@@ -17,7 +17,7 @@
 set -e
 
 echo "Running go tests..."
-go test -timeout 60s `go list ./... | grep -v vendor`
+go test -v -timeout 60s `go list ./... | grep -v vendor`
 
 echo "Checking gofmt..."
 files=$(find . -name "*.go" | grep -v vendor/ | xargs gofmt -l -s)
