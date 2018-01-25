@@ -1,0 +1,9 @@
+language: go
+os: linux
+
+go:
+  - 1.9.x
+go_import_path: github.com/GoogleCloudPlatform/skaffold
+
+script:
+  - make test
