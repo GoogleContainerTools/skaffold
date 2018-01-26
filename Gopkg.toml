@@ -9,3 +9,15 @@
 [[constraint]]
   name = "github.com/spf13/cobra"
   version = "0.0.1"
+
+[[constraint]]
+  name = "github.com/moby/moby"
+  revision = "1cea9d3bdb427bbdd7f14c6b11a3f6cef332bd34"
+
+[[override]]
+  name = "github.com/docker/docker"
+  revision = "1cea9d3bdb427bbdd7f14c6b11a3f6cef332bd34"
+
+[[override]]
+  name = "github.com/docker/distribution"
+  revision = "277ed486c948042cab91ad367c379524f3b25e18"
