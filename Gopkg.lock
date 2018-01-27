@@ -2,10 +2,22 @@
 
 
 [[projects]]
+  branch = "master"
+  name = "github.com/Azure/go-ansiterm"
+  packages = [".","winterm"]
+  revision = "d6e3b3328b783f23731bc4d058875b0371ff8109"
+
+[[projects]]
   name = "github.com/Microsoft/go-winio"
   packages = ["."]
   revision = "7da180ee92d8bd8bb8c37fc560e673e6557c392f"
   version = "v0.4.7"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/Nvveen/Gotty"
+  packages = ["."]
+  revision = "cd527374f1e5bff4938207604a14f2e38a9cf512"
 
 [[projects]]
   branch = "master"
@@ -14,15 +26,32 @@
   revision = "b2b946a77f5973f420514090d6f6dd58b08303f0"
 
 [[projects]]
+  name = "github.com/docker/distribution"
+  packages = ["digestset","reference"]
+  revision = "277ed486c948042cab91ad367c379524f3b25e18"
+
+[[projects]]
   name = "github.com/docker/docker"
-  packages = ["builder/dockerfile/command","pkg/mount","pkg/system"]
+  packages = ["api","api/types","api/types/blkiodev","api/types/container","api/types/events","api/types/filters","api/types/image","api/types/mount","api/types/network","api/types/registry","api/types/strslice","api/types/swarm","api/types/swarm/runtime","api/types/time","api/types/versions","api/types/volume","builder/dockerfile/command","pkg/archive","pkg/fileutils","pkg/idtools","pkg/ioutils","pkg/jsonmessage","pkg/longpath","pkg/mount","pkg/pools","pkg/progress","pkg/system","pkg/term","pkg/term/windows"]
   revision = "1cea9d3bdb427bbdd7f14c6b11a3f6cef332bd34"
+
+[[projects]]
+  name = "github.com/docker/go-connections"
+  packages = ["nat","sockets","tlsconfig"]
+  revision = "3ede32e2033de7505e6500d6c868c2b9ed9f169d"
+  version = "v0.3.0"
 
 [[projects]]
   name = "github.com/docker/go-units"
   packages = ["."]
   revision = "0dadbb0345b35ec7ef35e228dabb8de89a65bf52"
   version = "v0.3.2"
+
+[[projects]]
+  name = "github.com/gogo/protobuf"
+  packages = ["proto"]
+  revision = "342cbe0a04158f6dcb03ca0079991a51a4248c02"
+  version = "v0.5"
 
 [[projects]]
   name = "github.com/inconshreveable/mousetrap"
@@ -32,7 +61,7 @@
 
 [[projects]]
   name = "github.com/moby/moby"
-  packages = ["builder/dockerfile/parser"]
+  packages = ["builder/dockerfile/parser","client","pkg/archive","pkg/jsonmessage","pkg/streamformatter","pkg/term"]
   revision = "1cea9d3bdb427bbdd7f14c6b11a3f6cef332bd34"
 
 [[projects]]
@@ -46,6 +75,12 @@
   packages = ["specs-go","specs-go/v1"]
   revision = "d60099175f88c47cd379c4738d158884749ed235"
   version = "v1.0.1"
+
+[[projects]]
+  name = "github.com/opencontainers/runc"
+  packages = ["libcontainer/system","libcontainer/user"]
+  revision = "baf6536d6259209c3edfa2b22237af82942d3dfa"
+  version = "v0.1.1"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -79,9 +114,21 @@
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/net"
+  packages = ["context","context/ctxhttp","proxy"]
+  revision = "0ed95abb35c445290478a5348a7b38bb154135fd"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
   revision = "03467258950d845cd1877eab69461b98e8c09219"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/time"
+  packages = ["rate"]
+  revision = "6dc17368e09b0e8634d71cac8168d853e869a0c7"
 
 [[projects]]
   branch = "v2"
@@ -92,6 +139,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f4393e83261a3e25796242e396f91a55e687d86a14af225350870d7853fa1470"
+  inputs-digest = "436d3601415616008cb7cc1027ecb5e37e38c8ed73ad905d27a8625fe241d1d8"
   solver-name = "gps-cdcl"
   solver-version = 1
