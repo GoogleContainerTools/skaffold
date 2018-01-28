@@ -18,7 +18,6 @@ package config
 
 import (
 	"io"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -120,17 +119,7 @@ func TestParseConfig(t *testing.T) {
 				r = testutil.BadReader{}
 			}
 			cfg, err := Parse(test.defaultConfig, r)
-			if err != nil && !test.shouldErr {
-				t.Errorf("Test should have failed but didn't return error: %s, error: %s", test.description, err)
-				return
-			}
-			if err == nil && test.shouldErr {
-				t.Errorf("Test didn't return error but should have: %s", test.description)
-				return
-			}
-			if !reflect.DeepEqual(cfg, test.expected) {
-				t.Errorf("Configs differ: actual: \n%+v\n expected \n%+v", cfg, test.expected)
-			}
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cfg)
 		})
 	}
 }
