@@ -14,14 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package constants
+package util
 
-import "github.com/sirupsen/logrus"
-
-const (
-	// For alpha releases, the default log level should be 'info'
-	DefaultLogLevel = logrus.InfoLevel
-
-	// The dockerfile path is given relative to the context directory
-	DefaultDockerfilePath = "Dockerfile"
+import (
+	"crypto/rand"
+	"fmt"
 )
+
+func RandomID() string {
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("%x", b)
+}
