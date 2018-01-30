@@ -57,9 +57,9 @@ func TestNewChecksumTaggerFromDigest(t *testing.T) {
 	}
 }
 
-func TestGenerateTag(t *testing.T) {
+func TestGenerateFullyQualifiedImageName(t *testing.T) {
 	tagger := &ChecksumTagger{ImageName: "test", Checksum: "1234"}
-	if _, err := tagger.GenerateTag(); err != nil {
+	if _, err := tagger.GenerateFullyQualifiedImageName(); err != nil {
 		t.Errorf("Error generating tag: %s", err)
 	}
 }

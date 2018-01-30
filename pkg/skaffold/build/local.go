@@ -79,7 +79,7 @@ func (l *LocalBuilder) Run(out io.Writer) (*BuildResult, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "getting tag strategy")
 		}
-		tag, err := tagger.GenerateTag()
+		tag, err := tagger.GenerateFullyQualifiedImageName()
 		if err != nil {
 			return nil, errors.Wrap(err, "generating tag")
 		}

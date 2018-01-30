@@ -27,8 +27,8 @@ type ChecksumTagger struct {
 	Checksum  string
 }
 
-// GenerateTag tags an image with the supplied image name and the sha256 checksum of the image
-func (c *ChecksumTagger) GenerateTag() (string, error) {
+// GenerateFullyQualifiedImageName tags an image with the supplied image name and the sha256 checksum of the image
+func (c *ChecksumTagger) GenerateFullyQualifiedImageName() (string, error) {
 	return fmt.Sprintf("%s:%s", c.ImageName, c.Checksum), nil
 }
 
