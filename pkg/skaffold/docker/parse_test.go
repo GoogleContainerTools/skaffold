@@ -18,7 +18,6 @@ package docker
 
 import (
 	"io"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -54,6 +53,13 @@ FROM gcr.io/distroless/base
 WORKDIR /root/
 COPY --from=0 /go/src/github.com/r2d4/leeroy .
 CMD ["./worker"]
+`
+
+const envTest = `
+FROM busybox
+ENV foo bar
+WORKDIR ${foo}   # WORKDIR /bar
+COPY $foo /quux # COPY bar /quux
 `
 
 const copyDirectory = `
@@ -108,6 +114,12 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			workspace:   ".",
 			expected:    []string{".", "file"},
 		},
+		{
+			description: "env test",
+			dockerfile:  envTest,
+			workspace:   ".",
+			expected:    []string{"bar"},
+		},
 	}
 
 	for _, test := range tests {
@@ -118,17 +130,7 @@ func TestGetDockerfileDependencies(t *testing.T) {
 				r = testutil.BadReader{}
 			}
 			deps, err := GetDockerfileDependencies(test.workspace, r)
-			if err != nil && !test.shouldErr {
-				t.Errorf("Test should have failed but didn't return error: %s, error: %s", test.description, err)
-				return
-			}
-			if err == nil && test.shouldErr {
-				t.Errorf("Test didn't return error but should have: %s", test.description)
-				return
-			}
-			if !reflect.DeepEqual(deps, test.expected) {
-				t.Errorf("Dependencies differ: actual: \n%+v\n expected \n%+v", deps, test.expected)
-			}
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
 		})
 	}
 }

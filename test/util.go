@@ -43,7 +43,7 @@ func CheckErrorAndDeepEqual(t *testing.T, shouldErr bool, err error, expected, a
 		return
 	}
 	if !reflect.DeepEqual(expected, actual) {
-		t.Errorf("%T differ.\nExpected\n%s\nActual\n%s", expected, actual)
+		t.Errorf("%T differ.\nExpected\n%s\nActual\n%s", expected, expected, actual)
 		return
 	}
 }

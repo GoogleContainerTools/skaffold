@@ -17,9 +17,11 @@ limitations under the License.
 package docker
 
 import (
+	"fmt"
 	"io"
 	"path"
 
+	"github.com/GoogleCloudPlatform/skaffold/third_party/moby/moby/dockerfile"
 	"github.com/moby/moby/builder/dockerfile/parser"
 	"github.com/pkg/errors"
 )
@@ -27,6 +29,7 @@ import (
 const (
 	add  = "add"
 	copy = "copy"
+	env  = "env"
 )
 
 // GetDockerfileDependencies parses a dockerfile and returns the full paths
@@ -38,12 +41,18 @@ func GetDockerfileDependencies(workspace string, r io.Reader) ([]string, error) 
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing dockerfile")
 	}
+	slex := dockerfile.NewShellLex('\\')
 	deps := []string{}
+	envs := map[string]string{}
 	seen := map[string]struct{}{}
 	for _, value := range res.AST.Children {
+		// logrus.Infof("%+v", value)
 		switch value.Value {
 		case add, copy:
-			src := value.Next.Value
+			src, err := processShellWord(slex, value.Next.Value, envs)
+			if err != nil {
+				return nil, errors.Wrap(err, "processing word")
+			}
 			// If flags are present, we are dealing with a multi-stage dockerfile
 			// Adding a dependency from a different stage does not imply a source dependency
 			if len(value.Flags) != 0 {
@@ -56,7 +65,17 @@ func GetDockerfileDependencies(workspace string, r io.Reader) ([]string, error) 
 			}
 			seen[depPath] = struct{}{}
 			deps = append(deps, depPath)
+		case env:
+			envs[value.Next.Value] = value.Next.Next.Value
 		}
 	}
 	return deps, nil
+}
+
+func processShellWord(lex *dockerfile.ShellLex, word string, envs map[string]string) (string, error) {
+	envSlice := []string{}
+	for envKey, envVal := range envs {
+		envSlice = append(envSlice, fmt.Sprintf("%s=%s", envKey, envVal))
+	}
+	return lex.ProcessWord(word, envSlice)
 }
