@@ -20,10 +20,12 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"strings"
 
 	"github.com/GoogleCloudPlatform/skaffold/third_party/moby/moby/dockerfile"
 	"github.com/moby/moby/builder/dockerfile/parser"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -46,16 +48,16 @@ func GetDockerfileDependencies(workspace string, r io.Reader) ([]string, error) 
 	envs := map[string]string{}
 	seen := map[string]struct{}{}
 	for _, value := range res.AST.Children {
-		// logrus.Infof("%+v", value)
+		logrus.Debugf("Dockerfile instruction: %+v", value)
 		switch value.Value {
 		case add, copy:
 			src, err := processShellWord(slex, value.Next.Value, envs)
 			if err != nil {
 				return nil, errors.Wrap(err, "processing word")
 			}
-			// If flags are present, we are dealing with a multi-stage dockerfile
+			// If the --from flag is provided, we are dealing with a multi-stage dockerfile
 			// Adding a dependency from a different stage does not imply a source dependency
-			if len(value.Flags) != 0 {
+			if hasMultiStageFlag(value.Flags) {
 				continue
 			}
 			depPath := path.Join(workspace, src)
@@ -78,4 +80,13 @@ func processShellWord(lex *dockerfile.ShellLex, word string, envs map[string]str
 		envSlice = append(envSlice, fmt.Sprintf("%s=%s", envKey, envVal))
 	}
 	return lex.ProcessWord(word, envSlice)
+}
+
+func hasMultiStageFlag(flags []string) bool {
+	for _, f := range flags {
+		if strings.HasPrefix(f, "--from=") {
+			return true
+		}
+	}
+	return false
 }
