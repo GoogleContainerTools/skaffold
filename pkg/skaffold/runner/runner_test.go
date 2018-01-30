@@ -24,7 +24,9 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	testutil "github.com/GoogleCloudPlatform/skaffold/test"
 )
 
@@ -33,7 +35,7 @@ type TestBuilder struct {
 	err error
 }
 
-func (t *TestBuilder) Run(io.Writer) (*build.BuildResult, error) {
+func (t *TestBuilder) Run(io.Writer, tag.Tagger) (*build.BuildResult, error) {
 	return t.res, t.err
 }
 
@@ -48,6 +50,7 @@ func TestNewForConfig(t *testing.T) {
 			description: "local builder config",
 			config: &config.SkaffoldConfig{
 				Build: config.BuildConfig{
+					TagPolicy: constants.TagStrategySha256,
 					BuildType: config.BuildType{
 						LocalBuild: &config.LocalBuild{},
 					},
@@ -60,6 +63,18 @@ func TestNewForConfig(t *testing.T) {
 			config: &config.SkaffoldConfig{
 				Build: config.BuildConfig{},
 			},
+			shouldErr: true,
+			expected:  &build.LocalBuilder{},
+		},
+		{
+			description: "unknown tagger",
+			config: &config.SkaffoldConfig{
+				Build: config.BuildConfig{
+					TagPolicy: "bad tag strategy",
+					BuildType: config.BuildType{
+						LocalBuild: &config.LocalBuild{},
+					},
+				}},
 			shouldErr: true,
 			expected:  &build.LocalBuilder{},
 		},
@@ -88,6 +103,7 @@ func TestRun(t *testing.T) {
 					res: &build.BuildResult{},
 					err: nil,
 				},
+				Tagger: &tag.ChecksumTagger{},
 			},
 		},
 		{
@@ -96,6 +112,7 @@ func TestRun(t *testing.T) {
 				Builder: &TestBuilder{
 					err: fmt.Errorf(""),
 				},
+				Tagger: &tag.ChecksumTagger{},
 			},
 			shouldErr: true,
 		},

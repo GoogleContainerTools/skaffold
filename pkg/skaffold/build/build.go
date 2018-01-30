@@ -16,7 +16,11 @@ limitations under the License.
 
 package build
 
-import "io"
+import (
+	"io"
+
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
+)
 
 // BuildResult holds the results of builds
 type BuildResult struct {
@@ -33,5 +37,5 @@ type Build struct {
 // It must build and make the resulting image accesible to the cluster.
 // This could include pushing to a authorized repository or loading the nodes with the image.
 type Builder interface {
-	Run(out io.Writer) (*BuildResult, error)
+	Run(out io.Writer, tagger tag.Tagger) (*BuildResult, error)
 }

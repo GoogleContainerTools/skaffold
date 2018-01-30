@@ -47,7 +47,7 @@ func NewLocalBuilder(cfg *config.BuildConfig) (*LocalBuilder, error) {
 
 // Run runs a docker build on the host and tags the resulting image with
 // its checksum. It streams build progress to the writer argument.
-func (l *LocalBuilder) Run(out io.Writer) (*BuildResult, error) {
+func (l *LocalBuilder) Run(out io.Writer, tagger tag.Tagger) (*BuildResult, error) {
 	api, c, err := l.newAPI()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting image api client")
@@ -75,11 +75,10 @@ func (l *LocalBuilder) Run(out io.Writer) (*BuildResult, error) {
 		if digest == "" {
 			return nil, fmt.Errorf("digest not found")
 		}
-		tagger, err := tag.NewChecksumTaggerFromDigest(digest, artifact.ImageName)
-		if err != nil {
-			return nil, errors.Wrap(err, "getting tag strategy")
-		}
-		tag, err := tagger.GenerateFullyQualifiedImageName()
+		tag, err := tagger.GenerateFullyQualifiedImageName(&tag.TagOptions{
+			ImageName: artifact.ImageName,
+			Digest:    digest,
+		})
 		if err != nil {
 			return nil, errors.Wrap(err, "generating tag")
 		}

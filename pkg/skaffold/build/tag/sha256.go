@@ -28,20 +28,14 @@ type ChecksumTagger struct {
 }
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the sha256 checksum of the image
-func (c *ChecksumTagger) GenerateFullyQualifiedImageName() (string, error) {
-	return fmt.Sprintf("%s:%s", c.ImageName, c.Checksum), nil
-}
-
-// NewChecksumTaggerFromDigest returns a tagger instance by splitting the docker digest
-// into identifier and checksum
-func NewChecksumTaggerFromDigest(digest, imageName string) (*ChecksumTagger, error) {
-	digestSplit := strings.Split(digest, ":")
+func (c *ChecksumTagger) GenerateFullyQualifiedImageName(opts *TagOptions) (string, error) {
+	if opts == nil {
+		return "", fmt.Errorf("Tag options not provided")
+	}
+	digestSplit := strings.Split(opts.Digest, ":")
 	if len(digestSplit) != 2 {
-		return nil, fmt.Errorf("Digest wrong format: %s, expected sha256:<checksum>", digestSplit)
+		return "", fmt.Errorf("Digest wrong format: %s, expected sha256:<checksum>", digestSplit)
 	}
 	checksum := digestSplit[1]
-	return &ChecksumTagger{
-		ImageName: imageName,
-		Checksum:  checksum,
-	}, nil
+	return fmt.Sprintf("%s:%s", opts.ImageName, checksum), nil
 }

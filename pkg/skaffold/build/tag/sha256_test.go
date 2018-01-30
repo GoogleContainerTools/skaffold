@@ -22,44 +22,51 @@ import (
 	testutil "github.com/GoogleCloudPlatform/skaffold/test"
 )
 
-func TestNewChecksumTaggerFromDigest(t *testing.T) {
+func TestGenerateFullyQualifiedImageName(t *testing.T) {
 	var tests = []struct {
 		description string
+		opts        *TagOptions
 		digest      string
 		image       string
+		expected    string
 
 		shouldErr bool
 	}{
 		{
 			description: "no error",
-			digest:      "sha256:12345abcde",
-			image:       "test",
+			opts: &TagOptions{
+				ImageName: "test",
+				Digest:    "sha256:12345abcde",
+			},
+			expected: "test:12345abcde",
 		},
 		{
 			description: "wrong digest format",
-			digest:      "wrong:digest:format",
-			image:       "test",
-			shouldErr:   true,
+			opts: &TagOptions{
+				ImageName: "test",
+				Digest:    "wrong:digest:format",
+			},
+			shouldErr: true,
 		},
 		{
 			description: "wrong digest format no colon",
-			digest:      "sha256",
-			image:       "test",
+			opts: &TagOptions{
+				ImageName: "test",
+				Digest:    "sha256",
+			},
+			shouldErr: true,
+		},
+		{
+			description: "error no tag opts",
 			shouldErr:   true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			_, err := NewChecksumTaggerFromDigest(test.digest, test.image)
-			testutil.CheckError(t, test.shouldErr, err)
+			c := &ChecksumTagger{}
+			tag, err := c.GenerateFullyQualifiedImageName(test.opts)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, tag)
 		})
-	}
-}
-
-func TestGenerateFullyQualifiedImageName(t *testing.T) {
-	tagger := &ChecksumTagger{ImageName: "test", Checksum: "1234"}
-	if _, err := tagger.GenerateFullyQualifiedImageName(); err != nil {
-		t.Errorf("Error generating tag: %s", err)
 	}
 }

@@ -22,10 +22,20 @@ import (
 	"io"
 	"testing"
 
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	testutil "github.com/GoogleCloudPlatform/skaffold/test"
 	"github.com/moby/moby/client"
 )
+
+type FakeTagger struct {
+	Out string
+	Err error
+}
+
+func (f *FakeTagger) GenerateFullyQualifiedImageName(tagOpts *tag.TagOptions) (string, error) {
+	return f.Out, f.Err
+}
 
 func TestLocalRun(t *testing.T) {
 	var tests = []struct {
@@ -33,6 +43,7 @@ func TestLocalRun(t *testing.T) {
 		config      *config.BuildConfig
 		out         io.Writer
 		newAPI      func() (client.ImageAPIClient, io.Closer, error)
+		tagger      tag.Tagger
 
 		expectedBuild *BuildResult
 		shouldErr     bool
@@ -48,6 +59,7 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
+			tagger: &tag.ChecksumTagger{},
 			newAPI: testutil.NewFakeImageAPIClientCloser,
 			expectedBuild: &BuildResult{
 				[]Build{
@@ -69,6 +81,7 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
+			tagger:    &tag.ChecksumTagger{},
 			newAPI:    testutil.NewFakeImageAPIClientCloserBuildError,
 			shouldErr: true,
 		},
@@ -83,6 +96,7 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
+			tagger:    &tag.ChecksumTagger{},
 			newAPI:    testutil.NewFakeImageAPIClientCloserTagError,
 			shouldErr: true,
 		},
@@ -97,6 +111,7 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
+			tagger:    &tag.ChecksumTagger{},
 			newAPI:    func() (client.ImageAPIClient, io.Closer, error) { return nil, nil, fmt.Errorf("") },
 			shouldErr: true,
 		},
@@ -111,6 +126,7 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
+			tagger:    &tag.ChecksumTagger{},
 			newAPI:    testutil.NewFakeImageAPIClientCloser,
 			shouldErr: true,
 		},
@@ -125,7 +141,22 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
+			tagger:    &tag.ChecksumTagger{},
 			newAPI:    testutil.NewFakeImageAPIClientCloserListError,
+			shouldErr: true,
+		},
+		{
+			description: "error tagger",
+			config: &config.BuildConfig{
+				Artifacts: []config.Artifact{
+					{
+						ImageName: "test",
+						Workspace: ".",
+					},
+				},
+			},
+			tagger:    &FakeTagger{Err: fmt.Errorf("")},
+			newAPI:    testutil.NewFakeImageAPIClientCloser,
 			shouldErr: true,
 		},
 	}
@@ -136,7 +167,7 @@ func TestLocalRun(t *testing.T) {
 				BuildConfig: test.config,
 				newAPI:      test.newAPI,
 			}
-			res, err := l.Run(test.out)
+			res, err := l.Run(test.out, test.tagger)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedBuild, res)
 		})
 	}

@@ -21,13 +21,16 @@ import (
 	"io"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/pkg/errors"
 )
 
 // SkaffoldRunner is responsible for running the skaffold build and deploy pipeline.
 type SkaffoldRunner struct {
 	build.Builder
+	tag.Tagger
 	*config.SkaffoldConfig
 
 	out io.Writer
@@ -37,11 +40,16 @@ type SkaffoldRunner struct {
 func NewForConfig(out io.Writer, cfg *config.SkaffoldConfig) (*SkaffoldRunner, error) {
 	builder, err := getBuilder(&cfg.Build)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing skaffold config")
+		return nil, errors.Wrap(err, "parsing skaffold build config")
+	}
+	tagger, err := newTaggerForConfig(cfg.Build.TagPolicy)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing skaffold tag config")
 	}
 	return &SkaffoldRunner{
 		SkaffoldConfig: cfg,
 		Builder:        builder,
+		Tagger:         tagger,
 		out:            out,
 	}, nil
 }
@@ -53,9 +61,18 @@ func getBuilder(cfg *config.BuildConfig) (build.Builder, error) {
 	return nil, fmt.Errorf("Unknown builder for config %+v", cfg)
 }
 
+func newTaggerForConfig(tagStrategy string) (tag.Tagger, error) {
+	switch tagStrategy {
+	case constants.TagStrategySha256:
+		return &tag.ChecksumTagger{}, nil
+	}
+
+	return nil, fmt.Errorf("Unknown tagger for strategy %s", tagStrategy)
+}
+
 // Run runs the skaffold build and deploy pipeline.
 func (r *SkaffoldRunner) Run() error {
-	_, err := r.Builder.Run(r.out)
+	_, err := r.Builder.Run(r.out, r.Tagger)
 	if err != nil {
 		return errors.Wrap(err, "build step")
 	}
