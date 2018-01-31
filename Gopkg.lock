@@ -107,6 +107,12 @@
   version = "v1.0.4"
 
 [[projects]]
+  name = "github.com/spf13/afero"
+  packages = [".","mem"]
+  revision = "bb8f1927f2a9d3ab41c9340aa034f6b803f4359c"
+  version = "v1.0.2"
+
+[[projects]]
   name = "github.com/spf13/cobra"
   packages = ["."]
   revision = "7b2c5ac9fc04fc5efafb60700713d4fa609b777b"
@@ -144,6 +150,12 @@
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/text"
+  packages = ["internal/gen","internal/triegen","internal/ucd","transform","unicode/cldr","unicode/norm"]
+  revision = "e19ae1496984b1c655b8044a65c0300a3c878dd3"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/time"
   packages = ["rate"]
   revision = "6dc17368e09b0e8634d71cac8168d853e869a0c7"
@@ -157,6 +169,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b8afa2e7fd9d88f36979506ac1340693b40795bc2a64c22ac4f7bc034c7fd60b"
+  inputs-digest = "98f34efa9b5e025a98f8b0f16b784389c4799cfaa84959c15cd3d1cad1091902"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -21,3 +21,6 @@
 [[override]]
   name = "github.com/docker/distribution"
   revision = "277ed486c948042cab91ad367c379524f3b25e18"
+[[constraint]]
+  name = "github.com/spf13/afero"
+  version = "1.0.2"
