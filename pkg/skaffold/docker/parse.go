@@ -23,8 +23,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/GoogleCloudPlatform/skaffold/third_party/moby/moby/dockerfile"
 	"github.com/moby/moby/builder/dockerfile/parser"
+	"github.com/moby/moby/builder/dockerfile/shell"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -69,7 +69,7 @@ func GetDockerfileDependencies(workspace string, r io.Reader) ([]string, error) 
 }
 
 func processCopy(workspace string, value *parser.Node, paths map[string]struct{}, envs map[string]string) error {
-	slex := dockerfile.NewShellLex('\\')
+	slex := shell.NewLex('\\')
 	src, err := processShellWord(slex, value.Next.Value, envs)
 	if err != nil {
 		return errors.Wrap(err, "processing word")
@@ -149,7 +149,7 @@ func addDir(fs afero.Fs, dir string, expandedPaths map[string]struct{}) error {
 	return nil
 }
 
-func processShellWord(lex *dockerfile.ShellLex, word string, envs map[string]string) (string, error) {
+func processShellWord(lex *shell.Lex, word string, envs map[string]string) (string, error) {
 	envSlice := []string{}
 	for envKey, envVal := range envs {
 		envSlice = append(envSlice, fmt.Sprintf("%s=%s", envKey, envVal))
