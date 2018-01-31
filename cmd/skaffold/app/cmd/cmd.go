@@ -18,16 +18,21 @@ package cmd
 
 import (
 	"io"
+	"os"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/version"
-
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/runner"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
-var v string
+var (
+	v        string
+	filename string
+)
 
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	c := &cobra.Command{
@@ -44,6 +49,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 
 	c.AddCommand(NewCmdVersion(out))
 	c.AddCommand(NewCmdRun(out))
+	c.AddCommand(NewCmdDev(out))
 
 	c.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic")
 	return c
@@ -56,5 +62,29 @@ func SetUpLogs(out io.Writer, level string) error {
 		return errors.Wrap(err, "parsing log level")
 	}
 	logrus.SetLevel(lvl)
+	return nil
+}
+
+func runSkaffold(out io.Writer, defaultConfig *config.SkaffoldConfig, filename string) error {
+	f, err := os.Open(filename)
+	if err != nil {
+		return errors.Wrap(err, "opening skaffold config")
+	}
+	defer f.Close()
+
+	cfg, err := config.Parse(defaultConfig, f)
+	if err != nil {
+		return errors.Wrap(err, "parsing skaffold config")
+	}
+
+	r, err := runner.NewForConfig(out, cfg)
+	if err != nil {
+		return errors.Wrap(err, "getting skaffold config")
+	}
+
+	if err := r.Run(); err != nil {
+		return errors.Wrap(err, "running skaffold steps")
+	}
+
 	return nil
 }

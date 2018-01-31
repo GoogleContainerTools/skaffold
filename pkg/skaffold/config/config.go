@@ -77,6 +77,11 @@ type Artifact struct {
 	Workspace      string `yaml:"workspace"`
 }
 
+// DevelopmentConfig is the default development configuration for skaffold dev mode
+var DevelopmentConfig = SkaffoldConfig{
+	Watch: true,
+}
+
 // Parse reads from an io.Reader and unmarshals the result into a SkaffoldConfig.
 // The default config argument provides default values for the config,
 // which can be overridden if present in the config file.
