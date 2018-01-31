@@ -1,0 +1,13 @@
+apiVersion: skaffold/v1
+kind: Config
+
+build:
+  tagPolicy: sha256
+  artifacts:
+  - imageName: skaffold
+    dockerfilePath: deploy/skaffold/Dockerfile
+    workspace: ./
+    
+
+  local: {}
+

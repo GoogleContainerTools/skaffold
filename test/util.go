@@ -14,10 +14,66 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package tests
+package test
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+	"testing"
+)
 
 type BadReader struct{}
 
 func (BadReader) Read([]byte) (int, error) { return 0, fmt.Errorf("Bad read") }
+
+type BadWriter struct{}
+
+func (BadWriter) Write([]byte) (int, error) { return 0, fmt.Errorf("Bad write") }
+
+type FakeReaderCloser struct {
+	Err error
+}
+
+func (f FakeReaderCloser) Close() error             { return nil }
+func (f FakeReaderCloser) Read([]byte) (int, error) { return 0, f.Err }
+
+func CheckErrorAndDeepEqual(t *testing.T, shouldErr bool, err error, expected, actual interface{}) {
+	if err := checkErr(shouldErr, err); err != nil {
+		t.Error(err)
+		return
+	}
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("%T differ.\nExpected\n%s\nActual\n%s", expected, expected, actual)
+		return
+	}
+}
+
+func CheckErrorAndTypeEquality(t *testing.T, shouldErr bool, err error, expected, actual interface{}) {
+	if err := checkErr(shouldErr, err); err != nil {
+		t.Error(err)
+		return
+	}
+	expectedType := reflect.TypeOf(expected)
+	actualType := reflect.TypeOf(actual)
+
+	if expectedType != actualType {
+		t.Errorf("Types do not match. Expected %s, Actual %s", expectedType, actualType)
+		return
+	}
+}
+
+func CheckError(t *testing.T, shouldErr bool, err error) {
+	if err := checkErr(shouldErr, err); err != nil {
+		t.Error(err)
+	}
+}
+
+func checkErr(shouldErr bool, err error) error {
+	if err == nil && shouldErr {
+		return fmt.Errorf("Expected error, but returned none")
+	}
+	if err != nil && !shouldErr {
+		return fmt.Errorf("Unexpected error: %s", err)
+	}
+	return nil
+}

@@ -19,5 +19,12 @@ package constants
 import "github.com/sirupsen/logrus"
 
 const (
+	// For alpha releases, the default log level should be 'info'
 	DefaultLogLevel = logrus.InfoLevel
+
+	// The dockerfile path is given relative to the context directory
+	DefaultDockerfilePath = "Dockerfile"
+
+	// TagStrategySha256 uses the checksum of the built artifact as the tag
+	TagStrategySha256 = "sha256"
 )
