@@ -19,6 +19,7 @@ package docker
 import (
 	"fmt"
 	"io"
+	"os"
 	"path"
 	"strings"
 
@@ -26,6 +27,7 @@ import (
 	"github.com/moby/moby/builder/dockerfile/parser"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/afero"
 )
 
 const (
@@ -34,44 +36,117 @@ const (
 	env  = "env"
 )
 
+var fs = afero.NewOsFs()
+
 // GetDockerfileDependencies parses a dockerfile and returns the full paths
 // of all the source files that the resulting docker image depends on.
-// GetDockerfileDependencies does not expand paths and may contain both a directory and
-// files within it.
 func GetDockerfileDependencies(workspace string, r io.Reader) ([]string, error) {
 	res, err := parser.Parse(r)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing dockerfile")
 	}
-	slex := dockerfile.NewShellLex('\\')
-	deps := []string{}
 	envs := map[string]string{}
-	seen := map[string]struct{}{}
+	depMap := map[string]struct{}{}
 	for _, value := range res.AST.Children {
-		logrus.Debugf("Dockerfile instruction: %+v", value)
 		switch value.Value {
 		case add, copy:
-			src, err := processShellWord(slex, value.Next.Value, envs)
-			if err != nil {
-				return nil, errors.Wrap(err, "processing word")
-			}
-			// If the --from flag is provided, we are dealing with a multi-stage dockerfile
-			// Adding a dependency from a different stage does not imply a source dependency
-			if hasMultiStageFlag(value.Flags) {
-				continue
-			}
-			depPath := path.Join(workspace, src)
-			if _, ok := seen[depPath]; ok {
-				// If we've already seen this file, only add it once.
-				continue
-			}
-			seen[depPath] = struct{}{}
-			deps = append(deps, depPath)
+			processCopy(workspace, value, depMap, envs)
 		case env:
 			envs[value.Next.Value] = value.Next.Next.Value
 		}
 	}
-	return deps, nil
+
+	deps := []string{}
+	for dep := range depMap {
+		deps = append(deps, dep)
+	}
+
+	expandedDeps, err := expandDeps(workspace, deps)
+	if err != nil {
+		return nil, errors.Wrap(err, "expanding dockerfile paths")
+	}
+	return expandedDeps, nil
+}
+
+func processCopy(workspace string, value *parser.Node, paths map[string]struct{}, envs map[string]string) error {
+	slex := dockerfile.NewShellLex('\\')
+	src, err := processShellWord(slex, value.Next.Value, envs)
+	if err != nil {
+		return errors.Wrap(err, "processing word")
+	}
+	// If the --from flag is provided, we are dealing with a multi-stage dockerfile
+	// Adding a dependency from a different stage does not imply a source dependency
+	if hasMultiStageFlag(value.Flags) {
+		return nil
+	}
+	dep := path.Join(workspace, src)
+	if _, ok := paths[dep]; ok {
+		// If we've already seen this file, only add it once.
+		return nil
+	}
+	paths[dep] = struct{}{}
+	return nil
+}
+
+func expandDeps(workspace string, paths []string) ([]string, error) {
+	expandedPaths := map[string]struct{}{}
+	for _, p := range paths {
+		// If the path contains a filepath.Match wildcard, we have to walk the workspace
+		// and find any matches to that pattern
+		if containsWildcards(p) {
+			logrus.Debugf("COPY or ADD directive with wildcard %s", p)
+			if err := afero.Walk(fs, workspace, func(fpath string, info os.FileInfo, err error) error {
+				if err != nil {
+					return errors.Wrap(err, "getting relative path")
+				}
+				if match, _ := path.Match(p, fpath); !match {
+					return nil
+				}
+				if err := addFileOrDir(fs, fpath, info, expandedPaths); err != nil {
+					return errors.Wrap(err, "adding file or directory")
+				}
+				return nil
+			}); err != nil {
+				return nil, errors.Wrap(err, "walking wildcard path")
+			}
+			continue
+		}
+		// If the path does not contain a wildcard, recursively add the directory or individual file
+		info, err := fs.Stat(p)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting file info")
+		}
+		if err := addFileOrDir(fs, p, info, expandedPaths); err != nil {
+			return nil, errors.Wrap(err, "adding file or directory")
+		}
+	}
+	ret := []string{}
+	for ep := range expandedPaths {
+		ret = append(ret, ep)
+	}
+	return ret, nil
+}
+
+func addFileOrDir(fs afero.Fs, ref string, info os.FileInfo, expandedPaths map[string]struct{}) error {
+	if info.IsDir() {
+		return addDir(fs, ref, expandedPaths)
+	}
+	expandedPaths[ref] = struct{}{}
+	return nil
+}
+
+func addDir(fs afero.Fs, dir string, expandedPaths map[string]struct{}) error {
+	logrus.Debugf("Recursively adding %s", dir)
+	if err := afero.Walk(fs, dir, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+		expandedPaths[path] = struct{}{}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "filepath walk")
+	}
+	return nil
 }
 
 func processShellWord(lex *dockerfile.ShellLex, word string, envs map[string]string) (string, error) {
@@ -80,6 +155,17 @@ func processShellWord(lex *dockerfile.ShellLex, word string, envs map[string]str
 		envSlice = append(envSlice, fmt.Sprintf("%s=%s", envKey, envVal))
 	}
 	return lex.ProcessWord(word, envSlice)
+}
+
+func containsWildcards(path string) bool {
+	for i := 0; i < len(path); i++ {
+		ch := path[i]
+		// These are the wildcards that correspond to filepath.Match
+		if ch == '*' || ch == '?' || ch == '[' {
+			return true
+		}
+	}
+	return false
 }
 
 func hasMultiStageFlag(flags []string) bool {

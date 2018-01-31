@@ -21,7 +21,10 @@ import (
 	"strings"
 	"testing"
 
+	"sort"
+
 	testutil "github.com/GoogleCloudPlatform/skaffold/test"
+	"github.com/spf13/afero"
 )
 
 const copyDockerfile = `
@@ -99,8 +102,8 @@ func TestGetDockerfileDependencies(t *testing.T) {
 		{
 			description: "multistage dockerfile",
 			dockerfile:  multiStageDockerfile,
-			workspace:   "/go/src/github.com/skaffold",
-			expected:    []string{"/go/src/github.com/skaffold/worker.go"},
+			workspace:   "",
+			expected:    []string{"worker.go"},
 		},
 		{
 			description: "copy twice",
@@ -109,17 +112,22 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			expected:    []string{"test.conf"},
 		},
 		{
-			description: "copy directory",
-			dockerfile:  copyDirectory,
-			workspace:   ".",
-			expected:    []string{".", "file"},
-		},
-		{
 			description: "env test",
 			dockerfile:  envTest,
 			workspace:   ".",
 			expected:    []string{"bar"},
 		},
+	}
+
+	pkgFS := fs
+	defer func() {
+		fs = pkgFS
+	}()
+	fs = afero.NewMemMapFs()
+	fs.MkdirAll("docker", 0750)
+	files := []string{"docker/nginx.conf", "server.go", "test.conf", "worker.go", "bar", "file"}
+	for _, name := range files {
+		afero.WriteFile(fs, name, []byte(""), 0644)
 	}
 
 	for _, test := range tests {
@@ -131,6 +139,68 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			}
 			deps, err := GetDockerfileDependencies(test.workspace, r)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
+		})
+	}
+}
+
+func TestExpandDeps(t *testing.T) {
+	var tests = []struct {
+		description string
+		in          []string
+		out         []string
+		shouldErr   bool
+	}{
+		{
+			description: "add single files",
+			in:          []string{"test/a", "test/b", "test/c"},
+			out:         []string{"test/a", "test/b", "test/c"},
+		},
+		{
+			description: "add directory",
+			in:          []string{"test"},
+			out:         []string{"test/a", "test/b", "test/c"},
+		},
+		{
+			description: "add directory trailing slash",
+			in:          []string{"test/"},
+			out:         []string{"test/a", "test/b", "test/c"},
+		},
+		{
+			description: "file not exist",
+			in:          []string{"test/d"},
+			shouldErr:   true,
+		},
+		{
+			description: "add wildcard star",
+			in:          []string{"*"},
+			out:         []string{"test/a", "test/b", "test/c"},
+		},
+		{
+			description: "add wildcard any character",
+			in:          []string{"test/?"},
+			out:         []string{"test/a", "test/b", "test/c"},
+		},
+	}
+
+	pkgFS := fs
+	defer func() {
+		fs = pkgFS
+	}()
+	fs = afero.NewMemMapFs()
+	fs.MkdirAll("test", 0755)
+	files := []string{"test/a", "test/b", "test/c"}
+	for _, name := range files {
+		afero.WriteFile(fs, name, []byte(""), 0644)
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			actual, err := expandDeps(".", test.in)
+			// Sort both slices for reproducibility
+			sort.Strings(actual)
+			sort.Strings(test.out)
+
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.out, actual)
 		})
 	}
 }
