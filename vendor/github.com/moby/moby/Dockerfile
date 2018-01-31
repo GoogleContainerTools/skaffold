@@ -62,6 +62,7 @@ RUN apt-get update && apt-get install -y \
 	libudev-dev \
 	mercurial \
 	net-tools \
+	pigz \
 	pkg-config \
 	protobuf-compiler \
 	protobuf-c-compiler \
@@ -87,7 +88,7 @@ RUN apt-get update && apt-get install -y \
 #            will need updating, to avoid errors. Ping #docker-maintainers on IRC
 #            with a heads-up.
 # IMPORTANT: When updating this please note that stdlib archive/tar pkg is vendored
-ENV GO_VERSION 1.9.2
+ENV GO_VERSION 1.9.3
 RUN curl -fsSL "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz" \
 	| tar -xzC /usr/local
 
@@ -113,10 +114,10 @@ RUN set -x \
 	&& git clone https://github.com/docker/distribution.git "$GOPATH/src/github.com/docker/distribution" \
 	&& (cd "$GOPATH/src/github.com/docker/distribution" && git checkout -q "$REGISTRY_COMMIT") \
 	&& GOPATH="$GOPATH/src/github.com/docker/distribution/Godeps/_workspace:$GOPATH" \
-		go build -o /usr/local/bin/registry-v2 github.com/docker/distribution/cmd/registry \
+		go build -buildmode=pie -o /usr/local/bin/registry-v2 github.com/docker/distribution/cmd/registry \
 	&& (cd "$GOPATH/src/github.com/docker/distribution" && git checkout -q "$REGISTRY_COMMIT_SCHEMA1") \
 	&& GOPATH="$GOPATH/src/github.com/docker/distribution/Godeps/_workspace:$GOPATH" \
-		go build -o /usr/local/bin/registry-v2-schema1 github.com/docker/distribution/cmd/registry \
+		go build -buildmode=pie -o /usr/local/bin/registry-v2-schema1 github.com/docker/distribution/cmd/registry \
 	&& rm -rf "$GOPATH"
 
 # Install notary and notary-server
@@ -126,9 +127,9 @@ RUN set -x \
 	&& git clone https://github.com/docker/notary.git "$GOPATH/src/github.com/docker/notary" \
 	&& (cd "$GOPATH/src/github.com/docker/notary" && git checkout -q "$NOTARY_VERSION") \
 	&& GOPATH="$GOPATH/src/github.com/docker/notary/vendor:$GOPATH" \
-		go build -o /usr/local/bin/notary-server github.com/docker/notary/cmd/notary-server \
+		go build -buildmode=pie -o /usr/local/bin/notary-server github.com/docker/notary/cmd/notary-server \
 	&& GOPATH="$GOPATH/src/github.com/docker/notary/vendor:$GOPATH" \
-		go build -o /usr/local/bin/notary github.com/docker/notary/cmd/notary \
+		go build -buildmode=pie -o /usr/local/bin/notary github.com/docker/notary/cmd/notary \
 	&& rm -rf "$GOPATH"
 
 # Get the "docker-py" source so we can run their integration tests
@@ -167,11 +168,12 @@ RUN echo "source $PWD/hack/make/.integration-test-helpers" >> /etc/bash.bashrc
 
 # Get useful and necessary Hub images so we can "docker load" locally instead of pulling
 COPY contrib/download-frozen-image-v2.sh /go/src/github.com/docker/docker/contrib/
+# TODO: when issue #35963 fixed, we can upgrade the busybox to multi-arch
 RUN ./contrib/download-frozen-image-v2.sh /docker-frozen-images \
-	buildpack-deps:jessie@sha256:85b379ec16065e4fe4127eb1c5fb1bcc03c559bd36dbb2e22ff496de55925fa6 \
+	buildpack-deps:jessie@sha256:dd86dced7c9cd2a724e779730f0a53f93b7ef42228d4344b25ce9a42a1486251 \
 	busybox:latest@sha256:32f093055929dbc23dec4d03e09dfe971f5973a9ca5cf059cbfb644c206aa83f \
-	debian:jessie@sha256:72f784399fd2719b4cb4e16ef8e369a39dc67f53d978cd3e2e7bf4e502c7b793 \
-	hello-world:latest@sha256:c5515758d4c5e1e838e9cd307f6c6a0d620b5e07e6f927b07d05f6d12a1ac8d7
+	debian:jessie@sha256:287a20c5f73087ab406e6b364833e3fb7b3ae63ca0eb3486555dc27ed32c6e60 \
+	hello-world:latest@sha256:be0cd392e45be79ffeffa6b05338b98ebb16c87b255f48e297ec7f98e123905c
 # See also ensureFrozenImagesLinux() in "integration-cli/fixtures_linux_daemon_test.go" (which needs to be updated when adding images to this list)
 
 # Install tomlv, vndr, runc, containerd, tini, docker-proxy dockercli
@@ -189,7 +191,7 @@ RUN ln -s /usr/local/completion/bash/docker /etc/bash_completion.d/docker
 ENTRYPOINT ["hack/dind"]
 
 # Options for hack/validate/gometalinter
-ENV GOMETALINTER_OPTS="--deadline 2m"
+ENV GOMETALINTER_OPTS="--deadline=2m"
 
 # Upload docker source
 COPY . /go/src/github.com/docker/docker

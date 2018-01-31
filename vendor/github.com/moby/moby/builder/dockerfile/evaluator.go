@@ -21,12 +21,15 @@ package dockerfile
 
 import (
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/builder"
 	"github.com/docker/docker/builder/dockerfile/instructions"
+	"github.com/docker/docker/builder/dockerfile/shell"
+	"github.com/docker/docker/errdefs"
 	"github.com/docker/docker/pkg/system"
 	"github.com/docker/docker/runconfig/opts"
 	"github.com/pkg/errors"
@@ -37,7 +40,7 @@ func dispatch(d dispatchRequest, cmd instructions.Command) (err error) {
 		optionsOS := system.ParsePlatform(d.builder.options.Platform).OS
 		err := c.CheckPlatform(optionsOS)
 		if err != nil {
-			return validationError{err}
+			return errdefs.InvalidParameter(err)
 		}
 	}
 	runConfigEnv := d.state.runConfig.Env
@@ -48,7 +51,7 @@ func dispatch(d dispatchRequest, cmd instructions.Command) (err error) {
 			return d.shlex.ProcessWord(word, envs)
 		})
 		if err != nil {
-			return validationError{err}
+			return errdefs.InvalidParameter(err)
 		}
 	}
 
@@ -103,13 +106,14 @@ func dispatch(d dispatchRequest, cmd instructions.Command) (err error) {
 
 // dispatchState is a data object which is modified by dispatchers
 type dispatchState struct {
-	runConfig  *container.Config
-	maintainer string
-	cmdSet     bool
-	imageID    string
-	baseImage  builder.Image
-	stageName  string
-	buildArgs  *buildArgs
+	runConfig       *container.Config
+	maintainer      string
+	cmdSet          bool
+	imageID         string
+	baseImage       builder.Image
+	stageName       string
+	buildArgs       *buildArgs
+	operatingSystem string
 }
 
 func newDispatchState(baseArgs *buildArgs) *dispatchState {
@@ -184,7 +188,7 @@ func commitStage(state *dispatchState, stages *stagesBuildResults) error {
 
 type dispatchRequest struct {
 	state   *dispatchState
-	shlex   *ShellLex
+	shlex   *shell.Lex
 	builder *Builder
 	source  builder.Source
 	stages  *stagesBuildResults
@@ -193,7 +197,7 @@ type dispatchRequest struct {
 func newDispatchRequest(builder *Builder, escapeToken rune, source builder.Source, buildArgs *buildArgs, stages *stagesBuildResults) dispatchRequest {
 	return dispatchRequest{
 		state:   newDispatchState(buildArgs),
-		shlex:   NewShellLex(escapeToken),
+		shlex:   shell.NewLex(escapeToken),
 		builder: builder,
 		source:  source,
 		stages:  stages,
@@ -209,9 +213,16 @@ func (s *dispatchState) hasFromImage() bool {
 	return s.imageID != "" || (s.baseImage != nil && s.baseImage.ImageID() == "")
 }
 
-func (s *dispatchState) beginStage(stageName string, image builder.Image) {
+func (s *dispatchState) beginStage(stageName string, image builder.Image) error {
 	s.stageName = stageName
 	s.imageID = image.ImageID()
+	s.operatingSystem = image.OperatingSystem()
+	if s.operatingSystem == "" { // In case it isn't set
+		s.operatingSystem = runtime.GOOS
+	}
+	if !system.IsOSSupported(s.operatingSystem) {
+		return system.ErrNotSupportedOperatingSystem
+	}
 
 	if image.RunConfig() != nil {
 		// copy avoids referencing the same instance when 2 stages have the same base
@@ -223,12 +234,13 @@ func (s *dispatchState) beginStage(stageName string, image builder.Image) {
 	s.setDefaultPath()
 	s.runConfig.OpenStdin = false
 	s.runConfig.StdinOnce = false
+	return nil
 }
 
 // Add the default PATH to runConfig.ENV if one exists for the operating system and there
 // is no PATH set. Note that Windows containers on Windows won't have one as it's set by HCS
 func (s *dispatchState) setDefaultPath() {
-	defaultPath := system.DefaultPathEnv(s.baseImage.OperatingSystem())
+	defaultPath := system.DefaultPathEnv(s.operatingSystem)
 	if defaultPath == "" {
 		return
 	}

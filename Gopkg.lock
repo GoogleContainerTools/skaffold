@@ -26,20 +26,14 @@
   revision = "b2b946a77f5973f420514090d6f6dd58b08303f0"
 
 [[projects]]
-  name = "github.com/davecgh/go-spew"
-  packages = ["spew"]
-  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
-  version = "v1.1.0"
-
-[[projects]]
   name = "github.com/docker/distribution"
   packages = ["digestset","reference"]
-  revision = "277ed486c948042cab91ad367c379524f3b25e18"
+  revision = "edc3ab29cdff8694dd6feb85cfeb4b5f1b38ed9c"
 
 [[projects]]
   name = "github.com/docker/docker"
   packages = ["api","api/types","api/types/blkiodev","api/types/container","api/types/events","api/types/filters","api/types/image","api/types/mount","api/types/network","api/types/registry","api/types/strslice","api/types/swarm","api/types/swarm/runtime","api/types/time","api/types/versions","api/types/volume","builder/dockerfile/command","pkg/archive","pkg/fileutils","pkg/idtools","pkg/ioutils","pkg/jsonmessage","pkg/longpath","pkg/mount","pkg/pools","pkg/progress","pkg/system","pkg/term","pkg/term/windows"]
-  revision = "1cea9d3bdb427bbdd7f14c6b11a3f6cef332bd34"
+  revision = "e1f98e8ab3cb5ae5c0f452cdd81ac4a954279e62"
 
 [[projects]]
   name = "github.com/docker/go-connections"
@@ -67,8 +61,8 @@
 
 [[projects]]
   name = "github.com/moby/moby"
-  packages = ["builder/dockerfile/parser","client","pkg/archive","pkg/jsonmessage","pkg/streamformatter","pkg/term"]
-  revision = "1cea9d3bdb427bbdd7f14c6b11a3f6cef332bd34"
+  packages = ["builder/dockerfile/parser","builder/dockerfile/shell","client","pkg/archive","pkg/jsonmessage","pkg/streamformatter","pkg/term"]
+  revision = "e1f98e8ab3cb5ae5c0f452cdd81ac4a954279e62"
 
 [[projects]]
   name = "github.com/opencontainers/go-digest"
@@ -95,12 +89,6 @@
   version = "v0.8.0"
 
 [[projects]]
-  name = "github.com/pmezard/go-difflib"
-  packages = ["difflib"]
-  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
-  version = "v1.0.0"
-
-[[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
@@ -123,12 +111,6 @@
   packages = ["."]
   revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
   version = "v1.0.0"
-
-[[projects]]
-  name = "github.com/stretchr/testify"
-  packages = ["assert"]
-  revision = "b91bfb9ebec76498946beb6af7c0230c7cc7ba6c"
-  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
@@ -169,6 +151,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "98f34efa9b5e025a98f8b0f16b784389c4799cfaa84959c15cd3d1cad1091902"
+  inputs-digest = "fec209a36f6675879e63449ddcc9c8f78bc64c99ccc0b5e1d0d2616120fc9868"
   solver-name = "gps-cdcl"
   solver-version = 1

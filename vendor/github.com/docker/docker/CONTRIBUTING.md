@@ -102,7 +102,7 @@ the contributors guide.
       <p>
         Register for the Docker Community Slack at
 	<a href="https://community.docker.com/registrations/groups/4316" target="_blank">https://community.docker.com/registrations/groups/4316</a>.
-        We use the #moby-project channel for general discussion, and there are seperate channels for other Moby projects such as #containerd.
+        We use the #moby-project channel for general discussion, and there are separate channels for other Moby projects such as #containerd.
 	Archives are available at <a href="https://dockercommunity.slackarchive.io/" target="_blank">https://dockercommunity.slackarchive.io/</a>.
       </p>
     </td>
@@ -303,9 +303,8 @@ commit automatically with `git commit -s`.
 ### How can I become a maintainer?
 
 The procedures for adding new maintainers are explained in the 
-global [MAINTAINERS](https://github.com/docker/opensource/blob/master/MAINTAINERS)
-file in the [https://github.com/docker/opensource/](https://github.com/docker/opensource/)
-repository.
+[/project/GOVERNANCE.md](/project/GOVERNANCE.md)
+file in this repository.
 
 Don't forget: being a maintainer is a time investment. Make sure you
 will have time to make yourself available. You don't have to be a
@@ -370,6 +369,11 @@ guidelines for the community as a whole:
   pull request. Instead of sending an email, GitHub mentions should be
   used to ping maintainers to review a pull request, a proposal or an
   issue.
+
+The open source governance for this repository is handled via the [Moby Technical Steering Committee (TSC)](https://github.com/moby/tsc)
+charter. For any concerns with the community process regarding technical contributions,
+please contact the TSC. More information on project governance is available in
+our [project/GOVERNANCE.md](/project/GOVERNANCE.md) document.
 
 ### Guideline violations — 3 strikes method
 

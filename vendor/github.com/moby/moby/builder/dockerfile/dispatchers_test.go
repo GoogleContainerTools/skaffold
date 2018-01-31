@@ -12,6 +12,7 @@ import (
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/builder"
 	"github.com/docker/docker/builder/dockerfile/instructions"
+	"github.com/docker/docker/builder/dockerfile/shell"
 	"github.com/docker/docker/pkg/system"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +32,7 @@ func newBuilderWithMockBackend() *Builder {
 			Options: &types.ImageBuildOptions{Platform: runtime.GOOS},
 			Backend: mockBackend,
 		}),
-		imageProber:      newImageProber(mockBackend, nil, runtime.GOOS, false),
+		imageProber:      newImageProber(mockBackend, nil, false),
 		containerManager: newContainerManager(mockBackend),
 	}
 	return b
@@ -141,7 +142,7 @@ func TestFromWithArg(t *testing.T) {
 	cmd := &instructions.Stage{
 		BaseName: "alpine:${THETAG}",
 	}
-	err := processMetaArg(metaArg, NewShellLex('\\'), args)
+	err := processMetaArg(metaArg, shell.NewLex('\\'), args)
 
 	sb := newDispatchRequest(b, '\\', nil, args, newStagesBuildResults())
 	require.NoError(t, err)
@@ -427,10 +428,10 @@ func TestRunWithBuildArgs(t *testing.T) {
 	}
 
 	mockBackend := b.docker.(*MockBackend)
-	mockBackend.makeImageCacheFunc = func(_ []string, _ string) builder.ImageCache {
+	mockBackend.makeImageCacheFunc = func(_ []string) builder.ImageCache {
 		return imageCache
 	}
-	b.imageProber = newImageProber(mockBackend, nil, runtime.GOOS, false)
+	b.imageProber = newImageProber(mockBackend, nil, false)
 	mockBackend.getImageFunc = func(_ string) (builder.Image, builder.ReleaseableLayer, error) {
 		return &mockImage{
 			id:     "abcdef",

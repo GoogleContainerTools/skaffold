@@ -1,7 +1,7 @@
 package distribution
 
 import (
-	"context"
+	"github.com/docker/distribution/context"
 )
 
 // TagService provides access to information about tagged objects.
