@@ -89,6 +89,12 @@
   version = "v0.8.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/rjeczalik/notify"
+  packages = ["."]
+  revision = "27b537f07230b3f917421af6dcf044038dbe57e2"
+
+[[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
@@ -151,6 +157,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fec209a36f6675879e63449ddcc9c8f78bc64c99ccc0b5e1d0d2616120fc9868"
+  inputs-digest = "6b2098bedc8add5506859f0ffd45a180ed1ec21a2b64a688d8e1728899e12f38"
   solver-name = "gps-cdcl"
   solver-version = 1
