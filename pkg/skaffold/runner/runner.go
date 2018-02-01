@@ -24,14 +24,19 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // SkaffoldRunner is responsible for running the skaffold build and deploy pipeline.
 type SkaffoldRunner struct {
 	build.Builder
 	tag.Tagger
-	*config.SkaffoldConfig
+	watch.Watcher
+
+	config *config.SkaffoldConfig
+	cancel chan struct{}
 
 	out io.Writer
 }
@@ -47,10 +52,12 @@ func NewForConfig(out io.Writer, cfg *config.SkaffoldConfig) (*SkaffoldRunner, e
 		return nil, errors.Wrap(err, "parsing skaffold tag config")
 	}
 	return &SkaffoldRunner{
-		SkaffoldConfig: cfg,
-		Builder:        builder,
-		Tagger:         tagger,
-		out:            out,
+		config:  cfg,
+		Builder: builder,
+		Tagger:  tagger,
+		Watcher: &watch.FSWatcher{}, //TODO(@r2d4): should this be configurable?
+		cancel:  make(chan struct{}, 1),
+		out:     out,
 	}, nil
 }
 
@@ -59,6 +66,10 @@ func getBuilder(cfg *config.BuildConfig) (build.Builder, error) {
 		return build.NewLocalBuilder(cfg)
 	}
 	return nil, fmt.Errorf("Unknown builder for config %+v", cfg)
+}
+
+func getWatcher(cfg *config.SkaffoldConfig) (watch.Watcher, error) {
+	return &watch.FSWatcher{}, nil
 }
 
 func newTaggerForConfig(tagStrategy string) (tag.Tagger, error) {
@@ -72,10 +83,28 @@ func newTaggerForConfig(tagStrategy string) (tag.Tagger, error) {
 
 // Run runs the skaffold build and deploy pipeline.
 func (r *SkaffoldRunner) Run() error {
-	_, err := r.Builder.Run(r.out, r.Tagger)
-	if err != nil {
-		return errors.Wrap(err, "build step")
+	for {
+		if r.config.Watch {
+			_, err := r.Watch(r.config.Build.Artifacts, nil, r.cancel)
+			if err != nil {
+				return errors.Wrap(err, "watch step")
+			}
+		}
+
+		_, err := r.Builder.Run(r.out, r.Tagger)
+		if err != nil {
+			if r.config.Watch {
+				logrus.Warn("Build step error: %s", err)
+			} else {
+				return errors.Wrap(err, "build step")
+			}
+		}
+
+		// Deploy
+		if !r.config.Watch {
+			break
+		}
 	}
-	// Deploy
+
 	return nil
 }
