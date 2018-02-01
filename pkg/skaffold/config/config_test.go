@@ -44,7 +44,7 @@ var configA = &SkaffoldConfig{
 	APIVersion: "skaffold/v1",
 	Kind:       "Config",
 	Build: BuildConfig{
-		Artifacts: []Artifact{
+		Artifacts: []*Artifact{
 			{
 				ImageName: "example",
 				Workspace: "./examples/app",
@@ -64,7 +64,7 @@ var configB = &SkaffoldConfig{
 	Kind:       "Config",
 	Watch:      true,
 	Build: BuildConfig{
-		Artifacts: []Artifact{
+		Artifacts: []*Artifact{
 			{
 				ImageName: "example",
 				Workspace: "./examples/app",

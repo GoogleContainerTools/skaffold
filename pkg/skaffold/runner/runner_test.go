@@ -99,6 +99,7 @@ func TestRun(t *testing.T) {
 		{
 			description: "run no error",
 			runner: &SkaffoldRunner{
+				config: &config.SkaffoldConfig{},
 				Builder: &TestBuilder{
 					res: &build.BuildResult{},
 					err: nil,
@@ -109,6 +110,7 @@ func TestRun(t *testing.T) {
 		{
 			description: "run build error",
 			runner: &SkaffoldRunner{
+				config: &config.SkaffoldConfig{},
 				Builder: &TestBuilder{
 					err: fmt.Errorf(""),
 				},

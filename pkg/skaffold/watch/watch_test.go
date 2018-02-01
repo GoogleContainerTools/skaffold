@@ -23,7 +23,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	testutil "github.com/GoogleCloudPlatform/skaffold/test"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/spf13/afero"
 )
