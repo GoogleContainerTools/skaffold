@@ -71,6 +71,7 @@ type DeployType struct {
 	KubectlDeploy *KubectlDeploy `yaml:"kubectl"`
 }
 
+// KubectlDeploy contains the configuration needed for deploying with `kubectl apply`
 type KubectlDeploy struct {
 	Manifests []string `yaml:"manifests"`
 }

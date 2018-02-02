@@ -1,3 +1,19 @@
+/*
+Copyright 2018 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package deploy
 
 import (
@@ -10,7 +26,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
@@ -20,10 +35,14 @@ type KubectlDeployer struct {
 	*config.DeployConfig
 }
 
+// NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
+// with the needed configuration for `kubectl apply`
 func NewKubectlDeployer(cfg *config.DeployConfig) (*KubectlDeployer, error) {
 	return &KubectlDeployer{cfg}, nil
 }
 
+// Run templates the provided manifests with a simple `find and replace` and
+// runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Run(b *build.BuildResult) (*Result, error) {
 	params, err := JoinTagsToBuildResult(b, k.DeployConfig)
 	if err != nil {
@@ -54,7 +73,7 @@ func deployManifest(r io.Reader, params map[string]build.Build) error {
 	}
 	cmd := exec.Command("kubectl", "apply", "-f", "-")
 	stdin := strings.NewReader(manifest)
-	out, outerr, err := util.RunCommand(cmd, stdin)
+	out, outerr, err := execCommand.RunCommand(cmd, stdin)
 	if err != nil {
 		return errors.Wrapf(err, "running kubectl apply: stdout: %s stderr: %s err: %s", out, outerr, err)
 	}

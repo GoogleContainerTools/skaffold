@@ -69,9 +69,6 @@ func getBuilder(cfg *config.BuildConfig) (build.Builder, error) {
 }
 
 func getDeployer(cfg *config.DeployConfig) (deploy.Deployer, error) {
-	if cfg == nil {
-		return nil, fmt.Errorf("no deploy config specified")
-	}
 	if cfg.KubectlDeploy != nil {
 		return deploy.NewKubectlDeployer(cfg)
 	}

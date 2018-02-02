@@ -1,3 +1,19 @@
+/*
+Copyright 2018 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package util
 
 import (
@@ -8,7 +24,25 @@ import (
 	"github.com/pkg/errors"
 )
 
-func RunCommand(cmd *exec.Cmd, stdin io.Reader) ([]byte, []byte, error) {
+// DefaultExecCommand runs commands using exec.Cmd
+var DefaultExecCommand Command
+
+func init() {
+	DefaultExecCommand = &Commander{}
+}
+
+// Command is an interface used to run commands. All packages should use this
+// interface instead of calling exec.Cmd directly.
+type Command interface {
+	RunCommand(cmd *exec.Cmd, stdin io.Reader) ([]byte, []byte, error)
+}
+
+// Commander is the exec.Cmd implementation of the Command interface
+type Commander struct{}
+
+// RunCommand runs an exec.Command, optionally reading from stdin and return
+// the stdout, stderr, and error responses respectively.
+func (*Commander) RunCommand(cmd *exec.Cmd, stdin io.Reader) ([]byte, []byte, error) {
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, nil, err
