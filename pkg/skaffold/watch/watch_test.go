@@ -19,10 +19,12 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	testutil "github.com/GoogleCloudPlatform/skaffold/test"
+	"github.com/rjeczalik/notify"
 	"github.com/sirupsen/logrus"
 
 	"github.com/spf13/afero"
@@ -31,8 +33,10 @@ import (
 var mockFS = map[string]string{
 	"/tmp/skaffold/workspace_1/Dockerfile":             workspace1Dockerfile,
 	"/tmp/skaffold/workspace_1/Dockerfile.MISSINGFILE": workspace1DockerfileMissingFile,
+	"/tmp/skaffold/workspace_1/Dockerfile.SymlinkDep":  workspace1DockerfileSymlink,
 	"/tmp/skaffold/workspace_1/file_a":                 "a",
 	"/tmp/skaffold/workspace_1/file_b":                 "b",
+	"/tmp/skaffold/workspace_1/file.symlink":           "/tmp/skaffold/workspace_1/file_a",
 
 	"/tmp/skaffold/workspace_2/Dockerfile":              workspace2Dockerfile,
 	"/tmp/skaffold/workspace_2/Dockerfile.build":        workspace2DockerfileBuild,
@@ -49,6 +53,12 @@ COPY file_a dst_a
 COPY file_b dst_b
 CMD ls
 `
+
+	workspace1DockerfileSymlink = `
+FROM test
+COPY file.symlink dst_a
+COPY file_b dst_b
+CMD ls`
 
 	workspace1DockerfileMissingFile = `
 FROM test
@@ -86,7 +96,7 @@ var artifactDefaultDockerfilePath = &config.Artifact{
 
 var artifactMissingFile = &config.Artifact{
 	Workspace:      "/tmp/skaffold/workspace_1",
-	DockerfilePath: "Dockerfile.ignored_path",
+	DockerfilePath: "Dockerfile.MISSINGFILE",
 }
 
 var artifactMissingDockerfile = &config.Artifact{
@@ -99,12 +109,23 @@ var artifactDockerfileWithIgnoredDep = &config.Artifact{
 	DockerfilePath: "Dockerfile.ignored_path",
 }
 
+var artifactSymlinkDep = &config.Artifact{
+	Workspace:      "/tmp/skaffold/workspace_1",
+	DockerfilePath: "Dockerfile.SymlinkDep",
+}
+
 func initFS() {
 	for p, contents := range mockFS {
 		dir := filepath.Dir(p)
 
 		if err := fs.MkdirAll(dir, 0750); err != nil {
 			logrus.Fatalf("making mock fs dir %s", err)
+		}
+		if strings.HasSuffix(p, "symlink") {
+			if err := os.Symlink(contents, p); err != nil {
+				logrus.Fatalf("creating symlink file: %s", err)
+			}
+			continue
 		}
 		if err := afero.WriteFile(fs, p, []byte(contents), 0640); err != nil {
 			logrus.Fatalf("writing mock fs file: %s", err)
@@ -129,15 +150,6 @@ func TestWatch(t *testing.T) {
 		shouldErr  bool
 	}{
 		{
-			description: "write single file",
-			artifacts:   []*config.Artifact{artifactA},
-			writes:      []string{"/tmp/skaffold/workspace_1/file_a"},
-			expected: &WatchEvent{
-				EventType:       "notify.Write",
-				ChangedArtifact: artifactA,
-			},
-		},
-		{
 			description: "write file and ignored file",
 			artifacts: []*config.Artifact{
 				artifactA,
@@ -147,15 +159,6 @@ func TestWatch(t *testing.T) {
 				"/tmp/skaffold/workspace_2/vendor/vendor_file",
 				"/tmp/skaffold/workspace_1/file_a",
 			},
-			expected: &WatchEvent{
-				EventType:       "notify.Write",
-				ChangedArtifact: artifactA,
-			},
-		},
-		{
-			description: "default dockerfile path",
-			artifacts:   []*config.Artifact{artifactDefaultDockerfilePath},
-			writes:      []string{"/tmp/skaffold/workspace_1/file_a"},
 			expected: &WatchEvent{
 				EventType:       "notify.Write",
 				ChangedArtifact: artifactA,
@@ -173,12 +176,6 @@ func TestWatch(t *testing.T) {
 			expected: &WatchEvent{
 				EventType: "WatchStop",
 			},
-		},
-		{
-			description: "unknown file dependency",
-			artifacts:   []*config.Artifact{artifactMissingFile},
-			writes:      []string{"/tmp/skaffold/workspace_1/b"},
-			shouldErr:   true,
 		},
 	}
 
@@ -229,14 +226,97 @@ func TestWatch(t *testing.T) {
 
 		})
 	}
+}
 
+func TestAddDepsForArtifact(t *testing.T) {
+	var tests = []struct {
+		description string
+		artifact    *config.Artifact
+		expected    map[string]*config.Artifact
+
+		shouldErr bool
+	}{
+		{
+			description: "add deps",
+			artifact:    artifactA,
+			expected: map[string]*config.Artifact{
+				"/tmp/skaffold/workspace_1/file_a": artifactA,
+				"/tmp/skaffold/workspace_1/file_b": artifactA,
+			},
+		},
+		{
+			description: "missing dockerfile",
+			artifact:    artifactMissingDockerfile,
+			expected:    map[string]*config.Artifact{},
+			shouldErr:   true,
+		},
+		{
+			description: "missing file",
+			artifact:    artifactMissingFile,
+			expected:    map[string]*config.Artifact{},
+			shouldErr:   true,
+		},
+		{
+			description: "symlink file",
+			artifact:    artifactSymlinkDep,
+			expected: map[string]*config.Artifact{
+				"/tmp/skaffold/workspace_1/file_b": artifactSymlinkDep,
+			},
+		},
+		{
+			description: "default dockerfile path",
+			artifact:    artifactDefaultDockerfilePath,
+			expected: map[string]*config.Artifact{
+				"/tmp/skaffold/workspace_1/file_a": artifactDefaultDockerfilePath,
+				"/tmp/skaffold/workspace_1/file_b": artifactDefaultDockerfilePath,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			m := map[string]*config.Artifact{}
+			err := addDepsForArtifact(test.artifact, m)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, m)
+		})
+	}
+}
+
+func TestAddWatchForDeps(t *testing.T) {
+	var tests = []struct {
+		description     string
+		depsToArtifacts map[string]*config.Artifact
+		c               chan notify.EventInfo
+		shouldErr       bool
+	}{
+		{
+			description: "error bad path",
+			depsToArtifacts: map[string]*config.Artifact{
+				"bad.path": artifactA,
+			},
+			c:         make(chan notify.EventInfo, 1),
+			shouldErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			err := addWatchForDeps(test.depsToArtifacts, test.c)
+			testutil.CheckError(t, test.shouldErr, err)
+		})
+	}
 }
 
 func TestMain(m *testing.M) {
+	cleanup := func() {
+		if err := fs.RemoveAll("/tmp/skaffold"); err != nil {
+			logrus.Fatalf("Removing testing temp dir: %s", err)
+		}
+	}
+
+	cleanup()
 	initFS()
 	exit := m.Run()
-	if err := fs.RemoveAll("/tmp/skaffold"); err != nil {
-		logrus.Fatalf("Removing testing temp dir: %s", err)
-	}
+	cleanup()
 	os.Exit(exit)
 }

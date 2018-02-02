@@ -17,6 +17,7 @@ limitations under the License.
 package watch
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -57,33 +58,13 @@ var ignoredPrefixes = []string{"vendor", ".git"}
 func (f *FSWatcher) Watch(artifacts []*config.Artifact, ready chan *WatchEvent, cancel chan struct{}) (*WatchEvent, error) {
 	depsToArtifact := map[string]*config.Artifact{}
 	c := make(chan notify.EventInfo, 1)
-	errCh := make(chan error, 1)
 	defer notify.Stop(c)
 	for _, a := range artifacts {
-		if a.DockerfilePath == "" {
-			a.DockerfilePath = constants.DefaultDockerfilePath
+		if err := addDepsForArtifact(a, depsToArtifact); err != nil {
+			return nil, errors.Wrap(err, "adding deps for artifact")
 		}
-		fullPath := filepath.Join(a.Workspace, a.DockerfilePath)
-		r, err := fs.Open(fullPath)
-		if err != nil {
-			return nil, errors.Wrap(err, "opening file for watch")
-		}
-		deps, err := docker.GetDockerfileDependencies(a.Workspace, r)
-		if err != nil {
-			return nil, errors.Wrap(err, "getting dockerfile dependencies")
-		}
-		for _, dep := range deps {
-			// We need to evaluate the symlink if the dependency is a symlink
-			// inotify will return the final path of the symlink
-			// so we need to match it to know which dockerfile needs rebuilding
-			evalPath, err := filepath.EvalSymlinks(dep)
-			if err != nil {
-				return nil, errors.Wrap(err, "following possible symlink")
-			}
-			depsToArtifact[evalPath] = a
-			if err := watchFile(a.Workspace, dep, c); err != nil {
-				return nil, errors.Wrapf(err, "starting watch on file %s", dep)
-			}
+		if err := addWatchForDeps(depsToArtifact, c); err != nil {
+			return nil, errors.Wrap(err, "adding watching for deps")
 		}
 	}
 	if ready != nil {
@@ -98,14 +79,48 @@ func (f *FSWatcher) Watch(artifacts []*config.Artifact, ready chan *WatchEvent, 
 				EventType:       ei.Event().String(),
 				ChangedArtifact: artifact,
 			}, nil
-		case err := <-errCh:
-			return nil, err
 		case <-cancel:
 			logrus.Info("Watch canceled")
 			return &WatchEvent{EventType: WatchStop}, nil
 		}
 	}
+}
 
+func addDepsForArtifact(a *config.Artifact, depsToArtifact map[string]*config.Artifact) error {
+	dockerfilePath := a.DockerfilePath
+	if a.DockerfilePath == "" {
+		dockerfilePath = constants.DefaultDockerfilePath
+	}
+	fullPath := filepath.Join(a.Workspace, dockerfilePath)
+	r, err := fs.Open(fullPath)
+	if err != nil {
+		return errors.Wrap(err, "opening file for watch")
+	}
+	deps, err := docker.GetDockerfileDependencies(a.Workspace, r)
+	if err != nil {
+		return errors.Wrap(err, "getting dockerfile dependencies")
+	}
+	for _, dep := range deps {
+		fi, err := os.Lstat(dep)
+		if err != nil {
+			return errors.Wrapf(err, "stat %s", dep)
+		}
+		if !fi.Mode().IsRegular() {
+			// nothing to do for symlinks
+			continue
+		}
+		depsToArtifact[dep] = a
+	}
+	return nil
+}
+
+func addWatchForDeps(depsToArtifact map[string]*config.Artifact, c chan notify.EventInfo) error {
+	for dep, a := range depsToArtifact {
+		if err := watchFile(a.Workspace, dep, c); err != nil {
+			return errors.Wrapf(err, "starting watch on file %s", dep)
+		}
+	}
+	return nil
 }
 
 func watchFile(workspace, path string, c chan notify.EventInfo) error {
