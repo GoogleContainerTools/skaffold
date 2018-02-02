@@ -24,12 +24,14 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/deploy"
 	"github.com/pkg/errors"
 )
 
 // SkaffoldRunner is responsible for running the skaffold build and deploy pipeline.
 type SkaffoldRunner struct {
 	build.Builder
+	deploy.Deployer
 	tag.Tagger
 	*config.SkaffoldConfig
 
@@ -42,6 +44,10 @@ func NewForConfig(out io.Writer, cfg *config.SkaffoldConfig) (*SkaffoldRunner, e
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold build config")
 	}
+	deployer, err := getDeployer(&cfg.Deploy)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing skaffold deploy config")
+	}
 	tagger, err := newTaggerForConfig(cfg.Build.TagPolicy)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold tag config")
@@ -49,6 +55,7 @@ func NewForConfig(out io.Writer, cfg *config.SkaffoldConfig) (*SkaffoldRunner, e
 	return &SkaffoldRunner{
 		SkaffoldConfig: cfg,
 		Builder:        builder,
+		Deployer:       deployer,
 		Tagger:         tagger,
 		out:            out,
 	}, nil
@@ -59,6 +66,16 @@ func getBuilder(cfg *config.BuildConfig) (build.Builder, error) {
 		return build.NewLocalBuilder(cfg)
 	}
 	return nil, fmt.Errorf("Unknown builder for config %+v", cfg)
+}
+
+func getDeployer(cfg *config.DeployConfig) (deploy.Deployer, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("no deploy config specified")
+	}
+	if cfg.KubectlDeploy != nil {
+		return deploy.NewKubectlDeployer(cfg)
+	}
+	return nil, fmt.Errorf("Unknown deployer for config %+v", cfg)
 }
 
 func newTaggerForConfig(tagStrategy string) (tag.Tagger, error) {
@@ -72,10 +89,13 @@ func newTaggerForConfig(tagStrategy string) (tag.Tagger, error) {
 
 // Run runs the skaffold build and deploy pipeline.
 func (r *SkaffoldRunner) Run() error {
-	_, err := r.Builder.Run(r.out, r.Tagger)
+	res, err := r.Builder.Run(r.out, r.Tagger)
 	if err != nil {
 		return errors.Wrap(err, "build step")
 	}
-	// Deploy
+
+	if _, err := r.Deployer.Run(res); err != nil {
+		return errors.Wrap(err, "deploy step")
+	}
 	return nil
 }
