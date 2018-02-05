@@ -26,5 +26,6 @@ const (
 	DefaultDockerfilePath = "Dockerfile"
 
 	// TagStrategySha256 uses the checksum of the built artifact as the tag
-	TagStrategySha256 = "sha256"
+	TagStrategySha256    = "sha256"
+	TagStrategyGitCommit = "gitCommit"
 )
