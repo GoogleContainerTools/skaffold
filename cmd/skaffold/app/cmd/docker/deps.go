@@ -17,12 +17,11 @@ limitations under the License.
 package docker
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
+	"github.com/GoogleCloudPlatform/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -31,7 +30,10 @@ import (
 
 var (
 	filename, context string
+	output            flags.TemplateFlag
 )
+
+var depsFormatFlag = flags.NewTemplateFlag("{{range .Deps}}{{.}} {{end}}\n")
 
 func NewCmdDeps(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
@@ -45,8 +47,12 @@ func NewCmdDeps(out io.Writer) *cobra.Command {
 	}
 	cmd.Flags().StringVarP(&filename, "filename", "f", "Dockerfile", "Dockerfile path")
 	cmd.Flags().StringVarP(&context, "context", "c", ".", "Dockerfile context path")
-
+	cmd.Flags().VarP(depsFormatFlag, "output", "o", "Format output with go-template")
 	return cmd
+}
+
+type DepsOutput struct {
+	Deps []string
 }
 
 func runDeps(out io.Writer, filename, context string) error {
@@ -58,9 +64,9 @@ func runDeps(out io.Writer, filename, context string) error {
 	if err != nil {
 		return errors.Wrap(err, "getting dockerfile dependencies")
 	}
-	outStr := fmt.Sprintf("%s\n", strings.Join(deps, " "))
-	if _, err := io.WriteString(out, outStr); err != nil {
-		return errors.Wrap(err, "writing deps to out writer")
+	cmdOut := DepsOutput{Deps: deps}
+	if err := depsFormatFlag.Template().Execute(out, cmdOut); err != nil {
+		return errors.Wrap(err, "executing template")
 	}
 	return nil
 }
