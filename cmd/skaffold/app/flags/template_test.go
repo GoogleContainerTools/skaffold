@@ -36,7 +36,7 @@ func TestNewTemplateFlag(t *testing.T) {
 	actual := &bytes.Buffer{}
 	expected := &bytes.Buffer{}
 
-	flag := NewTemplateFlag(rawTemplate)
+	flag := NewTemplateFlag(rawTemplate, nil)
 	if err := flag.Template().Execute(actual, &data); err != nil {
 		t.Errorf("Error parsing template from flag: %s", err)
 	}
@@ -61,7 +61,7 @@ func TestTemplateSet(t *testing.T) {
 }
 
 func TestTemplateString(t *testing.T) {
-	flag := NewTemplateFlag(rawTemplate)
+	flag := NewTemplateFlag(rawTemplate, nil)
 	if rawTemplate != flag.String() {
 		t.Errorf("Flag String() does not match. Expected %s, Actual %s", rawTemplate, flag.String())
 	}

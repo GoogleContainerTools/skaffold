@@ -33,7 +33,7 @@ var (
 	output            flags.TemplateFlag
 )
 
-var depsFormatFlag = flags.NewTemplateFlag("{{range .Deps}}{{.}} {{end}}\n")
+var depsFormatFlag = flags.NewTemplateFlag("{{range .Deps}}{{.}} {{end}}\n", DepsOutput{})
 
 func NewCmdDeps(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
@@ -47,7 +47,7 @@ func NewCmdDeps(out io.Writer) *cobra.Command {
 	}
 	cmd.Flags().StringVarP(&filename, "filename", "f", "Dockerfile", "Dockerfile path")
 	cmd.Flags().StringVarP(&context, "context", "c", ".", "Dockerfile context path")
-	cmd.Flags().VarP(depsFormatFlag, "output", "o", "Format output with go-template")
+	cmd.Flags().VarP(depsFormatFlag, "output", "o", depsFormatFlag.Usage())
 	return cmd
 }
 
