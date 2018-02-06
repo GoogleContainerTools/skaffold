@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
 )
@@ -31,6 +32,7 @@ import (
 // SkaffoldRunner is responsible for running the skaffold build and deploy pipeline.
 type SkaffoldRunner struct {
 	build.Builder
+	deploy.Deployer
 	tag.Tagger
 	watch.Watcher
 
@@ -49,18 +51,23 @@ func NewForConfig(out io.Writer, dev bool, cfg *config.SkaffoldConfig) (*Skaffol
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold build config")
 	}
+	deployer, err := getDeployer(&cfg.Deploy)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing skaffold deploy config")
+	}
 	tagger, err := newTaggerForConfig(cfg.Build.TagPolicy)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold tag config")
 	}
 	return &SkaffoldRunner{
-		config:  cfg,
-		Builder: builder,
-		Tagger:  tagger,
-		Watcher: &watch.FSWatcher{}, //TODO(@r2d4): should this be configurable?
-		devMode: dev,
-		cancel:  make(chan struct{}, 1),
-		out:     out,
+		config:   cfg,
+		Builder:  builder,
+		Deployer: deployer,
+		Tagger:   tagger,
+		Watcher:  &watch.FSWatcher{}, //TODO(@r2d4): should this be configurable?
+		devMode:  dev,
+		cancel:   make(chan struct{}, 1),
+		out:      out,
 	}, nil
 }
 
@@ -69,6 +76,13 @@ func getBuilder(cfg *config.BuildConfig) (build.Builder, error) {
 		return build.NewLocalBuilder(cfg)
 	}
 	return nil, fmt.Errorf("Unknown builder for config %+v", cfg)
+}
+
+func getDeployer(cfg *config.DeployConfig) (deploy.Deployer, error) {
+	if cfg.KubectlDeploy != nil {
+		return deploy.NewKubectlDeployer(cfg)
+	}
+	return nil, fmt.Errorf("Unknown deployer for config %+v", cfg)
 }
 
 func newTaggerForConfig(tagStrategy string) (tag.Tagger, error) {
@@ -104,7 +118,13 @@ func (r *SkaffoldRunner) dev() error {
 }
 
 func (r *SkaffoldRunner) run() error {
-	_, err := r.Builder.Run(r.out, r.Tagger)
-	// Deploy
-	return err
+	res, err := r.Builder.Run(r.out, r.Tagger)
+	if err != nil {
+		return errors.Wrap(err, "build step")
+	}
+
+	if _, err := r.Deployer.Run(res); err != nil {
+		return errors.Wrap(err, "deploy step")
+	}
+	return nil
 }

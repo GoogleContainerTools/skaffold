@@ -97,12 +97,6 @@ func TestWatch(t *testing.T) {
 			dockerfiles: []string{"Dockerfile.MISSINGFILE"},
 			shouldErr:   true,
 		},
-		// {
-		// 	description: "send cancel",
-		// 	dockerfiles: []string{"Dockerfile"},
-		// 	sendCancel:  true,
-		// 	expected: &WatchEvent{EventType: "WatchStop",},
-		// },
 	}
 
 	for _, test := range tests {

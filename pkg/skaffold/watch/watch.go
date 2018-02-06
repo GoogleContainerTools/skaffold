@@ -74,6 +74,7 @@ func (f *FSWatcher) Watch(artifacts []*config.Artifact, ready chan *WatchEvent, 
 		}
 	}
 	if ready != nil {
+		logrus.Info("Watch is ready")
 		ready <- WatchStartEvent
 	}
 	select {
@@ -105,11 +106,11 @@ func addDepsForArtifact(a *config.Artifact, depsToArtifact map[string][]*config.
 		return errors.Wrap(err, "getting dockerfile dependencies")
 	}
 	for _, dep := range deps {
-		fi, err := os.Lstat(dep)
+		fi, err := os.Stat(dep)
 		if err != nil {
 			return errors.Wrapf(err, "stat %s", dep)
 		}
-		if !fi.Mode().IsRegular() {
+		if fi.Mode() == os.ModeSymlink {
 			// nothing to do for symlinks
 			continue
 		}

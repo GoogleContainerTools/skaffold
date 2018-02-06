@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/watch"
 	testutil "github.com/GoogleCloudPlatform/skaffold/test"
 	"github.com/sirupsen/logrus"
@@ -34,6 +35,11 @@ import (
 
 type TestBuilder struct {
 	res *build.BuildResult
+	err error
+}
+
+type TestDeployer struct {
+	res *deploy.Result
 	err error
 }
 
@@ -61,6 +67,9 @@ func (t *TestWatcher) Watch(artifacts []*config.Artifact, ready chan *watch.Watc
 	return ret, t.err
 }
 
+func (t *TestDeployer) Run(*build.BuildResult) (*deploy.Result, error) {
+	return t.res, t.err
+}
 func TestNewForConfig(t *testing.T) {
 	var tests = []struct {
 		description string
@@ -78,8 +87,29 @@ func TestNewForConfig(t *testing.T) {
 						LocalBuild: &config.LocalBuild{},
 					},
 				},
+				Deploy: config.DeployConfig{
+					DeployType: config.DeployType{
+						KubectlDeploy: &config.KubectlDeploy{},
+					},
+				},
 			},
 			expected: &build.LocalBuilder{},
+		},
+		{
+			description: "bad tagger config",
+			config: &config.SkaffoldConfig{
+				Build: config.BuildConfig{
+					BuildType: config.BuildType{
+						LocalBuild: &config.LocalBuild{},
+					},
+				},
+				Deploy: config.DeployConfig{
+					DeployType: config.DeployType{
+						KubectlDeploy: &config.KubectlDeploy{},
+					},
+				},
+			},
+			shouldErr: true,
 		},
 		{
 			description: "unknown builder",
@@ -100,6 +130,31 @@ func TestNewForConfig(t *testing.T) {
 				}},
 			shouldErr: true,
 			expected:  &build.LocalBuilder{},
+		},
+		{
+			description: "unknown deployer",
+			config: &config.SkaffoldConfig{
+				Build: config.BuildConfig{
+					TagPolicy: constants.TagStrategySha256,
+					BuildType: config.BuildType{
+						LocalBuild: &config.LocalBuild{},
+					},
+				},
+				Deploy: config.DeployConfig{},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "nil deployer",
+			config: &config.SkaffoldConfig{
+				Build: config.BuildConfig{
+					TagPolicy: constants.TagStrategySha256,
+					BuildType: config.BuildType{
+						LocalBuild: &config.LocalBuild{},
+					},
+				},
+			},
+			shouldErr: true,
 		},
 	}
 	for _, test := range tests {
@@ -130,6 +185,10 @@ func TestRun(t *testing.T) {
 				},
 				devMode: false,
 				Tagger:  &tag.ChecksumTagger{},
+				Deployer: &TestDeployer{
+					res: &deploy.Result{},
+					err: nil,
+				},
 			},
 		},
 		{
@@ -144,13 +203,25 @@ func TestRun(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "run dev mode",
+			description: "run deploy error",
 			runner: &SkaffoldRunner{
-				config: &config.SkaffoldConfig{},
+				Deployer: &TestDeployer{
+					err: fmt.Errorf(""),
+				},
+				Tagger: &tag.ChecksumTagger{},
 				Builder: &TestBuilder{
 					res: &build.BuildResult{},
 					err: nil,
 				},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "run dev mode",
+			runner: &SkaffoldRunner{
+				config:     &config.SkaffoldConfig{},
+				Builder:    &TestBuilder{},
+				Deployer:   &TestDeployer{},
 				Watcher:    NewTestWatch(nil, &watch.WatchEvent{}, watch.WatchStopEvent),
 				devMode:    true,
 				cancel:     make(chan struct{}, 1),
