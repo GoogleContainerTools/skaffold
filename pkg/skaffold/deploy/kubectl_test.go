@@ -174,12 +174,11 @@ func TestKubectlRun(t *testing.T) {
 		afero.WriteFile(fs, path, []byte(contents), 0644)
 	}
 
-	pkgCommand := execCommand
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			if test.command != nil {
-				execCommand = test.command
+				util.DefaultExecCommand = test.command
+				defer util.ResetDefaultExecCommand()
 			}
 			k, err := NewKubectlDeployer(test.cfg)
 			if err != nil {
@@ -187,7 +186,6 @@ func TestKubectlRun(t *testing.T) {
 				return
 			}
 			res, err := k.Run(test.b)
-			execCommand = pkgCommand
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
 		})
 

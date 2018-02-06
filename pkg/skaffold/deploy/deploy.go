@@ -21,10 +21,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 )
-
-var execCommand = util.DefaultExecCommand
 
 // Result is currently unused, but a stub for results that might be returned
 // from a Deployer.Run()

@@ -26,6 +26,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
@@ -73,7 +74,7 @@ func deployManifest(r io.Reader, params map[string]build.Build) error {
 	}
 	cmd := exec.Command("kubectl", "apply", "-f", "-")
 	stdin := strings.NewReader(manifest)
-	out, outerr, err := execCommand.RunCommand(cmd, stdin)
+	out, outerr, err := util.RunCommand(cmd, stdin)
 	if err != nil {
 		return errors.Wrapf(err, "running kubectl apply: stdout: %s stderr: %s err: %s", out, outerr, err)
 	}

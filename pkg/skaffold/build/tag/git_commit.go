@@ -20,6 +20,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
@@ -30,7 +31,7 @@ type GitCommit struct {
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the git commit.
 func (c *GitCommit) GenerateFullyQualifiedImageName(opts *TagOptions) (string, error) {
 	cmd := exec.Command("git", "rev-parse", "HEAD")
-	stdout, err := cmd.Output()
+	stdout, _, err := util.RunCommand(cmd, nil)
 	if err != nil {
 		return "", errors.Wrap(err, "determining current git commit")
 	}

@@ -31,10 +31,18 @@ func init() {
 	DefaultExecCommand = &Commander{}
 }
 
+func ResetDefaultExecCommand() {
+	DefaultExecCommand = &Commander{}
+}
+
 // Command is an interface used to run commands. All packages should use this
 // interface instead of calling exec.Cmd directly.
 type Command interface {
 	RunCommand(cmd *exec.Cmd, stdin io.Reader) ([]byte, []byte, error)
+}
+
+func RunCommand(cmd *exec.Cmd, stdin io.Reader) ([]byte, []byte, error) {
+	return DefaultExecCommand.RunCommand(cmd, stdin)
 }
 
 // Commander is the exec.Cmd implementation of the Command interface
