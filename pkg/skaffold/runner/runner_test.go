@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/deploy"
 	testutil "github.com/GoogleCloudPlatform/skaffold/test"
 )
 
@@ -35,7 +36,16 @@ type TestBuilder struct {
 	err error
 }
 
+type TestDeployer struct {
+	res *deploy.Result
+	err error
+}
+
 func (t *TestBuilder) Run(io.Writer, tag.Tagger) (*build.BuildResult, error) {
+	return t.res, t.err
+}
+
+func (t *TestDeployer) Run(*build.BuildResult) (*deploy.Result, error) {
 	return t.res, t.err
 }
 
@@ -55,8 +65,29 @@ func TestNewForConfig(t *testing.T) {
 						LocalBuild: &config.LocalBuild{},
 					},
 				},
+				Deploy: config.DeployConfig{
+					DeployType: config.DeployType{
+						KubectlDeploy: &config.KubectlDeploy{},
+					},
+				},
 			},
 			expected: &build.LocalBuilder{},
+		},
+		{
+			description: "bad tagger config",
+			config: &config.SkaffoldConfig{
+				Build: config.BuildConfig{
+					BuildType: config.BuildType{
+						LocalBuild: &config.LocalBuild{},
+					},
+				},
+				Deploy: config.DeployConfig{
+					DeployType: config.DeployType{
+						KubectlDeploy: &config.KubectlDeploy{},
+					},
+				},
+			},
+			shouldErr: true,
 		},
 		{
 			description: "unknown builder",
@@ -77,6 +108,31 @@ func TestNewForConfig(t *testing.T) {
 				}},
 			shouldErr: true,
 			expected:  &build.LocalBuilder{},
+		},
+		{
+			description: "unknown deployer",
+			config: &config.SkaffoldConfig{
+				Build: config.BuildConfig{
+					TagPolicy: constants.TagStrategySha256,
+					BuildType: config.BuildType{
+						LocalBuild: &config.LocalBuild{},
+					},
+				},
+				Deploy: config.DeployConfig{},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "nil deployer",
+			config: &config.SkaffoldConfig{
+				Build: config.BuildConfig{
+					TagPolicy: constants.TagStrategySha256,
+					BuildType: config.BuildType{
+						LocalBuild: &config.LocalBuild{},
+					},
+				},
+			},
+			shouldErr: true,
 		},
 	}
 	for _, test := range tests {
@@ -103,6 +159,10 @@ func TestRun(t *testing.T) {
 					res: &build.BuildResult{},
 					err: nil,
 				},
+				Deployer: &TestDeployer{
+					res: &deploy.Result{},
+					err: nil,
+				},
 				Tagger: &tag.ChecksumTagger{},
 			},
 		},
@@ -110,6 +170,20 @@ func TestRun(t *testing.T) {
 			description: "run build error",
 			runner: &SkaffoldRunner{
 				Builder: &TestBuilder{
+					err: fmt.Errorf(""),
+				},
+				Tagger: &tag.ChecksumTagger{},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "run deploy error",
+			runner: &SkaffoldRunner{
+				Builder: &TestBuilder{
+					res: &build.BuildResult{},
+					err: nil,
+				},
+				Deployer: &TestDeployer{
 					err: fmt.Errorf(""),
 				},
 				Tagger: &tag.ChecksumTagger{},

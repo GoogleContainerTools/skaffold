@@ -17,8 +17,14 @@ limitations under the License.
 package deploy
 
 import (
+	"fmt"
+
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 )
+
+var execCommand = util.DefaultExecCommand
 
 // Result is currently unused, but a stub for results that might be returned
 // from a Deployer.Run()
@@ -30,4 +36,21 @@ type Deployer interface {
 	// Run should ensure that the build results are deployed to the Kubernetes
 	// cluster.
 	Run(*build.BuildResult) (*Result, error)
+}
+
+func JoinTagsToBuildResult(b *build.BuildResult, cfg *config.DeployConfig) (map[string]build.Build, error) {
+	imageToBuildResult := map[string]build.Build{}
+	for _, build := range b.Builds {
+		imageToBuildResult[build.ImageName] = build
+	}
+
+	paramToBuildResult := map[string]build.Build{}
+	for param, imageName := range cfg.Parameters {
+		build, ok := imageToBuildResult[imageName]
+		if !ok {
+			return nil, fmt.Errorf("No build present for %s", imageName)
+		}
+		paramToBuildResult[param] = build
+	}
+	return paramToBuildResult, nil
 }
