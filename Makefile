@@ -57,6 +57,10 @@ cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(pla
 test: $(BUILD_DIR)/$(PROJECT)
 	@ ./test.sh
 
+.PHONY: install
+install: $(GO_FILES) $(BUILD_DIR)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go install -ldflags $(GO_LDFLAGS) $(BUILD_PACKAGE)
+
 .PHONY: integration
 integration: $(BUILD_DIR)/$(PROJECT)
 	go test -v -tags integration $(REPOPATH)/tests -timeout 20m

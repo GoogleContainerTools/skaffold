@@ -50,6 +50,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	c.AddCommand(NewCmdVersion(out))
 	c.AddCommand(NewCmdRun(out))
 	c.AddCommand(NewCmdDev(out))
+	c.AddCommand(NewCmdDocker(out))
 
 	c.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic")
 	return c
