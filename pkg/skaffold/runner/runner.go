@@ -79,6 +79,8 @@ func newTaggerForConfig(tagStrategy string) (tag.Tagger, error) {
 	switch tagStrategy {
 	case constants.TagStrategySha256:
 		return &tag.ChecksumTagger{}, nil
+	case constants.TagStrategyGitCommit:
+		return &tag.GitCommit{}, nil
 	}
 
 	return nil, fmt.Errorf("Unknown tagger for strategy %s", tagStrategy)
