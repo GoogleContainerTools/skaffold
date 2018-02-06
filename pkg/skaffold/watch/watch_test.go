@@ -79,7 +79,7 @@ func TestWatch(t *testing.T) {
 		dockerfiles    []string
 		writes         []string
 		expected       *WatchEvent
-		expectedChange string
+		expectedChange []string
 		sendCancel     bool
 		shouldErr      bool
 	}{
@@ -90,7 +90,7 @@ func TestWatch(t *testing.T) {
 				"vendor/3",
 				"dir/2",
 			},
-			expectedChange: "Dockerfile",
+			expectedChange: []string{"Dockerfile"},
 		},
 		{
 			description: "missing dockerfile",
@@ -149,8 +149,15 @@ func TestWatch(t *testing.T) {
 			// Now check to see if the watch registered a change event
 			select {
 			case e := <-eventCh:
-				if !reflect.DeepEqual(e.ChangedArtifact.DockerfilePath, test.expectedChange) {
-					t.Errorf("Expected %+v, Actual %+v", test.expectedChange, e.ChangedArtifact.DockerfilePath)
+				if e.ChangedArtifacts == nil {
+					t.Errorf("No changed artifacts but expected %s", test.expectedChange)
+				}
+				actual := []string{}
+				for _, d := range e.ChangedArtifacts {
+					actual = append(actual, d.DockerfilePath)
+				}
+				if !reflect.DeepEqual(actual, test.expectedChange) {
+					t.Errorf("Expected %+v, Actual %+v", test.expectedChange, actual)
 				}
 				return
 			case err := <-errCh:
@@ -194,14 +201,20 @@ func TestAddDepsForArtifact(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			m := map[string]*config.Artifact{}
+			m := map[string][]*config.Artifact{}
 			a := &config.Artifact{
 				Workspace:      tmpDir,
 				DockerfilePath: test.dockerfile,
 			}
-			expectedMap := map[string]*config.Artifact{}
+			expectedMap := map[string][]*config.Artifact{}
 			for _, d := range test.expected {
-				expectedMap[filepath.Join(tmpDir, d)] = a
+				p := filepath.Join(tmpDir, d)
+				arts, ok := expectedMap[p]
+				if !ok {
+					expectedMap[p] = []*config.Artifact{a}
+					continue
+				}
+				expectedMap[p] = append(arts, a)
 			}
 			err := addDepsForArtifact(a, m)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, expectedMap, m)
@@ -227,8 +240,6 @@ func TestMain(m *testing.M) {
 			logrus.Fatalf("Removing testing temp dir: %s", err)
 		}
 	}
-
-	cleanup()
 	initFS()
 	exit := m.Run()
 	cleanup()

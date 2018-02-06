@@ -40,8 +40,8 @@ type Watcher interface {
 }
 
 type WatchEvent struct {
-	EventType       string
-	ChangedArtifact *config.Artifact
+	EventType        string
+	ChangedArtifacts []*config.Artifact
 }
 
 var fs = afero.NewOsFs()
@@ -62,7 +62,7 @@ var (
 var ignoredPrefixes = []string{"vendor", ".git"}
 
 func (f *FSWatcher) Watch(artifacts []*config.Artifact, ready chan *WatchEvent, cancel chan struct{}) (*WatchEvent, error) {
-	depsToArtifact := map[string]*config.Artifact{}
+	depsToArtifact := map[string][]*config.Artifact{}
 	c := make(chan notify.EventInfo, 1)
 	defer notify.Stop(c)
 	for _, a := range artifacts {
@@ -76,23 +76,21 @@ func (f *FSWatcher) Watch(artifacts []*config.Artifact, ready chan *WatchEvent, 
 	if ready != nil {
 		ready <- WatchStartEvent
 	}
-	for {
-		select {
-		case ei := <-c:
-			logrus.Infof("%s %s", ei.Event().String(), ei.Path())
-			artifact := depsToArtifact[ei.Path()]
-			return &WatchEvent{
-				EventType:       ei.Event().String(),
-				ChangedArtifact: artifact,
-			}, nil
-		case <-cancel:
-			logrus.Info("Watch canceled")
-			return WatchStopEvent, nil
-		}
+	select {
+	case ei := <-c:
+		logrus.Infof("%s %s", ei.Event().String(), ei.Path())
+		artifacts := depsToArtifact[ei.Path()]
+		return &WatchEvent{
+			EventType:        ei.Event().String(),
+			ChangedArtifacts: artifacts,
+		}, nil
+	case <-cancel:
+		logrus.Info("Watch canceled")
+		return WatchStopEvent, nil
 	}
 }
 
-func addDepsForArtifact(a *config.Artifact, depsToArtifact map[string]*config.Artifact) error {
+func addDepsForArtifact(a *config.Artifact, depsToArtifact map[string][]*config.Artifact) error {
 	dockerfilePath := a.DockerfilePath
 	if a.DockerfilePath == "" {
 		dockerfilePath = constants.DefaultDockerfilePath
@@ -115,24 +113,29 @@ func addDepsForArtifact(a *config.Artifact, depsToArtifact map[string]*config.Ar
 			// nothing to do for symlinks
 			continue
 		}
-		depsToArtifact[dep] = a
+		artifacts, ok := depsToArtifact[dep]
+		if !ok {
+			depsToArtifact[dep] = []*config.Artifact{a}
+			continue
+		}
+		depsToArtifact[dep] = append(artifacts, a)
 	}
 	return nil
 }
 
-func addWatchForDeps(depsToArtifact map[string]*config.Artifact, c chan notify.EventInfo) error {
+func addWatchForDeps(depsToArtifact map[string][]*config.Artifact, c chan notify.EventInfo) error {
 	// It is a purely aesthetic choice to start the watches in sorted order
 	sortedDeps := getKeySlice(depsToArtifact)
 	for _, dep := range sortedDeps {
 		a := depsToArtifact[dep]
-		if err := watchFile(a.Workspace, dep, c); err != nil {
+		if err := watchFile(a[0].Workspace, dep, c); err != nil {
 			return errors.Wrapf(err, "starting watch on file %s", dep)
 		}
 	}
 	return nil
 }
 
-func getKeySlice(m map[string]*config.Artifact) []string {
+func getKeySlice(m map[string][]*config.Artifact) []string {
 	r := []string{}
 	for k := range m {
 		r = append(r, k)
