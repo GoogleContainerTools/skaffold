@@ -16,6 +16,7 @@ limitations under the License.
 package watch
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -24,175 +25,106 @@ import (
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	testutil "github.com/GoogleCloudPlatform/skaffold/test"
-	"github.com/rjeczalik/notify"
 	"github.com/sirupsen/logrus"
 
 	"github.com/spf13/afero"
 )
 
-var mockFS = map[string]string{
-	"/tmp/skaffold/workspace_1/Dockerfile":             workspace1Dockerfile,
-	"/tmp/skaffold/workspace_1/Dockerfile.MISSINGFILE": workspace1DockerfileMissingFile,
-	"/tmp/skaffold/workspace_1/Dockerfile.SymlinkDep":  workspace1DockerfileSymlink,
-	"/tmp/skaffold/workspace_1/file_a":                 "a",
-	"/tmp/skaffold/workspace_1/file_b":                 "b",
-	"/tmp/skaffold/workspace_1/file.symlink":           "/tmp/skaffold/workspace_1/file_a",
+var tmpDir string
 
-	"/tmp/skaffold/workspace_2/Dockerfile":              workspace2Dockerfile,
-	"/tmp/skaffold/workspace_2/Dockerfile.build":        workspace2DockerfileBuild,
-	"/tmp/skaffold/workspace_2/Dockerfile.ignored_path": dockerfileIgnoredFile,
-	"/tmp/skaffold/workspace_2/file_a":                  "a",
-	"/tmp/skaffold/workspace_2/vendor/vendor_file":      "vendor",
-	"/tmp/skaffold/workspace_2/dir_a/file_a":            "b",
-}
-
-const (
-	workspace1Dockerfile = `
-FROM test
-COPY file_a dst_a
-COPY file_b dst_b
-CMD ls
-`
-
-	workspace1DockerfileSymlink = `
-FROM test
-COPY file.symlink dst_a
-COPY file_b dst_b
-CMD ls`
-
-	workspace1DockerfileMissingFile = `
-FROM test
-COPY file_MISSING dst_a
-COPY file_b dst_b
-CMD ls
-`
-
-	workspace2DockerfileBuild = `
-FROM test
-COPY * /
-CMD ls`
-
-	workspace2Dockerfile = `
-FROM test
-COPY file_a /
-ADD dir_a/file_a /
-CMD ls`
-
-	dockerfileIgnoredFile = `
-FROM test
-COPY file_a /
-ADD vendor/vendor_file /
-CMD ls`
-)
-
-var artifactA = &config.Artifact{
-	Workspace:      "/tmp/skaffold/workspace_1",
-	DockerfilePath: "Dockerfile",
-}
-
-var artifactDefaultDockerfilePath = &config.Artifact{
-	Workspace: "/tmp/skaffold/workspace_1",
-}
-
-var artifactMissingFile = &config.Artifact{
-	Workspace:      "/tmp/skaffold/workspace_1",
-	DockerfilePath: "Dockerfile.MISSINGFILE",
-}
-
-var artifactMissingDockerfile = &config.Artifact{
-	Workspace:      "/tmp/skaffold/workspace_1",
-	DockerfilePath: "NOT_FOUND",
-}
-
-var artifactDockerfileWithIgnoredDep = &config.Artifact{
-	Workspace:      "/tmp/skaffold/workspace_2",
-	DockerfilePath: "Dockerfile.ignored_path",
-}
-
-var artifactSymlinkDep = &config.Artifact{
-	Workspace:      "/tmp/skaffold/workspace_1",
-	DockerfilePath: "Dockerfile.SymlinkDep",
+var mockFS = map[string][]string{
+	"Dockerfile":              {"COPY 1 /", "ADD dir/2 /"},
+	"Dockerfile.MISSINGFILE":  {"COPY file_MISSING /"},
+	"Dockerfile.symlinkdep":   {"COPY 5 /", "COPY 5 /"},
+	"Dockerfile.star":         {"COPY * /"},
+	"Dockerfile.ignored_file": {"COPY vendor/3 /", "COPY 1 /"},
+	// regular files
+	"1":         nil,
+	"dir/2":     nil,
+	"vendor/3":  nil,
+	"4.symlink": {"1"},
+	"5":         nil,
 }
 
 func initFS() {
-	for p, contents := range mockFS {
-		dir := filepath.Dir(p)
-
+	for p, contentSlice := range mockFS {
+		fullPath := filepath.Join(tmpDir, p)
+		contents := strings.Join(contentSlice, "\n")
+		dir := filepath.Dir(fullPath)
 		if err := fs.MkdirAll(dir, 0750); err != nil {
 			logrus.Fatalf("making mock fs dir %s", err)
 		}
-		if strings.HasSuffix(p, "symlink") {
-			if err := os.Symlink(contents, p); err != nil {
+		if strings.HasSuffix(fullPath, "symlink") {
+			if err := os.Symlink(filepath.Join(tmpDir, contents), fullPath); err != nil {
 				logrus.Fatalf("creating symlink file: %s", err)
 			}
 			continue
 		}
-		if err := afero.WriteFile(fs, p, []byte(contents), 0640); err != nil {
+		if err := afero.WriteFile(fs, fullPath, []byte(contents), 0640); err != nil {
 			logrus.Fatalf("writing mock fs file: %s", err)
 		}
 	}
 }
 
 func write(t *testing.T, path, contents string) {
-	if err := afero.WriteFile(fs, path, []byte(contents), 0640); err != nil {
+	if err := afero.WriteFile(fs, filepath.Join(tmpDir, path), []byte(contents), 0640); err != nil {
 		t.Errorf("writing mock fs file: %s", err)
 	}
 }
 
 func TestWatch(t *testing.T) {
 	var tests = []struct {
-		description string
-		artifacts   []*config.Artifact
-
-		writes     []string
-		expected   *WatchEvent
-		sendCancel bool
-		shouldErr  bool
+		description    string
+		artifacts      []*config.Artifact
+		dockerfiles    []string
+		writes         []string
+		expected       *WatchEvent
+		expectedChange string
+		sendCancel     bool
+		shouldErr      bool
 	}{
 		{
 			description: "write file and ignored file",
-			artifacts: []*config.Artifact{
-				artifactA,
-				artifactDockerfileWithIgnoredDep,
-			},
+			dockerfiles: []string{"Dockerfile.ignored_file", "Dockerfile"},
 			writes: []string{
-				"/tmp/skaffold/workspace_2/vendor/vendor_file",
-				"/tmp/skaffold/workspace_1/file_a",
+				"vendor/3",
+				"dir/2",
 			},
-			expected: &WatchEvent{
-				EventType:       "notify.Write",
-				ChangedArtifact: artifactA,
-			},
+			expectedChange: "Dockerfile",
 		},
 		{
 			description: "missing dockerfile",
-			artifacts:   []*config.Artifact{artifactMissingDockerfile},
+			dockerfiles: []string{"Dockerfile.MISSINGFILE"},
 			shouldErr:   true,
 		},
-		{
-			description: "send cancel",
-			artifacts:   []*config.Artifact{artifactA},
-			sendCancel:  true,
-			expected: &WatchEvent{
-				EventType: "WatchStop",
-			},
-		},
+		// {
+		// 	description: "send cancel",
+		// 	dockerfiles: []string{"Dockerfile"},
+		// 	sendCancel:  true,
+		// 	expected: &WatchEvent{EventType: "WatchStop",},
+		// },
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			artifacts := []*config.Artifact{}
+			for _, d := range test.dockerfiles {
+				artifacts = append(artifacts, &config.Artifact{
+					DockerfilePath: d,
+					Workspace:      tmpDir,
+				})
+			}
 			watcher := &FSWatcher{}
 			eventCh := make(chan *WatchEvent, 1)
 			readyCh := make(chan *WatchEvent, 1)
 			errCh := make(chan error, 1)
 			cancel := make(chan struct{}, 1)
 			go func() {
-				evt, err := watcher.Watch(test.artifacts, readyCh, cancel)
+				evt, err := watcher.Watch(artifacts, readyCh, cancel)
 				if err != nil {
 					errCh <- err
 					return
 				}
-
 				eventCh <- evt
 			}()
 
@@ -213,12 +145,14 @@ func TestWatch(t *testing.T) {
 			for _, p := range test.writes {
 				write(t, p, "")
 			}
+
 			// Now check to see if the watch registered a change event
 			select {
 			case e := <-eventCh:
-				if !reflect.DeepEqual(e, test.expected) {
-					t.Errorf("Expected %+v, Actual %+v", test.expected, e)
+				if !reflect.DeepEqual(e.ChangedArtifact.DockerfilePath, test.expectedChange) {
+					t.Errorf("Expected %+v, Actual %+v", test.expectedChange, e.ChangedArtifact.DockerfilePath)
 				}
+				return
 			case err := <-errCh:
 				testutil.CheckError(t, test.shouldErr, err)
 				return
@@ -231,85 +165,65 @@ func TestWatch(t *testing.T) {
 func TestAddDepsForArtifact(t *testing.T) {
 	var tests = []struct {
 		description string
-		artifact    *config.Artifact
-		expected    map[string]*config.Artifact
+		dockerfile  string
+		expected    []string
 
 		shouldErr bool
 	}{
 		{
 			description: "add deps",
-			artifact:    artifactA,
-			expected: map[string]*config.Artifact{
-				"/tmp/skaffold/workspace_1/file_a": artifactA,
-				"/tmp/skaffold/workspace_1/file_b": artifactA,
-			},
+			dockerfile:  "Dockerfile",
+			expected:    []string{"1", "dir/2"},
 		},
 		{
 			description: "missing dockerfile",
-			artifact:    artifactMissingDockerfile,
-			expected:    map[string]*config.Artifact{},
+			dockerfile:  "not a real file",
 			shouldErr:   true,
 		},
 		{
 			description: "missing file",
-			artifact:    artifactMissingFile,
-			expected:    map[string]*config.Artifact{},
+			dockerfile:  "Dockerfile.MISSINGFILE",
 			shouldErr:   true,
 		},
 		{
-			description: "symlink file",
-			artifact:    artifactSymlinkDep,
-			expected: map[string]*config.Artifact{
-				"/tmp/skaffold/workspace_1/file_b": artifactSymlinkDep,
-			},
-		},
-		{
-			description: "default dockerfile path",
-			artifact:    artifactDefaultDockerfilePath,
-			expected: map[string]*config.Artifact{
-				"/tmp/skaffold/workspace_1/file_a": artifactDefaultDockerfilePath,
-				"/tmp/skaffold/workspace_1/file_b": artifactDefaultDockerfilePath,
-			},
+			description: "symlink deps ignored",
+			dockerfile:  "Dockerfile.symlinkdep",
+			expected:    []string{"5"},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			m := map[string]*config.Artifact{}
-			err := addDepsForArtifact(test.artifact, m)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, m)
-		})
-	}
-}
-
-func TestAddWatchForDeps(t *testing.T) {
-	var tests = []struct {
-		description     string
-		depsToArtifacts map[string]*config.Artifact
-		c               chan notify.EventInfo
-		shouldErr       bool
-	}{
-		{
-			description: "error bad path",
-			depsToArtifacts: map[string]*config.Artifact{
-				"bad.path": artifactA,
-			},
-			c:         make(chan notify.EventInfo, 1),
-			shouldErr: true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			err := addWatchForDeps(test.depsToArtifacts, test.c)
-			testutil.CheckError(t, test.shouldErr, err)
+			a := &config.Artifact{
+				Workspace:      tmpDir,
+				DockerfilePath: test.dockerfile,
+			}
+			expectedMap := map[string]*config.Artifact{}
+			for _, d := range test.expected {
+				expectedMap[filepath.Join(tmpDir, d)] = a
+			}
+			err := addDepsForArtifact(a, m)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, expectedMap, m)
 		})
 	}
 }
 
 func TestMain(m *testing.M) {
+	var err error
+	tmpDir, err = ioutil.TempDir("", "skaffold")
+	if err != nil {
+		logrus.Fatalf("Getting temp dir: %s", err)
+	}
+	// On macOS the /tmp is symlinked to /private/tmp
+	// the dockerfile parser won't accept symlinks, so we evaluate
+	// the symlink for our tmp dir
+	tmpDir, err = filepath.EvalSymlinks(tmpDir)
+	if err != nil {
+		logrus.Fatalf("Evaluating possible temp dir symlink: %s", err)
+	}
 	cleanup := func() {
-		if err := fs.RemoveAll("/tmp/skaffold"); err != nil {
+		if err := fs.RemoveAll(tmpDir); err != nil {
 			logrus.Fatalf("Removing testing temp dir: %s", err)
 		}
 	}
