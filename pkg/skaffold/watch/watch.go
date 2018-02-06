@@ -19,6 +19,7 @@ package watch
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -120,12 +121,24 @@ func addDepsForArtifact(a *config.Artifact, depsToArtifact map[string]*config.Ar
 }
 
 func addWatchForDeps(depsToArtifact map[string]*config.Artifact, c chan notify.EventInfo) error {
-	for dep, a := range depsToArtifact {
+	// It is a purely aesthetic choice to start the watches in sorted order
+	sortedDeps := getKeySlice(depsToArtifact)
+	for _, dep := range sortedDeps {
+		a := depsToArtifact[dep]
 		if err := watchFile(a.Workspace, dep, c); err != nil {
 			return errors.Wrapf(err, "starting watch on file %s", dep)
 		}
 	}
 	return nil
+}
+
+func getKeySlice(m map[string]*config.Artifact) []string {
+	r := []string{}
+	for k := range m {
+		r = append(r, k)
+	}
+	sort.Strings(r)
+	return r
 }
 
 func watchFile(workspace, path string, c chan notify.EventInfo) error {
