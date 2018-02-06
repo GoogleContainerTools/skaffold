@@ -18,6 +18,7 @@ package flags
 
 import (
 	"fmt"
+	"reflect"
 	"text/template"
 
 	"github.com/pkg/errors"
@@ -26,10 +27,21 @@ import (
 type TemplateFlag struct {
 	rawTemplate string
 	template    *template.Template
+	context     interface{}
 }
 
 func (t *TemplateFlag) String() string {
 	return t.rawTemplate
+}
+
+func (t *TemplateFlag) Usage() string {
+	defaultUsage := "Format output with go-template."
+	if t.context != nil {
+		goType := reflect.TypeOf(t.context)
+		url := fmt.Sprintf("https://godoc.org/%s#%s", goType.PkgPath(), goType.Name())
+		defaultUsage += fmt.Sprintf(" For full struct documentation, see %s", url)
+	}
+	return defaultUsage
 }
 
 func (t *TemplateFlag) Set(value string) error {
@@ -50,9 +62,10 @@ func (t *TemplateFlag) Template() *template.Template {
 	return t.template
 }
 
-func NewTemplateFlag(value string) *TemplateFlag {
+func NewTemplateFlag(value string, context interface{}) *TemplateFlag {
 	return &TemplateFlag{
 		template:    template.Must(template.New("flagtemplate").Parse(value)),
 		rawTemplate: value,
+		context:     context,
 	}
 }
