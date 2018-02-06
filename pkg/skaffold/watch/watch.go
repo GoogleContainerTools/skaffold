@@ -52,6 +52,11 @@ const (
 	WatchStop  = "WatchStop"
 )
 
+var (
+	WatchStopEvent  = &WatchEvent{EventType: WatchStop}
+	WatchStartEvent = &WatchEvent{EventType: WatchReady}
+)
+
 //TODO(@r2d4): Figure out best UX to support configuring this blacklist
 var ignoredPrefixes = []string{"vendor", ".git"}
 
@@ -68,7 +73,7 @@ func (f *FSWatcher) Watch(artifacts []*config.Artifact, ready chan *WatchEvent, 
 		}
 	}
 	if ready != nil {
-		ready <- &WatchEvent{EventType: WatchReady}
+		ready <- WatchStartEvent
 	}
 	for {
 		select {
@@ -81,7 +86,7 @@ func (f *FSWatcher) Watch(artifacts []*config.Artifact, ready chan *WatchEvent, 
 			}, nil
 		case <-cancel:
 			logrus.Info("Watch canceled")
-			return &WatchEvent{EventType: WatchStop}, nil
+			return WatchStopEvent, nil
 		}
 	}
 }

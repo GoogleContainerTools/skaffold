@@ -26,7 +26,6 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // SkaffoldRunner is responsible for running the skaffold build and deploy pipeline.
@@ -35,14 +34,17 @@ type SkaffoldRunner struct {
 	tag.Tagger
 	watch.Watcher
 
-	config *config.SkaffoldConfig
-	cancel chan struct{}
+	devMode bool
+
+	config     *config.SkaffoldConfig
+	watchReady chan *watch.WatchEvent
+	cancel     chan struct{}
 
 	out io.Writer
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
-func NewForConfig(out io.Writer, cfg *config.SkaffoldConfig) (*SkaffoldRunner, error) {
+func NewForConfig(out io.Writer, dev bool, cfg *config.SkaffoldConfig) (*SkaffoldRunner, error) {
 	builder, err := getBuilder(&cfg.Build)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold build config")
@@ -56,6 +58,7 @@ func NewForConfig(out io.Writer, cfg *config.SkaffoldConfig) (*SkaffoldRunner, e
 		Builder: builder,
 		Tagger:  tagger,
 		Watcher: &watch.FSWatcher{}, //TODO(@r2d4): should this be configurable?
+		devMode: dev,
 		cancel:  make(chan struct{}, 1),
 		out:     out,
 	}, nil
@@ -66,10 +69,6 @@ func getBuilder(cfg *config.BuildConfig) (build.Builder, error) {
 		return build.NewLocalBuilder(cfg)
 	}
 	return nil, fmt.Errorf("Unknown builder for config %+v", cfg)
-}
-
-func getWatcher(cfg *config.SkaffoldConfig) (watch.Watcher, error) {
-	return &watch.FSWatcher{}, nil
 }
 
 func newTaggerForConfig(tagStrategy string) (tag.Tagger, error) {
@@ -83,28 +82,29 @@ func newTaggerForConfig(tagStrategy string) (tag.Tagger, error) {
 
 // Run runs the skaffold build and deploy pipeline.
 func (r *SkaffoldRunner) Run() error {
+	if r.devMode {
+		return r.dev()
+	}
+	return r.run()
+}
+
+func (r *SkaffoldRunner) dev() error {
 	for {
-		if r.config.Watch {
-			_, err := r.Watch(r.config.Build.Artifacts, nil, r.cancel)
-			if err != nil {
-				return errors.Wrap(err, "watch step")
-			}
-		}
-
-		_, err := r.Builder.Run(r.out, r.Tagger)
+		evt, err := r.Watch(r.config.Build.Artifacts, r.watchReady, r.cancel)
 		if err != nil {
-			if r.config.Watch {
-				logrus.Warn("Build step error: %s", err)
-			} else {
-				return errors.Wrap(err, "build step")
-			}
+			return errors.Wrap(err, "running watch")
 		}
-
-		// Deploy
-		if !r.config.Watch {
-			break
+		if evt.EventType == watch.WatchStop {
+			return nil
+		}
+		if err := r.run(); err != nil {
+			return errors.Wrap(err, "running build and deploy")
 		}
 	}
+}
 
-	return nil
+func (r *SkaffoldRunner) run() error {
+	_, err := r.Builder.Run(r.out, r.Tagger)
+	// Deploy
+	return err
 }

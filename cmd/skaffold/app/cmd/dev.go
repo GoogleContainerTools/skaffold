@@ -19,8 +19,6 @@ package cmd
 import (
 	"io"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
-
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -30,7 +28,7 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 		Use:   "dev",
 		Short: "runs a pipeline file in development mode",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := runSkaffold(out, &config.DevelopmentConfig, filename); err != nil {
+			if err := runSkaffold(out, true, filename); err != nil {
 				logrus.Errorf("run: %s", err)
 			}
 		},

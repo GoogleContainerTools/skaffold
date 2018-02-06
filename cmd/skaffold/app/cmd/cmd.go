@@ -65,19 +65,19 @@ func SetUpLogs(out io.Writer, level string) error {
 	return nil
 }
 
-func runSkaffold(out io.Writer, defaultConfig *config.SkaffoldConfig, filename string) error {
+func runSkaffold(out io.Writer, dev bool, filename string) error {
 	f, err := os.Open(filename)
 	if err != nil {
 		return errors.Wrap(err, "opening skaffold config")
 	}
 	defer f.Close()
 
-	cfg, err := config.Parse(defaultConfig, f)
+	cfg, err := config.Parse(f)
 	if err != nil {
 		return errors.Wrap(err, "parsing skaffold config")
 	}
 
-	r, err := runner.NewForConfig(out, cfg)
+	r, err := runner.NewForConfig(out, dev, cfg)
 	if err != nil {
 		return errors.Wrap(err, "getting skaffold config")
 	}
