@@ -14,35 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#!/bin/bash
+
+# Ignore these paths in the following tests.
+ignore="vendor\|out"
+BOILERPLATEDIR=./hack/boilerplate
+# Grep returns a non-zero exit code if we don't match anything, which is good in this case.
+set +e
+files=$(python ${BOILERPLATEDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BOILERPLATEDIR} | grep -v $ignore)
 set -e
-
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-RESET='\033[0m'
-
-echo "Running go tests..."
-go test -cover -v -timeout 60s `go list ./... | grep -v vendor`
-
-echo "Running validation scripts..."
-scripts=(
-    "hack/boilerplate.sh"
-    "hack/gofmt.sh"
-    "hack/gometalinter.sh"
-
-)
-fail=0
-for s in "${scripts[@]}"
-do
-    echo "RUN ${s}"
-    set +e
-    ./$s
-    result=$?
-    set -e
-    if [[ $result  -eq 1 ]]; then
-        echo -e "${RED}FAILED${RESET} ${s}"
-        fail=1
-    else
-        echo -e "${GREEN}PASSED${RESET} ${s}"
-    fi
-done
-exit $fail
+if [[ ! -z ${files} ]]; then
+	echo "Boilerplate missing in:"
+    echo "${files}"
+	exit 1
+fi

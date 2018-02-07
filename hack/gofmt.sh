@@ -14,35 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-RESET='\033[0m'
+#!/bin/bash
 
-echo "Running go tests..."
-go test -cover -v -timeout 60s `go list ./... | grep -v vendor`
-
-echo "Running validation scripts..."
-scripts=(
-    "hack/boilerplate.sh"
-    "hack/gofmt.sh"
-    "hack/gometalinter.sh"
-
-)
-fail=0
-for s in "${scripts[@]}"
-do
-    echo "RUN ${s}"
-    set +e
-    ./$s
-    result=$?
-    set -e
-    if [[ $result  -eq 1 ]]; then
-        echo -e "${RED}FAILED${RESET} ${s}"
-        fail=1
-    else
-        echo -e "${GREEN}PASSED${RESET} ${s}"
-    fi
-done
-exit $fail
+files=$(find . -name "*.go" | grep -v vendor/ | xargs gofmt -l -s)
+if [[ $files ]]; then
+    echo "Gofmt errors in files:"
+    echo "$files"
+    diff=$(find . -name "*.go" | grep -v vendor/ | xargs gofmt -d -s)
+    echo "$diff"
+    exit 1
+fi
