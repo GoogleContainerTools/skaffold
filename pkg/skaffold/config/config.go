@@ -53,7 +53,7 @@ type BuildType struct {
 // LocalBuild contains the fields needed to do a build on the local docker daemon
 // and optionally push to a repository.
 type LocalBuild struct {
-	Repository string `yaml:"repository"`
+	Push bool `yaml:"push"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps

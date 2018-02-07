@@ -24,7 +24,9 @@ import (
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
 	testutil "github.com/GoogleCloudPlatform/skaffold/test"
+	"github.com/docker/docker/api/types"
 	"github.com/moby/moby/client"
 )
 
@@ -37,7 +39,16 @@ func (f *FakeTagger) GenerateFullyQualifiedImageName(tagOpts *tag.TagOptions) (s
 	return f.Out, f.Err
 }
 
+type testAuthHelper struct{}
+
+func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
+	return types.AuthConfig{}, nil
+}
+func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { return nil, nil }
 func TestLocalRun(t *testing.T) {
+	auth := docker.DefaultAuthHelper
+	defer func() { docker.DefaultAuthHelper = auth }()
+	docker.DefaultAuthHelper = testAuthHelper{}
 	var tests = []struct {
 		description string
 		config      *config.BuildConfig
@@ -54,8 +65,13 @@ func TestLocalRun(t *testing.T) {
 			config: &config.BuildConfig{
 				Artifacts: []*config.Artifact{
 					{
-						ImageName: "test",
+						ImageName: "gcr.io/test/image",
 						Workspace: ".",
+					},
+				},
+				BuildType: config.BuildType{
+					LocalBuild: &config.LocalBuild{
+						Push: true,
 					},
 				},
 			},
@@ -64,8 +80,8 @@ func TestLocalRun(t *testing.T) {
 			expectedBuild: &BuildResult{
 				[]Build{
 					{
-						ImageName: "test",
-						Tag:       "test:imageid",
+						ImageName: "gcr.io/test/image",
+						Tag:       "gcr.io/test/image:imageid",
 					},
 				},
 			},
