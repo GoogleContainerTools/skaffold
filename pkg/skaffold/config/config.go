@@ -33,16 +33,14 @@ type SkaffoldConfig struct {
 	APIVersion string `yaml:"apiVersion"`
 	Kind       string `yaml:"kind"`
 
-	Watch bool `yaml:"watch"`
-
 	Build  BuildConfig  `yaml:"build"`
 	Deploy DeployConfig `yaml:"deploy"`
 }
 
 // BuildConfig contains all the configuration for the build steps
 type BuildConfig struct {
-	Artifacts []Artifact `yaml:"artifacts"`
-	TagPolicy string     `yaml:"tagPolicy"`
+	Artifacts []*Artifact `yaml:"artifacts"`
+	TagPolicy string      `yaml:"tagPolicy"`
 	BuildType `yaml:",inline"`
 }
 
@@ -87,16 +85,13 @@ type Artifact struct {
 // Parse reads from an io.Reader and unmarshals the result into a SkaffoldConfig.
 // The default config argument provides default values for the config,
 // which can be overridden if present in the config file.
-func Parse(defaultConfig *SkaffoldConfig, config io.Reader) (*SkaffoldConfig, error) {
+func Parse(config io.Reader) (*SkaffoldConfig, error) {
 	var b bytes.Buffer
 	if _, err := b.ReadFrom(config); err != nil {
 		return nil, errors.Wrap(err, "reading config")
 	}
 
 	var cfg SkaffoldConfig
-	if defaultConfig != nil {
-		cfg = *defaultConfig
-	}
 	if err := yaml.Unmarshal(b.Bytes(), &cfg); err != nil {
 		return nil, err
 	}

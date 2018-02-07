@@ -28,7 +28,9 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/watch"
 	testutil "github.com/GoogleCloudPlatform/skaffold/test"
+	"github.com/sirupsen/logrus"
 )
 
 type TestBuilder struct {
@@ -45,15 +47,35 @@ func (t *TestBuilder) Run(io.Writer, tag.Tagger) (*build.BuildResult, error) {
 	return t.res, t.err
 }
 
+type TestWatcher struct {
+	res []*watch.WatchEvent
+	err error
+
+	current int
+}
+
+func NewTestWatch(err error, res ...*watch.WatchEvent) *TestWatcher {
+	return &TestWatcher{res: res, err: err}
+}
+
+func (t *TestWatcher) Watch(artifacts []*config.Artifact, ready chan *watch.WatchEvent, cancel chan struct{}) (*watch.WatchEvent, error) {
+	if t.current > len(t.res)-1 {
+		logrus.Fatalf("Called watch too many times. WatchEvents %d, Current: %d", len(t.res)-1, t.current)
+	}
+	ret := t.res[t.current]
+	t.current = t.current + 1
+	return ret, t.err
+}
+
 func (t *TestDeployer) Run(*build.BuildResult) (*deploy.Result, error) {
 	return t.res, t.err
 }
-
 func TestNewForConfig(t *testing.T) {
 	var tests = []struct {
 		description string
 		config      *config.SkaffoldConfig
 		shouldErr   bool
+		sendCancel  bool
 		expected    interface{}
 	}{
 		{
@@ -137,7 +159,7 @@ func TestNewForConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			cfg, err := NewForConfig(&bytes.Buffer{}, test.config)
+			cfg, err := NewForConfig(&bytes.Buffer{}, false, test.config)
 			testutil.CheckError(t, test.shouldErr, err)
 			if cfg != nil {
 				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, test.expected, cfg.Builder)
@@ -150,25 +172,29 @@ func TestRun(t *testing.T) {
 	var tests = []struct {
 		description string
 		runner      *SkaffoldRunner
+		devmode     bool
 		shouldErr   bool
 	}{
 		{
 			description: "run no error",
 			runner: &SkaffoldRunner{
+				config: &config.SkaffoldConfig{},
 				Builder: &TestBuilder{
 					res: &build.BuildResult{},
 					err: nil,
 				},
+				devMode: false,
+				Tagger:  &tag.ChecksumTagger{},
 				Deployer: &TestDeployer{
 					res: &deploy.Result{},
 					err: nil,
 				},
-				Tagger: &tag.ChecksumTagger{},
 			},
 		},
 		{
 			description: "run build error",
 			runner: &SkaffoldRunner{
+				config: &config.SkaffoldConfig{},
 				Builder: &TestBuilder{
 					err: fmt.Errorf(""),
 				},
@@ -179,14 +205,58 @@ func TestRun(t *testing.T) {
 		{
 			description: "run deploy error",
 			runner: &SkaffoldRunner{
-				Builder: &TestBuilder{
-					res: &build.BuildResult{},
-					err: nil,
-				},
 				Deployer: &TestDeployer{
 					err: fmt.Errorf(""),
 				},
 				Tagger: &tag.ChecksumTagger{},
+				Builder: &TestBuilder{
+					res: &build.BuildResult{},
+					err: nil,
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "run dev mode",
+			runner: &SkaffoldRunner{
+				config:     &config.SkaffoldConfig{},
+				Builder:    &TestBuilder{},
+				Deployer:   &TestDeployer{},
+				Watcher:    NewTestWatch(nil, &watch.WatchEvent{}, watch.WatchStopEvent),
+				devMode:    true,
+				cancel:     make(chan struct{}, 1),
+				watchReady: make(chan *watch.WatchEvent, 1),
+				Tagger:     &tag.ChecksumTagger{},
+			},
+		},
+		{
+			description: "run dev mode build error",
+			runner: &SkaffoldRunner{
+				config: &config.SkaffoldConfig{},
+				Builder: &TestBuilder{
+					err: fmt.Errorf(""),
+				},
+				Watcher:    NewTestWatch(nil, &watch.WatchEvent{}, watch.WatchStopEvent),
+				devMode:    true,
+				cancel:     make(chan struct{}, 1),
+				watchReady: make(chan *watch.WatchEvent, 1),
+				Tagger:     &tag.ChecksumTagger{},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "bad watch dev mode",
+			runner: &SkaffoldRunner{
+				config: &config.SkaffoldConfig{},
+				Builder: &TestBuilder{
+					res: &build.BuildResult{},
+					err: nil,
+				},
+				Watcher:    NewTestWatch(fmt.Errorf(""), nil),
+				devMode:    true,
+				cancel:     make(chan struct{}, 1),
+				watchReady: make(chan *watch.WatchEvent, 1),
+				Tagger:     &tag.ChecksumTagger{},
 			},
 			shouldErr: true,
 		},

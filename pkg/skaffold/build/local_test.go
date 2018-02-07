@@ -52,7 +52,7 @@ func TestLocalRun(t *testing.T) {
 			description: "single build",
 			out:         &bytes.Buffer{},
 			config: &config.BuildConfig{
-				Artifacts: []config.Artifact{
+				Artifacts: []*config.Artifact{
 					{
 						ImageName: "test",
 						Workspace: ".",
@@ -74,7 +74,7 @@ func TestLocalRun(t *testing.T) {
 			description: "error image build",
 			out:         &bytes.Buffer{},
 			config: &config.BuildConfig{
-				Artifacts: []config.Artifact{
+				Artifacts: []*config.Artifact{
 					{
 						ImageName: "test",
 						Workspace: ".",
@@ -89,7 +89,7 @@ func TestLocalRun(t *testing.T) {
 			description: "error image tag",
 			out:         &bytes.Buffer{},
 			config: &config.BuildConfig{
-				Artifacts: []config.Artifact{
+				Artifacts: []*config.Artifact{
 					{
 						ImageName: "test",
 						Workspace: ".",
@@ -104,7 +104,7 @@ func TestLocalRun(t *testing.T) {
 			description: "error api client",
 			out:         &bytes.Buffer{},
 			config: &config.BuildConfig{
-				Artifacts: []config.Artifact{
+				Artifacts: []*config.Artifact{
 					{
 						ImageName: "test",
 						Workspace: ".",
@@ -119,7 +119,7 @@ func TestLocalRun(t *testing.T) {
 			description: "bad writer",
 			out:         &testutil.BadWriter{},
 			config: &config.BuildConfig{
-				Artifacts: []config.Artifact{
+				Artifacts: []*config.Artifact{
 					{
 						ImageName: "test",
 						Workspace: ".",
@@ -134,7 +134,7 @@ func TestLocalRun(t *testing.T) {
 			description: "error image list",
 			out:         &testutil.BadWriter{},
 			config: &config.BuildConfig{
-				Artifacts: []config.Artifact{
+				Artifacts: []*config.Artifact{
 					{
 						ImageName: "test",
 						Workspace: ".",
@@ -148,7 +148,7 @@ func TestLocalRun(t *testing.T) {
 		{
 			description: "error tagger",
 			config: &config.BuildConfig{
-				Artifacts: []config.Artifact{
+				Artifacts: []*config.Artifact{
 					{
 						ImageName: "test",
 						Workspace: ".",
@@ -175,7 +175,7 @@ func TestLocalRun(t *testing.T) {
 
 func TestNewLocalBuilder(t *testing.T) {
 	_, err := NewLocalBuilder(&config.BuildConfig{
-		Artifacts: []config.Artifact{
+		Artifacts: []*config.Artifact{
 			{
 				ImageName: "test",
 				Workspace: ".",

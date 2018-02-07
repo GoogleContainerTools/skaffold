@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
 )
 
@@ -33,13 +34,19 @@ type SkaffoldRunner struct {
 	build.Builder
 	deploy.Deployer
 	tag.Tagger
-	*config.SkaffoldConfig
+	watch.Watcher
+
+	devMode bool
+
+	config     *config.SkaffoldConfig
+	watchReady chan *watch.WatchEvent
+	cancel     chan struct{}
 
 	out io.Writer
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
-func NewForConfig(out io.Writer, cfg *config.SkaffoldConfig) (*SkaffoldRunner, error) {
+func NewForConfig(out io.Writer, dev bool, cfg *config.SkaffoldConfig) (*SkaffoldRunner, error) {
 	builder, err := getBuilder(&cfg.Build)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold build config")
@@ -53,11 +60,14 @@ func NewForConfig(out io.Writer, cfg *config.SkaffoldConfig) (*SkaffoldRunner, e
 		return nil, errors.Wrap(err, "parsing skaffold tag config")
 	}
 	return &SkaffoldRunner{
-		SkaffoldConfig: cfg,
-		Builder:        builder,
-		Deployer:       deployer,
-		Tagger:         tagger,
-		out:            out,
+		config:   cfg,
+		Builder:  builder,
+		Deployer: deployer,
+		Tagger:   tagger,
+		Watcher:  &watch.FSWatcher{}, //TODO(@r2d4): should this be configurable?
+		devMode:  dev,
+		cancel:   make(chan struct{}, 1),
+		out:      out,
 	}, nil
 }
 
@@ -88,6 +98,28 @@ func newTaggerForConfig(tagStrategy string) (tag.Tagger, error) {
 
 // Run runs the skaffold build and deploy pipeline.
 func (r *SkaffoldRunner) Run() error {
+	if r.devMode {
+		return r.dev()
+	}
+	return r.run()
+}
+
+func (r *SkaffoldRunner) dev() error {
+	for {
+		evt, err := r.Watch(r.config.Build.Artifacts, r.watchReady, r.cancel)
+		if err != nil {
+			return errors.Wrap(err, "running watch")
+		}
+		if evt.EventType == watch.WatchStop {
+			return nil
+		}
+		if err := r.run(); err != nil {
+			return errors.Wrap(err, "running build and deploy")
+		}
+	}
+}
+
+func (r *SkaffoldRunner) run() error {
 	res, err := r.Builder.Run(r.out, r.Tagger)
 	if err != nil {
 		return errors.Wrap(err, "build step")

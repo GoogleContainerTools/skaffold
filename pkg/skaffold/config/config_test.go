@@ -44,27 +44,7 @@ var configA = &SkaffoldConfig{
 	APIVersion: "skaffold/v1",
 	Kind:       "Config",
 	Build: BuildConfig{
-		Artifacts: []Artifact{
-			{
-				ImageName: "example",
-				Workspace: "./examples/app",
-			},
-		},
-	},
-	Deploy: DeployConfig{
-		Name: "example",
-		Parameters: map[string]string{
-			"key": "value",
-		},
-	},
-}
-
-var configB = &SkaffoldConfig{
-	APIVersion: "skaffold/v1",
-	Kind:       "Config",
-	Watch:      true,
-	Build: BuildConfig{
-		Artifacts: []Artifact{
+		Artifacts: []*Artifact{
 			{
 				ImageName: "example",
 				Workspace: "./examples/app",
@@ -81,12 +61,11 @@ var configB = &SkaffoldConfig{
 
 func TestParseConfig(t *testing.T) {
 	var tests = []struct {
-		description   string
-		config        string
-		defaultConfig *SkaffoldConfig
-		expected      *SkaffoldConfig
-		badReader     bool
-		shouldErr     bool
+		description string
+		config      string
+		expected    *SkaffoldConfig
+		badReader   bool
+		shouldErr   bool
 	}{
 		{
 			description: "Parse config",
@@ -97,12 +76,6 @@ func TestParseConfig(t *testing.T) {
 			description: "Bad config",
 			config:      badConfigA,
 			shouldErr:   true,
-		},
-		{
-			description:   "default config",
-			defaultConfig: &SkaffoldConfig{Watch: true},
-			config:        rawConfigA,
-			expected:      configB,
 		},
 		{
 			description: "bad reader",
@@ -118,7 +91,7 @@ func TestParseConfig(t *testing.T) {
 			if test.badReader {
 				r = testutil.BadReader{}
 			}
-			cfg, err := Parse(test.defaultConfig, r)
+			cfg, err := Parse(r)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cfg)
 		})
 	}

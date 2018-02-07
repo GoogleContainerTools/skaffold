@@ -60,7 +60,7 @@ func GetDockerfileDependencies(workspace string, r io.Reader) ([]string, error) 
 	for dep := range depMap {
 		deps = append(deps, dep)
 	}
-
+	logrus.Infof("Found dependencies for dockerfile %s", deps)
 	expandedDeps, err := expandDeps(workspace, deps)
 	if err != nil {
 		return nil, errors.Wrap(err, "expanding dockerfile paths")
