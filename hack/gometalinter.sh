@@ -14,35 +14,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-RESET='\033[0m'
+#!/bin/bash
+set -e -o pipefail
 
-echo "Running go tests..."
-go test -cover -v -timeout 60s `go list ./... | grep -v vendor`
+SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-echo "Running validation scripts..."
-scripts=(
-    "hack/boilerplate.sh"
-    "hack/gofmt.sh"
-    "hack/gometalinter.sh"
+install_gometalinter() {
+	echo "Installing gometalinter.v2"
+	go get -u gopkg.in/alecthomas/gometalinter.v2
+	gometalinter.v2 --install
+}
 
-)
-fail=0
-for s in "${scripts[@]}"
-do
-    echo "RUN ${s}"
-    set +e
-    ./$s
-    result=$?
-    set -e
-    if [[ $result  -eq 1 ]]; then
-        echo -e "${RED}FAILED${RESET} ${s}"
-        fail=1
-    else
-        echo -e "${GREEN}PASSED${RESET} ${s}"
-    fi
-done
-exit $fail
+if ! [ -x "$(command -v gometalinter.v2)" ]; then
+  install_gometalinter
+fi
+
+gometalinter.v2 \
+	${GOMETALINTER_OPTS:--deadine 5m} \
+	--config $SCRIPTDIR/gometalinter.json ./...

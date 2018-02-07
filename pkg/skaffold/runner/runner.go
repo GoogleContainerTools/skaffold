@@ -39,7 +39,7 @@ type SkaffoldRunner struct {
 	devMode bool
 
 	config     *config.SkaffoldConfig
-	watchReady chan *watch.WatchEvent
+	watchReady chan *watch.Event
 	cancel     chan struct{}
 
 	out io.Writer

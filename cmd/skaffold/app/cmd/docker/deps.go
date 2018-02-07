@@ -30,7 +30,6 @@ import (
 
 var (
 	filename, context string
-	output            flags.TemplateFlag
 )
 
 var depsFormatFlag = flags.NewTemplateFlag("{{range .Deps}}{{.}} {{end}}\n", DepsOutput{})

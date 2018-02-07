@@ -48,19 +48,19 @@ func (t *TestBuilder) Run(io.Writer, tag.Tagger) (*build.BuildResult, error) {
 }
 
 type TestWatcher struct {
-	res []*watch.WatchEvent
+	res []*watch.Event
 	err error
 
 	current int
 }
 
-func NewTestWatch(err error, res ...*watch.WatchEvent) *TestWatcher {
+func NewTestWatch(err error, res ...*watch.Event) *TestWatcher {
 	return &TestWatcher{res: res, err: err}
 }
 
-func (t *TestWatcher) Watch(artifacts []*config.Artifact, ready chan *watch.WatchEvent, cancel chan struct{}) (*watch.WatchEvent, error) {
+func (t *TestWatcher) Watch(artifacts []*config.Artifact, ready chan *watch.Event, cancel chan struct{}) (*watch.Event, error) {
 	if t.current > len(t.res)-1 {
-		logrus.Fatalf("Called watch too many times. WatchEvents %d, Current: %d", len(t.res)-1, t.current)
+		logrus.Fatalf("Called watch too many times. Events %d, Current: %d", len(t.res)-1, t.current)
 	}
 	ret := t.res[t.current]
 	t.current = t.current + 1
@@ -222,10 +222,10 @@ func TestRun(t *testing.T) {
 				config:     &config.SkaffoldConfig{},
 				Builder:    &TestBuilder{},
 				Deployer:   &TestDeployer{},
-				Watcher:    NewTestWatch(nil, &watch.WatchEvent{}, watch.WatchStopEvent),
+				Watcher:    NewTestWatch(nil, &watch.Event{}, watch.WatchStopEvent),
 				devMode:    true,
 				cancel:     make(chan struct{}, 1),
-				watchReady: make(chan *watch.WatchEvent, 1),
+				watchReady: make(chan *watch.Event, 1),
 				Tagger:     &tag.ChecksumTagger{},
 			},
 		},
@@ -236,10 +236,10 @@ func TestRun(t *testing.T) {
 				Builder: &TestBuilder{
 					err: fmt.Errorf(""),
 				},
-				Watcher:    NewTestWatch(nil, &watch.WatchEvent{}, watch.WatchStopEvent),
+				Watcher:    NewTestWatch(nil, &watch.Event{}, watch.WatchStopEvent),
 				devMode:    true,
 				cancel:     make(chan struct{}, 1),
-				watchReady: make(chan *watch.WatchEvent, 1),
+				watchReady: make(chan *watch.Event, 1),
 				Tagger:     &tag.ChecksumTagger{},
 			},
 			shouldErr: true,
@@ -255,7 +255,7 @@ func TestRun(t *testing.T) {
 				Watcher:    NewTestWatch(fmt.Errorf(""), nil),
 				devMode:    true,
 				cancel:     make(chan struct{}, 1),
-				watchReady: make(chan *watch.WatchEvent, 1),
+				watchReady: make(chan *watch.Event, 1),
 				Tagger:     &tag.ChecksumTagger{},
 			},
 			shouldErr: true,

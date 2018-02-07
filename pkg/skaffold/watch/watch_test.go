@@ -78,7 +78,7 @@ func TestWatch(t *testing.T) {
 		artifacts      []*config.Artifact
 		dockerfiles    []string
 		writes         []string
-		expected       *WatchEvent
+		expected       *Event
 		expectedChange []string
 		sendCancel     bool
 		shouldErr      bool
@@ -109,8 +109,8 @@ func TestWatch(t *testing.T) {
 				})
 			}
 			watcher := &FSWatcher{}
-			eventCh := make(chan *WatchEvent, 1)
-			readyCh := make(chan *WatchEvent, 1)
+			eventCh := make(chan *Event, 1)
+			readyCh := make(chan *Event, 1)
 			errCh := make(chan error, 1)
 			cancel := make(chan struct{}, 1)
 			go func() {
