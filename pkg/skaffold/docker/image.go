@@ -71,7 +71,7 @@ func RunBuild(cli client.ImageAPIClient, opts *BuildOptions) error {
 }
 
 // TODO(@r2d4): Make this output much better, this is the bare minimum
-func streamDockerMessages(dst io.Writer, src io.ReadCloser) error {
+func streamDockerMessages(dst io.Writer, src io.Reader) error {
 	fd, _ := term.GetFdInfo(dst)
 	return jsonmessage.DisplayJSONMessagesStream(src, dst, fd, false, nil)
 }
