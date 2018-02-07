@@ -17,11 +17,21 @@ limitations under the License.
 package docker
 
 import (
+	"bytes"
 	"fmt"
+	"os"
 	"testing"
 
 	testutil "github.com/GoogleCloudPlatform/skaffold/test"
 )
+
+func TestMain(m *testing.M) {
+	// So we don't shell out to credentials helpers or try to read dockercfg
+	auth := DefaultAuthHelper
+	defer func() { DefaultAuthHelper = auth }()
+	DefaultAuthHelper = testAuthHelper{}
+	os.Exit(m.Run())
+}
 
 type testImageAPI struct {
 	description  string
@@ -34,7 +44,49 @@ type testImageAPI struct {
 	testOpts *testutil.FakeImageAPIOptions
 }
 
+func TestRunPush(t *testing.T) {
+	var tests = []testImageAPI{
+		{
+			description:  "push",
+			imageName:    "gcr.io/scratchman",
+			tagToImageID: map[string]string{},
+		},
+		{
+			description:  "no error pushing non canonical tag",
+			imageName:    "noncanonicalscratchman",
+			tagToImageID: map[string]string{},
+		},
+		{
+			description:  "stream error",
+			imageName:    "gcr.io/imthescratchman",
+			tagToImageID: map[string]string{},
+			testOpts: &testutil.FakeImageAPIOptions{
+				ReturnBody: &testutil.FakeReaderCloser{Err: fmt.Errorf("")},
+			},
+			shouldErr: true,
+		},
+		{
+			description:  "image push error",
+			imageName:    "gcr.io/skibabopbadopbop",
+			tagToImageID: map[string]string{},
+			testOpts: &testutil.FakeImageAPIOptions{
+				ErrImagePush: true,
+			},
+			shouldErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			api := testutil.NewFakeImageAPIClient(test.tagToImageID, test.testOpts)
+			err := RunPush(api, test.imageName, &bytes.Buffer{})
+			testutil.CheckError(t, test.shouldErr, err)
+		})
+	}
+}
+
 func TestRunBuild(t *testing.T) {
+
 	var tests = []testImageAPI{
 		{
 			description:  "build",
