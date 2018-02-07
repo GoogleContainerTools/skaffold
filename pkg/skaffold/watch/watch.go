@@ -34,34 +34,45 @@ import (
 
 // Watcher provides a watch trigger for the skaffold pipeline to begin
 type Watcher interface {
-	// Watch watches a set of artifacts for changes, and on the first change returns
-	// a reference to the changed artifact
-	Watch(artifacts []*config.Artifact, ready chan *WatchEvent, cancel chan struct{}) (*WatchEvent, error)
+	// Watch watches a set of artifacts for changes, and on the first change
+	// returns a reference to the changed artifact
+	Watch(artifacts []*config.Artifact, ready chan *Event, cancel chan struct{}) (*Event, error)
 }
 
-type WatchEvent struct {
+// Event is sent on any inotify event and returns all artifacts which
+// reference the changed dependency
+type Event struct {
 	EventType        string
 	ChangedArtifacts []*config.Artifact
 }
 
 var fs = afero.NewOsFs()
 
+// FSWatcher uses inotify to watch for changes and implements
+// the Watcher interface
 type FSWatcher struct{}
 
 const (
+	// WatchReady is EventType sent when the watcher is ready to watch all files
 	WatchReady = "WatchReady"
-	WatchStop  = "WatchStop"
+	// WatchStop is the EventType sent when the watcher is stopped by a cancel
+	WatchStop = "WatchStop"
 )
 
 var (
-	WatchStopEvent  = &WatchEvent{EventType: WatchStop}
-	WatchStartEvent = &WatchEvent{EventType: WatchReady}
+	// WatchStopEvent is sent when the watcher is stopped by a message on the
+	// cancel channel
+	WatchStopEvent = &Event{EventType: WatchStop}
+	//WatchStartEvent is sent when the watcher is ready to watch all files
+	WatchStartEvent = &Event{EventType: WatchReady}
 )
 
 //TODO(@r2d4): Figure out best UX to support configuring this blacklist
 var ignoredPrefixes = []string{"vendor", ".git"}
 
-func (f *FSWatcher) Watch(artifacts []*config.Artifact, ready chan *WatchEvent, cancel chan struct{}) (*WatchEvent, error) {
+// Watch watches a set of artifacts for changes with inotify, and on the first change
+// returns a reference to the changed artifact
+func (f *FSWatcher) Watch(artifacts []*config.Artifact, ready chan *Event, cancel chan struct{}) (*Event, error) {
 	depsToArtifact := map[string][]*config.Artifact{}
 	c := make(chan notify.EventInfo, 1)
 	defer notify.Stop(c)
@@ -81,7 +92,7 @@ func (f *FSWatcher) Watch(artifacts []*config.Artifact, ready chan *WatchEvent, 
 	case ei := <-c:
 		logrus.Infof("%s %s", ei.Event().String(), ei.Path())
 		artifacts := depsToArtifact[ei.Path()]
-		return &WatchEvent{
+		return &Event{
 			EventType:        ei.Event().String(),
 			ChangedArtifacts: artifacts,
 		}, nil
