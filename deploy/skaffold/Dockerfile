@@ -20,4 +20,4 @@ RUN make
 FROM ubuntu 
 WORKDIR /root/
 COPY --from=0 /go/src/github.com/GoogleCloudPlatform/skaffold/out/skaffold .
-CMD ["./skaffold", "version"]  
+CMD ["./skaffold", "version"]
