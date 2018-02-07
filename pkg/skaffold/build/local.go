@@ -68,6 +68,9 @@ func (l *LocalBuilder) Run(out io.Writer, tagger tag.Tagger) (*BuildResult, erro
 			ProgressBuf: out,
 			BuildBuf:    out,
 		})
+		if err != nil {
+			return nil, errors.Wrap(err, "running build")
+		}
 		digest, err := docker.Digest(api, initialTag)
 		if err != nil {
 			return nil, errors.Wrap(err, "build and tag")

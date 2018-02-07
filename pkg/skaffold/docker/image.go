@@ -51,6 +51,9 @@ func RunBuild(cli client.ImageAPIClient, opts *BuildOptions) error {
 	buildCtx, err := archive.TarWithOptions(opts.ContextDir, &archive.TarOptions{
 		ChownOpts: &idtools.IDPair{UID: 0, GID: 0},
 	})
+	if err != nil {
+		return errors.Wrap(err, "tar workspace")
+	}
 
 	progressOutput := streamformatter.NewProgressOutput(opts.ProgressBuf)
 	body := progress.NewProgressReader(buildCtx, progressOutput, 0, "", "Sending build context to Docker daemon")
