@@ -117,11 +117,12 @@ func addDepsForArtifact(a *config.Artifact, depsToArtifact map[string][]*config.
 		return errors.Wrap(err, "getting dockerfile dependencies")
 	}
 	for _, dep := range deps {
-		fi, err := os.Stat(dep)
+		fi, err := os.Lstat(dep)
 		if err != nil {
 			return errors.Wrapf(err, "stat %s", dep)
 		}
 		if fi.Mode() == os.ModeSymlink {
+			logrus.Debugf("%s is a symlink", dep)
 			// nothing to do for symlinks
 			continue
 		}
