@@ -17,13 +17,13 @@ limitations under the License.
 package docker
 
 import (
-	"archive/tar"
 	"bytes"
-	"compress/gzip"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
 	"github.com/pkg/errors"
@@ -69,77 +69,8 @@ func runContext(out io.Writer, filename, context string) error {
 	// This prevents recursion problems, where the output file can end up
 	// in the context itself during creation.
 	var b bytes.Buffer
-	w := gzip.NewWriter(&b)
-	defer w.Close()
-
-	tw := tar.NewWriter(w)
-	defer tw.Close()
-
-	for _, d := range deps {
-		absPath, err := filepath.Abs(d)
-		if err != nil {
-			return err
-		}
-
-		fi, err := os.Lstat(d)
-		if err != nil {
-			return err
-		}
-		switch mode := fi.Mode(); {
-		case mode.IsRegular():
-			tarHeader, err := tar.FileInfoHeader(fi, fi.Name())
-			if err != nil {
-				return err
-			}
-
-			if absPath == dockerFilePath {
-				// The Dockerfile must be placed at the root of the context.
-				logrus.Infof("Placing Dockerfile %s at root of context", dockerFilePath)
-				tarHeader.Name = "Dockerfile"
-			} else {
-				tarHeader.Name, err = filepath.Rel(context, d)
-				if err != nil {
-					return err
-				}
-			}
-
-			if err := tw.WriteHeader(tarHeader); err != nil {
-				return err
-			}
-			f, err := os.Open(d)
-			if err != nil {
-				return err
-			}
-			if _, err := io.Copy(tw, f); err != nil {
-				return errors.Wrapf(err, "writing real file %s", d)
-			}
-		case mode&os.ModeSymlink != 0:
-			target, err := os.Readlink(d)
-			if err != nil {
-				return err
-			}
-			tarHeader, err := tar.FileInfoHeader(fi, target)
-			if err != nil {
-				return err
-			}
-			if err := tw.WriteHeader(tarHeader); err != nil {
-				return err
-			}
-		default:
-			logrus.Warnf("Adding possibly unsupported file %s of type %s.", d, mode)
-			// Try to add it anyway?
-			tarHeader, err := tar.FileInfoHeader(fi, "")
-			if err != nil {
-				return err
-			}
-			if err := tw.WriteHeader(tarHeader); err != nil {
-				return err
-			}
-		}
+	if err := util.CreateDockerTarContext(dockerFilePath, context, deps, &b); err != nil {
+		return err
 	}
-
-	// Explicitly close these to flush before writing to disk.
-	tw.Close()
-	w.Close()
 	return ioutil.WriteFile(output, b.Bytes(), 0644)
 }
