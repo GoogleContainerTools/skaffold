@@ -76,11 +76,17 @@ FROM ubuntu:14.04
 COPY server.go file .
 `
 
+const dockerIgnore = `
+bar
+docker/*
+`
+
 func TestGetDockerfileDependencies(t *testing.T) {
 	var tests = []struct {
-		description string
-		dockerfile  string
-		workspace   string
+		description  string
+		dockerfile   string
+		workspace    string
+		dockerIgnore bool
 
 		expected  []string
 		badReader bool
@@ -127,6 +133,13 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			workspace:   ".",
 			expected:    []string{"file", "server.go"},
 		},
+		{
+			description:  "dockerignore test",
+			dockerfile:   copyDirectory,
+			dockerIgnore: true,
+			workspace:    ".",
+			expected:     []string{"server.go", "test.conf", "worker.go", "file"},
+		},
 	}
 
 	util.Fs = afero.NewMemMapFs()
@@ -144,6 +157,9 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			r = strings.NewReader(test.dockerfile)
 			if test.badReader {
 				r = testutil.BadReader{}
+			}
+			if test.dockerIgnore {
+				afero.WriteFile(util.Fs, ".dockerignore", []byte(dockerIgnore), 0644)
 			}
 			deps, err := GetDockerfileDependencies(test.workspace, r)
 			sort.Strings(deps)

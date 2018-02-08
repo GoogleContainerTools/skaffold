@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
@@ -62,7 +63,15 @@ func GetDockerfileDependencies(workspace string, r io.Reader) ([]string, error) 
 	if err != nil {
 		return nil, errors.Wrap(err, "expanding dockerfile paths")
 	}
-	return expandedDeps, nil
+
+	// Look for .dockerignore.
+	ignorePath := filepath.Join(workspace, ".dockerignore")
+
+	filteredDeps, err := util.ApplyDockerIgnore(expandedDeps, ignorePath)
+	if err != nil {
+		return nil, errors.Wrap(err, "applying dockerignore")
+	}
+	return filteredDeps, nil
 }
 
 func processCopy(workspace string, value *parser.Node, paths map[string]struct{}, envs map[string]string) error {
