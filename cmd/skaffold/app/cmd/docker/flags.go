@@ -14,22 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package docker
 
-import (
-	"io"
-
-	"github.com/GoogleCloudPlatform/skaffold/cmd/skaffold/app/cmd/docker"
-	"github.com/spf13/cobra"
+var (
+	filename, context string
 )
-
-func NewCmdDocker(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "docker",
-		Short: "A set of commands related to developing with docker",
-	}
-
-	cmd.AddCommand(docker.NewCmdDeps(out))
-	cmd.AddCommand(docker.NewCmdContext(out))
-	return cmd
-}

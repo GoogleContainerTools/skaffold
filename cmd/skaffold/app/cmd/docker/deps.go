@@ -28,10 +28,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	filename, context string
-)
-
 var depsFormatFlag = flags.NewTemplateFlag("{{range .Deps}}{{.}} {{end}}\n", DepsOutput{})
 
 func NewCmdDeps(out io.Writer) *cobra.Command {
