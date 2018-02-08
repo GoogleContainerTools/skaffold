@@ -38,6 +38,7 @@ type FakeImageAPIOptions struct {
 	ErrImageList      bool
 	ErrImageListEmpty bool
 	ErrImageTag       bool
+	ErrImagePush      bool
 
 	BuildImageID string
 
@@ -110,6 +111,14 @@ func (f *FakeImageAPIClient) ImageTag(ctx context.Context, image, ref string) er
 	}
 	f.tagToImageID[ref] = imageID
 	return nil
+}
+
+func (f *FakeImageAPIClient) ImagePush(_ context.Context, _ string, _ types.ImagePushOptions) (io.ReadCloser, error) {
+	var err error
+	if f.opts.ErrImagePush {
+		err = fmt.Errorf("")
+	}
+	return f.opts.ReturnBody, err
 }
 
 func NewFakeImageAPIClientCloser() (client.ImageAPIClient, io.Closer, error) {

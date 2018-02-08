@@ -91,10 +91,16 @@ func (l *LocalBuilder) Run(out io.Writer, tagger tag.Tagger) (*BuildResult, erro
 		if _, err := io.WriteString(out, fmt.Sprintf("Successfully tagged %s\n", tag)); err != nil {
 			return nil, errors.Wrap(err, "writing tag status")
 		}
+		if l.LocalBuild.Push {
+			if err := docker.RunPush(api, tag, out); err != nil {
+				return nil, errors.Wrap(err, "running push")
+			}
+		}
 		res.Builds = append(res.Builds, Build{
 			ImageName: artifact.ImageName,
 			Tag:       tag,
 		})
 	}
+
 	return res, nil
 }

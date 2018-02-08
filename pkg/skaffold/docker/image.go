@@ -46,6 +46,10 @@ func RunBuild(cli client.ImageAPIClient, opts *BuildOptions) error {
 	imageBuildOpts := types.ImageBuildOptions{
 		Tags:       []string{opts.ImageName},
 		Dockerfile: opts.Dockerfile,
+		// TODO(@r2d4): Currently works, but is really slow,
+		// figure out how to get all private registry tokens in faster way
+		//
+		// AuthConfigs: auth.getAllAuthConfigs(),
 	}
 
 	buildCtx, err := archive.TarWithOptions(opts.ContextDir, &archive.TarOptions{
@@ -63,13 +67,28 @@ func RunBuild(cli client.ImageAPIClient, opts *BuildOptions) error {
 		return errors.Wrap(err, "docker build")
 	}
 	defer resp.Body.Close()
+	return streamDockerMessages(opts.BuildBuf, resp.Body)
+}
 
-	fd, _ := term.GetFdInfo(opts.BuildBuf)
-	if err = jsonmessage.DisplayJSONMessagesStream(resp.Body, opts.BuildBuf, fd, false, nil); err != nil {
-		return errors.Wrap(err, "streaming build output")
+// TODO(@r2d4): Make this output much better, this is the bare minimum
+func streamDockerMessages(dst io.Writer, src io.Reader) error {
+	fd, _ := term.GetFdInfo(dst)
+	return jsonmessage.DisplayJSONMessagesStream(src, dst, fd, false, nil)
+}
+
+func RunPush(cli client.ImageAPIClient, ref string, out io.Writer) error {
+	registryAuth, err := encodedRegistryAuth(DefaultAuthHelper, ref)
+	if err != nil {
+		return errors.Wrapf(err, "getting auth config for %s", ref)
 	}
-
-	return nil
+	rc, err := cli.ImagePush(context.Background(), ref, types.ImagePushOptions{
+		RegistryAuth: registryAuth,
+	})
+	if err != nil {
+		return errors.Wrap(err, "pushing image to repository")
+	}
+	defer rc.Close()
+	return streamDockerMessages(out, rc)
 }
 
 // Digest returns the image digest for a corresponding reference.
