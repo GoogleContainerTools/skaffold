@@ -7,7 +7,10 @@ build:
   - imageName: skaffold
     dockerfilePath: deploy/skaffold/Dockerfile
     workspace: ./
-    
-
   local: {}
-
+deploy:
+  parameters:
+    IMAGE_NAME: skaffold
+  kubectl:
+    manifests:
+    - deploy/skaffold/pod.yaml

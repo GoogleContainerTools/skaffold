@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: skaffold
+spec:
+  containers:
+  - name: skaffold
+    image: IMAGE_NAME
+    command: ["/bin/bash", "-c", "--" ]
+    args: ["while true; do sleep 30; done;"]
