@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
-	testutil "github.com/GoogleCloudPlatform/skaffold/test"
+	"github.com/GoogleCloudPlatform/skaffold/testutil"
 	"github.com/docker/docker/api/types"
 	"github.com/moby/moby/client"
 )

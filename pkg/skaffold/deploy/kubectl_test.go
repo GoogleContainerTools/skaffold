@@ -24,7 +24,7 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
-	testutil "github.com/GoogleCloudPlatform/skaffold/test"
+	"github.com/GoogleCloudPlatform/skaffold/testutil"
 	"github.com/spf13/afero"
 )
 

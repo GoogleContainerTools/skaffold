@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/watch"
-	testutil "github.com/GoogleCloudPlatform/skaffold/test"
+	"github.com/GoogleCloudPlatform/skaffold/testutil"
 	"github.com/sirupsen/logrus"
 )
 

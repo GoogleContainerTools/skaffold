@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	testutil "github.com/GoogleCloudPlatform/skaffold/test"
+	"github.com/GoogleCloudPlatform/skaffold/testutil"
 )
 
 const (
