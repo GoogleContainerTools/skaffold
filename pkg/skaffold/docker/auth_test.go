@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	testutil "github.com/GoogleCloudPlatform/skaffold/test"
+	"github.com/GoogleCloudPlatform/skaffold/testutil"
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/docker/api/types"
 	"github.com/spf13/afero"

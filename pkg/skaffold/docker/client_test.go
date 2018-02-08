@@ -20,7 +20,7 @@ import (
 	"os"
 	"testing"
 
-	testutil "github.com/GoogleCloudPlatform/skaffold/test"
+	"github.com/GoogleCloudPlatform/skaffold/testutil"
 )
 
 func TestNewEnvClient(t *testing.T) {
