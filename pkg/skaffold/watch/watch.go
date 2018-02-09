@@ -116,6 +116,8 @@ func addDepsForArtifact(a *config.Artifact, depsToArtifact map[string][]*config.
 	if err != nil {
 		return errors.Wrap(err, "getting dockerfile dependencies")
 	}
+	// Add the dockerfile itself as a dependency too
+	deps = append(deps, fullPath)
 	for _, dep := range deps {
 		fi, err := os.Lstat(dep)
 		if err != nil {
