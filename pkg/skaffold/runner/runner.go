@@ -106,15 +106,15 @@ func (r *SkaffoldRunner) Run() error {
 
 func (r *SkaffoldRunner) dev() error {
 	for {
+		if err := r.run(); err != nil {
+			return errors.Wrap(err, "running build and deploy")
+		}
 		evt, err := r.Watch(r.config.Build.Artifacts, r.watchReady, r.cancel)
 		if err != nil {
 			return errors.Wrap(err, "running watch")
 		}
 		if evt.EventType == watch.WatchStop {
 			return nil
-		}
-		if err := r.run(); err != nil {
-			return errors.Wrap(err, "running build and deploy")
 		}
 	}
 }
