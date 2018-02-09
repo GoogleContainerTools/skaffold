@@ -1,9 +1,16 @@
 language: go
 os: linux
-
+services:
+- docker
+cache:
+  directories:
+  - "$HOME/google-cloud-sdk/"
 go:
-  - 1.9.x
+- 1.9.x
 go_import_path: github.com/GoogleCloudPlatform/skaffold
-
 script:
-  - make test
+- hack/travis/gcloud.sh
+- make integration
+before_install:
+- openssl aes-256-cbc -K $encrypted_97ef5db70983_key -iv $encrypted_97ef5db70983_iv
+  -in k8s-skaffold-c0bfe91b623b.json.enc -out k8s-skaffold-c0bfe91b623b.json -d
