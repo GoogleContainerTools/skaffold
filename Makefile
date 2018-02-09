@@ -63,7 +63,7 @@ install: $(GO_FILES) $(BUILD_DIR)
 
 .PHONY: integration
 integration: $(BUILD_DIR)/$(PROJECT)
-	go test -v -tags integration $(REPOPATH)/tests -timeout 20m
+	go test -v -tags integration $(REPOPATH)/integration -timeout 10m
 
 .PHONY: release
 release: cross
