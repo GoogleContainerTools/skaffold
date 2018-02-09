@@ -2,10 +2,11 @@ package jsoniter
 
 import (
 	"encoding/json"
+	"github.com/modern-go/reflect2"
 	"io"
-	"unsafe"
-	"github.com/v2pro/plz/reflect2"
 	"sync"
+	"unsafe"
+	"github.com/modern-go/concurrent"
 )
 
 // Config customize how the API should behave.
@@ -58,6 +59,64 @@ var ConfigFastest = Config{
 	MarshalFloatWith6Digits:       true, // will lose precession
 	ObjectFieldMustBeSimpleString: true, // do not unescape object field
 }.Froze()
+
+
+type frozenConfig struct {
+	configBeforeFrozen            Config
+	sortMapKeys                   bool
+	indentionStep                 int
+	objectFieldMustBeSimpleString bool
+	onlyTaggedField               bool
+	disallowUnknownFields         bool
+	decoderCache                  *concurrent.Map
+	encoderCache                  *concurrent.Map
+	extensions                    []Extension
+	streamPool                    *sync.Pool
+	iteratorPool                  *sync.Pool
+}
+
+func (cfg *frozenConfig) initCache() {
+	cfg.decoderCache = concurrent.NewMap()
+	cfg.encoderCache = concurrent.NewMap()
+}
+
+func (cfg *frozenConfig) addDecoderToCache(cacheKey uintptr, decoder ValDecoder) {
+	cfg.decoderCache.Store(cacheKey, decoder)
+}
+
+func (cfg *frozenConfig) addEncoderToCache(cacheKey uintptr, encoder ValEncoder) {
+	cfg.encoderCache.Store(cacheKey, encoder)
+}
+
+func (cfg *frozenConfig) getDecoderFromCache(cacheKey uintptr) ValDecoder {
+	decoder, found := cfg.decoderCache.Load(cacheKey)
+	if found {
+		return decoder.(ValDecoder)
+	}
+	return nil
+}
+
+func (cfg *frozenConfig) getEncoderFromCache(cacheKey uintptr) ValEncoder {
+	encoder, found := cfg.encoderCache.Load(cacheKey)
+	if found {
+		return encoder.(ValEncoder)
+	}
+	return nil
+}
+
+var cfgCache = &sync.Map{}
+
+func getFrozenConfigFromCache(cfg Config) *frozenConfig {
+	obj, found := cfgCache.Load(cfg)
+	if found {
+		return obj.(*frozenConfig)
+	}
+	return nil
+}
+
+func addFrozenConfigToCache(cfg Config, frozenConfig *frozenConfig) {
+	cfgCache.Store(cfg, frozenConfig)
+}
 
 // Froze forge API from config
 func (cfg Config) Froze() API {

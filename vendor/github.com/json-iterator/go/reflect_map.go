@@ -1,11 +1,11 @@
 package jsoniter
 
 import (
+	"fmt"
+	"github.com/modern-go/reflect2"
 	"reflect"
 	"sort"
 	"unsafe"
-	"github.com/v2pro/plz/reflect2"
-	"fmt"
 )
 
 func decoderOfMap(ctx *ctx, typ reflect2.Type) ValDecoder {
@@ -38,6 +38,12 @@ func encoderOfMap(ctx *ctx, typ reflect2.Type) ValEncoder {
 }
 
 func decoderOfMapKey(ctx *ctx, typ reflect2.Type) ValDecoder {
+	for _, extension := range ctx.extensions {
+		decoder := extension.CreateMapKeyDecoder(typ)
+		if decoder != nil {
+			return decoder
+		}
+	}
 	switch typ.Kind() {
 	case reflect.String:
 		return decoderOfType(ctx, reflect2.DefaultTypeOfKind(reflect.String))
@@ -70,6 +76,12 @@ func decoderOfMapKey(ctx *ctx, typ reflect2.Type) ValDecoder {
 }
 
 func encoderOfMapKey(ctx *ctx, typ reflect2.Type) ValEncoder {
+	for _, extension := range ctx.extensions {
+		encoder := extension.CreateMapKeyEncoder(typ)
+		if encoder != nil {
+			return encoder
+		}
+	}
 	switch typ.Kind() {
 	case reflect.String:
 		return encoderOfType(ctx, reflect2.DefaultTypeOfKind(reflect.String))
