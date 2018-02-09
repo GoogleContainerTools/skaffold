@@ -252,6 +252,7 @@ func TestRun(t *testing.T) {
 					res: &build.BuildResult{},
 					err: nil,
 				},
+				Deployer:   &TestDeployer{},
 				Watcher:    NewTestWatch(fmt.Errorf(""), nil),
 				devMode:    true,
 				cancel:     make(chan struct{}, 1),
