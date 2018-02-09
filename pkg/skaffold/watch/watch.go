@@ -23,11 +23,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/spf13/afero"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/rjeczalik/notify"
 	"github.com/sirupsen/logrus"
 )
@@ -45,8 +45,6 @@ type Event struct {
 	EventType        string
 	ChangedArtifacts []*config.Artifact
 }
-
-var fs = afero.NewOsFs()
 
 // FSWatcher uses inotify to watch for changes and implements
 // the Watcher interface
@@ -108,7 +106,7 @@ func addDepsForArtifact(a *config.Artifact, depsToArtifact map[string][]*config.
 		dockerfilePath = constants.DefaultDockerfilePath
 	}
 	fullPath := filepath.Join(a.Workspace, dockerfilePath)
-	r, err := fs.Open(fullPath)
+	r, err := util.Fs.Open(fullPath)
 	if err != nil {
 		return errors.Wrap(err, "opening file for watch")
 	}
