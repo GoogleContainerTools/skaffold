@@ -17,6 +17,7 @@ limitations under the License.
 package tag
 
 import (
+	"fmt"
 	"os/exec"
 	"strings"
 
@@ -36,5 +37,5 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(opts *TagOptions) (string, e
 		return "", errors.Wrap(err, "determining current git commit")
 	}
 	commit := strings.TrimSuffix(string(stdout), "\n")
-	return commit, nil
+	return fmt.Sprintf("%s:%s", opts.ImageName, commit), nil
 }
