@@ -242,7 +242,6 @@ func TestRun(t *testing.T) {
 				watchReady: make(chan *watch.Event, 1),
 				Tagger:     &tag.ChecksumTagger{},
 			},
-			shouldErr: true,
 		},
 		{
 			description: "bad watch dev mode",

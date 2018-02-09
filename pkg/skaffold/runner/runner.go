@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // SkaffoldRunner is responsible for running the skaffold build and deploy pipeline.
@@ -107,7 +108,8 @@ func (r *SkaffoldRunner) Run() error {
 func (r *SkaffoldRunner) dev() error {
 	for {
 		if err := r.run(); err != nil {
-			return errors.Wrap(err, "running build and deploy")
+			// In dev mode, we only warn on pipeline errors
+			logrus.Warnf("run: %s", err)
 		}
 		evt, err := r.Watch(r.config.Build.Artifacts, r.watchReady, r.cancel)
 		if err != nil {
