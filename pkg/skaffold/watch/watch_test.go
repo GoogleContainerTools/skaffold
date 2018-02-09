@@ -174,7 +174,7 @@ func TestAddDepsForArtifact(t *testing.T) {
 		{
 			description: "add deps",
 			dockerfile:  "Dockerfile",
-			expected:    []string{"1", "dir/2"},
+			expected:    []string{"1", "dir/2", "Dockerfile"},
 		},
 		{
 			description: "missing dockerfile",
@@ -189,7 +189,7 @@ func TestAddDepsForArtifact(t *testing.T) {
 		{
 			description: "symlink deps ignored",
 			dockerfile:  "Dockerfile.symlinkdep",
-			expected:    []string{"5"},
+			expected:    []string{"5", "Dockerfile.symlinkdep"},
 		},
 	}
 
