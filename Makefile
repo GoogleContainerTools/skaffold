@@ -31,8 +31,7 @@ SUPPORTED_PLATFORMS := linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
 BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
 GO_LDFLAGS := "-X $(REPOPATH)/pkg/skaffold/version.version=$(VERSION)"
-GO_FILES := $(shell go list  -f '{{join .Deps "\n"}}' $(BUILD_PACKAGE) | grep $(ORG) | xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}')
-
+GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
 
