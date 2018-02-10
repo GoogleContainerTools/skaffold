@@ -161,17 +161,14 @@ func TestKubectlRun(t *testing.T) {
 		},
 	}
 
-	pkgFS := fs
-	defer func() {
-		fs = pkgFS
-	}()
-	fs = afero.NewMemMapFs()
-	fs.MkdirAll("test", 0750)
+	util.Fs = afero.NewMemMapFs()
+	defer util.ResetFs()
+	util.Fs.MkdirAll("test", 0750)
 	files := map[string]string{
 		"test/deployment.yaml": deploymentYAML,
 	}
 	for path, contents := range files {
-		afero.WriteFile(fs, path, []byte(contents), 0644)
+		afero.WriteFile(util.Fs, path, []byte(contents), 0644)
 	}
 
 	for _, test := range tests {

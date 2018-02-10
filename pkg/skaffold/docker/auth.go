@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/config/configfile"
 	"github.com/docker/distribution/reference"
@@ -112,7 +113,7 @@ func encodedRegistryAuth(a AuthConfigHelper, image string) (string, error) {
 
 func load() (*configfile.ConfigFile, error) {
 	filename := filepath.Join(configDir, config.ConfigFileName)
-	f, err := fs.Open(filename)
+	f, err := util.Fs.Open(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "opening docker config")
 	}

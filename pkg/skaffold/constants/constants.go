@@ -16,7 +16,9 @@ limitations under the License.
 
 package constants
 
-import "github.com/sirupsen/logrus"
+import (
+	"github.com/sirupsen/logrus"
+)
 
 const (
 	// For alpha releases, the default log level should be 'info'

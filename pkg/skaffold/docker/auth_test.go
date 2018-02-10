@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/docker/api/types"
@@ -52,10 +53,14 @@ const dockerCfg = `{
 }`
 
 func TestLoad(t *testing.T) {
-	fs = afero.NewMemMapFs()
+	util.Fs = afero.NewMemMapFs()
+
 	configDir, _ = ioutil.TempDir("", "")
-	defer fs.RemoveAll(configDir)
-	_ = afero.WriteFile(fs, filepath.Join(configDir, config.ConfigFileName), []byte(dockerCfg), 0650)
+	defer func() {
+		util.ResetFs()
+		util.Fs.RemoveAll(configDir)
+	}()
+	_ = afero.WriteFile(util.Fs, filepath.Join(configDir, config.ConfigFileName), []byte(dockerCfg), 0650)
 
 	_, err := load()
 	if err != nil {

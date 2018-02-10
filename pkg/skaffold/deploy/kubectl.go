@@ -22,15 +22,13 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/spf13/afero"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
-
-var fs = afero.NewOsFs()
 
 type KubectlDeployer struct {
 	*config.DeployConfig
@@ -50,8 +48,19 @@ func (k *KubectlDeployer) Run(b *build.BuildResult) (*Result, error) {
 		return nil, errors.Wrap(err, "joining template keys to image tag")
 	}
 
-	for _, m := range k.DeployConfig.KubectlDeploy.Manifests {
-		f, err := fs.Open(m)
+	// The manifests should all be relative to the path of the config
+	manifests, err := util.ExpandPaths(".", k.DeployConfig.KubectlDeploy.Manifests)
+	if err != nil {
+		return nil, errors.Wrap(err, "expanding manifest paths")
+	}
+	logrus.Debugf("Expanded manifests %s", strings.Join(manifests, "\n"))
+	for _, m := range manifests {
+		if !strings.HasSuffix(m, ".yml") && !strings.HasSuffix(m, ".yaml") {
+			logrus.Debugf("Refusing to deploy non yaml file %s", m)
+			continue
+		}
+		logrus.Infof("Deploying %s", m)
+		f, err := util.Fs.Open(m)
 		if err != nil {
 			return nil, errors.Wrap(err, "opening manifest")
 		}

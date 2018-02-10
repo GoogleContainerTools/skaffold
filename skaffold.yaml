@@ -1,16 +1,16 @@
 apiVersion: skaffold/v1
 kind: Config
-
 build:
   tagPolicy: sha256
   artifacts:
-  - imageName: skaffold
+  - imageName: gcr.io/k8s-skaffold/skaffold
     dockerfilePath: deploy/skaffold/Dockerfile
-    workspace: ./
-  local: {}
+    workspace: .
+  local:
+    push: true
 deploy:
   parameters:
-    IMAGE_NAME: skaffold
+    IMAGE_NAME: gcr.io/k8s-skaffold/skaffold
   kubectl:
     manifests:
-    - deploy/skaffold/pod.yaml
+    - deploy/skaffold/*

@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
 	"github.com/sirupsen/logrus"
 
@@ -51,7 +52,7 @@ func initFS() {
 		fullPath := filepath.Join(tmpDir, p)
 		contents := strings.Join(contentSlice, "\n")
 		dir := filepath.Dir(fullPath)
-		if err := fs.MkdirAll(dir, 0750); err != nil {
+		if err := util.Fs.MkdirAll(dir, 0750); err != nil {
 			logrus.Fatalf("making mock fs dir %s", err)
 		}
 		if strings.HasSuffix(fullPath, "symlink") {
@@ -60,14 +61,14 @@ func initFS() {
 			}
 			continue
 		}
-		if err := afero.WriteFile(fs, fullPath, []byte(contents), 0640); err != nil {
+		if err := afero.WriteFile(util.Fs, fullPath, []byte(contents), 0640); err != nil {
 			logrus.Fatalf("writing mock fs file: %s", err)
 		}
 	}
 }
 
 func write(t *testing.T, path, contents string) {
-	if err := afero.WriteFile(fs, filepath.Join(tmpDir, path), []byte(contents), 0640); err != nil {
+	if err := afero.WriteFile(util.Fs, filepath.Join(tmpDir, path), []byte(contents), 0640); err != nil {
 		t.Errorf("writing mock fs file: %s", err)
 	}
 }
@@ -230,7 +231,7 @@ func TestMain(m *testing.M) {
 		logrus.Fatalf("Evaluating possible temp dir symlink: %s", err)
 	}
 	cleanup := func() {
-		if err := fs.RemoveAll(tmpDir); err != nil {
+		if err := util.Fs.RemoveAll(tmpDir); err != nil {
 			logrus.Fatalf("Removing testing temp dir: %s", err)
 		}
 	}
