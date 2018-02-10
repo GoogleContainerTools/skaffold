@@ -25,9 +25,11 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/moby/moby/client"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // LocalBuilder uses the host docker daemon to build and tag the image
@@ -39,9 +41,18 @@ type LocalBuilder struct {
 
 // NewLocalBuilder returns an new instance of a LocalBuilder
 func NewLocalBuilder(cfg *config.BuildConfig) (*LocalBuilder, error) {
+	context, err := kubernetes.CurrentContext()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting current cluster context")
+	}
+	var newAPI = docker.NewImageAPIClient
+	if context == constants.DefaultMinikubeContext {
+		logrus.Infof("Found minikube context, using minikube docker daemon.")
+		newAPI = docker.NewMinikubeImageAPIClient
+	}
 	return &LocalBuilder{
 		BuildConfig: cfg,
-		newAPI:      docker.NewImageAPIClient,
+		newAPI:      newAPI,
 	}, nil
 }
 

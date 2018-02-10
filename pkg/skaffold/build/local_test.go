@@ -20,7 +20,12 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"testing"
+
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
@@ -49,6 +54,11 @@ func TestLocalRun(t *testing.T) {
 	auth := docker.DefaultAuthHelper
 	defer func() { docker.DefaultAuthHelper = auth }()
 	docker.DefaultAuthHelper = testAuthHelper{}
+
+	// Set a bad KUBECONFIG path so we don't parse a real one that happens to be
+	// present on the host
+	unsetEnvs := testutil.SetEnvs(t, map[string]string{"KUBECONFIG": "badpath"})
+	defer unsetEnvs(t)
 	var tests = []struct {
 		description string
 		config      *config.BuildConfig
@@ -190,6 +200,30 @@ func TestLocalRun(t *testing.T) {
 }
 
 func TestNewLocalBuilder(t *testing.T) {
+	_, err := NewLocalBuilder(&config.BuildConfig{
+		Artifacts: []*config.Artifact{
+			{
+				ImageName: "test",
+				Workspace: ".",
+			},
+		},
+	})
+	if err != nil {
+		t.Errorf("New local builder: %s", err)
+	}
+}
+
+func TestNewLocalBuilderMinikubeContext(t *testing.T) {
+	tmpDir := os.TempDir()
+	kubeConfig := filepath.Join(tmpDir, "config")
+	defer os.Remove(kubeConfig)
+	if err := clientcmd.WriteToFile(api.Config{
+		CurrentContext: "minikube",
+	}, kubeConfig); err != nil {
+		t.Fatalf("writing temp kubeconfig")
+	}
+	unsetEnvs := testutil.SetEnvs(t, map[string]string{"KUBECONFIG": kubeConfig})
+	defer unsetEnvs(t)
 	_, err := NewLocalBuilder(&config.BuildConfig{
 		Artifacts: []*config.Artifact{
 			{
