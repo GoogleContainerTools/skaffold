@@ -29,13 +29,18 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 	tests := []struct {
 		name    string
 		want    string
+		opts    *TagOptions
 		wantErr bool
 		command util.Command
 	}{
 		{
 			name:    "success",
 			command: testutil.NewFakeRunCommand("somecommit", "", nil),
-			want:    "somecommit",
+			opts: &TagOptions{
+				ImageName: "test",
+				Digest:    "sha256:12345abcde",
+			},
+			want:    "test:somecommit",
 			wantErr: false,
 		},
 		{
@@ -52,7 +57,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			defer util.ResetDefaultExecCommand()
 
 			c := &GitCommit{}
-			got, err := c.GenerateFullyQualifiedImageName(nil)
+			got, err := c.GenerateFullyQualifiedImageName(tt.opts)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GitCommit.GenerateFullyQualifiedImageName() error = %v, wantErr %v", err, tt.wantErr)
 				return
