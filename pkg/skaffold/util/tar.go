@@ -54,6 +54,7 @@ func addFileToTar(p string, tarPath string, tw *tar.Writer) error {
 		if err != nil {
 			return err
 		}
+		tarHeader.Name = tarPath
 
 		if err := tw.WriteHeader(tarHeader); err != nil {
 			return err
@@ -65,15 +66,21 @@ func addFileToTar(p string, tarPath string, tw *tar.Writer) error {
 		if _, err := io.Copy(tw, f); err != nil {
 			return errors.Wrapf(err, "writing real file %s", p)
 		}
-	case mode&os.ModeSymlink != 0:
+	case (mode & os.ModeSymlink) != 0:
 		target, err := os.Readlink(p)
 		if err != nil {
 			return err
 		}
+		if filepath.IsAbs(target) {
+			logrus.Warnf("Skipping %s. Only relative symlinks are supported.", p)
+			return nil
+		}
+
 		tarHeader, err := tar.FileInfoHeader(fi, target)
 		if err != nil {
 			return err
 		}
+		tarHeader.Name = tarPath
 		if err := tw.WriteHeader(tarHeader); err != nil {
 			return err
 		}
