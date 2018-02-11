@@ -53,9 +53,6 @@ var configA = &SkaffoldConfig{
 	},
 	Deploy: DeployConfig{
 		Name: "example",
-		Parameters: map[string]string{
-			"key": "value",
-		},
 	},
 }
 

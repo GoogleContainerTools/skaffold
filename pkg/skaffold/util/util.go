@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"sort"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -42,6 +43,9 @@ func RandomID() string {
 	return fmt.Sprintf("%x", b)
 }
 
+// ExpandPaths uses a filepath.Match to expand paths according to wildcards.
+// It requires a workspace directory, which is walked and tested for wildcard matches
+// It is used by the dockerfile parser and you most likely want to use ExpandPathsGlob
 func ExpandPaths(workspace string, paths []string) ([]string, error) {
 	expandedPaths := map[string]struct{}{}
 	for _, p := range paths {
@@ -50,10 +54,6 @@ func ExpandPaths(workspace string, paths []string) ([]string, error) {
 		if containsWildcards(p) {
 			logrus.Debugf("COPY or ADD directive with wildcard %s", p)
 			if err := afero.Walk(Fs, workspace, func(fpath string, info os.FileInfo, err error) error {
-				logrus.Debugf("expand: walk %s", fpath)
-				if err != nil {
-					return errors.Wrap(err, "getting relative path")
-				}
 				if match, _ := path.Match(p, fpath); !match {
 					return nil
 				}
@@ -79,6 +79,42 @@ func ExpandPaths(workspace string, paths []string) ([]string, error) {
 	for ep := range expandedPaths {
 		ret = append(ret, ep)
 	}
+	return ret, nil
+}
+
+// ExpandPathsGlob expands paths according to filepath.Glob patterns
+// Returns a list of unique files that match the glob patterns passed in.
+func ExpandPathsGlob(paths []string) ([]string, error) {
+	expandedPaths := map[string]struct{}{}
+	for _, p := range paths {
+		if _, err := Fs.Stat(p); err == nil {
+			// This is a file reference, so just add it
+			expandedPaths[p] = struct{}{}
+			continue
+		}
+		files, err := afero.Glob(Fs, p)
+		if err != nil {
+			return nil, errors.Wrap(err, "glob")
+		}
+		if files == nil {
+			return nil, fmt.Errorf("File pattern must match at least one file %s", p)
+		}
+
+		for _, f := range files {
+			fi, err := Fs.Stat(f)
+			if err != nil {
+				return nil, err
+			}
+			if err := addFileOrDir(Fs, f, fi, expandedPaths); err != nil {
+				return nil, errors.Wrap(err, "adding file or dir")
+			}
+		}
+	}
+	ret := []string{}
+	for k := range expandedPaths {
+		ret = append(ret, k)
+	}
+	sort.Strings(ret)
 	return ret, nil
 }
 

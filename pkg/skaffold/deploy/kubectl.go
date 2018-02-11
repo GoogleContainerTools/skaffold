@@ -43,36 +43,44 @@ func NewKubectlDeployer(cfg *config.DeployConfig) (*KubectlDeployer, error) {
 // Run templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Run(b *build.BuildResult) (*Result, error) {
-	params, err := JoinTagsToBuildResult(b, k.DeployConfig)
-	if err != nil {
-		return nil, errors.Wrap(err, "joining template keys to image tag")
-	}
-
-	// The manifests should all be relative to the path of the config
-	manifests, err := util.ExpandPaths(".", k.DeployConfig.KubectlDeploy.Manifests)
-	if err != nil {
-		return nil, errors.Wrap(err, "expanding manifest paths")
-	}
-	logrus.Debugf("Expanded manifests %s", strings.Join(manifests, "\n"))
-	for _, m := range manifests {
-		if !strings.HasSuffix(m, ".yml") && !strings.HasSuffix(m, ".yaml") {
-			logrus.Debugf("Refusing to deploy non yaml file %s", m)
-			continue
-		}
-		logrus.Infof("Deploying %s", m)
-		f, err := util.Fs.Open(m)
-		if err != nil {
-			return nil, errors.Wrap(err, "opening manifest")
-		}
-		if err := deployManifest(f, params); err != nil {
-			return nil, errors.Wrapf(err, "deploying manifest %s", m)
+	for _, m := range k.DeployConfig.KubectlDeploy.Manifests {
+		logrus.Debugf("Deploying path: %s parameters: %s", m.Path, m.Parameters)
+		if err := deployManifest(b.Builds, m); err != nil {
+			return nil, errors.Wrap(err, "deploying manifests")
 		}
 	}
 
 	return &Result{}, nil
 }
 
-func deployManifest(r io.Reader, params map[string]build.Build) error {
+func deployManifest(b []build.Build, manifest config.Manifest) error {
+	params, err := JoinTagsToBuildResult(b, manifest.Parameters)
+	if err != nil {
+		return errors.Wrap(err, "joining template keys to image tag")
+	}
+	manifests, err := util.ExpandPathsGlob(manifest.Path)
+	if err != nil {
+		return errors.Wrap(err, "expanding manifest paths")
+	}
+	logrus.Debugf("Expanded manifests %s", strings.Join(manifests, "\n"))
+	for _, fname := range manifests {
+		if !strings.HasSuffix(fname, ".yml") && !strings.HasSuffix(fname, ".yaml") {
+			logrus.Debugf("Refusing to deploy non yaml file %s", fname)
+			continue
+		}
+		logrus.Infof("Deploying %s", fname)
+		f, err := util.Fs.Open(fname)
+		if err != nil {
+			return errors.Wrap(err, "opening manifest")
+		}
+		if err := deployManifestFile(f, params); err != nil {
+			return errors.Wrapf(err, "deploying manifest %s", fname)
+		}
+	}
+	return nil
+}
+
+func deployManifestFile(r io.Reader, params map[string]build.Build) error {
 	var manifestContents bytes.Buffer
 	if _, err := manifestContents.ReadFrom(r); err != nil {
 		return errors.Wrap(err, "reading manifest")

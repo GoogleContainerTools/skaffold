@@ -18,7 +18,6 @@ package deploy
 
 import (
 	"fmt"
-	"io"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
@@ -65,13 +64,15 @@ func TestKubectlRun(t *testing.T) {
 			description: "parameter mismatch",
 			shouldErr:   true,
 			cfg: &config.DeployConfig{
-				Parameters: map[string]string{
-					"IMAGE_NAME": "abc",
-				},
 				DeployType: config.DeployType{
 					KubectlDeploy: &config.KubectlDeploy{
-						Manifests: []string{
-							"test/deployment.yaml",
+						Manifests: []config.Manifest{
+							{
+								Path: []string{"test/deployment.yaml"},
+								Parameters: map[string]string{
+									"IMAGE_NAME": "abc",
+								},
+							},
 						},
 					},
 				},
@@ -89,13 +90,15 @@ func TestKubectlRun(t *testing.T) {
 			description: "missing manifest file",
 			shouldErr:   true,
 			cfg: &config.DeployConfig{
-				Parameters: map[string]string{
-					"IMAGE_NAME": "abc",
-				},
 				DeployType: config.DeployType{
 					KubectlDeploy: &config.KubectlDeploy{
-						Manifests: []string{
-							"test/not_deployment.yaml",
+						Manifests: []config.Manifest{
+							{
+								Path: []string{"test/not_deployment.yaml"},
+								Parameters: map[string]string{
+									"IMAGE_NAME": "abc",
+								},
+							},
 						},
 					},
 				},
@@ -112,13 +115,15 @@ func TestKubectlRun(t *testing.T) {
 		{
 			description: "deploy success",
 			cfg: &config.DeployConfig{
-				Parameters: map[string]string{
-					"IMAGE_NAME": "abc",
-				},
 				DeployType: config.DeployType{
 					KubectlDeploy: &config.KubectlDeploy{
-						Manifests: []string{
-							"test/deployment.yaml",
+						Manifests: []config.Manifest{
+							{
+								Path: []string{"test/deployment.yaml"},
+								Parameters: map[string]string{
+									"IMAGE_NAME": "abc",
+								},
+							},
 						},
 					},
 				},
@@ -138,13 +143,15 @@ func TestKubectlRun(t *testing.T) {
 			description: "deploy command error",
 			shouldErr:   true,
 			cfg: &config.DeployConfig{
-				Parameters: map[string]string{
-					"IMAGE_NAME": "abc",
-				},
 				DeployType: config.DeployType{
 					KubectlDeploy: &config.KubectlDeploy{
-						Manifests: []string{
-							"test/deployment.yaml",
+						Manifests: []config.Manifest{
+							{
+								Path: []string{"test/not_deployment.yaml"},
+								Parameters: map[string]string{
+									"IMAGE_NAME": "abc",
+								},
+							},
 						},
 					},
 				},
@@ -186,34 +193,5 @@ func TestKubectlRun(t *testing.T) {
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
 		})
 
-	}
-}
-
-func TestDeployManifest(t *testing.T) {
-	var tests = []struct {
-		description string
-		r           io.Reader
-		params      map[string]build.Build
-
-		shouldErr bool
-	}{
-		{
-			description: "bad reader",
-			r:           testutil.BadReader{},
-			params: map[string]build.Build{
-				"IMAGE_NAME": {
-					ImageName: "leeroy-web",
-					Tag:       "leeroy-web:a1b2c3",
-				},
-			},
-			shouldErr: true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			err := deployManifest(test.r, test.params)
-			testutil.CheckError(t, test.shouldErr, err)
-		})
 	}
 }

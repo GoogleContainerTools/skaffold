@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 )
 
 // Result is currently unused, but a stub for results that might be returned
@@ -35,14 +34,14 @@ type Deployer interface {
 	Run(*build.BuildResult) (*Result, error)
 }
 
-func JoinTagsToBuildResult(b *build.BuildResult, cfg *config.DeployConfig) (map[string]build.Build, error) {
+func JoinTagsToBuildResult(b []build.Build, params map[string]string) (map[string]build.Build, error) {
 	imageToBuildResult := map[string]build.Build{}
-	for _, build := range b.Builds {
+	for _, build := range b {
 		imageToBuildResult[build.ImageName] = build
 	}
 
 	paramToBuildResult := map[string]build.Build{}
-	for param, imageName := range cfg.Parameters {
+	for param, imageName := range params {
 		build, ok := imageToBuildResult[imageName]
 		if !ok {
 			return nil, fmt.Errorf("No build present for %s", imageName)
