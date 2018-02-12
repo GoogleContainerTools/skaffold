@@ -147,6 +147,7 @@ func ApplyDockerIgnore(paths []string, dockerIgnorePath string) ([]string, error
 			filteredDeps = append(filteredDeps, d)
 		}
 	}
+	sort.Strings(filteredDeps)
 	return filteredDeps, nil
 }
 

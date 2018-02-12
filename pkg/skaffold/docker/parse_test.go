@@ -138,7 +138,7 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			dockerfile:   copyDirectory,
 			dockerIgnore: true,
 			workspace:    ".",
-			expected:     []string{"server.go", "test.conf", "worker.go", "file"},
+			expected:     []string{"file", "server.go", "test.conf", "worker.go"},
 		},
 	}
 
