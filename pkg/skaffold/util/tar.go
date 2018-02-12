@@ -1,3 +1,19 @@
+/*
+Copyright 2018 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package util
 
 import (
@@ -21,6 +37,10 @@ func CreateDockerTarContext(dockerfilePath, context string, paths []string, w io
 	tw := tar.NewWriter(w)
 	defer tw.Close()
 
+	absContext, err := filepath.Abs(context)
+	if err != nil {
+		return err
+	}
 	for _, p := range paths {
 		absPath, err := filepath.Abs(p)
 		if err != nil {
@@ -30,7 +50,7 @@ func CreateDockerTarContext(dockerfilePath, context string, paths []string, w io
 		if absPath == dockerfilePath {
 			tarPath = "Dockerfile"
 		} else {
-			tarPath, err = filepath.Rel(context, absPath)
+			tarPath, err = filepath.Rel(absContext, absPath)
 			if err != nil {
 				return err
 			}
@@ -60,6 +80,7 @@ func addFileToTar(p string, tarPath string, tw *tar.Writer) error {
 			return err
 		}
 		f, err := os.Open(p)
+		defer f.Close()
 		if err != nil {
 			return err
 		}
