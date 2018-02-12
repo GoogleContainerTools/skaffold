@@ -89,6 +89,7 @@
     "api/types/versions",
     "api/types/volume",
     "builder/dockerfile/command",
+    "builder/dockerignore",
     "errdefs",
     "pkg/archive",
     "pkg/fileutils",
@@ -612,6 +613,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "108ccc17b14fcf68c813e38014bd0149f78531da8ee9bc34683fc0c69c64eb77"
+  inputs-digest = "883f7f5fa771c811b75eea6d602c82c30cf555c471eada93163d5d78e8944b51"
   solver-name = "gps-cdcl"
   solver-version = 1
