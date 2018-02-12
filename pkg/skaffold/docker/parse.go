@@ -67,21 +67,24 @@ func GetDockerfileDependencies(workspace string, r io.Reader) ([]string, error) 
 
 func processCopy(workspace string, value *parser.Node, paths map[string]struct{}, envs map[string]string) error {
 	slex := shell.NewLex('\\')
-	src, err := processShellWord(slex, value.Next.Value, envs)
-	if err != nil {
-		return errors.Wrap(err, "processing word")
+	for {
+		// Skip last node, since it is the destination, and stop if we arrive at a comment
+		if value.Next.Next == nil || strings.HasPrefix(value.Next.Next.Value, "#") {
+			break
+		}
+		src, err := processShellWord(slex, value.Next.Value, envs)
+		if err != nil {
+			return errors.Wrap(err, "processing word")
+		}
+		// If the --from flag is provided, we are dealing with a multi-stage dockerfile
+		// Adding a dependency from a different stage does not imply a source dependency
+		if hasMultiStageFlag(value.Flags) {
+			return nil
+		}
+		dep := path.Join(workspace, src)
+		paths[dep] = struct{}{}
+		value = value.Next
 	}
-	// If the --from flag is provided, we are dealing with a multi-stage dockerfile
-	// Adding a dependency from a different stage does not imply a source dependency
-	if hasMultiStageFlag(value.Flags) {
-		return nil
-	}
-	dep := path.Join(workspace, src)
-	if _, ok := paths[dep]; ok {
-		// If we've already seen this file, only add it once.
-		return nil
-	}
-	paths[dep] = struct{}{}
 	return nil
 }
 

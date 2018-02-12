@@ -18,6 +18,7 @@ package docker
 
 import (
 	"io"
+	"sort"
 	"strings"
 	"testing"
 
@@ -70,6 +71,10 @@ ADD . /etc/
 COPY ./file /etc/file
 CMD nginx
 `
+const multiFileCopy = `
+FROM ubuntu:14.04
+COPY server.go file .
+`
 
 func TestGetDockerfileDependencies(t *testing.T) {
 	var tests = []struct {
@@ -116,6 +121,12 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			workspace:   ".",
 			expected:    []string{"bar"},
 		},
+		{
+			description: "multi file copy",
+			dockerfile:  multiFileCopy,
+			workspace:   ".",
+			expected:    []string{"file", "server.go"},
+		},
 	}
 
 	util.Fs = afero.NewMemMapFs()
@@ -135,6 +146,7 @@ func TestGetDockerfileDependencies(t *testing.T) {
 				r = testutil.BadReader{}
 			}
 			deps, err := GetDockerfileDependencies(test.workspace, r)
+			sort.Strings(deps)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
 		})
 	}
