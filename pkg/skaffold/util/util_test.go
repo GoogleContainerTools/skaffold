@@ -83,3 +83,48 @@ func TestExpandDeps(t *testing.T) {
 		})
 	}
 }
+
+func TestExpandPathsGlob(t *testing.T) {
+	Fs = afero.NewMemMapFs()
+	defer ResetFs()
+
+	Fs.MkdirAll("dir/sub_dir", 0700)
+	Fs.MkdirAll("dir_b/sub_dir_b", 0700)
+	afero.WriteFile(Fs, "dir_b/sub_dir_b/file", []byte(""), 0650)
+	afero.WriteFile(Fs, "dir/sub_dir/file", []byte(""), 0650)
+
+	var tests = []struct {
+		description string
+		in          []string
+		out         []string
+		shouldErr   bool
+	}{
+		{
+			description: "match exact filename",
+			in:          []string{"dir/sub_dir/file"},
+			out:         []string{"dir/sub_dir/file"},
+		},
+		{
+			description: "match leaf directory glob",
+			in:          []string{"dir/sub_dir/*"},
+			out:         []string{"dir/sub_dir/file"},
+		},
+		{
+			description: "match top level glob",
+			in:          []string{"dir*"},
+			out:         []string{"dir/sub_dir/file", "dir_b/sub_dir_b/file"},
+		},
+		{
+			description: "error unmatched glob",
+			in:          []string{"dir/sub_dir_c/*"},
+			shouldErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			actual, err := ExpandPathsGlob(tt.in)
+			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.out, actual)
+		})
+	}
+}

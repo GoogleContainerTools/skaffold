@@ -58,8 +58,7 @@ type LocalBuild struct {
 
 // DeployConfig contains all the configuration needed by the deploy steps
 type DeployConfig struct {
-	Name       string            `yaml:"name"`
-	Parameters map[string]string `yaml:"parameters"`
+	Name       string `yaml:"name"`
 	DeployType `yaml:",inline"`
 }
 
@@ -71,7 +70,12 @@ type DeployType struct {
 
 // KubectlDeploy contains the configuration needed for deploying with `kubectl apply`
 type KubectlDeploy struct {
-	Manifests []string `yaml:"manifests"`
+	Manifests []Manifest `yaml:"manifests"`
+}
+
+type Manifest struct {
+	Path       []string          `yaml:"path"`
+	Parameters map[string]string `yaml:"parameters"`
 }
 
 // Arifact represents items that need should be built, along with the context in which

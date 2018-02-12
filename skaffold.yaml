@@ -6,11 +6,11 @@ build:
   - imageName: gcr.io/k8s-skaffold/skaffold
     dockerfilePath: deploy/skaffold/Dockerfile
     workspace: .
-  local:
-    push: true
+  local: {}
 deploy:
-  parameters:
-    IMAGE_NAME: gcr.io/k8s-skaffold/skaffold
   kubectl:
     manifests:
-    - deploy/skaffold/*
+    - path:
+      - deploy/skaffold/*
+      parameters:
+        IMAGE_NAME: gcr.io/k8s-skaffold/skaffold
