@@ -17,41 +17,46 @@ limitations under the License.
 package docker
 
 import (
+	"bytes"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
-	"github.com/GoogleCloudPlatform/skaffold/cmd/skaffold/app/flags"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
+
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
-var depsFormatFlag = flags.NewTemplateFlag("{{range .Deps}}{{.}} {{end}}\n", DepsOutput{})
+var output string
 
-func NewCmdDeps(out io.Writer) *cobra.Command {
+func NewCmdContext(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "deps",
-		Short: "Returns a list of dependencies for the input dockerfile",
+		Use:   "context",
+		Short: "Outputs a minimal context tarball to stdout",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := runDeps(out, filename, context); err != nil {
+			if err := runContext(out, filename, context); err != nil {
 				logrus.Fatalf("docker deps: %s", err)
 			}
 		},
 	}
 	cmd.Flags().StringVarP(&filename, "filename", "f", "Dockerfile", "Dockerfile path")
 	cmd.Flags().StringVarP(&context, "context", "c", ".", "Dockerfile context path")
-	cmd.Flags().VarP(depsFormatFlag, "output", "o", depsFormatFlag.Usage())
+	cmd.Flags().StringVarP(&output, "output", "o", "context.tar.gz", "Output filename.")
 	return cmd
 }
 
-type DepsOutput struct {
-	Deps []string
-}
-
-func runDeps(out io.Writer, filename, context string) error {
-	f, err := os.Open(filepath.Join(context, filename))
+func runContext(out io.Writer, filename, context string) error {
+	dockerFilePath, err := filepath.Abs(filename)
+	logrus.Info(filename)
+	logrus.Info(dockerFilePath)
+	if err != nil {
+		return err
+	}
+	f, err := os.Open(dockerFilePath)
 	if err != nil {
 		return errors.Wrap(err, "opening dockerfile")
 	}
@@ -59,9 +64,13 @@ func runDeps(out io.Writer, filename, context string) error {
 	if err != nil {
 		return errors.Wrap(err, "getting dockerfile dependencies")
 	}
-	cmdOut := DepsOutput{Deps: deps}
-	if err := depsFormatFlag.Template().Execute(out, cmdOut); err != nil {
-		return errors.Wrap(err, "executing template")
+
+	// Write everything to memory, then flush to disk at the end.
+	// This prevents recursion problems, where the output file can end up
+	// in the context itself during creation.
+	var b bytes.Buffer
+	if err := util.CreateDockerTarContext(dockerFilePath, context, deps, &b); err != nil {
+		return err
 	}
-	return nil
+	return ioutil.WriteFile(output, b.Bytes(), 0644)
 }
