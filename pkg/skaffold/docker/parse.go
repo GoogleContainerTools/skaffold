@@ -81,13 +81,9 @@ func processCopy(workspace string, value *parser.Node, paths map[string]struct{}
 		if hasMultiStageFlag(value.Flags) {
 			return nil
 		}
-		value = value.Next
 		dep := path.Join(workspace, src)
-		if _, ok := paths[dep]; ok {
-			// If we've already seen this file, only add it once.
-			continue
-		}
 		paths[dep] = struct{}{}
+		value = value.Next
 	}
 	return nil
 }
