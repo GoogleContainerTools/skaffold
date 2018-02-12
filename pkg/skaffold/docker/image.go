@@ -31,6 +31,7 @@ import (
 	"github.com/moby/moby/pkg/streamformatter"
 	"github.com/moby/moby/pkg/term"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type BuildOptions struct {
@@ -43,6 +44,7 @@ type BuildOptions struct {
 
 // RunBuild performs a docker build and returns nothing
 func RunBuild(cli client.ImageAPIClient, opts *BuildOptions) error {
+	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", opts.ContextDir, opts.Dockerfile)
 	imageBuildOpts := types.ImageBuildOptions{
 		Tags:       []string{opts.ImageName},
 		Dockerfile: opts.Dockerfile,
