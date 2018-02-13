@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"io"
 
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/pkg/errors"
 
 	yaml "gopkg.in/yaml.v2"
@@ -89,12 +90,20 @@ type HelmRelease struct {
 	Values    map[string]string `yaml:"values"`
 }
 
-// Arifact represents items that need should be built, along with the context in which
+// Artifact represents items that need should be built, along with the context in which
 // they should be built.
 type Artifact struct {
 	ImageName      string `yaml:"imageName"`
 	DockerfilePath string `yaml:"dockerfilePath"`
 	Workspace      string `yaml:"workspace"`
+}
+
+// DefaultSkaffoldConfig is a partial set of defaults for the SkaffoldConfig
+// Each API is responsible for setting its own defaults that are not top level.
+var DefaultSkaffoldConfig = &SkaffoldConfig{
+	Build: BuildConfig{
+		TagPolicy: constants.DefaultTagStrategy,
+	},
 }
 
 // Parse reads from an io.Reader and unmarshals the result into a SkaffoldConfig.
@@ -105,11 +114,10 @@ func Parse(config io.Reader) (*SkaffoldConfig, error) {
 	if _, err := b.ReadFrom(config); err != nil {
 		return nil, errors.Wrap(err, "reading config")
 	}
-
-	var cfg SkaffoldConfig
-	if err := yaml.Unmarshal(b.Bytes(), &cfg); err != nil {
+	cfg := DefaultSkaffoldConfig
+	if err := yaml.Unmarshal(b.Bytes(), cfg); err != nil {
 		return nil, err
 	}
 
-	return &cfg, nil
+	return cfg, nil
 }
