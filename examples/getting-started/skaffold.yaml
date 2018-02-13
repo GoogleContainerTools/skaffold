@@ -1,0 +1,63 @@
+apiVersion: skaffold/v1
+kind: Config
+build:
+  # tagPolicy determines how skaffold is going to tag your image
+  # we provide a few strategies here, although you most likely won't need to care!
+  # Valid values for tagPolicy are
+  #
+  # sha256    - tags the image with the checksum of the built image (image id)
+  # gitCommit - tags the image with the git commit of your current repository
+  tagPolicy: sha256
+
+  # artifacts is a list of the actual images you're going to be building
+  # you can include as many as you want here.
+  artifacts:
+    # The name of the image we're going to build, the full reference to the built
+    # image will be available later in the the deploy section
+  - imageName: changeme # gcr.io/k8s-skaffold/skaffold-example
+    # dockerfilePath: Dockerfile # not required if its just $workspace/Dockerfile
+
+    # workspace is the path to your dockerfile context
+    workspace: examples/getting-started
+
+  # This next section is where you'll put your specific builder configuration.
+  # Here, we're using a local builder, which simply builds using the host docker
+
+  # If you're using minikube, you can skip the push step for even faster build
+  # and deploy cycles.
+  # local: {} # Use this for minikube configuration
+  local: {}
+    # Skaffold defers to your ~/.docker/config for authentication information
+    # If you're using GCR, make sure that you have gcloud and
+    # docker-credentials-helper-gcr configured correctly.
+    #
+    # gcloud components install docker-credential-gcr
+    # docker-credential-gcr configure-docker
+    # push: true
+
+# The deploy section has all the information needed to deploy. Along with build:
+# it is a required section.
+deploy:
+  # We'll be deferring to kubectl for the deployment. The kubectl deployer uses
+  # a client side kubectl apply to apply the manifests to the cluster. You'll
+  # need a kubectl version installed thats compatible with your cluster.
+  kubectl:
+    # Manifests is a list of manifests to deploy
+    manifests:
+    # First we need the path to where these manifests live.  path accepts a
+    # filepath.Glob, so * can be used to deploy a whole folder.
+    #
+    # Examples:
+    # project outside this repository
+    # - /home/mrick/path/to/different/project/deploy/*
+    #
+    - path:
+      - examples/getting-started/k8s-*
+      # Parameters are key value pairs that will be injected into the manifests
+      # above. In the kubectl implementation, it is a simple "find and replace"
+      # of these values.
+      # The value should be a reference to the image name of of one of the build
+      # artifacts above and will be expanded to reference the full image name
+      # and tag of the built image.
+      parameters:
+        IMAGE_NAME: changeme # gcr.io/k8s-skaffold/skaffold-example
