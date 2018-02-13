@@ -23,6 +23,10 @@ import (
 	"path"
 	"sort"
 
+	"github.com/docker/docker/builder/dockerignore"
+
+	"github.com/docker/docker/pkg/fileutils"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -116,6 +120,35 @@ func ExpandPathsGlob(paths []string) ([]string, error) {
 	}
 	sort.Strings(ret)
 	return ret, nil
+}
+
+func ApplyDockerIgnore(paths []string, dockerIgnorePath string) ([]string, error) {
+	excludes := []string{}
+	if _, err := Fs.Stat(dockerIgnorePath); !os.IsNotExist(err) {
+		r, err := Fs.Open(dockerIgnorePath)
+		defer r.Close()
+		if err != nil {
+			return nil, err
+		}
+		excludes, err = dockerignore.ReadAll(r)
+		if err != nil {
+			return nil, err
+		}
+		excludes = append(excludes, ".dockerignore")
+	}
+
+	filteredDeps := []string{}
+	for _, d := range paths {
+		m, err := fileutils.Matches(d, excludes)
+		if err != nil {
+			return nil, err
+		}
+		if !m {
+			filteredDeps = append(filteredDeps, d)
+		}
+	}
+	sort.Strings(filteredDeps)
+	return filteredDeps, nil
 }
 
 func addFileOrDir(fs afero.Fs, ref string, info os.FileInfo, expandedPaths map[string]struct{}) error {
