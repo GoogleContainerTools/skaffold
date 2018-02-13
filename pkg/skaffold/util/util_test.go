@@ -24,6 +24,44 @@ import (
 	"github.com/spf13/afero"
 )
 
+func TestSupportedKubernetesFormats(t *testing.T) {
+	var tests = []struct {
+		description string
+		in          string
+		out         bool
+	}{
+		{
+			description: "yaml",
+			in:          "filename.yaml",
+			out:         true,
+		},
+		{
+			description: "yml",
+			in:          "filename.yml",
+			out:         true,
+		},
+		{
+			description: "json",
+			in:          "filename.json",
+			out:         true,
+		},
+		{
+			description: "txt",
+			in:          "filename.txt",
+			out:         false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			actual := IsSupportedKubernetesFormat(tt.in)
+			if tt.out != actual {
+				t.Errorf("out: %t, actual: %t", tt.out, actual)
+			}
+		})
+	}
+}
+
 func TestExpandDeps(t *testing.T) {
 	var tests = []struct {
 		description string
