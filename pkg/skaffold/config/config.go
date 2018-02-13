@@ -74,7 +74,7 @@ type KubectlDeploy struct {
 }
 
 type Manifest struct {
-	Path       []string          `yaml:"path"`
+	Paths      []string          `yaml:"paths"`
 	Parameters map[string]string `yaml:"parameters"`
 }
 

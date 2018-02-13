@@ -44,7 +44,7 @@ func NewKubectlDeployer(cfg *config.DeployConfig) (*KubectlDeployer, error) {
 // runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Run(b *build.BuildResult) (*Result, error) {
 	for _, m := range k.DeployConfig.KubectlDeploy.Manifests {
-		logrus.Debugf("Deploying path: %s parameters: %s", m.Path, m.Parameters)
+		logrus.Debugf("Deploying path: %s parameters: %s", m.Paths, m.Parameters)
 		if err := deployManifest(b.Builds, m); err != nil {
 			return nil, errors.Wrap(err, "deploying manifests")
 		}
@@ -58,15 +58,15 @@ func deployManifest(b []build.Build, manifest config.Manifest) error {
 	if err != nil {
 		return errors.Wrap(err, "joining template keys to image tag")
 	}
-	manifests, err := util.ExpandPathsGlob(manifest.Path)
+	manifests, err := util.ExpandPathsGlob(manifest.Paths)
 	if err != nil {
 		return errors.Wrap(err, "expanding manifest paths")
 	}
 	logrus.Debugf("Expanded manifests %s", strings.Join(manifests, "\n"))
 	for _, fname := range manifests {
 		if !util.IsSupportedKubernetesFormat(fname) {
-			if !util.StrSliceContains(manifest.Path, fname) {
-				logrus.Infof("Refusing to deploy non yaml file %s", fname)
+			if !util.StrSliceContains(manifest.Paths, fname) {
+				logrus.Infof("Refusing to deploy non {json, yaml} file %s", fname)
 				logrus.Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
 				continue
 			}
