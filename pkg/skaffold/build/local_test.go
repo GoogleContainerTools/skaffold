@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
 	"github.com/docker/docker/api/types"
 	"github.com/moby/moby/client"
@@ -82,7 +83,7 @@ func TestLocalRun(t *testing.T) {
 				},
 				BuildType: config.BuildType{
 					LocalBuild: &config.LocalBuild{
-						Push: true,
+						SkipPush: util.BoolPtr(true),
 					},
 				},
 			},
@@ -207,7 +208,7 @@ func TestLocalRun(t *testing.T) {
 	}
 }
 
-func TestNewLocalBuilder(t *testing.T) {
+func TestNewLocalBuilderError(t *testing.T) {
 	_, err := NewLocalBuilder(&config.BuildConfig{
 		Artifacts: []*config.Artifact{
 			{
@@ -216,9 +217,7 @@ func TestNewLocalBuilder(t *testing.T) {
 			},
 		},
 	})
-	if err != nil {
-		t.Errorf("New local builder: %s", err)
-	}
+	testutil.CheckError(t, true, err)
 }
 
 func TestNewLocalBuilderMinikubeContext(t *testing.T) {
@@ -238,6 +237,9 @@ func TestNewLocalBuilderMinikubeContext(t *testing.T) {
 				ImageName: "test",
 				Workspace: ".",
 			},
+		},
+		BuildType: config.BuildType{
+			LocalBuild: &config.LocalBuild{},
 		},
 	})
 	if err != nil {

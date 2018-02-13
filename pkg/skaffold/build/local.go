@@ -42,6 +42,9 @@ type LocalBuilder struct {
 
 // NewLocalBuilder returns an new instance of a LocalBuilder
 func NewLocalBuilder(cfg *config.BuildConfig) (*LocalBuilder, error) {
+	if cfg.LocalBuild == nil {
+		return nil, fmt.Errorf("LocalBuild config field is needed to create a new LocalBuilder")
+	}
 	var localCluster bool
 	context, err := kubernetes.CurrentContext()
 	if err != nil {
@@ -67,7 +70,7 @@ func NewLocalBuilder(cfg *config.BuildConfig) (*LocalBuilder, error) {
 // its checksum. It streams build progress to the writer argument.
 func (l *LocalBuilder) Run(out io.Writer, tagger tag.Tagger) (*BuildResult, error) {
 	if l.localCluster {
-		if _, err := io.WriteString(out, "Found minikube context, using minikube docker daemon.\n"); err != nil {
+		if _, err := fmt.Fprint(out, "Found minikube context, using minikube docker daemon.\n"); err != nil {
 			return nil, errors.Wrap(err, "writing status")
 		}
 	}
