@@ -7,7 +7,8 @@ build:
   #
   # sha256    - tags the image with the checksum of the built image (image id)
   # gitCommit - tags the image with the git commit of your current repository
-  tagPolicy: sha256
+  
+  # tagPolicy: sha256
 
   # artifacts is a list of the actual images you're going to be building
   # you can include as many as you want here.
