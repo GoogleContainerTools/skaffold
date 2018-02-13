@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/moby/moby/client"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // LocalBuilder uses the host docker daemon to build and tag the image
@@ -50,6 +51,10 @@ func NewLocalBuilder(cfg *config.BuildConfig) (*LocalBuilder, error) {
 	if context == constants.DefaultMinikubeContext {
 		newImageAPI = docker.NewMinikubeImageAPIClient
 		localCluster = true
+	}
+	if cfg.LocalBuild.SkipPush == nil {
+		logrus.Debugf("skipPush value not present. defaulting to cluster default %t (minikube=true, gke=false)", localCluster)
+		cfg.LocalBuild.SkipPush = &localCluster
 	}
 	return &LocalBuilder{
 		BuildConfig:  cfg,
@@ -109,7 +114,7 @@ func (l *LocalBuilder) Run(out io.Writer, tagger tag.Tagger) (*BuildResult, erro
 		if _, err := io.WriteString(out, fmt.Sprintf("Successfully tagged %s\n", tag)); err != nil {
 			return nil, errors.Wrap(err, "writing tag status")
 		}
-		if l.LocalBuild.Push {
+		if !*l.LocalBuild.SkipPush {
 			if err := docker.RunPush(api, tag, out); err != nil {
 				return nil, errors.Wrap(err, "running push")
 			}
