@@ -60,11 +60,12 @@ func TestLocalRun(t *testing.T) {
 	unsetEnvs := testutil.SetEnvs(t, map[string]string{"KUBECONFIG": "badpath"})
 	defer unsetEnvs(t)
 	var tests = []struct {
-		description string
-		config      *config.BuildConfig
-		out         io.Writer
-		newAPI      func() (client.ImageAPIClient, io.Closer, error)
-		tagger      tag.Tagger
+		description  string
+		config       *config.BuildConfig
+		out          io.Writer
+		newImageAPI  func() (client.ImageAPIClient, io.Closer, error)
+		tagger       tag.Tagger
+		localCluster bool
 
 		expectedBuild *BuildResult
 		shouldErr     bool
@@ -85,8 +86,8 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			tagger: &tag.ChecksumTagger{},
-			newAPI: testutil.NewFakeImageAPIClientCloser,
+			tagger:      &tag.ChecksumTagger{},
+			newImageAPI: testutil.NewFakeImageAPIClientCloser,
 			expectedBuild: &BuildResult{
 				[]Build{
 					{
@@ -95,6 +96,12 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			description:  "local cluster bad writer",
+			out:          &testutil.BadWriter{},
+			shouldErr:    true,
+			localCluster: true,
 		},
 		{
 			description: "error image build",
@@ -107,9 +114,9 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			tagger:    &tag.ChecksumTagger{},
-			newAPI:    testutil.NewFakeImageAPIClientCloserBuildError,
-			shouldErr: true,
+			tagger:      &tag.ChecksumTagger{},
+			newImageAPI: testutil.NewFakeImageAPIClientCloserBuildError,
+			shouldErr:   true,
 		},
 		{
 			description: "error image tag",
@@ -122,9 +129,9 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			tagger:    &tag.ChecksumTagger{},
-			newAPI:    testutil.NewFakeImageAPIClientCloserTagError,
-			shouldErr: true,
+			tagger:      &tag.ChecksumTagger{},
+			newImageAPI: testutil.NewFakeImageAPIClientCloserTagError,
+			shouldErr:   true,
 		},
 		{
 			description: "error api client",
@@ -137,9 +144,9 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			tagger:    &tag.ChecksumTagger{},
-			newAPI:    func() (client.ImageAPIClient, io.Closer, error) { return nil, nil, fmt.Errorf("") },
-			shouldErr: true,
+			tagger:      &tag.ChecksumTagger{},
+			newImageAPI: func() (client.ImageAPIClient, io.Closer, error) { return nil, nil, fmt.Errorf("") },
+			shouldErr:   true,
 		},
 		{
 			description: "bad writer",
@@ -152,9 +159,9 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			tagger:    &tag.ChecksumTagger{},
-			newAPI:    testutil.NewFakeImageAPIClientCloser,
-			shouldErr: true,
+			tagger:      &tag.ChecksumTagger{},
+			newImageAPI: testutil.NewFakeImageAPIClientCloser,
+			shouldErr:   true,
 		},
 		{
 			description: "error image list",
@@ -167,9 +174,9 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			tagger:    &tag.ChecksumTagger{},
-			newAPI:    testutil.NewFakeImageAPIClientCloserListError,
-			shouldErr: true,
+			tagger:      &tag.ChecksumTagger{},
+			newImageAPI: testutil.NewFakeImageAPIClientCloserListError,
+			shouldErr:   true,
 		},
 		{
 			description: "error tagger",
@@ -181,17 +188,18 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			tagger:    &FakeTagger{Err: fmt.Errorf("")},
-			newAPI:    testutil.NewFakeImageAPIClientCloser,
-			shouldErr: true,
+			tagger:      &FakeTagger{Err: fmt.Errorf("")},
+			newImageAPI: testutil.NewFakeImageAPIClientCloser,
+			shouldErr:   true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			l := &LocalBuilder{
-				BuildConfig: test.config,
-				newAPI:      test.newAPI,
+				BuildConfig:  test.config,
+				newImageAPI:  test.newImageAPI,
+				localCluster: test.localCluster,
 			}
 			res, err := l.Run(test.out, test.tagger)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedBuild, res)

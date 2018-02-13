@@ -79,6 +79,8 @@ func checkErr(shouldErr bool, err error) error {
 	return nil
 }
 
+// SetEnvs takes a map of key values to set using os.Setenv and returns
+// a function that can be called to reset the envs to their previous values.
 func SetEnvs(t *testing.T, envs map[string]string) func(*testing.T) {
 	prevEnvs := map[string]string{}
 	for key, value := range envs {

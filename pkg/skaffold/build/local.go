@@ -29,37 +29,44 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/moby/moby/client"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // LocalBuilder uses the host docker daemon to build and tag the image
 type LocalBuilder struct {
 	*config.BuildConfig
 
-	newAPI func() (client.ImageAPIClient, io.Closer, error)
+	newImageAPI  func() (client.ImageAPIClient, io.Closer, error)
+	localCluster bool
 }
 
 // NewLocalBuilder returns an new instance of a LocalBuilder
 func NewLocalBuilder(cfg *config.BuildConfig) (*LocalBuilder, error) {
+	var localCluster bool
 	context, err := kubernetes.CurrentContext()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting current cluster context")
 	}
-	var newAPI = docker.NewImageAPIClient
+	var newImageAPI = docker.NewImageAPIClient
 	if context == constants.DefaultMinikubeContext {
-		logrus.Infof("Found minikube context, using minikube docker daemon.")
-		newAPI = docker.NewMinikubeImageAPIClient
+		newImageAPI = docker.NewMinikubeImageAPIClient
+		localCluster = true
 	}
 	return &LocalBuilder{
-		BuildConfig: cfg,
-		newAPI:      newAPI,
+		BuildConfig:  cfg,
+		newImageAPI:  newImageAPI,
+		localCluster: localCluster,
 	}, nil
 }
 
 // Run runs a docker build on the host and tags the resulting image with
 // its checksum. It streams build progress to the writer argument.
 func (l *LocalBuilder) Run(out io.Writer, tagger tag.Tagger) (*BuildResult, error) {
-	api, c, err := l.newAPI()
+	if l.localCluster {
+		if _, err := io.WriteString(out, "Found minikube context, using minikube docker daemon.\n"); err != nil {
+			return nil, errors.Wrap(err, "writing status")
+		}
+	}
+	api, c, err := l.newImageAPI()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting image api client")
 	}
