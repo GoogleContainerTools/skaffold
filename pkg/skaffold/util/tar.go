@@ -28,9 +28,6 @@ import (
 )
 
 func CreateDockerTarContext(dockerfilePath, context string, paths []string, w io.Writer) error {
-	// Write everything to memory, then flush to disk at the end.
-	// This prevents recursion problems, where the output file can end up
-	// in the context itself during creation.
 	gw := gzip.NewWriter(w)
 	defer gw.Close()
 
