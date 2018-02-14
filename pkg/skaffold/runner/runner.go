@@ -122,7 +122,7 @@ func (r *SkaffoldRunner) dev() error {
 }
 
 func (r *SkaffoldRunner) run() error {
-	logrus.Info("Starting build...")
+	util.Output("Starting build...")
 	res, err := r.Builder.Run(r.out, r.Tagger)
 	if err != nil {
 		return errors.Wrap(err, "build step")

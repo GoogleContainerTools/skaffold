@@ -20,6 +20,8 @@ import (
 	"io"
 	"os"
 
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
+
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/runner"
@@ -32,6 +34,7 @@ import (
 var (
 	v        string
 	filename string
+	q        bool
 )
 
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
@@ -42,7 +45,8 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			if err := SetUpLogs(err, v); err != nil {
 				return err
 			}
-			logrus.Infof("Skaffold %s", version.GetVersion())
+			util.SetupOutput(q, err)
+			util.Outputf("Skaffold %s", version.GetVersion())
 			return nil
 		},
 	}
@@ -53,6 +57,8 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	c.AddCommand(NewCmdDocker(out))
 
 	c.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic")
+	c.PersistentFlags().BoolVarP(&q, "quiet", "q", false, "Quiet mode. Disables all status output.")
+
 	return c
 }
 

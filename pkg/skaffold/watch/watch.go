@@ -88,7 +88,7 @@ func (f *FSWatcher) Watch(artifacts []*config.Artifact, ready chan *Event, cance
 	}
 	select {
 	case ei := <-c:
-		logrus.Infof("%s %s", ei.Event().String(), ei.Path())
+		logrus.Debugf("%s %s", ei.Event().String(), ei.Path())
 		artifacts := depsToArtifact[ei.Path()]
 		return &Event{
 			EventType:        ei.Event().String(),
@@ -168,7 +168,7 @@ func watchFile(workspace, path string, c chan notify.EventInfo) error {
 			return nil
 		}
 	}
-	logrus.Infof("Added watch for %s", path)
+	logrus.Debugf("Added watch for %s", path)
 	if err := notify.Watch(path, c, notify.All); err != nil {
 		return errors.Wrapf(err, "adding watch for %s", path)
 	}
