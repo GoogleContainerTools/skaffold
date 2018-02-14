@@ -66,12 +66,12 @@ func deployManifest(b []build.Build, manifest config.Manifest) error {
 	for _, fname := range manifests {
 		if !util.IsSupportedKubernetesFormat(fname) {
 			if !util.StrSliceContains(manifest.Path, fname) {
-				logrus.Infof("Refusing to deploy non yaml file %s", fname)
-				logrus.Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
+				util.Outputf("Refusing to deploy non yaml file %s", fname)
+				util.Output("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
 				continue
 			}
 		}
-		logrus.Infof("Deploying %s", fname)
+		util.Outputf("Deploying %s", fname)
 		f, err := util.Fs.Open(fname)
 		if err != nil {
 			return errors.Wrap(err, "opening manifest")

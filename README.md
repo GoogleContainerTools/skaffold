@@ -24,7 +24,7 @@ Use for:
 * Local development
 
 ## skaffold run
-Run runs a skaffold pipeline one, exiting on any errors in the pipeline.
+Run runs a skaffold pipeline once, exiting on any errors in the pipeline.
 
 Use for:
 * Continuous Integration or Continuous Deployment tools
@@ -65,8 +65,8 @@ $ skaffold dev -f examples/getting-started/skaffold.yaml
 You should see the output (for verbose output, append `-v debug`)
 
 ```shell
-INFO[0000] Skaffold v0.1.0
-INFO[0000] Starting build...
+Skaffold v0.1.0
+Starting build...
 Sending build context to Docker daemon   7.68kB
 Step 1/5 : FROM golang:1.9.2
  ---> 138bd936fa29
@@ -155,6 +155,7 @@ examples/getting-started/main.go
 out/getting-started: $(shell skaffold docker deps -c examples/getting-started -v error)
 	docker build -t getting-started . -q > out/getting-started
 ```
+
 
 #### skaffold docker context
 
