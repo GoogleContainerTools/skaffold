@@ -103,7 +103,6 @@ var brokenAuthHeaderProviders = []string{
 	"https://api.twitch.tv/",
 	"https://app.box.com/",
 	"https://connect.stripe.com/",
-	"https://graph.facebook.com", // see https://github.com/golang/oauth2/issues/214
 	"https://login.microsoftonline.com/",
 	"https://login.salesforce.com/",
 	"https://login.windows.net",
