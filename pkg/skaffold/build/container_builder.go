@@ -111,13 +111,29 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting build ID from op")
 	}
-	io.WriteString(out, fmt.Sprintf("Logs at available at \nhttps://console.cloud.google.com/m/cloudstorage/b/%s/o/log-%s.txt\n", cbBucket, remoteID))
+	logsObject := fmt.Sprintf("log-%s.txt", remoteID)
+	io.WriteString(out, fmt.Sprintf("Logs at available at \nhttps://console.cloud.google.com/m/cloudstorage/b/%s/o/%s\n", cbBucket, logsObject))
 	fail := false
 	var imageID string
+	offset := int64(0)
 	for {
+		logrus.Debugf("current offset %d", offset)
 		b, err := cbclient.Projects.Builds.Get(cb.GoogleCloudBuild.ProjectID, remoteID).Do()
 		if err != nil {
 			return nil, errors.Wrap(err, "getting build status")
+		}
+
+		r, err := getLogs(ctx, offset, cbBucket, logsObject)
+		if err != nil {
+			logrus.Debugf("get logs: %s", err)
+		}
+		if r != nil {
+			written, err := io.Copy(out, r)
+			if err != nil {
+				return nil, errors.Wrap(err, "copying logs to stdout")
+			}
+			offset += written
+			r.Close()
 		}
 
 		if s := b.Status; s != "WORKING" && s != "QUEUED" {
@@ -166,7 +182,7 @@ func getBuildID(op *cloudbuild.Operation) (string, error) {
 
 func getImageID(b *cloudbuild.Build) (string, error) {
 	if b.Results == nil || len(b.Results.Images) == 0 {
-		return "", fmt.Errorf("missing build result image metadata: %s", b.StatusDetail)
+		return "", errors.New("build failed")
 	}
 	return b.Results.Images[0].Digest, nil
 }
@@ -187,4 +203,19 @@ func uploadTarToGCS(ctx context.Context, dockerfilePath, dockerCtx, bucket, obje
 	defer w.Close()
 
 	return nil
+}
+
+func getLogs(ctx context.Context, offset int64, bucket, objectName string) (io.ReadCloser, error) {
+	c, err := cstorage.NewClient(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting storage client")
+	}
+	defer c.Close()
+
+	logrus.Debugf("get: bucket: %s object: %s offset: %d", bucket, objectName, offset)
+	r, err := c.Bucket(bucket).Object(objectName).NewRangeReader(ctx, offset, -1)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting logs from gcs")
+	}
+	return r, nil
 }
