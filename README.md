@@ -158,4 +158,11 @@ out/getting-started: $(shell skaffold docker deps -c examples/getting-started -v
 
 #### skaffold docker context
 
-This command generates the context tarball for the given dockerfile context. 
+Skaffold can also generate a tarball that can be used as a "docker context" for hosted build systems. To use this with Google Cloud Build:
+
+```
+$ skaffold docker context --filename examples/getting-started/Dockerfile --output=context.tar.gz
+$ gcloud container builds submit context.tar.gz --tag="gcr.io/$(gcloud config get-value project)/skaffold-context:latest"
+```
+
+This tarball will contain only the sources needed to build the Docker image, which will result in a faster upload than the default behavior.
