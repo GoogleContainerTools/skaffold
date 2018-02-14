@@ -76,6 +76,9 @@ func getBuilder(cfg *config.BuildConfig) (build.Builder, error) {
 	if cfg != nil && cfg.LocalBuild != nil {
 		return build.NewLocalBuilder(cfg)
 	}
+	if cfg.GoogleCloudBuild != nil {
+		return build.NewGoogleCloudBuilder(cfg)
+	}
 	return nil, fmt.Errorf("Unknown builder for config %+v", cfg)
 }
 

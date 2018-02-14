@@ -48,13 +48,18 @@ type BuildConfig struct {
 // BuildType contains the specific implementation and parameters needed
 // for the build step. Only one field should be populated.
 type BuildType struct {
-	LocalBuild *LocalBuild `yaml:"local"`
+	LocalBuild       *LocalBuild       `yaml:"local"`
+	GoogleCloudBuild *GoogleCloudBuild `yaml:"googleCloudBuild"`
 }
 
 // LocalBuild contains the fields needed to do a build on the local docker daemon
 // and optionally push to a repository.
 type LocalBuild struct {
 	SkipPush *bool `yaml:"skipPush"`
+}
+
+type GoogleCloudBuild struct {
+	ProjectID string `yaml:"projectId"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps

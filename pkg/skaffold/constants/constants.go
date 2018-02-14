@@ -35,4 +35,5 @@ const (
 	TagStrategyGitCommit = "gitCommit"
 
 	DefaultMinikubeContext = "minikube"
+	GCSBucketSuffix        = "_cloudbuild"
 )
