@@ -166,7 +166,7 @@ func getBuildID(op *cloudbuild.Operation) (string, error) {
 
 func getImageID(b *cloudbuild.Build) (string, error) {
 	if b.Results == nil || len(b.Results.Images) == 0 {
-		return "", errors.New("missing build result image metadata")
+		return "", fmt.Errorf("missing build result image metadata: %s", b.StatusDetail)
 	}
 	return b.Results.Images[0].Digest, nil
 }
