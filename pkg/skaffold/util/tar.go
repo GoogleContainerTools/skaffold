@@ -34,7 +34,7 @@ func CreateDockerTarContext(dockerfilePath, context string, paths []string, w io
 	gw := gzip.NewWriter(w)
 	defer gw.Close()
 
-	tw := tar.NewWriter(w)
+	tw := tar.NewWriter(gw)
 	defer tw.Close()
 
 	absContext, err := filepath.Abs(context)
