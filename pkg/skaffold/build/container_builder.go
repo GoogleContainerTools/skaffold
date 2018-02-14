@@ -37,6 +37,32 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	// StatusUnknown "STATUS_UNKNOWN" - Status of the build is unknown.
+	StatusUnknown = "STATUS_UNKNOWN"
+
+	// StatusQueued "QUEUED" - Build is queued; work has not yet begun.
+	StatusQueued = "QUEUED"
+
+	// StatusWorking "WORKING" - Build is being executed.
+	StatusWorking = "WORKING"
+
+	// StatusSuccess  "SUCCESS" - Build finished successfully.
+	StatusSuccess = "SUCCESS"
+
+	// StatusFailure  "FAILURE" - Build failed to complete successfully.
+	StatusFailure = "FAILURE"
+
+	// StatusInternalError  "INTERNAL_ERROR" - Build failed due to an internal cause.
+	StatusInternalError = "INTERNAL_ERROR"
+
+	// StatusTimeout  "TIMEOUT" - Build took longer than was allowed.
+	StatusTimeout = "TIMEOUT"
+
+	// StatusCancelled  "CANCELLED" - Build was canceled by a user.
+	StatusCancelled = "CANCELLED"
+)
+
 type GoogleCloudBuilder struct {
 	*config.BuildConfig
 }
@@ -113,9 +139,9 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 	}
 	logsObject := fmt.Sprintf("log-%s.txt", remoteID)
 	io.WriteString(out, fmt.Sprintf("Logs at available at \nhttps://console.cloud.google.com/m/cloudstorage/b/%s/o/%s\n", cbBucket, logsObject))
-	fail := false
 	var imageID string
 	offset := int64(0)
+watch:
 	for {
 		logrus.Debugf("current offset %d", offset)
 		b, err := cbclient.Projects.Builds.Get(cb.GoogleCloudBuild.ProjectID, remoteID).Do()
@@ -135,17 +161,19 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 			offset += written
 			r.Close()
 		}
-
-		if s := b.Status; s != "WORKING" && s != "QUEUED" {
-			if b.Status == "FAILURE" {
-				fail = true
-			}
-			logrus.Infof("Build status: %v", s)
+		switch b.Status {
+		case StatusQueued, StatusWorking, StatusUnknown:
+			break
+		case StatusSuccess:
 			imageID, err = getImageID(b)
 			if err != nil {
 				return nil, errors.Wrap(err, "getting image id from finished build")
 			}
-			break
+			break watch
+		case StatusFailure, StatusInternalError, StatusTimeout, StatusCancelled:
+			return nil, fmt.Errorf("cloud build failed: %s", b.Status)
+		default:
+			return nil, fmt.Errorf("unknown status: %s", b.Status)
 		}
 
 		time.Sleep(time.Second)
@@ -155,9 +183,6 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 		return nil, errors.Wrap(err, "cleaning up source tar after build")
 	}
 	logrus.Infof("Deleted object %s", buildObject)
-	if fail {
-		return nil, errors.Wrap(err, "cloud build failed")
-	}
 	tag := fmt.Sprintf("%s@%s", artifact.ImageName, imageID)
 	logrus.Infof("Image built at %s", tag)
 	return &Build{
