@@ -17,8 +17,6 @@ limitations under the License.
 package build
 
 import (
-	"io"
-
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 )
 
@@ -37,5 +35,5 @@ type Build struct {
 // It must build and make the resulting image accesible to the cluster.
 // This could include pushing to a authorized repository or loading the nodes with the image.
 type Builder interface {
-	Run(out io.Writer, tagger tag.Tagger) (*BuildResult, error)
+	Run(tagger tag.Tagger) (*BuildResult, error)
 }

@@ -19,6 +19,7 @@ package util
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 )
 
 var quiet bool
@@ -37,4 +38,11 @@ func Output(s string) {
 	if !quiet {
 		fmt.Fprintln(out, s)
 	}
+}
+
+func Writer() io.Writer {
+	if quiet {
+		return ioutil.Discard
+	}
+	return out
 }

@@ -44,8 +44,6 @@ type SkaffoldRunner struct {
 	config     *config.SkaffoldConfig
 	watchReady chan *watch.Event
 	cancel     chan struct{}
-
-	out io.Writer
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
@@ -70,7 +68,6 @@ func NewForConfig(out io.Writer, dev bool, cfg *config.SkaffoldConfig) (*Skaffol
 		Watcher:  &watch.FSWatcher{}, //TODO(@r2d4): should this be configurable?
 		devMode:  dev,
 		cancel:   make(chan struct{}, 1),
-		out:      out,
 	}, nil
 }
 
@@ -125,7 +122,7 @@ func (r *SkaffoldRunner) dev() error {
 
 func (r *SkaffoldRunner) run() error {
 	util.Output("Starting build...")
-	res, err := r.Builder.Run(r.out, r.Tagger)
+	res, err := r.Builder.Run(r.Tagger)
 	if err != nil {
 		return errors.Wrap(err, "build step")
 	}
