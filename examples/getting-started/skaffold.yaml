@@ -51,7 +51,7 @@ deploy:
     # project outside this repository
     # - /home/mrick/path/to/different/project/deploy/*
     #
-    - path:
+    - paths:
       - examples/getting-started/k8s-*
       # Parameters are key value pairs that will be injected into the manifests
       # above. In the kubectl implementation, it is a simple "find and replace"

@@ -10,7 +10,7 @@ build:
 deploy:
   kubectl:
     manifests:
-    - path:
+    - paths:
       - deploy/skaffold/*
       parameters:
         IMAGE_NAME: gcr.io/k8s-skaffold/skaffold

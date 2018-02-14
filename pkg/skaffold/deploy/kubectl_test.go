@@ -68,7 +68,7 @@ func TestKubectlRun(t *testing.T) {
 					KubectlDeploy: &config.KubectlDeploy{
 						Manifests: []config.Manifest{
 							{
-								Path: []string{"test/deployment.yaml"},
+								Paths: []string{"test/deployment.yaml"},
 								Parameters: map[string]string{
 									"IMAGE_NAME": "abc",
 								},
@@ -94,7 +94,7 @@ func TestKubectlRun(t *testing.T) {
 					KubectlDeploy: &config.KubectlDeploy{
 						Manifests: []config.Manifest{
 							{
-								Path: []string{"test/not_deployment.yaml"},
+								Paths: []string{"test/not_deployment.yaml"},
 								Parameters: map[string]string{
 									"IMAGE_NAME": "abc",
 								},
@@ -119,7 +119,7 @@ func TestKubectlRun(t *testing.T) {
 					KubectlDeploy: &config.KubectlDeploy{
 						Manifests: []config.Manifest{
 							{
-								Path: []string{"test/deployment.yaml"},
+								Paths: []string{"test/deployment.yaml"},
 								Parameters: map[string]string{
 									"IMAGE_NAME": "abc",
 								},
@@ -147,7 +147,7 @@ func TestKubectlRun(t *testing.T) {
 					KubectlDeploy: &config.KubectlDeploy{
 						Manifests: []config.Manifest{
 							{
-								Path: []string{"test/not_deployment.yaml"},
+								Paths: []string{"test/not_deployment.yaml"},
 								Parameters: map[string]string{
 									"IMAGE_NAME": "abc",
 								},
