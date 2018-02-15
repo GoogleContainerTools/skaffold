@@ -1,0 +1,14 @@
+steps:
+# Build the container that will do the go build.
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'builder', '-f', 'deploy/Dockerfile.build', '.']
+# Do the go build.
+  - name: 'builder'
+    args: ['make', 'cross']
+# Upload to GCS.
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args: ['cp', '-r', 'out/skaffold-*', 'gs://skaffold/releases/$TAG_NAME/']
+# Bump the latest build
+# Upload to GCS.
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args: ['cp', '-r', 'gs://skaffold/releases/$TAG_NAME/*', 'gs://skaffold/releases/latest/']
