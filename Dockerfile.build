@@ -1,0 +1,6 @@
+# Dockerfile used to build a build step that builds skaffold in CI.
+FROM golang:1.9
+RUN apt-get update && apt-get install make
+RUN mkdir -p /go/src/github.com/GoogleCloudPlatform/
+RUN ln -s /workspace /go/src/github.com/GoogleCloudPlatform/skaffold
+WORKDIR /go/src/github.com/GoogleCloudPlatform/skaffold
