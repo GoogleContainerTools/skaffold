@@ -27,6 +27,7 @@ import (
 	cstorage "cloud.google.com/go/storage"
 	"golang.org/x/oauth2/google"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
+	"google.golang.org/api/googleapi"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
@@ -113,10 +114,7 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 		return nil, errors.Wrap(err, "uploading source tarball")
 	}
 	var steps []*cloudbuild.BuildStep
-	steps = append(steps, &cloudbuild.BuildStep{
-		Name: "gcr.io/cloud-builders/docker",
-		Args: []string{"build", "--tag", artifact.ImageName, "-f", artifact.DockerfilePath, "."},
-	})
+	steps = append(steps)
 	call := cbclient.Projects.Builds.Create(cb.GoogleCloudBuild.ProjectID, &cloudbuild.Build{
 		LogsBucket: cbBucket,
 		Source: &cloudbuild.Source{
@@ -125,7 +123,12 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 				Object: buildObject,
 			},
 		},
-		Steps:  steps,
+		Steps: []*cloudbuild.BuildStep{
+			{
+				Name: "gcr.io/cloud-builders/docker",
+				Args: []string{"build", "--tag", artifact.ImageName, "-f", artifact.DockerfilePath, "."},
+			},
+		},
 		Images: []string{artifact.ImageName},
 	})
 	op, err := call.Context(ctx).Do()
@@ -151,7 +154,7 @@ watch:
 
 		r, err := getLogs(ctx, offset, cbBucket, logsObject)
 		if err != nil {
-			logrus.Debugf("get logs: %s", err)
+			return nil, errors.Wrap(err, "getting logs")
 		}
 		if r != nil {
 			written, err := io.Copy(out, r)
@@ -237,10 +240,20 @@ func getLogs(ctx context.Context, offset int64, bucket, objectName string) (io.R
 	}
 	defer c.Close()
 
-	logrus.Debugf("get: bucket: %s object: %s offset: %d", bucket, objectName, offset)
 	r, err := c.Bucket(bucket).Object(objectName).NewRangeReader(ctx, offset, -1)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting logs from gcs")
+		if gerr, ok := err.(*googleapi.Error); ok {
+			switch gerr.Code {
+			case 404, 416, 429, 503:
+				logrus.Debugf("Status Code: %d, %s", gerr.Code, gerr.Body)
+				return nil, nil
+			}
+		}
+		if err == cstorage.ErrObjectNotExist {
+			logrus.Debugf("Logs for %s %s not uploaded yet...", bucket, objectName)
+			return nil, nil
+		}
+		return nil, errors.Wrap(err, "unknown error")
 	}
 	return r, nil
 }
