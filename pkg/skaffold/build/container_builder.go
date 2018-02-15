@@ -113,8 +113,6 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 	if err := uploadTarToGCS(ctx, artifact.DockerfilePath, artifact.Workspace, cbBucket, buildObject); err != nil {
 		return nil, errors.Wrap(err, "uploading source tarball")
 	}
-	var steps []*cloudbuild.BuildStep
-	steps = append(steps)
 	call := cbclient.Projects.Builds.Create(cb.GoogleCloudBuild.ProjectID, &cloudbuild.Build{
 		LogsBucket: cbBucket,
 		Source: &cloudbuild.Source{
@@ -152,7 +150,7 @@ watch:
 			return nil, errors.Wrap(err, "getting build status")
 		}
 
-		r, err := getLogs(ctx, offset, cbBucket, logsObject)
+		r, err := cb.getLogs(ctx, offset, cbBucket, logsObject)
 		if err != nil {
 			return nil, errors.Wrap(err, "getting logs")
 		}
@@ -233,7 +231,7 @@ func uploadTarToGCS(ctx context.Context, dockerfilePath, dockerCtx, bucket, obje
 	return nil
 }
 
-func getLogs(ctx context.Context, offset int64, bucket, objectName string) (io.ReadCloser, error) {
+func (cb *GoogleCloudBuilder) getLogs(ctx context.Context, offset int64, bucket, objectName string) (io.ReadCloser, error) {
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting storage client")
@@ -249,6 +247,13 @@ func getLogs(ctx context.Context, offset int64, bucket, objectName string) (io.R
 				return nil, nil
 			}
 		}
+		if err == cstorage.ErrBucketNotExist {
+			if err := createBucket(ctx, bucket, cb.GoogleCloudBuild.ProjectID); err != nil {
+				return nil, errors.Wrap(err, "creating bucket")
+			}
+			logrus.Debugf("Created bucket %s in %s", bucket, cb.GoogleCloudBuild.ProjectID)
+			return nil, nil
+		}
 		if err == cstorage.ErrObjectNotExist {
 			logrus.Debugf("Logs for %s %s not uploaded yet...", bucket, objectName)
 			return nil, nil
@@ -256,4 +261,19 @@ func getLogs(ctx context.Context, offset int64, bucket, objectName string) (io.R
 		return nil, errors.Wrap(err, "unknown error")
 	}
 	return r, nil
+}
+
+func createBucket(ctx context.Context, bucket, projectId string) error {
+	c, err := cstorage.NewClient(ctx)
+	if err != nil {
+		return errors.Wrap(err, "getting storage client")
+	}
+	defer c.Close()
+
+	if err := c.Bucket(bucket).Create(ctx, projectId, &cstorage.BucketAttrs{
+		Name: bucket,
+	}); err != nil {
+		return err
+	}
+	return nil
 }
