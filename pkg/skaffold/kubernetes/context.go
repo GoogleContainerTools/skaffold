@@ -14,22 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package constants
+package kubernetes
 
 import (
-	"github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
-const (
-	// For alpha releases, the default log level should be 'info'
-	DefaultLogLevel = logrus.InfoLevel
-
-	// The dockerfile path is given relative to the context directory
-	DefaultDockerfilePath = "Dockerfile"
-
-	// TagStrategySha256 uses the checksum of the built artifact as the tag
-	TagStrategySha256    = "sha256"
-	TagStrategyGitCommit = "gitCommit"
-
-	DefaultMinikubeContext = "minikube"
-)
+func CurrentContext() (string, error) {
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
+	cfg, err := kubeConfig.RawConfig()
+	if err != nil {
+		return "", errors.Wrap(err, "loading kubeconfig")
+	}
+	return cfg.CurrentContext, nil
+}

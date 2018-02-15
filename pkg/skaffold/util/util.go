@@ -207,3 +207,9 @@ func containsWildcards(path string) bool {
 	}
 	return false
 }
+
+// BoolPtr returns a pointer to a bool
+func BoolPtr(b bool) *bool {
+	o := b
+	return &o
+}

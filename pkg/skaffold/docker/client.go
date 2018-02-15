@@ -20,8 +20,16 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
+	"os/exec"
+	"path/filepath"
+	"strings"
 
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
+	"github.com/docker/docker/api"
+	"github.com/docker/go-connections/tlsconfig"
 	"github.com/moby/moby/client"
+	"github.com/pkg/errors"
 )
 
 // NewImageAPIClient returns a docker client based on the environment variables set.
@@ -35,4 +43,70 @@ func NewImageAPIClient() (client.ImageAPIClient, io.Closer, error) {
 	cli.NegotiateAPIVersion(context.Background())
 
 	return cli, cli, nil
+}
+
+// NewMinikubeImageAPIClient returns a docker client using the environment variables
+// provided by minikube.
+func NewMinikubeImageAPIClient() (client.ImageAPIClient, io.Closer, error) {
+	env, err := getMinikubeDockerEnv()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "getting minikube docker env")
+	}
+
+	var httpclient *http.Client
+	if dockerCertPath := env["DOCKER_CERT_PATH"]; dockerCertPath != "" {
+		options := tlsconfig.Options{
+			CAFile:             filepath.Join(dockerCertPath, "ca.pem"),
+			CertFile:           filepath.Join(dockerCertPath, "cert.pem"),
+			KeyFile:            filepath.Join(dockerCertPath, "key.pem"),
+			InsecureSkipVerify: env["DOCKER_TLS_VERIFY"] == "",
+		}
+		tlsc, err := tlsconfig.Client(options)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		httpclient = &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: tlsc,
+			},
+			CheckRedirect: client.CheckRedirect,
+		}
+	}
+
+	host := env["DOCKER_HOST"]
+	if host == "" {
+		host = client.DefaultDockerHost
+	}
+	version := env["DOCKER_API_VERSION"]
+	if version == "" {
+		version = api.DefaultVersion
+	}
+
+	cli, err := client.NewClient(host, version, httpclient, nil)
+	if err != nil {
+		return cli, cli, err
+	}
+
+	return cli, cli, nil
+}
+
+func getMinikubeDockerEnv() (map[string]string, error) {
+	cmd := exec.Command("minikube", "docker-env", "--shell", "none")
+	out, stderr, err := util.RunCommand(cmd, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting minikube docker-env stdout: %s, stdin: %s, err: %s", out, stderr, err)
+	}
+	env := map[string]string{}
+	for _, line := range strings.Split(string(out), "\n") {
+		if line == "" {
+			continue
+		}
+		kv := strings.Split(line, "=")
+		if len(kv) != 2 {
+			return nil, fmt.Errorf("Unable to parse minikube docker-env keyvalue: %s, line: %s, output: %s", kv, line, string(out))
+		}
+		env[kv[0]] = kv[1]
+	}
+	return env, nil
 }

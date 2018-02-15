@@ -20,11 +20,17 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"testing"
+
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
 	"github.com/docker/docker/api/types"
 	"github.com/moby/moby/client"
@@ -49,12 +55,18 @@ func TestLocalRun(t *testing.T) {
 	auth := docker.DefaultAuthHelper
 	defer func() { docker.DefaultAuthHelper = auth }()
 	docker.DefaultAuthHelper = testAuthHelper{}
+
+	// Set a bad KUBECONFIG path so we don't parse a real one that happens to be
+	// present on the host
+	unsetEnvs := testutil.SetEnvs(t, map[string]string{"KUBECONFIG": "badpath"})
+	defer unsetEnvs(t)
 	var tests = []struct {
-		description string
-		config      *config.BuildConfig
-		out         io.Writer
-		newAPI      func() (client.ImageAPIClient, io.Closer, error)
-		tagger      tag.Tagger
+		description  string
+		config       *config.BuildConfig
+		out          io.Writer
+		newImageAPI  func() (client.ImageAPIClient, io.Closer, error)
+		tagger       tag.Tagger
+		localCluster bool
 
 		expectedBuild *BuildResult
 		shouldErr     bool
@@ -71,12 +83,12 @@ func TestLocalRun(t *testing.T) {
 				},
 				BuildType: config.BuildType{
 					LocalBuild: &config.LocalBuild{
-						Push: true,
+						SkipPush: util.BoolPtr(true),
 					},
 				},
 			},
-			tagger: &tag.ChecksumTagger{},
-			newAPI: testutil.NewFakeImageAPIClientCloser,
+			tagger:      &tag.ChecksumTagger{},
+			newImageAPI: testutil.NewFakeImageAPIClientCloser,
 			expectedBuild: &BuildResult{
 				[]Build{
 					{
@@ -85,6 +97,12 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			description:  "local cluster bad writer",
+			out:          &testutil.BadWriter{},
+			shouldErr:    true,
+			localCluster: true,
 		},
 		{
 			description: "error image build",
@@ -97,9 +115,9 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			tagger:    &tag.ChecksumTagger{},
-			newAPI:    testutil.NewFakeImageAPIClientCloserBuildError,
-			shouldErr: true,
+			tagger:      &tag.ChecksumTagger{},
+			newImageAPI: testutil.NewFakeImageAPIClientCloserBuildError,
+			shouldErr:   true,
 		},
 		{
 			description: "error image tag",
@@ -112,9 +130,9 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			tagger:    &tag.ChecksumTagger{},
-			newAPI:    testutil.NewFakeImageAPIClientCloserTagError,
-			shouldErr: true,
+			tagger:      &tag.ChecksumTagger{},
+			newImageAPI: testutil.NewFakeImageAPIClientCloserTagError,
+			shouldErr:   true,
 		},
 		{
 			description: "error api client",
@@ -127,9 +145,9 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			tagger:    &tag.ChecksumTagger{},
-			newAPI:    func() (client.ImageAPIClient, io.Closer, error) { return nil, nil, fmt.Errorf("") },
-			shouldErr: true,
+			tagger:      &tag.ChecksumTagger{},
+			newImageAPI: func() (client.ImageAPIClient, io.Closer, error) { return nil, nil, fmt.Errorf("") },
+			shouldErr:   true,
 		},
 		{
 			description: "bad writer",
@@ -142,9 +160,9 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			tagger:    &tag.ChecksumTagger{},
-			newAPI:    testutil.NewFakeImageAPIClientCloser,
-			shouldErr: true,
+			tagger:      &tag.ChecksumTagger{},
+			newImageAPI: testutil.NewFakeImageAPIClientCloser,
+			shouldErr:   true,
 		},
 		{
 			description: "error image list",
@@ -157,9 +175,9 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			tagger:    &tag.ChecksumTagger{},
-			newAPI:    testutil.NewFakeImageAPIClientCloserListError,
-			shouldErr: true,
+			tagger:      &tag.ChecksumTagger{},
+			newImageAPI: testutil.NewFakeImageAPIClientCloserListError,
+			shouldErr:   true,
 		},
 		{
 			description: "error tagger",
@@ -171,17 +189,18 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			tagger:    &FakeTagger{Err: fmt.Errorf("")},
-			newAPI:    testutil.NewFakeImageAPIClientCloser,
-			shouldErr: true,
+			tagger:      &FakeTagger{Err: fmt.Errorf("")},
+			newImageAPI: testutil.NewFakeImageAPIClientCloser,
+			shouldErr:   true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			l := &LocalBuilder{
-				BuildConfig: test.config,
-				newAPI:      test.newAPI,
+				BuildConfig:  test.config,
+				newImageAPI:  test.newImageAPI,
+				localCluster: test.localCluster,
 			}
 			res, err := l.Run(test.out, test.tagger)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedBuild, res)
@@ -189,13 +208,38 @@ func TestLocalRun(t *testing.T) {
 	}
 }
 
-func TestNewLocalBuilder(t *testing.T) {
+func TestNewLocalBuilderError(t *testing.T) {
 	_, err := NewLocalBuilder(&config.BuildConfig{
 		Artifacts: []*config.Artifact{
 			{
 				ImageName: "test",
 				Workspace: ".",
 			},
+		},
+	})
+	testutil.CheckError(t, true, err)
+}
+
+func TestNewLocalBuilderMinikubeContext(t *testing.T) {
+	tmpDir := os.TempDir()
+	kubeConfig := filepath.Join(tmpDir, "config")
+	defer os.Remove(kubeConfig)
+	if err := clientcmd.WriteToFile(api.Config{
+		CurrentContext: "minikube",
+	}, kubeConfig); err != nil {
+		t.Fatalf("writing temp kubeconfig")
+	}
+	unsetEnvs := testutil.SetEnvs(t, map[string]string{"KUBECONFIG": kubeConfig})
+	defer unsetEnvs(t)
+	_, err := NewLocalBuilder(&config.BuildConfig{
+		Artifacts: []*config.Artifact{
+			{
+				ImageName: "test",
+				Workspace: ".",
+			},
+		},
+		BuildType: config.BuildType{
+			LocalBuild: &config.LocalBuild{},
 		},
 	})
 	if err != nil {

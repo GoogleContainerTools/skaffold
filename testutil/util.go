@@ -18,6 +18,7 @@ package testutil
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 )
@@ -76,4 +77,26 @@ func checkErr(shouldErr bool, err error) error {
 		return fmt.Errorf("Unexpected error: %s", err)
 	}
 	return nil
+}
+
+// SetEnvs takes a map of key values to set using os.Setenv and returns
+// a function that can be called to reset the envs to their previous values.
+func SetEnvs(t *testing.T, envs map[string]string) func(*testing.T) {
+	prevEnvs := map[string]string{}
+	for key, value := range envs {
+		prevEnv := os.Getenv(key)
+		prevEnvs[key] = prevEnv
+		err := os.Setenv(key, value)
+		if err != nil {
+			t.Error(err)
+		}
+	}
+	return func(t *testing.T) {
+		for key, value := range prevEnvs {
+			err := os.Setenv(key, value)
+			if err != nil {
+				t.Error(err)
+			}
+		}
+	}
 }

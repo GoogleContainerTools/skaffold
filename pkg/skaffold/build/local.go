@@ -25,30 +25,56 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/moby/moby/client"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // LocalBuilder uses the host docker daemon to build and tag the image
 type LocalBuilder struct {
 	*config.BuildConfig
 
-	newAPI func() (client.ImageAPIClient, io.Closer, error)
+	newImageAPI  func() (client.ImageAPIClient, io.Closer, error)
+	localCluster bool
 }
 
 // NewLocalBuilder returns an new instance of a LocalBuilder
 func NewLocalBuilder(cfg *config.BuildConfig) (*LocalBuilder, error) {
+	if cfg.LocalBuild == nil {
+		return nil, fmt.Errorf("LocalBuild config field is needed to create a new LocalBuilder")
+	}
+	var localCluster bool
+	context, err := kubernetes.CurrentContext()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting current cluster context")
+	}
+	var newImageAPI = docker.NewImageAPIClient
+	if context == constants.DefaultMinikubeContext {
+		newImageAPI = docker.NewMinikubeImageAPIClient
+		localCluster = true
+	}
+	if cfg.LocalBuild.SkipPush == nil {
+		logrus.Debugf("skipPush value not present. defaulting to cluster default %t (minikube=true, gke=false)", localCluster)
+		cfg.LocalBuild.SkipPush = &localCluster
+	}
 	return &LocalBuilder{
-		BuildConfig: cfg,
-		newAPI:      docker.NewImageAPIClient,
+		BuildConfig:  cfg,
+		newImageAPI:  newImageAPI,
+		localCluster: localCluster,
 	}, nil
 }
 
 // Run runs a docker build on the host and tags the resulting image with
 // its checksum. It streams build progress to the writer argument.
 func (l *LocalBuilder) Run(out io.Writer, tagger tag.Tagger) (*BuildResult, error) {
-	api, c, err := l.newAPI()
+	if l.localCluster {
+		if _, err := fmt.Fprint(out, "Found minikube context, using minikube docker daemon.\n"); err != nil {
+			return nil, errors.Wrap(err, "writing status")
+		}
+	}
+	api, c, err := l.newImageAPI()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting image api client")
 	}
@@ -91,7 +117,7 @@ func (l *LocalBuilder) Run(out io.Writer, tagger tag.Tagger) (*BuildResult, erro
 		if _, err := io.WriteString(out, fmt.Sprintf("Successfully tagged %s\n", tag)); err != nil {
 			return nil, errors.Wrap(err, "writing tag status")
 		}
-		if l.LocalBuild.Push {
+		if !*l.LocalBuild.SkipPush {
 			if err := docker.RunPush(api, tag, out); err != nil {
 				return nil, errors.Wrap(err, "running push")
 			}

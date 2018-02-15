@@ -17,10 +17,12 @@ limitations under the License.
 package docker
 
 import (
-	"os"
+	"fmt"
 	"testing"
 
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
+	"github.com/moby/moby/client"
 )
 
 func TestNewEnvClient(t *testing.T) {
@@ -47,7 +49,7 @@ func TestNewEnvClient(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			unsetEnvs := setEnvs(t, test.envs)
+			unsetEnvs := testutil.SetEnvs(t, test.envs)
 			_, _, err := NewImageAPIClient()
 			testutil.CheckError(t, test.shouldErr, err)
 			unsetEnvs(t)
@@ -56,22 +58,82 @@ func TestNewEnvClient(t *testing.T) {
 
 }
 
-func setEnvs(t *testing.T, envs map[string]string) func(*testing.T) {
-	prevEnvs := map[string]string{}
-	for key, value := range envs {
-		prevEnv := os.Getenv(key)
-		prevEnvs[key] = prevEnv
-		err := os.Setenv(key, value)
-		if err != nil {
-			t.Error(err)
-		}
+func TestNewMinikubeImageAPIClient(t *testing.T) {
+	var tests = []struct {
+		description string
+		cmd         util.Command
+
+		expected  client.ImageAPIClient
+		shouldErr bool
+	}{
+		{
+			description: "correct client",
+			cmd: testutil.NewFakeRunCommand(`DOCKER_TLS_VERIFY=1
+DOCKER_HOST=http://127.0.0.1:8080
+DOCKER_CERT_PATH=testdata
+DOCKER_API_VERSION=1.23`, "", nil),
+		},
+		{
+			description: "bad env client",
+			cmd:         testutil.NewFakeRunCommand("", "", fmt.Errorf("")),
+			shouldErr:   true,
+		},
+		{
+			description: "correct client",
+			cmd: testutil.NewFakeRunCommand(`DOCKER_TLS_VERIFY=1
+DOCKER_HOST=http://127.0.0.1:8080
+DOCKER_CERT_PATH=bad/cert/path
+DOCKER_API_VERSION=1.23`, "", nil),
+			shouldErr: true,
+		},
+		{
+			description: "missing host env, no error",
+			cmd: testutil.NewFakeRunCommand(`DOCKER_TLS_VERIFY=1
+DOCKER_CERT_PATH=testdata
+DOCKER_API_VERSION=1.23`, "", nil),
+		},
+		{
+			description: "missing version env, no error",
+			cmd: testutil.NewFakeRunCommand(`DOCKER_TLS_VERIFY=1
+DOCKER_HOST=http://127.0.0.1:8080
+DOCKER_CERT_PATH=testdata`, "", nil),
+		},
+		{
+			description: "missing version env, no error",
+			cmd: testutil.NewFakeRunCommand(`DOCKER_TLS_VERIFY=1
+DOCKER_HOST=badurl
+DOCKER_CERT_PATH=testdata
+DOCKER_API_VERSION=1.23`, "", nil),
+			shouldErr: true,
+		},
+		{
+			description: "bad env output, too many key value pairs",
+			cmd: testutil.NewFakeRunCommand(`DOCKER_TLS_VERIFY=1
+DOCKER_HOST=http://127.0.0.1:8080=toomanyvalues
+DOCKER_CERT_PATH=testdata
+DOCKER_API_VERSION=1.23`, "", nil),
+			shouldErr: true,
+		},
+		{
+			description: "newlines ignored, no error",
+			cmd: testutil.NewFakeRunCommand(`
+			
+DOCKER_TLS_VERIFY=1
+DOCKER_HOST=http://127.0.0.1:8080
+
+DOCKER_CERT_PATH=testdata
+DOCKER_API_VERSION=1.23`, "", nil),
+			shouldErr: true,
+		},
 	}
-	return func(t *testing.T) {
-		for key, value := range prevEnvs {
-			err := os.Setenv(key, value)
-			if err != nil {
-				t.Error(err)
-			}
-		}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			util.DefaultExecCommand = test.cmd
+			defer util.ResetDefaultExecCommand()
+
+			_, _, err := NewMinikubeImageAPIClient()
+			testutil.CheckError(t, test.shouldErr, err)
+		})
 	}
 }
