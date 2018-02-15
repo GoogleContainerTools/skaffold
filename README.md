@@ -36,8 +36,19 @@ Use for:
 What you'll need installed
 
 * **skaffold**
-    * We don't ship a binary yet, so you'll have to build it yourself!
-    * Using `go >= 1.9`, run `make install` in the root directory to install `skaffold` to your `$GOBIN`.
+    * We don't have official releases yet, but we do publish CI builds on every merged PR.
+      To download the latest Linux build, run:
+      
+      ```shell
+      curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin
+      ```
+      
+      To download the latest OSX build, run:
+
+      ```shell
+      curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin
+      ```
+
 * **Kubernetes Cluster**
 * **kubectl**
   * configured with the current-context of your target cluster
