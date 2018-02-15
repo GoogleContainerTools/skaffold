@@ -32,11 +32,13 @@ BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
 GO_LDFLAGS := "-X $(REPOPATH)/pkg/skaffold/version.version=$(VERSION)"
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+GO_BUILD_TAGS := "kqueue"
+
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
 
 $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
-	GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=1 go build -ldflags $(GO_LDFLAGS) -o $@ $(BUILD_PACKAGE)
+	GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -tags $(GO_BUILD_TAGS) -o $@ $(BUILD_PACKAGE)
 
 %.sha256: %
 	shasum -a 256 $< &> $@
