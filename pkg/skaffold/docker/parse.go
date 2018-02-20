@@ -42,6 +42,9 @@ const (
 	from = "from"
 )
 
+// For testing.
+var RetrieveConfig = retrieveImageConfig
+
 // GetDockerfileDependencies parses a dockerfile and returns the full paths
 // of all the source files that the resulting docker image depends on.
 func GetDockerfileDependencies(workspace string, r io.Reader) ([]string, error) {
@@ -107,9 +110,19 @@ func processBaseImage(value *parser.Node) ([]string, error) {
 	base := value.Next.Value
 	logrus.Debugf("Checking base image %s for ONBUILD triggers.", base)
 	if strings.ToLower(base) == "scratch" {
+		logrus.Debugf("SCRATCH base image found, skipping check: %s", base)
 		return nil, nil
 	}
-	ref, err := docker.ParseReference("//" + base)
+	cfg, err := RetrieveConfig(base)
+	if err != nil {
+		return nil, err
+	}
+	logrus.Debugf("Found onbuild triggers %v in image %s", cfg.Config.OnBuild, base)
+	return cfg.Config.OnBuild, nil
+}
+
+func retrieveImageConfig(image string) (*manifest.Schema2Image, error) {
+	ref, err := docker.ParseReference("//" + image)
 	if err != nil {
 		return nil, err
 	}
@@ -123,13 +136,11 @@ func processBaseImage(value *parser.Node) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	var cfg manifest.Schema2Image
-	if err := json.Unmarshal(cfgBytes, &cfg); err != nil {
+	var cfg *manifest.Schema2Image
+	if err := json.Unmarshal(cfgBytes, cfg); err != nil {
 		return nil, err
 	}
-	logrus.Debugf("Found onbuild triggers: %v in base image %s", cfg.Config.OnBuild, base)
-	return cfg.Config.OnBuild, nil
-
+	return cfg, nil
 }
 
 func processCopy(workspace string, value *parser.Node, paths map[string]struct{}, envs map[string]string) error {
