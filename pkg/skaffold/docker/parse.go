@@ -17,11 +17,16 @@ limitations under the License.
 package docker
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/containers/image/manifest"
+
+	"github.com/containers/image/docker"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/moby/moby/builder/dockerfile/parser"
@@ -34,6 +39,7 @@ const (
 	add  = "add"
 	copy = "copy"
 	env  = "env"
+	from = "from"
 )
 
 // GetDockerfileDependencies parses a dockerfile and returns the full paths
@@ -45,14 +51,37 @@ func GetDockerfileDependencies(workspace string, r io.Reader) ([]string, error) 
 	}
 	envs := map[string]string{}
 	depMap := map[string]struct{}{}
+	// First process onbuilds, if present.
+	onbuilds := []string{}
 	for _, value := range res.AST.Children {
 		switch value.Value {
-		case add, copy:
-			processCopy(workspace, value, depMap, envs)
-		case env:
-			envs[value.Next.Value] = value.Next.Next.Value
+		case from:
+			onbuilds, err = processBaseImage(value)
+			if err != nil {
+				logrus.Warnf("Error prrocessing base image for onbuild triggers: %s. Dependencies may be incomplete.", err)
+			}
 		}
 	}
+
+	var dispatchInstructions = func(r *parser.Result) {
+		for _, value := range r.AST.Children {
+			switch value.Value {
+			case add, copy:
+				processCopy(workspace, value, depMap, envs)
+			case env:
+				envs[value.Next.Value] = value.Next.Next.Value
+			}
+		}
+	}
+	for _, ob := range onbuilds {
+		obRes, err := parser.Parse(strings.NewReader(ob))
+		if err != nil {
+			return nil, err
+		}
+		dispatchInstructions(obRes)
+	}
+
+	dispatchInstructions(res)
 
 	deps := []string{}
 	for dep := range depMap {
@@ -72,6 +101,35 @@ func GetDockerfileDependencies(workspace string, r io.Reader) ([]string, error) 
 		return nil, errors.Wrap(err, "applying dockerignore")
 	}
 	return filteredDeps, nil
+}
+
+func processBaseImage(value *parser.Node) ([]string, error) {
+	base := value.Next.Value
+	logrus.Debugf("Checking base image %s for ONBUILD triggers.", base)
+	if strings.ToLower(base) == "scratch" {
+		return nil, nil
+	}
+	ref, err := docker.ParseReference("//" + base)
+	if err != nil {
+		return nil, err
+	}
+
+	img, err := ref.NewImage(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	cfgBytes, err := img.ConfigBlob()
+	if err != nil {
+		return nil, err
+	}
+	var cfg manifest.Schema2Image
+	if err := json.Unmarshal(cfgBytes, &cfg); err != nil {
+		return nil, err
+	}
+	logrus.Debugf("Found onbuild triggers: %v in base image %s", cfg.Config.OnBuild, base)
+	return cfg.Config.OnBuild, nil
+
 }
 
 func processCopy(workspace string, value *parser.Node, paths map[string]struct{}, envs map[string]string) error {

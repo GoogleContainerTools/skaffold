@@ -34,13 +34,13 @@ CMD server.go
 `
 
 const addDockerfile = `
-FROM gcr.io/nginx
+FROM nginx
 ADD nginx.conf /etc/nginx
 CMD nginx
 `
 
 const multiCopy = `
-FROM gcr.io/nginx
+FROM nginx
 ADD test.conf /etc/test1
 COPY test.conf /etc/test2
 CMD nginx
@@ -66,7 +66,7 @@ COPY $foo /quux # COPY bar /quux
 `
 
 const copyDirectory = `
-FROM gcr.io/nginx
+FROM nginx
 ADD . /etc/
 COPY ./file /etc/file
 CMD nginx
@@ -79,6 +79,11 @@ COPY server.go file .
 const dockerIgnore = `
 bar
 docker/*
+`
+
+// This has an ONBUILD instruction of "COPY . /go/src/app"
+const onbuild = `
+FROM golang:onbuild
 `
 
 func TestGetDockerfileDependencies(t *testing.T) {
@@ -139,6 +144,12 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			dockerIgnore: true,
 			workspace:    ".",
 			expected:     []string{"file", "server.go", "test.conf", "worker.go"},
+		},
+		{
+			description: "onbuild test",
+			dockerfile:  onbuild,
+			workspace:   ".",
+			expected:    []string{"file", "server.go", "test.conf", "worker.go"},
 		},
 	}
 
