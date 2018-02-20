@@ -32,7 +32,7 @@ BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
 GO_LDFLAGS := "-X $(REPOPATH)/pkg/skaffold/version.version=$(VERSION)"
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
-GO_BUILD_TAGS := "kqueue"
+GO_BUILD_TAGS := "kqueue container_image_ostree_stub containers_image_openpgp"
 
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
