@@ -41,6 +41,23 @@
   revision = "b2b946a77f5973f420514090d6f6dd58b08303f0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/containers/image"
+  packages = [
+    "docker",
+    "docker/policyconfiguration",
+    "docker/reference",
+    "image",
+    "manifest",
+    "pkg/docker/config",
+    "pkg/strslice",
+    "pkg/tlsclientconfig",
+    "transports",
+    "types"
+  ]
+  revision = "701221f0891d76aeac3f25912e6bb9f84e88de1c"
+
+[[projects]]
   name = "github.com/docker/cli"
   packages = [
     "cli/config",
@@ -136,6 +153,12 @@
   packages = ["."]
   revision = "0dadbb0345b35ec7ef35e228dabb8de89a65bf52"
   version = "v0.3.2"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/docker/libtrust"
+  packages = ["."]
+  revision = "aabc10ec26b754e797f9028f4589c5b7bd90dc20"
 
 [[projects]]
   name = "github.com/emicklei/go-restful"
@@ -613,6 +636,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "883f7f5fa771c811b75eea6d602c82c30cf555c471eada93163d5d78e8944b51"
+  inputs-digest = "a0822d81c2671c571db440c85b852d2d60d95d6b2969e728444582ef94b6e9fc"
   solver-name = "gps-cdcl"
   solver-version = 1

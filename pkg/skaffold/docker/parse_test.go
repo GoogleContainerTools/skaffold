@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"fmt"
 	"io"
 	"sort"
 	"strings"
@@ -24,6 +25,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
+	"github.com/containers/image/manifest"
 	"github.com/spf13/afero"
 )
 
@@ -34,13 +36,13 @@ CMD server.go
 `
 
 const addDockerfile = `
-FROM gcr.io/nginx
+FROM nginx
 ADD nginx.conf /etc/nginx
 CMD nginx
 `
 
 const multiCopy = `
-FROM gcr.io/nginx
+FROM nginx
 ADD test.conf /etc/test1
 COPY test.conf /etc/test2
 CMD nginx
@@ -66,7 +68,7 @@ COPY $foo /quux # COPY bar /quux
 `
 
 const copyDirectory = `
-FROM gcr.io/nginx
+FROM nginx
 ADD . /etc/
 COPY ./file /etc/file
 CMD nginx
@@ -80,6 +82,38 @@ const dockerIgnore = `
 bar
 docker/*
 `
+
+// This has an ONBUILD instruction of "COPY . /go/src/app"
+const onbuild = `
+FROM golang:onbuild
+`
+
+const onbuildError = `
+FROM noimage:latest
+ADD ./file /etc/file
+`
+
+var ImageConfigs = map[string]*manifest.Schema2Image{
+	"golang:onbuild": {
+		Schema2V1Image: manifest.Schema2V1Image{
+			Config: &manifest.Schema2Config{
+				OnBuild: []string{
+					"COPY . /go/src/app",
+				},
+			},
+		},
+	},
+	"ubuntu:14.04": {Schema2V1Image: manifest.Schema2V1Image{Config: &manifest.Schema2Config{}}},
+	"nginx":        {Schema2V1Image: manifest.Schema2V1Image{Config: &manifest.Schema2Config{}}},
+	"busybox":      {Schema2V1Image: manifest.Schema2V1Image{Config: &manifest.Schema2Config{}}},
+}
+
+func mockRetrieveConfig(image string) (*manifest.Schema2Image, error) {
+	if cfg, ok := ImageConfigs[image]; ok {
+		return cfg, nil
+	}
+	return nil, fmt.Errorf("No image found for %s", image)
+}
 
 func TestGetDockerfileDependencies(t *testing.T) {
 	var tests = []struct {
@@ -140,7 +174,24 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			workspace:    ".",
 			expected:     []string{"file", "server.go", "test.conf", "worker.go"},
 		},
+		{
+			description: "onbuild test",
+			dockerfile:  onbuild,
+			workspace:   ".",
+			expected:    []string{"bar", "docker/nginx.conf", "file", "server.go", "test.conf", "worker.go"},
+		},
+		{
+			description: "onbuild error",
+			dockerfile:  onbuildError,
+			workspace:   ".",
+			expected:    []string{"file"},
+		},
 	}
+
+	RetrieveConfig = mockRetrieveConfig
+	defer func() {
+		RetrieveConfig = retrieveImageConfig
+	}()
 
 	util.Fs = afero.NewMemMapFs()
 	defer util.ResetFs()
@@ -160,6 +211,7 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			}
 			if test.dockerIgnore {
 				afero.WriteFile(util.Fs, ".dockerignore", []byte(dockerIgnore), 0644)
+				defer util.Fs.Remove(".dockerignore")
 			}
 			deps, err := GetDockerfileDependencies(test.workspace, r)
 			sort.Strings(deps)
