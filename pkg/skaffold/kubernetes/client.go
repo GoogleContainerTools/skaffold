@@ -22,6 +22,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	// Initialize all known client auth plugins
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 func GetClientset() (*kubernetes.Clientset, error) {
