@@ -83,6 +83,9 @@ func getDeployer(cfg *config.DeployConfig) (deploy.Deployer, error) {
 	if cfg.KubectlDeploy != nil {
 		return deploy.NewKubectlDeployer(cfg)
 	}
+	if cfg.HelmDeploy != nil {
+		return deploy.NewHelmDeployer(cfg)
+	}
 	return nil, fmt.Errorf("Unknown deployer for config %+v", cfg)
 }
 

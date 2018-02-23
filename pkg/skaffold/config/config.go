@@ -65,6 +65,7 @@ type DeployConfig struct {
 // DeployType contains the specific implementation and parameters needed
 // for the deploy step. Only one field should be populated.
 type DeployType struct {
+	HelmDeploy    *HelmDeploy    `yaml:"helm"`
 	KubectlDeploy *KubectlDeploy `yaml:"kubectl"`
 }
 
@@ -76,6 +77,16 @@ type KubectlDeploy struct {
 type Manifest struct {
 	Paths      []string          `yaml:"paths"`
 	Parameters map[string]string `yaml:"parameters"`
+}
+
+type HelmDeploy struct {
+	Releases []HelmRelease `yaml:"releases"`
+}
+
+type HelmRelease struct {
+	Name      string            `yaml:"name"`
+	ChartPath string            `yaml:"chartPath"`
+	Values    map[string]string `yaml:"values"`
 }
 
 // Arifact represents items that need should be built, along with the context in which

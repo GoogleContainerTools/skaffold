@@ -1,0 +1,16 @@
+apiVersion: skaffold/v1
+kind: Config
+build:
+  tagPolicy: sha256
+  artifacts:
+  - imageName: skaffold-helm
+    dockerfilePath: deploy/skaffold/Dockerfile
+    workspace: .
+  local: {}
+deploy:
+  helm:
+    releases:
+    - name: skaffold-helm
+      chartPath: examples/helm-deployment/skaffold-helm
+      values:
+        image: skaffold-helm
