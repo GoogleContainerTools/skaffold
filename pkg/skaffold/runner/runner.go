@@ -119,20 +119,17 @@ func (r *SkaffoldRunner) dev() error {
 		if evt.EventType == watch.WatchStop {
 			return nil
 		}
-		if err := r.run(evt); err != nil {
+		if err := r.run(evt.ChangedArtifacts); err != nil {
 			// In dev mode, we only warn on pipeline errors
 			logrus.Warnf("run: %s", err)
 		}
 	}
 }
 
-func (r *SkaffoldRunner) run(evt *watch.Event) error {
+func (r *SkaffoldRunner) run(artifacts []*config.Artifact) error {
 	logrus.Info("Starting build...")
-	var changedArtifacts []*config.Artifact
-	if evt != nil {
-		changedArtifacts = evt.ChangedArtifacts
-	}
-	res, err := r.Builder.Run(r.out, r.Tagger, changedArtifacts)
+
+	res, err := r.Builder.Run(r.out, r.Tagger, artifacts)
 	if err != nil {
 		return errors.Wrap(err, "build step")
 	}
