@@ -61,7 +61,7 @@ func GetDockerfileDependencies(workspace string, r io.Reader) ([]string, error) 
 		case from:
 			onbuilds, err = processBaseImage(value)
 			if err != nil {
-				logrus.Warnf("Error prrocessing base image for onbuild triggers: %s. Dependencies may be incomplete.", err)
+				logrus.Warnf("Error processing base image for onbuild triggers: %s. Dependencies may be incomplete.", err)
 			}
 		}
 	}
