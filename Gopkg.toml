@@ -50,3 +50,7 @@
 [[constraint]]
   name = "k8s.io/api"
   version = "kubernetes-1.9.2"
+
+[[override]]
+  name = "github.com/Azure/go-autorest"
+  version = "v9.1.0"
