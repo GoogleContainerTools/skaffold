@@ -17,7 +17,6 @@ limitations under the License.
 package docker
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
@@ -74,11 +73,6 @@ DOCKER_CERT_PATH=testdata
 DOCKER_API_VERSION=1.23`, "", nil),
 		},
 		{
-			description: "bad env client",
-			cmd:         testutil.NewFakeRunCommand("", "", fmt.Errorf("")),
-			shouldErr:   true,
-		},
-		{
 			description: "correct client",
 			cmd: testutil.NewFakeRunCommand(`DOCKER_TLS_VERIFY=1
 DOCKER_HOST=http://127.0.0.1:8080
@@ -107,23 +101,11 @@ DOCKER_API_VERSION=1.23`, "", nil),
 			shouldErr: true,
 		},
 		{
-			description: "bad env output, too many key value pairs",
+			description: "bad env output, should fallback to host docker",
 			cmd: testutil.NewFakeRunCommand(`DOCKER_TLS_VERIFY=1
 DOCKER_HOST=http://127.0.0.1:8080=toomanyvalues
 DOCKER_CERT_PATH=testdata
 DOCKER_API_VERSION=1.23`, "", nil),
-			shouldErr: true,
-		},
-		{
-			description: "newlines ignored, no error",
-			cmd: testutil.NewFakeRunCommand(`
-			
-DOCKER_TLS_VERIFY=1
-DOCKER_HOST=http://127.0.0.1:8080
-
-DOCKER_CERT_PATH=testdata
-DOCKER_API_VERSION=1.23`, "", nil),
-			shouldErr: true,
 		},
 	}
 
