@@ -90,7 +90,7 @@ func TestParseConfig(t *testing.T) {
 			if test.badReader {
 				r = testutil.BadReader{}
 			}
-			cfg, err := Parse(r)
+			cfg, err := Parse(r, DefaultDevSkaffoldConfig)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cfg)
 		})
 	}

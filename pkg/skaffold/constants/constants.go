@@ -27,7 +27,8 @@ const (
 	// The dockerfile path is given relative to the context directory
 	DefaultDockerfilePath = "Dockerfile"
 
-	DefaultTagStrategy = TagStrategyGitCommit
+	DefaultDevTagStrategy = TagStrategySha256
+	DefaultRunTagStrategy = TagStrategyGitCommit
 
 	// TagStrategySha256 uses the checksum of the built artifact as the tag
 	TagStrategySha256    = "sha256"

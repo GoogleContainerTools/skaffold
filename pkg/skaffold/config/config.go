@@ -98,26 +98,36 @@ type Artifact struct {
 	Workspace      string `yaml:"workspace"`
 }
 
-// DefaultSkaffoldConfig is a partial set of defaults for the SkaffoldConfig
+// DefaultDevSkaffoldConfig is a partial set of defaults for the SkaffoldConfig
+// when dev mode is specified.
 // Each API is responsible for setting its own defaults that are not top level.
-var DefaultSkaffoldConfig = &SkaffoldConfig{
+var DefaultDevSkaffoldConfig = &SkaffoldConfig{
 	Build: BuildConfig{
-		TagPolicy: constants.DefaultTagStrategy,
+		TagPolicy: constants.DefaultDevTagStrategy,
+	},
+}
+
+// DefaultRunSkaffoldConfig is a partial set of defaults for the SkaffoldConfig
+// when run mode is specified.
+// Each API is responsible for setting its own defaults that are not top level.
+var DefaultRunSkaffoldConfig = &SkaffoldConfig{
+	Build: BuildConfig{
+		TagPolicy: constants.DefaultRunTagStrategy,
 	},
 }
 
 // Parse reads from an io.Reader and unmarshals the result into a SkaffoldConfig.
 // The default config argument provides default values for the config,
 // which can be overridden if present in the config file.
-func Parse(config io.Reader) (*SkaffoldConfig, error) {
+func Parse(config io.Reader, defaultConfig *SkaffoldConfig) (*SkaffoldConfig, error) {
 	var b bytes.Buffer
 	if _, err := b.ReadFrom(config); err != nil {
 		return nil, errors.Wrap(err, "reading config")
 	}
-	cfg := DefaultSkaffoldConfig
-	if err := yaml.Unmarshal(b.Bytes(), cfg); err != nil {
+
+	if err := yaml.Unmarshal(b.Bytes(), defaultConfig); err != nil {
 		return nil, err
 	}
 
-	return cfg, nil
+	return defaultConfig, nil
 }
