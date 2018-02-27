@@ -30,10 +30,21 @@ import (
 	restclient "k8s.io/client-go/rest"
 )
 
+const streamRetryDelay = 1 * time.Second
+
 // TODO(@r2d4): Figure out how to mock this out. fake.NewSimpleClient
 // won't mock out restclient.Request and will just return a nil stream.
 var getStream = func(r *restclient.Request) (io.ReadCloser, error) {
 	return r.Stream()
+}
+
+func StreamLogsRetry(out io.Writer, client corev1.CoreV1Interface, image string, retry int) {
+	for i := 0; i < retry; i++ {
+		if err := StreamLogs(out, client, image); err != nil {
+			logrus.Infof("Error getting logs %s", err)
+		}
+		time.Sleep(streamRetryDelay)
+	}
 }
 
 func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string) error {
@@ -45,7 +56,6 @@ func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string) erro
 	}
 	logrus.Infof("Looking for logs to stream for %s", image)
 	for _, p := range pods.Items {
-		logrus.Debugf("Found pod %s", p.Name)
 		for _, c := range p.Spec.Containers {
 			logrus.Debugf("Found container %s with image %s", c.Name, c.Image)
 			if c.Image == image {
@@ -68,11 +78,13 @@ func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string) erro
 				if err := streamRequest(out, header, rc); err != nil {
 					return errors.Wrap(err, "streaming request")
 				}
+
+				return nil
 			}
 		}
 	}
 
-	return nil
+	return fmt.Errorf("Image %s not found", image)
 }
 
 func streamRequest(out io.Writer, header string, rc io.Reader) error {
@@ -91,9 +103,6 @@ func streamRequest(out io.Writer, header string, rc io.Reader) error {
 			return errors.Wrap(err, "writing to out")
 		}
 	}
-	msg := fmt.Sprintf("%s Stream finished", header)
-	if _, err := out.Write([]byte(msg)); err != nil {
-		return errors.Wrap(err, "writing to out")
-	}
+	logrus.Infof("%s exited", header)
 	return nil
 }

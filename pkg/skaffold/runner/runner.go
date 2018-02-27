@@ -138,11 +138,7 @@ func (r *SkaffoldRunner) dev() error {
 		if bRes != nil {
 			for _, b := range bRes.Builds {
 				tag := b.Tag
-				go func() {
-					if err := kubernetes.StreamLogs(r.out, r.kubeclient.CoreV1(), tag); err != nil {
-						logrus.Warnf("Getting logs from %s: %v", tag, err)
-					}
-				}()
+				go kubernetes.StreamLogsRetry(r.out, r.kubeclient.CoreV1(), tag, 5)
 			}
 		}
 		evt, err := r.Watch(r.config.Build.Artifacts, r.watchReady, r.cancel)
