@@ -30,6 +30,7 @@ import (
 	"github.com/docker/go-connections/tlsconfig"
 	"github.com/moby/moby/client"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // NewImageAPIClient returns a docker client based on the environment variables set.
@@ -50,7 +51,8 @@ func NewImageAPIClient() (client.ImageAPIClient, io.Closer, error) {
 func NewMinikubeImageAPIClient() (client.ImageAPIClient, io.Closer, error) {
 	env, err := getMinikubeDockerEnv()
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "getting minikube docker env")
+		logrus.Warnf("Could not get minikube docker env, falling back to local docker daemon")
+		return NewImageAPIClient()
 	}
 
 	var httpclient *http.Client
