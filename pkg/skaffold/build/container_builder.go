@@ -62,6 +62,9 @@ const (
 
 	// StatusCancelled  "CANCELLED" - Build was canceled by a user.
 	StatusCancelled = "CANCELLED"
+
+	// RetryDelay is the time to wait in between polling the status of the cloud build
+	RetryDelay = 1 * time.Second
 )
 
 type GoogleCloudBuilder struct {
@@ -177,7 +180,7 @@ watch:
 			return nil, fmt.Errorf("unknown status: %s", b.Status)
 		}
 
-		time.Sleep(time.Second)
+		time.Sleep(RetryDelay)
 	}
 
 	if err := c.Bucket(cbBucket).Object(buildObject).Delete(ctx); err != nil {
