@@ -112,8 +112,12 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 	cbBucket := fmt.Sprintf("%s%s", cb.GoogleCloudBuild.ProjectID, constants.GCSBucketSuffix)
 	buildObject := fmt.Sprintf("source/%s-%s.tar.gz", cb.GoogleCloudBuild.ProjectID, util.RandomID())
 
+	if err := cb.createBucketIfNotExists(ctx, cbBucket); err != nil {
+		return nil, errors.Wrap(err, "creating bucket if not exists")
+	}
+
 	io.WriteString(out, fmt.Sprintf("Pushing code to gs://%s/%s\n", cbBucket, buildObject))
-	if err := uploadTarToGCS(ctx, artifact.DockerfilePath, artifact.Workspace, cbBucket, buildObject); err != nil {
+	if err := cb.uploadTarToGCS(ctx, artifact.DockerfilePath, artifact.Workspace, cbBucket, buildObject); err != nil {
 		return nil, errors.Wrap(err, "uploading source tarball")
 	}
 	call := cbclient.Projects.Builds.Create(cb.GoogleCloudBuild.ProjectID, &cloudbuild.Build{
@@ -216,7 +220,7 @@ func getImageID(b *cloudbuild.Build) (string, error) {
 	return b.Results.Images[0].Digest, nil
 }
 
-func uploadTarToGCS(ctx context.Context, dockerfilePath, dockerCtx, bucket, objectName string) error {
+func (cb *GoogleCloudBuilder) uploadTarToGCS(ctx context.Context, dockerfilePath, dockerCtx, bucket, objectName string) error {
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
 		return err
@@ -224,14 +228,11 @@ func uploadTarToGCS(ctx context.Context, dockerfilePath, dockerCtx, bucket, obje
 	defer c.Close()
 
 	relDockerfilePath := filepath.Join(dockerCtx, dockerfilePath)
-
 	w := c.Bucket(bucket).Object(objectName).NewWriter(ctx)
 	if err := docker.CreateDockerTarContext(w, relDockerfilePath, dockerCtx); err != nil {
 		return errors.Wrap(err, "uploading targz to google storage")
 	}
-	defer w.Close()
-
-	return nil
+	return w.Close()
 }
 
 func (cb *GoogleCloudBuilder) getLogs(ctx context.Context, offset int64, bucket, objectName string) (io.ReadCloser, error) {
@@ -250,13 +251,6 @@ func (cb *GoogleCloudBuilder) getLogs(ctx context.Context, offset int64, bucket,
 				return nil, nil
 			}
 		}
-		if err == cstorage.ErrBucketNotExist {
-			if err := createBucket(ctx, bucket, cb.GoogleCloudBuild.ProjectID); err != nil {
-				return nil, errors.Wrap(err, "creating bucket")
-			}
-			logrus.Debugf("Created bucket %s in %s", bucket, cb.GoogleCloudBuild.ProjectID)
-			return nil, nil
-		}
 		if err == cstorage.ErrObjectNotExist {
 			logrus.Debugf("Logs for %s %s not uploaded yet...", bucket, objectName)
 			return nil, nil
@@ -266,17 +260,29 @@ func (cb *GoogleCloudBuilder) getLogs(ctx context.Context, offset int64, bucket,
 	return r, nil
 }
 
-func createBucket(ctx context.Context, bucket, projectId string) error {
+func (cb *GoogleCloudBuilder) createBucketIfNotExists(ctx context.Context, bucket string) error {
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
 		return errors.Wrap(err, "getting storage client")
 	}
 	defer c.Close()
 
-	if err := c.Bucket(bucket).Create(ctx, projectId, &cstorage.BucketAttrs{
+	_, err = c.Bucket(bucket).Attrs(ctx)
+
+	if err == nil {
+		// Bucket exists
+		return nil
+	}
+
+	if err != cstorage.ErrBucketNotExist {
+		return errors.Wrapf(err, "getting bucket %s", bucket)
+	}
+
+	if err := c.Bucket(bucket).Create(ctx, cb.GoogleCloudBuild.ProjectID, &cstorage.BucketAttrs{
 		Name: bucket,
 	}); err != nil {
 		return err
 	}
+	logrus.Debugf("Created bucket %s in %s", bucket, cb.GoogleCloudBuild.ProjectID)
 	return nil
 }
