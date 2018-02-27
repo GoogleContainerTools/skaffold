@@ -47,6 +47,7 @@ func StreamLogsRetry(out io.Writer, client corev1.CoreV1Interface, image string,
 	}
 }
 
+// nolint: interfacer
 func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string) error {
 	pods, err := client.Pods("").List(meta_v1.ListOptions{
 		IncludeUninitialized: true,
