@@ -39,6 +39,7 @@ func NewCmdDeps(out io.Writer) *cobra.Command {
 				logrus.Fatalf("docker deps: %s", err)
 			}
 		},
+		Args: cobra.NoArgs,
 	}
 	cmd.Flags().StringVarP(&filename, "filename", "f", "Dockerfile", "Dockerfile path")
 	cmd.Flags().StringVarP(&context, "context", "c", ".", "Dockerfile context path")

@@ -32,6 +32,7 @@ func NewCmdRun(out io.Writer) *cobra.Command {
 				logrus.Errorf("run: %s", err)
 			}
 		},
+		Args: cobra.NoArgs,
 	}
 	cmd.Flags().StringVarP(&filename, "filename", "f", "skaffold.yaml", "Filename of pipeline file")
 	return cmd
