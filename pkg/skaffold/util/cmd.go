@@ -22,6 +22,7 @@ import (
 	"os/exec"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // DefaultExecCommand runs commands using exec.Cmd
@@ -51,6 +52,7 @@ type Commander struct{}
 // RunCommand runs an exec.Command, optionally reading from stdin and return
 // the stdout, stderr, and error responses respectively.
 func (*Commander) RunCommand(cmd *exec.Cmd, stdin io.Reader) ([]byte, []byte, error) {
+	logrus.Debugf("Running command: %s", cmd.Args)
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, nil, err
@@ -85,7 +87,10 @@ func (*Commander) RunCommand(cmd *exec.Cmd, stdin io.Reader) ([]byte, []byte, er
 		return nil, nil, err
 	}
 
-	if err := cmd.Wait(); err != nil {
+	err = cmd.Wait()
+	logrus.Debugf("Command output: stdout %s, stderr: %s, err: %s", string(stdout), string(stderr), err)
+
+	if err != nil {
 		return stdout, stderr, err
 	}
 	return stdout, stderr, nil

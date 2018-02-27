@@ -90,7 +90,7 @@ func encodedRegistryAuth(a AuthConfigHelper, image string) (string, error) {
 	//  docker.io/foo -> the docker/cli adds library to this ambiguous reference
 	ref, err := reference.ParseNamed(image)
 	if err == reference.ErrNameNotCanonical {
-		logrus.Infof("Image %s not canonical, skipping registry auth helpers", image)
+		logrus.Infof("Image %s not canonical, skipping registry auth helpers. This will fail when pushing to any private registry.", image)
 		return "", nil
 	}
 	if err != nil {
