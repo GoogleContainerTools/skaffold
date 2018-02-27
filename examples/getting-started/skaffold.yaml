@@ -33,7 +33,7 @@ build:
     #
     # gcloud components install docker-credential-gcr
     # docker-credential-gcr configure-docker
-    # push: true
+    # skipPush: true
 
 # The deploy section has all the information needed to deploy. Along with build:
 # it is a required section.
