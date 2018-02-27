@@ -50,6 +50,7 @@ func NewLocalBuilder(cfg *config.BuildConfig) (*LocalBuilder, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "getting current cluster context")
 	}
+	logrus.Infof("Using kubectl context: %s", context)
 	var newImageAPI = docker.NewImageAPIClient
 	if context == constants.DefaultMinikubeContext {
 		newImageAPI = docker.NewMinikubeImageAPIClient
