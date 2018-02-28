@@ -28,6 +28,7 @@ import (
 	"golang.org/x/oauth2/google"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 	"google.golang.org/api/googleapi"
+	"google.golang.org/api/iterator"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
@@ -115,8 +116,11 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 	if err := cb.createBucketIfNotExists(ctx, cbBucket); err != nil {
 		return nil, errors.Wrap(err, "creating bucket if not exists")
 	}
+	if err := cb.checkBucketProjectCorrect(ctx, cbBucket); err != nil {
+		return nil, errors.Wrap(err, "checking bucket is in correct project")
+	}
 
-	io.WriteString(out, fmt.Sprintf("Pushing code to gs://%s/%s\n", cbBucket, buildObject))
+	fmt.Fprintf(out, "Pushing code to gs://%s/%s\n", cbBucket, buildObject)
 	if err := cb.uploadTarToGCS(ctx, artifact.DockerfilePath, artifact.Workspace, cbBucket, buildObject); err != nil {
 		return nil, errors.Wrap(err, "uploading source tarball")
 	}
@@ -146,7 +150,7 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 		return nil, errors.Wrapf(err, "getting build ID from op")
 	}
 	logsObject := fmt.Sprintf("log-%s.txt", remoteID)
-	io.WriteString(out, fmt.Sprintf("Logs at available at \nhttps://console.cloud.google.com/m/cloudstorage/b/%s/o/%s\n", cbBucket, logsObject))
+	fmt.Fprintf(out, "Logs at available at \nhttps://console.cloud.google.com/m/cloudstorage/b/%s/o/%s\n", cbBucket, logsObject)
 	var imageID string
 	offset := int64(0)
 watch:
@@ -258,6 +262,31 @@ func (cb *GoogleCloudBuilder) getLogs(ctx context.Context, offset int64, bucket,
 		return nil, errors.Wrap(err, "unknown error")
 	}
 	return r, nil
+}
+
+func (cb *GoogleCloudBuilder) checkBucketProjectCorrect(ctx context.Context, bucket string) error {
+	c, err := cstorage.NewClient(ctx)
+	if err != nil {
+		return errors.Wrap(err, "getting storage client")
+	}
+	it := c.Buckets(ctx, cb.GoogleCloudBuild.ProjectID)
+	// Set the prefix to the bucket we're looking for to only return that bucket and buckets with that prefix
+	// that we'll filter further later on
+	it.Prefix = bucket
+	for {
+		attrs, err := it.Next()
+		if err == iterator.Done {
+			return errors.Wrap(err, "bucket not found")
+		}
+		if err != nil {
+			return errors.Wrap(err, "iterating over buckets")
+		}
+		// Since we can't filter on bucket name specifically, only prefix, we need to check equality here and not just prefix
+		if attrs.Name == bucket {
+			return nil
+		}
+	}
+
 }
 
 func (cb *GoogleCloudBuilder) createBucketIfNotExists(ctx context.Context, bucket string) error {
