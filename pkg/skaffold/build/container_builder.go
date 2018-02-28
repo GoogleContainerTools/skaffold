@@ -76,7 +76,7 @@ func NewGoogleCloudBuilder(cfg *config.BuildConfig) (*GoogleCloudBuilder, error)
 	return &GoogleCloudBuilder{cfg}, nil
 }
 
-func (cb *GoogleCloudBuilder) Run(out io.Writer, tagger tag.Tagger) (*BuildResult, error) {
+func (cb *GoogleCloudBuilder) Run(out io.Writer, tagger tag.Tagger, artifacts []*config.Artifact) (*BuildResult, error) {
 	ctx := context.Background()
 	client, err := google.DefaultClient(ctx, cloudbuild.CloudPlatformScope)
 	if err != nil {
@@ -92,7 +92,7 @@ func (cb *GoogleCloudBuilder) Run(out io.Writer, tagger tag.Tagger) (*BuildResul
 	}
 	defer c.Close()
 	builds := []Build{}
-	for _, artifact := range cb.Artifacts {
+	for _, artifact := range artifacts {
 		build, err := cb.buildArtifact(ctx, out, cbclient, c, artifact)
 		if err != nil {
 			return nil, errors.Wrapf(err, "building artifact %s", artifact.ImageName)

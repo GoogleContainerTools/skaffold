@@ -108,12 +108,12 @@ func (r *SkaffoldRunner) Run() error {
 	if r.devMode {
 		return r.dev()
 	}
-	return r.run(nil)
+	return r.run(r.config.Build.Artifacts)
 }
 
 func (r *SkaffoldRunner) dev() error {
 	// First rebuild everything.
-	if err := r.run(nil); err != nil {
+	if err := r.run(r.config.Build.Artifacts); err != nil {
 		// In dev mode, we only warn on pipeline errors
 		logrus.Warnf("run: %s", err)
 	}
