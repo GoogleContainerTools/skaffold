@@ -30,7 +30,15 @@ RELEASE_BUCKET ?= $(PROJECT)
 SUPPORTED_PLATFORMS := linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
 BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
-GO_LDFLAGS := "-X $(REPOPATH)/pkg/skaffold/version.version=$(VERSION)"
+VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
+
+GO_LDFLAGS :="
+GO_LDFLAGS += -X $(VERSION_PACKAGE).version=$(VERSION)
+GO_LDFLAGS += -X $(VERSION_PACKAGE).buildDate=$(shell date +'%Y-%m-%dT%H:%M:%SZ')
+GO_LDFLAGS += -X $(VERSION_PACKAGE).gitCommit=$(shell git rev-parse HEAD)
+GO_LDFLAGS += -X $(VERSION_PACKAGE).gitTreeState=$(if $(shell git status --porcelain),dirty,clean)
+GO_LDFLAGS +="
+
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 GO_BUILD_TAGS := "kqueue container_image_ostree_stub containers_image_openpgp"
 
