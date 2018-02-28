@@ -77,7 +77,8 @@ func TestNewHelmDeployerNoError(t *testing.T) {
 }
 
 func TestHelmDeploy(t *testing.T) {
-	util.DefaultExecCommand = testutil.NewFakeRunCommand("", "", nil)
+	cmd := testutil.NewFakeRunCommand("", "", nil)
+	util.DefaultExecCommand = cmd
 	defer util.ResetDefaultExecCommand()
 
 	var tests = []struct {
@@ -141,6 +142,18 @@ func TestHelmDeploy(t *testing.T) {
 			},
 			buildResult: testBuildResult,
 		},
+		{
+			description: "dep build error",
+			cmd: &MockHelm{
+				t:         t,
+				depResult: cmdOutput{"", "", fmt.Errorf("unexpected error")},
+			},
+			shouldErr: true,
+			deployer: &HelmDeployer{
+				DeployConfig: testDeployConfig,
+			},
+			buildResult: testBuildResult,
+		},
 	}
 
 	for _, tt := range tests {
@@ -157,6 +170,7 @@ type MockHelm struct {
 	getResult     cmdOutput
 	installResult cmdOutput
 	upgradeResult cmdOutput
+	depResult     cmdOutput
 
 	t *testing.T
 }
@@ -182,6 +196,8 @@ func (m *MockHelm) RunCommand(c *exec.Cmd, _ io.Reader) ([]byte, []byte, error) 
 		return m.installResult.out()
 	case "upgrade":
 		return m.upgradeResult.out()
+	case "dep":
+		return m.depResult.out()
 	}
 
 	m.t.Errorf("Unknown helm command: %+v", c)
