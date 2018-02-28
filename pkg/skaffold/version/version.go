@@ -21,7 +21,7 @@ import (
 	"runtime"
 )
 
-var version, gitVersion, gitCommit, gitTreeState, buildDate string
+var version, gitCommit, gitTreeState, buildDate string
 
 type Info struct {
 	Version      string

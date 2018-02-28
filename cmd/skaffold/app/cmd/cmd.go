@@ -42,7 +42,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			if err := SetUpLogs(err, v); err != nil {
 				return err
 			}
-			logrus.Infof("Skaffold %s", version.GetVersion())
+			logrus.Infof("Skaffold %+v", version.Get())
 			return nil
 		},
 	}

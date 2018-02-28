@@ -17,12 +17,15 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"io"
 
+	"github.com/GoogleCloudPlatform/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/version"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
+
+var versionFlag = flags.NewTemplateFlag("{{.Version}}\n", version.Info{})
 
 func NewCmdVersion(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
@@ -32,10 +35,14 @@ func NewCmdVersion(out io.Writer) *cobra.Command {
 			return RunVersion(out, cmd)
 		},
 	}
+
+	cmd.Flags().VarP(versionFlag, "output", "o", versionFlag.Usage())
 	return cmd
 }
 
 func RunVersion(out io.Writer, cmd *cobra.Command) error {
-	fmt.Fprintln(out, version.Get())
+	if err := versionFlag.Template().Execute(out, version.Get()); err != nil {
+		return errors.Wrap(err, "executing template")
+	}
 	return nil
 }
