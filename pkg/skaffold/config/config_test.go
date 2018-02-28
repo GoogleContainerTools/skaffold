@@ -21,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
 )
 
@@ -44,6 +45,7 @@ var configA = &SkaffoldConfig{
 	APIVersion: "skaffold/v1",
 	Kind:       "Config",
 	Build: BuildConfig{
+		TagPolicy: constants.TagStrategySha256,
 		Artifacts: []*Artifact{
 			{
 				ImageName: "example",
@@ -88,7 +90,7 @@ func TestParseConfig(t *testing.T) {
 			if test.badReader {
 				r = testutil.BadReader{}
 			}
-			cfg, err := Parse(r)
+			cfg, err := Parse(r, DefaultDevSkaffoldConfig)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cfg)
 		})
 	}

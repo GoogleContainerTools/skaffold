@@ -73,7 +73,14 @@ func runSkaffold(out io.Writer, dev bool, filename string) error {
 	}
 	defer f.Close()
 
-	cfg, err := config.Parse(f)
+	var defaultConfig *config.SkaffoldConfig
+	if dev {
+		defaultConfig = config.DefaultDevSkaffoldConfig
+	} else {
+		defaultConfig = config.DefaultRunSkaffoldConfig
+	}
+
+	cfg, err := config.Parse(f, defaultConfig)
 	if err != nil {
 		return errors.Wrap(err, "parsing skaffold config")
 	}
