@@ -67,6 +67,7 @@ func TestLocalRun(t *testing.T) {
 		newImageAPI  func() (client.ImageAPIClient, io.Closer, error)
 		tagger       tag.Tagger
 		localCluster bool
+		artifacts    []*config.Artifact
 
 		expectedBuild *BuildResult
 		shouldErr     bool
@@ -99,8 +100,46 @@ func TestLocalRun(t *testing.T) {
 			},
 		},
 		{
+			description: "subset build",
+			out:         &bytes.Buffer{},
+			config: &config.BuildConfig{
+				Artifacts: []*config.Artifact{
+					{
+						ImageName: "gcr.io/test/image",
+						Workspace: ".",
+					},
+					{
+						ImageName: "gcr.io/test/image2",
+						Workspace: ".",
+					},
+				},
+				BuildType: config.BuildType{
+					LocalBuild: &config.LocalBuild{
+						SkipPush: util.BoolPtr(true),
+					},
+				},
+			},
+			tagger: &tag.ChecksumTagger{},
+			artifacts: []*config.Artifact{
+				{
+					ImageName: "gcr.io/test/image",
+					Workspace: ".",
+				},
+			},
+			newImageAPI: testutil.NewFakeImageAPIClientCloser,
+			expectedBuild: &BuildResult{
+				[]Build{
+					{
+						ImageName: "gcr.io/test/image",
+						Tag:       "gcr.io/test/image:imageid",
+					},
+				},
+			},
+		},
+		{
 			description:  "local cluster bad writer",
 			out:          &testutil.BadWriter{},
+			config:       &config.BuildConfig{},
 			shouldErr:    true,
 			localCluster: true,
 		},
@@ -197,12 +236,12 @@ func TestLocalRun(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			l := &LocalBuilder{
+			l := LocalBuilder{
 				BuildConfig:  test.config,
 				newImageAPI:  test.newImageAPI,
 				localCluster: test.localCluster,
 			}
-			res, err := l.Run(test.out, test.tagger)
+			res, err := l.Run(test.out, test.tagger, test.artifacts)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedBuild, res)
 		})
 	}

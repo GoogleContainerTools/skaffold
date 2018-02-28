@@ -19,6 +19,8 @@ package build
 import (
 	"io"
 
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 )
 
@@ -36,6 +38,7 @@ type Build struct {
 // Builder is an interface to the Build API of Skaffold.
 // It must build and make the resulting image accesible to the cluster.
 // This could include pushing to a authorized repository or loading the nodes with the image.
+// If artifacts is supplied, the builder should only rebuild those artifacts.
 type Builder interface {
-	Run(out io.Writer, tagger tag.Tagger) (*BuildResult, error)
+	Run(out io.Writer, tagger tag.Tagger, artifacts []*config.Artifact) (*BuildResult, error)
 }
