@@ -16,8 +16,34 @@ limitations under the License.
 
 package version
 
-var version = "v0.0.0-unset"
+import (
+	"fmt"
+	"runtime"
+)
 
-func GetVersion() string {
-	return version
+var version, gitCommit, gitTreeState, buildDate string
+
+type Info struct {
+	Version      string
+	GitVersion   string
+	GitCommit    string
+	GitTreeState string
+	BuildDate    string
+	GoVersion    string
+	Compiler     string
+	Platform     string
+}
+
+// Get returns the version and buildtime information about the binary
+func Get() *Info {
+	// These variables typically come from -ldflags settings to `go build`
+	return &Info{
+		Version:      version,
+		GitCommit:    gitCommit,
+		GitTreeState: gitTreeState,
+		BuildDate:    buildDate,
+		GoVersion:    runtime.Version(),
+		Compiler:     runtime.Compiler,
+		Platform:     fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
+	}
 }
