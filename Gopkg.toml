@@ -54,3 +54,11 @@
 [[override]]
   name = "github.com/Azure/go-autorest"
   version = "v9.1.0"
+
+[[constraint]]
+  name = "cloud.google.com/go"
+  version = "0.17.0"
+
+[[constraint]]
+  name = "google.golang.org/api"
+  revision = "ff7b961889714494dc1feb2e8359298cbd20e5e3"

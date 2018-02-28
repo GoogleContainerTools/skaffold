@@ -20,13 +20,9 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
-
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -57,20 +53,12 @@ func runContext(out io.Writer, filename, context string) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.Open(dockerFilePath)
-	if err != nil {
-		return errors.Wrap(err, "opening dockerfile")
-	}
-	deps, err := docker.GetDockerfileDependencies(context, f)
-	if err != nil {
-		return errors.Wrap(err, "getting dockerfile dependencies")
-	}
 
 	// Write everything to memory, then flush to disk at the end.
 	// This prevents recursion problems, where the output file can end up
 	// in the context itself during creation.
 	var b bytes.Buffer
-	if err := util.CreateDockerTarContext(dockerFilePath, context, deps, &b); err != nil {
+	if err := docker.CreateDockerTarContext(&b, dockerFilePath, context); err != nil {
 		return err
 	}
 	return ioutil.WriteFile(output, b.Bytes(), 0644)

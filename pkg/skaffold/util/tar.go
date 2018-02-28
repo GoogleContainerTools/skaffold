@@ -27,14 +27,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func CreateDockerTarContext(dockerfilePath, context string, paths []string, w io.Writer) error {
+func CreateTarGz(w io.Writer, root string, paths []string) error {
 	gw := gzip.NewWriter(w)
 	defer gw.Close()
 
 	tw := tar.NewWriter(gw)
 	defer tw.Close()
 
-	absContext, err := filepath.Abs(context)
+	absContext, err := filepath.Abs(root)
 	if err != nil {
 		return err
 	}
@@ -43,15 +43,12 @@ func CreateDockerTarContext(dockerfilePath, context string, paths []string, w io
 		if err != nil {
 			return err
 		}
-		var tarPath string
-		if absPath == dockerfilePath {
-			tarPath = "Dockerfile"
-		} else {
-			tarPath, err = filepath.Rel(absContext, absPath)
-			if err != nil {
-				return err
-			}
+
+		tarPath, err := filepath.Rel(absContext, absPath)
+		if err != nil {
+			return err
 		}
+
 		if err := addFileToTar(p, tarPath, tw); err != nil {
 			return err
 		}

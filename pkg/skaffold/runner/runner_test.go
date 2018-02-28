@@ -208,6 +208,15 @@ func TestRun(t *testing.T) {
 				Deployer: &TestDeployer{
 					err: fmt.Errorf(""),
 				},
+				config: &config.SkaffoldConfig{
+					Build: config.BuildConfig{
+						Artifacts: []*config.Artifact{
+							{
+								ImageName: "test",
+							},
+						},
+					},
+				},
 				Tagger: &tag.ChecksumTagger{},
 				Builder: &TestBuilder{
 					res: &build.BuildResult{},

@@ -241,6 +241,9 @@ func TestLocalRun(t *testing.T) {
 				newImageAPI:  test.newImageAPI,
 				localCluster: test.localCluster,
 			}
+			if test.artifacts == nil {
+				test.artifacts = test.config.Artifacts
+			}
 			res, err := l.Run(test.out, test.tagger, test.artifacts)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedBuild, res)
 		})
