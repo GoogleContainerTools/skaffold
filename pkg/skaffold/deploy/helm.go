@@ -63,6 +63,15 @@ func deployRelease(r config.HelmRelease, b *build.BuildResult) error {
 		setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v.Tag))
 	}
 
+	logrus.Infof("Building helm dependencies...")
+	// First build dependencies.
+	depCmd := exec.Command("helm", "dep", "build", r.ChartPath)
+	out, stderr, err := util.RunCommand(depCmd, nil)
+	if err != nil {
+		return errors.Wrapf(err, "helm dep build stdout: %s, stderr: %s", string(out), string(stderr))
+	}
+	logrus.Infof("Helm: %s", string(out))
+
 	var args []string
 	if !isInstalled {
 		args = []string{"install", "--name", r.Name, r.ChartPath}
@@ -71,7 +80,7 @@ func deployRelease(r config.HelmRelease, b *build.BuildResult) error {
 	}
 
 	args = append(args, setOpts...)
-	out, stderr, err := util.RunCommand(exec.Command("helm", args...), nil)
+	out, stderr, err = util.RunCommand(exec.Command("helm", args...), nil)
 	if err != nil {
 		return errors.Wrapf(err, "helm updater stdout: %s, stderr: %s", string(out), string(stderr))
 	}
