@@ -18,6 +18,7 @@ package deploy
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
 )
@@ -31,7 +32,7 @@ type Result struct{}
 type Deployer interface {
 	// Run should ensure that the build results are deployed to the Kubernetes
 	// cluster.
-	Run(*build.BuildResult) (*Result, error)
+	Run(io.Writer, *build.BuildResult) (*Result, error)
 }
 
 func JoinTagsToBuildResult(b []build.Build, params map[string]string) (map[string]build.Build, error) {

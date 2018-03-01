@@ -17,6 +17,7 @@ limitations under the License.
 package deploy
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os/exec"
@@ -159,7 +160,7 @@ func TestHelmDeploy(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
 			util.DefaultExecCommand = tt.cmd
-			_, err := tt.deployer.Run(tt.buildResult)
+			_, err := tt.deployer.Run(&bytes.Buffer{}, tt.buildResult)
 			testutil.CheckError(t, tt.shouldErr, err)
 		})
 	}

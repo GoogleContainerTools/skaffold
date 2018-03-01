@@ -158,7 +158,7 @@ func (r *SkaffoldRunner) run(artifacts []*config.Artifact) (*build.BuildResult, 
 	}
 
 	logrus.Info("Starting deploy...")
-	if _, err := r.Deployer.Run(bRes); err != nil {
+	if _, err := r.Deployer.Run(r.out, bRes); err != nil {
 		return nil, nil, errors.Wrap(err, "deploy step")
 	}
 	if r.opts.Notification {

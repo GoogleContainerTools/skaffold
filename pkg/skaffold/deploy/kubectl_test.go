@@ -17,6 +17,7 @@ limitations under the License.
 package deploy
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 
@@ -189,7 +190,7 @@ func TestKubectlRun(t *testing.T) {
 				t.Errorf("Error getting kubectl deployer: %s", err)
 				return
 			}
-			res, err := k.Run(test.b)
+			res, err := k.Run(&bytes.Buffer{}, test.b)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
 		})
 
