@@ -12,7 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# First stage is used to install the binaries that we need
+# First stage is to build the skaffold binary from source
+FROM golang:1.10 as build
+WORKDIR /go/src/github.com/GoogleCloudPlatform/skaffold
+COPY . .
+RUN make
+
+# Second stage is used to install the binaries that we need
 FROM gcr.io/gcp-runtimes/ubuntu_16_0_4
 RUN apt-get update && \
     apt-get install --no-install-recommends --no-install-suggests -y \
@@ -29,18 +35,13 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-helm/helm-${HELM_VERSION}
     tar -zxvf helm-${HELM_VERSION}-linux-amd64.tar.gz && \
     mv linux-amd64/helm /usr/local/bin/helm
 
-# Second stage is to build the skaffold binary from source
-FROM golang:1.10
-WORKDIR /go/src/github.com/GoogleCloudPlatform/skaffold
-COPY . .
-RUN make
-
 FROM gcr.io/distroless/base 
 WORKDIR /root/
-COPY --from=0 /usr/local/bin/kubectl    /usr/local/bin/kubectl
-COPY --from=0 /usr/local/bin/helm       /usr/local/bin/helm
-COPY --from=0 /usr/bin/git              /usr/bin/git
 
-COPY --from=1 /go/src/github.com/GoogleCloudPlatform/skaffold/out/skaffold .
+COPY --from=0 /go/src/github.com/GoogleCloudPlatform/skaffold/out/skaffold .
+
+COPY --from=1 /usr/local/bin/kubectl    /usr/local/bin/kubectl
+COPY --from=1 /usr/local/bin/helm       /usr/local/bin/helm
+COPY --from=1 /usr/bin/git              /usr/bin/git
 
 CMD ["/root/skaffold", "version"]
