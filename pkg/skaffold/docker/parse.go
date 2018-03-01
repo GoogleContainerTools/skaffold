@@ -24,6 +24,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/containers/image/types"
+
 	"github.com/containers/image/manifest"
 
 	"github.com/containers/image/docker"
@@ -127,7 +129,12 @@ func retrieveImageConfig(image string) (*manifest.Schema2Image, error) {
 		return nil, err
 	}
 
-	img, err := ref.NewImage(nil)
+	// Hardcode the OS and Arch in case the image returns a manifest list.
+	context := &types.SystemContext{
+		OSChoice:           "linux",
+		ArchitectureChoice: "amd64",
+	}
+	img, err := ref.NewImage(context)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +143,7 @@ func retrieveImageConfig(image string) (*manifest.Schema2Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	var cfg *manifest.Schema2Image
+	cfg := &manifest.Schema2Image{}
 	if err := json.Unmarshal(cfgBytes, cfg); err != nil {
 		return nil, err
 	}
