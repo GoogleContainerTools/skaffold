@@ -126,6 +126,10 @@ func addDepsForArtifact(a *config.Artifact, depsToArtifact map[string][]*config.
 			// nothing to do for symlinks
 			continue
 		}
+		dep, err = filepath.Abs(dep)
+		if err != nil {
+			return errors.Wrapf(err, "getting absolute path of %s", dep)
+		}
 		artifacts, ok := depsToArtifact[dep]
 		if !ok {
 			depsToArtifact[dep] = []*config.Artifact{a}
@@ -159,11 +163,11 @@ func getKeySlice(m map[string][]*config.Artifact) []string {
 
 func watchFile(workspace, path string, c chan notify.EventInfo) error {
 	for _, ig := range ignoredPrefixes {
-		relPath, err := filepath.Rel(workspace, path)
+		absPath, err := filepath.Abs(filepath.Join(workspace, ig))
 		if err != nil {
-			return errors.Wrap(err, "calculating path relative to workspace")
+			return errors.Wrapf(err, "calculating absolute path of ignored dep %s", ig)
 		}
-		if strings.HasPrefix(relPath, ig) {
+		if strings.HasPrefix(path, absPath) {
 			logrus.Debugf("Ignoring watch on %s", path)
 			return nil
 		}
