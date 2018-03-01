@@ -34,6 +34,6 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 		},
 		Args: cobra.NoArgs,
 	}
-	cmd.Flags().StringVarP(&filename, "filename", "f", "skaffold.yaml", "Filename of pipeline file")
+	AddRunDevFlags(cmd)
 	return cmd
 }

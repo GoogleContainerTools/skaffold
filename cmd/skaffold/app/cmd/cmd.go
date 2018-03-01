@@ -30,6 +30,7 @@ import (
 )
 
 var (
+	opts     = &config.SkaffoldOptions{}
 	v        string
 	filename string
 )
@@ -56,6 +57,11 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	return c
 }
 
+func AddRunDevFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&filename, "filename", "f", "skaffold.yaml", "Filename of pipeline file")
+	cmd.Flags().BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
+}
+
 func SetUpLogs(out io.Writer, level string) error {
 	logrus.SetOutput(out)
 	lvl, err := logrus.ParseLevel(v)
@@ -66,6 +72,11 @@ func SetUpLogs(out io.Writer, level string) error {
 	return nil
 }
 
+var defaultConfigForMode = map[bool]*config.SkaffoldConfig{
+	true:  config.DefaultDevSkaffoldConfig,
+	false: config.DefaultRunSkaffoldConfig,
+}
+
 func runSkaffold(out io.Writer, dev bool, filename string) error {
 	f, err := os.Open(filename)
 	if err != nil {
@@ -73,19 +84,15 @@ func runSkaffold(out io.Writer, dev bool, filename string) error {
 	}
 	defer f.Close()
 
-	var defaultConfig *config.SkaffoldConfig
-	if dev {
-		defaultConfig = config.DefaultDevSkaffoldConfig
-	} else {
-		defaultConfig = config.DefaultRunSkaffoldConfig
-	}
-
+	defaultConfig := defaultConfigForMode[dev]
 	cfg, err := config.Parse(f, defaultConfig)
 	if err != nil {
 		return errors.Wrap(err, "parsing skaffold config")
 	}
 
-	r, err := runner.NewForConfig(out, dev, cfg)
+	opts.Output = out
+	opts.DevMode = dev
+	r, err := runner.NewForConfig(opts, cfg)
 	if err != nil {
 		return errors.Wrap(err, "getting skaffold config")
 	}
