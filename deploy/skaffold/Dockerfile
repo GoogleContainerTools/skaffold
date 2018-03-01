@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # First stage is used to install the binaries that we need
-FROM ubuntu
+FROM gcr.io/gcp-runtimes/ubuntu_16_0_4
 RUN apt-get update && \
     apt-get install --no-install-recommends --no-install-suggests -y \
         curl \
@@ -35,7 +35,7 @@ WORKDIR /go/src/github.com/GoogleCloudPlatform/skaffold
 COPY . .
 RUN make
 
-FROM ubuntu 
+FROM gcr.io/distroless/base 
 WORKDIR /root/
 COPY --from=0 /usr/local/bin/kubectl    /usr/local/bin/kubectl
 COPY --from=0 /usr/local/bin/helm       /usr/local/bin/helm
