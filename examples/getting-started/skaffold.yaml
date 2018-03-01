@@ -40,8 +40,8 @@ build:
 # it is a required section.
 deploy:
   # We'll be deferring to kubectl for the deployment. The kubectl deployer uses
-  # a client side kubectl apply to apply the manifests to the cluster. You'll
-  # need a kubectl version installed thats compatible with your cluster.
+  # a client side `kubectl apply` to apply the manifests to the cluster. You'll
+  # need a kubectl version installed that's compatible with your cluster.
   kubectl:
     # Manifests is a list of manifests to deploy
     manifests:
@@ -57,7 +57,7 @@ deploy:
       # Parameters are key value pairs that will be injected into the manifests
       # above. In the kubectl implementation, it is a simple "find and replace"
       # of these values.
-      # The value should be a reference to the image name of of one of the build
+      # The value should be a reference to the image name of one of the build
       # artifacts above and will be expanded to reference the full image name
       # and tag of the built image.
       parameters:
