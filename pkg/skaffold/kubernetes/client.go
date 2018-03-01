@@ -26,7 +26,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
-func GetClientset() (*kubernetes.Clientset, error) {
+func GetClientset() (kubernetes.Interface, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
 	clientConfig, err := kubeConfig.ClientConfig()

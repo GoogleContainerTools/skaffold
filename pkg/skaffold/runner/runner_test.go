@@ -28,9 +28,12 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
 	"github.com/sirupsen/logrus"
+	clientgo "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 type TestBuilder struct {
@@ -54,6 +57,19 @@ type TestWatcher struct {
 	current int
 }
 
+type TestTagger struct {
+	out string
+	err error
+}
+
+func (t *TestTagger) GenerateFullyQualifiedImageName(_ *tag.TagOptions) (string, error) {
+	return t.out, t.err
+}
+
+func resetClient()                                { kubernetesClient = kubernetes.GetClientset }
+func fakeGetClient() (clientgo.Interface, error)  { return fake.NewSimpleClientset(), nil }
+func errorGetClient() (clientgo.Interface, error) { return nil, fmt.Errorf("") }
+
 func NewTestWatch(err error, res ...*watch.Event) *TestWatcher {
 	return &TestWatcher{res: res, err: err}
 }
@@ -71,6 +87,8 @@ func (t *TestDeployer) Run(*build.BuildResult) (*deploy.Result, error) {
 	return t.res, t.err
 }
 func TestNewForConfig(t *testing.T) {
+	kubernetesClient = fakeGetClient
+	defer resetClient()
 	var tests = []struct {
 		description string
 		config      *config.SkaffoldConfig
@@ -169,6 +187,7 @@ func TestNewForConfig(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
+	client, _ := fakeGetClient()
 	var tests = []struct {
 		description string
 		runner      *SkaffoldRunner
@@ -183,8 +202,9 @@ func TestRun(t *testing.T) {
 					res: &build.BuildResult{},
 					err: nil,
 				},
-				devMode: false,
-				Tagger:  &tag.ChecksumTagger{},
+				kubeclient: client,
+				devMode:    false,
+				Tagger:     &tag.ChecksumTagger{},
 				Deployer: &TestDeployer{
 					res: &deploy.Result{},
 					err: nil,
@@ -194,7 +214,8 @@ func TestRun(t *testing.T) {
 		{
 			description: "run build error",
 			runner: &SkaffoldRunner{
-				config: &config.SkaffoldConfig{},
+				config:     &config.SkaffoldConfig{},
+				kubeclient: client,
 				Builder: &TestBuilder{
 					err: fmt.Errorf(""),
 				},
@@ -217,7 +238,8 @@ func TestRun(t *testing.T) {
 						},
 					},
 				},
-				Tagger: &tag.ChecksumTagger{},
+				Tagger:     &tag.ChecksumTagger{},
+				kubeclient: client,
 				Builder: &TestBuilder{
 					res: &build.BuildResult{},
 					err: nil,
@@ -229,7 +251,17 @@ func TestRun(t *testing.T) {
 			description: "run dev mode",
 			runner: &SkaffoldRunner{
 				config:     &config.SkaffoldConfig{},
-				Builder:    &TestBuilder{},
+				kubeclient: client,
+				Builder: &TestBuilder{
+					res: &build.BuildResult{
+						Builds: []build.Build{
+							{
+								ImageName: "test",
+								Tag:       "test:tag",
+							},
+						},
+					},
+				},
 				Deployer:   &TestDeployer{},
 				Watcher:    NewTestWatch(nil, &watch.Event{}, watch.WatchStopEvent),
 				devMode:    true,
@@ -239,23 +271,28 @@ func TestRun(t *testing.T) {
 			},
 		},
 		{
-			description: "run dev mode build error",
+			description: "run dev mode build error, continue",
 			runner: &SkaffoldRunner{
-				config: &config.SkaffoldConfig{},
+				config:     &config.SkaffoldConfig{},
+				kubeclient: client,
 				Builder: &TestBuilder{
+					res: &build.BuildResult{},
 					err: fmt.Errorf(""),
 				},
+				out:        &bytes.Buffer{},
+				Deployer:   &TestDeployer{},
 				Watcher:    NewTestWatch(nil, &watch.Event{}, watch.WatchStopEvent),
 				devMode:    true,
 				cancel:     make(chan struct{}, 1),
-				watchReady: make(chan *watch.Event, 1),
-				Tagger:     &tag.ChecksumTagger{},
+				watchReady: make(chan *watch.Event, 2),
+				Tagger:     &TestTagger{},
 			},
 		},
 		{
 			description: "bad watch dev mode",
 			runner: &SkaffoldRunner{
-				config: &config.SkaffoldConfig{},
+				config:     &config.SkaffoldConfig{},
+				kubeclient: client,
 				Builder: &TestBuilder{
 					res: &build.BuildResult{},
 					err: nil,
