@@ -33,6 +33,7 @@ type BuildResult struct {
 type Build struct {
 	ImageName string
 	Tag       string
+	Artifact  *config.Artifact // The artifact used in the build.
 }
 
 // Builder is an interface to the Build API of Skaffold.

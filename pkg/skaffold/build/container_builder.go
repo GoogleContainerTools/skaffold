@@ -200,6 +200,7 @@ watch:
 	return &Build{
 		ImageName: artifact.ImageName,
 		Tag:       tag,
+		Artifact:  artifact,
 	}, nil
 }
 
