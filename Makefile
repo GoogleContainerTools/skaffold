@@ -63,7 +63,7 @@ $(BUILD_DIR):
 cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform).sha256)
 
 .PHONY: test
-test: $(BUILD_DIR)/$(PROJECT)
+test:
 	@ ./test.sh
 
 .PHONY: install
