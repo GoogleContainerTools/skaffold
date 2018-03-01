@@ -177,7 +177,7 @@ func TestNewForConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			cfg, err := NewForConfig(&bytes.Buffer{}, false, test.config)
+			cfg, err := NewForConfig(&config.SkaffoldOptions{DevMode: false}, test.config)
 			testutil.CheckError(t, test.shouldErr, err)
 			if cfg != nil {
 				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, test.expected, cfg.Builder)
@@ -203,8 +203,11 @@ func TestRun(t *testing.T) {
 					err: nil,
 				},
 				kubeclient: client,
-				devMode:    false,
-				Tagger:     &tag.ChecksumTagger{},
+				opts: &config.SkaffoldOptions{
+					DevMode: false,
+					Output:  &bytes.Buffer{},
+				},
+				Tagger: &tag.ChecksumTagger{},
 				Deployer: &TestDeployer{
 					res: &deploy.Result{},
 					err: nil,
@@ -218,6 +221,10 @@ func TestRun(t *testing.T) {
 				kubeclient: client,
 				Builder: &TestBuilder{
 					err: fmt.Errorf(""),
+				},
+				opts: &config.SkaffoldOptions{
+					DevMode: false,
+					Output:  &bytes.Buffer{},
 				},
 				Tagger: &tag.ChecksumTagger{},
 			},
@@ -238,8 +245,12 @@ func TestRun(t *testing.T) {
 						},
 					},
 				},
-				Tagger:     &tag.ChecksumTagger{},
+				opts: &config.SkaffoldOptions{
+					DevMode: false,
+					Output:  &bytes.Buffer{},
+				},
 				kubeclient: client,
+				Tagger:     &tag.ChecksumTagger{},
 				Builder: &TestBuilder{
 					res: &build.BuildResult{},
 					err: nil,
@@ -262,9 +273,12 @@ func TestRun(t *testing.T) {
 						},
 					},
 				},
-				Deployer:   &TestDeployer{},
-				Watcher:    NewTestWatch(nil, &watch.Event{}, watch.WatchStopEvent),
-				devMode:    true,
+				Deployer: &TestDeployer{},
+				Watcher:  NewTestWatch(nil, &watch.Event{}, watch.WatchStopEvent),
+				opts: &config.SkaffoldOptions{
+					DevMode: true,
+					Output:  &bytes.Buffer{},
+				},
 				cancel:     make(chan struct{}, 1),
 				watchReady: make(chan *watch.Event, 1),
 				Tagger:     &tag.ChecksumTagger{},
@@ -279,13 +293,15 @@ func TestRun(t *testing.T) {
 					res: &build.BuildResult{},
 					err: fmt.Errorf(""),
 				},
-				out:        &bytes.Buffer{},
-				Deployer:   &TestDeployer{},
-				Watcher:    NewTestWatch(nil, &watch.Event{}, watch.WatchStopEvent),
-				devMode:    true,
+				Deployer: &TestDeployer{},
+				Tagger:   &TestTagger{},
+				Watcher:  NewTestWatch(nil, &watch.Event{}, watch.WatchStopEvent),
+				opts: &config.SkaffoldOptions{
+					DevMode: true,
+					Output:  &bytes.Buffer{},
+				},
 				cancel:     make(chan struct{}, 1),
-				watchReady: make(chan *watch.Event, 2),
-				Tagger:     &TestTagger{},
+				watchReady: make(chan *watch.Event, 1),
 			},
 		},
 		{
@@ -297,10 +313,12 @@ func TestRun(t *testing.T) {
 					res: &build.BuildResult{},
 					err: nil,
 				},
-				Deployer:   &TestDeployer{},
-				Watcher:    NewTestWatch(fmt.Errorf(""), nil),
-				devMode:    true,
-				cancel:     make(chan struct{}, 1),
+				Deployer: &TestDeployer{},
+				Watcher:  NewTestWatch(fmt.Errorf(""), nil),
+				opts: &config.SkaffoldOptions{
+					DevMode: true,
+					Output:  &bytes.Buffer{},
+				}, cancel: make(chan struct{}, 1),
 				watchReady: make(chan *watch.Event, 1),
 				Tagger:     &tag.ChecksumTagger{},
 			},

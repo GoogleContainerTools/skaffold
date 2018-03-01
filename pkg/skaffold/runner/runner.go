@@ -162,7 +162,7 @@ func (r *SkaffoldRunner) run(artifacts []*config.Artifact) (*build.BuildResult, 
 		return nil, nil, errors.Wrap(err, "deploy step")
 	}
 	if r.opts.Notification {
-		fmt.Fprint(r.opts.Output, "\007")
+		fmt.Fprint(r.opts.Output, constants.TerminalBell)
 	}
 	return bRes, nil, nil
 }

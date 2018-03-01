@@ -37,6 +37,6 @@ const (
 	DefaultMinikubeContext = "minikube"
 	GCSBucketSuffix        = "_cloudbuild"
 
-	// TerminalBeep is the sequence that triggers a beep in the terminal
-	TerminalBeep = "\007"
+	// TerminalBell is the sequence that triggers a beep in the terminal
+	TerminalBell = "\007"
 )
