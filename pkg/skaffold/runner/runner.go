@@ -18,7 +18,6 @@ package runner
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
@@ -40,21 +39,17 @@ type SkaffoldRunner struct {
 	tag.Tagger
 	watch.Watcher
 
-	devMode bool
-
+	opts       *config.SkaffoldOptions
 	config     *config.SkaffoldConfig
 	watchReady chan *watch.Event
 	cancel     chan struct{}
-
 	kubeclient clientgo.Interface
-
-	out io.Writer
 }
 
 var kubernetesClient = kubernetes.GetClientset
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
-func NewForConfig(out io.Writer, dev bool, cfg *config.SkaffoldConfig) (*SkaffoldRunner, error) {
+func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*SkaffoldRunner, error) {
 	builder, err := getBuilder(&cfg.Build)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold build config")
@@ -77,10 +72,9 @@ func NewForConfig(out io.Writer, dev bool, cfg *config.SkaffoldConfig) (*Skaffol
 		Deployer:   deployer,
 		Tagger:     tagger,
 		Watcher:    &watch.FSWatcher{}, //TODO(@r2d4): should this be configurable?
+		opts:       opts,
 		kubeclient: client,
-		devMode:    dev,
 		cancel:     make(chan struct{}, 1),
-		out:        out,
 	}, nil
 }
 
@@ -117,7 +111,7 @@ func newTaggerForConfig(tagStrategy string) (tag.Tagger, error) {
 
 // Run runs the skaffold build and deploy pipeline.
 func (r *SkaffoldRunner) Run() error {
-	if r.devMode {
+	if r.opts.DevMode {
 		return r.dev()
 	}
 
@@ -138,7 +132,7 @@ func (r *SkaffoldRunner) dev() error {
 		if bRes != nil {
 			for _, b := range bRes.Builds {
 				tag := b.Tag
-				go kubernetes.StreamLogsRetry(r.out, r.kubeclient.CoreV1(), tag, 5)
+				go kubernetes.StreamLogsRetry(r.opts.Output, r.kubeclient.CoreV1(), tag, 5)
 			}
 		}
 		evt, err := r.Watch(r.config.Build.Artifacts, r.watchReady, r.cancel)
@@ -158,7 +152,7 @@ func (r *SkaffoldRunner) dev() error {
 
 func (r *SkaffoldRunner) run(artifacts []*config.Artifact) (*build.BuildResult, *deploy.Result, error) {
 	logrus.Info("Starting build...")
-	bRes, err := r.Builder.Run(r.out, r.Tagger, artifacts)
+	bRes, err := r.Builder.Run(r.opts.Output, r.Tagger, artifacts)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "build step")
 	}
@@ -166,6 +160,9 @@ func (r *SkaffoldRunner) run(artifacts []*config.Artifact) (*build.BuildResult, 
 	logrus.Info("Starting deploy...")
 	if _, err := r.Deployer.Run(bRes); err != nil {
 		return nil, nil, errors.Wrap(err, "deploy step")
+	}
+	if r.opts.Notification {
+		fmt.Fprint(r.opts.Output, constants.TerminalBell)
 	}
 	return bRes, nil, nil
 }

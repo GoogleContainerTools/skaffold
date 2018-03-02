@@ -14,26 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package config
 
-import (
-	"io"
+import "io"
 
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-)
-
-func NewCmdRun(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "run",
-		Short: "runs a pipeline file",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := runSkaffold(out, false, filename); err != nil {
-				logrus.Errorf("run: %s", err)
-			}
-		},
-		Args: cobra.NoArgs,
-	}
-	AddRunDevFlags(cmd)
-	return cmd
+// SkaffoldOptions are options that are set by command line arguments not included
+// in the config file itself
+type SkaffoldOptions struct {
+	DevMode      bool
+	Notification bool
+	Output       io.Writer
 }
