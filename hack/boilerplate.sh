@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/bin/bash
-
 # Ignore these paths in the following tests.
 ignore="vendor\|out"
 BOILERPLATEDIR=./hack/boilerplate
