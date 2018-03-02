@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	// For alpha releases, the default log level should be 'info'
+	// DefaultLogLevel is the default global verbosity
 	DefaultLogLevel = logrus.ErrorLevel
 
 	// The dockerfile path is given relative to the context directory
