@@ -18,6 +18,7 @@ package deploy
 
 import (
 	"fmt"
+	"io"
 	"os/exec"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
@@ -35,21 +36,21 @@ func NewHelmDeployer(cfg *config.DeployConfig) (*HelmDeployer, error) {
 	return &HelmDeployer{cfg}, nil
 }
 
-func (h *HelmDeployer) Run(b *build.BuildResult) (*Result, error) {
+func (h *HelmDeployer) Run(out io.Writer, b *build.BuildResult) (*Result, error) {
 	for _, r := range h.HelmDeploy.Releases {
-		if err := deployRelease(r, b); err != nil {
+		if err := deployRelease(out, r, b); err != nil {
 			return nil, errors.Wrapf(err, "deploying %s", r.Name)
 		}
 	}
 	return nil, nil
 }
 
-func deployRelease(r config.HelmRelease, b *build.BuildResult) error {
+func deployRelease(out io.Writer, r config.HelmRelease, b *build.BuildResult) error {
 	isInstalled := true
 	getCmd := exec.Command("helm", "get", r.Name)
-	if out, stderr, err := util.RunCommand(getCmd, nil); err != nil {
-		logrus.Debugf("Error getting release %s: %s stdout: %s stderr: %s", r.Name, err, string(out), string(stderr))
-		logrus.Infof("Helm release %s not installed. Installing...", r.Name)
+	if stdout, stderr, err := util.RunCommand(getCmd, nil); err != nil {
+		logrus.Debugf("Error getting release %s: %s stdout: %s stderr: %s", r.Name, err, string(stdout), string(stderr))
+		fmt.Fprintf(out, "Helm release %s not installed. Installing...", r.Name)
 		isInstalled = false
 	}
 	params, err := JoinTagsToBuildResult(b.Builds, r.Values)
@@ -66,11 +67,11 @@ func deployRelease(r config.HelmRelease, b *build.BuildResult) error {
 	logrus.Infof("Building helm dependencies...")
 	// First build dependencies.
 	depCmd := exec.Command("helm", "dep", "build", r.ChartPath)
-	out, stderr, err := util.RunCommand(depCmd, nil)
+	stdout, stderr, err := util.RunCommand(depCmd, nil)
 	if err != nil {
-		return errors.Wrapf(err, "helm dep build stdout: %s, stderr: %s", string(out), string(stderr))
+		return errors.Wrapf(err, "helm dep build stdout: %s, stderr: %s", string(stdout), string(stderr))
 	}
-	logrus.Infof("Helm: %s", string(out))
+	out.Write(stdout)
 
 	var args []string
 	if !isInstalled {
@@ -80,10 +81,10 @@ func deployRelease(r config.HelmRelease, b *build.BuildResult) error {
 	}
 
 	args = append(args, setOpts...)
-	out, stderr, err = util.RunCommand(exec.Command("helm", args...), nil)
+	stdout, stderr, err = util.RunCommand(exec.Command("helm", args...), nil)
 	if err != nil {
-		return errors.Wrapf(err, "helm updater stdout: %s, stderr: %s", string(out), string(stderr))
+		return errors.Wrapf(err, "helm updater stdout: %s, stderr: %s", string(stdout), string(stderr))
 	}
-	logrus.Infof("Helm: %s", string(out))
+	out.Write(stdout)
 	return nil
 }

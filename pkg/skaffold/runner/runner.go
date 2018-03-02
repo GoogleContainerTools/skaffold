@@ -151,18 +151,20 @@ func (r *SkaffoldRunner) dev() error {
 }
 
 func (r *SkaffoldRunner) run(artifacts []*config.Artifact) (*build.BuildResult, *deploy.Result, error) {
-	logrus.Info("Starting build...")
+	fmt.Fprint(r.opts.Output, "Starting build...\n")
 	bRes, err := r.Builder.Run(r.opts.Output, r.Tagger, artifacts)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "build step")
 	}
+	fmt.Fprint(r.opts.Output, "Build complete.\n")
 
-	logrus.Info("Starting deploy...")
-	if _, err := r.Deployer.Run(bRes); err != nil {
+	fmt.Fprint(r.opts.Output, "Starting deploy...\n")
+	if _, err := r.Deployer.Run(r.opts.Output, bRes); err != nil {
 		return nil, nil, errors.Wrap(err, "deploy step")
 	}
 	if r.opts.Notification {
 		fmt.Fprint(r.opts.Output, constants.TerminalBell)
 	}
+	fmt.Fprint(r.opts.Output, "Deploy complete.\n")
 	return bRes, nil, nil
 }

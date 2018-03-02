@@ -83,7 +83,7 @@ func (t *TestWatcher) Watch(artifacts []*config.Artifact, ready chan *watch.Even
 	return ret, t.err
 }
 
-func (t *TestDeployer) Run(*build.BuildResult) (*deploy.Result, error) {
+func (t *TestDeployer) Run(io.Writer, *build.BuildResult) (*deploy.Result, error) {
 	return t.res, t.err
 }
 func TestNewForConfig(t *testing.T) {
