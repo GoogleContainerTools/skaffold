@@ -25,7 +25,10 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/watch"
+	clientgo "k8s.io/client-go/kubernetes"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -43,8 +46,12 @@ type SkaffoldRunner struct {
 	watchReady chan *watch.Event
 	cancel     chan struct{}
 
+	kubeclient clientgo.Interface
+
 	out io.Writer
 }
+
+var kubernetesClient = kubernetes.GetClientset
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
 func NewForConfig(out io.Writer, dev bool, cfg *config.SkaffoldConfig) (*SkaffoldRunner, error) {
@@ -60,15 +67,20 @@ func NewForConfig(out io.Writer, dev bool, cfg *config.SkaffoldConfig) (*Skaffol
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold tag config")
 	}
+	client, err := kubernetesClient()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting k8s client")
+	}
 	return &SkaffoldRunner{
-		config:   cfg,
-		Builder:  builder,
-		Deployer: deployer,
-		Tagger:   tagger,
-		Watcher:  &watch.FSWatcher{}, //TODO(@r2d4): should this be configurable?
-		devMode:  dev,
-		cancel:   make(chan struct{}, 1),
-		out:      out,
+		config:     cfg,
+		Builder:    builder,
+		Deployer:   deployer,
+		Tagger:     tagger,
+		Watcher:    &watch.FSWatcher{}, //TODO(@r2d4): should this be configurable?
+		kubeclient: client,
+		devMode:    dev,
+		cancel:     make(chan struct{}, 1),
+		out:        out,
 	}, nil
 }
 
@@ -108,16 +120,27 @@ func (r *SkaffoldRunner) Run() error {
 	if r.devMode {
 		return r.dev()
 	}
-	return r.run(r.config.Build.Artifacts)
+
+	if _, _, err := r.run(r.config.Build.Artifacts); err != nil {
+		return errors.Wrap(err, "run")
+	}
+	return nil
 }
 
 func (r *SkaffoldRunner) dev() error {
 	// First rebuild everything.
-	if err := r.run(r.config.Build.Artifacts); err != nil {
+	bRes, _, err := r.run(r.config.Build.Artifacts)
+	if err != nil {
 		// In dev mode, we only warn on pipeline errors
 		logrus.Warnf("run: %s", err)
 	}
 	for {
+		if bRes != nil {
+			for _, b := range bRes.Builds {
+				tag := b.Tag
+				go kubernetes.StreamLogsRetry(r.out, r.kubeclient.CoreV1(), tag, 5)
+			}
+		}
 		evt, err := r.Watch(r.config.Build.Artifacts, r.watchReady, r.cancel)
 		if err != nil {
 			return errors.Wrap(err, "running watch")
@@ -125,24 +148,24 @@ func (r *SkaffoldRunner) dev() error {
 		if evt.EventType == watch.WatchStop {
 			return nil
 		}
-		if err := r.run(evt.ChangedArtifacts); err != nil {
+		bRes, _, err = r.run(evt.ChangedArtifacts)
+		if err != nil {
 			// In dev mode, we only warn on pipeline errors
 			logrus.Warnf("run: %s", err)
 		}
 	}
 }
 
-func (r *SkaffoldRunner) run(artifacts []*config.Artifact) error {
+func (r *SkaffoldRunner) run(artifacts []*config.Artifact) (*build.BuildResult, *deploy.Result, error) {
 	logrus.Info("Starting build...")
-
-	res, err := r.Builder.Run(r.out, r.Tagger, artifacts)
+	bRes, err := r.Builder.Run(r.out, r.Tagger, artifacts)
 	if err != nil {
-		return errors.Wrap(err, "build step")
+		return nil, nil, errors.Wrap(err, "build step")
 	}
 
 	logrus.Info("Starting deploy...")
-	if _, err := r.Deployer.Run(res); err != nil {
-		return errors.Wrap(err, "deploy step")
+	if _, err := r.Deployer.Run(bRes); err != nil {
+		return nil, nil, errors.Wrap(err, "deploy step")
 	}
-	return nil
+	return bRes, nil, nil
 }

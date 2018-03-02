@@ -3,7 +3,7 @@ package reflect2
 import (
 	"reflect"
 	"unsafe"
-	"github.com/v2pro/plz/concurrent"
+	"github.com/modern-go/concurrent"
 )
 
 type Type interface {
