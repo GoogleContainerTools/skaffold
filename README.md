@@ -30,9 +30,6 @@ workflow and tooling when moving applications to production.
 Skaffold has a pluggable architecture that allows you to choose the tools in the developer workflow that work best for you.
 ![Plugability Diagram](docs/img/plugability.png)
 
-### Demo
-![Demo gif](https://storage.googleapis.com/skaffold-demo/skaffold-demo.gif)
-
 ## Operating modes
 ### skaffold dev
 Updates your deployed application continually:
