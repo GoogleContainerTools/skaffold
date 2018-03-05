@@ -1,119 +1,118 @@
-skaffold
-=============
+# Skaffold
 
-[![Build Status](https://travis-ci.com/GoogleCloudPlatform/skaffold.svg?token=NyoV8n1D3L8EzmetKFNB&branch=master)](https://travis-ci.com/GoogleCloudPlatform/skaffold)
+Skaffold is a command line tool that facilitates continuous development for Kubernetes applications. You can iterate on your 
+application source code locally then deploy to local or remote Kubernetes clusters. Skaffold handles the workflow for building,
+pushing and deploying your application. It can also be used in an automated context such as a CI/CD pipeline to leverage the same 
+workflow and tooling when moving applications to production.
 
-Skaffold is a tool that makes the onboarding of existing applications to Kubernetes simple and repeatable. It currently handles the build and deploy lifecycle actions for Kubernetes. Skaffold has a simple, pluggable architecture that allows you to use some of the best community tooling available, such as `docker` or `helm`.
+- [Skaffold](#skaffold)
+  - [Features](#features)
+  - [Pluggability](#pluggability)
+  - [Demo](#demo)
+- [Operating modes](#operating-modes)
+  - [skaffold dev](#skaffold-dev)
+  - [skaffold run](#skaffold-run)
+- [Getting Started with Local Tooling](#getting-started-with-local-tooling)
+  - [Installation](#installation)
+  - [Iterative Development](#iterative-development)
+  - [Run a deployment pipeline once](#run-a-deployment-pipeline-once)
+- [Future](#future)
 
-Some of the main features
-* No server-side component. No additional overhead to your cluster.
-* Supports existing tooling and workflows. Build and deploy APIs make each implementation composable to support all types of workflows.
-* Multi-image and multi-manifest support.
-* Switch from development mode to run mode with no configuration changes
+### Features
+-  No server-side component. No overhead to your cluster.
+-  Detect changes in your source code and automatically build/push/deploy.
+-  Image tag management. Stop worrying about updating the image tags in Kubernetes manifests to push out changes during development.
+-  Supports existing tooling and workflows. Build and deploy APIs make each implementation composable to support many different workflows.
+-  Support for multiple application components. Build and deploy only the pieces of your stack that have changed.
+-  Deploy regularly when saving files or run one off deployments using the same configuration.
 
-Skaffold has two main modes: `skaffold run` and `skaffold dev`
+### Pluggability
+Skaffold has a pluggable architecture that allows you to choose the tools in the developer workflow that work best for you.
+![Plugability Diagram](docs/img/plugability.png)
 
-## skaffold dev
-This is the development mode for skaffold.
+### Demo
+![Demo gif](https://storage.googleapis.com/skaffold-demo/skaffold-demo.gif)
 
-* A filesystem watcher to watch the dependencies of your docker images
-* Streaming logs from deployed containers
-* Continuous build-deploy loop, warn on errors
+## Operating modes
+### skaffold dev
+Updates your deployed application continually:
+-  Watches your source code and the dependencies of your docker images for changes and runs a build and deploy when changes are detected
+-  Streams logs from deployed containers
+-  Continuous build-deploy loop, only warn on errors
 
+### skaffold run
+Run runs a Skaffold pipeline once, exits on any errors in the pipeline.  
 Use for:
-* Local development
+-  Continuous integration or continuous deployment pipelines
+-  Sanity checking after iterating on your application
 
-## skaffold run
-Run runs a skaffold pipeline one, exiting on any errors in the pipeline.
+## Getting Started with Local Tooling
+### Installation
 
-Use for:
-* Continuous Integration or Continuous Deployment tools
+You will need the following components to get started with Skaffold:
 
-## Getting Started
+1. skaffold
+   -  To download the latest Linux build, run:
+      -  `curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+   -  To download the latest OSX build, run:
+      -  `curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
 
-### Prerequisites
+1. Kubernetes Cluster
+   -  [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) and [GKE](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-container-cluster) have been tested but any Kubernetes cluster should work.
 
-What you'll need installed
+1. [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+   -  Configure the current-context with your target cluster for development
 
-* **skaffold**
-    * We don't have official releases yet, but we do publish CI builds on every merged PR.
-      To download the latest Linux build, run:
-      
-      ```shell
-      curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin
-      ```
-      
-      To download the latest OSX build, run:
+1. docker
 
-      ```shell
-      curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin
-      ```
+1. Docker image registry
+   -  Your docker client should be configured to push to an external docker image repository. If you're using a minikube cluster, you can skip this requirement.
+   -  If you are using Google Container Registry (GCR), run: `gcloud docker -a`
 
-* **Kubernetes Cluster**
-* **kubectl**
-  * configured with the current-context of your target cluster
-  * In the future, we'll support more deployment strategies and drop this dependency
-* **docker**
-    * In the future, we'll support more build strategies and drop this dependency
-* **Docker Image Repository**
-    * Your docker client should be configured to push to an external docker image repository.  If you're using a minikube cluster, you can skip this requirement.
+### Iterative Development
 
-If you're using minikube you'll only need
-* **skaffold**
-* **minikube**
-* **kubectl**
-
-### Development
-
-To get started, change the `imageName` and `IMAGE_NAME` parameters of `examples/getting-started/skaffold.yaml`.  This should be a fully qualified image name that your docker client is configured to push to.
-
+To get started, change the `imageName` and `IMAGE_NAME` parameters of `examples/getting-started/skaffold.yaml`. This should be a fully qualified image name that your docker client is configured to push to.  
 From the root directory of this repository,
 
-```shell
+```console
 $ skaffold dev -f examples/getting-started/skaffold.yaml
-```
-
-You should see the output (for verbose output, append `-v debug`)
-
-```shell
-INFO[0000] Skaffold v0.1.0
-INFO[0000] Starting build...
+You should see the following:
+Starting build...
+Found minikube context, using minikube docker daemon.
 Sending build context to Docker daemon   7.68kB
-Step 1/5 : FROM golang:1.9.2
- ---> 138bd936fa29
+Step 1/5 : FROM golang:1.9.4-alpine3.7
+ ---> fb6e10bf973b
 Step 2/5 : WORKDIR /go/src/github.com/GoogleCloudPlatform/skaffold/examples/getting-started
  ---> Using cache
- ---> bd3002e4d850
-Step 3/5 : COPY main.go .
+ ---> 259762612c45
+Step 3/5 : CMD ./app
  ---> Using cache
- ---> 7dcfea090d8f
-Step 4/5 : RUN go build -o app main.go
+ ---> e2cb5a3e8812
+Step 4/5 : COPY main.go .
  ---> Using cache
- ---> a69a1073e6da
-Step 5/5 : CMD ./app
+ ---> 149d709c4fd9
+Step 5/5 : RUN go build -o app main.go
  ---> Using cache
- ---> 5c6041e4ee28
-Successfully built 5c6041e4ee28
-Successfully tagged b93e205a1a6d9da76ccb0b4a65f2df16:latest
-Successfully tagged changeme:5c6041e4ee28b49ffca084eb25fa95e580b83992754d65ec60f0e90df6ee2f98
-INFO[0000] Starting deploy...
-INFO[0000] Deploying examples/getting-started/k8s-deployment.yaml
-INFO[0000] Found dependencies for dockerfile [examples/getting-started/main.go]
-INFO[0000] Added watch for examples/getting-started/Dockerfile
-INFO[0000] Added watch for examples/getting-started/main.go
-
+ ---> a688409b7e69
+Successfully built a688409b7e69
+Successfully tagged 97e2a15e650c6470fb30e1cdcc808b59:latest
+Successfully tagged changeme:a688409b7e696dec944a36a1fe4063fa7b6726891be75809d4ec8f180e2ccc96
+Build complete.
+Starting deploy...
+Deploying examples/getting-started/k8s-pod.yaml...
+Deploy complete.
+[getting-started getting-started] Hello world!
 ```
 
-At this point, you should be able to see some output from the pod with kubectl
+At this point, you should be able to see some output from the pod in the Skaffold output:
 
-```shell
-$ kubectl logs getting-started
-Hello world!
-Hello world!
-...
+```console
+[getting-started getting-started] Hello world!
+[getting-started getting-started] Hello world!
+[getting-started getting-started] Hello world!
 ```
 
-Now, lets update `examples/getting-started/main.go`
+Now, update `examples/getting-started/main.go`
 
 ```diff
 diff --git a/examples/getting-started/main.go b/examples/getting-started/main.go
@@ -129,51 +128,21 @@ index 64b7bdfc..f95e053d 100644
                 time.Sleep(time.Second * 1)
         }
  }
- ```
-
- Now you should see the application has updated
-
- ```
-$ kubectl logs getting-started
-Hello jerry!
-Hello jerry!
-...
 ```
 
-### Run pipeline once
+Once you save the file, you should see the pipeline kick off again to redeploy your application:
+```console
+[getting-started getting-started] Hello jerry!
+[getting-started getting-started] Hello jerry!
+```
 
-There may be some cases where you don't want to run build and deploy continuously. To run once, use
-
-```shell
+### Run a deployment pipeline once
+There may be some cases where you don't want to run build and deploy continuously. To run once, use:
+```console
 $ skaffold run -f examples/getting-started/skaffold.yaml
 ```
 
-### Docker commands
+## Future
 
-Skaffold exposes some the of the dockerfile introspection functionality that it uses under the hood.
-
-#### skaffold docker deps
-
-Many build systems require the developer to manually list the dependencies of a dockerfile.  Skaffold can inspect a dockerfile and output the file dependencies.  
-
-```
-$ skaffold docker deps --context examples/getting-started -v error
-examples/getting-started/main.go
-```
-
-**Example Makefile rule for conditional docker image rebuilds**
-```Makefile
-out/getting-started: $(shell skaffold docker deps -c examples/getting-started -v error)
-	docker build -t getting-started . -q > out/getting-started
-```
-
-#### skaffold docker context
-
-Skaffold can also generate a tarball that can be used as a "docker context" for hosted build systems. To use this with Google Cloud Build:
-
-```
-$ skaffold docker context --filename examples/getting-started/Dockerfile --output=context.tar.gz
-$ gcloud container builds submit context.tar.gz --tag="gcr.io/$(gcloud config get-value project)/skaffold-context:latest"
-```
-
-This tarball will contain only the sources needed to build the Docker image, which will result in a faster upload than the default behavior.
+1. Detect application information and create initial deployment manifests
+1. Create pipelines for CI/CD systems to facilitate transitions to production
