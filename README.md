@@ -8,7 +8,6 @@ workflow and tooling when moving applications to production.
 - [Skaffold](#skaffold)
   - [Features](#features)
   - [Pluggability](#pluggability)
-  - [Demo](#demo)
 - [Operating modes](#operating-modes)
   - [skaffold dev](#skaffold-dev)
   - [skaffold run](#skaffold-run)
