@@ -16,6 +16,7 @@ workflow and tooling when moving applications to production.
   - [Iterative Development](#iterative-development)
   - [Run a deployment pipeline once](#run-a-deployment-pipeline-once)
 - [Future](#future)
+- [Community](#community)
 
 ### Features
 -  No server-side component. No overhead to your cluster.
@@ -142,3 +143,6 @@ $ skaffold run -f examples/getting-started/skaffold.yaml
 
 1. Detect application information and create initial deployment manifests
 1. Create pipelines for CI/CD systems to facilitate transitions to production
+
+## Community
+- [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users)
