@@ -22,6 +22,7 @@ import (
 	"io"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
@@ -36,10 +37,11 @@ import (
 )
 
 const (
-	add  = "add"
-	copy = "copy"
-	env  = "env"
-	from = "from"
+	add    = "add"
+	copy   = "copy"
+	env    = "env"
+	from   = "from"
+	expose = "expose"
 )
 
 // For testing.
@@ -106,6 +108,49 @@ func GetDockerfileDependencies(workspace string, r io.Reader) ([]string, error) 
 	return filteredDeps, nil
 }
 
+func PortsFromDockerfile(r io.Reader) ([]string, error) {
+	res, err := parser.Parse(r)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing dockerfile")
+	}
+
+	// Check the dockerfile and the base.
+	ports := []string{}
+	for _, value := range res.AST.Children {
+		switch value.Value {
+		case from:
+			base := value.Next.Value
+			if strings.ToLower(base) == "scratch" {
+				logrus.Debug("Skipping port check in SCRATCH base image.")
+				continue
+			}
+			config, err := RetrieveConfig(value.Next.Value)
+			if err != nil {
+				logrus.Warnf("Error checking base image for ports: %s", err)
+				continue
+			}
+			for port := range config.Config.ExposedPorts {
+				logrus.Debugf("Found port %s in base image", port)
+				ports = append(ports, string(port))
+			}
+		case expose:
+			// There can be multiple ports per line.
+			for {
+				if value.Next == nil {
+					break
+				}
+				port := value.Next.Value
+				logrus.Debugf("Found port %s in Dockerfile", port)
+				ports = append(ports, port)
+				value = value.Next
+			}
+		}
+	}
+	// Sort ports for consistency in tests.
+	sort.Strings(ports)
+	return ports, nil
+}
+
 func processBaseImage(value *parser.Node) ([]string, error) {
 	base := value.Next.Value
 	logrus.Debugf("Checking base image %s for ONBUILD triggers.", base)
@@ -134,12 +179,12 @@ func retrieveImageConfig(image string) (*manifest.Schema2Image, error) {
 		return nil, err
 	}
 
-	// Hardcode the OS and Arch in case the image returns a manifest list.
 	context := &types.SystemContext{
 		OSChoice:           "linux",
 		ArchitectureChoice: "amd64",
 	}
 	img, err := ref.NewImage(context)
+
 	if err != nil {
 		return nil, err
 	}
