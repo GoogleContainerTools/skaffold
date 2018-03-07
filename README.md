@@ -55,7 +55,9 @@ You will need the following components to get started with Skaffold:
       -  `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
 
 1. Kubernetes Cluster
-   -  [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) and [GKE](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-container-cluster)
+   -  [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/),
+      [GKE](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-container-cluster),
+      [Docker for Mac (Edge)](https://docs.docker.com/docker-for-mac/install/) and [Docker for Windows (Edge)](https://docs.docker.com/docker-for-windows/install/)
       have been tested but any Kubernetes cluster will work.
 
 1. [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
@@ -64,7 +66,8 @@ You will need the following components to get started with Skaffold:
 1. docker
 
 1. Docker image registry
-   -  Your docker client should be configured to push to an external docker image repository. If you're using a minikube cluster, you can skip this requirement.
+   -  Your docker client should be configured to push to an external docker image repository. If you're using a minikube or Docker for Desktop cluster,
+      you can skip this requirement.
    -  If you are using Google Container Registry (GCR), run: `gcloud docker -a`
 
 ### Iterative Development
@@ -75,7 +78,7 @@ From the root directory of this repository.
 ```console
 $ skaffold dev -f examples/getting-started/skaffold.yaml
 Starting build...
-Found minikube context, using minikube docker daemon.
+Found minikube or Docker for Desktop context, using local docker daemon.
 Sending build context to Docker daemon   7.68kB
 Step 1/5 : FROM golang:1.9.4-alpine3.7
  ---> fb6e10bf973b
