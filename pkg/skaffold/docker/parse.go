@@ -22,6 +22,7 @@ import (
 	"io"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/containers/image/types"
@@ -121,7 +122,7 @@ func PortsFromDockerfile(r io.Reader) ([]string, error) {
 		switch value.Value {
 		case from:
 			base := value.Next.Value
-			if base == "SCRATCH" {
+			if strings.ToLower(base) == "scratch" {
 				logrus.Debug("Skipping port check in SCRATCH base image.")
 				continue
 			}
@@ -147,6 +148,8 @@ func PortsFromDockerfile(r io.Reader) ([]string, error) {
 			}
 		}
 	}
+	// Sort ports for consistency in tests.
+	sort.Strings(ports)
 	return ports, nil
 }
 
