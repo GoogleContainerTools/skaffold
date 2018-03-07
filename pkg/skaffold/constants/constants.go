@@ -34,8 +34,9 @@ const (
 	TagStrategySha256    = "sha256"
 	TagStrategyGitCommit = "gitCommit"
 
-	DefaultMinikubeContext = "minikube"
-	GCSBucketSuffix        = "_cloudbuild"
+	DefaultMinikubeContext         = "minikube"
+	DefaultDockerForDesktopContext = "docker-for-desktop"
+	GCSBucketSuffix                = "_cloudbuild"
 
 	// TerminalBell is the sequence that triggers a beep in the terminal
 	TerminalBell = "\007"

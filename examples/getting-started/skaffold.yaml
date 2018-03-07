@@ -24,9 +24,9 @@ build:
   # This next section is where you'll put your specific builder configuration.
   # Here, we're using a local builder, which simply builds using the host docker
 
-  # If you're using minikube, you can skip the push step for even faster build
-  # and deploy cycles.
-  # local: {} # Use this for minikube configuration
+  # If you're using minikube or Docker for Desktop, you can skip the push step
+  # for even faster build and deploy cycles.
+  # local: {} # Use this for minikube or Docker for Desktop configuration
   local: {}
     # Skaffold defers to your ~/.docker/config for authentication information
     # If you're using GCR, make sure that you have gcloud and

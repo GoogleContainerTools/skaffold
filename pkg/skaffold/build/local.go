@@ -52,12 +52,17 @@ func NewLocalBuilder(cfg *config.BuildConfig) (*LocalBuilder, error) {
 	}
 	logrus.Infof("Using kubectl context: %s", context)
 	var newImageAPI = docker.NewImageAPIClient
-	if context == constants.DefaultMinikubeContext {
+
+	switch context {
+	case constants.DefaultMinikubeContext:
 		newImageAPI = docker.NewMinikubeImageAPIClient
 		localCluster = true
+	case constants.DefaultDockerForDesktopContext:
+		localCluster = true
 	}
+
 	if cfg.LocalBuild.SkipPush == nil {
-		logrus.Debugf("skipPush value not present. defaulting to cluster default %t (minikube=true, gke=false)", localCluster)
+		logrus.Debugf("skipPush value not present. defaulting to cluster default %t (minikube=true, d4d=true, gke=false)", localCluster)
 		cfg.LocalBuild.SkipPush = &localCluster
 	}
 	return &LocalBuilder{
@@ -71,7 +76,7 @@ func NewLocalBuilder(cfg *config.BuildConfig) (*LocalBuilder, error) {
 // its checksum. It streams build progress to the writer argument.
 func (l *LocalBuilder) Run(out io.Writer, tagger tag.Tagger, artifacts []*config.Artifact) (*BuildResult, error) {
 	if l.localCluster {
-		if _, err := fmt.Fprint(out, "Found minikube context, using minikube docker daemon.\n"); err != nil {
+		if _, err := fmt.Fprint(out, "Found minikube or Docker for Desktop context, using local docker daemon.\n"); err != nil {
 			return nil, errors.Wrap(err, "writing status")
 		}
 	}
