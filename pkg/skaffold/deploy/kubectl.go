@@ -20,8 +20,13 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
+	"text/template"
+
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
 
 	"github.com/sirupsen/logrus"
 
@@ -30,6 +35,35 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
+
+// Slightly modified from kubectl run --dry-run
+var deploymentTemplate = template.Must(template.New("deployment").Parse(`apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    run: skaffold
+  name: skaffold
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: skaffold
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        run: skaffold
+    spec:
+      containers:
+      - image: IMAGE
+        name: app
+{{if .Ports}}
+        ports:
+{{range .Ports}}
+        - containerPort: {{.}}
+{{end}}
+{{end}}
+`))
 
 type KubectlDeployer struct {
 	*config.DeployConfig
@@ -44,6 +78,23 @@ func NewKubectlDeployer(cfg *config.DeployConfig) (*KubectlDeployer, error) {
 // Run templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Run(out io.Writer, b *build.BuildResult) (*Result, error) {
+
+	if len(k.DeployConfig.KubectlDeploy.Manifests) == 0 {
+		if len(b.Builds) != 1 {
+			return nil, errors.New("must specify manifest if using more than one image")
+		}
+		yaml, err := generateManifest(b.Builds[0])
+		if err != nil {
+			return nil, errors.Wrap(err, "generating manifest")
+		}
+		params := map[string]build.Build{"IMAGE": b.Builds[0]}
+
+		if err := deployManifestFile(strings.NewReader(yaml), params); err != nil {
+			return nil, errors.Wrap(err, "deploying manifest")
+		}
+		return &Result{}, nil
+	}
+
 	for _, m := range k.DeployConfig.KubectlDeploy.Manifests {
 		logrus.Debugf("Deploying path: %s parameters: %s", m.Paths, m.Parameters)
 		if err := deployManifest(out, b.Builds, m); err != nil {
@@ -52,6 +103,24 @@ func (k *KubectlDeployer) Run(out io.Writer, b *build.BuildResult) (*Result, err
 	}
 
 	return &Result{}, nil
+}
+
+func generateManifest(b build.Build) (string, error) {
+	logrus.Info("No manifests specified. Generating a deployment.")
+	dockerfilePath := filepath.Join(b.Artifact.Workspace, b.Artifact.DockerfilePath)
+	r, err := os.Open(dockerfilePath)
+	if err != nil {
+		return "", errors.Wrap(err, "reading dockerfile")
+	}
+	ports, err := docker.PortsFromDockerfile(r)
+	if err != nil {
+		logrus.Warnf("Unable to determine port from Dockerfile: %s.", err)
+	}
+	var out bytes.Buffer
+	if err := deploymentTemplate.Execute(&out, struct{ Ports []string }{Ports: ports}); err != nil {
+		return "", err
+	}
+	return out.String(), nil
 }
 
 func deployManifest(out io.Writer, b []build.Build, manifest config.Manifest) error {

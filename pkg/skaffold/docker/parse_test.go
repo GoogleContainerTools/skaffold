@@ -19,6 +19,7 @@ package docker
 import (
 	"fmt"
 	"io"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -93,6 +94,25 @@ FROM noimage:latest
 ADD ./file /etc/file
 `
 
+const onePortFromBaseImage = `
+FROM oneport
+`
+
+const onePortFromBaseImageAndDockerfile = `
+FROM oneport
+EXPOSE 9000
+`
+
+const severalPortsFromBaseImage = `
+FROM severalports
+`
+
+const severalPortsFromBaseImageAndDockerfile = `
+FROM severalports
+EXPOSE 9000 9001
+EXPOSE 9002/tcp
+`
+
 var ImageConfigs = map[string]*manifest.Schema2Image{
 	"golang:onbuild": {
 		Schema2V1Image: manifest.Schema2V1Image{
@@ -106,6 +126,16 @@ var ImageConfigs = map[string]*manifest.Schema2Image{
 	"ubuntu:14.04": {Schema2V1Image: manifest.Schema2V1Image{Config: &manifest.Schema2Config{}}},
 	"nginx":        {Schema2V1Image: manifest.Schema2V1Image{Config: &manifest.Schema2Config{}}},
 	"busybox":      {Schema2V1Image: manifest.Schema2V1Image{Config: &manifest.Schema2Config{}}},
+	"oneport": {Schema2V1Image: manifest.Schema2V1Image{
+		Config: &manifest.Schema2Config{
+			ExposedPorts: manifest.Schema2PortSet{manifest.Schema2Port("8000"): {}},
+		}}},
+	"severalports": {Schema2V1Image: manifest.Schema2V1Image{
+		Config: &manifest.Schema2Config{
+			ExposedPorts: manifest.Schema2PortSet{
+				manifest.Schema2Port("8000"):     {},
+				manifest.Schema2Port("8001/tcp"): {}},
+		}}},
 }
 
 func mockRetrieveConfig(image string) (*manifest.Schema2Image, error) {
@@ -216,6 +246,57 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			deps, err := GetDockerfileDependencies(test.workspace, r)
 			sort.Strings(deps)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
+		})
+	}
+}
+
+func TestPortsFromDockerfile(t *testing.T) {
+	type args struct {
+		dockerfile string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []string
+		wantErr bool
+	}{
+		{
+			name: "one port from base image",
+			args: args{dockerfile: onePortFromBaseImage},
+			want: []string{"8000"},
+		},
+		{
+			name: "two ports from base image",
+			args: args{dockerfile: severalPortsFromBaseImage},
+			want: []string{"8000", "8001/tcp"},
+		},
+		{
+			name: "one port from dockerfile",
+			args: args{dockerfile: onePortFromBaseImageAndDockerfile},
+			want: []string{"8000", "9000"},
+		},
+		{
+			name: "several port from dockerfile",
+			args: args{dockerfile: severalPortsFromBaseImageAndDockerfile},
+			want: []string{"8000", "8001/tcp", "9000", "9001", "9002/tcp"},
+		},
+	}
+	RetrieveConfig = mockRetrieveConfig
+	defer func() {
+		RetrieveConfig = retrieveImageConfig
+	}()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := strings.NewReader(tt.args.dockerfile)
+			got, err := PortsFromDockerfile(r)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("PortsFromDockerfile() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("PortsFromDockerfile() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

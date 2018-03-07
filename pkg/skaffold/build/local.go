@@ -126,6 +126,7 @@ func (l *LocalBuilder) Run(out io.Writer, tagger tag.Tagger, artifacts []*config
 		res.Builds = append(res.Builds, Build{
 			ImageName: artifact.ImageName,
 			Tag:       tag,
+			Artifact:  artifact,
 		})
 	}
 

@@ -51,6 +51,17 @@ func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
 	return types.AuthConfig{}, nil
 }
 func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { return nil, nil }
+
+var testImage1 = &config.Artifact{
+	ImageName: "gcr.io/test/image",
+	Workspace: ".",
+}
+
+var testImage2 = &config.Artifact{
+	ImageName: "gcr.io/test/image2",
+	Workspace: ".",
+}
+
 func TestLocalRun(t *testing.T) {
 	auth := docker.DefaultAuthHelper
 	defer func() { docker.DefaultAuthHelper = auth }()
@@ -77,10 +88,7 @@ func TestLocalRun(t *testing.T) {
 			out:         &bytes.Buffer{},
 			config: &config.BuildConfig{
 				Artifacts: []*config.Artifact{
-					{
-						ImageName: "gcr.io/test/image",
-						Workspace: ".",
-					},
+					testImage1,
 				},
 				BuildType: config.BuildType{
 					LocalBuild: &config.LocalBuild{
@@ -95,6 +103,7 @@ func TestLocalRun(t *testing.T) {
 					{
 						ImageName: "gcr.io/test/image",
 						Tag:       "gcr.io/test/image:imageid",
+						Artifact:  testImage1,
 					},
 				},
 			},
@@ -132,6 +141,7 @@ func TestLocalRun(t *testing.T) {
 					{
 						ImageName: "gcr.io/test/image",
 						Tag:       "gcr.io/test/image:imageid",
+						Artifact:  testImage1,
 					},
 				},
 			},
