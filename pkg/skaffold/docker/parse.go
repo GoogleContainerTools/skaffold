@@ -23,14 +23,12 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-
-	"github.com/containers/image/types"
-
-	"github.com/containers/image/manifest"
-
-	"github.com/containers/image/docker"
+	"sync"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
+	"github.com/containers/image/docker"
+	"github.com/containers/image/manifest"
+	"github.com/containers/image/types"
 	"github.com/moby/moby/builder/dockerfile/parser"
 	"github.com/moby/moby/builder/dockerfile/shell"
 	"github.com/pkg/errors"
@@ -123,7 +121,14 @@ func processBaseImage(value *parser.Node) ([]string, error) {
 	return cfg.Config.OnBuild, nil
 }
 
+var imageToConfigCache sync.Map
+
 func retrieveImageConfig(image string) (*manifest.Schema2Image, error) {
+	cachedCfg, present := imageToConfigCache.Load(image)
+	if present {
+		return cachedCfg.(*manifest.Schema2Image), nil
+	}
+
 	ref, err := docker.ParseReference("//" + image)
 	if err != nil {
 		return nil, err
@@ -148,6 +153,9 @@ func retrieveImageConfig(image string) (*manifest.Schema2Image, error) {
 	if err := json.Unmarshal(cfgBytes, cfg); err != nil {
 		return nil, err
 	}
+
+	imageToConfigCache.Store(image, cfg)
+
 	return cfg, nil
 }
 
