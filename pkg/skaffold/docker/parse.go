@@ -138,6 +138,7 @@ func retrieveImageConfig(image string) (*manifest.Schema2Image, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer img.Close()
 
 	cfgBytes, err := img.ConfigBlob()
 	if err != nil {
