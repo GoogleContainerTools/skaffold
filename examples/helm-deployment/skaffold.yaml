@@ -12,5 +12,7 @@ deploy:
     releases:
     - name: skaffold-helm
       chartPath: examples/helm-deployment/skaffold-helm
+      namespace: skaffold
+      valuesFilePath: helm-skaffold-values.yaml
       values:
         image: skaffold-helm
