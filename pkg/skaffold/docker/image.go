@@ -40,6 +40,7 @@ type BuildOptions struct {
 	ContextDir  string
 	ProgressBuf io.Writer
 	BuildBuf    io.Writer
+	BuildArgs   map[string]*string
 }
 
 // RunBuild performs a docker build and returns nothing
@@ -48,6 +49,7 @@ func RunBuild(cli client.ImageAPIClient, opts *BuildOptions) error {
 	imageBuildOpts := types.ImageBuildOptions{
 		Tags:       []string{opts.ImageName},
 		Dockerfile: opts.Dockerfile,
+		BuildArgs:  opts.BuildArgs,
 		// TODO(@r2d4): Currently works, but is really slow,
 		// figure out how to get all private registry tokens in faster way
 		//

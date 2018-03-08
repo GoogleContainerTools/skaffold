@@ -98,9 +98,10 @@ type HelmRelease struct {
 // Artifact represents items that need should be built, along with the context in which
 // they should be built.
 type Artifact struct {
-	ImageName      string `yaml:"imageName"`
-	DockerfilePath string `yaml:"dockerfilePath"`
-	Workspace      string `yaml:"workspace"`
+	ImageName      string             `yaml:"imageName"`
+	DockerfilePath string             `yaml:"dockerfilePath"`
+	Workspace      string             `yaml:"workspace"`
+	BuildArgs      map[string]*string `yaml:"buildArgs"`
 }
 
 // DefaultDevSkaffoldConfig is a partial set of defaults for the SkaffoldConfig

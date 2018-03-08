@@ -99,6 +99,7 @@ func (l *LocalBuilder) Run(out io.Writer, tagger tag.Tagger, artifacts []*config
 			ContextDir:  artifact.Workspace,
 			ProgressBuf: out,
 			BuildBuf:    out,
+			BuildArgs:   artifact.BuildArgs,
 		})
 		if err != nil {
 			return nil, errors.Wrap(err, "running build")
