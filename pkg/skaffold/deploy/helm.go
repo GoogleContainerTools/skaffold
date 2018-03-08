@@ -80,6 +80,14 @@ func deployRelease(out io.Writer, r config.HelmRelease, b *build.BuildResult) er
 		args = []string{"upgrade", r.Name, r.ChartPath}
 	}
 
+	if r.Namespace != "" {
+		args = append(args, "--namespace", r.Namespace)
+	}
+
+	if r.ValuesFilePath != "" {
+		args = append(args, "-f", r.ValuesFilePath)
+	}
+
 	args = append(args, setOpts...)
 	stdout, stderr, err = util.RunCommand(exec.Command("helm", args...), nil)
 	if err != nil {
