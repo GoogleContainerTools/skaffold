@@ -18,8 +18,12 @@ package testutil
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"reflect"
+	"syscall"
 	"testing"
 )
 
@@ -99,4 +103,31 @@ func SetEnvs(t *testing.T, envs map[string]string) func(*testing.T) {
 			}
 		}
 	}
+}
+
+// TempFile creates a temporary file with a given content. Returns the file name
+// and a teardown function that should be called to properly delete the file.
+func TempFile(t *testing.T, prefix string, content []byte) (name string, tearDown func()) {
+	file, err := ioutil.TempFile("", "skaffold.yaml")
+	if err != nil {
+		t.Error(err)
+	}
+
+	if err = ioutil.WriteFile(file.Name(), content, 0644); err != nil {
+		t.Error(err)
+	}
+
+	return file.Name(), func() {
+		syscall.Unlink(file.Name())
+	}
+}
+
+// ServeFile serves a file with http. Returns the url to the file and a teardown
+// function that should be called to properly stop the server.
+func ServeFile(t *testing.T, content []byte) (url string, tearDown func()) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write(content)
+	}))
+
+	return ts.URL, ts.Close
 }

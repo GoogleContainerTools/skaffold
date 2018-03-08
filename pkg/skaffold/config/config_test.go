@@ -17,8 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"io"
-	"strings"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
@@ -76,21 +74,11 @@ func TestParseConfig(t *testing.T) {
 			config:      badConfigA,
 			shouldErr:   true,
 		},
-		{
-			description: "bad reader",
-			badReader:   true,
-			shouldErr:   true,
-		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			var r io.Reader
-			r = strings.NewReader(test.config)
-			if test.badReader {
-				r = testutil.BadReader{}
-			}
-			cfg, err := Parse(r, DefaultDevSkaffoldConfig)
+			cfg, err := Parse([]byte(test.config), DefaultDevSkaffoldConfig)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cfg)
 		})
 	}
