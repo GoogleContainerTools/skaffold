@@ -17,11 +17,7 @@ limitations under the License.
 package config
 
 import (
-	"bytes"
-	"io"
-
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
-	"github.com/pkg/errors"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -124,13 +120,8 @@ var DefaultRunSkaffoldConfig = &SkaffoldConfig{
 // Parse reads from an io.Reader and unmarshals the result into a SkaffoldConfig.
 // The default config argument provides default values for the config,
 // which can be overridden if present in the config file.
-func Parse(config io.Reader, defaultConfig *SkaffoldConfig) (*SkaffoldConfig, error) {
-	var b bytes.Buffer
-	if _, err := b.ReadFrom(config); err != nil {
-		return nil, errors.Wrap(err, "reading config")
-	}
-
-	if err := yaml.Unmarshal(b.Bytes(), defaultConfig); err != nil {
+func Parse(config []byte, defaultConfig *SkaffoldConfig) (*SkaffoldConfig, error) {
+	if err := yaml.Unmarshal(config, defaultConfig); err != nil {
 		return nil, err
 	}
 

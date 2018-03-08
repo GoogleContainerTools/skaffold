@@ -18,7 +18,10 @@ package cmd
 
 import (
 	"io"
+	"io/ioutil"
+	"net/http"
 	"os"
+	"strings"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
@@ -58,7 +61,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 }
 
 func AddRunDevFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&filename, "filename", "f", "skaffold.yaml", "Filename of pipeline file")
+	cmd.Flags().StringVarP(&filename, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
 }
 
@@ -78,14 +81,13 @@ var defaultConfigForMode = map[bool]*config.SkaffoldConfig{
 }
 
 func runSkaffold(out io.Writer, dev bool, filename string) error {
-	f, err := os.Open(filename)
+	buf, err := readConfiguration(filename)
 	if err != nil {
-		return errors.Wrap(err, "opening skaffold config")
+		return errors.Wrap(err, "read skaffold config")
 	}
-	defer f.Close()
 
 	defaultConfig := defaultConfigForMode[dev]
-	cfg, err := config.Parse(f, defaultConfig)
+	cfg, err := config.Parse(buf, defaultConfig)
 	if err != nil {
 		return errors.Wrap(err, "parsing skaffold config")
 	}
@@ -102,4 +104,27 @@ func runSkaffold(out io.Writer, dev bool, filename string) error {
 	}
 
 	return nil
+}
+
+func readConfiguration(filename string) ([]byte, error) {
+	switch {
+	case filename == "":
+		return nil, errors.New("filename not specified")
+	case filename == "-":
+		return ioutil.ReadAll(os.Stdin)
+	case strings.HasPrefix(filename, "http://") || strings.HasPrefix(filename, "https://"):
+		return download(filename)
+	default:
+		return ioutil.ReadFile(filename)
+	}
+}
+
+func download(url string) ([]byte, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return ioutil.ReadAll(resp.Body)
 }
