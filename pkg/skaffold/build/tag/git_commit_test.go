@@ -36,8 +36,8 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		{
 			name: "success",
 			command: testutil.NewMultiFakeRunCommand(map[string]*testutil.FakeRunCommand{
-				"git rev-parse HEAD":     testutil.NewFakeRunCommand("somecommit", "", nil),
-				"git status --porcelain": testutil.NewFakeRunCommand("", "", nil),
+				"git rev-parse --short HEAD": testutil.NewFakeRunCommand("somecommit", "", nil),
+				"git status --porcelain":     testutil.NewFakeRunCommand("", "", nil),
 			}),
 			opts: &TagOptions{
 				ImageName: "test",
@@ -49,9 +49,9 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		{
 			name: "dirty",
 			command: testutil.NewMultiFakeRunCommand(map[string]*testutil.FakeRunCommand{
-				"git rev-parse HEAD":     testutil.NewFakeRunCommand("somecommit", "", nil),
-				"git status --porcelain": testutil.NewFakeRunCommand("M foo/bar\n", "", nil),
-				"git diff":               testutil.NewFakeRunCommand("somediff\n", "", nil),
+				"git rev-parse --short HEAD": testutil.NewFakeRunCommand("somecommit", "", nil),
+				"git status --porcelain":     testutil.NewFakeRunCommand("M foo/bar\n", "", nil),
+				"git diff":                   testutil.NewFakeRunCommand("somediff\n", "", nil),
 			}),
 			opts: &TagOptions{
 				ImageName: "test",
@@ -62,7 +62,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		{
 			name: "failure",
 			command: testutil.NewMultiFakeRunCommand(map[string]*testutil.FakeRunCommand{
-				"git rev-parse HEAD": testutil.NewFakeRunCommand("", "", errors.New("error")),
+				"git rev-parse --short HEAD": testutil.NewFakeRunCommand("", "", errors.New("error")),
 			}),
 			want:    "",
 			wantErr: true,

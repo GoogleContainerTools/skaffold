@@ -52,7 +52,7 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(opts *TagOptions) (string, e
 		shaStr := hex.EncodeToString(sha[:])[:16]
 		suffix = fmt.Sprintf("dirty-%s", shaStr)
 	}
-	cmd := exec.Command("git", "rev-parse", "HEAD")
+	cmd := exec.Command("git", "rev-parse", "--short", "HEAD")
 	stdout, _, err = util.RunCommand(cmd, nil)
 	if err != nil {
 		return "", errors.Wrap(err, "determining current git commit")
