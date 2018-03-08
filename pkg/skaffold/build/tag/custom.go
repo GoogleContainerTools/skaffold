@@ -14,15 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package tag
 
-import "io"
+import (
+	"fmt"
+)
 
-// SkaffoldOptions are options that are set by command line arguments not included
-// in the config file itself
-type SkaffoldOptions struct {
-	DevMode      bool
-	Notification bool
-	CustomTag    string
-	Output       io.Writer
+type CustomTag struct {
+	Tag string
+}
+
+// GenerateFullyQualifiedImageName tags an image with the custom tag
+func (c *CustomTag) GenerateFullyQualifiedImageName(opts *TagOptions) (string, error) {
+	if opts == nil {
+		return "", fmt.Errorf("Tag options not provided")
+	}
+	tag := c.Tag
+	if tag == "" {
+		return "", fmt.Errorf("Custom tag not provided")
+	}
+	return fmt.Sprintf("%s:%s", opts.ImageName, tag), nil
 }

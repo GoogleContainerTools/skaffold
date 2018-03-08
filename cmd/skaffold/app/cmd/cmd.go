@@ -58,6 +58,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 }
 
 func AddRunDevFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&opts.CustomTag, "tag", "t", "", "The optional custom tag to use for images which overrides the current Tagger configuration")
 	cmd.Flags().StringVarP(&filename, "filename", "f", "skaffold.yaml", "Filename of pipeline file")
 	cmd.Flags().BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
 }

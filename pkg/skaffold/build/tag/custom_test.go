@@ -14,15 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package tag
 
-import "io"
+import (
+	"testing"
 
-// SkaffoldOptions are options that are set by command line arguments not included
-// in the config file itself
-type SkaffoldOptions struct {
-	DevMode      bool
-	Notification bool
-	CustomTag    string
-	Output       io.Writer
+	"github.com/GoogleCloudPlatform/skaffold/testutil"
+)
+
+func TestCustomTag_GenerateFullyQualifiedImageName(t *testing.T) {
+	opts := &TagOptions{
+		ImageName: "test",
+		Digest:    "sha256:12345abcde",
+	}
+
+	expectedTag := "1.2.3-beta"
+
+	c := &CustomTag{
+		Tag: expectedTag,
+	}
+	tag, err := c.GenerateFullyQualifiedImageName(opts)
+	testutil.CheckErrorAndDeepEqual(t, false, err, "test:"+expectedTag, tag)
 }
