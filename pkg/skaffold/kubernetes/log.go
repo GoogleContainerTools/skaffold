@@ -69,7 +69,7 @@ func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string) erro
 			if err := WaitForPodReady(pods, p.Name); err != nil {
 				return errors.Wrap(err, "waiting for pod ready")
 			}
-			req := client.Pods(p.Namespace).GetLogs(p.Name, &v1.PodLogOptions{
+			req := pods.GetLogs(p.Name, &v1.PodLogOptions{
 				Follow:    true,
 				Container: c.Name,
 				SinceTime: &meta_v1.Time{Time: time.Now()},
