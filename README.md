@@ -66,9 +66,11 @@ You will need the following components to get started with Skaffold:
 1. docker
 
 1. Docker image registry
-   -  Your docker client should be configured to push to an external docker image repository. If you're using a minikube or Docker for Desktop cluster,
-      you can skip this requirement.
-   -  If you are using Google Container Registry (GCR), run: `gcloud docker -a`
+   -  Your docker client should be configured to push to an external docker image repository. If you're using a minikube or Docker for Desktop cluster, you can skip this requirement.
+   -  If you are using Google Container Registry (GCR), choose one of the following:
+        1. Use `gcloud`'s Docker credential helper: Run [`gcloud beta auth configure-docker`](https://cloud.google.com/sdk/gcloud/reference/beta/auth/configure-docker)
+        1. Install and configure GCR's standalone cred helper: [`docker-credential-gcr`](https://github.com/GoogleCloudPlatform/docker-credential-gcr#installation-and-usage)
+        1. Run `gcloud docker -a` before each development session.
 
 ### Iterative Development
 
