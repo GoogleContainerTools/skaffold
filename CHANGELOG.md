@@ -1,3 +1,22 @@
+# v0.2.0 Release - 3/9/2018
+
+New Features
+* Added "skip-push" optimization for Docker for Desktop Kubernetes Clusters
+* Examples should now be ran from their own directory
+* Fixed kubernetes context for build and deploy
+* Added options for GCR auth
+* Set default log level to warn
+* Change git commit to use short ID instead
+* Helm deployer now acceptes namespace and values file
+* Local builder now accepts docker build-args
+* Added --tag flag for skaffold run
+* Cache image configs by name
+* Kubectl Generate a basic manifest if none provided
+
+Bug fixes
+* Dockerfile parsing for remote ADD file works correctly now
+* Closed image config file descriptor
+
 # v0.1.0 Release - 3/2/2018
 
 * Added `skaffold run` command
