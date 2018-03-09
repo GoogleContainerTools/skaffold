@@ -14,28 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package tag
 
 import (
-	"io"
+	"testing"
 
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
+	"github.com/GoogleCloudPlatform/skaffold/testutil"
 )
 
-func NewCmdRun(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "run",
-		Short: "runs a pipeline file",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := runSkaffold(out, false, filename); err != nil {
-				logrus.Errorf("run: %s", err)
-			}
-		},
-		Args: cobra.NoArgs,
+func TestCustomTag_GenerateFullyQualifiedImageName(t *testing.T) {
+	opts := &TagOptions{
+		ImageName: "test",
+		Digest:    "sha256:12345abcde",
 	}
-	AddRunDevFlags(cmd)
 
-	cmd.Flags().StringVarP(&opts.CustomTag, "tag", "t", "", "The optional custom tag to use for images which overrides the current Tagger configuration")
-	return cmd
+	expectedTag := "1.2.3-beta"
+
+	c := &CustomTag{
+		Tag: expectedTag,
+	}
+	tag, err := c.GenerateFullyQualifiedImageName(opts)
+	testutil.CheckErrorAndDeepEqual(t, false, err, "test:"+expectedTag, tag)
 }

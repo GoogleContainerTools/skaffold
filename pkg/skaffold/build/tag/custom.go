@@ -14,28 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package tag
 
 import (
-	"io"
-
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
+	"fmt"
 )
 
-func NewCmdRun(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "run",
-		Short: "runs a pipeline file",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := runSkaffold(out, false, filename); err != nil {
-				logrus.Errorf("run: %s", err)
-			}
-		},
-		Args: cobra.NoArgs,
-	}
-	AddRunDevFlags(cmd)
+type CustomTag struct {
+	Tag string
+}
 
-	cmd.Flags().StringVarP(&opts.CustomTag, "tag", "t", "", "The optional custom tag to use for images which overrides the current Tagger configuration")
-	return cmd
+// GenerateFullyQualifiedImageName tags an image with the custom tag
+func (c *CustomTag) GenerateFullyQualifiedImageName(opts *TagOptions) (string, error) {
+	if opts == nil {
+		return "", fmt.Errorf("Tag options not provided")
+	}
+	tag := c.Tag
+	if tag == "" {
+		return "", fmt.Errorf("Custom tag not provided")
+	}
+	return fmt.Sprintf("%s:%s", opts.ImageName, tag), nil
 }

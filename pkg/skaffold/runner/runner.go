@@ -62,6 +62,12 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold tag config")
 	}
+	customTag := opts.CustomTag
+	if customTag != "" {
+		tagger = &tag.CustomTag{
+			Tag: customTag,
+		}
+	}
 	client, err := kubernetesClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting k8s client")

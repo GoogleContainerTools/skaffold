@@ -23,5 +23,6 @@ import "io"
 type SkaffoldOptions struct {
 	DevMode      bool
 	Notification bool
+	CustomTag    string
 	Output       io.Writer
 }
