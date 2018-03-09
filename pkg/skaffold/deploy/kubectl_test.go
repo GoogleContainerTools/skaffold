@@ -28,6 +28,8 @@ import (
 	"github.com/spf13/afero"
 )
 
+const testKubeContext = "kubecontext"
+
 const deploymentYAML = `apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -185,12 +187,10 @@ func TestKubectlRun(t *testing.T) {
 				util.DefaultExecCommand = test.command
 				defer util.ResetDefaultExecCommand()
 			}
-			k, err := NewKubectlDeployer(test.cfg)
-			if err != nil {
-				t.Errorf("Error getting kubectl deployer: %s", err)
-				return
-			}
+
+			k := NewKubectlDeployer(test.cfg, testKubeContext)
 			res, err := k.Run(&bytes.Buffer{}, test.b)
+
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
 		})
 

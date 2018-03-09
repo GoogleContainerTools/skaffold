@@ -50,11 +50,17 @@ var kubernetesClient = kubernetes.GetClientset
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
 func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*SkaffoldRunner, error) {
-	builder, err := getBuilder(&cfg.Build)
+	kubeContext, err := kubernetes.CurrentContext()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting current cluster context")
+	}
+	logrus.Infof("Using kubectl context: %s", kubeContext)
+
+	builder, err := getBuilder(&cfg.Build, kubeContext)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold build config")
 	}
-	deployer, err := getDeployer(&cfg.Deploy)
+	deployer, err := getDeployer(&cfg.Deploy, kubeContext)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold deploy config")
 	}
@@ -78,23 +84,25 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 	}, nil
 }
 
-func getBuilder(cfg *config.BuildConfig) (build.Builder, error) {
+func getBuilder(cfg *config.BuildConfig, kubeContext string) (build.Builder, error) {
 	if cfg != nil && cfg.LocalBuild != nil {
-		return build.NewLocalBuilder(cfg)
+		return build.NewLocalBuilder(cfg, kubeContext)
 	}
 	if cfg.GoogleCloudBuild != nil {
 		return build.NewGoogleCloudBuilder(cfg)
 	}
+
 	return nil, fmt.Errorf("Unknown builder for config %+v", cfg)
 }
 
-func getDeployer(cfg *config.DeployConfig) (deploy.Deployer, error) {
+func getDeployer(cfg *config.DeployConfig, kubeContext string) (deploy.Deployer, error) {
 	if cfg.KubectlDeploy != nil {
-		return deploy.NewKubectlDeployer(cfg)
+		return deploy.NewKubectlDeployer(cfg, kubeContext), nil
 	}
 	if cfg.HelmDeploy != nil {
-		return deploy.NewHelmDeployer(cfg)
+		return deploy.NewHelmDeployer(cfg, kubeContext), nil
 	}
+
 	return nil, fmt.Errorf("Unknown deployer for config %+v", cfg)
 }
 

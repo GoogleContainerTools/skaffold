@@ -20,12 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 	"testing"
-
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
@@ -268,21 +263,11 @@ func TestNewLocalBuilderError(t *testing.T) {
 				Workspace: ".",
 			},
 		},
-	})
+	}, "")
 	testutil.CheckError(t, true, err)
 }
 
 func TestNewLocalBuilderMinikubeContext(t *testing.T) {
-	tmpDir := os.TempDir()
-	kubeConfig := filepath.Join(tmpDir, "config")
-	defer os.Remove(kubeConfig)
-	if err := clientcmd.WriteToFile(api.Config{
-		CurrentContext: "minikube",
-	}, kubeConfig); err != nil {
-		t.Fatalf("writing temp kubeconfig")
-	}
-	unsetEnvs := testutil.SetEnvs(t, map[string]string{"KUBECONFIG": kubeConfig})
-	defer unsetEnvs(t)
 	_, err := NewLocalBuilder(&config.BuildConfig{
 		Artifacts: []*config.Artifact{
 			{
@@ -293,7 +278,7 @@ func TestNewLocalBuilderMinikubeContext(t *testing.T) {
 		BuildType: config.BuildType{
 			LocalBuild: &config.LocalBuild{},
 		},
-	})
+	}, "minikube")
 	if err != nil {
 		t.Errorf("New local builder: %s", err)
 	}
