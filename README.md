@@ -72,11 +72,24 @@ You will need the following components to get started with Skaffold:
 
 ### Iterative Development
 
-To get started, change the `imageName` and `IMAGE_NAME` parameters of `examples/getting-started/skaffold.yaml`. This should be a fully qualified image name that your docker client is configured to push to.  
-From the root directory of this repository.
+1. Clone this repostiory to get access to the examples.
+
+```shell
+git clone https://github.com/GoogleCloudPlatform/skaffold
+```
+
+1. Change directories to the `getting-started` example.
+
+```shell
+cd examples/getting-started
+```
+
+1. Change the `imageName` and `IMAGE_NAME` parameters of `skaffold.yaml`. This should be a fully qualified image name that your docker client is configured to push to.
+
+1. Run `skaffold dev`.
 
 ```console
-$ skaffold dev -f examples/getting-started/skaffold.yaml
+$ skaffold dev
 Starting build...
 Found minikube or Docker for Desktop context, using local docker daemon.
 Sending build context to Docker daemon   7.68kB
@@ -104,7 +117,14 @@ Deploy complete.
 [getting-started getting-started] Hello world!
 ```
 
-At this point, you should be able to see some output from the pod in the Skaffold output:
+1. Skaffold has done the following for you:
+
+ - Build an image from the local source code
+ - Tag it with its sha256
+ - Sets that image in the Kubernetes manifests defined in `skaffold.yaml`
+ - Deploy the Kubernetes manifests using `kubectl apply -f`
+
+1. You will see the output of the pod that was deployed:
 
 ```console
 [getting-started getting-started] Hello world!
@@ -112,7 +132,7 @@ At this point, you should be able to see some output from the pod in the Skaffol
 [getting-started getting-started] Hello world!
 ```
 
-Now, update `examples/getting-started/main.go`
+Now, update `main.go`
 
 ```diff
 diff --git a/examples/getting-started/main.go b/examples/getting-started/main.go
@@ -139,7 +159,7 @@ Once you save the file, you should see the pipeline kick off again to redeploy y
 ### Run a deployment pipeline once
 There may be some cases where you don't want to run build and deploy continuously. To run once, use:
 ```console
-$ skaffold run -f examples/getting-started/skaffold.yaml
+$ skaffold run -f skaffold.yaml
 ```
 
 ## Future

@@ -1,0 +1,16 @@
+apiVersion: skaffold/v1
+kind: Config
+build:
+  tagPolicy: sha256
+  artifacts:
+  - imageName: gcr.io/vic-goog/skaffold
+    workspace: .
+  googleCloudBuild:
+    projectId: vic-goog
+deploy:
+  kubectl:
+    manifests:
+    - paths:
+      - k8s-*
+      parameters:
+        IMAGE_NAME: gcr.io/vic-goog/skaffold

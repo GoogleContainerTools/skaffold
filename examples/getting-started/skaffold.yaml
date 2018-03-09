@@ -19,7 +19,7 @@ build:
     # dockerfilePath: Dockerfile # not required if its just $workspace/Dockerfile
 
     # workspace is the path to your dockerfile context
-    workspace: examples/getting-started
+    workspace: .
 
   # This next section is where you'll put your specific builder configuration.
   # Here, we're using a local builder, which simply builds using the host docker
@@ -53,7 +53,7 @@ deploy:
     # - /home/mrick/path/to/different/project/deploy/*
     #
     - paths:
-      - examples/getting-started/k8s-*
+      - k8s-*
       # Parameters are key value pairs that will be injected into the manifests
       # above. In the kubectl implementation, it is a simple "find and replace"
       # of these values.
