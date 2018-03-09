@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -31,6 +32,8 @@ import (
 	"github.com/rjeczalik/notify"
 	"github.com/sirupsen/logrus"
 )
+
+const quietPeriod = 500 * time.Millisecond
 
 // Watcher provides a watch trigger for the skaffold pipeline to begin
 type Watcher interface {
@@ -86,18 +89,42 @@ func (f *FSWatcher) Watch(artifacts []*config.Artifact, ready chan *Event, cance
 		logrus.Info("Watch is ready")
 		ready <- WatchStartEvent
 	}
-	select {
-	case ei := <-c:
-		logrus.Infof("%s %s", ei.Event().String(), ei.Path())
-		artifacts := depsToArtifact[ei.Path()]
-		return &Event{
-			EventType:        ei.Event().String(),
-			ChangedArtifacts: artifacts,
-		}, nil
-	case <-cancel:
-		logrus.Info("Watch canceled")
-		return WatchStopEvent, nil
+
+	var changedPaths []string
+
+	timer := time.NewTimer(1<<63 - 1) // Forever
+	for {
+		select {
+		case ei := <-c:
+			logrus.Infof("%s %s", ei.Event().String(), ei.Path())
+			changedPaths = append(changedPaths, ei.Path())
+			timer.Reset(quietPeriod)
+		case <-timer.C:
+			return &Event{
+				EventType:        WatchReady,
+				ChangedArtifacts: depsToArtifacts(changedPaths, depsToArtifact),
+			}, nil
+		case <-cancel:
+			logrus.Info("Watch canceled")
+			return WatchStopEvent, nil
+		}
 	}
+}
+
+func depsToArtifacts(changedPaths []string, depsToArtifact map[string][]*config.Artifact) []*config.Artifact {
+	changedArtifacts := map[*config.Artifact]bool{}
+	for _, changedPath := range changedPaths {
+		for _, changedArtifact := range depsToArtifact[changedPath] {
+			changedArtifacts[changedArtifact] = true
+		}
+	}
+
+	var artifacts []*config.Artifact
+	for changedArtifact := range changedArtifacts {
+		artifacts = append(artifacts, changedArtifact)
+	}
+
+	return artifacts
 }
 
 func addDepsForArtifact(a *config.Artifact, depsToArtifact map[string][]*config.Artifact) error {
