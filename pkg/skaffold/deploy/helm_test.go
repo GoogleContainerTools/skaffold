@@ -70,13 +70,6 @@ var testDeployConfigParameterUnmatched = &config.DeployConfig{
 	},
 }
 
-func TestNewHelmDeployerNoError(t *testing.T) {
-	_, err := NewHelmDeployer(testDeployConfig)
-	if err != nil {
-		t.Errorf("Unexpected error new config: %s", err)
-	}
-}
-
 func TestHelmDeploy(t *testing.T) {
 	cmd := testutil.NewFakeRunCommand("", "", nil)
 	util.DefaultExecCommand = cmd
@@ -93,17 +86,13 @@ func TestHelmDeploy(t *testing.T) {
 		{
 			description: "deploy success",
 			cmd:         &MockHelm{t: t},
-			deployer: &HelmDeployer{
-				DeployConfig: testDeployConfig,
-			},
+			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext),
 			buildResult: testBuildResult,
 		},
 		{
 			description: "deploy error unmatched parameter",
 			cmd:         &MockHelm{t: t},
-			deployer: &HelmDeployer{
-				DeployConfig: testDeployConfigParameterUnmatched,
-			},
+			deployer:    NewHelmDeployer(testDeployConfigParameterUnmatched, testKubeContext),
 			buildResult: testBuildResult,
 			shouldErr:   true,
 		},
@@ -114,9 +103,7 @@ func TestHelmDeploy(t *testing.T) {
 				getResult:     cmdOutput{"", "", fmt.Errorf("not found")},
 				upgradeResult: cmdOutput{"", "", fmt.Errorf("should not have called upgrade")},
 			},
-			deployer: &HelmDeployer{
-				DeployConfig: testDeployConfig,
-			},
+			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext),
 			buildResult: testBuildResult,
 		},
 		{
@@ -126,9 +113,7 @@ func TestHelmDeploy(t *testing.T) {
 				getResult:     cmdOutput{"", "", fmt.Errorf("not found")},
 				upgradeResult: cmdOutput{"", "", fmt.Errorf("should not have called install")},
 			},
-			deployer: &HelmDeployer{
-				DeployConfig: testDeployConfig,
-			},
+			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext),
 			buildResult: testBuildResult,
 		},
 		{
@@ -137,10 +122,8 @@ func TestHelmDeploy(t *testing.T) {
 				t:             t,
 				upgradeResult: cmdOutput{"", "", fmt.Errorf("unexpected error")},
 			},
-			shouldErr: true,
-			deployer: &HelmDeployer{
-				DeployConfig: testDeployConfig,
-			},
+			shouldErr:   true,
+			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext),
 			buildResult: testBuildResult,
 		},
 		{
@@ -149,10 +132,8 @@ func TestHelmDeploy(t *testing.T) {
 				t:         t,
 				depResult: cmdOutput{"", "", fmt.Errorf("unexpected error")},
 			},
-			shouldErr: true,
-			deployer: &HelmDeployer{
-				DeployConfig: testDeployConfig,
-			},
+			shouldErr:   true,
+			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext),
 			buildResult: testBuildResult,
 		},
 	}
@@ -187,10 +168,15 @@ func (c cmdOutput) out() ([]byte, []byte, error) {
 }
 
 func (m *MockHelm) RunCommand(c *exec.Cmd, _ io.Reader) ([]byte, []byte, error) {
-	if len(c.Args) < 1 {
+	if len(c.Args) < 3 {
 		m.t.Errorf("Not enough args in command %v", c)
 	}
-	switch c.Args[1] {
+
+	if c.Args[1] != "--kube-context" || c.Args[2] != testKubeContext {
+		m.t.Errorf("Invalid kubernetes context %v", c)
+	}
+
+	switch c.Args[3] {
 	case "get":
 		return m.getResult.out()
 	case "install":

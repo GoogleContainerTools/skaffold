@@ -30,24 +30,30 @@ import (
 
 type HelmDeployer struct {
 	*config.DeployConfig
+	kubeContext string
 }
 
-func NewHelmDeployer(cfg *config.DeployConfig) (*HelmDeployer, error) {
-	return &HelmDeployer{cfg}, nil
+// NewHelmDeployer returns a new HelmDeployer for a DeployConfig filled
+// with the needed configuration for `helm`
+func NewHelmDeployer(cfg *config.DeployConfig, kubeContext string) *HelmDeployer {
+	return &HelmDeployer{
+		DeployConfig: cfg,
+		kubeContext:  kubeContext,
+	}
 }
 
 func (h *HelmDeployer) Run(out io.Writer, b *build.BuildResult) (*Result, error) {
 	for _, r := range h.HelmDeploy.Releases {
-		if err := deployRelease(out, r, b); err != nil {
+		if err := h.deployRelease(out, r, b); err != nil {
 			return nil, errors.Wrapf(err, "deploying %s", r.Name)
 		}
 	}
 	return nil, nil
 }
 
-func deployRelease(out io.Writer, r config.HelmRelease, b *build.BuildResult) error {
+func (h *HelmDeployer) deployRelease(out io.Writer, r config.HelmRelease, b *build.BuildResult) error {
 	isInstalled := true
-	getCmd := exec.Command("helm", "get", r.Name)
+	getCmd := exec.Command("helm", "--kube-context", h.kubeContext, "get", r.Name)
 	if stdout, stderr, err := util.RunCommand(getCmd, nil); err != nil {
 		logrus.Debugf("Error getting release %s: %s stdout: %s stderr: %s", r.Name, err, string(stdout), string(stderr))
 		fmt.Fprintf(out, "Helm release %s not installed. Installing...", r.Name)
@@ -66,18 +72,18 @@ func deployRelease(out io.Writer, r config.HelmRelease, b *build.BuildResult) er
 
 	logrus.Infof("Building helm dependencies...")
 	// First build dependencies.
-	depCmd := exec.Command("helm", "dep", "build", r.ChartPath)
+	depCmd := exec.Command("helm", "--kube-context", h.kubeContext, "dep", "build", r.ChartPath)
 	stdout, stderr, err := util.RunCommand(depCmd, nil)
 	if err != nil {
 		return errors.Wrapf(err, "helm dep build stdout: %s, stderr: %s", string(stdout), string(stderr))
 	}
 	out.Write(stdout)
 
-	var args []string
+	args := []string{"--kube-context", h.kubeContext}
 	if !isInstalled {
-		args = []string{"install", "--name", r.Name, r.ChartPath}
+		args = append(args, "install", "--name", r.Name, r.ChartPath)
 	} else {
-		args = []string{"upgrade", r.Name, r.ChartPath}
+		args = append(args, "upgrade", r.Name, r.ChartPath)
 	}
 
 	if r.Namespace != "" {

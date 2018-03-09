@@ -25,7 +25,6 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/moby/moby/client"
 	"github.com/pkg/errors"
@@ -41,19 +40,15 @@ type LocalBuilder struct {
 }
 
 // NewLocalBuilder returns an new instance of a LocalBuilder
-func NewLocalBuilder(cfg *config.BuildConfig) (*LocalBuilder, error) {
+func NewLocalBuilder(cfg *config.BuildConfig, kubeContext string) (*LocalBuilder, error) {
 	if cfg.LocalBuild == nil {
 		return nil, fmt.Errorf("LocalBuild config field is needed to create a new LocalBuilder")
 	}
-	var localCluster bool
-	context, err := kubernetes.CurrentContext()
-	if err != nil {
-		return nil, errors.Wrap(err, "getting current cluster context")
-	}
-	logrus.Infof("Using kubectl context: %s", context)
-	var newImageAPI = docker.NewImageAPIClient
 
-	switch context {
+	var newImageAPI = docker.NewImageAPIClient
+	var localCluster bool
+
+	switch kubeContext {
 	case constants.DefaultMinikubeContext:
 		newImageAPI = docker.NewMinikubeImageAPIClient
 		localCluster = true
@@ -65,6 +60,7 @@ func NewLocalBuilder(cfg *config.BuildConfig) (*LocalBuilder, error) {
 		logrus.Debugf("skipPush value not present. defaulting to cluster default %t (minikube=true, d4d=true, gke=false)", localCluster)
 		cfg.LocalBuild.SkipPush = &localCluster
 	}
+
 	return &LocalBuilder{
 		BuildConfig:  cfg,
 		newImageAPI:  newImageAPI,

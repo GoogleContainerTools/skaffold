@@ -26,14 +26,12 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
-
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // Slightly modified from kubectl run --dry-run
@@ -67,12 +65,16 @@ spec:
 
 type KubectlDeployer struct {
 	*config.DeployConfig
+	kubeContext string
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(cfg *config.DeployConfig) (*KubectlDeployer, error) {
-	return &KubectlDeployer{cfg}, nil
+func NewKubectlDeployer(cfg *config.DeployConfig, kubeContext string) *KubectlDeployer {
+	return &KubectlDeployer{
+		DeployConfig: cfg,
+		kubeContext:  kubeContext,
+	}
 }
 
 // Run templates the provided manifests with a simple `find and replace` and
@@ -88,7 +90,7 @@ func (k *KubectlDeployer) Run(out io.Writer, b *build.BuildResult) (*Result, err
 		}
 		params := map[string]build.Build{"IMAGE": b.Builds[0]}
 
-		if err := deployManifestFile(strings.NewReader(yaml), params); err != nil {
+		if err := k.deployManifestFile(strings.NewReader(yaml), params); err != nil {
 			return nil, errors.Wrap(err, "deploying manifest")
 		}
 		return &Result{}, nil
@@ -96,7 +98,7 @@ func (k *KubectlDeployer) Run(out io.Writer, b *build.BuildResult) (*Result, err
 
 	for _, m := range k.DeployConfig.KubectlDeploy.Manifests {
 		logrus.Debugf("Deploying path: %s parameters: %s", m.Paths, m.Parameters)
-		if err := deployManifest(out, b.Builds, m); err != nil {
+		if err := k.deployManifest(out, b.Builds, m); err != nil {
 			return nil, errors.Wrap(err, "deploying manifests")
 		}
 	}
@@ -122,7 +124,7 @@ func generateManifest(b build.Build) (string, error) {
 	return out.String(), nil
 }
 
-func deployManifest(out io.Writer, b []build.Build, manifest config.Manifest) error {
+func (k *KubectlDeployer) deployManifest(out io.Writer, b []build.Build, manifest config.Manifest) error {
 	params, err := JoinTagsToBuildResult(b, manifest.Parameters)
 	if err != nil {
 		return errors.Wrap(err, "joining template keys to image tag")
@@ -145,14 +147,14 @@ func deployManifest(out io.Writer, b []build.Build, manifest config.Manifest) er
 		if err != nil {
 			return errors.Wrap(err, "opening manifest")
 		}
-		if err := deployManifestFile(f, params); err != nil {
+		if err := k.deployManifestFile(f, params); err != nil {
 			return errors.Wrapf(err, "deploying manifest %s", fname)
 		}
 	}
 	return nil
 }
 
-func deployManifestFile(r io.Reader, params map[string]build.Build) error {
+func (k *KubectlDeployer) deployManifestFile(r io.Reader, params map[string]build.Build) error {
 	var manifestContents bytes.Buffer
 	if _, err := manifestContents.ReadFrom(r); err != nil {
 		return errors.Wrap(err, "reading manifest")
@@ -161,7 +163,7 @@ func deployManifestFile(r io.Reader, params map[string]build.Build) error {
 	for old, new := range params {
 		manifest = strings.Replace(manifest, old, new.Tag, -1)
 	}
-	cmd := exec.Command("kubectl", "apply", "-f", "-")
+	cmd := exec.Command("kubectl", "--context", k.kubeContext, "apply", "-f", "-")
 	stdin := strings.NewReader(manifest)
 	out, outerr, err := util.RunCommand(cmd, stdin)
 	if err != nil {
