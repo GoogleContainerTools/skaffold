@@ -79,6 +79,11 @@ FROM ubuntu:14.04
 COPY server.go file .
 `
 
+const remoteFileAdd = `
+FROM ubuntu:14.04
+ADD https://example.com/test /test
+`
+
 const dockerIgnore = `
 bar
 docker/*
@@ -172,6 +177,12 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			description: "bad read",
 			badReader:   true,
 			shouldErr:   true,
+		},
+		{
+			// https://github.com/GoogleCloudPlatform/skaffold/issues/158
+			description: "no dependencies on remote files",
+			dockerfile:  remoteFileAdd,
+			expected:    []string{},
 		},
 		{
 			description: "multistage dockerfile",

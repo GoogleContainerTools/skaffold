@@ -220,8 +220,13 @@ func processCopy(workspace string, value *parser.Node, paths map[string]struct{}
 		if hasMultiStageFlag(value.Flags) {
 			return nil
 		}
-		dep := path.Join(workspace, src)
-		paths[dep] = struct{}{}
+		if !strings.HasPrefix(src, "http://") && !strings.HasPrefix(src, "https://") {
+			dep := path.Join(workspace, src)
+			paths[dep] = struct{}{}
+		} else {
+			logrus.Debugf("Skipping watch on remote dependency %s", src)
+		}
+
 		value = value.Next
 	}
 	return nil
