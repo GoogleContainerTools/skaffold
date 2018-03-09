@@ -55,33 +55,36 @@ func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string) erro
 	if err != nil {
 		return errors.Wrap(err, "getting pods")
 	}
+
 	logrus.Infof("Looking for logs to stream for %s", image)
 	for _, p := range pods.Items {
 		for _, c := range p.Spec.Containers {
 			logrus.Debugf("Found container %s with image %s", c.Name, c.Image)
-			if c.Image == image {
-				logrus.Infof("Trying to stream logs from pod: %s container: %s", p.Name, c.Name)
-				pods := client.Pods(p.Namespace)
-				if err := WaitForPodReady(pods, p.Name); err != nil {
-					return errors.Wrap(err, "waiting for pod ready")
-				}
-				req := client.Pods(p.Namespace).GetLogs(p.Name, &v1.PodLogOptions{
-					Follow:    true,
-					Container: c.Name,
-					SinceTime: &meta_v1.Time{Time: time.Now()},
-				})
-				rc, err := getStream(req)
-				if err != nil {
-					return errors.Wrap(err, "setting up container log stream")
-				}
-				defer rc.Close()
-				header := fmt.Sprintf("[%s %s]", p.Name, c.Name)
-				if err := streamRequest(out, header, rc); err != nil {
-					return errors.Wrap(err, "streaming request")
-				}
-
-				return nil
+			if c.Image != image {
+				continue
 			}
+
+			logrus.Infof("Trying to stream logs from pod: %s container: %s", p.Name, c.Name)
+			pods := client.Pods(p.Namespace)
+			if err := WaitForPodReady(pods, p.Name); err != nil {
+				return errors.Wrap(err, "waiting for pod ready")
+			}
+			req := client.Pods(p.Namespace).GetLogs(p.Name, &v1.PodLogOptions{
+				Follow:    true,
+				Container: c.Name,
+				SinceTime: &meta_v1.Time{Time: time.Now()},
+			})
+			rc, err := getStream(req)
+			if err != nil {
+				return errors.Wrap(err, "setting up container log stream")
+			}
+			defer rc.Close()
+			header := fmt.Sprintf("[%s %s]", p.Name, c.Name)
+			if err := streamRequest(out, header, rc); err != nil {
+				return errors.Wrap(err, "streaming request")
+			}
+
+			return nil
 		}
 	}
 
