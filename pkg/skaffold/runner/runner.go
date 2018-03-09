@@ -126,7 +126,7 @@ func newTaggerForConfig(tagStrategy string) (tag.Tagger, error) {
 // Run runs the skaffold build and deploy pipeline.
 func (r *SkaffoldRunner) Run() error {
 	if r.opts.DevMode {
-		return r.dev()
+		return r.dev(r.config.Build.Artifacts)
 	}
 
 	if _, _, err := r.run(r.config.Build.Artifacts); err != nil {
@@ -135,9 +135,9 @@ func (r *SkaffoldRunner) Run() error {
 	return nil
 }
 
-func (r *SkaffoldRunner) dev() error {
+func (r *SkaffoldRunner) dev(artifacts []*config.Artifact) error {
 	// First rebuild everything.
-	bRes, _, err := r.run(r.config.Build.Artifacts)
+	bRes, _, err := r.run(artifacts)
 	if err != nil {
 		// In dev mode, we only warn on pipeline errors
 		logrus.Warnf("run: %s", err)
@@ -149,7 +149,7 @@ func (r *SkaffoldRunner) dev() error {
 				go kubernetes.StreamLogsRetry(r.opts.Output, r.kubeclient.CoreV1(), tag, 5)
 			}
 		}
-		evt, err := r.Watch(r.config.Build.Artifacts, r.watchReady, r.cancel)
+		evt, err := r.Watch(artifacts, r.watchReady, r.cancel)
 		if err != nil {
 			return errors.Wrap(err, "running watch")
 		}
