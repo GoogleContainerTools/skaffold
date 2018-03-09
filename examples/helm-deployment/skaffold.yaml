@@ -4,15 +4,14 @@ build:
   tagPolicy: sha256
   artifacts:
   - imageName: skaffold-helm
-    dockerfilePath: deploy/skaffold/Dockerfile
     workspace: .
   local: {}
 deploy:
   helm:
     releases:
     - name: skaffold-helm
-      chartPath: examples/helm-deployment/skaffold-helm
+      chartPath: skaffold-helm
       namespace: skaffold
-      valuesFilePath: helm-skaffold-values.yaml
+      #valuesFilePath: helm-skaffold-values.yaml
       values:
         image: skaffold-helm
