@@ -22,7 +22,7 @@ import (
 
 const (
 	// DefaultLogLevel is the default global verbosity
-	DefaultLogLevel = logrus.ErrorLevel
+	DefaultLogLevel = logrus.WarnLevel
 
 	// The dockerfile path is given relative to the context directory
 	DefaultDockerfilePath = "Dockerfile"
