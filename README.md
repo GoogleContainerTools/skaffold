@@ -11,6 +11,7 @@ workflow and tooling when moving applications to production.
 - [Operating modes](#operating-modes)
   - [skaffold dev](#skaffold-dev)
   - [skaffold run](#skaffold-run)
+- [Demo](#demo)  
 - [Getting Started with Local Tooling](#getting-started-with-local-tooling)
   - [Installation](#installation)
   - [Iterative Development](#iterative-development)
@@ -43,9 +44,11 @@ Use for:
 -  Continuous integration or continuous deployment pipelines
 -  Sanity checking after iterating on your application
 
-## Getting Started with Local Tooling
+## Demo
 
-![Intro](/docs/img/intro.gif)
+![Demo](/docs/img/intro.gif)
+
+## Getting Started with Local Tooling
 
 ### Installation
 
