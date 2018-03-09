@@ -4,7 +4,6 @@ build:
   tagPolicy: sha256
   artifacts:
   - imageName: skaffold-helm
-    dockerfilePath: Dockerfile
     workspace: .
   local: {}
 deploy:
