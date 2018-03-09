@@ -44,6 +44,9 @@ Use for:
 -  Sanity checking after iterating on your application
 
 ## Getting Started with Local Tooling
+
+![Intro](/docs/img/intro.gif)
+
 ### Installation
 
 You will need the following components to get started with Skaffold:
