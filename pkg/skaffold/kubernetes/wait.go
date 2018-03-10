@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	digest "github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -37,6 +38,38 @@ func WaitForPodReady(pods corev1.PodInterface, podName string) error {
 		})
 		if err != nil {
 			return false, errors.Wrap(err, "pod not found")
+		}
+		switch pod.Status.Phase {
+		case v1.PodRunning:
+			return true, nil
+		case v1.PodSucceeded, v1.PodFailed:
+			return false, fmt.Errorf("pod already in terminal phase: %s", pod.Status.Phase)
+		case v1.PodUnknown, v1.PodPending:
+			return false, nil
+		}
+		return false, fmt.Errorf("unknown phase: %s", pod.Status.Phase)
+	})
+}
+
+func WaitForContainerReady(pods corev1.PodInterface, podName, containerName string, digest digest.Digest) error {
+	return wait.PollImmediate(time.Millisecond*500, time.Minute*10, func() (bool, error) {
+		pod, err := pods.Get(podName, meta_v1.GetOptions{
+			IncludeUninitialized: true,
+		})
+		if err != nil {
+			return false, errors.Wrap(err, "pod not found")
+		}
+		var found bool
+		for _, c := range pod.Status.ContainerStatuses {
+			if c.Name == containerName {
+				if c.ImageID == "docker://"+digest.String() {
+					found = true
+					break
+				}
+			}
+		}
+		if !found {
+			return false, errors.Wrap(err, "container not found")
 		}
 		switch pod.Status.Phase {
 		case v1.PodRunning:

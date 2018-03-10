@@ -22,6 +22,7 @@ import (
 	"io"
 	"time"
 
+	digest "github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -38,9 +39,9 @@ var getStream = func(r *restclient.Request) (io.ReadCloser, error) {
 	return r.Stream()
 }
 
-func StreamLogsRetry(out io.Writer, client corev1.CoreV1Interface, image string, retry int) {
+func StreamLogsRetry(out io.Writer, client corev1.CoreV1Interface, image string, digest digest.Digest, retry int) {
 	for i := 0; i < retry; i++ {
-		if err := StreamLogs(out, client, image); err != nil {
+		if err := StreamLogs(out, client, image, digest); err != nil {
 			logrus.Infof("Error getting logs %s", err)
 		}
 		time.Sleep(streamRetryDelay)
@@ -48,7 +49,7 @@ func StreamLogsRetry(out io.Writer, client corev1.CoreV1Interface, image string,
 }
 
 // nolint: interfacer
-func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string) error {
+func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string, digest digest.Digest) error {
 	pods, err := client.Pods("").List(meta_v1.ListOptions{
 		IncludeUninitialized: true,
 	})
@@ -62,7 +63,7 @@ func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string) erro
 			if c.Image == image {
 				logrus.Infof("Trying to stream logs from pod: %s container: %s", p.Name, c.Name)
 				pods := client.Pods(p.Namespace)
-				if err := WaitForPodReady(pods, p.Name); err != nil {
+				if err := WaitForContainerReady(pods, p.Name, c.Name, digest); err != nil {
 					return errors.Wrap(err, "waiting for pod ready")
 				}
 				req := client.Pods(p.Namespace).GetLogs(p.Name, &v1.PodLogOptions{
