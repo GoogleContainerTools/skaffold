@@ -30,7 +30,7 @@ var versionFlag = flags.NewTemplateFlag("{{.Version}}\n", version.Info{})
 func NewCmdVersion(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
-		Short: "print the version of skaffold",
+		Short: "Print the version information",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return RunVersion(out, cmd)
 		},

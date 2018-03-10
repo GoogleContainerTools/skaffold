@@ -26,7 +26,7 @@ import (
 func NewCmdDev(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "dev",
-		Short: "runs a pipeline file in development mode",
+		Short: "Runs a pipeline file in development mode",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := runSkaffold(out, true, filename); err != nil {
 				logrus.Errorf("run: %s", err)
