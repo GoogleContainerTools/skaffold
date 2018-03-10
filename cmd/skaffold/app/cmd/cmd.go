@@ -40,8 +40,8 @@ var (
 
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	c := &cobra.Command{
-		Use: "skaffold",
-		Short: "A tool that makes the onboarding of existing applications to Kubernetes Engine simple and repeatable.		",
+		Use:   "skaffold",
+		Short: "A tool that facilitates continuous development for Kubernetes applications.",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if err := SetUpLogs(err, v); err != nil {
 				return err

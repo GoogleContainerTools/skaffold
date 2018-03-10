@@ -1,5 +1,5 @@
 class Skaffold < Formula
-  desc "A tool that makes the onboarding of existing applications to Kubernetes simple and repeatable."
+  desc "A tool that facilitates continuous development for Kubernetes applications."
   url "https://github.com/GoogleCloudPlatform/skaffold.git"
   version "v0.1.0"
 
