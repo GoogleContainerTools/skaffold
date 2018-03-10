@@ -149,6 +149,7 @@ func (r *SkaffoldRunner) dev() error {
 				go kubernetes.StreamLogsRetry(r.opts.Output, r.kubeclient.CoreV1(), b.Tag, b.Digest, 5)
 			}
 		}
+		fmt.Fprint(r.opts.Output, "Watching for changes...\n")
 		evt, err := r.Watch(r.config.Build.Artifacts, r.watchReady, r.cancel)
 		if err != nil {
 			return errors.Wrap(err, "running watch")
