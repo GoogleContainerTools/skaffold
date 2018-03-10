@@ -37,7 +37,7 @@ func TestRunNoArgs(t *testing.T) {
 		}
 	}()
 	cmd := exec.Command("skaffold", "run")
-	cmd.Dir = "../"
+	cmd.Dir = "../examples/getting-started"
 	out, outerr, err := util.RunCommand(cmd, nil)
 	if err != nil {
 		t.Fatalf("skaffold run: \nstdout: %s\nstderr: %s\nerror: %s", out, outerr, err)
