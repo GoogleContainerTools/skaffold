@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
+	digest "github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -201,6 +202,7 @@ watch:
 		ImageName: artifact.ImageName,
 		Tag:       tag,
 		Artifact:  artifact,
+		Digest:    digest.FromString(imageID),
 	}, nil
 }
 
