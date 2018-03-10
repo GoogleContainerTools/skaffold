@@ -31,7 +31,7 @@ import (
 	restclient "k8s.io/client-go/rest"
 )
 
-const streamRetryDelay = 1 * time.Second
+const streamRetryDelay = 250 * time.Millisecond
 
 // TODO(@r2d4): Figure out how to mock this out. fake.NewSimpleClient
 // won't mock out restclient.Request and will just return a nil stream.
@@ -39,17 +39,22 @@ var getStream = func(r *restclient.Request) (io.ReadCloser, error) {
 	return r.Stream()
 }
 
-func StreamLogsRetry(out io.Writer, client corev1.CoreV1Interface, image string, digest digest.Digest, retry int) {
-	for i := 0; i < retry; i++ {
-		if err := StreamLogs(out, client, image, digest); err != nil {
-			logrus.Infof("Error getting logs %s", err)
+func StreamLogsRetry(out io.Writer, client corev1.CoreV1Interface, image string, digest digest.Digest, cancel chan struct{}) {
+	for {
+		select {
+		case <-cancel:
+			return
+		default:
+			if err := StreamLogs(out, client, image, digest, cancel); err != nil {
+				logrus.Infof("Error getting logs %s", err)
+			}
 		}
 		time.Sleep(streamRetryDelay)
 	}
 }
 
 // nolint: interfacer
-func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string, digest digest.Digest) error {
+func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string, digest digest.Digest, cancel chan struct{}) error {
 	pods, err := client.Pods("").List(meta_v1.ListOptions{
 		IncludeUninitialized: true,
 	})
@@ -77,7 +82,7 @@ func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string, dige
 				}
 				defer rc.Close()
 				header := fmt.Sprintf("[%s %s]", p.Name, c.Name)
-				if err := streamRequest(out, header, rc); err != nil {
+				if err := streamRequest(out, header, rc, cancel); err != nil {
 					return errors.Wrap(err, "streaming request")
 				}
 
@@ -89,23 +94,27 @@ func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string, dige
 	return fmt.Errorf("Image %s not found", image)
 }
 
-func streamRequest(out io.Writer, header string, rc io.Reader) error {
+func streamRequest(out io.Writer, header string, rc io.Reader, cancel chan struct{}) error {
 	r := bufio.NewReader(rc)
-loop:
 	for {
-		// Read up to newline
-		line, err := r.ReadBytes('\n')
-		if err == io.EOF {
-			break loop
-		}
-		if err != nil {
-			return errors.Wrap(err, "reading bytes from log stream")
-		}
-		msg := fmt.Sprintf("%s %s", header, line)
-		if _, err := out.Write([]byte(msg)); err != nil {
-			return errors.Wrap(err, "writing to out")
+		select {
+		case <-cancel:
+			logrus.Infof("%s Stream canceled", header)
+			return nil
+		default:
+			// Read up to newline
+			line, err := r.ReadBytes('\n')
+			if err == io.EOF {
+				logrus.Infof("%s exited", header)
+				return nil
+			}
+			if err != nil {
+				return errors.Wrap(err, "reading bytes from log stream")
+			}
+			msg := fmt.Sprintf("%s %s", header, line)
+			if _, err := out.Write([]byte(msg)); err != nil {
+				return errors.Wrap(err, "writing to out")
+			}
 		}
 	}
-	logrus.Infof("%s exited", header)
-	return nil
 }

@@ -143,10 +143,11 @@ func (r *SkaffoldRunner) dev() error {
 		logrus.Warnf("run: %s", err)
 	}
 	for {
+		r.cancel = make(chan struct{})
 		if bRes != nil {
 			for _, b := range bRes.Builds {
 				b := b
-				go kubernetes.StreamLogsRetry(r.opts.Output, r.kubeclient.CoreV1(), b.Tag, b.Digest, 5)
+				go kubernetes.StreamLogsRetry(r.opts.Output, r.kubeclient.CoreV1(), b.Tag, b.Digest, r.cancel)
 			}
 		}
 		fmt.Fprint(r.opts.Output, "Watching for changes...\n")
@@ -157,6 +158,8 @@ func (r *SkaffoldRunner) dev() error {
 		if evt.EventType == watch.WatchStop {
 			return nil
 		}
+		// Close all watchers and log streamers
+		close(r.cancel)
 		bRes, _, err = r.run(evt.ChangedArtifacts)
 		if err != nil {
 			// In dev mode, we only warn on pipeline errors
