@@ -112,7 +112,7 @@ func Digest(cli client.ImageAPIClient, ref string) (digest.Digest, error) {
 	for _, image := range imageList {
 		for _, tag := range image.RepoTags {
 			if tag == refLatest {
-				return digest.FromString(image.ID), nil
+				return digest.Parse(image.ID)
 			}
 		}
 	}
