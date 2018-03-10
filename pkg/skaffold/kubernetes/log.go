@@ -91,11 +91,12 @@ func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string, dige
 
 func streamRequest(out io.Writer, header string, rc io.Reader) error {
 	r := bufio.NewReader(rc)
+loop:
 	for {
 		// Read up to newline
 		line, err := r.ReadBytes('\n')
 		if err == io.EOF {
-			break
+			break loop
 		}
 		if err != nil {
 			return errors.Wrap(err, "reading bytes from log stream")
