@@ -57,6 +57,12 @@ below to get started with a local Kubernetes cluster.
 
 You will need the following components to get started with Skaffold:
 
+1. skaffold
+   -  To download the latest Linux build, run:
+      -  `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+   -  To download the latest OSX build, run:
+      -  `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
 1. Kubernetes Cluster
    -  [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/),
       [GKE](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-container-cluster),
@@ -166,6 +172,8 @@ There may be some cases where you don't want to run build and deploy continuousl
 ```console
 $ skaffold run -f skaffold.yaml
 ```
+
+## [Build from Source](/docs/building.md)
 
 ## Future
 
