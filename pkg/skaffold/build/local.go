@@ -26,7 +26,6 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
-	"github.com/moby/moby/client"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -35,7 +34,7 @@ import (
 type LocalBuilder struct {
 	*config.BuildConfig
 
-	newImageAPI  func() (client.ImageAPIClient, io.Closer, error)
+	api          docker.ImageAPIClient
 	localCluster bool
 }
 
@@ -44,28 +43,35 @@ func NewLocalBuilder(cfg *config.BuildConfig, kubeContext string) (*LocalBuilder
 	if cfg.LocalBuild == nil {
 		return nil, fmt.Errorf("LocalBuild config field is needed to create a new LocalBuilder")
 	}
+	l := &LocalBuilder{BuildConfig: cfg}
 
-	var newImageAPI = docker.NewImageAPIClient
-	var localCluster bool
-
+	var err error
 	switch kubeContext {
 	case constants.DefaultMinikubeContext:
-		newImageAPI = docker.NewMinikubeImageAPIClient
-		localCluster = true
+		l.api, err = docker.NewMinikubeImageAPIClient()
+		if err != nil {
+			return nil, errors.Wrap(err, "getting minikube docker client")
+		}
+		l.localCluster = true
 	case constants.DefaultDockerForDesktopContext:
-		localCluster = true
+		l.localCluster = true
+		l.api, err = docker.NewImageAPIClient()
+		if err != nil {
+			return nil, errors.Wrap(err, "getting docker for desktop client")
+		}
+	default:
+		l.api, err = docker.NewImageAPIClient()
+		if err != nil {
+			return nil, errors.Wrap(err, "getting docker client")
+		}
 	}
 
 	if cfg.LocalBuild.SkipPush == nil {
-		logrus.Debugf("skipPush value not present. defaulting to cluster default %t (minikube=true, d4d=true, gke=false)", localCluster)
-		cfg.LocalBuild.SkipPush = &localCluster
+		logrus.Debugf("skipPush value not present. defaulting to cluster default %t (minikube=true, d4d=true, gke=false)", l.localCluster)
+		cfg.LocalBuild.SkipPush = &l.localCluster
 	}
 
-	return &LocalBuilder{
-		BuildConfig:  cfg,
-		newImageAPI:  newImageAPI,
-		localCluster: localCluster,
-	}, nil
+	return l, nil
 }
 
 // Run runs a docker build on the host and tags the resulting image with
@@ -76,11 +82,7 @@ func (l *LocalBuilder) Run(out io.Writer, tagger tag.Tagger, artifacts []*config
 			return nil, errors.Wrap(err, "writing status")
 		}
 	}
-	api, c, err := l.newImageAPI()
-	if err != nil {
-		return nil, errors.Wrap(err, "getting image api client")
-	}
-	defer c.Close()
+	defer l.api.Close()
 	res := &BuildResult{
 		Builds: []Build{},
 	}
@@ -89,7 +91,7 @@ func (l *LocalBuilder) Run(out io.Writer, tagger tag.Tagger, artifacts []*config
 			artifact.DockerfilePath = constants.DefaultDockerfilePath
 		}
 		initialTag := util.RandomID()
-		err := docker.RunBuild(api, &docker.BuildOptions{
+		err := docker.RunBuild(l.api, &docker.BuildOptions{
 			ImageName:   initialTag,
 			Dockerfile:  artifact.DockerfilePath,
 			ContextDir:  artifact.Workspace,
@@ -100,7 +102,7 @@ func (l *LocalBuilder) Run(out io.Writer, tagger tag.Tagger, artifacts []*config
 		if err != nil {
 			return nil, errors.Wrap(err, "running build")
 		}
-		digest, err := docker.Digest(api, initialTag)
+		digest, err := docker.Digest(l.api, initialTag)
 		if err != nil {
 			return nil, errors.Wrap(err, "build and tag")
 		}
@@ -114,14 +116,14 @@ func (l *LocalBuilder) Run(out io.Writer, tagger tag.Tagger, artifacts []*config
 		if err != nil {
 			return nil, errors.Wrap(err, "generating tag")
 		}
-		if err := api.ImageTag(context.Background(), fmt.Sprintf("%s:latest", initialTag), tag); err != nil {
+		if err := l.api.ImageTag(context.Background(), fmt.Sprintf("%s:latest", initialTag), tag); err != nil {
 			return nil, errors.Wrap(err, "tagging image")
 		}
 		if _, err := io.WriteString(out, fmt.Sprintf("Successfully tagged %s\n", tag)); err != nil {
 			return nil, errors.Wrap(err, "writing tag status")
 		}
 		if !*l.LocalBuild.SkipPush {
-			if err := docker.RunPush(api, tag, out); err != nil {
+			if err := docker.RunPush(l.api, tag, out); err != nil {
 				return nil, errors.Wrap(err, "running push")
 			}
 		}
