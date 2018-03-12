@@ -121,30 +121,4 @@ func (f *FakeImageAPIClient) ImagePush(_ context.Context, _ string, _ types.Imag
 	return f.opts.ReturnBody, err
 }
 
-func NewFakeImageAPIClientCloser() (client.ImageAPIClient, io.Closer, error) {
-	fakeAPI := NewFakeImageAPIClient(map[string]string{}, &FakeImageAPIOptions{})
-	return fakeAPI, fakeAPI, nil
-}
-
-func NewFakeImageAPIClientCloserBuildError() (client.ImageAPIClient, io.Closer, error) {
-	fakeAPI := NewFakeImageAPIClient(map[string]string{}, &FakeImageAPIOptions{
-		ErrImageBuild: true,
-	})
-	return fakeAPI, fakeAPI, nil
-}
-
-func NewFakeImageAPIClientCloserTagError() (client.ImageAPIClient, io.Closer, error) {
-	fakeAPI := NewFakeImageAPIClient(map[string]string{}, &FakeImageAPIOptions{
-		ErrImageTag: true,
-	})
-	return fakeAPI, fakeAPI, nil
-}
-
-func NewFakeImageAPIClientCloserListError() (client.ImageAPIClient, io.Closer, error) {
-	fakeAPI := NewFakeImageAPIClient(map[string]string{}, &FakeImageAPIOptions{
-		ErrImageList: true,
-	})
-	return fakeAPI, fakeAPI, nil
-}
-
 func (f *FakeImageAPIClient) Close() error { return nil }

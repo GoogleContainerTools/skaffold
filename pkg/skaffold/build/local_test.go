@@ -28,7 +28,6 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
 	"github.com/docker/docker/api/types"
-	"github.com/moby/moby/client"
 )
 
 type FakeTagger struct {
@@ -70,7 +69,7 @@ func TestLocalRun(t *testing.T) {
 		description  string
 		config       *config.BuildConfig
 		out          io.Writer
-		newImageAPI  func() (client.ImageAPIClient, io.Closer, error)
+		api          docker.ImageAPIClient
 		tagger       tag.Tagger
 		localCluster bool
 		artifacts    []*config.Artifact
@@ -87,12 +86,12 @@ func TestLocalRun(t *testing.T) {
 				},
 				BuildType: config.BuildType{
 					LocalBuild: &config.LocalBuild{
-						SkipPush: util.BoolPtr(true),
+						SkipPush: util.BoolPtr(false),
 					},
 				},
 			},
-			tagger:      &tag.ChecksumTagger{},
-			newImageAPI: testutil.NewFakeImageAPIClientCloser,
+			tagger: &tag.ChecksumTagger{},
+			api:    testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
 			expectedBuild: &BuildResult{
 				[]Build{
 					{
@@ -130,7 +129,7 @@ func TestLocalRun(t *testing.T) {
 					Workspace: ".",
 				},
 			},
-			newImageAPI: testutil.NewFakeImageAPIClientCloser,
+			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
 			expectedBuild: &BuildResult{
 				[]Build{
 					{
@@ -159,9 +158,11 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			tagger:      &tag.ChecksumTagger{},
-			newImageAPI: testutil.NewFakeImageAPIClientCloserBuildError,
-			shouldErr:   true,
+			tagger: &tag.ChecksumTagger{},
+			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{
+				ErrImageBuild: true,
+			}),
+			shouldErr: true,
 		},
 		{
 			description: "error image tag",
@@ -174,24 +175,11 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			tagger:      &tag.ChecksumTagger{},
-			newImageAPI: testutil.NewFakeImageAPIClientCloserTagError,
-			shouldErr:   true,
-		},
-		{
-			description: "error api client",
-			out:         &bytes.Buffer{},
-			config: &config.BuildConfig{
-				Artifacts: []*config.Artifact{
-					{
-						ImageName: "test",
-						Workspace: ".",
-					},
-				},
-			},
-			tagger:      &tag.ChecksumTagger{},
-			newImageAPI: func() (client.ImageAPIClient, io.Closer, error) { return nil, nil, fmt.Errorf("") },
-			shouldErr:   true,
+			tagger: &tag.ChecksumTagger{},
+			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{
+				ErrImageTag: true,
+			}),
+			shouldErr: true,
 		},
 		{
 			description: "bad writer",
@@ -204,9 +192,9 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			tagger:      &tag.ChecksumTagger{},
-			newImageAPI: testutil.NewFakeImageAPIClientCloser,
-			shouldErr:   true,
+			tagger:    &tag.ChecksumTagger{},
+			api:       testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
+			shouldErr: true,
 		},
 		{
 			description: "error image list",
@@ -219,9 +207,11 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			tagger:      &tag.ChecksumTagger{},
-			newImageAPI: testutil.NewFakeImageAPIClientCloserListError,
-			shouldErr:   true,
+			tagger: &tag.ChecksumTagger{},
+			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{
+				ErrImageList: true,
+			}),
+			shouldErr: true,
 		},
 		{
 			description: "error tagger",
@@ -233,9 +223,9 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			tagger:      &FakeTagger{Err: fmt.Errorf("")},
-			newImageAPI: testutil.NewFakeImageAPIClientCloser,
-			shouldErr:   true,
+			tagger:    &FakeTagger{Err: fmt.Errorf("")},
+			api:       testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
+			shouldErr: true,
 		},
 	}
 
@@ -243,7 +233,7 @@ func TestLocalRun(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			l := LocalBuilder{
 				BuildConfig:  test.config,
-				newImageAPI:  test.newImageAPI,
+				api:          test.api,
 				localCluster: test.localCluster,
 			}
 			if test.artifacts == nil {
@@ -252,34 +242,5 @@ func TestLocalRun(t *testing.T) {
 			res, err := l.Run(test.out, test.tagger, test.artifacts)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedBuild, res)
 		})
-	}
-}
-
-func TestNewLocalBuilderError(t *testing.T) {
-	_, err := NewLocalBuilder(&config.BuildConfig{
-		Artifacts: []*config.Artifact{
-			{
-				ImageName: "test",
-				Workspace: ".",
-			},
-		},
-	}, "")
-	testutil.CheckError(t, true, err)
-}
-
-func TestNewLocalBuilderMinikubeContext(t *testing.T) {
-	_, err := NewLocalBuilder(&config.BuildConfig{
-		Artifacts: []*config.Artifact{
-			{
-				ImageName: "test",
-				Workspace: ".",
-			},
-		},
-		BuildType: config.BuildType{
-			LocalBuild: &config.LocalBuild{},
-		},
-	}, "minikube")
-	if err != nil {
-		t.Errorf("New local builder: %s", err)
 	}
 }
