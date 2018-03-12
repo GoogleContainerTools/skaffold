@@ -30,6 +30,7 @@ import (
 	"github.com/moby/moby/pkg/jsonmessage"
 	"github.com/moby/moby/pkg/streamformatter"
 	"github.com/moby/moby/pkg/term"
+	digest "github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -98,7 +99,7 @@ func RunPush(cli client.ImageAPIClient, ref string, out io.Writer) error {
 // Digest returns the image digest for a corresponding reference.
 // The digest is of the form
 // sha256:<image_id>
-func Digest(cli client.ImageAPIClient, ref string) (string, error) {
+func Digest(cli client.ImageAPIClient, ref string) (digest.Digest, error) {
 	refLatest := fmt.Sprintf("%s:latest", ref)
 	args := filters.KeyValuePair{Key: "reference", Value: refLatest}
 	filters := filters.NewArgs(args)
@@ -111,7 +112,7 @@ func Digest(cli client.ImageAPIClient, ref string) (string, error) {
 	for _, image := range imageList {
 		for _, tag := range image.RepoTags {
 			if tag == refLatest {
-				return image.ID, nil
+				return digest.Parse(image.ID)
 			}
 		}
 	}

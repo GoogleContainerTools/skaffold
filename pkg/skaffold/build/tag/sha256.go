@@ -18,7 +18,8 @@ package tag
 
 import (
 	"fmt"
-	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // ChecksumTagger tags an image by the sha256 of the image tarball
@@ -32,10 +33,8 @@ func (c *ChecksumTagger) GenerateFullyQualifiedImageName(opts *TagOptions) (stri
 	if opts == nil {
 		return "", fmt.Errorf("Tag options not provided")
 	}
-	digestSplit := strings.Split(opts.Digest, ":")
-	if len(digestSplit) != 2 {
-		return "", fmt.Errorf("Digest wrong format: %s, expected sha256:<checksum>", digestSplit)
+	if err := opts.Digest.Validate(); err != nil {
+		return "", errors.Wrap(err, "validating digest")
 	}
-	checksum := digestSplit[1]
-	return fmt.Sprintf("%s:%s", opts.ImageName, checksum), nil
+	return fmt.Sprintf("%s:%s", opts.ImageName, opts.Digest.Encoded()), nil
 }

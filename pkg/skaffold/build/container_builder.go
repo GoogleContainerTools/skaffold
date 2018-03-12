@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
+	digest "github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -197,10 +198,15 @@ watch:
 	logrus.Infof("Deleted object %s", buildObject)
 	tag := fmt.Sprintf("%s@%s", artifact.ImageName, imageID)
 	logrus.Infof("Image built at %s", tag)
+	digest, err := digest.Parse(imageID)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting digest")
+	}
 	return &Build{
 		ImageName: artifact.ImageName,
 		Tag:       tag,
 		Artifact:  artifact,
+		Digest:    digest,
 	}, nil
 }
 

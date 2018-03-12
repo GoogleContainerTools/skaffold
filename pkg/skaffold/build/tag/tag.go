@@ -16,6 +16,8 @@ limitations under the License.
 
 package tag
 
+import digest "github.com/opencontainers/go-digest"
+
 // Tagger is an interface for tag strategies to be implemented against
 type Tagger interface {
 	GenerateFullyQualifiedImageName(tagOpts *TagOptions) (string, error)
@@ -23,5 +25,5 @@ type Tagger interface {
 
 type TagOptions struct {
 	ImageName string
-	Digest    string
+	Digest    digest.Digest
 }

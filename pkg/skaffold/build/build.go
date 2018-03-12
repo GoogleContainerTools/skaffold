@@ -20,6 +20,7 @@ import (
 	"io"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+	digest "github.com/opencontainers/go-digest"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 )
@@ -34,6 +35,7 @@ type Build struct {
 	ImageName string
 	Tag       string
 	Artifact  *config.Artifact // The artifact used in the build.
+	Digest    digest.Digest
 }
 
 // Builder is an interface to the Build API of Skaffold.
