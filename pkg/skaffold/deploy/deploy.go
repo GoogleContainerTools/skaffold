@@ -36,18 +36,19 @@ type Deployer interface {
 }
 
 func JoinTagsToBuildResult(b []build.Build, params map[string]string) (map[string]build.Build, error) {
-	imageToBuildResult := map[string]build.Build{}
-	for _, build := range b {
-		imageToBuildResult[build.ImageName] = build
+	imageToParam := map[string]string{}
+	for k, v := range params {
+		imageToParam[v] = k
 	}
 
 	paramToBuildResult := map[string]build.Build{}
-	for param, imageName := range params {
-		build, ok := imageToBuildResult[imageName]
+	for _, build := range b {
+		param, ok := imageToParam[build.ImageName]
 		if !ok {
-			return nil, fmt.Errorf("No build present for %s", imageName)
+			return nil, fmt.Errorf("build not present into params for %s", build.ImageName)
 		}
 		paramToBuildResult[param] = build
 	}
+
 	return paramToBuildResult, nil
 }
