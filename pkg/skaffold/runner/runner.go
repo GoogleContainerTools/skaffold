@@ -17,6 +17,7 @@ limitations under the License.
 package runner
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
@@ -37,12 +38,10 @@ type SkaffoldRunner struct {
 	build.Builder
 	deploy.Deployer
 	tag.Tagger
-	watch.Watcher
+	watch.WatcherFactory
 
 	opts       *config.SkaffoldOptions
 	config     *config.SkaffoldConfig
-	watchReady chan *watch.Event
-	cancel     chan struct{}
 	kubeclient clientgo.Interface
 }
 
@@ -79,14 +78,13 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 		return nil, errors.Wrap(err, "getting k8s client")
 	}
 	return &SkaffoldRunner{
-		config:     cfg,
-		Builder:    builder,
-		Deployer:   deployer,
-		Tagger:     tagger,
-		Watcher:    &watch.FSWatcher{}, //TODO(@r2d4): should this be configurable?
-		opts:       opts,
-		kubeclient: client,
-		cancel:     make(chan struct{}, 1),
+		config:         cfg,
+		Builder:        builder,
+		Deployer:       deployer,
+		Tagger:         tagger,
+		opts:           opts,
+		kubeclient:     client,
+		WatcherFactory: watch.NewWatcher,
 	}, nil
 }
 
@@ -136,42 +134,35 @@ func (r *SkaffoldRunner) Run() error {
 }
 
 func (r *SkaffoldRunner) dev(artifacts []*config.Artifact) error {
+	watcher, err := r.WatcherFactory(artifacts)
+	if err != nil {
+		return err
+	}
+
 	mute := &kubernetes.Muter{}
 
-	// First rebuild everything.
-	bRes, _, err := r.run(artifacts)
-	if err != nil {
-		// In dev mode, we only warn on pipeline errors
-		logrus.Warnf("run: %s", err)
-	}
-	for {
-		if bRes != nil {
-			for _, b := range bRes.Builds {
-				tag := b.Tag
-				go kubernetes.StreamLogsRetry(r.opts.Output, r.kubeclient.CoreV1(), tag, 5, mute)
-			}
-		}
-
-		evt, err := r.Watch(artifacts, r.watchReady, r.cancel)
-		if err != nil {
-			return errors.Wrap(err, "running watch")
-		}
-		if evt.EventType == watch.WatchStop {
-			return nil
-		}
-
-		// Mute logs during build
+	onChange := func(artifacts []*config.Artifact) {
 		mute.Mute()
 
-		bRes, _, err = r.run(evt.ChangedArtifacts)
+		bRes, _, err := r.run(artifacts)
 		if err != nil {
 			// In dev mode, we only warn on pipeline errors
 			logrus.Warnf("run: %s", err)
 		}
 
-		// Unmute logs after build
 		mute.Unmute()
+
+		if bRes != nil {
+			for i := range bRes.Builds {
+				go kubernetes.StreamLogsRetry(r.opts.Output, r.kubeclient.CoreV1(), bRes.Builds[i].Tag, 5, mute)
+			}
+		}
 	}
+
+	onChange(artifacts)
+	watcher.Start(context.Background(), onChange)
+
+	return nil
 }
 
 func (r *SkaffoldRunner) run(artifacts []*config.Artifact) (*build.BuildResult, *deploy.Result, error) {
