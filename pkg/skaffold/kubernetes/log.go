@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
@@ -38,9 +39,9 @@ var getStream = func(r *restclient.Request) (io.ReadCloser, error) {
 	return r.Stream()
 }
 
-func StreamLogsRetry(out io.Writer, client corev1.CoreV1Interface, image string, retry int) {
+func StreamLogsRetry(out io.Writer, client corev1.CoreV1Interface, image string, retry int, mute *Muter) {
 	for i := 0; i < retry; i++ {
-		if err := StreamLogs(out, client, image); err != nil {
+		if err := StreamLogs(out, client, image, mute); err != nil {
 			logrus.Infof("Error getting logs %s", err)
 		}
 		time.Sleep(streamRetryDelay)
@@ -48,7 +49,7 @@ func StreamLogsRetry(out io.Writer, client corev1.CoreV1Interface, image string,
 }
 
 // nolint: interfacer
-func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string) error {
+func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string, mute *Muter) error {
 	pods, err := client.Pods("").List(meta_v1.ListOptions{
 		IncludeUninitialized: true,
 	})
@@ -80,7 +81,7 @@ func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string) erro
 			}
 			defer rc.Close()
 			header := fmt.Sprintf("[%s %s]", p.Name, c.Name)
-			if err := streamRequest(out, header, rc); err != nil {
+			if err := streamRequest(out, header, rc, mute); err != nil {
 				return errors.Wrap(err, "streaming request")
 			}
 
@@ -91,7 +92,7 @@ func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string) erro
 	return fmt.Errorf("Image %s not found", image)
 }
 
-func streamRequest(out io.Writer, header string, rc io.Reader) error {
+func streamRequest(out io.Writer, header string, rc io.Reader, mute *Muter) error {
 	r := bufio.NewReader(rc)
 	for {
 		// Read up to newline
@@ -102,11 +103,36 @@ func streamRequest(out io.Writer, header string, rc io.Reader) error {
 		if err != nil {
 			return errors.Wrap(err, "reading bytes from log stream")
 		}
-		msg := fmt.Sprintf("%s %s", header, line)
-		if _, err := out.Write([]byte(msg)); err != nil {
+
+		if mute != nil && mute.IsMuted() {
+			continue
+		}
+
+		if _, err := fmt.Fprintf(out, "%s %s", header, line); err != nil {
 			return errors.Wrap(err, "writing to out")
 		}
 	}
 	logrus.Infof("%s exited", header)
 	return nil
+}
+
+// Muter can be used to mute/unmute logs.
+// It's safe to use in multiple go routines.
+type Muter struct {
+	muted int32
+}
+
+// Mute mutes the logs.
+func (m *Muter) Mute() {
+	atomic.StoreInt32(&m.muted, 1)
+}
+
+// Unmute unmute the logs.
+func (m *Muter) Unmute() {
+	atomic.StoreInt32(&m.muted, 0)
+}
+
+// IsMuted says if the logs are to be muted.
+func (m *Muter) IsMuted() bool {
+	return atomic.LoadInt32(&m.muted) == 1
 }
