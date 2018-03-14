@@ -136,6 +136,8 @@ func (r *SkaffoldRunner) Run() error {
 }
 
 func (r *SkaffoldRunner) dev(artifacts []*config.Artifact) error {
+	mute := &kubernetes.Muter{}
+
 	// First rebuild everything.
 	bRes, _, err := r.run(artifacts)
 	if err != nil {
@@ -146,9 +148,10 @@ func (r *SkaffoldRunner) dev(artifacts []*config.Artifact) error {
 		if bRes != nil {
 			for _, b := range bRes.Builds {
 				tag := b.Tag
-				go kubernetes.StreamLogsRetry(r.opts.Output, r.kubeclient.CoreV1(), tag, 5)
+				go kubernetes.StreamLogsRetry(r.opts.Output, r.kubeclient.CoreV1(), tag, 5, mute)
 			}
 		}
+
 		evt, err := r.Watch(artifacts, r.watchReady, r.cancel)
 		if err != nil {
 			return errors.Wrap(err, "running watch")
@@ -156,11 +159,18 @@ func (r *SkaffoldRunner) dev(artifacts []*config.Artifact) error {
 		if evt.EventType == watch.WatchStop {
 			return nil
 		}
+
+		// Mute logs during build
+		mute.Mute()
+
 		bRes, _, err = r.run(evt.ChangedArtifacts)
 		if err != nil {
 			// In dev mode, we only warn on pipeline errors
 			logrus.Warnf("run: %s", err)
 		}
+
+		// Unmute logs after build
+		mute.Unmute()
 	}
 }
 
