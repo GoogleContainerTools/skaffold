@@ -50,7 +50,7 @@ Use for:
 
 ## Getting Started with Local Tooling
 
-For getting started with Google Kubernetes Engine and Container Builder [go here](docs/quicstart-gke.md). Otherwise continue
+For getting started with Google Kubernetes Engine and Container Builder [go here](docs/quickstart-gke.md). Otherwise continue
 below to get started with a local Kubernetes cluster.
 
 ### Installation
