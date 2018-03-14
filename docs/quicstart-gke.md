@@ -6,7 +6,7 @@
 
 ## Setup
 
-1. [Open a Cloud Shell window](https://console.cloud.google.com/cloudshell/open)
+1. [Open a Cloud Shell window](https://console.cloud.google.com/cloudshell)
 
 1. Create a Kubernetes Engine cluster if you don't already have one.
 
