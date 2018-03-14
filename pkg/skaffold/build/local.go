@@ -114,7 +114,7 @@ func (l *LocalBuilder) Build(out io.Writer, tagger tag.Tagger, artifacts []*conf
 		if digest == "" {
 			return nil, fmt.Errorf("digest not found")
 		}
-		tag, err := tagger.GenerateFullyQualifiedImageName(&tag.TagOptions{
+		tag, err := tagger.GenerateFullyQualifiedImageName(".", &tag.TagOptions{
 			ImageName: artifact.ImageName,
 			Digest:    digest,
 		})

@@ -65,7 +65,7 @@ func TestGenerateFullyQualifiedImageName(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			c := &ChecksumTagger{}
-			tag, err := c.GenerateFullyQualifiedImageName(test.opts)
+			tag, err := c.GenerateFullyQualifiedImageName(".", test.opts)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, tag)
 		})
 	}

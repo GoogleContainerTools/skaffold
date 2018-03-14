@@ -84,7 +84,7 @@ type TestTagger struct {
 	err error
 }
 
-func (t *TestTagger) GenerateFullyQualifiedImageName(_ *tag.TagOptions) (string, error) {
+func (t *TestTagger) GenerateFullyQualifiedImageName(_ string, _ *tag.TagOptions) (string, error) {
 	return t.out, t.err
 }
 

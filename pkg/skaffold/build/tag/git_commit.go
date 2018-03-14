@@ -32,9 +32,10 @@ type GitCommit struct {
 }
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the git commit.
-func (c *GitCommit) GenerateFullyQualifiedImageName(opts *TagOptions) (string, error) {
+func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *TagOptions) (string, error) {
 	// If the repository state is dirty, we add a -dirty-unique-id suffix to work well with local iterations
 	dirtyCmd := exec.Command("git", "status", "--porcelain")
+	dirtyCmd.Dir = workingDir
 	stdout, _, err := util.RunCommand(dirtyCmd, nil)
 	if err != nil {
 		return "", errors.Wrap(err, "determining repo state")
@@ -44,15 +45,18 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(opts *TagOptions) (string, e
 		// The file state is dirty. To generate a unique suffix, let's hash the "git diff" output.
 		// It should be roughly content-addressable.
 		uniqueCmd := exec.Command("git", "diff")
+		uniqueCmd.Dir = workingDir
 		stdout, _, err := util.RunCommand(uniqueCmd, nil)
 		if err != nil {
 			return "", errors.Wrap(err, "determining git diff")
 		}
+
 		sha := sha256.Sum256(stdout)
 		shaStr := hex.EncodeToString(sha[:])[:16]
 		suffix = fmt.Sprintf("dirty-%s", shaStr)
 	}
 	cmd := exec.Command("git", "rev-parse", "--short", "HEAD")
+	cmd.Dir = workingDir
 	stdout, _, err = util.RunCommand(cmd, nil)
 	if err != nil {
 		return "", errors.Wrap(err, "determining current git commit")
