@@ -83,7 +83,7 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r config.HelmRelease, b *bui
 	if !isInstalled {
 		args = append(args, "install", "--name", r.Name, r.ChartPath)
 	} else {
-		args = append(args, "upgrade", r.Name, r.ChartPath)
+		args = append(args, "upgrade", "--reuse-values", r.Name, r.ChartPath)
 	}
 
 	if r.Namespace != "" {
