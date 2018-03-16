@@ -21,7 +21,7 @@ because the image is already available locally.
 
 #### 3. Deploy
 The deploy step ensures that the most recent artifacts are running in the cluster. You can use different
-tools for deployment, for example `kubectl` or `helm`. Each deployment type has paramaters that allow you to
+tools for deployment, for example `kubectl` or `helm`. Each deployment type has parameters that allow you to
 define how you want your app to be installed and updated.
 
 ### Artifact
