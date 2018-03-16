@@ -20,6 +20,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
@@ -57,8 +60,18 @@ func RunBuild(ctx context.Context, cli DockerAPIClient, opts *BuildOptions) erro
 		AuthConfigs: authConfigs,
 	}
 
+	dockerfilePath := filepath.Join(opts.ContextDir, opts.Dockerfile)
+	f, err := os.Open(dockerfilePath)
+	if err != nil {
+		return errors.Wrap(err, "opening dockerfile")
+	}
+	paths, err := GetDockerfileDependencies(opts.ContextDir, f)
+	for i, path := range paths {
+		paths[i] = strings.TrimPrefix(path, opts.ContextDir)
+	}
 	buildCtx, err := archive.TarWithOptions(opts.ContextDir, &archive.TarOptions{
-		ChownOpts: &idtools.IDPair{UID: 0, GID: 0},
+		ChownOpts:    &idtools.IDPair{UID: 0, GID: 0},
+		IncludeFiles: append(paths, opts.Dockerfile),
 	})
 	if err != nil {
 		return errors.Wrap(err, "tar workspace")
