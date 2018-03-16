@@ -1,0 +1,40 @@
+# Concepts
+This document explains the concepts you will encounter when using Skaffold.
+
+### Skaffold configuration file or `skaffold.yaml`
+The Skaffold configuration file is where the workflow is configured.
+In this file you define the tools you will be using and their configuration.
+
+### Phases
+There are 3 main phases in the Skaffold workflow definition.
+
+#### 1. Build
+In the build phase, Skaffold will use the tool of your choice to build an artifact. Artifacts are Docker images
+that you would like to deploy into your Kubernetes cluster when changes are made to them.
+
+#### 2. Push
+In the push phase, Skaffold ensures that your image is uploaded to the registry referenced in the image name. Before
+running Skaffold you should ensure that you are able to push to your configured image registry.
+
+When using local Kubernetes clusters like Minikube or Docker for Desktop, the push is skipped
+because the image is already available locally.
+
+#### 3. Deploy
+The deploy step ensures that the most recent artifacts are running in the cluster. You can use different
+tools for deployment, for example `kubectl` or `helm`. Each deployment type has paramaters that allow you to
+define how you want your app to be installed and updated.
+
+### Artifact
+Artifacts are the outputs of the build phase. Artifacts are created by running a set of steps on some
+source code. Currently the only artifact type is a Docker image. You can define multiple artifacts that Skaffold
+needs to build. When running in `dev` mode, Skaffold will only rebuild artifacts whose source code has changed.
+Artifacts are configured by pointing Skaffold at a Dockerfile to build and giving the image a name.
+
+### Tag Policy
+Tag policies are configured in the build phase and tell Skaffold how your images should be tagged when they are pushed.
+
+During development, it is best to have Skaffold use content based tagging strategy, `sha256`, so that changes to your source
+code cause Kubernetes to redeploy your new images.
+
+When running Skaffold as part of a CI/CD pipeline you can use the `gitCommit` strategy so that your deployed resources
+reference the source code commit that they were deployed from.
