@@ -16,6 +16,7 @@ limitations under the License.
 package watch
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -77,16 +78,19 @@ func TestWatch(t *testing.T) {
 	var tests = []struct {
 		description    string
 		artifacts      []*config.Artifact
-		dockerfiles    []string
 		writes         []string
-		expected       *Event
 		expectedChange []string
-		sendCancel     bool
 		shouldErr      bool
 	}{
 		{
 			description: "write file and ignored file",
-			dockerfiles: []string{"Dockerfile.ignored_file", "Dockerfile"},
+			artifacts: []*config.Artifact{{
+				DockerfilePath: "Dockerfile.ignored_file",
+				Workspace:      tmpDir,
+			}, {
+				DockerfilePath: "Dockerfile",
+				Workspace:      tmpDir,
+			}},
 			writes: []string{
 				"vendor/3",
 				"dir/2",
@@ -95,71 +99,42 @@ func TestWatch(t *testing.T) {
 		},
 		{
 			description: "missing dockerfile",
-			dockerfiles: []string{"Dockerfile.MISSINGFILE"},
-			shouldErr:   true,
+			artifacts: []*config.Artifact{{
+				DockerfilePath: "Dockerfile.MISSINGFILE",
+				Workspace:      tmpDir,
+			}},
+			shouldErr: true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			artifacts := []*config.Artifact{}
-			for _, d := range test.dockerfiles {
-				artifacts = append(artifacts, &config.Artifact{
-					DockerfilePath: d,
-					Workspace:      tmpDir,
-				})
-			}
-			watcher := &FSWatcher{}
-			eventCh := make(chan *Event, 1)
-			readyCh := make(chan *Event, 1)
-			errCh := make(chan error, 1)
-			cancel := make(chan struct{}, 1)
-			go func() {
-				evt, err := watcher.Watch(artifacts, readyCh, cancel)
-				if err != nil {
-					errCh <- err
-					return
-				}
-				eventCh <- evt
-			}()
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
 
-			select {
-			case err := <-errCh:
-				testutil.CheckError(t, test.shouldErr, err)
+			watcher, err := NewWatcher(test.artifacts)
+
+			testutil.CheckError(t, test.shouldErr, err)
+			if test.shouldErr {
 				return
-			case readyEvt := <-readyCh:
-				if readyEvt.EventType != WatchReady {
-					t.Errorf("Got unknown watch event %s, expected %s", readyEvt.EventType, WatchReady)
-				}
-			}
-
-			if test.sendCancel {
-				cancel <- struct{}{}
 			}
 
 			for _, p := range test.writes {
 				write(t, p, "")
 			}
 
-			// Now check to see if the watch registered a change event
-			select {
-			case e := <-eventCh:
-				if e.ChangedArtifacts == nil {
-					t.Errorf("No changed artifacts but expected %s", test.expectedChange)
-				}
+			watcher.Start(ctx, func(artifacts []*config.Artifact) {
 				actual := []string{}
-				for _, d := range e.ChangedArtifacts {
+				for _, d := range artifacts {
 					actual = append(actual, d.DockerfilePath)
 				}
+
 				if !reflect.DeepEqual(actual, test.expectedChange) {
 					t.Errorf("Expected %+v, Actual %+v", test.expectedChange, actual)
 				}
-				return
-			case err := <-errCh:
-				testutil.CheckError(t, test.shouldErr, err)
-				return
-			}
 
+				cancel()
+			})
 		})
 	}
 }

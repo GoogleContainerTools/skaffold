@@ -18,10 +18,10 @@ package runner
 
 import (
 	"bytes"
+	"context"
+	"fmt"
 	"io"
 	"testing"
-
-	"fmt"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
@@ -31,7 +31,6 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
-	"github.com/sirupsen/logrus"
 	clientgo "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -41,20 +40,17 @@ type TestBuilder struct {
 	err error
 }
 
+func (t *TestBuilder) Run(io.Writer, tag.Tagger, []*config.Artifact) (*build.BuildResult, error) {
+	return t.res, t.err
+}
+
 type TestDeployer struct {
 	res *deploy.Result
 	err error
 }
 
-func (t *TestBuilder) Run(io.Writer, tag.Tagger, []*config.Artifact) (*build.BuildResult, error) {
+func (t *TestDeployer) Run(io.Writer, *build.BuildResult) (*deploy.Result, error) {
 	return t.res, t.err
-}
-
-type TestWatcher struct {
-	res []*watch.Event
-	err error
-
-	current int
 }
 
 type TestTagger struct {
@@ -70,22 +66,34 @@ func resetClient()                                { kubernetesClient = kubernete
 func fakeGetClient() (clientgo.Interface, error)  { return fake.NewSimpleClientset(), nil }
 func errorGetClient() (clientgo.Interface, error) { return nil, fmt.Errorf("") }
 
-func NewTestWatch(err error, res ...*watch.Event) *TestWatcher {
-	return &TestWatcher{res: res, err: err}
+type TestWatcher struct {
+	changes [][]*config.Artifact
 }
 
-func (t *TestWatcher) Watch(artifacts []*config.Artifact, ready chan *watch.Event, cancel chan struct{}) (*watch.Event, error) {
-	if t.current > len(t.res)-1 {
-		logrus.Fatalf("Called watch too many times. Events %d, Current: %d", len(t.res)-1, t.current)
+func NewWatcherFactory(err error, changes ...[]*config.Artifact) watch.WatcherFactory {
+	return func([]*config.Artifact) (watch.Watcher, error) {
+		return &TestWatcher{
+			changes: changes,
+		}, err
 	}
-	ret := t.res[t.current]
-	t.current = t.current + 1
-	return ret, t.err
 }
 
-func (t *TestDeployer) Run(io.Writer, *build.BuildResult) (*deploy.Result, error) {
-	return t.res, t.err
+func (t *TestWatcher) Start(context context.Context, onChange func([]*config.Artifact)) {
+	for _, change := range t.changes {
+		onChange(change)
+	}
 }
+
+type TestChanges struct {
+	changes [][]*config.Artifact
+}
+
+func (t *TestChanges) OnChange(action func(artifacts []*config.Artifact)) {
+	for _, artifacts := range t.changes {
+		action(artifacts)
+	}
+}
+
 func TestNewForConfig(t *testing.T) {
 	kubernetesClient = fakeGetClient
 	defer resetClient()
@@ -93,7 +101,6 @@ func TestNewForConfig(t *testing.T) {
 		description string
 		config      *config.SkaffoldConfig
 		shouldErr   bool
-		sendCancel  bool
 		expected    interface{}
 	}{
 		{
@@ -212,6 +219,7 @@ func TestRun(t *testing.T) {
 					res: &deploy.Result{},
 					err: nil,
 				},
+				WatcherFactory: NewWatcherFactory(nil),
 			},
 		},
 		{
@@ -226,7 +234,8 @@ func TestRun(t *testing.T) {
 					DevMode: false,
 					Output:  &bytes.Buffer{},
 				},
-				Tagger: &tag.ChecksumTagger{},
+				Tagger:         &tag.ChecksumTagger{},
+				WatcherFactory: NewWatcherFactory(nil),
 			},
 			shouldErr: true,
 		},
@@ -255,6 +264,7 @@ func TestRun(t *testing.T) {
 					res: &build.BuildResult{},
 					err: nil,
 				},
+				WatcherFactory: NewWatcherFactory(nil),
 			},
 			shouldErr: true,
 		},
@@ -273,15 +283,13 @@ func TestRun(t *testing.T) {
 						},
 					},
 				},
-				Deployer: &TestDeployer{},
-				Watcher:  NewTestWatch(nil, &watch.Event{}, watch.WatchStopEvent),
+				Deployer:       &TestDeployer{},
+				WatcherFactory: NewWatcherFactory(nil, []*config.Artifact{}),
 				opts: &config.SkaffoldOptions{
 					DevMode: true,
 					Output:  &bytes.Buffer{},
 				},
-				cancel:     make(chan struct{}, 1),
-				watchReady: make(chan *watch.Event, 1),
-				Tagger:     &tag.ChecksumTagger{},
+				Tagger: &tag.ChecksumTagger{},
 			},
 		},
 		{
@@ -293,15 +301,13 @@ func TestRun(t *testing.T) {
 					res: &build.BuildResult{},
 					err: fmt.Errorf(""),
 				},
-				Deployer: &TestDeployer{},
-				Tagger:   &TestTagger{},
-				Watcher:  NewTestWatch(nil, &watch.Event{}, watch.WatchStopEvent),
+				Deployer:       &TestDeployer{},
+				Tagger:         &TestTagger{},
+				WatcherFactory: NewWatcherFactory(nil, []*config.Artifact{}),
 				opts: &config.SkaffoldOptions{
 					DevMode: true,
 					Output:  &bytes.Buffer{},
 				},
-				cancel:     make(chan struct{}, 1),
-				watchReady: make(chan *watch.Event, 1),
 			},
 		},
 		{
@@ -313,14 +319,13 @@ func TestRun(t *testing.T) {
 					res: &build.BuildResult{},
 					err: nil,
 				},
-				Deployer: &TestDeployer{},
-				Watcher:  NewTestWatch(fmt.Errorf(""), nil),
+				Deployer:       &TestDeployer{},
+				WatcherFactory: NewWatcherFactory(fmt.Errorf("")),
 				opts: &config.SkaffoldOptions{
 					DevMode: true,
 					Output:  &bytes.Buffer{},
-				}, cancel: make(chan struct{}, 1),
-				watchReady: make(chan *watch.Event, 1),
-				Tagger:     &tag.ChecksumTagger{},
+				},
+				Tagger: &tag.ChecksumTagger{},
 			},
 			shouldErr: true,
 		},
