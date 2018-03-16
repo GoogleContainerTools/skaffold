@@ -25,7 +25,7 @@ import (
 
 const (
 	rawConfigA = `
-apiVersion: skaffold/v1
+apiVersion: skaffold/v1alpha1
 kind: Config
 build:
   artifacts:
@@ -40,7 +40,7 @@ deploy:
 )
 
 var configA = &SkaffoldConfig{
-	APIVersion: "skaffold/v1",
+	APIVersion: "skaffold/v1alpha1",
 	Kind:       "Config",
 	Build: BuildConfig{
 		TagPolicy: constants.TagStrategySha256,
