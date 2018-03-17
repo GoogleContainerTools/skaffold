@@ -36,6 +36,7 @@ type LocalBuilder struct {
 
 	api          docker.ImageAPIClient
 	localCluster bool
+	kubeContext  string
 }
 
 // NewLocalBuilder returns an new instance of a LocalBuilder
@@ -43,16 +44,20 @@ func NewLocalBuilder(cfg *config.BuildConfig, kubeContext string) (*LocalBuilder
 	if cfg.LocalBuild == nil {
 		return nil, fmt.Errorf("LocalBuild config field is needed to create a new LocalBuilder")
 	}
-	l := &LocalBuilder{BuildConfig: cfg}
+
+	l := &LocalBuilder{
+		BuildConfig: cfg,
+		kubeContext: kubeContext,
+	}
 
 	var err error
 	switch kubeContext {
 	case constants.DefaultMinikubeContext:
+		l.localCluster = true
 		l.api, err = docker.NewMinikubeImageAPIClient()
 		if err != nil {
 			return nil, errors.Wrap(err, "getting minikube docker client")
 		}
-		l.localCluster = true
 	case constants.DefaultDockerForDesktopContext:
 		l.localCluster = true
 		l.api, err = docker.NewImageAPIClient()
@@ -78,7 +83,7 @@ func NewLocalBuilder(cfg *config.BuildConfig, kubeContext string) (*LocalBuilder
 // its checksum. It streams build progress to the writer argument.
 func (l *LocalBuilder) Run(out io.Writer, tagger tag.Tagger, artifacts []*config.Artifact) (*BuildResult, error) {
 	if l.localCluster {
-		if _, err := fmt.Fprint(out, "Found minikube or Docker for Desktop context, using local docker daemon.\n"); err != nil {
+		if _, err := fmt.Fprintf(out, "Found [%s] context, using local docker daemon.\n", l.kubeContext); err != nil {
 			return nil, errors.Wrap(err, "writing status")
 		}
 	}
