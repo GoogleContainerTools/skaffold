@@ -40,7 +40,7 @@ type TestBuilder struct {
 	err error
 }
 
-func (t *TestBuilder) Run(io.Writer, tag.Tagger, []*config.Artifact) (*build.BuildResult, error) {
+func (t *TestBuilder) Build(io.Writer, tag.Tagger, []*config.Artifact) (*build.BuildResult, error) {
 	return t.res, t.err
 }
 
@@ -49,7 +49,7 @@ type TestDeployer struct {
 	err error
 }
 
-func (t *TestDeployer) Run(io.Writer, *build.BuildResult) (*deploy.Result, error) {
+func (t *TestDeployer) Deploy(io.Writer, *build.BuildResult) (*deploy.Result, error) {
 	return t.res, t.err
 }
 

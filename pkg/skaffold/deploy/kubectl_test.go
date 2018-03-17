@@ -189,7 +189,7 @@ func TestKubectlRun(t *testing.T) {
 			}
 
 			k := NewKubectlDeployer(test.cfg, testKubeContext)
-			res, err := k.Run(&bytes.Buffer{}, test.b)
+			res, err := k.Deploy(&bytes.Buffer{}, test.b)
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
 		})

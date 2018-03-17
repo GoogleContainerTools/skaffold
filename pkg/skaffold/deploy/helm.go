@@ -42,7 +42,7 @@ func NewHelmDeployer(cfg *config.DeployConfig, kubeContext string) *HelmDeployer
 	}
 }
 
-func (h *HelmDeployer) Run(out io.Writer, b *build.BuildResult) (*Result, error) {
+func (h *HelmDeployer) Deploy(out io.Writer, b *build.BuildResult) (*Result, error) {
 	for _, r := range h.HelmDeploy.Releases {
 		if err := h.deployRelease(out, r, b); err != nil {
 			return nil, errors.Wrapf(err, "deploying %s", r.Name)

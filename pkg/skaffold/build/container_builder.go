@@ -76,7 +76,7 @@ func NewGoogleCloudBuilder(cfg *config.BuildConfig) (*GoogleCloudBuilder, error)
 	return &GoogleCloudBuilder{cfg}, nil
 }
 
-func (cb *GoogleCloudBuilder) Run(out io.Writer, tagger tag.Tagger, artifacts []*config.Artifact) (*BuildResult, error) {
+func (cb *GoogleCloudBuilder) Build(out io.Writer, tagger tag.Tagger, artifacts []*config.Artifact) (*BuildResult, error) {
 	ctx := context.Background()
 	client, err := google.DefaultClient(ctx, cloudbuild.CloudPlatformScope)
 	if err != nil {
