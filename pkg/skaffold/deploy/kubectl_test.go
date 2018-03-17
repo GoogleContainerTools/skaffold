@@ -196,3 +196,18 @@ func TestKubectlRun(t *testing.T) {
 
 	}
 }
+
+func TestReplaceParameters(t *testing.T) {
+	manifest := "[IMAGE_NAME][IMAGE_NAME_OTHER][OTHER]"
+	expectedManifest := "[image:v1][image_other:v1][other:v1]"
+
+	manifest = replaceParameters(manifest, map[string]build.Build{
+		"IMAGE_NAME":       {Tag: "image:v1"},
+		"IMAGE_NAME_OTHER": {Tag: "image_other:v1"},
+		"OTHER":            {Tag: "other:v1"},
+	})
+
+	if manifest != expectedManifest {
+		t.Errorf("Expected: '%s'. Got: '%s'", expectedManifest, manifest)
+	}
+}

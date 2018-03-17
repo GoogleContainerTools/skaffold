@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -159,10 +160,9 @@ func (k *KubectlDeployer) deployManifestFile(r io.Reader, params map[string]buil
 	if _, err := manifestContents.ReadFrom(r); err != nil {
 		return errors.Wrap(err, "reading manifest")
 	}
-	manifest := manifestContents.String()
-	for old, new := range params {
-		manifest = strings.Replace(manifest, old, new.Tag, -1)
-	}
+
+	manifest := replaceParameters(manifestContents.String(), params)
+
 	cmd := exec.Command("kubectl", "--context", k.kubeContext, "apply", "-f", "-")
 	stdin := strings.NewReader(manifest)
 	out, outerr, err := util.RunCommand(cmd, stdin)
@@ -170,4 +170,27 @@ func (k *KubectlDeployer) deployManifestFile(r io.Reader, params map[string]buil
 		return errors.Wrapf(err, "running kubectl apply: stdout: %s stderr: %s err: %s", out, outerr, err)
 	}
 	return nil
+}
+
+func replaceParameters(manifest string, params map[string]build.Build) string {
+	// Sort parameters in descending length to replace the longest first.
+	names := paramNames(params)
+	sort.Slice(names, func(i, j int) bool { return len(names[i]) > len(names[j]) })
+
+	var oldnew []string
+	for _, name := range names {
+		oldnew = append(oldnew, []string{name, params[name].Tag}...)
+	}
+
+	return strings.NewReplacer(oldnew...).Replace(manifest)
+}
+
+func paramNames(params map[string]build.Build) []string {
+	var names []string
+
+	for name := range params {
+		names = append(names, name)
+	}
+
+	return names
 }
