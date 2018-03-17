@@ -173,6 +173,8 @@ There may be some cases where you don't want to run build and deploy continuousl
 $ skaffold run -f skaffold.yaml
 ```
 
+## [Build from Source](/docs/building.md)
+
 ## Future
 
 1. Detect application information and create initial deployment manifests
