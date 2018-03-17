@@ -19,9 +19,8 @@ package build
 import (
 	"io"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
-
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 )
 
 // BuildResult holds the results of builds
@@ -41,5 +40,5 @@ type Build struct {
 // This could include pushing to a authorized repository or loading the nodes with the image.
 // If artifacts is supplied, the builder should only rebuild those artifacts.
 type Builder interface {
-	Run(out io.Writer, tagger tag.Tagger, artifacts []*config.Artifact) (*BuildResult, error)
+	Build(out io.Writer, tagger tag.Tagger, artifacts []*config.Artifact) (*BuildResult, error)
 }

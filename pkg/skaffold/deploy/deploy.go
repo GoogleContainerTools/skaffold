@@ -30,9 +30,9 @@ type Result struct{}
 // Deployer is the Deploy API of skaffold and responsible for deploying
 // the build results to a Kubernetes cluster
 type Deployer interface {
-	// Run should ensure that the build results are deployed to the Kubernetes
+	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster.
-	Run(io.Writer, *build.BuildResult) (*Result, error)
+	Deploy(io.Writer, *build.BuildResult) (*Result, error)
 }
 
 func JoinTagsToBuildResult(b []build.Build, params map[string]string) (map[string]build.Build, error) {

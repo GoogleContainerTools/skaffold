@@ -74,9 +74,9 @@ func NewLocalBuilder(cfg *config.BuildConfig, kubeContext string) (*LocalBuilder
 	return l, nil
 }
 
-// Run runs a docker build on the host and tags the resulting image with
+// Build runs a docker build on the host and tags the resulting image with
 // its checksum. It streams build progress to the writer argument.
-func (l *LocalBuilder) Run(out io.Writer, tagger tag.Tagger, artifacts []*config.Artifact) (*BuildResult, error) {
+func (l *LocalBuilder) Build(out io.Writer, tagger tag.Tagger, artifacts []*config.Artifact) (*BuildResult, error) {
 	if l.localCluster {
 		if _, err := fmt.Fprint(out, "Found minikube or Docker for Desktop context, using local docker daemon.\n"); err != nil {
 			return nil, errors.Wrap(err, "writing status")

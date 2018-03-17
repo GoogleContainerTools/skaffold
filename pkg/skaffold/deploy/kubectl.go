@@ -77,9 +77,9 @@ func NewKubectlDeployer(cfg *config.DeployConfig, kubeContext string) *KubectlDe
 	}
 }
 
-// Run templates the provided manifests with a simple `find and replace` and
+// Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *KubectlDeployer) Run(out io.Writer, b *build.BuildResult) (*Result, error) {
+func (k *KubectlDeployer) Deploy(out io.Writer, b *build.BuildResult) (*Result, error) {
 	if len(k.DeployConfig.KubectlDeploy.Manifests) == 0 {
 		if len(b.Builds) != 1 {
 			return nil, errors.New("must specify manifest if using more than one image")
