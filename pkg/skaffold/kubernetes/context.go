@@ -17,16 +17,31 @@ limitations under the License.
 package kubernetes
 
 import (
+	"sync"
+
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+var (
+	currentContextOnce sync.Once
+	currentContext     string
+	currentContextErr  error
+)
+
 func CurrentContext() (string, error) {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
-	cfg, err := kubeConfig.RawConfig()
-	if err != nil {
-		return "", errors.Wrap(err, "loading kubeconfig")
-	}
-	return cfg.CurrentContext, nil
+	currentContextOnce.Do(func() {
+		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+		kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
+
+		cfg, err := kubeConfig.RawConfig()
+		if err != nil {
+			currentContextErr = errors.Wrap(err, "loading kubeconfig")
+			return
+		}
+
+		currentContext = cfg.CurrentContext
+	})
+
+	return currentContext, currentContextErr
 }

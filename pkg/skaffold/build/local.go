@@ -45,7 +45,7 @@ func NewLocalBuilder(cfg *config.BuildConfig, kubeContext string) (*LocalBuilder
 		return nil, fmt.Errorf("LocalBuild config field is needed to create a new LocalBuilder")
 	}
 
-	api, err := docker.NewDockerAPIClient(kubeContext)
+	api, err := docker.NewDockerAPIClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}

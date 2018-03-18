@@ -143,7 +143,7 @@ var ImageConfigs = map[string]*manifest.Schema2Image{
 		}}},
 }
 
-func mockRetrieveConfig(image string) (*manifest.Schema2Image, error) {
+func mockRetrieveImage(image string) (*manifest.Schema2Image, error) {
 	if cfg, ok := ImageConfigs[image]; ok {
 		return cfg, nil
 	}
@@ -229,9 +229,9 @@ func TestGetDockerfileDependencies(t *testing.T) {
 		},
 	}
 
-	RetrieveConfig = mockRetrieveConfig
+	RetrieveImage = mockRetrieveImage
 	defer func() {
-		RetrieveConfig = retrieveImageConfig
+		RetrieveImage = retrieveImage
 	}()
 
 	util.Fs = afero.NewMemMapFs()
@@ -292,9 +292,10 @@ func TestPortsFromDockerfile(t *testing.T) {
 			want: []string{"8000", "8001/tcp", "9000", "9001", "9002/tcp"},
 		},
 	}
-	RetrieveConfig = mockRetrieveConfig
+
+	RetrieveImage = mockRetrieveImage
 	defer func() {
-		RetrieveConfig = retrieveImageConfig
+		RetrieveImage = retrieveImage
 	}()
 
 	for _, tt := range tests {

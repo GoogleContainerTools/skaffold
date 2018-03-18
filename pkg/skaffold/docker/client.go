@@ -24,8 +24,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/api"
 	"github.com/docker/go-connections/tlsconfig"
@@ -39,18 +41,39 @@ type DockerAPIClient interface {
 	io.Closer
 }
 
+var (
+	dockerAPIClientOnce sync.Once
+	dockerAPIClient     DockerAPIClient
+	dockerAPIClientErr  error
+)
+
 // NewDockerAPIClient guesses the docker client to use based on current kubernetes context.
-func NewDockerAPIClient(kubeContext string) (DockerAPIClient, error) {
-	if kubeContext == constants.DefaultMinikubeContext {
-		return NewMinikubeDockerAPIClient()
-	}
-	return NewEnvDockerAPIClient()
+func NewDockerAPIClient() (DockerAPIClient, error) {
+	dockerAPIClientOnce.Do(func() {
+		kubeContext, err := kubernetes.CurrentContext()
+		if err != nil {
+			dockerAPIClientErr = errors.Wrap(err, "getting current cluster context")
+			return
+		}
+
+		dockerAPIClient, dockerAPIClientErr = newDockerAPIClient(kubeContext)
+	})
+
+	return dockerAPIClient, dockerAPIClientErr
 }
 
-// NewEnvDockerAPIClient returns a docker client based on the environment variables set.
+// newDockerAPIClient guesses the docker client to use based on current kubernetes context.
+func newDockerAPIClient(kubeContext string) (DockerAPIClient, error) {
+	if kubeContext == constants.DefaultMinikubeContext {
+		return newMinikubeDockerAPIClient()
+	}
+	return newEnvDockerAPIClient()
+}
+
+// newEnvDockerAPIClient returns a docker client based on the environment variables set.
 // It will "negotiate" the highest possible API version supported by both the client
 // and the server if there is a mismatch.
-func NewEnvDockerAPIClient() (DockerAPIClient, error) {
+func newEnvDockerAPIClient() (DockerAPIClient, error) {
 	cli, err := client.NewEnvClient()
 	if err != nil {
 		return nil, fmt.Errorf("Error getting docker client: %s", err)
@@ -60,13 +83,13 @@ func NewEnvDockerAPIClient() (DockerAPIClient, error) {
 	return cli, nil
 }
 
-// NewMinikubeDockerAPIClient returns a docker client using the environment variables
+// newMinikubeDockerAPIClient returns a docker client using the environment variables
 // provided by minikube.
-func NewMinikubeDockerAPIClient() (DockerAPIClient, error) {
+func newMinikubeDockerAPIClient() (DockerAPIClient, error) {
 	env, err := getMinikubeDockerEnv()
 	if err != nil {
 		logrus.Warnf("Could not get minikube docker env, falling back to local docker daemon")
-		return NewEnvDockerAPIClient()
+		return newEnvDockerAPIClient()
 	}
 
 	var httpclient *http.Client
