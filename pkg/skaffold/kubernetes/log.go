@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -33,13 +34,33 @@ import (
 
 const defaultRetry int = 5
 
+var colors = []int{
+	31, // red
+	32, // green
+	33, // yellow
+	34, // blue
+	35, // magenta
+	36, // cyan
+	37, // lightGray
+	90, // darkGray
+	91, // lightRed
+	92, // lightGreen
+	93, // lightYellow
+	94, // lightBlue
+	95, // lightPurple
+	96, // lightCyan
+	97, // white
+}
+
 // LogAggregator aggregates the logs for all the deployed pods.
 type LogAggregator struct {
 	Muter
 
-	creationTime time.Time
-	output       io.Writer
-	retries      int
+	creationTime   time.Time
+	output         io.Writer
+	retries        int
+	nextColorIndex int
+	lockColor      sync.Mutex
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
@@ -102,7 +123,10 @@ func (a *LogAggregator) streamLogs(client corev1.CoreV1Interface, image string) 
 				return errors.Wrap(err, "setting up container log stream")
 			}
 			defer rc.Close()
-			header := fmt.Sprintf("[%s %s]", p.Name, c.Name)
+
+			color := a.nextColor()
+
+			header := fmt.Sprintf("\033[1;%dm[%s %s]\033[0m", color, p.Name, c.Name)
 			if err := a.streamRequest(header, rc); err != nil {
 				return errors.Wrap(err, "streaming request")
 			}
@@ -112,6 +136,15 @@ func (a *LogAggregator) streamLogs(client corev1.CoreV1Interface, image string) 
 	}
 
 	return fmt.Errorf("Image %s not found", image)
+}
+
+func (a *LogAggregator) nextColor() int {
+	a.lockColor.Lock()
+	color := colors[a.nextColorIndex]
+	a.nextColorIndex++
+	a.lockColor.Unlock()
+
+	return color
 }
 
 func (a *LogAggregator) streamRequest(header string, rc io.Reader) error {
