@@ -84,6 +84,13 @@ FROM ubuntu:14.04
 ADD https://example.com/test /test
 `
 
+const contextDockerfile = `
+FROM nginx
+ADD nginx.conf /etc/nginx
+COPY . /files
+CMD nginx
+`
+
 const dockerIgnore = `
 bar
 docker/*
@@ -216,10 +223,17 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			expected:     []string{"file", "server.go", "test.conf", "worker.go"},
 		},
 		{
+			description:  "dockerignore with context in parent directory test",
+			dockerfile:   contextDockerfile,
+			workspace:    "docker/../docker",
+			dockerIgnore: true,
+			expected:     []string{"docker/nginx.conf"},
+		},
+		{
 			description: "onbuild test",
 			dockerfile:  onbuild,
 			workspace:   ".",
-			expected:    []string{"bar", "docker/nginx.conf", "file", "server.go", "test.conf", "worker.go"},
+			expected:    []string{"bar", "docker/bar", "docker/nginx.conf", "file", "server.go", "test.conf", "worker.go"},
 		},
 		{
 			description: "onbuild error",
@@ -238,7 +252,7 @@ func TestGetDockerfileDependencies(t *testing.T) {
 	defer util.ResetFs()
 
 	util.Fs.MkdirAll("docker", 0750)
-	files := []string{"docker/nginx.conf", "server.go", "test.conf", "worker.go", "bar", "file"}
+	files := []string{"docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file"}
 	for _, name := range files {
 		afero.WriteFile(util.Fs, name, []byte(""), 0644)
 	}
@@ -253,6 +267,8 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			if test.dockerIgnore {
 				afero.WriteFile(util.Fs, ".dockerignore", []byte(dockerIgnore), 0644)
 				defer util.Fs.Remove(".dockerignore")
+				afero.WriteFile(util.Fs, "docker/.dockerignore", []byte(dockerIgnore), 0644)
+				defer util.Fs.Remove("docker/.dockerignore")
 			}
 			deps, err := GetDockerfileDependencies(test.workspace, r)
 			sort.Strings(deps)

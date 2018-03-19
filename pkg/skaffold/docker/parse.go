@@ -101,9 +101,26 @@ func GetDockerfileDependencies(workspace string, r io.Reader) ([]string, error) 
 	// Look for .dockerignore.
 	ignorePath := filepath.Join(workspace, ".dockerignore")
 
-	filteredDeps, err := util.ApplyDockerIgnore(expandedDeps, ignorePath)
+	absWorkspacePath, _ := filepath.Abs(workspace)
+	var relPaths []string
+	for _, path := range expandedDeps {
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting absolute path")
+		}
+		relPath, err := filepath.Rel(absWorkspacePath, absPath)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting relative path")
+		}
+		relPaths = append(relPaths, relPath)
+	}
+	filteredDeps, err := util.ApplyDockerIgnore(relPaths, ignorePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "applying dockerignore")
+	}
+
+	for i, path := range filteredDeps {
+		filteredDeps[i] = filepath.Join(workspace, path)
 	}
 	return filteredDeps, nil
 }
