@@ -31,6 +31,26 @@ import (
 	restclient "k8s.io/client-go/rest"
 )
 
+const defaultRetry int = 5
+
+// LogAggregator aggregates the logs for all the deployed pods.
+type LogAggregator struct {
+	Muter
+
+	creationTime time.Time
+	output       io.Writer
+	retries      int
+}
+
+// NewLogAggregator creates a new LogAggregator for a given output.
+func NewLogAggregator(out io.Writer) *LogAggregator {
+	return &LogAggregator{
+		creationTime: time.Now(),
+		output:       out,
+		retries:      defaultRetry,
+	}
+}
+
 const streamRetryDelay = 1 * time.Second
 
 // TODO(@r2d4): Figure out how to mock this out. fake.NewSimpleClient
@@ -39,9 +59,9 @@ var getStream = func(r *restclient.Request) (io.ReadCloser, error) {
 	return r.Stream()
 }
 
-func StreamLogsRetry(out io.Writer, client corev1.CoreV1Interface, image string, retry int, mute *Muter) {
-	for i := 0; i < retry; i++ {
-		if err := StreamLogs(out, client, image, mute); err != nil {
+func (a *LogAggregator) StreamLogs(client corev1.CoreV1Interface, image string) {
+	for i := 0; i < a.retries; i++ {
+		if err := a.streamLogs(client, image); err != nil {
 			logrus.Infof("Error getting logs %s", err)
 		}
 		time.Sleep(streamRetryDelay)
@@ -49,7 +69,7 @@ func StreamLogsRetry(out io.Writer, client corev1.CoreV1Interface, image string,
 }
 
 // nolint: interfacer
-func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string, mute *Muter) error {
+func (a *LogAggregator) streamLogs(client corev1.CoreV1Interface, image string) error {
 	pods, err := client.Pods("").List(meta_v1.ListOptions{
 		IncludeUninitialized: true,
 	})
@@ -73,7 +93,9 @@ func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string, mute
 			req := pods.GetLogs(p.Name, &v1.PodLogOptions{
 				Follow:    true,
 				Container: c.Name,
-				SinceTime: &meta_v1.Time{Time: time.Now()},
+				SinceTime: &meta_v1.Time{
+					Time: a.creationTime,
+				},
 			})
 			rc, err := getStream(req)
 			if err != nil {
@@ -81,7 +103,7 @@ func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string, mute
 			}
 			defer rc.Close()
 			header := fmt.Sprintf("[%s %s]", p.Name, c.Name)
-			if err := streamRequest(out, header, rc, mute); err != nil {
+			if err := a.streamRequest(header, rc); err != nil {
 				return errors.Wrap(err, "streaming request")
 			}
 
@@ -92,7 +114,7 @@ func StreamLogs(out io.Writer, client corev1.CoreV1Interface, image string, mute
 	return fmt.Errorf("Image %s not found", image)
 }
 
-func streamRequest(out io.Writer, header string, rc io.Reader, mute *Muter) error {
+func (a *LogAggregator) streamRequest(header string, rc io.Reader) error {
 	r := bufio.NewReader(rc)
 	for {
 		// Read up to newline
@@ -104,11 +126,11 @@ func streamRequest(out io.Writer, header string, rc io.Reader, mute *Muter) erro
 			return errors.Wrap(err, "reading bytes from log stream")
 		}
 
-		if mute != nil && mute.IsMuted() {
+		if a.IsMuted() {
 			continue
 		}
 
-		if _, err := fmt.Fprintf(out, "%s %s", header, line); err != nil {
+		if _, err := fmt.Fprintf(a.output, "%s %s", header, line); err != nil {
 			return errors.Wrap(err, "writing to out")
 		}
 	}
