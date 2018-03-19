@@ -145,12 +145,12 @@ func (r *SkaffoldRunner) dev(artifacts []*config.Artifact) error {
 	onChange := func(artifacts []*config.Artifact) {
 		logger.Mute()
 
+		logger.SetCreationTime(time.Now())
 		bRes, _, err := r.run(artifacts)
 		if err != nil {
 			// In dev mode, we only warn on pipeline errors
 			logrus.Warnf("run: %s", err)
 		}
-
 		logger.Unmute()
 
 		if bRes != nil {
