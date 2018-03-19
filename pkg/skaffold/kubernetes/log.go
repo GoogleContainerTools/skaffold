@@ -54,8 +54,7 @@ var colors = []int{
 
 // LogAggregator aggregates the logs for all the deployed pods.
 type LogAggregator struct {
-	Muter
-
+	muted          int32
 	creationTime   time.Time
 	output         io.Writer
 	retries        int
@@ -171,23 +170,17 @@ func (a *LogAggregator) streamRequest(header string, rc io.Reader) error {
 	return nil
 }
 
-// Muter can be used to mute/unmute logs.
-// It's safe to use in multiple go routines.
-type Muter struct {
-	muted int32
-}
-
 // Mute mutes the logs.
-func (m *Muter) Mute() {
-	atomic.StoreInt32(&m.muted, 1)
+func (a *LogAggregator) Mute() {
+	atomic.StoreInt32(&a.muted, 1)
 }
 
 // Unmute unmute the logs.
-func (m *Muter) Unmute() {
-	atomic.StoreInt32(&m.muted, 0)
+func (a *LogAggregator) Unmute() {
+	atomic.StoreInt32(&a.muted, 0)
 }
 
 // IsMuted says if the logs are to be muted.
-func (m *Muter) IsMuted() bool {
-	return atomic.LoadInt32(&m.muted) == 1
+func (a *LogAggregator) IsMuted() bool {
+	return atomic.LoadInt32(&a.muted) == 1
 }
