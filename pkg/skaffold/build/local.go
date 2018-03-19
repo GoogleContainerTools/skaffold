@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
@@ -114,8 +115,9 @@ func (l *LocalBuilder) Build(out io.Writer, tagger tag.Tagger, artifacts []*conf
 		if digest == "" {
 			return nil, fmt.Errorf("digest not found")
 		}
+		imageName := os.ExpandEnv(artifact.ImageName)
 		tag, err := tagger.GenerateFullyQualifiedImageName(&tag.TagOptions{
-			ImageName: artifact.ImageName,
+			ImageName: imageName,
 			Digest:    digest,
 		})
 		if err != nil {
@@ -133,7 +135,7 @@ func (l *LocalBuilder) Build(out io.Writer, tagger tag.Tagger, artifacts []*conf
 			}
 		}
 		res.Builds = append(res.Builds, Build{
-			ImageName: artifact.ImageName,
+			ImageName: imageName,
 			Tag:       tag,
 			Artifact:  artifact,
 		})
