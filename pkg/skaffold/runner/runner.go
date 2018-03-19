@@ -19,6 +19,7 @@ package runner
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
@@ -166,20 +167,23 @@ func (r *SkaffoldRunner) dev(artifacts []*config.Artifact) error {
 }
 
 func (r *SkaffoldRunner) run(artifacts []*config.Artifact) (*build.BuildResult, *deploy.Result, error) {
-	fmt.Fprint(r.opts.Output, "Starting build...\n")
+	start := time.Now()
+	fmt.Fprintln(r.opts.Output, "Starting build...")
 	bRes, err := r.Builder.Build(r.opts.Output, r.Tagger, artifacts)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "build step")
 	}
-	fmt.Fprint(r.opts.Output, "Build complete.\n")
+	fmt.Fprintln(r.opts.Output, "Build complete in", time.Now().Sub(start))
 
-	fmt.Fprint(r.opts.Output, "Starting deploy...\n")
+	start = time.Now()
+	fmt.Fprintln(r.opts.Output, "Starting deploy...")
 	if _, err := r.Deployer.Deploy(r.opts.Output, bRes); err != nil {
 		return nil, nil, errors.Wrap(err, "deploy step")
 	}
 	if r.opts.Notification {
 		fmt.Fprint(r.opts.Output, constants.TerminalBell)
 	}
-	fmt.Fprint(r.opts.Output, "Deploy complete.\n")
+	fmt.Fprintln(r.opts.Output, "Deploy complete in", time.Now().Sub(start))
+
 	return bRes, nil, nil
 }
