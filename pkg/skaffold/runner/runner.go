@@ -140,10 +140,10 @@ func (r *SkaffoldRunner) dev(artifacts []*config.Artifact) error {
 		return err
 	}
 
-	mute := &kubernetes.Muter{}
+	logger := kubernetes.NewLogAggregator(r.opts.Output)
 
 	onChange := func(artifacts []*config.Artifact) {
-		mute.Mute()
+		logger.Mute()
 
 		bRes, _, err := r.run(artifacts)
 		if err != nil {
@@ -151,11 +151,11 @@ func (r *SkaffoldRunner) dev(artifacts []*config.Artifact) error {
 			logrus.Warnf("run: %s", err)
 		}
 
-		mute.Unmute()
+		logger.Unmute()
 
 		if bRes != nil {
 			for i := range bRes.Builds {
-				go kubernetes.StreamLogsRetry(r.opts.Output, r.kubeclient.CoreV1(), bRes.Builds[i].Tag, 5, mute)
+				go logger.StreamLogs(r.kubeclient.CoreV1(), bRes.Builds[i].Tag)
 			}
 		}
 	}

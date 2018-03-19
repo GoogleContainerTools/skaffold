@@ -96,7 +96,10 @@ func TestStreamLogs(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			client := fake.NewSimpleClientset(test.initialObj)
 			getStream = test.getStream
-			err := StreamLogs(test.out, client.CoreV1(), "image_name", nil)
+
+			logger := NewLogAggregator(test.out)
+			err := logger.streamLogs(client.CoreV1(), "image_name")
+
 			testutil.CheckError(t, test.shouldErr, err)
 		})
 	}
