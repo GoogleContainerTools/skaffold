@@ -19,49 +19,43 @@ package docker
 import (
 	"io"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
-	"github.com/docker/docker/pkg/idtools"
-	"github.com/moby/moby/pkg/archive"
 	"github.com/pkg/errors"
 )
 
-func CreateDockerTarContext(w io.Writer, dockerfilePath, context string) error {
+func contextTarPaths(dockerfilePath string, context string) ([]string, error) {
 	f, err := os.Open(dockerfilePath)
+	defer f.Close()
 	if err != nil {
-		return errors.Wrap(err, "opening dockerfile")
+		return nil, errors.Wrap(err, "opening dockerfile")
 	}
 	paths, err := GetDockerfileDependencies(context, f)
 	if err != nil {
-		return errors.Wrap(err, "getting dockerfile dependencies")
+		return nil, errors.Wrap(err, "getting dockerfile dependencies")
 	}
-	f.Close()
-	absDockerfilePath, _ := filepath.Abs(dockerfilePath)
 
-	paths = append(paths, absDockerfilePath)
-	if err := util.CreateTarGz(w, context, paths); err != nil {
+	return paths, nil
+}
+
+func CreateDockerTarContext(w io.Writer, dockerfilePath, context string) error {
+	paths, err := contextTarPaths(dockerfilePath, context)
+	if err != nil {
+		return errors.Wrap(err, "getting relative tar paths")
+	}
+	if err := util.CreateTar(w, context, paths); err != nil {
 		return errors.Wrap(err, "creating tar gz")
 	}
 	return nil
 }
 
-func CreateMobyTarContext(dockerfilePath string, context string) (io.ReadCloser, error) {
-	f, err := os.Open(dockerfilePath)
+func CreateDockerTarGzContext(w io.Writer, dockerfilePath, context string) error {
+	paths, err := contextTarPaths(dockerfilePath, context)
 	if err != nil {
-		return nil, errors.Wrap(err, "opening dockerfile")
+		return errors.Wrap(err, "getting relative tar paths")
 	}
-	paths, err := GetDockerfileDependencies(context, f)
-	for i, path := range paths {
-		paths[i] = strings.TrimPrefix(path, context)
+	if err := util.CreateTarGz(w, context, paths); err != nil {
+		return errors.Wrap(err, "creating tar gz")
 	}
-	buildCtx, err := archive.TarWithOptions(context, &archive.TarOptions{
-		ChownOpts:    &idtools.IDPair{UID: 0, GID: 0},
-		IncludeFiles: append(paths, strings.TrimPrefix(dockerfilePath, context)),
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "creating tar")
-	}
-	return buildCtx, nil
+	return nil
 }

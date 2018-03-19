@@ -56,7 +56,7 @@ func runContext(out io.Writer, filename, context string) error {
 	// This prevents recursion problems, where the output file can end up
 	// in the context itself during creation.
 	var b bytes.Buffer
-	if err := docker.CreateDockerTarContext(&b, dockerFilePath, context); err != nil {
+	if err := docker.CreateDockerTarGzContext(&b, dockerFilePath, context); err != nil {
 		return err
 	}
 	return ioutil.WriteFile(output, b.Bytes(), 0644)

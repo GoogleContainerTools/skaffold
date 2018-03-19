@@ -27,11 +27,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func CreateTarGz(w io.Writer, root string, paths []string) error {
-	gw := gzip.NewWriter(w)
-	defer gw.Close()
-
-	tw := tar.NewWriter(gw)
+func CreateTar(w io.Writer, root string, paths []string) error {
+	tw := tar.NewWriter(w)
 	defer tw.Close()
 
 	absContext, err := filepath.Abs(root)
@@ -55,6 +52,12 @@ func CreateTarGz(w io.Writer, root string, paths []string) error {
 
 	}
 	return nil
+}
+
+func CreateTarGz(w io.Writer, root string, paths []string) error {
+	gw := gzip.NewWriter(w)
+	defer gw.Close()
+	return CreateTar(gw, root, paths)
 }
 
 func addFileToTar(p string, tarPath string, tw *tar.Writer) error {

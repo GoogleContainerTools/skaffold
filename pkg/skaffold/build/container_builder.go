@@ -233,7 +233,7 @@ func (cb *GoogleCloudBuilder) uploadTarToGCS(ctx context.Context, dockerfilePath
 
 	relDockerfilePath := filepath.Join(dockerCtx, dockerfilePath)
 	w := c.Bucket(bucket).Object(objectName).NewWriter(ctx)
-	if err := docker.CreateDockerTarContext(w, relDockerfilePath, dockerCtx); err != nil {
+	if err := docker.CreateDockerTarGzContext(w, relDockerfilePath, dockerCtx); err != nil {
 		return errors.Wrap(err, "uploading targz to google storage")
 	}
 	return w.Close()
