@@ -20,8 +20,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
+	"github.com/docker/docker/pkg/idtools"
+	"github.com/moby/moby/pkg/archive"
 	"github.com/pkg/errors"
 )
 
@@ -42,4 +45,23 @@ func CreateDockerTarContext(w io.Writer, dockerfilePath, context string) error {
 		return errors.Wrap(err, "creating tar gz")
 	}
 	return nil
+}
+
+func CreateMobyTarContext(dockerfilePath string, context string) (io.ReadCloser, error) {
+	f, err := os.Open(dockerfilePath)
+	if err != nil {
+		return nil, errors.Wrap(err, "opening dockerfile")
+	}
+	paths, err := GetDockerfileDependencies(context, f)
+	for i, path := range paths {
+		paths[i] = strings.TrimPrefix(path, context)
+	}
+	buildCtx, err := archive.TarWithOptions(context, &archive.TarOptions{
+		ChownOpts:    &idtools.IDPair{UID: 0, GID: 0},
+		IncludeFiles: append(paths, strings.TrimPrefix(dockerfilePath, context)),
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "creating tar")
+	}
+	return buildCtx, nil
 }

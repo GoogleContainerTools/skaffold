@@ -20,15 +20,11 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/pkg/idtools"
 	"github.com/docker/docker/pkg/progress"
-	"github.com/moby/moby/pkg/archive"
 	"github.com/moby/moby/pkg/jsonmessage"
 	"github.com/moby/moby/pkg/streamformatter"
 	"github.com/moby/moby/pkg/term"
@@ -60,22 +56,29 @@ func RunBuild(ctx context.Context, cli DockerAPIClient, opts *BuildOptions) erro
 		AuthConfigs: authConfigs,
 	}
 
+	///////////////////////////////////////////
+	// Moby TarWithOptions method
+	///////////////////////////////////////////
+	// buildCtx, err := CreateMobyTarContext(filepath.Join(opts.ContextDir, opts.Dockerfile), opts.ContextDir)
+	// if err != nil {
+	// 	return errors.Wrap(err, "creating docker context")
+	// }
+	// progressOutput := streamformatter.NewProgressOutput(opts.ProgressBuf)
+	// body := progress.NewProgressReader(buildCtx, progressOutput, 0, "", "Sending build context to Docker daemon")
+
+	///////////////////////////////////////////
+	// io.Pipe method
+	///////////////////////////////////////////
+	buildCtx, buildCtxWriter := io.Pipe()
 	dockerfilePath := filepath.Join(opts.ContextDir, opts.Dockerfile)
-	f, err := os.Open(dockerfilePath)
-	if err != nil {
-		return errors.Wrap(err, "opening dockerfile")
-	}
-	paths, err := GetDockerfileDependencies(opts.ContextDir, f)
-	for i, path := range paths {
-		paths[i] = strings.TrimPrefix(path, opts.ContextDir)
-	}
-	buildCtx, err := archive.TarWithOptions(opts.ContextDir, &archive.TarOptions{
-		ChownOpts:    &idtools.IDPair{UID: 0, GID: 0},
-		IncludeFiles: append(paths, opts.Dockerfile),
-	})
-	if err != nil {
-		return errors.Wrap(err, "tar workspace")
-	}
+	go func() {
+		err := CreateDockerTarContext(buildCtxWriter, dockerfilePath, opts.ContextDir)
+		if err != nil {
+			buildCtxWriter.CloseWithError(errors.Wrap(err, "creating docker context"))
+			return
+		}
+		buildCtxWriter.Close()
+	}()
 
 	progressOutput := streamformatter.NewProgressOutput(opts.ProgressBuf)
 	body := progress.NewProgressReader(buildCtx, progressOutput, 0, "", "Sending build context to Docker daemon")
