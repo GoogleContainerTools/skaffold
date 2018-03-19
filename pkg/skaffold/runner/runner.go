@@ -158,6 +158,7 @@ func (r *SkaffoldRunner) dev(artifacts []*config.Artifact) error {
 				go logger.StreamLogs(r.kubeclient.CoreV1(), bRes.Builds[i].Tag)
 			}
 		}
+		fmt.Fprint(r.opts.Output, "Watching for changes...\n")
 	}
 
 	onChange(artifacts)
