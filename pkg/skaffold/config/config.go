@@ -91,6 +91,7 @@ type HelmRelease struct {
 	ValuesFilePath string            `yaml:"valuesFilePath"`
 	Values         map[string]string `yaml:"values"`
 	Namespace      string            `yaml:"namespace"`
+	Version        string            `yaml:"version"`
 }
 
 // Artifact represents items that need should be built, along with the context in which
