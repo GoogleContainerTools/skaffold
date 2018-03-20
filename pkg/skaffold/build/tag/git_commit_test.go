@@ -61,7 +61,22 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 					add(t, "source.go").
 					commit(t, "initial").
 					write("source.go", []byte("updated code"))
-			}},
+			},
+		},
+		{
+			description: "untracked",
+			opts: &TagOptions{
+				ImageName: "test",
+			},
+			expectedName: "test:41cf71e-dirty-d7bc32e5f6760a99",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source.go", []byte("code")).
+					add(t, "source.go").
+					commit(t, "initial").
+					write("new.go", []byte("new code"))
+			},
+		},
 		{
 			description:   "failure",
 			createGitRepo: func(dir string) {},

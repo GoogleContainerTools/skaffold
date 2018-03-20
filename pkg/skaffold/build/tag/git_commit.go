@@ -62,7 +62,8 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *Tag
 		return fqn, nil
 	}
 
-	// The file state is dirty. To generate a unique suffix, let's hash all the modified files.
+	// The file state is dirty. To generate a unique suffix,
+	// let's hash all the modified files.
 	h := sha256.New()
 	for path, change := range status {
 		if change.Worktree == git.Unmodified {
