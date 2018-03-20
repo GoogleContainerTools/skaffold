@@ -20,9 +20,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"os/exec"
-
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
+	"io"
+	"os"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	git "gopkg.in/src-d/go-git.v4"
@@ -62,16 +62,27 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *Tag
 		return fqn, nil
 	}
 
-	// The file state is dirty. To generate a unique suffix, let's hash the "git diff" output.
-	// It should be roughly content-addressable.
-	uniqueCmd := exec.Command("git", "diff")
-	uniqueCmd.Dir = workingDir
-	stdout, _, err := util.RunCommand(uniqueCmd, nil)
-	if err != nil {
-		return "", errors.Wrap(err, "determining git diff")
+	// The file state is dirty. To generate a unique suffix, let's hash all the modified files.
+	h := sha256.New()
+	for path, change := range status {
+		if change.Worktree == git.Unmodified {
+			continue
+		}
+
+		f, err := os.Open(filepath.Join(workingDir, path))
+		if err != nil {
+			return "", errors.Wrap(err, "reading diff")
+		}
+
+		if _, err := io.Copy(h, f); err != nil {
+			f.Close()
+			return "", errors.Wrap(err, "reading diff")
+		}
+
+		f.Close()
 	}
 
-	sha := sha256.Sum256(stdout)
+	sha := h.Sum(nil)
 	shaStr := hex.EncodeToString(sha[:])[:16]
 
 	return fmt.Sprintf("%s-dirty-%s", fqn, shaStr), nil

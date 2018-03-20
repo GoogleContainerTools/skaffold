@@ -54,7 +54,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			opts: &TagOptions{
 				ImageName: "test",
 			},
-			expectedName: "test:41cf71e-dirty-e749352d57f077cd",
+			expectedName: "test:41cf71e-dirty-17c3e6fb2811b7af",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
