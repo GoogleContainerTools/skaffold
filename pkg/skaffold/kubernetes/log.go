@@ -101,6 +101,8 @@ func (a *LogAggregator) streamLogs(client corev1.CoreV1Interface, image string) 
 		return errors.Wrap(err, "getting pods")
 	}
 
+	found := false
+
 	logrus.Infof("Looking for logs to stream for %s", image)
 	for _, p := range pods.Items {
 		for _, c := range p.Spec.Containers {
@@ -134,11 +136,15 @@ func (a *LogAggregator) streamLogs(client corev1.CoreV1Interface, image string) 
 				return errors.Wrap(err, "streaming request")
 			}
 
-			return nil
+			found = true
 		}
 	}
 
-	return fmt.Errorf("Image %s not found", image)
+	if !found {
+		return fmt.Errorf("Image %s not found", image)
+	}
+
+	return nil
 }
 
 func (a *LogAggregator) nextColor() int {
