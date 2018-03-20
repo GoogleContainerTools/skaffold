@@ -44,6 +44,23 @@ func (t *TestBuilder) Build(io.Writer, tag.Tagger, []*config.Artifact) (*build.B
 	return t.res, t.err
 }
 
+type TestBuildAll struct {
+}
+
+func (t *TestBuildAll) Build(w io.Writer, tagger tag.Tagger, artifacts []*config.Artifact) (*build.BuildResult, error) {
+	var builds []build.Build
+
+	for _, artifact := range artifacts {
+		builds = append(builds, build.Build{
+			ImageName: artifact.ImageName,
+		})
+	}
+
+	return &build.BuildResult{
+		Builds: builds,
+	}, nil
+}
+
 type TestDeployer struct {
 	res *deploy.Result
 	err error
@@ -51,6 +68,15 @@ type TestDeployer struct {
 
 func (t *TestDeployer) Deploy(io.Writer, *build.BuildResult) (*deploy.Result, error) {
 	return t.res, t.err
+}
+
+type TestDeployAll struct {
+	deployed *build.BuildResult
+}
+
+func (t *TestDeployAll) Deploy(w io.Writer, bRes *build.BuildResult) (*deploy.Result, error) {
+	t.deployed = bRes
+	return &deploy.Result{}, nil
 }
 
 type TestTagger struct {
@@ -336,5 +362,51 @@ func TestRun(t *testing.T) {
 			err := test.runner.Run()
 			testutil.CheckError(t, test.shouldErr, err)
 		})
+	}
+}
+
+func TestBuildAndDeployAllArtifacts(t *testing.T) {
+	kubeclient, _ := fakeGetClient()
+	builder := &TestBuildAll{}
+	deployer := &TestDeployAll{}
+
+	runner := &SkaffoldRunner{
+		opts: &config.SkaffoldOptions{
+			Output: &bytes.Buffer{},
+		},
+		kubeclient: kubeclient,
+		Builder:    builder,
+		Deployer:   deployer,
+	}
+
+	// Build all artifacts
+	bRes, _, err := runner.buildAndDeploy([]*config.Artifact{
+		{ImageName: "image1"},
+		{ImageName: "image2"},
+	})
+
+	if err != nil {
+		t.Errorf("Didn't expect an error. Got %s", err)
+	}
+	if len(bRes.Builds) != 2 {
+		t.Errorf("Expected 2 artifacts to be built. Got %d", len(bRes.Builds))
+	}
+	if len(deployer.deployed.Builds) != 2 {
+		t.Errorf("Expected 2 artifacts to be deployed. Got %d", len(deployer.deployed.Builds))
+	}
+
+	// Rebuild only one
+	bRes, _, err = runner.buildAndDeploy([]*config.Artifact{
+		{ImageName: "image2"},
+	})
+
+	if err != nil {
+		t.Errorf("Didn't expect an error. Got %s", err)
+	}
+	if len(bRes.Builds) != 1 {
+		t.Errorf("Expected 1 artifact to be built. Got %d", len(bRes.Builds))
+	}
+	if len(deployer.deployed.Builds) != 2 {
+		t.Errorf("Expected 2 artifacts to be deployed. Got %d", len(deployer.deployed.Builds))
 	}
 }
