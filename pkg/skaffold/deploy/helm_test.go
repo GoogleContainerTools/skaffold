@@ -110,8 +110,7 @@ func TestHelmDeploy(t *testing.T) {
 			description: "get success should upgrade not install",
 			cmd: &MockHelm{
 				t:             t,
-				getResult:     cmdOutput{"", "", fmt.Errorf("not found")},
-				upgradeResult: cmdOutput{"", "", fmt.Errorf("should not have called install")},
+				installResult: cmdOutput{"", "", fmt.Errorf("should not have called install")},
 			},
 			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext),
 			buildResult: testBuildResult,
