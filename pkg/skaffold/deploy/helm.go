@@ -94,6 +94,10 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r config.HelmRelease, b *bui
 		args = append(args, "-f", r.ValuesFilePath)
 	}
 
+	if r.Version != "" {
+		args = append(args, "--version", r.Version)
+	}
+
 	args = append(args, setOpts...)
 	stdout, stderr, err = util.RunCommand(exec.Command("helm", args...), nil)
 	if err != nil {
