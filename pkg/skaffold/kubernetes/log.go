@@ -88,6 +88,10 @@ func (a *LogAggregator) StreamLogs(client corev1.CoreV1Interface, image string) 
 	}
 }
 
+func (a *LogAggregator) SetCreationTime(t time.Time) {
+	a.creationTime = t
+}
+
 // nolint: interfacer
 func (a *LogAggregator) streamLogs(client corev1.CoreV1Interface, image string) error {
 	pods, err := client.Pods("").List(meta_v1.ListOptions{
