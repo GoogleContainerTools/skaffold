@@ -385,7 +385,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	bRes, _, err := runner.buildAndDeploy(ctx, []*config.Artifact{
 		{ImageName: "image1"},
 		{ImageName: "image2"},
-	})
+	}, nil)
 
 	if err != nil {
 		t.Errorf("Didn't expect an error. Got %s", err)
@@ -400,7 +400,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	// Rebuild only one
 	bRes, _, err = runner.buildAndDeploy(ctx, []*config.Artifact{
 		{ImageName: "image2"},
-	})
+	}, nil)
 
 	if err != nil {
 		t.Errorf("Didn't expect an error. Got %s", err)
