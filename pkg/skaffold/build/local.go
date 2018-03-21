@@ -75,56 +75,69 @@ func (l *LocalBuilder) Build(out io.Writer, tagger tag.Tagger, artifacts []*conf
 		}
 	}
 	defer l.api.Close()
-	res := &BuildResult{
-		Builds: []Build{},
+
+	builder := NewConcurrentBuilder(out)
+	for i := range artifacts {
+		builder.Schedule(func(o io.Writer) (*Build, error) {
+			return l.buildArtifact(o, tagger, artifacts[i])
+		})
 	}
-	for _, artifact := range artifacts {
-		if artifact.DockerfilePath == "" {
-			artifact.DockerfilePath = constants.DefaultDockerfilePath
-		}
-		initialTag := util.RandomID()
-		err := docker.RunBuild(l.api, &docker.BuildOptions{
-			ImageName:   initialTag,
-			Dockerfile:  artifact.DockerfilePath,
-			ContextDir:  artifact.Workspace,
-			ProgressBuf: out,
-			BuildBuf:    out,
-			BuildArgs:   artifact.BuildArgs,
-		})
-		if err != nil {
-			return nil, errors.Wrap(err, "running build")
-		}
-		digest, err := docker.Digest(l.api, initialTag)
-		if err != nil {
-			return nil, errors.Wrap(err, "build and tag")
-		}
-		if digest == "" {
-			return nil, fmt.Errorf("digest not found")
-		}
-		tag, err := tagger.GenerateFullyQualifiedImageName(".", &tag.TagOptions{
-			ImageName: artifact.ImageName,
-			Digest:    digest,
-		})
-		if err != nil {
-			return nil, errors.Wrap(err, "generating tag")
-		}
-		if err := l.api.ImageTag(context.Background(), fmt.Sprintf("%s:latest", initialTag), tag); err != nil {
-			return nil, errors.Wrap(err, "tagging image")
-		}
-		if _, err := io.WriteString(out, fmt.Sprintf("Successfully tagged %s\n", tag)); err != nil {
-			return nil, errors.Wrap(err, "writing tag status")
-		}
-		if !*l.LocalBuild.SkipPush {
-			if err := docker.RunPush(l.api, tag, out); err != nil {
-				return nil, errors.Wrap(err, "running push")
-			}
-		}
-		res.Builds = append(res.Builds, Build{
-			ImageName: artifact.ImageName,
-			Tag:       tag,
-			Artifact:  artifact,
-		})
+	builds, err := builder.Run()
+	if err != nil {
+		return nil, err
 	}
 
-	return res, nil
+	return &BuildResult{
+		Builds: builds,
+	}, nil
+}
+
+func (l *LocalBuilder) buildArtifact(out io.Writer, tagger tag.Tagger, artifact *config.Artifact) (*Build, error) {
+	initialTag := util.RandomID()
+
+	if artifact.DockerfilePath == "" {
+		artifact.DockerfilePath = constants.DefaultDockerfilePath
+	}
+	err := docker.RunBuild(l.api, &docker.BuildOptions{
+		ImageName:   initialTag,
+		Dockerfile:  artifact.DockerfilePath,
+		ContextDir:  artifact.Workspace,
+		ProgressBuf: out,
+		BuildBuf:    out,
+		BuildArgs:   artifact.BuildArgs,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "running build")
+	}
+	digest, err := docker.Digest(l.api, initialTag)
+	if err != nil {
+		return nil, errors.Wrap(err, "build and tag")
+	}
+	if digest == "" {
+		return nil, fmt.Errorf("digest not found")
+	}
+	tag, err := tagger.GenerateFullyQualifiedImageName(".", &tag.TagOptions{
+		ImageName: artifact.ImageName,
+		Digest:    digest,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "generating tag")
+	}
+	if err := l.api.ImageTag(context.Background(), fmt.Sprintf("%s:latest", initialTag), tag); err != nil {
+		return nil, errors.Wrap(err, "tagging image")
+	}
+	if _, err := io.WriteString(out, fmt.Sprintf("Successfully tagged %s\n", tag)); err != nil {
+		return nil, errors.Wrap(err, "writing tag status")
+	}
+	if !*l.LocalBuild.SkipPush {
+		if err := docker.RunPush(l.api, tag, out); err != nil {
+			return nil, errors.Wrap(err, "running push")
+		}
+	}
+
+	return &Build{
+		ImageName: artifact.ImageName,
+		Tag:       tag,
+		Artifact:  artifact,
+	}, nil
 }

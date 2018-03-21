@@ -91,13 +91,16 @@ func (cb *GoogleCloudBuilder) Build(out io.Writer, tagger tag.Tagger, artifacts 
 		return nil, errors.Wrap(err, "getting cloud storage client")
 	}
 	defer c.Close()
-	builds := []Build{}
-	for _, artifact := range artifacts {
-		build, err := cb.buildArtifact(ctx, out, cbclient, c, artifact)
-		if err != nil {
-			return nil, errors.Wrapf(err, "building artifact %s", artifact.ImageName)
-		}
-		builds = append(builds, *build)
+
+	builder := NewConcurrentBuilder(out)
+	for i := range artifacts {
+		builder.Schedule(func(o io.Writer) (*Build, error) {
+			return cb.buildArtifact(ctx, o, cbclient, c, artifacts[i])
+		})
+	}
+	builds, err := builder.Run()
+	if err != nil {
+		return nil, err
 	}
 
 	return &BuildResult{
