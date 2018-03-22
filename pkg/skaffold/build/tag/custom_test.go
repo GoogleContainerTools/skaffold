@@ -33,6 +33,6 @@ func TestCustomTag_GenerateFullyQualifiedImageName(t *testing.T) {
 	c := &CustomTag{
 		Tag: expectedTag,
 	}
-	tag, err := c.GenerateFullyQualifiedImageName(opts)
+	tag, err := c.GenerateFullyQualifiedImageName(".", opts)
 	testutil.CheckErrorAndDeepEqual(t, false, err, "test:"+expectedTag, tag)
 }

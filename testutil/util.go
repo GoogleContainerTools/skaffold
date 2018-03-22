@@ -105,10 +105,23 @@ func SetEnvs(t *testing.T, envs map[string]string) func(*testing.T) {
 	}
 }
 
+// TempDir creates a temporary directory. Returns its name and a teardown function
+// that should be called to properly delete the directory content.
+func TempDir(t *testing.T) (name string, tearDown func()) {
+	dir, err := ioutil.TempDir("", "skaffold")
+	if err != nil {
+		t.Error(err)
+	}
+
+	return dir, func() {
+		os.RemoveAll(dir)
+	}
+}
+
 // TempFile creates a temporary file with a given content. Returns the file name
 // and a teardown function that should be called to properly delete the file.
 func TempFile(t *testing.T, prefix string, content []byte) (name string, tearDown func()) {
-	file, err := ioutil.TempFile("", "skaffold.yaml")
+	file, err := ioutil.TempFile("", prefix)
 	if err != nil {
 		t.Error(err)
 	}

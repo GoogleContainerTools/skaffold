@@ -20,11 +20,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"os/exec"
-	"strings"
+	"io"
+	"os"
+	"path/filepath"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	git "gopkg.in/src-d/go-git.v4"
 )
 
 // GitCommit tags an image by the git commit it was built at.
@@ -32,34 +33,58 @@ type GitCommit struct {
 }
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the git commit.
-func (c *GitCommit) GenerateFullyQualifiedImageName(opts *TagOptions) (string, error) {
+func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *TagOptions) (string, error) {
 	// If the repository state is dirty, we add a -dirty-unique-id suffix to work well with local iterations
-	dirtyCmd := exec.Command("git", "status", "--porcelain")
-	stdout, _, err := util.RunCommand(dirtyCmd, nil)
+	repo, err := git.PlainOpen(workingDir)
 	if err != nil {
-		return "", errors.Wrap(err, "determining repo state")
+		return "", errors.Wrap(err, "opening git repo")
 	}
-	suffix := ""
-	if string(stdout) != "" {
-		// The file state is dirty. To generate a unique suffix, let's hash the "git diff" output.
-		// It should be roughly content-addressable.
-		uniqueCmd := exec.Command("git", "diff")
-		stdout, _, err := util.RunCommand(uniqueCmd, nil)
-		if err != nil {
-			return "", errors.Wrap(err, "determining git diff")
-		}
-		sha := sha256.Sum256(stdout)
-		shaStr := hex.EncodeToString(sha[:])[:16]
-		suffix = fmt.Sprintf("dirty-%s", shaStr)
+
+	w, err := repo.Worktree()
+	if err != nil {
+		return "", errors.Wrap(err, "reading worktree")
 	}
-	cmd := exec.Command("git", "rev-parse", "--short", "HEAD")
-	stdout, _, err = util.RunCommand(cmd, nil)
+
+	status, err := w.Status()
+	if err != nil {
+		return "", errors.Wrap(err, "reading status")
+	}
+
+	head, err := repo.Head()
 	if err != nil {
 		return "", errors.Wrap(err, "determining current git commit")
 	}
-	commit := strings.TrimSuffix(string(stdout), "\n")
-	if suffix != "" {
-		return fmt.Sprintf("%s:%s-%s", opts.ImageName, commit, suffix), nil
+
+	shortCommit := head.Hash().String()[0:7]
+
+	fqn := fmt.Sprintf("%s:%s", opts.ImageName, shortCommit)
+	if status.IsClean() {
+		return fqn, nil
 	}
-	return fmt.Sprintf("%s:%s", opts.ImageName, commit), nil
+
+	// The file state is dirty. To generate a unique suffix,
+	// let's hash all the modified files.
+	h := sha256.New()
+	for path, change := range status {
+		if change.Worktree == git.Unmodified {
+			continue
+		}
+
+		f, err := os.Open(filepath.Join(workingDir, path))
+		if err != nil {
+			return "", errors.Wrap(err, "reading diff")
+		}
+
+		if _, err := io.Copy(h, f); err != nil {
+			f.Close()
+			return "", errors.Wrap(err, "reading diff")
+		}
+
+		f.Close()
+	}
+
+	sha := h.Sum(nil)
+	shaStr := hex.EncodeToString(sha[:])[:16]
+
+	return fmt.Sprintf("%s-dirty-%s", fqn, shaStr), nil
 }

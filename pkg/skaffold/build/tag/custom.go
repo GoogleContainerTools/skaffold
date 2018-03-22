@@ -25,7 +25,7 @@ type CustomTag struct {
 }
 
 // GenerateFullyQualifiedImageName tags an image with the custom tag
-func (c *CustomTag) GenerateFullyQualifiedImageName(opts *TagOptions) (string, error) {
+func (c *CustomTag) GenerateFullyQualifiedImageName(workingDir string, opts *TagOptions) (string, error) {
 	if opts == nil {
 		return "", fmt.Errorf("Tag options not provided")
 	}
