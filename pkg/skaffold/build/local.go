@@ -45,30 +45,17 @@ func NewLocalBuilder(cfg *config.BuildConfig, kubeContext string) (*LocalBuilder
 		return nil, fmt.Errorf("LocalBuild config field is needed to create a new LocalBuilder")
 	}
 
-	l := &LocalBuilder{
-		BuildConfig: cfg,
-		kubeContext: kubeContext,
+	api, err := docker.NewImageAPIClient(kubeContext)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting docker client")
 	}
 
-	var err error
-	switch kubeContext {
-	case constants.DefaultMinikubeContext:
-		l.localCluster = true
-		l.api, err = docker.NewMinikubeImageAPIClient()
-		if err != nil {
-			return nil, errors.Wrap(err, "getting minikube docker client")
-		}
-	case constants.DefaultDockerForDesktopContext:
-		l.localCluster = true
-		l.api, err = docker.NewImageAPIClient()
-		if err != nil {
-			return nil, errors.Wrap(err, "getting docker for desktop client")
-		}
-	default:
-		l.api, err = docker.NewImageAPIClient()
-		if err != nil {
-			return nil, errors.Wrap(err, "getting docker client")
-		}
+	l := &LocalBuilder{
+		BuildConfig: cfg,
+
+		kubeContext:  kubeContext,
+		api:          api,
+		localCluster: kubeContext == constants.DefaultMinikubeContext || kubeContext == constants.DefaultDockerForDesktopContext,
 	}
 
 	if cfg.LocalBuild.SkipPush == nil {

@@ -49,7 +49,7 @@ func TestNewEnvClient(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			unsetEnvs := testutil.SetEnvs(t, test.envs)
-			_, err := NewImageAPIClient()
+			_, err := NewEnvImageAPIClient()
 			testutil.CheckError(t, test.shouldErr, err)
 			unsetEnvs(t)
 		})
