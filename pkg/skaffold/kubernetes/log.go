@@ -150,7 +150,7 @@ func (a *LogAggregator) streamLogs(client corev1.CoreV1Interface, image string) 
 func (a *LogAggregator) nextColor() int {
 	a.lockColor.Lock()
 	color := colors[a.nextColorIndex]
-	a.nextColorIndex++
+	a.nextColorIndex = (a.nextColorIndex + 1) % len(colors)
 	a.lockColor.Unlock()
 
 	return color
