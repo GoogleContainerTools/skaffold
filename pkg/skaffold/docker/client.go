@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/api"
 	"github.com/docker/go-connections/tlsconfig"
@@ -38,10 +39,18 @@ type ImageAPIClient interface {
 	io.Closer
 }
 
-// NewImageAPIClient returns a docker client based on the environment variables set.
+// NewImageAPIClient guesses the docker client to use based on current kubernetes context.
+func NewImageAPIClient(kubeContext string) (ImageAPIClient, error) {
+	if kubeContext == constants.DefaultMinikubeContext {
+		return NewMinikubeImageAPIClient()
+	}
+	return NewEnvImageAPIClient()
+}
+
+// NewEnvImageAPIClient returns a docker client based on the environment variables set.
 // It will "negotiate" the highest possible API version supported by both the client
 // and the server if there is a mismatch.
-func NewImageAPIClient() (ImageAPIClient, error) {
+func NewEnvImageAPIClient() (ImageAPIClient, error) {
 	cli, err := client.NewEnvClient()
 	if err != nil {
 		return nil, fmt.Errorf("Error getting docker client: %s", err)
@@ -57,7 +66,7 @@ func NewMinikubeImageAPIClient() (ImageAPIClient, error) {
 	env, err := getMinikubeDockerEnv()
 	if err != nil {
 		logrus.Warnf("Could not get minikube docker env, falling back to local docker daemon")
-		return NewImageAPIClient()
+		return NewEnvImageAPIClient()
 	}
 
 	var httpclient *http.Client
