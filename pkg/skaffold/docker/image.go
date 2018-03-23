@@ -46,14 +46,16 @@ type BuildOptions struct {
 // RunBuild performs a docker build and returns nothing
 func RunBuild(cli client.ImageAPIClient, opts *BuildOptions) error {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", opts.ContextDir, opts.Dockerfile)
+	authConfigs, err := DefaultAuthHelper.GetAllAuthConfigs()
+	if err != nil {
+		return errors.Wrap(err, "read auth configs")
+	}
+
 	imageBuildOpts := types.ImageBuildOptions{
-		Tags:       []string{opts.ImageName},
-		Dockerfile: opts.Dockerfile,
-		BuildArgs:  opts.BuildArgs,
-		// TODO(@r2d4): Currently works, but is really slow,
-		// figure out how to get all private registry tokens in faster way
-		//
-		// AuthConfigs: auth.getAllAuthConfigs(),
+		Tags:        []string{opts.ImageName},
+		Dockerfile:  opts.Dockerfile,
+		BuildArgs:   opts.BuildArgs,
+		AuthConfigs: authConfigs,
 	}
 
 	buildCtx, err := archive.TarWithOptions(opts.ContextDir, &archive.TarOptions{
