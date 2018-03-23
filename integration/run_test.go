@@ -19,31 +19,58 @@ limitations under the License.
 package integration
 
 import (
+	"flag"
+	"os"
 	"os/exec"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
+	"github.com/sirupsen/logrus"
 )
+
+var gkeZone = flag.String("gke-zone", "us-central1-a", "gke zone")
+var gkeClusterName = flag.String("gke-cluster-name", "integration-tests", "name of the integration test cluster")
+var gcpProject = flag.String("gcp-project", "k8s-skaffold", "the gcp project where the integration test cluster lives")
+var remote = flag.Bool("remote", false, "if true, run tests on a remote GKE cluster")
+
+func TestMain(m *testing.M) {
+	flag.Parse()
+	if *remote {
+		cmd := exec.Command("gcloud", "container", "clusters", "get-credentials", *gkeClusterName, "--zone", *gkeZone, "--project", *gcpProject)
+		if stdout, stderr, err := util.RunCommand(cmd, nil); err != nil {
+			logrus.Fatalf("Error authenticating to GKE cluster stdout: %s, stderr: %s, err: %s", stdout, stderr, err)
+		}
+	}
+
+	os.Exit(m.Run())
+}
 
 func TestRunNoArgs(t *testing.T) {
 	client, err := kubernetes.GetClientset()
 	if err != nil {
 		t.Fatalf("Test setup error: getting kubernetes client: %s", err)
 	}
+
+	if err := client.CoreV1().Pods("default").Delete("getting-started", nil); err != nil {
+		t.Log(err)
+	}
+
 	defer func() {
-		if err := client.CoreV1().Pods("default").Delete("skaffold", nil); err != nil {
+		if err := client.CoreV1().Pods("default").Delete("getting-started", nil); err != nil {
 			t.Fatalf("Error deleting pod %s", err)
 		}
 	}()
+
 	cmd := exec.Command("skaffold", "run")
 	cmd.Dir = "../examples/getting-started"
 	out, outerr, err := util.RunCommand(cmd, nil)
 	if err != nil {
 		t.Fatalf("skaffold run: \nstdout: %s\nstderr: %s\nerror: %s", out, outerr, err)
 	}
+	t.Logf("%s %s", out, outerr)
 
-	if err := kubernetes.WaitForPodReady(client.CoreV1().Pods("default"), "skaffold"); err != nil {
-		t.Fatalf("Timed out waiting for pod ready")
+	if err := kubernetes.WaitForPodReady(client.CoreV1().Pods("default"), "getting-started"); err != nil {
+		t.Fatalf("waiting for pod ready %s", err)
 	}
 }
