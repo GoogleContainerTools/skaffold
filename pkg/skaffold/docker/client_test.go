@@ -21,7 +21,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
-	"github.com/moby/moby/client"
 )
 
 func TestNewEnvClient(t *testing.T) {
@@ -49,7 +48,7 @@ func TestNewEnvClient(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			unsetEnvs := testutil.SetEnvs(t, test.envs)
-			_, err := NewEnvImageAPIClient()
+			_, err := NewEnvDockerAPIClient()
 			testutil.CheckError(t, test.shouldErr, err)
 			unsetEnvs(t)
 		})
@@ -62,7 +61,7 @@ func TestNewMinikubeImageAPIClient(t *testing.T) {
 		description string
 		cmd         util.Command
 
-		expected  client.ImageAPIClient
+		expected  DockerAPIClient
 		shouldErr bool
 	}{
 		{
@@ -114,7 +113,7 @@ DOCKER_API_VERSION=1.23`, "", nil),
 			util.DefaultExecCommand = test.cmd
 			defer util.ResetDefaultExecCommand()
 
-			_, err := NewMinikubeImageAPIClient()
+			_, err := NewMinikubeDockerAPIClient()
 			testutil.CheckError(t, test.shouldErr, err)
 		})
 	}

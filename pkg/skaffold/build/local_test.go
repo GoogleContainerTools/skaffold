@@ -69,7 +69,7 @@ func TestLocalRun(t *testing.T) {
 		description  string
 		config       *config.BuildConfig
 		out          io.Writer
-		api          docker.ImageAPIClient
+		api          docker.DockerAPIClient
 		tagger       tag.Tagger
 		localCluster bool
 		artifacts    []*config.Artifact

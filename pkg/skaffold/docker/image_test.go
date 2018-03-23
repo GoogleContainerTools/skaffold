@@ -57,6 +57,11 @@ func TestRunPush(t *testing.T) {
 			tagToImageID: map[string]string{},
 		},
 		{
+			description:  "no error pushing canonical tag",
+			imageName:    "canonical/name",
+			tagToImageID: map[string]string{},
+		},
+		{
 			description:  "stream error",
 			imageName:    "gcr.io/imthescratchman",
 			tagToImageID: map[string]string{},
