@@ -12,19 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# First stage is to build the skaffold binary from source
-FROM golang:1.10 as build
-WORKDIR /go/src/github.com/GoogleCloudPlatform/skaffold
-COPY . .
-RUN make
-
 # Second stage is used to install the binaries that we need
 FROM gcr.io/gcp-runtimes/ubuntu_16_0_4
+
 RUN apt-get update && \
     apt-get install --no-install-recommends --no-install-suggests -y \
-        curl \
         ca-certificates \
-        git
+        curl \
+        build-essential \
+        git \ 
+        gcc \
+        python-dev \
+        python-setuptools \
+        apt-transport-https \
+        lsb-release
+
+COPY --from=golang:1.10 /usr/local/go /usr/local/go
+ENV PATH /usr/local/go/bin:/go/bin:$PATH
+ENV GOPATH /go/
 
 ENV KUBECTL_VERSION v1.9.3
 RUN curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl  && \
@@ -35,13 +40,28 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-helm/helm-${HELM_VERSION}
     tar -zxvf helm-${HELM_VERSION}-linux-amd64.tar.gz && \
     mv linux-amd64/helm /usr/local/bin/helm
 
-FROM gcr.io/distroless/base 
-WORKDIR /root/
+ENV CLOUD_SDK_VERSION 193.0.0
+RUN easy_install -U pip && \
+    pip install -U crcmod && \
+    export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && \
+    echo "deb https://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" > /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
+    apt-get update && apt-get install -y google-cloud-sdk=${CLOUD_SDK_VERSION}-0 $INSTALL_COMPONENTS && \
+    gcloud config set core/disable_usage_reporting true && \
+    gcloud config set component_manager/disable_update_check true && \
+    gcloud config set metrics/environment skaffold_docker_image && \
+    gcloud --version
 
-COPY --from=0 /go/src/github.com/GoogleCloudPlatform/skaffold/out/skaffold .
+RUN curl -LO https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v1.4.3/docker-credential-gcr_linux_amd64-1.4.3.tar.gz && \
+    tar -zxvf docker-credential-gcr_linux_amd64-1.4.3.tar.gz && \
+    mv docker-credential-gcr /usr/bin/docker-credential-gcr && \
+    rm docker-credential-gcr_linux_amd64-1.4.3.tar.gz && \
+    docker-credential-gcr configure-docker
 
-COPY --from=1 /usr/local/bin/kubectl    /usr/local/bin/kubectl
-COPY --from=1 /usr/local/bin/helm       /usr/local/bin/helm
-COPY --from=1 /usr/bin/git              /usr/bin/git
+ENV PATH /usr/local/go/bin:/go/bin:/google-cloud-sdk/bin:$PATH
 
-CMD ["/root/skaffold", "version"]
+WORKDIR /go/src/github.com/GoogleCloudPlatform/skaffold
+COPY . .
+RUN make out/skaffold-linux-amd64 && mv out/skaffold-linux-amd64 /usr/bin/skaffold
+
+CMD ["make", "integration"]
