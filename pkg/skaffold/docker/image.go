@@ -25,7 +25,6 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/pkg/idtools"
 	"github.com/docker/docker/pkg/progress"
-	"github.com/moby/moby/client"
 	"github.com/moby/moby/pkg/archive"
 	"github.com/moby/moby/pkg/jsonmessage"
 	"github.com/moby/moby/pkg/streamformatter"
@@ -44,7 +43,7 @@ type BuildOptions struct {
 }
 
 // RunBuild performs a docker build and returns nothing
-func RunBuild(cli client.ImageAPIClient, opts *BuildOptions) error {
+func RunBuild(cli DockerAPIClient, opts *BuildOptions) error {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", opts.ContextDir, opts.Dockerfile)
 	imageBuildOpts := types.ImageBuildOptions{
 		Tags:       []string{opts.ImageName},
@@ -80,7 +79,7 @@ func streamDockerMessages(dst io.Writer, src io.Reader) error {
 	return jsonmessage.DisplayJSONMessagesStream(src, dst, fd, false, nil)
 }
 
-func RunPush(cli client.ImageAPIClient, ref string, out io.Writer) error {
+func RunPush(cli DockerAPIClient, ref string, out io.Writer) error {
 	registryAuth, err := encodedRegistryAuth(DefaultAuthHelper, ref)
 	if err != nil {
 		return errors.Wrapf(err, "getting auth config for %s", ref)
@@ -98,7 +97,7 @@ func RunPush(cli client.ImageAPIClient, ref string, out io.Writer) error {
 // Digest returns the image digest for a corresponding reference.
 // The digest is of the form
 // sha256:<image_id>
-func Digest(cli client.ImageAPIClient, ref string) (string, error) {
+func Digest(cli DockerAPIClient, ref string) (string, error) {
 	refLatest := fmt.Sprintf("%s:latest", ref)
 	args := filters.KeyValuePair{Key: "reference", Value: refLatest}
 	filters := filters.NewArgs(args)

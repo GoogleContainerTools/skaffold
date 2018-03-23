@@ -34,7 +34,7 @@ import (
 type LocalBuilder struct {
 	*config.BuildConfig
 
-	api          docker.ImageAPIClient
+	api          docker.DockerAPIClient
 	localCluster bool
 	kubeContext  string
 }
@@ -45,7 +45,7 @@ func NewLocalBuilder(cfg *config.BuildConfig, kubeContext string) (*LocalBuilder
 		return nil, fmt.Errorf("LocalBuild config field is needed to create a new LocalBuilder")
 	}
 
-	api, err := docker.NewImageAPIClient(kubeContext)
+	api, err := docker.NewDockerAPIClient(kubeContext)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}

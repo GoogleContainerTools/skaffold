@@ -34,23 +34,23 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type ImageAPIClient interface {
-	client.ImageAPIClient
+type DockerAPIClient interface {
+	client.CommonAPIClient
 	io.Closer
 }
 
-// NewImageAPIClient guesses the docker client to use based on current kubernetes context.
-func NewImageAPIClient(kubeContext string) (ImageAPIClient, error) {
+// NewDockerAPIClient guesses the docker client to use based on current kubernetes context.
+func NewDockerAPIClient(kubeContext string) (DockerAPIClient, error) {
 	if kubeContext == constants.DefaultMinikubeContext {
-		return NewMinikubeImageAPIClient()
+		return NewMinikubeDockerAPIClient()
 	}
-	return NewEnvImageAPIClient()
+	return NewEnvDockerAPIClient()
 }
 
-// NewEnvImageAPIClient returns a docker client based on the environment variables set.
+// NewEnvDockerAPIClient returns a docker client based on the environment variables set.
 // It will "negotiate" the highest possible API version supported by both the client
 // and the server if there is a mismatch.
-func NewEnvImageAPIClient() (ImageAPIClient, error) {
+func NewEnvDockerAPIClient() (DockerAPIClient, error) {
 	cli, err := client.NewEnvClient()
 	if err != nil {
 		return nil, fmt.Errorf("Error getting docker client: %s", err)
@@ -60,13 +60,13 @@ func NewEnvImageAPIClient() (ImageAPIClient, error) {
 	return cli, nil
 }
 
-// NewMinikubeImageAPIClient returns a docker client using the environment variables
+// NewMinikubeDockerAPIClient returns a docker client using the environment variables
 // provided by minikube.
-func NewMinikubeImageAPIClient() (ImageAPIClient, error) {
+func NewMinikubeDockerAPIClient() (DockerAPIClient, error) {
 	env, err := getMinikubeDockerEnv()
 	if err != nil {
 		logrus.Warnf("Could not get minikube docker env, falling back to local docker daemon")
-		return NewEnvImageAPIClient()
+		return NewEnvDockerAPIClient()
 	}
 
 	var httpclient *http.Client
