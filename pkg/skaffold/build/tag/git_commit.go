@@ -34,7 +34,11 @@ type GitCommit struct {
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the git commit.
 func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *TagOptions) (string, error) {
-	// If the repository state is dirty, we add a -dirty-unique-id suffix to work well with local iterations
+	workingDir, err := findTopLevelGitDir(workingDir)
+	if err != nil {
+		return "", errors.Wrap(err, "invalid working dir")
+	}
+
 	repo, err := git.PlainOpen(workingDir)
 	if err != nil {
 		return "", errors.Wrap(err, "opening git repo")
@@ -62,8 +66,8 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *Tag
 		return fqn, nil
 	}
 
-	// The file state is dirty. To generate a unique suffix,
-	// let's hash all the modified files.
+	// The file state is dirty. To generate a unique suffix, let's hash all the modified files.
+	// We add a -dirty-unique-id suffix to work well with local iterations.
 	h := sha256.New()
 	for path, change := range status {
 		if change.Worktree == git.Unmodified {
@@ -87,4 +91,23 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *Tag
 	shaStr := hex.EncodeToString(sha[:])[:16]
 
 	return fmt.Sprintf("%s-dirty-%s", fqn, shaStr), nil
+}
+
+func findTopLevelGitDir(workingDir string) (string, error) {
+	dir, err := filepath.Abs(workingDir)
+	if err != nil {
+		return "", errors.Wrap(err, "invalid working dir")
+	}
+
+	for {
+		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+			return dir, nil
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", errors.New("no git repository found")
+		}
+		dir = parent
+	}
 }
