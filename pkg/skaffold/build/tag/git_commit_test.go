@@ -18,6 +18,7 @@ package tag
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -99,6 +100,29 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 	}
 }
 
+func TestGenerateFullyQualifiedImageNameFromSubDirectory(t *testing.T) {
+	tmpDir, cleanup := testutil.TempDir(t)
+	defer cleanup()
+
+	gitInit(t, tmpDir).
+		mkdir("sub/sub").
+		commit(t, "initial")
+
+	opts := &TagOptions{ImageName: "test"}
+	c := &GitCommit{}
+
+	name1, err := c.GenerateFullyQualifiedImageName(tmpDir, opts)
+	failNowIfError(t, err)
+
+	subDir := filepath.Join(tmpDir, "sub", "sub")
+	name2, err := c.GenerateFullyQualifiedImageName(subDir, opts)
+	failNowIfError(t, err)
+
+	if name1 != name2 || name1 != "test:6e0beab" {
+		t.Errorf("Invalid names found: %s and %s", name1, name2)
+	}
+}
+
 // gitRepo deals with test git repositories
 type gitRepo struct {
 	dir      string
@@ -116,6 +140,11 @@ func gitInit(t *testing.T, dir string) *gitRepo {
 		dir:      dir,
 		workTree: w,
 	}
+}
+
+func (g *gitRepo) mkdir(folder string) *gitRepo {
+	os.MkdirAll(filepath.Join(g.dir, folder), os.ModePerm)
+	return g
 }
 
 func (g *gitRepo) write(file string, content []byte) *gitRepo {
