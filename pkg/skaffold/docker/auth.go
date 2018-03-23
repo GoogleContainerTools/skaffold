@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"os"
@@ -27,6 +28,7 @@ import (
 	"github.com/docker/cli/cli/config/configfile"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/registry"
 	"github.com/moby/moby/pkg/homedir"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -77,28 +79,24 @@ func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
 	return cf.GetAllCredentials()
 }
 
-func encodedRegistryAuth(a AuthConfigHelper, image string) (string, error) {
-	// Parse name takes a canonical image reference, i.e. domain/image
-	//
-	// Examples of canonical names -> domain:
-	// gcr.io/test -> domain=gcr.io
-	// test.com:8080/image -> domain=test.com:8080
-	// docker.io/library/test -> domain=docker.io
-	//
-	//	Examples of noncanonical names
-	//  imagename -> missing domain (docker.io cannot be inferred)
-	//  docker.io/foo -> the docker/cli adds library to this ambiguous reference
-	ref, err := reference.ParseNamed(image)
-	if err == reference.ErrNameNotCanonical {
-		logrus.Infof("Image %s not canonical, skipping registry auth helpers. This will fail when pushing to any private registry.", image)
-		return "", nil
-	}
+func encodedRegistryAuth(ctx context.Context, cli DockerAPIClient, a AuthConfigHelper, image string) (string, error) {
+	ref, err := reference.ParseNormalizedNamed(image)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing image name for registry")
 	}
-	registry := reference.Domain(ref)
 
-	ac, err := a.GetAuthConfig(registry)
+	repoInfo, err := registry.ParseRepositoryInfo(ref)
+	if err != nil {
+		return "", err
+	}
+
+	index := repoInfo.Index
+	configKey := index.Name
+	if index.Official {
+		configKey = officialRegistry(ctx, cli)
+	}
+
+	ac, err := a.GetAuthConfig(configKey)
 	if err != nil {
 		return "", errors.Wrap(err, "getting auth config")
 	}
@@ -109,6 +107,21 @@ func encodedRegistryAuth(a AuthConfigHelper, image string) (string, error) {
 	}
 
 	return base64.URLEncoding.EncodeToString(buf), nil
+}
+
+func officialRegistry(ctx context.Context, cli DockerAPIClient) string {
+	serverAddress := registry.IndexServer
+
+	// The daemon `/info` endpoint informs us of the default registry being used.
+	if info, err := cli.Info(ctx); err != nil {
+		logrus.Warnf("failed to get default registry endpoint from daemon (%v). Using system default: %s\n", err, serverAddress)
+	} else if info.IndexServerAddress == "" {
+		logrus.Warnf("empty registry endpoint from daemon. Using system default: %s\n", serverAddress)
+	} else {
+		serverAddress = info.IndexServerAddress
+	}
+
+	return serverAddress
 }
 
 func load() (*configfile.ConfigFile, error) {

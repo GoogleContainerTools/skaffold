@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -128,7 +129,7 @@ func TestGetEncodedRegistryAuth(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			DefaultAuthHelper = test.authType
-			out, err := encodedRegistryAuth(test.authType, test.image)
+			out, err := encodedRegistryAuth(context.Background(), nil, test.authType, test.image)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, out)
 		})
 	}

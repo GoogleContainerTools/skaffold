@@ -80,11 +80,13 @@ func streamDockerMessages(dst io.Writer, src io.Reader) error {
 }
 
 func RunPush(cli DockerAPIClient, ref string, out io.Writer) error {
-	registryAuth, err := encodedRegistryAuth(DefaultAuthHelper, ref)
+	ctx := context.Background()
+
+	registryAuth, err := encodedRegistryAuth(ctx, cli, DefaultAuthHelper, ref)
 	if err != nil {
 		return errors.Wrapf(err, "getting auth config for %s", ref)
 	}
-	rc, err := cli.ImagePush(context.Background(), ref, types.ImagePushOptions{
+	rc, err := cli.ImagePush(ctx, ref, types.ImagePushOptions{
 		RegistryAuth: registryAuth,
 	})
 	if err != nil {

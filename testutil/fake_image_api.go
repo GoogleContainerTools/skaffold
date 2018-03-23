@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/registry"
 	"github.com/moby/moby/client"
 )
 
@@ -119,6 +120,12 @@ func (f *FakeImageAPIClient) ImagePush(_ context.Context, _ string, _ types.Imag
 		err = fmt.Errorf("")
 	}
 	return f.opts.ReturnBody, err
+}
+
+func (f *FakeImageAPIClient) Info(ctx context.Context) (types.Info, error) {
+	return types.Info{
+		IndexServerAddress: registry.IndexServer,
+	}, nil
 }
 
 func (f *FakeImageAPIClient) Close() error { return nil }
