@@ -1,6 +1,6 @@
 # Build from source TL;DR
 
-0. Install Go
+0. Install Go (minimum required version 1.10)
 
 1. Get the source 
 
