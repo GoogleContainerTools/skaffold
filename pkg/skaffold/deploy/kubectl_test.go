@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
 	"github.com/spf13/afero"
@@ -56,7 +56,7 @@ spec:
 func TestKubectlRun(t *testing.T) {
 	var tests = []struct {
 		description string
-		cfg         *config.DeployConfig
+		cfg         *v1alpha1.DeployConfig
 		b           *build.BuildResult
 		command     util.Command
 

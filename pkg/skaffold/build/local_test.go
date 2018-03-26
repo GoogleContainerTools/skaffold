@@ -24,8 +24,8 @@ import (
 	"testing"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
 	"github.com/docker/docker/api/types"
@@ -47,7 +47,7 @@ func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
 }
 func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { return nil, nil }
 
-var testImage1 = &config.Artifact{
+var testImage1 = &v1alpha1.Artifact{
 	ImageName: "gcr.io/test/image",
 	Workspace: "../../../testdata/docker",
 	ArtifactType: config.ArtifactType{
@@ -55,7 +55,7 @@ var testImage1 = &config.Artifact{
 	},
 }
 
-var testImage2 = &config.Artifact{
+var testImage2 = &v1alpha1.Artifact{
 	ImageName: "gcr.io/test/image2",
 	Workspace: "../../../testdata/docker",
 	ArtifactType: config.ArtifactType{
@@ -74,12 +74,12 @@ func TestLocalRun(t *testing.T) {
 	defer unsetEnvs(t)
 	var tests = []struct {
 		description  string
-		config       *config.BuildConfig
+		config       *v1alpha1.BuildConfig
 		out          io.Writer
 		api          docker.DockerAPIClient
 		tagger       tag.Tagger
 		localCluster bool
-		artifacts    []*config.Artifact
+		artifacts    []*v1alpha1.Artifact
 
 		expectedBuild *BuildResult
 		shouldErr     bool
@@ -87,12 +87,12 @@ func TestLocalRun(t *testing.T) {
 		{
 			description: "single build",
 			out:         &bytes.Buffer{},
-			config: &config.BuildConfig{
-				Artifacts: []*config.Artifact{
+			config: &v1alpha1.BuildConfig{
+				Artifacts: []*v1alpha1.Artifact{
 					testImage1,
 				},
-				BuildType: config.BuildType{
-					LocalBuild: &config.LocalBuild{
+				BuildType: v1alpha1.BuildType{
+					LocalBuild: &v1alpha1.LocalBuild{
 						SkipPush: util.BoolPtr(false),
 					},
 				},
@@ -112,8 +112,8 @@ func TestLocalRun(t *testing.T) {
 		{
 			description: "subset build",
 			out:         &bytes.Buffer{},
-			config: &config.BuildConfig{
-				Artifacts: []*config.Artifact{
+			config: &v1alpha1.BuildConfig{
+				Artifacts: []*v1alpha1.Artifact{
 					{
 						ImageName: "gcr.io/test/image",
 						Workspace: "../../../testdata/docker",
@@ -129,14 +129,14 @@ func TestLocalRun(t *testing.T) {
 						},
 					},
 				},
-				BuildType: config.BuildType{
-					LocalBuild: &config.LocalBuild{
+				BuildType: v1alpha1.BuildType{
+					LocalBuild: &v1alpha1.LocalBuild{
 						SkipPush: util.BoolPtr(true),
 					},
 				},
 			},
 			tagger: &tag.ChecksumTagger{},
-			artifacts: []*config.Artifact{
+			artifacts: []*v1alpha1.Artifact{
 				{
 					ImageName: "gcr.io/test/image",
 					Workspace: "../../../testdata/docker",
@@ -159,15 +159,15 @@ func TestLocalRun(t *testing.T) {
 		{
 			description:  "local cluster bad writer",
 			out:          &testutil.BadWriter{},
-			config:       &config.BuildConfig{},
+			config:       &v1alpha1.BuildConfig{},
 			shouldErr:    true,
 			localCluster: true,
 		},
 		{
 			description: "error image build",
 			out:         &bytes.Buffer{},
-			config: &config.BuildConfig{
-				Artifacts: []*config.Artifact{
+			config: &v1alpha1.BuildConfig{
+				Artifacts: []*v1alpha1.Artifact{
 					{
 						ImageName: "test",
 						Workspace: ".",
@@ -183,8 +183,8 @@ func TestLocalRun(t *testing.T) {
 		{
 			description: "error image tag",
 			out:         &bytes.Buffer{},
-			config: &config.BuildConfig{
-				Artifacts: []*config.Artifact{
+			config: &v1alpha1.BuildConfig{
+				Artifacts: []*v1alpha1.Artifact{
 					{
 						ImageName: "test",
 						Workspace: ".",
@@ -200,8 +200,8 @@ func TestLocalRun(t *testing.T) {
 		{
 			description: "bad writer",
 			out:         &testutil.BadWriter{},
-			config: &config.BuildConfig{
-				Artifacts: []*config.Artifact{
+			config: &v1alpha1.BuildConfig{
+				Artifacts: []*v1alpha1.Artifact{
 					{
 						ImageName: "test",
 						Workspace: ".",
@@ -215,8 +215,8 @@ func TestLocalRun(t *testing.T) {
 		{
 			description: "error image list",
 			out:         &testutil.BadWriter{},
-			config: &config.BuildConfig{
-				Artifacts: []*config.Artifact{
+			config: &v1alpha1.BuildConfig{
+				Artifacts: []*v1alpha1.Artifact{
 					{
 						ImageName: "test",
 						Workspace: ".",
@@ -231,8 +231,8 @@ func TestLocalRun(t *testing.T) {
 		},
 		{
 			description: "error tagger",
-			config: &config.BuildConfig{
-				Artifacts: []*config.Artifact{
+			config: &v1alpha1.BuildConfig{
+				Artifacts: []*v1alpha1.Artifact{
 					{
 						ImageName: "test",
 						Workspace: ".",

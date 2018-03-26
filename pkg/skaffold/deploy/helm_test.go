@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
 )
@@ -39,10 +39,10 @@ var testBuildResult = &build.BuildResult{
 	},
 }
 
-var testDeployConfig = &config.DeployConfig{
-	DeployType: config.DeployType{
-		HelmDeploy: &config.HelmDeploy{
-			Releases: []config.HelmRelease{
+var testDeployConfig = &v1alpha1.DeployConfig{
+	DeployType: v1alpha1.DeployType{
+		HelmDeploy: &v1alpha1.HelmDeploy{
+			Releases: []v1alpha1.HelmRelease{
 				{
 					Name:      "skaffold-helm",
 					ChartPath: "examples/test",
@@ -58,10 +58,10 @@ var testDeployConfig = &config.DeployConfig{
 	},
 }
 
-var testDeployConfigParameterUnmatched = &config.DeployConfig{
-	DeployType: config.DeployType{
-		HelmDeploy: &config.HelmDeploy{
-			Releases: []config.HelmRelease{
+var testDeployConfigParameterUnmatched = &v1alpha1.DeployConfig{
+	DeployType: v1alpha1.DeployType{
+		HelmDeploy: &v1alpha1.HelmDeploy{
+			Releases: []v1alpha1.HelmRelease{
 				{
 					Name:      "skaffold-helm",
 					ChartPath: "examples/test",

@@ -23,20 +23,20 @@ import (
 	"os/exec"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 type HelmDeployer struct {
-	*config.DeployConfig
+	*v1alpha1.DeployConfig
 	kubeContext string
 }
 
 // NewHelmDeployer returns a new HelmDeployer for a DeployConfig filled
 // with the needed configuration for `helm`
-func NewHelmDeployer(cfg *config.DeployConfig, kubeContext string) *HelmDeployer {
+func NewHelmDeployer(cfg *v1alpha1.DeployConfig, kubeContext string) *HelmDeployer {
 	return &HelmDeployer{
 		DeployConfig: cfg,
 		kubeContext:  kubeContext,
@@ -52,7 +52,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, b *build.Build
 	return nil, nil
 }
 
-func (h *HelmDeployer) deployRelease(out io.Writer, r config.HelmRelease, b *build.BuildResult) error {
+func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha1.HelmRelease, b *build.BuildResult) error {
 	isInstalled := true
 	getCmd := exec.Command("helm", "--kube-context", h.kubeContext, "get", r.Name)
 	if stdout, stderr, err := util.RunCommand(getCmd, nil); err != nil {

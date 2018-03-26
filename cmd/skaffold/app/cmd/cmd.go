@@ -17,15 +17,15 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"io"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"strings"
+
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/runner"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -33,9 +33,10 @@ import (
 )
 
 var (
-	opts     = &config.SkaffoldOptions{}
-	v        string
-	filename string
+	opts      = &config.SkaffoldOptions{}
+	v         string
+	filename  string
+	overwrite bool
 )
 
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
@@ -54,6 +55,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	c.AddCommand(NewCmdVersion(out))
 	c.AddCommand(NewCmdRun(out))
 	c.AddCommand(NewCmdDev(out))
+	c.AddCommand(NewCmdFix(out))
 	c.AddCommand(NewCmdDocker(out))
 
 	c.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic")
@@ -64,6 +66,11 @@ func AddRunDevFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&filename, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
 	cmd.Flags().StringArrayVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
+}
+
+func AddFixFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&filename, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
+	cmd.Flags().BoolVar(&overwrite, "overwrite", false, "Overwrite original config with fixed config")
 }
 
 func SetUpLogs(out io.Writer, level string) error {
@@ -77,12 +84,21 @@ func SetUpLogs(out io.Writer, level string) error {
 }
 
 func runSkaffold(out io.Writer, dev bool, filename string) error {
-	buf, err := readConfiguration(filename)
+	buf, err := util.ReadConfiguration(filename)
 	if err != nil {
 		return errors.Wrap(err, "read skaffold config")
 	}
 
-	cfg, err := config.Parse(buf, dev)
+	apiVersion := &config.ApiVersion{}
+	if err := yaml.Unmarshal(buf, apiVersion); err != nil {
+		return errors.Wrap(err, "parsing api version")
+	}
+
+	if apiVersion.Version != config.LatestVersion {
+		return errors.New("Config version out of date: run `skaffold fix`")
+	}
+
+	cfg, err := config.GetConfig(buf, true, dev)
 	if err != nil {
 		return errors.Wrap(err, "parsing skaffold config")
 	}
@@ -94,7 +110,7 @@ func runSkaffold(out io.Writer, dev bool, filename string) error {
 
 	opts.Output = out
 	opts.DevMode = dev
-	r, err := runner.NewForConfig(opts, cfg)
+	r, err := runner.NewForConfig(opts, cfg.(*config.SkaffoldConfig))
 	if err != nil {
 		return errors.Wrap(err, "getting skaffold config")
 	}
@@ -104,27 +120,4 @@ func runSkaffold(out io.Writer, dev bool, filename string) error {
 	}
 
 	return nil
-}
-
-func readConfiguration(filename string) ([]byte, error) {
-	switch {
-	case filename == "":
-		return nil, errors.New("filename not specified")
-	case filename == "-":
-		return ioutil.ReadAll(os.Stdin)
-	case strings.HasPrefix(filename, "http://") || strings.HasPrefix(filename, "https://"):
-		return download(filename)
-	default:
-		return ioutil.ReadFile(filename)
-	}
-}
-
-func download(url string) ([]byte, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	return ioutil.ReadAll(resp.Body)
 }

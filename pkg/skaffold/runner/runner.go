@@ -27,6 +27,8 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha1"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/watch"
 	clientgo "k8s.io/client-go/kubernetes"
 
@@ -91,7 +93,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 	}, nil
 }
 
-func getBuilder(cfg *config.BuildConfig, kubeContext string) (build.Builder, error) {
+func getBuilder(cfg *v1alpha2.BuildConfig, kubeContext string) (build.Builder, error) {
 	if cfg != nil && cfg.LocalBuild != nil {
 		return build.NewLocalBuilder(cfg, kubeContext)
 	}
@@ -102,7 +104,7 @@ func getBuilder(cfg *config.BuildConfig, kubeContext string) (build.Builder, err
 	return nil, fmt.Errorf("Unknown builder for config %+v", cfg)
 }
 
-func getDeployer(cfg *config.DeployConfig, kubeContext string) (deploy.Deployer, error) {
+func getDeployer(cfg *v1alpha1.DeployConfig, kubeContext string) (deploy.Deployer, error) {
 	if cfg.KubectlDeploy != nil {
 		return deploy.NewKubectlDeployer(cfg, kubeContext), nil
 	}
@@ -139,7 +141,7 @@ func (r *SkaffoldRunner) Run() error {
 	return err
 }
 
-func (r *SkaffoldRunner) dev(ctx context.Context, artifacts []*config.Artifact) error {
+func (r *SkaffoldRunner) dev(ctx context.Context, artifacts []*v1alpha2.Artifact) error {
 	var err error
 	r.depMap, err = build.NewDependencyMap(artifacts)
 	if err != nil {
@@ -188,7 +190,7 @@ func (r *SkaffoldRunner) dev(ctx context.Context, artifacts []*config.Artifact) 
 	return nil
 }
 
-func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, artifacts []*config.Artifact, onBuildSuccess func(*build.BuildResult)) (*build.BuildResult, *deploy.Result, error) {
+func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, artifacts []*v1alpha1.Artifact, onBuildSuccess func(*build.BuildResult)) (*build.BuildResult, *deploy.Result, error) {
 	bRes, err := r.build(ctx, artifacts)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "build")
@@ -211,7 +213,7 @@ func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, artifacts []*config
 	return bRes, dRes, nil
 }
 
-func (r *SkaffoldRunner) build(ctx context.Context, artifacts []*config.Artifact) (*build.BuildResult, error) {
+func (r *SkaffoldRunner) build(ctx context.Context, artifacts []*v1alpha1.Artifact) (*build.BuildResult, error) {
 	start := time.Now()
 	fmt.Fprintln(r.opts.Output, "Starting build...")
 

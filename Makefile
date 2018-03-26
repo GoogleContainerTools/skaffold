@@ -76,7 +76,7 @@ install: $(GO_FILES) $(BUILD_DIR)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go install -ldflags $(GO_LDFLAGS) -tags $(GO_BUILD_TAGS) $(BUILD_PACKAGE)
 
 .PHONY: integration
-integration: $(BUILD_DIR)/$(PROJECT)
+integration: install $(BUILD_DIR)/$(PROJECT)
 	go test -v -tags integration $(REPOPATH)/integration -timeout 10m --remote=$(REMOTE_INTEGRATION)
 
 .PHONY: release

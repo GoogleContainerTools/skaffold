@@ -19,15 +19,11 @@ package config
 import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	yaml "gopkg.in/yaml.v2"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha1"
 )
 
-// SkaffoldConfig is the top level config object
-// that is parsed from a skaffold.yaml
-//
-// APIVersion and Kind are currently reserved for future use.
-type SkaffoldConfig struct {
-	APIVersion string `yaml:"apiVersion"`
-	Kind       string `yaml:"kind"`
+// the "latest" SkaffoldConfig object
+type SkaffoldConfig = v1alpha2.SkaffoldConfig
 
 	Build    BuildConfig  `yaml:"build,omitempty"`
 	Deploy   DeployConfig `yaml:"deploy,omitempty"`
