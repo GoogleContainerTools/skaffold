@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"os"
 	"sort"
 	"testing"
 
@@ -165,4 +166,32 @@ func TestExpandPathsGlob(t *testing.T) {
 			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.out, actual)
 		})
 	}
+}
+
+func TestEscapableOsGetEnv(t *testing.T) {
+	os.Setenv("TESTKEY", "testvalue")
+	var tests = []struct {
+		description string
+		in          string
+		out         string
+	}{
+		{
+			description: "should not replace escaped env vars",
+			in:          "$$PWD",
+			out:         "$PWD",
+		},
+		{
+			description: "should replace unescaped env vars",
+			in:          "$TESTKEY",
+			out:         "testvalue",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			actual := EscapableOsGetenv(tt.in)
+			testutil.CheckErrorAndDeepEqual(t, false, nil, tt.out, actual)
+		})
+	}
+
 }

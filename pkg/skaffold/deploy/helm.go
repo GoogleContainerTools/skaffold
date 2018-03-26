@@ -99,6 +99,13 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r config.HelmRelease, b *bui
 		args = append(args, "--version", r.Version)
 	}
 
+	if len(r.SetValues) != 0 {
+		for k, v := range r.SetValues {
+			setOpts = append(setOpts, "--set")
+			setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, util.EscapableOsGetenv(v)))
+		}
+	}
+
 	args = append(args, setOpts...)
 	stdout, stderr, err = util.RunCommand(exec.Command("helm", args...), nil)
 	if err != nil {
