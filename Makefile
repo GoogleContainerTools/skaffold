@@ -96,7 +96,7 @@ integration-in-docker:
 	docker run \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
-		-v $(PWD):/go/src/github.com/GoogleCloudPlatform/skaffold \
+		-v $(PWD):/go/src/$(REPOPATH) \
 		-e REMOTE_INTEGRATION=true \
 		gcr.io/$(GCP_PROJECT)/skaffold-integration
 

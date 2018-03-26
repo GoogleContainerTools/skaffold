@@ -24,7 +24,6 @@ RUN apt-get update && \
         gcc \
         python-dev \
         python-setuptools \
-        apt-transport-https \
         lsb-release
 
 COPY --from=golang:1.10 /usr/local/go /usr/local/go
@@ -41,21 +40,17 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-helm/helm-${HELM_VERSION}
     mv linux-amd64/helm /usr/local/bin/helm
 
 ENV CLOUD_SDK_VERSION 193.0.0
-RUN easy_install -U pip && \
-    pip install -U crcmod && \
-    export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && \
-    echo "deb https://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" > /etc/apt/sources.list.d/google-cloud-sdk.list && \
-    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
-    apt-get update && apt-get install -y google-cloud-sdk=${CLOUD_SDK_VERSION}-0 $INSTALL_COMPONENTS && \
-    gcloud config set core/disable_usage_reporting true && \
-    gcloud config set component_manager/disable_update_check true && \
-    gcloud config set metrics/environment skaffold_docker_image && \
-    gcloud --version
+RUN curl -LO https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz && \
+ tar -zxvf google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz && \
+    CLOUDSDK_PYTHON="python2.7" /google-cloud-sdk/install.sh --usage-reporting=false \
+        --bash-completion=false \
+        --disable-installation-options
 
-RUN curl -LO https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v1.4.3/docker-credential-gcr_linux_amd64-1.4.3.tar.gz && \
-    tar -zxvf docker-credential-gcr_linux_amd64-1.4.3.tar.gz && \
+ENV DOCKER_CREDENTIAL_GCR_VERSION=1.4.3
+RUN curl -LO https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v${DOCKER_CREDENTIAL_GCR_VERSION}/docker-credential-gcr_linux_amd64-${DOCKER_CREDENTIAL_GCR_VERSION}.tar.gz && \
+    tar -zxvf docker-credential-gcr_linux_amd64-${DOCKER_CREDENTIAL_GCR_VERSION}.tar.gz && \
     mv docker-credential-gcr /usr/bin/docker-credential-gcr && \
-    rm docker-credential-gcr_linux_amd64-1.4.3.tar.gz && \
+    rm docker-credential-gcr_linux_amd64-${DOCKER_CREDENTIAL_GCR_VERSION}.tar.gz && \
     docker-credential-gcr configure-docker
 
 ENV PATH /usr/local/go/bin:/go/bin:/google-cloud-sdk/bin:$PATH
