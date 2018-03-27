@@ -99,7 +99,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, b *build.Bu
 	}
 
 	for _, m := range k.DeployConfig.KubectlDeploy.Manifests {
-		logrus.Debugf("Deploying path: %s parameters: %s", m.Paths, m.Parameters)
+		logrus.Debugf("Deploying path: %s parameters: %s", m.Paths, m.Images)
 		if err := k.deployManifest(out, b.Builds, m); err != nil {
 			return nil, errors.Wrap(err, "deploying manifests")
 		}
@@ -126,11 +126,16 @@ func generateManifest(b build.Build) (string, error) {
 	return out.String(), nil
 }
 
-func (k *KubectlDeployer) deployManifest(out io.Writer, b []build.Build, manifest config.Manifest) error {
-	params, err := JoinTagsToBuildResult(b, manifest.Parameters)
-	if err != nil {
-		return errors.Wrap(err, "joining template keys to image tag")
+func imageToBuild(b []build.Build) map[string]build.Build {
+	m := map[string]build.Build{}
+	for _, build := range b {
+		m[build.ImageName] = build
 	}
+	return m
+}
+
+func (k *KubectlDeployer) deployManifest(out io.Writer, b []build.Build, manifest config.Manifest) error {
+	imageToBuilds := imageToBuild(b)
 	manifests, err := util.ExpandPathsGlob(manifest.Paths)
 	if err != nil {
 		return errors.Wrap(err, "expanding manifest paths")
@@ -149,7 +154,7 @@ func (k *KubectlDeployer) deployManifest(out io.Writer, b []build.Build, manifes
 		if err != nil {
 			return errors.Wrap(err, "opening manifest")
 		}
-		if err := k.deployManifestFile(f, params); err != nil {
+		if err := k.deployManifestFile(f, imageToBuilds); err != nil {
 			return errors.Wrapf(err, "deploying manifest %s", fname)
 		}
 	}
