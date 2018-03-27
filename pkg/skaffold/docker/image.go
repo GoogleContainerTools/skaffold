@@ -43,7 +43,7 @@ type BuildOptions struct {
 }
 
 // RunBuild performs a docker build and returns nothing
-func RunBuild(cli DockerAPIClient, opts *BuildOptions) error {
+func RunBuild(ctx context.Context, cli DockerAPIClient, opts *BuildOptions) error {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", opts.ContextDir, opts.Dockerfile)
 	authConfigs, err := DefaultAuthHelper.GetAllAuthConfigs()
 	if err != nil {
@@ -67,7 +67,7 @@ func RunBuild(cli DockerAPIClient, opts *BuildOptions) error {
 	progressOutput := streamformatter.NewProgressOutput(opts.ProgressBuf)
 	body := progress.NewProgressReader(buildCtx, progressOutput, 0, "", "Sending build context to Docker daemon")
 
-	resp, err := cli.ImageBuild(context.Background(), body, imageBuildOpts)
+	resp, err := cli.ImageBuild(ctx, body, imageBuildOpts)
 	if err != nil {
 		return errors.Wrap(err, "docker build")
 	}
@@ -81,9 +81,7 @@ func streamDockerMessages(dst io.Writer, src io.Reader) error {
 	return jsonmessage.DisplayJSONMessagesStream(src, dst, fd, false, nil)
 }
 
-func RunPush(cli DockerAPIClient, ref string, out io.Writer) error {
-	ctx := context.Background()
-
+func RunPush(ctx context.Context, cli DockerAPIClient, ref string, out io.Writer) error {
 	registryAuth, err := encodedRegistryAuth(ctx, cli, DefaultAuthHelper, ref)
 	if err != nil {
 		return errors.Wrapf(err, "getting auth config for %s", ref)
@@ -101,11 +99,11 @@ func RunPush(cli DockerAPIClient, ref string, out io.Writer) error {
 // Digest returns the image digest for a corresponding reference.
 // The digest is of the form
 // sha256:<image_id>
-func Digest(cli DockerAPIClient, ref string) (string, error) {
+func Digest(ctx context.Context, cli DockerAPIClient, ref string) (string, error) {
 	refLatest := fmt.Sprintf("%s:latest", ref)
 	args := filters.KeyValuePair{Key: "reference", Value: refLatest}
 	filters := filters.NewArgs(args)
-	imageList, err := cli.ImageList(context.Background(), types.ImageListOptions{
+	imageList, err := cli.ImageList(ctx, types.ImageListOptions{
 		Filters: filters,
 	})
 	if err != nil {

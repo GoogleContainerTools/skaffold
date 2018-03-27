@@ -40,14 +40,14 @@ type TestBuilder struct {
 	err error
 }
 
-func (t *TestBuilder) Build(io.Writer, tag.Tagger, []*config.Artifact) (*build.BuildResult, error) {
+func (t *TestBuilder) Build(context.Context, io.Writer, tag.Tagger, []*config.Artifact) (*build.BuildResult, error) {
 	return t.res, t.err
 }
 
 type TestBuildAll struct {
 }
 
-func (t *TestBuildAll) Build(w io.Writer, tagger tag.Tagger, artifacts []*config.Artifact) (*build.BuildResult, error) {
+func (t *TestBuildAll) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*config.Artifact) (*build.BuildResult, error) {
 	var builds []build.Build
 
 	for _, artifact := range artifacts {
@@ -66,7 +66,7 @@ type TestDeployer struct {
 	err error
 }
 
-func (t *TestDeployer) Deploy(io.Writer, *build.BuildResult) (*deploy.Result, error) {
+func (t *TestDeployer) Deploy(context.Context, io.Writer, *build.BuildResult) (*deploy.Result, error) {
 	return t.res, t.err
 }
 
@@ -74,7 +74,7 @@ type TestDeployAll struct {
 	deployed *build.BuildResult
 }
 
-func (t *TestDeployAll) Deploy(w io.Writer, bRes *build.BuildResult) (*deploy.Result, error) {
+func (t *TestDeployAll) Deploy(ctx context.Context, w io.Writer, bRes *build.BuildResult) (*deploy.Result, error) {
 	t.deployed = bRes
 	return &deploy.Result{}, nil
 }
@@ -379,8 +379,10 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 		Deployer:   deployer,
 	}
 
+	ctx := context.Background()
+
 	// Build all artifacts
-	bRes, _, err := runner.buildAndDeploy([]*config.Artifact{
+	bRes, _, err := runner.buildAndDeploy(ctx, []*config.Artifact{
 		{ImageName: "image1"},
 		{ImageName: "image2"},
 	})
@@ -396,7 +398,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	}
 
 	// Rebuild only one
-	bRes, _, err = runner.buildAndDeploy([]*config.Artifact{
+	bRes, _, err = runner.buildAndDeploy(ctx, []*config.Artifact{
 		{ImageName: "image2"},
 	})
 

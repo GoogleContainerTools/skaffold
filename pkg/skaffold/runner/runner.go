@@ -125,17 +125,19 @@ func newTaggerForConfig(tagStrategy string) (tag.Tagger, error) {
 
 // Run runs the skaffold build and deploy pipeline.
 func (r *SkaffoldRunner) Run() error {
+	ctx := context.Background()
+
 	if r.opts.DevMode {
-		return r.dev(r.config.Build.Artifacts)
+		return r.dev(ctx, r.config.Build.Artifacts)
 	}
 
-	if _, _, err := r.buildAndDeploy(r.config.Build.Artifacts); err != nil {
+	if _, _, err := r.buildAndDeploy(ctx, r.config.Build.Artifacts); err != nil {
 		return errors.Wrap(err, "run")
 	}
 	return nil
 }
 
-func (r *SkaffoldRunner) dev(artifacts []*config.Artifact) error {
+func (r *SkaffoldRunner) dev(ctx context.Context, artifacts []*config.Artifact) error {
 	watcher, err := r.WatcherFactory(artifacts)
 	if err != nil {
 		return err
@@ -147,7 +149,7 @@ func (r *SkaffoldRunner) dev(artifacts []*config.Artifact) error {
 		logger.SetCreationTime(time.Now())
 		logger.Mute()
 
-		bRes, _, err := r.buildAndDeploy(artifacts)
+		bRes, _, err := r.buildAndDeploy(ctx, artifacts)
 		if err != nil {
 			// In dev mode, we only warn on pipeline errors
 			logrus.Warnf("run: %s", err)
@@ -163,20 +165,20 @@ func (r *SkaffoldRunner) dev(artifacts []*config.Artifact) error {
 	}
 
 	onChange(artifacts)
-	watcher.Start(context.Background(), onChange)
+	watcher.Start(ctx, onChange)
 
 	return nil
 }
 
-func (r *SkaffoldRunner) buildAndDeploy(artifacts []*config.Artifact) (*build.BuildResult, *deploy.Result, error) {
-	bRes, err := r.build(artifacts)
+func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, artifacts []*config.Artifact) (*build.BuildResult, *deploy.Result, error) {
+	bRes, err := r.build(ctx, artifacts)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "build step")
 	}
 
 	r.builds = mergeWithPreviousBuilds(bRes.Builds, r.builds)
 
-	dRes, err := r.deploy(&build.BuildResult{
+	dRes, err := r.deploy(ctx, &build.BuildResult{
 		Builds: r.builds,
 	})
 	if err != nil {
@@ -186,11 +188,11 @@ func (r *SkaffoldRunner) buildAndDeploy(artifacts []*config.Artifact) (*build.Bu
 	return bRes, dRes, nil
 }
 
-func (r *SkaffoldRunner) build(artifacts []*config.Artifact) (*build.BuildResult, error) {
+func (r *SkaffoldRunner) build(ctx context.Context, artifacts []*config.Artifact) (*build.BuildResult, error) {
 	start := time.Now()
 	fmt.Fprintln(r.opts.Output, "Starting build...")
 
-	bRes, err := r.Builder.Build(r.opts.Output, r.Tagger, artifacts)
+	bRes, err := r.Builder.Build(ctx, r.opts.Output, r.Tagger, artifacts)
 	if err != nil {
 		return nil, errors.Wrap(err, "build step")
 	}
@@ -200,11 +202,11 @@ func (r *SkaffoldRunner) build(artifacts []*config.Artifact) (*build.BuildResult
 	return bRes, nil
 }
 
-func (r *SkaffoldRunner) deploy(bRes *build.BuildResult) (*deploy.Result, error) {
+func (r *SkaffoldRunner) deploy(ctx context.Context, bRes *build.BuildResult) (*deploy.Result, error) {
 	start := time.Now()
 	fmt.Fprintln(r.opts.Output, "Starting deploy...")
 
-	dRes, err := r.Deployer.Deploy(r.opts.Output, bRes)
+	dRes, err := r.Deployer.Deploy(ctx, r.opts.Output, bRes)
 	if err != nil {
 		return nil, errors.Wrap(err, "deploy step")
 	}
