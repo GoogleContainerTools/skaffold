@@ -49,7 +49,7 @@ spec:
     spec:
       containers:
       - name: leeroy-web
-        image: IMAGE_NAME
+        image: leeroy-web-image
         ports:
 		- containerPort: 8080
 `
@@ -72,10 +72,8 @@ func TestKubectlRun(t *testing.T) {
 					KubectlDeploy: &config.KubectlDeploy{
 						Manifests: []config.Manifest{
 							{
-								Paths: []string{"test/deployment.yaml"},
-								Parameters: map[string]string{
-									"IMAGE_NAME": "abc",
-								},
+								Paths:  []string{"test/deployment.yaml"},
+								Images: []string{"leeroy-web-image"},
 							},
 						},
 					},
@@ -84,8 +82,8 @@ func TestKubectlRun(t *testing.T) {
 			b: &build.BuildResult{
 				Builds: []build.Build{
 					{
-						ImageName: "not_abc",
-						Tag:       "not_abc:123",
+						ImageName: "leeroy-web-image",
+						Tag:       "leeroy-web-image:v1",
 					},
 				},
 			},
@@ -98,10 +96,8 @@ func TestKubectlRun(t *testing.T) {
 					KubectlDeploy: &config.KubectlDeploy{
 						Manifests: []config.Manifest{
 							{
-								Paths: []string{"test/not_deployment.yaml"},
-								Parameters: map[string]string{
-									"IMAGE_NAME": "abc",
-								},
+								Paths:  []string{"test/not_deployment.yaml"},
+								Images: []string{"leeroy-web-image"},
 							},
 						},
 					},
@@ -110,8 +106,8 @@ func TestKubectlRun(t *testing.T) {
 			b: &build.BuildResult{
 				Builds: []build.Build{
 					{
-						ImageName: "abc",
-						Tag:       "abc:123",
+						ImageName: "leeroy-web-image",
+						Tag:       "leeroy-web-image:123",
 					},
 				},
 			},
@@ -123,10 +119,8 @@ func TestKubectlRun(t *testing.T) {
 					KubectlDeploy: &config.KubectlDeploy{
 						Manifests: []config.Manifest{
 							{
-								Paths: []string{"test/deployment.yaml"},
-								Parameters: map[string]string{
-									"IMAGE_NAME": "abc",
-								},
+								Paths:  []string{"test/deployment.yaml"},
+								Images: []string{"leeroy-web-image"},
 							},
 						},
 					},
@@ -136,8 +130,8 @@ func TestKubectlRun(t *testing.T) {
 			b: &build.BuildResult{
 				Builds: []build.Build{
 					{
-						ImageName: "abc",
-						Tag:       "abc:123",
+						ImageName: "leeroy-web-image",
+						Tag:       "leeroy-web-image:123",
 					},
 				},
 			},
@@ -151,10 +145,8 @@ func TestKubectlRun(t *testing.T) {
 					KubectlDeploy: &config.KubectlDeploy{
 						Manifests: []config.Manifest{
 							{
-								Paths: []string{"test/not_deployment.yaml"},
-								Parameters: map[string]string{
-									"IMAGE_NAME": "abc",
-								},
+								Paths:  []string{"test/not_deployment.yaml"},
+								Images: []string{"leeroy-web-image"},
 							},
 						},
 					},
@@ -164,8 +156,8 @@ func TestKubectlRun(t *testing.T) {
 			b: &build.BuildResult{
 				Builds: []build.Build{
 					{
-						ImageName: "abc",
-						Tag:       "abc:123",
+						ImageName: "leeroy-web-image",
+						Tag:       "leeroy-web-image:123",
 					},
 				},
 			},
