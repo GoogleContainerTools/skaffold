@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -45,7 +46,7 @@ const (
 )
 
 // For testing.
-var RetrieveConfig = retrieveImageConfig
+var RetrieveImage = retrieveImage
 
 // GetDockerfileDependencies parses a dockerfile and returns the full paths
 // of all the source files that the resulting docker image depends on.
@@ -124,12 +125,12 @@ func PortsFromDockerfile(r io.Reader) ([]string, error) {
 				logrus.Debug("Skipping port check in SCRATCH base image.")
 				continue
 			}
-			config, err := RetrieveConfig(value.Next.Value)
+			img, err := RetrieveImage(value.Next.Value)
 			if err != nil {
 				logrus.Warnf("Error checking base image for ports: %s", err)
 				continue
 			}
-			for port := range config.Config.ExposedPorts {
+			for port := range img.Config.ExposedPorts {
 				logrus.Debugf("Found port %s in base image", port)
 				ports = append(ports, string(port))
 			}
@@ -158,20 +159,58 @@ func processBaseImage(value *parser.Node) ([]string, error) {
 		logrus.Debugf("SCRATCH base image found, skipping check: %s", base)
 		return nil, nil
 	}
-	cfg, err := RetrieveConfig(base)
+	img, err := RetrieveImage(base)
 	if err != nil {
 		return nil, err
 	}
-	logrus.Debugf("Found onbuild triggers %v in image %s", cfg.Config.OnBuild, base)
-	return cfg.Config.OnBuild, nil
+	logrus.Debugf("Found onbuild triggers %v in image %s", img.Config.OnBuild, base)
+	return img.Config.OnBuild, nil
 }
 
-var imageToConfigCache sync.Map
+var imageCache sync.Map
 
-func retrieveImageConfig(image string) (*manifest.Schema2Image, error) {
-	cachedCfg, present := imageToConfigCache.Load(image)
+func retrieveImage(image string) (*manifest.Schema2Image, error) {
+	cachedCfg, present := imageCache.Load(image)
 	if present {
 		return cachedCfg.(*manifest.Schema2Image), nil
+	}
+
+	client, err := NewDockerAPIClient()
+	if err != nil {
+		return nil, err
+	}
+
+	raw, err := retrieveLocalImage(client, image)
+	if err != nil {
+		raw, err = retrieveRemoteImage(image)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	cfg := &manifest.Schema2Image{}
+	if err := json.Unmarshal(raw, cfg); err != nil {
+		return nil, err
+	}
+
+	imageCache.Store(image, cfg)
+
+	return cfg, nil
+}
+
+func retrieveLocalImage(client DockerAPIClient, image string) ([]byte, error) {
+	_, raw, err := client.ImageInspectWithRaw(context.Background(), image)
+	if err != nil {
+		return nil, err
+	}
+
+	return raw, nil
+}
+
+func retrieveRemoteImage(image string) ([]byte, error) {
+	context := &types.SystemContext{
+		OSChoice:           "linux",
+		ArchitectureChoice: "amd64",
 	}
 
 	ref, err := docker.ParseReference("//" + image)
@@ -179,29 +218,13 @@ func retrieveImageConfig(image string) (*manifest.Schema2Image, error) {
 		return nil, err
 	}
 
-	context := &types.SystemContext{
-		OSChoice:           "linux",
-		ArchitectureChoice: "amd64",
-	}
 	img, err := ref.NewImage(context)
-
 	if err != nil {
 		return nil, err
 	}
 	defer img.Close()
 
-	cfgBytes, err := img.ConfigBlob()
-	if err != nil {
-		return nil, err
-	}
-	cfg := &manifest.Schema2Image{}
-	if err := json.Unmarshal(cfgBytes, cfg); err != nil {
-		return nil, err
-	}
-
-	imageToConfigCache.Store(image, cfg)
-
-	return cfg, nil
+	return img.ConfigBlob()
 }
 
 func processCopy(workspace string, value *parser.Node, paths map[string]struct{}, envs map[string]string) error {
