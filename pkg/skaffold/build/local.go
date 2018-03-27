@@ -68,7 +68,7 @@ func NewLocalBuilder(cfg *config.BuildConfig, kubeContext string) (*LocalBuilder
 
 // Build runs a docker build on the host and tags the resulting image with
 // its checksum. It streams build progress to the writer argument.
-func (l *LocalBuilder) Build(out io.Writer, tagger tag.Tagger, artifacts []*config.Artifact) (*BuildResult, error) {
+func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*config.Artifact) (*BuildResult, error) {
 	if l.localCluster {
 		if _, err := fmt.Fprintf(out, "Found [%s] context, using local docker daemon.\n", l.kubeContext); err != nil {
 			return nil, errors.Wrap(err, "writing status")
@@ -83,7 +83,7 @@ func (l *LocalBuilder) Build(out io.Writer, tagger tag.Tagger, artifacts []*conf
 			artifact.DockerfilePath = constants.DefaultDockerfilePath
 		}
 		initialTag := util.RandomID()
-		err := docker.RunBuild(l.api, &docker.BuildOptions{
+		err := docker.RunBuild(ctx, l.api, &docker.BuildOptions{
 			ImageName:   initialTag,
 			Dockerfile:  artifact.DockerfilePath,
 			ContextDir:  artifact.Workspace,
@@ -94,7 +94,7 @@ func (l *LocalBuilder) Build(out io.Writer, tagger tag.Tagger, artifacts []*conf
 		if err != nil {
 			return nil, errors.Wrap(err, "running build")
 		}
-		digest, err := docker.Digest(l.api, initialTag)
+		digest, err := docker.Digest(ctx, l.api, initialTag)
 		if err != nil {
 			return nil, errors.Wrap(err, "build and tag")
 		}
@@ -108,14 +108,14 @@ func (l *LocalBuilder) Build(out io.Writer, tagger tag.Tagger, artifacts []*conf
 		if err != nil {
 			return nil, errors.Wrap(err, "generating tag")
 		}
-		if err := l.api.ImageTag(context.Background(), fmt.Sprintf("%s:latest", initialTag), tag); err != nil {
+		if err := l.api.ImageTag(ctx, fmt.Sprintf("%s:latest", initialTag), tag); err != nil {
 			return nil, errors.Wrap(err, "tagging image")
 		}
 		if _, err := io.WriteString(out, fmt.Sprintf("Successfully tagged %s\n", tag)); err != nil {
 			return nil, errors.Wrap(err, "writing tag status")
 		}
 		if !*l.LocalBuild.SkipPush {
-			if err := docker.RunPush(l.api, tag, out); err != nil {
+			if err := docker.RunPush(ctx, l.api, tag, out); err != nil {
 				return nil, errors.Wrap(err, "running push")
 			}
 		}

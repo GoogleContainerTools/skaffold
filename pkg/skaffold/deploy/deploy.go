@@ -17,6 +17,7 @@ limitations under the License.
 package deploy
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -32,7 +33,7 @@ type Result struct{}
 type Deployer interface {
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster.
-	Deploy(io.Writer, *build.BuildResult) (*Result, error)
+	Deploy(context.Context, io.Writer, *build.BuildResult) (*Result, error)
 }
 
 func JoinTagsToBuildResult(b []build.Build, params map[string]string) (map[string]build.Build, error) {

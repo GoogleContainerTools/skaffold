@@ -18,6 +18,7 @@ package build
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"testing"
@@ -239,7 +240,7 @@ func TestLocalRun(t *testing.T) {
 			if test.artifacts == nil {
 				test.artifacts = test.config.Artifacts
 			}
-			res, err := l.Build(test.out, test.tagger, test.artifacts)
+			res, err := l.Build(context.Background(), test.out, test.tagger, test.artifacts)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedBuild, res)
 		})
 	}

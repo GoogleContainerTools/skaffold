@@ -18,6 +18,7 @@ package docker
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -84,7 +85,7 @@ func TestRunPush(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			api := testutil.NewFakeImageAPIClient(test.tagToImageID, test.testOpts)
-			err := RunPush(api, test.imageName, &bytes.Buffer{})
+			err := RunPush(context.Background(), api, test.imageName, &bytes.Buffer{})
 			testutil.CheckError(t, test.shouldErr, err)
 		})
 	}
@@ -119,7 +120,7 @@ func TestRunBuild(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			api := testutil.NewFakeImageAPIClient(test.tagToImageID, test.testOpts)
-			err := RunBuild(api, &BuildOptions{
+			err := RunBuild(context.Background(), api, &BuildOptions{
 				Dockerfile: "Dockerfile",
 				ContextDir: ".",
 				ImageName:  "finalimage",
@@ -162,7 +163,7 @@ func TestDigest(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			api := testutil.NewFakeImageAPIClient(test.tagToImageID, test.testOpts)
-			digest, err := Digest(api, test.imageName)
+			digest, err := Digest(context.Background(), api, test.imageName)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, digest)
 		})
 	}
