@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,7 +35,8 @@ func WaitForPodReady(pods corev1.PodInterface, podName string) error {
 			IncludeUninitialized: true,
 		})
 		if err != nil {
-			return false, errors.Wrap(err, "pod not found")
+			logrus.Infof("Getting pod %s", err)
+			return false, nil
 		}
 		switch pod.Status.Phase {
 		case v1.PodRunning:

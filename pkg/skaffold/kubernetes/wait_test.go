@@ -117,11 +117,6 @@ func TestWaitForPodReady(t *testing.T) {
 			initialObj:  podBadPhase,
 			shouldErr:   true,
 		},
-		{
-			description: "pod not found",
-			initialObj:  podDifferentName,
-			shouldErr:   true,
-		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {

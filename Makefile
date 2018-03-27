@@ -27,6 +27,11 @@ PROJECT := skaffold
 REPOPATH ?= $(ORG)/$(PROJECT)
 RELEASE_BUCKET ?= $(PROJECT)
 
+REMOTE_INTEGRATION ?= false
+GCP_PROJECT ?= k8s-skaffold
+GKE_CLUSTER_NAME ?= integration-tests
+GKE_ZONE ?= us-central1-a
+
 SUPPORTED_PLATFORMS := linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
 BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
@@ -72,7 +77,7 @@ install: $(GO_FILES) $(BUILD_DIR)
 
 .PHONY: integration
 integration: $(BUILD_DIR)/$(PROJECT)
-	go test -v -tags integration $(REPOPATH)/integration -timeout 10m
+	go test -v -tags integration $(REPOPATH)/integration -timeout 10m --remote=$(REMOTE_INTEGRATION)
 
 .PHONY: release
 release: cross
@@ -82,3 +87,16 @@ release: cross
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR)
+
+.PHONY: integration-in-docker
+integration-in-docker:
+	docker build \
+		-f deploy/skaffold/Dockerfile \
+		-t gcr.io/$(GCP_PROJECT)/skaffold-integration .
+	docker run \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
+		-v $(PWD):/go/src/$(REPOPATH) \
+		-e REMOTE_INTEGRATION=true \
+		gcr.io/$(GCP_PROJECT)/skaffold-integration
+
