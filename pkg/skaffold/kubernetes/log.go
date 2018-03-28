@@ -18,6 +18,7 @@ package kubernetes
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"sync"
@@ -28,132 +29,141 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	restclient "k8s.io/client-go/rest"
 )
-
-const defaultRetry int = 5
-
-var colors = []int{
-	31, // red
-	32, // green
-	33, // yellow
-	34, // blue
-	35, // magenta
-	36, // cyan
-	37, // lightGray
-	90, // darkGray
-	91, // lightRed
-	92, // lightGreen
-	93, // lightYellow
-	94, // lightBlue
-	95, // lightPurple
-	96, // lightCyan
-	97, // white
-}
 
 // LogAggregator aggregates the logs for all the deployed pods.
 type LogAggregator struct {
-	muted          int32
-	creationTime   time.Time
-	output         io.Writer
-	retries        int
-	nextColorIndex int
-	lockColor      sync.Mutex
+	muted     int32
+	startTime time.Time
+	output    io.Writer
+
+	images    map[string]int
+	lockImage sync.RWMutex
+
+	containers     map[string]bool
+	lockContainers sync.Mutex
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
 func NewLogAggregator(out io.Writer) *LogAggregator {
 	return &LogAggregator{
-		creationTime: time.Now(),
-		output:       out,
-		retries:      defaultRetry,
+		output:     out,
+		images:     map[string]int{},
+		containers: map[string]bool{},
 	}
 }
 
-const streamRetryDelay = 1 * time.Second
+func (a *LogAggregator) Start(ctx context.Context, client corev1.CoreV1Interface) error {
+	a.startTime = time.Now()
 
-// TODO(@r2d4): Figure out how to mock this out. fake.NewSimpleClient
-// won't mock out restclient.Request and will just return a nil stream.
-var getStream = func(r *restclient.Request) (io.ReadCloser, error) {
-	return r.Stream()
-}
-
-func (a *LogAggregator) StreamLogs(client corev1.CoreV1Interface, image string) {
-	for i := 0; i < a.retries; i++ {
-		if err := a.streamLogs(client, image); err != nil {
-			logrus.Infof("Error getting logs %s", err)
-		}
-		time.Sleep(streamRetryDelay)
-	}
-}
-
-func (a *LogAggregator) SetCreationTime(t time.Time) {
-	a.creationTime = t
-}
-
-// nolint: interfacer
-func (a *LogAggregator) streamLogs(client corev1.CoreV1Interface, image string) error {
-	pods, err := client.Pods("").List(meta_v1.ListOptions{
+	watcher, err := client.Pods("").Watch(meta_v1.ListOptions{
 		IncludeUninitialized: true,
 	})
 	if err != nil {
-		return errors.Wrap(err, "getting pods")
+		return err
 	}
 
-	found := false
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case evt := <-watcher.ResultChan():
+				if evt.Type != watch.Added && evt.Type != watch.Modified {
+					continue
+				}
 
-	logrus.Infof("Looking for logs to stream for %s", image)
-	for _, p := range pods.Items {
-		for _, c := range p.Spec.Containers {
-			logrus.Debugf("Found container %s with image %s", c.Name, c.Image)
-			if c.Image != image {
-				continue
+				pod, ok := evt.Object.(*v1.Pod)
+				if !ok {
+					continue
+				}
+
+				color, present := a.podColor(pod)
+				if present {
+					go a.streamLogs(client, pod, color)
+				}
 			}
+		}
+	}()
 
-			logrus.Infof("Trying to stream logs from pod: %s container: %s", p.Name, c.Name)
-			pods := client.Pods(p.Namespace)
-			if err := WaitForPodReady(pods, p.Name); err != nil {
-				return errors.Wrap(err, "waiting for pod ready")
-			}
-			req := pods.GetLogs(p.Name, &v1.PodLogOptions{
-				Follow:    true,
-				Container: c.Name,
-				SinceTime: &meta_v1.Time{
-					Time: a.creationTime,
-				},
-			})
-			rc, err := getStream(req)
-			if err != nil {
-				return errors.Wrap(err, "setting up container log stream")
-			}
-			defer rc.Close()
+	return nil
+}
 
-			color := a.nextColor()
+// RegisterImage register an image for which pods need to be logged.
+func (a *LogAggregator) RegisterImage(image string, color int) {
+	a.lockImage.Lock()
+	a.images[image] = color
+	a.lockImage.Unlock()
+}
 
-			header := fmt.Sprintf("\033[1;%dm[%s %s]\033[0m", color, p.Name, c.Name)
-			if err := a.streamRequest(header, rc); err != nil {
-				return errors.Wrap(err, "streaming request")
-			}
+// podColor reads the images used by a pod and compares them to the list
+// of registered colors.
+func (a *LogAggregator) podColor(pod *v1.Pod) (color int, found bool) {
+	a.lockImage.RLock()
+	defer a.lockImage.RUnlock()
 
-			found = true
+	for _, container := range pod.Spec.Containers {
+		if color, present := a.images[container.Image]; present {
+			return color, true
 		}
 	}
 
-	if !found {
-		return fmt.Errorf("Image %s not found", image)
+	return -1, false
+}
+
+// nolint: interfacer
+func (a *LogAggregator) streamLogs(client corev1.CoreV1Interface, pod *v1.Pod, color int) error {
+	pods := client.Pods(pod.Namespace)
+	if err := WaitForPodReady(pods, pod.Name); err != nil {
+		return errors.Wrap(err, "waiting for pod ready")
+	}
+
+	for _, container := range pod.Status.ContainerStatuses {
+		a.lockContainers.Lock()
+		alreadyLogged := a.containers[container.ContainerID]
+		a.containers[container.ContainerID] = true
+		a.lockContainers.Unlock()
+		if alreadyLogged {
+			continue
+		}
+
+		logrus.Infof("Stream logs from pod: %s container: %s", pod.Name, container.Name)
+
+		req := pods.GetLogs(pod.Name, &v1.PodLogOptions{
+			Follow:    true,
+			Container: container.Name,
+			SinceTime: &meta_v1.Time{
+				Time: a.startTime,
+			},
+		})
+
+		rc, err := req.Stream()
+		if err != nil {
+			return errors.Wrap(err, "setting up container log stream")
+		}
+
+		p := prefix(pod, container, color)
+		go func() {
+			defer rc.Close()
+
+			if err := a.streamRequest(p, rc); err != nil {
+				logrus.Errorf("streaming request %s", err)
+			}
+		}()
 	}
 
 	return nil
 }
 
-func (a *LogAggregator) nextColor() int {
-	a.lockColor.Lock()
-	color := colors[a.nextColorIndex]
-	a.nextColorIndex = (a.nextColorIndex + 1) % len(colors)
-	a.lockColor.Unlock()
+func prefix(pod *v1.Pod, container v1.ContainerStatus, color int) string {
+	name := pod.Name
+	if pod.Name != container.Name {
+		name += " " + container.Name
+	}
 
-	return color
+	return fmt.Sprintf("\033[1;%dm[%s]\033[0m", color, name)
 }
 
 func (a *LogAggregator) streamRequest(header string, rc io.Reader) error {

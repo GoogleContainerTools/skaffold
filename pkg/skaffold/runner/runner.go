@@ -131,10 +131,8 @@ func (r *SkaffoldRunner) Run() error {
 		return r.dev(ctx, r.config.Build.Artifacts)
 	}
 
-	if _, _, err := r.buildAndDeploy(ctx, r.config.Build.Artifacts); err != nil {
-		return errors.Wrap(err, "run")
-	}
-	return nil
+	_, _, err := r.buildAndDeploy(ctx, r.config.Build.Artifacts, nil)
+	return err
 }
 
 func (r *SkaffoldRunner) dev(ctx context.Context, artifacts []*config.Artifact) error {
@@ -143,46 +141,61 @@ func (r *SkaffoldRunner) dev(ctx context.Context, artifacts []*config.Artifact) 
 		return err
 	}
 
+	colors := colors(artifacts)
 	logger := kubernetes.NewLogAggregator(r.opts.Output)
 
+	onBuildSuccess := func(bRes *build.BuildResult) {
+		// Update which images are logged with which color
+		for _, build := range bRes.Builds {
+			logger.RegisterImage(build.Tag, colors[build.ImageName])
+		}
+	}
+
 	onChange := func(artifacts []*config.Artifact) {
-		logger.SetCreationTime(time.Now())
 		logger.Mute()
 
-		bRes, _, err := r.buildAndDeploy(ctx, artifacts)
+		_, _, err := r.buildAndDeploy(ctx, artifacts, onBuildSuccess)
 		if err != nil {
 			// In dev mode, we only warn on pipeline errors
 			logrus.Warnf("run: %s", err)
 		}
-		logger.Unmute()
 
-		if bRes != nil {
-			for i := range bRes.Builds {
-				go logger.StreamLogs(r.kubeclient.CoreV1(), bRes.Builds[i].Tag)
-			}
-		}
 		fmt.Fprint(r.opts.Output, "Watching for changes...\n")
+		logger.Unmute()
 	}
 
+	// First build
 	onChange(artifacts)
+
+	// Start logs
+	if err = logger.Start(ctx, r.kubeclient.CoreV1()); err != nil {
+		return err
+	}
+
+	// Watch files and rebuild
 	watcher.Start(ctx, onChange)
 
 	return nil
 }
 
-func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, artifacts []*config.Artifact) (*build.BuildResult, *deploy.Result, error) {
+func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, artifacts []*config.Artifact, onBuildSuccess func(*build.BuildResult)) (*build.BuildResult, *deploy.Result, error) {
 	bRes, err := r.build(ctx, artifacts)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "build step")
+		return nil, nil, errors.Wrap(err, "build")
 	}
 
+	if onBuildSuccess != nil {
+		onBuildSuccess(bRes)
+	}
+
+	// Make sure all artifacts are redeployed. Not only those that were just rebuilt.
 	r.builds = mergeWithPreviousBuilds(bRes.Builds, r.builds)
 
 	dRes, err := r.deploy(ctx, &build.BuildResult{
 		Builds: r.builds,
 	})
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "build step")
+		return nil, nil, errors.Wrap(err, "deploy")
 	}
 
 	return bRes, dRes, nil
@@ -235,4 +248,30 @@ func mergeWithPreviousBuilds(builds, previous []build.Build) []build.Build {
 	}
 
 	return merged
+}
+
+var colorCodes = []int{
+	31, // red
+	32, // green
+	33, // yellow
+	34, // blue
+	35, // purple
+	36, // cyan
+	91, // lightRed
+	92, // lightGreen
+	93, // lightYellow
+	94, // lightBlue
+	95, // lightPurple
+	96, // lightCyan
+	97, // white
+}
+
+func colors(artifacts []*config.Artifact) map[string]int {
+	colors := map[string]int{}
+
+	for i, artifact := range artifacts {
+		colors[artifact.ImageName] = colorCodes[i%len(colorCodes)]
+	}
+
+	return colors
 }
