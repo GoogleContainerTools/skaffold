@@ -20,6 +20,7 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 
 	yaml "gopkg.in/yaml.v2"
+	"os"
 )
 
 // SkaffoldConfig is the top level config object
@@ -125,7 +126,9 @@ var DefaultRunSkaffoldConfig = &SkaffoldConfig{
 // The default config argument provides default values for the config,
 // which can be overridden if present in the config file.
 func Parse(config []byte, defaultConfig *SkaffoldConfig) (*SkaffoldConfig, error) {
-	if err := yaml.Unmarshal(config, defaultConfig); err != nil {
+	// lets expand any environment variable expressions in the config
+	expanded := os.ExpandEnv(string(config))
+	if err := yaml.Unmarshal([]byte(expanded), defaultConfig); err != nil {
 		return nil, err
 	}
 
