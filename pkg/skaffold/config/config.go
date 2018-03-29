@@ -19,8 +19,9 @@ package config
 import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 
-	yaml "gopkg.in/yaml.v2"
 	"os"
+
+	yaml "gopkg.in/yaml.v2"
 )
 
 // SkaffoldConfig is the top level config object
