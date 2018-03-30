@@ -95,36 +95,34 @@ git clone https://github.com/GoogleCloudPlatform/skaffold
 cd examples/getting-started
 ```
 
-1. Change the `imageName` and `IMAGE_NAME` parameters of `skaffold.yaml`. This should be a fully qualified image name that your docker client is configured to push to.
-
 1. Run `skaffold dev`.
 
 ```console
 $ skaffold dev
 Starting build...
-Found minikube or Docker for Desktop context, using local docker daemon.
-Sending build context to Docker daemon   7.68kB
+Found [minikube] context, using local docker daemon.
+Sending build context to Docker daemon  6.144kB
 Step 1/5 : FROM golang:1.9.4-alpine3.7
  ---> fb6e10bf973b
 Step 2/5 : WORKDIR /go/src/github.com/GoogleCloudPlatform/skaffold/examples/getting-started
  ---> Using cache
- ---> 259762612c45
+ ---> e9d19a54595b
 Step 3/5 : CMD ./app
  ---> Using cache
- ---> e2cb5a3e8812
+ ---> 154b6512c4d9
 Step 4/5 : COPY main.go .
  ---> Using cache
- ---> 149d709c4fd9
+ ---> e097086e73a7
 Step 5/5 : RUN go build -o app main.go
  ---> Using cache
- ---> a688409b7e69
-Successfully built a688409b7e69
-Successfully tagged 97e2a15e650c6470fb30e1cdcc808b59:latest
-Successfully tagged changeme:a688409b7e696dec944a36a1fe4063fa7b6726891be75809d4ec8f180e2ccc96
-Build complete.
+ ---> 9c4622e8f0e7
+Successfully built 9c4622e8f0e7
+Successfully tagged 930080f0965230e824a79b9e7eccffbd:latest
+Successfully tagged gcr.io/k8s-skaffold/skaffold-example:9c4622e8f0e7b5549a61a503bf73366a9cf7f7512aa8e9d64f3327a3c7fded1b
+Build complete in 657.426821ms
 Starting deploy...
-Deploying examples/getting-started/k8s-pod.yaml...
-Deploy complete.
+Deploying k8s-pod.yaml...
+Deploy complete in 173.770268ms
 [getting-started getting-started] Hello world!
 ```
 
@@ -170,15 +168,14 @@ Once you save the file, you should see the pipeline kick off again to redeploy y
 ### Run a deployment pipeline once
 There may be some cases where you don't want to run build and deploy continuously. To run once, use:
 ```console
-$ skaffold run -f skaffold.yaml
+$ skaffold run
 ```
 
-## [Build from Source](/docs/building.md)
+### More examples
 
-## Future
-
-1. Detect application information and create initial deployment manifests
-1. Create pipelines for CI/CD systems to facilitate transitions to production
+* [Deploying with Helm](./examples/helm-deployment)
+* [Microservices/Multiple applications](./examples/microservices)
+* [Deploying with no Kubernetes manifests](./examples/no-manifest)
 
 ## Community
 - [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users)
