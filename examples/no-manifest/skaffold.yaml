@@ -2,7 +2,7 @@ apiVersion: skaffold/v1alpha1
 kind: Config
 build:
   artifacts:
-  - imageName: gcr.io/k8s-skaffold/skaffold-example
+  - imageName: gcr.io/k8s-skaffold/skaffold-no-manifest-example
     workspace: .
   local: {}
 deploy:

@@ -24,7 +24,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 	"text/template"
 
@@ -34,6 +33,7 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // Slightly modified from kubectl run --dry-run
@@ -97,9 +97,12 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, b *build.Bu
 		}
 		return &Result{}, nil
 	}
-
-	for _, m := range k.DeployConfig.KubectlDeploy.Manifests {
-		logrus.Debugf("Deploying path: %s parameters: %s", m.Paths, m.Parameters)
+	manifests, err := util.ExpandPathsGlob(k.DeployConfig.KubectlDeploy.Manifests)
+	if err != nil {
+		return nil, errors.Wrap(err, "expanding kubectl manifest paths")
+	}
+	for _, m := range manifests {
+		logrus.Debugf("Deploying path: %s", m)
 		if err := k.deployManifest(out, b.Builds, m); err != nil {
 			return nil, errors.Wrap(err, "deploying manifests")
 		}
@@ -126,32 +129,30 @@ func generateManifest(b build.Build) (string, error) {
 	return out.String(), nil
 }
 
-func (k *KubectlDeployer) deployManifest(out io.Writer, b []build.Build, manifest config.Manifest) error {
-	params, err := JoinTagsToBuildResult(b, manifest.Parameters)
-	if err != nil {
-		return errors.Wrap(err, "joining template keys to image tag")
+func imageToBuild(b []build.Build) map[string]build.Build {
+	m := map[string]build.Build{}
+	for _, build := range b {
+		m[build.ImageName] = build
 	}
-	manifests, err := util.ExpandPathsGlob(manifest.Paths)
-	if err != nil {
-		return errors.Wrap(err, "expanding manifest paths")
+	return m
+}
+
+func (k *KubectlDeployer) deployManifest(out io.Writer, b []build.Build, manifest string) error {
+	imageToBuilds := imageToBuild(b)
+	if !util.IsSupportedKubernetesFormat(manifest) {
+		if !util.StrSliceContains(k.KubectlDeploy.Manifests, manifest) {
+			logrus.Infof("Refusing to deploy non {json, yaml} file %s", manifest)
+			logrus.Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
+			return nil
+		}
 	}
-	logrus.Debugf("Expanded manifests %s", strings.Join(manifests, "\n"))
-	for _, fname := range manifests {
-		if !util.IsSupportedKubernetesFormat(fname) {
-			if !util.StrSliceContains(manifest.Paths, fname) {
-				logrus.Infof("Refusing to deploy non {json, yaml} file %s", fname)
-				logrus.Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
-				continue
-			}
-		}
-		fmt.Fprintf(out, "Deploying %s...\n", fname)
-		f, err := util.Fs.Open(fname)
-		if err != nil {
-			return errors.Wrap(err, "opening manifest")
-		}
-		if err := k.deployManifestFile(f, params); err != nil {
-			return errors.Wrapf(err, "deploying manifest %s", fname)
-		}
+	fmt.Fprintf(out, "Deploying %s...\n", manifest)
+	f, err := util.Fs.Open(manifest)
+	if err != nil {
+		return errors.Wrap(err, "opening manifest")
+	}
+	if err := k.deployManifestFile(f, imageToBuilds); err != nil {
+		return errors.Wrapf(err, "deploying manifest %s", manifest)
 	}
 	return nil
 }
@@ -162,7 +163,10 @@ func (k *KubectlDeployer) deployManifestFile(r io.Reader, params map[string]buil
 		return errors.Wrap(err, "reading manifest")
 	}
 
-	manifest := replaceParameters(manifestContents.String(), params)
+	manifest, err := replaceParameters(manifestContents.Bytes(), params)
+	if err != nil {
+		return errors.Wrap(err, "replacing image in manifest")
+	}
 
 	cmd := exec.Command("kubectl", "--context", k.kubeContext, "apply", "-f", "-")
 	stdin := strings.NewReader(manifest)
@@ -173,25 +177,42 @@ func (k *KubectlDeployer) deployManifestFile(r io.Reader, params map[string]buil
 	return nil
 }
 
-func replaceParameters(manifest string, params map[string]build.Build) string {
-	// Sort parameters in descending length to replace the longest first.
-	names := paramNames(params)
-	sort.Slice(names, func(i, j int) bool { return len(names[i]) > len(names[j]) })
+func replaceParameters(contents []byte, params map[string]build.Build) (string, error) {
+	m := make(map[interface{}]interface{})
 
-	var oldnew []string
-	for _, name := range names {
-		oldnew = append(oldnew, []string{name, params[name].Tag}...)
+	if err := yaml.Unmarshal(contents, &m); err != nil {
+		return "", errors.Wrap(err, "reading kubernetes YAML")
+	}
+	replaced := recursiveReplace(m, params)
+	replacedMap := replaced.(map[string]interface{})
+	out, err := yaml.Marshal(replacedMap)
+	if err != nil {
+		return "", errors.Wrap(err, "marshalling yaml")
 	}
 
-	return strings.NewReplacer(oldnew...).Replace(manifest)
+	logrus.Debugf("Applying manifest: \n%s", out)
+	return string(out), nil
 }
 
-func paramNames(params map[string]build.Build) []string {
-	var names []string
-
-	for name := range params {
-		names = append(names, name)
+func recursiveReplace(i interface{}, params map[string]build.Build) interface{} {
+	switch t := i.(type) {
+	case map[interface{}]interface{}:
+		m := map[string]interface{}{}
+		for k, v := range t {
+			if k.(string) == "image" {
+				for img, b := range params {
+					if v.(string) == img {
+						v = b.Tag
+					}
+				}
+			}
+			m[k.(string)] = recursiveReplace(v, params)
+		}
+		return m
+	case []interface{}:
+		for i, v := range t {
+			t[i] = recursiveReplace(v, params)
+		}
 	}
-
-	return names
+	return i
 }
