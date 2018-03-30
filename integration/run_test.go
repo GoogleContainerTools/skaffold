@@ -1,6 +1,5 @@
 // +build integration
 
-
 /*
 Copyright 2018 Google LLC
 
@@ -59,7 +58,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestRunNoArgs(t *testing.T) {
+func TestRun(t *testing.T) {
 	type testObject struct {
 		name      string
 		namespace string
@@ -68,6 +67,7 @@ func TestRunNoArgs(t *testing.T) {
 	type testRunCase struct {
 		description string
 		dir         string
+		extraArgs   []string
 		deployments []testObject
 		pods        []testObject
 	}
@@ -93,11 +93,24 @@ func TestRunNoArgs(t *testing.T) {
 			},
 			dir: "../examples/no-manifest",
 		},
+		{
+			description: "annotated getting-started example",
+			pods: []testObject{
+				{
+					name:      "getting-started",
+					namespace: "default",
+				},
+			},
+			dir:       "../examples",
+			extraArgs: []string{"-f", "annotated-skaffold.yaml"},
+		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.description, func(t *testing.T) {
-			cmd := exec.Command("skaffold", "run")
+			args := []string{"run"}
+			args = append(args, testCase.extraArgs...)
+			cmd := exec.Command("skaffold", args...)
 			cmd.Dir = testCase.dir
 			out, outerr, err := util.RunCommand(cmd, nil)
 			if err != nil {
