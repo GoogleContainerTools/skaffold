@@ -5,10 +5,11 @@ build:
   # we provide a few strategies here, although you most likely won't need to care!
   # Valid values for tagPolicy are
   #
-  # sha256    - tags the image with the checksum of the built image (image id)
-  # gitCommit - tags the image with the git commit of your current repository
+  # sha256: {}    - tags the image with the checksum of the built image (image id)
+  # gitCommit: {} - tags the image with the git commit of your current repository
   
-  # tagPolicy: sha256
+  # tagPolicy:
+  #   sha256: {}
 
   # artifacts is a list of the actual images you're going to be building
   # you can include as many as you want here.

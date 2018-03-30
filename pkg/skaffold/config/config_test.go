@@ -19,7 +19,6 @@ package config
 import (
 	"testing"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
 )
 
@@ -43,7 +42,7 @@ var configA = &SkaffoldConfig{
 	APIVersion: "skaffold/v1alpha1",
 	Kind:       "Config",
 	Build: BuildConfig{
-		TagPolicy: constants.TagStrategySha256,
+		TagPolicy: TagPolicy{ShaTagger: &ShaTagger{}},
 		Artifacts: []*Artifact{
 			{
 				ImageName: "example",

@@ -26,7 +26,6 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/watch"
@@ -133,7 +132,7 @@ func TestNewForConfig(t *testing.T) {
 			description: "local builder config",
 			config: &config.SkaffoldConfig{
 				Build: config.BuildConfig{
-					TagPolicy: constants.TagStrategySha256,
+					TagPolicy: config.TagPolicy{ShaTagger: &config.ShaTagger{}},
 					BuildType: config.BuildType{
 						LocalBuild: &config.LocalBuild{},
 					},
@@ -174,7 +173,7 @@ func TestNewForConfig(t *testing.T) {
 			description: "unknown tagger",
 			config: &config.SkaffoldConfig{
 				Build: config.BuildConfig{
-					TagPolicy: "bad tag strategy",
+					TagPolicy: config.TagPolicy{},
 					BuildType: config.BuildType{
 						LocalBuild: &config.LocalBuild{},
 					},
@@ -186,7 +185,7 @@ func TestNewForConfig(t *testing.T) {
 			description: "unknown deployer",
 			config: &config.SkaffoldConfig{
 				Build: config.BuildConfig{
-					TagPolicy: constants.TagStrategySha256,
+					TagPolicy: config.TagPolicy{ShaTagger: &config.ShaTagger{}},
 					BuildType: config.BuildType{
 						LocalBuild: &config.LocalBuild{},
 					},
@@ -199,7 +198,7 @@ func TestNewForConfig(t *testing.T) {
 			description: "nil deployer",
 			config: &config.SkaffoldConfig{
 				Build: config.BuildConfig{
-					TagPolicy: constants.TagStrategySha256,
+					TagPolicy: config.TagPolicy{ShaTagger: &config.ShaTagger{}},
 					BuildType: config.BuildType{
 						LocalBuild: &config.LocalBuild{},
 					},

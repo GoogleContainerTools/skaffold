@@ -17,8 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
-
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -37,9 +35,21 @@ type SkaffoldConfig struct {
 // BuildConfig contains all the configuration for the build steps
 type BuildConfig struct {
 	Artifacts []*Artifact `yaml:"artifacts"`
-	TagPolicy string      `yaml:"tagPolicy"`
+	TagPolicy TagPolicy   `yaml:",inline"`
 	BuildType `yaml:",inline"`
 }
+
+// TagPolicy contains all the configuration for the tagging step
+type TagPolicy struct {
+	GitTagger *GitTagger `yaml:"git"`
+	ShaTagger *ShaTagger `yaml:"sha256"`
+}
+
+// ShaTagger contains the configuration for the SHA tagger.
+type ShaTagger struct{}
+
+// GitTagger contains the configuration for the git tagger.
+type GitTagger struct{}
 
 // BuildType contains the specific implementation and parameters needed
 // for the build step. Only one field should be populated.
@@ -103,7 +113,7 @@ type Artifact struct {
 // Each API is responsible for setting its own defaults that are not top level.
 var DefaultDevSkaffoldConfig = &SkaffoldConfig{
 	Build: BuildConfig{
-		TagPolicy: constants.DefaultDevTagStrategy,
+		TagPolicy: TagPolicy{ShaTagger: &ShaTagger{}},
 	},
 }
 
@@ -112,7 +122,7 @@ var DefaultDevSkaffoldConfig = &SkaffoldConfig{
 // Each API is responsible for setting its own defaults that are not top level.
 var DefaultRunSkaffoldConfig = &SkaffoldConfig{
 	Build: BuildConfig{
-		TagPolicy: constants.DefaultRunTagStrategy,
+		TagPolicy: TagPolicy{GitTagger: &GitTagger{}},
 	},
 }
 

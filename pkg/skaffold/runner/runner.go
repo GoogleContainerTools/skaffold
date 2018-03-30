@@ -112,15 +112,15 @@ func getDeployer(cfg *config.DeployConfig, kubeContext string) (deploy.Deployer,
 	return nil, fmt.Errorf("Unknown deployer for config %+v", cfg)
 }
 
-func newTaggerForConfig(tagStrategy string) (tag.Tagger, error) {
-	switch tagStrategy {
-	case constants.TagStrategySha256:
+func newTaggerForConfig(t config.TagPolicy) (tag.Tagger, error) {
+	if t.ShaTagger != nil {
 		return &tag.ChecksumTagger{}, nil
-	case constants.TagStrategyGitCommit:
+	}
+	if t.GitTagger != nil {
 		return &tag.GitCommit{}, nil
 	}
 
-	return nil, fmt.Errorf("Unknown tagger for strategy %s", tagStrategy)
+	return nil, fmt.Errorf("Unknown tagger for strategy %s", t)
 }
 
 // Run runs the skaffold build and deploy pipeline.

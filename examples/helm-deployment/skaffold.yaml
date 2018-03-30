@@ -1,7 +1,8 @@
 apiVersion: skaffold/v1alpha1
 kind: Config
 build:
-  tagPolicy: sha256
+  tagPolicy:
+    sha256: {}
   artifacts:
   - imageName: skaffold-helm
     workspace: .
