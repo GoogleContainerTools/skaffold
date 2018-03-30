@@ -9,7 +9,4 @@ build:
 deploy:
   kubectl:
     manifests:
-    - paths:
-      - k8s-*
-      parameters:
-        IMAGE_NAME: gcr.io/k8s-skaffold/skaffold-gcb
+    - k8s-*
