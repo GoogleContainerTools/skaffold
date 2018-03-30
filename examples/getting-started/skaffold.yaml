@@ -8,5 +8,4 @@ build:
 deploy:
   kubectl:
     manifests:
-    - paths:
       - k8s-*
