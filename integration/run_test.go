@@ -28,6 +28,9 @@ import (
 
 	kubernetesutil "github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,6 +38,8 @@ var gkeZone = flag.String("gke-zone", "us-central1-a", "gke zone")
 var gkeClusterName = flag.String("gke-cluster-name", "integration-tests", "name of the integration test cluster")
 var gcpProject = flag.String("gcp-project", "k8s-skaffold", "the gcp project where the integration test cluster lives")
 var remote = flag.Bool("remote", false, "if true, run tests on a remote GKE cluster")
+
+var client kubernetes.Interface
 
 func TestMain(m *testing.M) {
 	flag.Parse()
