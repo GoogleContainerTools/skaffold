@@ -1,7 +1,7 @@
 steps:
 # Build the container that will do the go build.
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '--target', 'build', '-t', 'builder', '-f', 'deploy/skaffold/Dockerfile', '.']
+    args: ['build', '-t', 'builder', '-f', 'deploy/skaffold/Dockerfile', '.']
 # Do the go build.
   - name: 'builder'
     args: ['make', 'cross']
