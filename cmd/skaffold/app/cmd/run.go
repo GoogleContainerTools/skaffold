@@ -29,7 +29,7 @@ func NewCmdRun(out io.Writer) *cobra.Command {
 		Short: "Runs a pipeline file",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := runSkaffold(out, false, filename); err != nil {
-				logrus.Errorf("run: %s", err)
+				logrus.Fatalf("run: %s", err)
 			}
 		},
 		Args: cobra.NoArgs,
