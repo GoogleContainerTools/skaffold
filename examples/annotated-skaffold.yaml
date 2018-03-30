@@ -19,7 +19,7 @@ build:
     # dockerfilePath: Dockerfile # not required if its just $workspace/Dockerfile
 
     # workspace is the path to your dockerfile context
-    workspace: .
+    workspace: ../examples/getting-started
 
   # This next section is where you'll put your specific builder configuration.
   # Here, we're using a local builder, which simply builds using the host docker
@@ -52,4 +52,4 @@ deploy:
     # project outside this repository
     # - /home/mrick/path/to/different/project/deploy/*
     #
-    - k8s-*
+    - ../examples/getting-started/k8s-*

@@ -70,6 +70,8 @@ func TestRun(t *testing.T) {
 		extraArgs   []string
 		deployments []testObject
 		pods        []testObject
+
+		remoteOnly bool
 	}
 
 	var testCases = []testRunCase{
@@ -104,10 +106,37 @@ func TestRun(t *testing.T) {
 			dir:       "../examples",
 			extraArgs: []string{"-f", "annotated-skaffold.yaml"},
 		},
+		// // Don't run this test for now. It takes awhile to download all the
+		// // dependencies
+		// {
+		// 	description: "repository root skaffold.yaml",
+		// 	pods: []testObject{
+		// 		{
+		// 			name:      "skaffold",
+		// 			namespace: "default",
+		// 		},
+		// 	},
+		// 	dir: "../",
+		// },
+		{
+			description: "gcb builder example",
+			pods: []testObject{
+				{
+					name:      "getting-started",
+					namespace: "default",
+				},
+			},
+			dir:        "../examples/getting-started",
+			extraArgs:  []string{"-f", "skaffold-gcb.yaml"},
+			remoteOnly: true,
+		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.description, func(t *testing.T) {
+			if !*remote && testCase.remoteOnly {
+				t.Skip("skipping remote only test")
+			}
 			args := []string{"run"}
 			args = append(args, testCase.extraArgs...)
 			cmd := exec.Command("skaffold", args...)

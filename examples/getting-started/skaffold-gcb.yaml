@@ -2,7 +2,7 @@ apiVersion: skaffold/v1alpha1
 kind: Config
 build:
   artifacts:
-  - imageName: gcr.io/k8s-skaffold/skaffold-gcb
+  - imageName: gcr.io/k8s-skaffold/skaffold-example
     workspace: .
   googleCloudBuild:
     projectId: k8s-skaffold
