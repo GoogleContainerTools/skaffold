@@ -19,6 +19,8 @@ package transform
 import (
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/util"
@@ -43,10 +45,32 @@ func ToV1Alpha2(vc util.VersionedConfig) (util.VersionedConfig, error) {
 		}
 	}
 
+	var newHelmDeploy *v1alpha1.HelmDeploy
+	if oldConfig.Deploy.DeployType.HelmDeploy != nil {
+		newHelmDeploy = oldConfig.Deploy.DeployType.HelmDeploy
+	}
+	var newKubectlDeploy *v1alpha2.KubectlDeploy
+	if oldConfig.Deploy.DeployType.KubectlDeploy != nil {
+		newManifests := make([]string, 0)
+		logrus.Warn("Ignoring manifest parameters when transforming v1alpha1 config; check kubernetes yaml before running skaffold")
+		for _, manifest := range oldConfig.Deploy.DeployType.KubectlDeploy.Manifests {
+			newManifests = append(newManifests, manifest.Paths...)
+		}
+		newKubectlDeploy = &v1alpha2.KubectlDeploy{
+			Manifests: newManifests,
+		}
+	}
+
 	newConfig := &v1alpha2.SkaffoldConfig{
 		APIVersion: v1alpha2.Version,
 		Kind:       oldConfig.Kind,
-		Deploy:     oldConfig.Deploy,
+		Deploy: v1alpha2.DeployConfig{
+			Name: oldConfig.Deploy.Name,
+			DeployType: v1alpha2.DeployType{
+				HelmDeploy:    newHelmDeploy,
+				KubectlDeploy: newKubectlDeploy,
+			},
+		},
 		Build: v1alpha2.BuildConfig{
 			Artifacts: oldConfig.Build.Artifacts,
 			BuildType: oldConfig.Build.BuildType,

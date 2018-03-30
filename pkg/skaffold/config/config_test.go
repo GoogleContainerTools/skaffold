@@ -19,6 +19,9 @@ package config
 import (
 	"testing"
 
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha1"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
 )
 
@@ -147,12 +150,8 @@ func TestParseConfig(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-<<<<<<< HEAD
 			cfg, err := Parse([]byte(test.config), test.dev)
 
-=======
-			cfg, err := GetConfig([]byte(test.config), true, true)
->>>>>>> fix tests
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cfg)
 		})
 	}

@@ -134,15 +134,15 @@ func TestNewForConfig(t *testing.T) {
 		{
 			description: "local builder config",
 			config: &config.SkaffoldConfig{
-				Build: config.BuildConfig{
-					TagPolicy: config.TagPolicy{ShaTagger: &config.ShaTagger{}},
-					BuildType: config.BuildType{
-						LocalBuild: &config.LocalBuild{},
+				Build: v1alpha2.BuildConfig{
+					TagPolicy: v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}},
+					BuildType: v1alpha1.BuildType{
+						LocalBuild: &v1alpha1.LocalBuild{},
 					},
 				},
-				Deploy: v1alpha1.DeployConfig{
-					DeployType: v1alpha1.DeployType{
-						KubectlDeploy: &v1alpha1.KubectlDeploy{},
+				Deploy: v1alpha2.DeployConfig{
+					DeployType: v1alpha2.DeployType{
+						KubectlDeploy: &v1alpha2.KubectlDeploy{},
 					},
 				},
 			},
@@ -157,9 +157,9 @@ func TestNewForConfig(t *testing.T) {
 						LocalBuild: &v1alpha1.LocalBuild{},
 					},
 				},
-				Deploy: v1alpha1.DeployConfig{
-					DeployType: v1alpha1.DeployType{
-						KubectlDeploy: &v1alpha1.KubectlDeploy{},
+				Deploy: v1alpha2.DeployConfig{
+					DeployType: v1alpha2.DeployType{
+						KubectlDeploy: &v1alpha2.KubectlDeploy{},
 					},
 				},
 			},
@@ -176,10 +176,10 @@ func TestNewForConfig(t *testing.T) {
 		{
 			description: "unknown tagger",
 			config: &config.SkaffoldConfig{
-				Build: config.BuildConfig{
-					TagPolicy: config.TagPolicy{},
-					BuildType: config.BuildType{
-						LocalBuild: &config.LocalBuild{},
+				Build: v1alpha2.BuildConfig{
+					TagPolicy: v1alpha2.TagPolicy{},
+					BuildType: v1alpha1.BuildType{
+						LocalBuild: &v1alpha1.LocalBuild{},
 					},
 				}},
 			shouldErr: true,
@@ -188,16 +188,10 @@ func TestNewForConfig(t *testing.T) {
 		{
 			description: "unknown deployer",
 			config: &config.SkaffoldConfig{
-				Build: config.BuildConfig{
-					TagPolicy: config.TagPolicy{ShaTagger: &config.ShaTagger{}},
-					BuildType: config.BuildType{
-						LocalBuild: &config.LocalBuild{},
-					},
-			config: &config.SkaffoldConfig{
-				Build: config.BuildConfig{
-					TagPolicy: config.TagPolicy{ShaTagger: &config.ShaTagger{}},
-					BuildType: config.BuildType{
-						LocalBuild: &config.LocalBuild{},
+				Build: v1alpha2.BuildConfig{
+					TagPolicy: v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}},
+					BuildType: v1alpha1.BuildType{
+						LocalBuild: &v1alpha1.LocalBuild{},
 					},
 				},
 			},

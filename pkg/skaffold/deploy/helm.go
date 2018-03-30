@@ -24,19 +24,20 @@ import (
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha1"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 type HelmDeployer struct {
-	*v1alpha1.DeployConfig
+	*v1alpha2.DeployConfig
 	kubeContext string
 }
 
 // NewHelmDeployer returns a new HelmDeployer for a DeployConfig filled
 // with the needed configuration for `helm`
-func NewHelmDeployer(cfg *v1alpha1.DeployConfig, kubeContext string) *HelmDeployer {
+func NewHelmDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) *HelmDeployer {
 	return &HelmDeployer{
 		DeployConfig: cfg,
 		kubeContext:  kubeContext,

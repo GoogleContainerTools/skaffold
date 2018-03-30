@@ -2,7 +2,7 @@ apiVersion: skaffold/v1alpha2
 kind: Config
 build:
   artifacts:
-  - imageName: gcr.io/nick-cloudbuild/skaffold-example
+  - imageName: gcr.io/k8s-skaffold/skaffold-example
     workspace: .
 deploy:
   kubectl:

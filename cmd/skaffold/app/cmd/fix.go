@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 
 	yaml "gopkg.in/yaml.v2"
 

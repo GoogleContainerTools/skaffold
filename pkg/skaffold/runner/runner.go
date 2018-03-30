@@ -104,7 +104,7 @@ func getBuilder(cfg *v1alpha2.BuildConfig, kubeContext string) (build.Builder, e
 	return nil, fmt.Errorf("Unknown builder for config %+v", cfg)
 }
 
-func getDeployer(cfg *v1alpha1.DeployConfig, kubeContext string) (deploy.Deployer, error) {
+func getDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) (deploy.Deployer, error) {
 	if cfg.KubectlDeploy != nil {
 		return deploy.NewKubectlDeployer(cfg, kubeContext), nil
 	}
