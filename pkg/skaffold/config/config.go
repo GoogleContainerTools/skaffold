@@ -77,8 +77,7 @@ type KubectlDeploy struct {
 }
 
 type Manifest struct {
-	Paths  []string `yaml:"paths"`
-	Images []string `yaml:"images"`
+	Paths []string `yaml:"paths"`
 }
 
 type HelmDeploy struct {

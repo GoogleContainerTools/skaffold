@@ -49,7 +49,7 @@ spec:
     spec:
       containers:
       - name: leeroy-web
-        image: leeroy-web-image
+        image: leeroy-web
         ports:
 		- containerPort: 8080
 `
@@ -72,8 +72,7 @@ func TestKubectlRun(t *testing.T) {
 					KubectlDeploy: &config.KubectlDeploy{
 						Manifests: []config.Manifest{
 							{
-								Paths:  []string{"test/deployment.yaml"},
-								Images: []string{"leeroy-web-image"},
+								Paths: []string{"test/deployment.yaml"},
 							},
 						},
 					},
@@ -82,8 +81,8 @@ func TestKubectlRun(t *testing.T) {
 			b: &build.BuildResult{
 				Builds: []build.Build{
 					{
-						ImageName: "leeroy-web-image",
-						Tag:       "leeroy-web-image:v1",
+						ImageName: "leeroy-web",
+						Tag:       "leeroy-web:v1",
 					},
 				},
 			},
@@ -96,8 +95,7 @@ func TestKubectlRun(t *testing.T) {
 					KubectlDeploy: &config.KubectlDeploy{
 						Manifests: []config.Manifest{
 							{
-								Paths:  []string{"test/not_deployment.yaml"},
-								Images: []string{"leeroy-web-image"},
+								Paths: []string{"test/not_deployment.yaml"},
 							},
 						},
 					},
@@ -119,8 +117,7 @@ func TestKubectlRun(t *testing.T) {
 					KubectlDeploy: &config.KubectlDeploy{
 						Manifests: []config.Manifest{
 							{
-								Paths:  []string{"test/deployment.yaml"},
-								Images: []string{"leeroy-web-image"},
+								Paths: []string{"test/deployment.yaml"},
 							},
 						},
 					},
@@ -130,8 +127,8 @@ func TestKubectlRun(t *testing.T) {
 			b: &build.BuildResult{
 				Builds: []build.Build{
 					{
-						ImageName: "leeroy-web-image",
-						Tag:       "leeroy-web-image:123",
+						ImageName: "leeroy-web",
+						Tag:       "leeroy-web:123",
 					},
 				},
 			},
@@ -145,8 +142,7 @@ func TestKubectlRun(t *testing.T) {
 					KubectlDeploy: &config.KubectlDeploy{
 						Manifests: []config.Manifest{
 							{
-								Paths:  []string{"test/not_deployment.yaml"},
-								Images: []string{"leeroy-web-image"},
+								Paths: []string{"test/not_deployment.yaml"},
 							},
 						},
 					},
@@ -156,8 +152,8 @@ func TestKubectlRun(t *testing.T) {
 			b: &build.BuildResult{
 				Builds: []build.Build{
 					{
-						ImageName: "leeroy-web-image",
-						Tag:       "leeroy-web-image:123",
+						ImageName: "leeroy-web",
+						Tag:       "leeroy-web:123",
 					},
 				},
 			},
@@ -187,20 +183,5 @@ func TestKubectlRun(t *testing.T) {
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
 		})
 
-	}
-}
-
-func TestReplaceParameters(t *testing.T) {
-	manifest := "[IMAGE_NAME][IMAGE_NAME_OTHER][OTHER]"
-	expectedManifest := "[image:v1][image_other:v1][other:v1]"
-
-	manifest = replaceParameters(manifest, map[string]build.Build{
-		"IMAGE_NAME":       {Tag: "image:v1"},
-		"IMAGE_NAME_OTHER": {Tag: "image_other:v1"},
-		"OTHER":            {Tag: "other:v1"},
-	})
-
-	if manifest != expectedManifest {
-		t.Errorf("Expected: '%s'. Got: '%s'", expectedManifest, manifest)
 	}
 }

@@ -24,7 +24,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 	"text/template"
 
@@ -34,6 +33,7 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // Slightly modified from kubectl run --dry-run
@@ -99,7 +99,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, b *build.Bu
 	}
 
 	for _, m := range k.DeployConfig.KubectlDeploy.Manifests {
-		logrus.Debugf("Deploying path: %s parameters: %s", m.Paths, m.Images)
+		logrus.Debugf("Deploying path: %s", m.Paths)
 		if err := k.deployManifest(out, b.Builds, m); err != nil {
 			return nil, errors.Wrap(err, "deploying manifests")
 		}
@@ -167,7 +167,10 @@ func (k *KubectlDeployer) deployManifestFile(r io.Reader, params map[string]buil
 		return errors.Wrap(err, "reading manifest")
 	}
 
-	manifest := replaceParameters(manifestContents.String(), params)
+	manifest, err := replaceParameters(manifestContents.Bytes(), params)
+	if err != nil {
+		return errors.Wrap(err, "replacing image in manifest")
+	}
 
 	cmd := exec.Command("kubectl", "--context", k.kubeContext, "apply", "-f", "-")
 	stdin := strings.NewReader(manifest)
@@ -178,25 +181,42 @@ func (k *KubectlDeployer) deployManifestFile(r io.Reader, params map[string]buil
 	return nil
 }
 
-func replaceParameters(manifest string, params map[string]build.Build) string {
-	// Sort parameters in descending length to replace the longest first.
-	names := paramNames(params)
-	sort.Slice(names, func(i, j int) bool { return len(names[i]) > len(names[j]) })
+func replaceParameters(contents []byte, params map[string]build.Build) (string, error) {
+	m := make(map[interface{}]interface{})
 
-	var oldnew []string
-	for _, name := range names {
-		oldnew = append(oldnew, []string{name, params[name].Tag}...)
+	if err := yaml.Unmarshal(contents, &m); err != nil {
+		return "", errors.Wrap(err, "reading kubernetes YAML")
+	}
+	replaced := recursiveReplace(m, params)
+	replacedMap := replaced.(map[string]interface{})
+	out, err := yaml.Marshal(replacedMap)
+	if err != nil {
+		return "", errors.Wrap(err, "marshalling yaml")
 	}
 
-	return strings.NewReplacer(oldnew...).Replace(manifest)
+	logrus.Debugf("Applying manifest: \n%s", out)
+	return string(out), nil
 }
 
-func paramNames(params map[string]build.Build) []string {
-	var names []string
-
-	for name := range params {
-		names = append(names, name)
+func recursiveReplace(i interface{}, params map[string]build.Build) interface{} {
+	switch t := i.(type) {
+	case map[interface{}]interface{}:
+		m := map[string]interface{}{}
+		for k, v := range t {
+			if k.(string) == "image" {
+				for img, b := range params {
+					if v.(string) == img {
+						v = b.Tag
+					}
+				}
+			}
+			m[k.(string)] = recursiveReplace(v, params)
+		}
+		return m
+	case []interface{}:
+		for i, v := range t {
+			t[i] = recursiveReplace(v, params)
+		}
 	}
-
-	return names
+	return i
 }

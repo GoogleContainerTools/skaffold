@@ -10,5 +10,3 @@ deploy:
     manifests:
     - paths:
       - k8s-*
-      images:
-      - gcr.io/k8s-skaffold/skaffold-example
