@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: leeroy-app
+  labels:
+    app: leeroy-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: leeroy-app
+  template:
+    metadata:
+      labels:
+        app: leeroy-app
+    spec:
+      containers:
+      - name: leeroy-app
+        image: gcr.io/k8s-skaffold/leeroy-web:v99-rc.1
+        ports:
+        - containerPort: 50051
