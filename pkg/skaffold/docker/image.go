@@ -56,19 +56,6 @@ func RunBuild(ctx context.Context, cli DockerAPIClient, opts *BuildOptions) erro
 		AuthConfigs: authConfigs,
 	}
 
-	///////////////////////////////////////////
-	// Moby TarWithOptions method
-	///////////////////////////////////////////
-	// buildCtx, err := CreateMobyTarContext(filepath.Join(opts.ContextDir, opts.Dockerfile), opts.ContextDir)
-	// if err != nil {
-	// 	return errors.Wrap(err, "creating docker context")
-	// }
-	// progressOutput := streamformatter.NewProgressOutput(opts.ProgressBuf)
-	// body := progress.NewProgressReader(buildCtx, progressOutput, 0, "", "Sending build context to Docker daemon")
-
-	///////////////////////////////////////////
-	// io.Pipe method
-	///////////////////////////////////////////
 	buildCtx, buildCtxWriter := io.Pipe()
 	dockerfilePath := filepath.Join(opts.ContextDir, opts.Dockerfile)
 	go func() {
