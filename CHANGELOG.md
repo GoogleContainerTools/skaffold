@@ -1,3 +1,37 @@
+# v0.3.0 Release - 3/29/2018
+New Features
+* Logs are now colored by image deployment, different container instances will get different colors in `skaffold dev`
+* Better and less error prone logging
+* All logs are shown for a pod with deployed containers
+* Helm deployer now supports chart versions
+* Helm deployer now supports custom values file path
+* Logs are now muted during the build and deploy cycle
+* Integration tests added
+* Conditional rebuilding of changed artifacts
+* Builds only triggered after a quiet period
+* Duration of build and deploy is now logged
+
+
+Bug Fixes
+* .dockerignore now works if context is parent directory
+* removed duplicate logs
+* private registry authentication issues are fixed
+* no logs are missed
+
+Breaking config changes
+* tagPolicy is now a struct instead of a string, to convert to the new config format
+
+```
+tagPolicy: gitCommit
+```
+becomes
+```
+tagPolicy:
+    gitCommit: {}
+```
+
+* kubectl deployer no longer needs templated keys in manifests. Simply just make sure the artifacts in your skaffold.yaml correspond to the images in your kubernetes manifests and they will be automatically updated.
+
 # v0.2.0 Release - 3/9/2018
 
 New Features
