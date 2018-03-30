@@ -51,8 +51,7 @@ spec:
       - name: leeroy-web
         image: leeroy-web
         ports:
-		- containerPort: 8080
-`
+        - containerPort: 8080`
 
 func TestKubectlRun(t *testing.T) {
 	var tests = []struct {
@@ -70,11 +69,7 @@ func TestKubectlRun(t *testing.T) {
 			cfg: &config.DeployConfig{
 				DeployType: config.DeployType{
 					KubectlDeploy: &config.KubectlDeploy{
-						Manifests: []config.Manifest{
-							{
-								Paths: []string{"test/deployment.yaml"},
-							},
-						},
+						Manifests: []string{"test/deployment.yaml"},
 					},
 				},
 			},
@@ -93,19 +88,15 @@ func TestKubectlRun(t *testing.T) {
 			cfg: &config.DeployConfig{
 				DeployType: config.DeployType{
 					KubectlDeploy: &config.KubectlDeploy{
-						Manifests: []config.Manifest{
-							{
-								Paths: []string{"test/not_deployment.yaml"},
-							},
-						},
+						Manifests: []string{"test/deployment.yaml"},
 					},
 				},
 			},
 			b: &build.BuildResult{
 				Builds: []build.Build{
 					{
-						ImageName: "leeroy-web-image",
-						Tag:       "leeroy-web-image:123",
+						ImageName: "leeroy-web",
+						Tag:       "leeroy-web:123",
 					},
 				},
 			},
@@ -115,11 +106,7 @@ func TestKubectlRun(t *testing.T) {
 			cfg: &config.DeployConfig{
 				DeployType: config.DeployType{
 					KubectlDeploy: &config.KubectlDeploy{
-						Manifests: []config.Manifest{
-							{
-								Paths: []string{"test/deployment.yaml"},
-							},
-						},
+						Manifests: []string{"test/deployment.yaml"},
 					},
 				},
 			},
@@ -140,11 +127,7 @@ func TestKubectlRun(t *testing.T) {
 			cfg: &config.DeployConfig{
 				DeployType: config.DeployType{
 					KubectlDeploy: &config.KubectlDeploy{
-						Manifests: []config.Manifest{
-							{
-								Paths: []string{"test/not_deployment.yaml"},
-							},
-						},
+						Manifests: []string{"test/deployment.yaml"},
 					},
 				},
 			},

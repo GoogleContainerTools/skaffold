@@ -73,11 +73,7 @@ type DeployType struct {
 
 // KubectlDeploy contains the configuration needed for deploying with `kubectl apply`
 type KubectlDeploy struct {
-	Manifests []Manifest `yaml:"manifests"`
-}
-
-type Manifest struct {
-	Paths []string `yaml:"paths"`
+	Manifests []string `yaml:"manifests"`
 }
 
 type HelmDeploy struct {

@@ -97,9 +97,12 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, b *build.Bu
 		}
 		return &Result{}, nil
 	}
-
-	for _, m := range k.DeployConfig.KubectlDeploy.Manifests {
-		logrus.Debugf("Deploying path: %s", m.Paths)
+	manifests, err := util.ExpandPathsGlob(k.DeployConfig.KubectlDeploy.Manifests)
+	if err != nil {
+		return nil, errors.Wrap(err, "expanding kubectl manifest paths")
+	}
+	for _, m := range manifests {
+		logrus.Debugf("Deploying path: %s", m)
 		if err := k.deployManifest(out, b.Builds, m); err != nil {
 			return nil, errors.Wrap(err, "deploying manifests")
 		}
@@ -134,29 +137,22 @@ func imageToBuild(b []build.Build) map[string]build.Build {
 	return m
 }
 
-func (k *KubectlDeployer) deployManifest(out io.Writer, b []build.Build, manifest config.Manifest) error {
+func (k *KubectlDeployer) deployManifest(out io.Writer, b []build.Build, manifest string) error {
 	imageToBuilds := imageToBuild(b)
-	manifests, err := util.ExpandPathsGlob(manifest.Paths)
-	if err != nil {
-		return errors.Wrap(err, "expanding manifest paths")
+	if !util.IsSupportedKubernetesFormat(manifest) {
+		if !util.StrSliceContains(k.KubectlDeploy.Manifests, manifest) {
+			logrus.Infof("Refusing to deploy non {json, yaml} file %s", manifest)
+			logrus.Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
+			return nil
+		}
 	}
-	logrus.Debugf("Expanded manifests %s", strings.Join(manifests, "\n"))
-	for _, fname := range manifests {
-		if !util.IsSupportedKubernetesFormat(fname) {
-			if !util.StrSliceContains(manifest.Paths, fname) {
-				logrus.Infof("Refusing to deploy non {json, yaml} file %s", fname)
-				logrus.Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
-				continue
-			}
-		}
-		fmt.Fprintf(out, "Deploying %s...\n", fname)
-		f, err := util.Fs.Open(fname)
-		if err != nil {
-			return errors.Wrap(err, "opening manifest")
-		}
-		if err := k.deployManifestFile(f, imageToBuilds); err != nil {
-			return errors.Wrapf(err, "deploying manifest %s", fname)
-		}
+	fmt.Fprintf(out, "Deploying %s...\n", manifest)
+	f, err := util.Fs.Open(manifest)
+	if err != nil {
+		return errors.Wrap(err, "opening manifest")
+	}
+	if err := k.deployManifestFile(f, imageToBuilds); err != nil {
+		return errors.Wrapf(err, "deploying manifest %s", manifest)
 	}
 	return nil
 }
