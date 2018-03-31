@@ -35,23 +35,24 @@ import (
 
 // LogAggregator aggregates the logs for all the deployed pods.
 type LogAggregator struct {
-	muted     int32
-	startTime time.Time
-	output    io.Writer
+	output      io.Writer
+	podSelector PodSelector
+	colorPicker ColorPicker
 
-	images    map[string]int
-	lockImage sync.RWMutex
-
-	containers     map[string]bool
-	lockContainers sync.Mutex
+	muted             int32
+	startTime         time.Time
+	trackedContainers trackedContainers
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
-func NewLogAggregator(out io.Writer) *LogAggregator {
+func NewLogAggregator(out io.Writer, podSelector PodSelector, colorPicker ColorPicker) *LogAggregator {
 	return &LogAggregator{
-		output:     out,
-		images:     map[string]int{},
-		containers: map[string]bool{},
+		output:      out,
+		podSelector: podSelector,
+		colorPicker: colorPicker,
+		trackedContainers: trackedContainers{
+			ids: map[string]bool{},
+		},
 	}
 }
 
@@ -80,9 +81,8 @@ func (a *LogAggregator) Start(ctx context.Context, client corev1.CoreV1Interface
 					continue
 				}
 
-				color, present := a.podColor(pod)
-				if present {
-					go a.streamLogs(client, pod, color)
+				if a.podSelector.Select(pod) {
+					go a.streamLogs(client, pod)
 				}
 			}
 		}
@@ -91,41 +91,18 @@ func (a *LogAggregator) Start(ctx context.Context, client corev1.CoreV1Interface
 	return nil
 }
 
-// RegisterImage register an image for which pods need to be logged.
-func (a *LogAggregator) RegisterImage(image string, color int) {
-	a.lockImage.Lock()
-	a.images[image] = color
-	a.lockImage.Unlock()
-}
-
-// podColor reads the images used by a pod and compares them to the list
-// of registered colors.
-func (a *LogAggregator) podColor(pod *v1.Pod) (color int, found bool) {
-	a.lockImage.RLock()
-	defer a.lockImage.RUnlock()
-
-	for _, container := range pod.Spec.Containers {
-		if color, present := a.images[container.Image]; present {
-			return color, true
-		}
-	}
-
-	return -1, false
-}
-
 // nolint: interfacer
-func (a *LogAggregator) streamLogs(client corev1.CoreV1Interface, pod *v1.Pod, color int) error {
+func (a *LogAggregator) streamLogs(client corev1.CoreV1Interface, pod *v1.Pod) error {
 	pods := client.Pods(pod.Namespace)
 	if err := WaitForPodReady(pods, pod.Name); err != nil {
 		return errors.Wrap(err, "waiting for pod ready")
 	}
 
 	for _, container := range pod.Status.ContainerStatuses {
-		a.lockContainers.Lock()
-		alreadyLogged := a.containers[container.ContainerID]
-		a.containers[container.ContainerID] = true
-		a.lockContainers.Unlock()
-		if alreadyLogged {
+		containerID := container.ContainerID
+
+		alreadyTracked := a.trackedContainers.add(containerID)
+		if alreadyTracked {
 			continue
 		}
 
@@ -141,14 +118,20 @@ func (a *LogAggregator) streamLogs(client corev1.CoreV1Interface, pod *v1.Pod, c
 
 		rc, err := req.Stream()
 		if err != nil {
+			a.trackedContainers.remove(containerID)
 			return errors.Wrap(err, "setting up container log stream")
 		}
 
-		p := prefix(pod, container, color)
-		go func() {
-			defer rc.Close()
+		color := a.colorPicker.Pick(pod)
+		prefix := color.Sprint(prefix(pod, container))
 
-			if err := a.streamRequest(p, rc); err != nil {
+		go func() {
+			defer func() {
+				a.trackedContainers.remove(containerID)
+				rc.Close()
+			}()
+
+			if err := a.streamRequest(prefix, rc); err != nil {
 				logrus.Errorf("streaming request %s", err)
 			}
 		}()
@@ -157,13 +140,11 @@ func (a *LogAggregator) streamLogs(client corev1.CoreV1Interface, pod *v1.Pod, c
 	return nil
 }
 
-func prefix(pod *v1.Pod, container v1.ContainerStatus, color int) string {
-	name := pod.Name
+func prefix(pod *v1.Pod, container v1.ContainerStatus) string {
 	if pod.Name != container.Name {
-		name += " " + container.Name
+		return fmt.Sprintf("[%s %s]", pod.Name, container.Name)
 	}
-
-	return fmt.Sprintf("\033[1;%dm[%s]\033[0m", color, name)
+	return fmt.Sprintf("[%s]", container.Name)
 }
 
 func (a *LogAggregator) streamRequest(header string, rc io.Reader) error {
@@ -203,4 +184,65 @@ func (a *LogAggregator) Unmute() {
 // IsMuted says if the logs are to be muted.
 func (a *LogAggregator) IsMuted() bool {
 	return atomic.LoadInt32(&a.muted) == 1
+}
+
+type trackedContainers struct {
+	sync.Mutex
+	ids map[string]bool
+}
+
+// add adds a containerID to be tracked. Return true if the container
+// was already tracked.
+func (t *trackedContainers) add(id string) bool {
+	t.Lock()
+	alreadyTracked := t.ids[id]
+	t.ids[id] = true
+	t.Unlock()
+
+	return alreadyTracked
+}
+
+func (t *trackedContainers) remove(id string) {
+	t.Lock()
+	delete(t.ids, id)
+	t.Unlock()
+}
+
+// PodSelector is used to choose which pods to log.
+type PodSelector interface {
+	Select(pod *v1.Pod) bool
+}
+
+// ImageList implements PodSelector based on a list of images names.
+type ImageList struct {
+	sync.RWMutex
+	names map[string]bool
+}
+
+// NewImageList creates a new ImageList.
+func NewImageList() *ImageList {
+	return &ImageList{
+		names: make(map[string]bool),
+	}
+}
+
+// AddImage adds an image to the list.
+func (l *ImageList) AddImage(image string) {
+	l.Lock()
+	l.names[image] = true
+	l.Unlock()
+}
+
+// Select returns true if one of the pod's images is in the list.
+func (l *ImageList) Select(pod *v1.Pod) bool {
+	l.RLock()
+	defer l.RUnlock()
+
+	for _, container := range pod.Spec.Containers {
+		if l.names[container.Image] {
+			return true
+		}
+	}
+
+	return false
 }

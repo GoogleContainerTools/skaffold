@@ -141,13 +141,14 @@ func (r *SkaffoldRunner) dev(ctx context.Context, artifacts []*config.Artifact) 
 		return err
 	}
 
-	colors := colors(artifacts)
-	logger := kubernetes.NewLogAggregator(r.opts.Output)
+	podSelector := kubernetes.NewImageList()
+	colorPicker := kubernetes.NewColorPicker(artifacts)
+	logger := kubernetes.NewLogAggregator(r.opts.Output, podSelector, colorPicker)
 
 	onBuildSuccess := func(bRes *build.BuildResult) {
 		// Update which images are logged with which color
 		for _, build := range bRes.Builds {
-			logger.RegisterImage(build.Tag, colors[build.ImageName])
+			podSelector.AddImage(build.Tag)
 		}
 	}
 
@@ -248,30 +249,4 @@ func mergeWithPreviousBuilds(builds, previous []build.Build) []build.Build {
 	}
 
 	return merged
-}
-
-var colorCodes = []int{
-	31, // red
-	32, // green
-	33, // yellow
-	34, // blue
-	35, // purple
-	36, // cyan
-	91, // lightRed
-	92, // lightGreen
-	93, // lightYellow
-	94, // lightBlue
-	95, // lightPurple
-	96, // lightCyan
-	97, // white
-}
-
-func colors(artifacts []*config.Artifact) map[string]int {
-	colors := map[string]int{}
-
-	for i, artifact := range artifacts {
-		colors[artifact.ImageName] = colorCodes[i%len(colorCodes)]
-	}
-
-	return colors
 }
