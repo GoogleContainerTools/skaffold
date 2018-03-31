@@ -33,12 +33,10 @@ func NewCmdContext(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "context",
 		Short: "Outputs a minimal context tarball to stdout",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := runContext(out, filename, context); err != nil {
-				logrus.Fatalf("docker deps: %s", err)
-			}
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runContext(out, filename, context)
 		},
-		Args: cobra.NoArgs,
 	}
 	cmd.Flags().StringVarP(&filename, "filename", "f", "Dockerfile", "Dockerfile path")
 	cmd.Flags().StringVarP(&context, "context", "c", ".", "Dockerfile context path")
