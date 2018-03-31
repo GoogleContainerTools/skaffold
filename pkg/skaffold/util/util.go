@@ -81,12 +81,11 @@ func RelPathToAbsPath(relPaths []string) ([]string, error) {
 	return absPath, nil
 }
 
-func AbsPathToRelativePath(basePath string, absPaths []string) ([]string, error) {
+func AbsPathsToRelativePath(basePath string, absPaths []string) ([]string, error) {
 	absBasePath, err := filepath.Abs(basePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting absolute base path of %s", basePath)
 	}
-	fmt.Println(absBasePath)
 	relPaths := []string{}
 	for _, p := range absPaths {
 		r, err := filepath.Rel(absBasePath, p)

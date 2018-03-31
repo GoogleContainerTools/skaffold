@@ -174,13 +174,13 @@ func (r *SkaffoldRunner) dev(ctx context.Context, artifacts []*config.Artifact) 
 	}
 
 	onChange(r.depMap.Paths())
-		// Start logs
-		if err = logger.Start(ctx, r.kubeclient.CoreV1()); err != nil {
-			return err
-		}
-	
-		// Watch files and rebuild
-		watcher.Start(ctx, onChange)
+	// Start logs
+	if err = logger.Start(ctx, r.kubeclient.CoreV1()); err != nil {
+		return err
+	}
+
+	// Watch files and rebuild
+	watcher.Start(ctx, onChange)
 
 	return nil
 }
