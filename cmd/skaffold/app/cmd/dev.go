@@ -19,7 +19,6 @@ package cmd
 import (
 	"io"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -27,12 +26,10 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "dev",
 		Short: "Runs a pipeline file in development mode",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := runSkaffold(out, true, filename); err != nil {
-				logrus.Fatalf("run: %s", err)
-			}
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runSkaffold(out, true, filename)
 		},
-		Args: cobra.NoArgs,
 	}
 	AddRunDevFlags(cmd)
 	return cmd

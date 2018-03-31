@@ -24,7 +24,6 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -34,12 +33,10 @@ func NewCmdDeps(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deps",
 		Short: "Returns a list of dependencies for the input dockerfile",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := runDeps(out, filename, context); err != nil {
-				logrus.Fatalf("docker deps: %s", err)
-			}
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runDeps(out, filename, context)
 		},
-		Args: cobra.NoArgs,
 	}
 	cmd.Flags().StringVarP(&filename, "filename", "f", "Dockerfile", "Dockerfile path")
 	cmd.Flags().StringVarP(&context, "context", "c", ".", "Dockerfile context path")
