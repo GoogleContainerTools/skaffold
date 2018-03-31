@@ -131,16 +131,13 @@ func GetDockerfileDependencies(workspace string, r io.Reader) ([]string, error) 
 		return nil, errors.Wrap(err, "expanding dockerfile paths")
 	}
 
+	logrus.Infof("deps %s", expandedDeps)
+
 	// Look for .dockerignore.
 	ignorePath := filepath.Join(workspace, ".dockerignore")
 	filteredDeps, err := ApplyDockerIgnore(expandedDeps, ignorePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "applying dockerignore")
-	}
-
-	filteredDeps, err = util.FilterOutSymlinks(filteredDeps)
-	if err != nil {
-		return nil, errors.Wrap(err, "filtering out symlinks")
 	}
 
 	return filteredDeps, nil
