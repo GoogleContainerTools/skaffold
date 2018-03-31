@@ -75,7 +75,6 @@ func (*DockerfileDepResolver) GetDependencies(a *config.Artifact) ([]string, err
 	if err != nil {
 		return nil, errors.Wrap(err, "getting dockerfile dependencies")
 	}
-	fmt.Println("absolute docker path", dockerfileAbsPath)
 	deps = append(deps, dockerfileAbsPath)
 	return deps, nil
 }

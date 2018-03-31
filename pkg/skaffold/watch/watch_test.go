@@ -17,7 +17,6 @@ package watch
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"reflect"
 	"sort"
@@ -77,9 +76,8 @@ func TestWatch(t *testing.T) {
 			}
 
 			watcher.Start(ctx, func(actual []string) {
-				fmt.Println(actual)
 				sort.Strings(actual)
-				relPaths, err := util.AbsPathToRelativePath(wd, actual)
+				relPaths, err := util.AbsPathsToRelativePath(wd, actual)
 				if err != nil {
 					t.Fatal(err)
 				}
