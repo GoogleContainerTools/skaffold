@@ -4,7 +4,7 @@
 
 You can deploy multiple releases with skaffold, each will need a chartPath, a values file, and namespace. Skaffold can inject intermediate build tags in the the values map in the skaffold.yaml.
 
-Lets walk through the skaffold yaml
+Let's walk through the skaffold yaml
 
 We'll be building an image called `skaffold-helm`, and its a dockerfile, so we'll add it to the artifacts.
 ```
