@@ -103,10 +103,9 @@ type HelmRelease struct {
 // Artifact represents items that need should be built, along with the context in which
 // they should be built.
 type Artifact struct {
-	ImageName      string             `yaml:"imageName"`
-	DockerfilePath string             `yaml:"dockerfilePath,omitempty"`
-	Workspace      string             `yaml:"workspace,omitempty"`
-	BuildArgs      map[string]*string `yaml:"buildArgs,omitempty"`
+	ImageName    string `yaml:"imageName"`
+	Workspace    string `yaml:"workspace,omitempty"`
+	ArtifactType `yaml:",inline"`
 }
 
 // Profile is additional configuration that overrides default
@@ -115,6 +114,20 @@ type Profile struct {
 	Name   string       `yaml:"name"`
 	Build  BuildConfig  `yaml:"build,omitempty"`
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
+}
+
+type ArtifactType struct {
+	DockerArtifact *DockerArtifact `yaml:"docker"`
+	BazelArtifact  *BazelArtifact  `yaml:"bazel"`
+}
+
+type DockerArtifact struct {
+	DockerfilePath string             `yaml:"dockerfilePath,omitempty"`
+	BuildArgs      map[string]*string `yaml:"buildArgs,omitempty"`
+}
+
+type BazelArtifact struct {
+	BuildTarget string `yaml:"target"`
 }
 
 // DefaultDevSkaffoldConfig is a partial set of defaults for the SkaffoldConfig

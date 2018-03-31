@@ -105,8 +105,8 @@ func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger t
 }
 
 func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, cbclient *cloudbuild.Service, c *cstorage.Client, artifact *config.Artifact) (*Build, error) {
-	if artifact.DockerfilePath == "" {
-		artifact.DockerfilePath = constants.DefaultDockerfilePath
+	if artifact.DockerArtifact.DockerfilePath == "" {
+		artifact.DockerArtifact.DockerfilePath = constants.DefaultDockerfilePath
 	}
 	logrus.Infof("Building artifact: %+v", artifact)
 	cbBucket := fmt.Sprintf("%s%s", cb.GoogleCloudBuild.ProjectID, constants.GCSBucketSuffix)
@@ -120,7 +120,7 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 	}
 
 	fmt.Fprintf(out, "Pushing code to gs://%s/%s\n", cbBucket, buildObject)
-	if err := cb.uploadTarToGCS(ctx, artifact.DockerfilePath, artifact.Workspace, cbBucket, buildObject); err != nil {
+	if err := cb.uploadTarToGCS(ctx, artifact.DockerArtifact.DockerfilePath, artifact.DockerArtifact.Workspace, cbBucket, buildObject); err != nil {
 		return nil, errors.Wrap(err, "uploading source tarball")
 	}
 	call := cbclient.Projects.Builds.Create(cb.GoogleCloudBuild.ProjectID, &cloudbuild.Build{
@@ -134,7 +134,7 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 		Steps: []*cloudbuild.BuildStep{
 			{
 				Name: "gcr.io/cloud-builders/docker",
-				Args: []string{"build", "--tag", artifact.ImageName, "-f", artifact.DockerfilePath, "."},
+				Args: []string{"build", "--tag", artifact.ImageName, "-f", artifact.DockerArtifact.DockerfilePath, "."},
 			},
 		},
 		Images: []string{artifact.ImageName},

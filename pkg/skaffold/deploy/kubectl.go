@@ -113,7 +113,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, b *build.Bu
 
 func generateManifest(b build.Build) (string, error) {
 	logrus.Info("No manifests specified. Generating a deployment.")
-	dockerfilePath := filepath.Join(b.Artifact.Workspace, b.Artifact.DockerfilePath)
+	dockerfilePath := filepath.Join(b.Artifact.DockerArtifact.Workspace, b.Artifact.DockerArtifact.DockerfilePath)
 	r, err := os.Open(dockerfilePath)
 	if err != nil {
 		return "", errors.Wrap(err, "reading dockerfile")
