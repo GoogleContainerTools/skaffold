@@ -123,7 +123,7 @@ Build complete in 657.426821ms
 Starting deploy...
 Deploying k8s-pod.yaml...
 Deploy complete in 173.770268ms
-[getting-started getting-started] Hello world!
+[getting-started] Hello world!
 ```
 
 1. Skaffold has done the following for you:
@@ -136,9 +136,9 @@ Deploy complete in 173.770268ms
 1. You will see the output of the pod that was deployed:
 
 ```console
-[getting-started getting-started] Hello world!
-[getting-started getting-started] Hello world!
-[getting-started getting-started] Hello world!
+[getting-started] Hello world!
+[getting-started] Hello world!
+[getting-started] Hello world!
 ```
 
 Now, update `main.go`
@@ -161,8 +161,8 @@ index 64b7bdfc..f95e053d 100644
 
 Once you save the file, you should see the pipeline kick off again to redeploy your application:
 ```console
-[getting-started getting-started] Hello jerry!
-[getting-started getting-started] Hello jerry!
+[getting-started] Hello jerry!
+[getting-started] Hello jerry!
 ```
 
 ### Run a deployment pipeline once
