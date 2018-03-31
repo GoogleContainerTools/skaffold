@@ -112,10 +112,11 @@ func pathsForArtifact(a *config.Artifact) ([]string, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "getting dockerfile dependencies")
 	}
+	logrus.Infof("Source code dependencies %s: %s", a.ImageName, deps)
 	filteredDeps := []string{}
 	for _, dep := range deps {
 		//TODO(r2d4): what does the ignore workspace look like for bazel?
-		ignored, err := isIgnored(a.DockerArtifact.Workspace, dep)
+		ignored, err := isIgnored(a.Workspace, dep)
 		if err != nil {
 			return nil, errors.Wrapf(err, "calculating ignored files for artifact %s", a.ImageName)
 		}

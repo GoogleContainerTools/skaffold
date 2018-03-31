@@ -103,8 +103,9 @@ func RunPush(ctx context.Context, cli DockerAPIClient, ref string, out io.Writer
 // The digest is of the form
 // sha256:<image_id>
 func Digest(ctx context.Context, cli DockerAPIClient, ref string) (string, error) {
-	refLatest := fmt.Sprintf("%s:latest", ref)
-	args := filters.KeyValuePair{Key: "reference", Value: refLatest}
+	// TODO(r2d4)
+	fmt.Printf("Digest: %s\n", ref)
+	args := filters.KeyValuePair{Key: "reference", Value: ref}
 	filters := filters.NewArgs(args)
 	imageList, err := cli.ImageList(ctx, types.ImageListOptions{
 		Filters: filters,
@@ -114,7 +115,7 @@ func Digest(ctx context.Context, cli DockerAPIClient, ref string) (string, error
 	}
 	for _, image := range imageList {
 		for _, tag := range image.RepoTags {
-			if tag == refLatest {
+			if tag == ref {
 				return image.ID, nil
 			}
 		}

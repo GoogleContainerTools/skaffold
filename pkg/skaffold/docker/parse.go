@@ -63,7 +63,7 @@ func (*DockerfileDepResolver) GetDependencies(a *config.Artifact) ([]string, err
 	if d.DockerfilePath == "" {
 		dockerfilePath = constants.DefaultDockerfilePath
 	}
-	dockerfileAbsPath, err := filepath.Abs(filepath.Join(d.Workspace, dockerfilePath))
+	dockerfileAbsPath, err := filepath.Abs(filepath.Join(a.Workspace, dockerfilePath))
 	if err != nil {
 		return nil, errors.Wrap(err, "getting absolute path of dockerfile")
 	}
@@ -72,7 +72,7 @@ func (*DockerfileDepResolver) GetDependencies(a *config.Artifact) ([]string, err
 		return nil, errors.Wrap(err, "opening dockerfile")
 	}
 	defer f.Close()
-	deps, err := GetDockerfileDependencies(d.Workspace, f)
+	deps, err := GetDockerfileDependencies(a.Workspace, f)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting dockerfile dependencies")
 	}

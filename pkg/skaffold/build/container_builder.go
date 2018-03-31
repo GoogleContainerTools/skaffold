@@ -120,7 +120,7 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 	}
 
 	fmt.Fprintf(out, "Pushing code to gs://%s/%s\n", cbBucket, buildObject)
-	if err := cb.uploadTarToGCS(ctx, artifact.DockerArtifact.DockerfilePath, artifact.DockerArtifact.Workspace, cbBucket, buildObject); err != nil {
+	if err := cb.uploadTarToGCS(ctx, artifact.DockerArtifact.DockerfilePath, artifact.Workspace, cbBucket, buildObject); err != nil {
 		return nil, errors.Wrap(err, "uploading source tarball")
 	}
 	call := cbclient.Projects.Builds.Create(cb.GoogleCloudBuild.ProjectID, &cloudbuild.Build{
