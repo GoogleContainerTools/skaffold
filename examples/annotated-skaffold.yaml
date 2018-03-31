@@ -21,6 +21,7 @@ build:
 
     # workspace is the path to your dockerfile context
     workspace: ../examples/getting-started
+    docker: {}
 
   # This next section is where you'll put your specific builder configuration.
   # Here, we're using a local builder, which simply builds using the host docker

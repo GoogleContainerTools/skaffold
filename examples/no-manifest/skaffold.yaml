@@ -4,6 +4,7 @@ build:
   artifacts:
   - imageName: gcr.io/k8s-skaffold/skaffold-no-manifest-example
     workspace: .
+    docker: {}
   local: {}
 deploy:
   kubectl:
