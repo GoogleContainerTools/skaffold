@@ -5,8 +5,17 @@ build:
   # we provide a few strategies here, although you most likely won't need to care!
   # Valid values for tagPolicy are
   #
-  # sha256: {}    - tags the image with the checksum of the built image (image id)
-  # gitCommit: {} - tags the image with the git commit of your current repository
+  # sha256 tags the image with the checksum of the built image (image id)
+  # sha256: {}
+  # gitCommit tags the image with the git commit of your current repository
+  # gitCommit: {}
+  # envTemplate tags the image with a configurable template string.
+  # The template string must be in the golang text/template syntax: https://golang.org/pkg/text/template/
+  # The template is compiled and executed against the current environment, with two automatic variables injected:
+  #   - IMAGE_NAME: The name of the image being built, as supplied in the artifacts section
+  #   - DIGETST: The digest of the newly built image.
+  # envTemplate: - 
+  #   template: "{{.RELEASE}}-{{.IMAGE_NAME}}"
   
   # tagPolicy:
   #   sha256: {}
