@@ -35,6 +35,8 @@ func contextTarPaths(dockerfilePath string, context string) ([]string, error) {
 		return nil, errors.Wrap(err, "getting dockerfile dependencies")
 	}
 
+	paths = append(paths, dockerfilePath)
+
 	return paths, nil
 }
 
