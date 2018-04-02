@@ -72,6 +72,14 @@ func TestDockerContext(t *testing.T) {
 			t.Error("File ignored.txt should have been excluded, but was not")
 		}
 
+		if includes(files, "files/ignored.txt") {
+			t.Error("File files/ignored.txt should have been excluded, but was not")
+		}
+
+		if !includes(files, "files/included.txt") {
+			t.Error("File files/included.txt should have been included, but was not")
+		}
+
 		if !includes(files, "Dockerfile") {
 			t.Error("File Dockerfile should have been included, but was not")
 		}

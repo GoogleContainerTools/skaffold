@@ -1,2 +1,2 @@
 FROM alpine
-COPY . /files
+COPY ./files /files
