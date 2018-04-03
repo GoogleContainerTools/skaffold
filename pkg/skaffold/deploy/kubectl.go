@@ -178,20 +178,30 @@ func (k *KubectlDeployer) deployManifestFile(r io.Reader, params map[string]buil
 }
 
 func replaceParameters(contents []byte, params map[string]build.Build) (string, error) {
-	m := make(map[interface{}]interface{})
+	var manifests []string
 
-	if err := yaml.Unmarshal(contents, &m); err != nil {
-		return "", errors.Wrap(err, "reading kubernetes YAML")
-	}
-	replaced := recursiveReplace(m, params)
-	replacedMap := replaced.(map[string]interface{})
-	out, err := yaml.Marshal(replacedMap)
-	if err != nil {
-		return "", errors.Wrap(err, "marshalling yaml")
+	parts := bytes.Split(contents, []byte("\n---"))
+	for _, part := range parts {
+		m := make(map[interface{}]interface{})
+		if err := yaml.Unmarshal(part, &m); err != nil {
+			return "", errors.Wrap(err, "reading kubernetes YAML")
+		}
+
+		replaced := recursiveReplace(m, params)
+		replacedMap := replaced.(map[string]interface{})
+
+		out, err := yaml.Marshal(replacedMap)
+		if err != nil {
+			return "", errors.Wrap(err, "marshalling yaml")
+		}
+
+		manifests = append(manifests, string(out))
 	}
 
-	logrus.Debugf("Applying manifest: \n%s", out)
-	return string(out), nil
+	manifest := strings.Join(manifests, "---\n")
+	logrus.Debugln("Applying manifest:", manifest)
+
+	return manifest, nil
 }
 
 func recursiveReplace(i interface{}, params map[string]build.Build) interface{} {
