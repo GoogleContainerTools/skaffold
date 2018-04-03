@@ -45,7 +45,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			expectedName: "test:41cf71e",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
-					write("source.go", []byte("code")).
+					write(t, "source.go", []byte("code")).
 					add(t, "source.go").
 					commit(t, "initial")
 			},
@@ -58,10 +58,10 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			expectedName: "test:41cf71e-dirty-17c3e6fb2811b7af",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
-					write("source.go", []byte("code")).
+					write(t, "source.go", []byte("code")).
 					add(t, "source.go").
 					commit(t, "initial").
-					write("source.go", []byte("updated code"))
+					write(t, "source.go", []byte("updated code"))
 			},
 		},
 		{
@@ -72,10 +72,10 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			expectedName: "test:41cf71e-dirty-d7bc32e5f6760a99",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
-					write("source.go", []byte("code")).
+					write(t, "source.go", []byte("code")).
 					add(t, "source.go").
 					commit(t, "initial").
-					write("new.go", []byte("new code"))
+					write(t, "new.go", []byte("new code"))
 			},
 		},
 		{
@@ -147,8 +147,9 @@ func (g *gitRepo) mkdir(folder string) *gitRepo {
 	return g
 }
 
-func (g *gitRepo) write(file string, content []byte) *gitRepo {
-	ioutil.WriteFile(filepath.Join(g.dir, file), content, 0644)
+func (g *gitRepo) write(t *testing.T, file string, content []byte) *gitRepo {
+	err := ioutil.WriteFile(filepath.Join(g.dir, file), content, 0644)
+	failNowIfError(t, err)
 	return g
 }
 
