@@ -97,13 +97,9 @@ func pathToArtifactMap(artifacts []*config.Artifact, res DependencyResolver) (ma
 		if err != nil {
 			return nil, errors.Wrapf(err, "getting paths for artifact %s", a.DockerfilePath)
 		}
+
 		for _, p := range paths {
-			artifacts, ok := m[p]
-			if !ok {
-				m[p] = []*config.Artifact{a}
-				continue
-			}
-			artifacts = append(artifacts, a)
+			m[p] = append(m[p], a)
 		}
 	}
 
