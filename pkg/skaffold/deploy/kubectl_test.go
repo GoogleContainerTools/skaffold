@@ -168,3 +168,107 @@ func TestKubectlRun(t *testing.T) {
 
 	}
 }
+
+func TestReplaceParameters(t *testing.T) {
+	var tests = []struct {
+		description      string
+		manifest         string
+		expectedManifest string
+		shouldErr        bool
+	}{
+		{
+			description: "pod",
+			manifest: `apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/skaffold-example
+    name: getting-started
+`,
+			expectedManifest: `apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/skaffold-example
+    name: getting-started
+`,
+		},
+		{
+			description: "service and deployment",
+			manifest: `apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  labels:
+    app: leeroy-app
+  name: leeroy-app
+spec:
+  selector:
+    matchLabels:
+      app: leeroy-app
+  template:
+    metadata:
+      labels:
+        app: leeroy-app
+    spec:
+      containers:
+      - image: gcr.io/k8s-skaffold/leeroy-app
+        name: leeroy-app
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: leeroy-app
+  name: leeroy-app
+spec:
+  ports:
+  - port: 50051
+  selector:
+    app: leeroy-app
+`,
+			expectedManifest: `apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  labels:
+    app: leeroy-app
+  name: leeroy-app
+spec:
+  selector:
+    matchLabels:
+      app: leeroy-app
+  template:
+    metadata:
+      labels:
+        app: leeroy-app
+    spec:
+      containers:
+      - image: gcr.io/k8s-skaffold/leeroy-app
+        name: leeroy-app
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: leeroy-app
+  name: leeroy-app
+spec:
+  ports:
+  - port: 50051
+  selector:
+    app: leeroy-app
+`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			resultManifest, err := replaceParameters([]byte(test.manifest), map[string]build.Build{})
+
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, "["+test.expectedManifest+"]", "["+resultManifest+"]")
+		})
+	}
+}
