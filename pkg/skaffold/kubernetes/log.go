@@ -100,6 +100,9 @@ func (a *LogAggregator) streamLogs(client corev1.CoreV1Interface, pod *v1.Pod) e
 
 	for _, container := range pod.Status.ContainerStatuses {
 		containerID := container.ContainerID
+		if containerID == "" {
+			continue
+		}
 
 		alreadyTracked := a.trackedContainers.add(containerID)
 		if alreadyTracked {
@@ -176,7 +179,7 @@ func (a *LogAggregator) Mute() {
 	atomic.StoreInt32(&a.muted, 1)
 }
 
-// Unmute unmute the logs.
+// Unmute unmutes the logs.
 func (a *LogAggregator) Unmute() {
 	atomic.StoreInt32(&a.muted, 0)
 }
