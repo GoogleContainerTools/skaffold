@@ -36,6 +36,21 @@ deploy:
     key: value
 `
 	badConfigA = "bad config"
+
+	rawConfigB = `
+apiVersion: skaffold/v1alpha2
+kind: Config
+build:
+  tagPolicy:
+    git: {}
+  artifacts:
+  - imageName: example
+    workspace: ./examples/app
+deploy:
+  name: example
+  parameters:
+    key: value
+`
 )
 
 var configA = &SkaffoldConfig{
@@ -43,6 +58,23 @@ var configA = &SkaffoldConfig{
 	Kind:       "Config",
 	Build: BuildConfig{
 		TagPolicy: TagPolicy{ShaTagger: &ShaTagger{}},
+		Artifacts: []*Artifact{
+			{
+				ImageName: "example",
+				Workspace: "./examples/app",
+			},
+		},
+	},
+	Deploy: DeployConfig{
+		Name: "example",
+	},
+}
+
+var configB = &SkaffoldConfig{
+	APIVersion: "skaffold/v1alpha2",
+	Kind:       "Config",
+	Build: BuildConfig{
+		TagPolicy: TagPolicy{GitTagger: &GitTagger{}},
 		Artifacts: []*Artifact{
 			{
 				ImageName: "example",
@@ -72,6 +104,11 @@ func TestParseConfig(t *testing.T) {
 			description: "Bad config",
 			config:      badConfigA,
 			shouldErr:   true,
+		},
+		{
+			description: "Parse config with tagPolicy",
+			config:      rawConfigB,
+			expected:    configB,
 		},
 	}
 
