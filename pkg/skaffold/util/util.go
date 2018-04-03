@@ -81,22 +81,6 @@ func RelPathToAbsPath(relPaths []string) ([]string, error) {
 	return absPath, nil
 }
 
-func AbsPathsToRelativePath(basePath string, absPaths []string) ([]string, error) {
-	absBasePath, err := filepath.Abs(basePath)
-	if err != nil {
-		return nil, errors.Wrapf(err, "getting absolute base path of %s", basePath)
-	}
-	relPaths := []string{}
-	for _, p := range absPaths {
-		r, err := filepath.Rel(absBasePath, p)
-		if err != nil {
-			return nil, errors.Wrapf(err, "getting relative path of %s", p)
-		}
-		relPaths = append(relPaths, r)
-	}
-	return relPaths, nil
-}
-
 func FilterOutSymlinks(paths []string) ([]string, error) {
 	res := []string{}
 	for _, p := range paths {

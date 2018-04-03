@@ -37,7 +37,7 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/rjeczalik/notify"
+  name = "github.com/fsnotify/fsnotify"
 
 [[constraint]]
   name = "k8s.io/apimachinery"

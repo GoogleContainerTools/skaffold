@@ -17,48 +17,56 @@ package watch
 
 import (
 	"context"
-	"os"
+	"io/ioutil"
+	"path/filepath"
 	"reflect"
-	"sort"
 	"testing"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
-
-	"github.com/spf13/afero"
+	"github.com/GoogleCloudPlatform/skaffold/testutil"
 )
 
-func write(t *testing.T, path string) {
-	if err := afero.WriteFile(util.Fs, path, []byte(""), 0640); err != nil {
-		t.Errorf("writing mock fs file: %s", err)
-	}
-}
-
 func TestWatch(t *testing.T) {
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
 	var tests = []struct {
-		description    string
-		watchFiles     []string
-		writes         []string
-		expectedChange []string
-		shouldErr      bool
+		description     string
+		createFiles     []string
+		watchFiles      []string
+		writes          []string
+		deletes         []string
+		expectedChanges []string
+		shouldErr       bool
 	}{
 		{
-			description:    "write file",
-			watchFiles:     []string{"testdata/a", "testdata/b", "testdata/c"},
-			writes:         []string{"testdata/a", "testdata/b"},
-			expectedChange: []string{"testdata/a", "testdata/b"},
+			description: "watch unknown file",
+			createFiles: []string{"a"},
+			watchFiles:  []string{"a", "b"},
+			shouldErr:   true,
+		},
+		{
+			description:     "write files",
+			createFiles:     []string{"a", "b", "c"},
+			watchFiles:      []string{"a", "b", "c"},
+			writes:          []string{"a", "b"},
+			expectedChanges: []string{"a", "b"},
+		},
+		{
+			description:     "ignore file",
+			createFiles:     []string{"a", "b"},
+			watchFiles:      []string{"a"},
+			writes:          []string{"a", "b"},
+			expectedChanges: []string{"a"},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			tmp, teardown := testutil.TempDir(t)
+			defer teardown()
 
-			watcher, err := NewWatcher(test.watchFiles)
+			for _, p := range prependParentDir(tmp, test.createFiles) {
+				write(t, p, "")
+			}
+
+			watcher, err := NewWatcher(prependParentDir(tmp, test.watchFiles))
 			if err == nil && test.shouldErr {
 				t.Errorf("Expected error, but returned none")
 				return
@@ -71,22 +79,33 @@ func TestWatch(t *testing.T) {
 				return
 			}
 
-			for _, p := range test.writes {
-				write(t, p)
+			for _, p := range prependParentDir(tmp, test.writes) {
+				write(t, p, "CONTENT")
 			}
 
+			ctx, cancel := context.WithCancel(context.Background())
 			watcher.Start(ctx, func(actual []string) {
-				sort.Strings(actual)
-				relPaths, err := util.AbsPathsToRelativePath(wd, actual)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if !reflect.DeepEqual(relPaths, test.expectedChange) {
-					t.Errorf("Expected %+v, Actual %+v", test.expectedChange, actual)
-				}
+				defer cancel()
 
-				cancel()
+				expected := prependParentDir(tmp, test.expectedChanges)
+
+				if !reflect.DeepEqual(expected, actual) {
+					t.Errorf("Expected %+v, Actual %+v", expected, actual)
+				}
 			})
 		})
 	}
+}
+func write(t *testing.T, path string, content string) {
+	if err := ioutil.WriteFile(path, []byte(content), 0640); err != nil {
+		t.Errorf("writing mock fs file: %s", err)
+	}
+}
+
+func prependParentDir(parentDir string, paths []string) []string {
+	var list []string
+	for _, path := range paths {
+		list = append(list, filepath.Join(parentDir, path))
+	}
+	return list
 }

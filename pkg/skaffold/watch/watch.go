@@ -21,69 +21,88 @@ import (
 	"sort"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
-	"github.com/rjeczalik/notify"
 	"github.com/sirupsen/logrus"
 )
 
 const quietPeriod = 500 * time.Millisecond
 
-// WatcherFactory can build Watchers from a list of artifacts to be watched for changes
+// WatcherFactory can build Watchers from a list of files to be watched for changes
 type WatcherFactory func(paths []string) (Watcher, error)
 
 // Watcher provides a watch trigger for the skaffold pipeline to begin
 type Watcher interface {
-	// Start watches a set of artifacts for changes, and on the first change
-	// returns a reference to the changed artifact
+	// Start watches a set of files for changes, and calls `onChange`
+	// on each file change.
 	Start(ctx context.Context, onChange func([]string))
 }
 
 // fsWatcher uses inotify to watch for changes and implements
 // the Watcher interface
 type fsWatcher struct {
-	fsEvents chan notify.EventInfo
+	watcher *fsnotify.Watcher
 }
 
-// NewWatcher creates a new Watcher on a list of artifacts.
+// NewWatcher creates a new Watcher on a list of files.
 func NewWatcher(paths []string) (Watcher, error) {
-	// TODO(@dgageot): If file changes happen too quickly, events might be lost
-	fsEvents := make(chan notify.EventInfo, 100)
-	sort.Strings(paths)
+	w, err := fsnotify.NewWatcher()
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating watcher")
+	}
 
+	sort.Strings(paths)
 	for _, p := range paths {
 		logrus.Infof("Added watch for %s", p)
-		if err := notify.Watch(p, fsEvents, notify.All); err != nil {
-			notify.Stop(fsEvents)
+		if err := w.Add(p); err != nil {
+			w.Close()
 			return nil, errors.Wrapf(err, "adding watch for %s", p)
 		}
 	}
 
 	logrus.Info("Watch is ready")
 	return &fsWatcher{
-		fsEvents: fsEvents,
+		watcher: w,
 	}, nil
 }
 
-// Start watches a set of artifacts for changes with inotify, and on the first change
-// returns a reference to the changed artifact
+// Start watches a set of files for changes, and calls `onChange`
+// on each file change.
 func (f *fsWatcher) Start(ctx context.Context, onChange func([]string)) {
-	var changedPaths []string
+	changedPaths := map[string]bool{}
 
 	timer := time.NewTimer(1<<63 - 1) // Forever
 	defer timer.Stop()
 
 	for {
 		select {
-		case ei := <-f.fsEvents:
-			logrus.Infof("%s %s", ei.Event().String(), ei.Path())
-			changedPaths = append(changedPaths, ei.Path())
+		case ev := <-f.watcher.Events:
+			if ev.Op == fsnotify.Chmod {
+				continue // TODO(dgageot): VSCode seems to chmod randomly
+			}
 			timer.Reset(quietPeriod)
+			logrus.Infof("Change: %s", ev)
+			changedPaths[ev.Name] = true
+		case err := <-f.watcher.Errors:
+			logrus.Error(err)
 		case <-timer.C:
-			onChange(changedPaths)
-			changedPaths = nil
+			changes := sortedPaths(changedPaths)
+			changedPaths = map[string]bool{}
+			onChange(changes)
 		case <-ctx.Done():
-			notify.Stop(f.fsEvents)
+			f.watcher.Close()
 			return
 		}
 	}
+}
+
+func sortedPaths(changedPaths map[string]bool) []string {
+	var paths []string
+
+	for path := range changedPaths {
+		paths = append(paths, path)
+	}
+
+	sort.Strings(paths)
+	return paths
 }

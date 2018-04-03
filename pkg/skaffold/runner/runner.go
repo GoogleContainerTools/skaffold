@@ -146,7 +146,7 @@ func (r *SkaffoldRunner) dev(ctx context.Context, artifacts []*config.Artifact) 
 
 	watcher, err := r.WatcherFactory(r.depMap.Paths())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "creating watcher")
 	}
 
 	podSelector := kubernetes.NewImageList()
@@ -174,9 +174,10 @@ func (r *SkaffoldRunner) dev(ctx context.Context, artifacts []*config.Artifact) 
 	}
 
 	onChange(r.depMap.Paths())
+
 	// Start logs
 	if err = logger.Start(ctx, r.kubeclient.CoreV1()); err != nil {
-		return err
+		return errors.Wrap(err, "starting logger")
 	}
 
 	// Watch files and rebuild
