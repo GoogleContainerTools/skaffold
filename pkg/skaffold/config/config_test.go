@@ -37,7 +37,7 @@ build:
 deploy:
   name: example
 `
-	simpleConfigWithTagger = `
+	completeConfig = `
 apiVersion: skaffold/v1alpha2
 kind: Config
 build:
@@ -46,6 +46,7 @@ build:
   artifacts:
   - imageName: example
     workspace: ./examples/app
+    dockerfilePath: Dockerfile.dev
 deploy:
   name: example
 `
@@ -88,7 +89,7 @@ func TestParseConfig(t *testing.T) {
 			expected: config(
 				withBuild(
 					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
-					withArtifact("example", "./examples/app"),
+					withArtifact("example", "./examples/app", "Dockerfile"),
 				),
 				withDeploy("example"),
 			),
@@ -100,31 +101,31 @@ func TestParseConfig(t *testing.T) {
 			expected: config(
 				withBuild(
 					withTagPolicy(TagPolicy{GitTagger: &GitTagger{}}),
-					withArtifact("example", "./examples/app"),
+					withArtifact("example", "./examples/app", "Dockerfile"),
 				),
 				withDeploy("example"),
 			),
 		},
 		{
-			description: "Simple config with tagger for dev",
-			config:      simpleConfigWithTagger,
+			description: "Complete config for dev",
+			config:      completeConfig,
 			dev:         true,
 			expected: config(
 				withBuild(
 					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
-					withArtifact("example", "./examples/app"),
+					withArtifact("example", "./examples/app", "Dockerfile.dev"),
 				),
 				withDeploy("example"),
 			),
 		},
 		{
-			description: "Simple config with tagger for run",
-			config:      simpleConfigWithTagger,
+			description: "Complete config for run",
+			config:      completeConfig,
 			dev:         false,
 			expected: config(
 				withBuild(
 					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
-					withArtifact("example", "./examples/app"),
+					withArtifact("example", "./examples/app", "Dockerfile.dev"),
 				),
 				withDeploy("example"),
 			),
@@ -173,11 +174,12 @@ func withDeploy(name string, ops ...func(*DeployConfig)) func(*SkaffoldConfig) {
 	}
 }
 
-func withArtifact(image, workspace string) func(*BuildConfig) {
+func withArtifact(image, workspace, dockerfile string) func(*BuildConfig) {
 	return func(cfg *BuildConfig) {
 		cfg.Artifacts = append(cfg.Artifacts, &Artifact{
-			ImageName: image,
-			Workspace: workspace,
+			ImageName:      image,
+			Workspace:      workspace,
+			DockerfilePath: dockerfile,
 		})
 	}
 }

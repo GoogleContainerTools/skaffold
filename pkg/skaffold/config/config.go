@@ -170,6 +170,7 @@ func Parse(config []byte, dev bool) (*SkaffoldConfig, error) {
 	}
 
 	setDefaultTagger(cfg, dev)
+	setDefaultDockerfiles(cfg)
 
 	return cfg, nil
 }
@@ -183,5 +184,13 @@ func setDefaultTagger(cfg *SkaffoldConfig, dev bool) {
 		cfg.Build.TagPolicy = TagPolicy{ShaTagger: &ShaTagger{}}
 	} else {
 		cfg.Build.TagPolicy = TagPolicy{GitTagger: &GitTagger{}}
+	}
+}
+
+func setDefaultDockerfiles(cfg *SkaffoldConfig) {
+	for _, artifact := range cfg.Build.Artifacts {
+		if artifact.DockerfilePath == "" {
+			artifact.DockerfilePath = constants.DefaultDockerfilePath
+		}
 	}
 }
