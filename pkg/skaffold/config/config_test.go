@@ -33,7 +33,6 @@ kind: Config
 build:
   artifacts:
   - imageName: example
-    workspace: ./examples/app
 deploy:
   name: example
 `
@@ -91,7 +90,7 @@ func TestParseConfig(t *testing.T) {
 			expected: config(
 				withLocalBuild(
 					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
-					withArtifact("example", "./examples/app", "Dockerfile"),
+					withArtifact("example", ".", "Dockerfile"),
 				),
 				withDeploy("example"),
 			),
@@ -103,7 +102,7 @@ func TestParseConfig(t *testing.T) {
 			expected: config(
 				withLocalBuild(
 					withTagPolicy(TagPolicy{GitTagger: &GitTagger{}}),
-					withArtifact("example", "./examples/app", "Dockerfile"),
+					withArtifact("example", ".", "Dockerfile"),
 				),
 				withDeploy("example"),
 			),

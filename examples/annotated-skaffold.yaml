@@ -26,10 +26,9 @@ build:
     # The name of the image we're going to build, the full reference to the built
     # image will be available later in the the deploy section
   - imageName: gcr.io/k8s-skaffold/skaffold-example
-
-    # workspace is the path to your dockerfile context
     # dockerfilePath is the path to the Dockerfile. Defaults to "Dockerfile"
     dockerfilePath: Dockerfile
+    # workspace is the path to your dockerfile context. Defaults to ".""
     workspace: ../examples/getting-started
     docker: {}
 
