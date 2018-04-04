@@ -19,25 +19,43 @@ package docker
 import (
 	"io"
 	"os"
-	"path/filepath"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
-func CreateDockerTarContext(w io.Writer, dockerfilePath, context string) error {
+func contextTarPaths(dockerfilePath string, context string) ([]string, error) {
 	f, err := os.Open(dockerfilePath)
+	defer f.Close()
 	if err != nil {
-		return errors.Wrap(err, "opening dockerfile")
+		return nil, errors.Wrap(err, "opening dockerfile")
 	}
 	paths, err := GetDockerfileDependencies(context, f)
 	if err != nil {
-		return errors.Wrap(err, "getting dockerfile dependencies")
+		return nil, errors.Wrap(err, "getting dockerfile dependencies")
 	}
-	f.Close()
-	absDockerfilePath, _ := filepath.Abs(dockerfilePath)
 
-	paths = append(paths, absDockerfilePath)
+	paths = append(paths, dockerfilePath)
+
+	return paths, nil
+}
+
+func CreateDockerTarContext(w io.Writer, dockerfilePath, context string) error {
+	paths, err := contextTarPaths(dockerfilePath, context)
+	if err != nil {
+		return errors.Wrap(err, "getting relative tar paths")
+	}
+	if err := util.CreateTar(w, context, paths); err != nil {
+		return errors.Wrap(err, "creating tar gz")
+	}
+	return nil
+}
+
+func CreateDockerTarGzContext(w io.Writer, dockerfilePath, context string) error {
+	paths, err := contextTarPaths(dockerfilePath, context)
+	if err != nil {
+		return errors.Wrap(err, "getting relative tar paths")
+	}
 	if err := util.CreateTarGz(w, context, paths); err != nil {
 		return errors.Wrap(err, "creating tar gz")
 	}

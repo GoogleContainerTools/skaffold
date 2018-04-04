@@ -20,12 +20,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path/filepath"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/pkg/idtools"
 	"github.com/docker/docker/pkg/progress"
-	"github.com/moby/moby/pkg/archive"
 	"github.com/moby/moby/pkg/jsonmessage"
 	"github.com/moby/moby/pkg/streamformatter"
 	"github.com/moby/moby/pkg/term"
@@ -57,12 +56,16 @@ func RunBuild(ctx context.Context, cli DockerAPIClient, opts *BuildOptions) erro
 		AuthConfigs: authConfigs,
 	}
 
-	buildCtx, err := archive.TarWithOptions(opts.ContextDir, &archive.TarOptions{
-		ChownOpts: &idtools.IDPair{UID: 0, GID: 0},
-	})
-	if err != nil {
-		return errors.Wrap(err, "tar workspace")
-	}
+	buildCtx, buildCtxWriter := io.Pipe()
+	dockerfilePath := filepath.Join(opts.ContextDir, opts.Dockerfile)
+	go func() {
+		err := CreateDockerTarContext(buildCtxWriter, dockerfilePath, opts.ContextDir)
+		if err != nil {
+			buildCtxWriter.CloseWithError(errors.Wrap(err, "creating docker context"))
+			return
+		}
+		buildCtxWriter.Close()
+	}()
 
 	progressOutput := streamformatter.NewProgressOutput(opts.ProgressBuf)
 	body := progress.NewProgressReader(buildCtx, progressOutput, 0, "", "Sending build context to Docker daemon")
