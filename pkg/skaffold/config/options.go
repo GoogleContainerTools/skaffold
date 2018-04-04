@@ -23,6 +23,7 @@ import "io"
 type SkaffoldOptions struct {
 	DevMode      bool
 	Notification bool
+	Profiles     []string
 	CustomTag    string
 	Output       io.Writer
 }

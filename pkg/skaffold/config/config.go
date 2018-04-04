@@ -28,14 +28,15 @@ type SkaffoldConfig struct {
 	APIVersion string `yaml:"apiVersion"`
 	Kind       string `yaml:"kind"`
 
-	Build  BuildConfig  `yaml:"build"`
-	Deploy DeployConfig `yaml:"deploy"`
+	Build    BuildConfig  `yaml:"build"`
+	Deploy   DeployConfig `yaml:"deploy"`
+	Profiles []Profile    `yaml:"profiles"`
 }
 
 // BuildConfig contains all the configuration for the build steps
 type BuildConfig struct {
-	Artifacts []*Artifact `yaml:"artifacts"`
-	TagPolicy TagPolicy   `yaml:",inline"`
+	Artifacts []*Artifact `yaml:"artifacts,omitempty"`
+	TagPolicy TagPolicy   `yaml:"tagPolicy,omitempty"`
 	BuildType `yaml:",inline"`
 }
 
@@ -70,7 +71,7 @@ type GoogleCloudBuild struct {
 
 // DeployConfig contains all the configuration needed by the deploy steps
 type DeployConfig struct {
-	Name       string `yaml:"name"`
+	Name       string `yaml:"name,omitempty"`
 	DeployType `yaml:",inline"`
 }
 
@@ -83,11 +84,11 @@ type DeployType struct {
 
 // KubectlDeploy contains the configuration needed for deploying with `kubectl apply`
 type KubectlDeploy struct {
-	Manifests []string `yaml:"manifests"`
+	Manifests []string `yaml:"manifests,omitempty"`
 }
 
 type HelmDeploy struct {
-	Releases []HelmRelease `yaml:"releases"`
+	Releases []HelmRelease `yaml:"releases,omitempty"`
 }
 
 type HelmRelease struct {
@@ -103,9 +104,17 @@ type HelmRelease struct {
 // they should be built.
 type Artifact struct {
 	ImageName      string             `yaml:"imageName"`
-	DockerfilePath string             `yaml:"dockerfilePath"`
-	Workspace      string             `yaml:"workspace"`
-	BuildArgs      map[string]*string `yaml:"buildArgs"`
+	DockerfilePath string             `yaml:"dockerfilePath,omitempty"`
+	Workspace      string             `yaml:"workspace,omitempty"`
+	BuildArgs      map[string]*string `yaml:"buildArgs,omitempty"`
+}
+
+// Profile is additional configuration that overrides default
+// configuration when it is activated.
+type Profile struct {
+	Name   string       `yaml:"name"`
+	Build  BuildConfig  `yaml:"build,omitempty"`
+	Deploy DeployConfig `yaml:"deploy,omitempty"`
 }
 
 // DefaultDevSkaffoldConfig is a partial set of defaults for the SkaffoldConfig

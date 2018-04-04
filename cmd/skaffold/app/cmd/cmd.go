@@ -63,6 +63,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 func AddRunDevFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&filename, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
+	cmd.Flags().StringArrayVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
 }
 
 func SetUpLogs(out io.Writer, level string) error {
@@ -90,6 +91,11 @@ func runSkaffold(out io.Writer, dev bool, filename string) error {
 	cfg, err := config.Parse(buf, defaultConfig)
 	if err != nil {
 		return errors.Wrap(err, "parsing skaffold config")
+	}
+
+	err = cfg.ApplyProfiles(opts.Profiles)
+	if err != nil {
+		return errors.Wrap(err, "applying profiles")
 	}
 
 	opts.Output = out
