@@ -39,7 +39,7 @@ Updates your deployed application continually:
 -  Continuous build-deploy loop, only warn on errors
 
 ### skaffold run
-Run runs a Skaffold pipeline once, exits on any errors in the pipeline.  
+Runs a Skaffold pipeline once, exits on any errors in the pipeline.  
 Use for:
 -  Continuous integration or continuous deployment pipelines
 -  Sanity checking after iterating on your application
