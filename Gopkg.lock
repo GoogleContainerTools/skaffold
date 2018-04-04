@@ -219,6 +219,12 @@
   version = "v1.9.0"
 
 [[projects]]
+  name = "github.com/fsnotify/fsnotify"
+  packages = ["."]
+  revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
+  version = "v1.4.7"
+
+[[projects]]
   name = "github.com/ghodss/yaml"
   packages = ["."]
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
@@ -479,12 +485,6 @@
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/rjeczalik/notify"
-  packages = ["."]
-  revision = "c31e5f2cb22b3e4ef3f882f413847669bf2652b9"
 
 [[projects]]
   name = "github.com/sergi/go-diff"
@@ -956,6 +956,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9ac269c64c68526a9813ea1d716b011887581712449f34ac5521c525f393ddd3"
+  inputs-digest = "099099491cb87c57fde8b9598c8ed2aa0804dfadb2b9f55b2e108d2a789898bb"
   solver-name = "gps-cdcl"
   solver-version = 1

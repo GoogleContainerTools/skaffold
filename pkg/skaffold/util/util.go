@@ -21,11 +21,9 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
-
-	"github.com/docker/docker/builder/dockerignore"
-	"github.com/docker/docker/pkg/fileutils"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -69,6 +67,35 @@ func StrSliceContains(sl []string, s string) bool {
 		}
 	}
 	return false
+}
+
+func RelPathToAbsPath(relPaths []string) ([]string, error) {
+	absPath := []string{}
+	for _, p := range relPaths {
+		a, err := filepath.Abs(p)
+		if err != nil {
+			return nil, errors.Wrapf(err, "getting absolute path of %s", p)
+		}
+		absPath = append(absPath, a)
+	}
+	return absPath, nil
+}
+
+func FilterOutSymlinks(paths []string) ([]string, error) {
+	res := []string{}
+	for _, p := range paths {
+		fi, err := os.Lstat(p)
+		if err != nil {
+			return nil, errors.Wrapf(err, "getting file info for %s", p)
+		}
+		if fi.Mode() == os.ModeSymlink {
+			logrus.Debugf("%s is a symlink", p)
+			// nothing to do for symlinks
+			continue
+		}
+		res = append(res, p)
+	}
+	return res, nil
 }
 
 // ExpandPaths uses a filepath.Match to expand paths according to wildcards.
@@ -144,35 +171,6 @@ func ExpandPathsGlob(paths []string) ([]string, error) {
 	}
 	sort.Strings(ret)
 	return ret, nil
-}
-
-func ApplyDockerIgnore(paths []string, dockerIgnorePath string) ([]string, error) {
-	excludes := []string{}
-	if _, err := Fs.Stat(dockerIgnorePath); !os.IsNotExist(err) {
-		r, err := Fs.Open(dockerIgnorePath)
-		defer r.Close()
-		if err != nil {
-			return nil, err
-		}
-		excludes, err = dockerignore.ReadAll(r)
-		if err != nil {
-			return nil, err
-		}
-		excludes = append(excludes, ".dockerignore")
-	}
-
-	filteredDeps := []string{}
-	for _, d := range paths {
-		m, err := fileutils.Matches(d, excludes)
-		if err != nil {
-			return nil, err
-		}
-		if !m {
-			filteredDeps = append(filteredDeps, d)
-		}
-	}
-	sort.Strings(filteredDeps)
-	return filteredDeps, nil
 }
 
 func addFileOrDir(fs afero.Fs, ref string, info os.FileInfo, expandedPaths map[string]struct{}) error {

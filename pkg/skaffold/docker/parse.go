@@ -21,16 +21,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"path"
 	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
 
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/containers/image/docker"
 	"github.com/containers/image/manifest"
 	"github.com/containers/image/types"
+	"github.com/docker/docker/builder/dockerignore"
+	"github.com/docker/docker/pkg/fileutils"
 	"github.com/moby/moby/builder/dockerfile/parser"
 	"github.com/moby/moby/builder/dockerfile/shell"
 	"github.com/pkg/errors"
@@ -47,6 +52,32 @@ const (
 
 // For testing.
 var RetrieveImage = retrieveImage
+
+type DockerfileDepResolver struct{}
+
+var DefaultDockerfileDepResolver = &DockerfileDepResolver{}
+
+func (*DockerfileDepResolver) GetDependencies(a *config.Artifact) ([]string, error) {
+	dockerfilePath := a.DockerfilePath
+	if a.DockerfilePath == "" {
+		dockerfilePath = constants.DefaultDockerfilePath
+	}
+	dockerfileAbsPath, err := filepath.Abs(filepath.Join(a.Workspace, dockerfilePath))
+	if err != nil {
+		return nil, errors.Wrap(err, "getting absolute path of dockerfile")
+	}
+	f, err := util.Fs.Open(dockerfileAbsPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "opening dockerfile")
+	}
+	defer f.Close()
+	deps, err := GetDockerfileDependencies(a.Workspace, f)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting dockerfile dependencies")
+	}
+	deps = append(deps, dockerfileAbsPath)
+	return deps, nil
+}
 
 // GetDockerfileDependencies parses a dockerfile and returns the full paths
 // of all the source files that the resulting docker image depends on.
@@ -99,33 +130,15 @@ func GetDockerfileDependencies(workspace string, r io.Reader) ([]string, error) 
 		return nil, errors.Wrap(err, "expanding dockerfile paths")
 	}
 
+	logrus.Infof("deps %s", expandedDeps)
+
 	// Look for .dockerignore.
 	ignorePath := filepath.Join(workspace, ".dockerignore")
-
-	absWorkspacePath, err := filepath.Abs(workspace)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting workspace absolute path")
-	}
-	var relPaths []string
-	for _, path := range expandedDeps {
-		absPath, err := filepath.Abs(path)
-		if err != nil {
-			return nil, errors.Wrap(err, "getting absolute path")
-		}
-		relPath, err := filepath.Rel(absWorkspacePath, absPath)
-		if err != nil {
-			return nil, errors.Wrap(err, "getting relative path")
-		}
-		relPaths = append(relPaths, relPath)
-	}
-	filteredDeps, err := util.ApplyDockerIgnore(relPaths, ignorePath)
+	filteredDeps, err := ApplyDockerIgnore(expandedDeps, ignorePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "applying dockerignore")
 	}
 
-	for i, path := range filteredDeps {
-		filteredDeps[i] = filepath.Join(workspace, path)
-	}
 	return filteredDeps, nil
 }
 
@@ -290,4 +303,42 @@ func hasMultiStageFlag(flags []string) bool {
 		}
 	}
 	return false
+}
+
+func ApplyDockerIgnore(paths []string, dockerIgnorePath string) ([]string, error) {
+	absPaths, err := util.RelPathToAbsPath(paths)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting absolute path of dependencies")
+	}
+	excludes := []string{}
+	if _, err := util.Fs.Stat(dockerIgnorePath); !os.IsNotExist(err) {
+		r, err := util.Fs.Open(dockerIgnorePath)
+		defer r.Close()
+		if err != nil {
+			return nil, err
+		}
+		excludes, err = dockerignore.ReadAll(r)
+		if err != nil {
+			return nil, err
+		}
+		excludes = append(excludes, ".dockerignore")
+	}
+
+	absPathExcludes, err := util.RelPathToAbsPath(excludes)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting absolute path of docker ignored paths")
+	}
+
+	filteredDeps := []string{}
+	for _, d := range absPaths {
+		m, err := fileutils.Matches(d, absPathExcludes)
+		if err != nil {
+			return nil, err
+		}
+		if !m {
+			filteredDeps = append(filteredDeps, d)
+		}
+	}
+	sort.Strings(filteredDeps)
+	return filteredDeps, nil
 }

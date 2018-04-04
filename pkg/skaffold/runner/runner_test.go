@@ -92,18 +92,18 @@ func fakeGetClient() (clientgo.Interface, error)  { return fake.NewSimpleClients
 func errorGetClient() (clientgo.Interface, error) { return nil, fmt.Errorf("") }
 
 type TestWatcher struct {
-	changes [][]*config.Artifact
+	changes [][]string
 }
 
-func NewWatcherFactory(err error, changes ...[]*config.Artifact) watch.WatcherFactory {
-	return func([]*config.Artifact) (watch.Watcher, error) {
+func NewWatcherFactory(err error, changes ...[]string) watch.WatcherFactory {
+	return func([]string) (watch.Watcher, error) {
 		return &TestWatcher{
 			changes: changes,
 		}, err
 	}
 }
 
-func (t *TestWatcher) Start(context context.Context, onChange func([]*config.Artifact)) {
+func (t *TestWatcher) Start(context context.Context, onChange func([]string)) {
 	for _, change := range t.changes {
 		onChange(change)
 	}
@@ -309,7 +309,7 @@ func TestRun(t *testing.T) {
 					},
 				},
 				Deployer:       &TestDeployer{},
-				WatcherFactory: NewWatcherFactory(nil, []*config.Artifact{}),
+				WatcherFactory: NewWatcherFactory(nil, []string{}),
 				opts: &config.SkaffoldOptions{
 					DevMode: true,
 					Output:  &bytes.Buffer{},
@@ -328,7 +328,7 @@ func TestRun(t *testing.T) {
 				},
 				Deployer:       &TestDeployer{},
 				Tagger:         &TestTagger{},
-				WatcherFactory: NewWatcherFactory(nil, []*config.Artifact{}),
+				WatcherFactory: NewWatcherFactory(nil, []string{}),
 				opts: &config.SkaffoldOptions{
 					DevMode: true,
 					Output:  &bytes.Buffer{},
