@@ -42,7 +42,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 				ImageName: "test",
 				Digest:    "sha256:12345abcde",
 			},
-			expectedName: "test:41cf71e",
+			expectedName: "test:eefe1b9",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write(t, "source.go", []byte("code")).
@@ -55,7 +55,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			opts: &TagOptions{
 				ImageName: "test",
 			},
-			expectedName: "test:41cf71e-dirty-17c3e6fb2811b7af",
+			expectedName: "test:eefe1b9-dirty-17c3e6fb2811b7af",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write(t, "source.go", []byte("code")).
@@ -69,7 +69,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			opts: &TagOptions{
 				ImageName: "test",
 			},
-			expectedName: "test:41cf71e-dirty-d7bc32e5f6760a99",
+			expectedName: "test:eefe1b9-dirty-d7bc32e5f6760a99",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write(t, "source.go", []byte("code")).
@@ -118,7 +118,7 @@ func TestGenerateFullyQualifiedImageNameFromSubDirectory(t *testing.T) {
 	name2, err := c.GenerateFullyQualifiedImageName(subDir, opts)
 	failNowIfError(t, err)
 
-	if name1 != name2 || name1 != "test:6e0beab" {
+	if name1 != name2 || name1 != "test:a7b32a6" {
 		t.Errorf("Invalid names found: %s and %s", name1, name2)
 	}
 }
@@ -148,7 +148,7 @@ func (g *gitRepo) mkdir(folder string) *gitRepo {
 }
 
 func (g *gitRepo) write(t *testing.T, file string, content []byte) *gitRepo {
-	err := ioutil.WriteFile(filepath.Join(g.dir, file), content, 0644)
+	err := ioutil.WriteFile(filepath.Join(g.dir, file), content, os.ModePerm)
 	failNowIfError(t, err)
 	return g
 }
@@ -160,7 +160,7 @@ func (g *gitRepo) add(t *testing.T, file string) *gitRepo {
 }
 
 func (g *gitRepo) commit(t *testing.T, msg string) *gitRepo {
-	now, err := time.Parse("Jan 2, 2006 at 3:04pm (MST)", "Feb 3, 2013 at 7:54pm (PST)")
+	now, err := time.Parse("Jan 2, 2006 at 15:04:05 -0700 MST", "Feb 3, 2013 at 19:54:00 -0700 MST")
 	failNowIfError(t, err)
 
 	_, err = g.workTree.Commit(msg, &git.CommitOptions{
