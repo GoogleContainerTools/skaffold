@@ -163,10 +163,25 @@ var DefaultDockerArtifact = &DockerArtifact{
 // Parse reads from an io.Reader and unmarshals the result into a SkaffoldConfig.
 // The default config argument provides default values for the config,
 // which can be overridden if present in the config file.
-func Parse(config []byte, defaultConfig *SkaffoldConfig) (*SkaffoldConfig, error) {
-	if err := yaml.Unmarshal(config, defaultConfig); err != nil {
+func Parse(config []byte, dev bool) (*SkaffoldConfig, error) {
+	cfg := &SkaffoldConfig{}
+	if err := yaml.Unmarshal(config, cfg); err != nil {
 		return nil, err
 	}
 
-	return defaultConfig, nil
+	setDefaultTagger(cfg, dev)
+
+	return cfg, nil
+}
+
+func setDefaultTagger(cfg *SkaffoldConfig, dev bool) {
+	if cfg.Build.TagPolicy.GitTagger != nil || cfg.Build.TagPolicy.ShaTagger != nil {
+		return
+	}
+
+	if dev {
+		cfg.Build.TagPolicy = TagPolicy{ShaTagger: &ShaTagger{}}
+	} else {
+		cfg.Build.TagPolicy = TagPolicy{GitTagger: &GitTagger{}}
+	}
 }

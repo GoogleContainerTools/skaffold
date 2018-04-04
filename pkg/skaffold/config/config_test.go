@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	rawConfigA = `
+	minimalConfig = `
 apiVersion: skaffold/v1alpha2
 kind: Config
 build:
@@ -32,52 +32,101 @@ build:
     workspace: ./examples/app
 deploy:
   name: example
-  parameters:
-    key: value
 `
-	badConfigA = "bad config"
+	minimalConfigWithTagger = `
+apiVersion: skaffold/v1alpha2
+kind: Config
+build:
+  tagPolicy:
+    sha256: {}
+  artifacts:
+  - imageName: example
+    workspace: ./examples/app
+deploy:
+  name: example
+`
+	badConfig = "bad config"
 )
 
-var configA = &SkaffoldConfig{
-	APIVersion: "skaffold/v1alpha2",
-	Kind:       "Config",
-	Build: BuildConfig{
-		TagPolicy: TagPolicy{ShaTagger: &ShaTagger{}},
-		Artifacts: []*Artifact{
-			{
-				ImageName: "example",
-				Workspace: "./examples/app",
+var (
+	configShaTagger = &SkaffoldConfig{
+		APIVersion: "skaffold/v1alpha2",
+		Kind:       "Config",
+		Build: BuildConfig{
+			TagPolicy: TagPolicy{ShaTagger: &ShaTagger{}},
+			Artifacts: []*Artifact{
+				{
+					ImageName: "example",
+					Workspace: "./examples/app",
+				},
 			},
 		},
-	},
-	Deploy: DeployConfig{
-		Name: "example",
-	},
-}
+		Deploy: DeployConfig{
+			Name: "example",
+		},
+	}
+	configGitTagger = &SkaffoldConfig{
+		APIVersion: "skaffold/v1alpha2",
+		Kind:       "Config",
+		Build: BuildConfig{
+			TagPolicy: TagPolicy{GitTagger: &GitTagger{}},
+			Artifacts: []*Artifact{
+				{
+					ImageName: "example",
+					Workspace: "./examples/app",
+				},
+			},
+		},
+		Deploy: DeployConfig{
+			Name: "example",
+		},
+	}
+)
 
 func TestParseConfig(t *testing.T) {
 	var tests = []struct {
 		description string
 		config      string
+		dev         bool
 		expected    *SkaffoldConfig
 		badReader   bool
 		shouldErr   bool
 	}{
 		{
-			description: "Parse config",
-			config:      rawConfigA,
-			expected:    configA,
+			description: "Minimal config for dev",
+			config:      minimalConfig,
+			dev:         true,
+			expected:    configShaTagger,
+		},
+		{
+			description: "Minimal config for run",
+			config:      minimalConfig,
+			dev:         false,
+			expected:    configGitTagger,
+		},
+		{
+			description: "Minimal config with tagger for dev",
+			config:      minimalConfigWithTagger,
+			dev:         true,
+			expected:    configShaTagger,
+		},
+		{
+			description: "Minimal config with tagger for run",
+			config:      minimalConfigWithTagger,
+			dev:         false,
+			expected:    configShaTagger,
 		},
 		{
 			description: "Bad config",
-			config:      badConfigA,
+			config:      badConfig,
 			shouldErr:   true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			cfg, err := Parse([]byte(test.config), DefaultDevSkaffoldConfig)
+			cfg, err := Parse([]byte(test.config), test.dev)
+
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cfg)
 		})
 	}
