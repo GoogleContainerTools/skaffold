@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )
 
@@ -163,6 +164,57 @@ func TestKubectlDeploy(t *testing.T) {
 	}
 }
 
+func TestKubectlCleanup(t *testing.T) {
+	var tests = []struct {
+		description string
+		cfg         *v1alpha2.DeployConfig
+		command     util.Command
+		shouldErr   bool
+	}{
+		{
+			description: "cleanup success",
+			cfg: &v1alpha2.DeployConfig{
+				DeployType: v1alpha2.DeployType{
+					KubectlDeploy: &v1alpha2.KubectlDeploy{
+						Manifests: []string{"test/deployment.yaml"},
+					},
+				},
+			},
+			command: testutil.NewFakeRunCommand("kubectl --context kubecontext delete -f -", "", "", nil),
+		},
+		{
+			description: "cleanup error",
+			cfg: &v1alpha2.DeployConfig{
+				DeployType: v1alpha2.DeployType{
+					KubectlDeploy: &v1alpha2.KubectlDeploy{
+						Manifests: []string{"test/deployment.yaml"},
+					},
+				},
+			},
+			command:   testutil.NewFakeRunCommand("kubectl --context kubecontext delete -f -", "", "", errors.New("BUG")),
+			shouldErr: true,
+		},
+	}
+
+	util.Fs = afero.NewMemMapFs()
+	defer util.ResetFs()
+	util.Fs.MkdirAll("test", 0750)
+	afero.WriteFile(util.Fs, "test/deployment.yaml", []byte(deploymentYAML), 0644)
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			if test.command != nil {
+				util.DefaultExecCommand = test.command
+				defer util.ResetDefaultExecCommand()
+			}
+
+			k := NewKubectlDeployer(test.cfg, testKubeContext)
+			err := k.Cleanup(context.Background(), &bytes.Buffer{})
+
+			testutil.CheckError(t, test.shouldErr, err)
+		})
+	}
+}
 func TestReplaceImages(t *testing.T) {
 	var tests = []struct {
 		description       string

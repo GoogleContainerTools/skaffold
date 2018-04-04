@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"io"
 
 	yaml "gopkg.in/yaml.v2"
@@ -86,6 +87,8 @@ func SetUpLogs(out io.Writer, level string) error {
 }
 
 func runSkaffold(out io.Writer, dev bool, filename string) error {
+	ctx := context.Background()
+
 	buf, err := util.ReadConfiguration(filename)
 	if err != nil {
 		return errors.Wrap(err, "read skaffold config")
@@ -121,7 +124,7 @@ func runSkaffold(out io.Writer, dev bool, filename string) error {
 		return errors.Wrap(err, "getting skaffold config")
 	}
 
-	if err := r.Run(); err != nil {
+	if err := r.Run(ctx); err != nil {
 		return errors.Wrap(err, "running skaffold steps")
 	}
 

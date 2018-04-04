@@ -34,6 +34,9 @@ type Deployer interface {
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster.
 	Deploy(context.Context, io.Writer, *build.BuildResult) (*Result, error)
+
+	// Cleanup deletes what was deployed by calling Deploy.
+	Cleanup(context.Context, io.Writer) error
 }
 
 func JoinTagsToBuildResult(b []build.Build, params map[string]string) (map[string]build.Build, error) {
