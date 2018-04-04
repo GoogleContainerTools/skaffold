@@ -87,9 +87,8 @@ func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagg
 		}
 	}
 	defer l.api.Close()
-	res := &BuildResult{
-		Builds: []Build{},
-	}
+
+	res := &BuildResult{}
 	for _, artifact := range artifacts {
 		initialTag, err := l.runBuildForArtifact(ctx, out, artifact)
 		if err != nil {
