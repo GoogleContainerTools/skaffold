@@ -4,7 +4,6 @@ build:
   artifacts:
   - imageName: gcr.io/k8s-skaffold/skaffold-example
     workspace: .
-  local: {}
 deploy:
   kubectl:
     manifests:

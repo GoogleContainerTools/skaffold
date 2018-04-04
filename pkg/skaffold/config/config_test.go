@@ -47,6 +47,8 @@ build:
   - imageName: example
     workspace: ./examples/app
     dockerfilePath: Dockerfile.dev
+  googleCloudBuild:
+    projectId: ID
 deploy:
   name: example
 `
@@ -67,7 +69,7 @@ func TestParseConfig(t *testing.T) {
 			config:      minimalConfig,
 			dev:         true,
 			expected: config(
-				withBuild(
+				withLocalBuild(
 					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
 				),
 			),
@@ -77,7 +79,7 @@ func TestParseConfig(t *testing.T) {
 			config:      minimalConfig,
 			dev:         false,
 			expected: config(
-				withBuild(
+				withLocalBuild(
 					withTagPolicy(TagPolicy{GitTagger: &GitTagger{}}),
 				),
 			),
@@ -87,7 +89,7 @@ func TestParseConfig(t *testing.T) {
 			config:      simpleConfig,
 			dev:         true,
 			expected: config(
-				withBuild(
+				withLocalBuild(
 					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
 					withArtifact("example", "./examples/app", "Dockerfile"),
 				),
@@ -99,7 +101,7 @@ func TestParseConfig(t *testing.T) {
 			config:      simpleConfig,
 			dev:         false,
 			expected: config(
-				withBuild(
+				withLocalBuild(
 					withTagPolicy(TagPolicy{GitTagger: &GitTagger{}}),
 					withArtifact("example", "./examples/app", "Dockerfile"),
 				),
@@ -111,7 +113,7 @@ func TestParseConfig(t *testing.T) {
 			config:      completeConfig,
 			dev:         true,
 			expected: config(
-				withBuild(
+				withGCBBuild("ID",
 					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
 					withArtifact("example", "./examples/app", "Dockerfile.dev"),
 				),
@@ -123,7 +125,7 @@ func TestParseConfig(t *testing.T) {
 			config:      completeConfig,
 			dev:         false,
 			expected: config(
-				withBuild(
+				withGCBBuild("ID",
 					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
 					withArtifact("example", "./examples/app", "Dockerfile.dev"),
 				),
@@ -154,9 +156,19 @@ func config(ops ...func(*SkaffoldConfig)) *SkaffoldConfig {
 	return cfg
 }
 
-func withBuild(ops ...func(*BuildConfig)) func(*SkaffoldConfig) {
+func withLocalBuild(ops ...func(*BuildConfig)) func(*SkaffoldConfig) {
 	return func(cfg *SkaffoldConfig) {
-		b := BuildConfig{}
+		b := BuildConfig{BuildType: BuildType{LocalBuild: &LocalBuild{}}}
+		for _, op := range ops {
+			op(&b)
+		}
+		cfg.Build = b
+	}
+}
+
+func withGCBBuild(id string, ops ...func(*BuildConfig)) func(*SkaffoldConfig) {
+	return func(cfg *SkaffoldConfig) {
+		b := BuildConfig{BuildType: BuildType{GoogleCloudBuild: &GoogleCloudBuild{ProjectID: id}}}
 		for _, op := range ops {
 			op(&b)
 		}

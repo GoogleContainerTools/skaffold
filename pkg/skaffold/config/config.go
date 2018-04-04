@@ -171,6 +171,7 @@ func Parse(config []byte, dev bool) (*SkaffoldConfig, error) {
 
 	setDefaultTagger(cfg, dev)
 	setDefaultDockerfiles(cfg)
+	defaultToLocalBuild(cfg)
 
 	return cfg, nil
 }
@@ -193,4 +194,12 @@ func setDefaultDockerfiles(cfg *SkaffoldConfig) {
 			artifact.DockerfilePath = constants.DefaultDockerfilePath
 		}
 	}
+}
+
+func defaultToLocalBuild(cfg *SkaffoldConfig) {
+	if cfg.Build.LocalBuild != nil || cfg.Build.GoogleCloudBuild != nil {
+		return
+	}
+
+	cfg.Build.LocalBuild = &LocalBuild{}
 }
