@@ -19,8 +19,9 @@ package docker
 import (
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"reflect"
-	"sort"
 	"strings"
 	"testing"
 
@@ -125,6 +126,17 @@ EXPOSE 9000 9001
 EXPOSE 9002/tcp
 `
 
+func joinToTmpDir(base string, paths []string) []string {
+	if paths == nil {
+		return nil
+	}
+	ret := []string{}
+	for _, p := range paths {
+		ret = append(ret, filepath.Join(base, p))
+	}
+	return ret
+}
+
 var ImageConfigs = map[string]*manifest.Schema2Image{
 	"golang:onbuild": {
 		Schema2V1Image: manifest.Schema2V1Image{
@@ -227,7 +239,7 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			dockerfile:   contextDockerfile,
 			workspace:    "docker/../docker",
 			dockerIgnore: true,
-			expected:     []string{"docker/nginx.conf"},
+			expected:     []string{},
 		},
 		{
 			description: "onbuild test",
@@ -257,8 +269,14 @@ func TestGetDockerfileDependencies(t *testing.T) {
 		afero.WriteFile(util.Fs, name, []byte(""), 0644)
 	}
 
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			test.expected = joinToTmpDir(wd, test.expected)
 			var r io.Reader
 			r = strings.NewReader(test.dockerfile)
 			if test.badReader {
@@ -271,7 +289,6 @@ func TestGetDockerfileDependencies(t *testing.T) {
 				defer util.Fs.Remove("docker/.dockerignore")
 			}
 			deps, err := GetDockerfileDependencies(test.workspace, r)
-			sort.Strings(deps)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
 		})
 	}

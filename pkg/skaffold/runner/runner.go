@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/watch"
 	clientgo "k8s.io/client-go/kubernetes"
@@ -45,6 +46,7 @@ type SkaffoldRunner struct {
 	config     *config.SkaffoldConfig
 	kubeclient clientgo.Interface
 	builds     []build.Build
+	depMap     *build.DependencyMap
 }
 
 var kubernetesClient = kubernetes.GetClientset
@@ -136,7 +138,13 @@ func (r *SkaffoldRunner) Run() error {
 }
 
 func (r *SkaffoldRunner) dev(ctx context.Context, artifacts []*config.Artifact) error {
-	watcher, err := r.WatcherFactory(artifacts)
+	var err error
+	r.depMap, err = build.NewDependencyMap(artifacts, docker.DefaultDockerfileDepResolver)
+	if err != nil {
+		return errors.Wrap(err, "getting path to dependency map")
+	}
+
+	watcher, err := r.WatcherFactory(r.depMap.Paths())
 	if err != nil {
 		return err
 	}
@@ -152,7 +160,7 @@ func (r *SkaffoldRunner) dev(ctx context.Context, artifacts []*config.Artifact) 
 		}
 	}
 
-	onChange := func(artifacts []*config.Artifact) {
+	onChange := func(changedPaths []string) {
 		logger.Mute()
 
 		_, _, err := r.buildAndDeploy(ctx, artifacts, onBuildSuccess)
@@ -165,9 +173,7 @@ func (r *SkaffoldRunner) dev(ctx context.Context, artifacts []*config.Artifact) 
 		logger.Unmute()
 	}
 
-	// First build
-	onChange(artifacts)
-
+	onChange(r.depMap.Paths())
 	// Start logs
 	if err = logger.Start(ctx, r.kubeclient.CoreV1()); err != nil {
 		return err
