@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -53,15 +54,14 @@ spec:
         ports:
         - containerPort: 8080`
 
-func TestKubectlRun(t *testing.T) {
+func TestKubectlDeploy(t *testing.T) {
 	var tests = []struct {
 		description string
 		cfg         *v1alpha2.DeployConfig
 		b           *build.BuildResult
 		command     util.Command
-
-		expected  *Result
-		shouldErr bool
+		expected    *Result
+		shouldErr   bool
 	}{
 		{
 			description: "parameter mismatch",
@@ -110,7 +110,7 @@ func TestKubectlRun(t *testing.T) {
 					},
 				},
 			},
-			command: testutil.NewFakeRunCommand("", "", nil),
+			command: testutil.NewFakeRunCommand("kubectl --context kubecontext apply -f -", "", "", nil),
 			b: &build.BuildResult{
 				Builds: []build.Build{
 					{
@@ -131,7 +131,7 @@ func TestKubectlRun(t *testing.T) {
 					},
 				},
 			},
-			command: testutil.NewFakeRunCommand("", "", fmt.Errorf("")),
+			command: testutil.NewFakeRunCommand("kubectl --context kubecontext apply -f -", "", "", fmt.Errorf("")),
 			b: &build.BuildResult{
 				Builds: []build.Build{
 					{
@@ -146,12 +146,7 @@ func TestKubectlRun(t *testing.T) {
 	util.Fs = afero.NewMemMapFs()
 	defer util.ResetFs()
 	util.Fs.MkdirAll("test", 0750)
-	files := map[string]string{
-		"test/deployment.yaml": deploymentYAML,
-	}
-	for path, contents := range files {
-		afero.WriteFile(util.Fs, path, []byte(contents), 0644)
-	}
+	afero.WriteFile(util.Fs, "test/deployment.yaml", []byte(deploymentYAML), 0644)
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
@@ -168,13 +163,13 @@ func TestKubectlRun(t *testing.T) {
 	}
 }
 
-func TestReplaceParameters(t *testing.T) {
+func TestReplaceImages(t *testing.T) {
 	var tests = []struct {
-		description      string
-		builds           []build.Build
-		manifest         string
-		expectedManifest string
-		shouldErr        bool
+		description       string
+		builds            []build.Build
+		manifests         manifestList
+		expectedManifests manifestList
+		shouldErr         bool
 	}{
 		{
 			description: "pod",
@@ -182,24 +177,45 @@ func TestReplaceParameters(t *testing.T) {
 				ImageName: "gcr.io/k8s-skaffold/skaffold-example",
 				Tag:       "gcr.io/k8s-skaffold/skaffold-example:TAG",
 			}},
-			manifest: `apiVersion: v1
+			manifests: manifestList{[]byte(`apiVersion: v1
 kind: Pod
 metadata:
   name: getting-started
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold-example
-    name: getting-started
-`,
-			expectedManifest: `apiVersion: v1
+    name: getting-started`)},
+			expectedManifests: manifestList{[]byte(`apiVersion: v1
 kind: Pod
 metadata:
   name: getting-started
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold-example:TAG
-    name: getting-started
-`,
+    name: getting-started`)},
+		},
+		{
+			description: "ignore tag",
+			builds: []build.Build{{
+				ImageName: "gcr.io/k8s-skaffold/skaffold-example",
+				Tag:       "gcr.io/k8s-skaffold/skaffold-example:TAG",
+			}},
+			manifests: manifestList{[]byte(`apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/skaffold-example:IGNORED
+    name: getting-started`)},
+			expectedManifests: manifestList{[]byte(`apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/skaffold-example:TAG
+    name: getting-started`)},
 		},
 		{
 			description: "service and deployment",
@@ -207,7 +223,8 @@ spec:
 				ImageName: "gcr.io/k8s-skaffold/leeroy-app",
 				Tag:       "gcr.io/k8s-skaffold/leeroy-app:TAG",
 			}},
-			manifest: `apiVersion: apps/v1beta2
+			manifests: manifestList{
+				[]byte(`apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
   labels:
@@ -224,9 +241,8 @@ spec:
     spec:
       containers:
       - image: gcr.io/k8s-skaffold/leeroy-app
-        name: leeroy-app
----
-apiVersion: v1
+        name: leeroy-app`),
+				[]byte(`apiVersion: v1
 kind: Service
 metadata:
   labels:
@@ -236,9 +252,9 @@ spec:
   ports:
   - port: 50051
   selector:
-    app: leeroy-app
-`,
-			expectedManifest: `apiVersion: apps/v1beta2
+    app: leeroy-app`)},
+			expectedManifests: manifestList{
+				[]byte(`apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
   labels:
@@ -255,9 +271,8 @@ spec:
     spec:
       containers:
       - image: gcr.io/k8s-skaffold/leeroy-app:TAG
-        name: leeroy-app
----
-apiVersion: v1
+        name: leeroy-app`),
+				[]byte(`apiVersion: v1
 kind: Service
 metadata:
   labels:
@@ -267,16 +282,72 @@ spec:
   ports:
   - port: 50051
   selector:
-    app: leeroy-app
-`,
+    app: leeroy-app`)},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			resultManifest, err := replaceParameters([]byte(test.manifest), test.builds)
+			manifests := manifestList(test.manifests)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedManifest, resultManifest)
+			resultManifest, err := manifests.replaceImages(test.builds)
+
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedManifests.String(), resultManifest.String())
 		})
 	}
+}
+
+func TestGenerateManifest(t *testing.T) {
+	dockerfile, cleanup := testutil.TempFile(t, "Dockerfile", []byte("FROM scratch\nEXPOSE 80"))
+	defer cleanup()
+
+	bRes := &build.BuildResult{
+		Builds: []build.Build{{
+			ImageName: "gcr.io/k8s-skaffold/skaffold-example",
+			Tag:       "gcr.io/k8s-skaffold/skaffold-example:TAG",
+			Artifact: &v1alpha2.Artifact{
+				Workspace: filepath.Dir(dockerfile),
+				ArtifactType: v1alpha2.ArtifactType{
+					DockerArtifact: &v1alpha2.DockerArtifact{
+						DockerfilePath: filepath.Base(dockerfile),
+					},
+				},
+			},
+		}},
+	}
+
+	deployer := &KubectlDeployer{
+		DeployConfig: &v1alpha2.DeployConfig{
+			DeployType: v1alpha2.DeployType{
+				KubectlDeploy: &v1alpha2.KubectlDeploy{},
+			},
+		},
+	}
+	manifests, err := deployer.readOrGenerateManifests(bRes)
+	testutil.CheckError(t, false, err)
+
+	manifests, err = manifests.replaceImages(bRes.Builds)
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, `apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    run: skaffold
+  name: skaffold
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: skaffold
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        run: skaffold
+    spec:
+      containers:
+      - image: gcr.io/k8s-skaffold/skaffold-example:TAG
+        name: app
+        ports:
+        - containerPort: 80`, manifests.String())
 }
