@@ -21,10 +21,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha1"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"

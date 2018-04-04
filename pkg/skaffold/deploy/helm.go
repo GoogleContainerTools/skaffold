@@ -23,7 +23,6 @@ import (
 	"os/exec"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -53,7 +52,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, b *build.Build
 	return nil, nil
 }
 
-func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha1.HelmRelease, b *build.BuildResult) error {
+func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, b *build.BuildResult) error {
 	isInstalled := true
 	getCmd := exec.Command("helm", "--kube-context", h.kubeContext, "get", r.Name)
 	if stdout, stderr, err := util.RunCommand(getCmd, nil); err != nil {

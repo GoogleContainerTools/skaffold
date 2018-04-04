@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"io"
 
 	yaml "gopkg.in/yaml.v2"
@@ -103,14 +102,18 @@ func runSkaffold(out io.Writer, dev bool, filename string) error {
 		return errors.Wrap(err, "parsing skaffold config")
 	}
 
-	err = cfg.ApplyProfiles(opts.Profiles)
+	// we already ensured that the versions match in the previous block,
+	// so this type assertion is safe.
+	latestConfig := cfg.(*config.SkaffoldConfig)
+
+	err = latestConfig.ApplyProfiles(opts.Profiles)
 	if err != nil {
 		return errors.Wrap(err, "applying profiles")
 	}
 
 	opts.Output = out
 	opts.DevMode = dev
-	r, err := runner.NewForConfig(opts, cfg.(*config.SkaffoldConfig))
+	r, err := runner.NewForConfig(opts, latestConfig)
 	if err != nil {
 		return errors.Wrap(err, "getting skaffold config")
 	}

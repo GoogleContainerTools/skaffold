@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha1"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 	"k8s.io/api/core/v1"
 )
 
@@ -58,7 +58,7 @@ type colorPicker struct {
 }
 
 // NewColorPicker creates a new ColorPicker.
-func NewColorPicker(artifacts []*v1alpha1.Artifact) ColorPicker {
+func NewColorPicker(artifacts []*v1alpha2.Artifact) ColorPicker {
 	colors := map[string]color{}
 	for i, artifact := range artifacts {
 		colors[artifact.ImageName] = colorCodes[i%len(colorCodes)]

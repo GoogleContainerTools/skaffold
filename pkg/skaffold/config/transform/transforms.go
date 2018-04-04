@@ -45,9 +45,22 @@ func ToV1Alpha2(vc util.VersionedConfig) (util.VersionedConfig, error) {
 		}
 	}
 
-	var newHelmDeploy *v1alpha1.HelmDeploy
+	var newHelmDeploy *v1alpha2.HelmDeploy
 	if oldConfig.Deploy.DeployType.HelmDeploy != nil {
-		newHelmDeploy = oldConfig.Deploy.DeployType.HelmDeploy
+		newReleases := make([]v1alpha2.HelmRelease, 0)
+		for _, release := range oldConfig.Deploy.DeployType.HelmDeploy.Releases {
+			newReleases = append(newReleases, v1alpha2.HelmRelease{
+				Name:           release.Name,
+				ChartPath:      release.ChartPath,
+				ValuesFilePath: release.ValuesFilePath,
+				Values:         release.Values,
+				Namespace:      release.Namespace,
+				Version:        release.Version,
+			})
+		}
+		newHelmDeploy = &v1alpha2.HelmDeploy{
+			Releases: newReleases,
+		}
 	}
 	var newKubectlDeploy *v1alpha2.KubectlDeploy
 	if oldConfig.Deploy.DeployType.KubectlDeploy != nil {
@@ -58,6 +71,32 @@ func ToV1Alpha2(vc util.VersionedConfig) (util.VersionedConfig, error) {
 		}
 		newKubectlDeploy = &v1alpha2.KubectlDeploy{
 			Manifests: newManifests,
+		}
+	}
+
+	var newArtifacts = make([]*v1alpha2.Artifact, 0)
+	for _, artifact := range oldConfig.Build.Artifacts {
+		newArtifacts = append(newArtifacts, &v1alpha2.Artifact{
+			ImageName: artifact.ImageName,
+			Workspace: artifact.Workspace,
+			ArtifactType: v1alpha2.ArtifactType{
+				DockerArtifact: &v1alpha2.DockerArtifact{
+					DockerfilePath: artifact.DockerfilePath,
+					BuildArgs:      artifact.BuildArgs,
+				},
+			},
+		})
+	}
+
+	var newBuildType = v1alpha2.BuildType{}
+	if oldConfig.Build.GoogleCloudBuild != nil {
+		newBuildType.GoogleCloudBuild = &v1alpha2.GoogleCloudBuild{
+			ProjectID: oldConfig.Build.GoogleCloudBuild.ProjectID,
+		}
+	}
+	if oldConfig.Build.LocalBuild != nil {
+		newBuildType.LocalBuild = &v1alpha2.LocalBuild{
+			SkipPush: oldConfig.Build.LocalBuild.SkipPush,
 		}
 	}
 
@@ -72,8 +111,8 @@ func ToV1Alpha2(vc util.VersionedConfig) (util.VersionedConfig, error) {
 			},
 		},
 		Build: v1alpha2.BuildConfig{
-			Artifacts: oldConfig.Build.Artifacts,
-			BuildType: oldConfig.Build.BuildType,
+			Artifacts: newArtifacts,
+			BuildType: newBuildType,
 			TagPolicy: tagPolicy,
 		},
 	}

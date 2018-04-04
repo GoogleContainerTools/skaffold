@@ -23,14 +23,12 @@ import (
 	"io"
 	"testing"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
-
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha1"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
 	clientgo "k8s.io/client-go/kubernetes"
@@ -42,14 +40,14 @@ type TestBuilder struct {
 	err error
 }
 
-func (t *TestBuilder) Build(context.Context, io.Writer, tag.Tagger, []*v1alpha1.Artifact) (*build.BuildResult, error) {
+func (t *TestBuilder) Build(context.Context, io.Writer, tag.Tagger, []*v1alpha2.Artifact) (*build.BuildResult, error) {
 	return t.res, t.err
 }
 
 type TestBuildAll struct {
 }
 
-func (t *TestBuildAll) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*v1alpha1.Artifact) (*build.BuildResult, error) {
+func (t *TestBuildAll) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) (*build.BuildResult, error) {
 	var builds []build.Build
 
 	for _, artifact := range artifacts {
@@ -113,10 +111,10 @@ func (t *TestWatcher) Start(context context.Context, onChange func([]string)) {
 }
 
 type TestChanges struct {
-	changes [][]*v1alpha1.Artifact
+	changes [][]*v1alpha2.Artifact
 }
 
-func (t *TestChanges) OnChange(action func(artifacts []*v1alpha1.Artifact)) {
+func (t *TestChanges) OnChange(action func(artifacts []*v1alpha2.Artifact)) {
 	for _, artifacts := range t.changes {
 		action(artifacts)
 	}
@@ -136,8 +134,8 @@ func TestNewForConfig(t *testing.T) {
 			config: &config.SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{
 					TagPolicy: v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}},
-					BuildType: v1alpha1.BuildType{
-						LocalBuild: &v1alpha1.LocalBuild{},
+					BuildType: v1alpha2.BuildType{
+						LocalBuild: &v1alpha2.LocalBuild{},
 					},
 				},
 				Deploy: v1alpha2.DeployConfig{
@@ -153,8 +151,8 @@ func TestNewForConfig(t *testing.T) {
 			config: &v1alpha2.SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{
 					TagPolicy: v1alpha2.TagPolicy{},
-					BuildType: v1alpha1.BuildType{
-						LocalBuild: &v1alpha1.LocalBuild{},
+					BuildType: v1alpha2.BuildType{
+						LocalBuild: &v1alpha2.LocalBuild{},
 					},
 				},
 				Deploy: v1alpha2.DeployConfig{
@@ -178,8 +176,8 @@ func TestNewForConfig(t *testing.T) {
 			config: &config.SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{
 					TagPolicy: v1alpha2.TagPolicy{},
-					BuildType: v1alpha1.BuildType{
-						LocalBuild: &v1alpha1.LocalBuild{},
+					BuildType: v1alpha2.BuildType{
+						LocalBuild: &v1alpha2.LocalBuild{},
 					},
 				}},
 			shouldErr: true,
@@ -190,8 +188,8 @@ func TestNewForConfig(t *testing.T) {
 			config: &config.SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{
 					TagPolicy: v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}},
-					BuildType: v1alpha1.BuildType{
-						LocalBuild: &v1alpha1.LocalBuild{},
+					BuildType: v1alpha2.BuildType{
+						LocalBuild: &v1alpha2.LocalBuild{},
 					},
 				},
 			},
@@ -263,7 +261,7 @@ func TestRun(t *testing.T) {
 				},
 				config: &v1alpha2.SkaffoldConfig{
 					Build: v1alpha2.BuildConfig{
-						Artifacts: []*v1alpha1.Artifact{
+						Artifacts: []*v1alpha2.Artifact{
 							{
 								ImageName: "test",
 							},
@@ -372,7 +370,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	ctx := context.Background()
 
 	// Build all artifacts
-	bRes, _, err := runner.buildAndDeploy(ctx, []*v1alpha1.Artifact{
+	bRes, _, err := runner.buildAndDeploy(ctx, []*v1alpha2.Artifact{
 		{ImageName: "image1"},
 		{ImageName: "image2"},
 	}, nil)
@@ -388,7 +386,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	}
 
 	// Rebuild only one
-	bRes, _, err = runner.buildAndDeploy(ctx, []*v1alpha1.Artifact{
+	bRes, _, err = runner.buildAndDeploy(ctx, []*v1alpha2.Artifact{
 		{ImageName: "image2"},
 	}, nil)
 

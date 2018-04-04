@@ -27,7 +27,6 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/watch"
 	clientgo "k8s.io/client-go/kubernetes"
@@ -115,7 +114,7 @@ func getDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) (deploy.Deploye
 	return nil, fmt.Errorf("Unknown deployer for config %+v", cfg)
 }
 
-func newTaggerForConfig(t config.TagPolicy) (tag.Tagger, error) {
+func newTaggerForConfig(t v1alpha2.TagPolicy) (tag.Tagger, error) {
 	if t.EnvTemplateTagger != nil {
 		return tag.NewEnvTemplateTagger(t.EnvTemplateTagger.Template)
 	}
@@ -190,7 +189,7 @@ func (r *SkaffoldRunner) dev(ctx context.Context, artifacts []*v1alpha2.Artifact
 	return nil
 }
 
-func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, artifacts []*v1alpha1.Artifact, onBuildSuccess func(*build.BuildResult)) (*build.BuildResult, *deploy.Result, error) {
+func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, artifacts []*v1alpha2.Artifact, onBuildSuccess func(*build.BuildResult)) (*build.BuildResult, *deploy.Result, error) {
 	bRes, err := r.build(ctx, artifacts)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "build")
@@ -213,7 +212,7 @@ func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, artifacts []*v1alph
 	return bRes, dRes, nil
 }
 
-func (r *SkaffoldRunner) build(ctx context.Context, artifacts []*v1alpha1.Artifact) (*build.BuildResult, error) {
+func (r *SkaffoldRunner) build(ctx context.Context, artifacts []*v1alpha2.Artifact) (*build.BuildResult, error) {
 	start := time.Now()
 	fmt.Fprintln(r.opts.Output, "Starting build...")
 

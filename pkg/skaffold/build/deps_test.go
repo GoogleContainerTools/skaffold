@@ -19,32 +19,32 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 )
 
 type FakeDependencyResolver struct {
 	deps []string
 }
 
-func (f *FakeDependencyResolver) GetDependencies(a *config.Artifact) ([]string, error) {
+func (f *FakeDependencyResolver) GetDependencies(a *v1alpha2.Artifact) ([]string, error) {
 	return f.deps, nil
 }
 
 func TestPaths(t *testing.T) {
 	var tests = []struct {
 		description    string
-		artifacts      []*config.Artifact
+		artifacts      []*v1alpha2.Artifact
 		dockerResolver DependencyResolver
 		bazelResolver  DependencyResolver
 		expected       []string
 	}{
 		{
 			description: "correct deps from dockerfile",
-			artifacts: []*config.Artifact{
+			artifacts: []*v1alpha2.Artifact{
 				{
 					Workspace: ".",
-					ArtifactType: config.ArtifactType{
-						DockerArtifact: &config.DockerArtifact{},
+					ArtifactType: v1alpha2.ArtifactType{
+						DockerArtifact: &v1alpha2.DockerArtifact{},
 					},
 				},
 			},
@@ -53,11 +53,11 @@ func TestPaths(t *testing.T) {
 		},
 		{
 			description: "correct deps from bazel",
-			artifacts: []*config.Artifact{
+			artifacts: []*v1alpha2.Artifact{
 				{
 					Workspace: ".",
-					ArtifactType: config.ArtifactType{
-						BazelArtifact: &config.BazelArtifact{},
+					ArtifactType: v1alpha2.ArtifactType{
+						BazelArtifact: &v1alpha2.BazelArtifact{},
 					},
 				},
 			},

@@ -19,6 +19,7 @@ package config
 import (
 	"testing"
 
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
 )
 
@@ -40,84 +41,84 @@ func TestApplyProfiles(t *testing.T) {
 			description: "build type",
 			profile:     "profile",
 			config: SkaffoldConfig{
-				Build: BuildConfig{
-					Artifacts: []*Artifact{
+				Build: v1alpha2.BuildConfig{
+					Artifacts: []*v1alpha2.Artifact{
 						{ImageName: "image"},
 					},
-					BuildType: BuildType{
-						LocalBuild: &LocalBuild{},
+					BuildType: v1alpha2.BuildType{
+						LocalBuild: &v1alpha2.LocalBuild{},
 					},
 				},
-				Deploy: DeployConfig{},
-				Profiles: []Profile{
+				Deploy: v1alpha2.DeployConfig{},
+				Profiles: []v1alpha2.Profile{
 					{
 						Name: "profile",
-						Build: BuildConfig{
-							BuildType: BuildType{
-								GoogleCloudBuild: &GoogleCloudBuild{},
+						Build: v1alpha2.BuildConfig{
+							BuildType: v1alpha2.BuildType{
+								GoogleCloudBuild: &v1alpha2.GoogleCloudBuild{},
 							},
 						},
 					},
 				},
 			},
 			expectedConfig: SkaffoldConfig{
-				Build: BuildConfig{
-					Artifacts: []*Artifact{
+				Build: v1alpha2.BuildConfig{
+					Artifacts: []*v1alpha2.Artifact{
 						{ImageName: "image"},
 					},
-					BuildType: BuildType{
-						GoogleCloudBuild: &GoogleCloudBuild{},
+					BuildType: v1alpha2.BuildType{
+						GoogleCloudBuild: &v1alpha2.GoogleCloudBuild{},
 					},
 				},
-				Deploy: DeployConfig{},
+				Deploy: v1alpha2.DeployConfig{},
 			},
 		},
 		{
 			description: "tag policy",
 			profile:     "dev",
 			config: SkaffoldConfig{
-				Build: BuildConfig{
-					Artifacts: []*Artifact{
+				Build: v1alpha2.BuildConfig{
+					Artifacts: []*v1alpha2.Artifact{
 						{ImageName: "image"},
 					},
-					TagPolicy: TagPolicy{GitTagger: &GitTagger{}},
+					TagPolicy: v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}},
 				},
-				Deploy: DeployConfig{},
-				Profiles: []Profile{
+				Deploy: v1alpha2.DeployConfig{},
+				Profiles: []v1alpha2.Profile{
 					{
 						Name: "dev",
-						Build: BuildConfig{
-							TagPolicy: TagPolicy{ShaTagger: &ShaTagger{}},
+						Build: v1alpha2.BuildConfig{
+							TagPolicy: v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}},
 						},
 					},
 				},
 			},
 			expectedConfig: SkaffoldConfig{
-				Build: BuildConfig{
-					Artifacts: []*Artifact{
+				Build: v1alpha2.BuildConfig{
+					Artifacts: []*v1alpha2.Artifact{
 						{ImageName: "image"},
 					},
-					TagPolicy: TagPolicy{ShaTagger: &ShaTagger{}},
+					TagPolicy: v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}},
 				},
-				Deploy: DeployConfig{},
+				Deploy: v1alpha2.DeployConfig{},
 			},
 		},
 		{
 			description: "artifacts",
 			profile:     "profile",
 			config: SkaffoldConfig{
-				Build: BuildConfig{
-					Artifacts: []*Artifact{
+				Build: v1alpha2.BuildConfig{
+					Artifacts: []*v1alpha2.Artifact{
 						{ImageName: "image"},
 					},
-					TagPolicy: TagPolicy{GitTagger: &GitTagger{}},
+					TagPolicy: v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}},
 				},
-				Deploy: DeployConfig{},
-				Profiles: []Profile{
+				Deploy: v1alpha2.DeployConfig{},
+				Profiles: []v1alpha2.Profile{
 					{
 						Name: "profile",
-						Build: BuildConfig{
-							Artifacts: []*Artifact{
+						Build: v1alpha2.BuildConfig{
+							Artifacts: []*v1alpha2.Artifact{
 								{ImageName: "image"},
 								{ImageName: "imageProd"},
 							},
@@ -126,42 +127,42 @@ func TestApplyProfiles(t *testing.T) {
 				},
 			},
 			expectedConfig: SkaffoldConfig{
-				Build: BuildConfig{
-					Artifacts: []*Artifact{
+				Build: v1alpha2.BuildConfig{
+					Artifacts: []*v1alpha2.Artifact{
 						{ImageName: "image"},
 						{ImageName: "imageProd"},
 					},
-					TagPolicy: TagPolicy{GitTagger: &GitTagger{}},
+					TagPolicy: v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}},
 				},
-				Deploy: DeployConfig{},
+				Deploy: v1alpha2.DeployConfig{},
 			},
 		},
 		{
 			description: "deploy",
 			profile:     "profile",
 			config: SkaffoldConfig{
-				Build: BuildConfig{},
-				Deploy: DeployConfig{
-					DeployType: DeployType{
-						KubectlDeploy: &KubectlDeploy{},
+				Build: v1alpha2.BuildConfig{},
+				Deploy: v1alpha2.DeployConfig{
+					DeployType: v1alpha2.DeployType{
+						KubectlDeploy: &v1alpha2.KubectlDeploy{},
 					},
 				},
-				Profiles: []Profile{
+				Profiles: []v1alpha2.Profile{
 					{
 						Name: "profile",
-						Deploy: DeployConfig{
-							DeployType: DeployType{
-								HelmDeploy: &HelmDeploy{},
+						Deploy: v1alpha2.DeployConfig{
+							DeployType: v1alpha2.DeployType{
+								HelmDeploy: &v1alpha2.HelmDeploy{},
 							},
 						},
 					},
 				},
 			},
 			expectedConfig: SkaffoldConfig{
-				Build: BuildConfig{},
-				Deploy: DeployConfig{
-					DeployType: DeployType{
-						HelmDeploy: &HelmDeploy{},
+				Build: v1alpha2.BuildConfig{},
+				Deploy: v1alpha2.DeployConfig{
+					DeployType: v1alpha2.DeployType{
+						HelmDeploy: &v1alpha2.HelmDeploy{},
 					},
 				},
 			},
