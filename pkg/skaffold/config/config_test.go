@@ -26,6 +26,10 @@ const (
 	minimalConfig = `
 apiVersion: skaffold/v1alpha2
 kind: Config
+`
+	simpleConfig = `
+apiVersion: skaffold/v1alpha2
+kind: Config
 build:
   artifacts:
   - imageName: example
@@ -33,7 +37,7 @@ build:
 deploy:
   name: example
 `
-	minimalConfigWithTagger = `
+	simpleConfigWithTagger = `
 apiVersion: skaffold/v1alpha2
 kind: Config
 build:
@@ -46,41 +50,6 @@ deploy:
   name: example
 `
 	badConfig = "bad config"
-)
-
-var (
-	configShaTagger = &SkaffoldConfig{
-		APIVersion: "skaffold/v1alpha2",
-		Kind:       "Config",
-		Build: BuildConfig{
-			TagPolicy: TagPolicy{ShaTagger: &ShaTagger{}},
-			Artifacts: []*Artifact{
-				{
-					ImageName: "example",
-					Workspace: "./examples/app",
-				},
-			},
-		},
-		Deploy: DeployConfig{
-			Name: "example",
-		},
-	}
-	configGitTagger = &SkaffoldConfig{
-		APIVersion: "skaffold/v1alpha2",
-		Kind:       "Config",
-		Build: BuildConfig{
-			TagPolicy: TagPolicy{GitTagger: &GitTagger{}},
-			Artifacts: []*Artifact{
-				{
-					ImageName: "example",
-					Workspace: "./examples/app",
-				},
-			},
-		},
-		Deploy: DeployConfig{
-			Name: "example",
-		},
-	}
 )
 
 func TestParseConfig(t *testing.T) {
@@ -96,25 +65,69 @@ func TestParseConfig(t *testing.T) {
 			description: "Minimal config for dev",
 			config:      minimalConfig,
 			dev:         true,
-			expected:    configShaTagger,
+			expected: config(
+				withBuild(
+					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
+				),
+			),
 		},
 		{
 			description: "Minimal config for run",
 			config:      minimalConfig,
 			dev:         false,
-			expected:    configGitTagger,
+			expected: config(
+				withBuild(
+					withTagPolicy(TagPolicy{GitTagger: &GitTagger{}}),
+				),
+			),
 		},
 		{
-			description: "Minimal config with tagger for dev",
-			config:      minimalConfigWithTagger,
+			description: "Simple config for dev",
+			config:      simpleConfig,
 			dev:         true,
-			expected:    configShaTagger,
+			expected: config(
+				withBuild(
+					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
+					withArtifact("example", "./examples/app"),
+				),
+				withDeploy("example"),
+			),
 		},
 		{
-			description: "Minimal config with tagger for run",
-			config:      minimalConfigWithTagger,
+			description: "Simple config for run",
+			config:      simpleConfig,
 			dev:         false,
-			expected:    configShaTagger,
+			expected: config(
+				withBuild(
+					withTagPolicy(TagPolicy{GitTagger: &GitTagger{}}),
+					withArtifact("example", "./examples/app"),
+				),
+				withDeploy("example"),
+			),
+		},
+		{
+			description: "Simple config with tagger for dev",
+			config:      simpleConfigWithTagger,
+			dev:         true,
+			expected: config(
+				withBuild(
+					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
+					withArtifact("example", "./examples/app"),
+				),
+				withDeploy("example"),
+			),
+		},
+		{
+			description: "Simple config with tagger for run",
+			config:      simpleConfigWithTagger,
+			dev:         false,
+			expected: config(
+				withBuild(
+					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
+					withArtifact("example", "./examples/app"),
+				),
+				withDeploy("example"),
+			),
 		},
 		{
 			description: "Bad config",
@@ -130,4 +143,45 @@ func TestParseConfig(t *testing.T) {
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cfg)
 		})
 	}
+}
+
+func config(ops ...func(*SkaffoldConfig)) *SkaffoldConfig {
+	cfg := &SkaffoldConfig{APIVersion: "skaffold/v1alpha2", Kind: "Config"}
+	for _, op := range ops {
+		op(cfg)
+	}
+	return cfg
+}
+
+func withBuild(ops ...func(*BuildConfig)) func(*SkaffoldConfig) {
+	return func(cfg *SkaffoldConfig) {
+		b := BuildConfig{}
+		for _, op := range ops {
+			op(&b)
+		}
+		cfg.Build = b
+	}
+}
+
+func withDeploy(name string, ops ...func(*DeployConfig)) func(*SkaffoldConfig) {
+	return func(cfg *SkaffoldConfig) {
+		d := DeployConfig{Name: name}
+		for _, op := range ops {
+			op(&d)
+		}
+		cfg.Deploy = d
+	}
+}
+
+func withArtifact(image, workspace string) func(*BuildConfig) {
+	return func(cfg *BuildConfig) {
+		cfg.Artifacts = append(cfg.Artifacts, &Artifact{
+			ImageName: image,
+			Workspace: workspace,
+		})
+	}
+}
+
+func withTagPolicy(tagPolicy TagPolicy) func(*BuildConfig) {
+	return func(cfg *BuildConfig) { cfg.TagPolicy = tagPolicy }
 }
