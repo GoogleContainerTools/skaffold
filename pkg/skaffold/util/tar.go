@@ -77,10 +77,11 @@ func addFileToTar(p string, tarPath string, tw *tar.Writer) error {
 			return err
 		}
 		f, err := os.Open(p)
-		defer f.Close()
 		if err != nil {
 			return err
 		}
+		defer f.Close()
+
 		if _, err := io.Copy(tw, f); err != nil {
 			return errors.Wrapf(err, "writing real file %s", p)
 		}

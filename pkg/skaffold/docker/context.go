@@ -26,10 +26,11 @@ import (
 
 func contextTarPaths(dockerfilePath string, context string) ([]string, error) {
 	f, err := os.Open(dockerfilePath)
-	defer f.Close()
 	if err != nil {
 		return nil, errors.Wrap(err, "opening dockerfile")
 	}
+	defer f.Close()
+
 	paths, err := GetDockerfileDependencies(context, f)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting dockerfile dependencies")
