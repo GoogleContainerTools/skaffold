@@ -8,12 +8,12 @@
     "deadcode",
     "gofmt",
     "goimports",
-    "golint",
     "gosimple",
     "ineffassign",
     "interfacer",
     "unconvert",
-    "vet"
+    "vet",
+    "staticcheck"
   ],
 
   "LineLength": 200
