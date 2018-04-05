@@ -21,6 +21,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/bazel"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
 	"github.com/pkg/errors"
@@ -128,13 +129,22 @@ func pathsForArtifact(a *config.Artifact) ([]string, error) {
 	return filteredDeps, nil
 }
 
+var (
+	DefaultDockerfileDepResolver DependencyResolver
+	DefaultBazelDepResolver      DependencyResolver
+)
+
+func init() {
+	DefaultDockerfileDepResolver = &docker.DockerfileDepResolver{}
+	DefaultBazelDepResolver = &bazel.BazelDependencyResolver{}
+}
+
 func GetDependenciesForArtifact(a *config.Artifact) ([]string, error) {
 	if a.DockerArtifact != nil {
-		return docker.DefaultDockerfileDepResolver.GetDependencies(a)
+		return DefaultDockerfileDepResolver.GetDependencies(a)
 	}
 	if a.BazelArtifact != nil {
-		b := &BazelDependencyResolver{}
-		return b.GetDependencies(a)
+		return DefaultBazelDepResolver.GetDependencies(a)
 	}
 	return nil, errors.New("unknown artifact type")
 }

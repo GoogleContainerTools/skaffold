@@ -50,11 +50,17 @@ func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error)
 var testImage1 = &config.Artifact{
 	ImageName: "gcr.io/test/image",
 	Workspace: "../../../testdata/docker",
+	ArtifactType: config.ArtifactType{
+		DockerArtifact: &config.DockerArtifact{},
+	},
 }
 
 var testImage2 = &config.Artifact{
 	ImageName: "gcr.io/test/image2",
 	Workspace: "../../../testdata/docker",
+	ArtifactType: config.ArtifactType{
+		DockerArtifact: &config.DockerArtifact{},
+	},
 }
 
 func TestLocalRun(t *testing.T) {
@@ -111,10 +117,16 @@ func TestLocalRun(t *testing.T) {
 					{
 						ImageName: "gcr.io/test/image",
 						Workspace: "../../../testdata/docker",
+						ArtifactType: config.ArtifactType{
+							DockerArtifact: &config.DockerArtifact{},
+						},
 					},
 					{
 						ImageName: "gcr.io/test/image2",
 						Workspace: "../../../testdata/docker",
+						ArtifactType: config.ArtifactType{
+							DockerArtifact: &config.DockerArtifact{},
+						},
 					},
 				},
 				BuildType: config.BuildType{
@@ -128,6 +140,9 @@ func TestLocalRun(t *testing.T) {
 				{
 					ImageName: "gcr.io/test/image",
 					Workspace: "../../../testdata/docker",
+					ArtifactType: config.ArtifactType{
+						DockerArtifact: &config.DockerArtifact{},
+					},
 				},
 			},
 			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),

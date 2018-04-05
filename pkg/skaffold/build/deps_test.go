@@ -22,85 +22,71 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 )
 
-type FakeDependencyResolver struct{}
+type FakeDependencyResolver struct {
+	deps []string
+}
 
 func (f *FakeDependencyResolver) GetDependencies(a *config.Artifact) ([]string, error) {
-	return []string{a.DockerfilePath}, nil
+	return f.deps, nil
 }
 
 func TestPaths(t *testing.T) {
 	var tests = []struct {
-		description string
-		artifacts   []*config.Artifact
-		resolver    DependencyResolver
-		expected    []string
+		description    string
+		artifacts      []*config.Artifact
+		dockerResolver DependencyResolver
+		bazelResolver  DependencyResolver
+		expected       []string
 	}{
 		{
-			description: "correct deps",
+			description: "correct deps from dockerfile",
 			artifacts: []*config.Artifact{
 				{
-					DockerfilePath: "Dockerfile",
-					Workspace:      ".",
+					Workspace: ".",
+					ArtifactType: config.ArtifactType{
+						DockerArtifact: &config.DockerArtifact{},
+					},
 				},
 			},
-			resolver: &FakeDependencyResolver{},
-			expected: []string{"Dockerfile"},
+			dockerResolver: &FakeDependencyResolver{deps: []string{"Dockerfile"}},
+			expected:       []string{"Dockerfile"},
+		},
+		{
+			description: "correct deps from bazel",
+			artifacts: []*config.Artifact{
+				{
+					Workspace: ".",
+					ArtifactType: config.ArtifactType{
+						BazelArtifact: &config.BazelArtifact{},
+					},
+				},
+			},
+			bazelResolver: &FakeDependencyResolver{deps: []string{"bazelfile"}},
+			expected:      []string{"bazelfile"},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			m, err := NewDependencyMap(test.artifacts, test.resolver)
+			oldDockerResolver := DefaultDockerfileDepResolver
+			oldBazelResolver := DefaultBazelDepResolver
+
+			DefaultDockerfileDepResolver = test.dockerResolver
+			DefaultBazelDepResolver = test.bazelResolver
+
+			m, err := NewDependencyMap(test.artifacts)
 			if err != nil {
 				t.Fatalf("unexpected error: %s", err)
 			}
-			actual := m.Paths()
-			if !reflect.DeepEqual(test.expected, actual) {
-				t.Errorf("%T differ.\nExpected\n%+v\nActual\n%+v", test.expected, test.expected, actual)
+
+			DefaultDockerfileDepResolver = oldDockerResolver
+			DefaultBazelDepResolver = oldBazelResolver
+
+			if !reflect.DeepEqual(test.expected, m.Paths()) {
+				t.Errorf("%T differ.\nExpected\n%+v\nActual\n%+v", test.expected, test.expected, m.Paths())
 				return
 			}
-		})
-	}
-}
 
-func TestArtifactsForPaths(t *testing.T) {
-	var tests = []struct {
-		description string
-		artifacts   []*config.Artifact
-		resolver    DependencyResolver
-		paths       []string
-		expected    []*config.Artifact
-	}{
-		{
-			description: "correct artifacts",
-			artifacts: []*config.Artifact{
-				{
-					DockerfilePath: "Dockerfile",
-					Workspace:      ".",
-				},
-			},
-			paths:    []string{"Dockerfile"},
-			resolver: &FakeDependencyResolver{},
-			expected: []*config.Artifact{
-				{
-					DockerfilePath: "Dockerfile",
-					Workspace:      ".",
-				},
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			m, err := NewDependencyMap(test.artifacts, test.resolver)
-			if err != nil {
-				t.Fatalf("unexpected error: %s", err)
-			}
-			actual := m.ArtifactsForPaths(test.paths)
-			if !reflect.DeepEqual(test.expected, actual) {
-				t.Errorf("%T differ.\nExpected\n%+v\nActual\n%+v", test.expected, test.expected, actual)
-				return
-			}
 		})
 	}
 }

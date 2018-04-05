@@ -55,8 +55,6 @@ var RetrieveImage = retrieveImage
 
 type DockerfileDepResolver struct{}
 
-var DefaultDockerfileDepResolver = &DockerfileDepResolver{}
-
 func (*DockerfileDepResolver) GetDependencies(a *config.Artifact) ([]string, error) {
 	d := a.DockerArtifact
 	dockerfilePath := d.DockerfilePath

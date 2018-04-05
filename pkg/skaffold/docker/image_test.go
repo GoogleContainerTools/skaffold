@@ -134,7 +134,7 @@ func TestDigest(t *testing.T) {
 	var tests = []testImageAPI{
 		{
 			description: "get digest",
-			imageName:   "identifier",
+			imageName:   "identifier:latest",
 			tagToImageID: map[string]string{
 				"identifier:latest": "sha256:123abc",
 			},
