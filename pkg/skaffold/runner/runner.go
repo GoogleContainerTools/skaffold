@@ -218,7 +218,7 @@ func (r *SkaffoldRunner) build(ctx context.Context, artifacts []*config.Artifact
 		return nil, errors.Wrap(err, "build step")
 	}
 
-	fmt.Fprintln(r.opts.Output, "Build complete in", time.Now().Sub(start))
+	fmt.Fprintln(r.opts.Output, "Build complete in", time.Since(start))
 
 	return bRes, nil
 }
@@ -235,7 +235,7 @@ func (r *SkaffoldRunner) deploy(ctx context.Context, bRes *build.BuildResult) (*
 		fmt.Fprint(r.opts.Output, constants.TerminalBell)
 	}
 
-	fmt.Fprintln(r.opts.Output, "Deploy complete in", time.Now().Sub(start))
+	fmt.Fprintln(r.opts.Output, "Deploy complete in", time.Since(start))
 
 	return dRes, nil
 }

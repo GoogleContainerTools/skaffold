@@ -174,7 +174,6 @@ watch:
 		}
 		switch b.Status {
 		case StatusQueued, StatusWorking, StatusUnknown:
-			break
 		case StatusSuccess:
 			imageID, err = getImageID(b)
 			if err != nil {

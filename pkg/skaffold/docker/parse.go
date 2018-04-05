@@ -313,10 +313,11 @@ func ApplyDockerIgnore(paths []string, dockerIgnorePath string) ([]string, error
 	excludes := []string{}
 	if _, err := util.Fs.Stat(dockerIgnorePath); !os.IsNotExist(err) {
 		r, err := util.Fs.Open(dockerIgnorePath)
-		defer r.Close()
 		if err != nil {
 			return nil, err
 		}
+		defer r.Close()
+
 		excludes, err = dockerignore.ReadAll(r)
 		if err != nil {
 			return nil, err

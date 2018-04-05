@@ -85,13 +85,13 @@ func NewPodStore(c kubernetes.Interface, namespace string, label labels.Selector
 		ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
 			options.LabelSelector = label.String()
 			options.FieldSelector = field.String()
-			obj, err := c.Core().Pods(namespace).List(options)
+			obj, err := c.CoreV1().Pods(namespace).List(options)
 			return runtime.Object(obj), err
 		},
 		WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
 			options.LabelSelector = label.String()
 			options.FieldSelector = field.String()
-			return c.Core().Pods(namespace).Watch(options)
+			return c.CoreV1().Pods(namespace).Watch(options)
 		},
 	}
 	store := cache.NewStore(cache.MetaNamespaceKeyFunc)
@@ -150,7 +150,7 @@ func WaitForRCToStabilize(c kubernetes.Interface, ns, name string, timeout time.
 		"metadata.name":      name,
 		"metadata.namespace": ns,
 	}.AsSelector().String()}
-	w, err := c.Core().ReplicationControllers(ns).Watch(options)
+	w, err := c.CoreV1().ReplicationControllers(ns).Watch(options)
 	if err != nil {
 		return err
 	}
@@ -207,7 +207,7 @@ func WaitForDeploymentToStabilize(c kubernetes.Interface, ns, name string, timeo
 // WaitForService waits until the service appears (exist == true), or disappears (exist == false)
 func WaitForService(c kubernetes.Interface, namespace, name string, exist bool, interval, timeout time.Duration) error {
 	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
-		_, err := c.Core().Services(namespace).Get(name, meta_v1.GetOptions{})
+		_, err := c.CoreV1().Services(namespace).Get(name, meta_v1.GetOptions{})
 		switch {
 		case err == nil:
 			glog.Infof("Service %s in namespace %s found.", name, namespace)
@@ -234,7 +234,7 @@ func WaitForService(c kubernetes.Interface, namespace, name string, exist bool, 
 func WaitForServiceEndpointsNum(c kubernetes.Interface, namespace, serviceName string, expectNum int, interval, timeout time.Duration) error {
 	return wait.Poll(interval, timeout, func() (bool, error) {
 		glog.Infof("Waiting for amount of service:%s endpoints to be %d", serviceName, expectNum)
-		list, err := c.Core().Endpoints(namespace).List(meta_v1.ListOptions{})
+		list, err := c.CoreV1().Endpoints(namespace).List(meta_v1.ListOptions{})
 		if err != nil {
 			return false, err
 		}
