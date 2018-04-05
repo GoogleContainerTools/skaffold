@@ -35,7 +35,7 @@ type SkaffoldConfig struct {
 // BuildConfig contains all the configuration for the build steps
 type BuildConfig struct {
 	Artifacts []*Artifact `yaml:"artifacts"`
-	TagPolicy TagPolicy   `yaml:",inline"`
+	TagPolicy TagPolicy   `yaml:"tagPolicy"`
 	BuildType `yaml:",inline"`
 }
 
