@@ -150,7 +150,7 @@ func TestRun(t *testing.T) {
 				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(p.namespace), p.name); err != nil {
 					t.Fatalf("Timed out waiting for pod ready")
 				}
-				if err := client.CoreV1().Pods("default").Delete(p.name, nil); err != nil {
+				if err := client.CoreV1().Pods(p.namespace).Delete(p.name, nil); err != nil {
 					t.Fatalf("Error deleting pod %s: %s", p, err)
 				}
 			}
