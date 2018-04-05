@@ -29,5 +29,5 @@ if ! [ -x "$(command -v gometalinter.v2)" ]; then
 fi
 
 gometalinter.v2 \
-	${GOMETALINTER_OPTS:--deadine 5m} \
+	--deadline 5m \
 	--config $SCRIPTDIR/gometalinter.json ./...
