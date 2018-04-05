@@ -144,7 +144,6 @@
     "builder/dockerfile/command",
     "builder/dockerignore",
     "errdefs",
-    "pkg/archive",
     "pkg/fileutils",
     "pkg/homedir",
     "pkg/idtools",
@@ -152,7 +151,6 @@
     "pkg/jsonmessage",
     "pkg/longpath",
     "pkg/mount",
-    "pkg/pools",
     "pkg/progress",
     "pkg/stringid",
     "pkg/system",
@@ -418,7 +416,6 @@
     "builder/dockerfile/parser",
     "builder/dockerfile/shell",
     "client",
-    "pkg/archive",
     "pkg/homedir",
     "pkg/jsonmessage",
     "pkg/streamformatter",
@@ -455,10 +452,7 @@
 
 [[projects]]
   name = "github.com/opencontainers/runc"
-  packages = [
-    "libcontainer/system",
-    "libcontainer/user"
-  ]
+  packages = ["libcontainer/user"]
   revision = "baf6536d6259209c3edfa2b22237af82942d3dfa"
   version = "v0.1.1"
 
@@ -495,8 +489,8 @@
 [[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
-  version = "v1.0.4"
+  revision = "c155da19408a8799da419ed3eeb0cb5db0ad5dbc"
+  version = "v1.0.5"
 
 [[projects]]
   name = "github.com/spf13/afero"
@@ -504,14 +498,14 @@
     ".",
     "mem"
   ]
-  revision = "bb8f1927f2a9d3ab41c9340aa034f6b803f4359c"
-  version = "v1.0.2"
+  revision = "63644898a8da0bc22138abf860edaf5277b6102e"
+  version = "v1.1.0"
 
 [[projects]]
   name = "github.com/spf13/cobra"
   packages = ["."]
-  revision = "7b2c5ac9fc04fc5efafb60700713d4fa609b777b"
-  version = "v0.0.1"
+  revision = "a1f051bc3eba734da4772d60e2d677f47cf93ef4"
+  version = "v0.0.2"
 
 [[projects]]
   name = "github.com/spf13/pflag"
@@ -956,6 +950,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "099099491cb87c57fde8b9598c8ed2aa0804dfadb2b9f55b2e108d2a789898bb"
+  inputs-digest = "c88e5f214254024a4a10ea9ed7afafbe262ce1504930a50252cff7a3463aa85c"
   solver-name = "gps-cdcl"
   solver-version = 1
