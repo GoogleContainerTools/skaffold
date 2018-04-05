@@ -133,7 +133,7 @@ func TestWaitForPodReady(t *testing.T) {
 				test.initialObj.Status.Phase = p
 				pods.UpdateStatus(test.initialObj)
 			}
-			_ = <-done
+			<-done
 			var err error
 			select {
 			case waitErr := <-errCh:

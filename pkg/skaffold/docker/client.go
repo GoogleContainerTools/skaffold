@@ -122,12 +122,7 @@ func newMinikubeDockerAPIClient() (DockerAPIClient, error) {
 		version = api.DefaultVersion
 	}
 
-	cli, err := client.NewClient(host, version, httpclient, nil)
-	if err != nil {
-		return cli, err
-	}
-
-	return cli, nil
+	return client.NewClient(host, version, httpclient, nil)
 }
 
 func getMinikubeDockerEnv() (map[string]string, error) {

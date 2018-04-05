@@ -258,18 +258,16 @@ func TestGetDockerfileDependencies(t *testing.T) {
 	defer func() {
 		RetrieveImage = retrieveImage
 	}()
-
-	util.Fs = afero.NewMemMapFs()
 	defer util.ResetFs()
-
-	util.Fs.MkdirAll("docker", 0750)
-	files := []string{"docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file"}
-	for _, name := range files {
-		afero.WriteFile(util.Fs, name, []byte(""), 0644)
-	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			util.Fs = afero.NewMemMapFs()
+			util.Fs.MkdirAll("docker", 0750)
+			for _, file := range []string{"docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file"} {
+				afero.WriteFile(util.Fs, file, []byte(""), 0644)
+			}
+
 			var r io.Reader
 			if test.badReader {
 				r = testutil.BadReader{}
@@ -279,9 +277,7 @@ func TestGetDockerfileDependencies(t *testing.T) {
 
 			if test.dockerIgnore {
 				afero.WriteFile(util.Fs, ".dockerignore", []byte(dockerIgnore), 0644)
-				defer util.Fs.Remove(".dockerignore")
 				afero.WriteFile(util.Fs, "docker/.dockerignore", []byte(dockerIgnore), 0644)
-				defer util.Fs.Remove("docker/.dockerignore")
 			}
 
 			deps, err := GetDockerfileDependencies(test.workspace, r)
