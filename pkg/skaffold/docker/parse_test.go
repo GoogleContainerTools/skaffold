@@ -19,7 +19,6 @@ package docker
 import (
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -269,25 +268,22 @@ func TestGetDockerfileDependencies(t *testing.T) {
 		afero.WriteFile(util.Fs, name, []byte(""), 0644)
 	}
 
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			test.expected = joinToTmpDir(wd, test.expected)
 			var r io.Reader
-			r = strings.NewReader(test.dockerfile)
 			if test.badReader {
 				r = testutil.BadReader{}
+			} else {
+				r = strings.NewReader(test.dockerfile)
 			}
+
 			if test.dockerIgnore {
 				afero.WriteFile(util.Fs, ".dockerignore", []byte(dockerIgnore), 0644)
 				defer util.Fs.Remove(".dockerignore")
 				afero.WriteFile(util.Fs, "docker/.dockerignore", []byte(dockerIgnore), 0644)
 				defer util.Fs.Remove("docker/.dockerignore")
 			}
+
 			deps, err := GetDockerfileDependencies(test.workspace, r)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
 		})
