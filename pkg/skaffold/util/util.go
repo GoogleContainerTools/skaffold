@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -70,12 +69,11 @@ func StrSliceContains(sl []string, s string) bool {
 }
 
 func RelPathToAbsPath(relPaths []string) ([]string, error) {
+	baseFs := afero.NewBasePathFs(Fs, "").(*afero.BasePathFs)
+
 	absPath := []string{}
 	for _, p := range relPaths {
-		a, err := filepath.Abs(p)
-		if err != nil {
-			return nil, errors.Wrapf(err, "getting absolute path of %s", p)
-		}
+		a := afero.FullBaseFsPath(baseFs, p)
 		absPath = append(absPath, a)
 	}
 	return absPath, nil
@@ -184,6 +182,9 @@ func addFileOrDir(fs afero.Fs, ref string, info os.FileInfo, expandedPaths map[s
 func addDir(fs afero.Fs, dir string, expandedPaths map[string]struct{}) error {
 	logrus.Debugf("Recursively adding %s", dir)
 	if err := afero.Walk(fs, dir, func(path string, info os.FileInfo, err error) error {
+		if info == nil {
+			return nil
+		}
 		if info.IsDir() {
 			return nil
 		}
