@@ -43,9 +43,14 @@ build:
   tagPolicy:
     sha256: {}
   artifacts:
-  - imageName: example
-    workspace: ./examples/app
-    dockerfilePath: Dockerfile.dev
+  - imageName: image1
+    workspace: ./examples/app1
+    docker:
+      dockerfilePath: Dockerfile.dev
+  - imageName: image2
+    workspace: ./examples/app2
+    bazel:
+      target: //:example.tar
   googleCloudBuild:
     projectId: ID
 deploy:
@@ -90,7 +95,7 @@ func TestParseConfig(t *testing.T) {
 			expected: config(
 				withLocalBuild(
 					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
-					withArtifact("example", ".", "Dockerfile"),
+					withDockerArtifact("example", ".", "Dockerfile"),
 				),
 				withDeploy("example"),
 			),
@@ -102,7 +107,7 @@ func TestParseConfig(t *testing.T) {
 			expected: config(
 				withLocalBuild(
 					withTagPolicy(TagPolicy{GitTagger: &GitTagger{}}),
-					withArtifact("example", ".", "Dockerfile"),
+					withDockerArtifact("example", ".", "Dockerfile"),
 				),
 				withDeploy("example"),
 			),
@@ -114,7 +119,8 @@ func TestParseConfig(t *testing.T) {
 			expected: config(
 				withGCBBuild("ID",
 					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
-					withArtifact("example", "./examples/app", "Dockerfile.dev"),
+					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
+					withBazelArtifact("image2", "./examples/app2", "//:example.tar"),
 				),
 				withDeploy("example"),
 			),
@@ -126,7 +132,8 @@ func TestParseConfig(t *testing.T) {
 			expected: config(
 				withGCBBuild("ID",
 					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
-					withArtifact("example", "./examples/app", "Dockerfile.dev"),
+					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
+					withBazelArtifact("image2", "./examples/app2", "//:example.tar"),
 				),
 				withDeploy("example"),
 			),
@@ -185,12 +192,30 @@ func withDeploy(name string, ops ...func(*DeployConfig)) func(*SkaffoldConfig) {
 	}
 }
 
-func withArtifact(image, workspace, dockerfile string) func(*BuildConfig) {
+func withDockerArtifact(image, workspace, dockerfile string) func(*BuildConfig) {
 	return func(cfg *BuildConfig) {
 		cfg.Artifacts = append(cfg.Artifacts, &Artifact{
-			ImageName:      image,
-			Workspace:      workspace,
-			DockerfilePath: dockerfile,
+			ImageName: image,
+			Workspace: workspace,
+			ArtifactType: ArtifactType{
+				DockerArtifact: &DockerArtifact{
+					DockerfilePath: dockerfile,
+				},
+			},
+		})
+	}
+}
+
+func withBazelArtifact(image, workspace, target string) func(*BuildConfig) {
+	return func(cfg *BuildConfig) {
+		cfg.Artifacts = append(cfg.Artifacts, &Artifact{
+			ImageName: image,
+			Workspace: workspace,
+			ArtifactType: ArtifactType{
+				BazelArtifact: &BazelArtifact{
+					BuildTarget: target,
+				},
+			},
 		})
 	}
 }

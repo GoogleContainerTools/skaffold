@@ -74,8 +74,8 @@ func (l *LocalBuilder) runBuildForArtifact(ctx context.Context, out io.Writer, a
 	if artifact.BazelArtifact != nil {
 		return l.buildBazel(ctx, out, artifact)
 	}
-	artifact.DockerArtifact = config.DefaultDockerArtifact
-	return l.buildDocker(ctx, out, artifact)
+
+	return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 }
 
 // Build runs a docker build on the host and tags the resulting image with
@@ -163,9 +163,6 @@ func (l *LocalBuilder) buildBazel(ctx context.Context, out io.Writer, a *config.
 }
 
 func (l *LocalBuilder) buildDocker(ctx context.Context, out io.Writer, a *config.Artifact) (string, error) {
-	if a.DockerArtifact.DockerfilePath == "" {
-		a.DockerArtifact.DockerfilePath = constants.DefaultDockerfilePath
-	}
 	initialTag := util.RandomID()
 	err := docker.RunBuild(ctx, l.api, &docker.BuildOptions{
 		ImageName:   initialTag,

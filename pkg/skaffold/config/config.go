@@ -138,28 +138,6 @@ type BazelArtifact struct {
 	BuildTarget string `yaml:"target"`
 }
 
-// DefaultDevSkaffoldConfig is a partial set of defaults for the SkaffoldConfig
-// when dev mode is specified.
-// Each API is responsible for setting its own defaults that are not top level.
-var DefaultDevSkaffoldConfig = &SkaffoldConfig{
-	Build: BuildConfig{
-		TagPolicy: TagPolicy{ShaTagger: &ShaTagger{}},
-	},
-}
-
-// DefaultRunSkaffoldConfig is a partial set of defaults for the SkaffoldConfig
-// when run mode is specified.
-// Each API is responsible for setting its own defaults that are not top level.
-var DefaultRunSkaffoldConfig = &SkaffoldConfig{
-	Build: BuildConfig{
-		TagPolicy: TagPolicy{GitTagger: &GitTagger{}},
-	},
-}
-
-var DefaultDockerArtifact = &DockerArtifact{
-	DockerfilePath: constants.DefaultDockerfilePath,
-}
-
 // Parse reads from an io.Reader and unmarshals the result into a SkaffoldConfig.
 // The default config argument provides default values for the config,
 // which can be overridden if present in the config file.
@@ -169,16 +147,37 @@ func Parse(config []byte, dev bool) (*SkaffoldConfig, error) {
 		return nil, err
 	}
 
+	defaultToLocalBuild(cfg)
+	defaultToDockerArtifacts(cfg)
 	setDefaultTagger(cfg, dev)
 	setDefaultDockerfiles(cfg)
 	setDefaultWorkspaces(cfg)
-	defaultToLocalBuild(cfg)
 
 	return cfg, nil
 }
 
+func defaultToLocalBuild(cfg *SkaffoldConfig) {
+	if cfg.Build.BuildType != (BuildType{}) {
+		return
+	}
+
+	cfg.Build.BuildType.LocalBuild = &LocalBuild{}
+}
+
+func defaultToDockerArtifacts(cfg *SkaffoldConfig) {
+	for _, artifact := range cfg.Build.Artifacts {
+		if artifact.ArtifactType != (ArtifactType{}) {
+			continue
+		}
+
+		artifact.ArtifactType = ArtifactType{
+			DockerArtifact: &DockerArtifact{},
+		}
+	}
+}
+
 func setDefaultTagger(cfg *SkaffoldConfig, dev bool) {
-	if cfg.Build.TagPolicy.GitTagger != nil || cfg.Build.TagPolicy.ShaTagger != nil {
+	if cfg.Build.TagPolicy != (TagPolicy{}) {
 		return
 	}
 
@@ -191,8 +190,8 @@ func setDefaultTagger(cfg *SkaffoldConfig, dev bool) {
 
 func setDefaultDockerfiles(cfg *SkaffoldConfig) {
 	for _, artifact := range cfg.Build.Artifacts {
-		if artifact.DockerfilePath == "" {
-			artifact.DockerfilePath = constants.DefaultDockerfilePath
+		if artifact.DockerArtifact != nil && artifact.DockerArtifact.DockerfilePath == "" {
+			artifact.DockerArtifact.DockerfilePath = constants.DefaultDockerfilePath
 		}
 	}
 }
@@ -203,11 +202,4 @@ func setDefaultWorkspaces(cfg *SkaffoldConfig) {
 			artifact.Workspace = "."
 		}
 	}
-}
-
-func defaultToLocalBuild(cfg *SkaffoldConfig) {
-	if cfg.Build.LocalBuild != nil || cfg.Build.GoogleCloudBuild != nil {
-		return
-	}
-	cfg.Build.LocalBuild = &LocalBuild{}
 }
