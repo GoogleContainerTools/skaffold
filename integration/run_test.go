@@ -127,7 +127,7 @@ func TestRun(t *testing.T) {
 				},
 			},
 			dir:        "../examples/getting-started",
-			extraArgs:  []string{"-f", "skaffold-gcb.yaml"},
+			extraArgs:  []string{"-p", "gcb"},
 			remoteOnly: true,
 		},
 	}
