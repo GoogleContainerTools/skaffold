@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -146,6 +147,10 @@ var DefaultRunSkaffoldConfig = &SkaffoldConfig{
 	Build: BuildConfig{
 		TagPolicy: TagPolicy{GitTagger: &GitTagger{}},
 	},
+}
+
+var DefaultDockerArtifact = &DockerArtifact{
+	DockerfilePath: constants.DefaultDockerfilePath,
 }
 
 // Parse reads from an io.Reader and unmarshals the result into a SkaffoldConfig.

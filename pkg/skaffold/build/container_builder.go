@@ -105,8 +105,8 @@ func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger t
 }
 
 func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, cbclient *cloudbuild.Service, c *cstorage.Client, artifact *config.Artifact) (*Build, error) {
-	if artifact.DockerArtifact.DockerfilePath == "" {
-		artifact.DockerArtifact.DockerfilePath = constants.DefaultDockerfilePath
+	if artifact.DockerArtifact == nil {
+		artifact.DockerArtifact = config.DefaultDockerArtifact
 	}
 	logrus.Infof("Building artifact: %+v", artifact)
 	cbBucket := fmt.Sprintf("%s%s", cb.GoogleCloudBuild.ProjectID, constants.GCSBucketSuffix)

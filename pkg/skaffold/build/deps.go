@@ -146,5 +146,8 @@ func GetDependenciesForArtifact(a *config.Artifact) ([]string, error) {
 	if a.BazelArtifact != nil {
 		return DefaultBazelDepResolver.GetDependencies(a)
 	}
-	return nil, errors.New("unknown artifact type")
+
+	logrus.Infof("No artifact type found for %+v, default to docker", a)
+	a.DockerArtifact = config.DefaultDockerArtifact
+	return DefaultDockerfileDepResolver.GetDependencies(a)
 }

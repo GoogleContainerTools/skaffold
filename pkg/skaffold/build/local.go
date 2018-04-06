@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
@@ -77,7 +78,8 @@ func (l *LocalBuilder) runBuildForArtifact(ctx context.Context, out io.Writer, a
 	if artifact.BazelArtifact != nil {
 		return l.buildBazel(ctx, out, artifact)
 	}
-	return "", errors.New("unknown artifact type")
+	artifact.DockerArtifact = config.DefaultDockerArtifact
+	return l.buildDocker(ctx, out, artifact)
 }
 
 // Build runs a docker build on the host and tags the resulting image with
@@ -145,7 +147,7 @@ func (l *LocalBuilder) buildBazel(ctx context.Context, out io.Writer, a *config.
 	tarPath := strings.TrimPrefix(a.BazelArtifact.BuildTarget, "//:")
 	//TODO(r2d4): strip off trailing .tar, even worse
 	imageTag := strings.TrimSuffix(tarPath, ".tar")
-	imageTar, err := os.Open(fmt.Sprintf("bazel-bin/%s", tarPath))
+	imageTar, err := os.Open(filepath.Join("bazel-bin", tarPath))
 	if err != nil {
 		return "", errors.Wrap(err, "opening image tarball")
 	}
