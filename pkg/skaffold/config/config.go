@@ -29,9 +29,9 @@ type SkaffoldConfig struct {
 	APIVersion string `yaml:"apiVersion"`
 	Kind       string `yaml:"kind"`
 
-	Build    BuildConfig  `yaml:"build"`
-	Deploy   DeployConfig `yaml:"deploy"`
-	Profiles []Profile    `yaml:"profiles"`
+	Build    BuildConfig  `yaml:"build,omitempty"`
+	Deploy   DeployConfig `yaml:"deploy,omitempty"`
+	Profiles []Profile    `yaml:"profiles,omitempty"`
 }
 
 // BuildConfig contains all the configuration for the build steps
@@ -72,6 +72,8 @@ type LocalBuild struct {
 	SkipPush *bool `yaml:"skipPush"`
 }
 
+// GoogleCloudBuild contains the fields needed to do a remote build on
+// Google Container Builder.
 type GoogleCloudBuild struct {
 	ProjectID string `yaml:"projectId"`
 }
@@ -94,6 +96,7 @@ type KubectlDeploy struct {
 	Manifests []string `yaml:"manifests,omitempty"`
 }
 
+// HelmDeploy contains the configuration needed for deploying with helm
 type HelmDeploy struct {
 	Releases []HelmRelease `yaml:"releases,omitempty"`
 }
@@ -102,7 +105,7 @@ type HelmRelease struct {
 	Name           string            `yaml:"name"`
 	ChartPath      string            `yaml:"chartPath"`
 	ValuesFilePath string            `yaml:"valuesFilePath"`
-	Values         map[string]string `yaml:"values"`
+	Values         map[string]string `yaml:"values,omitempty"`
 	Namespace      string            `yaml:"namespace"`
 	Version        string            `yaml:"version"`
 	SetValues      map[string]string `yaml:"setValues"`
