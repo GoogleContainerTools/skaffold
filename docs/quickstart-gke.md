@@ -35,24 +35,24 @@ As a new developer on-boarding you need to start Skaffold in `dev` mode to begin
 on the application and seeing the updates happen in real time. The development team working on the application
 has already setup the Dockerfile, Kubernetes manifests, and Skaffold manifest necessary to get you started.
 
-1. Change the references in `skaffold-gcb.yaml` to point to your Container Registry.
+1. Change the references in `skaffold.yaml` to point to your Container Registry.
 
     ```shell
-    sed -i s#k8s-skaffold#${GOOGLE_CLOUD_PROJECT}#g skaffold-gcb.yaml
+    sed -i s#k8s-skaffold#${GOOGLE_CLOUD_PROJECT}#g skaffold.yaml
     ```
 
-1. Take a look at the contents of `skaffold-gcb.yaml`. You'll notice in the build section you will be using Google Container Builder to build
+1. Take a look at the contents of `skaffold.yaml`. You'll notice a profile named `gcb` that will be using Google Container Builder to build
    and push your image. The deploy section is configured to use kubectl to apply the Kubernetes manifests.
    
    ```shell
-   cat skaffold-gcb.yaml
+   cat skaffold.yaml
    ```
 
-1. Run Skaffold in `dev` mode. This will use Container Builder to build a new image from the local source code,
+1. Run Skaffold in `dev` mode with the `gcb` profile enabled. This will use Container Builder to build a new image from the local source code,
    push it to your Container Registry and then deploy your application to your Kubernetes Engine cluster.
 
     ```shell
-    skaffold dev -f skaffold-gcb.yaml
+    skaffold dev -p gcb
     ```
 1. You will see the application's logs printing to the screen.
 
