@@ -49,6 +49,9 @@ var testDeployConfig = &config.DeployConfig{
 					Values: map[string]string{
 						"image.tag": "skaffold-helm",
 					},
+					SetValues: map[string]string{
+						"some.key": "somevalue",
+					},
 				},
 			},
 		},
