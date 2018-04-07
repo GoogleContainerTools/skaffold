@@ -17,8 +17,6 @@ deploy:
       #valuesFilePath: helm-skaffold-values.yaml
       values:
         image: skaffold-helm
-      #setValues get appended to the helm deploy with --set. 
-      #Environment vars supported.  
+      #setValues get appended to the helm deploy with --set.  
       #setValues:
         #some.key: someValue
-        #some.other.key: ${PWD}/mypath

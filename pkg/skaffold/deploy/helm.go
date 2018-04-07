@@ -102,7 +102,7 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r config.HelmRelease, b *bui
 	if len(r.SetValues) != 0 {
 		for k, v := range r.SetValues {
 			setOpts = append(setOpts, "--set")
-			setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, util.EscapableOsGetenv(v)))
+			setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v))
 		}
 	}
 

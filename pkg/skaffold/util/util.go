@@ -212,13 +212,3 @@ func BoolPtr(b bool) *bool {
 	o := b
 	return &o
 }
-
-//EscapableOsGetenv wraps os.Getenv to allow for escaping with $$.
-func EscapableOsGetenv(s string) string {
-	return os.Expand(s, func(s string) string {
-		if s == "$" {
-			return "$"
-		}
-		return os.Getenv(s)
-	})
-}
