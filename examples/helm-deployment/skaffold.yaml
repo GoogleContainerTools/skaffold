@@ -6,6 +6,7 @@ build:
   artifacts:
   - imageName: skaffold-helm
     workspace: .
+    docker: {}
   local: {}
 deploy:
   helm:

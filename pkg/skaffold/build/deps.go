@@ -21,7 +21,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/bazel"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -62,8 +64,8 @@ func (d *DependencyMap) ArtifactsForPaths(paths []string) []*config.Artifact {
 	return artifacts
 }
 
-func NewDependencyMap(artifacts []*config.Artifact, res DependencyResolver) (*DependencyMap, error) {
-	m, err := pathToArtifactMap(artifacts, res)
+func NewDependencyMap(artifacts []*config.Artifact) (*DependencyMap, error) {
+	m, err := pathToArtifactMap(artifacts)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating path to artifact map")
 	}
@@ -90,12 +92,12 @@ func isIgnored(workspace, path string) (bool, error) {
 	return false, nil
 }
 
-func pathToArtifactMap(artifacts []*config.Artifact, res DependencyResolver) (map[string][]*config.Artifact, error) {
+func pathToArtifactMap(artifacts []*config.Artifact) (map[string][]*config.Artifact, error) {
 	m := map[string][]*config.Artifact{}
 	for _, a := range artifacts {
-		paths, err := pathsForArtifact(a, res)
+		paths, err := pathsForArtifact(a)
 		if err != nil {
-			return nil, errors.Wrapf(err, "getting paths for artifact %s", a.DockerfilePath)
+			return nil, errors.Wrapf(err, "getting paths for artifact %s", a.ImageName)
 		}
 
 		for _, p := range paths {
@@ -106,16 +108,18 @@ func pathToArtifactMap(artifacts []*config.Artifact, res DependencyResolver) (ma
 	return m, nil
 }
 
-func pathsForArtifact(a *config.Artifact, res DependencyResolver) ([]string, error) {
-	deps, err := res.GetDependencies(a)
+func pathsForArtifact(a *config.Artifact) ([]string, error) {
+	deps, err := GetDependenciesForArtifact(a)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting dockerfile dependencies")
 	}
+	logrus.Infof("Source code dependencies %s: %s", a.ImageName, deps)
 	filteredDeps := []string{}
 	for _, dep := range deps {
+		//TODO(r2d4): what does the ignore workspace look like for bazel?
 		ignored, err := isIgnored(a.Workspace, dep)
 		if err != nil {
-			return nil, errors.Wrapf(err, "calculating ignored files for artifact %s", a.DockerfilePath)
+			return nil, errors.Wrapf(err, "calculating ignored files for artifact %s", a.ImageName)
 		}
 		if ignored {
 			continue
@@ -123,4 +127,27 @@ func pathsForArtifact(a *config.Artifact, res DependencyResolver) ([]string, err
 		filteredDeps = append(filteredDeps, dep)
 	}
 	return filteredDeps, nil
+}
+
+var (
+	DefaultDockerfileDepResolver DependencyResolver
+	DefaultBazelDepResolver      DependencyResolver
+)
+
+func init() {
+	DefaultDockerfileDepResolver = &docker.DockerfileDepResolver{}
+	DefaultBazelDepResolver = &bazel.BazelDependencyResolver{}
+}
+
+func GetDependenciesForArtifact(a *config.Artifact) ([]string, error) {
+	if a.DockerArtifact != nil {
+		return DefaultDockerfileDepResolver.GetDependencies(a)
+	}
+	if a.BazelArtifact != nil {
+		return DefaultBazelDepResolver.GetDependencies(a)
+	}
+
+	logrus.Infof("No artifact type found for %+v, default to docker", a)
+	a.DockerArtifact = config.DefaultDockerArtifact
+	return DefaultDockerfileDepResolver.GetDependencies(a)
 }

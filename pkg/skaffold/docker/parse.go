@@ -29,7 +29,6 @@ import (
 	"sync"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/containers/image/docker"
 	"github.com/containers/image/manifest"
@@ -55,14 +54,8 @@ var RetrieveImage = retrieveImage
 
 type DockerfileDepResolver struct{}
 
-var DefaultDockerfileDepResolver = &DockerfileDepResolver{}
-
 func (*DockerfileDepResolver) GetDependencies(a *config.Artifact) ([]string, error) {
-	dockerfilePath := a.DockerfilePath
-	if a.DockerfilePath == "" {
-		dockerfilePath = constants.DefaultDockerfilePath
-	}
-	dockerfileAbsPath, err := filepath.Abs(filepath.Join(a.Workspace, dockerfilePath))
+	dockerfileAbsPath, err := filepath.Abs(filepath.Join(a.Workspace, a.DockerArtifact.DockerfilePath))
 	if err != nil {
 		return nil, errors.Wrap(err, "getting absolute path of dockerfile")
 	}

@@ -26,7 +26,6 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/deploy"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/watch"
 	clientgo "k8s.io/client-go/kubernetes"
@@ -139,7 +138,7 @@ func (r *SkaffoldRunner) Run() error {
 
 func (r *SkaffoldRunner) dev(ctx context.Context, artifacts []*config.Artifact) error {
 	var err error
-	r.depMap, err = build.NewDependencyMap(artifacts, docker.DefaultDockerfileDepResolver)
+	r.depMap, err = build.NewDependencyMap(artifacts)
 	if err != nil {
 		return errors.Wrap(err, "getting path to dependency map")
 	}
