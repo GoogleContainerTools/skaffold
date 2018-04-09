@@ -13,7 +13,7 @@ build:
   # The template string must be in the golang text/template syntax: https://golang.org/pkg/text/template/
   # The template is compiled and executed against the current environment, with two automatic variables injected:
   #   - IMAGE_NAME: The name of the image being built, as supplied in the artifacts section
-  #   - DIGETST: The digest of the newly built image.
+  #   - DIGEST: The digest of the newly built image.
   # envTemplate: - 
   #   template: "{{.RELEASE}}-{{.IMAGE_NAME}}"
   

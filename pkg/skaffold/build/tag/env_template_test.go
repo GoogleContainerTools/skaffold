@@ -19,6 +19,8 @@ package tag
 import (
 	"testing"
 	"text/template"
+
+	"github.com/GoogleCloudPlatform/skaffold/testutil"
 )
 
 func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
@@ -30,11 +32,11 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 		env  []string
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    string
-		wantErr bool
+		name      string
+		fields    fields
+		args      args
+		want      string
+		shouldErr bool
 	}{
 		{
 			name: "empty env",
@@ -88,14 +90,9 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			environ = func() []string {
 				return tt.args.env
 			}
+
 			got, err := c.GenerateFullyQualifiedImageName("", tt.args.opts)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("EnvTemplateTagger.GenerateFullyQualifiedImageName() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("EnvTemplateTagger.GenerateFullyQualifiedImageName() = %v, want %v", got, tt.want)
-			}
+			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.want, got)
 		})
 	}
 }
@@ -105,32 +102,28 @@ func TestNewEnvTemplateTagger(t *testing.T) {
 		t string
 	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name      string
+		args      args
+		shouldErr bool
 	}{
 		{
 			name: "valid template",
 			args: args{
 				t: "{{.FOO}}",
 			},
-			wantErr: false,
 		},
 		{
 			name: "invalid template",
 			args: args{
 				t: "{{.FOO",
 			},
-			wantErr: true,
+			shouldErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := NewEnvTemplateTagger(tt.args.t)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewEnvTemplateTagger() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			testutil.CheckError(t, tt.shouldErr, err)
 		})
 	}
 }
