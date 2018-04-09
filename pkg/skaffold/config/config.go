@@ -43,8 +43,9 @@ type BuildConfig struct {
 
 // TagPolicy contains all the configuration for the tagging step
 type TagPolicy struct {
-	GitTagger *GitTagger `yaml:"git"`
-	ShaTagger *ShaTagger `yaml:"sha256"`
+	GitTagger         *GitTagger         `yaml:"git"`
+	ShaTagger         *ShaTagger         `yaml:"sha256"`
+	EnvTemplateTagger *EnvTemplateTagger `yaml:"envTemplate"`
 }
 
 // ShaTagger contains the configuration for the SHA tagger.
@@ -52,6 +53,11 @@ type ShaTagger struct{}
 
 // GitTagger contains the configuration for the git tagger.
 type GitTagger struct{}
+
+// EnvTemplateTagger contains the configuration for the envTemplate tagger.
+type EnvTemplateTagger struct {
+	Template string `yaml:"template"`
+}
 
 // BuildType contains the specific implementation and parameters needed
 // for the build step. Only one field should be populated.

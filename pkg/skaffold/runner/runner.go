@@ -114,6 +114,9 @@ func getDeployer(cfg *config.DeployConfig, kubeContext string) (deploy.Deployer,
 }
 
 func newTaggerForConfig(t config.TagPolicy) (tag.Tagger, error) {
+	if t.EnvTemplateTagger != nil {
+		return tag.NewEnvTemplateTagger(t.EnvTemplateTagger.Template)
+	}
 	if t.ShaTagger != nil {
 		return &tag.ChecksumTagger{}, nil
 	}

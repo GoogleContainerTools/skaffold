@@ -20,6 +20,7 @@ package integration
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"os/exec"
 	"testing"
@@ -70,6 +71,7 @@ func TestRun(t *testing.T) {
 		extraArgs   []string
 		deployments []testObject
 		pods        []testObject
+		env         map[string]string
 
 		remoteOnly bool
 	}
@@ -106,6 +108,18 @@ func TestRun(t *testing.T) {
 			dir:       "../examples",
 			extraArgs: []string{"-f", "annotated-skaffold.yaml"},
 		},
+		{
+			description: "getting-started envTagger",
+			pods: []testObject{
+				{
+					name:      "getting-started",
+					namespace: "default",
+				},
+			},
+			dir:       "../examples/environment-variables",
+			extraArgs: []string{"-f", "skaffold-env-tag.yaml"},
+			env:       map[string]string{"FOO": "foo"},
+		},
 		// // Don't run this test for now. It takes awhile to download all the
 		// // dependencies
 		// {
@@ -140,6 +154,11 @@ func TestRun(t *testing.T) {
 			args := []string{"run"}
 			args = append(args, testCase.extraArgs...)
 			cmd := exec.Command("skaffold", args...)
+			env := os.Environ()
+			for k, v := range testCase.env {
+				env = append(env, fmt.Sprintf("%s=%s", k, v))
+			}
+			cmd.Env = env
 			cmd.Dir = testCase.dir
 			out, outerr, err := util.RunCommand(cmd, nil)
 			if err != nil {
