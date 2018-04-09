@@ -177,8 +177,20 @@ func (k *KubectlDeployer) deployManifestFile(r io.Reader, params map[string]buil
 	return nil
 }
 
+type replacement struct {
+	tag   string
+	found bool
+}
+
 func replaceParameters(contents []byte, params map[string]build.Build) (string, error) {
 	var manifests []string
+
+	replacements := map[string]*replacement{}
+	for img, b := range params {
+		replacements[img] = &replacement{
+			tag: b.Tag,
+		}
+	}
 
 	parts := bytes.Split(contents, []byte("\n---"))
 	for _, part := range parts {
@@ -187,7 +199,7 @@ func replaceParameters(contents []byte, params map[string]build.Build) (string, 
 			return "", errors.Wrap(err, "reading kubernetes YAML")
 		}
 
-		replaced := recursiveReplace(m, params)
+		replaced := recursiveReplace(m, replacements)
 		replacedMap := replaced.(map[string]interface{})
 
 		out, err := yaml.Marshal(replacedMap)
@@ -198,30 +210,36 @@ func replaceParameters(contents []byte, params map[string]build.Build) (string, 
 		manifests = append(manifests, string(out))
 	}
 
+	for name, replacement := range replacements {
+		if !replacement.found {
+			logrus.Warnf("image [%s] is not used by the deployment", name)
+		}
+	}
+
 	manifest := strings.Join(manifests, "---\n")
 	logrus.Debugln("Applying manifest:", manifest)
 
 	return manifest, nil
 }
 
-func recursiveReplace(i interface{}, params map[string]build.Build) interface{} {
+func recursiveReplace(i interface{}, replacements map[string]*replacement) interface{} {
 	switch t := i.(type) {
 	case map[interface{}]interface{}:
 		m := map[string]interface{}{}
 		for k, v := range t {
 			if k.(string) == "image" {
-				for img, b := range params {
-					if v.(string) == img {
-						v = b.Tag
-					}
+				name := v.(string)
+				if img, present := replacements[name]; present {
+					v = img.tag
+					img.found = true
 				}
 			}
-			m[k.(string)] = recursiveReplace(v, params)
+			m[k.(string)] = recursiveReplace(v, replacements)
 		}
 		return m
 	case []interface{}:
 		for i, v := range t {
-			t[i] = recursiveReplace(v, params)
+			t[i] = recursiveReplace(v, replacements)
 		}
 	}
 	return i
