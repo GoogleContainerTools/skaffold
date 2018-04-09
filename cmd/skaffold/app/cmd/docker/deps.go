@@ -18,8 +18,6 @@ package docker
 
 import (
 	"io"
-	"os"
-	"path/filepath"
 
 	"github.com/GoogleCloudPlatform/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
@@ -49,14 +47,11 @@ type DepsOutput struct {
 }
 
 func runDeps(out io.Writer, filename, context string) error {
-	f, err := os.Open(filepath.Join(context, filename))
-	if err != nil {
-		return errors.Wrap(err, "opening dockerfile")
-	}
-	deps, err := docker.GetDockerfileDependencies(context, f)
+	deps, err := docker.GetDockerfileDependencies(filename, context)
 	if err != nil {
 		return errors.Wrap(err, "getting dockerfile dependencies")
 	}
+
 	cmdOut := DepsOutput{Deps: deps}
 	if err := depsFormatFlag.Template().Execute(out, cmdOut); err != nil {
 		return errors.Wrap(err, "executing template")

@@ -18,27 +18,13 @@ package docker
 
 import (
 	"io"
-	"os"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
 func contextTarPaths(dockerfilePath string, context string) ([]string, error) {
-	f, err := os.Open(dockerfilePath)
-	if err != nil {
-		return nil, errors.Wrap(err, "opening dockerfile")
-	}
-	defer f.Close()
-
-	paths, err := GetDockerfileDependencies(context, f)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting dockerfile dependencies")
-	}
-
-	paths = append(paths, dockerfilePath)
-
-	return paths, nil
+	return GetDockerfileDependencies(dockerfilePath, context)
 }
 
 func CreateDockerTarContext(w io.Writer, dockerfilePath, context string) error {

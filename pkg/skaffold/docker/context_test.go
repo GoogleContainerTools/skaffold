@@ -19,7 +19,6 @@ package docker
 import (
 	"archive/tar"
 	"io"
-	"path/filepath"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -39,13 +38,10 @@ func includes(vs []string, t string) bool {
 }
 
 func TestDockerContext(t *testing.T) {
-	context := "../../../testdata/docker"
-	dockerfilePath := filepath.Join(context, "Dockerfile")
-
 	t.Run("context excludes dockerignore files", func(t *testing.T) {
 		reader, writer := io.Pipe()
 		go func() {
-			err := CreateDockerTarContext(writer, dockerfilePath, context)
+			err := CreateDockerTarContext(writer, "Dockerfile", "../../../testdata/docker")
 			if err != nil {
 				writer.CloseWithError(errors.Wrap(err, "creating docker context"))
 				panic(err)

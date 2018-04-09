@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"path/filepath"
 	"time"
 
 	cstorage "cloud.google.com/go/storage"
@@ -233,16 +232,15 @@ func getImageID(b *cloudbuild.Build) (string, error) {
 	return b.Results.Images[0].Digest, nil
 }
 
-func (cb *GoogleCloudBuilder) uploadTarToGCS(ctx context.Context, dockerCtx, dockerfilePath, bucket, objectName string) error {
+func (cb *GoogleCloudBuilder) uploadTarToGCS(ctx context.Context, dockerfilePath, dockerCtx, bucket, objectName string) error {
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
 		return err
 	}
 	defer c.Close()
 
-	relDockerfilePath := filepath.Join(dockerCtx, dockerfilePath)
 	w := c.Bucket(bucket).Object(objectName).NewWriter(ctx)
-	if err := docker.CreateDockerTarGzContext(w, relDockerfilePath, dockerCtx); err != nil {
+	if err := docker.CreateDockerTarGzContext(w, dockerfilePath, dockerCtx); err != nil {
 		return errors.Wrap(err, "uploading targz to google storage")
 	}
 	return w.Close()
