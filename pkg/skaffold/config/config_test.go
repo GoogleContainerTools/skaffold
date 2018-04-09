@@ -23,62 +23,203 @@ import (
 )
 
 const (
-	rawConfigA = `
+	minimalConfig = `
+apiVersion: skaffold/v1alpha2
+kind: Config
+`
+	simpleConfig = `
 apiVersion: skaffold/v1alpha2
 kind: Config
 build:
   artifacts:
   - imageName: example
-    workspace: ./examples/app
 deploy:
   name: example
-  parameters:
-    key: value
 `
-	badConfigA = "bad config"
+	completeConfig = `
+apiVersion: skaffold/v1alpha2
+kind: Config
+build:
+  tagPolicy:
+    sha256: {}
+  artifacts:
+  - imageName: image1
+    workspace: ./examples/app1
+    docker:
+      dockerfilePath: Dockerfile.dev
+  - imageName: image2
+    workspace: ./examples/app2
+    bazel:
+      target: //:example.tar
+  googleCloudBuild:
+    projectId: ID
+deploy:
+  name: example
+`
+	badConfig = "bad config"
 )
-
-var configA = &SkaffoldConfig{
-	APIVersion: "skaffold/v1alpha2",
-	Kind:       "Config",
-	Build: BuildConfig{
-		TagPolicy: TagPolicy{ShaTagger: &ShaTagger{}},
-		Artifacts: []*Artifact{
-			{
-				ImageName: "example",
-				Workspace: "./examples/app",
-			},
-		},
-	},
-	Deploy: DeployConfig{
-		Name: "example",
-	},
-}
 
 func TestParseConfig(t *testing.T) {
 	var tests = []struct {
 		description string
 		config      string
+		dev         bool
 		expected    *SkaffoldConfig
 		badReader   bool
 		shouldErr   bool
 	}{
 		{
-			description: "Parse config",
-			config:      rawConfigA,
-			expected:    configA,
+			description: "Minimal config for dev",
+			config:      minimalConfig,
+			dev:         true,
+			expected: config(
+				withLocalBuild(
+					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
+				),
+			),
+		},
+		{
+			description: "Minimal config for run",
+			config:      minimalConfig,
+			dev:         false,
+			expected: config(
+				withLocalBuild(
+					withTagPolicy(TagPolicy{GitTagger: &GitTagger{}}),
+				),
+			),
+		},
+		{
+			description: "Simple config for dev",
+			config:      simpleConfig,
+			dev:         true,
+			expected: config(
+				withLocalBuild(
+					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
+					withDockerArtifact("example", ".", "Dockerfile"),
+				),
+				withDeploy("example"),
+			),
+		},
+		{
+			description: "Simple config for run",
+			config:      simpleConfig,
+			dev:         false,
+			expected: config(
+				withLocalBuild(
+					withTagPolicy(TagPolicy{GitTagger: &GitTagger{}}),
+					withDockerArtifact("example", ".", "Dockerfile"),
+				),
+				withDeploy("example"),
+			),
+		},
+		{
+			description: "Complete config for dev",
+			config:      completeConfig,
+			dev:         true,
+			expected: config(
+				withGCBBuild("ID",
+					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
+					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
+					withBazelArtifact("image2", "./examples/app2", "//:example.tar"),
+				),
+				withDeploy("example"),
+			),
+		},
+		{
+			description: "Complete config for run",
+			config:      completeConfig,
+			dev:         false,
+			expected: config(
+				withGCBBuild("ID",
+					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
+					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
+					withBazelArtifact("image2", "./examples/app2", "//:example.tar"),
+				),
+				withDeploy("example"),
+			),
 		},
 		{
 			description: "Bad config",
-			config:      badConfigA,
+			config:      badConfig,
 			shouldErr:   true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			cfg, err := Parse([]byte(test.config), DefaultDevSkaffoldConfig)
+			cfg, err := Parse([]byte(test.config), test.dev)
+
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cfg)
 		})
 	}
+}
+
+func config(ops ...func(*SkaffoldConfig)) *SkaffoldConfig {
+	cfg := &SkaffoldConfig{APIVersion: "skaffold/v1alpha2", Kind: "Config"}
+	for _, op := range ops {
+		op(cfg)
+	}
+	return cfg
+}
+
+func withLocalBuild(ops ...func(*BuildConfig)) func(*SkaffoldConfig) {
+	return func(cfg *SkaffoldConfig) {
+		b := BuildConfig{BuildType: BuildType{LocalBuild: &LocalBuild{}}}
+		for _, op := range ops {
+			op(&b)
+		}
+		cfg.Build = b
+	}
+}
+
+func withGCBBuild(id string, ops ...func(*BuildConfig)) func(*SkaffoldConfig) {
+	return func(cfg *SkaffoldConfig) {
+		b := BuildConfig{BuildType: BuildType{GoogleCloudBuild: &GoogleCloudBuild{ProjectID: id}}}
+		for _, op := range ops {
+			op(&b)
+		}
+		cfg.Build = b
+	}
+}
+
+func withDeploy(name string, ops ...func(*DeployConfig)) func(*SkaffoldConfig) {
+	return func(cfg *SkaffoldConfig) {
+		d := DeployConfig{Name: name}
+		for _, op := range ops {
+			op(&d)
+		}
+		cfg.Deploy = d
+	}
+}
+
+func withDockerArtifact(image, workspace, dockerfile string) func(*BuildConfig) {
+	return func(cfg *BuildConfig) {
+		cfg.Artifacts = append(cfg.Artifacts, &Artifact{
+			ImageName: image,
+			Workspace: workspace,
+			ArtifactType: ArtifactType{
+				DockerArtifact: &DockerArtifact{
+					DockerfilePath: dockerfile,
+				},
+			},
+		})
+	}
+}
+
+func withBazelArtifact(image, workspace, target string) func(*BuildConfig) {
+	return func(cfg *BuildConfig) {
+		cfg.Artifacts = append(cfg.Artifacts, &Artifact{
+			ImageName: image,
+			Workspace: workspace,
+			ArtifactType: ArtifactType{
+				BazelArtifact: &BazelArtifact{
+					BuildTarget: target,
+				},
+			},
+		})
+	}
+}
+
+func withTagPolicy(tagPolicy TagPolicy) func(*BuildConfig) {
+	return func(cfg *BuildConfig) { cfg.TagPolicy = tagPolicy }
 }

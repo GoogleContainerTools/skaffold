@@ -17,6 +17,7 @@ limitations under the License.
 package build
 
 import (
+	"fmt"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -139,15 +140,13 @@ func init() {
 	DefaultBazelDepResolver = &bazel.BazelDependencyResolver{}
 }
 
-func GetDependenciesForArtifact(a *config.Artifact) ([]string, error) {
-	if a.DockerArtifact != nil {
-		return DefaultDockerfileDepResolver.GetDependencies(a)
+func GetDependenciesForArtifact(artifact *config.Artifact) ([]string, error) {
+	if artifact.DockerArtifact != nil {
+		return DefaultDockerfileDepResolver.GetDependencies(artifact)
 	}
-	if a.BazelArtifact != nil {
-		return DefaultBazelDepResolver.GetDependencies(a)
+	if artifact.BazelArtifact != nil {
+		return DefaultBazelDepResolver.GetDependencies(artifact)
 	}
 
-	logrus.Infof("No artifact type found for %+v, default to docker", a)
-	a.DockerArtifact = config.DefaultDockerArtifact
-	return DefaultDockerfileDepResolver.GetDependencies(a)
+	return nil, fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 }

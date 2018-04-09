@@ -105,9 +105,6 @@ func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger t
 }
 
 func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, cbclient *cloudbuild.Service, c *cstorage.Client, artifact *config.Artifact) (*Build, error) {
-	if artifact.DockerArtifact == nil {
-		artifact.DockerArtifact = config.DefaultDockerArtifact
-	}
 	logrus.Infof("Building artifact: %+v", artifact)
 	cbBucket := fmt.Sprintf("%s%s", cb.GoogleCloudBuild.ProjectID, constants.GCSBucketSuffix)
 	buildObject := fmt.Sprintf("source/%s-%s.tar.gz", cb.GoogleCloudBuild.ProjectID, util.RandomID())
@@ -223,7 +220,7 @@ func getImageID(b *cloudbuild.Build) (string, error) {
 	return b.Results.Images[0].Digest, nil
 }
 
-func (cb *GoogleCloudBuilder) uploadTarToGCS(ctx context.Context, dockerfilePath, dockerCtx, bucket, objectName string) error {
+func (cb *GoogleCloudBuilder) uploadTarToGCS(ctx context.Context, dockerCtx, dockerfilePath, bucket, objectName string) error {
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
 		return err

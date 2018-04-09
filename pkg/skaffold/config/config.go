@@ -29,9 +29,9 @@ type SkaffoldConfig struct {
 	APIVersion string `yaml:"apiVersion"`
 	Kind       string `yaml:"kind"`
 
-	Build    BuildConfig  `yaml:"build"`
-	Deploy   DeployConfig `yaml:"deploy"`
-	Profiles []Profile    `yaml:"profiles"`
+	Build    BuildConfig  `yaml:"build,omitempty"`
+	Deploy   DeployConfig `yaml:"deploy,omitempty"`
+	Profiles []Profile    `yaml:"profiles,omitempty"`
 }
 
 // BuildConfig contains all the configuration for the build steps
@@ -72,6 +72,8 @@ type LocalBuild struct {
 	SkipPush *bool `yaml:"skipPush"`
 }
 
+// GoogleCloudBuild contains the fields needed to do a remote build on
+// Google Container Builder.
 type GoogleCloudBuild struct {
 	ProjectID string `yaml:"projectId"`
 }
@@ -94,6 +96,7 @@ type KubectlDeploy struct {
 	Manifests []string `yaml:"manifests,omitempty"`
 }
 
+// HelmDeploy contains the configuration needed for deploying with helm
 type HelmDeploy struct {
 	Releases []HelmRelease `yaml:"releases,omitempty"`
 }
@@ -102,7 +105,7 @@ type HelmRelease struct {
 	Name           string            `yaml:"name"`
 	ChartPath      string            `yaml:"chartPath"`
 	ValuesFilePath string            `yaml:"valuesFilePath"`
-	Values         map[string]string `yaml:"values"`
+	Values         map[string]string `yaml:"values,omitempty"`
 	Namespace      string            `yaml:"namespace"`
 	Version        string            `yaml:"version"`
 	SetValues      map[string]string `yaml:"setValues"`
@@ -138,35 +141,68 @@ type BazelArtifact struct {
 	BuildTarget string `yaml:"target"`
 }
 
-// DefaultDevSkaffoldConfig is a partial set of defaults for the SkaffoldConfig
-// when dev mode is specified.
-// Each API is responsible for setting its own defaults that are not top level.
-var DefaultDevSkaffoldConfig = &SkaffoldConfig{
-	Build: BuildConfig{
-		TagPolicy: TagPolicy{ShaTagger: &ShaTagger{}},
-	},
-}
-
-// DefaultRunSkaffoldConfig is a partial set of defaults for the SkaffoldConfig
-// when run mode is specified.
-// Each API is responsible for setting its own defaults that are not top level.
-var DefaultRunSkaffoldConfig = &SkaffoldConfig{
-	Build: BuildConfig{
-		TagPolicy: TagPolicy{GitTagger: &GitTagger{}},
-	},
-}
-
-var DefaultDockerArtifact = &DockerArtifact{
-	DockerfilePath: constants.DefaultDockerfilePath,
-}
-
 // Parse reads from an io.Reader and unmarshals the result into a SkaffoldConfig.
 // The default config argument provides default values for the config,
 // which can be overridden if present in the config file.
-func Parse(config []byte, defaultConfig *SkaffoldConfig) (*SkaffoldConfig, error) {
-	if err := yaml.Unmarshal(config, defaultConfig); err != nil {
+func Parse(config []byte, dev bool) (*SkaffoldConfig, error) {
+	cfg := &SkaffoldConfig{}
+	if err := yaml.Unmarshal(config, cfg); err != nil {
 		return nil, err
 	}
 
-	return defaultConfig, nil
+	defaultToLocalBuild(cfg)
+	defaultToDockerArtifacts(cfg)
+	setDefaultTagger(cfg, dev)
+	setDefaultDockerfiles(cfg)
+	setDefaultWorkspaces(cfg)
+
+	return cfg, nil
+}
+
+func defaultToLocalBuild(cfg *SkaffoldConfig) {
+	if cfg.Build.BuildType != (BuildType{}) {
+		return
+	}
+
+	cfg.Build.BuildType.LocalBuild = &LocalBuild{}
+}
+
+func defaultToDockerArtifacts(cfg *SkaffoldConfig) {
+	for _, artifact := range cfg.Build.Artifacts {
+		if artifact.ArtifactType != (ArtifactType{}) {
+			continue
+		}
+
+		artifact.ArtifactType = ArtifactType{
+			DockerArtifact: &DockerArtifact{},
+		}
+	}
+}
+
+func setDefaultTagger(cfg *SkaffoldConfig, dev bool) {
+	if cfg.Build.TagPolicy != (TagPolicy{}) {
+		return
+	}
+
+	if dev {
+		cfg.Build.TagPolicy = TagPolicy{ShaTagger: &ShaTagger{}}
+	} else {
+		cfg.Build.TagPolicy = TagPolicy{GitTagger: &GitTagger{}}
+	}
+}
+
+func setDefaultDockerfiles(cfg *SkaffoldConfig) {
+	for _, artifact := range cfg.Build.Artifacts {
+		if artifact.DockerArtifact != nil && artifact.DockerArtifact.DockerfilePath == "" {
+			artifact.DockerArtifact.DockerfilePath = constants.DefaultDockerfilePath
+		}
+	}
+}
+
+func setDefaultWorkspaces(cfg *SkaffoldConfig) {
+	for _, artifact := range cfg.Build.Artifacts {
+		if artifact.Workspace == "" {
+			artifact.Workspace = "."
+		}
+	}
 }

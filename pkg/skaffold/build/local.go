@@ -46,10 +46,6 @@ type LocalBuilder struct {
 
 // NewLocalBuilder returns an new instance of a LocalBuilder
 func NewLocalBuilder(cfg *config.BuildConfig, kubeContext string) (*LocalBuilder, error) {
-	if cfg.LocalBuild == nil {
-		return nil, fmt.Errorf("LocalBuild config field is needed to create a new LocalBuilder")
-	}
-
 	api, err := docker.NewDockerAPIClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
@@ -78,8 +74,8 @@ func (l *LocalBuilder) runBuildForArtifact(ctx context.Context, out io.Writer, a
 	if artifact.BazelArtifact != nil {
 		return l.buildBazel(ctx, out, artifact)
 	}
-	artifact.DockerArtifact = config.DefaultDockerArtifact
-	return l.buildDocker(ctx, out, artifact)
+
+	return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 }
 
 // Build runs a docker build on the host and tags the resulting image with
@@ -91,9 +87,8 @@ func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagg
 		}
 	}
 	defer l.api.Close()
-	res := &BuildResult{
-		Builds: []Build{},
-	}
+
+	res := &BuildResult{}
 	for _, artifact := range artifacts {
 		initialTag, err := l.runBuildForArtifact(ctx, out, artifact)
 		if err != nil {
@@ -167,9 +162,6 @@ func (l *LocalBuilder) buildBazel(ctx context.Context, out io.Writer, a *config.
 }
 
 func (l *LocalBuilder) buildDocker(ctx context.Context, out io.Writer, a *config.Artifact) (string, error) {
-	if a.DockerArtifact.DockerfilePath == "" {
-		a.DockerArtifact.DockerfilePath = constants.DefaultDockerfilePath
-	}
 	initialTag := util.RandomID()
 	err := docker.RunBuild(ctx, l.api, &docker.BuildOptions{
 		ImageName:   initialTag,

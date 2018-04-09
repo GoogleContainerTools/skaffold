@@ -76,19 +76,13 @@ func SetUpLogs(out io.Writer, level string) error {
 	return nil
 }
 
-var defaultConfigForMode = map[bool]*config.SkaffoldConfig{
-	true:  config.DefaultDevSkaffoldConfig,
-	false: config.DefaultRunSkaffoldConfig,
-}
-
 func runSkaffold(out io.Writer, dev bool, filename string) error {
 	buf, err := readConfiguration(filename)
 	if err != nil {
 		return errors.Wrap(err, "read skaffold config")
 	}
 
-	defaultConfig := defaultConfigForMode[dev]
-	cfg, err := config.Parse(buf, defaultConfig)
+	cfg, err := config.Parse(buf, dev)
 	if err != nil {
 		return errors.Wrap(err, "parsing skaffold config")
 	}
