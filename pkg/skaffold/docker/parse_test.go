@@ -18,7 +18,6 @@ package docker
 
 import (
 	"fmt"
-	"io"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -183,13 +182,13 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			description: "copy dependency",
 			dockerfile:  copyDockerfile,
 			workspace:   ".",
-			expected:    []string{"server.go"},
+			expected:    []string{"Dockerfile", "server.go"},
 		},
 		{
 			description: "add dependency",
 			dockerfile:  addDockerfile,
 			workspace:   "docker",
-			expected:    []string{"docker/nginx.conf"},
+			expected:    []string{"docker/Dockerfile", "docker/nginx.conf"},
 		},
 		{
 			description: "bad read",
@@ -200,38 +199,38 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			// https://github.com/GoogleCloudPlatform/skaffold/issues/158
 			description: "no dependencies on remote files",
 			dockerfile:  remoteFileAdd,
-			expected:    []string{},
+			expected:    []string{"Dockerfile"},
 		},
 		{
 			description: "multistage dockerfile",
 			dockerfile:  multiStageDockerfile,
 			workspace:   "",
-			expected:    []string{"worker.go"},
+			expected:    []string{"Dockerfile", "worker.go"},
 		},
 		{
 			description: "copy twice",
 			dockerfile:  multiCopy,
 			workspace:   ".",
-			expected:    []string{"test.conf"},
+			expected:    []string{"Dockerfile", "test.conf"},
 		},
 		{
 			description: "env test",
 			dockerfile:  envTest,
 			workspace:   ".",
-			expected:    []string{"bar"},
+			expected:    []string{"Dockerfile", "bar"},
 		},
 		{
 			description: "multi file copy",
 			dockerfile:  multiFileCopy,
 			workspace:   ".",
-			expected:    []string{"file", "server.go"},
+			expected:    []string{"Dockerfile", "file", "server.go"},
 		},
 		{
 			description:  "dockerignore test",
 			dockerfile:   copyDirectory,
 			dockerIgnore: true,
 			workspace:    ".",
-			expected:     []string{"file", "server.go", "test.conf", "worker.go"},
+			expected:     []string{"Dockerfile", "file", "server.go", "test.conf", "worker.go"},
 		},
 		{
 			description:  "dockerignore with context in parent directory test",
@@ -244,13 +243,13 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			description: "onbuild test",
 			dockerfile:  onbuild,
 			workspace:   ".",
-			expected:    []string{"bar", "docker/bar", "docker/nginx.conf", "file", "server.go", "test.conf", "worker.go"},
+			expected:    []string{"Dockerfile", "bar", "docker/bar", "docker/nginx.conf", "file", "server.go", "test.conf", "worker.go"},
 		},
 		{
 			description: "onbuild error",
 			dockerfile:  onbuildError,
 			workspace:   ".",
-			expected:    []string{"file"},
+			expected:    []string{"Dockerfile", "file"},
 		},
 	}
 
@@ -268,19 +267,16 @@ func TestGetDockerfileDependencies(t *testing.T) {
 				afero.WriteFile(util.Fs, file, []byte(""), 0644)
 			}
 
-			var r io.Reader
-			if test.badReader {
-				r = testutil.BadReader{}
-			} else {
-				r = strings.NewReader(test.dockerfile)
+			if !test.badReader {
+				afero.WriteFile(util.Fs, filepath.Join(test.workspace, "Dockerfile"), []byte(test.dockerfile), 0644)
 			}
 
 			if test.dockerIgnore {
 				afero.WriteFile(util.Fs, ".dockerignore", []byte(dockerIgnore), 0644)
-				afero.WriteFile(util.Fs, "docker/.dockerignore", []byte(dockerIgnore), 0644)
+				afero.WriteFile(util.Fs, filepath.Join("docker", ".dockerignore"), []byte(dockerIgnore), 0644)
 			}
 
-			deps, err := GetDockerfileDependencies(test.workspace, r)
+			deps, err := GetDockerfileDependencies("Dockerfile", test.workspace)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
 		})
 	}

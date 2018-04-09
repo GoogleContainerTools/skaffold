@@ -55,30 +55,24 @@ var RetrieveImage = retrieveImage
 type DockerfileDepResolver struct{}
 
 func (*DockerfileDepResolver) GetDependencies(a *config.Artifact) ([]string, error) {
-	dockerfileAbsPath, err := filepath.Abs(filepath.Join(a.Workspace, a.DockerArtifact.DockerfilePath))
-	if err != nil {
-		return nil, errors.Wrap(err, "getting absolute path of dockerfile")
-	}
-	f, err := util.Fs.Open(dockerfileAbsPath)
-	if err != nil {
-		return nil, errors.Wrap(err, "opening dockerfile")
-	}
-	defer f.Close()
-	deps, err := GetDockerfileDependencies(a.Workspace, f)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting dockerfile dependencies")
-	}
-	deps = append(deps, dockerfileAbsPath)
-	return deps, nil
+	return GetDockerfileDependencies(a.DockerArtifact.DockerfilePath, a.Workspace)
 }
 
 // GetDockerfileDependencies parses a dockerfile and returns the full paths
 // of all the source files that the resulting docker image depends on.
-func GetDockerfileDependencies(workspace string, r io.Reader) ([]string, error) {
-	res, err := parser.Parse(r)
+func GetDockerfileDependencies(dockerfilePath, workspace string) ([]string, error) {
+	path := filepath.Join(workspace, dockerfilePath)
+	f, err := util.Fs.Open(path)
+	if err != nil {
+		return nil, errors.Wrapf(err, "opening dockerfile: %d", path)
+	}
+	defer f.Close()
+
+	res, err := parser.Parse(f)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing dockerfile")
 	}
+
 	envs := map[string]string{}
 	depMap := map[string]struct{}{}
 	// First process onbuilds, if present.
@@ -118,12 +112,16 @@ func GetDockerfileDependencies(workspace string, r io.Reader) ([]string, error) 
 		deps = append(deps, dep)
 	}
 	logrus.Infof("Found dependencies for dockerfile %s", deps)
+
 	expandedDeps, err := util.ExpandPaths(workspace, deps)
 	if err != nil {
 		return nil, errors.Wrap(err, "expanding dockerfile paths")
 	}
-
 	logrus.Infof("deps %s", expandedDeps)
+
+	if !util.StrSliceContains(expandedDeps, path) {
+		expandedDeps = append(expandedDeps, path)
+	}
 
 	// Look for .dockerignore.
 	ignorePath := filepath.Join(workspace, ".dockerignore")

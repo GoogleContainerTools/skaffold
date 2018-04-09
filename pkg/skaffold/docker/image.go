@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"path/filepath"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
@@ -57,9 +56,8 @@ func RunBuild(ctx context.Context, cli DockerAPIClient, opts *BuildOptions) erro
 	}
 
 	buildCtx, buildCtxWriter := io.Pipe()
-	dockerfilePath := filepath.Join(opts.ContextDir, opts.Dockerfile)
 	go func() {
-		err := CreateDockerTarContext(buildCtxWriter, dockerfilePath, opts.ContextDir)
+		err := CreateDockerTarContext(buildCtxWriter, opts.Dockerfile, opts.ContextDir)
 		if err != nil {
 			buildCtxWriter.CloseWithError(errors.Wrap(err, "creating docker context"))
 			return
