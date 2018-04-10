@@ -70,7 +70,7 @@ You will need the following components to get started with Skaffold:
       have been tested but any Kubernetes cluster will work.
 
 1. [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
-   -  Configure the current-context with your target cluster for development
+   -  If you're not using Minikube, configure the current-context with your target cluster for development
 
 1. docker
 
