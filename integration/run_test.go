@@ -116,9 +116,8 @@ func TestRun(t *testing.T) {
 					namespace: "default",
 				},
 			},
-			dir:       "../examples/environment-variables",
-			extraArgs: []string{"-f", "skaffold-env-tag.yaml"},
-			env:       map[string]string{"FOO": "foo"},
+			dir: "../examples/environment-variables",
+			env: map[string]string{"FOO": "foo"},
 		},
 		// // Don't run this test for now. It takes awhile to download all the
 		// // dependencies
