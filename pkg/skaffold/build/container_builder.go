@@ -30,9 +30,9 @@ import (
 	"google.golang.org/api/iterator"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -68,14 +68,14 @@ const (
 )
 
 type GoogleCloudBuilder struct {
-	*config.BuildConfig
+	*v1alpha2.BuildConfig
 }
 
-func NewGoogleCloudBuilder(cfg *config.BuildConfig) (*GoogleCloudBuilder, error) {
+func NewGoogleCloudBuilder(cfg *v1alpha2.BuildConfig) (*GoogleCloudBuilder, error) {
 	return &GoogleCloudBuilder{cfg}, nil
 }
 
-func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*config.Artifact) (*BuildResult, error) {
+func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) (*BuildResult, error) {
 	client, err := google.DefaultClient(ctx, cloudbuild.CloudPlatformScope)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting google client")
@@ -103,7 +103,7 @@ func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger t
 	}, nil
 }
 
-func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, cbclient *cloudbuild.Service, c *cstorage.Client, artifact *config.Artifact) (*Build, error) {
+func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, cbclient *cloudbuild.Service, c *cstorage.Client, artifact *v1alpha2.Artifact) (*Build, error) {
 	logrus.Infof("Building artifact: %+v", artifact)
 
 	// need to format build args as strings to pass to container builder docker

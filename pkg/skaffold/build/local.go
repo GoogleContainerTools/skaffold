@@ -27,9 +27,9 @@ import (
 	"strings"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -37,7 +37,7 @@ import (
 
 // LocalBuilder uses the host docker daemon to build and tag the image
 type LocalBuilder struct {
-	*config.BuildConfig
+	*v1alpha2.BuildConfig
 
 	api          docker.DockerAPIClient
 	localCluster bool
@@ -45,7 +45,7 @@ type LocalBuilder struct {
 }
 
 // NewLocalBuilder returns an new instance of a LocalBuilder
-func NewLocalBuilder(cfg *config.BuildConfig, kubeContext string) (*LocalBuilder, error) {
+func NewLocalBuilder(cfg *v1alpha2.BuildConfig, kubeContext string) (*LocalBuilder, error) {
 	api, err := docker.NewDockerAPIClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
@@ -67,7 +67,7 @@ func NewLocalBuilder(cfg *config.BuildConfig, kubeContext string) (*LocalBuilder
 	return l, nil
 }
 
-func (l *LocalBuilder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *config.Artifact) (string, error) {
+func (l *LocalBuilder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *v1alpha2.Artifact) (string, error) {
 	if artifact.DockerArtifact != nil {
 		return l.buildDocker(ctx, out, artifact)
 	}
@@ -80,7 +80,7 @@ func (l *LocalBuilder) runBuildForArtifact(ctx context.Context, out io.Writer, a
 
 // Build runs a docker build on the host and tags the resulting image with
 // its checksum. It streams build progress to the writer argument.
-func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*config.Artifact) (*BuildResult, error) {
+func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) (*BuildResult, error) {
 	if l.localCluster {
 		if _, err := fmt.Fprintf(out, "Found [%s] context, using local docker daemon.\n", l.kubeContext); err != nil {
 			return nil, errors.Wrap(err, "writing status")
@@ -131,7 +131,7 @@ func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagg
 	return res, nil
 }
 
-func (l *LocalBuilder) buildBazel(ctx context.Context, out io.Writer, a *config.Artifact) (string, error) {
+func (l *LocalBuilder) buildBazel(ctx context.Context, out io.Writer, a *v1alpha2.Artifact) (string, error) {
 	cmd := exec.Command("bazel", "build", a.BazelArtifact.BuildTarget)
 	cmd.Stdout = out
 	cmd.Stderr = out
@@ -161,7 +161,7 @@ func (l *LocalBuilder) buildBazel(ctx context.Context, out io.Writer, a *config.
 	return fmt.Sprintf("bazel:%s", imageTag), nil
 }
 
-func (l *LocalBuilder) buildDocker(ctx context.Context, out io.Writer, a *config.Artifact) (string, error) {
+func (l *LocalBuilder) buildDocker(ctx context.Context, out io.Writer, a *v1alpha2.Artifact) (string, error) {
 	initialTag := util.RandomID()
 	err := docker.RunBuild(ctx, l.api, &docker.BuildOptions{
 		ImageName:   initialTag,

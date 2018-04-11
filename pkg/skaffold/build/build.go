@@ -21,7 +21,7 @@ import (
 	"io"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 )
 
 // BuildResult holds the results of builds
@@ -33,7 +33,7 @@ type BuildResult struct {
 type Build struct {
 	ImageName string
 	Tag       string
-	Artifact  *config.Artifact // The artifact used in the build.
+	Artifact  *v1alpha2.Artifact // The artifact used in the build.
 }
 
 // Builder is an interface to the Build API of Skaffold.
@@ -41,5 +41,5 @@ type Build struct {
 // This could include pushing to a authorized repository or loading the nodes with the image.
 // If artifacts is supplied, the builder should only rebuild those artifacts.
 type Builder interface {
-	Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*config.Artifact) (*BuildResult, error)
+	Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) (*BuildResult, error)
 }

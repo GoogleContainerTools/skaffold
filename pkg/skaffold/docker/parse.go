@@ -28,7 +28,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/containers/image/docker"
 	"github.com/containers/image/manifest"
@@ -54,7 +54,7 @@ var RetrieveImage = retrieveImage
 
 type DockerfileDepResolver struct{}
 
-func (*DockerfileDepResolver) GetDependencies(a *config.Artifact) ([]string, error) {
+func (*DockerfileDepResolver) GetDependencies(a *v1alpha2.Artifact) ([]string, error) {
 	return GetDockerfileDependencies(a.DockerArtifact.DockerfilePath, a.Workspace)
 }
 

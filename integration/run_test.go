@@ -184,3 +184,21 @@ func TestRun(t *testing.T) {
 		})
 	}
 }
+
+func TestFix(t *testing.T) {
+	fixCmd := exec.Command("skaffold", "fix", "-f", "skaffold.yaml", "--overwrite")
+	fixCmd.Dir = "testdata/old-config"
+	out, outerr, err := util.RunCommand(fixCmd, nil)
+	if err != nil {
+		t.Fatalf("testing error: %s", err.Error())
+	}
+	t.Logf("%s %s", out, outerr)
+
+	runCmd := exec.Command("skaffold", "run", "-f", "skaffold.yaml")
+	runCmd.Dir = "testdata/old-config"
+	out, outerr, err = util.RunCommand(runCmd, nil)
+	if err != nil {
+		t.Fatalf("testing error: %s", err.Error())
+	}
+	t.Logf("%s %s", out, outerr)
+}

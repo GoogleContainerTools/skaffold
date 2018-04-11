@@ -19,7 +19,7 @@ package kubernetes
 import (
 	"testing"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -78,7 +78,7 @@ func TestColorPicker(t *testing.T) {
 		},
 	}
 
-	picker := NewColorPicker([]*config.Artifact{
+	picker := NewColorPicker([]*v1alpha2.Artifact{
 		{ImageName: "image"},
 		{ImageName: "second"},
 	})

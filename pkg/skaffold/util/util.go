@@ -19,6 +19,8 @@ package util
 import (
 	"crypto/rand"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"path"
 	"sort"
@@ -211,4 +213,27 @@ func containsWildcards(path string) bool {
 func BoolPtr(b bool) *bool {
 	o := b
 	return &o
+}
+
+func ReadConfiguration(filename string) ([]byte, error) {
+	switch {
+	case filename == "":
+		return nil, errors.New("filename not specified")
+	case filename == "-":
+		return ioutil.ReadAll(os.Stdin)
+	case strings.HasPrefix(filename, "http://") || strings.HasPrefix(filename, "https://"):
+		return download(filename)
+	default:
+		return ioutil.ReadFile(filename)
+	}
+}
+
+func download(url string) ([]byte, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return ioutil.ReadAll(resp.Body)
 }

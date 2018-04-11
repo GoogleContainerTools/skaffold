@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
 	"github.com/spf13/afero"
@@ -56,7 +56,7 @@ spec:
 func TestKubectlRun(t *testing.T) {
 	var tests = []struct {
 		description string
-		cfg         *config.DeployConfig
+		cfg         *v1alpha2.DeployConfig
 		b           *build.BuildResult
 		command     util.Command
 
@@ -66,9 +66,9 @@ func TestKubectlRun(t *testing.T) {
 		{
 			description: "parameter mismatch",
 			shouldErr:   true,
-			cfg: &config.DeployConfig{
-				DeployType: config.DeployType{
-					KubectlDeploy: &config.KubectlDeploy{
+			cfg: &v1alpha2.DeployConfig{
+				DeployType: v1alpha2.DeployType{
+					KubectlDeploy: &v1alpha2.KubectlDeploy{
 						Manifests: []string{"test/deployment.yaml"},
 					},
 				},
@@ -85,9 +85,9 @@ func TestKubectlRun(t *testing.T) {
 		{
 			description: "missing manifest file",
 			shouldErr:   true,
-			cfg: &config.DeployConfig{
-				DeployType: config.DeployType{
-					KubectlDeploy: &config.KubectlDeploy{
+			cfg: &v1alpha2.DeployConfig{
+				DeployType: v1alpha2.DeployType{
+					KubectlDeploy: &v1alpha2.KubectlDeploy{
 						Manifests: []string{"test/deployment.yaml"},
 					},
 				},
@@ -103,9 +103,9 @@ func TestKubectlRun(t *testing.T) {
 		},
 		{
 			description: "deploy success",
-			cfg: &config.DeployConfig{
-				DeployType: config.DeployType{
-					KubectlDeploy: &config.KubectlDeploy{
+			cfg: &v1alpha2.DeployConfig{
+				DeployType: v1alpha2.DeployType{
+					KubectlDeploy: &v1alpha2.KubectlDeploy{
 						Manifests: []string{"test/deployment.yaml"},
 					},
 				},
@@ -124,9 +124,9 @@ func TestKubectlRun(t *testing.T) {
 		{
 			description: "deploy command error",
 			shouldErr:   true,
-			cfg: &config.DeployConfig{
-				DeployType: config.DeployType{
-					KubectlDeploy: &config.KubectlDeploy{
+			cfg: &v1alpha2.DeployConfig{
+				DeployType: v1alpha2.DeployType{
+					KubectlDeploy: &v1alpha2.KubectlDeploy{
 						Manifests: []string{"test/deployment.yaml"},
 					},
 				},

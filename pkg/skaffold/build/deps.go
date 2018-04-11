@@ -23,19 +23,19 @@ import (
 	"strings"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/bazel"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 type DependencyMap struct {
-	artifacts       []*config.Artifact
-	pathToArtifacts map[string][]*config.Artifact
+	artifacts       []*v1alpha2.Artifact
+	pathToArtifacts map[string][]*v1alpha2.Artifact
 }
 
 type DependencyResolver interface {
-	GetDependencies(a *config.Artifact) ([]string, error)
+	GetDependencies(a *v1alpha2.Artifact) ([]string, error)
 }
 
 //TODO(@r2d4): Figure out best UX to support configuring this blacklist
@@ -50,22 +50,22 @@ func (d *DependencyMap) Paths() []string {
 	return allPaths
 }
 
-func (d *DependencyMap) ArtifactsForPaths(paths []string) []*config.Artifact {
-	m := map[*config.Artifact]struct{}{}
+func (d *DependencyMap) ArtifactsForPaths(paths []string) []*v1alpha2.Artifact {
+	m := map[*v1alpha2.Artifact]struct{}{}
 	for _, p := range paths {
 		artifacts := d.pathToArtifacts[p]
 		for _, a := range artifacts {
 			m[a] = struct{}{}
 		}
 	}
-	artifacts := []*config.Artifact{}
+	artifacts := []*v1alpha2.Artifact{}
 	for a := range m {
 		artifacts = append(artifacts, a)
 	}
 	return artifacts
 }
 
-func NewDependencyMap(artifacts []*config.Artifact) (*DependencyMap, error) {
+func NewDependencyMap(artifacts []*v1alpha2.Artifact) (*DependencyMap, error) {
 	m, err := pathToArtifactMap(artifacts)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating path to artifact map")
@@ -93,8 +93,8 @@ func isIgnored(workspace, path string) (bool, error) {
 	return false, nil
 }
 
-func pathToArtifactMap(artifacts []*config.Artifact) (map[string][]*config.Artifact, error) {
-	m := map[string][]*config.Artifact{}
+func pathToArtifactMap(artifacts []*v1alpha2.Artifact) (map[string][]*v1alpha2.Artifact, error) {
+	m := map[string][]*v1alpha2.Artifact{}
 	for _, a := range artifacts {
 		paths, err := pathsForArtifact(a)
 		if err != nil {
@@ -109,7 +109,7 @@ func pathToArtifactMap(artifacts []*config.Artifact) (map[string][]*config.Artif
 	return m, nil
 }
 
-func pathsForArtifact(a *config.Artifact) ([]string, error) {
+func pathsForArtifact(a *v1alpha2.Artifact) ([]string, error) {
 	deps, err := GetDependenciesForArtifact(a)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting dockerfile dependencies")
@@ -140,7 +140,7 @@ func init() {
 	DefaultBazelDepResolver = &bazel.BazelDependencyResolver{}
 }
 
-func GetDependenciesForArtifact(artifact *config.Artifact) ([]string, error) {
+func GetDependenciesForArtifact(artifact *v1alpha2.Artifact) ([]string, error) {
 	if artifact.DockerArtifact != nil {
 		return DefaultDockerfileDepResolver.GetDependencies(artifact)
 	}

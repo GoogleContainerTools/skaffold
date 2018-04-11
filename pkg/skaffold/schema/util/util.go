@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package util
 
-import (
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
-)
+type VersionedConfig interface {
+	GetVersion() string
+	Parse([]byte, bool, bool) error
+}
 
-// the "latest" SkaffoldConfig object
-type SkaffoldConfig = v1alpha2.SkaffoldConfig
-
-const LatestVersion string = v1alpha2.Version
+type Config interface {
+	Parse([]byte) (VersionedConfig, error)
+}

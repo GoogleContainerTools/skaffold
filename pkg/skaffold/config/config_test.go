@@ -19,6 +19,8 @@ package config
 import (
 	"testing"
 
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
 )
 
@@ -64,7 +66,7 @@ func TestParseConfig(t *testing.T) {
 		description string
 		config      string
 		dev         bool
-		expected    *SkaffoldConfig
+		expected    util.VersionedConfig
 		badReader   bool
 		shouldErr   bool
 	}{
@@ -74,7 +76,7 @@ func TestParseConfig(t *testing.T) {
 			dev:         true,
 			expected: config(
 				withLocalBuild(
-					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
+					withTagPolicy(v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}}),
 				),
 			),
 		},
@@ -84,7 +86,7 @@ func TestParseConfig(t *testing.T) {
 			dev:         false,
 			expected: config(
 				withLocalBuild(
-					withTagPolicy(TagPolicy{GitTagger: &GitTagger{}}),
+					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
 				),
 			),
 		},
@@ -94,7 +96,7 @@ func TestParseConfig(t *testing.T) {
 			dev:         true,
 			expected: config(
 				withLocalBuild(
-					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
+					withTagPolicy(v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}}),
 					withDockerArtifact("example", ".", "Dockerfile"),
 				),
 				withDeploy("example"),
@@ -106,7 +108,7 @@ func TestParseConfig(t *testing.T) {
 			dev:         false,
 			expected: config(
 				withLocalBuild(
-					withTagPolicy(TagPolicy{GitTagger: &GitTagger{}}),
+					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
 					withDockerArtifact("example", ".", "Dockerfile"),
 				),
 				withDeploy("example"),
@@ -118,7 +120,7 @@ func TestParseConfig(t *testing.T) {
 			dev:         true,
 			expected: config(
 				withGCBBuild("ID",
-					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
+					withTagPolicy(v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}}),
 					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
 					withBazelArtifact("image2", "./examples/app2", "//:example.tar"),
 				),
@@ -131,7 +133,7 @@ func TestParseConfig(t *testing.T) {
 			dev:         false,
 			expected: config(
 				withGCBBuild("ID",
-					withTagPolicy(TagPolicy{ShaTagger: &ShaTagger{}}),
+					withTagPolicy(v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}}),
 					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
 					withBazelArtifact("image2", "./examples/app2", "//:example.tar"),
 				),
@@ -147,8 +149,7 @@ func TestParseConfig(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			cfg, err := Parse([]byte(test.config), test.dev)
-
+			cfg, err := GetConfig([]byte(test.config), true, test.dev)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cfg)
 		})
 	}
@@ -162,9 +163,9 @@ func config(ops ...func(*SkaffoldConfig)) *SkaffoldConfig {
 	return cfg
 }
 
-func withLocalBuild(ops ...func(*BuildConfig)) func(*SkaffoldConfig) {
+func withLocalBuild(ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldConfig) {
 	return func(cfg *SkaffoldConfig) {
-		b := BuildConfig{BuildType: BuildType{LocalBuild: &LocalBuild{}}}
+		b := v1alpha2.BuildConfig{BuildType: v1alpha2.BuildType{LocalBuild: &v1alpha2.LocalBuild{}}}
 		for _, op := range ops {
 			op(&b)
 		}
@@ -172,9 +173,9 @@ func withLocalBuild(ops ...func(*BuildConfig)) func(*SkaffoldConfig) {
 	}
 }
 
-func withGCBBuild(id string, ops ...func(*BuildConfig)) func(*SkaffoldConfig) {
+func withGCBBuild(id string, ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldConfig) {
 	return func(cfg *SkaffoldConfig) {
-		b := BuildConfig{BuildType: BuildType{GoogleCloudBuild: &GoogleCloudBuild{ProjectID: id}}}
+		b := v1alpha2.BuildConfig{BuildType: v1alpha2.BuildType{GoogleCloudBuild: &v1alpha2.GoogleCloudBuild{ProjectID: id}}}
 		for _, op := range ops {
 			op(&b)
 		}
@@ -182,9 +183,9 @@ func withGCBBuild(id string, ops ...func(*BuildConfig)) func(*SkaffoldConfig) {
 	}
 }
 
-func withDeploy(name string, ops ...func(*DeployConfig)) func(*SkaffoldConfig) {
+func withDeploy(name string, ops ...func(*v1alpha2.DeployConfig)) func(*SkaffoldConfig) {
 	return func(cfg *SkaffoldConfig) {
-		d := DeployConfig{Name: name}
+		d := v1alpha2.DeployConfig{Name: name}
 		for _, op := range ops {
 			op(&d)
 		}
@@ -192,13 +193,13 @@ func withDeploy(name string, ops ...func(*DeployConfig)) func(*SkaffoldConfig) {
 	}
 }
 
-func withDockerArtifact(image, workspace, dockerfile string) func(*BuildConfig) {
-	return func(cfg *BuildConfig) {
-		cfg.Artifacts = append(cfg.Artifacts, &Artifact{
+func withDockerArtifact(image, workspace, dockerfile string) func(*v1alpha2.BuildConfig) {
+	return func(cfg *v1alpha2.BuildConfig) {
+		cfg.Artifacts = append(cfg.Artifacts, &v1alpha2.Artifact{
 			ImageName: image,
 			Workspace: workspace,
-			ArtifactType: ArtifactType{
-				DockerArtifact: &DockerArtifact{
+			ArtifactType: v1alpha2.ArtifactType{
+				DockerArtifact: &v1alpha2.DockerArtifact{
 					DockerfilePath: dockerfile,
 				},
 			},
@@ -206,13 +207,13 @@ func withDockerArtifact(image, workspace, dockerfile string) func(*BuildConfig) 
 	}
 }
 
-func withBazelArtifact(image, workspace, target string) func(*BuildConfig) {
-	return func(cfg *BuildConfig) {
-		cfg.Artifacts = append(cfg.Artifacts, &Artifact{
+func withBazelArtifact(image, workspace, target string) func(*v1alpha2.BuildConfig) {
+	return func(cfg *v1alpha2.BuildConfig) {
+		cfg.Artifacts = append(cfg.Artifacts, &v1alpha2.Artifact{
 			ImageName: image,
 			Workspace: workspace,
-			ArtifactType: ArtifactType{
-				BazelArtifact: &BazelArtifact{
+			ArtifactType: v1alpha2.ArtifactType{
+				BazelArtifact: &v1alpha2.BazelArtifact{
 					BuildTarget: target,
 				},
 			},
@@ -220,6 +221,6 @@ func withBazelArtifact(image, workspace, target string) func(*BuildConfig) {
 	}
 }
 
-func withTagPolicy(tagPolicy TagPolicy) func(*BuildConfig) {
-	return func(cfg *BuildConfig) { cfg.TagPolicy = tagPolicy }
+func withTagPolicy(tagPolicy v1alpha2.TagPolicy) func(*v1alpha2.BuildConfig) {
+	return func(cfg *v1alpha2.BuildConfig) { cfg.TagPolicy = tagPolicy }
 }

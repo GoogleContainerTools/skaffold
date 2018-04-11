@@ -21,7 +21,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
@@ -30,7 +30,7 @@ type BazelDependencyResolver struct{}
 
 const sourceQuery = "kind('source file', deps('%s'))"
 
-func (*BazelDependencyResolver) GetDependencies(a *config.Artifact) ([]string, error) {
+func (*BazelDependencyResolver) GetDependencies(a *v1alpha2.Artifact) ([]string, error) {
 	cmd := exec.Command("bazel", "query", fmt.Sprintf(sourceQuery, a.BazelArtifact.BuildTarget), "--noimplicit_deps", "--order_output=no")
 	stdout, stderr, err := util.RunCommand(cmd, nil)
 	if err != nil {

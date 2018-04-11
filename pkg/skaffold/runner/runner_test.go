@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
 	clientgo "k8s.io/client-go/kubernetes"
@@ -39,14 +40,14 @@ type TestBuilder struct {
 	err error
 }
 
-func (t *TestBuilder) Build(context.Context, io.Writer, tag.Tagger, []*config.Artifact) (*build.BuildResult, error) {
+func (t *TestBuilder) Build(context.Context, io.Writer, tag.Tagger, []*v1alpha2.Artifact) (*build.BuildResult, error) {
 	return t.res, t.err
 }
 
 type TestBuildAll struct {
 }
 
-func (t *TestBuildAll) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*config.Artifact) (*build.BuildResult, error) {
+func (t *TestBuildAll) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) (*build.BuildResult, error) {
 	var builds []build.Build
 
 	for _, artifact := range artifacts {
@@ -110,10 +111,10 @@ func (t *TestWatcher) Start(context context.Context, onChange func([]string)) {
 }
 
 type TestChanges struct {
-	changes [][]*config.Artifact
+	changes [][]*v1alpha2.Artifact
 }
 
-func (t *TestChanges) OnChange(action func(artifacts []*config.Artifact)) {
+func (t *TestChanges) OnChange(action func(artifacts []*v1alpha2.Artifact)) {
 	for _, artifacts := range t.changes {
 		action(artifacts)
 	}
@@ -124,22 +125,22 @@ func TestNewForConfig(t *testing.T) {
 	defer resetClient()
 	var tests = []struct {
 		description string
-		config      *config.SkaffoldConfig
+		config      *v1alpha2.SkaffoldConfig
 		shouldErr   bool
 		expected    interface{}
 	}{
 		{
 			description: "local builder config",
 			config: &config.SkaffoldConfig{
-				Build: config.BuildConfig{
-					TagPolicy: config.TagPolicy{ShaTagger: &config.ShaTagger{}},
-					BuildType: config.BuildType{
-						LocalBuild: &config.LocalBuild{},
+				Build: v1alpha2.BuildConfig{
+					TagPolicy: v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}},
+					BuildType: v1alpha2.BuildType{
+						LocalBuild: &v1alpha2.LocalBuild{},
 					},
 				},
-				Deploy: config.DeployConfig{
-					DeployType: config.DeployType{
-						KubectlDeploy: &config.KubectlDeploy{},
+				Deploy: v1alpha2.DeployConfig{
+					DeployType: v1alpha2.DeployType{
+						KubectlDeploy: &v1alpha2.KubectlDeploy{},
 					},
 				},
 			},
@@ -147,15 +148,16 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "bad tagger config",
-			config: &config.SkaffoldConfig{
-				Build: config.BuildConfig{
-					BuildType: config.BuildType{
-						LocalBuild: &config.LocalBuild{},
+			config: &v1alpha2.SkaffoldConfig{
+				Build: v1alpha2.BuildConfig{
+					TagPolicy: v1alpha2.TagPolicy{},
+					BuildType: v1alpha2.BuildType{
+						LocalBuild: &v1alpha2.LocalBuild{},
 					},
 				},
-				Deploy: config.DeployConfig{
-					DeployType: config.DeployType{
-						KubectlDeploy: &config.KubectlDeploy{},
+				Deploy: v1alpha2.DeployConfig{
+					DeployType: v1alpha2.DeployType{
+						KubectlDeploy: &v1alpha2.KubectlDeploy{},
 					},
 				},
 			},
@@ -163,8 +165,8 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "unknown builder",
-			config: &config.SkaffoldConfig{
-				Build: config.BuildConfig{},
+			config: &v1alpha2.SkaffoldConfig{
+				Build: v1alpha2.BuildConfig{},
 			},
 			shouldErr: true,
 			expected:  &build.LocalBuilder{},
@@ -172,10 +174,10 @@ func TestNewForConfig(t *testing.T) {
 		{
 			description: "unknown tagger",
 			config: &config.SkaffoldConfig{
-				Build: config.BuildConfig{
-					TagPolicy: config.TagPolicy{},
-					BuildType: config.BuildType{
-						LocalBuild: &config.LocalBuild{},
+				Build: v1alpha2.BuildConfig{
+					TagPolicy: v1alpha2.TagPolicy{},
+					BuildType: v1alpha2.BuildType{
+						LocalBuild: &v1alpha2.LocalBuild{},
 					},
 				}},
 			shouldErr: true,
@@ -184,23 +186,10 @@ func TestNewForConfig(t *testing.T) {
 		{
 			description: "unknown deployer",
 			config: &config.SkaffoldConfig{
-				Build: config.BuildConfig{
-					TagPolicy: config.TagPolicy{ShaTagger: &config.ShaTagger{}},
-					BuildType: config.BuildType{
-						LocalBuild: &config.LocalBuild{},
-					},
-				},
-				Deploy: config.DeployConfig{},
-			},
-			shouldErr: true,
-		},
-		{
-			description: "nil deployer",
-			config: &config.SkaffoldConfig{
-				Build: config.BuildConfig{
-					TagPolicy: config.TagPolicy{ShaTagger: &config.ShaTagger{}},
-					BuildType: config.BuildType{
-						LocalBuild: &config.LocalBuild{},
+				Build: v1alpha2.BuildConfig{
+					TagPolicy: v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}},
+					BuildType: v1alpha2.BuildType{
+						LocalBuild: &v1alpha2.LocalBuild{},
 					},
 				},
 			},
@@ -229,7 +218,7 @@ func TestRun(t *testing.T) {
 		{
 			description: "run no error",
 			runner: &SkaffoldRunner{
-				config: &config.SkaffoldConfig{},
+				config: &v1alpha2.SkaffoldConfig{},
 				Builder: &TestBuilder{
 					res: &build.BuildResult{},
 					err: nil,
@@ -250,7 +239,7 @@ func TestRun(t *testing.T) {
 		{
 			description: "run build error",
 			runner: &SkaffoldRunner{
-				config:     &config.SkaffoldConfig{},
+				config:     &v1alpha2.SkaffoldConfig{},
 				kubeclient: client,
 				Builder: &TestBuilder{
 					err: fmt.Errorf(""),
@@ -270,9 +259,9 @@ func TestRun(t *testing.T) {
 				Deployer: &TestDeployer{
 					err: fmt.Errorf(""),
 				},
-				config: &config.SkaffoldConfig{
-					Build: config.BuildConfig{
-						Artifacts: []*config.Artifact{
+				config: &v1alpha2.SkaffoldConfig{
+					Build: v1alpha2.BuildConfig{
+						Artifacts: []*v1alpha2.Artifact{
 							{
 								ImageName: "test",
 							},
@@ -296,7 +285,7 @@ func TestRun(t *testing.T) {
 		{
 			description: "run dev mode",
 			runner: &SkaffoldRunner{
-				config:     &config.SkaffoldConfig{},
+				config:     &v1alpha2.SkaffoldConfig{},
 				kubeclient: client,
 				Builder: &TestBuilder{
 					res: &build.BuildResult{
@@ -320,7 +309,7 @@ func TestRun(t *testing.T) {
 		{
 			description: "run dev mode build error, continue",
 			runner: &SkaffoldRunner{
-				config:     &config.SkaffoldConfig{},
+				config:     &v1alpha2.SkaffoldConfig{},
 				kubeclient: client,
 				Builder: &TestBuilder{
 					res: &build.BuildResult{},
@@ -338,7 +327,7 @@ func TestRun(t *testing.T) {
 		{
 			description: "bad watch dev mode",
 			runner: &SkaffoldRunner{
-				config:     &config.SkaffoldConfig{},
+				config:     &v1alpha2.SkaffoldConfig{},
 				kubeclient: client,
 				Builder: &TestBuilder{
 					res: &build.BuildResult{},
@@ -381,7 +370,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	ctx := context.Background()
 
 	// Build all artifacts
-	bRes, _, err := runner.buildAndDeploy(ctx, []*config.Artifact{
+	bRes, _, err := runner.buildAndDeploy(ctx, []*v1alpha2.Artifact{
 		{ImageName: "image1"},
 		{ImageName: "image2"},
 	}, nil)
@@ -397,7 +386,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	}
 
 	// Rebuild only one
-	bRes, _, err = runner.buildAndDeploy(ctx, []*config.Artifact{
+	bRes, _, err = runner.buildAndDeploy(ctx, []*v1alpha2.Artifact{
 		{ImageName: "image2"},
 	}, nil)
 

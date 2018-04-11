@@ -28,8 +28,8 @@ import (
 	"text/template"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -66,13 +66,13 @@ spec:
 `))
 
 type KubectlDeployer struct {
-	*config.DeployConfig
+	*v1alpha2.DeployConfig
 	kubeContext string
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(cfg *config.DeployConfig, kubeContext string) *KubectlDeployer {
+func NewKubectlDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) *KubectlDeployer {
 	return &KubectlDeployer{
 		DeployConfig: cfg,
 		kubeContext:  kubeContext,

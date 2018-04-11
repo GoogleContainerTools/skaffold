@@ -19,6 +19,7 @@ package cmd
 import (
 	"testing"
 
+	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
 )
 
@@ -51,7 +52,7 @@ func TestReadConfiguration(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		cfg, err := readConfiguration(test.filename)
+		cfg, err := util.ReadConfiguration(test.filename)
 
 		testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedCfg, cfg)
 	}
