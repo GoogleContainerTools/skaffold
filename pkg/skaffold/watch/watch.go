@@ -18,6 +18,7 @@ package watch
 
 import (
 	"context"
+	"path/filepath"
 	"sort"
 	"time"
 
@@ -42,6 +43,7 @@ type Watcher interface {
 // the Watcher interface
 type fsWatcher struct {
 	watcher *fsnotify.Watcher
+	files   map[string]bool
 }
 
 // NewWatcher creates a new Watcher on a list of files.
@@ -51,10 +53,19 @@ func NewWatcher(paths []string) (Watcher, error) {
 		return nil, errors.Wrapf(err, "creating watcher")
 	}
 
+	files := map[string]bool{}
+
 	sort.Strings(paths)
 	for _, p := range paths {
+		files[p] = true
 		logrus.Infof("Added watch for %s", p)
+
 		if err := w.Add(p); err != nil {
+			w.Close()
+			return nil, errors.Wrapf(err, "adding watch for %s", p)
+		}
+
+		if err := w.Add(filepath.Dir(p)); err != nil {
 			w.Close()
 			return nil, errors.Wrapf(err, "adding watch for %s", p)
 		}
@@ -63,6 +74,7 @@ func NewWatcher(paths []string) (Watcher, error) {
 	logrus.Info("Watch is ready")
 	return &fsWatcher{
 		watcher: w,
+		files:   files,
 	}, nil
 }
 
@@ -79,6 +91,9 @@ func (f *fsWatcher) Start(ctx context.Context, onChange func([]string)) {
 		case ev := <-f.watcher.Events:
 			if ev.Op == fsnotify.Chmod {
 				continue // TODO(dgageot): VSCode seems to chmod randomly
+			}
+			if !f.files[ev.Name] {
+				continue // File is not directly watched. Maybe its parent is
 			}
 			timer.Reset(quietPeriod)
 			logrus.Infof("Change: %s", ev)
