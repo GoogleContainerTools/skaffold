@@ -21,8 +21,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 
 	"github.com/pkg/errors"
 	git "gopkg.in/src-d/go-git.v4"
@@ -34,12 +32,7 @@ type GitCommit struct {
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the git commit.
 func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *TagOptions) (string, error) {
-	workingDir, err := findTopLevelGitDir(workingDir)
-	if err != nil {
-		return "", errors.Wrap(err, "invalid working dir")
-	}
-
-	repo, err := git.PlainOpen(workingDir)
+	repo, err := git.PlainOpenWithOptions(workingDir, &git.PlainOpenOptions{DetectDotGit: true})
 	if err != nil {
 		return "", errors.Wrap(err, "opening git repo")
 	}
@@ -74,7 +67,7 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *Tag
 			continue
 		}
 
-		f, err := os.Open(filepath.Join(workingDir, path))
+		f, err := w.Filesystem.Open(path)
 		if err != nil {
 			return "", errors.Wrap(err, "reading diff")
 		}
@@ -91,23 +84,4 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *Tag
 	shaStr := hex.EncodeToString(sha[:])[:16]
 
 	return fmt.Sprintf("%s-dirty-%s", fqn, shaStr), nil
-}
-
-func findTopLevelGitDir(workingDir string) (string, error) {
-	dir, err := filepath.Abs(workingDir)
-	if err != nil {
-		return "", errors.Wrap(err, "invalid working dir")
-	}
-
-	for {
-		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
-			return dir, nil
-		}
-
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			return "", errors.New("no git repository found")
-		}
-		dir = parent
-	}
 }
