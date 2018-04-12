@@ -38,27 +38,30 @@ var (
 	overwrite bool
 )
 
+var rootCmd = &cobra.Command{
+	Use:   "skaffold",
+	Short: "A tool that facilitates continuous development for Kubernetes applications.",
+}
+
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
-	c := &cobra.Command{
-		Use:   "skaffold",
-		Short: "A tool that facilitates continuous development for Kubernetes applications.",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			if err := SetUpLogs(err, v); err != nil {
-				return err
-			}
-			logrus.Infof("Skaffold %+v", version.Get())
-			return nil
-		},
+
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		if err := SetUpLogs(err, v); err != nil {
+			return err
+		}
+		logrus.Infof("Skaffold %+v", version.Get())
+		return nil
 	}
 
-	c.AddCommand(NewCmdVersion(out))
-	c.AddCommand(NewCmdRun(out))
-	c.AddCommand(NewCmdDev(out))
-	c.AddCommand(NewCmdFix(out))
-	c.AddCommand(NewCmdDocker(out))
+	rootCmd.AddCommand(NewCmdCompletion(out))
+	rootCmd.AddCommand(NewCmdVersion(out))
+	rootCmd.AddCommand(NewCmdRun(out))
+	rootCmd.AddCommand(NewCmdDev(out))
+	rootCmd.AddCommand(NewCmdFix(out))
+	rootCmd.AddCommand(NewCmdDocker(out))
 
-	c.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic")
-	return c
+	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic")
+	return rootCmd
 }
 
 func AddRunDevFlags(cmd *cobra.Command) {
