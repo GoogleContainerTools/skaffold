@@ -25,6 +25,8 @@ import (
 	"reflect"
 	"syscall"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 type BadReader struct{}
@@ -47,8 +49,8 @@ func CheckErrorAndDeepEqual(t *testing.T, shouldErr bool, err error, expected, a
 		t.Error(err)
 		return
 	}
-	if !reflect.DeepEqual(expected, actual) {
-		t.Errorf("%T differ.\nExpected\n%+v\nActual\n%+v", expected, expected, actual)
+	if diff := cmp.Diff(expected, actual); diff != "" {
+		t.Errorf("%T differ (-got, +want): %s", expected, diff)
 		return
 	}
 }
