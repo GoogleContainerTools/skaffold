@@ -109,12 +109,15 @@ type Line struct {
 	Text string
 	// Date is when the original text of the line was introduced
 	Date time.Time
+	// Hash is the commit hash that introduced the original line
+	Hash plumbing.Hash
 }
 
-func newLine(author, text string, date time.Time) *Line {
+func newLine(author, text string, date time.Time, hash plumbing.Hash) *Line {
 	return &Line{
 		Author: author,
 		Text:   text,
+		Hash:   hash,
 		Date:   date,
 	}
 }
@@ -125,7 +128,7 @@ func newLines(contents []string, commits []*object.Commit) ([]*Line, error) {
 	}
 	result := make([]*Line, 0, len(contents))
 	for i := range contents {
-		l := newLine(commits[i].Author.Email, contents[i], commits[i].Author.When)
+		l := newLine(commits[i].Author.Email, contents[i], commits[i].Author.When, commits[i].Hash)
 		result = append(result, l)
 	}
 	return result, nil

@@ -12,7 +12,7 @@ type IndexStorage struct {
 	dir *dotgit.DotGit
 }
 
-func (s *IndexStorage) SetIndex(idx *index.Index) error {
+func (s *IndexStorage) SetIndex(idx *index.Index) (err error) {
 	f, err := s.dir.IndexWriter()
 	if err != nil {
 		return err
@@ -25,7 +25,7 @@ func (s *IndexStorage) SetIndex(idx *index.Index) error {
 	return err
 }
 
-func (s *IndexStorage) Index() (*index.Index, error) {
+func (s *IndexStorage) Index() (i *index.Index, err error) {
 	idx := &index.Index{
 		Version: 2,
 	}

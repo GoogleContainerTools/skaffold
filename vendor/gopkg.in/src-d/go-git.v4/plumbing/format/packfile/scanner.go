@@ -279,14 +279,15 @@ func (s *Scanner) NextObject(w io.Writer) (written int64, crc32 uint32, err erro
 // from it zlib stream in an object entry in the packfile.
 func (s *Scanner) copyObject(w io.Writer) (n int64, err error) {
 	if s.zr == nil {
-		zr, err := zlib.NewReader(s.r)
+		var zr io.ReadCloser
+		zr, err = zlib.NewReader(s.r)
 		if err != nil {
 			return 0, fmt.Errorf("zlib initialization error: %s", err)
 		}
 
 		s.zr = zr.(readerResetter)
 	} else {
-		if err := s.zr.Reset(s.r, nil); err != nil {
+		if err = s.zr.Reset(s.r, nil); err != nil {
 			return 0, fmt.Errorf("zlib reset error: %s", err)
 		}
 	}

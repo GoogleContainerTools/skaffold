@@ -44,7 +44,7 @@ func (f *File) Contents() (content string, err error) {
 }
 
 // IsBinary returns if the file is binary or not
-func (f *File) IsBinary() (bool, error) {
+func (f *File) IsBinary() (bin bool, err error) {
 	reader, err := f.Reader()
 	if err != nil {
 		return false, err

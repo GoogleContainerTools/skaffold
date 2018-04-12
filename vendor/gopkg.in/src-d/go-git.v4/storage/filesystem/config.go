@@ -13,7 +13,7 @@ type ConfigStorage struct {
 	dir *dotgit.DotGit
 }
 
-func (c *ConfigStorage) Config() (*config.Config, error) {
+func (c *ConfigStorage) Config() (conf *config.Config, err error) {
 	cfg := config.NewConfig()
 
 	f, err := c.dir.Config()
@@ -32,15 +32,15 @@ func (c *ConfigStorage) Config() (*config.Config, error) {
 		return nil, err
 	}
 
-	if err := cfg.Unmarshal(b); err != nil {
+	if err = cfg.Unmarshal(b); err != nil {
 		return nil, err
 	}
 
 	return cfg, err
 }
 
-func (c *ConfigStorage) SetConfig(cfg *config.Config) error {
-	if err := cfg.Validate(); err != nil {
+func (c *ConfigStorage) SetConfig(cfg *config.Config) (err error) {
+	if err = cfg.Validate(); err != nil {
 		return err
 	}
 

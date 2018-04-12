@@ -25,11 +25,15 @@ import (
 )
 
 var (
+	// ErrBranchExists an error stating the specified branch already exists
+	ErrBranchExists = errors.New("branch already exists")
+	// ErrBranchNotFound an error stating the specified branch does not exist
+	ErrBranchNotFound            = errors.New("branch not found")
 	ErrInvalidReference          = errors.New("invalid reference, should be a tag or a branch")
 	ErrRepositoryNotExists       = errors.New("repository does not exist")
 	ErrRepositoryAlreadyExists   = errors.New("repository already exists")
 	ErrRemoteNotFound            = errors.New("remote not found")
-	ErrRemoteExists              = errors.New("remote already exists	")
+	ErrRemoteExists              = errors.New("remote already exists")
 	ErrWorktreeNotProvided       = errors.New("worktree should be provided")
 	ErrIsBareRepository          = errors.New("worktree not available in a bare repository")
 	ErrUnableToResolveCommit     = errors.New("unable to resolve commit")
@@ -225,7 +229,14 @@ func PlainInit(path string, isBare bool) (*Repository, error) {
 // repository is bare or a normal one. If the path doesn't contain a valid
 // repository ErrRepositoryNotExists is returned
 func PlainOpen(path string) (*Repository, error) {
-	dot, wt, err := dotGitToOSFilesystems(path)
+	return PlainOpenWithOptions(path, &PlainOpenOptions{})
+}
+
+// PlainOpen opens a git repository from the given path. It detects if the
+// repository is bare or a normal one. If the path doesn't contain a valid
+// repository ErrRepositoryNotExists is returned
+func PlainOpenWithOptions(path string, o *PlainOpenOptions) (*Repository, error) {
+	dot, wt, err := dotGitToOSFilesystems(path, o.DetectDotGit)
 	if err != nil {
 		return nil, err
 	}
@@ -246,14 +257,33 @@ func PlainOpen(path string) (*Repository, error) {
 	return Open(s, wt)
 }
 
-func dotGitToOSFilesystems(path string) (dot, wt billy.Filesystem, err error) {
-	fs := osfs.New(path)
-	fi, err := fs.Stat(".git")
-	if err != nil {
+func dotGitToOSFilesystems(path string, detect bool) (dot, wt billy.Filesystem, err error) {
+	if path, err = filepath.Abs(path); err != nil {
+		return nil, nil, err
+	}
+	var fs billy.Filesystem
+	var fi os.FileInfo
+	for {
+		fs = osfs.New(path)
+		fi, err = fs.Stat(".git")
+		if err == nil {
+			// no error; stop
+			break
+		}
 		if !os.IsNotExist(err) {
+			// unknown error; stop
 			return nil, nil, err
 		}
-
+		if detect {
+			// try its parent as long as we haven't reached
+			// the root dir
+			if dir := filepath.Dir(path); dir != path {
+				path = dir
+				continue
+			}
+		}
+		// not detecting via parent dirs and the dir does not exist;
+		// stop
 		return fs, nil, nil
 	}
 
@@ -270,9 +300,7 @@ func dotGitToOSFilesystems(path string) (dot, wt billy.Filesystem, err error) {
 	return dot, fs, nil
 }
 
-func dotGitFileToOSFilesystem(path string, fs billy.Filesystem) (billy.Filesystem, error) {
-	var err error
-
+func dotGitFileToOSFilesystem(path string, fs billy.Filesystem) (bfs billy.Filesystem, err error) {
 	f, err := fs.Open(".git")
 	if err != nil {
 		return nil, err
@@ -404,6 +432,55 @@ func (r *Repository) DeleteRemote(name string) error {
 	return r.Storer.SetConfig(cfg)
 }
 
+// Branch return a Branch if exists
+func (r *Repository) Branch(name string) (*config.Branch, error) {
+	cfg, err := r.Storer.Config()
+	if err != nil {
+		return nil, err
+	}
+
+	b, ok := cfg.Branches[name]
+	if !ok {
+		return nil, ErrBranchNotFound
+	}
+
+	return b, nil
+}
+
+// CreateBranch creates a new Branch
+func (r *Repository) CreateBranch(c *config.Branch) error {
+	if err := c.Validate(); err != nil {
+		return err
+	}
+
+	cfg, err := r.Storer.Config()
+	if err != nil {
+		return err
+	}
+
+	if _, ok := cfg.Branches[c.Name]; ok {
+		return ErrBranchExists
+	}
+
+	cfg.Branches[c.Name] = c
+	return r.Storer.SetConfig(cfg)
+}
+
+// DeleteBranch delete a Branch from the repository and delete the config
+func (r *Repository) DeleteBranch(name string) error {
+	cfg, err := r.Storer.Config()
+	if err != nil {
+		return err
+	}
+
+	if _, ok := cfg.Branches[name]; !ok {
+		return ErrBranchNotFound
+	}
+
+	delete(cfg.Branches, name)
+	return r.Storer.SetConfig(cfg)
+}
+
 func (r *Repository) resolveToCommitHash(h plumbing.Hash) (plumbing.Hash, error) {
 	obj, err := r.Storer.EncodedObject(plumbing.AnyObject, h)
 	if err != nil {
@@ -477,7 +554,29 @@ func (r *Repository) clone(ctx context.Context, o *CloneOptions) error {
 		}
 	}
 
-	return r.updateRemoteConfigIfNeeded(o, c, ref)
+	if err := r.updateRemoteConfigIfNeeded(o, c, ref); err != nil {
+		return err
+	}
+
+	if ref.Name().IsBranch() {
+		branchRef := ref.Name()
+		branchName := strings.Split(string(branchRef), "refs/heads/")[1]
+
+		b := &config.Branch{
+			Name:  branchName,
+			Merge: branchRef,
+		}
+		if o.RemoteName == "" {
+			b.Remote = "origin"
+		} else {
+			b.Remote = o.RemoteName
+		}
+		if err := r.CreateBranch(b); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 const (
@@ -1092,7 +1191,7 @@ func (r *Repository) createNewObjectPack(cfg *RepackConfig) (h plumbing.Hash, er
 	if los, ok := r.Storer.(storer.LooseObjectStorer); ok {
 		err = los.ForEachObjectHash(func(hash plumbing.Hash) error {
 			if ow.isSeen(hash) {
-				err := los.DeleteLooseObject(hash)
+				err = los.DeleteLooseObject(hash)
 				if err != nil {
 					return err
 				}

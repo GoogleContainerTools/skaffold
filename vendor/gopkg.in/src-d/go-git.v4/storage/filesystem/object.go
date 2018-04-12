@@ -55,7 +55,7 @@ func (s *ObjectStorage) requireIndex() error {
 	return nil
 }
 
-func (s *ObjectStorage) loadIdxFile(h plumbing.Hash) error {
+func (s *ObjectStorage) loadIdxFile(h plumbing.Hash) (err error) {
 	f, err := s.dir.ObjectPackIdx(h)
 	if err != nil {
 		return err
@@ -94,7 +94,7 @@ func (s *ObjectStorage) PackfileWriter() (io.WriteCloser, error) {
 }
 
 // SetEncodedObject adds a new object to the storage.
-func (s *ObjectStorage) SetEncodedObject(o plumbing.EncodedObject) (plumbing.Hash, error) {
+func (s *ObjectStorage) SetEncodedObject(o plumbing.EncodedObject) (h plumbing.Hash, err error) {
 	if o.Type() == plumbing.OFSDeltaObject || o.Type() == plumbing.REFDeltaObject {
 		return plumbing.ZeroHash, plumbing.ErrInvalidType
 	}
@@ -113,11 +113,11 @@ func (s *ObjectStorage) SetEncodedObject(o plumbing.EncodedObject) (plumbing.Has
 
 	defer ioutil.CheckClose(or, &err)
 
-	if err := ow.WriteHeader(o.Type(), o.Size()); err != nil {
+	if err = ow.WriteHeader(o.Type(), o.Size()); err != nil {
 		return plumbing.ZeroHash, err
 	}
 
-	if _, err := io.Copy(ow, or); err != nil {
+	if _, err = io.Copy(ow, or); err != nil {
 		return plumbing.ZeroHash, err
 	}
 

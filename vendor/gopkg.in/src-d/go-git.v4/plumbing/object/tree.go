@@ -233,7 +233,7 @@ func (t *Tree) Decode(o plumbing.EncodedObject) (err error) {
 }
 
 // Encode transforms a Tree into a plumbing.EncodedObject.
-func (t *Tree) Encode(o plumbing.EncodedObject) error {
+func (t *Tree) Encode(o plumbing.EncodedObject) (err error) {
 	o.SetType(plumbing.TreeObject)
 	w, err := o.Writer()
 	if err != nil {
@@ -242,7 +242,7 @@ func (t *Tree) Encode(o plumbing.EncodedObject) error {
 
 	defer ioutil.CheckClose(w, &err)
 	for _, entry := range t.Entries {
-		if _, err := fmt.Fprintf(w, "%o %s", entry.Mode, entry.Name); err != nil {
+		if _, err = fmt.Fprintf(w, "%o %s", entry.Mode, entry.Name); err != nil {
 			return err
 		}
 

@@ -62,3 +62,7 @@
 [[constraint]]
   name = "google.golang.org/api"
   revision = "ff7b961889714494dc1feb2e8359298cbd20e5e3"
+
+[[constraint]]
+  name = "gopkg.in/src-d/go-git.v4"
+  revision = "v4.3.0"

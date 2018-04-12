@@ -67,7 +67,7 @@ func (b *Blob) Decode(o plumbing.EncodedObject) error {
 }
 
 // Encode transforms a Blob into a plumbing.EncodedObject.
-func (b *Blob) Encode(o plumbing.EncodedObject) error {
+func (b *Blob) Encode(o plumbing.EncodedObject) (err error) {
 	o.SetType(plumbing.BlobObject)
 
 	w, err := o.Writer()

@@ -375,7 +375,7 @@ func (d *DotGit) findPackedRefsInFile(f billy.File) ([]*plumbing.Reference, erro
 	return refs, s.Err()
 }
 
-func (d *DotGit) findPackedRefs() ([]*plumbing.Reference, error) {
+func (d *DotGit) findPackedRefs() (r []*plumbing.Reference, err error) {
 	f, err := d.fs.Open(packedRefsPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -676,7 +676,7 @@ func (d *DotGit) PackRefs() (err error) {
 	// Gather all refs using addRefsFromRefDir and addRefsFromPackedRefs.
 	var refs []*plumbing.Reference
 	seen := make(map[plumbing.ReferenceName]bool)
-	if err := d.addRefsFromRefDir(&refs, seen); err != nil {
+	if err = d.addRefsFromRefDir(&refs, seen); err != nil {
 		return err
 	}
 	if len(refs) == 0 {
@@ -684,7 +684,7 @@ func (d *DotGit) PackRefs() (err error) {
 		return nil
 	}
 	numLooseRefs := len(refs)
-	if err := d.addRefsFromPackedRefsFile(&refs, f, seen); err != nil {
+	if err = d.addRefsFromPackedRefsFile(&refs, f, seen); err != nil {
 		return err
 	}
 
@@ -701,7 +701,7 @@ func (d *DotGit) PackRefs() (err error) {
 
 	w := bufio.NewWriter(tmp)
 	for _, ref := range refs {
-		_, err := w.WriteString(ref.String() + "\n")
+		_, err = w.WriteString(ref.String() + "\n")
 		if err != nil {
 			return err
 		}

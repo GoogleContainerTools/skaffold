@@ -95,7 +95,8 @@ func (t *Tag) Decode(o plumbing.EncodedObject) (err error) {
 
 	r := bufio.NewReader(reader)
 	for {
-		line, err := r.ReadBytes('\n')
+		var line []byte
+		line, err = r.ReadBytes('\n')
 		if err != nil && err != io.EOF {
 			return err
 		}
@@ -168,7 +169,7 @@ func (t *Tag) Encode(o plumbing.EncodedObject) error {
 	return t.encode(o, true)
 }
 
-func (t *Tag) encode(o plumbing.EncodedObject, includeSig bool) error {
+func (t *Tag) encode(o plumbing.EncodedObject, includeSig bool) (err error) {
 	o.SetType(plumbing.TagObject)
 	w, err := o.Writer()
 	if err != nil {
