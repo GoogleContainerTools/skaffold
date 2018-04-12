@@ -1,3 +1,26 @@
+# v0.4.0 Release - 4/12/2018
+New Features
+* Added `skaffold fix` command to migrate configs from v1alpha1 to v1alpha2
+* Added `skaffold completion` command to output bash completion for skaffold subcommands
+* Warns when an image is built but not used
+* Artifacts can now be built with bazel
+* Environment variable template tagger
+* Support multiple document YAML files
+* Helm deployer now accepts extra set values
+
+Bug Fixes
+* Logs use relative time instead of host time, which fixes issues with clock sync on local clusters
+* Removed duplicate error
+* Docker build args passsed to Google Container Builder
+* Fixed unreliable file detection when using IntelliJ or other IDEs
+* Better handling of default values
+* Fixed issue with some logs being displayed twice
+* Fixed .dockerignore support
+
+Updates
+* Updated go-git package
+* Refactored watch package
+
 # v0.3.0 Release - 3/29/2018
 New Features
 * Logs are now colored by image deployment, different container instances will get different colors in `skaffold dev`
