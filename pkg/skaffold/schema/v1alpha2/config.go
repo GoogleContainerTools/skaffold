@@ -45,10 +45,10 @@ type BuildConfig struct {
 
 // TagPolicy contains all the configuration for the tagging step
 type TagPolicy struct {
-	GitTagger         *GitTagger         `yaml:"gitCommit" yamltags:"oneOf"`
-	ShaTagger         *ShaTagger         `yaml:"sha256" yamltags:"oneOf"`
-	EnvTemplateTagger *EnvTemplateTagger `yaml:"envTemplate" yamltags:"oneOf"`
-	DateTimeTagger    *DateTimeTagger    `yaml:"dateTime" yamltags:"oneOf"`
+	GitTagger         *GitTagger         `yaml:"gitCommit" yamltags:"oneOf=tag"`
+	ShaTagger         *ShaTagger         `yaml:"sha256" yamltags:"oneOf=tag"`
+	EnvTemplateTagger *EnvTemplateTagger `yaml:"envTemplate" yamltags:"oneOf=tag"`
+	DateTimeTagger    *DateTimeTagger    `yaml:"dateTime" yamltags:"oneOf=tag"`
 }
 
 // ShaTagger contains the configuration for the SHA tagger.
@@ -71,9 +71,9 @@ type DateTimeTagger struct {
 // BuildType contains the specific implementation and parameters needed
 // for the build step. Only one field should be populated.
 type BuildType struct {
-	LocalBuild       *LocalBuild       `yaml:"local" yamltags:"oneOf"`
-	GoogleCloudBuild *GoogleCloudBuild `yaml:"googleCloudBuild" yamltags:"oneOf"`
-	KanikoBuild      *KanikoBuild      `yaml:"kaniko" yamltags:"oneOf"`
+	LocalBuild       *LocalBuild       `yaml:"local" yamltags:"oneOf=build"`
+	GoogleCloudBuild *GoogleCloudBuild `yaml:"googleCloudBuild" yamltags:"oneOf=build"`
+	KanikoBuild      *KanikoBuild      `yaml:"kaniko" yamltags:"oneOf=build"`
 }
 
 // LocalBuild contains the fields needed to do a build on the local docker daemon
@@ -112,9 +112,9 @@ type DeployConfig struct {
 // DeployType contains the specific implementation and parameters needed
 // for the deploy step. Only one field should be populated.
 type DeployType struct {
-	HelmDeploy      *HelmDeploy      `yaml:"helm" yamltags:"oneOf"`
-	KubectlDeploy   *KubectlDeploy   `yaml:"kubectl" yamltags:"oneOf"`
-	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize" yamltags:"oneOf"`
+	HelmDeploy      *HelmDeploy      `yaml:"helm" yamltags:"oneOf=deploy"`
+	KubectlDeploy   *KubectlDeploy   `yaml:"kubectl" yamltags:"oneOf=deploy"`
+	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize" yamltags:"oneOf=deploy"`
 }
 
 // KubectlDeploy contains the configuration needed for deploying with `kubectl apply`
@@ -202,8 +202,8 @@ type Profile struct {
 }
 
 type ArtifactType struct {
-	DockerArtifact *DockerArtifact `yaml:"docker" yamltags:"oneOf"`
-	BazelArtifact  *BazelArtifact  `yaml:"bazel" yamltags:"oneOf"`
+	DockerArtifact *DockerArtifact `yaml:"docker" yamltags:"oneOf=artifact"`
+	BazelArtifact  *BazelArtifact  `yaml:"bazel" yamltags:"oneOf=artifact"`
 }
 
 type DockerArtifact struct {

@@ -41,6 +41,20 @@ build:
 deploy:
   kubectl: {}
 `
+	// This config has two tag policies set.
+	invalidConfig = `
+apiVersion: skaffold/v1alpha2
+kind: Config
+build:
+  tagPolicy:
+    sha256: {}
+    gitCommit: {}
+  artifacts:
+  - imageName: example
+deploy:
+  name: example
+`
+
 	completeConfig = `
 apiVersion: skaffold/v1alpha2
 kind: Config
@@ -149,6 +163,11 @@ func TestParseConfig(t *testing.T) {
 		{
 			description: "Bad config",
 			config:      badConfig,
+			shouldErr:   true,
+		},
+		{
+			description: "two taggers defined",
+			config:      invalidConfig,
 			shouldErr:   true,
 		},
 	}
