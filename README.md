@@ -85,61 +85,61 @@ You will need the following components to get started with Skaffold:
 
 1. Clone this repostiory to get access to the examples.
 
-```shell
-git clone https://github.com/GoogleCloudPlatform/skaffold
-```
+    ```shell
+    git clone https://github.com/GoogleCloudPlatform/skaffold
+    ```
 
 1. Change directories to the `getting-started` example.
 
-```shell
-cd examples/getting-started
-```
+    ```shell
+    cd examples/getting-started
+    ```
 
 1. Run `skaffold dev`.
 
-```console
-$ skaffold dev
-Starting build...
-Found [minikube] context, using local docker daemon.
-Sending build context to Docker daemon  6.144kB
-Step 1/5 : FROM golang:1.9.4-alpine3.7
- ---> fb6e10bf973b
-Step 2/5 : WORKDIR /go/src/github.com/GoogleCloudPlatform/skaffold/examples/getting-started
- ---> Using cache
- ---> e9d19a54595b
-Step 3/5 : CMD ./app
- ---> Using cache
- ---> 154b6512c4d9
-Step 4/5 : COPY main.go .
- ---> Using cache
- ---> e097086e73a7
-Step 5/5 : RUN go build -o app main.go
- ---> Using cache
- ---> 9c4622e8f0e7
-Successfully built 9c4622e8f0e7
-Successfully tagged 930080f0965230e824a79b9e7eccffbd:latest
-Successfully tagged gcr.io/k8s-skaffold/skaffold-example:9c4622e8f0e7b5549a61a503bf73366a9cf7f7512aa8e9d64f3327a3c7fded1b
-Build complete in 657.426821ms
-Starting deploy...
-Deploying k8s-pod.yaml...
-Deploy complete in 173.770268ms
-[getting-started] Hello world!
-```
+    ```console
+    $ skaffold dev
+    Starting build...
+    Found [minikube] context, using local docker daemon.
+    Sending build context to Docker daemon  6.144kB
+    Step 1/5 : FROM golang:1.9.4-alpine3.7
+     ---> fb6e10bf973b
+    Step 2/5 : WORKDIR /go/src/github.com/GoogleCloudPlatform/skaffold/examples/getting-started
+     ---> Using cache
+     ---> e9d19a54595b
+    Step 3/5 : CMD ./app
+     ---> Using cache
+     ---> 154b6512c4d9
+    Step 4/5 : COPY main.go .
+     ---> Using cache
+     ---> e097086e73a7
+    Step 5/5 : RUN go build -o app main.go
+     ---> Using cache
+     ---> 9c4622e8f0e7
+    Successfully built 9c4622e8f0e7
+    Successfully tagged 930080f0965230e824a79b9e7eccffbd:latest
+    Successfully tagged gcr.io/k8s-skaffold/skaffold-example:9c4622e8f0e7b5549a61a503bf73366a9cf7f7512aa8e9d64f3327a3c7fded1b
+    Build complete in 657.426821ms
+    Starting deploy...
+    Deploying k8s-pod.yaml...
+    Deploy complete in 173.770268ms
+    [getting-started] Hello world!
+    ```
 
 1. Skaffold has done the following for you:
 
- - Build an image from the local source code
- - Tag it with its sha256
- - Sets that image in the Kubernetes manifests defined in `skaffold.yaml`
- - Deploy the Kubernetes manifests using `kubectl apply -f`
+   - Build an image from the local source code
+   - Tag it with its sha256
+   - Sets that image in the Kubernetes manifests defined in `skaffold.yaml`
+   - Deploy the Kubernetes manifests using `kubectl apply -f`
 
 1. You will see the output of the pod that was deployed:
 
-```console
-[getting-started] Hello world!
-[getting-started] Hello world!
-[getting-started] Hello world!
-```
+    ```console
+    [getting-started] Hello world!
+    [getting-started] Hello world!
+    [getting-started] Hello world!
+    ```
 
 Now, update `main.go`
 
