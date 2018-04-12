@@ -30,7 +30,7 @@ COPY --from=golang:1.10 /usr/local/go /usr/local/go
 ENV PATH /usr/local/go/bin:/go/bin:$PATH
 ENV GOPATH /go/
 
-ENV KUBECTL_VERSION v1.9.3
+ENV KUBECTL_VERSION v1.10.0
 RUN curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl  && \
     chmod +x /usr/local/bin/kubectl
 
