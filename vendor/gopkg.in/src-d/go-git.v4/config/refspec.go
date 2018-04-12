@@ -62,7 +62,13 @@ func (s RefSpec) IsDelete() bool {
 // Src return the src side.
 func (s RefSpec) Src() string {
 	spec := string(s)
-	start := strings.Index(spec, refSpecForce) + 1
+
+	var start int
+	if s.IsForceUpdate() {
+		start = 1
+	} else {
+		start = 0
+	}
 	end := strings.Index(spec, refSpecSeparator)
 
 	return spec[start:end]

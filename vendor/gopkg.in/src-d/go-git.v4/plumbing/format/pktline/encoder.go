@@ -17,6 +17,9 @@ type Encoder struct {
 const (
 	// MaxPayloadSize is the maximum payload size of a pkt-line in bytes.
 	MaxPayloadSize = 65516
+
+	// For compatibility with canonical Git implementation, accept longer pkt-lines
+	OversizePayloadMax = 65520
 )
 
 var (

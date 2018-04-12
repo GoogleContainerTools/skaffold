@@ -420,3 +420,14 @@ func (o *GrepOptions) Validate(w *Worktree) error {
 
 	return nil
 }
+
+// PlainOpenOptions describes how opening a plain repository should be
+// performed.
+type PlainOpenOptions struct {
+	// DetectDotGit defines whether parent directories should be
+	// walked until a .git directory or file is found.
+	DetectDotGit bool
+}
+
+// Validate validates the fields and sets the default values.
+func (o *PlainOpenOptions) Validate() error { return nil }

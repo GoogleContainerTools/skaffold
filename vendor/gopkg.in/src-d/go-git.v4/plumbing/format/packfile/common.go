@@ -40,8 +40,7 @@ func UpdateObjectStorage(s storer.EncodedObjectStorer, packfile io.Reader) error
 	return err
 }
 
-func writePackfileToObjectStorage(sw storer.PackfileWriter, packfile io.Reader) error {
-	var err error
+func writePackfileToObjectStorage(sw storer.PackfileWriter, packfile io.Reader) (err error) {
 	w, err := sw.PackfileWriter()
 	if err != nil {
 		return err

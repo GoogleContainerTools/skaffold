@@ -554,6 +554,22 @@ func (w *Worktree) checkoutFileSymlink(f *object.File) (err error) {
 	}
 
 	err = w.Filesystem.Symlink(string(bytes), f.Name)
+
+	// On windows, this might fail.
+	// Follow Git on Windows behavior by writing the link as it is.
+	if err != nil && isSymlinkWindowsNonAdmin(err) {
+		mode, _ := f.Mode.ToOSFileMode()
+
+		to, err := w.Filesystem.OpenFile(f.Name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode.Perm())
+		if err != nil {
+			return err
+		}
+
+		defer ioutil.CheckClose(to, &err)
+
+		_, err = to.Write(bytes)
+		return err
+	}
 	return
 }
 

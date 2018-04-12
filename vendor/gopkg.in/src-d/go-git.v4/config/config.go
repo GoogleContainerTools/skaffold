@@ -25,7 +25,7 @@ type ConfigStorer interface {
 }
 
 var (
-	ErrInvalid               = errors.New("config invalid remote")
+	ErrInvalid               = errors.New("config invalid key in remote or branch")
 	ErrRemoteConfigNotFound  = errors.New("remote config not found")
 	ErrRemoteConfigEmptyURL  = errors.New("remote config: empty URL")
 	ErrRemoteConfigEmptyName = errors.New("remote config: empty name")
@@ -55,7 +55,9 @@ type Config struct {
 	// Submodules list of repository submodules, the key of the map is the name
 	// of the submodule, should equal to Submodule.Name.
 	Submodules map[string]*Submodule
-
+	// Branches list of branches, the key is the branch name and should
+	// equal Branch.Name
+	Branches map[string]*Branch
 	// Raw contains the raw information of a config file. The main goal is
 	// preserve the parsed information from the original format, to avoid
 	// dropping unsupported fields.
@@ -67,6 +69,7 @@ func NewConfig() *Config {
 	config := &Config{
 		Remotes:    make(map[string]*RemoteConfig),
 		Submodules: make(map[string]*Submodule),
+		Branches:   make(map[string]*Branch),
 		Raw:        format.New(),
 	}
 
@@ -87,12 +90,23 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	for name, b := range c.Branches {
+		if b.Name != name {
+			return ErrInvalid
+		}
+
+		if err := b.Validate(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
 const (
 	remoteSection    = "remote"
 	submoduleSection = "submodule"
+	branchSection    = "branch"
 	coreSection      = "core"
 	packSection      = "pack"
 	fetchKey         = "fetch"
@@ -100,6 +114,7 @@ const (
 	bareKey          = "bare"
 	worktreeKey      = "worktree"
 	windowKey        = "window"
+	mergeKey         = "merge"
 
 	// DefaultPackWindow holds the number of previous objects used to
 	// generate deltas. The value 10 is the same used by git command.
@@ -121,6 +136,11 @@ func (c *Config) Unmarshal(b []byte) error {
 		return err
 	}
 	c.unmarshalSubmodules()
+
+	if err := c.unmarshalBranches(); err != nil {
+		return err
+	}
+
 	return c.unmarshalRemotes()
 }
 
@@ -172,12 +192,27 @@ func (c *Config) unmarshalSubmodules() {
 	}
 }
 
+func (c *Config) unmarshalBranches() error {
+	bs := c.Raw.Section(branchSection)
+	for _, sub := range bs.Subsections {
+		b := &Branch{}
+
+		if err := b.unmarshal(sub); err != nil {
+			return err
+		}
+
+		c.Branches[b.Name] = b
+	}
+	return nil
+}
+
 // Marshal returns Config encoded as a git-config file.
 func (c *Config) Marshal() ([]byte, error) {
 	c.marshalCore()
 	c.marshalPack()
 	c.marshalRemotes()
 	c.marshalSubmodules()
+	c.marshalBranches()
 
 	buf := bytes.NewBuffer(nil)
 	if err := format.NewEncoder(buf).Encode(c.Raw); err != nil {
@@ -243,6 +278,33 @@ func (c *Config) marshalSubmodules() {
 		s.Subsections[i] = section
 		i++
 	}
+}
+
+func (c *Config) marshalBranches() {
+	s := c.Raw.Section(branchSection)
+	newSubsections := make(format.Subsections, 0, len(c.Branches))
+	added := make(map[string]bool)
+	for _, subsection := range s.Subsections {
+		if branch, ok := c.Branches[subsection.Name]; ok {
+			newSubsections = append(newSubsections, branch.marshal())
+			added[subsection.Name] = true
+		}
+	}
+
+	branchNames := make([]string, 0, len(c.Branches))
+	for name := range c.Branches {
+		branchNames = append(branchNames, name)
+	}
+
+	sort.Strings(branchNames)
+
+	for _, name := range branchNames {
+		if !added[name] {
+			newSubsections = append(newSubsections, c.Branches[name].marshal())
+		}
+	}
+
+	s.Subsections = newSubsections
 }
 
 // RemoteConfig contains the configuration for a given remote repository.

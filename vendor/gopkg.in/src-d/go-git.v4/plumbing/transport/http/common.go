@@ -31,7 +31,7 @@ func applyHeadersToRequest(req *http.Request, content *bytes.Buffer, host string
 
 const infoRefsPath = "/info/refs"
 
-func advertisedReferences(s *session, serviceName string) (*packp.AdvRefs, error) {
+func advertisedReferences(s *session, serviceName string) (ref *packp.AdvRefs, err error) {
 	url := fmt.Sprintf(
 		"%s%s?service=%s",
 		s.endpoint.String(), infoRefsPath, serviceName,
@@ -52,12 +52,12 @@ func advertisedReferences(s *session, serviceName string) (*packp.AdvRefs, error
 	s.ModifyEndpointIfRedirect(res)
 	defer ioutil.CheckClose(res.Body, &err)
 
-	if err := NewErr(res); err != nil {
+	if err = NewErr(res); err != nil {
 		return nil, err
 	}
 
 	ar := packp.NewAdvRefs()
-	if err := ar.Decode(res.Body); err != nil {
+	if err = ar.Decode(res.Body); err != nil {
 		if err == packp.ErrEmptyAdvRefs {
 			err = transport.ErrEmptyRemoteRepository
 		}

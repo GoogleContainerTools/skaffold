@@ -226,7 +226,7 @@ func (b *Commit) Encode(o plumbing.EncodedObject) error {
 	return b.encode(o, true)
 }
 
-func (b *Commit) encode(o plumbing.EncodedObject, includeSig bool) error {
+func (b *Commit) encode(o plumbing.EncodedObject, includeSig bool) (err error) {
 	o.SetType(plumbing.CommitObject)
 	w, err := o.Writer()
 	if err != nil {
