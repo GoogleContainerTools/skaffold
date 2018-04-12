@@ -19,6 +19,7 @@ package bazel
 import (
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
@@ -32,10 +33,12 @@ const sourceQuery = "kind('source file', deps('%s'))"
 
 func (*BazelDependencyResolver) GetDependencies(a *v1alpha2.Artifact) ([]string, error) {
 	cmd := exec.Command("bazel", "query", fmt.Sprintf(sourceQuery, a.BazelArtifact.BuildTarget), "--noimplicit_deps", "--order_output=no")
+	cmd.Dir = a.Workspace
 	stdout, stderr, err := util.RunCommand(cmd, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "stdout: %s stderr: %s", stdout, stderr)
 	}
+
 	labels := strings.Split(string(stdout), "\n")
 	var deps []string
 	for _, l := range labels {
@@ -48,8 +51,14 @@ func (*BazelDependencyResolver) GetDependencies(a *v1alpha2.Artifact) ([]string,
 		if l == "" {
 			continue
 		}
-		dep := strings.TrimPrefix(l, "//:")
+
+		dep := filepath.Join(a.Workspace, depToPath(l))
+
 		deps = append(deps, dep)
 	}
 	return deps, nil
+}
+
+func depToPath(dep string) string {
+	return strings.TrimPrefix(strings.Replace(strings.TrimPrefix(dep, "//"), ":", "/", 1), "/")
 }
