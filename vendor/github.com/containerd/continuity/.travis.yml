@@ -1,0 +1,21 @@
+language: go
+sudo: required
+
+go:
+  - 1.8.x
+  - 1.9.x
+  - tip
+
+go_import_path: github.com/containerd/continuity
+
+env:
+# NOTE: we cannot set GOOS directly (because gimme overrides the value)
+  - TRAVIS_GOOS=windows
+  - TRAVIS_GOOS=linux
+  - TRAVIS_GOOS=darwin
+
+script:
+  - export GOOS=${TRAVIS_GOOS}
+  - make build binaries
+  - if [ "$GOOS" = "linux" ]; then make vet test; fi
+  - if [ "$GOOS" != "linux" ]; then make test-compile; fi
