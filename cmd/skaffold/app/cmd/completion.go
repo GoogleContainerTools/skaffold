@@ -19,6 +19,7 @@ package cmd
 import (
 	"io"
 	"os"
+
 	"github.com/spf13/cobra"
 )
 
@@ -35,7 +36,7 @@ To configure bash shell completion for all your sessions, add the following to y
 
 eval "$(skaffold completion bash)"`,
 	Run: func(cmd *cobra.Command, args []string) {
-		rootCmd.GenBashCompletion(os.Stdout);
+		rootCmd.GenBashCompletion(os.Stdout)
 	},
 }
 

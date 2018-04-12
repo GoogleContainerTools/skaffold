@@ -44,7 +44,7 @@ var rootCmd = &cobra.Command{
 }
 
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
-	
+
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if err := SetUpLogs(err, v); err != nil {
 			return err
