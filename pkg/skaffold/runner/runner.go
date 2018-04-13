@@ -166,7 +166,9 @@ func (r *SkaffoldRunner) dev(ctx context.Context, artifacts []*v1alpha2.Artifact
 	onChange := func(changedPaths []string) {
 		logger.Mute()
 
-		_, _, err := r.buildAndDeploy(ctx, artifacts, onBuildSuccess)
+		changedArtifacts := r.depMap.ArtifactsForPaths(changedPaths)
+
+		_, _, err := r.buildAndDeploy(ctx, changedArtifacts, onBuildSuccess)
 		if err != nil {
 			// In dev mode, we only warn on pipeline errors
 			logrus.Warnf("run: %s", err)
