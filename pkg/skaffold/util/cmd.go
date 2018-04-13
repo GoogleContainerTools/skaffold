@@ -88,7 +88,7 @@ func (*Commander) RunCommand(cmd *exec.Cmd, stdin io.Reader) ([]byte, []byte, er
 	}
 
 	err = cmd.Wait()
-	logrus.Debugf("Command output: stdout %s, stderr: %s, err: %s", string(stdout), string(stderr), err)
+	logrus.Debugf("Command output: stdout %s, stderr: %s, err: %v", string(stdout), string(stderr), err)
 
 	return stdout, stderr, err
 }
