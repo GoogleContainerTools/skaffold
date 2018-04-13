@@ -194,7 +194,7 @@ func replaceParameters(contents []byte, params map[string]build.Build) (string, 
 
 	parts := bytes.Split(contents, []byte("\n---"))
 	for _, part := range parts {
-		m := make(map[interface{}]interface{})
+		m := make(map[string]interface{})
 		if err := yaml.Unmarshal(part, &m); err != nil {
 			return "", errors.Wrap(err, "reading kubernetes YAML")
 		}
@@ -224,17 +224,17 @@ func replaceParameters(contents []byte, params map[string]build.Build) (string, 
 
 func recursiveReplace(i interface{}, replacements map[string]*replacement) interface{} {
 	switch t := i.(type) {
-	case map[interface{}]interface{}:
+	case map[string]interface{}:
 		m := map[string]interface{}{}
 		for k, v := range t {
-			if k.(string) == "image" {
+			if k == "image" {
 				name := v.(string)
 				if img, present := replacements[name]; present {
 					v = img.tag
 					img.found = true
 				}
 			}
-			m[k.(string)] = recursiveReplace(v, replacements)
+			m[k] = recursiveReplace(v, replacements)
 		}
 		return m
 	case []interface{}:
