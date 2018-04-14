@@ -19,10 +19,10 @@ import (
 	"context"
 	"io/ioutil"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestWatch(t *testing.T) {
@@ -89,7 +89,7 @@ func TestWatch(t *testing.T) {
 
 				expected := prependParentDir(tmp, test.expectedChanges)
 
-				if !reflect.DeepEqual(expected, actual) {
+				if diff := cmp.Diff(expected, actual); diff != "" {
 					t.Errorf("Expected %+v, Actual %+v", expected, actual)
 				}
 			})
