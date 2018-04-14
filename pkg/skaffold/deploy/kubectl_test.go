@@ -165,19 +165,23 @@ func TestKubectlRun(t *testing.T) {
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
 		})
-
 	}
 }
 
 func TestReplaceParameters(t *testing.T) {
 	var tests = []struct {
 		description      string
+		builds           []build.Build
 		manifest         string
 		expectedManifest string
 		shouldErr        bool
 	}{
 		{
 			description: "pod",
+			builds: []build.Build{{
+				ImageName: "gcr.io/k8s-skaffold/skaffold-example",
+				Tag:       "gcr.io/k8s-skaffold/skaffold-example:TAG",
+			}},
 			manifest: `apiVersion: v1
 kind: Pod
 metadata:
@@ -193,12 +197,16 @@ metadata:
   name: getting-started
 spec:
   containers:
-  - image: gcr.io/k8s-skaffold/skaffold-example
+  - image: gcr.io/k8s-skaffold/skaffold-example:TAG
     name: getting-started
 `,
 		},
 		{
 			description: "service and deployment",
+			builds: []build.Build{{
+				ImageName: "gcr.io/k8s-skaffold/leeroy-app",
+				Tag:       "gcr.io/k8s-skaffold/leeroy-app:TAG",
+			}},
 			manifest: `apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
@@ -246,7 +254,7 @@ spec:
         app: leeroy-app
     spec:
       containers:
-      - image: gcr.io/k8s-skaffold/leeroy-app
+      - image: gcr.io/k8s-skaffold/leeroy-app:TAG
         name: leeroy-app
 ---
 apiVersion: v1
@@ -266,9 +274,9 @@ spec:
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			resultManifest, err := replaceParameters([]byte(test.manifest), map[string]build.Build{})
+			resultManifest, err := replaceParameters([]byte(test.manifest), test.builds)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, "["+test.expectedManifest+"]", "["+resultManifest+"]")
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedManifest, resultManifest)
 		})
 	}
 }

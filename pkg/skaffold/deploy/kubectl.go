@@ -90,9 +90,8 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, b *build.Bu
 		if err != nil {
 			return nil, errors.Wrap(err, "generating manifest")
 		}
-		params := map[string]build.Build{"IMAGE": b.Builds[0]}
 
-		if err := k.deployManifestFile(strings.NewReader(yaml), params); err != nil {
+		if err := k.deployManifestFile(strings.NewReader(yaml), []build.Build{{ImageName: "IMAGE", Tag: b.Builds[0].Tag}}); err != nil {
 			return nil, errors.Wrap(err, "deploying manifest")
 		}
 		return &Result{}, nil
@@ -129,16 +128,7 @@ func generateManifest(b build.Build) (string, error) {
 	return out.String(), nil
 }
 
-func imageToBuild(b []build.Build) map[string]build.Build {
-	m := map[string]build.Build{}
-	for _, build := range b {
-		m[build.ImageName] = build
-	}
-	return m
-}
-
 func (k *KubectlDeployer) deployManifest(out io.Writer, b []build.Build, manifest string) error {
-	imageToBuilds := imageToBuild(b)
 	if !util.IsSupportedKubernetesFormat(manifest) {
 		if !util.StrSliceContains(k.KubectlDeploy.Manifests, manifest) {
 			logrus.Infof("Refusing to deploy non {json, yaml} file %s", manifest)
@@ -151,19 +141,20 @@ func (k *KubectlDeployer) deployManifest(out io.Writer, b []build.Build, manifes
 	if err != nil {
 		return errors.Wrap(err, "opening manifest")
 	}
-	if err := k.deployManifestFile(f, imageToBuilds); err != nil {
+
+	if err := k.deployManifestFile(f, b); err != nil {
 		return errors.Wrapf(err, "deploying manifest %s", manifest)
 	}
 	return nil
 }
 
-func (k *KubectlDeployer) deployManifestFile(r io.Reader, params map[string]build.Build) error {
+func (k *KubectlDeployer) deployManifestFile(r io.Reader, b []build.Build) error {
 	var manifestContents bytes.Buffer
 	if _, err := manifestContents.ReadFrom(r); err != nil {
 		return errors.Wrap(err, "reading manifest")
 	}
 
-	manifest, err := replaceParameters(manifestContents.Bytes(), params)
+	manifest, err := replaceParameters(manifestContents.Bytes(), b)
 	if err != nil {
 		return errors.Wrap(err, "replacing image in manifest")
 	}
@@ -182,19 +173,19 @@ type replacement struct {
 	found bool
 }
 
-func replaceParameters(contents []byte, params map[string]build.Build) (string, error) {
+func replaceParameters(contents []byte, b []build.Build) (string, error) {
 	var manifests []string
 
 	replacements := map[string]*replacement{}
-	for img, b := range params {
-		replacements[img] = &replacement{
-			tag: b.Tag,
+	for _, build := range b {
+		replacements[build.ImageName] = &replacement{
+			tag: build.Tag,
 		}
 	}
 
 	parts := bytes.Split(contents, []byte("\n---"))
 	for _, part := range parts {
-		m := make(map[string]interface{})
+		m := make(map[interface{}]interface{})
 		if err := yaml.Unmarshal(part, &m); err != nil {
 			return "", errors.Wrap(err, "reading kubernetes YAML")
 		}
@@ -224,17 +215,17 @@ func replaceParameters(contents []byte, params map[string]build.Build) (string, 
 
 func recursiveReplace(i interface{}, replacements map[string]*replacement) interface{} {
 	switch t := i.(type) {
-	case map[string]interface{}:
+	case map[interface{}]interface{}:
 		m := map[string]interface{}{}
 		for k, v := range t {
-			if k == "image" {
+			if k.(string) == "image" {
 				name := v.(string)
 				if img, present := replacements[name]; present {
 					v = img.tag
 					img.found = true
 				}
 			}
-			m[k] = recursiveReplace(v, replacements)
+			m[k.(string)] = recursiveReplace(v, replacements)
 		}
 		return m
 	case []interface{}:
