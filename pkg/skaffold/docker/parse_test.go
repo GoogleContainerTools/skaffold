@@ -19,13 +19,13 @@ package docker
 import (
 	"fmt"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
 	"github.com/GoogleCloudPlatform/skaffold/testutil"
 	"github.com/containers/image/manifest"
+	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/afero"
 )
 
@@ -327,7 +327,7 @@ func TestPortsFromDockerfile(t *testing.T) {
 				t.Errorf("PortsFromDockerfile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
+			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("PortsFromDockerfile() = %v, want %v", got, tt.want)
 			}
 		})

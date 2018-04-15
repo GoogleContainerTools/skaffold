@@ -16,10 +16,10 @@ limitations under the License.
 package build
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/google/go-cmp/cmp"
 )
 
 type FakeDependencyResolver struct {
@@ -82,7 +82,7 @@ func TestPaths(t *testing.T) {
 			DefaultDockerfileDepResolver = oldDockerResolver
 			DefaultBazelDepResolver = oldBazelResolver
 
-			if !reflect.DeepEqual(test.expected, m.Paths()) {
+			if diff := cmp.Diff(test.expected, m.Paths()); diff != "" {
 				t.Errorf("%T differ.\nExpected\n%+v\nActual\n%+v", test.expected, test.expected, m.Paths())
 				return
 			}
