@@ -53,23 +53,6 @@
   revision = "d8fb8589b0e8e85b8c8bbaa8840226d0dfeb7371"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/containers/image"
-  packages = [
-    "docker",
-    "docker/policyconfiguration",
-    "docker/reference",
-    "image",
-    "manifest",
-    "pkg/docker/config",
-    "pkg/strslice",
-    "pkg/tlsclientconfig",
-    "transports",
-    "types"
-  ]
-  revision = "f7ea1dcb32a06092905672e99faa75bf2f61632b"
-
-[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
@@ -177,12 +160,6 @@
   version = "v0.3.2"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/docker/libtrust"
-  packages = ["."]
-  revision = "aabc10ec26b754e797f9028f4589c5b7bd90dc20"
-
-[[projects]]
   name = "github.com/emirpasic/gods"
   packages = [
     "containers",
@@ -245,6 +222,21 @@
   ]
   revision = "3af367b6b30c263d47e8895973edcca9a49cf029"
   version = "v0.2.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/google/go-containerregistry"
+  packages = [
+    "authn",
+    "name",
+    "v1",
+    "v1/partial",
+    "v1/remote",
+    "v1/remote/transport",
+    "v1/types",
+    "v1/v1util"
+  ]
+  revision = "692805fc49bef6e1268195f7d514f33cc0d238e2"
 
 [[projects]]
   branch = "master"
@@ -870,6 +862,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6566068d317659a0ea4775ebb12e7f7d76510720446c4b418de6c24d76e730e4"
+  inputs-digest = "63a2c1670a4a573c76a2af609374beec0a83a4641967c882c48c21989f822070"
   solver-name = "gps-cdcl"
   solver-version = 1
