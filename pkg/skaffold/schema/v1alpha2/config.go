@@ -138,6 +138,13 @@ type Profile struct {
 type ArtifactType struct {
 	DockerArtifact *DockerArtifact `yaml:"docker"`
 	BazelArtifact  *BazelArtifact  `yaml:"bazel"`
+	KanikoArtifact *KanikoArtifact `yaml:"kaniko,omitempty"`
+}
+
+type KanikoArtifact struct {
+	GCSBucket      string `yaml:"gcsBucket,omitempty"`
+	DockerfilePath string `yaml:"dockerfilePath,omitempty"`
+	PullSecret     string `yaml:"pullSecret,omitempty"`
 }
 
 type DockerArtifact struct {

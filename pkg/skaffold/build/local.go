@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -68,6 +69,9 @@ func (l *LocalBuilder) runBuildForArtifact(ctx context.Context, out io.Writer, a
 	}
 	if artifact.BazelArtifact != nil {
 		return l.buildBazel(ctx, out, artifact)
+	}
+	if artifact.KanikoArtifact != nil {
+		return kaniko.Build(ctx, out, artifact)
 	}
 
 	return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)

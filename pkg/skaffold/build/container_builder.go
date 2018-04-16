@@ -126,7 +126,7 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 	}
 
 	fmt.Fprintf(out, "Pushing code to gs://%s/%s\n", cbBucket, buildObject)
-	if err := UploadTarToGCS(ctx, artifact.DockerArtifact.DockerfilePath, artifact.Workspace, cbBucket, buildObject); err != nil {
+	if err := docker.UploadContextToGCS(ctx, artifact.DockerArtifact.DockerfilePath, artifact.Workspace, cbBucket, buildObject); err != nil {
 		return nil, errors.Wrap(err, "uploading source tarball")
 	}
 
@@ -244,20 +244,6 @@ func getImageID(b *cloudbuild.Build) (string, error) {
 		return "", errors.New("build failed")
 	}
 	return b.Results.Images[0].Digest, nil
-}
-
-func UploadTarToGCS(ctx context.Context, dockerfilePath, dockerCtx, bucket, objectName string) error {
-	c, err := cstorage.NewClient(ctx)
-	if err != nil {
-		return err
-	}
-	defer c.Close()
-
-	w := c.Bucket(bucket).Object(objectName).NewWriter(ctx)
-	if err := docker.CreateDockerTarGzContext(w, dockerfilePath, dockerCtx); err != nil {
-		return errors.Wrap(err, "uploading targz to google storage")
-	}
-	return w.Close()
 }
 
 func (cb *GoogleCloudBuilder) getLogs(ctx context.Context, offset int64, bucket, objectName string) (io.ReadCloser, error) {
