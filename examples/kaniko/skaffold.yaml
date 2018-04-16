@@ -1,0 +1,13 @@
+apiVersion: skaffold/v1alpha2
+kind: Config
+build:
+  artifacts:
+  - imageName: gcr.io/r2d4minikube/skaffold-example
+    workspace: .
+    kaniko:
+      gcsBucket: r2d4minikube	
+      pullSecret: /Users/matt/Downloads/kaniko.json
+deploy:
+  kubectl:
+    manifests:
+      - k8s-*
