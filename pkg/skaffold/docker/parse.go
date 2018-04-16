@@ -64,7 +64,7 @@ func GetDockerfileDependencies(dockerfilePath, workspace string) ([]string, erro
 	path := filepath.Join(workspace, dockerfilePath)
 	f, err := util.Fs.Open(path)
 	if err != nil {
-		return nil, errors.Wrapf(err, "opening dockerfile: %d", path)
+		return nil, errors.Wrapf(err, "opening dockerfile: %s", path)
 	}
 	defer f.Close()
 
