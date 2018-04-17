@@ -20,7 +20,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/GoogleCloudPlatform/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/spf13/afero"
 )
 

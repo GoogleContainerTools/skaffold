@@ -22,7 +22,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )

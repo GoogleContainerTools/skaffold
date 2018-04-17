@@ -19,8 +19,8 @@ package docker
 import (
 	"io"
 
-	"github.com/GoogleCloudPlatform/skaffold/cmd/skaffold/app/flags"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )

@@ -19,7 +19,7 @@ package app
 import (
 	"os"
 
-	"github.com/GoogleCloudPlatform/skaffold/cmd/skaffold/app/cmd"
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
 )
 
 func Run() error {

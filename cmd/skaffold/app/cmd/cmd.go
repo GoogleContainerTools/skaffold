@@ -21,11 +21,11 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/version"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

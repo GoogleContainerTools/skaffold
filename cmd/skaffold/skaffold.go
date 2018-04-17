@@ -19,7 +19,7 @@ package main
 import (
 	"os"
 
-	"github.com/GoogleCloudPlatform/skaffold/cmd/skaffold/app"
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app"
 )
 
 func main() {

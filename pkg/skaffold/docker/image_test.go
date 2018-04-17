@@ -23,7 +23,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/GoogleCloudPlatform/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestMain(m *testing.M) {

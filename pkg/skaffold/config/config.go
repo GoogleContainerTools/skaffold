@@ -17,7 +17,7 @@ limitations under the License.
 package config
 
 import (
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 )
 
 // the "latest" SkaffoldConfig object
