@@ -1,0 +1,16 @@
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Cloud VPN</title>
+  <g>
+    <path d="M126.47,58.1l-26.3-45.74a11.56,11.56,0,0,0-9.86-5.88H37.7a11.55,11.55,0,0,0-9.86,5.88L1.53,58a11.48,11.48,0,0,0,0,11.44l26.3,46a11.77,11.77,0,0,0,9.86,6.09H90.3a11.73,11.73,0,0,0,9.87-6.06l26.3-45.74A11.73,11.73,0,0,0,126.47,58.1Z" style="fill: #4285f4"/>
+    <path d="M128,63.14,92.86,28.05,76.44,44.44l8.22,8.22V63.48l-8.29,1.6-6.85-6.85-7.6-.42L53.2,64.35l-8.62-8.62L28.21,72.18l49.29,49.3H90.3a11.73,11.73,0,0,0,9.87-6.06l26.3-45.74A11.56,11.56,0,0,0,128,63.14Z" style="opacity: 0.070000000298023;isolation: isolate"/>
+    <g id="art">
+      <rect x="70.48" y="61.48" width="15.19" height="5" style="fill: #fff"/>
+      <rect x="82.16" y="42.72" width="5" height="42.54" style="fill: #fff"/>
+      <rect x="76.17" y="83.45" width="16.99" height="16.99" rx="1" ry="1" style="fill: #fff"/>
+      <rect x="76.17" y="27.76" width="16.99" height="16.99" rx="1" ry="1" style="fill: #fff"/>
+      <rect x="42.3" y="61.48" width="15.55" height="5" style="fill: #fff"/>
+      <rect x="27.93" y="55.48" width="16.99" height="16.99" rx="1" ry="1" style="fill: #fff"/>
+      <path d="M64,72a8,8,0,1,1,8-8A8,8,0,0,1,64,72Zm0-13a5,5,0,1,0,5,5A5,5,0,0,0,64,59Z" style="fill: #fff"/>
+    </g>
+  </g>
+</svg>

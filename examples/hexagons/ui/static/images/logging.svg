@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="512px" height="456px" viewBox="0 0 512 456" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 3.7.2 (28276) - http://www.bohemiancoding.com/sketch -->
+    <title>Logs_512px</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <linearGradient x1="50%" y1="2.19428074e-05%" x2="50%" y2="99.8449302%" id="linearGradient-1">
+            <stop stop-color="#4387FD" offset="0%"></stop>
+            <stop stop-color="#4683EA" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Logs_512px">
+            <path d="M111.1643,432.867 L6.1623,250.998 C-2.0541,236.7668 -2.0541,219.2332 6.1623,205.0019 L111.1643,23.133 C119.3807,8.9017 134.5653,0.1349 150.9981,0.1349 L361.0019,0.1349 C377.4347,0.1349 392.6193,8.9017 400.8357,23.133 L505.8377,205.0019 C514.0541,219.2331 514.0541,236.7668 505.8377,250.998 L400.8357,432.867 C392.6193,447.0982 377.4347,455.8651 361.0019,455.8651 L150.9981,455.8651 C134.5652,455.8651 119.3807,447.0982 111.1643,432.867 L111.1643,432.867 Z" id="Shape" fill="url(#linearGradient-1)"></path>
+            <path d="M506.2416,250.2416 L375.9999,120 L347.2681,151.6341 L322,139 L243.9512,160.9512 L196,113 L190.0635,124.5503 L185,121 L136,173 L168.84,205.84 L168,211 L159,330 L284.8651,455.8651 L361.0019,455.8651 C377.4348,455.8651 392.6193,447.0983 400.8358,432.867 L505.8378,250.9981 C505.9813,250.7493 506.103,250.4922 506.2416,250.2416 L506.2416,250.2416 Z" id="Shape" fill="#000000" opacity="0.07"></path>
+            <rect id="Rectangle-path" fill="#FFFFFF" x="226" y="120" width="150" height="46"></rect>
+            <rect id="Rectangle-path" fill="#FFFFFF" x="226" y="210" width="150" height="46"></rect>
+            <rect id="Rectangle-path" fill="#FFFFFF" x="136" y="113" width="60" height="60"></rect>
+            <rect id="Rectangle-path" fill="#FFFFFF" x="226" y="300" width="150" height="46"></rect>
+            <rect id="Rectangle-path" fill="#FFFFFF" x="159" y="157.75" width="14" height="172.25"></rect>
+            <rect id="Rectangle-path" fill="#FFFFFF" x="166" y="226" width="60" height="14"></rect>
+            <rect id="Rectangle-path" fill="#FFFFFF" x="166" y="316" width="60" height="14"></rect>
+        </g>
+    </g>
+</svg>
