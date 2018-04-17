@@ -71,7 +71,7 @@ def file_passes(filename, refs, regexs):
         (data, found) = p.subn("", data, 1)
 
     # remove shebang from the top of shell files
-    if extension == "sh":
+    elif extension == "sh":
         p = regexs["shebang"]
         (data, found) = p.subn("", data, 1)
 
