@@ -22,8 +22,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
-	"github.com/GoogleCloudPlatform/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/containers/image/manifest"
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/afero"
@@ -196,7 +196,7 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			shouldErr:   true,
 		},
 		{
-			// https://github.com/GoogleCloudPlatform/skaffold/issues/158
+			// https://github.com/GoogleContainerTools/skaffold/issues/158
 			description: "no dependencies on remote files",
 			dockerfile:  remoteFileAdd,
 			expected:    []string{"Dockerfile"},

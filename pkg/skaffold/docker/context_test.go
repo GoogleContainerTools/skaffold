@@ -21,7 +21,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 

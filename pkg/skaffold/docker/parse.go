@@ -28,8 +28,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/containers/image/docker"
 	"github.com/containers/image/manifest"
 	"github.com/containers/image/types"

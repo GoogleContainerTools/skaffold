@@ -6,7 +6,7 @@
 
 ## Setup
 
-[![Open in Cloud Shell](http://gstatic.com/cloudssh/images/open-btn.svg)](https://console.cloud.google.com/cloudshell/open?git_repo=https%3A%2F%2Fgithub.com%2FGoogleCloudPlatform%2Fskaffold.git&page=editor&working_dir=examples%2Fgetting-started&tutorial=..%2F..%2Fdocs%2Fquickstart-gke.md)
+[![Open in Cloud Shell](http://gstatic.com/cloudssh/images/open-btn.svg)](https://console.cloud.google.com/cloudshell/open?git_repo=https%3A%2F%2Fgithub.com%2FGoogleContainerTools%2Fskaffold.git&page=editor&working_dir=examples%2Fgetting-started&tutorial=..%2F..%2Fdocs%2Fquickstart-gke.md)
 
 1. Create a Kubernetes Engine cluster if you don't already have one.
 
@@ -17,7 +17,7 @@
 1. Clone the Skaffold repository then change directories to the sample application.
 
     ```shell
-    git clone https://github.com/GoogleCloudPlatform/skaffold.git
+    git clone https://github.com/GoogleContainerTools/skaffold.git
     cd skaffold/examples/getting-started
     ```
 1. Install `skaffold`.

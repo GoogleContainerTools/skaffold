@@ -4,7 +4,7 @@
 
 1. Get the source 
 
-        $ go get -u -d github.com/GoogleCloudPlatform/skaffold
+        $ go get -u -d github.com/GoogleContainerTools/skaffold
     
 1. Build and install Skaffold to `$GOPATH/bin/skaffold`
 

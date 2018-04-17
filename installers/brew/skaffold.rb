@@ -1,15 +1,15 @@
 class Skaffold < Formula
   desc "A tool that facilitates continuous development for Kubernetes applications."
-  url "https://github.com/GoogleCloudPlatform/skaffold.git"
+  url "https://github.com/GoogleContainerTools/skaffold.git"
   version "v0.3.0"
 
   depends_on "go" => :build
 
   def install
     ENV["GOPATH"] = buildpath
-    (buildpath/"src/github.com/GoogleCloudPlatform").mkpath
+    (buildpath/"src/github.com/GoogleContainerTools").mkpath
 
-    ln_s buildpath, buildpath/"src/github.com/GoogleCloudPlatform/skaffold"
+    ln_s buildpath, buildpath/"src/github.com/GoogleContainerTools/skaffold"
     system "make"
     bin.install "out/skaffold"
   end

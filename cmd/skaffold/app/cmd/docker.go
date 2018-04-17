@@ -19,7 +19,7 @@ package cmd
 import (
 	"io"
 
-	"github.com/GoogleCloudPlatform/skaffold/cmd/skaffold/app/cmd/docker"
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/docker"
 	"github.com/spf13/cobra"
 )
 

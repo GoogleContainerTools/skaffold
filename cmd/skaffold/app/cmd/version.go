@@ -19,8 +19,8 @@ package cmd
 import (
 	"io"
 
-	"github.com/GoogleCloudPlatform/skaffold/cmd/skaffold/app/flags"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/version"
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )

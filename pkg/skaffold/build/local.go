@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )

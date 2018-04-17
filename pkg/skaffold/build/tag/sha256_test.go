@@ -19,7 +19,7 @@ package tag
 import (
 	"testing"
 
-	"github.com/GoogleCloudPlatform/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestGenerateFullyQualifiedImageName(t *testing.T) {

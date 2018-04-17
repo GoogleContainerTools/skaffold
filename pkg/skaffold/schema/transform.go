@@ -19,10 +19,10 @@ package schema
 import (
 	"fmt"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config/transform"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config/transform"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/pkg/errors"
 )
 

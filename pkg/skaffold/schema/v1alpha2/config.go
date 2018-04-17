@@ -19,7 +19,7 @@ package v1alpha2
 import (
 	"fmt"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"

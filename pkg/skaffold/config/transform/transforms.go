@@ -21,11 +21,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha1"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 )
 
 func ToV1Alpha2(vc util.VersionedConfig) (util.VersionedConfig, error) {

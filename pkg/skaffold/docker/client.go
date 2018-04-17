@@ -26,9 +26,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/api"
 	"github.com/docker/go-connections/tlsconfig"
 	"github.com/moby/moby/client"

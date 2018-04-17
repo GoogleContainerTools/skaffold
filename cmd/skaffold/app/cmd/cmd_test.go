@@ -19,8 +19,8 @@ package cmd
 import (
 	"testing"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
-	"github.com/GoogleCloudPlatform/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestReadConfiguration(t *testing.T) {

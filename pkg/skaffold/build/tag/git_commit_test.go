@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleCloudPlatform/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 	git "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 )

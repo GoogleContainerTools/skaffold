@@ -24,10 +24,10 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
-	"github.com/GoogleCloudPlatform/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 var testBuildResult = &build.BuildResult{

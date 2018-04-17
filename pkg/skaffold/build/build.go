@@ -20,8 +20,8 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 )
 
 // BuildResult holds the results of builds

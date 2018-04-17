@@ -55,7 +55,7 @@ RUN curl -LO https://github.com/GoogleCloudPlatform/docker-credential-gcr/releas
 
 ENV PATH /usr/local/go/bin:/go/bin:/google-cloud-sdk/bin:$PATH
 
-WORKDIR /go/src/github.com/GoogleCloudPlatform/skaffold
+WORKDIR /go/src/github.com/GoogleContainerTools/skaffold
 COPY . .
 RUN make out/skaffold-linux-amd64 && mv out/skaffold-linux-amd64 /usr/bin/skaffold
 

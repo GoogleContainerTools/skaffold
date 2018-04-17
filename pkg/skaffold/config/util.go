@@ -19,9 +19,9 @@ package config
 import (
 	"errors"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha1"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 )
 
 // Ordered list of all schema versions

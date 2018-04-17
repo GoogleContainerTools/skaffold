@@ -19,7 +19,7 @@ package kubernetes
 import (
 	"testing"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	v1 "k8s.io/api/core/v1"
 )
 

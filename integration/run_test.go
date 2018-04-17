@@ -26,8 +26,8 @@ import (
 	"testing"
 	"time"
 
-	kubernetesutil "github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
+	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 

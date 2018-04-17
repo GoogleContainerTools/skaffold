@@ -20,7 +20,7 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/GoogleCloudPlatform/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {

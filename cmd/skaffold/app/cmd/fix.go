@@ -27,10 +27,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/config"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema"
-	schemautil "github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleCloudPlatform/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
+	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 func NewCmdFix(out io.Writer) *cobra.Command {
