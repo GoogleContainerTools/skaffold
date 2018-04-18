@@ -33,7 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 // Slightly modified from kubectl run --dry-run
@@ -82,7 +82,42 @@ func NewKubectlDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) *Kubectl
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, b *build.BuildResult) (*Result, error) {
-	if len(k.DeployConfig.KubectlDeploy.Manifests) == 0 {
+	if len(k.DeployConfig.KubectlDeploy.Manifests) > 0 {
+		manifests, err := util.ExpandPathsGlob(k.DeployConfig.KubectlDeploy.Manifests)
+		if err != nil {
+			logrus.Error("expanding kubectl manifest paths", err)
+		} else {
+			for _, m := range manifests {
+				logrus.Debugf("Deploying path: %s", m)
+				if err := k.deployManifest(out, b.Builds, m); err != nil {
+					return nil, errors.Wrap(err, "deploying manifests")
+				}
+			}
+		}
+	}
+
+	if len(k.DeployConfig.KubectlDeploy.RemoteManifests) > 0 {
+		for _, m := range k.DeployConfig.KubectlDeploy.RemoteManifests {
+			namespace := "default"
+			name := m
+			if strings.Contains(m, ":") {
+				namespace = strings.Split(m, ":")[0]
+				name = strings.Split(m, ":")[1]
+			}
+			manifest, err := k.getRemoteManifest(out, namespace, name, b.Builds)
+			if err != nil {
+				return nil, errors.Wrap(err, "get remote manifests")
+			}
+			logrus.Debugf("Deploying Remote Manifest: %s", m)
+			err = k.apply(manifest)
+			if err != nil {
+				return nil, errors.Wrap(err, "deploying remote manifests")
+			}
+
+		}
+	}
+
+	if len(k.DeployConfig.KubectlDeploy.Manifests) == 0 && len(k.DeployConfig.KubectlDeploy.RemoteManifests) == 0 {
 		if len(b.Builds) != 1 {
 			return nil, errors.New("must specify manifest if using more than one image")
 		}
@@ -94,20 +129,33 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, b *build.Bu
 		if err := k.deployManifestFile(strings.NewReader(yaml), []build.Build{{ImageName: "IMAGE", Tag: b.Builds[0].Tag}}); err != nil {
 			return nil, errors.Wrap(err, "deploying manifest")
 		}
-		return &Result{}, nil
-	}
-	manifests, err := util.ExpandPathsGlob(k.DeployConfig.KubectlDeploy.Manifests)
-	if err != nil {
-		return nil, errors.Wrap(err, "expanding kubectl manifest paths")
-	}
-	for _, m := range manifests {
-		logrus.Debugf("Deploying path: %s", m)
-		if err := k.deployManifest(out, b.Builds, m); err != nil {
-			return nil, errors.Wrap(err, "deploying manifests")
-		}
 	}
 
 	return &Result{}, nil
+}
+
+func (k *KubectlDeployer) getRemoteManifest(out io.Writer, namespace, name string, b []build.Build) (string, error) {
+	var manifestContents bytes.Buffer
+	cmd := exec.Command("kubectl", "--context", k.kubeContext, "--namespace", namespace, "get", name, "-o", "yaml")
+	cmd.Stdout = &manifestContents
+	cmd.Stderr = out
+	cmd.Run()
+	manifest, err := replaceParameters(manifestContents.Bytes(), b)
+	if err != nil {
+		return "", errors.Wrap(err, "replacing image in manifest")
+	}
+	return manifest, nil
+}
+
+func (k *KubectlDeployer) apply(manifest string) error {
+	cmd := exec.Command("kubectl", "--context", k.kubeContext, "apply", "-f", "-")
+	stdin := strings.NewReader(manifest)
+	output, outerr, err := util.RunCommand(cmd, stdin)
+	if err != nil {
+		return errors.Wrapf(err, "running kubectl apply: stdout: %s stderr: %s err: %s", output, outerr, err)
+	}
+	return nil
+
 }
 
 func generateManifest(b build.Build) (string, error) {
@@ -158,14 +206,7 @@ func (k *KubectlDeployer) deployManifestFile(r io.Reader, b []build.Build) error
 	if err != nil {
 		return errors.Wrap(err, "replacing image in manifest")
 	}
-
-	cmd := exec.Command("kubectl", "--context", k.kubeContext, "apply", "-f", "-")
-	stdin := strings.NewReader(manifest)
-	out, outerr, err := util.RunCommand(cmd, stdin)
-	if err != nil {
-		return errors.Wrapf(err, "running kubectl apply: stdout: %s stderr: %s err: %s", out, outerr, err)
-	}
-	return nil
+	return k.apply(manifest)
 }
 
 type replacement struct {
@@ -220,6 +261,9 @@ func recursiveReplace(i interface{}, replacements map[string]*replacement) inter
 		for k, v := range t {
 			if k.(string) == "image" {
 				name := v.(string)
+				if strings.Contains(name, ":") {
+					name = strings.Split(name, ":")[0]
+				}
 				if img, present := replacements[name]; present {
 					v = img.tag
 					img.found = true

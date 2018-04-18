@@ -100,7 +100,8 @@ type DeployType struct {
 
 // KubectlDeploy contains the configuration needed for deploying with `kubectl apply`
 type KubectlDeploy struct {
-	Manifests []string `yaml:"manifests,omitempty"`
+	Manifests       []string `yaml:"manifests,omitempty"`
+	RemoteManifests []string `yaml:"remoteManifests,omitempty"`
 }
 
 // HelmDeploy contains the configuration needed for deploying with helm
