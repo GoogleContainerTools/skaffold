@@ -72,4 +72,3 @@ deploy:
     # project outside this repository
     # - namespace1:deployment/web-app2
     #
-    - default:deployment/web-app2

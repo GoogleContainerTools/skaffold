@@ -98,7 +98,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, b *build.Bu
 
 	if len(k.DeployConfig.KubectlDeploy.RemoteManifests) > 0 {
 		for _, m := range k.DeployConfig.KubectlDeploy.RemoteManifests {
-			namespace := "default"
+			namespace := "default" //TODO get namespace from kubectl context
 			name := m
 			if strings.Contains(m, ":") {
 				namespace = strings.Split(m, ":")[0]
@@ -139,7 +139,10 @@ func (k *KubectlDeployer) getRemoteManifest(out io.Writer, namespace, name strin
 	cmd := exec.Command("kubectl", "--context", k.kubeContext, "--namespace", namespace, "get", name, "-o", "yaml")
 	cmd.Stdout = &manifestContents
 	cmd.Stderr = out
-	cmd.Run()
+	err := cmd.Run()
+	if err != nil {
+		return "", errors.Wrap(err, "getting manifest")
+	}
 	manifest, err := replaceParameters(manifestContents.Bytes(), b)
 	if err != nil {
 		return "", errors.Wrap(err, "replacing image in manifest")
