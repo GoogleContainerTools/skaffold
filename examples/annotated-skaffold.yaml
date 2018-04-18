@@ -54,7 +54,7 @@ deploy:
   # a client side `kubectl apply` to apply the manifests to the cluster. You'll
   # need a kubectl version installed that's compatible with your cluster.
   kubectl:
-    # Manifests is a list of manifests to deploy
+    # Manifests is a list of manifests to deploy from files
     manifests:
     # The path to where these manifests live.  path accepts a
     # filepath.Glob, so * can be used to deploy a whole folder.
@@ -64,3 +64,11 @@ deploy:
     # - /home/mrick/path/to/different/project/deploy/*
     #
     - ../examples/getting-started/k8s-*
+    # Manifests is a list of manifests to deploy from remote cluster
+    remoteManifests:
+    # The path to where these manifests live in remote kubernetes cluster
+    #
+    # Examples:
+    # project outside this repository
+    # - namespace1:deployment/web-app2
+    #
