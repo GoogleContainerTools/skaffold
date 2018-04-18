@@ -134,7 +134,10 @@ func newTaggerForConfig(t v1alpha2.TagPolicy) (tag.Tagger, error) {
 // Run runs the skaffold build and deploy pipeline.
 func (r *SkaffoldRunner) Run(ctx context.Context) error {
 	if r.opts.DevMode {
-		return cleanUpOnCtrlC(ctx, r.dev, r.cleanup)
+		if r.opts.Cleanup {
+			return cleanUpOnCtrlC(ctx, r.dev, r.cleanup)
+		}
+		return r.dev(ctx)
 	}
 
 	_, _, err := r.buildAndDeploy(ctx, r.config.Build.Artifacts, nil)

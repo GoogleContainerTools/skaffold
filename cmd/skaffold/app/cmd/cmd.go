@@ -65,6 +65,10 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	return rootCmd
 }
 
+func AddDevFlags(cmd *cobra.Command) {
+	cmd.Flags().BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
+}
+
 func AddRunDevFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&filename, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")

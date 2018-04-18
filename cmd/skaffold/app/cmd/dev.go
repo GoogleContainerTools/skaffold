@@ -32,5 +32,6 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 		},
 	}
 	AddRunDevFlags(cmd)
+	AddDevFlags(cmd)
 	return cmd
 }
