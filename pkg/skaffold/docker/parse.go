@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -30,9 +31,12 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/containers/image/docker"
-	"github.com/containers/image/manifest"
-	"github.com/containers/image/types"
+	"github.com/google/go-containerregistry/v1"
+
+	"github.com/google/go-containerregistry/authn"
+	"github.com/google/go-containerregistry/name"
+	"github.com/google/go-containerregistry/v1/remote"
+
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/fileutils"
 	"github.com/moby/moby/builder/dockerfile/parser"
@@ -156,7 +160,7 @@ func PortsFromDockerfile(r io.Reader) ([]string, error) {
 			}
 			for port := range img.Config.ExposedPorts {
 				logrus.Debugf("Found port %s in base image", port)
-				ports = append(ports, string(port))
+				ports = append(ports, port)
 			}
 		case expose:
 			// There can be multiple ports per line.
@@ -193,10 +197,10 @@ func processBaseImage(value *parser.Node) ([]string, error) {
 
 var imageCache sync.Map
 
-func retrieveImage(image string) (*manifest.Schema2Image, error) {
+func retrieveImage(image string) (*v1.ConfigFile, error) {
 	cachedCfg, present := imageCache.Load(image)
 	if present {
-		return cachedCfg.(*manifest.Schema2Image), nil
+		return cachedCfg.(*v1.ConfigFile), nil
 	}
 
 	client, err := NewDockerAPIClient()
@@ -204,17 +208,17 @@ func retrieveImage(image string) (*manifest.Schema2Image, error) {
 		return nil, err
 	}
 
+	cfg := &v1.ConfigFile{}
 	raw, err := retrieveLocalImage(client, image)
-	if err != nil {
-		raw, err = retrieveRemoteImage(image)
+	if err == nil {
+		if err := json.Unmarshal(raw, cfg); err != nil {
+			return nil, err
+		}
+	} else {
+		cfg, err = retrieveRemoteImage(image)
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	cfg := &manifest.Schema2Image{}
-	if err := json.Unmarshal(raw, cfg); err != nil {
-		return nil, err
 	}
 
 	imageCache.Store(image, cfg)
@@ -231,24 +235,22 @@ func retrieveLocalImage(client DockerAPIClient, image string) ([]byte, error) {
 	return raw, nil
 }
 
-func retrieveRemoteImage(image string) ([]byte, error) {
-	context := &types.SystemContext{
-		OSChoice:           "linux",
-		ArchitectureChoice: "amd64",
-	}
+func retrieveRemoteImage(image string) (*v1.ConfigFile, error) {
 
-	ref, err := docker.ParseReference("//" + image)
+	tag, err := name.NewTag(image, name.WeakValidation)
 	if err != nil {
 		return nil, err
 	}
 
-	img, err := ref.NewImage(context)
+	auth, err := authn.DefaultKeychain.Resolve(tag.Registry)
 	if err != nil {
 		return nil, err
 	}
-	defer img.Close()
-
-	return img.ConfigBlob()
+	img, err := remote.Image(tag, auth, http.DefaultTransport)
+	if err != nil {
+		return nil, err
+	}
+	return img.ConfigFile()
 }
 
 func processCopy(workspace string, value *parser.Node, paths map[string]struct{}, envs map[string]string) error {

@@ -45,7 +45,7 @@ GO_LDFLAGS += -X $(VERSION_PACKAGE).gitTreeState=$(if $(shell git status --porce
 GO_LDFLAGS +="
 
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
-GO_BUILD_TAGS := "kqueue container_image_ostree_stub containers_image_openpgp"
+GO_BUILD_TAGS := "kqueue"
 
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@

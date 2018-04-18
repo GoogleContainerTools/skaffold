@@ -24,8 +24,9 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/containers/image/manifest"
+
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-containerregistry/v1"
 	"github.com/spf13/afero"
 )
 
@@ -135,32 +136,33 @@ func joinToTmpDir(base string, paths []string) []string {
 	return ret
 }
 
-var ImageConfigs = map[string]*manifest.Schema2Image{
+var ImageConfigs = map[string]*v1.ConfigFile{
 	"golang:onbuild": {
-		Schema2V1Image: manifest.Schema2V1Image{
-			Config: &manifest.Schema2Config{
-				OnBuild: []string{
-					"COPY . /go/src/app",
-				},
+		Config: v1.Config{
+			OnBuild: []string{
+				"COPY . /go/src/app",
 			},
 		},
 	},
-	"ubuntu:14.04": {Schema2V1Image: manifest.Schema2V1Image{Config: &manifest.Schema2Config{}}},
-	"nginx":        {Schema2V1Image: manifest.Schema2V1Image{Config: &manifest.Schema2Config{}}},
-	"busybox":      {Schema2V1Image: manifest.Schema2V1Image{Config: &manifest.Schema2Config{}}},
-	"oneport": {Schema2V1Image: manifest.Schema2V1Image{
-		Config: &manifest.Schema2Config{
-			ExposedPorts: manifest.Schema2PortSet{manifest.Schema2Port("8000"): {}},
-		}}},
-	"severalports": {Schema2V1Image: manifest.Schema2V1Image{
-		Config: &manifest.Schema2Config{
-			ExposedPorts: manifest.Schema2PortSet{
-				manifest.Schema2Port("8000"):     {},
-				manifest.Schema2Port("8001/tcp"): {}},
-		}}},
+	"ubuntu:14.04": {Config: v1.Config{}},
+	"nginx":        {Config: v1.Config{}},
+	"busybox":      {Config: v1.Config{}},
+	"oneport": {
+		Config: v1.Config{
+			ExposedPorts: map[string]struct{}{
+				"8000": {},
+			},
+		}},
+	"severalports": {
+		Config: v1.Config{
+			ExposedPorts: map[string]struct{}{
+				"8000":     {},
+				"8001/tcp": {},
+			},
+		}},
 }
 
-func mockRetrieveImage(image string) (*manifest.Schema2Image, error) {
+func mockRetrieveImage(image string) (*v1.ConfigFile, error) {
 	if cfg, ok := ImageConfigs[image]; ok {
 		return cfg, nil
 	}

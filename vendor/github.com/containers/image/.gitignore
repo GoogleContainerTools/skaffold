@@ -1,9 +1,0 @@
-vendor
-tools.timestamp
-
-# Idea IDE
-*.iml
-.idea
-
-# Visual Studio Code
-.vscode/*
