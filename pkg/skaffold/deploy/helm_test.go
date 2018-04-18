@@ -75,10 +75,6 @@ var testDeployConfigParameterUnmatched = &v1alpha2.DeployConfig{
 }
 
 func TestHelmDeploy(t *testing.T) {
-	cmd := testutil.NewFakeRunCommand("", "", nil)
-	util.DefaultExecCommand = cmd
-	defer util.ResetDefaultExecCommand()
-
 	var tests = []struct {
 		description string
 		cmd         util.Command
@@ -144,6 +140,8 @@ func TestHelmDeploy(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
 			util.DefaultExecCommand = tt.cmd
+			defer util.ResetDefaultExecCommand()
+
 			_, err := tt.deployer.Deploy(context.Background(), &bytes.Buffer{}, tt.buildResult)
 			testutil.CheckError(t, tt.shouldErr, err)
 		})
