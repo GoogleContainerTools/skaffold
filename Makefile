@@ -99,6 +99,7 @@ integration-in-docker:
 		-v $(PWD):/go/src/$(REPOPATH) \
 		-v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
 		-e REMOTE_INTEGRATION=true \
+		-e DOCKER_CONFIG=/root/.docker/config.json \
 		-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
 		gcr.io/$(GCP_PROJECT)/skaffold-integration
 
