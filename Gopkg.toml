@@ -66,6 +66,8 @@
 [[constraint]]
   name = "gopkg.in/src-d/go-git.v4"
   revision = "v4.3.0"
+
 [[constraint]]
-  branch = "master"
   name = "github.com/google/go-containerregistry"
+  revision = "a74336cb6fc16b36e8402a7ec1562661c14cbee5"
+

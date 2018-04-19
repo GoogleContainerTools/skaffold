@@ -16,7 +16,10 @@ package name
 
 import "net/url"
 
-const DefaultRegistry = "index.docker.io"
+const (
+	DefaultRegistry      = "index.docker.io"
+	defaultRegistryAlias = "docker.io"
+)
 
 // Registry stores a docker registry name in a structured form.
 type Registry struct {
@@ -65,5 +68,12 @@ func NewRegistry(name string, strict Strictness) (Registry, error) {
 	if err := checkRegistry(name); err != nil {
 		return Registry{}, err
 	}
+
+	// Rewrite "docker.io" to "index.docker.io".
+	// See: https://github.com/google/go-containerregistry/issues/68
+	if name == defaultRegistryAlias {
+		name = DefaultRegistry
+	}
+
 	return Registry{registry: name}, nil
 }
