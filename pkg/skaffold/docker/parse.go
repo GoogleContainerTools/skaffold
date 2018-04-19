@@ -76,14 +76,15 @@ func GetDockerfileDependencies(dockerfilePath, workspace string) ([]string, erro
 	envs := map[string]string{}
 	depMap := map[string]struct{}{}
 	// First process onbuilds, if present.
-	onbuilds := []string{}
+	onbuildsImages := [][]string{}
 	for _, value := range res.AST.Children {
 		switch value.Value {
 		case from:
-			onbuilds, err = processBaseImage(value)
+			onbuilds, err := processBaseImage(value)
 			if err != nil {
 				logrus.Warnf("Error processing base image for onbuild triggers: %s. Dependencies may be incomplete.", err)
 			}
+			onbuildsImages = append(onbuildsImages, onbuilds)
 		}
 	}
 
@@ -97,12 +98,14 @@ func GetDockerfileDependencies(dockerfilePath, workspace string) ([]string, erro
 			}
 		}
 	}
-	for _, ob := range onbuilds {
-		obRes, err := parser.Parse(strings.NewReader(ob))
-		if err != nil {
-			return nil, err
+	for _, image := range onbuildsImages {
+		for _, ob := range image {
+			obRes, err := parser.Parse(strings.NewReader(ob))
+			if err != nil {
+				return nil, err
+			}
+			dispatchInstructions(obRes)
 		}
-		dispatchInstructions(obRes)
 	}
 
 	dispatchInstructions(res)
