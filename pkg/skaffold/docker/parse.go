@@ -232,17 +232,12 @@ func retrieveLocalImage(client DockerAPIClient, image string) ([]byte, error) {
 }
 
 func retrieveRemoteImage(image string) ([]byte, error) {
-	context := &types.SystemContext{
-		OSChoice:           "linux",
-		ArchitectureChoice: "amd64",
-	}
-
 	ref, err := docker.ParseReference("//" + image)
 	if err != nil {
 		return nil, err
 	}
 
-	img, err := ref.NewImage(context)
+	img, err := ref.NewImage(&types.SystemContext{})
 	if err != nil {
 		return nil, err
 	}
