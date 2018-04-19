@@ -34,6 +34,12 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func TestTag(t *testing.T) {
+	if err := AddTag("gcr.io/r2d4minikube/skaffold-example:latest", "gcr.io/r2d4minikube/skaffold-example:whatever"); err != nil {
+		t.Fatalf("error: %s", err)
+	}
+}
+
 type testImageAPI struct {
 	description  string
 	imageName    string

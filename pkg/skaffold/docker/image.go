@@ -17,9 +17,18 @@ limitations under the License.
 package docker
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+
+	"github.com/google/go-containerregistry/authn"
+	"github.com/google/go-containerregistry/name"
+	"github.com/google/go-containerregistry/v1/remote"
+	"github.com/google/go-containerregistry/v1/remote/transport"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
@@ -95,6 +104,85 @@ func RunPush(ctx context.Context, cli DockerAPIClient, ref string, out io.Writer
 	}
 	defer rc.Close()
 	return streamDockerMessages(out, rc)
+}
+
+func AddTag(src, target string) error {
+	srcRef, err := resolveReference(src)
+	if err != nil {
+		return errors.Wrap(err, "getting source reference")
+	}
+
+	auth, err := authn.DefaultKeychain.Resolve(srcRef.Context().Registry)
+	if err != nil {
+		return err
+	}
+
+	targetRef, err := resolveReference(target)
+	if err != nil {
+		return errors.Wrap(err, "getting target reference")
+	}
+
+	fmt.Println()
+
+	return addTag(srcRef, targetRef, auth, http.DefaultTransport)
+}
+
+func resolveReference(identifier string) (name.Reference, error) {
+	// try tag first
+	tag, err := name.NewTag(identifier, name.WeakValidation)
+	if err == nil {
+		return tag, nil
+	}
+
+	digest, err := name.NewDigest(identifier, name.WeakValidation)
+	if err == nil {
+		return digest, nil
+	}
+
+	return name.Tag{}, fmt.Errorf("Not a valid tag or digest: %s", identifier)
+}
+
+func addTag(ref name.Reference, targetRef name.Reference, auth authn.Authenticator, t http.RoundTripper) error {
+	tr, err := transport.New(ref, auth, t, transport.PushScope)
+	if err != nil {
+		return err
+	}
+
+	img, err := remote.Image(ref, auth, tr)
+	if err != nil {
+		return err
+	}
+
+	data, err := img.RawManifest()
+	if err != nil {
+		return errors.Wrap(err, "getting raw manifest")
+	}
+
+	c := &http.Client{Transport: tr}
+	u := url.URL{
+		Scheme: transport.Scheme(ref.Context().Registry),
+		Host:   targetRef.Context().RegistryStr(),
+		Path:   fmt.Sprintf("/v2/%s/manifests/%s", targetRef.Context().RepositoryStr(), targetRef.Identifier()),
+	}
+
+	req, err := http.NewRequest(http.MethodPut, u.String(), bytes.NewReader(data))
+
+	resp, err := c.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusOK, http.StatusAccepted:
+		return nil
+	default:
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("unrecognized status code during PUT: %v; %v", resp.Status, string(b))
+	}
 }
 
 // Digest returns the image digest for a corresponding reference.
