@@ -99,6 +99,9 @@ func getBuilder(cfg *v1alpha2.BuildConfig, kubeContext string) (build.Builder, e
 	if cfg.GoogleCloudBuild != nil {
 		return build.NewGoogleCloudBuilder(cfg)
 	}
+	if cfg.KanikoBuild != nil {
+		return build.NewKanikoBuilder(cfg)
+	}
 
 	return nil, fmt.Errorf("Unknown builder for config %+v", cfg)
 }

@@ -148,10 +148,6 @@ func GetDependenciesForArtifact(artifact *v1alpha2.Artifact) ([]string, error) {
 	if artifact.BazelArtifact != nil {
 		return DefaultBazelDepResolver.GetDependencies(artifact)
 	}
-	if artifact.KanikoArtifact != nil {
-		d := docker.NewDockerfileDepResolver(artifact.KanikoArtifact.DockerfilePath)
-		return d.GetDependencies(artifact)
-	}
 
 	return nil, fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 }

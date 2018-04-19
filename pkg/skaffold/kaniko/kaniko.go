@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -17,43 +16,20 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Build(ctx context.Context, out io.Writer, artifact *v1alpha2.Artifact) (string, error) {
-	dockerfilePath := artifact.KanikoArtifact.DockerfilePath
+func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artifact, cfg *v1alpha2.KanikoBuild) (string, error) {
+	dockerfilePath := artifact.DockerArtifact.DockerfilePath
 	if dockerfilePath == "" {
 		dockerfilePath = constants.DefaultDockerfilePath
 	}
 	initialTag := util.RandomID()
 	tarName := "context.tar.gz" // TODO(r2d4): until this is configurable upstream
-	if err := docker.UploadContextToGCS(ctx, dockerfilePath, artifact.Workspace, artifact.KanikoArtifact.GCSBucket, tarName); err != nil {
+	if err := docker.UploadContextToGCS(ctx, dockerfilePath, artifact.Workspace, cfg.GCSBucket, tarName); err != nil {
 		return "", errors.Wrap(err, "uploading tar to gcs")
 	}
 	client, err := kubernetes.GetClientset()
 	if err != nil {
 		return "", errors.Wrap(err, "")
 	}
-
-	secretData, err := ioutil.ReadFile(artifact.KanikoArtifact.PullSecret)
-	if err != nil {
-		return "", errors.Wrap(err, "reading secret")
-	}
-
-	_, err = client.CoreV1().Secrets("default").Create(&v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "kaniko-secret",
-			Labels: map[string]string{"kaniko": "kaniko"},
-		},
-		Data: map[string][]byte{
-			"kaniko-secret": secretData,
-		},
-	})
-	if err != nil {
-		logrus.Warnf("creating secret: %s", err)
-	}
-	defer func() {
-		if err := client.CoreV1().Secrets("default").Delete("kaniko-secret", &metav1.DeleteOptions{}); err != nil {
-			logrus.Warnf("deleting secret")
-		}
-	}()
 
 	imageList := kubernetes.NewImageList()
 	imageList.AddImage(constants.DefaultKanikoImage)
@@ -76,7 +52,7 @@ func Build(ctx context.Context, out io.Writer, artifact *v1alpha2.Artifact) (str
 					ImagePullPolicy: v1.PullIfNotPresent,
 					Args: []string{
 						fmt.Sprintf("--dockerfile=%s", dockerfilePath),
-						fmt.Sprintf("--bucket=%s", artifact.KanikoArtifact.GCSBucket),
+						fmt.Sprintf("--bucket=%s", cfg.GCSBucket),
 						fmt.Sprintf("--destination=%s", imageDst),
 						fmt.Sprintf("-v=%s", logrus.GetLevel().String()),
 					},
