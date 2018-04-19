@@ -166,6 +166,9 @@ func addTag(ref name.Reference, targetRef name.Reference, auth authn.Authenticat
 	}
 
 	req, err := http.NewRequest(http.MethodPut, u.String(), bytes.NewReader(data))
+	if err != nil {
+		return errors.Wrap(err, "generating http request")
+	}
 
 	resp, err := c.Do(req)
 	if err != nil {

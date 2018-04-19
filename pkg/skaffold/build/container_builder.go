@@ -210,6 +210,10 @@ watch:
 		Digest:    imageID,
 	})
 
+	if err != nil {
+		return nil, errors.Wrap(err, "generating tag")
+	}
+
 	if err := docker.AddTag(builtTag, newTag); err != nil {
 		return nil, errors.Wrap(err, "tagging image")
 	}
