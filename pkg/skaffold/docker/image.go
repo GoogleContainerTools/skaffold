@@ -107,7 +107,7 @@ func RunPush(ctx context.Context, cli DockerAPIClient, ref string, out io.Writer
 }
 
 func AddTag(src, target string) error {
-	srcRef, err := resolveReference(src)
+	srcRef, err := name.ParseReference(src, name.WeakValidation)
 	if err != nil {
 		return errors.Wrap(err, "getting source reference")
 	}
@@ -117,29 +117,12 @@ func AddTag(src, target string) error {
 		return err
 	}
 
-	targetRef, err := resolveReference(target)
+	targetRef, err := name.ParseReference(target, name.WeakValidation)
 	if err != nil {
 		return errors.Wrap(err, "getting target reference")
 	}
 
-	fmt.Println()
-
 	return addTag(srcRef, targetRef, auth, http.DefaultTransport)
-}
-
-func resolveReference(identifier string) (name.Reference, error) {
-	// try tag first
-	tag, err := name.NewTag(identifier, name.WeakValidation)
-	if err == nil {
-		return tag, nil
-	}
-
-	digest, err := name.NewDigest(identifier, name.WeakValidation)
-	if err == nil {
-		return digest, nil
-	}
-
-	return name.Tag{}, fmt.Errorf("Not a valid tag or digest: %s", identifier)
 }
 
 func addTag(ref name.Reference, targetRef name.Reference, auth authn.Authenticator, t http.RoundTripper) error {
