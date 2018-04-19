@@ -57,19 +57,14 @@ const (
 // For testing.
 var RetrieveImage = retrieveImage
 
-type DockerfileDepResolver struct {
-	dockerfilePath string
-}
+type DockerfileDepResolver struct{}
 
-func NewDockerfileDepResolver(dockerfilePath string) *DockerfileDepResolver {
+func (d *DockerfileDepResolver) GetDependencies(a *v1alpha2.Artifact) ([]string, error) {
+	dockerfilePath := a.DockerArtifact.DockerfilePath
 	if dockerfilePath == "" {
 		dockerfilePath = constants.DefaultDockerfilePath
 	}
-	return &DockerfileDepResolver{dockerfilePath: dockerfilePath}
-}
-
-func (d *DockerfileDepResolver) GetDependencies(a *v1alpha2.Artifact) ([]string, error) {
-	return GetDockerfileDependencies(d.dockerfilePath, a.Workspace)
+	return GetDockerfileDependencies(dockerfilePath, a.Workspace)
 }
 
 // GetDockerfileDependencies parses a dockerfile and returns the full paths

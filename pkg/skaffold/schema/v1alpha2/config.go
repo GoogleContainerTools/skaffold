@@ -71,7 +71,7 @@ type EnvTemplateTagger struct {
 type BuildType struct {
 	LocalBuild       *LocalBuild       `yaml:"local"`
 	GoogleCloudBuild *GoogleCloudBuild `yaml:"googleCloudBuild"`
-	KanikoBuild      *KanikoBuild      `yaml:"kaniko",omitempty`
+	KanikoBuild      *KanikoBuild      `yaml:"kaniko"`
 }
 
 // LocalBuild contains the fields needed to do a build on the local docker daemon

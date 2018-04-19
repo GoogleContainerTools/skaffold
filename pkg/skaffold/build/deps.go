@@ -142,8 +142,7 @@ func init() {
 
 func GetDependenciesForArtifact(artifact *v1alpha2.Artifact) ([]string, error) {
 	if artifact.DockerArtifact != nil {
-		d := docker.NewDockerfileDepResolver(artifact.DockerArtifact.DockerfilePath)
-		return d.GetDependencies(artifact)
+		return DefaultDockerfileDepResolver.GetDependencies(artifact)
 	}
 	if artifact.BazelArtifact != nil {
 		return DefaultBazelDepResolver.GetDependencies(artifact)
