@@ -17,13 +17,10 @@ limitations under the License.
 package docker
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
-	"net/url"
 
 	"github.com/google/go-containerregistry/authn"
 	"github.com/google/go-containerregistry/name"
@@ -136,39 +133,10 @@ func addTag(ref name.Reference, targetRef name.Reference, auth authn.Authenticat
 		return err
 	}
 
-	data, err := img.RawManifest()
-	if err != nil {
-		return errors.Wrap(err, "getting raw manifest")
+	wo := remote.WriteOptions{
+		MountPaths: []name.Repository{ref.Context()},
 	}
-
-	c := &http.Client{Transport: tr}
-	u := url.URL{
-		Scheme: transport.Scheme(ref.Context().Registry),
-		Host:   targetRef.Context().RegistryStr(),
-		Path:   fmt.Sprintf("/v2/%s/manifests/%s", targetRef.Context().RepositoryStr(), targetRef.Identifier()),
-	}
-
-	req, err := http.NewRequest(http.MethodPut, u.String(), bytes.NewReader(data))
-	if err != nil {
-		return errors.Wrap(err, "generating http request")
-	}
-
-	resp, err := c.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	switch resp.StatusCode {
-	case http.StatusOK, http.StatusAccepted:
-		return nil
-	default:
-		b, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		return fmt.Errorf("unrecognized status code during PUT: %v; %v", resp.Status, string(b))
-	}
+	return remote.Write(targetRef, img, auth, t, wo)
 }
 
 // Digest returns the image digest for a corresponding reference.
