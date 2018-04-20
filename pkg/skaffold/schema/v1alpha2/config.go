@@ -86,10 +86,11 @@ type GoogleCloudBuild struct {
 	ProjectID string `yaml:"projectId"`
 }
 
+// KanikoBuild contains the fields needed to do a on-cluster build using
+// the kaniko image
 type KanikoBuild struct {
-	GCSBucket      string `yaml:"gcsBucket,omitempty"`
-	DockerfilePath string `yaml:"dockerfilePath,omitempty"`
-	PullSecret     string `yaml:"pullSecret,omitempty"`
+	GCSBucket  string `yaml:"gcsBucket,omitempty"`
+	PullSecret string `yaml:"pullSecret,omitempty"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps

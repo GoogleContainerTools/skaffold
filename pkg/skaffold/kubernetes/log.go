@@ -242,7 +242,7 @@ func (l *ImageList) AddImage(image string) {
 
 func (l *ImageList) RemoveImage(image string) {
 	l.Lock()
-	l.names[image] = false
+	delete(l.names, image)
 	l.Unlock()
 }
 

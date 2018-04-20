@@ -214,5 +214,5 @@ func RemoteDigest(identifier string) (string, error) {
 		return "", errors.Wrap(err, "getting digest")
 	}
 
-	return fmt.Sprintf("%s:%s", h.Algorithm, h.Hex), nil
+	return h.String(), nil
 }
