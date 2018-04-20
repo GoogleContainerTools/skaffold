@@ -1,5 +1,7 @@
 # Skaffold
 
+[![Build Status](https://travis-ci.org/GoogleContainerTools/skaffold.svg?branch=master)](https://travis-ci.org/GoogleContainerTools/skaffold)
+
 Skaffold is a command line tool that facilitates continuous development for Kubernetes applications. You can iterate on your 
 application source code locally then deploy to local or remote Kubernetes clusters. Skaffold handles the workflow for building,
 pushing and deploying your application. It can also be used in an automated context such as a CI/CD pipeline to leverage the same 
