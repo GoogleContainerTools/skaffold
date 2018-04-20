@@ -81,23 +81,6 @@ func RelPathToAbsPath(relPaths []string) ([]string, error) {
 	return absPath, nil
 }
 
-func FilterOutSymlinks(paths []string) ([]string, error) {
-	res := []string{}
-	for _, p := range paths {
-		fi, err := os.Lstat(p)
-		if err != nil {
-			return nil, errors.Wrapf(err, "getting file info for %s", p)
-		}
-		if fi.Mode() == os.ModeSymlink {
-			logrus.Debugf("%s is a symlink", p)
-			// nothing to do for symlinks
-			continue
-		}
-		res = append(res, p)
-	}
-	return res, nil
-}
-
 // ExpandPaths uses a filepath.Match to expand paths according to wildcards.
 // It requires a workspace directory, which is walked and tested for wildcard matches
 // It is used by the dockerfile parser and you most likely want to use ExpandPathsGlob
