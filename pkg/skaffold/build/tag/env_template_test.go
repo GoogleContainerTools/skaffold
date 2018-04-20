@@ -80,19 +80,17 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			want: "image_name-FOO:latest",
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt := tt
-			t.Parallel()
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			c := &EnvTemplateTagger{
-				Template: template.Must(template.New("").Parse(tt.fields.Template)),
+				Template: template.Must(template.New("").Parse(test.fields.Template)),
 			}
 			environ = func() []string {
-				return tt.args.env
+				return test.args.env
 			}
 
-			got, err := c.GenerateFullyQualifiedImageName("", tt.args.opts)
-			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.want, got)
+			got, err := c.GenerateFullyQualifiedImageName("", test.args.opts)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.want, got)
 		})
 	}
 }
