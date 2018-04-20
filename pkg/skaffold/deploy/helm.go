@@ -52,12 +52,16 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, b *build.Build
 	return nil, nil
 }
 
+func (h *HelmDeployer) args(moreArgs ...string) []string {
+	return append([]string{"--kube-context", h.kubeContext}, moreArgs...)
+}
+
 func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, b *build.BuildResult) error {
 	isInstalled := true
-	getCmd := exec.Command("helm", "--kube-context", h.kubeContext, "get", r.Name)
+	getCmd := exec.Command("helm", h.args("get", r.Name)...)
 	if stdout, stderr, err := util.RunCommand(getCmd, nil); err != nil {
 		logrus.Debugf("Error getting release %s: %s stdout: %s stderr: %s", r.Name, err, string(stdout), string(stderr))
-		fmt.Fprintf(out, "Helm release %s not installed. Installing...", r.Name)
+		fmt.Fprintf(out, "Helm release %s not installed. Installing...\n", r.Name)
 		isInstalled = false
 	}
 	params, err := JoinTagsToBuildResult(b.Builds, r.Values)
@@ -71,16 +75,16 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, b *b
 		setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v.Tag))
 	}
 
-	logrus.Infof("Building helm dependencies...")
 	// First build dependencies.
-	depCmd := exec.Command("helm", "--kube-context", h.kubeContext, "dep", "build", r.ChartPath)
+	logrus.Infof("Building helm dependencies...")
+	depCmd := exec.Command("helm", h.args("dep", "build", r.ChartPath)...)
 	stdout, stderr, err := util.RunCommand(depCmd, nil)
 	if err != nil {
 		return errors.Wrapf(err, "helm dep build stdout: %s, stderr: %s", string(stdout), string(stderr))
 	}
 	out.Write(stdout)
 
-	args := []string{"--kube-context", h.kubeContext}
+	args := h.args()
 	if !isInstalled {
 		args = append(args, "install", "--name", r.Name, r.ChartPath)
 	} else {
@@ -90,11 +94,9 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, b *b
 	if r.Namespace != "" {
 		args = append(args, "--namespace", r.Namespace)
 	}
-
 	if r.ValuesFilePath != "" {
 		args = append(args, "-f", r.ValuesFilePath)
 	}
-
 	if r.Version != "" {
 		args = append(args, "--version", r.Version)
 	}
@@ -105,12 +107,14 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, b *b
 			setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v))
 		}
 	}
-
 	args = append(args, setOpts...)
-	stdout, stderr, err = util.RunCommand(exec.Command("helm", args...), nil)
+
+	execCmd := exec.Command("helm", args...)
+	stdout, stderr, err = util.RunCommand(execCmd, nil)
 	if err != nil {
 		return errors.Wrapf(err, "helm updater stdout: %s, stderr: %s", string(stdout), string(stderr))
 	}
+
 	out.Write(stdout)
 	return nil
 }

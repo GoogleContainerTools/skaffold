@@ -24,34 +24,26 @@ import (
 )
 
 type FakeRunCommand struct {
-	stdout string
-	stderr string
-	err    error
+	expectedCommand string
+	stdout          string
+	stderr          string
+	err             error
 }
 
-func (f *FakeRunCommand) RunCommand(*exec.Cmd, io.Reader) ([]byte, []byte, error) {
+func NewFakeRunCommand(expectedCommand, stdout, stderr string, err error) *FakeRunCommand {
+	return &FakeRunCommand{
+		expectedCommand: expectedCommand,
+		stdout:          stdout,
+		stderr:          stderr,
+		err:             err,
+	}
+}
+
+func (f *FakeRunCommand) RunCommand(cmd *exec.Cmd, stdin io.Reader) ([]byte, []byte, error) {
+	actualCommand := strings.Join(cmd.Args, " ")
+	if f.expectedCommand != actualCommand {
+		return nil, nil, fmt.Errorf("Expected: %s. Got: %s", f.expectedCommand, actualCommand)
+	}
+
 	return []byte(f.stdout), []byte(f.stderr), f.err
-}
-
-func NewFakeRunCommand(stdout, stderr string, err error) *FakeRunCommand {
-	return &FakeRunCommand{stdout, stderr, err}
-}
-
-type MultiFakeRunCommand struct {
-	resultMap map[string]*FakeRunCommand
-}
-
-func (f *MultiFakeRunCommand) RunCommand(c *exec.Cmd, stdin io.Reader) ([]byte, []byte, error) {
-	cmdString := strings.Join(c.Args, " ")
-	if fakeCmd, ok := f.resultMap[cmdString]; ok {
-		return fakeCmd.RunCommand(c, stdin)
-	}
-	return nil, nil, fmt.Errorf("no command registered for %s", cmdString)
-}
-
-func NewMultiFakeRunCommand(r map[string]*FakeRunCommand) *MultiFakeRunCommand {
-	mf := MultiFakeRunCommand{
-		resultMap: r,
-	}
-	return &mf
 }
