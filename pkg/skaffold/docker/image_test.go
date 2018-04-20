@@ -119,10 +119,9 @@ func TestRunBuild(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			api := testutil.NewFakeImageAPIClient(test.tagToImageID, test.testOpts)
-			err := RunBuild(context.Background(), api, &BuildOptions{
+			_, err := RunBuild(context.Background(), api, &BuildOptions{
 				Dockerfile: "Dockerfile",
 				ContextDir: "../../../testdata/docker",
-				ImageName:  "finalimage",
 			})
 			testutil.CheckError(t, test.shouldErr, err)
 		})
