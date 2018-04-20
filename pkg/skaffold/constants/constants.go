@@ -38,6 +38,8 @@ const (
 	DefaultDockerForDesktopContext = "docker-for-desktop"
 	GCSBucketSuffix                = "_cloudbuild"
 
+	DefaultKanikoImage = "gcr.io/kaniko-project/executor:latest"
+
 	// TerminalBell is the sequence that triggers a beep in the terminal
 	TerminalBell = "\007"
 )

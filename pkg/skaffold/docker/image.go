@@ -143,8 +143,6 @@ func addTag(ref name.Reference, targetRef name.Reference, auth authn.Authenticat
 // The digest is of the form
 // sha256:<image_id>
 func Digest(ctx context.Context, cli DockerAPIClient, ref string) (string, error) {
-	// TODO(r2d4)
-	fmt.Printf("Digest: %s\n", ref)
 	args := filters.KeyValuePair{Key: "reference", Value: ref}
 	filters := filters.NewArgs(args)
 	imageList, err := cli.ImageList(ctx, types.ImageListOptions{
@@ -161,4 +159,28 @@ func Digest(ctx context.Context, cli DockerAPIClient, ref string) (string, error
 		}
 	}
 	return "", nil
+}
+
+func RemoteDigest(identifier string) (string, error) {
+	ref, err := name.ParseReference(identifier, name.WeakValidation)
+	if err != nil {
+		return "", errors.Wrap(err, "parsing initial ref")
+	}
+
+	auth, err := authn.DefaultKeychain.Resolve(ref.Context().Registry)
+	if err != nil {
+		return "", errors.Wrap(err, "getting default keychain auth")
+	}
+
+	img, err := remote.Image(ref, auth, http.DefaultTransport)
+	if err != nil {
+		return "", errors.Wrap(err, "getting image")
+	}
+
+	h, err := img.Digest()
+	if err != nil {
+		return "", errors.Wrap(err, "getting digest")
+	}
+
+	return h.String(), nil
 }

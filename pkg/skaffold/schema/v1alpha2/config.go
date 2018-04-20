@@ -71,6 +71,7 @@ type EnvTemplateTagger struct {
 type BuildType struct {
 	LocalBuild       *LocalBuild       `yaml:"local"`
 	GoogleCloudBuild *GoogleCloudBuild `yaml:"googleCloudBuild"`
+	KanikoBuild      *KanikoBuild      `yaml:"kaniko"`
 }
 
 // LocalBuild contains the fields needed to do a build on the local docker daemon
@@ -83,6 +84,13 @@ type LocalBuild struct {
 // Google Container Builder.
 type GoogleCloudBuild struct {
 	ProjectID string `yaml:"projectId"`
+}
+
+// KanikoBuild contains the fields needed to do a on-cluster build using
+// the kaniko image
+type KanikoBuild struct {
+	GCSBucket  string `yaml:"gcsBucket,omitempty"`
+	PullSecret string `yaml:"pullSecret,omitempty"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps

@@ -17,8 +17,10 @@ limitations under the License.
 package docker
 
 import (
+	"context"
 	"io"
 
+	cstorage "cloud.google.com/go/storage"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
@@ -47,4 +49,18 @@ func CreateDockerTarGzContext(w io.Writer, dockerfilePath, context string) error
 		return errors.Wrap(err, "creating tar gz")
 	}
 	return nil
+}
+
+func UploadContextToGCS(ctx context.Context, dockerfilePath, dockerCtx, bucket, objectName string) error {
+	c, err := cstorage.NewClient(ctx)
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+
+	w := c.Bucket(bucket).Object(objectName).NewWriter(ctx)
+	if err := CreateDockerTarGzContext(w, dockerfilePath, dockerCtx); err != nil {
+		return errors.Wrap(err, "uploading targz to google storage")
+	}
+	return w.Close()
 }

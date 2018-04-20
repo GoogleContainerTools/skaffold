@@ -29,6 +29,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/google/go-containerregistry/v1"
@@ -58,8 +59,12 @@ var RetrieveImage = retrieveImage
 
 type DockerfileDepResolver struct{}
 
-func (*DockerfileDepResolver) GetDependencies(a *v1alpha2.Artifact) ([]string, error) {
-	return GetDockerfileDependencies(a.DockerArtifact.DockerfilePath, a.Workspace)
+func (d *DockerfileDepResolver) GetDependencies(a *v1alpha2.Artifact) ([]string, error) {
+	dockerfilePath := a.DockerArtifact.DockerfilePath
+	if dockerfilePath == "" {
+		dockerfilePath = constants.DefaultDockerfilePath
+	}
+	return GetDockerfileDependencies(dockerfilePath, a.Workspace)
 }
 
 // GetDockerfileDependencies parses a dockerfile and returns the full paths

@@ -247,6 +247,12 @@ func (l *ImageList) AddImage(image string) {
 	l.Unlock()
 }
 
+func (l *ImageList) RemoveImage(image string) {
+	l.Lock()
+	delete(l.names, image)
+	l.Unlock()
+}
+
 // Select returns true if one of the pod's images is in the list.
 func (l *ImageList) Select(pod *v1.Pod) bool {
 	l.RLock()
