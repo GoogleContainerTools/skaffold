@@ -14,7 +14,10 @@
 
 package name
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 // Reference defines the interface that consumers use when they can
 // take either a tag or a digest.
@@ -32,4 +35,15 @@ type Reference interface {
 
 	// Scope is the scope needed to access this reference.
 	Scope(string) string
+}
+
+// ParseReference parses the string as a reference, either by tag or digest.
+func ParseReference(s string, strict Strictness) (Reference, error) {
+	if t, err := NewTag(s, strict); err == nil {
+		return t, nil
+	}
+	if d, err := NewDigest(s, strict); err == nil {
+		return d, nil
+	}
+	return nil, errors.New("could not parse reference")
 }

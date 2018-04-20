@@ -91,7 +91,7 @@ func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger t
 	defer c.Close()
 	builds := []Build{}
 	for _, artifact := range artifacts {
-		build, err := cb.buildArtifact(ctx, out, cbclient, c, artifact)
+		build, err := cb.buildArtifact(ctx, out, tagger, cbclient, c, artifact)
 		if err != nil {
 			return nil, errors.Wrapf(err, "building artifact %s", artifact.ImageName)
 		}
@@ -103,7 +103,7 @@ func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger t
 	}, nil
 }
 
-func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, cbclient *cloudbuild.Service, c *cstorage.Client, artifact *v1alpha2.Artifact) (*Build, error) {
+func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, cbclient *cloudbuild.Service, c *cstorage.Client, artifact *v1alpha2.Artifact) (*Build, error) {
 	logrus.Infof("Building artifact: %+v", artifact)
 
 	// need to format build args as strings to pass to container builder docker
@@ -202,11 +202,25 @@ watch:
 		return nil, errors.Wrap(err, "cleaning up source tar after build")
 	}
 	logrus.Infof("Deleted object %s", buildObject)
-	tag := fmt.Sprintf("%s@%s", artifact.ImageName, imageID)
-	logrus.Infof("Image built at %s", tag)
+	builtTag := fmt.Sprintf("%s@%s", artifact.ImageName, imageID)
+	logrus.Infof("Image built at %s", builtTag)
+
+	newTag, err := tagger.GenerateFullyQualifiedImageName(".", &tag.TagOptions{
+		ImageName: artifact.ImageName,
+		Digest:    imageID,
+	})
+
+	if err != nil {
+		return nil, errors.Wrap(err, "generating tag")
+	}
+
+	if err := docker.AddTag(builtTag, newTag); err != nil {
+		return nil, errors.Wrap(err, "tagging image")
+	}
+
 	return &Build{
 		ImageName: artifact.ImageName,
-		Tag:       tag,
+		Tag:       newTag,
 		Artifact:  artifact,
 	}, nil
 }

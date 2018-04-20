@@ -224,7 +224,6 @@
   version = "v0.2.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/google/go-containerregistry"
   packages = [
     "authn",
@@ -236,7 +235,7 @@
     "v1/types",
     "v1/v1util"
   ]
-  revision = "692805fc49bef6e1268195f7d514f33cc0d238e2"
+  revision = "a74336cb6fc16b36e8402a7ec1562661c14cbee5"
 
 [[projects]]
   branch = "master"
@@ -862,6 +861,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "63a2c1670a4a573c76a2af609374beec0a83a4641967c882c48c21989f822070"
+  inputs-digest = "02370b10cdd0da4cb902b501a66ed8ca3788d804cf9c9357e173aba899ff2a02"
   solver-name = "gps-cdcl"
   solver-version = 1
