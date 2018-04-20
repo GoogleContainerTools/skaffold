@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"io"
 
 	yaml "gopkg.in/yaml.v2"
@@ -64,6 +65,10 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	return rootCmd
 }
 
+func AddDevFlags(cmd *cobra.Command) {
+	cmd.Flags().BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
+}
+
 func AddRunDevFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&filename, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
@@ -86,6 +91,8 @@ func SetUpLogs(out io.Writer, level string) error {
 }
 
 func runSkaffold(out io.Writer, dev bool, filename string) error {
+	ctx := context.Background()
+
 	buf, err := util.ReadConfiguration(filename)
 	if err != nil {
 		return errors.Wrap(err, "read skaffold config")
@@ -121,7 +128,7 @@ func runSkaffold(out io.Writer, dev bool, filename string) error {
 		return errors.Wrap(err, "getting skaffold config")
 	}
 
-	if err := r.Run(); err != nil {
+	if err := r.Run(ctx); err != nil {
 		return errors.Wrap(err, "running skaffold steps")
 	}
 

@@ -19,6 +19,9 @@ package runner
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -129,18 +132,21 @@ func newTaggerForConfig(t v1alpha2.TagPolicy) (tag.Tagger, error) {
 }
 
 // Run runs the skaffold build and deploy pipeline.
-func (r *SkaffoldRunner) Run() error {
-	ctx := context.Background()
-
+func (r *SkaffoldRunner) Run(ctx context.Context) error {
 	if r.opts.DevMode {
-		return r.dev(ctx, r.config.Build.Artifacts)
+		if r.opts.Cleanup {
+			return cleanUpOnCtrlC(ctx, r.dev, r.cleanup)
+		}
+		return r.dev(ctx)
 	}
 
 	_, _, err := r.buildAndDeploy(ctx, r.config.Build.Artifacts, nil)
 	return err
 }
 
-func (r *SkaffoldRunner) dev(ctx context.Context, artifacts []*v1alpha2.Artifact) error {
+func (r *SkaffoldRunner) dev(ctx context.Context) error {
+	artifacts := r.config.Build.Artifacts
+
 	var err error
 	r.depMap, err = build.NewDependencyMap(artifacts)
 	if err != nil {
@@ -243,6 +249,35 @@ func (r *SkaffoldRunner) deploy(ctx context.Context, bRes *build.BuildResult) (*
 	fmt.Fprintln(r.opts.Output, "Deploy complete in", time.Since(start))
 
 	return dRes, nil
+}
+
+func cleanUpOnCtrlC(ctx context.Context, runDevMode func(context.Context) error, cleanup func(context.Context)) error {
+	ctx, cancel := context.WithCancel(ctx)
+
+	signals := make(chan os.Signal, 2)
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-signals
+		cancel()
+	}()
+
+	errRun := runDevMode(ctx)
+	cleanup(ctx)
+	return errRun
+}
+
+func (r *SkaffoldRunner) cleanup(ctx context.Context) {
+	start := time.Now()
+	fmt.Fprintln(r.opts.Output, "Cleaning up...")
+
+	err := r.Deployer.Cleanup(ctx, r.opts.Output)
+	if err != nil {
+		logrus.Warnf("cleanup: %s", err)
+		return
+	}
+
+	fmt.Fprintln(r.opts.Output, "Cleanup complete in", time.Since(start))
 }
 
 func mergeWithPreviousBuilds(builds, previous []build.Build) []build.Build {

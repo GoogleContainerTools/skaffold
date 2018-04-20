@@ -22,6 +22,7 @@ import "io"
 // in the config file itself
 type SkaffoldOptions struct {
 	DevMode      bool
+	Cleanup      bool
 	Notification bool
 	Profiles     []string
 	CustomTag    string

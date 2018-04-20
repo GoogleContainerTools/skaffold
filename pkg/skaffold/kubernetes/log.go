@@ -82,7 +82,7 @@ func (a *LogAggregator) Start(ctx context.Context, client corev1.CoreV1Interface
 				}
 
 				if a.podSelector.Select(pod) {
-					go a.streamLogs(client, pod)
+					go a.streamLogs(ctx, client, pod)
 				}
 			}
 		}
@@ -92,7 +92,7 @@ func (a *LogAggregator) Start(ctx context.Context, client corev1.CoreV1Interface
 }
 
 // nolint: interfacer
-func (a *LogAggregator) streamLogs(client corev1.CoreV1Interface, pod *v1.Pod) error {
+func (a *LogAggregator) streamLogs(ctx context.Context, client corev1.CoreV1Interface, pod *v1.Pod) error {
 	pods := client.Pods(pod.Namespace)
 	if err := WaitForPodReady(pods, pod.Name); err != nil {
 		return errors.Wrap(err, "waiting for pod ready")
@@ -138,7 +138,7 @@ func (a *LogAggregator) streamLogs(client corev1.CoreV1Interface, pod *v1.Pod) e
 				rc.Close()
 			}()
 
-			if err := a.streamRequest(prefix, rc); err != nil {
+			if err := a.streamRequest(ctx, prefix, rc); err != nil {
 				logrus.Errorf("streaming request %s", err)
 			}
 		}()
@@ -154,9 +154,16 @@ func prefix(pod *v1.Pod, container v1.ContainerStatus) string {
 	return fmt.Sprintf("[%s]", container.Name)
 }
 
-func (a *LogAggregator) streamRequest(header string, rc io.Reader) error {
+func (a *LogAggregator) streamRequest(ctx context.Context, header string, rc io.Reader) error {
 	r := bufio.NewReader(rc)
 	for {
+		select {
+		case <-ctx.Done():
+			logrus.Infof("%s interrupted", header)
+			return nil
+		default:
+		}
+
 		// Read up to newline
 		line, err := r.ReadBytes('\n')
 		if err == io.EOF {

@@ -101,6 +101,25 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, b *build.Bu
 	return &Result{}, nil
 }
 
+// Cleanup deletes what was deployed by calling Deploy.
+func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
+	if len(k.KubectlDeploy.Manifests) == 0 {
+		return k.kubectl(nil, out, "delete", "deployment", "skaffold")
+	}
+
+	manifests, err := k.readManifests()
+	if err != nil {
+		return errors.Wrap(err, "reading manifests")
+	}
+
+	err = k.kubectl(manifests.reader(), out, "delete", "-f", "-")
+	if err != nil {
+		return errors.Wrap(err, "deleting manifests")
+	}
+
+	return nil
+}
+
 // readOrGenerateManifests reads the manifests to deploy/delete. If no manifest exists, try to
 // generate it with the information we have.
 func (k *KubectlDeployer) readOrGenerateManifests(b *build.BuildResult) (manifestList, error) {

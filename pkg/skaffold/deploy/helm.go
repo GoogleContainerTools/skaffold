@@ -52,6 +52,16 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, b *build.Build
 	return nil, nil
 }
 
+// Cleanup deletes what was deployed by calling Deploy.
+func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
+	for _, r := range h.HelmDeploy.Releases {
+		if err := h.deleteRelease(out, r); err != nil {
+			return errors.Wrapf(err, "deploying %s", r.Name)
+		}
+	}
+	return nil
+}
+
 func (h *HelmDeployer) args(moreArgs ...string) []string {
 	return append([]string{"--kube-context", h.kubeContext}, moreArgs...)
 }
@@ -113,6 +123,17 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, b *b
 	stdout, stderr, err = util.RunCommand(execCmd, nil)
 	if err != nil {
 		return errors.Wrapf(err, "helm updater stdout: %s, stderr: %s", string(stdout), string(stderr))
+	}
+
+	out.Write(stdout)
+	return nil
+}
+
+func (h *HelmDeployer) deleteRelease(out io.Writer, r v1alpha2.HelmRelease) error {
+	getCmd := exec.Command("helm", h.args("delete", r.Name, "--purge")...)
+	stdout, stderr, err := util.RunCommand(getCmd, nil)
+	if err != nil {
+		logrus.Debugf("running helm delete %s: %v stdout: %s stderr: %s", r.Name, err, string(stdout), string(stderr))
 	}
 
 	out.Write(stdout)

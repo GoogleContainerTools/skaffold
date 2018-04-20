@@ -70,6 +70,10 @@ func (t *TestDeployer) Deploy(context.Context, io.Writer, *build.BuildResult) (*
 	return t.res, t.err
 }
 
+func (t *TestDeployer) Cleanup(ctx context.Context, out io.Writer) error {
+	return nil
+}
+
 type TestDeployAll struct {
 	deployed *build.BuildResult
 }
@@ -77,6 +81,10 @@ type TestDeployAll struct {
 func (t *TestDeployAll) Deploy(ctx context.Context, w io.Writer, bRes *build.BuildResult) (*deploy.Result, error) {
 	t.deployed = bRes
 	return &deploy.Result{}, nil
+}
+
+func (t *TestDeployAll) Cleanup(ctx context.Context, out io.Writer) error {
+	return nil
 }
 
 type TestTagger struct {
@@ -347,7 +355,8 @@ func TestRun(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			err := test.runner.Run()
+			err := test.runner.Run(context.Background())
+
 			testutil.CheckError(t, test.shouldErr, err)
 		})
 	}
