@@ -18,7 +18,6 @@ package docker
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 
