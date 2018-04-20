@@ -18,7 +18,6 @@ package build
 
 import (
 	"fmt"
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -76,16 +75,9 @@ func NewDependencyMap(artifacts []*v1alpha2.Artifact) (*DependencyMap, error) {
 	}, nil
 }
 
-// path must be an absolute path
-func isIgnored(workspace, path string) (bool, error) {
-	for _, ig := range ignoredPrefixes {
-		ignoredPrefix, err := filepath.Abs(filepath.Join(workspace, ig))
-		if err != nil {
-			return false, errors.Wrapf(err, "calculating absolute path of ignored dep %s", ig)
-		}
-
+func isIgnored(path string) (bool, error) {
+	for _, ignoredPrefix := range ignoredPrefixes {
 		if strings.HasPrefix(path, ignoredPrefix) {
-			logrus.Debugf("Ignoring %s for artifact dependencies", path)
 			return true, nil
 		}
 	}
@@ -115,14 +107,16 @@ func pathsForArtifact(a *v1alpha2.Artifact) ([]string, error) {
 		return nil, errors.Wrap(err, "getting dockerfile dependencies")
 	}
 	logrus.Infof("Source code dependencies %s: %s", a.ImageName, deps)
-	filteredDeps := []string{}
+
+	var filteredDeps []string
 	for _, dep := range deps {
 		//TODO(r2d4): what does the ignore workspace look like for bazel?
-		ignored, err := isIgnored(a.Workspace, dep)
+		ignored, err := isIgnored(dep)
 		if err != nil {
 			return nil, errors.Wrapf(err, "calculating ignored files for artifact %s", a.ImageName)
 		}
 		if ignored {
+			logrus.Debugf("Ignoring %s for artifact dependencies", dep)
 			continue
 		}
 		filteredDeps = append(filteredDeps, dep)
