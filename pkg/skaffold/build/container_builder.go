@@ -205,7 +205,7 @@ watch:
 	builtTag := fmt.Sprintf("%s@%s", artifact.ImageName, imageID)
 	logrus.Infof("Image built at %s", builtTag)
 
-	newTag, err := tagger.GenerateFullyQualifiedImageName(".", &tag.TagOptions{
+	newTag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.TagOptions{
 		ImageName: artifact.ImageName,
 		Digest:    imageID,
 	})
