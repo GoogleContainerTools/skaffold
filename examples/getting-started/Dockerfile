@@ -1,8 +1,7 @@
-FROM golang:1.9.4-alpine3.7 as builder
-WORKDIR /go/src/github.com/GoogleContainerTools/skaffold/examples/getting-started
+FROM golang:1.10.1-alpine3.7 as builder
 COPY main.go .
-RUN go build -o app main.go
+RUN go build -o /app main.go
 
-FROM alpine:latest  
+FROM alpine:3.7  
 CMD ["./app"]
-COPY --from=builder /go/src/github.com/GoogleContainerTools/skaffold/examples/getting-started/app .
+COPY --from=builder /app .

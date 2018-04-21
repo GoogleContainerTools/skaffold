@@ -4,11 +4,8 @@ build:
   artifacts:
   - imageName: gcr.io/k8s-skaffold/leeroy-web
     workspace: ./leeroy-web/
-    docker: {}
   - imageName: gcr.io/k8s-skaffold/leeroy-app
     workspace: ./leeroy-app/
-    docker: {}
-  local: {}
 deploy:
   kubectl:
     manifests:

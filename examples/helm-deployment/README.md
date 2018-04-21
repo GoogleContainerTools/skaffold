@@ -11,7 +11,6 @@ We'll be building an image called `skaffold-helm`, and its a dockerfile, so we'l
 build:
   artifacts:
   - imageName: skaffold-helm
-    workspace: .
 ```
 
 Now, we want to deploy this image with helm. We add a new release in the helm part of the deploy stanza. 
