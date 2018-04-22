@@ -19,6 +19,7 @@ limitations under the License.
 package integration
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"os"
@@ -28,10 +29,12 @@ import (
 
 	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/sirupsen/logrus"
+	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/sirupsen/logrus"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 var gkeZone = flag.String("gke-zone", "us-central1-a", "gke zone")
@@ -40,6 +43,8 @@ var gcpProject = flag.String("gcp-project", "k8s-skaffold", "the gcp project whe
 var remote = flag.Bool("remote", false, "if true, run tests on a remote GKE cluster")
 
 var client kubernetes.Interface
+
+var context *api.Context
 
 func TestMain(m *testing.M) {
 	flag.Parse()
@@ -56,13 +61,29 @@ func TestMain(m *testing.M) {
 		logrus.Fatalf("Test setup error: getting kubernetes client: %s", err)
 	}
 
-	os.Exit(m.Run())
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
+
+	cfg, err := kubeConfig.RawConfig()
+	if err != nil {
+		logrus.Fatalf("loading kubeconfig: %s", err)
+	}
+
+	context = cfg.Contexts[cfg.CurrentContext]
+
+	exitCode := m.Run()
+
+	// Reset default context and namespace
+	if err := exec.Command("kubectl", "config", "set-context", context.Cluster, "--namespace", context.Namespace).Run(); err != nil {
+		logrus.Warn(err)
+	}
+
+	os.Exit(exitCode)
 }
 
 func TestRun(t *testing.T) {
 	type testObject struct {
-		name      string
-		namespace string
+		name string
 	}
 
 	type testRunCase struct {
@@ -81,8 +102,7 @@ func TestRun(t *testing.T) {
 			description: "getting-started example",
 			pods: []testObject{
 				{
-					name:      "getting-started",
-					namespace: "default",
+					name: "getting-started",
 				},
 			},
 			dir: "../examples/getting-started",
@@ -91,8 +111,7 @@ func TestRun(t *testing.T) {
 			description: "no manifest example",
 			deployments: []testObject{
 				{
-					name:      "skaffold",
-					namespace: "default",
+					name: "skaffold",
 				},
 			},
 			dir: "../examples/no-manifest",
@@ -101,8 +120,7 @@ func TestRun(t *testing.T) {
 			description: "annotated getting-started example",
 			pods: []testObject{
 				{
-					name:      "getting-started",
-					namespace: "default",
+					name: "getting-started",
 				},
 			},
 			dir:       "../examples",
@@ -112,8 +130,7 @@ func TestRun(t *testing.T) {
 			description: "getting-started envTagger",
 			pods: []testObject{
 				{
-					name:      "getting-started",
-					namespace: "default",
+					name: "getting-started",
 				},
 			},
 			dir: "../examples/environment-variables",
@@ -135,8 +152,7 @@ func TestRun(t *testing.T) {
 			description: "gcb builder example",
 			pods: []testObject{
 				{
-					name:      "getting-started",
-					namespace: "default",
+					name: "getting-started",
 				},
 			},
 			dir:        "../examples/getting-started",
@@ -150,6 +166,10 @@ func TestRun(t *testing.T) {
 			if !*remote && testCase.remoteOnly {
 				t.Skip("skipping remote only test")
 			}
+
+			ns, deleteNs := setupNamespace(t)
+			defer deleteNs()
+
 			args := []string{"run"}
 			args = append(args, testCase.extraArgs...)
 			cmd := exec.Command("skaffold", args...)
@@ -165,40 +185,51 @@ func TestRun(t *testing.T) {
 			}
 
 			for _, p := range testCase.pods {
-				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(p.namespace), p.name); err != nil {
+				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(ns.Name), p.name); err != nil {
 					t.Fatalf("Timed out waiting for pod ready")
-				}
-				if err := client.CoreV1().Pods(p.namespace).Delete(p.name, nil); err != nil {
-					t.Fatalf("Error deleting pod %s: %s", p, err)
 				}
 			}
 
 			for _, d := range testCase.deployments {
-				if err := kubernetesutil.WaitForDeploymentToStabilize(client, d.namespace, d.name, 10*time.Minute); err != nil {
+				if err := kubernetesutil.WaitForDeploymentToStabilize(client, ns.Name, d.name, 10*time.Minute); err != nil {
 					t.Fatalf("Timed out waiting for deployment to stabilize")
-				}
-				if err := client.AppsV1().Deployments(d.namespace).Delete(d.name, &meta_v1.DeleteOptions{}); err != nil {
-					t.Fatalf("Error deleting deployment %s: %s", d, err)
 				}
 			}
 		})
 	}
 }
 
-func TestFix(t *testing.T) {
-	fixCmd := exec.Command("skaffold", "fix", "-f", "skaffold.yaml", "--overwrite")
-	fixCmd.Dir = "testdata/old-config"
-	out, outerr, err := util.RunCommand(fixCmd, nil)
-	if err != nil {
-		t.Fatalf("testing error: %s", err.Error())
-	}
-	t.Logf("%s %s", out, outerr)
+func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
+	namespaceName := util.RandomID()
+	ns, err := client.CoreV1().Namespaces().Create(&v1.Namespace{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      namespaceName,
+			Namespace: namespaceName,
+		},
+	})
 
-	runCmd := exec.Command("skaffold", "run", "-f", "skaffold.yaml")
-	runCmd.Dir = "testdata/old-config"
-	out, outerr, err = util.RunCommand(runCmd, nil)
+	kubectlCmd := exec.Command("kubectl", "config", "set-context", context.Cluster, "--namespace", ns.Name)
+	out, outerr, err := util.RunCommand(kubectlCmd, nil)
+	if err != nil {
+		t.Fatalf("kubectl config set-context --namespace: %s\nstderr: %s\nerror: %s", out, outerr, err)
+	}
+
+	return ns, func() { client.CoreV1().Namespaces().Delete(ns.Name, &meta_v1.DeleteOptions{}); return }
+}
+func TestFix(t *testing.T) {
+	_, deleteNs := setupNamespace(t)
+	defer deleteNs()
+
+	fixCmd := exec.Command("skaffold", "fix", "-f", "skaffold.yaml")
+	fixCmd.Dir = "testdata/old-config"
+	out, _, err := util.RunCommand(fixCmd, nil)
 	if err != nil {
 		t.Fatalf("testing error: %s", err.Error())
 	}
-	t.Logf("%s %s", out, outerr)
+	runCmd := exec.Command("skaffold", "run", "-f", "-")
+	runCmd.Dir = "testdata/old-config"
+	out, _, err = util.RunCommand(runCmd, bytes.NewReader(out))
+	if err != nil {
+		t.Fatalf("testing error: %s", err.Error())
+	}
 }

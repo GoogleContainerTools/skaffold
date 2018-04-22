@@ -2,7 +2,7 @@ apiVersion: skaffold/v1alpha1
 kind: Config
 build:
   artifacts:
-  - imageName: gcr.io/k8s-skaffold/skaffold
+  - imageName: gcr.io/k8s-skaffold/skaffold-example
     workspace: .
   local: {}
   tagPolicy: sha256
