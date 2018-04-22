@@ -207,6 +207,9 @@ func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
 			Namespace: namespaceName,
 		},
 	})
+	if err != nil {
+		t.Fatalf("creating namespace: %s", err)
+	}
 
 	kubectlCmd := exec.Command("kubectl", "config", "set-context", context.Cluster, "--namespace", ns.Name)
 	out, outerr, err := util.RunCommand(kubectlCmd, nil)
@@ -228,7 +231,7 @@ func TestFix(t *testing.T) {
 	}
 	runCmd := exec.Command("skaffold", "run", "-f", "-")
 	runCmd.Dir = "testdata/old-config"
-	out, _, err = util.RunCommand(runCmd, bytes.NewReader(out))
+	_, _, err = util.RunCommand(runCmd, bytes.NewReader(out))
 	if err != nil {
 		t.Fatalf("testing error: %s", err.Error())
 	}
