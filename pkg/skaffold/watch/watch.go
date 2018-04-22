@@ -22,6 +22,8 @@ import (
 	"sort"
 	"time"
 
+	"strings"
+
 	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -57,6 +59,9 @@ func NewWatcher(paths []string) (Watcher, error) {
 
 	sort.Strings(paths)
 	for _, p := range paths {
+		if strings.HasPrefix(p, "vendor") {
+			continue
+		}
 		files[p] = true
 		logrus.Infof("Added watch for %s", p)
 
