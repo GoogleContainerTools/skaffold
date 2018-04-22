@@ -70,12 +70,20 @@ func (t *TestDeployer) Deploy(context.Context, io.Writer, *build.BuildResult) (*
 	return t.res, t.err
 }
 
+func (t *TestDeployer) Dependencies() ([]string, error) {
+	return nil, nil
+}
+
 func (t *TestDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
 type TestDeployAll struct {
 	deployed *build.BuildResult
+}
+
+func (t *TestDeployAll) Dependencies() ([]string, error) {
+	return nil, nil
 }
 
 func (t *TestDeployAll) Deploy(ctx context.Context, w io.Writer, bRes *build.BuildResult) (*deploy.Result, error) {
@@ -112,10 +120,11 @@ func NewWatcherFactory(err error, changes ...[]string) watch.WatcherFactory {
 	}
 }
 
-func (t *TestWatcher) Start(context context.Context, onChange func([]string)) {
+func (t *TestWatcher) Start(context context.Context, onChange func([]string)) error {
 	for _, change := range t.changes {
 		onChange(change)
 	}
+	return nil
 }
 
 type TestChanges struct {
