@@ -24,6 +24,8 @@ import (
 	"syscall"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -161,6 +163,17 @@ func (r *SkaffoldRunner) dev(ctx context.Context) error {
 		return errors.Wrap(err, "creating watcher")
 	}
 
+	deployDeps, err := r.Deployer.Dependencies()
+	if err != nil {
+		return errors.Wrap(err, "getting deploy dependencies")
+	}
+	logrus.Infof("Deployer dependencies: %s", deployDeps)
+
+	deployWatcher, err := r.WatcherFactory(deployDeps)
+	if err != nil {
+		return errors.Wrap(err, "creating deploy watcher")
+	}
+
 	podSelector := kubernetes.NewImageList()
 	colorPicker := kubernetes.NewColorPicker(artifacts)
 	logger := kubernetes.NewLogAggregator(r.opts.Output, podSelector, colorPicker)
@@ -187,6 +200,18 @@ func (r *SkaffoldRunner) dev(ctx context.Context) error {
 		logger.Unmute()
 	}
 
+	onDeployChange := func(changedPaths []string) {
+		logger.Mute()
+		_, err := r.deploy(ctx, &build.BuildResult{
+			Builds: r.builds,
+		})
+		if err != nil {
+			logrus.Warnf("deploy: %s", err)
+		}
+		fmt.Fprint(r.opts.Output, "Watching for changes...\n")
+		logger.Unmute()
+	}
+
 	onChange(r.depMap.Paths())
 
 	// Start logs
@@ -195,9 +220,15 @@ func (r *SkaffoldRunner) dev(ctx context.Context) error {
 	}
 
 	// Watch files and rebuild
-	watcher.Start(ctx, onChange)
+	g, watchCtx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		return watcher.Start(watchCtx, onChange)
+	})
+	g.Go(func() error {
+		return deployWatcher.Start(watchCtx, onDeployChange)
+	})
 
-	return nil
+	return g.Wait()
 }
 
 func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, artifacts []*v1alpha2.Artifact, onBuildSuccess func(*build.BuildResult)) (*build.BuildResult, *deploy.Result, error) {

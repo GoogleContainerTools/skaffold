@@ -35,6 +35,10 @@ type Deployer interface {
 	// cluster.
 	Deploy(context.Context, io.Writer, *build.BuildResult) (*Result, error)
 
+	// Dependencies returns a list of files that the deployer depends on.
+	// In dev mode, a redeploy will be triggered
+	Dependencies() ([]string, error)
+
 	// Cleanup deletes what was deployed by calling Deploy.
 	Cleanup(context.Context, io.Writer) error
 }

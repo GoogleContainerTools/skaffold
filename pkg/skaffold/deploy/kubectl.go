@@ -120,6 +120,11 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
+// Not implemented
+func (k *KubectlDeployer) Dependencies() ([]string, error) {
+	return manifestFiles(k.KubectlDeploy.Manifests)
+}
+
 // readOrGenerateManifests reads the manifests to deploy/delete. If no manifest exists, try to
 // generate it with the information we have.
 func (k *KubectlDeployer) readOrGenerateManifests(b *build.BuildResult) (manifestList, error) {
@@ -152,24 +157,36 @@ func (k *KubectlDeployer) kubectl(in io.Reader, out io.Writer, arg ...string) er
 	return nil
 }
 
-// readManifests reads the manifests to deploy/delete.
-func (k *KubectlDeployer) readManifests() (manifestList, error) {
-	list, err := util.ExpandPathsGlob(k.KubectlDeploy.Manifests)
+func manifestFiles(manifests []string) ([]string, error) {
+	list, err := util.ExpandPathsGlob(manifests)
 	if err != nil {
 		return nil, errors.Wrap(err, "expanding kubectl manifest paths")
 	}
 
-	var manifests manifestList
-
-	for _, manifest := range list {
-		if !util.IsSupportedKubernetesFormat(manifest) {
-			if !util.StrSliceContains(k.KubectlDeploy.Manifests, manifest) {
-				logrus.Infof("refusing to deploy/delete non {json, yaml} file %s", manifest)
+	var filteredManifests []string
+	for _, f := range list {
+		if !util.IsSupportedKubernetesFormat(f) {
+			if !util.StrSliceContains(manifests, f) {
+				logrus.Infof("refusing to deploy/delete non {json, yaml} file %s", f)
 				logrus.Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
 				continue
 			}
 		}
+		filteredManifests = append(filteredManifests, f)
+	}
 
+	return filteredManifests, nil
+}
+
+// readManifests reads the manifests to deploy/delete.
+func (k *KubectlDeployer) readManifests() (manifestList, error) {
+	files, err := manifestFiles(k.KubectlDeploy.Manifests)
+	if err != nil {
+		return nil, errors.Wrap(err, "expanding user manifest list")
+	}
+	var manifests manifestList
+
+	for _, manifest := range files {
 		buf, err := afero.ReadFile(util.Fs, manifest)
 		if err != nil {
 			return nil, errors.Wrap(err, "reading manifest")
