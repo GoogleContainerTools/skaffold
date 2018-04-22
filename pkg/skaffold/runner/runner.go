@@ -97,12 +97,15 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 
 func getBuilder(cfg *v1alpha2.BuildConfig, kubeContext string) (build.Builder, error) {
 	if cfg != nil && cfg.LocalBuild != nil {
+		logrus.Debugf("Using builder: local")
 		return build.NewLocalBuilder(cfg, kubeContext)
 	}
 	if cfg.GoogleCloudBuild != nil {
+		logrus.Debugf("Using builder: google cloud")
 		return build.NewGoogleCloudBuilder(cfg)
 	}
 	if cfg.KanikoBuild != nil {
+		logrus.Debugf("Using builder: kaniko")
 		return build.NewKanikoBuilder(cfg)
 	}
 

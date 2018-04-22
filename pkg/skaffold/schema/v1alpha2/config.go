@@ -162,6 +162,7 @@ func defaultToLocalBuild(cfg *SkaffoldConfig) {
 		return
 	}
 
+	logrus.Debugf("Defaulting build type to local build")
 	cfg.Build.BuildType.LocalBuild = &LocalBuild{}
 }
 
