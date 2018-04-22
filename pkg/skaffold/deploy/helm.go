@@ -52,6 +52,11 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, b *build.Build
 	return nil, nil
 }
 
+// Not implemented
+func (k *HelmDeployer) Dependencies() ([]string, error) {
+	return nil, nil
+}
+
 // Cleanup deletes what was deployed by calling Deploy.
 func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	for _, r := range h.HelmDeploy.Releases {

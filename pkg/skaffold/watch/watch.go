@@ -36,7 +36,7 @@ type WatcherFactory func(paths []string) (Watcher, error)
 type Watcher interface {
 	// Start watches a set of files for changes, and calls `onChange`
 	// on each file change.
-	Start(ctx context.Context, onChange func([]string))
+	Start(ctx context.Context, onChange func([]string)) error
 }
 
 // fsWatcher uses inotify to watch for changes and implements
@@ -80,7 +80,7 @@ func NewWatcher(paths []string) (Watcher, error) {
 
 // Start watches a set of files for changes, and calls `onChange`
 // on each file change.
-func (f *fsWatcher) Start(ctx context.Context, onChange func([]string)) {
+func (f *fsWatcher) Start(ctx context.Context, onChange func([]string)) error {
 	changedPaths := map[string]bool{}
 
 	timer := time.NewTimer(1<<63 - 1) // Forever
@@ -99,14 +99,14 @@ func (f *fsWatcher) Start(ctx context.Context, onChange func([]string)) {
 			logrus.Infof("Change: %s", ev)
 			changedPaths[ev.Name] = true
 		case err := <-f.watcher.Errors:
-			logrus.Error(err)
+			return errors.Wrap(err, "watch error")
 		case <-timer.C:
 			changes := sortedPaths(changedPaths)
 			changedPaths = map[string]bool{}
 			onChange(changes)
 		case <-ctx.Done():
 			f.watcher.Close()
-			return
+			return nil
 		}
 	}
 }
