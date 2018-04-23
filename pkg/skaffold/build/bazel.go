@@ -20,12 +20,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/pkg/errors"
 )
@@ -43,23 +43,21 @@ func (l *LocalBuilder) buildBazel(ctx context.Context, out io.Writer, a *v1alpha
 	tarPath := strings.TrimPrefix(a.BazelArtifact.BuildTarget, "//:")
 	//TODO(r2d4): strip off trailing .tar, even worse
 	imageTag := strings.TrimSuffix(tarPath, ".tar")
-
 	imageTar, err := os.Open(filepath.Join(a.Workspace, "bazel-bin", tarPath))
 	if err != nil {
 		return "", errors.Wrap(err, "opening image tarball")
 	}
 	defer imageTar.Close()
-
 	resp, err := l.api.ImageLoad(ctx, imageTar, false)
 	if err != nil {
 		return "", errors.Wrap(err, "loading image into docker daemon")
 	}
 	defer resp.Body.Close()
-
-	err = docker.StreamDockerMessages(out, resp.Body, nil)
+	respStr, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", errors.Wrap(err, "reading from image load response")
 	}
+	out.Write(respStr)
 
 	return fmt.Sprintf("bazel:%s", imageTag), nil
 }

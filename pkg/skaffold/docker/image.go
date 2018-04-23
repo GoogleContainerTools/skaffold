@@ -18,7 +18,6 @@ package docker
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 
@@ -79,14 +78,13 @@ func RunBuild(ctx context.Context, cli DockerAPIClient, opts *BuildOptions) erro
 		return errors.Wrap(err, "docker build")
 	}
 	defer resp.Body.Close()
-
-	return StreamDockerMessages(opts.BuildBuf, resp.Body, nil)
+	return streamDockerMessages(opts.BuildBuf, resp.Body)
 }
 
-// StreamDockerMessages prints docker messages to the console.
-func StreamDockerMessages(dst io.Writer, src io.Reader, auxCallback func(*json.RawMessage)) error {
-	fd, isTerminal := term.GetFdInfo(dst)
-	return jsonmessage.DisplayJSONMessagesStream(src, dst, fd, isTerminal, auxCallback)
+// TODO(@r2d4): Make this output much better, this is the bare minimum
+func streamDockerMessages(dst io.Writer, src io.Reader) error {
+	fd, _ := term.GetFdInfo(dst)
+	return jsonmessage.DisplayJSONMessagesStream(src, dst, fd, false, nil)
 }
 
 func RunPush(ctx context.Context, cli DockerAPIClient, ref string, out io.Writer) error {
@@ -101,8 +99,7 @@ func RunPush(ctx context.Context, cli DockerAPIClient, ref string, out io.Writer
 		return errors.Wrap(err, "pushing image to repository")
 	}
 	defer rc.Close()
-
-	return StreamDockerMessages(out, rc, nil)
+	return streamDockerMessages(out, rc)
 }
 
 func AddTag(src, target string) error {
