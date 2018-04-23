@@ -101,7 +101,7 @@ func TestExpandDeps(t *testing.T) {
 		},
 	}
 
-	defer ResetFs()
+	defer func(fs afero.Fs) { Fs = fs }(Fs)
 	Fs = afero.NewMemMapFs()
 
 	Fs.MkdirAll("test", 0755)
@@ -123,8 +123,8 @@ func TestExpandDeps(t *testing.T) {
 }
 
 func TestExpandPathsGlob(t *testing.T) {
+	defer func(fs afero.Fs) { Fs = fs }(Fs)
 	Fs = afero.NewMemMapFs()
-	defer ResetFs()
 
 	Fs.MkdirAll("dir/sub_dir", 0700)
 	Fs.MkdirAll("dir_b/sub_dir_b", 0700)

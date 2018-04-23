@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
-	"github.com/google/go-cmp/cmp"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 type FakeDependencyResolver struct {
@@ -68,25 +68,14 @@ func TestPaths(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			oldDockerResolver := DefaultDockerfileDepResolver
-			oldBazelResolver := DefaultBazelDepResolver
-
+			defer func(r DependencyResolver) { DefaultDockerfileDepResolver = r }(DefaultDockerfileDepResolver)
+			defer func(r DependencyResolver) { DefaultBazelDepResolver = r }(DefaultBazelDepResolver)
 			DefaultDockerfileDepResolver = test.dockerResolver
 			DefaultBazelDepResolver = test.bazelResolver
 
 			m, err := NewDependencyMap(test.artifacts)
-			if err != nil {
-				t.Fatalf("unexpected error: %s", err)
-			}
 
-			DefaultDockerfileDepResolver = oldDockerResolver
-			DefaultBazelDepResolver = oldBazelResolver
-
-			if diff := cmp.Diff(test.expected, m.Paths()); diff != "" {
-				t.Errorf("%T differ.\nExpected\n%+v\nActual\n%+v", test.expected, test.expected, m.Paths())
-				return
-			}
-
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, m.Paths())
 		})
 	}
 }

@@ -25,7 +25,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-containerregistry/v1"
 	"github.com/spf13/afero"
 )
@@ -105,36 +104,6 @@ const onbuildError = `
 FROM noimage:latest
 ADD ./file /etc/file
 `
-
-const onePortFromBaseImage = `
-FROM oneport
-`
-
-const onePortFromBaseImageAndDockerfile = `
-FROM oneport
-EXPOSE 9000
-`
-
-const severalPortsFromBaseImage = `
-FROM severalports
-`
-
-const severalPortsFromBaseImageAndDockerfile = `
-FROM severalports
-EXPOSE 9000 9001
-EXPOSE 9002/tcp
-`
-
-func joinToTmpDir(base string, paths []string) []string {
-	if paths == nil {
-		return nil
-	}
-	ret := []string{}
-	for _, p := range paths {
-		ret = append(ret, filepath.Join(base, p))
-	}
-	return ret
-}
 
 var ImageConfigs = map[string]*v1.ConfigFile{
 	"golang:onbuild": {
@@ -259,11 +228,12 @@ func TestGetDockerfileDependencies(t *testing.T) {
 	defer func() {
 		RetrieveImage = retrieveImage
 	}()
-	defer util.ResetFs()
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			defer func(fs afero.Fs) { util.Fs = fs }(util.Fs)
 			util.Fs = afero.NewMemMapFs()
+
 			util.Fs.MkdirAll("docker", 0750)
 			for _, file := range []string{"docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file"} {
 				afero.WriteFile(util.Fs, file, []byte(""), 0644)
@@ -285,34 +255,31 @@ func TestGetDockerfileDependencies(t *testing.T) {
 }
 
 func TestPortsFromDockerfile(t *testing.T) {
-	type args struct {
-		dockerfile string
-	}
 	tests := []struct {
-		name    string
-		args    args
-		want    []string
-		wantErr bool
+		name          string
+		dockerfile    string
+		expectedPorts []string
+		shouldErr     bool
 	}{
 		{
-			name: "one port from base image",
-			args: args{dockerfile: onePortFromBaseImage},
-			want: []string{"8000"},
+			name:          "one port from base image",
+			dockerfile:    "FROM oneport",
+			expectedPorts: []string{"8000"},
 		},
 		{
-			name: "two ports from base image",
-			args: args{dockerfile: severalPortsFromBaseImage},
-			want: []string{"8000", "8001/tcp"},
+			name:          "two ports from base image",
+			dockerfile:    "FROM severalports",
+			expectedPorts: []string{"8000", "8001/tcp"},
 		},
 		{
-			name: "one port from dockerfile",
-			args: args{dockerfile: onePortFromBaseImageAndDockerfile},
-			want: []string{"8000", "9000"},
+			name:          "one port from dockerfile",
+			dockerfile:    "FROM oneport\nEXPOSE 9000",
+			expectedPorts: []string{"8000", "9000"},
 		},
 		{
-			name: "several port from dockerfile",
-			args: args{dockerfile: severalPortsFromBaseImageAndDockerfile},
-			want: []string{"8000", "8001/tcp", "9000", "9001", "9002/tcp"},
+			name:          "several port from dockerfile",
+			dockerfile:    "FROM severalports\nEXPOSE 9000 9001\nEXPOSE 9002/tcp",
+			expectedPorts: []string{"8000", "8001/tcp", "9000", "9001", "9002/tcp"},
 		},
 	}
 
@@ -323,15 +290,11 @@ func TestPortsFromDockerfile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := strings.NewReader(tt.args.dockerfile)
-			got, err := PortsFromDockerfile(r)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("PortsFromDockerfile() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("PortsFromDockerfile() = %v, want %v", got, tt.want)
-			}
+			r := strings.NewReader(tt.dockerfile)
+
+			ports, err := PortsFromDockerfile(r)
+
+			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.expectedPorts, ports)
 		})
 	}
 }

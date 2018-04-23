@@ -24,15 +24,14 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func Test_addFileToTar(t *testing.T) {
 	// Setup a few files in a tempdir. We can't use afero here because it doesn't support symlinks.
-	testDir, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Fatalf("Error creating tempdir: %s", err)
-	}
-	defer os.RemoveAll(testDir)
+	testDir, cleanup := testutil.TempDir(t)
+	defer cleanup()
 
 	files := map[string]string{
 		"foo":     "baz1",
@@ -93,27 +92,22 @@ func setupFiles(path string, files map[string]string) error {
 
 func Test_addLinksToTar(t *testing.T) {
 	// Setup a few files in a tempdir. We can't use afero here because it doesn't support symlinks.
-	testDir, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Fatalf("Error creating tempdir: %s", err)
-	}
-	t.Log(testDir)
-	defer os.RemoveAll(testDir)
+	testDir, cleanup := testutil.TempDir(t)
+	defer cleanup()
 
 	files := map[string]string{
 		"foo":     "baz1",
 		"bar/bat": "baz2",
 		"bar/baz": "baz3",
 	}
+	if err := setupFiles(testDir, files); err != nil {
+		t.Fatalf("Error setting up files: %s", err)
+	}
 
 	links := map[string]string{
 		"foo.link":     "./foo",
 		"bar.link":     "./bar/bat",
 		"bat/baz.link": "../bar/baz",
-	}
-
-	if err := setupFiles(testDir, files); err != nil {
-		t.Fatalf("Error setting up files: %s", err)
 	}
 
 	for src, dst := range links {

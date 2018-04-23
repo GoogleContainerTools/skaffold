@@ -33,10 +33,6 @@ import (
 
 var Fs = afero.NewOsFs()
 
-func ResetFs() {
-	Fs = afero.NewOsFs()
-}
-
 func RandomID() string {
 	b := make([]byte, 16)
 	_, err := rand.Read(b)

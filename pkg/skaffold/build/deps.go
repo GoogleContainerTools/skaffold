@@ -125,14 +125,9 @@ func pathsForArtifact(a *v1alpha2.Artifact) ([]string, error) {
 }
 
 var (
-	DefaultDockerfileDepResolver DependencyResolver
-	DefaultBazelDepResolver      DependencyResolver
+	DefaultDockerfileDepResolver DependencyResolver = &docker.DockerfileDepResolver{}
+	DefaultBazelDepResolver      DependencyResolver = &bazel.BazelDependencyResolver{}
 )
-
-func init() {
-	DefaultDockerfileDepResolver = &docker.DockerfileDepResolver{}
-	DefaultBazelDepResolver = &bazel.BazelDependencyResolver{}
-}
 
 func GetDependenciesForArtifact(artifact *v1alpha2.Artifact) ([]string, error) {
 	if artifact.DockerArtifact != nil {

@@ -110,8 +110,8 @@ DOCKER_API_VERSION=1.23`, "", nil),
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = test.cmd
-			defer util.ResetDefaultExecCommand()
 
 			_, err := newMinikubeDockerAPIClient()
 			testutil.CheckError(t, test.shouldErr, err)

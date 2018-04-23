@@ -24,58 +24,40 @@ import (
 )
 
 func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
-	type fields struct {
-		Template string
-	}
-	type args struct {
-		opts *TagOptions
-		env  []string
-	}
 	tests := []struct {
 		name      string
-		fields    fields
-		args      args
+		template  string
+		opts      *TagOptions
+		env       []string
 		want      string
 		shouldErr bool
 	}{
 		{
-			name: "empty env",
-			fields: fields{
-				Template: "{{.IMAGE_NAME}}:{{.DIGEST}}",
-			},
-			args: args{
-				opts: &TagOptions{
-					ImageName: "foo",
-					Digest:    "bar",
-				},
+			name:     "empty env",
+			template: "{{.IMAGE_NAME}}:{{.DIGEST}}",
+			opts: &TagOptions{
+				ImageName: "foo",
+				Digest:    "bar",
 			},
 			want: "foo:bar",
 		},
 		{
-			name: "env",
-			fields: fields{
-				Template: "{{.FOO}}-{{.BAZ}}:latest",
-			},
-			args: args{
-				env: []string{"FOO=BAR", "BAZ=BAT"},
-				opts: &TagOptions{
-					ImageName: "foo",
-					Digest:    "bar",
-				},
+			name:     "env",
+			template: "{{.FOO}}-{{.BAZ}}:latest",
+			env:      []string{"FOO=BAR", "BAZ=BAT"},
+			opts: &TagOptions{
+				ImageName: "foo",
+				Digest:    "bar",
 			},
 			want: "BAR-BAT:latest",
 		},
 		{
-			name: "opts precedence",
-			fields: fields{
-				Template: "{{.IMAGE_NAME}}-{{.FROM_ENV}}:latest",
-			},
-			args: args{
-				env: []string{"FROM_ENV=FOO", "IMAGE_NAME=BAT"},
-				opts: &TagOptions{
-					ImageName: "image_name",
-					Digest:    "bar",
-				},
+			name:     "opts precedence",
+			template: "{{.IMAGE_NAME}}-{{.FROM_ENV}}:latest",
+			env:      []string{"FROM_ENV=FOO", "IMAGE_NAME=BAT"},
+			opts: &TagOptions{
+				ImageName: "image_name",
+				Digest:    "bar",
 			},
 			want: "image_name-FOO:latest",
 		},
@@ -83,44 +65,37 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			c := &EnvTemplateTagger{
-				Template: template.Must(template.New("").Parse(test.fields.Template)),
+				Template: template.Must(template.New("").Parse(test.template)),
 			}
 			environ = func() []string {
-				return test.args.env
+				return test.env
 			}
 
-			got, err := c.GenerateFullyQualifiedImageName("", test.args.opts)
+			got, err := c.GenerateFullyQualifiedImageName("", test.opts)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.want, got)
 		})
 	}
 }
 
 func TestNewEnvTemplateTagger(t *testing.T) {
-	type args struct {
-		t string
-	}
 	tests := []struct {
 		name      string
-		args      args
+		template  string
 		shouldErr bool
 	}{
 		{
-			name: "valid template",
-			args: args{
-				t: "{{.FOO}}",
-			},
+			name:     "valid template",
+			template: "{{.FOO}}",
 		},
 		{
-			name: "invalid template",
-			args: args{
-				t: "{{.FOO",
-			},
+			name:      "invalid template",
+			template:  "{{.FOO",
 			shouldErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewEnvTemplateTagger(tt.args.t)
+			_, err := NewEnvTemplateTagger(tt.template)
 			testutil.CheckError(t, tt.shouldErr, err)
 		})
 	}

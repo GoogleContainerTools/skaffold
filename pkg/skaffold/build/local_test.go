@@ -64,8 +64,7 @@ var testImage2 = &v1alpha2.Artifact{
 }
 
 func TestLocalRun(t *testing.T) {
-	auth := docker.DefaultAuthHelper
-	defer func() { docker.DefaultAuthHelper = auth }()
+	defer func(h docker.AuthConfigHelper) { docker.DefaultAuthHelper = h }(docker.DefaultAuthHelper)
 	docker.DefaultAuthHelper = testAuthHelper{}
 
 	// Set a bad KUBECONFIG path so we don't parse a real one that happens to be

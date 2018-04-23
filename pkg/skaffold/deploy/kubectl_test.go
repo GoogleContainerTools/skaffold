@@ -144,16 +144,17 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 	}
 
+	defer func(fs afero.Fs) { util.Fs = fs }(util.Fs)
 	util.Fs = afero.NewMemMapFs()
-	defer util.ResetFs()
+
 	util.Fs.MkdirAll("test", 0750)
 	afero.WriteFile(util.Fs, "test/deployment.yaml", []byte(deploymentYAML), 0644)
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			if test.command != nil {
+				defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 				util.DefaultExecCommand = test.command
-				defer util.ResetDefaultExecCommand()
 			}
 
 			k := NewKubectlDeployer(test.cfg, testKubeContext)
@@ -196,16 +197,17 @@ func TestKubectlCleanup(t *testing.T) {
 		},
 	}
 
+	defer func(fs afero.Fs) { util.Fs = fs }(util.Fs)
 	util.Fs = afero.NewMemMapFs()
-	defer util.ResetFs()
+
 	util.Fs.MkdirAll("test", 0750)
 	afero.WriteFile(util.Fs, "test/deployment.yaml", []byte(deploymentYAML), 0644)
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			if test.command != nil {
+				defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 				util.DefaultExecCommand = test.command
-				defer util.ResetDefaultExecCommand()
 			}
 
 			k := NewKubectlDeployer(test.cfg, testKubeContext)

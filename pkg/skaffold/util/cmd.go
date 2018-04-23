@@ -26,15 +26,7 @@ import (
 )
 
 // DefaultExecCommand runs commands using exec.Cmd
-var DefaultExecCommand Command
-
-func init() {
-	DefaultExecCommand = &Commander{}
-}
-
-func ResetDefaultExecCommand() {
-	DefaultExecCommand = &Commander{}
-}
+var DefaultExecCommand Command = &Commander{}
 
 // Command is an interface used to run commands. All packages should use this
 // interface instead of calling exec.Cmd directly.
