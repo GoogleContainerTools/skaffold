@@ -1,3 +1,20 @@
+# v0.5.0 Release - 4/23/2018
+New Features
+* Added kaniko builder
+* Added support for "remote-manifests" in kubectl deployer
+* `skaffold dev` now performs a cleanup of deployed resources on exit
+* `skaffold dev` redeploys when deploy dependencies are changed (only kubectl deployer currently)
+
+Bug Fixes
+* GCB builder now uses tags correctly
+* Supports multi-stage dockerfiles with onbuild commands
+* Better error messages
+* Fixed tagger working directory
+
+Updates
+* Switched from containers/image to google/go-containerregistry
+* Integration tests now run in separate namespaces
+
 # v0.4.0 Release - 4/12/2018
 New Features
 * Added `skaffold fix` command to migrate configs from v1alpha1 to v1alpha2
