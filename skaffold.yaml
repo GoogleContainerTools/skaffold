@@ -3,8 +3,9 @@ kind: Config
 build:
   artifacts:
   - imageName: gcr.io/k8s-skaffold/skaffold
-    dockerfilePath: deploy/skaffold/Dockerfile
     workspace: .
+    docker:
+      dockerfilePath: deploy/skaffold/Dockerfile
   local: {}
 deploy:
   kubectl:
