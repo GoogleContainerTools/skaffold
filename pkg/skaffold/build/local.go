@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -128,6 +130,13 @@ func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagg
 
 func (l *LocalBuilder) buildDocker(ctx context.Context, out io.Writer, a *v1alpha2.Artifact) (string, error) {
 	initialTag := util.RandomID()
+	// Add a sanity check to check if the dockerfile exists before running the build
+	if _, err := util.Fs.Stat(filepath.Join(a.Workspace, a.DockerArtifact.DockerfilePath)); err != nil {
+		if os.IsNotExist(err) {
+			return "", fmt.Errorf("Could not find dockerfile: %s", a.DockerArtifact.DockerfilePath)
+		}
+		return "", errors.Wrap(err, "stat dockerfile")
+	}
 	err := docker.RunBuild(ctx, l.api, &docker.BuildOptions{
 		ImageName:   initialTag,
 		Dockerfile:  a.DockerArtifact.DockerfilePath,
