@@ -56,11 +56,9 @@ Let's walk through the first part of the skaffold.yaml
     workspace: ./leeroy-web/
   - imageName: gcr.io/k8s-skaffold/leeroy-app
     workspace: ./leeroy-app/
-  - imageName: gcr.io/k8s-skaffold/skaffold-example
-    workspace: ../getting-started
 ```
 
-We're deploying a `leeroy-web` image, which we build in the context of its subdirectory, a `leeroy-app` image built in a similar manner, and the `getting-started` example, just for fun.
+We're deploying a `leeroy-web` image, which we build in the context of its subdirectory and a `leeroy-app` image built in a similar manner.
 
 `leeroy-web` will listen for requests, and then make a simple HTTP call to `leeroy-app` using Kubernetes service discovery and return that result.
 
@@ -73,5 +71,4 @@ deploy:
     manifests:
     - ./leeroy-web/kubernetes/*
     - ./leeroy-app/kubernetes/*
-    - ../getting-started/k8s-*
 ```

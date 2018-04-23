@@ -1,6 +1,6 @@
-FROM golang:1.9.2
-WORKDIR /go/src/github.com/GoogleContainerTools/skaffold/examples/getting-started
+FROM golang:1.10.1-alpine3.7
+
 EXPOSE 8080
+CMD ["./app"]
 COPY main.go .
 RUN go build -o app main.go
-CMD ["./app"]
