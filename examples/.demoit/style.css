@@ -1,0 +1,59 @@
+.k8s {
+    width: 200px;
+    height: 200px;
+}
+
+.gcp {
+    width: 200px;
+    height: 200px;
+}
+
+.github {
+    width: calc(2730px / 3);
+    height: calc(1994px / 3);
+}
+
+.logos {
+    display: flex;
+    margin: 0 auto 40px auto;
+    width: 600px;
+    align-items: center;
+}
+
+img {
+    background-color: transparent;
+    border: 0;
+}
+
+em {
+    font-style: normal;
+    font-weight: bold;
+    color: #42affa;
+}
+
+table {
+    margin: 30px auto 0 auto;
+    width: 80%;
+    background: white;
+    color: black;
+    border-collapse: collapse;
+}
+
+td, th {
+    padding: 15px 20px;
+}
+
+th {
+    font-weight: bold;
+    background-color: rgb(0,122,204);
+    color: white;
+}
+
+th, td {
+    text-align: left;
+    font-size: 2rem;
+}
+
+source-code {
+    max-width: 60% !important;
+}
