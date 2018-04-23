@@ -34,9 +34,7 @@ import (
 
 func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artifact, cfg *v1alpha2.KanikoBuild) (string, error) {
 	dockerfilePath := artifact.DockerArtifact.DockerfilePath
-	if dockerfilePath == "" {
-		dockerfilePath = constants.DefaultDockerfilePath
-	}
+
 	initialTag := util.RandomID()
 	tarName := "context.tar.gz" // TODO(r2d4): until this is configurable upstream
 	if err := docker.UploadContextToGCS(ctx, dockerfilePath, artifact.Workspace, cfg.GCSBucket, tarName); err != nil {
