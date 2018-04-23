@@ -97,7 +97,7 @@ func TestLocalRun(t *testing.T) {
 				},
 			},
 			tagger: &tag.ChecksumTagger{},
-			api:    testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
+			api:    testutil.NewFakeImageAPIClient(map[string]string{}, nil),
 			expectedBuild: &BuildResult{
 				[]Build{
 					{
@@ -144,7 +144,7 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
+			api: testutil.NewFakeImageAPIClient(map[string]string{}, nil),
 			expectedBuild: &BuildResult{
 				[]Build{
 					{
@@ -208,7 +208,7 @@ func TestLocalRun(t *testing.T) {
 				},
 			},
 			tagger:    &tag.ChecksumTagger{},
-			api:       testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
+			api:       testutil.NewFakeImageAPIClient(map[string]string{}, nil),
 			shouldErr: true,
 		},
 		{
@@ -239,7 +239,7 @@ func TestLocalRun(t *testing.T) {
 				},
 			},
 			tagger:    &FakeTagger{Err: fmt.Errorf("")},
-			api:       testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
+			api:       testutil.NewFakeImageAPIClient(map[string]string{}, nil),
 			shouldErr: true,
 		},
 	}

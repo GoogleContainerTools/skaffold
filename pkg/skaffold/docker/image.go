@@ -19,8 +19,10 @@ package docker
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/google/go-containerregistry/authn"
 	"github.com/google/go-containerregistry/name"
@@ -38,7 +40,6 @@ import (
 )
 
 type BuildOptions struct {
-	ImageName   string
 	Dockerfile  string
 	ContextDir  string
 	ProgressBuf io.Writer
@@ -47,15 +48,14 @@ type BuildOptions struct {
 }
 
 // RunBuild performs a docker build and returns nothing
-func RunBuild(ctx context.Context, cli DockerAPIClient, opts *BuildOptions) error {
+func RunBuild(ctx context.Context, cli DockerAPIClient, opts *BuildOptions) (string, error) {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", opts.ContextDir, opts.Dockerfile)
 	authConfigs, err := DefaultAuthHelper.GetAllAuthConfigs()
 	if err != nil {
-		return errors.Wrap(err, "read auth configs")
+		return "", errors.Wrap(err, "read auth configs")
 	}
 
 	imageBuildOpts := types.ImageBuildOptions{
-		Tags:        []string{opts.ImageName},
 		Dockerfile:  opts.Dockerfile,
 		BuildArgs:   opts.BuildArgs,
 		AuthConfigs: authConfigs,
@@ -76,11 +76,26 @@ func RunBuild(ctx context.Context, cli DockerAPIClient, opts *BuildOptions) erro
 
 	resp, err := cli.ImageBuild(ctx, body, imageBuildOpts)
 	if err != nil {
-		return errors.Wrap(err, "docker build")
+		return "", errors.Wrap(err, "docker build")
 	}
 	defer resp.Body.Close()
 
-	return StreamDockerMessages(opts.BuildBuf, resp.Body, nil)
+	imageID := ""
+	aux := func(auxJSON *json.RawMessage) {
+		var result types.BuildResult
+		if err := json.Unmarshal(*auxJSON, &result); err != nil {
+			logrus.Errorln("Failed to parse aux message:", err)
+		} else {
+			imageID = result.ID
+		}
+	}
+
+	err = StreamDockerMessages(opts.BuildBuf, resp.Body, aux)
+	if err != nil {
+		return "", errors.Wrap(err, "streaming messages")
+	}
+
+	return imageID, nil
 }
 
 // StreamDockerMessages prints docker messages to the console.
@@ -145,6 +160,11 @@ func addTag(ref name.Reference, targetRef name.Reference, auth authn.Authenticat
 // The digest is of the form
 // sha256:<image_id>
 func Digest(ctx context.Context, cli DockerAPIClient, ref string) (string, error) {
+	if strings.HasPrefix(ref, "sha256:") {
+		parts := strings.Split(ref, ":")
+		return fmt.Sprintf("%s:%s", parts[0], parts[1]), nil
+	}
+
 	args := filters.KeyValuePair{Key: "reference", Value: ref}
 	filters := filters.NewArgs(args)
 	imageList, err := cli.ImageList(ctx, types.ImageListOptions{

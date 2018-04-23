@@ -17,14 +17,17 @@ limitations under the License.
 package testutil
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
-	"strings"
+	"io/ioutil"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/registry"
 	"github.com/moby/moby/client"
+	"github.com/moby/moby/pkg/jsonmessage"
 )
 
 type FakeImageAPIClient struct {
@@ -50,9 +53,7 @@ func NewFakeImageAPIClient(initContents map[string]string, opts *FakeImageAPIOpt
 	if opts == nil {
 		opts = &FakeImageAPIOptions{}
 	}
-	if opts.ReturnBody == nil {
-		opts.ReturnBody = FakeReaderCloser{Err: io.EOF}
-	}
+
 	return &FakeImageAPIClient{
 		tagToImageID: initContents,
 		opts:         opts,
@@ -63,18 +64,23 @@ func (f *FakeImageAPIClient) ImageBuild(ctx context.Context, context io.Reader, 
 	if f.opts.ErrImageBuild {
 		return types.ImageBuildResponse{}, fmt.Errorf("")
 	}
-	for _, tag := range options.Tags {
-		if !strings.Contains(tag, ":") {
-			tag = fmt.Sprintf("%s:latest", tag)
-		}
-		if f.opts.BuildImageID == "" {
-			f.tagToImageID[tag] = "sha256:imageid"
-		} else {
-			f.tagToImageID[tag] = f.opts.BuildImageID
-		}
+
+	imageID := "sha256:imageid"
+	f.tagToImageID[imageID] = imageID
+
+	if f.opts.ReturnBody != nil {
+		return types.ImageBuildResponse{
+			Body: f.opts.ReturnBody,
+		}, nil
 	}
+
+	aux := json.RawMessage([]byte(fmt.Sprintf(`{"ID":"%s"}`, imageID)))
+	buf, _ := json.Marshal(jsonmessage.JSONMessage{
+		Aux: &aux,
+	})
+
 	return types.ImageBuildResponse{
-		Body: f.opts.ReturnBody,
+		Body: ioutil.NopCloser(bytes.NewReader(buf)),
 	}, nil
 }
 
@@ -119,6 +125,11 @@ func (f *FakeImageAPIClient) ImagePush(_ context.Context, _ string, _ types.Imag
 	if f.opts.ErrImagePush {
 		err = fmt.Errorf("")
 	}
+
+	if f.opts.ReturnBody == nil {
+		f.opts.ReturnBody = FakeReaderCloser{Err: io.EOF}
+	}
+
 	return f.opts.ReturnBody, err
 }
 
