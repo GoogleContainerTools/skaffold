@@ -18,11 +18,8 @@ package docker
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/google/go-containerregistry/authn"
 	"github.com/google/go-containerregistry/name"
@@ -40,6 +37,7 @@ import (
 )
 
 type BuildOptions struct {
+	ImageName   string
 	Dockerfile  string
 	ContextDir  string
 	ProgressBuf io.Writer
@@ -48,14 +46,15 @@ type BuildOptions struct {
 }
 
 // RunBuild performs a docker build and returns nothing
-func RunBuild(ctx context.Context, cli DockerAPIClient, opts *BuildOptions) (string, error) {
+func RunBuild(ctx context.Context, cli DockerAPIClient, opts *BuildOptions) error {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", opts.ContextDir, opts.Dockerfile)
 	authConfigs, err := DefaultAuthHelper.GetAllAuthConfigs()
 	if err != nil {
-		return "", errors.Wrap(err, "read auth configs")
+		return errors.Wrap(err, "read auth configs")
 	}
 
 	imageBuildOpts := types.ImageBuildOptions{
+		Tags:        []string{opts.ImageName},
 		Dockerfile:  opts.Dockerfile,
 		BuildArgs:   opts.BuildArgs,
 		AuthConfigs: authConfigs,
@@ -76,32 +75,16 @@ func RunBuild(ctx context.Context, cli DockerAPIClient, opts *BuildOptions) (str
 
 	resp, err := cli.ImageBuild(ctx, body, imageBuildOpts)
 	if err != nil {
-		return "", errors.Wrap(err, "docker build")
+		return errors.Wrap(err, "docker build")
 	}
 	defer resp.Body.Close()
-
-	imageID := ""
-	aux := func(auxJSON *json.RawMessage) {
-		var result types.BuildResult
-		if err := json.Unmarshal(*auxJSON, &result); err != nil {
-			logrus.Errorln("Failed to parse aux message:", err)
-		} else {
-			imageID = result.ID
-		}
-	}
-
-	err = StreamDockerMessages(opts.BuildBuf, resp.Body, aux)
-	if err != nil {
-		return "", errors.Wrap(err, "streaming messages")
-	}
-
-	return imageID, nil
+	return streamDockerMessages(opts.BuildBuf, resp.Body)
 }
 
-// StreamDockerMessages prints docker messages to the console.
-func StreamDockerMessages(dst io.Writer, src io.Reader, auxCallback func(*json.RawMessage)) error {
-	fd, isTerminal := term.GetFdInfo(dst)
-	return jsonmessage.DisplayJSONMessagesStream(src, dst, fd, isTerminal, auxCallback)
+// TODO(@r2d4): Make this output much better, this is the bare minimum
+func streamDockerMessages(dst io.Writer, src io.Reader) error {
+	fd, _ := term.GetFdInfo(dst)
+	return jsonmessage.DisplayJSONMessagesStream(src, dst, fd, false, nil)
 }
 
 func RunPush(ctx context.Context, cli DockerAPIClient, ref string, out io.Writer) error {
@@ -116,8 +99,7 @@ func RunPush(ctx context.Context, cli DockerAPIClient, ref string, out io.Writer
 		return errors.Wrap(err, "pushing image to repository")
 	}
 	defer rc.Close()
-
-	return StreamDockerMessages(out, rc, nil)
+	return streamDockerMessages(out, rc)
 }
 
 func AddTag(src, target string) error {
@@ -160,11 +142,6 @@ func addTag(ref name.Reference, targetRef name.Reference, auth authn.Authenticat
 // The digest is of the form
 // sha256:<image_id>
 func Digest(ctx context.Context, cli DockerAPIClient, ref string) (string, error) {
-	if strings.HasPrefix(ref, "sha256:") {
-		parts := strings.Split(ref, ":")
-		return fmt.Sprintf("%s:%s", parts[0], parts[1]), nil
-	}
-
 	args := filters.KeyValuePair{Key: "reference", Value: ref}
 	filters := filters.NewArgs(args)
 	imageList, err := cli.ImageList(ctx, types.ImageListOptions{

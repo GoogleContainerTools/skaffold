@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -91,9 +92,11 @@ func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagg
 
 		digest, err := docker.Digest(ctx, l.api, initialTag)
 		if err != nil {
-			return nil, errors.Wrap(err, "finding digest")
+			return nil, errors.Wrapf(err, "build and tag: %s", initialTag)
 		}
-
+		if digest == "" {
+			return nil, fmt.Errorf("digest not found")
+		}
 		tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.TagOptions{
 			ImageName: artifact.ImageName,
 			Digest:    digest,
@@ -101,8 +104,7 @@ func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagg
 		if err != nil {
 			return nil, errors.Wrap(err, "generating tag")
 		}
-
-		if err := l.api.ImageTag(ctx, digest, tag); err != nil {
+		if err := l.api.ImageTag(ctx, initialTag, tag); err != nil {
 			return nil, errors.Wrap(err, "tagging image")
 		}
 		if _, err := io.WriteString(out, fmt.Sprintf("Successfully tagged %s\n", tag)); err != nil {
@@ -124,9 +126,10 @@ func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagg
 	return res, nil
 }
 
-// buildDocker return the imageID (sha256 digest) of the built image.
 func (l *LocalBuilder) buildDocker(ctx context.Context, out io.Writer, a *v1alpha2.Artifact) (string, error) {
-	imageID, err := docker.RunBuild(ctx, l.api, &docker.BuildOptions{
+	initialTag := util.RandomID()
+	err := docker.RunBuild(ctx, l.api, &docker.BuildOptions{
+		ImageName:   initialTag,
 		Dockerfile:  a.DockerArtifact.DockerfilePath,
 		ContextDir:  a.Workspace,
 		ProgressBuf: out,
@@ -136,6 +139,5 @@ func (l *LocalBuilder) buildDocker(ctx context.Context, out io.Writer, a *v1alph
 	if err != nil {
 		return "", errors.Wrap(err, "running build")
 	}
-
-	return imageID, nil
+	return fmt.Sprintf("%s:latest", initialTag), nil
 }
