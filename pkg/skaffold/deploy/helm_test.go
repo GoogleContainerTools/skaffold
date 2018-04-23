@@ -139,8 +139,8 @@ func TestHelmDeploy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
+			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = tt.cmd
-			defer util.ResetDefaultExecCommand()
 
 			_, err := tt.deployer.Deploy(context.Background(), &bytes.Buffer{}, tt.buildResult)
 			testutil.CheckError(t, tt.shouldErr, err)

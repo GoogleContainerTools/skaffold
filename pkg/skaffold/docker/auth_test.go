@@ -23,11 +23,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/docker/api/types"
-	"github.com/spf13/afero"
 )
 
 const dockerCfg = `{
@@ -54,21 +52,24 @@ const dockerCfg = `{
 }`
 
 func TestLoad(t *testing.T) {
-	util.Fs = afero.NewMemMapFs()
+	tempDir, cleanup := testutil.TempDir(t)
+	defer cleanup()
 
-	configDir, _ = ioutil.TempDir("", "")
-	defer func() {
-		util.ResetFs()
-		util.Fs.RemoveAll(configDir)
-	}()
-	_ = afero.WriteFile(util.Fs, filepath.Join(configDir, config.ConfigFileName), []byte(dockerCfg), 0650)
+	defer func(d string) { configDir = d }(configDir)
+	configDir = tempDir
+
+	ioutil.WriteFile(filepath.Join(configDir, config.ConfigFileName), []byte(dockerCfg), 0650)
 
 	_, err := load()
 	if err != nil {
 		t.Errorf("Couldn't load docker config: %s", err)
 	}
+}
 
+func TestLoadNotARealPath(t *testing.T) {
+	defer func(d string) { configDir = d }(configDir)
 	configDir = "not a real path"
+
 	cf, err := load()
 	if err == nil {
 		t.Errorf("Expected error loading from bad path, but got none: %+v", cf)
@@ -97,9 +98,6 @@ func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error)
 }
 
 func TestGetEncodedRegistryAuth(t *testing.T) {
-	oldAuth := DefaultAuthHelper
-	defer func() { DefaultAuthHelper = oldAuth }()
-
 	var tests = []struct {
 		description string
 		image       string
@@ -128,7 +126,9 @@ func TestGetEncodedRegistryAuth(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			defer func(h AuthConfigHelper) { DefaultAuthHelper = h }(DefaultAuthHelper)
 			DefaultAuthHelper = test.authType
+
 			out, err := encodedRegistryAuth(context.Background(), nil, test.authType, test.image)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, out)
 		})

@@ -28,9 +28,9 @@ import (
 
 func TestMain(m *testing.M) {
 	// So we don't shell out to credentials helpers or try to read dockercfg
-	auth := DefaultAuthHelper
-	defer func() { DefaultAuthHelper = auth }()
+	defer func(h AuthConfigHelper) { DefaultAuthHelper = h }(DefaultAuthHelper)
 	DefaultAuthHelper = testAuthHelper{}
+
 	os.Exit(m.Run())
 }
 
@@ -92,7 +92,6 @@ func TestRunPush(t *testing.T) {
 }
 
 func TestRunBuild(t *testing.T) {
-
 	var tests = []testImageAPI{
 		{
 			description:  "build",
