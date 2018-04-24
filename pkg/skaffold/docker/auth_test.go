@@ -19,62 +19,11 @@ package docker
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/docker/cli/cli/config"
 	"github.com/docker/docker/api/types"
 )
-
-const dockerCfg = `{
-	"auths": {
-			"https://appengine.gcr.io": {},
-			"https://asia.gcr.io": {},
-			"https://b.gcr.io": {},
-			"https://beta.gcr.io": {},
-			"https://bucket.gcr.io": {},
-			"https://eu.gcr.io": {},
-			"https://gcr.io": {},
-			"https://gcr.kubernetes.io": {},
-			"https://us.gcr.io": {}
-	},
-	"credsStore": "gcr",
-	"credHelpers": {
-			"appengine.gcr.io": "gcr",
-			"asia.gcr.io": "gcr",
-			"eu.gcr.io": "gcr",
-			"gcr.io": "gcr",
-			"gcr.kubernetes.io": "gcr",
-			"us.gcr.io": "gcr"
-	}
-}`
-
-func TestLoad(t *testing.T) {
-	tempDir, cleanup := testutil.TempDir(t)
-	defer cleanup()
-
-	defer func(d string) { configDir = d }(configDir)
-	configDir = tempDir
-
-	ioutil.WriteFile(filepath.Join(configDir, config.ConfigFileName), []byte(dockerCfg), 0650)
-
-	_, err := load()
-	if err != nil {
-		t.Errorf("Couldn't load docker config: %s", err)
-	}
-}
-
-func TestLoadNotARealPath(t *testing.T) {
-	defer func(d string) { configDir = d }(configDir)
-	configDir = "not a real path"
-
-	cf, err := load()
-	if err == nil {
-		t.Errorf("Expected error loading from bad path, but got none: %+v", cf)
-	}
-}
 
 type testAuthHelper struct {
 	getAuthConfigErr     error

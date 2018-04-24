@@ -23,7 +23,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/config/configfile"
 	"github.com/docker/distribution/reference"
@@ -64,7 +63,7 @@ type credsHelper struct {
 }
 
 func (credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
-	cf, err := load()
+	cf, err := config.Load(configDir)
 	if err != nil {
 		return types.AuthConfig{}, errors.Wrap(err, "docker config")
 	}
@@ -72,7 +71,7 @@ func (credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
 }
 
 func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
-	cf, err := load()
+	cf, err := config.Load(configDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "docker config")
 	}
@@ -125,18 +124,4 @@ func officialRegistry(ctx context.Context, cli DockerAPIClient) string {
 	}
 
 	return serverAddress
-}
-
-func load() (*configfile.ConfigFile, error) {
-	filename := filepath.Join(configDir, config.ConfigFileName)
-	f, err := util.Fs.Open(filename)
-	if err != nil {
-		return nil, errors.Wrap(err, "opening docker config")
-	}
-	defer f.Close()
-	cf := configfile.New("")
-	if err := cf.LoadFromReader(f); err != nil {
-		return nil, errors.Wrap(err, "loading docker config file")
-	}
-	return cf, nil
 }
