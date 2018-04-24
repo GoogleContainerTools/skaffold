@@ -181,3 +181,4 @@ $ skaffold run
 
 ## Community
 - [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users)
+- [#skaffold on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/)
