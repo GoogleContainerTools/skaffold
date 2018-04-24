@@ -38,7 +38,7 @@ has already setup the Dockerfile, Kubernetes manifests, and Skaffold manifest ne
 1. Change the references in `skaffold.yaml` to point to your Container Registry.
 
     ```shell
-    sed -i s#k8s-skaffold#${GOOGLE_CLOUD_PROJECT}#g skaffold.yaml
+    sed -i -e s#k8s-skaffold#${GOOGLE_CLOUD_PROJECT}#g skaffold.yaml
     ```
 
 1. Take a look at the contents of `skaffold.yaml`. You'll notice a profile named `gcb` that will be using Google Container Builder to build
