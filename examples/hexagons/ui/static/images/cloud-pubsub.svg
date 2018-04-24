@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 18.1.1, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="512px"
+	 height="512px" viewBox="0 0 512 512" style="enable-background:new 0 0 512 512;" xml:space="preserve">
+<g id="Placement_ONLY" style="display:none;">
+</g>
+<g id="BASE">
+	<linearGradient id="SVGID_1_" gradientUnits="userSpaceOnUse" x1="256" y1="28.1348" x2="256" y2="483.1582">
+		<stop  offset="0" style="stop-color:#4387FD"/>
+		<stop  offset="1" style="stop-color:#4683EA"/>
+	</linearGradient>
+	<path style="fill:url(#SVGID_1_);" d="M111.1643,460.8668L6.1623,278.9979c-8.2164-14.2312-8.2164-31.7648,0-45.9961
+		l105.002-181.8689c8.2164-14.2313,23.401-22.9981,39.8338-22.9981h210.0038c16.4328,0,31.6174,8.7668,39.8338,22.9981
+		l105.002,181.8689c8.2164,14.2312,8.2164,31.7648,0,45.9961l-105.002,181.8689c-8.2164,14.2313-23.401,22.9981-39.8338,22.9981
+		H150.9981C134.5652,483.8649,119.3807,475.0981,111.1643,460.8668z"/>
+</g>
+<g id="shadow">
+	<g>
+		<defs>
+			<path id="SVGID_4_" d="M111.1643,460.8668L6.1623,278.9979c-8.2164-14.2312-8.2164-31.7648,0-45.9961l105.002-181.8689
+				c8.2164-14.2313,23.401-22.9981,39.8338-22.9981h210.0038c16.4328,0,31.6174,8.7668,39.8338,22.9981l105.002,181.8689
+				c8.2164,14.2312,8.2164,31.7648,0,45.9961l-105.002,181.8689c-8.2164,14.2313-23.401,22.9981-39.8338,22.9981H150.9981
+				C134.5652,483.8649,119.3807,475.0981,111.1643,460.8668z"/>
+		</defs>
+		<clipPath id="SVGID_2_">
+			<use xlink:href="#SVGID_4_"  style="overflow:visible;"/>
+		</clipPath>
+		<polygon style="opacity:0.07;clip-path:url(#SVGID_2_);" points="484.2155,318.3232 356.8717,190.9793 333.4394,195.8419 
+			275.0288,137.4313 256.3378,172.3883 246.1996,212.8246 263.3557,229.9807 230.4045,236.7128 185.2186,191.5269 
+			154.5409,221.0221 211.0341,277.5156 151.1543,325.1133 311.9257,485.8847 390.25,485.125 		"/>
+	</g>
+</g>
+<g id="art">
+	<g>
+		<circle style="fill:#FFFFFF;" cx="342.0781" cy="206.3028" r="21.2953"/>
+		<circle style="fill:#FFFFFF;" cx="169.9219" cy="206.3028" r="21.2953"/>
+		<circle style="fill:#FFFFFF;" cx="256" cy="355.3945" r="21.2988"/>
+		<defs>
+			
+				<filter id="Adobe_OpacityMaskFilter" filterUnits="userSpaceOnUse" x="165.0062" y="156.6055" width="181.9876" height="157.6059">
+				<feFlood  style="flood-color:white;flood-opacity:1" result="back"/>
+				<feBlend  in="SourceGraphic" in2="back" mode="normal"/>
+			</filter>
+		</defs>
+		<mask maskUnits="userSpaceOnUse" x="165.0062" y="156.6055" width="181.9876" height="157.6059" id="SVGID_3_">
+			<g style="filter:url(#Adobe_OpacityMaskFilter);">
+				<circle cx="256" cy="256" r="44.2411"/>
+			</g>
+		</mask>
+		<g style="mask:url(#SVGID_3_);">
+			<g>
+				
+					<rect x="249.3418" y="271.0173" transform="matrix(0.866 0.5 -0.5 0.866 180.488 -111.893)" style="fill:#FFFFFF;" width="99.3945" height="19.6627"/>
+			</g>
+			<g>
+				
+					<rect x="163.2637" y="271.0172" transform="matrix(-0.866 0.5 -0.5 -0.866 537.8148 417.5901)" style="fill:#FFFFFF;" width="99.3945" height="19.6627"/>
+			</g>
+			<g>
+				<rect x="246.1686" y="156.6055" style="fill:#FFFFFF;" width="19.6627" height="99.3945"/>
+			</g>
+		</g>
+		<circle style="fill:#FFFFFF;" cx="256" cy="256" r="34.4098"/>
+		<circle style="fill:#FFFFFF;" cx="169.9219" cy="305.6972" r="27.0317"/>
+		<circle style="fill:#FFFFFF;" cx="342.0781" cy="305.6972" r="27.0317"/>
+		<circle style="fill:#FFFFFF;" cx="256" cy="156.6055" r="27.0362"/>
+	</g>
+</g>
+<g id="Guides">
+</g>
+</svg>

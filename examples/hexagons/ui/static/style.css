@@ -1,0 +1,94 @@
+body, html {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background-color: rgb(70, 70, 70);
+  color: white;
+  font-family: Arial, Helvetica, sans-serif
+}
+
+.quizz {
+  text-align: center;
+}
+
+a {
+  color: white;
+}
+
+.title {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-size: 1.4rem;
+}
+
+.nav {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 1.4rem;
+}
+
+.nav-link {
+  padding: 0 5px;
+}
+
+.question {
+  margin-top: 110px;
+}
+
+.question h2 {
+  font-size: 2rem;
+}
+
+.question h3 {
+  font-size: 3rem;
+  margin-top: 0;
+}
+
+.choices {
+  display: flex;
+  width: 80%;
+  margin: 0 auto;
+}
+
+.hexagon {
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hexagon img {
+  width: 100%;
+  height: 100%;
+}
+
+.or {
+  position: relative;
+  width: 120px;
+  min-width: 120px;
+  font-size: 2rem;
+  display: flex;
+  justify-content: center;
+  padding-top: 50px;
+}
+
+.correct {
+  color: green;
+}
+
+.wrong {
+  color: red;
+}
+
+.result {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+}
+
+.result a {
+  font-size: 1.2rem;
+}

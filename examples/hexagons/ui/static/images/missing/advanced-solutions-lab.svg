@@ -1,0 +1,23 @@
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Advanced Solutions Lab</title>
+  <g>
+    <path d="M126.47,58.12l-26.3-45.74A11.56,11.56,0,0,0,90.31,6.5H37.7a11.55,11.55,0,0,0-9.86,5.88L1.53,58a11.48,11.48,0,0,0,0,11.44l26.3,46a11.77,11.77,0,0,0,9.86,6.09H90.3a11.73,11.73,0,0,0,9.87-6.06l26.3-45.74A11.73,11.73,0,0,0,126.47,58.12Z" style="fill: #4285f4"/>
+    <path d="M95.42,43.51l-2.28,2L75.53,35.54l-8.38-8.38L32.92,49.27l1.94,1.94-.41,25-1.52,5.9L72.28,121.5h18a11.73,11.73,0,0,0,9.87-6.06L124.7,72.78Z" style="opacity: 0.070000000298023;isolation: isolate"/>
+    <circle cx="64.28" cy="30.06" r="4.08" style="fill: #fff"/>
+    <circle cx="92.54" cy="46.4" r="4.08" style="fill: #fff"/>
+    <circle cx="35.82" cy="46.4" r="4.08" style="fill: #fff"/>
+    <circle cx="64.28" cy="63.94" r="6.41" style="fill: #fff"/>
+    <circle cx="92.54" cy="79.27" r="4.08" style="fill: #fff"/>
+    <circle cx="35.82" cy="79.27" r="4.08" style="fill: #fff"/>
+    <path d="M64.14,65.33,32.62,46.42,64.14,28.19l31.5,17.88ZM38.45,46.47l25.68,15.4,25.69-15.7L64.16,31.6Z" style="fill: #fff"/>
+    <path d="M64.15,100.29,32.53,79.08,64.24,61.52,95.4,79.27Zm-26-21,26,17.41L89.79,79.48,64.22,64.91Z" style="fill: #fff"/>
+    <rect x="48.18" y="42.61" width="2.96" height="59.34" transform="translate(-28.68 32.87) rotate(-28.8)" style="fill: #fff"/>
+    <rect x="48.84" y="71.25" width="58.9" height="2.96" transform="translate(-22.86 107.18) rotate(-61.7)" style="fill: #fff"/>
+    <rect x="21.61" y="53.12" width="56.44" height="2.96" transform="translate(-22.37 70.46) rotate(-60)" style="fill: #fff"/>
+    <rect x="77.01" y="26.15" width="2.96" height="57.16" transform="translate(-16.8 46.06) rotate(-29.69)" style="fill: #fff"/>
+    <rect x="62.81" y="29.64" width="2.96" height="68.6" style="fill: #fff"/>
+    <rect x="33.82" y="46.74" width="2.96" height="33.1" style="fill: #fff"/>
+    <rect x="91.05" y="46.39" width="2.96" height="33.1" style="fill: #fff"/>
+    <circle cx="64.28" cy="98.37" r="4.08" style="fill: #fff"/>
+  </g>
+</svg>

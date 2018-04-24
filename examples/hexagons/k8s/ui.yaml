@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ui
+spec:
+  ports:
+  - port: 8080
+    targetPort: 80
+    name: http
+  type: LoadBalancer
+  selector:
+    app: hexagons
+    tier: ui
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: ui
+  annotations:
+    sidecar.istio.io/inject: "false"
+spec:
+  selector:
+    matchLabels:
+      app: hexagons
+      tier: ui
+  template:
+    metadata:
+      labels:
+        app: hexagons
+        tier: ui
+    spec:
+      containers:
+      - name: ui
+        image: dgageot/hexagons-ui
+      - name: api
+        image: dgageot/hexagons-api

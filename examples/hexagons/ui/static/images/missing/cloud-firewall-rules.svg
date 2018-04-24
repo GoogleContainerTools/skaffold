@@ -1,0 +1,23 @@
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Cloud Firewall Rules</title>
+  <g>
+    <path d="M126.47,58.12l-26.3-45.74A11.56,11.56,0,0,0,90.31,6.5H37.7a11.55,11.55,0,0,0-9.86,5.88L1.53,58a11.48,11.48,0,0,0,0,11.44l26.3,46a11.77,11.77,0,0,0,9.86,6.09H90.3a11.73,11.73,0,0,0,9.87-6.06l26.3-45.74A11.73,11.73,0,0,0,126.47,58.12Z" style="fill: #4285f4"/>
+    <path d="M89,39,66.76,44.57,61.2,39,39,44.57l5.65,5.65L39,55.67l6.07,6.07-6.07,5,6.35,6.35L39,77.89l6.38,6.38L39,89,71.5,121.5H90.3a11.73,11.73,0,0,0,9.87-6.06L124,74Z" style="opacity: 0.070000000298023;isolation: isolate"/>
+    <g id="art">
+      <g>
+        <rect x="38.99" y="39.01" width="22.21" height="5.56" style="fill: #fff"/>
+        <rect x="38.99" y="83.43" width="22.21" height="5.56" style="fill: #fff"/>
+        <rect x="38.99" y="61.22" width="22.21" height="5.56" style="fill: #fff"/>
+        <rect x="66.76" y="39.01" width="22.21" height="5.56" style="fill: #fff"/>
+        <rect x="66.76" y="83.43" width="22.21" height="5.56" style="fill: #fff"/>
+        <rect x="66.76" y="61.22" width="22.21" height="5.56" style="fill: #fff"/>
+        <rect x="52.87" y="50.11" width="22.21" height="5.56" style="fill: #fff"/>
+        <rect x="52.87" y="72.33" width="22.21" height="5.56" style="fill: #fff"/>
+        <rect x="38.99" y="50.11" width="8.33" height="5.56" style="fill: #fff"/>
+        <rect x="38.99" y="72.33" width="8.33" height="5.56" style="fill: #fff"/>
+        <rect x="80.64" y="50.11" width="8.33" height="5.56" style="fill: #fff"/>
+        <rect x="80.64" y="72.33" width="8.33" height="5.56" style="fill: #fff"/>
+      </g>
+    </g>
+  </g>
+</svg>

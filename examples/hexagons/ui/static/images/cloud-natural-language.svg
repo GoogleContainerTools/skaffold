@@ -1,0 +1,14 @@
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Cloud Natural Language API</title>
+  <g>
+    <path d="M126.47,58.12l-26.3-45.74A11.56,11.56,0,0,0,90.31,6.5H37.7a11.55,11.55,0,0,0-9.86,5.88L1.53,58a11.48,11.48,0,0,0,0,11.44l26.3,46a11.77,11.77,0,0,0,9.86,6.09H90.3a11.73,11.73,0,0,0,9.87-6.06l26.3-45.74A11.73,11.73,0,0,0,126.47,58.12Z" style="fill: #4285f4"/>
+    <path d="M127.44,67.44,94,34,92.14,58.14,79,45,62.67,49.67,47,34l-7,7V71.33L34,94l27.5,27.5H90.3a11.73,11.73,0,0,0,9.87-6.06l26.3-45.74A11.23,11.23,0,0,0,127.44,67.44Z" style="opacity: 0.070000000298023;isolation: isolate"/>
+    <rect x="49" y="75" width="30" height="8" style="fill: #fff"/>
+    <rect x="49" y="60" width="30" height="8" style="fill: #fff"/>
+    <rect x="49" y="45" width="30" height="8" style="fill: #fff"/>
+    <g>
+      <polygon points="86 34 81 34 81 42 86 42 86 86 81 86 81 94 86 94 94 94 94 86 94 42 94 34 86 34" style="fill: #fff"/>
+      <polygon points="34 34 34 42 34 86 34 94 42 94 47 94 47 86 42 86 42 42 47 42 47 34 42 34 34 34" style="fill: #fff"/>
+    </g>
+  </g>
+</svg>

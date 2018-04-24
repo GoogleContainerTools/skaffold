@@ -1,0 +1,15 @@
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Virtual Private Cloud</title>
+  <g>
+    <path d="M126.47,58.12l-26.3-45.74A11.56,11.56,0,0,0,90.31,6.5H37.7a11.55,11.55,0,0,0-9.86,5.88L1.53,58a11.48,11.48,0,0,0,0,11.44l26.3,46a11.77,11.77,0,0,0,9.86,6.09H90.3a11.73,11.73,0,0,0,9.87-6.06l26.3-45.74A11.73,11.73,0,0,0,126.47,58.12Z" style="fill: #4285f4"/>
+    <path d="M87.64,40.3,66.73,50.35l-10-10L40.39,56.77,51.27,67.65l-10.9,20L74.25,121.5H90.3a11.73,11.73,0,0,0,9.87-6.06L123,75.69Z" style="opacity: 0.070000000298023;isolation: isolate"/>
+    <rect x="47" y="54.5" width="5" height="19.5" style="fill: #fff"/>
+    <rect x="76" y="52.13" width="5" height="21.82" style="fill: #fff"/>
+    <rect x="54.38" y="47" width="19.25" height="5" style="fill: #fff"/>
+    <rect x="54.38" y="76" width="19.25" height="5" style="fill: #fff"/>
+    <rect x="40" y="40" width="17" height="17" rx="1" ry="1" style="fill: #fff"/>
+    <rect x="71" y="40" width="17" height="17" rx="1" ry="1" style="fill: #fff"/>
+    <rect x="40" y="71" width="17" height="17" rx="1" ry="1" style="fill: #fff"/>
+    <rect x="71" y="71" width="17" height="17" rx="1" ry="1" style="fill: #fff"/>
+  </g>
+</svg>

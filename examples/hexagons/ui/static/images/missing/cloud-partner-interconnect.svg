@@ -1,0 +1,14 @@
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Cloud Partner Interconnect</title>
+  <g>
+    <path d="M126.47,58.12l-26.3-45.74A11.56,11.56,0,0,0,90.31,6.5H37.7a11.55,11.55,0,0,0-9.86,5.88L1.53,58a11.48,11.48,0,0,0,0,11.44l26.3,46a11.77,11.77,0,0,0,9.86,6.09H90.3a11.73,11.73,0,0,0,9.87-6.06l26.3-45.74A11.73,11.73,0,0,0,126.47,58.12Z" style="fill: #4285f4"/>
+    <path d="M88.21,39.32,57.5,45,70.75,58.25l-.16,2.41-8.34-8.34L27.5,67,82,121.5h8.3a11.73,11.73,0,0,0,9.87-6.06L123.59,74.7Z" style="opacity: 0.070000000298023;isolation: isolate"/>
+    <rect x="87" y="61" width="13.5" height="6" style="fill: #fff"/>
+    <rect x="82.5" y="45" width="6" height="38" style="fill: #fff"/>
+    <rect x="27.5" y="61" width="12" height="6" style="fill: #fff"/>
+    <path d="M58.54,39H87.46a1,1,0,0,1,1,1h0v5h-31V40A1,1,0,0,1,58.54,39Z" style="fill: #fff"/>
+    <path d="M57.5,83h31v5a1,1,0,0,1-1,1H58.54a1,1,0,0,1-1-1h0Z" style="fill: #fff"/>
+    <rect x="38.5" y="52" width="24" height="24" rx="0.89" ry="0.89" style="fill: #fff"/>
+    <path d="M75.5,52.89V75.11a.83.83,0,0,1-.76.89H70.26a.83.83,0,0,1-.76-.89V52.89a.83.83,0,0,1,.76-.89h4.47A.83.83,0,0,1,75.5,52.89Z" style="fill: #fff"/>
+  </g>
+</svg>

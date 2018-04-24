@@ -1,0 +1,39 @@
+<div class="question">
+    <h2>
+        <span ng-if="flavor == 1">Find the logo for</span>
+        <span ng-if="flavor == 2">It's</span>
+    </h2>
+
+    <h3>
+        <span ng-if="flavor == 1">{{guess.name}}</span>
+        <span ng-if="flavor == 2">{{guess.description}}</span>
+    </h3>
+</div>
+
+<div class="choices">
+    <div class="hexagon">
+        <a href="#" ng-click="playLeft()">
+            <img src="/images/{{candidate1.image}}" alt="{{candidate1.name}}">
+        </a>
+        <h3><span ng-if="playAgain">{{candidate1.name}}</span></h3>
+    </div>
+
+    <div class="or">
+        <span>Is it?<br/>or</span>
+
+        <div class="result">
+            <div ng-if="correct" class="correct">Correct!</div>
+            <div ng-if="wrong" class="wrong">Wrong</div>
+            <a ng-if="playAgain" ng-click="play()" href="/">Play again</a>
+        </div>
+    </div>
+
+    <div class="hexagon">
+        <a href="#" ng-click="playRight()">
+            <img src="/images/{{candidate2.image}}" alt="{{candidate2.name}}">
+        </a>
+        <h3><span ng-if="playAgain">{{candidate2.name}}</span></h3>
+    </div>
+</div>
+
+

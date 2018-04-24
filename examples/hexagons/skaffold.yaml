@@ -1,0 +1,16 @@
+apiVersion: skaffold/v1alpha2
+kind: Config
+
+build:
+  artifacts:
+  - imageName: dgageot/hexagons-ui
+    workspace: ./ui
+  - imageName: dgageot/hexagons-api
+    workspace: ./api
+  - imageName: dgageot/hexagons-db
+    workspace: ./db
+
+deploy:
+  kubectl:
+    manifests:
+      - k8s/*.yaml

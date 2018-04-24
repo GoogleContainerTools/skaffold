@@ -1,0 +1,326 @@
+<h1>Skaffold</h1>
+<h2>Easy and Repeatable<br/>Kubernetes Development</h2>
+
+<div class="logos">
+    <img class="k8s" src="/images/kubernetes.png">
+    <img class="gcp" src="/images/gcp.png">
+</div>
+
+---
+
+<h1>Open-Source</h1>
+<h2>
+    <a href="https://github.com/GoogleContainerTools/skaffold">
+        GoogleContainerTools/skaffold
+    </a>
+</h2>
+<img src="/images/github.png">
+
+---
+
+<h1>What's Skaffold?</h1>
+<h2></h2>
+
+---
+
+<h1>What's Skaffold?</h1>
+<h2></h2>
+
+<h2>
+    Local development and CI/CD for<br/><em>Kubernetes</em>
+</h2>
+
+---
+
+<h1>What's Skaffold?</h1>
+<h2></h2>
+
+<h2>
+    Local development and CI/CD for<br/><em>Kubernetes</em>
+</h2>
+
+<h2>
+    <em>Iterate locally</em><br/>then <em>deploy</em> to remote cluster
+</h2>
+
+---
+
+<h1>What's Skaffold?</h1>
+<h2></h2>
+
+<h2>
+    Local development and CI/CD for<br/><em>Kubernetes</em>
+</h2>
+
+<h2>
+    <em>Iterate locally</em><br/>then <em>deploy</em> to remote cluster
+</h2>
+
+<h2>
+    <em>Pluggability</em> lets you use<br/>the best tooling available</h2>
+</h2>
+
+---
+
+<h1>Supported Tools/APIs</h1>
+
+<table>
+    <tr>
+        <th>Build (Local)</th>
+        <th>Build (Remote)</th>
+        <th>Tag</th>
+        <th>Deploy</th>
+    </tr>
+    <tr>
+        <td>Docker</td>
+        <td>GCB</td>
+        <td>git</td>
+        <td>kubectl</td>
+    </tr>
+    <tr>
+        <td>Docker for Desktop</td>
+        <td>Kaniko</td>
+        <td>checksum</td>
+        <td>helm</td>
+    </tr>
+    <tr>
+        <td>Minikube</td>
+        <td></td>
+        <td>custom</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Bazel</td>
+        <td></td>
+        <td></td>
+        <td></td>
+    </tr>
+</table>
+
+---
+
+<h1>Want a Demo?</h1>
+<h2>Let's start simple</h2>
+<br/>
+
+---
+
+<h1>Want a Demo?</h1>
+<h2>Let's start simple</h2>
+<br/>
+
+<h2>A <em>single</em> pod</h2>
+
+---
+
+<h1>Want a Demo?</h1>
+<h2>Let's start simple</h2>
+<br/>
+
+<h2>A <em>single</em> pod</h2>
+<h2>Prints <em>Hello world!</em> every second</h2>
+
+---
+
+<h1>Want a Demo?</h1>
+<h2>Let's start simple</h2>
+<br/>
+
+<h2>A <em>single</em> pod</h2>
+<h2>Prints <em>Hello world!</em> every second</h2>
+<h2><em>Automatically</em> redeployed on code change</h2>
+
+---
+
+<h1>The code</h1>
+<h2>Built with docker build</h2>
+
+<div class="split">
+    <source-code folder="getting-started/{{ .WorkingDir }}"
+        files="main.go Dockerfile"
+        start-lines="10"
+        end-lines="10">
+    </source-code>
+</div>
+
+---
+
+<h1>A project descriptor</h1>
+<h2>Describes build and deploy</h2>
+
+<div class="split">
+    <source-code folder="getting-started/{{ .WorkingDir }}"
+        files="skaffold.yaml"
+        start-lines="5,9"
+        end-lines="6,11">
+    </source-code>
+</div>
+
+---
+
+<h1>The usual Kubernetes Yaml</h1>
+<h2>Uses the image without a tag</h2>
+
+<div class="split">
+    <source-code folder="getting-started/{{ .WorkingDir }}"
+        files="k8s-pod.yaml"
+        start-lines="8"
+        end-lines="8">
+    </source-code>
+</div>
+
+---
+
+<h1>Edit -> Build -> Deploy</h1>
+
+<div class="split">
+    <div id="shells">
+        <a id="addtab" onclick="addTab();" href="#">+</a>
+        <web-term path="getting-started"></web-term>
+    </div>
+</div>
+
+<script>
+function addTab() {
+    const term = document.createElement("web-term");
+    term.setAttribute("path", "getting-started");
+    document.getElementById("shells").appendChild(term);
+}
+</script>
+
+<style>
+.split {
+    display: flex;
+    height: calc(100% - 150px);
+}
+</style>
+
+---
+
+<img src="/images/tim-and-eric-mind-blown.gif">
+
+---
+
+<h1>Now, let's deploy it</h1>
+
+---
+
+<h1>Now, let's deploy it</h1>
+<h2>To a <em>remote</em> GKE cluster</h2>
+
+---
+
+<h1>Now, let's deploy it</h1>
+<h2>To a <em>remote</em> GKE cluster</h2>
+<h2>After it's built with <em>Google Container Builder</em></h2>
+
+---
+
+<h1>Now, let's deploy it</h1>
+<h2>To a <em>remote</em> GKE cluster</h2>
+<h2>After it's built with <em>Google Container Builder</em></h2>
+<h2>Using skaffold <em>profiles</em></h2>
+
+---
+
+<h1>Deploy on GKE</h1>
+
+<div class="split">
+    <div id="shells">
+        <a id="addtab" onclick="addTab();" href="#">+</a>
+        <web-term path="getting-started"></web-term>
+    </div>
+</div>
+
+<script>
+function addTab() {
+    const term = document.createElement("web-term");
+    term.setAttribute("path", "getting-started");
+    document.getElementById("shells").appendChild(term);
+}
+</script>
+
+<style>
+.split {
+    display: flex;
+    height: calc(100% - 150px);
+}
+</style>
+
+---
+
+<h1>And Now for something<br/>completely different</h1>
+
+---
+
+<h1>A micro-services based application</h1>
+
+---
+
+<h1>A micro-services based application</h1>
+<h2><em>nginx</em> front</h2>
+
+---
+
+<h1>A micro-services based application</h1>
+<h2><em>nginx</em> front</h2>
+<h2><em>golang</em> back</h2>
+
+---
+
+<h1>A micro-services based application</h1>
+<h2><em>nginx</em> front</h2>
+<h2><em>golang</em> back</h2>
+<h2><em>postgres</em> database</h2>
+
+---
+
+<h1>Project descriptor</h1>
+
+<div class="split">
+    <source-code folder="hexagons/{{ .WorkingDir }}"
+        files="skaffold.yaml"
+        start-lines="6,8,10"
+        end-lines="6,8,10">
+    </source-code>
+</div>
+
+---
+
+<h1>GCP Hexagons!</h1>
+
+<div class="split">
+    <div id="shells">
+        <a id="addtab" onclick="addTab();" href="#">+</a>
+        <web-term path="hexagons"></web-term>
+    </div>
+    <web-browser src="http://localhost:8080/"></web-browser>
+</div>
+
+<script>
+function addTab() {
+    const term = document.createElement("web-term");
+    term.setAttribute("path", "hexagons");
+    document.getElementById("shells").appendChild(term);
+}
+</script>
+
+<style>
+.split {
+    display: flex;
+    height: calc(100% - 150px);
+}
+</style>
+
+---
+
+<h1>There's even more to it</h1>
+<h2>Ask the experts on the booth!</h2>
+<br/>
+
+<h1>Give it a try!</h1>
+<h2>
+    <a href="https://github.com/GoogleContainerTools/skaffold">
+        GoogleContainerTools/skaffold
+    </a>
+</h2>
