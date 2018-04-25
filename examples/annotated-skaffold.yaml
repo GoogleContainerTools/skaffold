@@ -26,9 +26,12 @@ build:
     # The name of the image we're going to build, the full reference to the built
     # image will be available later in the the deploy section
   - imageName: gcr.io/k8s-skaffold/skaffold-example
-    # dockerfilePath is the path to the Dockerfile. Defaults to "Dockerfile"
     # workspace is the path to your dockerfile context. Defaults to ".""
     workspace: ../examples/getting-started
+    # docker: {} # Use this for custom Docker configuration
+    docker: {}
+      # Dockerfile location relative to workspace. Defaults to "Dockerfile"
+      # dockerfilePath: Dockerfile
 
   # This next section is where you'll put your specific builder configuration.
   # Here, we're using a local builder, which simply builds using the host docker
