@@ -97,6 +97,8 @@ You will need the following components to get started with Skaffold:
     cd examples/getting-started
     ```
 
+1. In the skaffold.yaml file, update the `build.artifacts.imageName` stanza to the `<registry/image:tag>` registry where your image will be pushed. For example `gcr.io/<your-project-ID>/your-image`, where `gcr.io/<your-project-ID>` is your GCP container registry location. As mentioned earlier, your docker client should be configured to push to this location.
+
 1. Run `skaffold dev`.
 
     ```console
