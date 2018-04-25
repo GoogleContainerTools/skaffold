@@ -26,7 +26,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
 
@@ -68,13 +67,14 @@ func StrSliceContains(sl []string, s string) bool {
 // ExpandPathsGlob expands paths according to filepath.Glob patterns
 // Returns a list of unique files that match the glob patterns passed in.
 func ExpandPathsGlob(paths []string) ([]string, error) {
-	expandedPaths := map[string]struct{}{}
+	expandedPaths := make(map[string]bool)
 	for _, p := range paths {
 		if _, err := Fs.Stat(p); err == nil {
 			// This is a file reference, so just add it
-			expandedPaths[p] = struct{}{}
+			expandedPaths[p] = true
 			continue
 		}
+
 		files, err := afero.Glob(Fs, p)
 		if err != nil {
 			return nil, errors.Wrap(err, "glob")
@@ -84,46 +84,25 @@ func ExpandPathsGlob(paths []string) ([]string, error) {
 		}
 
 		for _, f := range files {
-			fi, err := Fs.Stat(f)
+			err := afero.Walk(Fs, f, func(path string, info os.FileInfo, err error) error {
+				if !info.IsDir() {
+					expandedPaths[path] = true
+				}
+
+				return nil
+			})
 			if err != nil {
-				return nil, err
-			}
-			if err := addFileOrDir(Fs, f, fi, expandedPaths); err != nil {
-				return nil, errors.Wrap(err, "adding file or dir")
+				return nil, errors.Wrap(err, "filepath walk")
 			}
 		}
 	}
-	ret := []string{}
+
+	var ret []string
 	for k := range expandedPaths {
 		ret = append(ret, k)
 	}
 	sort.Strings(ret)
 	return ret, nil
-}
-
-func addFileOrDir(fs afero.Fs, ref string, info os.FileInfo, expandedPaths map[string]struct{}) error {
-	if info.IsDir() {
-		return addDir(fs, ref, expandedPaths)
-	}
-	expandedPaths[ref] = struct{}{}
-	return nil
-}
-
-func addDir(fs afero.Fs, dir string, expandedPaths map[string]struct{}) error {
-	logrus.Debugf("Recursively adding %s", dir)
-	if err := afero.Walk(fs, dir, func(path string, info os.FileInfo, err error) error {
-		if info == nil {
-			return nil
-		}
-		if info.IsDir() {
-			return nil
-		}
-		expandedPaths[path] = struct{}{}
-		return nil
-	}); err != nil {
-		return errors.Wrap(err, "filepath walk")
-	}
-	return nil
 }
 
 // BoolPtr returns a pointer to a bool
