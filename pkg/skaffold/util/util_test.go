@@ -17,7 +17,6 @@ limitations under the License.
 package util
 
 import (
-	"sort"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -58,66 +57,6 @@ func TestSupportedKubernetesFormats(t *testing.T) {
 			if tt.out != actual {
 				t.Errorf("out: %t, actual: %t", tt.out, actual)
 			}
-		})
-	}
-}
-
-func TestExpandDeps(t *testing.T) {
-	var tests = []struct {
-		description string
-		in          []string
-		out         []string
-		shouldErr   bool
-	}{
-		{
-			description: "add single files",
-			in:          []string{"test/a", "test/b", "test/c"},
-			out:         []string{"test/a", "test/b", "test/c"},
-		},
-		{
-			description: "add directory",
-			in:          []string{"test"},
-			out:         []string{"test/a", "test/b", "test/c"},
-		},
-		{
-			description: "add directory trailing slash",
-			in:          []string{"test/"},
-			out:         []string{"test/a", "test/b", "test/c"},
-		},
-		{
-			description: "file not exist",
-			in:          []string{"test/d"},
-			shouldErr:   true,
-		},
-		{
-			description: "add wildcard star",
-			in:          []string{"*"},
-			out:         []string{"test/a", "test/b", "test/c"},
-		},
-		{
-			description: "add wildcard any character",
-			in:          []string{"test/?"},
-			out:         []string{"test/a", "test/b", "test/c"},
-		},
-	}
-
-	defer func(fs afero.Fs) { Fs = fs }(Fs)
-	Fs = afero.NewMemMapFs()
-
-	Fs.MkdirAll("test", 0755)
-	files := []string{"test/a", "test/b", "test/c"}
-	for _, name := range files {
-		afero.WriteFile(Fs, name, []byte(""), 0644)
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			actual, err := ExpandPaths(".", test.in)
-			// Sort both slices for reproducibility
-			sort.Strings(actual)
-			sort.Strings(test.out)
-
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.out, actual)
 		})
 	}
 }

@@ -18,15 +18,15 @@ package docker
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 
 	"github.com/google/go-containerregistry/v1"
-	"github.com/spf13/afero"
 )
 
 const copyDockerfile = `
@@ -159,7 +159,7 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			description: "add dependency",
 			dockerfile:  addDockerfile,
 			workspace:   "docker",
-			expected:    []string{"docker/Dockerfile", "docker/nginx.conf"},
+			expected:    []string{"Dockerfile", "nginx.conf"},
 		},
 		{
 			description: "bad read",
@@ -204,11 +204,18 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			expected:     []string{"Dockerfile", "file", "server.go", "test.conf", "worker.go"},
 		},
 		{
-			description:  "dockerignore with context in parent directory test",
+			description:  "dockerignore with non canonical workspace",
 			dockerfile:   contextDockerfile,
 			workspace:    "docker/../docker",
 			dockerIgnore: true,
-			expected:     []string{},
+			expected:     []string{"Dockerfile", "nginx.conf"},
+		},
+		{
+			description:  "dockerignore with context in parent directory",
+			dockerfile:   contextDockerfile,
+			workspace:    "docker/..",
+			dockerIgnore: true,
+			expected:     []string{"Dockerfile", "file", "server.go", "test.conf", "worker.go"},
 		},
 		{
 			description: "onbuild test",
@@ -231,24 +238,24 @@ func TestGetDockerfileDependencies(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			defer func(fs afero.Fs) { util.Fs = fs }(util.Fs)
-			util.Fs = afero.NewMemMapFs()
+			tmpDir, cleanup := testutil.TempDir(t)
+			defer cleanup()
 
-			util.Fs.MkdirAll("docker", 0750)
+			os.MkdirAll(filepath.Join(tmpDir, "docker"), 0750)
 			for _, file := range []string{"docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file"} {
-				afero.WriteFile(util.Fs, file, []byte(""), 0644)
+				ioutil.WriteFile(filepath.Join(tmpDir, file), []byte(""), 0644)
 			}
 
+			workspace := filepath.Join(tmpDir, test.workspace)
 			if !test.badReader {
-				afero.WriteFile(util.Fs, filepath.Join(test.workspace, "Dockerfile"), []byte(test.dockerfile), 0644)
+				ioutil.WriteFile(filepath.Join(workspace, "Dockerfile"), []byte(test.dockerfile), 0644)
 			}
 
 			if test.dockerIgnore {
-				afero.WriteFile(util.Fs, ".dockerignore", []byte(dockerIgnore), 0644)
-				afero.WriteFile(util.Fs, filepath.Join("docker", ".dockerignore"), []byte(dockerIgnore), 0644)
+				ioutil.WriteFile(filepath.Join(workspace, ".dockerignore"), []byte(dockerIgnore), 0644)
 			}
 
-			deps, err := GetDockerfileDependencies("Dockerfile", test.workspace)
+			deps, err := GetDockerfileDependencies("Dockerfile", workspace)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
 		})
 	}

@@ -25,12 +25,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func contextTarPaths(dockerfilePath string, context string) ([]string, error) {
-	return GetDockerfileDependencies(dockerfilePath, context)
-}
-
 func CreateDockerTarContext(w io.Writer, dockerfilePath, context string) error {
-	paths, err := contextTarPaths(dockerfilePath, context)
+	paths, err := GetDockerfileDependencies(dockerfilePath, context)
 	if err != nil {
 		return errors.Wrap(err, "getting relative tar paths")
 	}
@@ -41,7 +37,7 @@ func CreateDockerTarContext(w io.Writer, dockerfilePath, context string) error {
 }
 
 func CreateDockerTarGzContext(w io.Writer, dockerfilePath, context string) error {
-	paths, err := contextTarPaths(dockerfilePath, context)
+	paths, err := GetDockerfileDependencies(dockerfilePath, context)
 	if err != nil {
 		return errors.Wrap(err, "getting relative tar paths")
 	}

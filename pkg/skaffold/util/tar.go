@@ -31,22 +31,10 @@ func CreateTar(w io.Writer, root string, paths []string) error {
 	tw := tar.NewWriter(w)
 	defer tw.Close()
 
-	absContext, err := filepath.Abs(root)
-	if err != nil {
-		return err
-	}
 	for _, p := range paths {
-		absPath, err := filepath.Abs(p)
-		if err != nil {
-			return err
-		}
+		tarPath := filepath.ToSlash(filepath.Join(root, p))
 
-		tarPath, err := filepath.Rel(absContext, absPath)
-		if err != nil {
-			return err
-		}
-
-		if err := addFileToTar(p, filepath.ToSlash(tarPath), tw); err != nil {
+		if err := addFileToTar(tarPath, p, tw); err != nil {
 			return err
 		}
 
