@@ -45,7 +45,6 @@ var rootCmd = &cobra.Command{
 }
 
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
-
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if err := SetUpLogs(err, v); err != nil {
 			return err
@@ -90,26 +89,24 @@ func SetUpLogs(out io.Writer, level string) error {
 	return nil
 }
 
-func runSkaffold(out io.Writer, dev bool, filename string) error {
-	ctx := context.Background()
-
+func readConfiguration(filename string, dev bool) (*config.SkaffoldConfig, error) {
 	buf, err := util.ReadConfiguration(filename)
 	if err != nil {
-		return errors.Wrap(err, "read skaffold config")
+		return nil, errors.Wrap(err, "read skaffold config")
 	}
 
 	apiVersion := &config.ApiVersion{}
 	if err := yaml.Unmarshal(buf, apiVersion); err != nil {
-		return errors.Wrap(err, "parsing api version")
+		return nil, errors.Wrap(err, "parsing api version")
 	}
 
 	if apiVersion.Version != config.LatestVersion {
-		return errors.New("Config version out of date: run `skaffold fix`")
+		return nil, errors.New("Config version out of date: run `skaffold fix`")
 	}
 
 	cfg, err := config.GetConfig(buf, true, dev)
 	if err != nil {
-		return errors.Wrap(err, "parsing skaffold config")
+		return nil, errors.Wrap(err, "parsing skaffold config")
 	}
 
 	// we already ensured that the versions match in the previous block,
@@ -118,12 +115,24 @@ func runSkaffold(out io.Writer, dev bool, filename string) error {
 
 	err = latestConfig.ApplyProfiles(opts.Profiles)
 	if err != nil {
-		return errors.Wrap(err, "applying profiles")
+		return nil, errors.Wrap(err, "applying profiles")
 	}
+
+	return latestConfig, nil
+}
+
+func runSkaffold(out io.Writer, dev bool, filename string) error {
+	ctx := context.Background()
 
 	opts.Output = out
 	opts.DevMode = dev
-	r, err := runner.NewForConfig(opts, latestConfig)
+
+	config, err := readConfiguration(filename, dev)
+	if err != nil {
+		return errors.Wrap(err, "reading configuration")
+	}
+
+	r, err := runner.NewForConfig(opts, config)
 	if err != nil {
 		return errors.Wrap(err, "getting skaffold config")
 	}
