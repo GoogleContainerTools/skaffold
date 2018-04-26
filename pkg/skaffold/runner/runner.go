@@ -139,6 +139,17 @@ func newTaggerForConfig(t v1alpha2.TagPolicy) (tag.Tagger, error) {
 	return nil, fmt.Errorf("Unknown tagger for strategy %s", t)
 }
 
+// Build builds the artifacts.
+func (r *SkaffoldRunner) Build(ctx context.Context) error {
+	bRes, err := r.build(ctx, r.config.Build.Artifacts)
+
+	for _, res := range bRes.Builds {
+		fmt.Fprintf(r.opts.Output, "%s -> %s\n", res.ImageName, res.Tag)
+	}
+
+	return err
+}
+
 // Dev watches for changes and runs the skaffold build and deploy
 // pipeline until interrrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context) error {
