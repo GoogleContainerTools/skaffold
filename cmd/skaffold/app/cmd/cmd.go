@@ -121,11 +121,10 @@ func readConfiguration(filename string, dev bool) (*config.SkaffoldConfig, error
 	return latestConfig, nil
 }
 
-func runSkaffold(out io.Writer, dev bool, filename string) error {
+func runSkaffold(out io.Writer, dev bool, filename string, action func(context.Context, *runner.SkaffoldRunner) error) error {
 	ctx := context.Background()
 
 	opts.Output = out
-	opts.DevMode = dev
 
 	config, err := readConfiguration(filename, dev)
 	if err != nil {
@@ -137,7 +136,7 @@ func runSkaffold(out io.Writer, dev bool, filename string) error {
 		return errors.Wrap(err, "getting skaffold config")
 	}
 
-	if err := r.Run(ctx); err != nil {
+	if err := action(ctx, r); err != nil {
 		return errors.Wrap(err, "running skaffold steps")
 	}
 

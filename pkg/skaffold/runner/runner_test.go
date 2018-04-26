@@ -215,7 +215,7 @@ func TestNewForConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			cfg, err := NewForConfig(&config.SkaffoldOptions{DevMode: false}, test.config)
+			cfg, err := NewForConfig(&config.SkaffoldOptions{}, test.config)
 			testutil.CheckError(t, test.shouldErr, err)
 			if cfg != nil {
 				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, test.expected, cfg.Builder)
@@ -229,7 +229,6 @@ func TestRun(t *testing.T) {
 	var tests = []struct {
 		description string
 		runner      *SkaffoldRunner
-		devmode     bool
 		shouldErr   bool
 	}{
 		{
@@ -238,19 +237,15 @@ func TestRun(t *testing.T) {
 				config: &v1alpha2.SkaffoldConfig{},
 				Builder: &TestBuilder{
 					res: &build.BuildResult{},
-					err: nil,
 				},
 				kubeclient: client,
 				opts: &config.SkaffoldOptions{
-					DevMode: false,
-					Output:  &bytes.Buffer{},
+					Output: &bytes.Buffer{},
 				},
 				Tagger: &tag.ChecksumTagger{},
 				Deployer: &TestDeployer{
 					res: &deploy.Result{},
-					err: nil,
 				},
-				WatcherFactory: NewWatcherFactory(nil),
 			},
 		},
 		{
@@ -262,11 +257,9 @@ func TestRun(t *testing.T) {
 					err: fmt.Errorf(""),
 				},
 				opts: &config.SkaffoldOptions{
-					DevMode: false,
-					Output:  &bytes.Buffer{},
+					Output: &bytes.Buffer{},
 				},
-				Tagger:         &tag.ChecksumTagger{},
-				WatcherFactory: NewWatcherFactory(nil),
+				Tagger: &tag.ChecksumTagger{},
 			},
 			shouldErr: true,
 		},
@@ -286,19 +279,34 @@ func TestRun(t *testing.T) {
 					},
 				},
 				opts: &config.SkaffoldOptions{
-					DevMode: false,
-					Output:  &bytes.Buffer{},
+					Output: &bytes.Buffer{},
 				},
 				kubeclient: client,
 				Tagger:     &tag.ChecksumTagger{},
 				Builder: &TestBuilder{
 					res: &build.BuildResult{},
-					err: nil,
 				},
-				WatcherFactory: NewWatcherFactory(nil),
 			},
 			shouldErr: true,
 		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			err := test.runner.Run(context.Background())
+
+			testutil.CheckError(t, test.shouldErr, err)
+		})
+	}
+}
+
+func TestDev(t *testing.T) {
+	client, _ := fakeGetClient()
+	var tests = []struct {
+		description string
+		runner      *SkaffoldRunner
+		shouldErr   bool
+	}{
 		{
 			description: "run dev mode",
 			runner: &SkaffoldRunner{
@@ -317,8 +325,7 @@ func TestRun(t *testing.T) {
 				Deployer:       &TestDeployer{},
 				WatcherFactory: NewWatcherFactory(nil, []string{}),
 				opts: &config.SkaffoldOptions{
-					DevMode: true,
-					Output:  &bytes.Buffer{},
+					Output: &bytes.Buffer{},
 				},
 				Tagger: &tag.ChecksumTagger{},
 			},
@@ -336,8 +343,7 @@ func TestRun(t *testing.T) {
 				Tagger:         &TestTagger{},
 				WatcherFactory: NewWatcherFactory(nil, []string{}),
 				opts: &config.SkaffoldOptions{
-					DevMode: true,
-					Output:  &bytes.Buffer{},
+					Output: &bytes.Buffer{},
 				},
 			},
 		},
@@ -348,13 +354,11 @@ func TestRun(t *testing.T) {
 				kubeclient: client,
 				Builder: &TestBuilder{
 					res: &build.BuildResult{},
-					err: nil,
 				},
 				Deployer:       &TestDeployer{},
 				WatcherFactory: NewWatcherFactory(fmt.Errorf("")),
 				opts: &config.SkaffoldOptions{
-					DevMode: true,
-					Output:  &bytes.Buffer{},
+					Output: &bytes.Buffer{},
 				},
 				Tagger: &tag.ChecksumTagger{},
 			},
@@ -364,7 +368,7 @@ func TestRun(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			err := test.runner.Run(context.Background())
+			err := test.runner.Dev(context.Background())
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})

@@ -139,15 +139,17 @@ func newTaggerForConfig(t v1alpha2.TagPolicy) (tag.Tagger, error) {
 	return nil, fmt.Errorf("Unknown tagger for strategy %s", t)
 }
 
+// Dev watches for changes and runs the skaffold build and deploy
+// pipeline until interrrupted by the user.
+func (r *SkaffoldRunner) Dev(ctx context.Context) error {
+	if r.opts.Cleanup {
+		return cleanUpOnCtrlC(ctx, r.dev, r.cleanup)
+	}
+	return r.dev(ctx)
+}
+
 // Run runs the skaffold build and deploy pipeline.
 func (r *SkaffoldRunner) Run(ctx context.Context) error {
-	if r.opts.DevMode {
-		if r.opts.Cleanup {
-			return cleanUpOnCtrlC(ctx, r.dev, r.cleanup)
-		}
-		return r.dev(ctx)
-	}
-
 	_, _, err := r.buildAndDeploy(ctx, r.config.Build.Artifacts, nil)
 	return err
 }

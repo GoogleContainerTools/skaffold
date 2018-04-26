@@ -17,18 +17,23 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/spf13/cobra"
 )
 
+// NewCmdDev describes the CLI command to run a pipeline in development mode.
 func NewCmdDev(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "dev",
 		Short: "Runs a pipeline file in development mode",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runSkaffold(out, true, filename)
+			return runSkaffold(out, true, filename, func(ctx context.Context, r *runner.SkaffoldRunner) error {
+				return r.Dev(ctx)
+			})
 		},
 	}
 	AddRunDevFlags(cmd)

@@ -17,18 +17,23 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/spf13/cobra"
 )
 
+// NewCmdRun describes the CLI command to run a pipeline.
 func NewCmdRun(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Runs a pipeline file",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runSkaffold(out, false, filename)
+			return runSkaffold(out, false, filename, func(ctx context.Context, r *runner.SkaffoldRunner) error {
+				return r.Run(ctx)
+			})
 		},
 	}
 	AddRunDevFlags(cmd)
