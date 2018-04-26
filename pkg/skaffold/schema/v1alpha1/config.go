@@ -128,9 +128,9 @@ var defaultRunSkaffoldConfig = &SkaffoldConfig{
 // Parse reads from an io.Reader and unmarshals the result into a SkaffoldConfig.
 // The default config argument provides default values for the config,
 // which can be overridden if present in the config file.
-func (config *SkaffoldConfig) Parse(contents []byte, useDefault bool, mode bool) error {
+func (config *SkaffoldConfig) Parse(contents []byte, useDefault bool) error {
 	if useDefault {
-		*config = *config.getDefaultForMode(mode)
+		*config = *config.getDefaultForMode(false)
 	} else {
 		*config = SkaffoldConfig{}
 	}

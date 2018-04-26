@@ -31,7 +31,7 @@ func NewCmdRun(out io.Writer) *cobra.Command {
 		Short: "Runs a pipeline file",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runSkaffold(out, false, filename, func(ctx context.Context, r *runner.SkaffoldRunner) error {
+			return runSkaffold(out, filename, func(ctx context.Context, r *runner.SkaffoldRunner) error {
 				return r.Run(ctx)
 			})
 		},

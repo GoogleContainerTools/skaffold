@@ -89,7 +89,7 @@ func SetUpLogs(out io.Writer, level string) error {
 	return nil
 }
 
-func readConfiguration(filename string, dev bool) (*config.SkaffoldConfig, error) {
+func readConfiguration(filename string) (*config.SkaffoldConfig, error) {
 	buf, err := util.ReadConfiguration(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "read skaffold config")
@@ -104,7 +104,7 @@ func readConfiguration(filename string, dev bool) (*config.SkaffoldConfig, error
 		return nil, errors.New("Config version out of date: run `skaffold fix`")
 	}
 
-	cfg, err := config.GetConfig(buf, true, dev)
+	cfg, err := config.GetConfig(buf, true)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold config")
 	}
@@ -121,12 +121,12 @@ func readConfiguration(filename string, dev bool) (*config.SkaffoldConfig, error
 	return latestConfig, nil
 }
 
-func runSkaffold(out io.Writer, dev bool, filename string, action func(context.Context, *runner.SkaffoldRunner) error) error {
+func runSkaffold(out io.Writer, filename string, action func(context.Context, *runner.SkaffoldRunner) error) error {
 	ctx := context.Background()
 
 	opts.Output = out
 
-	config, err := readConfiguration(filename, dev)
+	config, err := readConfiguration(filename)
 	if err != nil {
 		return errors.Wrap(err, "reading configuration")
 	}

@@ -67,25 +67,13 @@ func TestParseConfig(t *testing.T) {
 	var tests = []struct {
 		description string
 		config      string
-		dev         bool
 		expected    util.VersionedConfig
 		badReader   bool
 		shouldErr   bool
 	}{
 		{
-			description: "Minimal config for dev",
+			description: "Minimal config",
 			config:      minimalConfig,
-			dev:         true,
-			expected: config(
-				withLocalBuild(
-					withTagPolicy(v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}}),
-				),
-			),
-		},
-		{
-			description: "Minimal config for run",
-			config:      minimalConfig,
-			dev:         false,
 			expected: config(
 				withLocalBuild(
 					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
@@ -93,9 +81,8 @@ func TestParseConfig(t *testing.T) {
 			),
 		},
 		{
-			description: "Simple config for dev",
+			description: "Simple config",
 			config:      simpleConfig,
-			dev:         true,
 			expected: config(
 				withLocalBuild(
 					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
@@ -105,34 +92,8 @@ func TestParseConfig(t *testing.T) {
 			),
 		},
 		{
-			description: "Simple config for run",
-			config:      simpleConfig,
-			dev:         false,
-			expected: config(
-				withLocalBuild(
-					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
-					withDockerArtifact("example", ".", "Dockerfile"),
-				),
-				withDeploy("example"),
-			),
-		},
-		{
-			description: "Complete config for dev",
+			description: "Complete config",
 			config:      completeConfig,
-			dev:         true,
-			expected: config(
-				withGCBBuild("ID",
-					withTagPolicy(v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}}),
-					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
-					withBazelArtifact("image2", "./examples/app2", "//:example.tar"),
-				),
-				withDeploy("example"),
-			),
-		},
-		{
-			description: "Complete config for run",
-			config:      completeConfig,
-			dev:         false,
 			expected: config(
 				withGCBBuild("ID",
 					withTagPolicy(v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}}),
@@ -151,7 +112,7 @@ func TestParseConfig(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			cfg, err := GetConfig([]byte(test.config), true, test.dev)
+			cfg, err := GetConfig([]byte(test.config), true)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cfg)
 		})
 	}
