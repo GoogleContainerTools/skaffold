@@ -21,6 +21,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"sort"
 
 	"github.com/pkg/errors"
 	git "gopkg.in/src-d/go-git.v4"
@@ -62,12 +63,19 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *Tag
 	// The file state is dirty. To generate a unique suffix, let's hash all the modified files.
 	// We add a -dirty-unique-id suffix to work well with local iterations.
 	h := sha256.New()
-	for path, change := range status {
-		if change.Worktree == git.Unmodified {
+	for _, changedPath := range changedPaths(status) {
+		status := status[changedPath].Worktree
+
+		statusLine := fmt.Sprintf("%c %s", status, changedPath)
+		if _, err := h.Write([]byte(statusLine)); err != nil {
+			return "", errors.Wrap(err, "adding deleted file to diff")
+		}
+
+		if status == git.Deleted {
 			continue
 		}
 
-		f, err := w.Filesystem.Open(path)
+		f, err := w.Filesystem.Open(changedPath)
 		if err != nil {
 			return "", errors.Wrap(err, "reading diff")
 		}
@@ -84,4 +92,19 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *Tag
 	shaStr := hex.EncodeToString(sha[:])[:16]
 
 	return fmt.Sprintf("%s-dirty-%s", fqn, shaStr), nil
+}
+
+// changedPaths returns the changed paths in a consistent order.
+// The order is important because we generate a sha256 out of it.
+func changedPaths(status git.Status) []string {
+	var changes []string
+
+	for path, change := range status {
+		if change.Worktree != git.Unmodified {
+			changes = append(changes, path)
+		}
+	}
+
+	sort.Strings(changes)
+	return changes
 }
