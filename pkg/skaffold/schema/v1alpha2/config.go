@@ -50,7 +50,7 @@ type BuildConfig struct {
 
 // TagPolicy contains all the configuration for the tagging step
 type TagPolicy struct {
-	GitTagger         *GitTagger         `yaml:"git"`
+	GitTagger         *GitTagger         `yaml:"gitCommit"`
 	ShaTagger         *ShaTagger         `yaml:"sha256"`
 	EnvTemplateTagger *EnvTemplateTagger `yaml:"envTemplate"`
 }

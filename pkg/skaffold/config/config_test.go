@@ -33,6 +33,8 @@ kind: Config
 apiVersion: skaffold/v1alpha2
 kind: Config
 build:
+  tagPolicy:
+    gitCommit: {}
   artifacts:
   - imageName: example
 deploy:
@@ -96,7 +98,7 @@ func TestParseConfig(t *testing.T) {
 			dev:         true,
 			expected: config(
 				withLocalBuild(
-					withTagPolicy(v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}}),
+					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
 					withDockerArtifact("example", ".", "Dockerfile"),
 				),
 				withDeploy("example"),
