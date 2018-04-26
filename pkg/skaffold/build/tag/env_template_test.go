@@ -37,7 +37,7 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			template: "{{.IMAGE_NAME}}:{{.DIGEST}}",
 			opts: &TagOptions{
 				ImageName: "foo",
-				Digest:    "bar",
+				Digest:    "sha256:bar",
 			},
 			want: "foo:bar",
 		},
@@ -47,7 +47,7 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			env:      []string{"FOO=BAR", "BAZ=BAT"},
 			opts: &TagOptions{
 				ImageName: "foo",
-				Digest:    "bar",
+				Digest:    "sha256:bar",
 			},
 			want: "BAR-BAT:latest",
 		},
@@ -57,7 +57,7 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			env:      []string{"FROM_ENV=FOO", "IMAGE_NAME=BAT"},
 			opts: &TagOptions{
 				ImageName: "image_name",
-				Digest:    "bar",
+				Digest:    "sha256:bar",
 			},
 			want: "image_name-FOO:latest",
 		},

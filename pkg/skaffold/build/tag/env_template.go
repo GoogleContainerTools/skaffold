@@ -60,7 +60,7 @@ func (c *EnvTemplateTagger) GenerateFullyQualifiedImageName(workingDir string, o
 	}
 
 	envMap["IMAGE_NAME"] = opts.ImageName
-	envMap["DIGEST"] = opts.Digest
+	envMap["DIGEST"] = strings.TrimPrefix(opts.Digest, "sha256:")
 
 	logrus.Debugf("Executing template %v with environment %v", c.Template, envMap)
 	if err := c.Template.Execute(&buf, envMap); err != nil {
