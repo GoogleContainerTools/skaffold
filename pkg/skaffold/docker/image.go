@@ -78,11 +78,11 @@ func RunBuild(ctx context.Context, cli DockerAPIClient, opts *BuildOptions) erro
 		return errors.Wrap(err, "docker build")
 	}
 	defer resp.Body.Close()
-	return streamDockerMessages(opts.BuildBuf, resp.Body)
+	return StreamDockerMessages(opts.BuildBuf, resp.Body)
 }
 
 // TODO(@r2d4): Make this output much better, this is the bare minimum
-func streamDockerMessages(dst io.Writer, src io.Reader) error {
+func StreamDockerMessages(dst io.Writer, src io.Reader) error {
 	fd, _ := term.GetFdInfo(dst)
 	return jsonmessage.DisplayJSONMessagesStream(src, dst, fd, false, nil)
 }
@@ -99,7 +99,7 @@ func RunPush(ctx context.Context, cli DockerAPIClient, ref string, out io.Writer
 		return errors.Wrap(err, "pushing image to repository")
 	}
 	defer rc.Close()
-	return streamDockerMessages(out, rc)
+	return StreamDockerMessages(out, rc)
 }
 
 func AddTag(src, target string) error {
