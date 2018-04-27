@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
 	"io"
 
 	yaml "gopkg.in/yaml.v2"
@@ -90,6 +89,21 @@ func SetUpLogs(out io.Writer, level string) error {
 	return nil
 }
 
+func NewRunner(out io.Writer, filename string) (*runner.SkaffoldRunner, error) {
+	config, err := readConfiguration(filename)
+	if err != nil {
+		return nil, errors.Wrap(err, "reading configuration")
+	}
+
+	opts.Output = out
+	r, err := runner.NewForConfig(opts, config)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting skaffold config")
+	}
+
+	return r, nil
+}
+
 func readConfiguration(filename string) (*config.SkaffoldConfig, error) {
 	buf, err := util.ReadConfiguration(filename)
 	if err != nil {
@@ -120,26 +134,4 @@ func readConfiguration(filename string) (*config.SkaffoldConfig, error) {
 	}
 
 	return latestConfig, nil
-}
-
-func runSkaffold(out io.Writer, filename string, action func(context.Context, *runner.SkaffoldRunner) error) error {
-	ctx := context.Background()
-
-	opts.Output = out
-
-	config, err := readConfiguration(filename)
-	if err != nil {
-		return errors.Wrap(err, "reading configuration")
-	}
-
-	r, err := runner.NewForConfig(opts, config)
-	if err != nil {
-		return errors.Wrap(err, "getting skaffold config")
-	}
-
-	if err := action(ctx, r); err != nil {
-		return errors.Wrap(err, "running skaffold steps")
-	}
-
-	return nil
 }

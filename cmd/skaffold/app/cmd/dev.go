@@ -20,7 +20,6 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/spf13/cobra"
 )
 
@@ -31,12 +30,21 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 		Short: "Runs a pipeline file in development mode",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runSkaffold(out, filename, func(ctx context.Context, r *runner.SkaffoldRunner) error {
-				return r.Dev(ctx)
-			})
+			return dev(out, filename)
 		},
 	}
 	AddRunDevFlags(cmd)
 	AddDevFlags(cmd)
 	return cmd
+}
+
+func dev(out io.Writer, filename string) error {
+	ctx := context.Background()
+
+	runner, err := NewRunner(out, filename)
+	if err != nil {
+		return err
+	}
+
+	return runner.Build(ctx)
 }

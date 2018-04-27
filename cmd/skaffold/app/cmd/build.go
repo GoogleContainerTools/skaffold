@@ -20,7 +20,6 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/spf13/cobra"
 )
 
@@ -31,11 +30,20 @@ func NewCmdBuild(out io.Writer) *cobra.Command {
 		Short: "Builds the artifacts",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runSkaffold(out, filename, func(ctx context.Context, r *runner.SkaffoldRunner) error {
-				return r.Build(ctx)
-			})
+			return build(out, filename)
 		},
 	}
 	AddRunDevFlags(cmd)
 	return cmd
+}
+
+func build(out io.Writer, filename string) error {
+	ctx := context.Background()
+
+	runner, err := NewRunner(out, filename)
+	if err != nil {
+		return err
+	}
+
+	return runner.Build(ctx)
 }

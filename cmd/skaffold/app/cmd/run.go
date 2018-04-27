@@ -20,7 +20,6 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/spf13/cobra"
 )
 
@@ -31,13 +30,22 @@ func NewCmdRun(out io.Writer) *cobra.Command {
 		Short: "Runs a pipeline file",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runSkaffold(out, filename, func(ctx context.Context, r *runner.SkaffoldRunner) error {
-				return r.Run(ctx)
-			})
+			return run(out, filename)
 		},
 	}
 	AddRunDevFlags(cmd)
 
 	cmd.Flags().StringVarP(&opts.CustomTag, "tag", "t", "", "The optional custom tag to use for images which overrides the current Tagger configuration")
 	return cmd
+}
+
+func run(out io.Writer, filename string) error {
+	ctx := context.Background()
+
+	runner, err := NewRunner(out, filename)
+	if err != nil {
+		return err
+	}
+
+	return runner.Run(ctx)
 }
