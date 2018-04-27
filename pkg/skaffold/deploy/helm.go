@@ -17,10 +17,15 @@ limitations under the License.
 package deploy
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"strconv"
+	"strings"
+	"text/template"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
@@ -33,6 +38,9 @@ type HelmDeployer struct {
 	*v1alpha2.DeployConfig
 	kubeContext string
 }
+
+// For testing
+var environ = os.Environ
 
 // NewHelmDeployer returns a new HelmDeployer for a DeployConfig filled
 // with the needed configuration for `helm`
@@ -116,11 +124,22 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, b *b
 		args = append(args, "--version", r.Version)
 	}
 
-	if len(r.SetValues) != 0 {
-		for k, v := range r.SetValues {
-			setOpts = append(setOpts, "--set")
-			setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v))
+	setValues := r.SetValues
+	if setValues == nil {
+		setValues = map[string]string{}
+	}
+	if len(r.SetValueTemplates) != 0 {
+		m, err := h.evaluateTemplates(r.SetValueTemplates, b)
+		if err != nil {
+			return errors.Wrapf(err, "failed to generate setValueTemplates")
 		}
+		for k, v := range m {
+			setValues[k] = v
+		}
+	}
+	for k, v := range setValues {
+		setOpts = append(setOpts, "--set")
+		setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v))
 	}
 	args = append(args, setOpts...)
 
@@ -143,4 +162,40 @@ func (h *HelmDeployer) deleteRelease(out io.Writer, r v1alpha2.HelmRelease) erro
 
 	out.Write(stdout)
 	return nil
+}
+
+func (h *HelmDeployer) evaluateTemplates(setValueTemplates map[string]string, r *build.BuildResult) (map[string]string, error) {
+	results := map[string]string{}
+	envMap := map[string]string{}
+	for _, env := range environ() {
+		kvp := strings.SplitN(env, "=", 2)
+		if len(kvp) != 2 {
+			return results, fmt.Errorf("error parsing environment variables, %s does not contain an =", kvp)
+		}
+		envMap[kvp[0]] = kvp[1]
+	}
+
+	for idx, b := range r.Builds {
+		suffix := ""
+		if idx > 0 {
+			suffix = strconv.Itoa(idx + 1)
+		}
+		envMap["IMAGE_NAME"+suffix] = b.ImageName
+		envMap["TAG"+suffix] = b.Tag
+	}
+
+	for k, v := range setValueTemplates {
+		tmpl, err := template.New("envTemplate").Parse(v)
+		if err != nil {
+			return results, errors.Wrap(err, "parsing template")
+		}
+
+		logrus.Debugf("Executing template %v with environment %v", tmpl, envMap)
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, envMap); err != nil {
+			return results, errors.Wrap(err, "executing template")
+		}
+		results[k] = buf.String()
+	}
+	return results, nil
 }

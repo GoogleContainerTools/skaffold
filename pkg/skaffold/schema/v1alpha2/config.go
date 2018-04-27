@@ -118,13 +118,14 @@ type HelmDeploy struct {
 }
 
 type HelmRelease struct {
-	Name           string            `yaml:"name"`
-	ChartPath      string            `yaml:"chartPath"`
-	ValuesFilePath string            `yaml:"valuesFilePath"`
-	Values         map[string]string `yaml:"values,omitempty"`
-	Namespace      string            `yaml:"namespace"`
-	Version        string            `yaml:"version"`
-	SetValues      map[string]string `yaml:"setValues"`
+	Name              string            `yaml:"name"`
+	ChartPath         string            `yaml:"chartPath"`
+	ValuesFilePath    string            `yaml:"valuesFilePath"`
+	Values            map[string]string `yaml:"values,omitempty"`
+	Namespace         string            `yaml:"namespace"`
+	Version           string            `yaml:"version"`
+	SetValues         map[string]string `yaml:"setValues"`
+	SetValueTemplates map[string]string `yaml:"setValueTemplates"`
 }
 
 // Artifact represents items that need should be built, along with the context in which
