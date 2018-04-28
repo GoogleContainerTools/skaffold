@@ -60,7 +60,15 @@ func (c *EnvTemplateTagger) GenerateFullyQualifiedImageName(workingDir string, o
 	}
 
 	envMap["IMAGE_NAME"] = opts.ImageName
-	envMap["DIGEST"] = opts.Digest
+	digest := opts.Digest
+	envMap["DIGEST"] = digest
+	if digest != "" {
+		names := strings.SplitN(digest, ":", 2)
+		if len(names) >= 2 {
+			envMap["DIGEST_ALGO"] = names[0]
+			envMap["DIGEST_HEX"] = names[1]
+		}
+	}
 
 	logrus.Debugf("Executing template %v with environment %v", c.Template, envMap)
 	if err := c.Template.Execute(&buf, envMap); err != nil {

@@ -61,6 +61,15 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 			want: "image_name-FOO:latest",
 		},
+		{
+			name:     "digest algo hex",
+			template: "{{.IMAGE_NAME}}:{{.DIGEST_ALGO}}-{{.DIGEST_HEX}}",
+			opts: &TagOptions{
+				ImageName: "foo",
+				Digest:    "sha256:abcd",
+			},
+			want: "foo:sha256-abcd",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
