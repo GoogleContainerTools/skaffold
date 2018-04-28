@@ -64,7 +64,10 @@ func TestApplyProfiles(t *testing.T) {
 			expectedConfig: SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{
 					Artifacts: []*v1alpha2.Artifact{
-						{ImageName: "image"},
+						{
+							ImageName: "image",
+							Workspace: ".",
+						},
 					},
 					BuildType: v1alpha2.BuildType{
 						GoogleCloudBuild: &v1alpha2.GoogleCloudBuild{},
@@ -96,7 +99,10 @@ func TestApplyProfiles(t *testing.T) {
 			expectedConfig: SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{
 					Artifacts: []*v1alpha2.Artifact{
-						{ImageName: "image"},
+						{
+							ImageName: "image",
+							Workspace: ".",
+						},
 					},
 					TagPolicy: v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}},
 				},
@@ -129,8 +135,14 @@ func TestApplyProfiles(t *testing.T) {
 			expectedConfig: SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{
 					Artifacts: []*v1alpha2.Artifact{
-						{ImageName: "image"},
-						{ImageName: "imageProd"},
+						{
+							ImageName: "image",
+							Workspace: ".",
+						},
+						{
+							ImageName: "imageProd",
+							Workspace: ".",
+						},
 					},
 					TagPolicy: v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}},
 				},
@@ -166,7 +178,8 @@ func TestApplyProfiles(t *testing.T) {
 					},
 				},
 			},
-		}}
+		},
+	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {

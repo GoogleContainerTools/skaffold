@@ -226,6 +226,10 @@ func (c *SkaffoldConfig) ApplyProfiles(profiles []string) error {
 
 	c.Profiles = nil
 
+	// lets populate any missing default values
+	setDefaultDockerfiles(c)
+	setDefaultWorkspaces(c)
+
 	return nil
 }
 
