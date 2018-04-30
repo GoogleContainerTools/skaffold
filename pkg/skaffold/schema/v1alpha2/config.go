@@ -157,17 +157,17 @@ type BazelArtifact struct {
 	BuildTarget string `yaml:"target"`
 }
 
-func defaultToLocalBuild(cfg *SkaffoldConfig) {
-	if cfg.Build.BuildType != (BuildType{}) {
+func defaultToLocalBuild(config *SkaffoldConfig) {
+	if config.Build.BuildType != (BuildType{}) {
 		return
 	}
 
 	logrus.Debugf("Defaulting build type to local build")
-	cfg.Build.BuildType.LocalBuild = &LocalBuild{}
+	config.Build.BuildType.LocalBuild = &LocalBuild{}
 }
 
-func defaultToDockerArtifacts(cfg *SkaffoldConfig) {
-	for _, artifact := range cfg.Build.Artifacts {
+func defaultToDockerArtifacts(config *SkaffoldConfig) {
+	for _, artifact := range config.Build.Artifacts {
 		if artifact.ArtifactType != (ArtifactType{}) {
 			continue
 		}
@@ -178,28 +178,28 @@ func defaultToDockerArtifacts(cfg *SkaffoldConfig) {
 	}
 }
 
-func setDefaultTagger(cfg *SkaffoldConfig, dev bool) {
-	if cfg.Build.TagPolicy != (TagPolicy{}) {
+func setDefaultTagger(config *SkaffoldConfig, dev bool) {
+	if config.Build.TagPolicy != (TagPolicy{}) {
 		return
 	}
 
 	if dev {
-		cfg.Build.TagPolicy = TagPolicy{ShaTagger: &ShaTagger{}}
+		config.Build.TagPolicy = TagPolicy{ShaTagger: &ShaTagger{}}
 	} else {
-		cfg.Build.TagPolicy = TagPolicy{GitTagger: &GitTagger{}}
+		config.Build.TagPolicy = TagPolicy{GitTagger: &GitTagger{}}
 	}
 }
 
-func setDefaultDockerfiles(cfg *SkaffoldConfig) {
-	for _, artifact := range cfg.Build.Artifacts {
+func setDefaultDockerfiles(config *SkaffoldConfig) {
+	for _, artifact := range config.Build.Artifacts {
 		if artifact.DockerArtifact != nil && artifact.DockerArtifact.DockerfilePath == "" {
 			artifact.DockerArtifact.DockerfilePath = constants.DefaultDockerfilePath
 		}
 	}
 }
 
-func setDefaultWorkspaces(cfg *SkaffoldConfig) {
-	for _, artifact := range cfg.Build.Artifacts {
+func setDefaultWorkspaces(config *SkaffoldConfig) {
+	for _, artifact := range config.Build.Artifacts {
 		if artifact.Workspace == "" {
 			artifact.Workspace = "."
 		}
@@ -208,23 +208,23 @@ func setDefaultWorkspaces(cfg *SkaffoldConfig) {
 
 // ApplyProfiles returns configuration modified by the application
 // of a list of profiles.
-func (c *SkaffoldConfig) ApplyProfiles(profiles []string) error {
+func (config *SkaffoldConfig) ApplyProfiles(profiles []string) error {
 	var err error
 
-	byName := profilesByName(c.Profiles)
+	byName := profilesByName(config.Profiles)
 	for _, name := range profiles {
 		profile, present := byName[name]
 		if !present {
 			return fmt.Errorf("couldn't find profile %s", name)
 		}
 
-		err = applyProfile(c, profile)
+		err = applyProfile(config, profile)
 		if err != nil {
 			return errors.Wrapf(err, "applying profile %s", name)
 		}
 	}
 
-	c.Profiles = nil
+	config.Profiles = nil
 
 	return nil
 }
