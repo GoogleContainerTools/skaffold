@@ -111,7 +111,7 @@ func (a *LogAggregator) streamLogs(ctx context.Context, client corev1.CoreV1Inte
 
 		logrus.Infof("Stream logs from pod: %s container: %s", pod.Name, container.Name)
 
-		sinceSeconds := int64(time.Since(a.startTime).Seconds())
+		sinceSeconds := int64(time.Since(a.startTime).Seconds() + 0.5)
 		// 0s means all the logs
 		if sinceSeconds == 0 {
 			sinceSeconds = 1
