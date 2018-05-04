@@ -73,3 +73,11 @@ deploy:
     # - deployment/web-app1
     # - namespace:deployment/web-app2
     #
+
+# profiles section has all the profile information to use Google Container Builder    
+profiles:
+  - name: gcb
+    build:
+      googleCloudBuild:
+        projectId: k8s-skaffold
+        # Google Cloud Build's project id
