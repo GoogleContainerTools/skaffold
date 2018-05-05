@@ -291,8 +291,12 @@ func (r *SkaffoldRunner) deploy(ctx context.Context, bRes *build.BuildResult) (*
 func cleanUpOnCtrlC(ctx context.Context, runDevMode func(context.Context) error, cleanup func(context.Context)) error {
 	ctx, cancel := context.WithCancel(ctx)
 
-	signals := make(chan os.Signal, 2)
-	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt,
+		syscall.SIGTERM,
+		syscall.SIGINT,
+		syscall.SIGPIPE,
+	)
 
 	go func() {
 		<-signals
