@@ -46,7 +46,7 @@ func CreateTar(w io.Writer, root string, paths []string) error {
 			return err
 		}
 
-		if err := addFileToTar(p, tarPath, tw); err != nil {
+		if err := addFileToTar(p, filepath.ToSlash(tarPath), tw); err != nil {
 			return err
 		}
 
