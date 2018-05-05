@@ -45,9 +45,9 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			expectedName: "test:eefe1b9",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
-					write(t, "source.go", []byte("code")).
-					add(t, "source.go").
-					commit(t, "initial")
+					write("source.go", []byte("code")).
+					add("source.go").
+					commit("initial")
 			},
 		},
 		{
@@ -55,13 +55,13 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			opts: &TagOptions{
 				ImageName: "test",
 			},
-			expectedName: "test:eefe1b9-dirty-17c3e6fb2811b7af",
+			expectedName: "test:eefe1b9-dirty-af8de1fde8be4367",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
-					write(t, "source.go", []byte("code")).
-					add(t, "source.go").
-					commit(t, "initial").
-					write(t, "source.go", []byte("updated code"))
+					write("source.go", []byte("code")).
+					add("source.go").
+					commit("initial").
+					write("source.go", []byte("updated code"))
 			},
 		},
 		{
@@ -69,13 +69,71 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			opts: &TagOptions{
 				ImageName: "test",
 			},
-			expectedName: "test:eefe1b9-dirty-d7bc32e5f6760a99",
+			expectedName: "test:eefe1b9-dirty-bfe9b4566c9d3fec",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
-					write(t, "source.go", []byte("code")).
-					add(t, "source.go").
-					commit(t, "initial").
-					write(t, "new.go", []byte("new code"))
+					write("source.go", []byte("code")).
+					add("source.go").
+					commit("initial").
+					write("new.go", []byte("new code"))
+			},
+		},
+		{
+			description: "one file deleted",
+			opts: &TagOptions{
+				ImageName: "test",
+			},
+			expectedName: "test:279d53f-dirty-6a3ce511c689eda7",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source1.go", []byte("code1")).
+					write("source2.go", []byte("code2")).
+					add("source1.go", "source2.go").
+					commit("initial").
+					delete("source1.go")
+			},
+		},
+		{
+			description: "two files deleted",
+			opts: &TagOptions{
+				ImageName: "test",
+			},
+			expectedName: "test:279d53f-dirty-d48c11ed65c37a09", // Must be <> than when only one file is deleted
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source1.go", []byte("code1")).
+					write("source2.go", []byte("code2")).
+					add("source1.go", "source2.go").
+					commit("initial").
+					delete("source1.go", "source2.go")
+			},
+		},
+		{
+			description: "rename",
+			opts: &TagOptions{
+				ImageName: "test",
+			},
+			expectedName: "test:eefe1b9-dirty-9c858d88cc0bf792",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source.go", []byte("code")).
+					add("source.go").
+					commit("initial").
+					rename("source.go", "source2.go")
+			},
+		},
+		{
+			description: "rename to different name",
+			opts: &TagOptions{
+				ImageName: "test",
+			},
+			expectedName: "test:eefe1b9-dirty-6534adc17ccd1cf4", // Must be <> each time a new name is used
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source.go", []byte("code")).
+					add("source.go").
+					commit("initial").
+					rename("source.go", "source3.go")
 			},
 		},
 		{
@@ -106,7 +164,7 @@ func TestGenerateFullyQualifiedImageNameFromSubDirectory(t *testing.T) {
 
 	gitInit(t, tmpDir).
 		mkdir("sub/sub").
-		commit(t, "initial")
+		commit("initial")
 
 	opts := &TagOptions{ImageName: "test"}
 	c := &GitCommit{}
@@ -127,6 +185,7 @@ func TestGenerateFullyQualifiedImageNameFromSubDirectory(t *testing.T) {
 type gitRepo struct {
 	dir      string
 	workTree *git.Worktree
+	t        *testing.T
 }
 
 func gitInit(t *testing.T, dir string) *gitRepo {
@@ -139,29 +198,47 @@ func gitInit(t *testing.T, dir string) *gitRepo {
 	return &gitRepo{
 		dir:      dir,
 		workTree: w,
+		t:        t,
 	}
 }
 
 func (g *gitRepo) mkdir(folder string) *gitRepo {
-	os.MkdirAll(filepath.Join(g.dir, folder), os.ModePerm)
+	err := os.MkdirAll(filepath.Join(g.dir, folder), os.ModePerm)
+	failNowIfError(g.t, err)
 	return g
 }
 
-func (g *gitRepo) write(t *testing.T, file string, content []byte) *gitRepo {
+func (g *gitRepo) write(file string, content []byte) *gitRepo {
 	err := ioutil.WriteFile(filepath.Join(g.dir, file), content, os.ModePerm)
-	failNowIfError(t, err)
+	failNowIfError(g.t, err)
 	return g
 }
 
-func (g *gitRepo) add(t *testing.T, file string) *gitRepo {
-	_, err := g.workTree.Add(file)
-	failNowIfError(t, err)
+func (g *gitRepo) rename(file, to string) *gitRepo {
+	err := os.Rename(filepath.Join(g.dir, file), filepath.Join(g.dir, to))
+	failNowIfError(g.t, err)
 	return g
 }
 
-func (g *gitRepo) commit(t *testing.T, msg string) *gitRepo {
+func (g *gitRepo) delete(files ...string) *gitRepo {
+	for _, file := range files {
+		err := os.Remove(filepath.Join(g.dir, file))
+		failNowIfError(g.t, err)
+	}
+	return g
+}
+
+func (g *gitRepo) add(files ...string) *gitRepo {
+	for _, file := range files {
+		_, err := g.workTree.Add(file)
+		failNowIfError(g.t, err)
+	}
+	return g
+}
+
+func (g *gitRepo) commit(msg string) *gitRepo {
 	now, err := time.Parse("Jan 2, 2006 at 15:04:05 -0700 MST", "Feb 3, 2013 at 19:54:00 -0700 MST")
-	failNowIfError(t, err)
+	failNowIfError(g.t, err)
 
 	_, err = g.workTree.Commit(msg, &git.CommitOptions{
 		Author: &object.Signature{
@@ -170,7 +247,7 @@ func (g *gitRepo) commit(t *testing.T, msg string) *gitRepo {
 			When:  now,
 		},
 	})
-	failNowIfError(t, err)
+	failNowIfError(g.t, err)
 
 	return g
 }
