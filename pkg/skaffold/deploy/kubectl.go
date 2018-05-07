@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -333,8 +334,6 @@ func recursiveReplaceImage(i interface{}, replacements map[string]*replacement) 
 }
 
 func removeTag(image string) string {
-	if strings.Contains(image, ":") {
-		return strings.Split(image, ":")[0]
-	}
-	return image
+	re := regexp.MustCompile(":[^/]+$")
+	return re.ReplaceAllString(image, "")
 }

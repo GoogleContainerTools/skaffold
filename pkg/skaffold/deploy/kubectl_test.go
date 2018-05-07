@@ -405,3 +405,20 @@ spec:
         ports:
         - containerPort: 80`, manifests.String())
 }
+
+func TestRemoveTag(t *testing.T) {
+	removed := removeTag("host:1234/user/container:tag")
+	if removed != "host:1234/user/container" {
+		t.Errorf("Tag vas not removed from an image name with port: %s ", removed)
+	}
+
+	removed = removeTag("host/user/container:tag")
+	if removed != "host/user/container" {
+		t.Errorf("Tag vas not removed from an image name with port: %s ", removed)
+	}
+
+	removed = removeTag("host:1234/user/container")
+	if removed != "host:1234/user/container" {
+		t.Errorf("Image without tag and port is changed during tag removal: %s ", removed)
+	}
+}
