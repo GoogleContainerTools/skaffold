@@ -99,8 +99,8 @@ func TestHelmDeploy(t *testing.T) {
 			description: "get failure should install not upgrade",
 			cmd: &MockHelm{
 				t:             t,
-				getResult:     cmdOutput{"", "", fmt.Errorf("not found")},
-				upgradeResult: cmdOutput{"", "", fmt.Errorf("should not have called upgrade")},
+				getResult:     cmdOutput{"", fmt.Errorf("not found")},
+				upgradeResult: cmdOutput{"", fmt.Errorf("should not have called upgrade")},
 			},
 			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext),
 			buildResult: testBuildResult,
@@ -109,7 +109,7 @@ func TestHelmDeploy(t *testing.T) {
 			description: "get success should upgrade not install",
 			cmd: &MockHelm{
 				t:             t,
-				installResult: cmdOutput{"", "", fmt.Errorf("should not have called install")},
+				installResult: cmdOutput{"", fmt.Errorf("should not have called install")},
 			},
 			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext),
 			buildResult: testBuildResult,
@@ -118,7 +118,7 @@ func TestHelmDeploy(t *testing.T) {
 			description: "deploy error",
 			cmd: &MockHelm{
 				t:             t,
-				upgradeResult: cmdOutput{"", "", fmt.Errorf("unexpected error")},
+				upgradeResult: cmdOutput{"", fmt.Errorf("unexpected error")},
 			},
 			shouldErr:   true,
 			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext),
@@ -128,7 +128,7 @@ func TestHelmDeploy(t *testing.T) {
 			description: "dep build error",
 			cmd: &MockHelm{
 				t:         t,
-				depResult: cmdOutput{"", "", fmt.Errorf("unexpected error")},
+				depResult: cmdOutput{"", fmt.Errorf("unexpected error")},
 			},
 			shouldErr:   true,
 			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext),
@@ -159,15 +159,14 @@ type MockHelm struct {
 
 type cmdOutput struct {
 	stdout string
-	stderr string
 	err    error
 }
 
-func (c cmdOutput) out() ([]byte, []byte, error) {
-	return []byte(c.stdout), []byte(c.stderr), c.err
+func (c cmdOutput) out() ([]byte, error) {
+	return []byte(c.stdout), c.err
 }
 
-func (m *MockHelm) RunCommand(c *exec.Cmd) ([]byte, []byte, error) {
+func (m *MockHelm) RunCmdOut(c *exec.Cmd) ([]byte, error) {
 	if len(c.Args) < 3 {
 		m.t.Errorf("Not enough args in command %v", c)
 	}
@@ -188,5 +187,10 @@ func (m *MockHelm) RunCommand(c *exec.Cmd) ([]byte, []byte, error) {
 	}
 
 	m.t.Errorf("Unknown helm command: %+v", c)
-	return nil, nil, nil
+	return nil, nil
+}
+
+func (m *MockHelm) RunCmd(c *exec.Cmd) error {
+	_, err := m.RunCmdOut(c)
+	return err
 }

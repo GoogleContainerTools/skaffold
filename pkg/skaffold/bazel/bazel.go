@@ -34,9 +34,9 @@ const sourceQuery = "kind('source file', deps('%s'))"
 func (*BazelDependencyResolver) GetDependencies(a *v1alpha2.Artifact) ([]string, error) {
 	cmd := exec.Command("bazel", "query", fmt.Sprintf(sourceQuery, a.BazelArtifact.BuildTarget), "--noimplicit_deps", "--order_output=no")
 	cmd.Dir = a.Workspace
-	stdout, stderr, err := util.RunCommand(cmd)
+	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
-		return nil, errors.Wrapf(err, "stdout: %s stderr: %s", stdout, stderr)
+		return nil, errors.Wrap(err, "getting bazel dependencies")
 	}
 
 	labels := strings.Split(string(stdout), "\n")

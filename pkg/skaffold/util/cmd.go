@@ -30,45 +30,60 @@ var DefaultExecCommand Command = &Commander{}
 // Command is an interface used to run commands. All packages should use this
 // interface instead of calling exec.Cmd directly.
 type Command interface {
-	RunCommand(cmd *exec.Cmd) ([]byte, []byte, error)
+	RunCmdOut(cmd *exec.Cmd) ([]byte, error)
+	RunCmd(cmd *exec.Cmd) error
 }
 
-func RunCommand(cmd *exec.Cmd) ([]byte, []byte, error) {
-	return DefaultExecCommand.RunCommand(cmd)
+func RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
+	return DefaultExecCommand.RunCmdOut(cmd)
+}
+
+func RunCmd(cmd *exec.Cmd) error {
+	return DefaultExecCommand.RunCmd(cmd)
 }
 
 // Commander is the exec.Cmd implementation of the Command interface
 type Commander struct{}
 
-// RunCommand runs an exec.Command and return the stdout, stderr,
-// and error responses respectively.
-func (*Commander) RunCommand(cmd *exec.Cmd) ([]byte, []byte, error) {
+// RunCmdOut runs an exec.Command and returns the stdout and error.
+func (*Commander) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	logrus.Debugf("Running command: %s", cmd.Args)
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if err := cmd.Start(); err != nil {
-		return nil, nil, errors.Wrapf(err, "starting command %v", cmd)
+		return nil, errors.Wrapf(err, "starting command %v", cmd)
 	}
 
 	stdout, err := ioutil.ReadAll(stdoutPipe)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+
 	stderr, err := ioutil.ReadAll(stderrPipe)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	err = cmd.Wait()
-	logrus.Debugf("Command output: stdout %s, stderr: %s, err: %v", string(stdout), string(stderr), err)
+	if err != nil {
+		return stdout, errors.Wrapf(err, "Running %s: stdout %s, stderr: %s, err: %v", cmd.Args, stdout, stderr, err)
+	}
 
-	return stdout, stderr, err
+	logrus.Debugf("Command output: stdout %s, stderr: %s", stdout, stderr)
+
+	return stdout, nil
+}
+
+// RunCmd runs an exec.Command.
+func (*Commander) RunCmd(cmd *exec.Cmd) error {
+	logrus.Debugf("Running command: %s", cmd.Args)
+	return cmd.Run()
 }
