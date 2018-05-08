@@ -42,7 +42,7 @@ func NewCmdFix(out io.Writer) *cobra.Command {
 			if err != nil {
 				logrus.Errorf("fix: %s", err)
 			}
-			cfg, err := config.GetConfig(contents, false, true)
+			cfg, err := config.GetConfig(contents, false)
 			if err != nil {
 				logrus.Error(err)
 				return

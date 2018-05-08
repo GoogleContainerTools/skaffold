@@ -27,22 +27,22 @@ import (
 // Ordered list of all schema versions
 var Versions = []string{v1alpha1.Version, v1alpha2.Version}
 
-var schemaVersions map[string]func([]byte, bool, bool) (util.VersionedConfig, error) = map[string]func([]byte, bool, bool) (util.VersionedConfig, error){
-	v1alpha1.Version: func(contents []byte, useDefault bool, dev bool) (util.VersionedConfig, error) {
+var schemaVersions = map[string]func([]byte, bool) (util.VersionedConfig, error){
+	v1alpha1.Version: func(contents []byte, useDefault bool) (util.VersionedConfig, error) {
 		config := new(v1alpha1.SkaffoldConfig)
-		err := config.Parse(contents, useDefault, dev)
+		err := config.Parse(contents, useDefault)
 		return config, err
 	},
-	v1alpha2.Version: func(contents []byte, useDefault bool, dev bool) (util.VersionedConfig, error) {
+	v1alpha2.Version: func(contents []byte, useDefault bool) (util.VersionedConfig, error) {
 		config := new(v1alpha2.SkaffoldConfig)
-		err := config.Parse(contents, useDefault, dev)
+		err := config.Parse(contents, useDefault)
 		return config, err
 	},
 }
 
-func GetConfig(contents []byte, useDefault bool, dev bool) (util.VersionedConfig, error) {
+func GetConfig(contents []byte, useDefault bool) (util.VersionedConfig, error) {
 	for _, version := range Versions {
-		if cfg, err := schemaVersions[version](contents, useDefault, dev); err == nil {
+		if cfg, err := schemaVersions[version](contents, useDefault); err == nil {
 			// successfully parsed, but make sure versions match
 			if cfg.GetVersion() == version {
 				return cfg, err

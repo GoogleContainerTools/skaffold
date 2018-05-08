@@ -23,22 +23,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewCmdDev describes the CLI command to run a pipeline in development mode.
-func NewCmdDev(out io.Writer) *cobra.Command {
+// NewCmdBuild describes the CLI command to build artifacts.
+func NewCmdBuild(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "dev",
-		Short: "Runs a pipeline file in development mode",
+		Use:   "build",
+		Short: "Builds the artifacts",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return dev(out, filename)
+			return build(out, filename)
 		},
 	}
 	AddRunDevFlags(cmd)
-	AddDevFlags(cmd)
 	return cmd
 }
 
-func dev(out io.Writer, filename string) error {
+func build(out io.Writer, filename string) error {
 	ctx := context.Background()
 
 	runner, err := NewRunner(out, filename)

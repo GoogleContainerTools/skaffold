@@ -178,16 +178,12 @@ func defaultToDockerArtifacts(config *SkaffoldConfig) {
 	}
 }
 
-func setDefaultTagger(config *SkaffoldConfig, dev bool) {
-	if config.Build.TagPolicy != (TagPolicy{}) {
+func setDefaultTagger(cfg *SkaffoldConfig) {
+	if cfg.Build.TagPolicy != (TagPolicy{}) {
 		return
 	}
 
-	if dev {
-		config.Build.TagPolicy = TagPolicy{ShaTagger: &ShaTagger{}}
-	} else {
-		config.Build.TagPolicy = TagPolicy{GitTagger: &GitTagger{}}
-	}
+	cfg.Build.TagPolicy = TagPolicy{GitTagger: &GitTagger{}}
 }
 
 func setDefaultDockerfiles(config *SkaffoldConfig) {
@@ -248,14 +244,14 @@ func profilesByName(profiles []Profile) map[string]Profile {
 	return byName
 }
 
-func (config *SkaffoldConfig) Parse(contents []byte, useDefaults bool, mode bool) error {
+func (config *SkaffoldConfig) Parse(contents []byte, useDefaults bool) error {
 	if err := yaml.Unmarshal(contents, config); err != nil {
 		return err
 	}
 	if useDefaults {
 		defaultToLocalBuild(config)
 		defaultToDockerArtifacts(config)
-		setDefaultTagger(config, mode)
+		setDefaultTagger(config)
 		setDefaultDockerfiles(config)
 		setDefaultWorkspaces(config)
 	}

@@ -17,22 +17,35 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"io"
 
 	"github.com/spf13/cobra"
 )
 
+// NewCmdRun describes the CLI command to run a pipeline.
 func NewCmdRun(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Runs a pipeline file",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runSkaffold(out, false, filename)
+			return run(out, filename)
 		},
 	}
 	AddRunDevFlags(cmd)
 
 	cmd.Flags().StringVarP(&opts.CustomTag, "tag", "t", "", "The optional custom tag to use for images which overrides the current Tagger configuration")
 	return cmd
+}
+
+func run(out io.Writer, filename string) error {
+	ctx := context.Background()
+
+	runner, err := NewRunner(out, filename)
+	if err != nil {
+		return err
+	}
+
+	return runner.Run(ctx)
 }

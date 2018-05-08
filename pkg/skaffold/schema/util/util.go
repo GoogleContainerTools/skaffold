@@ -18,7 +18,7 @@ package util
 
 type VersionedConfig interface {
 	GetVersion() string
-	Parse([]byte, bool, bool) error
+	Parse([]byte, bool) error
 }
 
 type Config interface {

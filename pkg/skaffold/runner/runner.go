@@ -24,8 +24,6 @@ import (
 	"syscall"
 	"time"
 
-	"golang.org/x/sync/errgroup"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -34,10 +32,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
-	clientgo "k8s.io/client-go/kubernetes"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
+	clientgo "k8s.io/client-go/kubernetes"
 )
 
 // SkaffoldRunner is responsible for running the skaffold build and deploy pipeline.
@@ -68,24 +66,22 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold build config")
 	}
+
 	deployer, err := getDeployer(&cfg.Deploy, kubeContext)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold deploy config")
 	}
-	tagger, err := newTaggerForConfig(cfg.Build.TagPolicy)
+
+	tagger, err := getTagger(cfg.Build.TagPolicy, opts.CustomTag)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold tag config")
 	}
-	customTag := opts.CustomTag
-	if customTag != "" {
-		tagger = &tag.CustomTag{
-			Tag: customTag,
-		}
-	}
+
 	client, err := kubernetesClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting k8s client")
 	}
+
 	return &SkaffoldRunner{
 		config:         cfg,
 		Builder:        builder,
@@ -98,7 +94,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 }
 
 func getBuilder(cfg *v1alpha2.BuildConfig, kubeContext string) (build.Builder, error) {
-	if cfg != nil && cfg.LocalBuild != nil {
+	if cfg.LocalBuild != nil {
 		logrus.Debugf("Using builder: local")
 		return build.NewLocalBuilder(cfg, kubeContext)
 	}
@@ -125,7 +121,13 @@ func getDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) (deploy.Deploye
 	return nil, fmt.Errorf("Unknown deployer for config %+v", cfg)
 }
 
-func newTaggerForConfig(t v1alpha2.TagPolicy) (tag.Tagger, error) {
+func getTagger(t v1alpha2.TagPolicy, customTag string) (tag.Tagger, error) {
+	if customTag != "" {
+		return &tag.CustomTag{
+			Tag: customTag,
+		}, nil
+	}
+
 	if t.EnvTemplateTagger != nil {
 		return tag.NewEnvTemplateTagger(t.EnvTemplateTagger.Template)
 	}
@@ -139,20 +141,33 @@ func newTaggerForConfig(t v1alpha2.TagPolicy) (tag.Tagger, error) {
 	return nil, fmt.Errorf("Unknown tagger for strategy %s", t)
 }
 
-// Run runs the skaffold build and deploy pipeline.
-func (r *SkaffoldRunner) Run(ctx context.Context) error {
-	if r.opts.DevMode {
-		if r.opts.Cleanup {
-			return cleanUpOnCtrlC(ctx, r.dev, r.cleanup)
-		}
-		return r.dev(ctx)
+// Build builds the artifacts.
+func (r *SkaffoldRunner) Build(ctx context.Context) error {
+	bRes, err := r.build(ctx, r.config.Build.Artifacts)
+
+	for _, res := range bRes.Builds {
+		fmt.Fprintf(r.opts.Output, "%s -> %s\n", res.ImageName, res.Tag)
 	}
 
+	return err
+}
+
+// Run runs the skaffold build and deploy pipeline.
+func (r *SkaffoldRunner) Run(ctx context.Context) error {
 	_, _, err := r.buildAndDeploy(ctx, r.config.Build.Artifacts, nil)
 	return err
 }
 
-func (r *SkaffoldRunner) dev(ctx context.Context) error {
+// Dev watches for changes and runs the skaffold build and deploy
+// pipeline until interrrupted by the user.
+func (r *SkaffoldRunner) Dev(ctx context.Context) error {
+	if r.opts.Cleanup {
+		return cleanUpOnCtrlC(ctx, r.watchBuildDeploy, r.cleanup)
+	}
+	return r.watchBuildDeploy(ctx)
+}
+
+func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 	artifacts := r.config.Build.Artifacts
 
 	var err error

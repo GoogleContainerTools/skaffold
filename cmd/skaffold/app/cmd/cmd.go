@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
 	"io"
 
 	yaml "gopkg.in/yaml.v2"
@@ -45,7 +44,6 @@ var rootCmd = &cobra.Command{
 }
 
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
-
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if err := SetUpLogs(err, v); err != nil {
 			return err
@@ -58,6 +56,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdVersion(out))
 	rootCmd.AddCommand(NewCmdRun(out))
 	rootCmd.AddCommand(NewCmdDev(out))
+	rootCmd.AddCommand(NewCmdBuild(out))
 	rootCmd.AddCommand(NewCmdFix(out))
 	rootCmd.AddCommand(NewCmdDocker(out))
 
@@ -90,26 +89,39 @@ func SetUpLogs(out io.Writer, level string) error {
 	return nil
 }
 
-func runSkaffold(out io.Writer, dev bool, filename string) error {
-	ctx := context.Background()
+func NewRunner(out io.Writer, filename string) (*runner.SkaffoldRunner, error) {
+	config, err := readConfiguration(filename)
+	if err != nil {
+		return nil, errors.Wrap(err, "reading configuration")
+	}
 
+	opts.Output = out
+	r, err := runner.NewForConfig(opts, config)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting skaffold config")
+	}
+
+	return r, nil
+}
+
+func readConfiguration(filename string) (*config.SkaffoldConfig, error) {
 	buf, err := util.ReadConfiguration(filename)
 	if err != nil {
-		return errors.Wrap(err, "read skaffold config")
+		return nil, errors.Wrap(err, "read skaffold config")
 	}
 
 	apiVersion := &config.ApiVersion{}
 	if err := yaml.Unmarshal(buf, apiVersion); err != nil {
-		return errors.Wrap(err, "parsing api version")
+		return nil, errors.Wrap(err, "parsing api version")
 	}
 
 	if apiVersion.Version != config.LatestVersion {
-		return errors.New("Config version out of date: run `skaffold fix`")
+		return nil, errors.New("Config version out of date: run `skaffold fix`")
 	}
 
-	cfg, err := config.GetConfig(buf, true, dev)
+	cfg, err := config.GetConfig(buf, true)
 	if err != nil {
-		return errors.Wrap(err, "parsing skaffold config")
+		return nil, errors.Wrap(err, "parsing skaffold config")
 	}
 
 	// we already ensured that the versions match in the previous block,
@@ -118,19 +130,8 @@ func runSkaffold(out io.Writer, dev bool, filename string) error {
 
 	err = latestConfig.ApplyProfiles(opts.Profiles)
 	if err != nil {
-		return errors.Wrap(err, "applying profiles")
+		return nil, errors.Wrap(err, "applying profiles")
 	}
 
-	opts.Output = out
-	opts.DevMode = dev
-	r, err := runner.NewForConfig(opts, latestConfig)
-	if err != nil {
-		return errors.Wrap(err, "getting skaffold config")
-	}
-
-	if err := r.Run(ctx); err != nil {
-		return errors.Wrap(err, "running skaffold steps")
-	}
-
-	return nil
+	return latestConfig, nil
 }
