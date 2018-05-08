@@ -149,7 +149,8 @@ func (k *KubectlDeployer) kubectl(in io.Reader, out io.Writer, arg ...string) er
 	args := append([]string{"--context", k.kubeContext}, arg...)
 
 	cmd := exec.Command("kubectl", args...)
-	stdout, stderr, err := util.RunCommand(cmd, in)
+	cmd.Stdin = in
+	stdout, stderr, err := util.RunCommand(cmd)
 	if err != nil {
 		return errors.Wrapf(err, "running kubectl: stdout: %s, stderr: %s, err: %v", stdout, stderr, err)
 	}

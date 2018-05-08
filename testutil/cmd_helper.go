@@ -18,7 +18,6 @@ package testutil
 
 import (
 	"fmt"
-	"io"
 	"os/exec"
 	"strings"
 )
@@ -39,7 +38,7 @@ func NewFakeRunCommand(expectedCommand, stdout, stderr string, err error) *FakeR
 	}
 }
 
-func (f *FakeRunCommand) RunCommand(cmd *exec.Cmd, stdin io.Reader) ([]byte, []byte, error) {
+func (f *FakeRunCommand) RunCommand(cmd *exec.Cmd) ([]byte, []byte, error) {
 	actualCommand := strings.Join(cmd.Args, " ")
 	if f.expectedCommand != actualCommand {
 		return nil, nil, fmt.Errorf("Expected: %s. Got: %s", f.expectedCommand, actualCommand)

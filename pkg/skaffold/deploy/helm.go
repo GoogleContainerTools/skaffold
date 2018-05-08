@@ -74,7 +74,7 @@ func (h *HelmDeployer) args(moreArgs ...string) []string {
 func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, b *build.BuildResult) error {
 	isInstalled := true
 	getCmd := exec.Command("helm", h.args("get", r.Name)...)
-	if stdout, stderr, err := util.RunCommand(getCmd, nil); err != nil {
+	if stdout, stderr, err := util.RunCommand(getCmd); err != nil {
 		logrus.Debugf("Error getting release %s: %s stdout: %s stderr: %s", r.Name, err, string(stdout), string(stderr))
 		fmt.Fprintf(out, "Helm release %s not installed. Installing...\n", r.Name)
 		isInstalled = false
@@ -93,7 +93,7 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, b *b
 	// First build dependencies.
 	logrus.Infof("Building helm dependencies...")
 	depCmd := exec.Command("helm", h.args("dep", "build", r.ChartPath)...)
-	stdout, stderr, err := util.RunCommand(depCmd, nil)
+	stdout, stderr, err := util.RunCommand(depCmd)
 	if err != nil {
 		return errors.Wrapf(err, "helm dep build stdout: %s, stderr: %s", string(stdout), string(stderr))
 	}
@@ -125,7 +125,7 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, b *b
 	args = append(args, setOpts...)
 
 	execCmd := exec.Command("helm", args...)
-	stdout, stderr, err = util.RunCommand(execCmd, nil)
+	stdout, stderr, err = util.RunCommand(execCmd)
 	if err != nil {
 		return errors.Wrapf(err, "helm updater stdout: %s, stderr: %s", string(stdout), string(stderr))
 	}
@@ -136,7 +136,7 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, b *b
 
 func (h *HelmDeployer) deleteRelease(out io.Writer, r v1alpha2.HelmRelease) error {
 	getCmd := exec.Command("helm", h.args("delete", r.Name, "--purge")...)
-	stdout, stderr, err := util.RunCommand(getCmd, nil)
+	stdout, stderr, err := util.RunCommand(getCmd)
 	if err != nil {
 		logrus.Debugf("running helm delete %s: %v stdout: %s stderr: %s", r.Name, err, string(stdout), string(stderr))
 	}

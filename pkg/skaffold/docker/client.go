@@ -127,7 +127,7 @@ func newMinikubeDockerAPIClient() (DockerAPIClient, error) {
 
 func getMinikubeDockerEnv() (map[string]string, error) {
 	cmd := exec.Command("minikube", "docker-env", "--shell", "none")
-	out, stderr, err := util.RunCommand(cmd, nil)
+	out, stderr, err := util.RunCommand(cmd)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting minikube docker-env stdout: %s, stdin: %s, err: %s", out, stderr, err)
 	}

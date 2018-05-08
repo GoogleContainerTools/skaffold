@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"os/exec"
 	"testing"
 
@@ -168,7 +167,7 @@ func (c cmdOutput) out() ([]byte, []byte, error) {
 	return []byte(c.stdout), []byte(c.stderr), c.err
 }
 
-func (m *MockHelm) RunCommand(c *exec.Cmd, _ io.Reader) ([]byte, []byte, error) {
+func (m *MockHelm) RunCommand(c *exec.Cmd) ([]byte, []byte, error) {
 	if len(c.Args) < 3 {
 		m.t.Errorf("Not enough args in command %v", c)
 	}

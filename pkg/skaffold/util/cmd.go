@@ -17,7 +17,6 @@ limitations under the License.
 package util
 
 import (
-	"io"
 	"io/ioutil"
 	"os/exec"
 
@@ -31,34 +30,23 @@ var DefaultExecCommand Command = &Commander{}
 // Command is an interface used to run commands. All packages should use this
 // interface instead of calling exec.Cmd directly.
 type Command interface {
-	RunCommand(cmd *exec.Cmd, stdin io.Reader) ([]byte, []byte, error)
+	RunCommand(cmd *exec.Cmd) ([]byte, []byte, error)
 }
 
-func RunCommand(cmd *exec.Cmd, stdin io.Reader) ([]byte, []byte, error) {
-	return DefaultExecCommand.RunCommand(cmd, stdin)
+func RunCommand(cmd *exec.Cmd) ([]byte, []byte, error) {
+	return DefaultExecCommand.RunCommand(cmd)
 }
 
 // Commander is the exec.Cmd implementation of the Command interface
 type Commander struct{}
 
-// RunCommand runs an exec.Command, optionally reading from stdin and return
-// the stdout, stderr, and error responses respectively.
-func (*Commander) RunCommand(cmd *exec.Cmd, stdin io.Reader) ([]byte, []byte, error) {
+// RunCommand runs an exec.Command and return the stdout, stderr,
+// and error responses respectively.
+func (*Commander) RunCommand(cmd *exec.Cmd) ([]byte, []byte, error) {
 	logrus.Debugf("Running command: %s", cmd.Args)
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, nil, err
-	}
-
-	if stdin != nil {
-		stdinPipe, err := cmd.StdinPipe()
-		if err != nil {
-			return nil, nil, err
-		}
-		go func() {
-			defer stdinPipe.Close()
-			io.Copy(stdinPipe, stdin)
-		}()
 	}
 
 	stderrPipe, err := cmd.StderrPipe()

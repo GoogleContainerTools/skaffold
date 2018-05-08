@@ -50,7 +50,7 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	if *remote {
 		cmd := exec.Command("gcloud", "container", "clusters", "get-credentials", *gkeClusterName, "--zone", *gkeZone, "--project", *gcpProject)
-		if stdout, stderr, err := util.RunCommand(cmd, nil); err != nil {
+		if stdout, stderr, err := util.RunCommand(cmd); err != nil {
 			logrus.Fatalf("Error authenticating to GKE cluster stdout: %s, stderr: %s, err: %s", stdout, stderr, err)
 		}
 	}
@@ -179,7 +179,7 @@ func TestRun(t *testing.T) {
 			}
 			cmd.Env = env
 			cmd.Dir = testCase.dir
-			out, outerr, err := util.RunCommand(cmd, nil)
+			out, outerr, err := util.RunCommand(cmd)
 			if err != nil {
 				t.Fatalf("skaffold run: \nstdout: %s\nstderr: %s\nerror: %s", out, outerr, err)
 			}
@@ -212,7 +212,7 @@ func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
 	}
 
 	kubectlCmd := exec.Command("kubectl", "config", "set-context", context.Cluster, "--namespace", ns.Name)
-	out, outerr, err := util.RunCommand(kubectlCmd, nil)
+	out, outerr, err := util.RunCommand(kubectlCmd)
 	if err != nil {
 		t.Fatalf("kubectl config set-context --namespace: %s\nstderr: %s\nerror: %s", out, outerr, err)
 	}
@@ -225,13 +225,15 @@ func TestFix(t *testing.T) {
 
 	fixCmd := exec.Command("skaffold", "fix", "-f", "skaffold.yaml")
 	fixCmd.Dir = "testdata/old-config"
-	out, _, err := util.RunCommand(fixCmd, nil)
+	out, _, err := util.RunCommand(fixCmd)
 	if err != nil {
 		t.Fatalf("testing error: %s", err.Error())
 	}
+
 	runCmd := exec.Command("skaffold", "run", "-f", "-")
 	runCmd.Dir = "testdata/old-config"
-	_, _, err = util.RunCommand(runCmd, bytes.NewReader(out))
+	runCmd.Stdin = bytes.NewReader(out)
+	_, _, err = util.RunCommand(runCmd)
 	if err != nil {
 		t.Fatalf("testing error: %s", err.Error())
 	}
