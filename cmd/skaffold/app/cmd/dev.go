@@ -46,5 +46,5 @@ func dev(out io.Writer, filename string) error {
 		return err
 	}
 
-	return runner.Build(ctx)
+	return runner.Dev(ctx)
 }
