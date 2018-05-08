@@ -14,9 +14,9 @@ build:
   # The template is compiled and executed against the current environment, with two automatic variables injected:
   #   - IMAGE_NAME: The name of the image being built, as supplied in the artifacts section
   #   - DIGEST: The digest of the newly built image.
-  # envTemplate: - 
+  # envTemplate: -
   #   template: "{{.RELEASE}}-{{.IMAGE_NAME}}"
-  
+
   # tagPolicy:
   #   sha256: {}
 
@@ -73,3 +73,11 @@ deploy:
     # - deployment/web-app1
     # - namespace:deployment/web-app2
     #
+
+# profiles section has all the profile information which can be used to override any build or deploy configuration
+profiles:
+  - name: gcb
+    build:
+      googleCloudBuild:
+        projectId: k8s-skaffold
+        # Google Cloud Build's project id
