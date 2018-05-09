@@ -37,8 +37,8 @@ type SkaffoldConfig struct {
 	Profiles []Profile    `yaml:"profiles,omitempty"`
 }
 
-func (config *SkaffoldConfig) GetVersion() string {
-	return config.APIVersion
+func (c *SkaffoldConfig) GetVersion() string {
+	return c.APIVersion
 }
 
 // BuildConfig contains all the configuration for the build steps
@@ -156,17 +156,38 @@ type BazelArtifact struct {
 	BuildTarget string `yaml:"target"`
 }
 
-func defaultToLocalBuild(config *SkaffoldConfig) {
-	if config.Build.BuildType != (BuildType{}) {
+// Parse reads a SkaffoldConfig from yaml.
+func (c *SkaffoldConfig) Parse(contents []byte, useDefaults bool) error {
+	if err := yaml.Unmarshal(contents, c); err != nil {
+		return err
+	}
+
+	if useDefaults {
+		c.setDefaultValues()
+	}
+
+	return nil
+}
+
+func (c *SkaffoldConfig) setDefaultValues() {
+	c.defaultToLocalBuild()
+	c.defaultToDockerArtifacts()
+	c.setDefaultTagger()
+	c.setDefaultDockerfiles()
+	c.setDefaultWorkspaces()
+}
+
+func (c *SkaffoldConfig) defaultToLocalBuild() {
+	if c.Build.BuildType != (BuildType{}) {
 		return
 	}
 
 	logrus.Debugf("Defaulting build type to local build")
-	config.Build.BuildType.LocalBuild = &LocalBuild{}
+	c.Build.BuildType.LocalBuild = &LocalBuild{}
 }
 
-func defaultToDockerArtifacts(config *SkaffoldConfig) {
-	for _, artifact := range config.Build.Artifacts {
+func (c *SkaffoldConfig) defaultToDockerArtifacts() {
+	for _, artifact := range c.Build.Artifacts {
 		if artifact.ArtifactType != (ArtifactType{}) {
 			continue
 		}
@@ -177,24 +198,24 @@ func defaultToDockerArtifacts(config *SkaffoldConfig) {
 	}
 }
 
-func setDefaultTagger(cfg *SkaffoldConfig) {
-	if cfg.Build.TagPolicy != (TagPolicy{}) {
+func (c *SkaffoldConfig) setDefaultTagger() {
+	if c.Build.TagPolicy != (TagPolicy{}) {
 		return
 	}
 
-	cfg.Build.TagPolicy = TagPolicy{GitTagger: &GitTagger{}}
+	c.Build.TagPolicy = TagPolicy{GitTagger: &GitTagger{}}
 }
 
-func setDefaultDockerfiles(config *SkaffoldConfig) {
-	for _, artifact := range config.Build.Artifacts {
+func (c *SkaffoldConfig) setDefaultDockerfiles() {
+	for _, artifact := range c.Build.Artifacts {
 		if artifact.DockerArtifact != nil && artifact.DockerArtifact.DockerfilePath == "" {
 			artifact.DockerArtifact.DockerfilePath = constants.DefaultDockerfilePath
 		}
 	}
 }
 
-func setDefaultWorkspaces(config *SkaffoldConfig) {
-	for _, artifact := range config.Build.Artifacts {
+func (c *SkaffoldConfig) setDefaultWorkspaces() {
+	for _, artifact := range c.Build.Artifacts {
 		if artifact.Workspace == "" {
 			artifact.Workspace = "."
 		}
@@ -203,23 +224,24 @@ func setDefaultWorkspaces(config *SkaffoldConfig) {
 
 // ApplyProfiles returns configuration modified by the application
 // of a list of profiles.
-func (config *SkaffoldConfig) ApplyProfiles(profiles []string) error {
+func (c *SkaffoldConfig) ApplyProfiles(profiles []string) error {
 	var err error
 
-	byName := profilesByName(config.Profiles)
+	byName := profilesByName(c.Profiles)
 	for _, name := range profiles {
 		profile, present := byName[name]
 		if !present {
 			return fmt.Errorf("couldn't find profile %s", name)
 		}
 
-		err = applyProfile(config, profile)
+		err = applyProfile(c, profile)
 		if err != nil {
 			return errors.Wrapf(err, "applying profile %s", name)
 		}
 	}
 
-	config.Profiles = nil
+	c.setDefaultValues()
+	c.Profiles = nil
 
 	return nil
 }
@@ -241,18 +263,4 @@ func profilesByName(profiles []Profile) map[string]Profile {
 		byName[profile.Name] = profile
 	}
 	return byName
-}
-
-func (config *SkaffoldConfig) Parse(contents []byte, useDefaults bool) error {
-	if err := yaml.Unmarshal(contents, config); err != nil {
-		return err
-	}
-	if useDefaults {
-		defaultToLocalBuild(config)
-		defaultToDockerArtifacts(config)
-		setDefaultTagger(config)
-		setDefaultDockerfiles(config)
-		setDefaultWorkspaces(config)
-	}
-	return nil
 }
