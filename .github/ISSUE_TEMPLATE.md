@@ -1,5 +1,7 @@
-Issues without logs and details are more complicated to fix.
-Please help us!
+<!-- 
+  Issues without logs and details are more complicated to fix.
+  Please help us by filling the template below!
+-->
 
 ### Expected behavior
 
@@ -7,14 +9,15 @@ Please help us!
 
 ### Information
 
-```
-Skaffold version: version...
-Operating system: ...
-Content of skaffold.yaml: ...
+- Skaffold version: version...
+- Operating system: ...
+- Contents of skaffold.yaml:
+
+```yaml
+<paste your skaffold.yaml here>
 ```
 
 ### Steps to reproduce the behavior
 
-  1. ...
-  2. ...
-  
+1. ...
+2. ...
