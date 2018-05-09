@@ -19,13 +19,11 @@ package transform
 import (
 	"fmt"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/sirupsen/logrus"
 )
 
 func ToV1Alpha2(vc util.VersionedConfig) (util.VersionedConfig, error) {
@@ -104,7 +102,6 @@ func ToV1Alpha2(vc util.VersionedConfig) (util.VersionedConfig, error) {
 		APIVersion: v1alpha2.Version,
 		Kind:       oldConfig.Kind,
 		Deploy: v1alpha2.DeployConfig{
-			Name: oldConfig.Deploy.Name,
 			DeployType: v1alpha2.DeployType{
 				HelmDeploy:    newHelmDeploy,
 				KubectlDeploy: newKubectlDeploy,
