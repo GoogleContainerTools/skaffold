@@ -68,7 +68,12 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 func (h *HelmDeployer) args(moreArgs ...string) []string {
-	return append([]string{"--kube-context", h.kubeContext}, moreArgs...)
+	args := []string{"--kube-context", h.kubeContext}
+
+	if h.HelmDeploy.TillerNamespace != "" {
+		args = append(args, []string{"--tiller-namespace", h.HelmDeploy.TillerNamespace}...)
+	}
+	return append(args, moreArgs...)
 }
 
 func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, b *build.BuildResult) error {

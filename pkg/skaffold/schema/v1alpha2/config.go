@@ -113,7 +113,8 @@ type KubectlDeploy struct {
 
 // HelmDeploy contains the configuration needed for deploying with helm
 type HelmDeploy struct {
-	Releases []HelmRelease `yaml:"releases,omitempty"`
+	Releases        []HelmRelease `yaml:"releases,omitempty"`
+	TillerNamespace string        `yaml:"tillerNamespace,omitempty"`
 }
 
 type HelmRelease struct {
