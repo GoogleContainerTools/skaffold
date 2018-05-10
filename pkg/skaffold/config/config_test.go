@@ -88,7 +88,7 @@ func TestParseConfig(t *testing.T) {
 					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
 					withDockerArtifact("example", ".", "Dockerfile"),
 				),
-				withDeploy("example"),
+				withDeploy(),
 			),
 		},
 		{
@@ -100,7 +100,7 @@ func TestParseConfig(t *testing.T) {
 					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
 					withBazelArtifact("image2", "./examples/app2", "//:example.tar"),
 				),
-				withDeploy("example"),
+				withDeploy(),
 			),
 		},
 		{
@@ -146,9 +146,9 @@ func withGCBBuild(id string, ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldC
 	}
 }
 
-func withDeploy(name string, ops ...func(*v1alpha2.DeployConfig)) func(*SkaffoldConfig) {
+func withDeploy(ops ...func(*v1alpha2.DeployConfig)) func(*SkaffoldConfig) {
 	return func(cfg *SkaffoldConfig) {
-		d := v1alpha2.DeployConfig{Name: name}
+		d := v1alpha2.DeployConfig{}
 		for _, op := range ops {
 			op(&d)
 		}

@@ -95,7 +95,6 @@ type KanikoBuild struct {
 
 // DeployConfig contains all the configuration needed by the deploy steps
 type DeployConfig struct {
-	Name       string `yaml:"name,omitempty"`
 	DeployType `yaml:",inline"`
 }
 
