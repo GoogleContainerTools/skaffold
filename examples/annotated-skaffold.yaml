@@ -1,83 +1,115 @@
 apiVersion: skaffold/v1alpha2
 kind: Config
-build:
-  # tagPolicy determines how skaffold is going to tag your image
-  # we provide a few strategies here, although you most likely won't need to care!
-  # Valid values for tagPolicy are
-  #
-  # sha256 tags the image with the checksum of the built image (image id)
-  # sha256: {}
-  # gitCommit tags the image with the git commit of your current repository
-  # gitCommit: {}
-  # envTemplate tags the image with a configurable template string.
-  # The template string must be in the golang text/template syntax: https://golang.org/pkg/text/template/
-  # The template is compiled and executed against the current environment, with two automatic variables injected:
-  #   - IMAGE_NAME: The name of the image being built, as supplied in the artifacts section
-  #   - DIGEST: The digest of the newly built image.
-  # envTemplate: -
-  #   template: "{{.RELEASE}}-{{.IMAGE_NAME}}"
 
-  # tagPolicy:
-  #   sha256: {}
+build:
+  # tagPolicy determines how skaffold is going to tag your images.
+  # We provide a few strategies here, although you most likely won't need to care!
+  # The policy can `gitCommit`, `sha256` or `envTemplate`.
+  # If not specified, it defaults to `gitCommit: {}`.
+  tagPolicy:
+    # Tag the image with the git commit of your current repository.
+    gitCommit: {}
+
+    # Tag the image with the checksum of the built image (image id).
+    sha256: {}
+
+    # Tag the image with a configurable template string.
+    # The template must be in the golang text/template syntax: https://golang.org/pkg/text/template/
+    # The template is compiled and executed against the current environment,
+    # with those variables injected:
+    #   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.
+    #   DIGEST       |  Digest of the newly built image. For eg. `sha256:27ffc7f352665cc50ae3cbcc4b2725e36062f1b38c611b6f95d6df9a7510de23`.
+    #   DIGEST_ALGO  |  Algorithm used by the digest: For eg. `sha256`.
+    #   DIGEST_HEX   |  Digest of the newly built image. For eg. `27ffc7f352665cc50ae3cbcc4b2725e36062f1b38c611b6f95d6df9a7510de23`.
+    envTemplate:
+      template: "{{.RELEASE}}-{{.IMAGE_NAME}}"
 
   # artifacts is a list of the actual images you're going to be building
   # you can include as many as you want here.
   artifacts:
-    # The name of the image we're going to build, the full reference to the built
-    # image will be available later in the the deploy section
+    # The name of the image to be built.
   - imageName: gcr.io/k8s-skaffold/skaffold-example
-    # workspace is the path to your dockerfile context. Defaults to ".""
+    # The path to your dockerfile context. Defaults to ".".
     workspace: ../examples/getting-started
-    # docker: {} # Use this for custom Docker configuration
-    docker: {}
-      # Dockerfile location relative to workspace. Defaults to "Dockerfile"
-      # dockerfilePath: Dockerfile
+
+    # Each artifact is of a given type among: `docker` and `bazel`.
+    # If not specified, it defaults to `docker: {}`.
+    docker:
+      # Dockerfile's location relative to workspace. Defaults to "Dockerfile"
+      dockerfilePath: Dockerfile
+      # Key/value arguements passed to the docker build.
+      buildArgs:
+        key1: "value1"
+        key2: "value2"
+
+    # bazel requires bazel CLI to be installed and the artifacts sources to 
+    # contain Bazel configuration files.
+    bazel:
+      target: //:skaffold_example.tar
 
   # This next section is where you'll put your specific builder configuration.
-  # Here, we're using a local builder, which simply builds using the host docker
-
-  # If you're using minikube or Docker for Desktop, you can skip the push step
-  # for even faster build and deploy cycles.
-  # local: {} # Use this for minikube or Docker for Desktop configuration
-  local: {}
-    # Skaffold defers to your ~/.docker/config for authentication information
-    # If you're using GCR, make sure that you have gcloud and
+  # Valid builders are `local`, `googleCloudBuild` and `kaniko.
+  # Defaults to `local: {}`
+  local:
+    # Pushing the images can be skipped. If no value is specified, it'll default to
+    # `true` on minikube or Docker for Desktop, for even faster build and deploy cycles.
+    # `false` on other types of kubernetes clusters that require pushing the images. 
+    # Skaffold defers to your ~/.docker/config for authentication information.
+    # If you're using Google Container Registry, make sure that you have gcloud and
     # docker-credentials-helper-gcr configured correctly.
-    #
-    # gcloud components install docker-credential-gcr
-    # docker-credential-gcr configure-docker
-    # skipPush: true
+    skipPush: true
+
+  # Docker artifacts can be built on Google Container Builder. The projectId then needs
+  # to be provided and the currently logged user should be given permissions to trigger
+  # new builds on GCB.
+  googleCloudBuild:
+    projectId: YOUR_PROJECT
+
+  # Docker artifacts can be built on a Kubernetes cluster with Kaniko.
+  # Sources will be sent to a GCS bucket whose name is provided.
+  # Kaniko also needs access to a service account to push the final image.
+  # See https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster
+  kaniko:
+    gcsBucket: k8s-skaffold
+    pullSecret: /a/secret/path/serviceaccount.json
+    # pullSecret: ~/secret/path/serviceaccount.json
 
 # The deploy section has all the information needed to deploy. Along with build:
 # it is a required section.
 deploy:
-  # We'll be deferring to kubectl for the deployment. The kubectl deployer uses
-  # a client side `kubectl apply` to apply the manifests to the cluster. You'll
-  # need a kubectl version installed that's compatible with your cluster.
-  kubectl:
-    # Manifests is a list of manifests to deploy from files
-    manifests:
-    # The path to where these manifests live.  path accepts a
-    # filepath.Glob, so * can be used to deploy a whole folder.
-    #
-    # Examples:
-    # project outside this repository
-    # - /home/mrick/path/to/different/project/deploy/*
-    #
-    - ../examples/getting-started/k8s-*
-    # RemoteManifests is a list of manifests to deploy from remote cluster
-    remoteManifests:
-    # The path to where these manifests live in remote kubernetes cluster
-    #
-    # Examples:
-    # - deployment/web-app1
-    # - namespace:deployment/web-app2
-    #
+  # The type of the deployment method can be `kubectl` or `helm`.
 
-# profiles section has all the profile information which can be used to override any build or deploy configuration
+  # The kubectl deployer uses  a client side `kubectl apply` to apply the manifests to the cluster.
+  # You'll need a kubectl CLI version installed that's compatible with your cluster.
+  kubectl:
+    # manifests to deploy from files.
+    manifests:
+    - /home/mrick/path/to/different/project/deploy/*
+    - ../examples/getting-started/k8s-*
+
+    # manifests to deploy from remote cluster.
+    # The path to where these manifests live in remote kubernetes cluster.
+    remoteManifests:
+    - deployment/web-app1
+    - namespace:deployment/web-app2
+
+  helm:
+    # helm releases to deploy.
+    releases:
+    - name: skaffold-helm
+      chartPath: skaffold-helm
+      valuesFilePath: helm-skaffold-values.yaml
+      values:
+        image: skaffold-helm
+      namespace: skaffold
+      version: ""
+      # setValues get appended to the helm deploy with --set.  
+      setValues: 
+        key: "value"
+
+# profiles can be used to override any build or deploy configuration.
+# When applied, a profile replaces either build or deploy or both default configurations.
 profiles:
   - name: gcb
-    build:
-      googleCloudBuild:
-        projectId: k8s-skaffold
-        # Google Cloud Build's project id
+    build: ...
+    deploy: ...
