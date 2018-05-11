@@ -66,45 +66,45 @@ func TestNewMinikubeImageAPIClient(t *testing.T) {
 	}{
 		{
 			description: "correct client",
-			cmd: testutil.NewFakeRunCommand("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
+			cmd: testutil.NewFakeCmdOut("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
 DOCKER_HOST=http://127.0.0.1:8080
 DOCKER_CERT_PATH=testdata
-DOCKER_API_VERSION=1.23`, "", nil),
+DOCKER_API_VERSION=1.23`, nil),
 		},
 		{
 			description: "correct client",
-			cmd: testutil.NewFakeRunCommand("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
+			cmd: testutil.NewFakeCmdOut("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
 DOCKER_HOST=http://127.0.0.1:8080
 DOCKER_CERT_PATH=bad/cert/path
-DOCKER_API_VERSION=1.23`, "", nil),
+DOCKER_API_VERSION=1.23`, nil),
 			shouldErr: true,
 		},
 		{
 			description: "missing host env, no error",
-			cmd: testutil.NewFakeRunCommand("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
+			cmd: testutil.NewFakeCmdOut("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
 DOCKER_CERT_PATH=testdata
-DOCKER_API_VERSION=1.23`, "", nil),
+DOCKER_API_VERSION=1.23`, nil),
 		},
 		{
 			description: "missing version env, no error",
-			cmd: testutil.NewFakeRunCommand("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
+			cmd: testutil.NewFakeCmdOut("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
 DOCKER_HOST=http://127.0.0.1:8080
-DOCKER_CERT_PATH=testdata`, "", nil),
+DOCKER_CERT_PATH=testdata`, nil),
 		},
 		{
 			description: "missing version env, no error",
-			cmd: testutil.NewFakeRunCommand("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
+			cmd: testutil.NewFakeCmdOut("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
 DOCKER_HOST=badurl
 DOCKER_CERT_PATH=testdata
-DOCKER_API_VERSION=1.23`, "", nil),
+DOCKER_API_VERSION=1.23`, nil),
 			shouldErr: true,
 		},
 		{
 			description: "bad env output, should fallback to host docker",
-			cmd: testutil.NewFakeRunCommand("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
+			cmd: testutil.NewFakeCmdOut("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
 DOCKER_HOST=http://127.0.0.1:8080=toomanyvalues
 DOCKER_CERT_PATH=testdata
-DOCKER_API_VERSION=1.23`, "", nil),
+DOCKER_API_VERSION=1.23`, nil),
 		},
 	}
 

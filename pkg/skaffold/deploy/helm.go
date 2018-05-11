@@ -74,11 +74,11 @@ func (h *HelmDeployer) args(moreArgs ...string) []string {
 func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, b *build.BuildResult) error {
 	isInstalled := true
 	getCmd := exec.Command("helm", h.args("get", r.Name)...)
-	if stdout, stderr, err := util.RunCommand(getCmd, nil); err != nil {
-		logrus.Debugf("Error getting release %s: %s stdout: %s stderr: %s", r.Name, err, string(stdout), string(stderr))
+	if _, err := util.RunCmdOut(getCmd); err != nil {
 		fmt.Fprintf(out, "Helm release %s not installed. Installing...\n", r.Name)
 		isInstalled = false
 	}
+
 	params, err := JoinTagsToBuildResult(b.Builds, r.Values)
 	if err != nil {
 		return errors.Wrap(err, "matching build results to chart values")
@@ -93,11 +93,9 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, b *b
 	// First build dependencies.
 	logrus.Infof("Building helm dependencies...")
 	depCmd := exec.Command("helm", h.args("dep", "build", r.ChartPath)...)
-	stdout, stderr, err := util.RunCommand(depCmd, nil)
-	if err != nil {
-		return errors.Wrapf(err, "helm dep build stdout: %s, stderr: %s", string(stdout), string(stderr))
+	if err := util.RunCmd(depCmd); err != nil {
+		return errors.Wrap(err, "building helm dependencies")
 	}
-	out.Write(stdout)
 
 	args := h.args()
 	if !isInstalled {
@@ -125,22 +123,16 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, b *b
 	args = append(args, setOpts...)
 
 	execCmd := exec.Command("helm", args...)
-	stdout, stderr, err = util.RunCommand(execCmd, nil)
-	if err != nil {
-		return errors.Wrapf(err, "helm updater stdout: %s, stderr: %s", string(stdout), string(stderr))
-	}
-
-	out.Write(stdout)
-	return nil
+	return util.RunCmd(execCmd)
 }
 
 func (h *HelmDeployer) deleteRelease(out io.Writer, r v1alpha2.HelmRelease) error {
-	getCmd := exec.Command("helm", h.args("delete", r.Name, "--purge")...)
-	stdout, stderr, err := util.RunCommand(getCmd, nil)
+	deleteCmd := exec.Command("helm", h.args("delete", r.Name, "--purge")...)
+
+	err := util.RunCmd(deleteCmd)
 	if err != nil {
-		logrus.Debugf("running helm delete %s: %v stdout: %s stderr: %s", r.Name, err, string(stdout), string(stderr))
+		logrus.Debugf("deleting release %s: %v\n", r.Name, err)
 	}
 
-	out.Write(stdout)
 	return nil
 }

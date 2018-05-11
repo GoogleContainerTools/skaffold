@@ -111,7 +111,7 @@ func TestKubectlDeploy(t *testing.T) {
 					},
 				},
 			},
-			command: testutil.NewFakeRunCommand("kubectl --context kubecontext apply -f -", "", "", nil),
+			command: testutil.NewFakeCmd("kubectl --context kubecontext apply -f -", nil),
 			b: &build.BuildResult{
 				Builds: []build.Build{
 					{
@@ -132,7 +132,7 @@ func TestKubectlDeploy(t *testing.T) {
 					},
 				},
 			},
-			command: testutil.NewFakeRunCommand("kubectl --context kubecontext apply -f -", "", "", fmt.Errorf("")),
+			command: testutil.NewFakeCmd("kubectl --context kubecontext apply -f -", fmt.Errorf("")),
 			b: &build.BuildResult{
 				Builds: []build.Build{
 					{
@@ -181,7 +181,7 @@ func TestKubectlCleanup(t *testing.T) {
 					},
 				},
 			},
-			command: testutil.NewFakeRunCommand("kubectl --context kubecontext delete -f -", "", "", nil),
+			command: testutil.NewFakeCmd("kubectl --context kubecontext delete -f -", nil),
 		},
 		{
 			description: "cleanup error",
@@ -192,7 +192,7 @@ func TestKubectlCleanup(t *testing.T) {
 					},
 				},
 			},
-			command:   testutil.NewFakeRunCommand("kubectl --context kubecontext delete -f -", "", "", errors.New("BUG")),
+			command:   testutil.NewFakeCmd("kubectl --context kubecontext delete -f -", errors.New("BUG")),
 			shouldErr: true,
 		},
 	}
@@ -220,11 +220,11 @@ func TestKubectlCleanup(t *testing.T) {
 
 func TestReplaceImages(t *testing.T) {
 	var tests = []struct {
-		description       string
-		builds            []build.Build
-		manifests         manifestList
-		expectedManifests manifestList
-		shouldErr         bool
+		description string
+		builds      []build.Build
+		manifests   manifestList
+		expected    manifestList
+		shouldErr   bool
 	}{
 		{
 			description: "pod",
@@ -240,7 +240,7 @@ spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold-example
     name: getting-started`)},
-			expectedManifests: manifestList{[]byte(`apiVersion: v1
+			expected: manifestList{[]byte(`apiVersion: v1
 kind: Pod
 metadata:
   name: getting-started
@@ -250,9 +250,9 @@ spec:
     name: getting-started`)},
 		},
 		{
-			description:       "empty",
-			manifests:         manifestList{[]byte(""), []byte("  ")},
-			expectedManifests: manifestList{},
+			description: "empty",
+			manifests:   manifestList{[]byte(""), []byte("  ")},
+			expected:    manifestList{},
 		},
 		{
 			description: "ignore tag",
@@ -268,7 +268,7 @@ spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold-example:IGNORED
     name: getting-started`)},
-			expectedManifests: manifestList{[]byte(`apiVersion: v1
+			expected: manifestList{[]byte(`apiVersion: v1
 kind: Pod
 metadata:
   name: getting-started
@@ -313,7 +313,7 @@ spec:
   - port: 50051
   selector:
     app: leeroy-app`)},
-			expectedManifests: manifestList{
+			expected: manifestList{
 				[]byte(`apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
@@ -352,7 +352,7 @@ spec:
 
 			resultManifest, err := manifests.replaceImages(test.builds)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedManifests.String(), resultManifest.String())
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected.String(), resultManifest.String())
 		})
 	}
 }

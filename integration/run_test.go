@@ -50,8 +50,8 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	if *remote {
 		cmd := exec.Command("gcloud", "container", "clusters", "get-credentials", *gkeClusterName, "--zone", *gkeZone, "--project", *gcpProject)
-		if stdout, stderr, err := util.RunCommand(cmd, nil); err != nil {
-			logrus.Fatalf("Error authenticating to GKE cluster stdout: %s, stderr: %s, err: %s", stdout, stderr, err)
+		if err := util.RunCmd(cmd); err != nil {
+			logrus.Fatalf("Error authenticating to GKE cluster stdout: %v", err)
 		}
 	}
 
@@ -179,9 +179,9 @@ func TestRun(t *testing.T) {
 			}
 			cmd.Env = env
 			cmd.Dir = testCase.dir
-			out, outerr, err := util.RunCommand(cmd, nil)
+			err := util.RunCmd(cmd)
 			if err != nil {
-				t.Fatalf("skaffold run: \nstdout: %s\nstderr: %s\nerror: %s", out, outerr, err)
+				t.Fatalf("skaffold run: %v", err)
 			}
 
 			for _, p := range testCase.pods {
@@ -212,9 +212,9 @@ func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
 	}
 
 	kubectlCmd := exec.Command("kubectl", "config", "set-context", context.Cluster, "--namespace", ns.Name)
-	out, outerr, err := util.RunCommand(kubectlCmd, nil)
+	err := util.RunCmd(kubectlCmd)
 	if err != nil {
-		t.Fatalf("kubectl config set-context --namespace: %s\nstderr: %s\nerror: %s", out, outerr, err)
+		t.Fatalf("kubectl config set-context --namespace: %v", err)
 	}
 
 	return ns, func() { client.CoreV1().Namespaces().Delete(ns.Name, &meta_v1.DeleteOptions{}); return }
@@ -225,14 +225,16 @@ func TestFix(t *testing.T) {
 
 	fixCmd := exec.Command("skaffold", "fix", "-f", "skaffold.yaml")
 	fixCmd.Dir = "testdata/old-config"
-	out, _, err := util.RunCommand(fixCmd, nil)
+	out, err := util.RunCmdOut(fixCmd)
 	if err != nil {
-		t.Fatalf("testing error: %s", err.Error())
+		t.Fatalf("testing error: %v", err)
 	}
+
 	runCmd := exec.Command("skaffold", "run", "-f", "-")
 	runCmd.Dir = "testdata/old-config"
-	_, _, err = util.RunCommand(runCmd, bytes.NewReader(out))
+	runCmd.Stdin = bytes.NewReader(out)
+	err = util.RunCmd(runCmd)
 	if err != nil {
-		t.Fatalf("testing error: %s", err.Error())
+		t.Fatalf("testing error: %v", err)
 	}
 }

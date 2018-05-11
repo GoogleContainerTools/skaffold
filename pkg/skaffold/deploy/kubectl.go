@@ -149,13 +149,10 @@ func (k *KubectlDeployer) kubectl(in io.Reader, out io.Writer, arg ...string) er
 	args := append([]string{"--context", k.kubeContext}, arg...)
 
 	cmd := exec.Command("kubectl", args...)
-	stdout, stderr, err := util.RunCommand(cmd, in)
-	if err != nil {
-		return errors.Wrapf(err, "running kubectl: stdout: %s, stderr: %s, err: %v", stdout, stderr, err)
-	}
+	cmd.Stdin = in
+	cmd.Stdout = out
 
-	out.Write(stdout)
-	return nil
+	return util.RunCmd(cmd)
 }
 
 func manifestFiles(manifests []string) ([]string, error) {

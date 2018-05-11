@@ -18,32 +18,53 @@ package testutil
 
 import (
 	"fmt"
-	"io"
 	"os/exec"
 	"strings"
 )
 
-type FakeRunCommand struct {
+type FakeCmd struct {
 	expectedCommand string
-	stdout          string
-	stderr          string
+	stdout          []byte
 	err             error
 }
 
-func NewFakeRunCommand(expectedCommand, stdout, stderr string, err error) *FakeRunCommand {
-	return &FakeRunCommand{
+func NewFakeCmd(expectedCommand string, err error) *FakeCmd {
+	return &FakeCmd{
 		expectedCommand: expectedCommand,
-		stdout:          stdout,
-		stderr:          stderr,
 		err:             err,
 	}
 }
 
-func (f *FakeRunCommand) RunCommand(cmd *exec.Cmd, stdin io.Reader) ([]byte, []byte, error) {
+func NewFakeCmdOut(expectedCommand, stdout string, err error) *FakeCmd {
+	return &FakeCmd{
+		expectedCommand: expectedCommand,
+		stdout:          []byte(stdout),
+		err:             err,
+	}
+}
+
+func (f *FakeCmd) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	actualCommand := strings.Join(cmd.Args, " ")
 	if f.expectedCommand != actualCommand {
-		return nil, nil, fmt.Errorf("Expected: %s. Got: %s", f.expectedCommand, actualCommand)
+		return nil, fmt.Errorf("Expected: %s. Got: %s", f.expectedCommand, actualCommand)
 	}
 
-	return []byte(f.stdout), []byte(f.stderr), f.err
+	if f.stdout == nil {
+		return nil, fmt.Errorf("Expected RunCmd(%s) to be called. Got RunCmdOut(%s)", f.expectedCommand, actualCommand)
+	}
+
+	return f.stdout, f.err
+}
+
+func (f *FakeCmd) RunCmd(cmd *exec.Cmd) error {
+	actualCommand := strings.Join(cmd.Args, " ")
+	if f.expectedCommand != actualCommand {
+		return fmt.Errorf("Expected: %s. Got: %s", f.expectedCommand, actualCommand)
+	}
+
+	if f.stdout != nil {
+		return fmt.Errorf("Expected RunCmdOut(%s) to be called. Got RunCmd(%s)", f.expectedCommand, actualCommand)
+	}
+
+	return f.err
 }
