@@ -97,51 +97,56 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig, out 
 }
 
 func getBuilder(cfg *v1alpha2.BuildConfig, kubeContext string) (build.Builder, error) {
-	if cfg.LocalBuild != nil {
+	switch {
+	case cfg.LocalBuild != nil:
 		logrus.Debugf("Using builder: local")
 		return build.NewLocalBuilder(cfg, kubeContext)
-	}
-	if cfg.GoogleCloudBuild != nil {
+
+	case cfg.GoogleCloudBuild != nil:
 		logrus.Debugf("Using builder: google cloud")
 		return build.NewGoogleCloudBuilder(cfg)
-	}
-	if cfg.KanikoBuild != nil {
+
+	case cfg.KanikoBuild != nil:
 		logrus.Debugf("Using builder: kaniko")
 		return build.NewKanikoBuilder(cfg)
-	}
 
-	return nil, fmt.Errorf("Unknown builder for config %+v", cfg)
+	default:
+		return nil, fmt.Errorf("Unknown builder for config %+v", cfg)
+	}
 }
 
 func getDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) (deploy.Deployer, error) {
-	if cfg.KubectlDeploy != nil {
+	switch {
+	case cfg.KubectlDeploy != nil:
 		return deploy.NewKubectlDeployer(cfg, kubeContext), nil
-	}
-	if cfg.HelmDeploy != nil {
-		return deploy.NewHelmDeployer(cfg, kubeContext), nil
-	}
 
-	return nil, fmt.Errorf("Unknown deployer for config %+v", cfg)
+	case cfg.HelmDeploy != nil:
+		return deploy.NewHelmDeployer(cfg, kubeContext), nil
+
+	default:
+		return nil, fmt.Errorf("Unknown deployer for config %+v", cfg)
+	}
 }
 
 func getTagger(t v1alpha2.TagPolicy, customTag string) (tag.Tagger, error) {
-	if customTag != "" {
+	switch {
+	case customTag != "":
 		return &tag.CustomTag{
 			Tag: customTag,
 		}, nil
-	}
 
-	if t.EnvTemplateTagger != nil {
+	case t.EnvTemplateTagger != nil:
 		return tag.NewEnvTemplateTagger(t.EnvTemplateTagger.Template)
-	}
-	if t.ShaTagger != nil {
-		return &tag.ChecksumTagger{}, nil
-	}
-	if t.GitTagger != nil {
-		return &tag.GitCommit{}, nil
-	}
 
-	return nil, fmt.Errorf("Unknown tagger for strategy %s", t)
+	case t.ShaTagger != nil:
+		return &tag.ChecksumTagger{}, nil
+
+	case t.GitTagger != nil:
+		return &tag.GitCommit{}, nil
+
+	default:
+		return nil, fmt.Errorf("Unknown tagger for strategy %s", t)
+	}
 }
 
 // Build builds the artifacts.
