@@ -141,11 +141,10 @@ func TestHelmDeploy(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = tt.cmd
 
-			_, err := tt.deployer.Deploy(context.Background(), &bytes.Buffer{}, tt.buildResult)
+			err := tt.deployer.Deploy(context.Background(), &bytes.Buffer{}, tt.buildResult)
 			testutil.CheckError(t, tt.shouldErr, err)
 		})
 	}
-
 }
 
 type MockHelm struct {

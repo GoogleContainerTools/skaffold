@@ -83,23 +83,23 @@ func NewKubectlDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) *Kubectl
 
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, b *build.BuildResult) (*Result, error) {
+func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, b *build.BuildResult) error {
 	manifests, err := k.readOrGenerateManifests(b)
 	if err != nil {
-		return nil, errors.Wrap(err, "reading manifests")
+		return errors.Wrap(err, "reading manifests")
 	}
 
 	manifests, err = manifests.replaceImages(b.Builds)
 	if err != nil {
-		return nil, errors.Wrap(err, "replacing images in manifests")
+		return errors.Wrap(err, "replacing images in manifests")
 	}
 
 	err = k.kubectl(manifests.reader(), out, "apply", "-f", "-")
 	if err != nil {
-		return nil, errors.Wrap(err, "deploying manifests")
+		return errors.Wrap(err, "deploying manifests")
 	}
 
-	return &Result{}, nil
+	return nil
 }
 
 // Cleanup deletes what was deployed by calling Deploy.

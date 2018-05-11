@@ -61,7 +61,6 @@ func TestKubectlDeploy(t *testing.T) {
 		cfg         *v1alpha2.DeployConfig
 		b           *build.BuildResult
 		command     util.Command
-		expected    *Result
 		shouldErr   bool
 	}{
 		{
@@ -120,7 +119,6 @@ func TestKubectlDeploy(t *testing.T) {
 					},
 				},
 			},
-			expected: &Result{},
 		},
 		{
 			description: "deploy command error",
@@ -158,9 +156,9 @@ func TestKubectlDeploy(t *testing.T) {
 			}
 
 			k := NewKubectlDeployer(test.cfg, testKubeContext)
-			res, err := k.Deploy(context.Background(), &bytes.Buffer{}, test.b)
+			err := k.Deploy(context.Background(), &bytes.Buffer{}, test.b)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
+			testutil.CheckError(t, test.shouldErr, err)
 		})
 	}
 }

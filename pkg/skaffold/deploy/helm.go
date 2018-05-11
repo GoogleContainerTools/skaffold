@@ -43,13 +43,13 @@ func NewHelmDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) *HelmDeploy
 	}
 }
 
-func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, b *build.BuildResult) (*Result, error) {
+func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, b *build.BuildResult) error {
 	for _, r := range h.HelmDeploy.Releases {
 		if err := h.deployRelease(out, r, b); err != nil {
-			return nil, errors.Wrapf(err, "deploying %s", r.Name)
+			return errors.Wrapf(err, "deploying %s", r.Name)
 		}
 	}
-	return nil, nil
+	return nil
 }
 
 // Not implemented

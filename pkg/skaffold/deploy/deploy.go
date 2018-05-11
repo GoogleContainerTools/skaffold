@@ -24,16 +24,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 )
 
-// Result is currently unused, but a stub for results that might be returned
-// from a Deployer.Run()
-type Result struct{}
-
 // Deployer is the Deploy API of skaffold and responsible for deploying
 // the build results to a Kubernetes cluster
 type Deployer interface {
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster.
-	Deploy(context.Context, io.Writer, *build.BuildResult) (*Result, error)
+	Deploy(context.Context, io.Writer, *build.BuildResult) error
 
 	// Dependencies returns a list of files that the deployer depends on.
 	// In dev mode, a redeploy will be triggered

@@ -26,7 +26,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
@@ -62,12 +61,11 @@ func (t *TestBuildAll) Build(ctx context.Context, w io.Writer, tagger tag.Tagger
 }
 
 type TestDeployer struct {
-	res *deploy.Result
 	err error
 }
 
-func (t *TestDeployer) Deploy(context.Context, io.Writer, *build.BuildResult) (*deploy.Result, error) {
-	return t.res, t.err
+func (t *TestDeployer) Deploy(context.Context, io.Writer, *build.BuildResult) error {
+	return t.err
 }
 
 func (t *TestDeployer) Dependencies() ([]string, error) {
@@ -86,9 +84,9 @@ func (t *TestDeployAll) Dependencies() ([]string, error) {
 	return nil, nil
 }
 
-func (t *TestDeployAll) Deploy(ctx context.Context, w io.Writer, bRes *build.BuildResult) (*deploy.Result, error) {
+func (t *TestDeployAll) Deploy(ctx context.Context, w io.Writer, bRes *build.BuildResult) error {
 	t.deployed = bRes
-	return &deploy.Result{}, nil
+	return nil
 }
 
 func (t *TestDeployAll) Cleanup(ctx context.Context, out io.Writer) error {
@@ -241,10 +239,8 @@ func TestRun(t *testing.T) {
 				kubeclient: client,
 				opts:       &config.SkaffoldOptions{},
 				Tagger:     &tag.ChecksumTagger{},
-				Deployer: &TestDeployer{
-					res: &deploy.Result{},
-				},
-				out: ioutil.Discard,
+				Deployer:   &TestDeployer{},
+				out:        ioutil.Discard,
 			},
 		},
 		{
@@ -385,7 +381,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	ctx := context.Background()
 
 	// Build all artifacts
-	bRes, _, err := runner.buildAndDeploy(ctx, []*v1alpha2.Artifact{
+	bRes, err := runner.buildAndDeploy(ctx, []*v1alpha2.Artifact{
 		{ImageName: "image1"},
 		{ImageName: "image2"},
 	}, nil)
@@ -401,7 +397,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	}
 
 	// Rebuild only one
-	bRes, _, err = runner.buildAndDeploy(ctx, []*v1alpha2.Artifact{
+	bRes, err = runner.buildAndDeploy(ctx, []*v1alpha2.Artifact{
 		{ImageName: "image2"},
 	}, nil)
 
