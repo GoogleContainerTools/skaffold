@@ -35,18 +35,18 @@ import (
 )
 
 type TestBuilder struct {
-	res *build.BuildResult
-	err error
+	result []build.Build
+	err    error
 }
 
-func (t *TestBuilder) Build(context.Context, io.Writer, tag.Tagger, []*v1alpha2.Artifact) (*build.BuildResult, error) {
-	return t.res, t.err
+func (t *TestBuilder) Build(context.Context, io.Writer, tag.Tagger, []*v1alpha2.Artifact) ([]build.Build, error) {
+	return t.result, t.err
 }
 
 type TestBuildAll struct {
 }
 
-func (t *TestBuildAll) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) (*build.BuildResult, error) {
+func (t *TestBuildAll) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Build, error) {
 	var builds []build.Build
 
 	for _, artifact := range artifacts {
@@ -55,16 +55,14 @@ func (t *TestBuildAll) Build(ctx context.Context, w io.Writer, tagger tag.Tagger
 		})
 	}
 
-	return &build.BuildResult{
-		Builds: builds,
-	}, nil
+	return builds, nil
 }
 
 type TestDeployer struct {
 	err error
 }
 
-func (t *TestDeployer) Deploy(context.Context, io.Writer, *build.BuildResult) error {
+func (t *TestDeployer) Deploy(context.Context, io.Writer, []build.Build) error {
 	return t.err
 }
 
@@ -77,15 +75,15 @@ func (t *TestDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 type TestDeployAll struct {
-	deployed *build.BuildResult
+	deployed []build.Build
 }
 
 func (t *TestDeployAll) Dependencies() ([]string, error) {
 	return nil, nil
 }
 
-func (t *TestDeployAll) Deploy(ctx context.Context, w io.Writer, bRes *build.BuildResult) error {
-	t.deployed = bRes
+func (t *TestDeployAll) Deploy(ctx context.Context, w io.Writer, builds []build.Build) error {
+	t.deployed = builds
 	return nil
 }
 
@@ -232,10 +230,8 @@ func TestRun(t *testing.T) {
 		{
 			description: "run no error",
 			runner: &SkaffoldRunner{
-				config: &v1alpha2.SkaffoldConfig{},
-				Builder: &TestBuilder{
-					res: &build.BuildResult{},
-				},
+				config:     &v1alpha2.SkaffoldConfig{},
+				Builder:    &TestBuilder{},
 				kubeclient: client,
 				opts:       &config.SkaffoldOptions{},
 				Tagger:     &tag.ChecksumTagger{},
@@ -275,10 +271,8 @@ func TestRun(t *testing.T) {
 				opts:       &config.SkaffoldOptions{},
 				kubeclient: client,
 				Tagger:     &tag.ChecksumTagger{},
-				Builder: &TestBuilder{
-					res: &build.BuildResult{},
-				},
-				out: ioutil.Discard,
+				Builder:    &TestBuilder{},
+				out:        ioutil.Discard,
 			},
 			shouldErr: true,
 		},
@@ -306,12 +300,10 @@ func TestDev(t *testing.T) {
 				config:     &v1alpha2.SkaffoldConfig{},
 				kubeclient: client,
 				Builder: &TestBuilder{
-					res: &build.BuildResult{
-						Builds: []build.Build{
-							{
-								ImageName: "test",
-								Tag:       "test:tag",
-							},
+					result: []build.Build{
+						{
+							ImageName: "test",
+							Tag:       "test:tag",
 						},
 					},
 				},
@@ -328,7 +320,6 @@ func TestDev(t *testing.T) {
 				config:     &v1alpha2.SkaffoldConfig{},
 				kubeclient: client,
 				Builder: &TestBuilder{
-					res: &build.BuildResult{},
 					err: fmt.Errorf(""),
 				},
 				Deployer:       &TestDeployer{},
@@ -341,11 +332,9 @@ func TestDev(t *testing.T) {
 		{
 			description: "bad watch dev mode",
 			runner: &SkaffoldRunner{
-				config:     &v1alpha2.SkaffoldConfig{},
-				kubeclient: client,
-				Builder: &TestBuilder{
-					res: &build.BuildResult{},
-				},
+				config:         &v1alpha2.SkaffoldConfig{},
+				kubeclient:     client,
+				Builder:        &TestBuilder{},
 				Deployer:       &TestDeployer{},
 				WatcherFactory: NewWatcherFactory(fmt.Errorf("")),
 				opts:           &config.SkaffoldOptions{},
@@ -389,11 +378,11 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	if err != nil {
 		t.Errorf("Didn't expect an error. Got %s", err)
 	}
-	if len(bRes.Builds) != 2 {
-		t.Errorf("Expected 2 artifacts to be built. Got %d", len(bRes.Builds))
+	if len(bRes) != 2 {
+		t.Errorf("Expected 2 artifacts to be built. Got %d", len(bRes))
 	}
-	if len(deployer.deployed.Builds) != 2 {
-		t.Errorf("Expected 2 artifacts to be deployed. Got %d", len(deployer.deployed.Builds))
+	if len(deployer.deployed) != 2 {
+		t.Errorf("Expected 2 artifacts to be deployed. Got %d", len(deployer.deployed))
 	}
 
 	// Rebuild only one
@@ -404,10 +393,10 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	if err != nil {
 		t.Errorf("Didn't expect an error. Got %s", err)
 	}
-	if len(bRes.Builds) != 1 {
-		t.Errorf("Expected 1 artifact to be built. Got %d", len(bRes.Builds))
+	if len(bRes) != 1 {
+		t.Errorf("Expected 1 artifact to be built. Got %d", len(bRes))
 	}
-	if len(deployer.deployed.Builds) != 2 {
-		t.Errorf("Expected 2 artifacts to be deployed. Got %d", len(deployer.deployed.Builds))
+	if len(deployer.deployed) != 2 {
+		t.Errorf("Expected 2 artifacts to be deployed. Got %d", len(deployer.deployed))
 	}
 }

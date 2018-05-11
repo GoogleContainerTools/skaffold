@@ -151,8 +151,8 @@ func (r *SkaffoldRunner) Build(ctx context.Context) error {
 		return err
 	}
 
-	for _, res := range bRes.Builds {
-		fmt.Fprintf(r.out, "%s -> %s\n", res.ImageName, res.Tag)
+	for _, build := range bRes {
+		fmt.Fprintf(r.out, "%s -> %s\n", build.ImageName, build.Tag)
 	}
 
 	return nil
@@ -202,9 +202,9 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 	colorPicker := kubernetes.NewColorPicker(artifacts)
 	logger := kubernetes.NewLogAggregator(r.out, podSelector, colorPicker)
 
-	onBuildSuccess := func(bRes *build.BuildResult) {
-		// Update which images are logged with which color
-		for _, build := range bRes.Builds {
+	onBuildSuccess := func(builds []build.Build) {
+		// Update which images are logged.
+		for _, build := range builds {
 			podSelector.AddImage(build.Tag)
 		}
 	}
@@ -230,10 +230,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 	onDeployChange := func(changedPaths []string) {
 		logger.Mute()
 
-		err = r.deploy(ctx, &build.BuildResult{
-			Builds: r.builds,
-		})
-		if err != nil {
+		if err := r.deploy(ctx, r.builds); err != nil {
 			logrus.Warnf("deploy: %s", err)
 		}
 
@@ -260,7 +257,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 	return g.Wait()
 }
 
-func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, artifacts []*v1alpha2.Artifact, onBuildSuccess func(*build.BuildResult)) (*build.BuildResult, error) {
+func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, artifacts []*v1alpha2.Artifact, onBuildSuccess func([]build.Build)) ([]build.Build, error) {
 	bRes, err := r.build(ctx, artifacts)
 	if err != nil {
 		return nil, errors.Wrap(err, "build")
@@ -271,11 +268,9 @@ func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, artifacts []*v1alph
 	}
 
 	// Make sure all artifacts are redeployed. Not only those that were just rebuilt.
-	r.builds = mergeWithPreviousBuilds(bRes.Builds, r.builds)
+	r.builds = mergeWithPreviousBuilds(bRes, r.builds)
 
-	err = r.deploy(ctx, &build.BuildResult{
-		Builds: r.builds,
-	})
+	err = r.deploy(ctx, r.builds)
 	if err != nil {
 		return bRes, errors.Wrap(err, "deploy")
 	}
@@ -283,7 +278,7 @@ func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, artifacts []*v1alph
 	return bRes, nil
 }
 
-func (r *SkaffoldRunner) build(ctx context.Context, artifacts []*v1alpha2.Artifact) (*build.BuildResult, error) {
+func (r *SkaffoldRunner) build(ctx context.Context, artifacts []*v1alpha2.Artifact) ([]build.Build, error) {
 	start := time.Now()
 	fmt.Fprintln(r.out, "Starting build...")
 
@@ -297,11 +292,11 @@ func (r *SkaffoldRunner) build(ctx context.Context, artifacts []*v1alpha2.Artifa
 	return bRes, nil
 }
 
-func (r *SkaffoldRunner) deploy(ctx context.Context, bRes *build.BuildResult) error {
+func (r *SkaffoldRunner) deploy(ctx context.Context, builds []build.Build) error {
 	start := time.Now()
 	fmt.Fprintln(r.out, "Starting deploy...")
 
-	err := r.Deployer.Deploy(ctx, r.out, bRes)
+	err := r.Deployer.Deploy(ctx, r.out, builds)
 	if err != nil {
 		return errors.Wrap(err, "deploy step")
 	}

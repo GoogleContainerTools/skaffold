@@ -42,9 +42,7 @@ func NewKanikoBuilder(cfg *v1alpha2.BuildConfig) (*KanikoBuilder, error) {
 	}, nil
 }
 
-func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) (*BuildResult, error) {
-	res := &BuildResult{}
-
+func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]Build, error) {
 	client, err := kubernetes.GetClientset()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting kubernetes client")
@@ -74,6 +72,8 @@ func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tag
 	}()
 
 	// TODO(r2d4): parallel builds
+	var builds []Build
+
 	for _, artifact := range artifacts {
 		initialTag, err := kaniko.RunKanikoBuild(ctx, out, artifact, k.KanikoBuild)
 		if err != nil {
@@ -97,11 +97,12 @@ func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tag
 			return nil, errors.Wrap(err, "tagging image")
 		}
 
-		res.Builds = append(res.Builds, Build{
+		builds = append(builds, Build{
 			ImageName: artifact.ImageName,
 			Tag:       tag,
 			Artifact:  artifact,
 		})
 	}
-	return res, nil
+
+	return builds, nil
 }

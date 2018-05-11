@@ -77,7 +77,7 @@ func (l *LocalBuilder) runBuildForArtifact(ctx context.Context, out io.Writer, a
 
 // Build runs a docker build on the host and tags the resulting image with
 // its checksum. It streams build progress to the writer argument.
-func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) (*BuildResult, error) {
+func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]Build, error) {
 	if l.localCluster {
 		if _, err := fmt.Fprintf(out, "Found [%s] context, using local docker daemon.\n", l.kubeContext); err != nil {
 			return nil, errors.Wrap(err, "writing status")
@@ -85,7 +85,8 @@ func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagg
 	}
 	defer l.api.Close()
 
-	res := &BuildResult{}
+	var builds []Build
+
 	for _, artifact := range artifacts {
 		initialTag, err := l.runBuildForArtifact(ctx, out, artifact)
 		if err != nil {
@@ -118,14 +119,14 @@ func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagg
 			}
 		}
 
-		res.Builds = append(res.Builds, Build{
+		builds = append(builds, Build{
 			ImageName: artifact.ImageName,
 			Tag:       tag,
 			Artifact:  artifact,
 		})
 	}
 
-	return res, nil
+	return builds, nil
 }
 
 func (l *LocalBuilder) buildDocker(ctx context.Context, out io.Writer, a *v1alpha2.Artifact) (string, error) {

@@ -79,9 +79,8 @@ func TestLocalRun(t *testing.T) {
 		tagger       tag.Tagger
 		localCluster bool
 		artifacts    []*v1alpha2.Artifact
-
-		expectedBuild *BuildResult
-		shouldErr     bool
+		expected     []Build
+		shouldErr    bool
 	}{
 		{
 			description: "single build",
@@ -98,13 +97,11 @@ func TestLocalRun(t *testing.T) {
 			},
 			tagger: &tag.ChecksumTagger{},
 			api:    testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
-			expectedBuild: &BuildResult{
-				[]Build{
-					{
-						ImageName: "gcr.io/test/image",
-						Tag:       "gcr.io/test/image:imageid",
-						Artifact:  testImage1,
-					},
+			expected: []Build{
+				{
+					ImageName: "gcr.io/test/image",
+					Tag:       "gcr.io/test/image:imageid",
+					Artifact:  testImage1,
 				},
 			},
 		},
@@ -145,13 +142,11 @@ func TestLocalRun(t *testing.T) {
 				},
 			},
 			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
-			expectedBuild: &BuildResult{
-				[]Build{
-					{
-						ImageName: "gcr.io/test/image",
-						Tag:       "gcr.io/test/image:imageid",
-						Artifact:  testImage1,
-					},
+			expected: []Build{
+				{
+					ImageName: "gcr.io/test/image",
+					Tag:       "gcr.io/test/image:imageid",
+					Artifact:  testImage1,
 				},
 			},
 		},
@@ -254,8 +249,9 @@ func TestLocalRun(t *testing.T) {
 			if test.artifacts == nil {
 				test.artifacts = test.config.Artifacts
 			}
+
 			res, err := l.Build(context.Background(), test.out, test.tagger, test.artifacts)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedBuild, res)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
 		})
 	}
 }

@@ -24,11 +24,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 )
 
-// BuildResult holds the results of builds
-type BuildResult struct {
-	Builds []Build
-}
-
 // Build is the result corresponding to each Artifact built.
 type Build struct {
 	ImageName string
@@ -41,5 +36,5 @@ type Build struct {
 // This could include pushing to a authorized repository or loading the nodes with the image.
 // If artifacts is supplied, the builder should only rebuild those artifacts.
 type Builder interface {
-	Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) (*BuildResult, error)
+	Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]Build, error)
 }

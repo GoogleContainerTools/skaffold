@@ -29,12 +29,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-var testBuildResult = &build.BuildResult{
-	Builds: []build.Build{
-		{
-			ImageName: "skaffold-helm",
-			Tag:       "skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184",
-		},
+var testBuilds = []build.Build{
+	{
+		ImageName: "skaffold-helm",
+		Tag:       "skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184",
 	},
 }
 
@@ -78,21 +76,20 @@ func TestHelmDeploy(t *testing.T) {
 		description string
 		cmd         util.Command
 		deployer    *HelmDeployer
-		buildResult *build.BuildResult
-
-		shouldErr bool
+		builds      []build.Build
+		shouldErr   bool
 	}{
 		{
 			description: "deploy success",
 			cmd:         &MockHelm{t: t},
 			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext),
-			buildResult: testBuildResult,
+			builds:      testBuilds,
 		},
 		{
 			description: "deploy error unmatched parameter",
 			cmd:         &MockHelm{t: t},
 			deployer:    NewHelmDeployer(testDeployConfigParameterUnmatched, testKubeContext),
-			buildResult: testBuildResult,
+			builds:      testBuilds,
 			shouldErr:   true,
 		},
 		{
@@ -102,8 +99,8 @@ func TestHelmDeploy(t *testing.T) {
 				getResult:     cmdOutput{"", fmt.Errorf("not found")},
 				upgradeResult: cmdOutput{"", fmt.Errorf("should not have called upgrade")},
 			},
-			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext),
-			buildResult: testBuildResult,
+			deployer: NewHelmDeployer(testDeployConfig, testKubeContext),
+			builds:   testBuilds,
 		},
 		{
 			description: "get success should upgrade not install",
@@ -111,8 +108,8 @@ func TestHelmDeploy(t *testing.T) {
 				t:             t,
 				installResult: cmdOutput{"", fmt.Errorf("should not have called install")},
 			},
-			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext),
-			buildResult: testBuildResult,
+			deployer: NewHelmDeployer(testDeployConfig, testKubeContext),
+			builds:   testBuilds,
 		},
 		{
 			description: "deploy error",
@@ -120,9 +117,9 @@ func TestHelmDeploy(t *testing.T) {
 				t:             t,
 				upgradeResult: cmdOutput{"", fmt.Errorf("unexpected error")},
 			},
-			shouldErr:   true,
-			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext),
-			buildResult: testBuildResult,
+			shouldErr: true,
+			deployer:  NewHelmDeployer(testDeployConfig, testKubeContext),
+			builds:    testBuilds,
 		},
 		{
 			description: "dep build error",
@@ -130,9 +127,9 @@ func TestHelmDeploy(t *testing.T) {
 				t:         t,
 				depResult: cmdOutput{"", fmt.Errorf("unexpected error")},
 			},
-			shouldErr:   true,
-			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext),
-			buildResult: testBuildResult,
+			shouldErr: true,
+			deployer:  NewHelmDeployer(testDeployConfig, testKubeContext),
+			builds:    testBuilds,
 		},
 	}
 
@@ -141,7 +138,7 @@ func TestHelmDeploy(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = tt.cmd
 
-			err := tt.deployer.Deploy(context.Background(), &bytes.Buffer{}, tt.buildResult)
+			err := tt.deployer.Deploy(context.Background(), &bytes.Buffer{}, tt.builds)
 			testutil.CheckError(t, tt.shouldErr, err)
 		})
 	}

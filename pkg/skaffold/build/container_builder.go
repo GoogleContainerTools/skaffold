@@ -77,22 +77,25 @@ func NewGoogleCloudBuilder(cfg *v1alpha2.BuildConfig) (*GoogleCloudBuilder, erro
 	return &GoogleCloudBuilder{cfg}, nil
 }
 
-func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) (*BuildResult, error) {
+func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]Build, error) {
 	client, err := google.DefaultClient(ctx, cloudbuild.CloudPlatformScope)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting google client")
 	}
+
 	cbclient, err := cloudbuild.New(client)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting builder")
 	}
+
 	cbclient.UserAgent = version.UserAgent()
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting cloud storage client")
 	}
 	defer c.Close()
-	builds := []Build{}
+
+	var builds []Build
 	for _, artifact := range artifacts {
 		build, err := cb.buildArtifact(ctx, out, tagger, cbclient, c, artifact)
 		if err != nil {
@@ -101,9 +104,7 @@ func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger t
 		builds = append(builds, *build)
 	}
 
-	return &BuildResult{
-		Builds: builds,
-	}, nil
+	return builds, nil
 }
 
 func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, cbclient *cloudbuild.Service, c *cstorage.Client, artifact *v1alpha2.Artifact) (*Build, error) {
