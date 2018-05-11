@@ -217,6 +217,7 @@ func TestKubectlCleanup(t *testing.T) {
 		})
 	}
 }
+
 func TestReplaceImages(t *testing.T) {
 	var tests = []struct {
 		description       string
@@ -247,6 +248,11 @@ spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold-example:TAG
     name: getting-started`)},
+		},
+		{
+			description:       "empty",
+			manifests:         manifestList{[]byte(""), []byte("  ")},
+			expectedManifests: manifestList{},
 		},
 		{
 			description: "ignore tag",

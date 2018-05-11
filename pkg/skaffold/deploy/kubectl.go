@@ -208,6 +208,8 @@ func (k *KubectlDeployer) readManifests() (manifestList, error) {
 		manifests = append(manifests, manifest)
 	}
 
+	logrus.Debugln("manifests", manifests.String())
+
 	return manifests, nil
 }
 
@@ -293,6 +295,10 @@ func (l *manifestList) replaceImages(b []build.Build) (manifestList, error) {
 			return nil, errors.Wrap(err, "reading kubernetes YAML")
 		}
 
+		if len(m) == 0 {
+			continue
+		}
+
 		recursiveReplaceImage(m, replacements)
 
 		updatedManifest, err := yaml.Marshal(m)
@@ -308,6 +314,8 @@ func (l *manifestList) replaceImages(b []build.Build) (manifestList, error) {
 			logrus.Warnf("image [%s] is not used by the deployment", name)
 		}
 	}
+
+	logrus.Debugln("manifests with tagged images", updatedManifests.String())
 
 	return updatedManifests, nil
 }
