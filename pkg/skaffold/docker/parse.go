@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -32,10 +31,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/google/go-containerregistry/v1"
-
-	"github.com/google/go-containerregistry/authn"
-	"github.com/google/go-containerregistry/name"
-	"github.com/google/go-containerregistry/v1/remote"
 
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/fileutils"
@@ -218,9 +213,9 @@ func retrieveImage(image string) (*v1.ConfigFile, error) {
 			return nil, err
 		}
 	} else {
-		cfg, err = retrieveRemoteImage(image)
+		cfg, err = retrieveRemoteConfig(image)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "getting remote config")
 		}
 	}
 
@@ -238,21 +233,12 @@ func retrieveLocalImage(client DockerAPIClient, image string) ([]byte, error) {
 	return raw, nil
 }
 
-func retrieveRemoteImage(image string) (*v1.ConfigFile, error) {
-
-	tag, err := name.NewTag(image, name.WeakValidation)
+func retrieveRemoteConfig(identifier string) (*v1.ConfigFile, error) {
+	img, err := remoteImage(identifier)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getting image")
 	}
 
-	auth, err := authn.DefaultKeychain.Resolve(tag.Registry)
-	if err != nil {
-		return nil, err
-	}
-	img, err := remote.Image(tag, auth, http.DefaultTransport)
-	if err != nil {
-		return nil, err
-	}
 	return img.ConfigFile()
 }
 
