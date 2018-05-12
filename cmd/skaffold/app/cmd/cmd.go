@@ -95,8 +95,7 @@ func NewRunner(out io.Writer, filename string) (*runner.SkaffoldRunner, error) {
 		return nil, errors.Wrap(err, "reading configuration")
 	}
 
-	opts.Output = out
-	r, err := runner.NewForConfig(opts, config)
+	r, err := runner.NewForConfig(opts, config, out)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting skaffold config")
 	}

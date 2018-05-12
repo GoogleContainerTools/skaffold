@@ -17,10 +17,10 @@ limitations under the License.
 package runner
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -215,7 +215,7 @@ func TestNewForConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			cfg, err := NewForConfig(&config.SkaffoldOptions{}, test.config)
+			cfg, err := NewForConfig(&config.SkaffoldOptions{}, test.config, ioutil.Discard)
 			testutil.CheckError(t, test.shouldErr, err)
 			if cfg != nil {
 				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, test.expected, cfg.Builder)
@@ -239,13 +239,12 @@ func TestRun(t *testing.T) {
 					res: &build.BuildResult{},
 				},
 				kubeclient: client,
-				opts: &config.SkaffoldOptions{
-					Output: &bytes.Buffer{},
-				},
-				Tagger: &tag.ChecksumTagger{},
+				opts:       &config.SkaffoldOptions{},
+				Tagger:     &tag.ChecksumTagger{},
 				Deployer: &TestDeployer{
 					res: &deploy.Result{},
 				},
+				out: ioutil.Discard,
 			},
 		},
 		{
@@ -256,10 +255,9 @@ func TestRun(t *testing.T) {
 				Builder: &TestBuilder{
 					err: fmt.Errorf(""),
 				},
-				opts: &config.SkaffoldOptions{
-					Output: &bytes.Buffer{},
-				},
+				opts:   &config.SkaffoldOptions{},
 				Tagger: &tag.ChecksumTagger{},
+				out:    ioutil.Discard,
 			},
 			shouldErr: true,
 		},
@@ -278,14 +276,13 @@ func TestRun(t *testing.T) {
 						},
 					},
 				},
-				opts: &config.SkaffoldOptions{
-					Output: &bytes.Buffer{},
-				},
+				opts:       &config.SkaffoldOptions{},
 				kubeclient: client,
 				Tagger:     &tag.ChecksumTagger{},
 				Builder: &TestBuilder{
 					res: &build.BuildResult{},
 				},
+				out: ioutil.Discard,
 			},
 			shouldErr: true,
 		},
@@ -324,10 +321,9 @@ func TestDev(t *testing.T) {
 				},
 				Deployer:       &TestDeployer{},
 				WatcherFactory: NewWatcherFactory(nil, []string{}),
-				opts: &config.SkaffoldOptions{
-					Output: &bytes.Buffer{},
-				},
-				Tagger: &tag.ChecksumTagger{},
+				opts:           &config.SkaffoldOptions{},
+				Tagger:         &tag.ChecksumTagger{},
+				out:            ioutil.Discard,
 			},
 		},
 		{
@@ -342,9 +338,8 @@ func TestDev(t *testing.T) {
 				Deployer:       &TestDeployer{},
 				Tagger:         &TestTagger{},
 				WatcherFactory: NewWatcherFactory(nil, []string{}),
-				opts: &config.SkaffoldOptions{
-					Output: &bytes.Buffer{},
-				},
+				opts:           &config.SkaffoldOptions{},
+				out:            ioutil.Discard,
 			},
 		},
 		{
@@ -357,10 +352,9 @@ func TestDev(t *testing.T) {
 				},
 				Deployer:       &TestDeployer{},
 				WatcherFactory: NewWatcherFactory(fmt.Errorf("")),
-				opts: &config.SkaffoldOptions{
-					Output: &bytes.Buffer{},
-				},
-				Tagger: &tag.ChecksumTagger{},
+				opts:           &config.SkaffoldOptions{},
+				Tagger:         &tag.ChecksumTagger{},
+				out:            ioutil.Discard,
 			},
 			shouldErr: true,
 		},
@@ -381,12 +375,11 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	deployer := &TestDeployAll{}
 
 	runner := &SkaffoldRunner{
-		opts: &config.SkaffoldOptions{
-			Output: &bytes.Buffer{},
-		},
+		opts:       &config.SkaffoldOptions{},
 		kubeclient: kubeclient,
 		Builder:    builder,
 		Deployer:   deployer,
+		out:        ioutil.Discard,
 	}
 
 	ctx := context.Background()

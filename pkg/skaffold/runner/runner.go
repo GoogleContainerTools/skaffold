@@ -19,6 +19,7 @@ package runner
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"syscall"
@@ -50,12 +51,13 @@ type SkaffoldRunner struct {
 	kubeclient clientgo.Interface
 	builds     []build.Build
 	depMap     *build.DependencyMap
+	out        io.Writer
 }
 
 var kubernetesClient = kubernetes.GetClientset
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
-func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*SkaffoldRunner, error) {
+func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig, out io.Writer) (*SkaffoldRunner, error) {
 	kubeContext, err := kubernetes.CurrentContext()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting current cluster context")
@@ -90,6 +92,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 		opts:           opts,
 		kubeclient:     client,
 		WatcherFactory: watch.NewWatcher,
+		out:            out,
 	}, nil
 }
 
@@ -146,7 +149,7 @@ func (r *SkaffoldRunner) Build(ctx context.Context) error {
 	bRes, err := r.build(ctx, r.config.Build.Artifacts)
 
 	for _, res := range bRes.Builds {
-		fmt.Fprintf(r.opts.Output, "%s -> %s\n", res.ImageName, res.Tag)
+		fmt.Fprintf(r.out, "%s -> %s\n", res.ImageName, res.Tag)
 	}
 
 	return err
@@ -194,7 +197,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 
 	podSelector := kubernetes.NewImageList()
 	colorPicker := kubernetes.NewColorPicker(artifacts)
-	logger := kubernetes.NewLogAggregator(r.opts.Output, podSelector, colorPicker)
+	logger := kubernetes.NewLogAggregator(r.out, podSelector, colorPicker)
 
 	onBuildSuccess := func(bRes *build.BuildResult) {
 		// Update which images are logged with which color
@@ -214,7 +217,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 			logrus.Warnf("run: %s", err)
 		}
 
-		fmt.Fprint(r.opts.Output, "Watching for changes...\n")
+		fmt.Fprint(r.out, "Watching for changes...\n")
 		logger.Unmute()
 	}
 
@@ -226,7 +229,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 		if err != nil {
 			logrus.Warnf("deploy: %s", err)
 		}
-		fmt.Fprint(r.opts.Output, "Watching for changes...\n")
+		fmt.Fprint(r.out, "Watching for changes...\n")
 		logger.Unmute()
 	}
 
@@ -274,31 +277,31 @@ func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, artifacts []*v1alph
 
 func (r *SkaffoldRunner) build(ctx context.Context, artifacts []*v1alpha2.Artifact) (*build.BuildResult, error) {
 	start := time.Now()
-	fmt.Fprintln(r.opts.Output, "Starting build...")
+	fmt.Fprintln(r.out, "Starting build...")
 
-	bRes, err := r.Builder.Build(ctx, r.opts.Output, r.Tagger, artifacts)
+	bRes, err := r.Builder.Build(ctx, r.out, r.Tagger, artifacts)
 	if err != nil {
 		return nil, errors.Wrap(err, "build step")
 	}
 
-	fmt.Fprintln(r.opts.Output, "Build complete in", time.Since(start))
+	fmt.Fprintln(r.out, "Build complete in", time.Since(start))
 
 	return bRes, nil
 }
 
 func (r *SkaffoldRunner) deploy(ctx context.Context, bRes *build.BuildResult) (*deploy.Result, error) {
 	start := time.Now()
-	fmt.Fprintln(r.opts.Output, "Starting deploy...")
+	fmt.Fprintln(r.out, "Starting deploy...")
 
-	dRes, err := r.Deployer.Deploy(ctx, r.opts.Output, bRes)
+	dRes, err := r.Deployer.Deploy(ctx, r.out, bRes)
 	if err != nil {
 		return nil, errors.Wrap(err, "deploy step")
 	}
 	if r.opts.Notification {
-		fmt.Fprint(r.opts.Output, constants.TerminalBell)
+		fmt.Fprint(r.out, constants.TerminalBell)
 	}
 
-	fmt.Fprintln(r.opts.Output, "Deploy complete in", time.Since(start))
+	fmt.Fprintln(r.out, "Deploy complete in", time.Since(start))
 
 	return dRes, nil
 }
@@ -325,15 +328,15 @@ func cleanUpOnCtrlC(ctx context.Context, runDevMode func(context.Context) error,
 
 func (r *SkaffoldRunner) cleanup(ctx context.Context) {
 	start := time.Now()
-	fmt.Fprintln(r.opts.Output, "Cleaning up...")
+	fmt.Fprintln(r.out, "Cleaning up...")
 
-	err := r.Deployer.Cleanup(ctx, r.opts.Output)
+	err := r.Deployer.Cleanup(ctx, r.out)
 	if err != nil {
 		logrus.Warnf("cleanup: %s", err)
 		return
 	}
 
-	fmt.Fprintln(r.opts.Output, "Cleanup complete in", time.Since(start))
+	fmt.Fprintln(r.out, "Cleanup complete in", time.Since(start))
 }
 
 func mergeWithPreviousBuilds(builds, previous []build.Build) []build.Build {
