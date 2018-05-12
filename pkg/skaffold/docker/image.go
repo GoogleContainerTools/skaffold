@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-containerregistry/authn"
 	"github.com/google/go-containerregistry/name"
+	"github.com/google/go-containerregistry/v1"
 	"github.com/google/go-containerregistry/v1/remote"
 	"github.com/google/go-containerregistry/v1/remote/transport"
 
@@ -160,18 +161,22 @@ func Digest(ctx context.Context, cli DockerAPIClient, ref string) (string, error
 	return "", nil
 }
 
-func RemoteDigest(identifier string) (string, error) {
+func remoteImage(identifier string) (v1.Image, error) {
 	ref, err := name.ParseReference(identifier, name.WeakValidation)
 	if err != nil {
-		return "", errors.Wrap(err, "parsing initial ref")
+		return nil, errors.Wrap(err, "parsing initial ref")
 	}
 
 	auth, err := authn.DefaultKeychain.Resolve(ref.Context().Registry)
 	if err != nil {
-		return "", errors.Wrap(err, "getting default keychain auth")
+		return nil, errors.Wrap(err, "getting default keychain auth")
 	}
 
-	img, err := remote.Image(ref, auth, http.DefaultTransport)
+	return remote.Image(ref, auth, http.DefaultTransport)
+}
+
+func RemoteDigest(identifier string) (string, error) {
+	img, err := remoteImage(identifier)
 	if err != nil {
 		return "", errors.Wrap(err, "getting image")
 	}
