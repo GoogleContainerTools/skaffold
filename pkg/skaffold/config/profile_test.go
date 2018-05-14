@@ -25,11 +25,11 @@ import (
 
 func TestApplyProfiles(t *testing.T) {
 	tests := []struct {
-		description    string
-		config         SkaffoldConfig
-		profile        string
-		expectedConfig SkaffoldConfig
-		shouldErr      bool
+		description string
+		config      SkaffoldConfig
+		profile     string
+		expected    SkaffoldConfig
+		shouldErr   bool
 	}{
 		{
 			description: "unknown profile",
@@ -61,13 +61,24 @@ func TestApplyProfiles(t *testing.T) {
 					},
 				},
 			},
-			expectedConfig: SkaffoldConfig{
+			expected: SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{
 					Artifacts: []*v1alpha2.Artifact{
-						{ImageName: "image"},
+						{
+							ImageName: "image",
+							Workspace: ".",
+							ArtifactType: v1alpha2.ArtifactType{
+								DockerArtifact: &v1alpha2.DockerArtifact{
+									DockerfilePath: "Dockerfile",
+								},
+							},
+						},
 					},
 					BuildType: v1alpha2.BuildType{
 						GoogleCloudBuild: &v1alpha2.GoogleCloudBuild{},
+					},
+					TagPolicy: v1alpha2.TagPolicy{
+						GitTagger: &v1alpha2.GitTagger{},
 					},
 				},
 				Deploy: v1alpha2.DeployConfig{},
@@ -93,12 +104,23 @@ func TestApplyProfiles(t *testing.T) {
 					},
 				},
 			},
-			expectedConfig: SkaffoldConfig{
+			expected: SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{
 					Artifacts: []*v1alpha2.Artifact{
-						{ImageName: "image"},
+						{
+							ImageName: "image",
+							Workspace: ".",
+							ArtifactType: v1alpha2.ArtifactType{
+								DockerArtifact: &v1alpha2.DockerArtifact{
+									DockerfilePath: "Dockerfile",
+								},
+							},
+						},
 					},
 					TagPolicy: v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}},
+					BuildType: v1alpha2.BuildType{
+						LocalBuild: &v1alpha2.LocalBuild{},
+					},
 				},
 				Deploy: v1alpha2.DeployConfig{},
 			},
@@ -126,13 +148,32 @@ func TestApplyProfiles(t *testing.T) {
 					},
 				},
 			},
-			expectedConfig: SkaffoldConfig{
+			expected: SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{
 					Artifacts: []*v1alpha2.Artifact{
-						{ImageName: "image"},
-						{ImageName: "imageProd"},
+						{
+							ImageName: "image",
+							Workspace: ".",
+							ArtifactType: v1alpha2.ArtifactType{
+								DockerArtifact: &v1alpha2.DockerArtifact{
+									DockerfilePath: "Dockerfile",
+								},
+							},
+						},
+						{
+							ImageName: "imageProd",
+							Workspace: ".",
+							ArtifactType: v1alpha2.ArtifactType{
+								DockerArtifact: &v1alpha2.DockerArtifact{
+									DockerfilePath: "Dockerfile",
+								},
+							},
+						},
 					},
 					TagPolicy: v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}},
+					BuildType: v1alpha2.BuildType{
+						LocalBuild: &v1alpha2.LocalBuild{},
+					},
 				},
 				Deploy: v1alpha2.DeployConfig{},
 			},
@@ -158,21 +199,29 @@ func TestApplyProfiles(t *testing.T) {
 					},
 				},
 			},
-			expectedConfig: SkaffoldConfig{
-				Build: v1alpha2.BuildConfig{},
+			expected: SkaffoldConfig{
+				Build: v1alpha2.BuildConfig{
+					TagPolicy: v1alpha2.TagPolicy{
+						GitTagger: &v1alpha2.GitTagger{},
+					},
+					BuildType: v1alpha2.BuildType{
+						LocalBuild: &v1alpha2.LocalBuild{},
+					},
+				},
 				Deploy: v1alpha2.DeployConfig{
 					DeployType: v1alpha2.DeployType{
 						HelmDeploy: &v1alpha2.HelmDeploy{},
 					},
 				},
 			},
-		}}
+		},
+	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			err := test.config.ApplyProfiles([]string{test.profile})
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedConfig, test.config)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, test.config)
 		})
 	}
 }
