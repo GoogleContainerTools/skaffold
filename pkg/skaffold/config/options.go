@@ -16,8 +16,6 @@ limitations under the License.
 
 package config
 
-import "io"
-
 // SkaffoldOptions are options that are set by command line arguments not included
 // in the config file itself
 type SkaffoldOptions struct {
@@ -25,5 +23,4 @@ type SkaffoldOptions struct {
 	Notification bool
 	Profiles     []string
 	CustomTag    string
-	Output       io.Writer
 }
