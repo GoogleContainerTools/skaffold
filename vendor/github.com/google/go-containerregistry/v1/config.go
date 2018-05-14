@@ -26,7 +26,7 @@ import (
 type ConfigFile struct {
 	Architecture    string    `json:"architecture"`
 	Container       string    `json:"container"`
-	Created         time.Time `json:"created"`
+	Created         Time      `json:"created"`
 	DockerVersion   string    `json:"docker_version"`
 	History         []History `json:"history"`
 	OS              string    `json:"os"`
@@ -38,11 +38,23 @@ type ConfigFile struct {
 
 // History is one entry of a list recording how this container image was built.
 type History struct {
-	Author     string    `json:"author"`
-	Created    time.Time `json:"created"`
-	CreatedBy  string    `json:"created_by"`
-	Comment    string    `json:"comment"`
-	EmptyLayer bool      `json:"empty_layer,omitempty"`
+	Author     string `json:"author"`
+	Created    Time   `json:"created"`
+	CreatedBy  string `json:"created_by"`
+	Comment    string `json:"comment"`
+	EmptyLayer bool   `json:"empty_layer,omitempty"`
+}
+
+// Time is a wrapper around time.Time to help with deep copying
+type Time struct {
+	time.Time
+}
+
+// DeepCopyInto creates a deep-copy of the Time value.  The underlying time.Time
+// type is effectively immutable in the time API, so it is safe to
+// copy-by-assign, despite the presence of (unexported) Pointer fields.
+func (t *Time) DeepCopyInto(out *Time) {
+	*out = *t
 }
 
 // RootFS holds the ordered list of file system deltas that comprise the
@@ -67,7 +79,7 @@ type Config struct {
 	Cmd             []string
 	Domainname      string
 	Entrypoint      []string
-	End             []string
+	Env             []string
 	Hostname        string
 	Image           string
 	Labels          map[string]string
@@ -86,9 +98,8 @@ type Config struct {
 	Shell           []string
 }
 
-// ParseConfigFile parses the io.ReadCloser's contents into a ConfigFile.
-func ParseConfigFile(r io.ReadCloser) (*ConfigFile, error) {
-	defer r.Close()
+// ParseConfigFile parses the io.Reader's contents into a ConfigFile.
+func ParseConfigFile(r io.Reader) (*ConfigFile, error) {
 	cf := ConfigFile{}
 	if err := json.NewDecoder(r).Decode(&cf); err != nil {
 		return nil, err

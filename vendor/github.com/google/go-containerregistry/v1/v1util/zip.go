@@ -25,16 +25,22 @@ var gzipMagicHeader = []byte{'\x1f', '\x8b'}
 // GzipReadCloser reads uncompressed input data from the io.ReadCloser and
 // returns an io.ReadCloser from which compressed data may be read.
 func GzipReadCloser(r io.ReadCloser) (io.ReadCloser, error) {
-	defer r.Close()
+	pr, pw := io.Pipe()
 
-	// TODO(mattmoor): How to avoid buffering this whole thing into memory?
-	data := bytes.NewBuffer(nil)
-	gw := gzip.NewWriter(data)
-	defer gw.Close()
-	if _, err := io.Copy(gw, r); err != nil {
-		return nil, err
-	}
-	return NopReadCloser(data), nil
+	go func() {
+		defer pw.Close()
+		defer r.Close()
+
+		gw, _ := gzip.NewWriterLevel(pw, gzip.BestCompression)
+		defer gw.Close()
+
+		_, err := io.Copy(gw, r)
+		if err != nil {
+			pr.CloseWithError(err)
+		}
+	}()
+
+	return pr, nil
 }
 
 // GunzipReadCloser reads compressed input data from the io.ReadCloser and

@@ -54,6 +54,7 @@ func (ule *compressedLayerExtender) DiffID() (v1.Hash, error) {
 	if err != nil {
 		return v1.Hash{}, err
 	}
+	defer r.Close()
 	h, _, err := v1.SHA256(r)
 	return h, err
 }

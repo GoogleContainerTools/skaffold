@@ -13,4 +13,7 @@
 // limitations under the License.
 
 // Package v1 defines structured types for OCI v1 images
+// +k8s:deepcopy-gen=package
+
+//go:generate deepcopy-gen -O zz_deepcopy_generated --go-header-file $BOILER_PLATE_FILE -i .
 package v1

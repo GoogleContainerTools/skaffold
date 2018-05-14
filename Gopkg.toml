@@ -69,5 +69,5 @@
 
 [[constraint]]
   name = "github.com/google/go-containerregistry"
-  revision = "a74336cb6fc16b36e8402a7ec1562661c14cbee5"
+  revision = "fc1c0d6fb2a64018a6e6f18391338034bc67183d"
 

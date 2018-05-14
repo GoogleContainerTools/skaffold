@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"sync"
@@ -47,7 +46,8 @@ var _ partial.CompressedImageCore = (*remoteImage)(nil)
 
 // Image accesses a given image reference over the provided transport, with the provided authentication.
 func Image(ref name.Reference, auth authn.Authenticator, t http.RoundTripper) (v1.Image, error) {
-	tr, err := transport.New(ref, auth, t, transport.PullScope)
+	scopes := []string{ref.Scope(transport.PullScope)}
+	tr, err := transport.New(ref.Context().Registry, auth, t, scopes)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (r *remoteImage) RawManifest() ([]byte, error) {
 		return nil, err
 	}
 
-	digest, _, err := v1.SHA256(ioutil.NopCloser(bytes.NewReader(manifest)))
+	digest, _, err := v1.SHA256(bytes.NewReader(manifest))
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,6 @@ func (r *remoteImage) RawManifest() ([]byte, error) {
 		err := fmt.Errorf("manifest digest: %q does not match Docker-Content-Digest: %q for %q", digest, checksum, r.ref)
 		if r.ref.Context().RegistryStr() == name.DefaultRegistry {
 			// TODO(docker/distribution#2395): Remove this check.
-			log.Println(err)
 		} else {
 			// When pulling by tag, we can only validate that the digest matches what the registry told us it should be.
 			return nil, err

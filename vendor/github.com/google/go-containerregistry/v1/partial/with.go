@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 
 	"github.com/google/go-containerregistry/v1"
 	"github.com/google/go-containerregistry/v1/v1util"
@@ -37,7 +36,7 @@ func ConfigFile(i WithRawConfigFile) (*v1.ConfigFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	return v1.ParseConfigFile(v1util.NopReadCloser(bytes.NewBuffer(b)))
+	return v1.ParseConfigFile(bytes.NewReader(b))
 }
 
 // ConfigName is a helper for implementing v1.Image
@@ -46,7 +45,7 @@ func ConfigName(i WithRawConfigFile) (v1.Hash, error) {
 	if err != nil {
 		return v1.Hash{}, err
 	}
-	h, _, err := v1.SHA256(v1util.NopReadCloser(bytes.NewBuffer(b)))
+	h, _, err := v1.SHA256(bytes.NewReader(b))
 	return h, err
 }
 
@@ -111,11 +110,7 @@ func DiffIDs(i WithConfigFile) ([]v1.Hash, error) {
 	if err != nil {
 		return nil, err
 	}
-	dids := make([]v1.Hash, len(cfg.RootFS.DiffIDs))
-	for i, did := range cfg.RootFS.DiffIDs {
-		dids[len(dids)-i-1] = did
-	}
-	return dids, nil
+	return cfg.RootFS.DiffIDs, nil
 }
 
 // RawConfigFile is a helper for implementing v1.Image
@@ -154,7 +149,7 @@ func Digest(i WithRawManifest) (v1.Hash, error) {
 	if err != nil {
 		return v1.Hash{}, err
 	}
-	digest, _, err := v1.SHA256(ioutil.NopCloser(bytes.NewReader(mb)))
+	digest, _, err := v1.SHA256(bytes.NewReader(mb))
 	return digest, err
 }
 
@@ -164,7 +159,7 @@ func Manifest(i WithRawManifest) (*v1.Manifest, error) {
 	if err != nil {
 		return nil, err
 	}
-	return v1.ParseManifest(v1util.NopReadCloser(bytes.NewBuffer(b)))
+	return v1.ParseManifest(bytes.NewReader(b))
 }
 
 // WithManifest defines the subset of v1.Image used by these helper methods
@@ -190,7 +185,7 @@ func FSLayers(i WithManifest) ([]v1.Hash, error) {
 	}
 	fsl := make([]v1.Hash, len(m.Layers))
 	for i, l := range m.Layers {
-		fsl[len(fsl)-i-1] = l.Digest
+		fsl[i] = l.Digest
 	}
 	return fsl, nil
 }
