@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"sort"
 	"time"
@@ -48,36 +49,102 @@ type fsWatcher struct {
 	files   map[string]bool
 }
 
+type mtimeWatcher struct {
+	files map[string]time.Time
+}
+
+func (m *mtimeWatcher) Start(ctx context.Context, out io.Writer, onChange func([]string) error) error {
+
+	c := time.NewTicker(2 * time.Second)
+
+	changedPaths := map[string]bool{}
+
+	fmt.Fprintln(out, "Watching for changes...")
+	for {
+		select {
+		case <-c.C:
+			// add things to changedpaths
+			for f := range m.files {
+				fi, err := os.Stat(f)
+				if err != nil {
+					return errors.Wrapf(err, "statting file %s", f)
+				}
+				mtime, ok := m.files[f]
+				if !ok {
+					logrus.Warningf("file %s not found.", f)
+					continue
+				}
+				if mtime != fi.ModTime() {
+					m.files[f] = fi.ModTime()
+					changedPaths[f] = true
+				}
+			}
+			if len(changedPaths) > 0 {
+				if err := onChange(sortedPaths(changedPaths)); err != nil {
+					return errors.Wrap(err, "change callback")
+				}
+				logrus.Infof("Files changed: %v", changedPaths)
+				changedPaths = map[string]bool{}
+			}
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
 // NewWatcher creates a new Watcher on a list of files.
 func NewWatcher(paths []string) (Watcher, error) {
-	w, err := fsnotify.NewWatcher()
-	if err != nil {
-		return nil, errors.Wrapf(err, "creating watcher")
-	}
-
-	files := map[string]bool{}
-
 	sort.Strings(paths)
-	for _, p := range paths {
-		files[p] = true
-		logrus.Infof("Added watch for %s", p)
 
-		if err := w.Add(p); err != nil {
-			w.Close()
-			return nil, errors.Wrapf(err, "adding watch for %s", p)
-		}
-
-		if err := w.Add(filepath.Dir(p)); err != nil {
-			w.Close()
-			return nil, errors.Wrapf(err, "adding watch for %s", p)
-		}
+	// Get the watcher type to use, defaulting to mtime.
+	watcher := os.Getenv("SKAFFOLD_FILE_WATCHER")
+	if watcher == "" {
+		watcher = "mtime"
 	}
 
-	logrus.Info("Watch is ready")
-	return &fsWatcher{
-		watcher: w,
-		files:   files,
-	}, nil
+	switch watcher {
+	case "mtime":
+		logrus.Info("Starting mtime file watcher.")
+		files := map[string]time.Time{}
+		for _, p := range paths {
+			fi, err := os.Stat(p)
+			if err != nil {
+				return nil, err
+			}
+			files[p] = fi.ModTime()
+		}
+		return &mtimeWatcher{
+			files: files,
+		}, nil
+	case "fsnotify":
+		logrus.Info("Starting fsnotify file watcher.")
+		w, err := fsnotify.NewWatcher()
+		if err != nil {
+			return nil, errors.Wrapf(err, "creating watcher")
+		}
+
+		files := map[string]bool{}
+
+		for _, p := range paths {
+			files[p] = true
+			logrus.Infof("Added watch for %s", p)
+
+			if err := w.Add(p); err != nil {
+				w.Close()
+				return nil, errors.Wrapf(err, "adding watch for %s", p)
+			}
+
+			if err := w.Add(filepath.Dir(p)); err != nil {
+				w.Close()
+				return nil, errors.Wrapf(err, "adding watch for %s", p)
+			}
+		}
+		return &fsWatcher{
+			watcher: w,
+			files:   files,
+		}, nil
+	}
+	return nil, fmt.Errorf("unknown watch type: %s", watcher)
 }
 
 // Start watches a set of files for changes, and calls `onChange`

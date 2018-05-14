@@ -17,7 +17,9 @@ package watch
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -26,6 +28,7 @@ import (
 )
 
 func TestWatch(t *testing.T) {
+	watchers := []string{"mtime", "fsnotify"}
 	var tests = []struct {
 		description     string
 		createFiles     []string
@@ -57,50 +60,55 @@ func TestWatch(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			tmp, teardown := testutil.TempDir(t)
-			defer teardown()
+	for _, watcher := range watchers {
+		for _, test := range tests {
+			t.Run(fmt.Sprintf("%s %s", test.description, watcher), func(t *testing.T) {
+				os.Setenv("SKAFFOLD_FILE_WATCHER", watcher)
+				defer os.Setenv("SKAFFOLD_FILE_WATCHER", "")
+				tmp, teardown := testutil.TempDir(t)
+				defer teardown()
 
-			for _, p := range prependParentDir(tmp, test.createFiles) {
-				write(t, p, "")
-			}
-
-			watcher, err := NewWatcher(prependParentDir(tmp, test.watchFiles))
-			if err == nil && test.shouldErr {
-				t.Errorf("Expected error, but returned none")
-				return
-			}
-			if err != nil && !test.shouldErr {
-				t.Errorf("Unexpected error: %s", err)
-				return
-			}
-			if err != nil && test.shouldErr {
-				return
-			}
-
-			for _, p := range prependParentDir(tmp, test.writes) {
-				write(t, p, "CONTENT")
-			}
-
-			ctx, cancel := context.WithCancel(context.Background())
-			watcher.Start(ctx, ioutil.Discard, func(actual []string) error {
-				defer cancel()
-
-				expected := prependParentDir(tmp, test.expectedChanges)
-
-				if diff := cmp.Diff(expected, actual); diff != "" {
-					t.Errorf("Expected %+v, Actual %+v", expected, actual)
+				for _, p := range prependParentDir(tmp, test.createFiles) {
+					write(t, p, "")
 				}
 
-				return nil
+				watcher, err := NewWatcher(prependParentDir(tmp, test.watchFiles))
+				if err == nil && test.shouldErr {
+					t.Errorf("Expected error, but returned none")
+					return
+				}
+				if err != nil && !test.shouldErr {
+					t.Errorf("Unexpected error: %s", err)
+					return
+				}
+				if err != nil && test.shouldErr {
+					return
+				}
+
+				ctx, cancel := context.WithCancel(context.Background())
+
+				defer cancel()
+				go watcher.Start(ctx, ioutil.Discard, func(actual []string) error {
+
+					expected := prependParentDir(tmp, test.expectedChanges)
+
+					if diff := cmp.Diff(expected, actual); diff != "" {
+						t.Errorf("Expected %+v, Actual %+v", expected, actual)
+					}
+
+					return nil
+				})
+
+				for _, p := range prependParentDir(tmp, test.writes) {
+					write(t, p, "CONTENT")
+				}
 			})
-		})
+		}
 	}
 }
 func write(t *testing.T, path string, content string) {
-	if err := ioutil.WriteFile(path, []byte(content), 0640); err != nil {
-		t.Errorf("writing mock fs file: %s", err)
+	if err := ioutil.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("writing file: %s", err)
 	}
 }
 
