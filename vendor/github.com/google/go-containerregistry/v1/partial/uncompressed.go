@@ -56,6 +56,7 @@ func (ule *uncompressedLayerExtender) Digest() (v1.Hash, error) {
 	if err != nil {
 		return v1.Hash{}, err
 	}
+	defer r.Close()
 	h, _, err := v1.SHA256(r)
 	return h, err
 }
@@ -66,6 +67,7 @@ func (ule *uncompressedLayerExtender) Size() (int64, error) {
 	if err != nil {
 		return -1, err
 	}
+	defer r.Close()
 	_, i, err := v1.SHA256(r)
 	return i, err
 }
@@ -126,7 +128,8 @@ func (i *uncompressedImageExtender) Manifest() (*v1.Manifest, error) {
 	if err != nil {
 		return nil, err
 	}
-	cfgHash, cfgSize, err := v1.SHA256(v1util.NopReadCloser(bytes.NewBuffer(b)))
+
+	cfgHash, cfgSize, err := v1.SHA256(bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +149,8 @@ func (i *uncompressedImageExtender) Manifest() (*v1.Manifest, error) {
 		return nil, err
 	}
 
-	for _, l := range ls {
+	m.Layers = make([]v1.Descriptor, len(ls))
+	for i, l := range ls {
 		sz, err := l.Size()
 		if err != nil {
 			return nil, err
@@ -155,11 +159,12 @@ func (i *uncompressedImageExtender) Manifest() (*v1.Manifest, error) {
 		if err != nil {
 			return nil, err
 		}
-		m.Layers = append(m.Layers, v1.Descriptor{
+
+		m.Layers[i] = v1.Descriptor{
 			MediaType: types.DockerLayer,
 			Size:      sz,
 			Digest:    h,
-		})
+		}
 	}
 
 	i.manifest = m

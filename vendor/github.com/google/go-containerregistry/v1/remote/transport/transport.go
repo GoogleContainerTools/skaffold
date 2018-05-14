@@ -27,9 +27,9 @@ const (
 )
 
 // New returns a new RoundTripper based on the provided RoundTripper that has been
-// setup to authenticate with the remote registry hosting "ref", in the capacity
-// laid out by the specified Scope.
-func New(ref name.Reference, auth authn.Authenticator, t http.RoundTripper, a Scope) (http.RoundTripper, error) {
+// setup to authenticate with the remote registry "reg", in the capacity
+// laid out by the specified scopes.
+func New(reg name.Registry, auth authn.Authenticator, t http.RoundTripper, scopes []string) (http.RoundTripper, error) {
 	// The handshake:
 	//  1. Use "t" to ping() the registry for the authentication challenge.
 	//
@@ -44,7 +44,7 @@ func New(ref name.Reference, auth authn.Authenticator, t http.RoundTripper, a Sc
 
 	// First we ping the registry to determine the parameters of the authentication handshake
 	// (if one is even necessary).
-	pr, err := ping(ref.Context().Registry, t)
+	pr, err := ping(reg, t)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func New(ref name.Reference, auth authn.Authenticator, t http.RoundTripper, a Sc
 	case anonymous:
 		return t, nil
 	case basic:
-		return &basicTransport{inner: t, auth: auth, target: ref.Context().RegistryStr()}, nil
+		return &basicTransport{inner: t, auth: auth, target: reg.RegistryStr()}, nil
 	case bearer:
 		// We require the realm, which tells us where to send our Basic auth to turn it into Bearer auth.
 		realm, ok := pr.parameters["realm"]
@@ -64,15 +64,15 @@ func New(ref name.Reference, auth authn.Authenticator, t http.RoundTripper, a Sc
 		if !ok {
 			// If the service parameter is not specified, then default it to the registry
 			// with which we are talking.
-			service = ref.Context().Registry.String()
+			service = reg.String()
 		}
 		bt := &bearerTransport{
 			inner:    t,
 			basic:    auth,
 			realm:    realm,
-			registry: ref.Context().Registry,
+			registry: reg,
 			service:  service,
-			scope:    ref.Scope(string(a)),
+			scopes:   scopes,
 		}
 		if err := bt.refresh(); err != nil {
 			return nil, err

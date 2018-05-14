@@ -21,7 +21,7 @@ import (
 // Image defines the interface for interacting with an OCI v1 image.
 type Image interface {
 	// Layers returns the ordered collection of filesystem layers that comprise this image.
-	// The order of the list is most-recent first, and oldest base layer last.
+	// The order of the list is oldest/base layer first, and most-recent/top layer last.
 	Layers() ([]Layer, error)
 
 	// BlobSet returns an unordered collection of all the blobs in the image.

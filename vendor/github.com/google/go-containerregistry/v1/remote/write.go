@@ -39,7 +39,13 @@ type WriteOptions struct {
 // Write pushes the provided img to the specified image reference.
 func Write(ref name.Reference, img v1.Image, auth authn.Authenticator, t http.RoundTripper,
 	wo WriteOptions) error {
-	tr, err := transport.New(ref, auth, t, transport.PushScope)
+
+	scopes := []string{ref.Scope(transport.PushScope)}
+	for _, mp := range wo.MountPaths {
+		scopes = append(scopes, mp.Scope(transport.PullScope))
+	}
+
+	tr, err := transport.New(ref.Context().Registry, auth, t, scopes)
 	if err != nil {
 		return err
 	}
@@ -228,7 +234,7 @@ func (w *writer) uploadOne(h v1.Hash) error {
 	if err != nil {
 		return err
 	} else if mounted {
-		log.Printf("mounted %v", h)
+		log.Printf("mounted blob: %v", h)
 		return nil
 	}
 
@@ -240,7 +246,7 @@ func (w *writer) uploadOne(h v1.Hash) error {
 	if err := w.commitBlob(h, location); err != nil {
 		return err
 	}
-	log.Printf("pushed %v", h)
+	log.Printf("pushed blob %v", h)
 	return nil
 }
 
@@ -273,8 +279,14 @@ func (w *writer) commitImage() error {
 	if err := checkError(resp, http.StatusOK, http.StatusCreated, http.StatusAccepted); err != nil {
 		return err
 	}
+
+	digest, err := w.img.Digest()
+	if err != nil {
+		return err
+	}
+
 	// The image was successfully pushed!
-	log.Printf("pushed %v", w.ref)
+	fmt.Printf("%v: digest: %v size: %d\n", w.ref, digest, len(raw))
 	return nil
 }
 

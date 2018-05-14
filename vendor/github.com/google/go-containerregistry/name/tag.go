@@ -76,7 +76,9 @@ func NewTag(name string, strict Strictness) (Tag, error) {
 	tag := ""
 
 	// Split on ":"
-	if parts := strings.Split(name, tagDelim); len(parts) >= 2 {
+	parts := strings.Split(name, tagDelim)
+	// Verify that we aren't confusing a tag for a hostname w/ port for the purposes of weak validation.
+	if len(parts) > 1 && !strings.Contains(parts[len(parts)-1], regRepoDelimiter) {
 		base = strings.Join(parts[:len(parts)-1], tagDelim)
 		tag = parts[len(parts)-1]
 	}

@@ -97,9 +97,8 @@ func (h *Hash) parse(unquoted string) error {
 	return nil
 }
 
-// SHA256 computes the Hash of the provided io.ReadCloser's content.
-func SHA256(r io.ReadCloser) (Hash, int64, error) {
-	defer r.Close()
+// SHA256 computes the Hash of the provided io.Reader's content.
+func SHA256(r io.Reader) (Hash, int64, error) {
 	hasher := sha256.New()
 	n, err := io.Copy(hasher, r)
 	if err != nil {

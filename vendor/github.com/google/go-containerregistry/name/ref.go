@@ -45,5 +45,6 @@ func ParseReference(s string, strict Strictness) (Reference, error) {
 	if d, err := NewDigest(s, strict); err == nil {
 		return d, nil
 	}
+	// TODO: Combine above errors into something more useful?
 	return nil, errors.New("could not parse reference")
 }

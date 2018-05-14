@@ -16,12 +16,13 @@ package authn
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
-	"os/user"
 	"path"
+	"runtime"
 
 	"github.com/google/go-containerregistry/name"
 )
@@ -41,11 +42,22 @@ func configDir() (string, error) {
 	if dc := os.Getenv("DOCKER_CONFIG"); dc != "" {
 		return dc, nil
 	}
-	usr, err := user.Current()
-	if err != nil {
-		return "", err
+	if h := dockerUserHomeDir(); h != "" {
+		return path.Join(dockerUserHomeDir(), ".docker"), nil
 	}
-	return path.Join(usr.HomeDir, ".docker"), nil
+	return "", errNoHomeDir
+}
+
+var errNoHomeDir = errors.New("could not determine home directory")
+
+// dockerUserHomeDir returns the current user's home directory, as interpreted by Docker.
+func dockerUserHomeDir() string {
+	if runtime.GOOS == "windows" {
+		// Docker specifically expands "%USERPROFILE%" on Windows,
+		return os.Getenv("USERPROFILE")
+	}
+	// Docker defaults to "$HOME" Linux and OSX.
+	return os.Getenv("HOME")
 }
 
 // authEntry is a helper for JSON parsing an "auth" entry of config.json
@@ -135,6 +147,6 @@ func (dk *defaultKeychain) Resolve(reg name.Registry) (Authenticator, error) {
 		}
 	}
 
-	log.Printf("No matching credentials found for %v, falling back on anoynmous", reg)
+	log.Printf("No matching credentials found for %v, falling back on anonymous", reg)
 	return Anonymous, nil
 }

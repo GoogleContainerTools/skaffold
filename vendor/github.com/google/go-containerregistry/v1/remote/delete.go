@@ -34,7 +34,8 @@ type DeleteOptions struct {
 
 // Delete removes the specified image reference from the remote registry.
 func Delete(ref name.Reference, auth authn.Authenticator, t http.RoundTripper, do DeleteOptions) error {
-	tr, err := transport.New(ref, auth, t, transport.DeleteScope)
+	scopes := []string{ref.Scope(transport.DeleteScope)}
+	tr, err := transport.New(ref.Context().Registry, auth, t, scopes)
 	if err != nil {
 		return err
 	}

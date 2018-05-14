@@ -14,14 +14,11 @@
 
 package transport
 
-// Scope is an enumeration of the supported scopes to pass a transport.
-type Scope string
-
-// Scopes suitable to pass to New()
+// Scopes suitable to qualify each Repository
 const (
-	PullScope Scope = "pull"
-	PushScope Scope = "push,pull"
+	PullScope string = "pull"
+	PushScope string = "push,pull"
 	// For now DELETE is PUSH, which is the read/write ACL.
-	DeleteScope  Scope = PushScope
-	CatalogScope Scope = "catalog"
+	DeleteScope  string = PushScope
+	CatalogScope string = "catalog"
 )

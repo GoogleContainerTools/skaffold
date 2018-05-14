@@ -15,6 +15,8 @@
 package transport
 
 import (
+	"fmt"
+
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -37,7 +39,7 @@ type bearerTransport struct {
 	realm string
 	// See https://docs.docker.com/registry/spec/auth/token/
 	service string
-	scope   string
+	scopes  []string
 }
 
 var _ http.RoundTripper = (*bearerTransport)(nil)
@@ -75,7 +77,7 @@ func (bt *bearerTransport) refresh() error {
 	client := http.Client{Transport: b}
 
 	u.RawQuery = url.Values{
-		"scope":   []string{bt.scope},
+		"scope":   bt.scopes,
 		"service": []string{bt.service},
 	}.Encode()
 
@@ -90,12 +92,28 @@ func (bt *bearerTransport) refresh() error {
 		return err
 	}
 
-	// Parse the response into a Bearer authenticator
-	bearer := &authn.Bearer{}
-	if err := json.Unmarshal(content, bearer); err != nil {
+	// Some registries don't have "token" in the response. See #54.
+	type tokenResponse struct {
+		Token       string `json:"token"`
+		AccessToken string `json:"access_token"`
+	}
+
+	var response tokenResponse
+	if err := json.Unmarshal(content, &response); err != nil {
 		return err
 	}
+
+	// Find a token to turn into a Bearer authenticator
+	var bearer authn.Bearer
+	if response.Token != "" {
+		bearer = authn.Bearer{Token: response.Token}
+	} else if response.AccessToken != "" {
+		bearer = authn.Bearer{Token: response.AccessToken}
+	} else {
+		return fmt.Errorf("no token in bearer response:\n%s", content)
+	}
+
 	// Replace our old bearer authenticator (if we had one) with our newly refreshed authenticator.
-	bt.bearer = bearer
+	bt.bearer = &bearer
 	return nil
 }

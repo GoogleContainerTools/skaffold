@@ -39,9 +39,8 @@ type Descriptor struct {
 	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
-// ParseManifest parses the io.ReadCloser's contents into a Manifest.
-func ParseManifest(r io.ReadCloser) (*Manifest, error) {
-	defer r.Close()
+// ParseManifest parses the io.Reader's contents into a Manifest.
+func ParseManifest(r io.Reader) (*Manifest, error) {
 	m := Manifest{}
 	if err := json.NewDecoder(r).Decode(&m); err != nil {
 		return nil, err
