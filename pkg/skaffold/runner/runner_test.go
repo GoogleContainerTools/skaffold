@@ -59,45 +59,21 @@ func (t *TestBuildAll) Build(ctx context.Context, w io.Writer, tagger tag.Tagger
 }
 
 type TestDeployer struct {
-	err error
-}
-
-func (t *TestDeployer) Deploy(context.Context, io.Writer, []build.Build) error {
-	return t.err
+	deployed []build.Build
+	err      error
 }
 
 func (t *TestDeployer) Dependencies() ([]string, error) {
 	return nil, nil
 }
 
+func (t *TestDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Build) error {
+	t.deployed = builds
+	return t.err
+}
+
 func (t *TestDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	return nil
-}
-
-type TestDeployAll struct {
-	deployed []build.Build
-}
-
-func (t *TestDeployAll) Dependencies() ([]string, error) {
-	return nil, nil
-}
-
-func (t *TestDeployAll) Deploy(ctx context.Context, w io.Writer, builds []build.Build) error {
-	t.deployed = builds
-	return nil
-}
-
-func (t *TestDeployAll) Cleanup(ctx context.Context, out io.Writer) error {
-	return nil
-}
-
-type TestTagger struct {
-	out string
-	err error
-}
-
-func (t *TestTagger) GenerateFullyQualifiedImageName(_ string, _ *tag.TagOptions) (string, error) {
-	return t.out, t.err
 }
 
 func resetClient()                                { kubernetesClient = kubernetes.GetClientset }
@@ -323,7 +299,7 @@ func TestDev(t *testing.T) {
 					err: fmt.Errorf(""),
 				},
 				Deployer:       &TestDeployer{},
-				Tagger:         &TestTagger{},
+				Tagger:         &tag.ChecksumTagger{},
 				WatcherFactory: NewWatcherFactory(nil, []string{}),
 				opts:           &config.SkaffoldOptions{},
 				out:            ioutil.Discard,
@@ -357,7 +333,7 @@ func TestDev(t *testing.T) {
 func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	kubeclient, _ := fakeGetClient()
 	builder := &TestBuildAll{}
-	deployer := &TestDeployAll{}
+	deployer := &TestDeployer{}
 
 	runner := &SkaffoldRunner{
 		opts:       &config.SkaffoldOptions{},
