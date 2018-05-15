@@ -147,12 +147,15 @@ func getTagger(t v1alpha2.TagPolicy, customTag string) (tag.Tagger, error) {
 // Build builds the artifacts.
 func (r *SkaffoldRunner) Build(ctx context.Context) error {
 	bRes, err := r.build(ctx, r.config.Build.Artifacts)
+	if err != nil {
+		return err
+	}
 
 	for _, res := range bRes.Builds {
 		fmt.Fprintf(r.out, "%s -> %s\n", res.ImageName, res.Tag)
 	}
 
-	return err
+	return nil
 }
 
 // Run runs the skaffold build and deploy pipeline.
