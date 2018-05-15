@@ -25,6 +25,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	git "gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 )
 
@@ -51,6 +52,25 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
+			description: "use tag over commit",
+			opts: &TagOptions{
+				ImageName: "test",
+				Digest:    "sha256:12345abcde",
+			},
+			expectedName: "test:v2",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source.go", []byte("code")).
+					add("source.go").
+					commit("initial").
+					tag("v1").
+					write("other.go", []byte("other")).
+					add("other.go").
+					commit("second commit").
+					tag("v2")
+			},
+		},
+		{
 			description: "dirty",
 			opts: &TagOptions{
 				ImageName: "test",
@@ -61,6 +81,22 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 					write("source.go", []byte("code")).
 					add("source.go").
 					commit("initial").
+					write("source.go", []byte("updated code"))
+			},
+		},
+		{
+			description: "ignore tag when dirty",
+			opts: &TagOptions{
+				ImageName: "test",
+				Digest:    "sha256:12345abcde",
+			},
+			expectedName: "test:eefe1b9-dirty-af8de1fde8be4367",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source.go", []byte("code")).
+					add("source.go").
+					commit("initial").
+					tag("v1").
 					write("source.go", []byte("updated code"))
 			},
 		},
@@ -184,6 +220,7 @@ func TestGenerateFullyQualifiedImageNameFromSubDirectory(t *testing.T) {
 // gitRepo deals with test git repositories
 type gitRepo struct {
 	dir      string
+	repo     *git.Repository
 	workTree *git.Worktree
 	t        *testing.T
 }
@@ -197,6 +234,7 @@ func gitInit(t *testing.T, dir string) *gitRepo {
 
 	return &gitRepo{
 		dir:      dir,
+		repo:     repo,
 		workTree: w,
 		t:        t,
 	}
@@ -247,6 +285,19 @@ func (g *gitRepo) commit(msg string) *gitRepo {
 			When:  now,
 		},
 	})
+	failNowIfError(g.t, err)
+
+	return g
+}
+
+func (g *gitRepo) tag(tag string) *gitRepo {
+	head, err := g.repo.Head()
+	failNowIfError(g.t, err)
+
+	n := plumbing.ReferenceName("refs/tags/" + tag)
+	t := plumbing.NewHashReference(n, head.Hash())
+
+	err = g.repo.Storer.SetReference(t)
 	failNowIfError(g.t, err)
 
 	return g

@@ -25,6 +25,7 @@ import (
 
 	"github.com/pkg/errors"
 	git "gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/plumbing"
 )
 
 // GitCommit tags an image by the git commit it was built at.
@@ -53,10 +54,22 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *Tag
 		return "", errors.Wrap(err, "determining current git commit")
 	}
 
-	shortCommit := head.Hash().String()[0:7]
+	commitHash := head.Hash().String()
+	currentTag := commitHash[0:7]
 
-	fqn := fmt.Sprintf("%s:%s", opts.ImageName, shortCommit)
 	if status.IsClean() {
+		tagrefs, _ := repo.Tags()
+		err = tagrefs.ForEach(func(t *plumbing.Reference) error {
+			if t.Hash() == head.Hash() {
+				currentTag = t.Name().Short()
+			}
+			return nil
+		})
+		if err != nil {
+			return "", errors.Wrap(err, "determining git tag")
+		}
+
+		fqn := fmt.Sprintf("%s:%s", opts.ImageName, currentTag)
 		return fqn, nil
 	}
 
@@ -90,8 +103,8 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *Tag
 
 	sha := h.Sum(nil)
 	shaStr := hex.EncodeToString(sha[:])[:16]
-
-	return fmt.Sprintf("%s-dirty-%s", fqn, shaStr), nil
+	fqn := fmt.Sprintf("%s:%s-dirty-%s", opts.ImageName, currentTag, shaStr)
+	return fqn, nil
 }
 
 // changedPaths returns the changed paths in a consistent order.
