@@ -42,11 +42,10 @@ var schemaVersions = map[string]func([]byte, bool) (util.VersionedConfig, error)
 
 func GetConfig(contents []byte, useDefault bool) (util.VersionedConfig, error) {
 	for _, version := range Versions {
-		if cfg, err := schemaVersions[version](contents, useDefault); err == nil {
-			// successfully parsed, but make sure versions match
-			if cfg.GetVersion() == version {
-				return cfg, err
-			}
+		cfg, err := schemaVersions[version](contents, useDefault)
+		if cfg.GetVersion() == version {
+			// Versions are same hence propogate the parse error.
+			return cfg, err
 		}
 	}
 	return nil, errors.New("Unable to parse config")

@@ -111,5 +111,6 @@ deploy:
 # When applied, a profile replaces either build or deploy or both default configurations.
 profiles:
   - name: gcb
-    build: ...
-    deploy: ...
+    build:
+      googleCloudBuild:
+        projectId: k8s-skaffold
