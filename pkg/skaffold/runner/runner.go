@@ -217,7 +217,8 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 		_, _, err := r.buildAndDeploy(ctx, changedArtifacts, onBuildSuccess)
 		if err != nil {
 			// In dev mode, we only warn on pipeline errors
-			logrus.Warnf("run: %s", err)
+			logrus.Errorf("run: %s", err)
+			logrus.Error("Skipping Deploy due to build error.")
 		}
 
 		fmt.Fprint(r.out, "Watching for changes...\n")
