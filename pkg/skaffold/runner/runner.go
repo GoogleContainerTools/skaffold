@@ -28,7 +28,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
@@ -73,6 +72,9 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig, out 
 	deployer, err := getDeployer(&cfg.Deploy, kubeContext)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold deploy config")
+	}
+	if opts.Notification {
+		deployer = deploy.WithNotification(deployer)
 	}
 
 	tagger, err := getTagger(cfg.Build.TagPolicy, opts.CustomTag)
@@ -296,9 +298,6 @@ func (r *SkaffoldRunner) deploy(ctx context.Context, builds []build.Build) error
 	err := r.Deployer.Deploy(ctx, r.out, builds)
 	if err != nil {
 		return errors.Wrap(err, "deploy step")
-	}
-	if r.opts.Notification {
-		fmt.Fprint(r.out, constants.TerminalBell)
 	}
 
 	fmt.Fprintln(r.out, "Deploy complete in", time.Since(start))
