@@ -214,10 +214,13 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 
 		changedArtifacts := r.depMap.ArtifactsForPaths(changedPaths)
 
-		_, _, err := r.buildAndDeploy(ctx, changedArtifacts, onBuildSuccess)
+		br, _, err := r.buildAndDeploy(ctx, changedArtifacts, onBuildSuccess)
 		if err != nil {
-			// In dev mode, we only warn on pipeline errors
-			logrus.Warnf("run: %s", err)
+			// In dev mode, we only log on pipeline errors
+			logrus.Errorf("run: %s", err)
+			if br == nil {
+				logrus.Error("Skipping Deploy due to build error.")
+			}
 		}
 
 		fmt.Fprint(r.out, "Watching for changes...\n")
@@ -272,7 +275,7 @@ func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, artifacts []*v1alph
 		Builds: r.builds,
 	})
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "deploy")
+		return bRes, nil, errors.Wrap(err, "deploy")
 	}
 
 	return bRes, dRes, nil
