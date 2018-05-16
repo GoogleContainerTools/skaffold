@@ -1,6 +1,5 @@
 apiVersion: skaffold/v1alpha2
 kind: Config
-
 build:
   # tagPolicy determines how skaffold is going to tag your images.
   # We provide a few strategies here, although you most likely won't need to care!
@@ -21,8 +20,9 @@ build:
     #   DIGEST       |  Digest of the newly built image. For eg. `sha256:27ffc7f352665cc50ae3cbcc4b2725e36062f1b38c611b6f95d6df9a7510de23`.
     #   DIGEST_ALGO  |  Algorithm used by the digest: For eg. `sha256`.
     #   DIGEST_HEX   |  Digest of the newly built image. For eg. `27ffc7f352665cc50ae3cbcc4b2725e36062f1b38c611b6f95d6df9a7510de23`.
-    envTemplate:
-      template: "{{.RELEASE}}-{{.IMAGE_NAME}}"
+    # Example
+    # envTemplate:
+    #  template: "{{.RELEASE}}-{{.IMAGE_NAME}}"
 
   # artifacts is a list of the actual images you're going to be building
   # you can include as many as you want here.
@@ -42,37 +42,38 @@ build:
         key1: "value1"
         key2: "value2"
 
-    # bazel requires bazel CLI to be installed and the artifacts sources to 
+    # bazel requires bazel CLI to be installed and the artifacts sources to
     # contain Bazel configuration files.
-    bazel:
-      target: //:skaffold_example.tar
+    # bazel:
+    #  target: //:skaffold_example.tar
 
-  # This next section is where you'll put your specific builder configuration.
+# This next section is where you'll put your specific builder configuration.
   # Valid builders are `local`, `googleCloudBuild` and `kaniko.
   # Defaults to `local: {}`
-  local:
+  # Example
+  # local:
     # Pushing the images can be skipped. If no value is specified, it'll default to
     # `true` on minikube or Docker for Desktop, for even faster build and deploy cycles.
-    # `false` on other types of kubernetes clusters that require pushing the images. 
+    # `false` on other types of kubernetes clusters that require pushing the images.
     # Skaffold defers to your ~/.docker/config for authentication information.
     # If you're using Google Container Registry, make sure that you have gcloud and
     # docker-credentials-helper-gcr configured correctly.
-    skipPush: true
+    # skipPush: true
 
   # Docker artifacts can be built on Google Container Builder. The projectId then needs
   # to be provided and the currently logged user should be given permissions to trigger
   # new builds on GCB.
-  googleCloudBuild:
-    projectId: YOUR_PROJECT
+  #  googleCloudBuild:
+  #   projectId: YOUR_PROJECT
 
   # Docker artifacts can be built on a Kubernetes cluster with Kaniko.
   # Sources will be sent to a GCS bucket whose name is provided.
   # Kaniko also needs access to a service account to push the final image.
   # See https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster
-  kaniko:
-    gcsBucket: k8s-skaffold
-    pullSecret: /a/secret/path/serviceaccount.json
-    # pullSecret: ~/secret/path/serviceaccount.json
+  # Example
+  # kaniko:
+    # gcsBucket: k8s-skaffold
+    # pullSecret: /a/secret/path/serviceaccount.json
 
 # The deploy section has all the information needed to deploy. Along with build:
 # it is a required section.
@@ -84,32 +85,32 @@ deploy:
   kubectl:
     # manifests to deploy from files.
     manifests:
-    - /home/mrick/path/to/different/project/deploy/*
     - ../examples/getting-started/k8s-*
 
     # manifests to deploy from remote cluster.
     # The path to where these manifests live in remote kubernetes cluster.
-    remoteManifests:
-    - deployment/web-app1
-    - namespace:deployment/web-app2
+    # Example
+    # remoteManifests:
+    # - deployment/web-app1
+    # - namespace:deployment/web-app2
 
-  helm:
+ # helm:
     # helm releases to deploy.
-    releases:
-    - name: skaffold-helm
-      chartPath: skaffold-helm
-      valuesFilePath: helm-skaffold-values.yaml
-      values:
-        image: skaffold-helm
-      namespace: skaffold
-      version: ""
-      # setValues get appended to the helm deploy with --set.  
-      setValues: 
-        key: "value"
-
-# profiles can be used to override any build or deploy configuration.
-# When applied, a profile replaces either build or deploy or both default configurations.
+    # releases:
+    # - name: skaffold-helm
+    #  chartPath: skaffold-helm
+    #  valuesFilePath: helm-skaffold-values.yaml
+    #  values:
+    #    image: skaffold-helm
+    #  namespace: skaffold
+    #  version: ""
+      # setValues get appended to the helm deploy with --set.
+    #  setValues:
+    #    key: "value"
+# profiles section has all the profile information which can be used to override any build or deploy configuration
 profiles:
   - name: gcb
-    build: ...
-    deploy: ...
+    build:
+      googleCloudBuild:
+        projectId: k8s-skaffold
+        # Google Cloud Build's project id
