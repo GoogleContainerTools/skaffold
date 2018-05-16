@@ -227,8 +227,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 
 		bRes, err := r.Builder.Build(ctx, r.out, r.Tagger, changedArtifacts)
 		if err != nil {
-			logrus.Errorln("build:", err)
-			logrus.Errorln("Skipping Deploy due to build error.")
+			logrus.Warnln("Skipping Deploy due to build error:", err)
 			return
 		}
 
@@ -242,7 +241,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 
 		err = r.Deployer.Deploy(ctx, r.out, r.builds)
 		if err != nil {
-			logrus.Errorf("deploy: %s", err)
+			logrus.Errorln("deploy:", err)
 			return
 		}
 	}
@@ -255,7 +254,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 		}()
 
 		if err := r.Deployer.Deploy(ctx, r.out, r.builds); err != nil {
-			logrus.Warnf("deploy: %s", err)
+			logrus.Warnln("deploy: %s", err)
 		}
 	}
 
