@@ -1,7 +1,7 @@
 class Skaffold < Formula
   desc "A tool that facilitates continuous development for Kubernetes applications."
   url "https://github.com/GoogleContainerTools/skaffold.git"
-  version "v0.5.0"
+  version "v0.6.0"
 
   depends_on "go" => :build
 
