@@ -87,9 +87,8 @@ func (t *TestDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-func resetClient()                                { kubernetesClient = kubernetes.GetClientset }
-func fakeGetClient() (clientgo.Interface, error)  { return fake.NewSimpleClientset(), nil }
-func errorGetClient() (clientgo.Interface, error) { return nil, fmt.Errorf("") }
+func resetClient()                               { kubernetesClient = kubernetes.GetClientset }
+func fakeGetClient() (clientgo.Interface, error) { return fake.NewSimpleClientset(), nil }
 
 type TestWatcher struct {
 	changes [][]string
@@ -208,7 +207,8 @@ func TestNewForConfig(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
-	client, _ := fakeGetClient()
+	kubernetesClient = fakeGetClient
+	defer resetClient()
 	var tests = []struct {
 		description string
 		runner      *SkaffoldRunner
@@ -217,20 +217,18 @@ func TestRun(t *testing.T) {
 		{
 			description: "run no error",
 			runner: &SkaffoldRunner{
-				config:     &v1alpha2.SkaffoldConfig{},
-				Builder:    &TestBuilder{},
-				kubeclient: client,
-				opts:       &config.SkaffoldOptions{},
-				Tagger:     &tag.ChecksumTagger{},
-				Deployer:   &TestDeployer{},
-				out:        ioutil.Discard,
+				config:   &v1alpha2.SkaffoldConfig{},
+				Builder:  &TestBuilder{},
+				opts:     &config.SkaffoldOptions{},
+				Tagger:   &tag.ChecksumTagger{},
+				Deployer: &TestDeployer{},
+				out:      ioutil.Discard,
 			},
 		},
 		{
 			description: "run build error",
 			runner: &SkaffoldRunner{
-				config:     &v1alpha2.SkaffoldConfig{},
-				kubeclient: client,
+				config: &v1alpha2.SkaffoldConfig{},
 				Builder: &TestBuilder{
 					err: fmt.Errorf(""),
 				},
@@ -255,11 +253,10 @@ func TestRun(t *testing.T) {
 						},
 					},
 				},
-				opts:       &config.SkaffoldOptions{},
-				kubeclient: client,
-				Tagger:     &tag.ChecksumTagger{},
-				Builder:    &TestBuilder{},
-				out:        ioutil.Discard,
+				opts:    &config.SkaffoldOptions{},
+				Tagger:  &tag.ChecksumTagger{},
+				Builder: &TestBuilder{},
+				out:     ioutil.Discard,
 			},
 			shouldErr: true,
 		},
@@ -275,7 +272,8 @@ func TestRun(t *testing.T) {
 }
 
 func TestDev(t *testing.T) {
-	client, _ := fakeGetClient()
+	kubernetesClient = fakeGetClient
+	defer resetClient()
 	var tests = []struct {
 		description string
 		runner      *SkaffoldRunner
@@ -284,8 +282,7 @@ func TestDev(t *testing.T) {
 		{
 			description: "run dev mode",
 			runner: &SkaffoldRunner{
-				config:     &v1alpha2.SkaffoldConfig{},
-				kubeclient: client,
+				config: &v1alpha2.SkaffoldConfig{},
 				Builder: &TestBuilder{
 					result: []build.Build{
 						{
@@ -305,8 +302,7 @@ func TestDev(t *testing.T) {
 		{
 			description: "run dev mode build error, continue",
 			runner: &SkaffoldRunner{
-				config:     &v1alpha2.SkaffoldConfig{},
-				kubeclient: client,
+				config: &v1alpha2.SkaffoldConfig{},
 				Builder: &TestBuilder{
 					err: fmt.Errorf(""),
 				},
@@ -322,7 +318,6 @@ func TestDev(t *testing.T) {
 			description: "bad watch dev mode",
 			runner: &SkaffoldRunner{
 				config:               &v1alpha2.SkaffoldConfig{},
-				kubeclient:           client,
 				Builder:              &TestBuilder{},
 				Deployer:             &TestDeployer{},
 				WatcherFactory:       NewWatcherFactory(fmt.Errorf("")),
@@ -345,7 +340,9 @@ func TestDev(t *testing.T) {
 }
 
 func TestBuildAndDeployAllArtifacts(t *testing.T) {
-	kubeclient, _ := fakeGetClient()
+	kubernetesClient = fakeGetClient
+	defer resetClient()
+
 	builder := &TestBuildAll{}
 	deployer := &TestDeployer{}
 	artifacts := []*v1alpha2.Artifact{
@@ -363,11 +360,10 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 				Artifacts: artifacts,
 			},
 		},
-		opts:       &config.SkaffoldOptions{},
-		kubeclient: kubeclient,
-		Builder:    builder,
-		Deployer:   deployer,
-		out:        ioutil.Discard,
+		opts:     &config.SkaffoldOptions{},
+		Builder:  builder,
+		Deployer: deployer,
+		out:      ioutil.Discard,
 		DependencyMapFactory: func(artifacts []*v1alpha2.Artifact) (build.DependencyMap, error) {
 			return build.NewExplicitDependencyMap(artifacts, pathToArtifacts), nil
 		},

@@ -34,7 +34,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
-	clientgo "k8s.io/client-go/kubernetes"
 )
 
 // SkaffoldRunner is responsible for running the skaffold build and deploy pipeline.
@@ -45,11 +44,10 @@ type SkaffoldRunner struct {
 	watch.WatcherFactory
 	build.DependencyMapFactory
 
-	opts       *config.SkaffoldOptions
-	config     *config.SkaffoldConfig
-	kubeclient clientgo.Interface
-	builds     []build.Build
-	out        io.Writer
+	opts   *config.SkaffoldOptions
+	config *config.SkaffoldConfig
+	builds []build.Build
+	out    io.Writer
 }
 
 var kubernetesClient = kubernetes.GetClientset
@@ -82,18 +80,12 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig, out 
 		return nil, errors.Wrap(err, "parsing skaffold tag config")
 	}
 
-	client, err := kubernetesClient()
-	if err != nil {
-		return nil, errors.Wrap(err, "getting k8s client")
-	}
-
 	return &SkaffoldRunner{
 		config:               cfg,
 		Builder:              builder,
 		Deployer:             deployer,
 		Tagger:               tagger,
 		opts:                 opts,
-		kubeclient:           client,
 		WatcherFactory:       watch.NewWatcher,
 		DependencyMapFactory: build.NewDependencyMap,
 		out:                  out,
@@ -259,7 +251,12 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 	onChange(depMap.Paths())
 
 	// Start logs
-	if err = logger.Start(ctx, r.kubeclient.CoreV1()); err != nil {
+	kubeclient, err := kubernetesClient()
+	if err != nil {
+		return errors.Wrap(err, "getting k8s client")
+	}
+
+	if err = logger.Start(ctx, kubeclient.CoreV1()); err != nil {
 		return errors.Wrap(err, "starting logger")
 	}
 
