@@ -1,3 +1,32 @@
+# v0.6.0 Release - 5/16/2018
+New Features
+* Improve the `docker load` output in Bazel build [#475](https://github.com/GoogleContainerTools/skaffold/pull/475)
+* `envTemplate` now supports `DIGEST_ALGO` and `DIGEST_HEX` variables [#495](https://github.com/GoogleContainerTools/skaffold/pull/495)
+* Perform cleanup on `SIGPIPE` signal [#515](https://github.com/GoogleContainerTools/skaffold/pull/515)
+* Learnt a `skaffold build` command [#476](https://github.com/GoogleContainerTools/skaffold/pull/476), [#553](https://github.com/GoogleContainerTools/skaffold/pull/553)
+* Git tagger should use tags over commits [#552](https://github.com/GoogleContainerTools/skaffold/pull/552)
+
+Bug Fixes
+* Fixed the microservices example [#451](https://github.com/GoogleContainerTools/skaffold/pull/451)
+* Don't fail if `~/.docker/config.json` doesn't exist [#454](https://github.com/GoogleContainerTools/skaffold/pull/454)
+* Fix the Git Tagger name [#473](https://github.com/GoogleContainerTools/skaffold/pull/473)
+* Git Tagger now handles deleted files without failing [#471](https://github.com/GoogleContainerTools/skaffold/pull/471)
+* Add files to the context tarball with Unix separators [#489](https://github.com/GoogleContainerTools/skaffold/pull/489)
+* Fix and improve `annotated-skaffold.yaml` [#467](https://github.com/GoogleContainerTools/skaffold/pull/467), [#520](https://github.com/GoogleContainerTools/skaffold/pull/520), [#536](https://github.com/GoogleContainerTools/skaffold/pull/536), [#542](https://github.com/GoogleContainerTools/skaffold/pull/542)
+* Handle private docker registries with explicit port numbers [#525](https://github.com/GoogleContainerTools/skaffold/pull/525)
+* Ignore empty manifests [#538](https://github.com/GoogleContainerTools/skaffold/pull/538)
+* Default values are set after a profile is applied [#533](https://github.com/GoogleContainerTools/skaffold/pull/533)
+* Remove warning when building images [#548](https://github.com/GoogleContainerTools/skaffold/pull/548)
+* Some logs where not printed [#513](https://github.com/GoogleContainerTools/skaffold/pull/513)
+
+Updates
+* Improvements to the documentation [#452](https://github.com/GoogleContainerTools/skaffold/pull/452), [#453](https://github.com/GoogleContainerTools/skaffold/pull/453), [#556](https://github.com/GoogleContainerTools/skaffold/pull/556)
+* Improve `kubectl` and `helm` commands output [#534](https://github.com/GoogleContainerTools/skaffold/pull/534)
+* Code improvements [#485](https://github.com/GoogleContainerTools/skaffold/pull/485), [#537](https://github.com/GoogleContainerTools/skaffold/pull/537), [#544](https://github.com/GoogleContainerTools/skaffold/pull/544), [#545](https://github.com/GoogleContainerTools/skaffold/pull/545)
+* Improved Git Issue template [#532](https://github.com/GoogleContainerTools/skaffold/pull/532)
+
+https://github.com/GoogleContainerTools/skaffold/compare/v0.5.0...v0.6.0
+
 # v0.5.0 Release - 4/23/2018
 New Features
 * Added kaniko builder
