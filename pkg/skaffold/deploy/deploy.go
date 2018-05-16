@@ -48,6 +48,70 @@ type Deployer interface {
 	Cleanup(context.Context, io.Writer) error
 }
 
+type multiDeployer struct {
+	deployers []Deployer
+}
+
+func NewMultiDeployer(deployers []Deployer) Deployer {
+	return &multiDeployer{
+		deployers: deployers,
+	}
+}
+
+func (m *multiDeployer) Labels() map[string]string {
+	labels := map[string]string{}
+	for _, deployer := range m.deployers {
+		for k, v := range deployer.Labels() {
+			labels[k] = v
+		}
+	}
+
+	return labels
+}
+
+func (m *multiDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
+	results := []Artifact{}
+	for _, deployer := range m.deployers {
+		a, err := deployer.Deploy(ctx, out, builds)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, a...)
+	}
+
+	return results, nil
+}
+
+func (m *multiDeployer) Dependencies() ([]string, error) {
+	allDeps := []string{}
+
+	for _, deployer := range m.deployers {
+		deps, err := deployer.Dependencies()
+		if err != nil {
+			return allDeps, err
+		}
+
+		allDeps = append(allDeps, deps...)
+	}
+
+	for _, dep := range allDeps {
+		fmt.Println(dep)
+	}
+
+	return allDeps, nil
+}
+
+func (m *multiDeployer) Cleanup(ctx context.Context, w io.Writer) error {
+	for _, deployer := range m.deployers {
+		err := deployer.Cleanup(ctx, w)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func joinTagsToBuildResult(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {
 	imageToBuildResult := map[string]build.Artifact{}
 	for _, build := range builds {
