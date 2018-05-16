@@ -206,7 +206,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 	colorPicker := kubernetes.NewColorPicker(artifacts)
 	logger := kubernetes.NewLogAggregator(r.out, podSelector, colorPicker)
 
-	onChange := func(changedPaths []string) {
+	onChange := func(changedPaths []string) error {
 		logger.Mute()
 		defer func() {
 			fmt.Fprint(r.out, "Watching for changes...\n")
@@ -218,7 +218,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 		bRes, err := r.Builder.Build(ctx, r.out, r.Tagger, changedArtifacts)
 		if err != nil {
 			logrus.Warnln("Skipping Deploy due to build error:", err)
-			return
+			return nil
 		}
 
 		// Update which images are logged.
@@ -229,26 +229,22 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 		// Make sure all artifacts are redeployed. Not only those that were just rebuilt.
 		r.builds = mergeWithPreviousBuilds(bRes, r.builds)
 
-		err = r.Deployer.Deploy(ctx, r.out, r.builds)
-		if err != nil {
-			logrus.Errorln("deploy:", err)
-			return
-		}
+		return r.Deployer.Deploy(ctx, r.out, r.builds)
 	}
 
-	onDeployChange := func(changedPaths []string) {
+	onDeployChange := func(changedPaths []string) error {
 		logger.Mute()
 		defer func() {
 			fmt.Fprint(r.out, "Watching for changes...\n")
 			logger.Unmute()
 		}()
 
-		if err := r.Deployer.Deploy(ctx, r.out, r.builds); err != nil {
-			logrus.Warnln("deploy: %s", err)
-		}
+		return r.Deployer.Deploy(ctx, r.out, r.builds)
 	}
 
-	onChange(depMap.Paths())
+	if err := onChange(depMap.Paths()); err != nil {
+		return errors.Wrap(err, "first build")
+	}
 
 	// Start logs
 	kubeclient, err := kubernetesClient()

@@ -93,7 +93,7 @@ func NewWatcherFactory(err error, changes ...[]string) watch.WatcherFactory {
 	}
 }
 
-func (t *TestWatcher) Start(context context.Context, onChange func([]string)) error {
+func (t *TestWatcher) Start(context context.Context, onChange func([]string) error) error {
 	for _, change := range t.changes {
 		onChange(change)
 	}
