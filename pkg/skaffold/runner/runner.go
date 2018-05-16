@@ -45,12 +45,13 @@ type SkaffoldRunner struct {
 	deploy.Deployer
 	tag.Tagger
 	watch.WatcherFactory
+	build.DependencyMapFactory
 
 	opts       *config.SkaffoldOptions
 	config     *config.SkaffoldConfig
 	kubeclient clientgo.Interface
 	builds     []build.Build
-	depMap     *build.DependencyMap
+	depMap     build.DependencyMap
 	out        io.Writer
 }
 
@@ -85,14 +86,15 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig, out 
 	}
 
 	return &SkaffoldRunner{
-		config:         cfg,
-		Builder:        builder,
-		Deployer:       deployer,
-		Tagger:         tagger,
-		opts:           opts,
-		kubeclient:     client,
-		WatcherFactory: watch.NewWatcher,
-		out:            out,
+		config:               cfg,
+		Builder:              builder,
+		Deployer:             deployer,
+		Tagger:               tagger,
+		opts:                 opts,
+		kubeclient:           client,
+		WatcherFactory:       watch.NewWatcher,
+		DependencyMapFactory: build.NewDependencyMap,
+		out:                  out,
 	}, nil
 }
 
@@ -165,8 +167,12 @@ func (r *SkaffoldRunner) Build(ctx context.Context) error {
 
 // Run runs the skaffold build and deploy pipeline.
 func (r *SkaffoldRunner) Run(ctx context.Context) error {
-	_, err := r.buildAndDeploy(ctx, r.config.Build.Artifacts, nil)
-	return err
+	bRes, err := r.build(ctx, r.config.Build.Artifacts)
+	if err != nil {
+		return err
+	}
+
+	return r.deploy(ctx, bRes)
 }
 
 // Dev watches for changes and runs the skaffold build and deploy
@@ -182,7 +188,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 	artifacts := r.config.Build.Artifacts
 
 	var err error
-	r.depMap, err = build.NewDependencyMap(artifacts)
+	r.depMap, err = r.DependencyMapFactory(artifacts)
 	if err != nil {
 		return errors.Wrap(err, "getting path to dependency map")
 	}
@@ -207,40 +213,47 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 	colorPicker := kubernetes.NewColorPicker(artifacts)
 	logger := kubernetes.NewLogAggregator(r.out, podSelector, colorPicker)
 
-	onBuildSuccess := func(builds []build.Build) {
-		// Update which images are logged.
-		for _, build := range builds {
-			podSelector.AddImage(build.Tag)
-		}
-	}
-
 	onChange := func(changedPaths []string) {
 		logger.Mute()
+		defer func() {
+			fmt.Fprint(r.out, "Watching for changes...\n")
+			logger.Unmute()
+		}()
 
 		changedArtifacts := r.depMap.ArtifactsForPaths(changedPaths)
 
-		br, err := r.buildAndDeploy(ctx, changedArtifacts, onBuildSuccess)
+		bRes, err := r.build(ctx, changedArtifacts)
 		if err != nil {
-			// In dev mode, we only log on pipeline errors
-			logrus.Errorf("run: %s", err)
-			if br == nil {
-				logrus.Error("Skipping Deploy due to build error.")
-			}
+			logrus.Errorln("build:", err)
+			logrus.Errorln("Skipping Deploy due to build error.")
+			return
 		}
 
-		fmt.Fprint(r.out, "Watching for changes...\n")
-		logger.Unmute()
+		// Update which images are logged.
+		for _, build := range bRes {
+			podSelector.AddImage(build.Tag)
+		}
+
+		// Make sure all artifacts are redeployed. Not only those that were just rebuilt.
+		r.builds = mergeWithPreviousBuilds(bRes, r.builds)
+
+		err = r.deploy(ctx, r.builds)
+		if err != nil {
+			logrus.Errorf("deploy: %s", err)
+			return
+		}
 	}
 
 	onDeployChange := func(changedPaths []string) {
 		logger.Mute()
+		defer func() {
+			fmt.Fprint(r.out, "Watching for changes...\n")
+			logger.Unmute()
+		}()
 
 		if err := r.deploy(ctx, r.builds); err != nil {
 			logrus.Warnf("deploy: %s", err)
 		}
-
-		fmt.Fprint(r.out, "Watching for changes...\n")
-		logger.Unmute()
 	}
 
 	onChange(r.depMap.Paths())
@@ -260,27 +273,6 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 	})
 
 	return g.Wait()
-}
-
-func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, artifacts []*v1alpha2.Artifact, onBuildSuccess func([]build.Build)) ([]build.Build, error) {
-	bRes, err := r.build(ctx, artifacts)
-	if err != nil {
-		return nil, errors.Wrap(err, "build")
-	}
-
-	if onBuildSuccess != nil {
-		onBuildSuccess(bRes)
-	}
-
-	// Make sure all artifacts are redeployed. Not only those that were just rebuilt.
-	r.builds = mergeWithPreviousBuilds(bRes, r.builds)
-
-	err = r.deploy(ctx, r.builds)
-	if err != nil {
-		return bRes, errors.Wrap(err, "deploy")
-	}
-
-	return bRes, nil
 }
 
 func (r *SkaffoldRunner) build(ctx context.Context, artifacts []*v1alpha2.Artifact) ([]build.Build, error) {

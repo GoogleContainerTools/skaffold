@@ -44,9 +44,15 @@ func (t *TestBuilder) Build(context.Context, io.Writer, tag.Tagger, []*v1alpha2.
 }
 
 type TestBuildAll struct {
+	built []build.Build
+	err   error
 }
 
 func (t *TestBuildAll) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Build, error) {
+	if t.err != nil {
+		return nil, t.err
+	}
+
 	var builds []build.Build
 
 	for _, artifact := range artifacts {
@@ -55,6 +61,7 @@ func (t *TestBuildAll) Build(ctx context.Context, w io.Writer, tagger tag.Tagger
 		})
 	}
 
+	t.built = builds
 	return builds, nil
 }
 
@@ -68,8 +75,12 @@ func (t *TestDeployer) Dependencies() ([]string, error) {
 }
 
 func (t *TestDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Build) error {
+	if t.err != nil {
+		return t.err
+	}
+
 	t.deployed = builds
-	return t.err
+	return nil
 }
 
 func (t *TestDeployer) Cleanup(ctx context.Context, out io.Writer) error {
@@ -283,11 +294,12 @@ func TestDev(t *testing.T) {
 						},
 					},
 				},
-				Deployer:       &TestDeployer{},
-				WatcherFactory: NewWatcherFactory(nil, []string{}),
-				opts:           &config.SkaffoldOptions{},
-				Tagger:         &tag.ChecksumTagger{},
-				out:            ioutil.Discard,
+				Deployer:             &TestDeployer{},
+				WatcherFactory:       NewWatcherFactory(nil, []string{}),
+				DependencyMapFactory: build.NewDependencyMap,
+				opts:                 &config.SkaffoldOptions{},
+				Tagger:               &tag.ChecksumTagger{},
+				out:                  ioutil.Discard,
 			},
 		},
 		{
@@ -298,24 +310,26 @@ func TestDev(t *testing.T) {
 				Builder: &TestBuilder{
 					err: fmt.Errorf(""),
 				},
-				Deployer:       &TestDeployer{},
-				Tagger:         &tag.ChecksumTagger{},
-				WatcherFactory: NewWatcherFactory(nil, []string{}),
-				opts:           &config.SkaffoldOptions{},
-				out:            ioutil.Discard,
+				Deployer:             &TestDeployer{},
+				Tagger:               &tag.ChecksumTagger{},
+				WatcherFactory:       NewWatcherFactory(nil, []string{}),
+				DependencyMapFactory: build.NewDependencyMap,
+				opts:                 &config.SkaffoldOptions{},
+				out:                  ioutil.Discard,
 			},
 		},
 		{
 			description: "bad watch dev mode",
 			runner: &SkaffoldRunner{
-				config:         &v1alpha2.SkaffoldConfig{},
-				kubeclient:     client,
-				Builder:        &TestBuilder{},
-				Deployer:       &TestDeployer{},
-				WatcherFactory: NewWatcherFactory(fmt.Errorf("")),
-				opts:           &config.SkaffoldOptions{},
-				Tagger:         &tag.ChecksumTagger{},
-				out:            ioutil.Discard,
+				config:               &v1alpha2.SkaffoldConfig{},
+				kubeclient:           client,
+				Builder:              &TestBuilder{},
+				Deployer:             &TestDeployer{},
+				WatcherFactory:       NewWatcherFactory(fmt.Errorf("")),
+				DependencyMapFactory: build.NewDependencyMap,
+				opts:                 &config.SkaffoldOptions{},
+				Tagger:               &tag.ChecksumTagger{},
+				out:                  ioutil.Discard,
 			},
 			shouldErr: true,
 		},
@@ -334,43 +348,56 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	kubeclient, _ := fakeGetClient()
 	builder := &TestBuildAll{}
 	deployer := &TestDeployer{}
+	artifacts := []*v1alpha2.Artifact{
+		{ImageName: "image1"},
+		{ImageName: "image2"},
+	}
+	pathToArtifacts := map[string][]*v1alpha2.Artifact{
+		"path1": artifacts[0:1],
+		"path2": artifacts[1:],
+	}
 
 	runner := &SkaffoldRunner{
+		config: &v1alpha2.SkaffoldConfig{
+			Build: v1alpha2.BuildConfig{
+				Artifacts: artifacts,
+			},
+		},
 		opts:       &config.SkaffoldOptions{},
 		kubeclient: kubeclient,
 		Builder:    builder,
 		Deployer:   deployer,
 		out:        ioutil.Discard,
+		DependencyMapFactory: func(artifacts []*v1alpha2.Artifact) (build.DependencyMap, error) {
+			return build.NewExplicitDependencyMap(artifacts, pathToArtifacts), nil
+		},
 	}
 
 	ctx := context.Background()
 
-	// Build all artifacts
-	bRes, err := runner.buildAndDeploy(ctx, []*v1alpha2.Artifact{
-		{ImageName: "image1"},
-		{ImageName: "image2"},
-	}, nil)
+	// All artifacts are changed
+	runner.WatcherFactory = NewWatcherFactory(nil, []string{"path1", "path2"})
+	err := runner.Dev(ctx)
 
 	if err != nil {
 		t.Errorf("Didn't expect an error. Got %s", err)
 	}
-	if len(bRes) != 2 {
-		t.Errorf("Expected 2 artifacts to be built. Got %d", len(bRes))
+	if len(builder.built) != 2 {
+		t.Errorf("Expected 2 artifacts to be built. Got %d", len(builder.built))
 	}
 	if len(deployer.deployed) != 2 {
 		t.Errorf("Expected 2 artifacts to be deployed. Got %d", len(deployer.deployed))
 	}
 
-	// Rebuild only one
-	bRes, err = runner.buildAndDeploy(ctx, []*v1alpha2.Artifact{
-		{ImageName: "image2"},
-	}, nil)
+	// Only one is changed
+	runner.WatcherFactory = NewWatcherFactory(nil, []string{"path2"})
+	err = runner.Dev(ctx)
 
 	if err != nil {
 		t.Errorf("Didn't expect an error. Got %s", err)
 	}
-	if len(bRes) != 1 {
-		t.Errorf("Expected 1 artifact to be built. Got %d", len(bRes))
+	if len(builder.built) != 1 {
+		t.Errorf("Expected 1 artifact to be built. Got %d", len(builder.built))
 	}
 	if len(deployer.deployed) != 2 {
 		t.Errorf("Expected 2 artifacts to be deployed. Got %d", len(deployer.deployed))
