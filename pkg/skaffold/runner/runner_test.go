@@ -144,7 +144,7 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 			},
-			expected: &build.LocalBuilder{},
+			expected: build.WithTimings(&build.LocalBuilder{}),
 		},
 		{
 			description: "bad tagger config",
@@ -169,7 +169,7 @@ func TestNewForConfig(t *testing.T) {
 				Build: v1alpha2.BuildConfig{},
 			},
 			shouldErr: true,
-			expected:  &build.LocalBuilder{},
+			expected:  build.WithTimings(&build.LocalBuilder{}),
 		},
 		{
 			description: "unknown tagger",
@@ -181,7 +181,7 @@ func TestNewForConfig(t *testing.T) {
 					},
 				}},
 			shouldErr: true,
-			expected:  &build.LocalBuilder{},
+			expected:  build.WithTimings(&build.LocalBuilder{}),
 		},
 		{
 			description: "unknown deployer",

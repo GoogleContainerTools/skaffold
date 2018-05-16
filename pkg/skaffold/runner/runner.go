@@ -23,7 +23,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -68,11 +67,13 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig, out 
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold build config")
 	}
+	builder = build.WithTimings(builder)
 
 	deployer, err := getDeployer(&cfg.Deploy, kubeContext)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold deploy config")
 	}
+	deployer = deploy.WithTimings(deployer)
 	if opts.Notification {
 		deployer = deploy.WithNotification(deployer)
 	}
@@ -155,7 +156,7 @@ func getTagger(t v1alpha2.TagPolicy, customTag string) (tag.Tagger, error) {
 
 // Build builds the artifacts.
 func (r *SkaffoldRunner) Build(ctx context.Context) error {
-	bRes, err := r.build(ctx, r.config.Build.Artifacts)
+	bRes, err := r.Builder.Build(ctx, r.out, r.Tagger, r.config.Build.Artifacts)
 	if err != nil {
 		return err
 	}
@@ -169,19 +170,19 @@ func (r *SkaffoldRunner) Build(ctx context.Context) error {
 
 // Run runs the skaffold build and deploy pipeline.
 func (r *SkaffoldRunner) Run(ctx context.Context) error {
-	bRes, err := r.build(ctx, r.config.Build.Artifacts)
+	bRes, err := r.Builder.Build(ctx, r.out, r.Tagger, r.config.Build.Artifacts)
 	if err != nil {
 		return err
 	}
 
-	return r.deploy(ctx, bRes)
+	return r.Deployer.Deploy(ctx, r.out, bRes)
 }
 
 // Dev watches for changes and runs the skaffold build and deploy
 // pipeline until interrrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context) error {
 	if r.opts.Cleanup {
-		return cleanUpOnCtrlC(ctx, r.watchBuildDeploy, r.cleanup)
+		return r.cleanUpOnCtrlC(ctx)
 	}
 	return r.watchBuildDeploy(ctx)
 }
@@ -224,7 +225,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 
 		changedArtifacts := r.depMap.ArtifactsForPaths(changedPaths)
 
-		bRes, err := r.build(ctx, changedArtifacts)
+		bRes, err := r.Builder.Build(ctx, r.out, r.Tagger, changedArtifacts)
 		if err != nil {
 			logrus.Errorln("build:", err)
 			logrus.Errorln("Skipping Deploy due to build error.")
@@ -239,7 +240,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 		// Make sure all artifacts are redeployed. Not only those that were just rebuilt.
 		r.builds = mergeWithPreviousBuilds(bRes, r.builds)
 
-		err = r.deploy(ctx, r.builds)
+		err = r.Deployer.Deploy(ctx, r.out, r.builds)
 		if err != nil {
 			logrus.Errorf("deploy: %s", err)
 			return
@@ -253,7 +254,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 			logger.Unmute()
 		}()
 
-		if err := r.deploy(ctx, r.builds); err != nil {
+		if err := r.Deployer.Deploy(ctx, r.out, r.builds); err != nil {
 			logrus.Warnf("deploy: %s", err)
 		}
 	}
@@ -277,35 +278,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 	return g.Wait()
 }
 
-func (r *SkaffoldRunner) build(ctx context.Context, artifacts []*v1alpha2.Artifact) ([]build.Build, error) {
-	start := time.Now()
-	fmt.Fprintln(r.out, "Starting build...")
-
-	bRes, err := r.Builder.Build(ctx, r.out, r.Tagger, artifacts)
-	if err != nil {
-		return nil, errors.Wrap(err, "build step")
-	}
-
-	fmt.Fprintln(r.out, "Build complete in", time.Since(start))
-
-	return bRes, nil
-}
-
-func (r *SkaffoldRunner) deploy(ctx context.Context, builds []build.Build) error {
-	start := time.Now()
-	fmt.Fprintln(r.out, "Starting deploy...")
-
-	err := r.Deployer.Deploy(ctx, r.out, builds)
-	if err != nil {
-		return errors.Wrap(err, "deploy step")
-	}
-
-	fmt.Fprintln(r.out, "Deploy complete in", time.Since(start))
-
-	return nil
-}
-
-func cleanUpOnCtrlC(ctx context.Context, runDevMode func(context.Context) error, cleanup func(context.Context)) error {
+func (r *SkaffoldRunner) cleanUpOnCtrlC(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 
 	signals := make(chan os.Signal, 1)
@@ -320,22 +293,11 @@ func cleanUpOnCtrlC(ctx context.Context, runDevMode func(context.Context) error,
 		cancel()
 	}()
 
-	errRun := runDevMode(ctx)
-	cleanup(ctx)
-	return errRun
-}
-
-func (r *SkaffoldRunner) cleanup(ctx context.Context) {
-	start := time.Now()
-	fmt.Fprintln(r.out, "Cleaning up...")
-
-	err := r.Deployer.Cleanup(ctx, r.out)
-	if err != nil {
-		logrus.Warnf("cleanup: %s", err)
-		return
+	errRun := r.watchBuildDeploy(ctx)
+	if err := r.Deployer.Cleanup(ctx, r.out); err != nil {
+		logrus.Warnln("cleanup:", err)
 	}
-
-	fmt.Fprintln(r.out, "Cleanup complete in", time.Since(start))
+	return errRun
 }
 
 func mergeWithPreviousBuilds(builds, previous []build.Build) []build.Build {
