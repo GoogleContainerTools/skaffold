@@ -85,7 +85,7 @@ You will need the following components to get started with Skaffold:
 
 ### Iterative Development
 
-1. Clone this repostiory to get access to the examples.
+1. Clone this repository to get access to the examples.
 
     ```shell
     git clone https://github.com/GoogleContainerTools/skaffold
