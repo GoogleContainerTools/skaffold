@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	homedir "github.com/mitchellh/go-homedir"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -163,18 +164,21 @@ func (c *SkaffoldConfig) Parse(contents []byte, useDefaults bool) error {
 	}
 
 	if useDefaults {
-		c.setDefaultValues()
+		if err := c.setDefaultValues(); err != nil {
+			return errors.Wrap(err, "applying default values")
+		}
 	}
 
 	return nil
 }
 
-func (c *SkaffoldConfig) setDefaultValues() {
+func (c *SkaffoldConfig) setDefaultValues() error {
 	c.defaultToLocalBuild()
 	c.defaultToDockerArtifacts()
 	c.setDefaultTagger()
 	c.setDefaultDockerfiles()
 	c.setDefaultWorkspaces()
+	return c.expandKanikoSecretPath()
 }
 
 func (c *SkaffoldConfig) defaultToLocalBuild() {
@@ -222,6 +226,20 @@ func (c *SkaffoldConfig) setDefaultWorkspaces() {
 	}
 }
 
+func (c *SkaffoldConfig) expandKanikoSecretPath() error {
+	if c.Build.KanikoBuild == nil || c.Build.KanikoBuild.PullSecret == "" {
+		return nil
+	}
+
+	absPath, err := homedir.Expand(c.Build.KanikoBuild.PullSecret)
+	if err != nil {
+		return fmt.Errorf("unable to expand pullSecret %s", c.Build.KanikoBuild.PullSecret)
+	}
+
+	c.Build.KanikoBuild.PullSecret = absPath
+	return nil
+}
+
 // ApplyProfiles returns configuration modified by the application
 // of a list of profiles.
 func (c *SkaffoldConfig) ApplyProfiles(profiles []string) error {
@@ -240,8 +258,10 @@ func (c *SkaffoldConfig) ApplyProfiles(profiles []string) error {
 		}
 	}
 
-	c.setDefaultValues()
 	c.Profiles = nil
+	if err := c.setDefaultValues(); err != nil {
+		return errors.Wrap(err, "applying default values")
+	}
 
 	return nil
 }
