@@ -30,23 +30,36 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
-
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func WaitForPodReady(pods corev1.PodInterface, podName string) error {
+	logrus.Infof("Waiting for %s to be scheduled", podName)
+	err := wait.PollImmediate(time.Millisecond*500, time.Second*10, func() (bool, error) {
+		_, err := pods.Get(podName, meta_v1.GetOptions{
+			IncludeUninitialized: true,
+		})
+		if err != nil {
+			logrus.Infof("Getting pod %s", err)
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		return err
+	}
+
 	logrus.Infof("Waiting for %s to be ready", podName)
 	return wait.PollImmediate(time.Millisecond*500, time.Minute*10, func() (bool, error) {
 		pod, err := pods.Get(podName, meta_v1.GetOptions{
 			IncludeUninitialized: true,
 		})
 		if err != nil {
-			logrus.Infof("Getting pod %s", err)
-			return false, nil
+			return false, fmt.Errorf("not found: %s", podName)
 		}
 		switch pod.Status.Phase {
 		case v1.PodRunning:
