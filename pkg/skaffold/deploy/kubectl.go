@@ -151,6 +151,7 @@ func (k *KubectlDeployer) kubectl(in io.Reader, out io.Writer, arg ...string) er
 	cmd := exec.Command("kubectl", args...)
 	cmd.Stdin = in
 	cmd.Stdout = out
+	cmd.Stderr = out
 
 	return util.RunCmd(cmd)
 }
