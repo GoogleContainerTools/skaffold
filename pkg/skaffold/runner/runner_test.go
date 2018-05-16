@@ -34,15 +34,6 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-type TestBuilder struct {
-	result []build.Build
-	err    error
-}
-
-func (t *TestBuilder) Build(context.Context, io.Writer, tag.Tagger, []*v1alpha2.Artifact) ([]build.Build, error) {
-	return t.result, t.err
-}
-
 type TestBuildAll struct {
 	built []build.Build
 	err   error
@@ -218,7 +209,7 @@ func TestRun(t *testing.T) {
 			description: "run no error",
 			runner: &SkaffoldRunner{
 				config:   &v1alpha2.SkaffoldConfig{},
-				Builder:  &TestBuilder{},
+				Builder:  &TestBuildAll{},
 				opts:     &config.SkaffoldOptions{},
 				Tagger:   &tag.ChecksumTagger{},
 				Deployer: &TestDeployer{},
@@ -229,7 +220,7 @@ func TestRun(t *testing.T) {
 			description: "run build error",
 			runner: &SkaffoldRunner{
 				config: &v1alpha2.SkaffoldConfig{},
-				Builder: &TestBuilder{
+				Builder: &TestBuildAll{
 					err: fmt.Errorf(""),
 				},
 				opts:   &config.SkaffoldOptions{},
@@ -255,7 +246,7 @@ func TestRun(t *testing.T) {
 				},
 				opts:    &config.SkaffoldOptions{},
 				Tagger:  &tag.ChecksumTagger{},
-				Builder: &TestBuilder{},
+				Builder: &TestBuildAll{},
 				out:     ioutil.Discard,
 			},
 			shouldErr: true,
@@ -280,35 +271,14 @@ func TestDev(t *testing.T) {
 		shouldErr   bool
 	}{
 		{
-			description: "run dev mode",
-			runner: &SkaffoldRunner{
-				config: &v1alpha2.SkaffoldConfig{},
-				Builder: &TestBuilder{
-					result: []build.Build{
-						{
-							ImageName: "test",
-							Tag:       "test:tag",
-						},
-					},
-				},
-				Deployer:             &TestDeployer{},
-				WatcherFactory:       NewWatcherFactory(nil, []string{}),
-				DependencyMapFactory: build.NewDependencyMap,
-				opts:                 &config.SkaffoldOptions{},
-				Tagger:               &tag.ChecksumTagger{},
-				out:                  ioutil.Discard,
-			},
-		},
-		{
 			description: "run dev mode build error, continue",
 			runner: &SkaffoldRunner{
 				config: &v1alpha2.SkaffoldConfig{},
-				Builder: &TestBuilder{
+				Builder: &TestBuildAll{
 					err: fmt.Errorf(""),
 				},
 				Deployer:             &TestDeployer{},
-				Tagger:               &tag.ChecksumTagger{},
-				WatcherFactory:       NewWatcherFactory(nil, []string{}),
+				WatcherFactory:       NewWatcherFactory(nil),
 				DependencyMapFactory: build.NewDependencyMap,
 				opts:                 &config.SkaffoldOptions{},
 				out:                  ioutil.Discard,
@@ -318,12 +288,11 @@ func TestDev(t *testing.T) {
 			description: "bad watch dev mode",
 			runner: &SkaffoldRunner{
 				config:               &v1alpha2.SkaffoldConfig{},
-				Builder:              &TestBuilder{},
+				Builder:              &TestBuildAll{},
 				Deployer:             &TestDeployer{},
 				WatcherFactory:       NewWatcherFactory(fmt.Errorf("")),
 				DependencyMapFactory: build.NewDependencyMap,
 				opts:                 &config.SkaffoldOptions{},
-				Tagger:               &tag.ChecksumTagger{},
 				out:                  ioutil.Discard,
 			},
 			shouldErr: true,
