@@ -44,26 +44,27 @@ build:
 
     # bazel requires bazel CLI to be installed and the artifacts sources to
     # contain Bazel configuration files.
-    bazel:
-      target: //:skaffold_example.tar
+    # bazel:
+    #  target: //:skaffold_example.tar
 
 # This next section is where you'll put your specific builder configuration.
   # Valid builders are `local`, `googleCloudBuild` and `kaniko.
   # Defaults to `local: {}`
-  local:
+  # Example
+  # local:
     # Pushing the images can be skipped. If no value is specified, it'll default to
     # `true` on minikube or Docker for Desktop, for even faster build and deploy cycles.
     # `false` on other types of kubernetes clusters that require pushing the images.
     # Skaffold defers to your ~/.docker/config for authentication information.
     # If you're using Google Container Registry, make sure that you have gcloud and
     # docker-credentials-helper-gcr configured correctly.
-    skipPush: true
+    # skipPush: true
 
   # Docker artifacts can be built on Google Container Builder. The projectId then needs
   # to be provided and the currently logged user should be given permissions to trigger
   # new builds on GCB.
-  googleCloudBuild:
-    projectId: YOUR_PROJECT
+  #  googleCloudBuild:
+  #   projectId: YOUR_PROJECT
 
   # Docker artifacts can be built on a Kubernetes cluster with Kaniko.
   # Sources will be sent to a GCS bucket whose name is provided.
