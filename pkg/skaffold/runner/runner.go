@@ -49,7 +49,6 @@ type SkaffoldRunner struct {
 	config     *config.SkaffoldConfig
 	kubeclient clientgo.Interface
 	builds     []build.Build
-	depMap     build.DependencyMap
 	out        io.Writer
 }
 
@@ -190,13 +189,12 @@ func (r *SkaffoldRunner) Dev(ctx context.Context) error {
 func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 	artifacts := r.config.Build.Artifacts
 
-	var err error
-	r.depMap, err = r.DependencyMapFactory(artifacts)
+	depMap, err := r.DependencyMapFactory(artifacts)
 	if err != nil {
 		return errors.Wrap(err, "getting path to dependency map")
 	}
 
-	watcher, err := r.WatcherFactory(r.depMap.Paths())
+	watcher, err := r.WatcherFactory(depMap.Paths())
 	if err != nil {
 		return errors.Wrap(err, "creating watcher")
 	}
@@ -223,7 +221,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 			logger.Unmute()
 		}()
 
-		changedArtifacts := r.depMap.ArtifactsForPaths(changedPaths)
+		changedArtifacts := depMap.ArtifactsForPaths(changedPaths)
 
 		bRes, err := r.Builder.Build(ctx, r.out, r.Tagger, changedArtifacts)
 		if err != nil {
@@ -258,7 +256,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 		}
 	}
 
-	onChange(r.depMap.Paths())
+	onChange(depMap.Paths())
 
 	// Start logs
 	if err = logger.Start(ctx, r.kubeclient.CoreV1()); err != nil {
