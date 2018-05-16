@@ -24,30 +24,31 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 )
 
-// Ordered list of all schema versions
-var Versions = []string{v1alpha1.Version, v1alpha2.Version}
+// Versions is an ordered list of all schema versions.
+var Versions = []string{
+	v1alpha1.Version,
+	v1alpha2.Version,
+}
 
-var schemaVersions = map[string]func([]byte, bool) (util.VersionedConfig, error){
-	v1alpha1.Version: func(contents []byte, useDefault bool) (util.VersionedConfig, error) {
-		config := new(v1alpha1.SkaffoldConfig)
-		err := config.Parse(contents, useDefault)
-		return config, err
+var schemaVersions = map[string]func() util.VersionedConfig{
+	v1alpha1.Version: func() util.VersionedConfig {
+		return new(v1alpha1.SkaffoldConfig)
 	},
-	v1alpha2.Version: func(contents []byte, useDefault bool) (util.VersionedConfig, error) {
-		config := new(v1alpha2.SkaffoldConfig)
-		err := config.Parse(contents, useDefault)
-		return config, err
+	v1alpha2.Version: func() util.VersionedConfig {
+		return new(v1alpha2.SkaffoldConfig)
 	},
 }
 
 func GetConfig(contents []byte, useDefault bool) (util.VersionedConfig, error) {
 	for _, version := range Versions {
-		cfg, err := schemaVersions[version](contents, useDefault)
+		cfg := schemaVersions[version]()
+		err := cfg.Parse(contents, useDefault)
 		if cfg.GetVersion() == version {
 			// Versions are same hence propogate the parse error.
 			return cfg, err
 		}
 	}
+
 	return nil, errors.New("Unable to parse config")
 }
 
