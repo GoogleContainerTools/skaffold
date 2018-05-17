@@ -255,7 +255,7 @@ spec:
 			expected:    manifestList{},
 		},
 		{
-			description: "ignore tag",
+			description: "skipped tagged",
 			builds: []build.Build{{
 				ImageName: "gcr.io/k8s-skaffold/skaffold-example",
 				Tag:       "gcr.io/k8s-skaffold/skaffold-example:TAG",
@@ -266,7 +266,30 @@ metadata:
   name: getting-started
 spec:
   containers:
-  - image: gcr.io/k8s-skaffold/skaffold-example:IGNORED
+  - image: gcr.io/k8s-skaffold/skaffold-example:v1
+    name: getting-started`)},
+			expected: manifestList{[]byte(`apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/skaffold-example:v1
+    name: getting-started`)},
+		},
+		{
+			description: "replace latest",
+			builds: []build.Build{{
+				ImageName: "gcr.io/k8s-skaffold/skaffold-example",
+				Tag:       "gcr.io/k8s-skaffold/skaffold-example:TAG",
+			}},
+			manifests: manifestList{[]byte(`apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/skaffold-example:latest
     name: getting-started`)},
 			expected: manifestList{[]byte(`apiVersion: v1
 kind: Pod
@@ -276,8 +299,7 @@ spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold-example:TAG
     name: getting-started`)},
-		},
-		{
+		}, {
 			description: "service and deployment",
 			builds: []build.Build{{
 				ImageName: "gcr.io/k8s-skaffold/leeroy-app",
@@ -412,19 +434,49 @@ spec:
         - containerPort: 80`, manifests.String())
 }
 
-func TestRemoveTag(t *testing.T) {
-	removed := removeTag("host:1234/user/container:tag")
-	if removed != "host:1234/user/container" {
-		t.Errorf("Tag vas not removed from an image name with port: %s ", removed)
+func TestSplitTag(t *testing.T) {
+	var tests = []struct {
+		description  string
+		image        string
+		expectedName string
+		expectedTag  string
+	}{
+		{
+			description:  "port and tag",
+			image:        "host:1234/user/container:tag",
+			expectedName: "host:1234/user/container",
+			expectedTag:  "tag",
+		},
+		{
+			description:  "port",
+			image:        "host:1234/user/container",
+			expectedName: "host:1234/user/container",
+			expectedTag:  "",
+		},
+		{
+			description:  "tag",
+			image:        "host/user/container:tag",
+			expectedName: "host/user/container",
+			expectedTag:  "tag",
+		},
+		{
+			description:  "latest",
+			image:        "host/user/container:latest",
+			expectedName: "host/user/container",
+			expectedTag:  "latest",
+		},
 	}
 
-	removed = removeTag("host/user/container:tag")
-	if removed != "host/user/container" {
-		t.Errorf("Tag vas not removed from an image name with port: %s ", removed)
-	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			name, tag := splitTag(test.image)
 
-	removed = removeTag("host:1234/user/container")
-	if removed != "host:1234/user/container" {
-		t.Errorf("Image without tag and port is changed during tag removal: %s ", removed)
+			if name != test.expectedName {
+				t.Errorf("Expected name: [%s]. Got: [%s]", test.expectedName, name)
+			}
+			if tag != test.expectedTag {
+				t.Errorf("Expected tag: [%s]. Got: [%s]", test.expectedTag, tag)
+			}
+		})
 	}
 }

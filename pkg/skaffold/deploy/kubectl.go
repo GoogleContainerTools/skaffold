@@ -327,10 +327,12 @@ func recursiveReplaceImage(i interface{}, replacements map[string]*replacement) 
 	case map[interface{}]interface{}:
 		for k, v := range t {
 			if k.(string) == "image" {
-				name := removeTag(v.(string))
-				if img, present := replacements[name]; present {
-					t[k] = img.tag
-					img.found = true
+				name, tag := splitTag(v.(string))
+				if tag == "" || tag == "latest" {
+					if img, present := replacements[name]; present {
+						t[k] = img.tag
+						img.found = true
+					}
 				}
 			} else {
 				recursiveReplaceImage(v, replacements)
@@ -339,7 +341,12 @@ func recursiveReplaceImage(i interface{}, replacements map[string]*replacement) 
 	}
 }
 
-func removeTag(image string) string {
-	re := regexp.MustCompile(":[^/]+$")
-	return re.ReplaceAllString(image, "")
+func splitTag(image string) (string, string) {
+	re := regexp.MustCompile(`(.*):([^/]+)$`)
+	matches := re.FindStringSubmatch(image)
+
+	if len(matches) == 3 {
+		return matches[1], matches[2]
+	}
+	return image, ""
 }
