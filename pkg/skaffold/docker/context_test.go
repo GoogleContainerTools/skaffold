@@ -19,51 +19,63 @@ package docker
 import (
 	"archive/tar"
 	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestDockerContext(t *testing.T) {
+	tmpDir, cleanup := testutil.TempDir(t)
+	defer cleanup()
+
+	os.Mkdir(filepath.Join(tmpDir, "files"), 0750)
+	ioutil.WriteFile(filepath.Join(tmpDir, "files", "ignored.txt"), []byte(""), 0644)
+	ioutil.WriteFile(filepath.Join(tmpDir, "files", "included.txt"), []byte(""), 0644)
+	ioutil.WriteFile(filepath.Join(tmpDir, ".dockerignore"), []byte("**/ignored.txt\nalsoignored.txt"), 0644)
+	ioutil.WriteFile(filepath.Join(tmpDir, "Dockerfile"), []byte("FROM alpine\nCOPY ./files /files"), 0644)
+	ioutil.WriteFile(filepath.Join(tmpDir, "ignored.txt"), []byte(""), 0644)
+	ioutil.WriteFile(filepath.Join(tmpDir, "alsoignored.txt"), []byte(""), 0644)
+
 	reader, writer := io.Pipe()
 	go func() {
-		err := CreateDockerTarContext(writer, "Dockerfile", "../../../testdata/docker")
+		err := CreateDockerTarContext(writer, "Dockerfile", tmpDir)
 		if err != nil {
-			writer.CloseWithError(errors.Wrap(err, "creating docker context"))
-			panic(err)
+			writer.CloseWithError(err)
+		} else {
+			writer.Close()
 		}
-		writer.Close()
 	}()
 
-	var files []string
+	files := make(map[string]bool)
 	tr := tar.NewReader(reader)
 	for {
 		header, err := tr.Next()
-
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			panic(errors.Wrap(err, "reading tar headers"))
+			t.Fatal(err)
 		}
 
-		files = append(files, header.Name)
+		files[header.Name] = true
 	}
 
-	if util.StrSliceContains(files, "ignored.txt") {
+	if files["ignored.txt"] {
 		t.Error("File ignored.txt should have been excluded, but was not")
 	}
-
-	if util.StrSliceContains(files, "files/ignored.txt") {
+	if files["alsoignored.txt"] {
+		t.Error("File alsoignored.txt should have been excluded, but was not")
+	}
+	if files["files/ignored.txt"] {
 		t.Error("File files/ignored.txt should have been excluded, but was not")
 	}
-
-	if !util.StrSliceContains(files, "files/included.txt") {
+	if !files["files/included.txt"] {
 		t.Error("File files/included.txt should have been included, but was not")
 	}
-
-	if !util.StrSliceContains(files, "Dockerfile") {
+	if !files["Dockerfile"] {
 		t.Error("File Dockerfile should have been included, but was not")
 	}
 }

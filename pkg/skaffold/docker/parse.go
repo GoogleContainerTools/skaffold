@@ -22,14 +22,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/google/go-containerregistry/v1"
 
 	"github.com/docker/docker/builder/dockerignore"
@@ -57,11 +55,9 @@ func (d *DockerfileDepResolver) GetDependencies(a *v1alpha2.Artifact) ([]string,
 	return GetDockerfileDependencies(a.DockerArtifact.DockerfilePath, a.Workspace)
 }
 
-// GetDockerfileDependencies parses a dockerfile and returns the full paths
-// of all the source files that the resulting docker image depends on.
-func GetDockerfileDependencies(dockerfilePath, workspace string) ([]string, error) {
+func readDockerfile(workspace, dockerfilePath string) ([]string, error) {
 	path := filepath.Join(workspace, dockerfilePath)
-	f, err := util.Fs.Open(path)
+	f, err := os.Open(path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "opening dockerfile: %s", path)
 	}
@@ -91,7 +87,7 @@ func GetDockerfileDependencies(dockerfilePath, workspace string) ([]string, erro
 		for _, value := range r.AST.Children {
 			switch value.Value {
 			case add, copy:
-				processCopy(workspace, value, depMap, envs)
+				processCopy(value, depMap, envs)
 			case env:
 				envs[value.Next.Value] = value.Next.Next.Value
 			}
@@ -109,30 +105,86 @@ func GetDockerfileDependencies(dockerfilePath, workspace string) ([]string, erro
 
 	dispatchInstructions(res)
 
-	deps := []string{}
+	var deps []string
 	for dep := range depMap {
 		deps = append(deps, dep)
 	}
 	logrus.Infof("Found dependencies for dockerfile %s", deps)
 
-	expandedDeps, err := util.ExpandPaths(workspace, deps)
+	return deps, nil
+}
+
+func GetDockerfileDependencies(dockerfilePath, workspace string) ([]string, error) {
+	deps, err := readDockerfile(workspace, dockerfilePath)
 	if err != nil {
-		return nil, errors.Wrap(err, "expanding dockerfile paths")
-	}
-	logrus.Infof("deps %s", expandedDeps)
-
-	if !util.StrSliceContains(expandedDeps, path) {
-		expandedDeps = append(expandedDeps, path)
+		return nil, err
 	}
 
-	// Look for .dockerignore.
-	ignorePath := filepath.Join(workspace, ".dockerignore")
-	filteredDeps, err := ApplyDockerIgnore(expandedDeps, ignorePath)
+	// Read patterns to ignore
+	var excludes []string
+	dockerignorePath := filepath.Join(workspace, ".dockerignore")
+	if _, err := os.Stat(dockerignorePath); !os.IsNotExist(err) {
+		r, err := os.Open(dockerignorePath)
+		if err != nil {
+			return nil, err
+		}
+		defer r.Close()
+
+		excludes, err = dockerignore.ReadAll(r)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Walk the workspace
+	files := make(map[string]bool)
+	for _, dep := range deps {
+		filepath.Walk(filepath.Join(workspace, dep), func(fpath string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			relPath, err := filepath.Rel(workspace, fpath)
+			if err != nil {
+				return err
+			}
+
+			ignored, err := fileutils.Matches(relPath, excludes)
+			if err != nil {
+				return err
+			}
+
+			if info.IsDir() && ignored {
+				return filepath.SkipDir
+			}
+
+			if !info.IsDir() && !ignored {
+				files[relPath] = true
+			}
+
+			return nil
+		})
+	}
+
+	// Add dockerfile?
+	m, err := fileutils.Matches(dockerfilePath, excludes)
 	if err != nil {
-		return nil, errors.Wrap(err, "applying dockerignore")
+		return nil, err
+	}
+	if !m {
+		files[dockerfilePath] = true
 	}
 
-	return filteredDeps, nil
+	// Ignore .dockerignore
+	delete(files, ".dockerignore")
+
+	var dependencies []string
+	for file := range files {
+		dependencies = append(dependencies, file)
+	}
+	sort.Strings(dependencies)
+
+	return dependencies, nil
 }
 
 func PortsFromDockerfile(r io.Reader) ([]string, error) {
@@ -242,7 +294,7 @@ func retrieveRemoteConfig(identifier string) (*v1.ConfigFile, error) {
 	return img.ConfigFile()
 }
 
-func processCopy(workspace string, value *parser.Node, paths map[string]struct{}, envs map[string]string) error {
+func processCopy(value *parser.Node, paths map[string]struct{}, envs map[string]string) error {
 	slex := shell.NewLex('\\')
 	for {
 		// Skip last node, since it is the destination, and stop if we arrive at a comment
@@ -259,8 +311,7 @@ func processCopy(workspace string, value *parser.Node, paths map[string]struct{}
 			return nil
 		}
 		if !strings.HasPrefix(src, "http://") && !strings.HasPrefix(src, "https://") {
-			dep := path.Join(workspace, src)
-			paths[dep] = struct{}{}
+			paths[src] = struct{}{}
 		} else {
 			logrus.Debugf("Skipping watch on remote dependency %s", src)
 		}
@@ -285,43 +336,4 @@ func hasMultiStageFlag(flags []string) bool {
 		}
 	}
 	return false
-}
-
-func ApplyDockerIgnore(paths []string, dockerIgnorePath string) ([]string, error) {
-	absPaths, err := util.RelPathToAbsPath(paths)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting absolute path of dependencies")
-	}
-	excludes := []string{}
-	if _, err := util.Fs.Stat(dockerIgnorePath); !os.IsNotExist(err) {
-		r, err := util.Fs.Open(dockerIgnorePath)
-		if err != nil {
-			return nil, err
-		}
-		defer r.Close()
-
-		excludes, err = dockerignore.ReadAll(r)
-		if err != nil {
-			return nil, err
-		}
-		excludes = append(excludes, ".dockerignore")
-	}
-
-	absPathExcludes, err := util.RelPathToAbsPath(excludes)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting absolute path of docker ignored paths")
-	}
-
-	filteredDeps := []string{}
-	for _, d := range absPaths {
-		m, err := fileutils.Matches(d, absPathExcludes)
-		if err != nil {
-			return nil, err
-		}
-		if !m {
-			filteredDeps = append(filteredDeps, d)
-		}
-	}
-	sort.Strings(filteredDeps)
-	return filteredDeps, nil
 }

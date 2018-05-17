@@ -19,7 +19,6 @@ package bazel
 import (
 	"fmt"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
@@ -52,9 +51,7 @@ func (*BazelDependencyResolver) GetDependencies(a *v1alpha2.Artifact) ([]string,
 			continue
 		}
 
-		dep := filepath.Join(a.Workspace, depToPath(l))
-
-		deps = append(deps, dep)
+		deps = append(deps, depToPath(l))
 	}
 	return deps, nil
 }

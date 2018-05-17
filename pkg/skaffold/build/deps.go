@@ -18,6 +18,7 @@ package build
 
 import (
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -119,7 +120,7 @@ func pathsForArtifact(a *v1alpha2.Artifact) ([]string, error) {
 			logrus.Debugf("Ignoring %s for artifact dependencies", dep)
 			continue
 		}
-		filteredDeps = append(filteredDeps, dep)
+		filteredDeps = append(filteredDeps, filepath.Join(a.Workspace, dep))
 	}
 	return filteredDeps, nil
 }
