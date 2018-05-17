@@ -34,9 +34,10 @@ func TestDockerContext(t *testing.T) {
 	os.Mkdir(filepath.Join(tmpDir, "files"), 0750)
 	ioutil.WriteFile(filepath.Join(tmpDir, "files", "ignored.txt"), []byte(""), 0644)
 	ioutil.WriteFile(filepath.Join(tmpDir, "files", "included.txt"), []byte(""), 0644)
-	ioutil.WriteFile(filepath.Join(tmpDir, ".dockerignore"), []byte("**/ignored.txt"), 0644)
+	ioutil.WriteFile(filepath.Join(tmpDir, ".dockerignore"), []byte("**/ignored.txt\nalsoignored.txt"), 0644)
 	ioutil.WriteFile(filepath.Join(tmpDir, "Dockerfile"), []byte("FROM alpine\nCOPY ./files /files"), 0644)
 	ioutil.WriteFile(filepath.Join(tmpDir, "ignored.txt"), []byte(""), 0644)
+	ioutil.WriteFile(filepath.Join(tmpDir, "alsoignored.txt"), []byte(""), 0644)
 
 	reader, writer := io.Pipe()
 	go func() {
@@ -64,6 +65,9 @@ func TestDockerContext(t *testing.T) {
 
 	if files["ignored.txt"] {
 		t.Error("File ignored.txt should have been excluded, but was not")
+	}
+	if files["alsoignored.txt"] {
+		t.Error("File alsoignored.txt should have been excluded, but was not")
 	}
 	if files["files/ignored.txt"] {
 		t.Error("File files/ignored.txt should have been excluded, but was not")
