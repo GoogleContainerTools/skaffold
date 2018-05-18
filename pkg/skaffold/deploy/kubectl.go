@@ -328,10 +328,13 @@ func recursiveReplaceImage(i interface{}, replacements map[string]*replacement) 
 		for k, v := range t {
 			if k.(string) == "image" {
 				name, tag := splitTag(v.(string))
-				if tag == "" || tag == "latest" {
-					if img, present := replacements[name]; present {
+				if img, present := replacements[name]; present {
+					if tag == "" || tag == "latest" {
 						t[k] = img.tag
 						img.found = true
+					} else {
+						// TODO(1.0.0): Remove this warning.
+						logrus.Infof("Not replacing fully qualified image: %s (see #565)", v)
 					}
 				}
 			} else {
