@@ -23,7 +23,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"text/template"
 
@@ -31,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/docker/distribution/reference"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -326,30 +326,58 @@ func recursiveReplaceImage(i interface{}, replacements map[string]*replacement) 
 		}
 	case map[interface{}]interface{}:
 		for k, v := range t {
-			if k.(string) == "image" {
-				name, tag := splitTag(v.(string))
-				if img, present := replacements[name]; present {
-					if tag == "" || tag == "latest" {
-						t[k] = img.tag
-						img.found = true
-					} else {
-						// TODO(1.0.0): Remove this warning.
-						logrus.Infof("Not replacing fully qualified image: %s (see #565)", v)
-					}
-				}
-			} else {
+			if k.(string) != "image" {
 				recursiveReplaceImage(v, replacements)
+				continue
+			}
+
+			image := v.(string)
+			parsed, err := parseReference(image)
+			if err != nil {
+				logrus.Warnf("Couldn't parse image: %s", v)
+				continue
+			}
+
+			if parsed.fullyQualified {
+				// TODO(1.0.0): Remove this warning.
+				logrus.Infof("Not replacing fully qualified image: %s (see #565)", v)
+				continue
+			}
+
+			if img, present := replacements[parsed.baseName]; present {
+				t[k] = img.tag
+				img.found = true
 			}
 		}
 	}
 }
 
-func splitTag(image string) (string, string) {
-	re := regexp.MustCompile(`(.*):([^/]+)$`)
-	matches := re.FindStringSubmatch(image)
+type imageReference struct {
+	baseName       string
+	fullyQualified bool
+}
 
-	if len(matches) == 3 {
-		return matches[1], matches[2]
+func parseReference(image string) (*imageReference, error) {
+	r, err := reference.Parse(image)
+	if err != nil {
+		return nil, err
 	}
-	return image, ""
+
+	baseName := image
+	if n, ok := r.(reference.Named); ok {
+		baseName = n.Name()
+	}
+
+	fullyQualified := false
+	switch n := r.(type) {
+	case reference.Tagged:
+		fullyQualified = n.Tag() != "latest"
+	case reference.Digested:
+		fullyQualified = true
+	}
+
+	return &imageReference{
+		baseName:       baseName,
+		fullyQualified: fullyQualified,
+	}, nil
 }
