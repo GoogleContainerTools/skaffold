@@ -234,6 +234,8 @@ spec:
     name: fully-qualified
   - image: skaffold/other
     name: other
+  - image: gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883
+    name: digest
 `)}
 
 	builds := []build.Build{{
@@ -259,6 +261,8 @@ spec:
     name: fully-qualified
   - image: skaffold/other:OTHER_TAG
     name: other
+  - image: gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883
+    name: digest
 `)}
 
 	resultManifest, err := manifests.replaceImages(builds)
