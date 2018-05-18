@@ -67,14 +67,19 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-func (h *HelmDeployer) args(moreArgs ...string) []string {
-	return append([]string{"--kube-context", h.kubeContext}, moreArgs...)
+func (h *HelmDeployer) helm(out io.Writer, arg ...string) error {
+	args := append([]string{"--kube-context", h.kubeContext}, arg...)
+
+	cmd := exec.Command("helm", args...)
+	cmd.Stdout = out
+	cmd.Stderr = out
+
+	return util.RunCmd(cmd)
 }
 
 func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, b *build.BuildResult) error {
 	isInstalled := true
-	getCmd := exec.Command("helm", h.args("get", r.Name)...)
-	if _, err := util.RunCmdOut(getCmd); err != nil {
+	if err := h.helm(out, "get", r.Name); err != nil {
 		fmt.Fprintf(out, "Helm release %s not installed. Installing...\n", r.Name)
 		isInstalled = false
 	}
@@ -92,12 +97,11 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, b *b
 
 	// First build dependencies.
 	logrus.Infof("Building helm dependencies...")
-	depCmd := exec.Command("helm", h.args("dep", "build", r.ChartPath)...)
-	if err := util.RunCmd(depCmd); err != nil {
+	if err := h.helm(out, "dep", "build", r.ChartPath); err != nil {
 		return errors.Wrap(err, "building helm dependencies")
 	}
 
-	args := h.args()
+	var args []string
 	if !isInstalled {
 		args = append(args, "install", "--name", r.Name, r.ChartPath)
 	} else {
@@ -122,15 +126,11 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, b *b
 	}
 	args = append(args, setOpts...)
 
-	execCmd := exec.Command("helm", args...)
-	return util.RunCmd(execCmd)
+	return h.helm(out, args...)
 }
 
 func (h *HelmDeployer) deleteRelease(out io.Writer, r v1alpha2.HelmRelease) error {
-	deleteCmd := exec.Command("helm", h.args("delete", r.Name, "--purge")...)
-
-	err := util.RunCmd(deleteCmd)
-	if err != nil {
+	if err := h.helm(out, "delete", r.Name, "--purge"); err != nil {
 		logrus.Debugf("deleting release %s: %v\n", r.Name, err)
 	}
 
