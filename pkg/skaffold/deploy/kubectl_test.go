@@ -219,164 +219,68 @@ func TestKubectlCleanup(t *testing.T) {
 }
 
 func TestReplaceImages(t *testing.T) {
-	var tests = []struct {
-		description string
-		builds      []build.Build
-		manifests   manifestList
-		expected    manifestList
-		shouldErr   bool
-	}{
-		{
-			description: "pod",
-			builds: []build.Build{{
-				ImageName: "gcr.io/k8s-skaffold/skaffold-example",
-				Tag:       "gcr.io/k8s-skaffold/skaffold-example:TAG",
-			}},
-			manifests: manifestList{[]byte(`apiVersion: v1
+	manifests := manifestList{[]byte(`
+apiVersion: v1
 kind: Pod
 metadata:
   name: getting-started
 spec:
   containers:
-  - image: gcr.io/k8s-skaffold/skaffold-example
-    name: getting-started`)},
-			expected: manifestList{[]byte(`apiVersion: v1
-kind: Pod
-metadata:
-  name: getting-started
-spec:
-  containers:
-  - image: gcr.io/k8s-skaffold/skaffold-example:TAG
-    name: getting-started`)},
-		},
-		{
-			description: "empty",
-			manifests:   manifestList{[]byte(""), []byte("  ")},
-			expected:    manifestList{},
-		},
-		{
-			description: "skipped tagged",
-			builds: []build.Build{{
-				ImageName: "gcr.io/k8s-skaffold/skaffold-example",
-				Tag:       "gcr.io/k8s-skaffold/skaffold-example:TAG",
-			}},
-			manifests: manifestList{[]byte(`apiVersion: v1
-kind: Pod
-metadata:
-  name: getting-started
-spec:
-  containers:
-  - image: gcr.io/k8s-skaffold/skaffold-example:v1
-    name: getting-started`)},
-			expected: manifestList{[]byte(`apiVersion: v1
-kind: Pod
-metadata:
-  name: getting-started
-spec:
-  containers:
-  - image: gcr.io/k8s-skaffold/skaffold-example:v1
-    name: getting-started`)},
-		},
-		{
-			description: "replace latest",
-			builds: []build.Build{{
-				ImageName: "gcr.io/k8s-skaffold/skaffold-example",
-				Tag:       "gcr.io/k8s-skaffold/skaffold-example:TAG",
-			}},
-			manifests: manifestList{[]byte(`apiVersion: v1
-kind: Pod
-metadata:
-  name: getting-started
-spec:
-  containers:
-  - image: gcr.io/k8s-skaffold/skaffold-example:latest
-    name: getting-started`)},
-			expected: manifestList{[]byte(`apiVersion: v1
-kind: Pod
-metadata:
-  name: getting-started
-spec:
-  containers:
-  - image: gcr.io/k8s-skaffold/skaffold-example:TAG
-    name: getting-started`)},
-		}, {
-			description: "service and deployment",
-			builds: []build.Build{{
-				ImageName: "gcr.io/k8s-skaffold/leeroy-app",
-				Tag:       "gcr.io/k8s-skaffold/leeroy-app:TAG",
-			}},
-			manifests: manifestList{
-				[]byte(`apiVersion: apps/v1beta2
-kind: Deployment
-metadata:
-  labels:
-    app: leeroy-app
-  name: leeroy-app
-spec:
-  selector:
-    matchLabels:
-      app: leeroy-app
-  template:
-    metadata:
-      labels:
-        app: leeroy-app
-    spec:
-      containers:
-      - image: gcr.io/k8s-skaffold/leeroy-app
-        name: leeroy-app`),
-				[]byte(`apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: leeroy-app
-  name: leeroy-app
-spec:
-  ports:
-  - port: 50051
-  selector:
-    app: leeroy-app`)},
-			expected: manifestList{
-				[]byte(`apiVersion: apps/v1beta2
-kind: Deployment
-metadata:
-  labels:
-    app: leeroy-app
-  name: leeroy-app
-spec:
-  selector:
-    matchLabels:
-      app: leeroy-app
-  template:
-    metadata:
-      labels:
-        app: leeroy-app
-    spec:
-      containers:
-      - image: gcr.io/k8s-skaffold/leeroy-app:TAG
-        name: leeroy-app`),
-				[]byte(`apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: leeroy-app
-  name: leeroy-app
-spec:
-  ports:
-  - port: 50051
-  selector:
-    app: leeroy-app`)},
-		},
-	}
+  - image: gcr.io/k8s-skaffold/example
+    name: not-tagged
+  - image: gcr.io/k8s-skaffold/example:latest
+    name: latest
+  - image: gcr.io/k8s-skaffold/example:v1
+    name: fully-qualified
+  - image: skaffold/other
+    name: other
+`)}
 
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			manifests := manifestList(test.manifests)
+	builds := []build.Build{{
+		ImageName: "gcr.io/k8s-skaffold/example",
+		Tag:       "gcr.io/k8s-skaffold/example:TAG",
+	}, {
+		ImageName: "skaffold/other",
+		Tag:       "skaffold/other:OTHER_TAG",
+	}}
 
-			resultManifest, err := manifests.replaceImages(test.builds)
+	expected := manifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example:TAG
+    name: not-tagged
+  - image: gcr.io/k8s-skaffold/example:TAG
+    name: latest
+  - image: gcr.io/k8s-skaffold/example:v1
+    name: fully-qualified
+  - image: skaffold/other:OTHER_TAG
+    name: other
+`)}
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected.String(), resultManifest.String())
-		})
-	}
+	resultManifest, err := manifests.replaceImages(builds)
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
+}
+
+func TestReplaceEmptyManifest(t *testing.T) {
+	manifests := manifestList{[]byte(""), []byte("  ")}
+	expected := manifestList{}
+
+	resultManifest, err := manifests.replaceImages(nil)
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
+}
+
+func TestReplaceInvalidManifest(t *testing.T) {
+	manifests := manifestList{[]byte("INVALID")}
+
+	_, err := manifests.replaceImages(nil)
+
+	testutil.CheckError(t, true, err)
 }
 
 func TestGenerateManifest(t *testing.T) {
