@@ -135,7 +135,7 @@ func (config *SkaffoldConfig) Parse(contents []byte, useDefault bool) error {
 		*config = SkaffoldConfig{}
 	}
 
-	return yaml.Unmarshal(contents, config)
+	return yaml.UnmarshalStrict(contents, config)
 }
 
 func (config *SkaffoldConfig) getDefaultForMode(dev bool) *SkaffoldConfig {

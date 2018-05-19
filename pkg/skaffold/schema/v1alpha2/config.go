@@ -159,7 +159,7 @@ type BazelArtifact struct {
 
 // Parse reads a SkaffoldConfig from yaml.
 func (c *SkaffoldConfig) Parse(contents []byte, useDefaults bool) error {
-	if err := yaml.Unmarshal(contents, c); err != nil {
+	if err := yaml.UnmarshalStrict(contents, c); err != nil {
 		return err
 	}
 
