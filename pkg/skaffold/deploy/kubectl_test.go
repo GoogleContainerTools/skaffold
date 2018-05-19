@@ -214,6 +214,8 @@ func TestReplaceImages(t *testing.T) {
 apiVersion: v1
 kind: Pod
 metadata:
+  labels:
+    key: value
   name: getting-started
 spec:
   containers:
@@ -222,11 +224,18 @@ spec:
   - image: gcr.io/k8s-skaffold/example:latest
     name: latest
   - image: gcr.io/k8s-skaffold/example:v1
-    name: fully-qualified
-  - image: skaffold/other
-    name: other
-  - image: gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883
-    name: digest
+    name: fully-qualified`), []byte(`
+apiVersion: v1
+kind: Deployment
+metadata:
+  name: deployment
+template:
+  spec:
+    containers:
+    - image: skaffold/other
+      name: other
+    - image: gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883
+      name: digest
 `)}
 
 	builds := []build.Build{{
@@ -241,6 +250,9 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
+  labels:
+    key: value
+    skaffold: "true"
   name: getting-started
 spec:
   containers:
@@ -249,11 +261,20 @@ spec:
   - image: gcr.io/k8s-skaffold/example:TAG
     name: latest
   - image: gcr.io/k8s-skaffold/example:v1
-    name: fully-qualified
-  - image: skaffold/other:OTHER_TAG
-    name: other
-  - image: gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883
-    name: digest
+    name: fully-qualified`), []byte(`
+apiVersion: v1
+kind: Deployment
+metadata:
+  labels:
+    skaffold: "true"
+  name: deployment
+template:
+  spec:
+    containers:
+    - image: skaffold/other:OTHER_TAG
+      name: other
+    - image: gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883
+      name: digest
 `)}
 
 	resultManifest, err := manifests.replaceImages(builds)
@@ -312,6 +333,7 @@ kind: Deployment
 metadata:
   labels:
     run: skaffold
+    skaffold: "true"
   name: skaffold
 spec:
   replicas: 1
