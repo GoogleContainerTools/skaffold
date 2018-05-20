@@ -24,14 +24,23 @@ var gzipMagicHeader = []byte{'\x1f', '\x8b'}
 
 // GzipReadCloser reads uncompressed input data from the io.ReadCloser and
 // returns an io.ReadCloser from which compressed data may be read.
+// This uses gzip.DefaultCompression for the compression level.
 func GzipReadCloser(r io.ReadCloser) (io.ReadCloser, error) {
+	return GzipReadCloserLevel(r, gzip.DefaultCompression)
+}
+
+// GzipReadCloserLevel reads uncompressed input data from the io.ReadCloser and
+// returns an io.ReadCloser from which compressed data may be read.
+// Refer to compress/gzip for the level:
+// https://golang.org/pkg/compress/gzip/#pkg-constants
+func GzipReadCloserLevel(r io.ReadCloser, level int) (io.ReadCloser, error) {
 	pr, pw := io.Pipe()
 
 	go func() {
 		defer pw.Close()
 		defer r.Close()
 
-		gw, _ := gzip.NewWriterLevel(pw, gzip.BestCompression)
+		gw, _ := gzip.NewWriterLevel(pw, level)
 		defer gw.Close()
 
 		_, err := io.Copy(gw, r)
