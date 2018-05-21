@@ -38,7 +38,7 @@ build:
   artifacts:
   - imageName: example
 deploy:
-  name: example
+  kubectl: {}
 `
 	completeConfig = `
 apiVersion: skaffold/v1alpha2
@@ -58,7 +58,7 @@ build:
   googleCloudBuild:
     projectId: ID
 deploy:
-  name: example
+  kubectl: {}
 `
 	badConfig = "bad config"
 )
@@ -88,7 +88,7 @@ func TestParseConfig(t *testing.T) {
 					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
 					withDockerArtifact("example", ".", "Dockerfile"),
 				),
-				withDeploy(),
+				withKubectlDeploy(),
 			),
 		},
 		{
@@ -100,7 +100,7 @@ func TestParseConfig(t *testing.T) {
 					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
 					withBazelArtifact("image2", "./examples/app2", "//:example.tar"),
 				),
-				withDeploy(),
+				withKubectlDeploy(),
 			),
 		},
 		{
@@ -146,13 +146,13 @@ func withGCBBuild(id string, ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldC
 	}
 }
 
-func withDeploy(ops ...func(*v1alpha2.DeployConfig)) func(*SkaffoldConfig) {
+func withKubectlDeploy() func(*SkaffoldConfig) {
 	return func(cfg *SkaffoldConfig) {
-		d := v1alpha2.DeployConfig{}
-		for _, op := range ops {
-			op(&d)
+		cfg.Deploy = v1alpha2.DeployConfig{
+			DeployType: v1alpha2.DeployType{
+				KubectlDeploy: &v1alpha2.KubectlDeploy{},
+			},
 		}
-		cfg.Deploy = d
 	}
 }
 
