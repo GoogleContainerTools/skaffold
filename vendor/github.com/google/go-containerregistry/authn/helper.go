@@ -72,15 +72,17 @@ func (h *helper) Authorization() (string, error) {
 
 	var out bytes.Buffer
 	cmd.Stdout = &out
-	if err := h.r.Run(cmd); err != nil {
-		return "", err
-	}
-	output := out.String()
+	err := h.r.Run(cmd)
 
 	// If we see this specific message, it means the domain wasn't found
 	// and we should fall back on anonymous auth.
+	output := out.String()
 	if output == magicNotFoundMessage {
 		return Anonymous.Authorization()
+	}
+
+	if err != nil {
+		return "", err
 	}
 
 	// Any other output should be parsed as JSON and the Username / Secret
