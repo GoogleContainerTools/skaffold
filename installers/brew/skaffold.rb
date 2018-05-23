@@ -1,5 +1,6 @@
 class Skaffold < Formula
   desc "A tool that facilitates continuous development for Kubernetes applications."
+  head "https://github.com/GoogleContainerTools/skaffold.git"
   url "https://github.com/GoogleContainerTools/skaffold.git"
   version "v0.6.0"
 
