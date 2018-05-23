@@ -23,6 +23,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+
 	cstorage "cloud.google.com/go/storage"
 	"golang.org/x/oauth2/google"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
@@ -84,6 +86,7 @@ func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger t
 	if err != nil {
 		return nil, errors.Wrap(err, "getting builder")
 	}
+	cbclient.UserAgent = version.UserAgent()
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting cloud storage client")

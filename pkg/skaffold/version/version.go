@@ -22,6 +22,7 @@ import (
 )
 
 var version, gitCommit, gitTreeState, buildDate string
+var platform = fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
 
 type Info struct {
 	Version      string
@@ -44,6 +45,10 @@ func Get() *Info {
 		BuildDate:    buildDate,
 		GoVersion:    runtime.Version(),
 		Compiler:     runtime.Compiler,
-		Platform:     fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
+		Platform:     platform,
 	}
+}
+
+func UserAgent() string {
+	return fmt.Sprintf("skaffold/%s/%s", platform, version)
 }
