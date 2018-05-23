@@ -148,19 +148,17 @@ func TestRun(t *testing.T) {
 		// 	},
 		// 	dir: "../",
 		// },
-		// // Add this test back if after looking at debug logs to see why is this
-		// // failing. See #561 for more details.
-		// {
-		// 	description: "gcb builder example",
-		// 	pods: []testObject{
-		// 		{
-		// 			name: "getting-started",
-		// 		},
-		// 	},
-		// 	dir:        "../examples/getting-started",
-		// 	extraArgs:  []string{"-p", "gcb"},
-		// 	remoteOnly: true,
-		// },
+		{
+			description: "gcb builder example",
+			pods: []testObject{
+				{
+					name: "getting-started",
+				},
+			},
+			dir:        "../examples/getting-started",
+			extraArgs:  []string{"-p", "gcb"},
+			remoteOnly: true,
+		},
 	}
 
 	for _, testCase := range testCases {
