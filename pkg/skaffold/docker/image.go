@@ -123,7 +123,7 @@ func AddTag(src, target string) error {
 }
 
 func addTag(ref name.Reference, targetRef name.Reference, auth authn.Authenticator, t http.RoundTripper) error {
-	tr, err := transport.New(ref.Context().Registry, auth, t, []string{transport.PushScope})
+	tr, err := transport.New(ref.Context().Registry, auth, t, []string{targetRef.Scope(transport.PushScope)})
 	if err != nil {
 		return err
 	}
