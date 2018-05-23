@@ -17,13 +17,19 @@ limitations under the License.
 package deploy
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 
+	// k8syaml "k8s.io/apimachinery/pkg/util/yaml"
+	// "k8s.io/client-go/kubernetes/scheme"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -47,14 +53,23 @@ func NewHelmDeployer(cfg *v1alpha2.DeployConfig, kubeContext string, namespace s
 	}
 }
 
-func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Build) error {
-	for _, r := range h.HelmDeploy.Releases {
-		if err := h.deployRelease(out, r, builds); err != nil {
-			releaseName, _ := evaluateReleaseName(r.Name)
-			return errors.Wrapf(err, "deploying %s", releaseName)
-		}
+func (h *HelmDeployer) Labels() map[string]string {
+	return map[string]string{
+		constants.Labels.Deployer: "helm",
 	}
-	return nil
+}
+
+func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
+	deployResults := []Artifact{}
+	for _, r := range h.HelmDeploy.Releases {
+		results, err := h.deployRelease(out, r, builds)
+		if err != nil {
+			releaseName, _ := evaluateReleaseName(r.Name)
+			return deployResults, errors.Wrapf(err, "deploying %s", releaseName)
+		}
+		deployResults = append(deployResults, results...)
+	}
+	return deployResults, nil
 }
 
 // Not implemented
@@ -83,12 +98,12 @@ func (h *HelmDeployer) helm(out io.Writer, arg ...string) error {
 	return util.RunCmd(cmd)
 }
 
-func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, builds []build.Build) error {
+func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, builds []build.Artifact) ([]Artifact, error) {
 	isInstalled := true
 
 	releaseName, err := evaluateReleaseName(r.Name)
 	if err != nil {
-		return errors.Wrap(err, "cannot parse the release name template")
+		return nil, errors.Wrap(err, "cannot parse the release name template")
 	}
 	if err := h.helm(out, "get", releaseName); err != nil {
 		fmt.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
@@ -96,7 +111,7 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 	}
 	params, err := JoinTagsToBuildResult(builds, r.Values)
 	if err != nil {
-		return errors.Wrap(err, "matching build results to chart values")
+		return nil, errors.Wrap(err, "matching build results to chart values")
 	}
 
 	var setOpts []string
@@ -108,7 +123,7 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 	// First build dependencies.
 	logrus.Infof("Building helm dependencies...")
 	if err := h.helm(out, "dep", "build", r.ChartPath); err != nil {
-		return errors.Wrap(err, "building helm dependencies")
+		return nil, errors.Wrap(err, "building helm dependencies")
 	}
 
 	var args []string
@@ -132,14 +147,14 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 	if len(r.Overrides) != 0 {
 		overrides, err := yaml.Marshal(r.Overrides)
 		if err != nil {
-			return errors.Wrap(err, "cannot marshal overrides to create overrides values.yaml")
+			return nil, errors.Wrap(err, "cannot marshal overrides to create overrides values.yaml")
 		}
 		overridesFile, err := os.Create("skaffold-overrides.yaml")
 		if err != nil {
-			return errors.Wrap(err, "cannot create file skaffold-overrides.yaml")
+			return nil, errors.Wrap(err, "cannot create file skaffold-overrides.yaml")
 		}
 		if _, err := overridesFile.WriteString(string(overrides)); err != nil {
-			return errors.Wrap(err, "failed to write file skaffold-overrides.yaml")
+			return nil, errors.Wrap(err, "failed to write file skaffold-overrides.yaml")
 		}
 		args = append(args, "-f", "skaffold-overrides.yaml")
 	}
@@ -165,7 +180,28 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 	if len(r.Overrides) != 0 {
 		os.Remove("skaffold-overrides.yaml")
 	}
-	return helmErr
+
+	return h.getDeployResults(ns, r.Name), helmErr
+}
+
+func (h *HelmDeployer) getReleaseInfo(release string) (*bufio.Reader, error) {
+	var releaseInfo bytes.Buffer
+	if err := h.helm(&releaseInfo, "get", release); err != nil {
+		return nil, fmt.Errorf("error retrieving helm deployment info: %s", releaseInfo.String())
+	}
+	return bufio.NewReader(&releaseInfo), nil
+}
+
+// Retrieve info about all releases using helm get
+// Skaffold labels will be applied to each deployed k8s object
+// Since helm isn't always consistent with retrieving results, don't return errors here
+func (h *HelmDeployer) getDeployResults(namespace string, release string) []Artifact {
+	b, err := h.getReleaseInfo(release)
+	if err != nil {
+		logrus.Warnf(err.Error())
+		return nil
+	}
+	return parseReleaseInfo(namespace, b)
 }
 
 func (h *HelmDeployer) deleteRelease(out io.Writer, r v1alpha2.HelmRelease) error {
@@ -182,7 +218,6 @@ func (h *HelmDeployer) deleteRelease(out io.Writer, r v1alpha2.HelmRelease) erro
 }
 
 func evaluateReleaseName(nameTemplate string) (string, error) {
-
 	tmpl, err := util.ParseEnvTemplate(nameTemplate)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing template")

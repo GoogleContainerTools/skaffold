@@ -42,6 +42,10 @@ func (f *FakeTagger) GenerateFullyQualifiedImageName(workingDir string, tagOpts 
 	return f.Out, f.Err
 }
 
+func (f *FakeTagger) Labels() map[string]string {
+	return map[string]string{}
+}
+
 type testAuthHelper struct{}
 
 func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
@@ -70,7 +74,7 @@ func TestLocalRun(t *testing.T) {
 		api          docker.APIClient
 		tagger       tag.Tagger
 		artifacts    []*v1alpha2.Artifact
-		expected     []Build
+		expected     []Artifact
 		localCluster bool
 		shouldErr    bool
 	}{
@@ -95,7 +99,7 @@ func TestLocalRun(t *testing.T) {
 			},
 			tagger: &tag.ChecksumTagger{},
 			api:    testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
-			expected: []Build{
+			expected: []Artifact{
 				{
 					ImageName: "gcr.io/test/image",
 					Tag:       "gcr.io/test/image:imageid",
@@ -139,7 +143,7 @@ func TestLocalRun(t *testing.T) {
 				},
 			},
 			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
-			expected: []Build{
+			expected: []Artifact{
 				{
 					ImageName: "gcr.io/test/image",
 					Tag:       "gcr.io/test/image:imageid",

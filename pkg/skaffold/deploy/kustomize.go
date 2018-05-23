@@ -42,23 +42,29 @@ func NewKustomizeDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) *Kusto
 	}
 }
 
-func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Build) error {
+func (k *KustomizeDeployer) Labels() map[string]string {
+	return map[string]string{
+		constants.Labels.Deployer: "kustomize",
+	}
+}
+
+func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
 	manifests, err := buildManifests(constants.DefaultKustomizationPath)
 	if err != nil {
-		return errors.Wrap(err, "kustomize")
+		return nil, errors.Wrap(err, "kustomize")
 	}
 	manifestList, err := newManifestList(manifests)
 	if err != nil {
-		return errors.Wrap(err, "getting manifest list")
+		return nil, errors.Wrap(err, "getting manifest list")
 	}
 	manifestList, err = manifestList.replaceImages(builds)
 	if err != nil {
-		return errors.Wrap(err, "replacing images")
+		return nil, errors.Wrap(err, "replacing images")
 	}
 	if err := kubectl(manifestList.reader(), out, k.kubeContext, "apply", "-f", "-"); err != nil {
-		return errors.Wrap(err, "running kubectl")
+		return nil, errors.Wrap(err, "running kubectl")
 	}
-	return nil
+	return parseManifestsForDeploys(manifestList)
 }
 
 func newManifestList(r io.Reader) (manifestList, error) {

@@ -41,13 +41,13 @@ type withNotification struct {
 	deploy.Deployer
 }
 
-func (w withNotification) Deploy(ctx context.Context, out io.Writer, builds []build.Build) error {
-	err := w.Deployer.Deploy(ctx, out, builds)
+func (w withNotification) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]deploy.Artifact, error) {
+	res, err := w.Deployer.Deploy(ctx, out, builds)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	fmt.Fprint(out, terminalBell)
 
-	return nil
+	return res, nil
 }

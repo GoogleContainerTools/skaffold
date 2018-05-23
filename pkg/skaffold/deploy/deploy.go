@@ -21,15 +21,26 @@ import (
 	"fmt"
 	"io"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 )
+
+// Artifact contains all information about a completed deployment
+type Artifact struct {
+	Obj       *runtime.Object
+	Namespace string
+}
 
 // Deployer is the Deploy API of skaffold and responsible for deploying
 // the build results to a Kubernetes cluster
 type Deployer interface {
+	// Labels returns a list of labels to be attached to each deployed Kubernetes object
+	Labels() map[string]string
+
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster.
-	Deploy(context.Context, io.Writer, []build.Build) error
+	Deploy(context.Context, io.Writer, []build.Artifact) ([]Artifact, error)
 
 	// Dependencies returns a list of files that the deployer depends on.
 	// In dev mode, a redeploy will be triggered
@@ -39,13 +50,13 @@ type Deployer interface {
 	Cleanup(context.Context, io.Writer) error
 }
 
-func JoinTagsToBuildResult(builds []build.Build, params map[string]string) (map[string]build.Build, error) {
-	imageToBuildResult := map[string]build.Build{}
+func JoinTagsToBuildResult(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {
+	imageToBuildResult := map[string]build.Artifact{}
 	for _, build := range builds {
 		imageToBuildResult[build.ImageName] = build
 	}
 
-	paramToBuildResult := map[string]build.Build{}
+	paramToBuildResult := map[string]build.Artifact{}
 	for param, imageName := range params {
 		build, ok := imageToBuildResult[imageName]
 		if !ok {

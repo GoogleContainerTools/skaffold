@@ -17,6 +17,7 @@ limitations under the License.
 package deploy
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"io"
@@ -25,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -51,24 +53,31 @@ func NewKubectlDeployer(workingDir string, cfg *v1alpha2.DeployConfig, kubeConte
 	}
 }
 
+func (k *KubectlDeployer) Labels() map[string]string {
+	return map[string]string{
+		constants.Labels.Deployer: "kubectl",
+	}
+}
+
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Build) error {
+func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
 	manifests, err := k.readManifests()
 	if err != nil {
-		return errors.Wrap(err, "reading manifests")
+		return nil, errors.Wrap(err, "reading manifests")
 	}
 
 	manifests, err = manifests.replaceImages(builds)
 	if err != nil {
-		return errors.Wrap(err, "replacing images in manifests")
+		return nil, errors.Wrap(err, "replacing images in manifests")
 	}
 
-	if err := kubectl(manifests.reader(), out, k.kubeContext, "apply", "-f", "-"); err != nil {
-		return errors.Wrap(err, "deploying manifests")
+	err = kubectl(manifests.reader(), out, k.kubeContext, "apply", "-f", "-")
+	if err != nil {
+		return nil, errors.Wrap(err, "deploying manifests")
 	}
 
-	return nil
+	return parseManifestsForDeploys(manifests)
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
@@ -119,6 +128,15 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 	}
 
 	return filteredManifests, nil
+}
+
+func parseManifestsForDeploys(manifests manifestList) ([]Artifact, error) {
+	results := []Artifact{}
+	for _, manifest := range manifests {
+		b := bufio.NewReader(bytes.NewReader(manifest))
+		results = append(results, parseReleaseInfo("", b)...)
+	}
+	return results, nil
 }
 
 // readManifests reads the manifests to deploy/delete.
@@ -194,7 +212,7 @@ func (l *manifestList) reader() io.Reader {
 	return strings.NewReader(l.String())
 }
 
-func (l *manifestList) replaceImages(builds []build.Build) (manifestList, error) {
+func (l *manifestList) replaceImages(builds []build.Artifact) (manifestList, error) {
 	replacements := map[string]*replacement{}
 	for _, build := range builds {
 		replacements[build.ImageName] = &replacement{

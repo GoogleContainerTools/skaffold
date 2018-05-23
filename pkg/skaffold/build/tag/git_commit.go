@@ -23,6 +23,8 @@ import (
 	"io"
 	"sort"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+
 	"github.com/pkg/errors"
 	git "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
@@ -30,6 +32,12 @@ import (
 
 // GitCommit tags an image by the git commit it was built at.
 type GitCommit struct {
+}
+
+func (c *GitCommit) Labels() map[string]string {
+	return map[string]string{
+		constants.Labels.TagPolicy: "git-commit",
+	}
 }
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the git commit.

@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/label"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -50,7 +51,7 @@ func NewCmdDeploy(out io.Writer) *cobra.Command {
 func runDeploy(out io.Writer, filename string) error {
 	ctx := context.Background()
 
-	runner, _, err := newRunner(filename)
+	r, _, err := newRunner(filename)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}
@@ -60,21 +61,23 @@ func runDeploy(out io.Writer, filename string) error {
 		deployOut = ioutil.Discard
 	}
 
-	var builds []build.Build
+	var builds []build.Artifact
 	for _, image := range images {
 		parsed, err := docker.ParseReference(image)
 		if err != nil {
 			return err
 		}
-		builds = append(builds, build.Build{
+		builds = append(builds, build.Artifact{
 			ImageName: parsed.BaseName,
 			Tag:       image,
 		})
 	}
 
-	if err := runner.Deploy(ctx, deployOut, builds); err != nil {
+	dRes, err := r.Deploy(ctx, deployOut, builds)
+	if err != nil {
 		return errors.Wrap(err, "deploy step")
 	}
+	label.LabelDeployResults(r.Labels(), dRes)
 
 	return nil
 }

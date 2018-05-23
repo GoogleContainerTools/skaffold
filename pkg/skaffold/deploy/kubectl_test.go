@@ -60,7 +60,7 @@ func TestKubectlDeploy(t *testing.T) {
 	var tests = []struct {
 		description string
 		cfg         *v1alpha2.DeployConfig
-		builds      []build.Build
+		builds      []build.Artifact
 		command     util.Command
 		shouldErr   bool
 	}{
@@ -74,7 +74,7 @@ func TestKubectlDeploy(t *testing.T) {
 					},
 				},
 			},
-			builds: []build.Build{
+			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",
 					Tag:       "leeroy-web:v1",
@@ -91,7 +91,7 @@ func TestKubectlDeploy(t *testing.T) {
 					},
 				},
 			},
-			builds: []build.Build{
+			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",
 					Tag:       "leeroy-web:123",
@@ -108,7 +108,7 @@ func TestKubectlDeploy(t *testing.T) {
 				},
 			},
 			command: testutil.NewFakeCmd("kubectl --context kubecontext apply -f -", nil),
-			builds: []build.Build{
+			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",
 					Tag:       "leeroy-web:123",
@@ -126,7 +126,7 @@ func TestKubectlDeploy(t *testing.T) {
 				},
 			},
 			command: testutil.NewFakeCmd("kubectl --context kubecontext apply -f -", fmt.Errorf("")),
-			builds: []build.Build{
+			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",
 					Tag:       "leeroy-web:123",
@@ -149,7 +149,7 @@ func TestKubectlDeploy(t *testing.T) {
 			}
 
 			k := NewKubectlDeployer(tmp, test.cfg, testKubeContext)
-			err := k.Deploy(context.Background(), &bytes.Buffer{}, test.builds)
+			_, err := k.Deploy(context.Background(), &bytes.Buffer{}, test.builds)
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})
@@ -229,7 +229,7 @@ spec:
     name: digest
 `)}
 
-	builds := []build.Build{{
+	builds := []build.Artifact{{
 		ImageName: "gcr.io/k8s-skaffold/example",
 		Tag:       "gcr.io/k8s-skaffold/example:TAG",
 	}, {

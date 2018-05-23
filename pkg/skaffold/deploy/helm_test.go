@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-var testBuilds = []build.Build{
+var testBuilds = []build.Artifact{
 	{
 		ImageName: "skaffold-helm",
 		Tag:       "skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184",
@@ -76,12 +76,90 @@ var testDeployConfigParameterUnmatched = &v1alpha2.DeployConfig{
 
 var testNamespace = "testNamespace"
 
+var validDeployYaml = `
+# Source: skaffold-helm/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: skaffold-helm
+  labels:
+    app: skaffold-helm
+    chart: skaffold-helm-0.1.0
+    release: skaffold-helm
+    heritage: Tiller
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: skaffold-helm
+        release: skaffold-helm
+    spec:
+      containers:
+        - name: skaffold-helm
+          image: gcr.io/nick-cloudbuild/skaffold-helm:f759510436c8fd6f7ffa13dd9e9d85e64bec8d2bfd12c5aa3fb9af1288eccdab
+          imagePullPolicy: 
+          command: ["/bin/bash", "-c", "--" ]
+          args: ["while true; do sleep 30; done;"]
+          resources:
+            {}
+`
+
+var validServiceYaml = `
+# Source: skaffold-helm/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: skaffold-helm-skaffold-helm
+  labels:
+    app: skaffold-helm
+    chart: skaffold-helm-0.1.0
+    release: skaffold-helm
+    heritage: Tiller
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: nginx
+  selector:
+    app: skaffold-helm
+    release: skaffold-helm
+`
+
+var invalidDeployYaml = `REVISION: 2
+RELEASED: Tue Jun 12 15:40:18 2018
+CHART: skaffold-helm-0.1.0
+USER-SUPPLIED VALUES:
+image: gcr.io/nick-cloudbuild/skaffold-helm:f759510436c8fd6f7ffa13dd9e9d85e64bec8d2bfd12c5aa3fb9af1288eccdab
+
+COMPUTED VALUES:
+image: gcr.io/nick-cloudbuild/skaffold-helm:f759510436c8fd6f7ffa13dd9e9d85e64bec8d2bfd12c5aa3fb9af1288eccdab
+ingress:
+  annotations: null
+  enabled: false
+  hosts:
+  - chart-example.local
+  tls: null
+replicaCount: 1
+resources: {}
+service:
+  externalPort: 80
+  internalPort: 80
+  name: nginx
+  type: ClusterIP
+
+HOOKS:
+MANIFEST:
+`
+
 func TestHelmDeploy(t *testing.T) {
 	var tests = []struct {
 		description string
 		cmd         util.Command
 		deployer    *HelmDeployer
-		builds      []build.Build
+		builds      []build.Artifact
 		shouldErr   bool
 	}{
 		{
@@ -143,7 +221,7 @@ func TestHelmDeploy(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = tt.cmd
 
-			err := tt.deployer.Deploy(context.Background(), &bytes.Buffer{}, tt.builds)
+			_, err := tt.deployer.Deploy(context.Background(), &bytes.Buffer{}, tt.builds)
 			testutil.CheckError(t, tt.shouldErr, err)
 		})
 	}
@@ -184,5 +262,36 @@ func (m *MockHelm) RunCmd(c *exec.Cmd) error {
 	default:
 		m.t.Errorf("Unknown helm command: %+v", c)
 		return nil
+	}
+}
+
+func TestParseHelmRelease(t *testing.T) {
+	var tests = []struct {
+		name      string
+		yaml      []byte
+		shouldErr bool
+	}{
+		{
+			name:      "parse valid deployment yaml",
+			yaml:      []byte(validDeployYaml),
+			shouldErr: false,
+		},
+		{
+			name:      "parse invalid deployment yaml",
+			yaml:      []byte(invalidDeployYaml),
+			shouldErr: true,
+		},
+		{
+			name:      "parse valid service yaml",
+			yaml:      []byte(validServiceYaml),
+			shouldErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := parseRuntimeObject(testNamespace, tt.yaml)
+			testutil.CheckError(t, tt.shouldErr, err)
+		})
 	}
 }
