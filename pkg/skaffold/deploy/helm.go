@@ -33,14 +33,16 @@ import (
 type HelmDeployer struct {
 	*v1alpha2.DeployConfig
 	kubeContext string
+	namespace   string
 }
 
 // NewHelmDeployer returns a new HelmDeployer for a DeployConfig filled
 // with the needed configuration for `helm`
-func NewHelmDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) *HelmDeployer {
+func NewHelmDeployer(cfg *v1alpha2.DeployConfig, kubeContext string, namespace string) *HelmDeployer {
 	return &HelmDeployer{
 		DeployConfig: cfg,
 		kubeContext:  kubeContext,
+		namespace:    namespace,
 	}
 }
 
@@ -115,8 +117,12 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 		args = append(args, "upgrade", releaseName, r.ChartPath)
 	}
 
-	ns := r.Namespace
-	if ns == "" {
+	var ns string
+	if h.namespace != "" {
+		ns = h.namespace
+	} else if r.Namespace != "" {
+		ns = r.Namespace
+	} else {
 		ns = os.Getenv("SKAFFOLD_DEPLOY_NAMESPACE")
 	}
 	if ns != "" {

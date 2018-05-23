@@ -71,6 +71,8 @@ var testDeployConfigParameterUnmatched = &v1alpha2.DeployConfig{
 	},
 }
 
+var testNamespace = "testNamespace"
+
 func TestHelmDeploy(t *testing.T) {
 	var tests = []struct {
 		description string
@@ -82,13 +84,13 @@ func TestHelmDeploy(t *testing.T) {
 		{
 			description: "deploy success",
 			cmd:         &MockHelm{t: t},
-			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext),
+			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace),
 			builds:      testBuilds,
 		},
 		{
 			description: "deploy error unmatched parameter",
 			cmd:         &MockHelm{t: t},
-			deployer:    NewHelmDeployer(testDeployConfigParameterUnmatched, testKubeContext),
+			deployer:    NewHelmDeployer(testDeployConfigParameterUnmatched, testKubeContext, testNamespace),
 			builds:      testBuilds,
 			shouldErr:   true,
 		},
@@ -99,7 +101,7 @@ func TestHelmDeploy(t *testing.T) {
 				getResult:     fmt.Errorf("not found"),
 				upgradeResult: fmt.Errorf("should not have called upgrade"),
 			},
-			deployer: NewHelmDeployer(testDeployConfig, testKubeContext),
+			deployer: NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace),
 			builds:   testBuilds,
 		},
 		{
@@ -108,7 +110,7 @@ func TestHelmDeploy(t *testing.T) {
 				t:             t,
 				installResult: fmt.Errorf("should not have called install"),
 			},
-			deployer: NewHelmDeployer(testDeployConfig, testKubeContext),
+			deployer: NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace),
 			builds:   testBuilds,
 		},
 		{
@@ -118,7 +120,7 @@ func TestHelmDeploy(t *testing.T) {
 				upgradeResult: fmt.Errorf("unexpected error"),
 			},
 			shouldErr: true,
-			deployer:  NewHelmDeployer(testDeployConfig, testKubeContext),
+			deployer:  NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace),
 			builds:    testBuilds,
 		},
 		{
@@ -128,7 +130,7 @@ func TestHelmDeploy(t *testing.T) {
 				depResult: fmt.Errorf("unexpected error"),
 			},
 			shouldErr: true,
-			deployer:  NewHelmDeployer(testDeployConfig, testKubeContext),
+			deployer:  NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace),
 			builds:    testBuilds,
 		},
 	}
