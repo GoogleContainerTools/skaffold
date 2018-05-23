@@ -30,7 +30,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/docker/distribution/reference"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -123,7 +122,7 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 
 // Not implemented
 func (k *KubectlDeployer) Dependencies() ([]string, error) {
-	return manifestFiles(k.KubectlDeploy.Manifests)
+	return util.ManifestFiles(k.KubectlDeploy.Manifests)
 }
 
 // readOrGenerateManifests reads the manifests to deploy/delete. If no manifest exists, try to
@@ -156,30 +155,9 @@ func (k *KubectlDeployer) kubectl(in io.Reader, out io.Writer, arg ...string) er
 	return util.RunCmd(cmd)
 }
 
-func manifestFiles(manifests []string) ([]string, error) {
-	list, err := util.ExpandPathsGlob(manifests)
-	if err != nil {
-		return nil, errors.Wrap(err, "expanding kubectl manifest paths")
-	}
-
-	var filteredManifests []string
-	for _, f := range list {
-		if !util.IsSupportedKubernetesFormat(f) {
-			if !util.StrSliceContains(manifests, f) {
-				logrus.Infof("refusing to deploy/delete non {json, yaml} file %s", f)
-				logrus.Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
-				continue
-			}
-		}
-		filteredManifests = append(filteredManifests, f)
-	}
-
-	return filteredManifests, nil
-}
-
 // readManifests reads the manifests to deploy/delete.
 func (k *KubectlDeployer) readManifests() (manifestList, error) {
-	files, err := manifestFiles(k.KubectlDeploy.Manifests)
+	files, err := util.ManifestFiles(k.KubectlDeploy.Manifests)
 	if err != nil {
 		return nil, errors.Wrap(err, "expanding user manifest list")
 	}
@@ -332,52 +310,22 @@ func recursiveReplaceImage(i interface{}, replacements map[string]*replacement) 
 			}
 
 			image := v.(string)
-			parsed, err := parseReference(image)
+			parsed, err := util.ParseReference(image)
 			if err != nil {
 				logrus.Warnf("Couldn't parse image: %s", v)
 				continue
 			}
 
-			if parsed.fullyQualified {
+			if parsed.FullyQualified {
 				// TODO(1.0.0): Remove this warning.
 				logrus.Infof("Not replacing fully qualified image: %s (see #565)", v)
 				continue
 			}
 
-			if img, present := replacements[parsed.baseName]; present {
+			if img, present := replacements[parsed.BaseName]; present {
 				t[k] = img.tag
 				img.found = true
 			}
 		}
 	}
-}
-
-type imageReference struct {
-	baseName       string
-	fullyQualified bool
-}
-
-func parseReference(image string) (*imageReference, error) {
-	r, err := reference.Parse(image)
-	if err != nil {
-		return nil, err
-	}
-
-	baseName := image
-	if n, ok := r.(reference.Named); ok {
-		baseName = n.Name()
-	}
-
-	fullyQualified := false
-	switch n := r.(type) {
-	case reference.Tagged:
-		fullyQualified = n.Tag() != "latest"
-	case reference.Digested:
-		fullyQualified = true
-	}
-
-	return &imageReference{
-		baseName:       baseName,
-		fullyQualified: fullyQualified,
-	}, nil
 }
