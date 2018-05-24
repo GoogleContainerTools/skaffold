@@ -287,8 +287,11 @@ func (r *SkaffoldRunner) cleanUpOnCtrlC(ctx context.Context) error {
 	}()
 
 	errRun := r.watchBuildDeploy(ctx)
-	if err := r.Cleanup(ctx, r.out); err != nil {
-		logrus.Warnln("cleanup:", err)
+	// Cleanup only if something was built
+	if r.builds != nil {
+		if err := r.Cleanup(ctx, r.out); err != nil {
+			logrus.Warnln("cleanup:", err)
+		}
 	}
 	return errRun
 }
