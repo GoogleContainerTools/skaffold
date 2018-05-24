@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package deploy
+package runner
 
 import (
 	"context"
@@ -22,6 +22,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 )
 
 const (
@@ -30,14 +31,14 @@ const (
 )
 
 // WithNotification creates a deployer that bips each time a deploy is done.
-func WithNotification(d Deployer) Deployer {
+func WithNotification(d deploy.Deployer) deploy.Deployer {
 	return withNotification{
 		Deployer: d,
 	}
 }
 
 type withNotification struct {
-	Deployer
+	deploy.Deployer
 }
 
 func (w withNotification) Deploy(ctx context.Context, out io.Writer, builds []build.Build) error {

@@ -23,6 +23,8 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -114,10 +116,11 @@ func TestNewForConfig(t *testing.T) {
 	kubernetesClient = fakeGetClient
 	defer resetClient()
 	var tests = []struct {
-		description string
-		config      *v1alpha2.SkaffoldConfig
-		shouldErr   bool
-		expected    interface{}
+		description      string
+		config           *v1alpha2.SkaffoldConfig
+		shouldErr        bool
+		expectedBuilder  build.Builder
+		expectedDeployer deploy.Deployer
 	}{
 		{
 			description: "local builder config",
@@ -134,7 +137,8 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 			},
-			expected: build.WithTimings(&build.LocalBuilder{}),
+			expectedBuilder:  &build.LocalBuilder{},
+			expectedDeployer: &deploy.KubectlDeployer{},
 		},
 		{
 			description: "bad tagger config",
@@ -158,8 +162,9 @@ func TestNewForConfig(t *testing.T) {
 			config: &v1alpha2.SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{},
 			},
-			shouldErr: true,
-			expected:  build.WithTimings(&build.LocalBuilder{}),
+			shouldErr:        true,
+			expectedBuilder:  &build.LocalBuilder{},
+			expectedDeployer: &deploy.KubectlDeployer{},
 		},
 		{
 			description: "unknown tagger",
@@ -170,8 +175,9 @@ func TestNewForConfig(t *testing.T) {
 						LocalBuild: &v1alpha2.LocalBuild{},
 					},
 				}},
-			shouldErr: true,
-			expected:  build.WithTimings(&build.LocalBuilder{}),
+			shouldErr:        true,
+			expectedBuilder:  &build.LocalBuilder{},
+			expectedDeployer: &deploy.KubectlDeployer{},
 		},
 		{
 			description: "unknown deployer",
@@ -189,9 +195,13 @@ func TestNewForConfig(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			cfg, err := NewForConfig(&config.SkaffoldOptions{}, test.config, ioutil.Discard)
+
 			testutil.CheckError(t, test.shouldErr, err)
 			if cfg != nil {
-				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, test.expected, cfg.Builder)
+				b, d := WithTimings(test.expectedBuilder, test.expectedDeployer)
+
+				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, b, cfg.Builder)
+				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, d, cfg.Deployer)
 			}
 		})
 	}

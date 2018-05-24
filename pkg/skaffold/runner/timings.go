@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package deploy
+package runner
 
 import (
 	"context"
@@ -23,17 +23,37 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 )
 
 // WithTimings creates a deployer that logs the duration of each phase.
-func WithTimings(d Deployer) Deployer {
-	return withTimings{
+func WithTimings(b build.Builder, d deploy.Deployer) (build.Builder, deploy.Deployer) {
+	w := withTimings{
+		Builder:  b,
 		Deployer: d,
 	}
+
+	return w, w
 }
 
 type withTimings struct {
-	Deployer
+	build.Builder
+	deploy.Deployer
+}
+
+func (w withTimings) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Build, error) {
+	start := time.Now()
+	fmt.Fprintln(out, "Starting build...")
+
+	bRes, err := w.Builder.Build(ctx, out, tagger, artifacts)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Fprintln(out, "Build complete in", time.Since(start))
+	return bRes, nil
 }
 
 func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.Build) error {
@@ -46,7 +66,6 @@ func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.B
 	}
 
 	fmt.Fprintln(out, "Deploy complete in", time.Since(start))
-
 	return nil
 }
 
@@ -60,6 +79,5 @@ func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {
 	}
 
 	fmt.Fprintln(out, "Cleanup complete in", time.Since(start))
-
 	return nil
 }

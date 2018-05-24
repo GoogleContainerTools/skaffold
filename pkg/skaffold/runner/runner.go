@@ -64,15 +64,15 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig, out 
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold build config")
 	}
-	builder = build.WithTimings(builder)
 
 	deployer, err := getDeployer(&cfg.Deploy, kubeContext)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold deploy config")
 	}
-	deployer = deploy.WithTimings(deployer)
+
+	builder, deployer = WithTimings(builder, deployer)
 	if opts.Notification {
-		deployer = deploy.WithNotification(deployer)
+		deployer = WithNotification(deployer)
 	}
 
 	tagger, err := getTagger(cfg.Build.TagPolicy, opts.CustomTag)
