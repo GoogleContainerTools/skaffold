@@ -1,3 +1,25 @@
+# v0.6.1 Release - 5/24/2018
+New Features
+* Stricter YAML parsing [#570](https://github.com/GoogleContainerTools/skaffold/pull/570)
+* Show helm's output and errors [#576](https://github.com/GoogleContainerTools/skaffold/pull/576)
+* Support ~ in secret path for Kaniko [#455](https://github.com/GoogleContainerTools/skaffold/pull/455)
+* `skaffold dev` now stops on non-build errors [#540](https://github.com/GoogleContainerTools/skaffold/pull/540)
+
+Bug Fixes
+* GCB Build fixed [#579](https://github.com/GoogleContainerTools/skaffold/pull/579)
+* Show errors of kubectl and helm commands [#560](https://github.com/GoogleContainerTools/skaffold/pull/560)
+* Can now run `skaffold build` without a kubernetes cluster [#540](https://github.com/GoogleContainerTools/skaffold/pull/540)
+
+Updates
+* Updated google/go-containerregistry [#571](https://github.com/GoogleContainerTools/skaffold/pull/571)
+* Added a user agent to GCB calls [#582](https://github.com/GoogleContainerTools/skaffold/pull/582)
+* Simplified runner code [#540](https://github.com/GoogleContainerTools/skaffold/pull/540)
+* Silenced usage text on errors [#449](https://github.com/GoogleContainerTools/skaffold/pull/449)
+* Skipped fully qualified names when replacing image names [#566](https://github.com/GoogleContainerTools/skaffold/pull/566)
+* Improved docker dependencies code [#466](https://github.com/GoogleContainerTools/skaffold/pull/466)
+
+https://github.com/GoogleContainerTools/skaffold/compare/v0.6.0...v0.6.1
+
 # v0.6.0 Release - 5/16/2018
 New Features
 * Improve the `docker load` output in Bazel build [#475](https://github.com/GoogleContainerTools/skaffold/pull/475)
