@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/signal"
 	"syscall"
@@ -212,10 +213,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 
 	onChange := func(changedPaths []string) error {
 		logger.Mute()
-		defer func() {
-			fmt.Fprint(r.out, "Watching for changes...\n")
-			logger.Unmute()
-		}()
+		defer logger.Unmute()
 
 		changedArtifacts := depMap.ArtifactsForPaths(changedPaths)
 
@@ -238,10 +236,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 
 	onDeployChange := func(changedPaths []string) error {
 		logger.Mute()
-		defer func() {
-			fmt.Fprint(r.out, "Watching for changes...\n")
-			logger.Unmute()
-		}()
+		defer logger.Unmute()
 
 		return r.Deploy(ctx, r.out, r.builds)
 	}
@@ -263,10 +258,10 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 	// Watch files and rebuild
 	g, watchCtx := errgroup.WithContext(ctx)
 	g.Go(func() error {
-		return watcher.Start(watchCtx, onChange)
+		return watcher.Start(watchCtx, r.out, onChange)
 	})
 	g.Go(func() error {
-		return deployWatcher.Start(watchCtx, onDeployChange)
+		return deployWatcher.Start(watchCtx, ioutil.Discard, onDeployChange)
 	})
 
 	return g.Wait()

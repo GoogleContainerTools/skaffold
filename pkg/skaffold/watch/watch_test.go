@@ -84,7 +84,7 @@ func TestWatch(t *testing.T) {
 			}
 
 			ctx, cancel := context.WithCancel(context.Background())
-			watcher.Start(ctx, func(actual []string) error {
+			watcher.Start(ctx, ioutil.Discard, func(actual []string) error {
 				defer cancel()
 
 				expected := prependParentDir(tmp, test.expectedChanges)
