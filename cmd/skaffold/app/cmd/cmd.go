@@ -53,6 +53,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 		return nil
 	}
 
+	rootCmd.SilenceErrors = true
 	rootCmd.AddCommand(NewCmdCompletion(out))
 	rootCmd.AddCommand(NewCmdVersion(out))
 	rootCmd.AddCommand(NewCmdRun(out))

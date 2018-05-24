@@ -17,14 +17,13 @@ limitations under the License.
 package main
 
 import (
-	"os"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app"
 )
 
 func main() {
 	if err := app.Run(); err != nil {
-		os.Exit(1)
+		logrus.Fatal(err)
 	}
-	os.Exit(0)
 }
