@@ -29,6 +29,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// DependencyMapFactory can build DependencyMaps from a list of artifacts.
+type DependencyMapFactory func(artifacts []*v1alpha2.Artifact) (*DependencyMap, error)
+
+// DependencyMap is a bijection between artifacts and the files they depend on.
 type DependencyMap struct {
 	artifacts       []*v1alpha2.Artifact
 	pathToArtifacts map[string][]*v1alpha2.Artifact
@@ -70,10 +74,15 @@ func NewDependencyMap(artifacts []*v1alpha2.Artifact) (*DependencyMap, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "generating path to artifact map")
 	}
+
+	return NewExplicitDependencyMap(artifacts, m), nil
+}
+
+func NewExplicitDependencyMap(artifacts []*v1alpha2.Artifact, pathToArtifacts map[string][]*v1alpha2.Artifact) *DependencyMap {
 	return &DependencyMap{
 		artifacts:       artifacts,
-		pathToArtifacts: m,
-	}, nil
+		pathToArtifacts: pathToArtifacts,
+	}
 }
 
 func isIgnored(path string) (bool, error) {

@@ -59,9 +59,8 @@ func TestKubectlDeploy(t *testing.T) {
 	var tests = []struct {
 		description string
 		cfg         *v1alpha2.DeployConfig
-		b           *build.BuildResult
+		builds      []build.Build
 		command     util.Command
-		expected    *Result
 		shouldErr   bool
 	}{
 		{
@@ -74,12 +73,10 @@ func TestKubectlDeploy(t *testing.T) {
 					},
 				},
 			},
-			b: &build.BuildResult{
-				Builds: []build.Build{
-					{
-						ImageName: "leeroy-web",
-						Tag:       "leeroy-web:v1",
-					},
+			builds: []build.Build{
+				{
+					ImageName: "leeroy-web",
+					Tag:       "leeroy-web:v1",
 				},
 			},
 		},
@@ -93,12 +90,10 @@ func TestKubectlDeploy(t *testing.T) {
 					},
 				},
 			},
-			b: &build.BuildResult{
-				Builds: []build.Build{
-					{
-						ImageName: "leeroy-web",
-						Tag:       "leeroy-web:123",
-					},
+			builds: []build.Build{
+				{
+					ImageName: "leeroy-web",
+					Tag:       "leeroy-web:123",
 				},
 			},
 		},
@@ -112,15 +107,12 @@ func TestKubectlDeploy(t *testing.T) {
 				},
 			},
 			command: testutil.NewFakeCmd("kubectl --context kubecontext apply -f -", nil),
-			b: &build.BuildResult{
-				Builds: []build.Build{
-					{
-						ImageName: "leeroy-web",
-						Tag:       "leeroy-web:123",
-					},
+			builds: []build.Build{
+				{
+					ImageName: "leeroy-web",
+					Tag:       "leeroy-web:123",
 				},
 			},
-			expected: &Result{},
 		},
 		{
 			description: "deploy command error",
@@ -133,12 +125,10 @@ func TestKubectlDeploy(t *testing.T) {
 				},
 			},
 			command: testutil.NewFakeCmd("kubectl --context kubecontext apply -f -", fmt.Errorf("")),
-			b: &build.BuildResult{
-				Builds: []build.Build{
-					{
-						ImageName: "leeroy-web",
-						Tag:       "leeroy-web:123",
-					},
+			builds: []build.Build{
+				{
+					ImageName: "leeroy-web",
+					Tag:       "leeroy-web:123",
 				},
 			},
 		},
@@ -158,9 +148,9 @@ func TestKubectlDeploy(t *testing.T) {
 			}
 
 			k := NewKubectlDeployer(test.cfg, testKubeContext)
-			res, err := k.Deploy(context.Background(), &bytes.Buffer{}, test.b)
+			err := k.Deploy(context.Background(), &bytes.Buffer{}, test.builds)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
+			testutil.CheckError(t, test.shouldErr, err)
 		})
 	}
 }
@@ -291,16 +281,14 @@ func TestGenerateManifest(t *testing.T) {
 	dockerfile, cleanup := testutil.TempFile(t, "Dockerfile", []byte("FROM scratch\nEXPOSE 80"))
 	defer cleanup()
 
-	bRes := &build.BuildResult{
-		Builds: []build.Build{{
-			ImageName: "gcr.io/k8s-skaffold/skaffold-example",
-			Tag:       "gcr.io/k8s-skaffold/skaffold-example:TAG",
-			Artifact: &v1alpha2.Artifact{
-				Workspace: filepath.Dir(dockerfile),
-				ArtifactType: v1alpha2.ArtifactType{
-					DockerArtifact: &v1alpha2.DockerArtifact{
-						DockerfilePath: filepath.Base(dockerfile),
-					},
+	builds := []build.Build{{
+		ImageName: "gcr.io/k8s-skaffold/skaffold-example",
+		Tag:       "gcr.io/k8s-skaffold/skaffold-example:TAG",
+		Artifact: &v1alpha2.Artifact{
+			Workspace: filepath.Dir(dockerfile),
+			ArtifactType: v1alpha2.ArtifactType{
+				DockerArtifact: &v1alpha2.DockerArtifact{
+					DockerfilePath: filepath.Base(dockerfile),
 				},
 			},
 		}},
@@ -313,10 +301,10 @@ func TestGenerateManifest(t *testing.T) {
 			},
 		},
 	}
-	manifests, err := deployer.readOrGenerateManifests(bRes)
+	manifests, err := deployer.readOrGenerateManifests(builds)
 	testutil.CheckError(t, false, err)
 
-	manifests, err = manifests.replaceImages(bRes.Builds)
+	manifests, err = manifests.replaceImages(builds)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, `apiVersion: extensions/v1beta1
 kind: Deployment

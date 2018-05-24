@@ -23,12 +23,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
@@ -36,7 +34,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
-	clientgo "k8s.io/client-go/kubernetes"
 )
 
 // SkaffoldRunner is responsible for running the skaffold build and deploy pipeline.
@@ -45,13 +42,12 @@ type SkaffoldRunner struct {
 	deploy.Deployer
 	tag.Tagger
 	watch.WatcherFactory
+	build.DependencyMapFactory
 
-	opts       *config.SkaffoldOptions
-	config     *config.SkaffoldConfig
-	kubeclient clientgo.Interface
-	builds     []build.Build
-	depMap     *build.DependencyMap
-	out        io.Writer
+	opts   *config.SkaffoldOptions
+	config *config.SkaffoldConfig
+	builds []build.Build
+	out    io.Writer
 }
 
 var kubernetesClient = kubernetes.GetClientset
@@ -74,85 +70,90 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig, out 
 		return nil, errors.Wrap(err, "parsing skaffold deploy config")
 	}
 
+	builder, deployer = WithTimings(builder, deployer)
+	if opts.Notification {
+		deployer = WithNotification(deployer)
+	}
+
 	tagger, err := getTagger(cfg.Build.TagPolicy, opts.CustomTag)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold tag config")
 	}
 
-	client, err := kubernetesClient()
-	if err != nil {
-		return nil, errors.Wrap(err, "getting k8s client")
-	}
-
 	return &SkaffoldRunner{
-		config:         cfg,
-		Builder:        builder,
-		Deployer:       deployer,
-		Tagger:         tagger,
-		opts:           opts,
-		kubeclient:     client,
-		WatcherFactory: watch.NewWatcher,
-		out:            out,
+		config:               cfg,
+		Builder:              builder,
+		Deployer:             deployer,
+		Tagger:               tagger,
+		opts:                 opts,
+		WatcherFactory:       watch.NewWatcher,
+		DependencyMapFactory: build.NewDependencyMap,
+		out:                  out,
 	}, nil
 }
 
 func getBuilder(cfg *v1alpha2.BuildConfig, kubeContext string) (build.Builder, error) {
-	if cfg.LocalBuild != nil {
+	switch {
+	case cfg.LocalBuild != nil:
 		logrus.Debugf("Using builder: local")
 		return build.NewLocalBuilder(cfg, kubeContext)
-	}
-	if cfg.GoogleCloudBuild != nil {
+
+	case cfg.GoogleCloudBuild != nil:
 		logrus.Debugf("Using builder: google cloud")
 		return build.NewGoogleCloudBuilder(cfg)
-	}
-	if cfg.KanikoBuild != nil {
+
+	case cfg.KanikoBuild != nil:
 		logrus.Debugf("Using builder: kaniko")
 		return build.NewKanikoBuilder(cfg)
-	}
 
-	return nil, fmt.Errorf("Unknown builder for config %+v", cfg)
+	default:
+		return nil, fmt.Errorf("Unknown builder for config %+v", cfg)
+	}
 }
 
 func getDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) (deploy.Deployer, error) {
-	if cfg.KubectlDeploy != nil {
+	switch {
+	case cfg.KubectlDeploy != nil:
 		return deploy.NewKubectlDeployer(cfg, kubeContext), nil
-	}
-	if cfg.HelmDeploy != nil {
-		return deploy.NewHelmDeployer(cfg, kubeContext), nil
-	}
 
-	return nil, fmt.Errorf("Unknown deployer for config %+v", cfg)
+	case cfg.HelmDeploy != nil:
+		return deploy.NewHelmDeployer(cfg, kubeContext), nil
+
+	default:
+		return nil, fmt.Errorf("Unknown deployer for config %+v", cfg)
+	}
 }
 
 func getTagger(t v1alpha2.TagPolicy, customTag string) (tag.Tagger, error) {
-	if customTag != "" {
+	switch {
+	case customTag != "":
 		return &tag.CustomTag{
 			Tag: customTag,
 		}, nil
-	}
 
-	if t.EnvTemplateTagger != nil {
+	case t.EnvTemplateTagger != nil:
 		return tag.NewEnvTemplateTagger(t.EnvTemplateTagger.Template)
-	}
-	if t.ShaTagger != nil {
-		return &tag.ChecksumTagger{}, nil
-	}
-	if t.GitTagger != nil {
-		return &tag.GitCommit{}, nil
-	}
 
-	return nil, fmt.Errorf("Unknown tagger for strategy %s", t)
+	case t.ShaTagger != nil:
+		return &tag.ChecksumTagger{}, nil
+
+	case t.GitTagger != nil:
+		return &tag.GitCommit{}, nil
+
+	default:
+		return nil, fmt.Errorf("Unknown tagger for strategy %+v", t)
+	}
 }
 
 // Build builds the artifacts.
 func (r *SkaffoldRunner) Build(ctx context.Context) error {
-	bRes, err := r.build(ctx, r.config.Build.Artifacts)
+	bRes, err := r.Builder.Build(ctx, r.out, r.Tagger, r.config.Build.Artifacts)
 	if err != nil {
 		return err
 	}
 
-	for _, res := range bRes.Builds {
-		fmt.Fprintf(r.out, "%s -> %s\n", res.ImageName, res.Tag)
+	for _, build := range bRes {
+		fmt.Fprintf(r.out, "%s -> %s\n", build.ImageName, build.Tag)
 	}
 
 	return nil
@@ -160,15 +161,23 @@ func (r *SkaffoldRunner) Build(ctx context.Context) error {
 
 // Run runs the skaffold build and deploy pipeline.
 func (r *SkaffoldRunner) Run(ctx context.Context) error {
-	_, _, err := r.buildAndDeploy(ctx, r.config.Build.Artifacts, nil)
-	return err
+	bRes, err := r.Builder.Build(ctx, r.out, r.Tagger, r.config.Build.Artifacts)
+	if err != nil {
+		return errors.Wrap(err, "build step")
+	}
+
+	if err := r.Deployer.Deploy(ctx, r.out, bRes); err != nil {
+		return errors.Wrap(err, "deploy step")
+	}
+
+	return nil
 }
 
 // Dev watches for changes and runs the skaffold build and deploy
 // pipeline until interrrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context) error {
 	if r.opts.Cleanup {
-		return cleanUpOnCtrlC(ctx, r.watchBuildDeploy, r.cleanup)
+		return r.cleanUpOnCtrlC(ctx)
 	}
 	return r.watchBuildDeploy(ctx)
 }
@@ -176,13 +185,12 @@ func (r *SkaffoldRunner) Dev(ctx context.Context) error {
 func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 	artifacts := r.config.Build.Artifacts
 
-	var err error
-	r.depMap, err = build.NewDependencyMap(artifacts)
+	depMap, err := r.DependencyMapFactory(artifacts)
 	if err != nil {
 		return errors.Wrap(err, "getting path to dependency map")
 	}
 
-	watcher, err := r.WatcherFactory(r.depMap.Paths())
+	watcher, err := r.WatcherFactory(depMap.Paths())
 	if err != nil {
 		return errors.Wrap(err, "creating watcher")
 	}
@@ -202,47 +210,53 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 	colorPicker := kubernetes.NewColorPicker(artifacts)
 	logger := kubernetes.NewLogAggregator(r.out, podSelector, colorPicker)
 
-	onBuildSuccess := func(bRes *build.BuildResult) {
-		// Update which images are logged with which color
-		for _, build := range bRes.Builds {
+	onChange := func(changedPaths []string) error {
+		logger.Mute()
+		defer func() {
+			fmt.Fprint(r.out, "Watching for changes...\n")
+			logger.Unmute()
+		}()
+
+		changedArtifacts := depMap.ArtifactsForPaths(changedPaths)
+
+		bRes, err := r.Builder.Build(ctx, r.out, r.Tagger, changedArtifacts)
+		if err != nil {
+			logrus.Warnln("Skipping Deploy due to build error:", err)
+			return nil
+		}
+
+		// Update which images are logged.
+		for _, build := range bRes {
 			podSelector.AddImage(build.Tag)
 		}
+
+		// Make sure all artifacts are redeployed. Not only those that were just rebuilt.
+		r.builds = mergeWithPreviousBuilds(bRes, r.builds)
+
+		return r.Deployer.Deploy(ctx, r.out, r.builds)
 	}
 
-	onChange := func(changedPaths []string) {
+	onDeployChange := func(changedPaths []string) error {
 		logger.Mute()
+		defer func() {
+			fmt.Fprint(r.out, "Watching for changes...\n")
+			logger.Unmute()
+		}()
 
-		changedArtifacts := r.depMap.ArtifactsForPaths(changedPaths)
-
-		br, _, err := r.buildAndDeploy(ctx, changedArtifacts, onBuildSuccess)
-		if err != nil {
-			// In dev mode, we only log on pipeline errors
-			logrus.Errorf("run: %s", err)
-			if br == nil {
-				logrus.Error("Skipping Deploy due to build error.")
-			}
-		}
-
-		fmt.Fprint(r.out, "Watching for changes...\n")
-		logger.Unmute()
+		return r.Deployer.Deploy(ctx, r.out, r.builds)
 	}
 
-	onDeployChange := func(changedPaths []string) {
-		logger.Mute()
-		_, err := r.deploy(ctx, &build.BuildResult{
-			Builds: r.builds,
-		})
-		if err != nil {
-			logrus.Warnf("deploy: %s", err)
-		}
-		fmt.Fprint(r.out, "Watching for changes...\n")
-		logger.Unmute()
+	if err := onChange(depMap.Paths()); err != nil {
+		return errors.Wrap(err, "first build")
 	}
-
-	onChange(r.depMap.Paths())
 
 	// Start logs
-	if err = logger.Start(ctx, r.kubeclient.CoreV1()); err != nil {
+	kubeclient, err := kubernetesClient()
+	if err != nil {
+		return errors.Wrap(err, "getting k8s client")
+	}
+
+	if err = logger.Start(ctx, kubeclient.CoreV1()); err != nil {
 		return errors.Wrap(err, "starting logger")
 	}
 
@@ -258,61 +272,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 	return g.Wait()
 }
 
-func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, artifacts []*v1alpha2.Artifact, onBuildSuccess func(*build.BuildResult)) (*build.BuildResult, *deploy.Result, error) {
-	bRes, err := r.build(ctx, artifacts)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "build")
-	}
-
-	if onBuildSuccess != nil {
-		onBuildSuccess(bRes)
-	}
-
-	// Make sure all artifacts are redeployed. Not only those that were just rebuilt.
-	r.builds = mergeWithPreviousBuilds(bRes.Builds, r.builds)
-
-	dRes, err := r.deploy(ctx, &build.BuildResult{
-		Builds: r.builds,
-	})
-	if err != nil {
-		return bRes, nil, errors.Wrap(err, "deploy")
-	}
-
-	return bRes, dRes, nil
-}
-
-func (r *SkaffoldRunner) build(ctx context.Context, artifacts []*v1alpha2.Artifact) (*build.BuildResult, error) {
-	start := time.Now()
-	fmt.Fprintln(r.out, "Starting build...")
-
-	bRes, err := r.Builder.Build(ctx, r.out, r.Tagger, artifacts)
-	if err != nil {
-		return nil, errors.Wrap(err, "build step")
-	}
-
-	fmt.Fprintln(r.out, "Build complete in", time.Since(start))
-
-	return bRes, nil
-}
-
-func (r *SkaffoldRunner) deploy(ctx context.Context, bRes *build.BuildResult) (*deploy.Result, error) {
-	start := time.Now()
-	fmt.Fprintln(r.out, "Starting deploy...")
-
-	dRes, err := r.Deployer.Deploy(ctx, r.out, bRes)
-	if err != nil {
-		return nil, errors.Wrap(err, "deploy step")
-	}
-	if r.opts.Notification {
-		fmt.Fprint(r.out, constants.TerminalBell)
-	}
-
-	fmt.Fprintln(r.out, "Deploy complete in", time.Since(start))
-
-	return dRes, nil
-}
-
-func cleanUpOnCtrlC(ctx context.Context, runDevMode func(context.Context) error, cleanup func(context.Context)) error {
+func (r *SkaffoldRunner) cleanUpOnCtrlC(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 
 	signals := make(chan os.Signal, 1)
@@ -327,22 +287,11 @@ func cleanUpOnCtrlC(ctx context.Context, runDevMode func(context.Context) error,
 		cancel()
 	}()
 
-	errRun := runDevMode(ctx)
-	cleanup(ctx)
-	return errRun
-}
-
-func (r *SkaffoldRunner) cleanup(ctx context.Context) {
-	start := time.Now()
-	fmt.Fprintln(r.out, "Cleaning up...")
-
-	err := r.Deployer.Cleanup(ctx, r.out)
-	if err != nil {
-		logrus.Warnf("cleanup: %s", err)
-		return
+	errRun := r.watchBuildDeploy(ctx)
+	if err := r.Deployer.Cleanup(ctx, r.out); err != nil {
+		logrus.Warnln("cleanup:", err)
 	}
-
-	fmt.Fprintln(r.out, "Cleanup complete in", time.Since(start))
+	return errRun
 }
 
 func mergeWithPreviousBuilds(builds, previous []build.Build) []build.Build {

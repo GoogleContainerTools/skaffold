@@ -23,10 +23,11 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
@@ -35,19 +36,16 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-type TestBuilder struct {
-	res *build.BuildResult
-	err error
-}
-
-func (t *TestBuilder) Build(context.Context, io.Writer, tag.Tagger, []*v1alpha2.Artifact) (*build.BuildResult, error) {
-	return t.res, t.err
-}
-
 type TestBuildAll struct {
+	built []build.Build
+	err   error
 }
 
-func (t *TestBuildAll) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) (*build.BuildResult, error) {
+func (t *TestBuildAll) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Build, error) {
+	if t.err != nil {
+		return nil, t.err
+	}
+
 	var builds []build.Build
 
 	for _, artifact := range artifacts {
@@ -56,57 +54,34 @@ func (t *TestBuildAll) Build(ctx context.Context, w io.Writer, tagger tag.Tagger
 		})
 	}
 
-	return &build.BuildResult{
-		Builds: builds,
-	}, nil
+	t.built = builds
+	return builds, nil
 }
 
 type TestDeployer struct {
-	res *deploy.Result
-	err error
-}
-
-func (t *TestDeployer) Deploy(context.Context, io.Writer, *build.BuildResult) (*deploy.Result, error) {
-	return t.res, t.err
+	deployed []build.Build
+	err      error
 }
 
 func (t *TestDeployer) Dependencies() ([]string, error) {
 	return nil, nil
 }
 
+func (t *TestDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Build) error {
+	if t.err != nil {
+		return t.err
+	}
+
+	t.deployed = builds
+	return nil
+}
+
 func (t *TestDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-type TestDeployAll struct {
-	deployed *build.BuildResult
-}
-
-func (t *TestDeployAll) Dependencies() ([]string, error) {
-	return nil, nil
-}
-
-func (t *TestDeployAll) Deploy(ctx context.Context, w io.Writer, bRes *build.BuildResult) (*deploy.Result, error) {
-	t.deployed = bRes
-	return &deploy.Result{}, nil
-}
-
-func (t *TestDeployAll) Cleanup(ctx context.Context, out io.Writer) error {
-	return nil
-}
-
-type TestTagger struct {
-	out string
-	err error
-}
-
-func (t *TestTagger) GenerateFullyQualifiedImageName(_ string, _ *tag.TagOptions) (string, error) {
-	return t.out, t.err
-}
-
-func resetClient()                                { kubernetesClient = kubernetes.GetClientset }
-func fakeGetClient() (clientgo.Interface, error)  { return fake.NewSimpleClientset(), nil }
-func errorGetClient() (clientgo.Interface, error) { return nil, fmt.Errorf("") }
+func resetClient()                               { kubernetesClient = kubernetes.GetClientset }
+func fakeGetClient() (clientgo.Interface, error) { return fake.NewSimpleClientset(), nil }
 
 type TestWatcher struct {
 	changes [][]string
@@ -120,7 +95,7 @@ func NewWatcherFactory(err error, changes ...[]string) watch.WatcherFactory {
 	}
 }
 
-func (t *TestWatcher) Start(context context.Context, onChange func([]string)) error {
+func (t *TestWatcher) Start(context context.Context, onChange func([]string) error) error {
 	for _, change := range t.changes {
 		onChange(change)
 	}
@@ -141,10 +116,11 @@ func TestNewForConfig(t *testing.T) {
 	kubernetesClient = fakeGetClient
 	defer resetClient()
 	var tests = []struct {
-		description string
-		config      *v1alpha2.SkaffoldConfig
-		shouldErr   bool
-		expected    interface{}
+		description      string
+		config           *v1alpha2.SkaffoldConfig
+		shouldErr        bool
+		expectedBuilder  build.Builder
+		expectedDeployer deploy.Deployer
 	}{
 		{
 			description: "local builder config",
@@ -161,7 +137,8 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 			},
-			expected: &build.LocalBuilder{},
+			expectedBuilder:  &build.LocalBuilder{},
+			expectedDeployer: &deploy.KubectlDeployer{},
 		},
 		{
 			description: "bad tagger config",
@@ -185,8 +162,9 @@ func TestNewForConfig(t *testing.T) {
 			config: &v1alpha2.SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{},
 			},
-			shouldErr: true,
-			expected:  &build.LocalBuilder{},
+			shouldErr:        true,
+			expectedBuilder:  &build.LocalBuilder{},
+			expectedDeployer: &deploy.KubectlDeployer{},
 		},
 		{
 			description: "unknown tagger",
@@ -197,8 +175,9 @@ func TestNewForConfig(t *testing.T) {
 						LocalBuild: &v1alpha2.LocalBuild{},
 					},
 				}},
-			shouldErr: true,
-			expected:  &build.LocalBuilder{},
+			shouldErr:        true,
+			expectedBuilder:  &build.LocalBuilder{},
+			expectedDeployer: &deploy.KubectlDeployer{},
 		},
 		{
 			description: "unknown deployer",
@@ -216,16 +195,21 @@ func TestNewForConfig(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			cfg, err := NewForConfig(&config.SkaffoldOptions{}, test.config, ioutil.Discard)
+
 			testutil.CheckError(t, test.shouldErr, err)
 			if cfg != nil {
-				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, test.expected, cfg.Builder)
+				b, d := WithTimings(test.expectedBuilder, test.expectedDeployer)
+
+				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, b, cfg.Builder)
+				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, d, cfg.Deployer)
 			}
 		})
 	}
 }
 
 func TestRun(t *testing.T) {
-	client, _ := fakeGetClient()
+	kubernetesClient = fakeGetClient
+	defer resetClient()
 	var tests = []struct {
 		description string
 		runner      *SkaffoldRunner
@@ -234,25 +218,19 @@ func TestRun(t *testing.T) {
 		{
 			description: "run no error",
 			runner: &SkaffoldRunner{
-				config: &v1alpha2.SkaffoldConfig{},
-				Builder: &TestBuilder{
-					res: &build.BuildResult{},
-				},
-				kubeclient: client,
-				opts:       &config.SkaffoldOptions{},
-				Tagger:     &tag.ChecksumTagger{},
-				Deployer: &TestDeployer{
-					res: &deploy.Result{},
-				},
-				out: ioutil.Discard,
+				config:   &v1alpha2.SkaffoldConfig{},
+				Builder:  &TestBuildAll{},
+				opts:     &config.SkaffoldOptions{},
+				Tagger:   &tag.ChecksumTagger{},
+				Deployer: &TestDeployer{},
+				out:      ioutil.Discard,
 			},
 		},
 		{
 			description: "run build error",
 			runner: &SkaffoldRunner{
-				config:     &v1alpha2.SkaffoldConfig{},
-				kubeclient: client,
-				Builder: &TestBuilder{
+				config: &v1alpha2.SkaffoldConfig{},
+				Builder: &TestBuildAll{
 					err: fmt.Errorf(""),
 				},
 				opts:   &config.SkaffoldOptions{},
@@ -276,13 +254,10 @@ func TestRun(t *testing.T) {
 						},
 					},
 				},
-				opts:       &config.SkaffoldOptions{},
-				kubeclient: client,
-				Tagger:     &tag.ChecksumTagger{},
-				Builder: &TestBuilder{
-					res: &build.BuildResult{},
-				},
-				out: ioutil.Discard,
+				opts:    &config.SkaffoldOptions{},
+				Tagger:  &tag.ChecksumTagger{},
+				Builder: &TestBuildAll{},
+				out:     ioutil.Discard,
 			},
 			shouldErr: true,
 		},
@@ -298,63 +273,37 @@ func TestRun(t *testing.T) {
 }
 
 func TestDev(t *testing.T) {
-	client, _ := fakeGetClient()
+	kubernetesClient = fakeGetClient
+	defer resetClient()
 	var tests = []struct {
 		description string
 		runner      *SkaffoldRunner
 		shouldErr   bool
 	}{
 		{
-			description: "run dev mode",
-			runner: &SkaffoldRunner{
-				config:     &v1alpha2.SkaffoldConfig{},
-				kubeclient: client,
-				Builder: &TestBuilder{
-					res: &build.BuildResult{
-						Builds: []build.Build{
-							{
-								ImageName: "test",
-								Tag:       "test:tag",
-							},
-						},
-					},
-				},
-				Deployer:       &TestDeployer{},
-				WatcherFactory: NewWatcherFactory(nil, []string{}),
-				opts:           &config.SkaffoldOptions{},
-				Tagger:         &tag.ChecksumTagger{},
-				out:            ioutil.Discard,
-			},
-		},
-		{
 			description: "run dev mode build error, continue",
 			runner: &SkaffoldRunner{
-				config:     &v1alpha2.SkaffoldConfig{},
-				kubeclient: client,
-				Builder: &TestBuilder{
-					res: &build.BuildResult{},
+				config: &v1alpha2.SkaffoldConfig{},
+				Builder: &TestBuildAll{
 					err: fmt.Errorf(""),
 				},
-				Deployer:       &TestDeployer{},
-				Tagger:         &TestTagger{},
-				WatcherFactory: NewWatcherFactory(nil, []string{}),
-				opts:           &config.SkaffoldOptions{},
-				out:            ioutil.Discard,
+				Deployer:             &TestDeployer{},
+				WatcherFactory:       NewWatcherFactory(nil),
+				DependencyMapFactory: build.NewDependencyMap,
+				opts:                 &config.SkaffoldOptions{},
+				out:                  ioutil.Discard,
 			},
 		},
 		{
 			description: "bad watch dev mode",
 			runner: &SkaffoldRunner{
-				config:     &v1alpha2.SkaffoldConfig{},
-				kubeclient: client,
-				Builder: &TestBuilder{
-					res: &build.BuildResult{},
-				},
-				Deployer:       &TestDeployer{},
-				WatcherFactory: NewWatcherFactory(fmt.Errorf("")),
-				opts:           &config.SkaffoldOptions{},
-				Tagger:         &tag.ChecksumTagger{},
-				out:            ioutil.Discard,
+				config:               &v1alpha2.SkaffoldConfig{},
+				Builder:              &TestBuildAll{},
+				Deployer:             &TestDeployer{},
+				WatcherFactory:       NewWatcherFactory(fmt.Errorf("")),
+				DependencyMapFactory: build.NewDependencyMap,
+				opts:                 &config.SkaffoldOptions{},
+				out:                  ioutil.Discard,
 			},
 			shouldErr: true,
 		},
@@ -370,48 +319,62 @@ func TestDev(t *testing.T) {
 }
 
 func TestBuildAndDeployAllArtifacts(t *testing.T) {
-	kubeclient, _ := fakeGetClient()
+	kubernetesClient = fakeGetClient
+	defer resetClient()
+
 	builder := &TestBuildAll{}
-	deployer := &TestDeployAll{}
+	deployer := &TestDeployer{}
+	artifacts := []*v1alpha2.Artifact{
+		{ImageName: "image1"},
+		{ImageName: "image2"},
+	}
+	pathToArtifacts := map[string][]*v1alpha2.Artifact{
+		"path1": artifacts[0:1],
+		"path2": artifacts[1:],
+	}
 
 	runner := &SkaffoldRunner{
-		opts:       &config.SkaffoldOptions{},
-		kubeclient: kubeclient,
-		Builder:    builder,
-		Deployer:   deployer,
-		out:        ioutil.Discard,
+		config: &v1alpha2.SkaffoldConfig{
+			Build: v1alpha2.BuildConfig{
+				Artifacts: artifacts,
+			},
+		},
+		opts:     &config.SkaffoldOptions{},
+		Builder:  builder,
+		Deployer: deployer,
+		out:      ioutil.Discard,
+		DependencyMapFactory: func(artifacts []*v1alpha2.Artifact) (*build.DependencyMap, error) {
+			return build.NewExplicitDependencyMap(artifacts, pathToArtifacts), nil
+		},
 	}
 
 	ctx := context.Background()
 
-	// Build all artifacts
-	bRes, _, err := runner.buildAndDeploy(ctx, []*v1alpha2.Artifact{
-		{ImageName: "image1"},
-		{ImageName: "image2"},
-	}, nil)
+	// All artifacts are changed
+	runner.WatcherFactory = NewWatcherFactory(nil, []string{"path1", "path2"})
+	err := runner.Dev(ctx)
 
 	if err != nil {
 		t.Errorf("Didn't expect an error. Got %s", err)
 	}
-	if len(bRes.Builds) != 2 {
-		t.Errorf("Expected 2 artifacts to be built. Got %d", len(bRes.Builds))
+	if len(builder.built) != 2 {
+		t.Errorf("Expected 2 artifacts to be built. Got %d", len(builder.built))
 	}
-	if len(deployer.deployed.Builds) != 2 {
-		t.Errorf("Expected 2 artifacts to be deployed. Got %d", len(deployer.deployed.Builds))
+	if len(deployer.deployed) != 2 {
+		t.Errorf("Expected 2 artifacts to be deployed. Got %d", len(deployer.deployed))
 	}
 
-	// Rebuild only one
-	bRes, _, err = runner.buildAndDeploy(ctx, []*v1alpha2.Artifact{
-		{ImageName: "image2"},
-	}, nil)
+	// Only one is changed
+	runner.WatcherFactory = NewWatcherFactory(nil, []string{"path2"})
+	err = runner.Dev(ctx)
 
 	if err != nil {
 		t.Errorf("Didn't expect an error. Got %s", err)
 	}
-	if len(bRes.Builds) != 1 {
-		t.Errorf("Expected 1 artifact to be built. Got %d", len(bRes.Builds))
+	if len(builder.built) != 1 {
+		t.Errorf("Expected 1 artifact to be built. Got %d", len(builder.built))
 	}
-	if len(deployer.deployed.Builds) != 2 {
-		t.Errorf("Expected 2 artifacts to be deployed. Got %d", len(deployer.deployed.Builds))
+	if len(deployer.deployed) != 2 {
+		t.Errorf("Expected 2 artifacts to be deployed. Got %d", len(deployer.deployed))
 	}
 }

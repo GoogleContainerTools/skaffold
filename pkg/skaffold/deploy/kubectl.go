@@ -83,23 +83,23 @@ func NewKubectlDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) *Kubectl
 
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, b *build.BuildResult) (*Result, error) {
-	manifests, err := k.readOrGenerateManifests(b)
+func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Build) error {
+	manifests, err := k.readOrGenerateManifests(builds)
 	if err != nil {
-		return nil, errors.Wrap(err, "reading manifests")
+		return errors.Wrap(err, "reading manifests")
 	}
 
-	manifests, err = manifests.replaceImages(b.Builds)
+	manifests, err = manifests.replaceImages(builds)
 	if err != nil {
-		return nil, errors.Wrap(err, "replacing images in manifests")
+		return errors.Wrap(err, "replacing images in manifests")
 	}
 
 	err = k.kubectl(manifests.reader(), out, "apply", "-f", "-")
 	if err != nil {
-		return nil, errors.Wrap(err, "deploying manifests")
+		return errors.Wrap(err, "deploying manifests")
 	}
 
-	return &Result{}, nil
+	return nil
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
@@ -128,16 +128,16 @@ func (k *KubectlDeployer) Dependencies() ([]string, error) {
 
 // readOrGenerateManifests reads the manifests to deploy/delete. If no manifest exists, try to
 // generate it with the information we have.
-func (k *KubectlDeployer) readOrGenerateManifests(b *build.BuildResult) (manifestList, error) {
+func (k *KubectlDeployer) readOrGenerateManifests(builds []build.Build) (manifestList, error) {
 	if len(k.KubectlDeploy.Manifests) > 0 {
 		return k.readManifests()
 	}
 
-	if len(b.Builds) != 1 {
+	if len(builds) != 1 {
 		return nil, errors.New("must specify manifest if using more than one image")
 	}
 
-	yaml, err := generateManifest(b.Builds[0])
+	yaml, err := generateManifest(builds[0])
 	if err != nil {
 		return nil, errors.Wrap(err, "generating manifest")
 	}
@@ -277,9 +277,9 @@ func (l *manifestList) reader() io.Reader {
 	return strings.NewReader(l.String())
 }
 
-func (l *manifestList) replaceImages(b []build.Build) (manifestList, error) {
+func (l *manifestList) replaceImages(builds []build.Build) (manifestList, error) {
 	replacements := map[string]*replacement{}
-	for _, build := range b {
+	for _, build := range builds {
 		replacements[build.ImageName] = &replacement{
 			tag: build.Tag,
 		}

@@ -24,16 +24,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 )
 
-// Result is currently unused, but a stub for results that might be returned
-// from a Deployer.Run()
-type Result struct{}
-
 // Deployer is the Deploy API of skaffold and responsible for deploying
 // the build results to a Kubernetes cluster
 type Deployer interface {
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster.
-	Deploy(context.Context, io.Writer, *build.BuildResult) (*Result, error)
+	Deploy(context.Context, io.Writer, []build.Build) error
 
 	// Dependencies returns a list of files that the deployer depends on.
 	// In dev mode, a redeploy will be triggered
@@ -43,9 +39,9 @@ type Deployer interface {
 	Cleanup(context.Context, io.Writer) error
 }
 
-func JoinTagsToBuildResult(b []build.Build, params map[string]string) (map[string]build.Build, error) {
+func JoinTagsToBuildResult(builds []build.Build, params map[string]string) (map[string]build.Build, error) {
 	imageToBuildResult := map[string]build.Build{}
-	for _, build := range b {
+	for _, build := range builds {
 		imageToBuildResult[build.ImageName] = build
 	}
 

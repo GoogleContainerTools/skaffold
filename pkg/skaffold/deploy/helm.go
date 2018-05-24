@@ -43,13 +43,13 @@ func NewHelmDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) *HelmDeploy
 	}
 }
 
-func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, b *build.BuildResult) (*Result, error) {
+func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Build) error {
 	for _, r := range h.HelmDeploy.Releases {
-		if err := h.deployRelease(out, r, b); err != nil {
-			return nil, errors.Wrapf(err, "deploying %s", r.Name)
+		if err := h.deployRelease(out, r, builds); err != nil {
+			return errors.Wrapf(err, "deploying %s", r.Name)
 		}
 	}
-	return nil, nil
+	return nil
 }
 
 // Not implemented
@@ -77,14 +77,13 @@ func (h *HelmDeployer) helm(out io.Writer, arg ...string) error {
 	return util.RunCmd(cmd)
 }
 
-func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, b *build.BuildResult) error {
+func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, builds []build.Build) error {
 	isInstalled := true
 	if err := h.helm(out, "get", r.Name); err != nil {
 		fmt.Fprintf(out, "Helm release %s not installed. Installing...\n", r.Name)
 		isInstalled = false
 	}
-
-	params, err := JoinTagsToBuildResult(b.Builds, r.Values)
+	params, err := JoinTagsToBuildResult(builds, r.Values)
 	if err != nil {
 		return errors.Wrap(err, "matching build results to chart values")
 	}
