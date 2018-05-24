@@ -166,7 +166,7 @@ func (r *SkaffoldRunner) Run(ctx context.Context) error {
 		return errors.Wrap(err, "build step")
 	}
 
-	if err := r.Deployer.Deploy(ctx, r.out, bRes); err != nil {
+	if err := r.Deploy(ctx, r.out, bRes); err != nil {
 		return errors.Wrap(err, "deploy step")
 	}
 
@@ -195,7 +195,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 		return errors.Wrap(err, "creating watcher")
 	}
 
-	deployDeps, err := r.Deployer.Dependencies()
+	deployDeps, err := r.Dependencies()
 	if err != nil {
 		return errors.Wrap(err, "getting deploy dependencies")
 	}
@@ -233,7 +233,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 		// Make sure all artifacts are redeployed. Not only those that were just rebuilt.
 		r.builds = mergeWithPreviousBuilds(bRes, r.builds)
 
-		return r.Deployer.Deploy(ctx, r.out, r.builds)
+		return r.Deploy(ctx, r.out, r.builds)
 	}
 
 	onDeployChange := func(changedPaths []string) error {
@@ -243,7 +243,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 			logger.Unmute()
 		}()
 
-		return r.Deployer.Deploy(ctx, r.out, r.builds)
+		return r.Deploy(ctx, r.out, r.builds)
 	}
 
 	if err := onChange(depMap.Paths()); err != nil {
@@ -288,7 +288,7 @@ func (r *SkaffoldRunner) cleanUpOnCtrlC(ctx context.Context) error {
 	}()
 
 	errRun := r.watchBuildDeploy(ctx)
-	if err := r.Deployer.Cleanup(ctx, r.out); err != nil {
+	if err := r.Cleanup(ctx, r.out); err != nil {
 		logrus.Warnln("cleanup:", err)
 	}
 	return errRun
