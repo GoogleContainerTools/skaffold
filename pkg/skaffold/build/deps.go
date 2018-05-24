@@ -30,15 +30,10 @@ import (
 )
 
 // DependencyMapFactory can build DependencyMaps from a list of artifacts.
-type DependencyMapFactory func(artifacts []*v1alpha2.Artifact) (DependencyMap, error)
+type DependencyMapFactory func(artifacts []*v1alpha2.Artifact) (*DependencyMap, error)
 
 // DependencyMap is a bijection between artifacts and the files they depend on.
-type DependencyMap interface {
-	Paths() []string
-	ArtifactsForPaths(paths []string) []*v1alpha2.Artifact
-}
-
-type dependencyMap struct {
+type DependencyMap struct {
 	artifacts       []*v1alpha2.Artifact
 	pathToArtifacts map[string][]*v1alpha2.Artifact
 }
@@ -50,7 +45,7 @@ type DependencyResolver interface {
 //TODO(@r2d4): Figure out best UX to support configuring this blacklist
 var ignoredPrefixes = []string{"vendor", ".git"}
 
-func (d *dependencyMap) Paths() []string {
+func (d *DependencyMap) Paths() []string {
 	allPaths := []string{}
 	for path := range d.pathToArtifacts {
 		allPaths = append(allPaths, path)
@@ -59,7 +54,7 @@ func (d *dependencyMap) Paths() []string {
 	return allPaths
 }
 
-func (d *dependencyMap) ArtifactsForPaths(paths []string) []*v1alpha2.Artifact {
+func (d *DependencyMap) ArtifactsForPaths(paths []string) []*v1alpha2.Artifact {
 	m := map[*v1alpha2.Artifact]struct{}{}
 	for _, p := range paths {
 		artifacts := d.pathToArtifacts[p]
@@ -74,7 +69,7 @@ func (d *dependencyMap) ArtifactsForPaths(paths []string) []*v1alpha2.Artifact {
 	return artifacts
 }
 
-func NewDependencyMap(artifacts []*v1alpha2.Artifact) (DependencyMap, error) {
+func NewDependencyMap(artifacts []*v1alpha2.Artifact) (*DependencyMap, error) {
 	m, err := pathToArtifactMap(artifacts)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating path to artifact map")
@@ -83,8 +78,8 @@ func NewDependencyMap(artifacts []*v1alpha2.Artifact) (DependencyMap, error) {
 	return NewExplicitDependencyMap(artifacts, m), nil
 }
 
-func NewExplicitDependencyMap(artifacts []*v1alpha2.Artifact, pathToArtifacts map[string][]*v1alpha2.Artifact) DependencyMap {
-	return &dependencyMap{
+func NewExplicitDependencyMap(artifacts []*v1alpha2.Artifact, pathToArtifacts map[string][]*v1alpha2.Artifact) *DependencyMap {
+	return &DependencyMap{
 		artifacts:       artifacts,
 		pathToArtifacts: pathToArtifacts,
 	}

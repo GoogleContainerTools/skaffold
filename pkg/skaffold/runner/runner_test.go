@@ -333,7 +333,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 		Builder:  builder,
 		Deployer: deployer,
 		out:      ioutil.Discard,
-		DependencyMapFactory: func(artifacts []*v1alpha2.Artifact) (build.DependencyMap, error) {
+		DependencyMapFactory: func(artifacts []*v1alpha2.Artifact) (*build.DependencyMap, error) {
 			return build.NewExplicitDependencyMap(artifacts, pathToArtifacts), nil
 		},
 	}

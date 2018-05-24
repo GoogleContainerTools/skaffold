@@ -105,7 +105,7 @@ func (f *fsWatcher) Start(ctx context.Context, onChange func([]string) error) er
 			changedPaths = map[string]bool{}
 
 			if err := onChange(changes); err != nil {
-				return err
+				return errors.Wrap(err, "change callback")
 			}
 		case <-ctx.Done():
 			f.watcher.Close()

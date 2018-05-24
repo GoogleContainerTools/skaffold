@@ -141,7 +141,7 @@ func getTagger(t v1alpha2.TagPolicy, customTag string) (tag.Tagger, error) {
 		return &tag.GitCommit{}, nil
 
 	default:
-		return nil, fmt.Errorf("Unknown tagger for strategy %s", t)
+		return nil, fmt.Errorf("Unknown tagger for strategy %+v", t)
 	}
 }
 
@@ -163,10 +163,14 @@ func (r *SkaffoldRunner) Build(ctx context.Context) error {
 func (r *SkaffoldRunner) Run(ctx context.Context) error {
 	bRes, err := r.Builder.Build(ctx, r.out, r.Tagger, r.config.Build.Artifacts)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "build step")
 	}
 
-	return r.Deployer.Deploy(ctx, r.out, bRes)
+	if err := r.Deployer.Deploy(ctx, r.out, bRes); err != nil {
+		return errors.Wrap(err, "deploy step")
+	}
+
+	return nil
 }
 
 // Dev watches for changes and runs the skaffold build and deploy
