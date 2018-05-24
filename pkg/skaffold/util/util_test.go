@@ -105,3 +105,52 @@ func TestExpandPathsGlob(t *testing.T) {
 		})
 	}
 }
+
+func TestSplitTag(t *testing.T) {
+	var tests = []struct {
+		description            string
+		image                  string
+		expectedName           string
+		expectedFullyQualified bool
+	}{
+		{
+			description:            "port and tag",
+			image:                  "host:1234/user/container:tag",
+			expectedName:           "host:1234/user/container",
+			expectedFullyQualified: true,
+		},
+		{
+			description:            "port",
+			image:                  "host:1234/user/container",
+			expectedName:           "host:1234/user/container",
+			expectedFullyQualified: false,
+		},
+		{
+			description:            "tag",
+			image:                  "host/user/container:tag",
+			expectedName:           "host/user/container",
+			expectedFullyQualified: true,
+		},
+		{
+			description:            "latest",
+			image:                  "host/user/container:latest",
+			expectedName:           "host/user/container",
+			expectedFullyQualified: false,
+		},
+		{
+			description:            "digest",
+			image:                  "gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
+			expectedName:           "gcr.io/k8s-skaffold/example",
+			expectedFullyQualified: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			parsed, err := ParseReference(test.image)
+
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedName, parsed.BaseName)
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedFullyQualified, parsed.FullyQualified)
+		})
+	}
+}

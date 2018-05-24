@@ -25,7 +25,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/docker/distribution/reference"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
 
@@ -42,6 +44,27 @@ func RandomID() string {
 
 // These are the supported file formats for kubernetes manifests
 var validSuffixes = []string{".yml", ".yaml", ".json"}
+
+func ManifestFiles(manifests []string) ([]string, error) {
+	list, err := ExpandPathsGlob(manifests)
+	if err != nil {
+		return nil, errors.Wrap(err, "expanding kubectl manifest paths")
+	}
+
+	var filteredManifests []string
+	for _, f := range list {
+		if !IsSupportedKubernetesFormat(f) {
+			if !StrSliceContains(manifests, f) {
+				logrus.Infof("refusing to deploy/delete non {json, yaml} file %s", f)
+				logrus.Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
+				continue
+			}
+		}
+		filteredManifests = append(filteredManifests, f)
+	}
+
+	return filteredManifests, nil
+}
 
 // IsSupportedKubernetesFormat is for determining if a file under a glob pattern
 // is deployable file format. It makes no attempt to check whether or not the file
@@ -132,4 +155,34 @@ func download(url string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	return ioutil.ReadAll(resp.Body)
+}
+
+type imageReference struct {
+	BaseName       string
+	FullyQualified bool
+}
+
+func ParseReference(image string) (*imageReference, error) {
+	r, err := reference.Parse(image)
+	if err != nil {
+		return nil, err
+	}
+
+	baseName := image
+	if n, ok := r.(reference.Named); ok {
+		baseName = n.Name()
+	}
+
+	fullyQualified := false
+	switch n := r.(type) {
+	case reference.Tagged:
+		fullyQualified = n.Tag() != "latest"
+	case reference.Digested:
+		fullyQualified = true
+	}
+
+	return &imageReference{
+		BaseName:       baseName,
+		FullyQualified: fullyQualified,
+	}, nil
 }

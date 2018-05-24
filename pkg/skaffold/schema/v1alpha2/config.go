@@ -18,10 +18,11 @@ package v1alpha2
 
 import (
 	"fmt"
+	"io/ioutil"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	homedir "github.com/mitchellh/go-homedir"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
@@ -163,6 +164,10 @@ func (c *SkaffoldConfig) Parse(contents []byte, useDefaults bool) error {
 		return err
 	}
 
+	if err := c.validateImages(); err != nil {
+		return err
+	}
+
 	if useDefaults {
 		if err := c.setDefaultValues(); err != nil {
 			return errors.Wrap(err, "applying default values")
@@ -238,6 +243,95 @@ func (c *SkaffoldConfig) expandKanikoSecretPath() error {
 
 	c.Build.KanikoBuild.PullSecret = absPath
 	return nil
+}
+
+func (c *SkaffoldConfig) validateImages() error {
+	// Create a map of built images
+	builtImages := make(map[string]bool)
+	for _, artifact := range c.Build.Artifacts {
+		builtImages[artifact.ImageName] = false
+	}
+	// Get a list of images that will be deployed
+	deployedImages, err := c.deployedImages()
+	if err != nil {
+		return err
+	}
+	// Make sure all deployed images are also built, else return error
+	for _, d := range deployedImages {
+		if _, ok := builtImages[d]; !ok {
+			return fmt.Errorf("%s will be deployed but not built", d)
+		}
+	}
+	return nil
+}
+
+// deployedImages returns a list of images that will be deployed
+func (c *SkaffoldConfig) deployedImages() ([]string, error) {
+	var deployImages []string
+	// Make sure all deployed images match
+	if c.Deploy.KubectlDeploy != nil {
+		manifestFiles, err := util.ManifestFiles(c.Deploy.KubectlDeploy.Manifests)
+		if err != nil {
+			return nil, err
+		}
+		d, err := imagesFromManifests(manifestFiles)
+		if err != nil {
+			return nil, err
+		}
+		deployImages = append(deployImages, d...)
+	}
+	if c.Deploy.HelmDeploy != nil {
+		for _, release := range c.Deploy.HelmDeploy.Releases {
+			if d, ok := release.Values["image"]; ok {
+				deployImages = append(deployImages, d)
+			}
+		}
+	}
+	return deployImages, nil
+}
+
+func imagesFromManifests(manifests []string) ([]string, error) {
+	var images []string
+	for _, manifest := range manifests {
+		contents, err := ioutil.ReadFile(manifest)
+		if err != nil {
+			return nil, err
+		}
+		m := map[interface{}]interface{}{}
+		if err := yaml.Unmarshal(contents, &m); err != nil {
+			return nil, errors.Wrap(err, "reading kubernetes YAML")
+		}
+		if len(m) == 0 {
+			continue
+		}
+		images = append(images, recursiveGetImages(m)...)
+	}
+	return images, nil
+}
+
+func recursiveGetImages(i interface{}) []string {
+	images := []string{}
+	switch t := i.(type) {
+	case []interface{}:
+		for _, v := range t {
+			images = append(images, recursiveGetImages(v)...)
+		}
+	case map[interface{}]interface{}:
+		for k, v := range t {
+			if k.(string) != "image" {
+				images = append(images, recursiveGetImages(v)...)
+				continue
+			}
+			image := v.(string)
+			parsed, err := util.ParseReference(image)
+			if err != nil {
+				logrus.Warnf("Couldn't parse image: %s", v)
+				continue
+			}
+			images = append(images, parsed.BaseName)
+		}
+	}
+	return images
 }
 
 // ApplyProfiles returns configuration modified by the application
