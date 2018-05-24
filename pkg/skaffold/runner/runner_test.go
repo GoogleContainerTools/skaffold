@@ -37,13 +37,15 @@ import (
 )
 
 type TestBuildAll struct {
-	built []build.Build
-	err   error
+	built  []build.Build
+	errors []error
 }
 
 func (t *TestBuildAll) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Build, error) {
-	if t.err != nil {
-		return nil, t.err
+	if len(t.errors) > 0 {
+		err := t.errors[0]
+		t.errors = t.errors[1:]
+		return nil, err
 	}
 
 	var builds []build.Build
@@ -231,7 +233,7 @@ func TestRun(t *testing.T) {
 			runner: &SkaffoldRunner{
 				config: &v1alpha2.SkaffoldConfig{},
 				Builder: &TestBuildAll{
-					err: fmt.Errorf(""),
+					errors: []error{fmt.Errorf("")},
 				},
 				opts:   &config.SkaffoldOptions{},
 				Tagger: &tag.ChecksumTagger{},
@@ -281,14 +283,29 @@ func TestDev(t *testing.T) {
 		shouldErr   bool
 	}{
 		{
-			description: "run dev mode build error, continue",
+			description: "fails to build the first time",
 			runner: &SkaffoldRunner{
 				config: &v1alpha2.SkaffoldConfig{},
 				Builder: &TestBuildAll{
-					err: fmt.Errorf(""),
+					errors: []error{fmt.Errorf("")},
 				},
 				Deployer:             &TestDeployer{},
 				WatcherFactory:       NewWatcherFactory(nil),
+				DependencyMapFactory: build.NewDependencyMap,
+				opts:                 &config.SkaffoldOptions{},
+				out:                  ioutil.Discard,
+			},
+			shouldErr: true,
+		},
+		{
+			description: "ignore subsequent build errors",
+			runner: &SkaffoldRunner{
+				config: &v1alpha2.SkaffoldConfig{},
+				Builder: &TestBuildAll{
+					errors: []error{nil, fmt.Errorf("")},
+				},
+				Deployer:             &TestDeployer{},
+				WatcherFactory:       NewWatcherFactory(nil, nil),
 				DependencyMapFactory: build.NewDependencyMap,
 				opts:                 &config.SkaffoldOptions{},
 				out:                  ioutil.Discard,

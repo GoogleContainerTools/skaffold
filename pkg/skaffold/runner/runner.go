@@ -219,6 +219,10 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context) error {
 
 		bRes, err := r.Builder.Build(ctx, r.out, r.Tagger, changedArtifacts)
 		if err != nil {
+			if r.builds == nil {
+				return errors.Wrap(err, "exiting dev mode because the first build failed")
+			}
+
 			logrus.Warnln("Skipping Deploy due to build error:", err)
 			return nil
 		}
