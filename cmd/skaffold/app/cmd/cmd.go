@@ -23,7 +23,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
@@ -90,20 +89,6 @@ func SetUpLogs(out io.Writer, level string) error {
 	}
 	logrus.SetLevel(lvl)
 	return nil
-}
-
-func NewRunner(out io.Writer, filename string) (*runner.SkaffoldRunner, error) {
-	config, err := readConfiguration(filename)
-	if err != nil {
-		return nil, errors.Wrap(err, "reading configuration")
-	}
-
-	r, err := runner.NewForConfig(opts, config, out)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting skaffold config")
-	}
-
-	return r, nil
 }
 
 func readConfiguration(filename string) (*config.SkaffoldConfig, error) {

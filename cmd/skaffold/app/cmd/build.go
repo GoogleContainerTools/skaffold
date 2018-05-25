@@ -18,8 +18,11 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -40,10 +43,24 @@ func NewCmdBuild(out io.Writer) *cobra.Command {
 func build(out io.Writer, filename string) error {
 	ctx := context.Background()
 
-	runner, err := NewRunner(out, filename)
+	config, err := readConfiguration(filename)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "reading configuration")
 	}
 
-	return runner.Build(ctx)
+	runner, err := runner.NewForConfig(opts, config)
+	if err != nil {
+		return errors.Wrap(err, "creating runner")
+	}
+
+	bRes, err := runner.Build(ctx, out, runner.Tagger, config.Build.Artifacts)
+	if err != nil {
+		return errors.Wrap(err, "build step")
+	}
+
+	for _, build := range bRes {
+		fmt.Fprintln(out, build.ImageName, "->", build.Tag)
+	}
+
+	return err
 }

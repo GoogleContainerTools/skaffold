@@ -20,6 +20,8 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -40,9 +42,14 @@ func NewCmdDelete(out io.Writer) *cobra.Command {
 func delete(out io.Writer, filename string) error {
 	ctx := context.Background()
 
-	runner, err := NewRunner(out, filename)
+	config, err := readConfiguration(filename)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "reading configuration")
+	}
+
+	runner, err := runner.NewForConfig(opts, config)
+	if err != nil {
+		return errors.Wrap(err, "creating runner")
 	}
 
 	return runner.Cleanup(ctx, out)
