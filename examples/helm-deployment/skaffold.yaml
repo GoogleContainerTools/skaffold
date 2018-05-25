@@ -13,7 +13,7 @@ deploy:
       namespace: skaffold
       #valuesFilePath: helm-skaffold-values.yaml
       values:
-        image: skaffold-helm
+        image.tag: skaffold-helm
       #setValues get appended to the helm deploy with --set.  
       #setValues:
         #some.key: someValue
