@@ -31,6 +31,11 @@ func TestDockerContext(t *testing.T) {
 	tmpDir, cleanup := testutil.TempDir(t)
 	defer cleanup()
 
+	RetrieveImage = mockRetrieveImage
+	defer func() {
+		RetrieveImage = retrieveImage
+	}()
+
 	os.Mkdir(filepath.Join(tmpDir, "files"), 0750)
 	ioutil.WriteFile(filepath.Join(tmpDir, "files", "ignored.txt"), []byte(""), 0644)
 	ioutil.WriteFile(filepath.Join(tmpDir, "files", "included.txt"), []byte(""), 0644)
