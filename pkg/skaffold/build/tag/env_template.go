@@ -17,14 +17,10 @@ limitations under the License.
 package tag
 
 import (
-	"bytes"
-	"fmt"
-	"os"
 	"strings"
 	"text/template"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
@@ -33,12 +29,9 @@ type EnvTemplateTagger struct {
 	Template *template.Template
 }
 
-// For testing
-var environ = os.Environ
-
 // NewEnvTemplateTagger creates a new EnvTemplateTagger
 func NewEnvTemplateTagger(t string) (*EnvTemplateTagger, error) {
-	tmpl, err := template.New("envTemplate").Parse(t)
+	tmpl, err := util.ParseEnvTemplate(t)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing template")
 	}
@@ -49,30 +42,18 @@ func NewEnvTemplateTagger(t string) (*EnvTemplateTagger, error) {
 
 // GenerateFullyQualifiedImageName tags an image with the custom tag
 func (c *EnvTemplateTagger) GenerateFullyQualifiedImageName(workingDir string, opts *TagOptions) (string, error) {
-	var buf bytes.Buffer
-	envMap := map[string]string{}
-	for _, env := range environ() {
-		kvp := strings.SplitN(env, "=", 2)
-		if len(kvp) != 2 {
-			return "", fmt.Errorf("error parsing environment variables, %s does not contain an =", kvp)
-		}
-		envMap[kvp[0]] = kvp[1]
-	}
+	customMap := map[string]string{}
 
-	envMap["IMAGE_NAME"] = opts.ImageName
+	customMap["IMAGE_NAME"] = opts.ImageName
 	digest := opts.Digest
-	envMap["DIGEST"] = digest
+	customMap["DIGEST"] = digest
 	if digest != "" {
 		names := strings.SplitN(digest, ":", 2)
 		if len(names) >= 2 {
-			envMap["DIGEST_ALGO"] = names[0]
-			envMap["DIGEST_HEX"] = names[1]
+			customMap["DIGEST_ALGO"] = names[0]
+			customMap["DIGEST_HEX"] = names[1]
 		}
 	}
 
-	logrus.Debugf("Executing template %v with environment %v", c.Template, envMap)
-	if err := c.Template.Execute(&buf, envMap); err != nil {
-		return "", errors.Wrap(err, "executing template")
-	}
-	return buf.String(), nil
+	return util.ExecuteEnvTemplate(c.Template, customMap)
 }

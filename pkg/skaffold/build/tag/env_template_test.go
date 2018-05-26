@@ -20,6 +20,7 @@ import (
 	"testing"
 	"text/template"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -76,7 +77,7 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			c := &EnvTemplateTagger{
 				Template: template.Must(template.New("").Parse(test.template)),
 			}
-			environ = func() []string {
+			util.OSEnviron = func() []string {
 				return test.env
 			}
 
