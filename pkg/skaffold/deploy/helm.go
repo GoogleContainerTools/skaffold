@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -107,8 +108,12 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 		args = append(args, "upgrade", r.Name, r.ChartPath)
 	}
 
-	if r.Namespace != "" {
-		args = append(args, "--namespace", r.Namespace)
+	ns := r.Namespace
+	if ns == "" {
+		ns = os.Getenv("SKAFFOLD_DEPLOY_NAMESPACE")
+	}
+	if ns != "" {
+		args = append(args, "--namespace", ns)
 	}
 	if r.ValuesFilePath != "" {
 		args = append(args, "-f", r.ValuesFilePath)
