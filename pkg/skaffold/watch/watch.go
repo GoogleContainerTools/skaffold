@@ -18,6 +18,8 @@ package watch
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"path/filepath"
 	"sort"
 	"time"
@@ -36,7 +38,7 @@ type WatcherFactory func(paths []string) (Watcher, error)
 type Watcher interface {
 	// Start watches a set of files for changes, and calls `onChange`
 	// on each file change.
-	Start(ctx context.Context, onChange func([]string) error) error
+	Start(ctx context.Context, out io.Writer, onChange func([]string) error) error
 }
 
 // fsWatcher uses inotify to watch for changes and implements
@@ -80,7 +82,7 @@ func NewWatcher(paths []string) (Watcher, error) {
 
 // Start watches a set of files for changes, and calls `onChange`
 // on each file change.
-func (f *fsWatcher) Start(ctx context.Context, onChange func([]string) error) error {
+func (f *fsWatcher) Start(ctx context.Context, out io.Writer, onChange func([]string) error) error {
 	changedPaths := map[string]bool{}
 
 	timer := time.NewTimer(1<<63 - 1) // Forever
@@ -107,6 +109,8 @@ func (f *fsWatcher) Start(ctx context.Context, onChange func([]string) error) er
 			if err := onChange(changes); err != nil {
 				return errors.Wrap(err, "change callback")
 			}
+
+			fmt.Fprintln(out, "Watching for changes...")
 		case <-ctx.Done():
 			f.watcher.Close()
 			return nil

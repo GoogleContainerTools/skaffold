@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
@@ -26,21 +25,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewCmdBuild describes the CLI command to build artifacts.
-func NewCmdBuild(out io.Writer) *cobra.Command {
+// NewCmdDelete describes the CLI command to delete deployed resources.
+func NewCmdDelete(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "build",
-		Short: "Builds the artifacts",
+		Use:   "delete",
+		Short: "Delete the deployed resources",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return build(out, filename)
+			return delete(out, filename)
 		},
 	}
 	AddRunDevFlags(cmd)
 	return cmd
 }
 
-func build(out io.Writer, filename string) error {
+func delete(out io.Writer, filename string) error {
 	ctx := context.Background()
 
 	config, err := readConfiguration(filename)
@@ -53,14 +52,5 @@ func build(out io.Writer, filename string) error {
 		return errors.Wrap(err, "creating runner")
 	}
 
-	bRes, err := runner.Build(ctx, out, runner.Tagger, config.Build.Artifacts)
-	if err != nil {
-		return errors.Wrap(err, "build step")
-	}
-
-	for _, build := range bRes {
-		fmt.Fprintln(out, build.ImageName, "->", build.Tag)
-	}
-
-	return err
+	return runner.Cleanup(ctx, out)
 }
