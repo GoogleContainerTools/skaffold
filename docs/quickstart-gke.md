@@ -35,10 +35,11 @@ As a new developer on-boarding you need to start Skaffold in `dev` mode to begin
 on the application and seeing the updates happen in real time. The development team working on the application
 has already setup the Dockerfile, Kubernetes manifests, and Skaffold manifest necessary to get you started.
 
-1. Change the references in `skaffold.yaml` to point to your Container Registry.
+1. Change the references in `skaffold.yaml` and `k8s-pod.yaml`  to point to your Container Registry.
 
     ```shell
     sed -i -e s#k8s-skaffold#${GOOGLE_CLOUD_PROJECT}#g skaffold.yaml
+    sed -i -e s#k8s-skaffold#${GOOGLE_CLOUD_PROJECT}#g k8s-pod.yaml
     ```
 
 1. Take a look at the contents of `skaffold.yaml`. You'll notice a profile named `gcb` that will be using Google Container Builder to build
