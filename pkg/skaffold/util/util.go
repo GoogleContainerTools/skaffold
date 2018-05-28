@@ -22,14 +22,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/spf13/afero"
 )
-
-var Fs = afero.NewOsFs()
 
 func RandomID() string {
 	b := make([]byte, 16)
@@ -66,25 +64,27 @@ func StrSliceContains(sl []string, s string) bool {
 
 // ExpandPathsGlob expands paths according to filepath.Glob patterns
 // Returns a list of unique files that match the glob patterns passed in.
-func ExpandPathsGlob(paths []string) ([]string, error) {
+func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 	expandedPaths := make(map[string]bool)
 	for _, p := range paths {
-		if _, err := Fs.Stat(p); err == nil {
+		path := filepath.Join(workingDir, p)
+
+		if _, err := os.Stat(path); err == nil {
 			// This is a file reference, so just add it
-			expandedPaths[p] = true
+			expandedPaths[path] = true
 			continue
 		}
 
-		files, err := afero.Glob(Fs, p)
+		files, err := filepath.Glob(path)
 		if err != nil {
 			return nil, errors.Wrap(err, "glob")
 		}
 		if files == nil {
-			return nil, fmt.Errorf("File pattern must match at least one file %s", p)
+			return nil, fmt.Errorf("File pattern must match at least one file %s", path)
 		}
 
 		for _, f := range files {
-			err := afero.Walk(Fs, f, func(path string, info os.FileInfo, err error) error {
+			err := filepath.Walk(f, func(path string, info os.FileInfo, err error) error {
 				if !info.IsDir() {
 					expandedPaths[path] = true
 				}
