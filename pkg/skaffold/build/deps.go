@@ -38,10 +38,6 @@ type DependencyMap struct {
 	pathToArtifacts map[string][]*v1alpha2.Artifact
 }
 
-type DependencyResolver interface {
-	GetDependencies(a *v1alpha2.Artifact) ([]string, error)
-}
-
 //TODO(@r2d4): Figure out best UX to support configuring this blacklist
 var ignoredPrefixes = []string{"vendor", ".git"}
 
@@ -85,6 +81,50 @@ func NewExplicitDependencyMap(artifacts []*v1alpha2.Artifact, pathToArtifacts ma
 	}
 }
 
+func pathToArtifactMap(artifacts []*v1alpha2.Artifact) (map[string][]*v1alpha2.Artifact, error) {
+	m := make(map[string][]*v1alpha2.Artifact)
+
+	for _, a := range artifacts {
+		deps, err := DependenciesForArtifact(a)
+		if err != nil {
+			return nil, errors.Wrapf(err, "getting dependencies for artifact %s", a.ImageName)
+		}
+		logrus.Infof("Source code dependencies %s: %s", a.ImageName, deps)
+
+		for _, dep := range deps {
+			//TODO(r2d4): what does the ignore workspace look like for bazel?
+			ignored, err := isIgnored(dep)
+			if err != nil {
+				return nil, errors.Wrapf(err, "calculating ignored files for artifact %s", a.ImageName)
+			}
+
+			if ignored {
+				logrus.Debugf("Ignoring %s for artifact dependencies", dep)
+				continue
+			}
+
+			path := filepath.Join(a.Workspace, dep)
+			m[path] = append(m[path], a)
+		}
+	}
+
+	return m, nil
+}
+
+// DependenciesForArtifact is used in tests.
+var DependenciesForArtifact = dependenciesForArtifact
+
+func dependenciesForArtifact(a *v1alpha2.Artifact) ([]string, error) {
+	if a.DockerArtifact != nil {
+		return docker.GetDependencies(a.DockerArtifact.DockerfilePath, a.Workspace)
+	}
+	if a.BazelArtifact != nil {
+		return bazel.GetDependencies(a)
+	}
+
+	return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
+}
+
 func isIgnored(path string) (bool, error) {
 	for _, ignoredPrefix := range ignoredPrefixes {
 		if strings.HasPrefix(path, ignoredPrefix) {
@@ -93,59 +133,4 @@ func isIgnored(path string) (bool, error) {
 	}
 
 	return false, nil
-}
-
-func pathToArtifactMap(artifacts []*v1alpha2.Artifact) (map[string][]*v1alpha2.Artifact, error) {
-	m := map[string][]*v1alpha2.Artifact{}
-	for _, a := range artifacts {
-		paths, err := pathsForArtifact(a)
-		if err != nil {
-			return nil, errors.Wrapf(err, "getting paths for artifact %s", a.ImageName)
-		}
-
-		for _, p := range paths {
-			m[p] = append(m[p], a)
-		}
-	}
-
-	return m, nil
-}
-
-func pathsForArtifact(a *v1alpha2.Artifact) ([]string, error) {
-	deps, err := GetDependenciesForArtifact(a)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting dockerfile dependencies")
-	}
-	logrus.Infof("Source code dependencies %s: %s", a.ImageName, deps)
-
-	var filteredDeps []string
-	for _, dep := range deps {
-		//TODO(r2d4): what does the ignore workspace look like for bazel?
-		ignored, err := isIgnored(dep)
-		if err != nil {
-			return nil, errors.Wrapf(err, "calculating ignored files for artifact %s", a.ImageName)
-		}
-		if ignored {
-			logrus.Debugf("Ignoring %s for artifact dependencies", dep)
-			continue
-		}
-		filteredDeps = append(filteredDeps, filepath.Join(a.Workspace, dep))
-	}
-	return filteredDeps, nil
-}
-
-var (
-	DefaultDockerfileDepResolver DependencyResolver = &docker.DockerfileDepResolver{}
-	DefaultBazelDepResolver      DependencyResolver = &bazel.BazelDependencyResolver{}
-)
-
-func GetDependenciesForArtifact(artifact *v1alpha2.Artifact) ([]string, error) {
-	if artifact.DockerArtifact != nil {
-		return DefaultDockerfileDepResolver.GetDependencies(artifact)
-	}
-	if artifact.BazelArtifact != nil {
-		return DefaultBazelDepResolver.GetDependencies(artifact)
-	}
-
-	return nil, fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 }
