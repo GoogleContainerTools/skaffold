@@ -47,7 +47,7 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 	}
 
 	imageList := kubernetes.NewImageList()
-	imageList.AddImage(constants.DefaultKanikoImage)
+	imageList.Add(constants.DefaultKanikoImage)
 
 	logger := kubernetes.NewLogAggregator(out, imageList, kubernetes.NewColorPicker([]*v1alpha2.Artifact{artifact}))
 	if err := logger.Start(ctx); err != nil {
@@ -104,7 +104,7 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 	}
 
 	defer func() {
-		imageList.RemoveImage(constants.DefaultKanikoImage)
+		imageList.Remove(constants.DefaultKanikoImage)
 		if err := client.CoreV1().Pods("default").Delete(p.Name, &metav1.DeleteOptions{
 			GracePeriodSeconds: new(int64),
 		}); err != nil {

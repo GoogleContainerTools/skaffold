@@ -193,9 +193,9 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context, out io.Writer, ar
 		return errors.Wrap(err, "creating deploy watcher")
 	}
 
-	podSelector := kubernetes.NewImageList()
+	imageList := kubernetes.NewImageList()
 	colorPicker := kubernetes.NewColorPicker(artifacts)
-	logger := kubernetes.NewLogAggregator(out, podSelector, colorPicker)
+	logger := kubernetes.NewLogAggregator(out, imageList, colorPicker)
 
 	onChange := func(changedPaths []string) error {
 		logger.Mute()
@@ -215,7 +215,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context, out io.Writer, ar
 
 		// Update which images are logged.
 		for _, build := range bRes {
-			podSelector.AddImage(build.Tag)
+			imageList.Add(build.Tag)
 		}
 
 		// Make sure all artifacts are redeployed. Not only those that were just rebuilt.

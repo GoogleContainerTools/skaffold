@@ -245,14 +245,15 @@ func NewImageList() *ImageList {
 	}
 }
 
-// AddImage adds an image to the list.
-func (l *ImageList) AddImage(image string) {
+// Add adds an image to the list.
+func (l *ImageList) Add(image string) {
 	l.Lock()
 	l.names[image] = true
 	l.Unlock()
 }
 
-func (l *ImageList) RemoveImage(image string) {
+// Remove removes an image from the list.
+func (l *ImageList) Remove(image string) {
 	l.Lock()
 	delete(l.names, image)
 	l.Unlock()
