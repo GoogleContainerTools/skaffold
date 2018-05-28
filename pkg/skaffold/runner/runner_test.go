@@ -23,11 +23,10 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
@@ -82,7 +81,7 @@ func (t *TestDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-func resetClient()                               { kubernetesClient = kubernetes.GetClientset }
+func resetClient()                               { kubernetes.Client = kubernetes.GetClientset }
 func fakeGetClient() (clientgo.Interface, error) { return fake.NewSimpleClientset(), nil }
 
 type TestWatcher struct {
@@ -105,8 +104,6 @@ func (t *TestWatcher) Start(context context.Context, out io.Writer, onChange fun
 }
 
 func TestNewForConfig(t *testing.T) {
-	kubernetesClient = fakeGetClient
-	defer resetClient()
 	var tests = []struct {
 		description      string
 		config           *v1alpha2.SkaffoldConfig
@@ -200,8 +197,6 @@ func TestNewForConfig(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
-	kubernetesClient = fakeGetClient
-	defer resetClient()
 	var tests = []struct {
 		description string
 		config      *config.SkaffoldConfig
@@ -258,8 +253,9 @@ func TestRun(t *testing.T) {
 }
 
 func TestDev(t *testing.T) {
-	kubernetesClient = fakeGetClient
+	kubernetes.Client = fakeGetClient
 	defer resetClient()
+
 	var tests = []struct {
 		description    string
 		builder        build.Builder
@@ -307,7 +303,7 @@ func TestDev(t *testing.T) {
 }
 
 func TestBuildAndDeployAllArtifacts(t *testing.T) {
-	kubernetesClient = fakeGetClient
+	kubernetes.Client = fakeGetClient
 	defer resetClient()
 
 	builder := &TestBuilder{}

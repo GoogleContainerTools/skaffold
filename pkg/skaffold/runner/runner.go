@@ -49,8 +49,6 @@ type SkaffoldRunner struct {
 	builds []build.Build
 }
 
-var kubernetesClient = kubernetes.GetClientset
-
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
 func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*SkaffoldRunner, error) {
 	kubeContext, err := kubernetes.CurrentContext()
@@ -235,12 +233,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context, out io.Writer, ar
 	}
 
 	// Start logs
-	kubeclient, err := kubernetesClient()
-	if err != nil {
-		return errors.Wrap(err, "getting k8s client")
-	}
-
-	if err = logger.Start(ctx, kubeclient.CoreV1()); err != nil {
+	if err = logger.Start(ctx); err != nil {
 		return errors.Wrap(err, "starting logger")
 	}
 
