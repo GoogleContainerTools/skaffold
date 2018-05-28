@@ -19,6 +19,7 @@ package cmd
 import (
 	"context"
 	"io"
+	"io/ioutil"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -27,7 +28,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var buildFormatFlag = flags.NewTemplateFlag("{{range .Builds}}{{.ImageName}} -> {{.Tag}}\n{{end}}", BuildOutput{})
+var (
+	quietFlag       bool
+	buildFormatFlag = flags.NewTemplateFlag("{{range .Builds}}{{.ImageName}} -> {{.Tag}}\n{{end}}", BuildOutput{})
+)
 
 // NewCmdBuild describes the CLI command to build artifacts.
 func NewCmdBuild(out io.Writer) *cobra.Command {
@@ -40,6 +44,7 @@ func NewCmdBuild(out io.Writer) *cobra.Command {
 		},
 	}
 	AddRunDevFlags(cmd)
+	cmd.Flags().BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success")
 	cmd.Flags().VarP(buildFormatFlag, "output", "o", buildFormatFlag.Usage())
 	return cmd
 }
@@ -62,7 +67,12 @@ func runBuild(out io.Writer, filename string) error {
 		return errors.Wrap(err, "creating runner")
 	}
 
-	bRes, err := runner.Build(ctx, out, runner.Tagger, config.Build.Artifacts)
+	buildOut := out
+	if quietFlag {
+		buildOut = ioutil.Discard
+	}
+
+	bRes, err := runner.Build(ctx, buildOut, runner.Tagger, config.Build.Artifacts)
 	if err != nil {
 		return errors.Wrap(err, "build step")
 	}
