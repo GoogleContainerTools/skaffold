@@ -16,18 +16,22 @@
 
 set -e -o pipefail
 
-SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-install_gometalinter() {
-	echo "Installing gometalinter.v2"
-	go get -u gopkg.in/alecthomas/gometalinter.v2
-	gometalinter.v2 --install
-}
-
-if ! [ -x "$(command -v gometalinter.v2)" ]; then
-  install_gometalinter
+if ! [ -x "$(command -v golangci-lint)" ]; then
+	echo "Installing GolangCI-Lint"
+	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 fi
 
-gometalinter.v2 \
-	--deadline 5m \
-	--config $SCRIPTDIR/gometalinter.json ./...
+golangci-lint run \
+	--no-config \
+	-E goimports \
+	-E interfacer \
+	-E unconvert \
+	-E goconst \
+	-E maligned \
+	-D errcheck
+
+# From now on, run go lint.
+golangci-lint run \
+	--disable-all \
+	-E golint \
+	--new-from-rev bed41e9a77431990cc8504c0955252c851934b89
