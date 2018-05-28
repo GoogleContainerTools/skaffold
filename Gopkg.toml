@@ -32,10 +32,6 @@
   revision = "edc3ab29cdff8694dd6feb85cfeb4b5f1b38ed9c"
 
 [[constraint]]
-  name = "github.com/spf13/afero"
-  version = "1.1.0"
-
-[[constraint]]
   name = "github.com/fsnotify/fsnotify"
   version = "1.4.7"
 
