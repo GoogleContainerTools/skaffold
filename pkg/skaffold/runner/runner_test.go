@@ -104,16 +104,6 @@ func (t *TestWatcher) Start(context context.Context, out io.Writer, onChange fun
 	return nil
 }
 
-type TestChanges struct {
-	changes [][]*v1alpha2.Artifact
-}
-
-func (t *TestChanges) OnChange(action func(artifacts []*v1alpha2.Artifact)) {
-	for _, artifacts := range t.changes {
-		action(artifacts)
-	}
-}
-
 func TestNewForConfig(t *testing.T) {
 	kubernetesClient = fakeGetClient
 	defer resetClient()
