@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 
 	"github.com/docker/cli/cli/config"
-	"github.com/docker/cli/cli/config/configfile"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/registry"
@@ -58,9 +57,7 @@ type AuthConfigHelper interface {
 	GetAllAuthConfigs() (map[string]types.AuthConfig, error)
 }
 
-type credsHelper struct {
-	cf *configfile.ConfigFile
-}
+type credsHelper struct{}
 
 func (credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
 	cf, err := config.Load(configDir)
