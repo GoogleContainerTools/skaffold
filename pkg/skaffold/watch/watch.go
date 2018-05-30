@@ -83,7 +83,7 @@ func (m *mtimeWatcher) Start(ctx context.Context, out io.Writer, onChange func([
 				if err := onChange(sortedPaths(changedPaths)); err != nil {
 					return errors.Wrap(err, "change callback")
 				}
-				logrus.Infof("Files changed: %v", changedPaths)
+				logrus.Debugf("Files changed: %v", changedPaths)
 				changedPaths = map[string]bool{}
 			}
 		case <-ctx.Done():
@@ -127,7 +127,7 @@ func NewWatcher(paths []string) (Watcher, error) {
 
 		for _, p := range paths {
 			files[p] = true
-			logrus.Infof("Added watch for %s", p)
+			logrus.Debugf("Added watch for %s", p)
 
 			if err := w.Add(p); err != nil {
 				w.Close()
