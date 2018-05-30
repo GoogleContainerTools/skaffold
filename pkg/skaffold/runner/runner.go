@@ -111,7 +111,12 @@ func getBuilder(cfg *v1alpha2.BuildConfig, kubeContext string) (build.Builder, e
 func getDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) (deploy.Deployer, error) {
 	switch {
 	case cfg.KubectlDeploy != nil:
-		return deploy.NewKubectlDeployer(cfg, kubeContext), nil
+		// TODO(dgageot): this should be the folder containing skaffold.yaml. Should also be moved elsewhere.
+		cwd, err := os.Getwd()
+		if err != nil {
+			return nil, errors.Wrap(err, "finding current directory")
+		}
+		return deploy.NewKubectlDeployer(cwd, cfg, kubeContext), nil
 
 	case cfg.HelmDeploy != nil:
 		return deploy.NewHelmDeployer(cfg, kubeContext), nil

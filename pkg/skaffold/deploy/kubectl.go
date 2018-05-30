@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -33,7 +34,6 @@ import (
 	"github.com/docker/distribution/reference"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
 )
 
@@ -69,14 +69,17 @@ spec:
 // KubectlDeployer deploys workflows using kubectl CLI.
 type KubectlDeployer struct {
 	*v1alpha2.DeployConfig
+
+	workingDir  string
 	kubeContext string
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) *KubectlDeployer {
+func NewKubectlDeployer(workingDir string, cfg *v1alpha2.DeployConfig, kubeContext string) *KubectlDeployer {
 	return &KubectlDeployer{
 		DeployConfig: cfg,
+		workingDir:   workingDir,
 		kubeContext:  kubeContext,
 	}
 }
@@ -121,9 +124,8 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-// Not implemented
 func (k *KubectlDeployer) Dependencies() ([]string, error) {
-	return manifestFiles(k.KubectlDeploy.Manifests)
+	return k.manifestFiles(k.KubectlDeploy.Manifests)
 }
 
 // readOrGenerateManifests reads the manifests to deploy/delete. If no manifest exists, try to
@@ -156,8 +158,8 @@ func (k *KubectlDeployer) kubectl(in io.Reader, out io.Writer, arg ...string) er
 	return util.RunCmd(cmd)
 }
 
-func manifestFiles(manifests []string) ([]string, error) {
-	list, err := util.ExpandPathsGlob(manifests)
+func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
+	list, err := util.ExpandPathsGlob(k.workingDir, manifests)
 	if err != nil {
 		return nil, errors.Wrap(err, "expanding kubectl manifest paths")
 	}
@@ -179,14 +181,14 @@ func manifestFiles(manifests []string) ([]string, error) {
 
 // readManifests reads the manifests to deploy/delete.
 func (k *KubectlDeployer) readManifests() (manifestList, error) {
-	files, err := manifestFiles(k.KubectlDeploy.Manifests)
+	files, err := k.manifestFiles(k.KubectlDeploy.Manifests)
 	if err != nil {
 		return nil, errors.Wrap(err, "expanding user manifest list")
 	}
 	var manifests manifestList
 
 	for _, manifest := range files {
-		buf, err := afero.ReadFile(util.Fs, manifest)
+		buf, err := ioutil.ReadFile(manifest)
 		if err != nil {
 			return nil, errors.Wrap(err, "reading manifest")
 		}

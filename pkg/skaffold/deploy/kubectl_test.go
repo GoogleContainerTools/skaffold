@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -28,7 +30,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/pkg/errors"
-	"github.com/spf13/afero"
 )
 
 const testKubeContext = "kubecontext"
@@ -134,11 +135,11 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 	}
 
-	defer func(fs afero.Fs) { util.Fs = fs }(util.Fs)
-	util.Fs = afero.NewMemMapFs()
+	tmp, cleanup := testutil.TempDir(t)
+	defer cleanup()
 
-	util.Fs.MkdirAll("test", 0750)
-	afero.WriteFile(util.Fs, "test/deployment.yaml", []byte(deploymentYAML), 0644)
+	os.MkdirAll(filepath.Join(tmp, "test"), 0750)
+	ioutil.WriteFile(filepath.Join(tmp, "test", "deployment.yaml"), []byte(deploymentYAML), 0644)
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
@@ -147,7 +148,7 @@ func TestKubectlDeploy(t *testing.T) {
 				util.DefaultExecCommand = test.command
 			}
 
-			k := NewKubectlDeployer(test.cfg, testKubeContext)
+			k := NewKubectlDeployer(tmp, test.cfg, testKubeContext)
 			err := k.Deploy(context.Background(), &bytes.Buffer{}, test.builds)
 
 			testutil.CheckError(t, test.shouldErr, err)
@@ -187,11 +188,11 @@ func TestKubectlCleanup(t *testing.T) {
 		},
 	}
 
-	defer func(fs afero.Fs) { util.Fs = fs }(util.Fs)
-	util.Fs = afero.NewMemMapFs()
+	tmp, cleanup := testutil.TempDir(t)
+	defer cleanup()
 
-	util.Fs.MkdirAll("test", 0750)
-	afero.WriteFile(util.Fs, "test/deployment.yaml", []byte(deploymentYAML), 0644)
+	os.MkdirAll(filepath.Join(tmp, "test"), 0750)
+	ioutil.WriteFile(filepath.Join(tmp, "test", "deployment.yaml"), []byte(deploymentYAML), 0644)
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
@@ -200,7 +201,7 @@ func TestKubectlCleanup(t *testing.T) {
 				util.DefaultExecCommand = test.command
 			}
 
-			k := NewKubectlDeployer(test.cfg, testKubeContext)
+			k := NewKubectlDeployer(tmp, test.cfg, testKubeContext)
 			err := k.Cleanup(context.Background(), &bytes.Buffer{})
 
 			testutil.CheckError(t, test.shouldErr, err)

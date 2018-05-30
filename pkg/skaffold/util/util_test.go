@@ -17,10 +17,12 @@ limitations under the License.
 package util
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/spf13/afero"
 )
 
 func TestSupportedKubernetesFormats(t *testing.T) {
@@ -62,13 +64,13 @@ func TestSupportedKubernetesFormats(t *testing.T) {
 }
 
 func TestExpandPathsGlob(t *testing.T) {
-	defer func(fs afero.Fs) { Fs = fs }(Fs)
-	Fs = afero.NewMemMapFs()
+	tmp, cleanup := testutil.TempDir(t)
+	defer cleanup()
 
-	Fs.MkdirAll("dir/sub_dir", 0700)
-	Fs.MkdirAll("dir_b/sub_dir_b", 0700)
-	afero.WriteFile(Fs, "dir_b/sub_dir_b/file", []byte(""), 0650)
-	afero.WriteFile(Fs, "dir/sub_dir/file", []byte(""), 0650)
+	os.MkdirAll(filepath.Join(tmp, "dir", "sub_dir"), 0700)
+	os.MkdirAll(filepath.Join(tmp, "dir_b", "sub_dir_b"), 0700)
+	ioutil.WriteFile(filepath.Join(tmp, "dir_b", "sub_dir_b", "file"), []byte(""), 0650)
+	ioutil.WriteFile(filepath.Join(tmp, "dir", "sub_dir", "file"), []byte(""), 0650)
 
 	var tests = []struct {
 		description string
@@ -79,17 +81,17 @@ func TestExpandPathsGlob(t *testing.T) {
 		{
 			description: "match exact filename",
 			in:          []string{"dir/sub_dir/file"},
-			out:         []string{"dir/sub_dir/file"},
+			out:         []string{filepath.Join(tmp, "dir", "sub_dir", "file")},
 		},
 		{
 			description: "match leaf directory glob",
 			in:          []string{"dir/sub_dir/*"},
-			out:         []string{"dir/sub_dir/file"},
+			out:         []string{filepath.Join(tmp, "dir", "sub_dir", "file")},
 		},
 		{
 			description: "match top level glob",
 			in:          []string{"dir*"},
-			out:         []string{"dir/sub_dir/file", "dir_b/sub_dir_b/file"},
+			out:         []string{filepath.Join(tmp, "dir", "sub_dir", "file"), filepath.Join(tmp, "dir_b", "sub_dir_b", "file")},
 		},
 		{
 			description: "error unmatched glob",
@@ -100,7 +102,8 @@ func TestExpandPathsGlob(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
-			actual, err := ExpandPathsGlob(tt.in)
+			actual, err := ExpandPathsGlob(tmp, tt.in)
+
 			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.out, actual)
 		})
 	}
