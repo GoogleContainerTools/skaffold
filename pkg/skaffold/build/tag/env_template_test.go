@@ -74,7 +74,7 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			c := &EnvTemplateTagger{
+			c := &envTemplateTagger{
 				Template: template.Must(template.New("").Parse(test.template)),
 			}
 			util.OSEnviron = func() []string {

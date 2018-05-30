@@ -24,6 +24,14 @@ build:
     # envTemplate:
     #  template: "{{.RELEASE}}-{{.IMAGE_NAME}}"
 
+    # Tag the image with the build timestamp.
+    #  The format can be overridden with golang formats, see: https://golang.org/pkg/time/#Time.Format
+    #    Default format is "2006-01-02_15-04-05.999_MST
+    #  The timezone is by default the local timezone, this can be overridden, see https://golang.org/pkg/time/#Time.LoadLocation
+    # dateTime:
+    #   format: "2006-01-02"
+    #   timezone: "UTC"
+
   # artifacts is a list of the actual images you're going to be building
   # you can include as many as you want here.
   artifacts:

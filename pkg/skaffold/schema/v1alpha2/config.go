@@ -54,6 +54,7 @@ type TagPolicy struct {
 	GitTagger         *GitTagger         `yaml:"gitCommit"`
 	ShaTagger         *ShaTagger         `yaml:"sha256"`
 	EnvTemplateTagger *EnvTemplateTagger `yaml:"envTemplate"`
+	DateTimeTagger    *DateTimeTagger    `yaml:"dateTime"`
 }
 
 // ShaTagger contains the configuration for the SHA tagger.
@@ -65,6 +66,12 @@ type GitTagger struct{}
 // EnvTemplateTagger contains the configuration for the envTemplate tagger.
 type EnvTemplateTagger struct {
 	Template string `yaml:"template"`
+}
+
+// DateTimeTagger contains the configuration for the DateTime tagger.
+type DateTimeTagger struct {
+	Format string `yaml:"format,omitempty"`
+	TimeZone string `yaml:"timezone,omitempty"`
 }
 
 // BuildType contains the specific implementation and parameters needed
@@ -127,7 +134,7 @@ type HelmRelease struct {
 	SetValues      map[string]string `yaml:"setValues"`
 }
 
-// Artifact represents items that need should be built, along with the context in which
+// Artifact represents items that need to be built, along with the context in which
 // they should be built.
 type Artifact struct {
 	ImageName    string `yaml:"imageName"`
