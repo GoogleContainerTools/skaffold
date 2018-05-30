@@ -47,7 +47,8 @@ func NewHelmDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) *HelmDeploy
 func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Build) error {
 	for _, r := range h.HelmDeploy.Releases {
 		if err := h.deployRelease(out, r, builds); err != nil {
-			return errors.Wrapf(err, "deploying %s", r.Name)
+			releaseName, _ := evaluateReleaseName(r.Name)
+			return errors.Wrapf(err, "deploying %s", releaseName)
 		}
 	}
 	return nil
@@ -62,7 +63,8 @@ func (k *HelmDeployer) Dependencies() ([]string, error) {
 func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	for _, r := range h.HelmDeploy.Releases {
 		if err := h.deleteRelease(out, r); err != nil {
-			return errors.Wrapf(err, "deploying %s", r.Name)
+			releaseName, _ := evaluateReleaseName(r.Name)
+			return errors.Wrapf(err, "deploying %s", releaseName)
 		}
 	}
 	return nil
@@ -80,8 +82,13 @@ func (h *HelmDeployer) helm(out io.Writer, arg ...string) error {
 
 func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, builds []build.Build) error {
 	isInstalled := true
-	if err := h.helm(out, "get", r.Name); err != nil {
-		fmt.Fprintf(out, "Helm release %s not installed. Installing...\n", r.Name)
+
+	releaseName, err := evaluateReleaseName(r.Name)
+	if err != nil {
+		return errors.Wrap(err, "cannot parse the release name template")
+	}
+	if err := h.helm(out, "get", releaseName); err != nil {
+		fmt.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
 		isInstalled = false
 	}
 	params, err := JoinTagsToBuildResult(builds, r.Values)
@@ -103,9 +110,9 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 
 	var args []string
 	if !isInstalled {
-		args = append(args, "install", "--name", r.Name, r.ChartPath)
+		args = append(args, "install", "--name", releaseName, r.ChartPath)
 	} else {
-		args = append(args, "upgrade", r.Name, r.ChartPath)
+		args = append(args, "upgrade", releaseName, r.ChartPath)
 	}
 
 	ns := r.Namespace
@@ -134,9 +141,24 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 }
 
 func (h *HelmDeployer) deleteRelease(out io.Writer, r v1alpha2.HelmRelease) error {
-	if err := h.helm(out, "delete", r.Name, "--purge"); err != nil {
-		logrus.Debugf("deleting release %s: %v\n", r.Name, err)
+	releaseName, err := evaluateReleaseName(r.Name)
+	if err != nil {
+		return errors.Wrap(err, "cannot parse the release name template")
+	}
+
+	if err := h.helm(out, "delete", releaseName, "--purge"); err != nil {
+		logrus.Debugf("deleting release %s: %v\n", releaseName, err)
 	}
 
 	return nil
+}
+
+func evaluateReleaseName(nameTemplate string) (string, error) {
+
+	tmpl, err := util.ParseEnvTemplate(nameTemplate)
+	if err != nil {
+		return "", errors.Wrap(err, "parsing template")
+	}
+
+	return util.ExecuteEnvTemplate(tmpl, nil)
 }
