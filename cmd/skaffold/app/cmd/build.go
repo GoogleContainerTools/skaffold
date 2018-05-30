@@ -18,12 +18,19 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"io"
+	"io/ioutil"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+)
+
+var (
+	quietFlag       bool
+	buildFormatFlag = flags.NewTemplateFlag("{{range .Builds}}{{.ImageName}} -> {{.Tag}}\n{{end}}", BuildOutput{})
 )
 
 // NewCmdBuild describes the CLI command to build artifacts.
@@ -33,14 +40,21 @@ func NewCmdBuild(out io.Writer) *cobra.Command {
 		Short: "Builds the artifacts",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return build(out, filename)
+			return runBuild(out, filename)
 		},
 	}
 	AddRunDevFlags(cmd)
+	cmd.Flags().BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success")
+	cmd.Flags().VarP(buildFormatFlag, "output", "o", buildFormatFlag.Usage())
 	return cmd
 }
 
-func build(out io.Writer, filename string) error {
+// BuildOutput is the output of `skaffold build`.
+type BuildOutput struct {
+	Builds []build.Build
+}
+
+func runBuild(out io.Writer, filename string) error {
 	ctx := context.Background()
 
 	config, err := readConfiguration(filename)
@@ -53,14 +67,19 @@ func build(out io.Writer, filename string) error {
 		return errors.Wrap(err, "creating runner")
 	}
 
-	bRes, err := runner.Build(ctx, out, runner.Tagger, config.Build.Artifacts)
+	buildOut := out
+	if quietFlag {
+		buildOut = ioutil.Discard
+	}
+
+	bRes, err := runner.Build(ctx, buildOut, runner.Tagger, config.Build.Artifacts)
 	if err != nil {
 		return errors.Wrap(err, "build step")
 	}
 
-	for _, build := range bRes {
-		fmt.Fprintln(out, build.ImageName, "->", build.Tag)
+	cmdOut := BuildOutput{Builds: bRes}
+	if err := buildFormatFlag.Template().Execute(out, cmdOut); err != nil {
+		return errors.Wrap(err, "executing template")
 	}
-
-	return err
+	return nil
 }

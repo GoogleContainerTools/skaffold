@@ -17,8 +17,11 @@ limitations under the License.
 package flags
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"text/template"
 
 	"github.com/pkg/errors"
@@ -45,7 +48,7 @@ func (t *TemplateFlag) Usage() string {
 }
 
 func (t *TemplateFlag) Set(value string) error {
-	tmpl, err := template.New("flagtemplate").Parse(value)
+	tmpl, err := parseTemplate(value)
 	if err != nil {
 		return errors.Wrap(err, "setting template flag")
 	}
@@ -64,8 +67,26 @@ func (t *TemplateFlag) Template() *template.Template {
 
 func NewTemplateFlag(value string, context interface{}) *TemplateFlag {
 	return &TemplateFlag{
-		template:    template.Must(template.New("flagtemplate").Parse(value)),
+		template:    template.Must(parseTemplate(value)),
 		rawTemplate: value,
 		context:     context,
 	}
+}
+
+func parseTemplate(value string) (*template.Template, error) {
+	var funcs = template.FuncMap{
+		"json": func(v interface{}) string {
+			buf := &bytes.Buffer{}
+			enc := json.NewEncoder(buf)
+			enc.SetEscapeHTML(false)
+			enc.Encode(v)
+			return strings.TrimSpace(buf.String())
+		},
+		"join":  strings.Join,
+		"title": strings.Title,
+		"lower": strings.ToLower,
+		"upper": strings.ToUpper,
+	}
+
+	return template.New("flagtemplate").Funcs(funcs).Parse(value)
 }
