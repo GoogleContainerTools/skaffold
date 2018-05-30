@@ -21,6 +21,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -47,22 +49,6 @@ func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
 }
 func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { return nil, nil }
 
-var testImage1 = &v1alpha2.Artifact{
-	ImageName: "gcr.io/test/image",
-	Workspace: "../../../testdata/docker",
-	ArtifactType: v1alpha2.ArtifactType{
-		DockerArtifact: &v1alpha2.DockerArtifact{},
-	},
-}
-
-var testImage2 = &v1alpha2.Artifact{
-	ImageName: "gcr.io/test/image2",
-	Workspace: "../../../testdata/docker",
-	ArtifactType: v1alpha2.ArtifactType{
-		DockerArtifact: &v1alpha2.DockerArtifact{},
-	},
-}
-
 func TestLocalRun(t *testing.T) {
 	defer func(h docker.AuthConfigHelper) { docker.DefaultAuthHelper = h }(docker.DefaultAuthHelper)
 	docker.DefaultAuthHelper = testAuthHelper{}
@@ -71,6 +57,12 @@ func TestLocalRun(t *testing.T) {
 	// present on the host
 	unsetEnvs := testutil.SetEnvs(t, map[string]string{"KUBECONFIG": "badpath"})
 	defer unsetEnvs(t)
+
+	tmp, cleanup := testutil.TempDir(t)
+	defer cleanup()
+
+	ioutil.WriteFile(filepath.Join(tmp, "Dockerfile"), []byte(""), 0640)
+
 	var tests = []struct {
 		description  string
 		config       *v1alpha2.BuildConfig
@@ -87,7 +79,13 @@ func TestLocalRun(t *testing.T) {
 			out:         &bytes.Buffer{},
 			config: &v1alpha2.BuildConfig{
 				Artifacts: []*v1alpha2.Artifact{
-					testImage1,
+					{
+						ImageName: "gcr.io/test/image",
+						Workspace: tmp,
+						ArtifactType: v1alpha2.ArtifactType{
+							DockerArtifact: &v1alpha2.DockerArtifact{},
+						},
+					},
 				},
 				BuildType: v1alpha2.BuildType{
 					LocalBuild: &v1alpha2.LocalBuild{
@@ -101,7 +99,13 @@ func TestLocalRun(t *testing.T) {
 				{
 					ImageName: "gcr.io/test/image",
 					Tag:       "gcr.io/test/image:imageid",
-					Artifact:  testImage1,
+					Artifact: &v1alpha2.Artifact{
+						ImageName: "gcr.io/test/image",
+						Workspace: tmp,
+						ArtifactType: v1alpha2.ArtifactType{
+							DockerArtifact: &v1alpha2.DockerArtifact{},
+						},
+					},
 				},
 			},
 		},
@@ -112,14 +116,14 @@ func TestLocalRun(t *testing.T) {
 				Artifacts: []*v1alpha2.Artifact{
 					{
 						ImageName: "gcr.io/test/image",
-						Workspace: "../../../testdata/docker",
+						Workspace: tmp,
 						ArtifactType: v1alpha2.ArtifactType{
 							DockerArtifact: &v1alpha2.DockerArtifact{},
 						},
 					},
 					{
 						ImageName: "gcr.io/test/image2",
-						Workspace: "../../../testdata/docker",
+						Workspace: tmp,
 						ArtifactType: v1alpha2.ArtifactType{
 							DockerArtifact: &v1alpha2.DockerArtifact{},
 						},
@@ -135,7 +139,7 @@ func TestLocalRun(t *testing.T) {
 			artifacts: []*v1alpha2.Artifact{
 				{
 					ImageName: "gcr.io/test/image",
-					Workspace: "../../../testdata/docker",
+					Workspace: tmp,
 					ArtifactType: v1alpha2.ArtifactType{
 						DockerArtifact: &v1alpha2.DockerArtifact{},
 					},
@@ -146,7 +150,13 @@ func TestLocalRun(t *testing.T) {
 				{
 					ImageName: "gcr.io/test/image",
 					Tag:       "gcr.io/test/image:imageid",
-					Artifact:  testImage1,
+					Artifact: &v1alpha2.Artifact{
+						ImageName: "gcr.io/test/image",
+						Workspace: tmp,
+						ArtifactType: v1alpha2.ArtifactType{
+							DockerArtifact: &v1alpha2.DockerArtifact{},
+						},
+					},
 				},
 			},
 		},
