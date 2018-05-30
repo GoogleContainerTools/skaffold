@@ -70,7 +70,7 @@ type EnvTemplateTagger struct {
 
 // DateTimeTagger contains the configuration for the DateTime tagger.
 type DateTimeTagger struct {
-	Format string `yaml:"format,omitempty"`
+	Format   string `yaml:"format,omitempty"`
 	TimeZone string `yaml:"timezone,omitempty"`
 }
 

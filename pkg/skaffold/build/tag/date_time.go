@@ -19,8 +19,9 @@ package tag
 import (
 	"fmt"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"time"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 const tagTime = "2006-01-02_15-04-05.999_MST"
@@ -35,9 +36,9 @@ type dateTimeTagger struct {
 
 func NewDateTimeTagger(format, timezone string) (*dateTimeTagger, error) {
 	return &dateTimeTagger{
-		Format: format,
+		Format:   format,
 		TimeZone: timezone,
-		Clock:  &util.RealClock{},
+		Clock:    &util.RealClock{},
 	}, nil
 }
 

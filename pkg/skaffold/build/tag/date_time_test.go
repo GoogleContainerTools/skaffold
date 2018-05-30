@@ -31,8 +31,6 @@ func (m mockClock) Now() time.Time {
 	return m.time
 }
 
-
-
 func TestDateTime_GenerateFullyQualifiedImageName(t *testing.T) {
 	aLocalTimeStamp := time.Date(2015, 03, 07, 11, 06, 39, 123456789, time.Local)
 	localZone, _ := aLocalTimeStamp.Zone()
@@ -58,7 +56,7 @@ func TestDateTime_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description: "user provided timezone",
-			buildTime:   time.Unix(1234,123456789),
+			buildTime:   time.Unix(1234, 123456789),
 			timezone:    "UTC",
 			opts: &TagOptions{
 				ImageName: "test_image",
@@ -84,7 +82,7 @@ func TestDateTime_GenerateFullyQualifiedImageName(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 
 			c := &dateTimeTagger{
-				Format: test.format,
+				Format:   test.format,
 				TimeZone: test.timezone,
 				Clock: &mockClock{
 					time: test.buildTime,
