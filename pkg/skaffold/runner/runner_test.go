@@ -36,12 +36,12 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-type TestBuildAll struct {
+type TestBuilder struct {
 	built  []build.Build
 	errors []error
 }
 
-func (t *TestBuildAll) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Build, error) {
+func (t *TestBuilder) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Build, error) {
 	if len(t.errors) > 0 {
 		err := t.errors[0]
 		t.errors = t.errors[1:]
@@ -102,16 +102,6 @@ func (t *TestWatcher) Start(context context.Context, out io.Writer, onChange fun
 		onChange(change)
 	}
 	return nil
-}
-
-type TestChanges struct {
-	changes [][]*v1alpha2.Artifact
-}
-
-func (t *TestChanges) OnChange(action func(artifacts []*v1alpha2.Artifact)) {
-	for _, artifacts := range t.changes {
-		action(artifacts)
-	}
 }
 
 func TestNewForConfig(t *testing.T) {
@@ -222,13 +212,13 @@ func TestRun(t *testing.T) {
 		{
 			description: "run no error",
 			config:      &v1alpha2.SkaffoldConfig{},
-			builder:     &TestBuildAll{},
+			builder:     &TestBuilder{},
 			deployer:    &TestDeployer{},
 		},
 		{
 			description: "run build error",
 			config:      &v1alpha2.SkaffoldConfig{},
-			builder: &TestBuildAll{
+			builder: &TestBuilder{
 				errors: []error{fmt.Errorf("")},
 			},
 			shouldErr: true,
@@ -244,7 +234,7 @@ func TestRun(t *testing.T) {
 					},
 				},
 			},
-			builder: &TestBuildAll{},
+			builder: &TestBuilder{},
 			deployer: &TestDeployer{
 				err: fmt.Errorf(""),
 			},
@@ -278,7 +268,7 @@ func TestDev(t *testing.T) {
 	}{
 		{
 			description: "fails to build the first time",
-			builder: &TestBuildAll{
+			builder: &TestBuilder{
 				errors: []error{fmt.Errorf("")},
 			},
 			watcherFactory: NewWatcherFactory(nil),
@@ -286,14 +276,14 @@ func TestDev(t *testing.T) {
 		},
 		{
 			description: "ignore subsequent build errors",
-			builder: &TestBuildAll{
+			builder: &TestBuilder{
 				errors: []error{nil, fmt.Errorf("")},
 			},
 			watcherFactory: NewWatcherFactory(nil, nil),
 		},
 		{
 			description:    "bad watch dev mode",
-			builder:        &TestBuildAll{},
+			builder:        &TestBuilder{},
 			watcherFactory: NewWatcherFactory(fmt.Errorf("")),
 			shouldErr:      true,
 		},
@@ -320,7 +310,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	kubernetesClient = fakeGetClient
 	defer resetClient()
 
-	builder := &TestBuildAll{}
+	builder := &TestBuilder{}
 	deployer := &TestDeployer{}
 	artifacts := []*v1alpha2.Artifact{
 		{ImageName: "image1"},
