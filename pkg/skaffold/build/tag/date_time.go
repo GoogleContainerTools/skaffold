@@ -18,10 +18,7 @@ package tag
 
 import (
 	"fmt"
-
 	"time"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 const tagTime = "2006-01-02_15-04-05.999_MST"
@@ -31,14 +28,14 @@ const tagTime = "2006-01-02_15-04-05.999_MST"
 type dateTimeTagger struct {
 	Format   string
 	TimeZone string
-	Clock    util.Clock
+	timeFn   func() time.Time
 }
 
 func NewDateTimeTagger(format, timezone string) (*dateTimeTagger, error) {
 	return &dateTimeTagger{
 		Format:   format,
 		TimeZone: timezone,
-		Clock:    &util.RealClock{},
+		timeFn:   func() time.Time { return time.Now() },
 	}, nil
 }
 
@@ -47,8 +44,6 @@ func (tagger *dateTimeTagger) GenerateFullyQualifiedImageName(workingDir string,
 	if opts == nil {
 		return "", fmt.Errorf("tag options not provided")
 	}
-
-	c := tagger.Clock
 
 	format := tagTime
 	if len(tagger.Format) > 0 {
@@ -65,5 +60,5 @@ func (tagger *dateTimeTagger) GenerateFullyQualifiedImageName(workingDir string,
 		return "", fmt.Errorf("bad timezone provided: \"%s\", error: %s", timezone, err)
 	}
 
-	return opts.ImageName + ":" + c.Now().In(loc).Format(format), nil
+	return fmt.Sprintf("%s:%s", opts.ImageName, tagger.timeFn().In(loc).Format(format)), nil
 }

@@ -84,9 +84,7 @@ func TestDateTime_GenerateFullyQualifiedImageName(t *testing.T) {
 			c := &dateTimeTagger{
 				Format:   test.format,
 				TimeZone: test.timezone,
-				Clock: &mockClock{
-					time: test.buildTime,
-				},
+				timeFn:   func() time.Time { return test.buildTime },
 			}
 			tag, err := c.GenerateFullyQualifiedImageName(".", test.opts)
 
