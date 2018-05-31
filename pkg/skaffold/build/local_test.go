@@ -69,9 +69,9 @@ func TestLocalRun(t *testing.T) {
 		out          io.Writer
 		api          docker.DockerAPIClient
 		tagger       tag.Tagger
-		localCluster bool
 		artifacts    []*v1alpha2.Artifact
 		expected     []Build
+		localCluster bool
 		shouldErr    bool
 	}{
 		{

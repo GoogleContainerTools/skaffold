@@ -30,7 +30,7 @@ type envTemplateTagger struct {
 }
 
 // NewEnvTemplateTagger creates a new envTemplateTagger
-func NewEnvTemplateTagger(t string) (*envTemplateTagger, error) {
+func NewEnvTemplateTagger(t string) (Tagger, error) {
 	tmpl, err := util.ParseEnvTemplate(t)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing template")

@@ -141,7 +141,7 @@ func getTagger(t v1alpha2.TagPolicy, customTag string) (tag.Tagger, error) {
 		return &tag.GitCommit{}, nil
 
 	case t.DateTimeTagger != nil:
-		return tag.NewDateTimeTagger(t.DateTimeTagger.Format, t.DateTimeTagger.TimeZone)
+		return tag.NewDateTimeTagger(t.DateTimeTagger.Format, t.DateTimeTagger.TimeZone), nil
 
 	default:
 		return nil, fmt.Errorf("Unknown tagger for strategy %+v", t)

@@ -60,12 +60,12 @@ func TestEnvTemplate_ExecuteEnvTemplate(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			test_template := template.Must(template.New("").Parse(test.template))
+			testTemplate := template.Must(template.New("").Parse(test.template))
 			OSEnviron = func() []string {
 				return test.env
 			}
 
-			got, err := ExecuteEnvTemplate(test_template, test.customMap)
+			got, err := ExecuteEnvTemplate(testTemplate, test.customMap)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.want, got)
 		})
 	}

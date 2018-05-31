@@ -23,14 +23,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-type mockClock struct {
-	time time.Time
-}
-
-func (m mockClock) Now() time.Time {
-	return m.time
-}
-
 func TestDateTime_GenerateFullyQualifiedImageName(t *testing.T) {
 	aLocalTimeStamp := time.Date(2015, 03, 07, 11, 06, 39, 123456789, time.Local)
 	localZone, _ := aLocalTimeStamp.Zone()
