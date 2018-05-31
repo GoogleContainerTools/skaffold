@@ -23,8 +23,6 @@ import (
 
 // ChecksumTagger tags an image by the sha256 of the image tarball
 type ChecksumTagger struct {
-	ImageName string
-	Checksum  string
 }
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the sha256 checksum of the image

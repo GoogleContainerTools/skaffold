@@ -24,24 +24,24 @@ import (
 	"github.com/pkg/errors"
 )
 
-// EnvTemplateTagger implements Tag
-type EnvTemplateTagger struct {
+// envTemplateTagger implements Tagger
+type envTemplateTagger struct {
 	Template *template.Template
 }
 
-// NewEnvTemplateTagger creates a new EnvTemplateTagger
-func NewEnvTemplateTagger(t string) (*EnvTemplateTagger, error) {
+// NewEnvTemplateTagger creates a new envTemplateTagger
+func NewEnvTemplateTagger(t string) (*envTemplateTagger, error) {
 	tmpl, err := util.ParseEnvTemplate(t)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing template")
 	}
-	return &EnvTemplateTagger{
+	return &envTemplateTagger{
 		Template: tmpl,
 	}, nil
 }
 
 // GenerateFullyQualifiedImageName tags an image with the custom tag
-func (c *EnvTemplateTagger) GenerateFullyQualifiedImageName(workingDir string, opts *TagOptions) (string, error) {
+func (c *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir string, opts *TagOptions) (string, error) {
 	customMap := map[string]string{}
 
 	customMap["IMAGE_NAME"] = opts.ImageName

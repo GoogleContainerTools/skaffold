@@ -49,7 +49,7 @@ func CheckErrorAndDeepEqual(t *testing.T, shouldErr bool, err error, expected, a
 		t.Error(err)
 		return
 	}
-	if diff := cmp.Diff(expected, actual); diff != "" {
+	if diff := cmp.Diff(actual, expected); diff != "" {
 		t.Errorf("%T differ (-got, +want): %s", expected, diff)
 		return
 	}
