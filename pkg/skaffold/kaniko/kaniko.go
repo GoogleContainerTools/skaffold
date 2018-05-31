@@ -40,6 +40,7 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 	if err := docker.UploadContextToGCS(ctx, dockerfilePath, artifact.Workspace, cfg.GCSBucket, tarName); err != nil {
 		return "", errors.Wrap(err, "uploading tar to gcs")
 	}
+
 	client, err := kubernetes.GetClientset()
 	if err != nil {
 		return "", errors.Wrap(err, "")
@@ -49,7 +50,7 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 	imageList.AddImage(constants.DefaultKanikoImage)
 
 	logger := kubernetes.NewLogAggregator(out, imageList, kubernetes.NewColorPicker([]*v1alpha2.Artifact{artifact}))
-	if err := logger.Start(ctx, client.CoreV1()); err != nil {
+	if err := logger.Start(ctx); err != nil {
 		return "", errors.Wrap(err, "starting log streamer")
 	}
 	imageDst := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)

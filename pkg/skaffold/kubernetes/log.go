@@ -33,6 +33,9 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
+// Client is for tests
+var Client = GetClientset
+
 // LogAggregator aggregates the logs for all the deployed pods.
 type LogAggregator struct {
 	output      io.Writer
@@ -56,7 +59,14 @@ func NewLogAggregator(out io.Writer, podSelector PodSelector, colorPicker ColorP
 	}
 }
 
-func (a *LogAggregator) Start(ctx context.Context, client corev1.CoreV1Interface) error {
+func (a *LogAggregator) Start(ctx context.Context) error {
+	// Start logs
+	kubeclient, err := Client()
+	if err != nil {
+		return errors.Wrap(err, "getting k8s client")
+	}
+	client := kubeclient.CoreV1()
+
 	a.startTime = time.Now()
 
 	watcher, err := client.Pods("").Watch(meta_v1.ListOptions{
