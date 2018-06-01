@@ -29,13 +29,13 @@ import (
 	"github.com/google/go-containerregistry/v1"
 )
 
-const copyDockerfile = `
+const copyServerGo = `
 FROM ubuntu:14.04
 COPY server.go .
 CMD server.go
 `
 
-const addDockerfile = `
+const addNginx = `
 FROM nginx
 ADD nginx.conf /etc/nginx
 CMD nginx
@@ -90,11 +90,6 @@ COPY . /files
 CMD nginx
 `
 
-const dockerIgnore = `
-bar
-docker/*
-`
-
 // This has an ONBUILD instruction of "COPY . /go/src/app"
 const onbuild = `
 FROM golang:onbuild
@@ -140,10 +135,10 @@ func mockRetrieveImage(image string) (*v1.ConfigFile, error) {
 
 func TestGetDockerfileDependencies(t *testing.T) {
 	var tests = []struct {
-		description  string
-		dockerfile   string
-		workspace    string
-		dockerIgnore bool
+		description string
+		dockerfile  string
+		workspace   string
+		ignore      string
 
 		expected  []string
 		badReader bool
@@ -151,13 +146,13 @@ func TestGetDockerfileDependencies(t *testing.T) {
 	}{
 		{
 			description: "copy dependency",
-			dockerfile:  copyDockerfile,
+			dockerfile:  copyServerGo,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "server.go"},
 		},
 		{
 			description: "add dependency",
-			dockerfile:  addDockerfile,
+			dockerfile:  addNginx,
 			workspace:   "docker",
 			expected:    []string{"Dockerfile", "nginx.conf"},
 		},
@@ -197,25 +192,32 @@ func TestGetDockerfileDependencies(t *testing.T) {
 			expected:    []string{"Dockerfile", "file", "server.go"},
 		},
 		{
-			description:  "dockerignore test",
-			dockerfile:   copyDirectory,
-			dockerIgnore: true,
-			workspace:    ".",
-			expected:     []string{"Dockerfile", "file", "server.go", "test.conf", "worker.go"},
+			description: "dockerignore test",
+			dockerfile:  copyDirectory,
+			ignore:      "bar\ndocker/*",
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "file", "server.go", "test.conf", "worker.go"},
 		},
 		{
-			description:  "dockerignore with non canonical workspace",
-			dockerfile:   contextDockerfile,
-			workspace:    "docker/../docker",
-			dockerIgnore: true,
-			expected:     []string{"Dockerfile", "nginx.conf"},
+			description: "dockerignore dockerfile",
+			dockerfile:  copyServerGo,
+			ignore:      "Dockerfile",
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "server.go"},
 		},
 		{
-			description:  "dockerignore with context in parent directory",
-			dockerfile:   contextDockerfile,
-			workspace:    "docker/..",
-			dockerIgnore: true,
-			expected:     []string{"Dockerfile", "file", "server.go", "test.conf", "worker.go"},
+			description: "dockerignore with non canonical workspace",
+			dockerfile:  contextDockerfile,
+			workspace:   "docker/../docker",
+			ignore:      "bar\ndocker/*",
+			expected:    []string{"Dockerfile", "nginx.conf"},
+		},
+		{
+			description: "dockerignore with context in parent directory",
+			dockerfile:  contextDockerfile,
+			workspace:   "docker/..",
+			ignore:      "bar\ndocker/*",
+			expected:    []string{"Dockerfile", "file", "server.go", "test.conf", "worker.go"},
 		},
 		{
 			description: "onbuild test",
@@ -251,8 +253,8 @@ func TestGetDockerfileDependencies(t *testing.T) {
 				ioutil.WriteFile(filepath.Join(workspace, "Dockerfile"), []byte(test.dockerfile), 0644)
 			}
 
-			if test.dockerIgnore {
-				ioutil.WriteFile(filepath.Join(workspace, ".dockerignore"), []byte(dockerIgnore), 0644)
+			if test.ignore != "" {
+				ioutil.WriteFile(filepath.Join(workspace, ".dockerignore"), []byte(test.ignore), 0644)
 			}
 
 			deps, err := GetDockerfileDependencies("Dockerfile", workspace)

@@ -166,14 +166,8 @@ func GetDockerfileDependencies(dockerfilePath, workspace string) ([]string, erro
 		})
 	}
 
-	// Add dockerfile?
-	m, err := fileutils.Matches(dockerfilePath, excludes)
-	if err != nil {
-		return nil, err
-	}
-	if !m {
-		files[dockerfilePath] = true
-	}
+	// Always add dockerfile even if it's .dockerignored. The daemon will need it anyways.
+	files[dockerfilePath] = true
 
 	// Ignore .dockerignore
 	delete(files, ".dockerignore")
