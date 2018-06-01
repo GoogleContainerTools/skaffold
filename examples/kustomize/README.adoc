@@ -1,0 +1,30 @@
+=== Example: kustomize
+:icons: font
+
+This is an example demonstrating how skaffold can work with kustomize with the `skaffold deploy` command.
+
+ifndef::env-github[]
+==== Example files
+link:{github-repo-tree}/examples/kustomize[see on Github icon:github[]]
+
+[source,yaml, indent=3, title=skaffold.yaml]
+----
+include::skaffold.yaml[]
+----
+
+[source,yaml, indent=3, title=kustomization.yaml]
+----
+include::kustomization.yaml[]
+----
+
+[source,patch, indent=3, title=patch.yaml]
+----
+include::patch.yaml[]
+----
+
+[source,patch, indent=3, title=deployment.yaml]
+----
+include::deployment.yaml[]
+----
+
+endif::[]

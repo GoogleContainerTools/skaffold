@@ -1,4 +1,9 @@
-## µSvcs with Skaffold
+=== Example: µSvcs with Skaffold
+:icons: font
+
+ifndef::env-github[]
+link:{github-repo-tree}/examples/microservices[see on Github icon:github[]]
+endif::[]
 
 In this example:
 
@@ -6,11 +11,13 @@ In this example:
 * In development, only rebuild and redeploy the artifacts that have changed
 * Deploy multiple applications outside the working directory
 
-In the real world, Kubernetes deployments will consist of multiple applications that work together. In this example, we'll walk through using skaffold to develop and deploy two applications, an exposed "web" frontend which calls an unexposed "app" backend.
+In the real world, Kubernetes deployments will consist of multiple applications that work together.
+In this example, we'll walk through using skaffold to develop and deploy two applications, an exposed "web" frontend which calls an unexposed "app" backend.
 
-**WARNING:** *If you're running this on a cloud cluster, this example will create a service and expose a webserver. It's highly suggested that you only run this example on a local, private cluster like minikube or Kubernetes in Docker for Desktop.*
+**WARNING:** *If you're running this on a cloud cluster, this example will create a service and expose a webserver.
+It's highly suggested that you only run this example on a local, private cluster like minikube or Kubernetes in Docker for Desktop.*
 
-## Running the example on minikube
+==== Running the example on minikube
 
 From this directory, run
 
@@ -25,7 +32,8 @@ $ curl $(minikube service leeroy-web --url)
 leeroooooy app!
 ```
 
-Now, let's change the message in `leeroy-app` without changing `leeroy-web`. Add a few exclamations points because this is exhilarating stuff.
+Now, let's change the message in `leeroy-app` without changing `leeroy-web`.
+Add a few exclamations points because this is exhilarating stuff.
 
 In `leeroy-app/app.go`, change the message here
 
@@ -46,7 +54,7 @@ $ curl $(minikube service leeroy-web --url)
 leeroooooy app!!!
 ```
 
-## Configuration walkthrough
+==== Configuration walkthrough
 
 Let's walk through the first part of the skaffold.yaml
 
@@ -72,3 +80,4 @@ deploy:
     - ./leeroy-web/kubernetes/*
     - ./leeroy-app/kubernetes/*
 ```
+

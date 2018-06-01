@@ -1,13 +1,18 @@
+# using default substitutions, provided by Google Container Builder
+# see: https://cloud.google.com/container-builder/docs/configuring-builds/substitute-variable-values#using_default_substitutions
 steps:
 # Build the container that will do the go build.
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'gcr.io/k8s-skaffold/skaffold:$TAG_NAME', '-f', 'deploy/skaffold/Dockerfile', '.']
 # Do the go build.
   - name: 'gcr.io/k8s-skaffold/skaffold:$TAG_NAME'
-    args: ['make', 'cross']
+    args: ['make', 'cross', 'docs']
 # Upload to GCS.
   - name: 'gcr.io/cloud-builders/gsutil'
     args: ['cp', '-r', 'out/skaffold-*', 'gs://skaffold/releases/$TAG_NAME/']
+# Upload docs to GCS.
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args: ['cp', '-r', 'docs/generated/*', 'gs://skaffold/releases/$TAG_NAME/docs/']
 # Bump the latest build
 # Upload to GCS.
   - name: 'gcr.io/cloud-builders/gsutil'

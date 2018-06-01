@@ -36,11 +36,12 @@ SUPPORTED_PLATFORMS := linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
 BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
 VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
+COMMIT = $(shell git rev-parse HEAD)
 
 GO_LDFLAGS :="
 GO_LDFLAGS += -X $(VERSION_PACKAGE).version=$(VERSION)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).buildDate=$(shell date +'%Y-%m-%dT%H:%M:%SZ')
-GO_LDFLAGS += -X $(VERSION_PACKAGE).gitCommit=$(shell git rev-parse HEAD)
+GO_LDFLAGS += -X $(VERSION_PACKAGE).gitCommit=$(COMMIT)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).gitTreeState=$(if $(shell git status --porcelain),dirty,clean)
 GO_LDFLAGS +="
 
@@ -103,3 +104,25 @@ integration-in-docker:
 		-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
 		gcr.io/$(GCP_PROJECT)/skaffold-integration
 
+.PHONY: docs
+docs:
+	rm -rf docs/generated
+	mkdir -p docs/generated
+	cp -R docs/css docs/generated/
+	docker run -v $(PWD):/documents/ asciidoctor/docker-asciidoctor \
+		asciidoctor \
+		-a version="$(VERSION)" \
+		-a commit="$(COMMIT)" \
+		-a data-uri \
+		-d book \
+		-D docs/generated/ \
+		docs/index.adoc
+	docker run -v $(PWD):/documents/ asciidoctor/docker-asciidoctor \
+		asciidoctor-pdf \
+		-a version="$(VERSION)" \
+		-a commit="$(COMMIT)" \
+		-a allow-uri-read \
+		-d book \
+		-a pdf \
+		-D docs/generated/ \
+		docs/index.adoc
