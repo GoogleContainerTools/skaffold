@@ -27,7 +27,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/google/go-containerregistry/v1"
 
 	"github.com/docker/docker/builder/dockerignore"
@@ -48,12 +47,6 @@ const (
 
 // For testing.
 var RetrieveImage = retrieveImage
-
-type DockerfileDepResolver struct{}
-
-func (d *DockerfileDepResolver) GetDependencies(a *v1alpha2.Artifact) ([]string, error) {
-	return GetDockerfileDependencies(a.DockerArtifact.DockerfilePath, a.Workspace)
-}
 
 func readDockerfile(workspace, dockerfilePath string) ([]string, error) {
 	path := filepath.Join(workspace, dockerfilePath)
@@ -114,7 +107,7 @@ func readDockerfile(workspace, dockerfilePath string) ([]string, error) {
 	return deps, nil
 }
 
-func GetDockerfileDependencies(dockerfilePath, workspace string) ([]string, error) {
+func GetDependencies(dockerfilePath, workspace string) ([]string, error) {
 	deps, err := readDockerfile(workspace, dockerfilePath)
 	if err != nil {
 		return nil, err

@@ -26,11 +26,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-type BazelDependencyResolver struct{}
-
 const sourceQuery = "kind('source file', deps('%s'))"
 
-func (*BazelDependencyResolver) GetDependencies(a *v1alpha2.Artifact) ([]string, error) {
+func GetDependencies(a *v1alpha2.Artifact) ([]string, error) {
 	cmd := exec.Command("bazel", "query", fmt.Sprintf(sourceQuery, a.BazelArtifact.BuildTarget), "--noimplicit_deps", "--order_output=no")
 	cmd.Dir = a.Workspace
 	stdout, err := util.RunCmdOut(cmd)

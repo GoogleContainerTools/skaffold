@@ -26,7 +26,7 @@ import (
 )
 
 func CreateDockerTarContext(w io.Writer, dockerfilePath, context string) error {
-	paths, err := GetDockerfileDependencies(dockerfilePath, context)
+	paths, err := GetDependencies(dockerfilePath, context)
 	if err != nil {
 		return errors.Wrap(err, "getting relative tar paths")
 	}
@@ -37,7 +37,7 @@ func CreateDockerTarContext(w io.Writer, dockerfilePath, context string) error {
 }
 
 func CreateDockerTarGzContext(w io.Writer, dockerfilePath, context string) error {
-	paths, err := GetDockerfileDependencies(dockerfilePath, context)
+	paths, err := GetDependencies(dockerfilePath, context)
 	if err != nil {
 		return errors.Wrap(err, "getting relative tar paths")
 	}

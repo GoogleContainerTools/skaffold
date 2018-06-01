@@ -133,7 +133,7 @@ func mockRetrieveImage(image string) (*v1.ConfigFile, error) {
 	return nil, fmt.Errorf("No image found for %s", image)
 }
 
-func TestGetDockerfileDependencies(t *testing.T) {
+func TestGetDependencies(t *testing.T) {
 	var tests = []struct {
 		description string
 		dockerfile  string
@@ -257,7 +257,7 @@ func TestGetDockerfileDependencies(t *testing.T) {
 				ioutil.WriteFile(filepath.Join(workspace, ".dockerignore"), []byte(test.ignore), 0644)
 			}
 
-			deps, err := GetDockerfileDependencies("Dockerfile", workspace)
+			deps, err := GetDependencies("Dockerfile", workspace)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
 		})
 	}

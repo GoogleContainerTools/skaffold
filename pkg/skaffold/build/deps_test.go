@@ -16,27 +16,30 @@ limitations under the License.
 package build
 
 import (
+	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-type FakeDependencyResolver struct {
-	deps []string
-}
+func fakeDependenciesForArtifact(a *v1alpha2.Artifact) ([]string, error) {
+	if a.DockerArtifact != nil {
+		return []string{"Dockerfile", filepath.Join("vendor", "file")}, nil
+	}
+	if a.BazelArtifact != nil {
+		return []string{"bazelfile", filepath.Join(".git", "config")}, nil
+	}
 
-func (f *FakeDependencyResolver) GetDependencies(a *v1alpha2.Artifact) ([]string, error) {
-	return f.deps, nil
+	return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
 }
 
 func TestPaths(t *testing.T) {
 	var tests = []struct {
-		description    string
-		artifacts      []*v1alpha2.Artifact
-		dockerResolver DependencyResolver
-		bazelResolver  DependencyResolver
-		expected       []string
+		description string
+		artifacts   []*v1alpha2.Artifact
+		expected    []string
 	}{
 		{
 			description: "correct deps from dockerfile",
@@ -48,30 +51,26 @@ func TestPaths(t *testing.T) {
 					},
 				},
 			},
-			dockerResolver: &FakeDependencyResolver{deps: []string{"Dockerfile"}},
-			expected:       []string{"Dockerfile"},
+			expected: []string{"Dockerfile"},
 		},
 		{
 			description: "correct deps from bazel",
 			artifacts: []*v1alpha2.Artifact{
 				{
-					Workspace: ".",
+					Workspace: "project",
 					ArtifactType: v1alpha2.ArtifactType{
 						BazelArtifact: &v1alpha2.BazelArtifact{},
 					},
 				},
 			},
-			bazelResolver: &FakeDependencyResolver{deps: []string{"bazelfile"}},
-			expected:      []string{"bazelfile"},
+			expected: []string{filepath.Join("project", "bazelfile")},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			defer func(r DependencyResolver) { DefaultDockerfileDepResolver = r }(DefaultDockerfileDepResolver)
-			defer func(r DependencyResolver) { DefaultBazelDepResolver = r }(DefaultBazelDepResolver)
-			DefaultDockerfileDepResolver = test.dockerResolver
-			DefaultBazelDepResolver = test.bazelResolver
+			DependenciesForArtifact = fakeDependenciesForArtifact
+			defer func() { DependenciesForArtifact = dependenciesForArtifact }()
 
 			m, err := NewDependencyMap(test.artifacts)
 
