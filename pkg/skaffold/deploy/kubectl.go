@@ -300,6 +300,7 @@ func (l *manifestList) replaceImages(builds []build.Build) (manifestList, error)
 		}
 
 		recursiveReplaceImage(m, replacements)
+		addSkaffoldLabels(m)
 
 		updatedManifest, err := yaml.Marshal(m)
 		if err != nil {
@@ -318,6 +319,21 @@ func (l *manifestList) replaceImages(builds []build.Build) (manifestList, error)
 	logrus.Debugln("manifests with tagged images", updatedManifests.String())
 
 	return updatedManifests, nil
+}
+
+func addSkaffoldLabels(m map[interface{}]interface{}) {
+	metadata, ok := m["metadata"].(map[interface{}]interface{})
+	if !ok {
+		return
+	}
+
+	if metadata["labels"] == nil {
+		metadata["labels"] = make(map[interface{}]interface{})
+	}
+
+	if labels, ok := metadata["labels"].(map[interface{}]interface{}); ok {
+		labels["skaffold"] = "true"
+	}
 }
 
 func recursiveReplaceImage(i interface{}, replacements map[string]*replacement) {
