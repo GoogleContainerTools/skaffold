@@ -135,6 +135,9 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 			setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v))
 		}
 	}
+	if r.Wait {
+		args = append(args, "--wait")
+	}
 	args = append(args, setOpts...)
 
 	return h.helm(out, args...)
