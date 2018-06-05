@@ -62,7 +62,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 		return nil, errors.Wrap(err, "parsing skaffold build config")
 	}
 
-	deployer, err := getDeployer(&cfg.Deploy, kubeContext)
+	deployer, err := getDeployer(&cfg.Deploy, kubeContext, opts.Namespace)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold deploy config")
 	}
@@ -106,7 +106,7 @@ func getBuilder(cfg *v1alpha2.BuildConfig, kubeContext string) (build.Builder, e
 	}
 }
 
-func getDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) (deploy.Deployer, error) {
+func getDeployer(cfg *v1alpha2.DeployConfig, kubeContext string, namespace string) (deploy.Deployer, error) {
 	switch {
 	case cfg.KubectlDeploy != nil:
 		// TODO(dgageot): this should be the folder containing skaffold.yaml. Should also be moved elsewhere.
@@ -117,7 +117,7 @@ func getDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) (deploy.Deploye
 		return deploy.NewKubectlDeployer(cwd, cfg, kubeContext), nil
 
 	case cfg.HelmDeploy != nil:
-		return deploy.NewHelmDeployer(cfg, kubeContext), nil
+		return deploy.NewHelmDeployer(cfg, kubeContext, namespace), nil
 
 	default:
 		return nil, fmt.Errorf("Unknown deployer for config %+v", cfg)

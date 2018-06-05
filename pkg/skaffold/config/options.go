@@ -23,4 +23,5 @@ type SkaffoldOptions struct {
 	Notification bool
 	Profiles     []string
 	CustomTag    string
+	Namespace    string
 }
