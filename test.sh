@@ -31,7 +31,7 @@ echo "Running validation scripts..."
 scripts=(
     "hack/boilerplate.sh"
     "hack/gofmt.sh"
-    "hack/gometalinter.sh"
+    "hack/linter.sh"
     "hack/dep.sh"
 )
 fail=0

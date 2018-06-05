@@ -116,8 +116,7 @@ func (s *PodStore) Stop() {
 	close(s.stopCh)
 }
 
-// nolint: interfacer
-func NewPodStore(c kubernetes.Interface, namespace string, label labels.Selector, field fields.Selector) *PodStore {
+func NewPodStore(c kubernetes.Interface, namespace string, label fmt.Stringer, field fmt.Stringer) *PodStore {
 	lw := &cache.ListWatch{
 		ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
 			options.LabelSelector = label.String()

@@ -31,12 +31,13 @@ type dateTimeTagger struct {
 	timeFn   func() time.Time
 }
 
-func NewDateTimeTagger(format, timezone string) (*dateTimeTagger, error) {
+// NewDateTimeTagger creates a tagger from a date format and timezone.
+func NewDateTimeTagger(format, timezone string) Tagger {
 	return &dateTimeTagger{
 		Format:   format,
 		TimeZone: timezone,
 		timeFn:   func() time.Time { return time.Now() },
-	}, nil
+	}
 }
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the current timestamp

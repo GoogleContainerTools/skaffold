@@ -37,7 +37,6 @@ func TestMain(m *testing.M) {
 type testImageAPI struct {
 	description  string
 	imageName    string
-	imageID      string
 	tagToImageID map[string]string
 	shouldErr    bool
 	expected     string
@@ -96,7 +95,6 @@ func TestRunBuild(t *testing.T) {
 		{
 			description:  "build",
 			tagToImageID: map[string]string{},
-			imageID:      "sha256:test",
 			expected:     "test",
 		},
 		{

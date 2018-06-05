@@ -60,7 +60,6 @@ func NewLogAggregator(out io.Writer, podSelector PodSelector, colorPicker ColorP
 }
 
 func (a *LogAggregator) Start(ctx context.Context) error {
-	// Start logs
 	kubeclient, err := Client()
 	if err != nil {
 		return errors.Wrap(err, "getting k8s client")
@@ -101,8 +100,7 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 	return nil
 }
 
-// nolint: interfacer
-func (a *LogAggregator) streamLogs(ctx context.Context, client corev1.CoreV1Interface, pod *v1.Pod) error {
+func (a *LogAggregator) streamLogs(ctx context.Context, client corev1.PodsGetter, pod *v1.Pod) error {
 	pods := client.Pods(pod.Namespace)
 	if err := WaitForPodReady(pods, pod.Name); err != nil {
 		return errors.Wrap(err, "waiting for pod ready")

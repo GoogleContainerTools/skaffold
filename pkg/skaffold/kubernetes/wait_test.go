@@ -79,20 +79,6 @@ var podBadPhase = &v1.Pod{
 	},
 }
 
-var podDifferentName = &v1.Pod{
-	ObjectMeta: metav1.ObjectMeta{
-		Name: "pod_different_name",
-	},
-	Status: v1.PodStatus{
-		Conditions: []v1.PodCondition{
-			{
-				Type: v1.PodScheduled,
-			},
-		},
-		Phase: "not a real phase",
-	},
-}
-
 func TestWaitForPodReady(t *testing.T) {
 	var tests = []struct {
 		description string
