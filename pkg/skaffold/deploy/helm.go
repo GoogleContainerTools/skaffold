@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v2"
 )
 
 type HelmDeployer struct {
@@ -122,6 +123,20 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 	if ns != "" {
 		args = append(args, "--namespace", ns)
 	}
+	if len(r.Overrides) != 0 {
+		overrides, err := yaml.Marshal(r.Overrides)
+		if err != nil {
+			return errors.Wrap(err, "cannot marshal overrides to create overrides values.yaml")
+		}
+		overridesFile, err := os.Create("skaffold-overrides.yaml")
+		if err != nil {
+			return errors.Wrap(err, "cannot create file skaffold-overrides.yaml")
+		}
+		if _, err := overridesFile.WriteString(string(overrides)); err != nil {
+			return errors.Wrap(err, "failed to write file skaffold-overrides.yaml")
+		}
+		args = append(args, "-f", "skaffold-overrides.yaml")
+	}
 	if r.ValuesFilePath != "" {
 		args = append(args, "-f", r.ValuesFilePath)
 	}
@@ -140,7 +155,11 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 	}
 	args = append(args, setOpts...)
 
-	return h.helm(out, args...)
+	helmErr := h.helm(out, args...)
+	if len(r.Overrides) != 0 {
+		os.Remove("skaffold-overrides.yaml")
+	}
+	return helmErr
 }
 
 func (h *HelmDeployer) deleteRelease(out io.Writer, r v1alpha2.HelmRelease) error {
