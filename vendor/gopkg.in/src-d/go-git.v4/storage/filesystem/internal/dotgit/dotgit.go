@@ -162,8 +162,11 @@ func (d *DotGit) ObjectPacks() ([]plumbing.Hash, error) {
 
 		n := f.Name()
 		h := plumbing.NewHash(n[5 : len(n)-5]) //pack-(hash).pack
+		if h.IsZero() {
+			// Ignore files with badly-formatted names.
+			continue
+		}
 		packs = append(packs, h)
-
 	}
 
 	return packs, nil
@@ -255,7 +258,12 @@ func (d *DotGit) ForEachObjectHash(fun func(plumbing.Hash) error) error {
 			}
 
 			for _, o := range d {
-				err = fun(plumbing.NewHash(base + o.Name()))
+				h := plumbing.NewHash(base + o.Name())
+				if h.IsZero() {
+					// Ignore files with badly-formatted names.
+					continue
+				}
+				err = fun(h)
 				if err != nil {
 					return err
 				}

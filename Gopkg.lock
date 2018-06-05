@@ -663,7 +663,7 @@
     "utils/merkletrie/internal/frame",
     "utils/merkletrie/noder"
   ]
-  revision = "v4.3.0"
+  revision = "v4.4.0"
 
 [[projects]]
   name = "gopkg.in/warnings.v0"
@@ -858,6 +858,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c4e843497cf7cd15686a956ba4eb5600f356b59ac3c08b025a4501962fd3b48e"
+  inputs-digest = "0d621436ddce40e37823d53fca8ac6d42a42fdd25b704c21b1e71cd5cf0f2329"
   solver-name = "gps-cdcl"
   solver-version = 1
