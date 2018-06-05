@@ -13,6 +13,7 @@ import (
 	"gopkg.in/src-d/go-git.v4/config"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/filemode"
+	"gopkg.in/src-d/go-git.v4/plumbing/format/gitignore"
 	"gopkg.in/src-d/go-git.v4/plumbing/format/index"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	"gopkg.in/src-d/go-git.v4/plumbing/storer"
@@ -33,6 +34,8 @@ var (
 type Worktree struct {
 	// Filesystem underlying filesystem.
 	Filesystem billy.Filesystem
+	// External excludes not found in the repository .gitignore
+	Excludes []gitignore.Pattern
 
 	r *Repository
 }

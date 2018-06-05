@@ -61,7 +61,7 @@
 
 [[constraint]]
   name = "gopkg.in/src-d/go-git.v4"
-  revision = "v4.3.0"
+  revision = "v4.4.0"
 
 [[constraint]]
   name = "github.com/google/go-containerregistry"

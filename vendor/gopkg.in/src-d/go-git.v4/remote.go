@@ -371,14 +371,22 @@ func (r *Remote) addReferencesToUpdate(
 	refspecs []config.RefSpec,
 	localRefs []*plumbing.Reference,
 	remoteRefs storer.ReferenceStorer,
-	req *packp.ReferenceUpdateRequest) error {
+	req *packp.ReferenceUpdateRequest,
+) error {
+	// This references dictionary will be used to search references by name.
+	refsDict := make(map[string]*plumbing.Reference)
+	for _, ref := range localRefs {
+		refsDict[ref.Name().String()] = ref
+	}
+
 	for _, rs := range refspecs {
 		if rs.IsDelete() {
 			if err := r.deleteReferences(rs, remoteRefs, req); err != nil {
 				return err
 			}
 		} else {
-			if err := r.addOrUpdateReferences(rs, localRefs, remoteRefs, req); err != nil {
+			err := r.addOrUpdateReferences(rs, localRefs, refsDict, remoteRefs, req)
+			if err != nil {
 				return err
 			}
 		}
@@ -390,9 +398,21 @@ func (r *Remote) addReferencesToUpdate(
 func (r *Remote) addOrUpdateReferences(
 	rs config.RefSpec,
 	localRefs []*plumbing.Reference,
+	refsDict map[string]*plumbing.Reference,
 	remoteRefs storer.ReferenceStorer,
 	req *packp.ReferenceUpdateRequest,
 ) error {
+	// If it is not a wilcard refspec we can directly search for the reference
+	// in the references dictionary.
+	if !rs.IsWildcard() {
+		ref, ok := refsDict[rs.Src()]
+		if !ok {
+			return nil
+		}
+
+		return r.addReferenceIfRefSpecMatches(rs, remoteRefs, ref, req)
+	}
+
 	for _, ref := range localRefs {
 		err := r.addReferenceIfRefSpecMatches(rs, remoteRefs, ref, req)
 		if err != nil {
@@ -976,9 +996,24 @@ func pushHashes(
 }
 
 func (r *Remote) updateShallow(o *FetchOptions, resp *packp.UploadPackResponse) error {
-	if o.Depth == 0 {
+	if o.Depth == 0 || len(resp.Shallows) == 0 {
 		return nil
 	}
 
-	return r.s.SetShallow(resp.Shallows)
+	shallows, err := r.s.Shallow()
+	if err != nil {
+		return err
+	}
+
+outer:
+	for _, s := range resp.Shallows {
+		for _, oldS := range shallows {
+			if s == oldS {
+				continue outer
+			}
+		}
+		shallows = append(shallows, s)
+	}
+
+	return r.s.SetShallow(shallows)
 }

@@ -41,6 +41,8 @@ func (s *ShallowStorage) Shallow() ([]plumbing.Hash, error) {
 		return nil, err
 	}
 
+	defer ioutil.CheckClose(f, &err)
+
 	var hash []plumbing.Hash
 
 	scn := bufio.NewScanner(f)

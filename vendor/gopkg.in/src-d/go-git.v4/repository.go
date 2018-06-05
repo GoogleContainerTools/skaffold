@@ -24,6 +24,9 @@ import (
 	"gopkg.in/src-d/go-billy.v4/osfs"
 )
 
+// GitDirName this is a special folder where all the git stuff is.
+const GitDirName = ".git"
+
 var (
 	// ErrBranchExists an error stating the specified branch already exists
 	ErrBranchExists = errors.New("branch already exists")
@@ -113,12 +116,12 @@ func createDotGitFile(worktree, storage billy.Filesystem) error {
 		path = storage.Root()
 	}
 
-	if path == ".git" {
+	if path == GitDirName {
 		// not needed, since the folder is the default place
 		return nil
 	}
 
-	f, err := worktree.Create(".git")
+	f, err := worktree.Create(GitDirName)
 	if err != nil {
 		return err
 	}
@@ -214,7 +217,7 @@ func PlainInit(path string, isBare bool) (*Repository, error) {
 		dot = osfs.New(path)
 	} else {
 		wt = osfs.New(path)
-		dot, _ = wt.Chroot(".git")
+		dot, _ = wt.Chroot(GitDirName)
 	}
 
 	s, err := filesystem.NewStorage(dot)
@@ -265,7 +268,7 @@ func dotGitToOSFilesystems(path string, detect bool) (dot, wt billy.Filesystem, 
 	var fi os.FileInfo
 	for {
 		fs = osfs.New(path)
-		fi, err = fs.Stat(".git")
+		fi, err = fs.Stat(GitDirName)
 		if err == nil {
 			// no error; stop
 			break
@@ -288,7 +291,7 @@ func dotGitToOSFilesystems(path string, detect bool) (dot, wt billy.Filesystem, 
 	}
 
 	if fi.IsDir() {
-		dot, err = fs.Chroot(".git")
+		dot, err = fs.Chroot(GitDirName)
 		return dot, fs, err
 	}
 
@@ -301,7 +304,7 @@ func dotGitToOSFilesystems(path string, detect bool) (dot, wt billy.Filesystem, 
 }
 
 func dotGitFileToOSFilesystem(path string, fs billy.Filesystem) (bfs billy.Filesystem, err error) {
-	f, err := fs.Open(".git")
+	f, err := fs.Open(GitDirName)
 	if err != nil {
 		return nil, err
 	}
@@ -1021,6 +1024,8 @@ func (r *Repository) ResolveRevision(rev plumbing.Revision) (*plumbing.Hash, err
 		case revision.Ref:
 			revisionRef := item.(revision.Ref)
 			var ref *plumbing.Reference
+			var hashCommit, refCommit *object.Commit
+			var rErr, hErr error
 
 			for _, rule := range append([]string{"%s"}, plumbing.RefRevParseRules...) {
 				ref, err = storer.ResolveReference(r.Storer, plumbing.ReferenceName(fmt.Sprintf(rule, revisionRef)))
@@ -1030,14 +1035,27 @@ func (r *Repository) ResolveRevision(rev plumbing.Revision) (*plumbing.Hash, err
 				}
 			}
 
-			if ref == nil {
-				return &plumbing.ZeroHash, plumbing.ErrReferenceNotFound
+			if ref != nil {
+				refCommit, rErr = r.CommitObject(ref.Hash())
+			} else {
+				rErr = plumbing.ErrReferenceNotFound
 			}
 
-			commit, err = r.CommitObject(ref.Hash())
+			isHash := plumbing.NewHash(string(revisionRef)).String() == string(revisionRef)
 
-			if err != nil {
-				return &plumbing.ZeroHash, err
+			if isHash {
+				hashCommit, hErr = r.CommitObject(plumbing.NewHash(string(revisionRef)))
+			}
+
+			switch {
+			case rErr == nil && !isHash:
+				commit = refCommit
+			case rErr != nil && isHash && hErr == nil:
+				commit = hashCommit
+			case rErr == nil && isHash && hErr == nil:
+				return &plumbing.ZeroHash, fmt.Errorf(`refname "%s" is ambiguous`, revisionRef)
+			default:
+				return &plumbing.ZeroHash, plumbing.ErrReferenceNotFound
 			}
 		case revision.CaretPath:
 			depth := item.(revision.CaretPath).Depth

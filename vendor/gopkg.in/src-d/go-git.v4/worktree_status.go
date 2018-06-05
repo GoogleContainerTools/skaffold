@@ -145,6 +145,9 @@ func (w *Worktree) excludeIgnoredChanges(changes merkletrie.Changes) merkletrie.
 	if err != nil || len(patterns) == 0 {
 		return changes
 	}
+
+	patterns = append(patterns, w.Excludes...)
+
 	m := gitignore.NewMatcher(patterns)
 
 	var res merkletrie.Changes
@@ -300,6 +303,10 @@ func (w *Worktree) doAddDirectory(idx *index.Index, s Status, directory string) 
 
 		var a bool
 		if file.IsDir() {
+			if file.Name() == GitDirName {
+				// ignore special git directory
+				continue
+			}
 			a, err = w.doAddDirectory(idx, s, name)
 		} else {
 			a, _, err = w.doAddFile(idx, s, name)
