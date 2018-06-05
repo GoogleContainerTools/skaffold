@@ -22,6 +22,7 @@ import (
 	"io"
 	"io/ioutil"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -93,22 +94,24 @@ func resetClient()                               { kubernetes.Client = kubernete
 func fakeGetClient() (clientgo.Interface, error) { return fake.NewSimpleClientset(), nil }
 
 type TestWatcher struct {
-	changes [][]string
+	changes [][]*v1alpha2.Artifact
+	err     error
 }
 
-func NewWatcherFactory(err error, changes ...[]string) watch.WatcherFactory {
-	return func([]string) (watch.Watcher, error) {
+func NewWatcherFactory(err error, changes ...[]*v1alpha2.Artifact) watch.Factory {
+	return func(files []string, artifacts []*v1alpha2.Artifact, pollInterval time.Duration) watch.CompositeWatcher {
 		return &TestWatcher{
 			changes: changes,
-		}, err
+			err:     err,
+		}
 	}
 }
 
-func (t *TestWatcher) Start(context context.Context, out io.Writer, onChange func([]string) error) error {
+func (t *TestWatcher) Run(ctx context.Context, onFileChange watch.FileChangedFn, onArtifactChange watch.ArtifactChangedFn) error {
 	for _, change := range t.changes {
-		onChange(change)
+		onArtifactChange(change)
 	}
-	return nil
+	return t.err
 }
 
 func TestNewForConfig(t *testing.T) {
@@ -266,7 +269,7 @@ func TestDev(t *testing.T) {
 	var tests = []struct {
 		description    string
 		builder        build.Builder
-		watcherFactory watch.WatcherFactory
+		watcherFactory watch.Factory
 		shouldErr      bool
 	}{
 		{
@@ -285,7 +288,7 @@ func TestDev(t *testing.T) {
 			watcherFactory: NewWatcherFactory(nil, nil),
 		},
 		{
-			description:    "bad watch dev mode",
+			description:    "fail to watch files",
 			builder:        &TestBuilder{},
 			watcherFactory: NewWatcherFactory(fmt.Errorf("")),
 			shouldErr:      true,
@@ -295,11 +298,10 @@ func TestDev(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			runner := &SkaffoldRunner{
-				Builder:              test.builder,
-				Deployer:             &TestDeployer{},
-				Tagger:               &tag.ChecksumTagger{},
-				DependencyMapFactory: build.NewDependencyMap,
-				WatcherFactory:       test.watcherFactory,
+				Builder:      test.builder,
+				Deployer:     &TestDeployer{},
+				Tagger:       &tag.ChecksumTagger{},
+				watchFactory: test.watcherFactory,
 			}
 			_, err := runner.Dev(context.Background(), ioutil.Discard, nil)
 
@@ -318,23 +320,16 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 		{ImageName: "image1"},
 		{ImageName: "image2"},
 	}
-	pathToArtifacts := map[string][]*v1alpha2.Artifact{
-		"path1": artifacts[0:1],
-		"path2": artifacts[1:],
-	}
 
 	runner := &SkaffoldRunner{
 		Builder:  builder,
 		Deployer: deployer,
-		DependencyMapFactory: func(artifacts []*v1alpha2.Artifact) (*build.DependencyMap, error) {
-			return build.NewExplicitDependencyMap(artifacts, pathToArtifacts), nil
-		},
 	}
 
 	ctx := context.Background()
 
 	// All artifacts are changed
-	runner.WatcherFactory = NewWatcherFactory(nil, []string{"path1", "path2"})
+	runner.watchFactory = NewWatcherFactory(nil, artifacts)
 	_, err := runner.Dev(ctx, ioutil.Discard, artifacts)
 
 	if err != nil {
@@ -348,7 +343,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	}
 
 	// Only one is changed
-	runner.WatcherFactory = NewWatcherFactory(nil, []string{"path2"})
+	runner.watchFactory = NewWatcherFactory(nil, artifacts[1:])
 	_, err = runner.Dev(ctx, ioutil.Discard, artifacts)
 
 	if err != nil {

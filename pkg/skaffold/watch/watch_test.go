@@ -21,12 +21,13 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestWatch(t *testing.T) {
+func TestFileWatcher(t *testing.T) {
 	watchers := []string{"mtime", "fsnotify"}
 	var tests = []struct {
 		description     string
@@ -69,7 +70,7 @@ func TestWatch(t *testing.T) {
 					write(t, p, "")
 				}
 
-				watcher, err := NewWatcher(prependParentDir(tmp, test.watchFiles))
+				watcher, err := NewFileWatcher(prependParentDir(tmp, test.watchFiles), 10*time.Millisecond)
 				if err == nil && test.shouldErr {
 					t.Errorf("Expected error, but returned none")
 					return
@@ -85,8 +86,7 @@ func TestWatch(t *testing.T) {
 				ctx, cancel := context.WithCancel(context.Background())
 
 				defer cancel()
-				go watcher.Start(ctx, ioutil.Discard, func(actual []string) error {
-
+				go watcher.Run(ctx, func(actual []string) error {
 					expected := prependParentDir(tmp, test.expectedChanges)
 
 					if diff := cmp.Diff(expected, actual); diff != "" {
@@ -103,6 +103,7 @@ func TestWatch(t *testing.T) {
 		}
 	}
 }
+
 func write(t *testing.T, path string, content string) {
 	if err := ioutil.WriteFile(path, []byte(content), 0644); err != nil {
 		t.Fatalf("writing file: %s", err)

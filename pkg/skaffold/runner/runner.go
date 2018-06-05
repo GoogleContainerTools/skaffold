@@ -20,8 +20,8 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -33,18 +33,18 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/sync/errgroup"
 )
+
+const PollInterval = 500 * time.Millisecond
 
 // SkaffoldRunner is responsible for running the skaffold build and deploy pipeline.
 type SkaffoldRunner struct {
 	build.Builder
 	deploy.Deployer
 	tag.Tagger
-	watch.WatcherFactory
-	build.DependencyMapFactory
 
-	builds []build.Artifact
+	watchFactory watch.Factory
+	builds       []build.Artifact
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
@@ -77,11 +77,10 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 	}
 
 	return &SkaffoldRunner{
-		Builder:              builder,
-		Deployer:             deployer,
-		Tagger:               tagger,
-		WatcherFactory:       watch.NewWatcher,
-		DependencyMapFactory: build.NewDependencyMap,
+		Builder:      builder,
+		Deployer:     deployer,
+		Tagger:       tagger,
+		watchFactory: watch.NewCompositeWatcher,
 	}, nil
 }
 
@@ -167,15 +166,9 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*v1
 // Dev watches for changes and runs the skaffold build and deploy
 // pipeline until interrrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
-	depMap, err := r.DependencyMapFactory(artifacts)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting path to dependency map")
-	}
-
-	watcher, err := r.WatcherFactory(depMap.Paths())
-	if err != nil {
-		return nil, errors.Wrap(err, "creating watcher")
-	}
+	imageList := kubernetes.NewImageList()
+	colorPicker := kubernetes.NewColorPicker(artifacts)
+	logger := kubernetes.NewLogAggregator(out, imageList, colorPicker)
 
 	deployDeps, err := r.Dependencies()
 	if err != nil {
@@ -183,58 +176,42 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 	}
 	logrus.Infof("Deployer dependencies: %s", deployDeps)
 
-	deployWatcher, err := r.WatcherFactory(deployDeps)
-	if err != nil {
-		return nil, errors.Wrap(err, "creating deploy watcher")
-	}
-
-	imageList := kubernetes.NewImageList()
-	colorPicker := kubernetes.NewColorPicker(artifacts)
-	logger := kubernetes.NewLogAggregator(out, imageList, colorPicker)
-
-	onDeployChange := func(changedPaths []string) error {
+	onFileChange := func(changedPaths []string) error {
 		logger.Mute()
 
 		_, err := r.Deploy(ctx, out, r.builds)
 
 		logger.Unmute()
+		fmt.Fprintln(out, "Watching for changes...")
 		return err
 	}
 
-	onArtifactChange := func(changedPaths []string) error {
+	onArtifactChange := func(changes []*v1alpha2.Artifact) error {
 		logger.Mute()
 
-		changedArtifacts := depMap.ArtifactsForPaths(changedPaths)
-		_, err = r.buildAndDeploy(ctx, out, changedArtifacts, imageList)
+		_, err := r.buildAndDeploy(ctx, out, changes, imageList)
 
 		logger.Unmute()
+		fmt.Fprintln(out, "Watching for changes...")
 		return err
 	}
 
-	if err := onArtifactChange(depMap.Paths()); err != nil {
+	if err := onArtifactChange(artifacts); err != nil {
 		return nil, errors.Wrap(err, "first build")
 	}
 
 	// Start logs
 	if err = logger.Start(ctx); err != nil {
-		return r.builds, errors.Wrap(err, "starting logger")
+		return nil, errors.Wrap(err, "starting logger")
 	}
 
-	// Watch files and rebuild
-	g, watchCtx := errgroup.WithContext(ctx)
-	g.Go(func() error {
-		return watcher.Start(watchCtx, out, onArtifactChange)
-	})
-	g.Go(func() error {
-		return deployWatcher.Start(watchCtx, ioutil.Discard, onDeployChange)
-	})
-
-	return r.builds, g.Wait()
+	watcher := r.watchFactory(deployDeps, artifacts, PollInterval)
+	return nil, watcher.Run(ctx, onFileChange, onArtifactChange)
 }
 
 // buildAndDeploy builds a subset of the artifacts and deploys everything.
 func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact, images *kubernetes.ImageList) ([]deploy.Artifact, error) {
-	bRes, err := r.Builder.Build(ctx, out, r.Tagger, artifacts)
+	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
 	if err != nil {
 		if r.builds == nil {
 			return nil, errors.Wrap(err, "exiting dev mode because the first build failed")

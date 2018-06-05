@@ -29,9 +29,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// DependencyMapFactory can build DependencyMaps from a list of artifacts.
-type DependencyMapFactory func(artifacts []*v1alpha2.Artifact) (*DependencyMap, error)
-
 // DependencyMap is a bijection between artifacts and the files they depend on.
 type DependencyMap struct {
 	artifacts       []*v1alpha2.Artifact

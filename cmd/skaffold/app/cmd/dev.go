@@ -21,8 +21,11 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -51,21 +54,71 @@ func dev(out io.Writer, filename string) error {
 		catchCtrlC(cancel)
 	}
 
+	errDev := devLoop(ctx, out, filename)
+
+	if opts.Cleanup {
+		if err := delete(out, filename); err != nil {
+			logrus.Warnln("cleanup:", err)
+		}
+	}
+
+	return errDev
+}
+
+func devLoop(ctx context.Context, out io.Writer, filename string) error {
+	watcher, err := watch.NewFileWatcher([]string{filename}, runner.PollInterval)
+	if err != nil {
+		return errors.Wrap(err, "watching configuration")
+	}
+
+	c := make(chan context.CancelFunc, 1)
+	var devLoop sync.WaitGroup
+	devLoop.Add(1)
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				devLoop.Done()
+				return
+			default:
+				ctxDev, cancelDev := context.WithCancel(ctx)
+				c <- cancelDev
+				if err := runDev(ctxDev, out, filename); err != nil {
+					logrus.Warnln("dev:", err)
+				}
+			}
+		}
+	}()
+
+	errRun := watcher.Run(ctx, func([]string) error {
+		cancelDev := <-c
+		cancelDev()
+		return nil
+	})
+
+	// Drain c to make sure the dev loop is not waiting for it
+	go func() {
+		for range c {
+		}
+	}()
+	devLoop.Wait()
+
+	return errRun
+}
+
+func runDev(ctx context.Context, out io.Writer, filename string) error {
 	runner, config, err := newRunner(filename)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}
 
-	built, err := runner.Dev(ctx, out, config.Build.Artifacts)
-
-	if opts.Cleanup && built != nil {
-		// Cleanup only if something was built
-		if err := runner.Cleanup(ctx, out); err != nil {
-			logrus.Warnln("cleanup:", err)
-		}
+	_, err = runner.Dev(ctx, out, config.Build.Artifacts)
+	if err != nil {
+		return errors.Wrap(err, "dev step")
 	}
 
-	return err
+	return nil
 }
 
 func catchCtrlC(cancel context.CancelFunc) {
