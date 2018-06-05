@@ -15,6 +15,10 @@ deploy:
       #valuesFilePath: helm-skaffold-values.yaml
       values:
         image: skaffold-helm
+      #overrides builds an override values.yaml file to run with the helm deploy
+      #overrides:
+      # some:
+      #   key: someValue
       #setValues get appended to the helm deploy with --set.  
       #setValues:
         #some.key: someValue
