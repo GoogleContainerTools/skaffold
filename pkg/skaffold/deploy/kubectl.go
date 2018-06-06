@@ -97,7 +97,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return errors.Wrap(err, "replacing images in manifests")
 	}
 
-	err = k.kubectl(manifests.reader(), out, "apply", "-f", "-")
+	err = kubectl(manifests.reader(), out, k.kubeContext, "apply", "-f", "-")
 	if err != nil {
 		return errors.Wrap(err, "deploying manifests")
 	}
@@ -108,7 +108,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 // Cleanup deletes what was deployed by calling Deploy.
 func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	if len(k.KubectlDeploy.Manifests) == 0 {
-		return k.kubectl(nil, out, "delete", "deployment", "skaffold")
+		return kubectl(nil, out, k.kubeContext, "delete", "deployment", "skaffold")
 	}
 
 	manifests, err := k.readManifests()
@@ -116,7 +116,7 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		return errors.Wrap(err, "reading manifests")
 	}
 
-	err = k.kubectl(manifests.reader(), out, "delete", "-f", "-")
+	err = kubectl(manifests.reader(), out, k.kubeContext, "delete", "-f", "-")
 	if err != nil {
 		return errors.Wrap(err, "deleting manifests")
 	}
@@ -147,8 +147,8 @@ func (k *KubectlDeployer) readOrGenerateManifests(builds []build.Build) (manifes
 	return manifestList{yaml}, nil
 }
 
-func (k *KubectlDeployer) kubectl(in io.Reader, out io.Writer, arg ...string) error {
-	args := append([]string{"--context", k.kubeContext}, arg...)
+func kubectl(in io.Reader, out io.Writer, kubeContext string, arg ...string) error {
+	args := append([]string{"--context", kubeContext}, arg...)
 
 	cmd := exec.Command("kubectl", args...)
 	cmd.Stdin = in
@@ -222,7 +222,7 @@ func (k *KubectlDeployer) readRemoteManifest(name string) ([]byte, error) {
 	args = append(args, "get", name, "-o", "yaml")
 
 	var manifest bytes.Buffer
-	err := k.kubectl(nil, &manifest, args...)
+	err := kubectl(nil, &manifest, k.kubeContext, args...)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting manifest")
 	}
