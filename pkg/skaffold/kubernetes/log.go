@@ -91,7 +91,7 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 				}
 
 				if a.podSelector.Select(pod) {
-					go a.streamLogs(ctx, client, pod)
+					a.streamLogs(ctx, client, pod)
 				}
 			}
 		}
@@ -102,9 +102,6 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 
 func (a *LogAggregator) streamLogs(ctx context.Context, client corev1.PodsGetter, pod *v1.Pod) error {
 	pods := client.Pods(pod.Namespace)
-	if err := WaitForPodReady(pods, pod.Name); err != nil {
-		return errors.Wrap(err, "waiting for pod ready")
-	}
 
 	for _, container := range pod.Status.ContainerStatuses {
 		containerID := container.ContainerID
@@ -248,14 +245,15 @@ func NewImageList() *ImageList {
 	}
 }
 
-// AddImage adds an image to the list.
-func (l *ImageList) AddImage(image string) {
+// Add adds an image to the list.
+func (l *ImageList) Add(image string) {
 	l.Lock()
 	l.names[image] = true
 	l.Unlock()
 }
 
-func (l *ImageList) RemoveImage(image string) {
+// Remove removes an image from the list.
+func (l *ImageList) Remove(image string) {
 	l.Lock()
 	delete(l.names, image)
 	l.Unlock()
