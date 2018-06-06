@@ -53,6 +53,11 @@ RUN curl -LO https://github.com/GoogleCloudPlatform/docker-credential-gcr/releas
     rm docker-credential-gcr_linux_amd64-${DOCKER_CREDENTIAL_GCR_VERSION}.tar.gz && \
     docker-credential-gcr configure-docker
 
+ENV KUSTOMIZE_VERSION=1.0.1
+RUN curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/v${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64 && \
+    chmod +x kustomize_${KUSTOMIZE_VERSION}_linux_amd64 && \
+    mv kustomize_${KUSTOMIZE_VERSION}_linux_amd64 /usr/local/bin/kustomize
+
 ENV PATH /usr/local/go/bin:/go/bin:/google-cloud-sdk/bin:$PATH
 
 WORKDIR /go/src/github.com/GoogleContainerTools/skaffold
