@@ -59,6 +59,12 @@ func TestParseReference(t *testing.T) {
 			expectedName:           "gcr.io/k8s-skaffold/example",
 			expectedFullyQualified: true,
 		},
+		{
+			description:            "docker library",
+			image:                  "nginx:latest",
+			expectedName:           "nginx",
+			expectedFullyQualified: false,
+		},
 	}
 
 	for _, test := range tests {

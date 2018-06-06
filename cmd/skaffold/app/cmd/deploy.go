@@ -22,8 +22,8 @@ import (
 	"io/ioutil"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/google/go-containerregistry/name"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -68,13 +68,13 @@ func runDeploy(out io.Writer, filename string) error {
 
 	var builds []build.Build
 	for _, image := range images {
-		parsedTag, err := name.NewTag(image, name.WeakValidation)
+		parsed, err := docker.ParseReference(image)
 		if err != nil {
 			return err
 		}
 		builds = append(builds, build.Build{
-			ImageName: parsedTag.Context().String(),
-			Tag:       parsedTag.Name(),
+			ImageName: parsed.BaseName,
+			Tag:       image,
 		})
 	}
 
