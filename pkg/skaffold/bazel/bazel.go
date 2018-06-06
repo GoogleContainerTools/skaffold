@@ -18,7 +18,9 @@ package bazel
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
@@ -26,10 +28,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-const sourceQuery = "kind('source file', deps('%s'))"
+const sourceQuery = "kind('source file', deps('%[1]s')) union buildfiles('%[1]s')"
 
+func query(target string) string {
+	return fmt.Sprintf(sourceQuery, target)
+}
+
+// GetDependencies finds the sources dependencies for the given bazel artifact.
 func GetDependencies(a *v1alpha2.Artifact) ([]string, error) {
-	cmd := exec.Command("bazel", "query", fmt.Sprintf(sourceQuery, a.BazelArtifact.BuildTarget), "--noimplicit_deps", "--order_output=no")
+	cmd := exec.Command("bazel", "query", query(a.BazelArtifact.BuildTarget), "--noimplicit_deps", "--order_output=no")
 	cmd.Dir = a.Workspace
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
@@ -51,6 +58,11 @@ func GetDependencies(a *v1alpha2.Artifact) ([]string, error) {
 
 		deps = append(deps, depToPath(l))
 	}
+
+	if _, err := os.Stat(filepath.Join(a.Workspace, "WORKSPACE")); err == nil {
+		deps = append(deps, "WORKSPACE")
+	}
+
 	return deps, nil
 }
 

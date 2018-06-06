@@ -20,6 +20,15 @@ import (
 	"testing"
 )
 
+func TestQuery(t *testing.T) {
+	query := query("//:skaffold_example.tar")
+
+	expectedQuery := `kind('source file', deps('//:skaffold_example.tar')) union buildfiles('//:skaffold_example.tar')`
+	if query != expectedQuery {
+		t.Errorf("Expected [%s]. Got [%s]", expectedQuery, query)
+	}
+}
+
 func TestDepToPath(t *testing.T) {
 	var tests = []struct {
 		description string
