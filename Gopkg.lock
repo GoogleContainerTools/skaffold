@@ -50,7 +50,7 @@
   branch = "master"
   name = "github.com/containerd/continuity"
   packages = ["pathdriver"]
-  revision = "d8fb8589b0e8e85b8c8bbaa8840226d0dfeb7371"
+  revision = "d3c23511c1bf5851696cba83143d9cbcd666869b"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -61,8 +61,8 @@
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
   packages = ["."]
-  revision = "dbeaa9332f19a944acb5736b4456cfcc02140e29"
-  version = "v3.1.0"
+  revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
+  version = "v3.2.0"
 
 [[projects]]
   name = "github.com/docker/cli"
@@ -156,8 +156,8 @@
 [[projects]]
   name = "github.com/docker/go-units"
   packages = ["."]
-  revision = "0dadbb0345b35ec7ef35e228dabb8de89a65bf52"
-  version = "v0.3.2"
+  revision = "47565b4f722fb6ceae66b95f853feed578a4a51c"
+  version = "v0.3.3"
 
 [[projects]]
   name = "github.com/emirpasic/gods"
@@ -209,8 +209,8 @@
     "ptypes/duration",
     "ptypes/timestamp"
   ]
-  revision = "925541529c1fa6821df4e44ce2723319eb2be768"
-  version = "v1.0.0"
+  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
+  version = "v1.1.0"
 
 [[projects]]
   name = "github.com/google/go-cmp"
@@ -256,8 +256,8 @@
     "compiler",
     "extensions"
   ]
-  revision = "ee43cbb60db7bd22502942cccbc39059117352ab"
-  version = "v0.1.0"
+  revision = "7c663266750e7d82587642f65e60bc4083f1f84e"
+  version = "v0.2.0"
 
 [[projects]]
   branch = "master"
@@ -271,19 +271,19 @@
     "openstack/utils",
     "pagination"
   ]
-  revision = "afbf0422412f5dc726fa12be280fa0c3cb31fcbd"
+  revision = "832951a0303f301dd83a67e48c279b1b7f464b94"
 
 [[projects]]
   name = "github.com/gorilla/context"
   packages = ["."]
-  revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
-  version = "v1.1"
+  revision = "08b5f424b9271eedf6f9f0ce86cb9396ed337a42"
+  version = "v1.1.1"
 
 [[projects]]
   name = "github.com/gorilla/mux"
   packages = ["."]
-  revision = "53c1911da2b537f792e7cafcb446b05ffe33b996"
-  version = "v1.6.1"
+  revision = "e3702bed27f0d39777b0b37b664b6280e8ef8fbf"
+  version = "v1.6.2"
 
 [[projects]]
   branch = "master"
@@ -303,8 +303,8 @@
 [[projects]]
   name = "github.com/imdario/mergo"
   packages = ["."]
-  revision = "163f41321a19dd09362d4c63cc2489db2015f1f4"
-  version = "0.3.2"
+  revision = "9d5f1277e9a8ed20c3684bda8fde67c05628518c"
+  version = "v0.3.4"
 
 [[projects]]
   name = "github.com/inconshreveable/mousetrap"
@@ -321,20 +321,20 @@
 [[projects]]
   name = "github.com/json-iterator/go"
   packages = ["."]
-  revision = "3353055b2a1a5ae1b6a8dfde887a524e7088f3a2"
-  version = "1.1.2"
+  revision = "ca39e5af3ece67bbcda3d0f4f56a8e24d9f2dad4"
+  version = "1.1.3"
 
 [[projects]]
   name = "github.com/kevinburke/ssh_config"
   packages = ["."]
-  revision = "0ff8514904a8ebfcfb3c32ad73e1f8498a7f81b4"
-  version = "0.3"
+  revision = "9fc7bb800b555d63157c65a904c86a2cc7b4e795"
+  version = "0.4"
 
 [[projects]]
   branch = "master"
   name = "github.com/mitchellh/go-homedir"
   packages = ["."]
-  revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
+  revision = "3864e76763d94a6df2f9960b16a20a33da9f9a66"
 
 [[projects]]
   name = "github.com/moby/moby"
@@ -352,8 +352,8 @@
 [[projects]]
   name = "github.com/modern-go/concurrent"
   packages = ["."]
-  revision = "b889e4d97c66647327c9ee06ac249673a997db5f"
-  version = "1.0.1"
+  revision = "bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94"
+  version = "1.0.3"
 
 [[projects]]
   name = "github.com/modern-go/reflect2"
@@ -409,14 +409,14 @@
 [[projects]]
   name = "github.com/spf13/cobra"
   packages = ["."]
-  revision = "a1f051bc3eba734da4772d60e2d677f47cf93ef4"
-  version = "v0.0.2"
+  revision = "ef82de70bb3f60c65fb8eebacbb2d122ef517385"
+  version = "v0.0.3"
 
 [[projects]]
   name = "github.com/spf13/pflag"
   packages = ["."]
-  revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
-  version = "v1.0.0"
+  revision = "583c0c0531f06d5278b7d917446061adc344b5cd"
+  version = "v1.0.1"
 
 [[projects]]
   name = "github.com/src-d/gcfg"
@@ -456,7 +456,7 @@
     "ssh/knownhosts",
     "ssh/terminal"
   ]
-  revision = "91a49db82a88618983a78a06c1cbd4e00ab749ab"
+  revision = "b47b1587369238182299fe4dad77d05b8b461e06"
 
 [[projects]]
   branch = "master"
@@ -464,15 +464,16 @@
   packages = [
     "context",
     "context/ctxhttp",
+    "http/httpguts",
     "http2",
     "http2/hpack",
     "idna",
+    "internal/socks",
     "internal/timeseries",
-    "lex/httplex",
     "proxy",
     "trace"
   ]
-  revision = "cbe0f9307d0156177f9dd5dc85da1a31abc5f2fb"
+  revision = "1e491301e022f8f977054da4c2d852decd59571f"
 
 [[projects]]
   branch = "master"
@@ -484,7 +485,7 @@
     "jws",
     "jwt"
   ]
-  revision = "2f32c3ac0fa4fb807a0fcefb0b6f2468a0d99bd0"
+  revision = "1e0a3fa8ba9a5c9eb35c271780101fdaf1b205d7"
 
 [[projects]]
   branch = "master"
@@ -499,7 +500,7 @@
     "unix",
     "windows"
   ]
-  revision = "f6cff0780e542efa0c8e864dc8fa522808f6a598"
+  revision = "9527bec2660bd847c050fda93a0f0c6dee0800bb"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -526,7 +527,7 @@
   branch = "master"
   name = "golang.org/x/time"
   packages = ["rate"]
-  revision = "6dc17368e09b0e8634d71cac8168d853e869a0c7"
+  revision = "fbb02b2291d28baffd63558aa44b4b56f178d650"
 
 [[projects]]
   name = "google.golang.org/api"
@@ -569,7 +570,7 @@
     "googleapis/iam/v1",
     "googleapis/rpc/status"
   ]
-  revision = "2d9486acae19cf9bd0c093d7dc236a323726a9e4"
+  revision = "81158efcc9f219c511e4d3c0d61a0e6e49c01a24"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -578,6 +579,7 @@
     "balancer",
     "balancer/base",
     "balancer/roundrobin",
+    "channelz",
     "codes",
     "connectivity",
     "credentials",
@@ -598,14 +600,14 @@
     "tap",
     "transport"
   ]
-  revision = "8e4536a86ab602859c20df5ebfd0bd4228d08655"
-  version = "v1.10.0"
+  revision = "22a49e732a507a11ac524e4ea5fd1a3e384b6fb8"
+  version = "v1.12.1"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
   packages = ["."]
-  revision = "3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4"
-  version = "v0.9.0"
+  revision = "d2d2541c53f18d2a059457998ce2876cc8e67cbf"
+  version = "v0.9.1"
 
 [[projects]]
   name = "gopkg.in/src-d/go-billy.v4"
@@ -616,8 +618,8 @@
     "osfs",
     "util"
   ]
-  revision = "027dceab1aa836eb310d92c2eb2266e4dc9f4b81"
-  version = "v4.1.0"
+  revision = "df053870ae7070b0350624ba5a22161ba3796cc0"
+  version = "v4.1.1"
 
 [[projects]]
   name = "gopkg.in/src-d/go-git.v4"
@@ -674,8 +676,8 @@
 [[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "7f97868eec74b32b0982dd158a51a446d1da7eb5"
-  version = "v2.1.1"
+  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
+  version = "v2.2.1"
 
 [[projects]]
   name = "k8s.io/api"

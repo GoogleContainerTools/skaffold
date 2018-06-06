@@ -2,11 +2,12 @@ package jsoniter
 
 import (
 	"encoding/json"
+	"github.com/modern-go/concurrent"
 	"github.com/modern-go/reflect2"
 	"io"
+	"reflect"
 	"sync"
 	"unsafe"
-	"github.com/modern-go/concurrent"
 )
 
 // Config customize how the API should behave.
@@ -39,6 +40,8 @@ type API interface {
 	NewDecoder(reader io.Reader) *Decoder
 	Valid(data []byte) bool
 	RegisterExtension(extension Extension)
+	DecoderOf(typ reflect2.Type) ValDecoder
+	EncoderOf(typ reflect2.Type) ValEncoder
 }
 
 // ConfigDefault the default API
@@ -59,7 +62,6 @@ var ConfigFastest = Config{
 	MarshalFloatWith6Digits:       true, // will lose precession
 	ObjectFieldMustBeSimpleString: true, // do not unescape object field
 }.Froze()
-
 
 type frozenConfig struct {
 	configBeforeFrozen            Config
@@ -104,7 +106,7 @@ func (cfg *frozenConfig) getEncoderFromCache(cacheKey uintptr) ValEncoder {
 	return nil
 }
 
-var cfgCache = &sync.Map{}
+var cfgCache = concurrent.NewMap()
 
 func getFrozenConfigFromCache(cfg Config) *frozenConfig {
 	obj, found := cfgCache.Load(cfg)
@@ -192,6 +194,11 @@ func (cfg *frozenConfig) validateJsonRawMessage(extension EncoderExtension) {
 
 func (cfg *frozenConfig) useNumber(extension DecoderExtension) {
 	extension[reflect2.TypeOfPtr((*interface{})(nil)).Elem()] = &funcDecoder{func(ptr unsafe.Pointer, iter *Iterator) {
+		exitingValue := *((*interface{})(ptr))
+		if exitingValue != nil && reflect.TypeOf(exitingValue).Kind() == reflect.Ptr {
+			iter.ReadVal(exitingValue)
+			return
+		}
 		if iter.WhatIsNext() == NumberValue {
 			*((*interface{})(ptr)) = json.Number(iter.readNumberAsString())
 		} else {
