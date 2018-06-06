@@ -21,11 +21,8 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
-	"text/template"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -35,35 +32,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
-
-// Slightly modified from kubectl run --dry-run
-var deploymentTemplate = template.Must(template.New("deployment").Parse(`apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  labels:
-    run: skaffold
-  name: skaffold
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      run: skaffold
-  strategy: {}
-  template:
-    metadata:
-      labels:
-        run: skaffold
-    spec:
-      containers:
-      - image: {{ .Image }}
-        name: app
-{{if .Ports}}
-        ports:
-{{range .Ports}}
-        - containerPort: {{.}}
-{{end}}
-{{end}}
-`))
 
 // KubectlDeployer deploys workflows using kubectl CLI.
 type KubectlDeployer struct {
@@ -86,7 +54,7 @@ func NewKubectlDeployer(workingDir string, cfg *v1alpha2.DeployConfig, kubeConte
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Build) error {
-	manifests, err := k.readOrGenerateManifests(builds)
+	manifests, err := k.readManifests()
 	if err != nil {
 		return errors.Wrap(err, "reading manifests")
 	}
@@ -105,10 +73,6 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 
 // Cleanup deletes what was deployed by calling Deploy.
 func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
-	if len(k.KubectlDeploy.Manifests) == 0 {
-		return kubectl(nil, out, k.kubeContext, "delete", "deployment", "skaffold")
-	}
-
 	manifests, err := k.readManifests()
 	if err != nil {
 		return errors.Wrap(err, "reading manifests")
@@ -123,25 +87,6 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 
 func (k *KubectlDeployer) Dependencies() ([]string, error) {
 	return k.manifestFiles(k.KubectlDeploy.Manifests)
-}
-
-// readOrGenerateManifests reads the manifests to deploy/delete. If no manifest exists, try to
-// generate it with the information we have.
-func (k *KubectlDeployer) readOrGenerateManifests(builds []build.Build) (manifestList, error) {
-	if len(k.KubectlDeploy.Manifests) > 0 {
-		return k.readManifests()
-	}
-
-	if len(builds) != 1 {
-		return nil, errors.New("must specify manifest if using more than one image")
-	}
-
-	yaml, err := generateManifest(builds[0])
-	if err != nil {
-		return nil, errors.Wrap(err, "generating manifest")
-	}
-
-	return manifestList{yaml}, nil
 }
 
 func kubectl(in io.Reader, out io.Writer, kubeContext string, arg ...string) error {
@@ -225,33 +170,6 @@ func (k *KubectlDeployer) readRemoteManifest(name string) ([]byte, error) {
 	}
 
 	return manifest.Bytes(), nil
-}
-
-func generateManifest(b build.Build) ([]byte, error) {
-	logrus.Info("No manifests specified. Generating a deployment.")
-
-	dockerfilePath := filepath.Join(b.Artifact.Workspace, b.Artifact.DockerArtifact.DockerfilePath)
-	r, err := os.Open(dockerfilePath)
-	if err != nil {
-		return nil, errors.Wrap(err, "reading dockerfile")
-	}
-
-	ports, err := docker.PortsFromDockerfile(r)
-	if err != nil {
-		logrus.Warnf("Unable to determine port from Dockerfile: %s.", err)
-	}
-
-	var out bytes.Buffer
-	if err := deploymentTemplate.Execute(&out, struct {
-		Ports []string
-		Image string
-	}{
-		Ports: ports,
-		Image: b.ImageName,
-	}); err != nil {
-		return nil, err
-	}
-	return out.Bytes(), nil
 }
 
 type replacement struct {

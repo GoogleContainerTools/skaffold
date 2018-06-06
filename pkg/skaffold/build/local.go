@@ -122,7 +122,6 @@ func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagg
 		builds = append(builds, Build{
 			ImageName: artifact.ImageName,
 			Tag:       tag,
-			Artifact:  artifact,
 		})
 	}
 

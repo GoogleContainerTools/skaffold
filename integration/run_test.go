@@ -111,16 +111,6 @@ func TestRun(t *testing.T) {
 			dir: "../examples/getting-started",
 		},
 		{
-			description: "no manifest example",
-			args:        []string{"run"},
-			deployments: []testObject{
-				{
-					name: "skaffold",
-				},
-			},
-			dir: "../examples/no-manifest",
-		},
-		{
 			description: "annotated getting-started example",
 			args:        []string{"run", "-f", "annotated-skaffold.yaml"},
 			pods: []testObject{

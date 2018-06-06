@@ -100,7 +100,6 @@ func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tag
 		builds = append(builds, Build{
 			ImageName: artifact.ImageName,
 			Tag:       tag,
-			Artifact:  artifact,
 		})
 	}
 

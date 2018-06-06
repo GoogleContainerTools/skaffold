@@ -28,7 +28,6 @@ import (
 type Build struct {
 	ImageName string
 	Tag       string
-	Artifact  *v1alpha2.Artifact // The artifact used in the build.
 }
 
 // Builder is an interface to the Build API of Skaffold.
