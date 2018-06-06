@@ -35,6 +35,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		expectedName  string
 		createGitRepo func(string)
 		opts          *Options
+		subDir        string
 		shouldErr     bool
 	}{
 		{
@@ -173,6 +174,33 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
+			description: "sub directory",
+			opts: &Options{
+				ImageName: "test",
+			},
+			expectedName: "test:a7b32a6",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					mkdir("sub/sub").
+					commit("initial")
+			},
+			subDir: "sub/sub",
+		},
+		{
+			description: "sub directory with dirty status",
+			opts: &Options{
+				ImageName: "test",
+			},
+			expectedName: "test:a7b32a6-dirty-83715cdc64e43ee9",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					mkdir("sub/sub").
+					commit("initial").
+					write("source.go", []byte("updated code"))
+			},
+			subDir: "sub/sub",
+		},
+		{
 			description:   "failure",
 			createGitRepo: func(dir string) {},
 			shouldErr:     true,
@@ -185,35 +213,18 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			defer cleanup()
 
 			tt.createGitRepo(tmpDir)
+			workspace := filepath.Join(tmpDir, tt.subDir)
 
 			c := &GitCommit{}
-			name, err := c.GenerateFullyQualifiedImageName(tmpDir, tt.opts)
+			name, err := c.GenerateFullyQualifiedImageName(workspace, tt.opts)
+			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.expectedName, name)
 
+			name, err = generateNameGoGit(workspace, tt.opts)
+			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.expectedName, name)
+
+			name, err = generateNameGitShellOut(workspace, tt.opts)
 			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.expectedName, name)
 		})
-	}
-}
-
-func TestGenerateFullyQualifiedImageNameFromSubDirectory(t *testing.T) {
-	tmpDir, cleanup := testutil.TempDir(t)
-	defer cleanup()
-
-	gitInit(t, tmpDir).
-		mkdir("sub/sub").
-		commit("initial")
-
-	opts := &Options{ImageName: "test"}
-	c := &GitCommit{}
-
-	name1, err := c.GenerateFullyQualifiedImageName(tmpDir, opts)
-	failNowIfError(t, err)
-
-	subDir := filepath.Join(tmpDir, "sub", "sub")
-	name2, err := c.GenerateFullyQualifiedImageName(subDir, opts)
-	failNowIfError(t, err)
-
-	if name1 != name2 || name1 != "test:a7b32a6" {
-		t.Errorf("Invalid names found: %s and %s", name1, name2)
 	}
 }
 
