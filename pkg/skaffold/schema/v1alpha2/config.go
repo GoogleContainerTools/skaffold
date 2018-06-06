@@ -109,8 +109,9 @@ type DeployConfig struct {
 // DeployType contains the specific implementation and parameters needed
 // for the deploy step. Only one field should be populated.
 type DeployType struct {
-	HelmDeploy    *HelmDeploy    `yaml:"helm"`
-	KubectlDeploy *KubectlDeploy `yaml:"kubectl"`
+	HelmDeploy      *HelmDeploy      `yaml:"helm"`
+	KubectlDeploy   *KubectlDeploy   `yaml:"kubectl"`
+	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize"`
 }
 
 // KubectlDeploy contains the configuration needed for deploying with `kubectl apply`
@@ -123,6 +124,8 @@ type KubectlDeploy struct {
 type HelmDeploy struct {
 	Releases []HelmRelease `yaml:"releases,omitempty"`
 }
+
+type KustomizeDeploy struct{}
 
 type HelmRelease struct {
 	Name           string            `yaml:"name"`

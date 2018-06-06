@@ -30,6 +30,7 @@ import (
 	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -87,12 +88,13 @@ func TestRun(t *testing.T) {
 	}
 
 	type testRunCase struct {
-		description string
-		dir         string
-		extraArgs   []string
-		deployments []testObject
-		pods        []testObject
-		env         map[string]string
+		description          string
+		dir                  string
+		args                 []string
+		deployments          []testObject
+		pods                 []testObject
+		deploymentValidation func(t *testing.T, d *appsv1.Deployment)
+		env                  map[string]string
 
 		remoteOnly bool
 	}
@@ -100,6 +102,7 @@ func TestRun(t *testing.T) {
 	var testCases = []testRunCase{
 		{
 			description: "getting-started example",
+			args:        []string{"run"},
 			pods: []testObject{
 				{
 					name: "getting-started",
@@ -109,6 +112,7 @@ func TestRun(t *testing.T) {
 		},
 		{
 			description: "no manifest example",
+			args:        []string{"run"},
 			deployments: []testObject{
 				{
 					name: "skaffold",
@@ -118,16 +122,17 @@ func TestRun(t *testing.T) {
 		},
 		{
 			description: "annotated getting-started example",
+			args:        []string{"run", "-f", "annotated-skaffold.yaml"},
 			pods: []testObject{
 				{
 					name: "getting-started",
 				},
 			},
-			dir:       "../examples",
-			extraArgs: []string{"-f", "annotated-skaffold.yaml"},
+			dir: "../examples",
 		},
 		{
 			description: "getting-started envTagger",
+			args:        []string{"run"},
 			pods: []testObject{
 				{
 					name: "getting-started",
@@ -136,28 +141,34 @@ func TestRun(t *testing.T) {
 			dir: "../examples/environment-variables",
 			env: map[string]string{"FOO": "foo"},
 		},
-		// // Don't run this test for now. It takes awhile to download all the
-		// // dependencies
-		// {
-		// 	description: "repository root skaffold.yaml",
-		// 	pods: []testObject{
-		// 		{
-		// 			name:      "skaffold",
-		// 			namespace: "default",
-		// 		},
-		// 	},
-		// 	dir: "../",
-		// },
 		{
 			description: "gcb builder example",
+			args:        []string{"run", "-p", "gcb"},
 			pods: []testObject{
 				{
 					name: "getting-started",
 				},
 			},
 			dir:        "../examples/getting-started",
-			extraArgs:  []string{"-p", "gcb"},
 			remoteOnly: true,
+		},
+		{
+			description: "deploy kustomize",
+			args:        []string{"deploy", "--images", "index.docker.io/library/busybox:1"},
+			deployments: []testObject{
+				{
+					name: "kustomize-test",
+				},
+			},
+			deploymentValidation: func(t *testing.T, d *appsv1.Deployment) {
+				if d == nil {
+					t.Fatalf("Could not find deployment")
+				}
+				if d.Spec.Template.Spec.Containers[0].Image != "index.docker.io/library/busybox:1" {
+					t.Fatalf("Wrong image name in kustomized deployment: %s", d.Spec.Template.Spec.Containers[0].Image)
+				}
+			},
+			dir: "../examples/kustomize",
 		},
 	}
 
@@ -170,18 +181,16 @@ func TestRun(t *testing.T) {
 			ns, deleteNs := setupNamespace(t)
 			defer deleteNs()
 
-			args := []string{"run"}
-			args = append(args, testCase.extraArgs...)
-			cmd := exec.Command("skaffold", args...)
+			cmd := exec.Command("skaffold", testCase.args...)
 			env := os.Environ()
 			for k, v := range testCase.env {
 				env = append(env, fmt.Sprintf("%s=%s", k, v))
 			}
 			cmd.Env = env
 			cmd.Dir = testCase.dir
-			err := util.RunCmd(cmd)
+			output, err := util.RunCmdOut(cmd)
 			if err != nil {
-				t.Fatalf("skaffold run: %v", err)
+				t.Fatalf("skaffold: %s %v", output, err)
 			}
 
 			for _, p := range testCase.pods {
@@ -193,6 +202,13 @@ func TestRun(t *testing.T) {
 			for _, d := range testCase.deployments {
 				if err := kubernetesutil.WaitForDeploymentToStabilize(client, ns.Name, d.name, 10*time.Minute); err != nil {
 					t.Fatalf("Timed out waiting for deployment to stabilize")
+				}
+				if testCase.deploymentValidation != nil {
+					deployment, err := client.AppsV1().Deployments(ns.Name).Get(d.name, meta_v1.GetOptions{})
+					if err != nil {
+						t.Fatalf("Could not find deployment: %s %s", ns.Name, d)
+					}
+					testCase.deploymentValidation(t, deployment)
 				}
 			}
 		})

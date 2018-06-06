@@ -119,6 +119,9 @@ func getDeployer(cfg *v1alpha2.DeployConfig, kubeContext string, namespace strin
 	case cfg.HelmDeploy != nil:
 		return deploy.NewHelmDeployer(cfg, kubeContext, namespace), nil
 
+	case cfg.KustomizeDeploy != nil:
+		return deploy.NewKustomizeDeployer(cfg, kubeContext), nil
+
 	default:
 		return nil, fmt.Errorf("Unknown deployer for config %+v", cfg)
 	}
