@@ -97,8 +97,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return errors.Wrap(err, "replacing images in manifests")
 	}
 
-	err = kubectl(manifests.reader(), out, k.kubeContext, "apply", "-f", "-")
-	if err != nil {
+	if err := kubectl(manifests.reader(), out, k.kubeContext, "apply", "-f", "-"); err != nil {
 		return errors.Wrap(err, "deploying manifests")
 	}
 
@@ -116,8 +115,7 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		return errors.Wrap(err, "reading manifests")
 	}
 
-	err = kubectl(manifests.reader(), out, k.kubeContext, "delete", "-f", "-")
-	if err != nil {
+	if err := kubectl(manifests.reader(), out, k.kubeContext, "delete", "-f", "-"); err != nil {
 		return errors.Wrap(err, "deleting manifests")
 	}
 
