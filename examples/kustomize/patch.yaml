@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kustomize-test
+  labels:
+    app: kustomize-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kustomize-test
+  template:
+    metadata:
+      labels:
+        app: kustomize-test
+    spec:
+      containers:
+      - name: kustomize-test
+        image: index.docker.io/library/busybox
+        command:
+          - sleep
+          - "3600"
