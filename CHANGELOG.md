@@ -42,7 +42,7 @@ Updates
 * Remove afero [#613](https://github.com/GoogleContainerTools/skaffold/pull/613)
 
 
-https://github.com/GoogleContainerTools/skaffold/compare/v0.6.0...v0.6.1
+https://github.com/GoogleContainerTools/skaffold/compare/v0.6.1...v0.7.0
 
 # v0.6.1 Release - 5/24/2018
 New Features
