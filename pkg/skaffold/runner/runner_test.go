@@ -242,7 +242,6 @@ func TestRun(t *testing.T) {
 			runner := &SkaffoldRunner{
 				Builder:  test.builder,
 				Deployer: test.deployer,
-				opts:     &config.SkaffoldOptions{},
 				Tagger:   &tag.ChecksumTagger{},
 			}
 			err := runner.Run(context.Background(), ioutil.Discard, test.config.Build.Artifacts)
@@ -290,12 +289,11 @@ func TestDev(t *testing.T) {
 			runner := &SkaffoldRunner{
 				Builder:              test.builder,
 				Deployer:             &TestDeployer{},
-				opts:                 &config.SkaffoldOptions{},
 				Tagger:               &tag.ChecksumTagger{},
 				DependencyMapFactory: build.NewDependencyMap,
 				WatcherFactory:       test.watcherFactory,
 			}
-			err := runner.Dev(context.Background(), ioutil.Discard, nil)
+			_, err := runner.Dev(context.Background(), ioutil.Discard, nil)
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})
@@ -318,7 +316,6 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	}
 
 	runner := &SkaffoldRunner{
-		opts:     &config.SkaffoldOptions{},
 		Builder:  builder,
 		Deployer: deployer,
 		DependencyMapFactory: func(artifacts []*v1alpha2.Artifact) (*build.DependencyMap, error) {
@@ -330,7 +327,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 
 	// All artifacts are changed
 	runner.WatcherFactory = NewWatcherFactory(nil, []string{"path1", "path2"})
-	err := runner.Dev(ctx, ioutil.Discard, artifacts)
+	_, err := runner.Dev(ctx, ioutil.Discard, artifacts)
 
 	if err != nil {
 		t.Errorf("Didn't expect an error. Got %s", err)
@@ -344,7 +341,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 
 	// Only one is changed
 	runner.WatcherFactory = NewWatcherFactory(nil, []string{"path2"})
-	err = runner.Dev(ctx, ioutil.Discard, artifacts)
+	_, err = runner.Dev(ctx, ioutil.Discard, artifacts)
 
 	if err != nil {
 		t.Errorf("Didn't expect an error. Got %s", err)
