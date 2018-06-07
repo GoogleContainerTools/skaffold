@@ -23,7 +23,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -57,12 +56,7 @@ type BuildOutput struct {
 func runBuild(out io.Writer, filename string) error {
 	ctx := context.Background()
 
-	config, err := readConfiguration(filename)
-	if err != nil {
-		return errors.Wrap(err, "reading configuration")
-	}
-
-	runner, err := runner.NewForConfig(opts, config)
+	runner, config, err := newRunner(filename)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}
