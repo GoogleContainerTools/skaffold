@@ -173,12 +173,6 @@
   version = "v1.9.0"
 
 [[projects]]
-  name = "github.com/fsnotify/fsnotify"
-  packages = ["."]
-  revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
-  version = "v1.4.7"
-
-[[projects]]
   name = "github.com/ghodss/yaml"
   packages = ["."]
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
@@ -860,6 +854,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0d621436ddce40e37823d53fca8ac6d42a42fdd25b704c21b1e71cd5cf0f2329"
+  inputs-digest = "107ff4ac76514c059f521e12b9bbc0820dfca0307083ad043a3359454d7d6d2e"
   solver-name = "gps-cdcl"
   solver-version = 1
