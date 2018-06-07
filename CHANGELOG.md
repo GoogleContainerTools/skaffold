@@ -1,3 +1,49 @@
+# v0.7.0 Release - 5/24/2018
+
+
+New Features
+
+* cmd: add skaffold deploy [#624](https://github.com/GoogleContainerTools/skaffold/pull/624)
+* Remove no-manifest code. [#640](https://github.com/GoogleContainerTools/skaffold/pull/640)
+* Add an mtime file watcher. [#549](https://github.com/GoogleContainerTools/skaffold/pull/549)
+* Add functionality to toggle the `--wait` flag on helm install/upgrade [#633](https://github.com/GoogleContainerTools/skaffold/pull/633)
+* Add kustomize deployer [#641](https://github.com/GoogleContainerTools/skaffold/pull/641)
+* Add datetime tagger tagpolicy [#621](https://github.com/GoogleContainerTools/skaffold/pull/621)
+* Helm: add option to generate override values.yaml based on data passed into skaffold.yaml [#632](https://github.com/GoogleContainerTools/skaffold/pull/632)
+* add `--output` and `--quiet` to `skaffold build` [#606](https://github.com/GoogleContainerTools/skaffold/pull/606)
+* Add the ability to express the release name as a template [#602](https://github.com/GoogleContainerTools/skaffold/pull/602)
+* Simpler code that logs containers [#612](https://github.com/GoogleContainerTools/skaffold/pull/612)
+
+Bug Fixes
+
+* Fix image parsing in skaffold deploy [#638](https://github.com/GoogleContainerTools/skaffold/pull/638)
+* Fix flaky test [#594](https://github.com/GoogleContainerTools/skaffold/pull/594)
+* fix: allow an environment variable to default the deploy namespace [#497](https://github.com/GoogleContainerTools/skaffold/pull/497)
+* Add BUILD and WORKSPACE files to dependencies [#636](https://github.com/GoogleContainerTools/skaffold/pull/636)
+* Misc fixes to dev mode [#589](https://github.com/GoogleContainerTools/skaffold/pull/589)
+
+
+Updates
+
+* Quick Start GKE Doc - reference change for k8s-pod deployment [#615](https://github.com/GoogleContainerTools/skaffold/pull/615)
+* kaniko: pin image version to v0.1.0 [#592](https://github.com/GoogleContainerTools/skaffold/pull/592)
+* Refactor the envTemplate code to make it reusable [#601](https://github.com/GoogleContainerTools/skaffold/pull/601)
+* Simplify runner test [#609](https://github.com/GoogleContainerTools/skaffold/pull/609)
+* Move kubernetes client creation to kubernetes package [#608](https://github.com/GoogleContainerTools/skaffold/pull/608)
+* Remove unused field. [#616](https://github.com/GoogleContainerTools/skaffold/pull/616)
+* Remove annoying testdata folder [#614](https://github.com/GoogleContainerTools/skaffold/pull/614)
+* Dockerfile should always be sent to daemon [#605](https://github.com/GoogleContainerTools/skaffold/pull/605)
+* Simplify code that resolves dependencies [#610](https://github.com/GoogleContainerTools/skaffold/pull/610)
+* Switch boilerplate to The Skaffold Authors. [#626](https://github.com/GoogleContainerTools/skaffold/pull/626)
+* Improve runner code [#645](https://github.com/GoogleContainerTools/skaffold/pull/645)
+* Simplify helm_test [#607](https://github.com/GoogleContainerTools/skaffold/pull/607)
+* Replace gometalinter with GolangCI-Lint [#619](https://github.com/GoogleContainerTools/skaffold/pull/619)
+* Update go-git to v4.4.0 [#634](https://github.com/GoogleContainerTools/skaffold/pull/634)
+* Remove afero [#613](https://github.com/GoogleContainerTools/skaffold/pull/613)
+
+
+https://github.com/GoogleContainerTools/skaffold/compare/v0.6.0...v0.6.1
+
 # v0.6.1 Release - 5/24/2018
 New Features
 * Stricter YAML parsing [#570](https://github.com/GoogleContainerTools/skaffold/pull/570)
