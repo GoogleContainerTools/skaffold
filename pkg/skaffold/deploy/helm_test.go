@@ -46,6 +46,9 @@ var testDeployConfig = &v1alpha2.DeployConfig{
 					Values: map[string]string{
 						"image.tag": "skaffold-helm",
 					},
+					Overrides: map[string]interface{}{
+						"foo": "bar",
+					},
 					SetValues: map[string]string{
 						"some.key": "somevalue",
 					},
