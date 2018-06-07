@@ -177,7 +177,6 @@ $ skaffold run
 
 * [Deploying with Helm](./examples/helm-deployment)
 * [Microservices/Multiple applications](./examples/microservices)
-* [Deploying with no Kubernetes manifests](./examples/no-manifest)
 * [Annotated skaffold.yaml](./examples/annotated-skaffold.yaml)
 
 ## Community

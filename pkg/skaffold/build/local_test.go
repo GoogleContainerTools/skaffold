@@ -99,13 +99,6 @@ func TestLocalRun(t *testing.T) {
 				{
 					ImageName: "gcr.io/test/image",
 					Tag:       "gcr.io/test/image:imageid",
-					Artifact: &v1alpha2.Artifact{
-						ImageName: "gcr.io/test/image",
-						Workspace: tmp,
-						ArtifactType: v1alpha2.ArtifactType{
-							DockerArtifact: &v1alpha2.DockerArtifact{},
-						},
-					},
 				},
 			},
 		},
@@ -150,13 +143,6 @@ func TestLocalRun(t *testing.T) {
 				{
 					ImageName: "gcr.io/test/image",
 					Tag:       "gcr.io/test/image:imageid",
-					Artifact: &v1alpha2.Artifact{
-						ImageName: "gcr.io/test/image",
-						Workspace: tmp,
-						ArtifactType: v1alpha2.ArtifactType{
-							DockerArtifact: &v1alpha2.DockerArtifact{},
-						},
-					},
 				},
 			},
 		},

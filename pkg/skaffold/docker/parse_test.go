@@ -21,11 +21,9 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
-
 	"github.com/google/go-containerregistry/v1"
 )
 
@@ -259,51 +257,6 @@ func TestGetDependencies(t *testing.T) {
 
 			deps, err := GetDependencies("Dockerfile", workspace)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
-		})
-	}
-}
-
-func TestPortsFromDockerfile(t *testing.T) {
-	tests := []struct {
-		name          string
-		dockerfile    string
-		expectedPorts []string
-		shouldErr     bool
-	}{
-		{
-			name:          "one port from base image",
-			dockerfile:    "FROM oneport",
-			expectedPorts: []string{"8000"},
-		},
-		{
-			name:          "two ports from base image",
-			dockerfile:    "FROM severalports",
-			expectedPorts: []string{"8000", "8001/tcp"},
-		},
-		{
-			name:          "one port from dockerfile",
-			dockerfile:    "FROM oneport\nEXPOSE 9000",
-			expectedPorts: []string{"8000", "9000"},
-		},
-		{
-			name:          "several port from dockerfile",
-			dockerfile:    "FROM severalports\nEXPOSE 9000 9001\nEXPOSE 9002/tcp",
-			expectedPorts: []string{"8000", "8001/tcp", "9000", "9001", "9002/tcp"},
-		},
-	}
-
-	RetrieveImage = mockRetrieveImage
-	defer func() {
-		RetrieveImage = retrieveImage
-	}()
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := strings.NewReader(tt.dockerfile)
-
-			ports, err := PortsFromDockerfile(r)
-
-			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.expectedPorts, ports)
 		})
 	}
 }

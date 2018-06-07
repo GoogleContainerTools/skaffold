@@ -23,21 +23,19 @@ import (
 	"io"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-
 	cstorage "cloud.google.com/go/storage"
-	"golang.org/x/oauth2/google"
-	cloudbuild "google.golang.org/api/cloudbuild/v1"
-	"google.golang.org/api/googleapi"
-	"google.golang.org/api/iterator"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/oauth2/google"
+	cloudbuild "google.golang.org/api/cloudbuild/v1"
+	"google.golang.org/api/googleapi"
+	"google.golang.org/api/iterator"
 )
 
 const (
@@ -225,7 +223,6 @@ watch:
 	return &Build{
 		ImageName: artifact.ImageName,
 		Tag:       newTag,
-		Artifact:  artifact,
 	}, nil
 }
 
