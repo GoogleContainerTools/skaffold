@@ -22,8 +22,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -45,7 +43,6 @@ type SkaffoldRunner struct {
 	watch.WatcherFactory
 	build.DependencyMapFactory
 
-	opts   *config.SkaffoldOptions
 	builds []build.Build
 }
 
@@ -83,7 +80,6 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 		Tagger:               tagger,
 		WatcherFactory:       watch.NewWatcher,
 		DependencyMapFactory: build.NewDependencyMap,
-		opts:                 opts,
 	}, nil
 }
 
@@ -167,33 +163,26 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*v1
 
 // Dev watches for changes and runs the skaffold build and deploy
 // pipeline until interrrupted by the user.
-func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact) error {
-	if r.opts.Cleanup {
-		return r.cleanUpOnCtrlC(ctx, out, artifacts)
-	}
-	return r.watchBuildDeploy(ctx, out, artifacts)
-}
-
-func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact) error {
+func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact) ([]build.Build, error) {
 	depMap, err := r.DependencyMapFactory(artifacts)
 	if err != nil {
-		return errors.Wrap(err, "getting path to dependency map")
+		return nil, errors.Wrap(err, "getting path to dependency map")
 	}
 
 	watcher, err := r.WatcherFactory(depMap.Paths())
 	if err != nil {
-		return errors.Wrap(err, "creating watcher")
+		return nil, errors.Wrap(err, "creating watcher")
 	}
 
 	deployDeps, err := r.Dependencies()
 	if err != nil {
-		return errors.Wrap(err, "getting deploy dependencies")
+		return nil, errors.Wrap(err, "getting deploy dependencies")
 	}
 	logrus.Infof("Deployer dependencies: %s", deployDeps)
 
 	deployWatcher, err := r.WatcherFactory(deployDeps)
 	if err != nil {
-		return errors.Wrap(err, "creating deploy watcher")
+		return nil, errors.Wrap(err, "creating deploy watcher")
 	}
 
 	imageList := kubernetes.NewImageList()
@@ -235,12 +224,12 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context, out io.Writer, ar
 	}
 
 	if err := onChange(depMap.Paths()); err != nil {
-		return errors.Wrap(err, "first build")
+		return nil, errors.Wrap(err, "first build")
 	}
 
 	// Start logs
 	if err = logger.Start(ctx); err != nil {
-		return errors.Wrap(err, "starting logger")
+		return r.builds, errors.Wrap(err, "starting logger")
 	}
 
 	// Watch files and rebuild
@@ -252,32 +241,7 @@ func (r *SkaffoldRunner) watchBuildDeploy(ctx context.Context, out io.Writer, ar
 		return deployWatcher.Start(watchCtx, ioutil.Discard, onDeployChange)
 	})
 
-	return g.Wait()
-}
-
-func (r *SkaffoldRunner) cleanUpOnCtrlC(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact) error {
-	ctx, cancel := context.WithCancel(ctx)
-
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt,
-		syscall.SIGTERM,
-		syscall.SIGINT,
-		syscall.SIGPIPE,
-	)
-
-	go func() {
-		<-signals
-		cancel()
-	}()
-
-	errRun := r.watchBuildDeploy(ctx, out, artifacts)
-	// Cleanup only if something was built
-	if r.builds != nil {
-		if err := r.Cleanup(ctx, out); err != nil {
-			logrus.Warnln("cleanup:", err)
-		}
-	}
-	return errRun
+	return r.builds, g.Wait()
 }
 
 func mergeWithPreviousBuilds(builds, previous []build.Build) []build.Build {

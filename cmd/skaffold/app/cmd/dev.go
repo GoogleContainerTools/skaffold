@@ -19,9 +19,12 @@ package cmd
 import (
 	"context"
 	"io"
+	"os"
+	"os/signal"
+	"syscall"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -41,17 +44,40 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 }
 
 func dev(out io.Writer, filename string) error {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	config, err := readConfiguration(filename)
-	if err != nil {
-		return errors.Wrap(err, "reading configuration")
+	if opts.Cleanup {
+		catchCtrlC(cancel)
 	}
 
-	runner, err := runner.NewForConfig(opts, config)
+	runner, config, err := newRunner(filename)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}
 
-	return runner.Dev(ctx, out, config.Build.Artifacts)
+	built, err := runner.Dev(ctx, out, config.Build.Artifacts)
+
+	if opts.Cleanup && built != nil {
+		// Cleanup only if something was built
+		if err := runner.Cleanup(ctx, out); err != nil {
+			logrus.Warnln("cleanup:", err)
+		}
+	}
+
+	return err
+}
+
+func catchCtrlC(cancel context.CancelFunc) {
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt,
+		syscall.SIGTERM,
+		syscall.SIGINT,
+		syscall.SIGPIPE,
+	)
+
+	go func() {
+		<-signals
+		cancel()
+	}()
 }

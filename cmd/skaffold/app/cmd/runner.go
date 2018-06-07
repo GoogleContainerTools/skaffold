@@ -17,34 +17,22 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
-	"io"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 )
 
-// NewCmdDelete describes the CLI command to delete deployed resources.
-func NewCmdDelete(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "delete",
-		Short: "Delete the deployed resources",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return delete(out, filename)
-		},
-	}
-	AddRunDevFlags(cmd)
-	return cmd
-}
-
-func delete(out io.Writer, filename string) error {
-	ctx := context.Background()
-
-	runner, _, err := newRunner(filename)
+// newRunner creates a SkaffoldRunner and returns the SkaffoldConfig associated with it.
+func newRunner(filename string) (*runner.SkaffoldRunner, *config.SkaffoldConfig, error) {
+	config, err := readConfiguration(filename)
 	if err != nil {
-		return errors.Wrap(err, "creating runner")
+		return nil, nil, errors.Wrap(err, "reading configuration")
 	}
 
-	return runner.Cleanup(ctx, out)
+	runner, err := runner.NewForConfig(opts, config)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "creating runner")
+	}
+
+	return runner, config, nil
 }
