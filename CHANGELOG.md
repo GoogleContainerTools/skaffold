@@ -1,4 +1,4 @@
-# v0.7.0 Release - 5/24/2018
+# v0.7.0 Release - 06/07/2018
 
 
 New Features
