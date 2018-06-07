@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -63,8 +62,6 @@ func TestWatch(t *testing.T) {
 	for _, watcher := range watchers {
 		for _, test := range tests {
 			t.Run(fmt.Sprintf("%s %s", test.description, watcher), func(t *testing.T) {
-				os.Setenv("SKAFFOLD_FILE_WATCHER", watcher)
-				defer os.Setenv("SKAFFOLD_FILE_WATCHER", "")
 				tmp, teardown := testutil.TempDir(t)
 				defer teardown()
 
