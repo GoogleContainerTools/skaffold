@@ -81,7 +81,7 @@ integration: install $(BUILD_DIR)/$(PROJECT)
 
 .PHONY: release
 release: cross
-	gsutil cp $(BUILD_DIR)/$(PROJECT)-* gs://$(RELEASE_BUCKET)/$(VERSION)/
+	gsutil cp $(BUILD_DIR)/$(PROJECT)-* gs://$(RELEASE_BUCKET)/releases/$(VERSION)/
 	gsutil cp $(BUILD_DIR)/$(PROJECT)-* gs://$(RELEASE_BUCKET)/latest/
 
 .PHONY: clean
