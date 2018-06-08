@@ -21,16 +21,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"sort"
 	"time"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
-
-const quietPeriod = 500 * time.Millisecond
 
 // WatcherFactory can build Watchers from a list of files to be watched for changes
 type WatcherFactory func(paths []string) (Watcher, error)
@@ -42,20 +38,14 @@ type Watcher interface {
 	Start(ctx context.Context, out io.Writer, onChange func([]string) error) error
 }
 
-// fsWatcher uses inotify to watch for changes and implements
-// the Watcher interface
-type fsWatcher struct {
-	watcher *fsnotify.Watcher
-	files   map[string]bool
-}
-
+// mtimeWatcher uses polling on file mTimes.
 type mtimeWatcher struct {
 	files map[string]time.Time
 }
 
 func (m *mtimeWatcher) Start(ctx context.Context, out io.Writer, onChange func([]string) error) error {
-
 	c := time.NewTicker(2 * time.Second)
+	defer c.Stop()
 
 	changedPaths := map[string]bool{}
 
@@ -94,95 +84,22 @@ func (m *mtimeWatcher) Start(ctx context.Context, out io.Writer, onChange func([
 
 // NewWatcher creates a new Watcher on a list of files.
 func NewWatcher(paths []string) (Watcher, error) {
+	logrus.Info("Starting mtime file watcher.")
+
 	sort.Strings(paths)
 
-	// Get the watcher type to use, defaulting to mtime.
-	watcher := os.Getenv("SKAFFOLD_FILE_WATCHER")
-	if watcher == "" {
-		watcher = "mtime"
-	}
-
-	switch watcher {
-	case "mtime":
-		logrus.Info("Starting mtime file watcher.")
-		files := map[string]time.Time{}
-		for _, p := range paths {
-			fi, err := os.Stat(p)
-			if err != nil {
-				return nil, err
-			}
-			files[p] = fi.ModTime()
-		}
-		return &mtimeWatcher{
-			files: files,
-		}, nil
-	case "fsnotify":
-		logrus.Info("Starting fsnotify file watcher.")
-		w, err := fsnotify.NewWatcher()
+	files := map[string]time.Time{}
+	for _, p := range paths {
+		fi, err := os.Stat(p)
 		if err != nil {
-			return nil, errors.Wrapf(err, "creating watcher")
+			return nil, errors.Wrapf(err, "statting file %s", p)
 		}
-
-		files := map[string]bool{}
-
-		for _, p := range paths {
-			files[p] = true
-			logrus.Debugf("Added watch for %s", p)
-
-			if err := w.Add(p); err != nil {
-				w.Close()
-				return nil, errors.Wrapf(err, "adding watch for %s", p)
-			}
-
-			if err := w.Add(filepath.Dir(p)); err != nil {
-				w.Close()
-				return nil, errors.Wrapf(err, "adding watch for %s", p)
-			}
-		}
-		return &fsWatcher{
-			watcher: w,
-			files:   files,
-		}, nil
+		files[p] = fi.ModTime()
 	}
-	return nil, fmt.Errorf("unknown watch type: %s", watcher)
-}
 
-// Start watches a set of files for changes, and calls `onChange`
-// on each file change.
-func (f *fsWatcher) Start(ctx context.Context, out io.Writer, onChange func([]string) error) error {
-	changedPaths := map[string]bool{}
-
-	timer := time.NewTimer(1<<63 - 1) // Forever
-	defer timer.Stop()
-
-	for {
-		select {
-		case ev := <-f.watcher.Events:
-			if ev.Op == fsnotify.Chmod {
-				continue // TODO(dgageot): VSCode seems to chmod randomly
-			}
-			if !f.files[ev.Name] {
-				continue // File is not directly watched. Maybe its parent is
-			}
-			timer.Reset(quietPeriod)
-			logrus.Infof("Change: %s", ev)
-			changedPaths[ev.Name] = true
-		case err := <-f.watcher.Errors:
-			return errors.Wrap(err, "watch error")
-		case <-timer.C:
-			changes := sortedPaths(changedPaths)
-			changedPaths = map[string]bool{}
-
-			if err := onChange(changes); err != nil {
-				return errors.Wrap(err, "change callback")
-			}
-
-			fmt.Fprintln(out, "Watching for changes...")
-		case <-ctx.Done():
-			f.watcher.Close()
-			return nil
-		}
-	}
+	return &mtimeWatcher{
+		files: files,
+	}, nil
 }
 
 func sortedPaths(changedPaths map[string]bool) []string {
