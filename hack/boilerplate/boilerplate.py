@@ -18,8 +18,6 @@ from __future__ import print_function
 
 import argparse
 import glob
-import json
-import mmap
 import os
 import re
 import sys

@@ -1,12 +1,12 @@
-# Build from source TL;DR
+== Build from source TL;DR
 
-0. Install Go (minimum required version 1.10)
+. Install Go (minimum required version 1.10)
 
-1. Get the source 
+. Get the source 
 
         $ go get -u -d github.com/GoogleContainerTools/skaffold
     
-1. Build and install Skaffold to `$GOPATH/bin/skaffold`
+. Build and install Skaffold to `$GOPATH/bin/skaffold`
 
         make install 
 

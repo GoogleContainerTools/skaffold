@@ -1,0 +1,60 @@
+= Skaffold
+Dan Lorenc <dlorenc@google.com>; Matt Rickard <mrick@google.com>; David Gageot <david@gageot.net>; Vic Iglesias <viglesias@google.com>; Balint Pato <balintp@google.com>
+:toc: left
+:icons: font
+:imagesdir: img
+:source-highlighter: pygments
+:pygments-css: style
+:stylesheet: css/skaffold.css
+:linkcss: css/skaffold.css
+:doctype: book
+:github-repo-tree: http://github.com/GoogleContainerTools/skaffold/tree/{commit}
+
+ifndef::env-github[]
+=====
+version: {version} +
+updated: {docdate} +
+commit: link:http://github.com/GoogleContainerTools/skaffold/tree/{commit}[{commit}]
+=====
+endif::[]
+
+== Introduction
+
+include::../README.adoc[leveloffset=+1,tags=title;intro;features;pluggability;operatingmodes]
+
+ifndef::pdf[]
+include::../README.adoc[leveloffset=+1,tags=demo]
+endif::[]
+
+include::../README.adoc[leveloffset=+1,tags=getting_started_local]
+
+include::building.adoc[]
+
+include::quickstart-gke.adoc[leveloffset=+1]
+
+include::concepts.adoc[]
+
+include::../examples/README.adoc[]
+
+= Advanced topics
+
+include::docker-commands.adoc[]
+
+= Contributing
+
+include::../CONTRIBUTING.adoc[leveloffset=+1]
+
+== Code of conduct
+
+See http://github.com/GoogleContainerTools/skaffold/tree/master/code-of-conduct.md[code-of-conduct.md]
+
+= Resources
+
+== Changelog
+
+See http://github.com/GoogleContainerTools/skaffold/tree/master/CHANGELOG.md[CHANGELOG.md]
+
+
+include::../README.adoc[leveloffset=+1,tags=community]
+
+include::copyright.adoc[]

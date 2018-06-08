@@ -1,0 +1,3 @@
+/* Skaffold default stylesheet - for now it simply defaults to the asciidoctor's CSS */
+
+@import "asciidoctor.css";

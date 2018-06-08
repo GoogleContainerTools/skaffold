@@ -2,3 +2,4 @@ out/
 examples/bazel/bazel-*
 *.new
 .idea/
+docs/generated
