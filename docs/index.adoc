@@ -10,11 +10,13 @@ Dan Lorenc <dlorenc@google.com>; Matt Rickard <mrick@google.com>; David Gageot <
 :doctype: book
 :github-repo-tree: http://github.com/GoogleContainerTools/skaffold/tree/{commit}
 
+ifndef::env-github[]
 =====
 version: {version} +
 updated: {docdate} +
 commit: link:http://github.com/GoogleContainerTools/skaffold/tree/{commit}[{commit}]
 =====
+endif::[]
 
 == Introduction
 
