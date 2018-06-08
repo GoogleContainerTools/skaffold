@@ -18,3 +18,4 @@ steps:
   - name: 'gcr.io/cloud-builders/gsutil'
     args: ['cp', '-r', 'gs://skaffold/releases/$TAG_NAME/*', 'gs://skaffold/releases/latest/']
 images: ['gcr.io/k8s-skaffold/skaffold:$TAG_NAME']
+timeout: 20m

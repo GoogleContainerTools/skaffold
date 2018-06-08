@@ -18,3 +18,4 @@ steps:
   - name: 'gcr.io/cloud-builders/gsutil'
     args: ['cp', '-r', 'gs://skaffold/builds/$COMMIT_SHA/*', 'gs://skaffold/builds/latest/']
 images: ['gcr.io/k8s-skaffold/skaffold:$COMMIT_SHA']
+timeout: 20m
