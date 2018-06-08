@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/google/go-containerregistry/v1"
+	"github.com/google/go-containerregistry/pkg/v1"
 )
 
 const copyServerGo = `

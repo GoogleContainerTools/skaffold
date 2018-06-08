@@ -15,7 +15,7 @@
 package v1
 
 import (
-	"github.com/google/go-containerregistry/v1/types"
+	"github.com/google/go-containerregistry/pkg/v1/types"
 )
 
 // Image defines the interface for interacting with an OCI v1 image.

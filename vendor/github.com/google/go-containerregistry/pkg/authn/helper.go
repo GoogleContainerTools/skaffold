@@ -21,7 +21,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/google/go-containerregistry/name"
+	"github.com/google/go-containerregistry/pkg/name"
 )
 
 // magicNotFoundMessage is the string that the CLI special cases to mean

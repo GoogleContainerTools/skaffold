@@ -18,7 +18,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/google/go-containerregistry/name"
+	"github.com/google/go-containerregistry/pkg/name"
 )
 
 // Detect more complex forms of local references.

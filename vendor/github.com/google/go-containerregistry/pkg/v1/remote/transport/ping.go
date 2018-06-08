@@ -19,15 +19,15 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/google/go-containerregistry/name"
+	"github.com/google/go-containerregistry/pkg/name"
 )
 
 type challenge string
 
 const (
-	anonymous challenge = "Anonymous"
-	basic     challenge = "Basic"
-	bearer    challenge = "Bearer"
+	anonymous challenge = "anonymous"
+	basic     challenge = "basic"
+	bearer    challenge = "bearer"
 )
 
 type pingResp struct {
@@ -36,6 +36,10 @@ type pingResp struct {
 	// Following the challenge there are often key/value pairs
 	// e.g. Bearer service="gcr.io",realm="https://auth.gcr.io/v36/tokenz"
 	parameters map[string]string
+}
+
+func (c challenge) Canonical() challenge {
+	return challenge(strings.ToLower(string(c)))
 }
 
 func parseChallenge(suffix string) map[string]string {
@@ -75,13 +79,13 @@ func ping(reg name.Registry, t http.RoundTripper) (*pingResp, error) {
 		if parts := strings.SplitN(wac, " ", 2); len(parts) == 2 {
 			// If there are two parts, then parse the challenge parameters.
 			return &pingResp{
-				challenge:  challenge(strings.Title(parts[0])),
+				challenge:  challenge(parts[0]).Canonical(),
 				parameters: parseChallenge(parts[1]),
 			}, nil
 		}
 		// Otherwise, just return the challenge without parameters.
 		return &pingResp{
-			challenge: challenge(strings.Title(wac)),
+			challenge: challenge(wac).Canonical(),
 		}, nil
 	default:
 		return nil, fmt.Errorf("unrecognized HTTP status: %v", resp.Status)
