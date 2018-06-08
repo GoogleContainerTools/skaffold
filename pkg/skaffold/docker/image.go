@@ -21,15 +21,14 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/google/go-containerregistry/authn"
-	"github.com/google/go-containerregistry/name"
-	"github.com/google/go-containerregistry/v1"
-	"github.com/google/go-containerregistry/v1/remote"
-	"github.com/google/go-containerregistry/v1/remote/transport"
-
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/pkg/progress"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/moby/moby/pkg/jsonmessage"
 	"github.com/moby/moby/pkg/streamformatter"
 	"github.com/moby/moby/pkg/term"
@@ -133,10 +132,7 @@ func addTag(ref name.Reference, targetRef name.Reference, auth authn.Authenticat
 		return err
 	}
 
-	wo := remote.WriteOptions{
-		MountPaths: []name.Repository{ref.Context()},
-	}
-	return remote.Write(targetRef, img, auth, t, wo)
+	return remote.Write(targetRef, img, auth, t, remote.WriteOptions{})
 }
 
 // Digest returns the image digest for a corresponding reference.

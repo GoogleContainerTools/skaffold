@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/google/go-containerregistry/authn"
-	"github.com/google/go-containerregistry/name"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
 )
 
 const (
@@ -49,7 +49,7 @@ func New(reg name.Registry, auth authn.Authenticator, t http.RoundTripper, scope
 		return nil, err
 	}
 
-	switch pr.challenge {
+	switch pr.challenge.Canonical() {
 	case anonymous:
 		return t, nil
 	case basic:

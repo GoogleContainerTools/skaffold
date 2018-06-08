@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/google/go-containerregistry/v1"
-	"github.com/google/go-containerregistry/v1/v1util"
+	"github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/v1util"
 )
 
 // WithRawConfigFile defines the subset of v1.Image used by these helper methods
@@ -284,4 +284,9 @@ func UncompressedBlob(b WithBlob, h v1.Hash) (io.ReadCloser, error) {
 		return nil, err
 	}
 	return v1util.GunzipReadCloser(rc)
+}
+
+// WithDiffID defines the subset of v1.Layer for exposing the DiffID method.
+type WithDiffID interface {
+	DiffID() (v1.Hash, error)
 }

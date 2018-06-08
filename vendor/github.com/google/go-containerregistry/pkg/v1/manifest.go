@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/google/go-containerregistry/v1/types"
+	"github.com/google/go-containerregistry/pkg/v1/types"
 )
 
 // Manifest represents the OCI image manifest in a structured way.

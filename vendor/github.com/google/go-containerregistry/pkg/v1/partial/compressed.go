@@ -17,8 +17,8 @@ package partial
 import (
 	"io"
 
-	"github.com/google/go-containerregistry/v1"
-	"github.com/google/go-containerregistry/v1/v1util"
+	"github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/v1util"
 )
 
 // CompressedLayer represents the bare minimum interface a natively
@@ -50,6 +50,11 @@ func (ule *compressedLayerExtender) Uncompressed() (io.ReadCloser, error) {
 
 // DiffID implements v1.Layer
 func (ule *compressedLayerExtender) DiffID() (v1.Hash, error) {
+	// If our nested CompressedLayer implements DiffID,
+	// then delegate to it instead.
+	if wdi, ok := ule.CompressedLayer.(WithDiffID); ok {
+		return wdi.DiffID()
+	}
 	r, err := ule.Uncompressed()
 	if err != nil {
 		return v1.Hash{}, err
