@@ -120,7 +120,17 @@ func ReadConfiguration(filename string) ([]byte, error) {
 	case strings.HasPrefix(filename, "http://") || strings.HasPrefix(filename, "https://"):
 		return download(filename)
 	default:
-		return ioutil.ReadFile(filename)
+		directory := filepath.Dir(filename)
+		baseName := filepath.Base(filename)
+		if baseName != "skaffold.yaml" {
+			return ioutil.ReadFile(filename)
+		}
+		contents, err := ioutil.ReadFile(filename)
+		if err != nil {
+			// Try reading the skaffold.yml file instead
+			return ioutil.ReadFile(filepath.Join(directory, "skaffold.yml"))
+		}
+		return contents, err
 	}
 }
 
