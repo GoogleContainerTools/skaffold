@@ -48,10 +48,10 @@ type BuildOptions struct {
 // RunBuild performs a docker build and returns nothing
 func RunBuild(ctx context.Context, cli DockerAPIClient, opts *BuildOptions) error {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", opts.ContextDir, opts.Dockerfile)
-	authConfigs, err := DefaultAuthHelper.GetAllAuthConfigs()
-	if err != nil {
-		return errors.Wrap(err, "read auth configs")
-	}
+
+	// Like `docker build`, we ignore the errors
+	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
+	authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs()
 
 	imageBuildOpts := types.ImageBuildOptions{
 		Tags:        []string{opts.ImageName},
