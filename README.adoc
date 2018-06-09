@@ -91,7 +91,7 @@ You will need the following components to get started with Skaffold:
 . docker
 
 . Docker image registry
-   -  Your docker client should be configured to push to an external docker image repositor.
+   -  Your docker client should be configured to push to an external docker image repository.
 If you're using a minikube or Docker for Desktop cluster, you can skip this requirement.
    -  If you are using Google Container Registry (GCR), choose one of the following:
         . Use `gcloud`'s Docker credential helper: Run link:https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker[`gcloud auth configure-docker`]
