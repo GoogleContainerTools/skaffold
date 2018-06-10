@@ -110,7 +110,6 @@ func TestExpandPathsGlob(t *testing.T) {
 }
 
 func TestDefaultConfigFilenameAlternate(t *testing.T) {
-	// Setup a few files in a tempdir. We can't use afero here because it doesn't support symlinks.
 	testDir, cleanup := testutil.TempDir(t)
 	defer cleanup()
 
