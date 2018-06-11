@@ -17,7 +17,6 @@
 # a simple little utility to list PRs for release notes:
 # Run ./hack/release_notes.sh --help for more info
 
-go get github.com/google/go-github/github
 go build -o out/listpullreqs ./hack/release_note/listpullreqs.go
 chmod +x out/listpullreqs
 out/listpullreqs $@
