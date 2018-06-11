@@ -32,7 +32,7 @@ func TestDateTime_GenerateFullyQualifiedImageName(t *testing.T) {
 		format      string
 		buildTime   time.Time
 		timezone    string
-		opts        *TagOptions
+		opts        *Options
 		digest      string
 		image       string
 		want        string
@@ -41,7 +41,7 @@ func TestDateTime_GenerateFullyQualifiedImageName(t *testing.T) {
 		{
 			description: "default formatter",
 			buildTime:   aLocalTimeStamp,
-			opts: &TagOptions{
+			opts: &Options{
 				ImageName: "test_image",
 			},
 			want: "test_image:2015-03-07_11-06-39.123_" + localZone,
@@ -50,7 +50,7 @@ func TestDateTime_GenerateFullyQualifiedImageName(t *testing.T) {
 			description: "user provided timezone",
 			buildTime:   time.Unix(1234, 123456789),
 			timezone:    "UTC",
-			opts: &TagOptions{
+			opts: &Options{
 				ImageName: "test_image",
 			},
 			want: "test_image:1970-01-01_00-20-34.123_UTC",
@@ -59,7 +59,7 @@ func TestDateTime_GenerateFullyQualifiedImageName(t *testing.T) {
 			description: "user provided format",
 			buildTime:   aLocalTimeStamp,
 			format:      "2006-01-02",
-			opts: &TagOptions{
+			opts: &Options{
 				ImageName: "test_image",
 			},
 			want: "test_image:2015-03-07",

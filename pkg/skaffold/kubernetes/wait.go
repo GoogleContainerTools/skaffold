@@ -149,7 +149,7 @@ func StartPods(c kubernetes.Interface, namespace string, pod v1.Pod, waitForRunn
 	return nil
 }
 
-// Wait up to 10 minutes for all matching pods to become Running and at least one
+// WaitForPodsWithLabelRunning waits up to 10 minutes for all matching pods to become Running and at least one
 // matching pod exists.
 func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels.Selector) error {
 	lastKnownPodNumber := -1

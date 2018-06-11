@@ -25,13 +25,8 @@ golangci-lint run \
 	--no-config \
 	-E goimports \
 	-E interfacer \
+	-E golint \
 	-E unconvert \
 	-E goconst \
 	-E maligned \
 	-D errcheck
-
-# From now on, run go lint.
-golangci-lint run \
-	--disable-all \
-	-E golint \
-	--new-from-rev bed41e9a77431990cc8504c0955252c851934b89

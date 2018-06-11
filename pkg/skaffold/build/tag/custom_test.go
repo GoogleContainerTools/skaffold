@@ -23,7 +23,7 @@ import (
 )
 
 func TestCustomTag_GenerateFullyQualifiedImageName(t *testing.T) {
-	opts := &TagOptions{
+	opts := &Options{
 		ImageName: "test",
 		Digest:    "sha256:12345abcde",
 	}

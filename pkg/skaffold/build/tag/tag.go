@@ -18,10 +18,10 @@ package tag
 
 // Tagger is an interface for tag strategies to be implemented against
 type Tagger interface {
-	GenerateFullyQualifiedImageName(workingDir string, tagOpts *TagOptions) (string, error)
+	GenerateFullyQualifiedImageName(workingDir string, tagOpts *Options) (string, error)
 }
 
-type TagOptions struct {
+type Options struct {
 	ImageName string
 	Digest    string
 }

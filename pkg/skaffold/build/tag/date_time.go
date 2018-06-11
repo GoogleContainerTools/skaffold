@@ -41,7 +41,7 @@ func NewDateTimeTagger(format, timezone string) Tagger {
 }
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the current timestamp
-func (tagger *dateTimeTagger) GenerateFullyQualifiedImageName(workingDir string, opts *TagOptions) (string, error) {
+func (tagger *dateTimeTagger) GenerateFullyQualifiedImageName(workingDir string, opts *Options) (string, error) {
 	if opts == nil {
 		return "", fmt.Errorf("tag options not provided")
 	}

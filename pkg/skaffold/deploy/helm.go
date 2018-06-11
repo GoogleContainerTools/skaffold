@@ -58,7 +58,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 }
 
 // Not implemented
-func (k *HelmDeployer) Dependencies() ([]string, error) {
+func (h *HelmDeployer) Dependencies() ([]string, error) {
 	return nil, nil
 }
 

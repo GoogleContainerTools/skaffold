@@ -85,7 +85,7 @@ func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tag
 			return nil, errors.Wrap(err, "getting digest")
 		}
 
-		tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.TagOptions{
+		tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.Options{
 			ImageName: artifact.ImageName,
 			Digest:    digest,
 		})
