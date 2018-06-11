@@ -52,6 +52,6 @@ func GetConfig(contents []byte, useDefault bool) (util.VersionedConfig, error) {
 	return nil, errors.New("Unable to parse config")
 }
 
-type ApiVersion struct {
+type APIVersion struct {
 	Version string `yaml:"apiVersion"`
 }

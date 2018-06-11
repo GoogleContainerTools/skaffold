@@ -99,7 +99,7 @@ func readConfiguration(filename string) (*config.SkaffoldConfig, error) {
 		return nil, errors.Wrap(err, "read skaffold config")
 	}
 
-	apiVersion := &config.ApiVersion{}
+	apiVersion := &config.APIVersion{}
 	if err := yaml.Unmarshal(buf, apiVersion); err != nil {
 		return nil, errors.Wrap(err, "parsing api version")
 	}

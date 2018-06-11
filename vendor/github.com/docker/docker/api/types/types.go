@@ -123,7 +123,7 @@ type Version struct {
 	// The following fields are deprecated, they relate to the Engine component and are kept for backwards compatibility
 
 	Version       string
-	APIVersion    string `json:"ApiVersion"`
+	APIVersion    string `json:"APIVersion"`
 	MinAPIVersion string `json:"MinAPIVersion,omitempty"`
 	GitCommit     string
 	GoVersion     string
