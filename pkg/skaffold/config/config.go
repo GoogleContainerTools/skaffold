@@ -20,7 +20,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 )
 
-// the "latest" SkaffoldConfig object
+// SkaffoldConfig references the most recent skaffold config version
 type SkaffoldConfig = v1alpha2.SkaffoldConfig
 
 const LatestVersion string = v1alpha2.Version

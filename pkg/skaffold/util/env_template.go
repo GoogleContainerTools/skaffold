@@ -30,13 +30,13 @@ import (
 
 var OSEnviron = os.Environ
 
-// Simple wrapper to parse an env template
+// ParseEnvTemplate is a simple wrapper to parse an env template
 func ParseEnvTemplate(t string) (*template.Template, error) {
 	tmpl, err := template.New("envTemplate").Parse(t)
 	return tmpl, err
 }
 
-// Executes an envTemplate based on OS environment variables and a custom map
+// ExecuteEnvTemplate executes an envTemplate based on OS environment variables and a custom map
 func ExecuteEnvTemplate(envTemplate *template.Template, customMap map[string]string) (string, error) {
 	var buf bytes.Buffer
 	envMap := map[string]string{}

@@ -81,6 +81,7 @@ func RunBuild(ctx context.Context, cli DockerAPIClient, opts *BuildOptions) erro
 	return StreamDockerMessages(opts.BuildBuf, resp.Body)
 }
 
+// StreamDockerMessages streams formatted json output from the docker daemon
 // TODO(@r2d4): Make this output much better, this is the bare minimum
 func StreamDockerMessages(dst io.Writer, src io.Reader) error {
 	fd, _ := term.GetFdInfo(dst)

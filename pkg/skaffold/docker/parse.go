@@ -42,7 +42,7 @@ const (
 	from = "from"
 )
 
-// For testing.
+// RetrieveImage is overriden for unit testing
 var RetrieveImage = retrieveImage
 
 func readDockerfile(workspace, dockerfilePath string) ([]string, error) {
