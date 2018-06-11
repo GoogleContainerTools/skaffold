@@ -36,14 +36,14 @@ import (
 type LocalBuilder struct {
 	*v1alpha2.BuildConfig
 
-	api          docker.DockerAPIClient
+	api          docker.APIClient
 	localCluster bool
 	kubeContext  string
 }
 
 // NewLocalBuilder returns an new instance of a LocalBuilder
 func NewLocalBuilder(cfg *v1alpha2.BuildConfig, kubeContext string) (*LocalBuilder, error) {
-	api, err := docker.NewDockerAPIClient()
+	api, err := docker.NewAPIClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
@@ -100,7 +100,7 @@ func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagg
 		if digest == "" {
 			return nil, fmt.Errorf("digest not found")
 		}
-		tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.TagOptions{
+		tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.Options{
 			ImageName: artifact.ImageName,
 			Digest:    digest,
 		})

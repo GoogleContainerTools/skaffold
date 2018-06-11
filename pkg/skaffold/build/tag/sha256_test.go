@@ -25,7 +25,7 @@ import (
 func TestGenerateFullyQualifiedImageName(t *testing.T) {
 	var tests = []struct {
 		description string
-		opts        *TagOptions
+		opts        *Options
 		digest      string
 		image       string
 		expected    string
@@ -34,7 +34,7 @@ func TestGenerateFullyQualifiedImageName(t *testing.T) {
 	}{
 		{
 			description: "no error",
-			opts: &TagOptions{
+			opts: &Options{
 				ImageName: "test",
 				Digest:    "sha256:12345abcde",
 			},
@@ -42,7 +42,7 @@ func TestGenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description: "wrong digest format",
-			opts: &TagOptions{
+			opts: &Options{
 				ImageName: "test",
 				Digest:    "wrong:digest:format",
 			},
@@ -50,7 +50,7 @@ func TestGenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description: "wrong digest format no colon",
-			opts: &TagOptions{
+			opts: &Options{
 				ImageName: "test",
 				Digest:    "sha256",
 			},

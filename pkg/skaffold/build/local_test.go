@@ -38,7 +38,7 @@ type FakeTagger struct {
 	Err error
 }
 
-func (f *FakeTagger) GenerateFullyQualifiedImageName(workingDir string, tagOpts *tag.TagOptions) (string, error) {
+func (f *FakeTagger) GenerateFullyQualifiedImageName(workingDir string, tagOpts *tag.Options) (string, error) {
 	return f.Out, f.Err
 }
 
@@ -67,7 +67,7 @@ func TestLocalRun(t *testing.T) {
 		description  string
 		config       *v1alpha2.BuildConfig
 		out          io.Writer
-		api          docker.DockerAPIClient
+		api          docker.APIClient
 		tagger       tag.Tagger
 		artifacts    []*v1alpha2.Artifact
 		expected     []Build

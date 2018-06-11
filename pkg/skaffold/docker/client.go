@@ -36,19 +36,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type DockerAPIClient interface {
+type APIClient interface {
 	client.CommonAPIClient
 	io.Closer
 }
 
 var (
 	dockerAPIClientOnce sync.Once
-	dockerAPIClient     DockerAPIClient
+	dockerAPIClient     APIClient
 	dockerAPIClientErr  error
 )
 
-// NewDockerAPIClient guesses the docker client to use based on current kubernetes context.
-func NewDockerAPIClient() (DockerAPIClient, error) {
+// NewAPIClient guesses the docker client to use based on current kubernetes context.
+func NewAPIClient() (APIClient, error) {
 	dockerAPIClientOnce.Do(func() {
 		kubeContext, err := kubernetes.CurrentContext()
 		if err != nil {
@@ -56,24 +56,24 @@ func NewDockerAPIClient() (DockerAPIClient, error) {
 			return
 		}
 
-		dockerAPIClient, dockerAPIClientErr = newDockerAPIClient(kubeContext)
+		dockerAPIClient, dockerAPIClientErr = newAPIClient(kubeContext)
 	})
 
 	return dockerAPIClient, dockerAPIClientErr
 }
 
-// newDockerAPIClient guesses the docker client to use based on current kubernetes context.
-func newDockerAPIClient(kubeContext string) (DockerAPIClient, error) {
+// newAPIClient guesses the docker client to use based on current kubernetes context.
+func newAPIClient(kubeContext string) (APIClient, error) {
 	if kubeContext == constants.DefaultMinikubeContext {
-		return newMinikubeDockerAPIClient()
+		return newMinikubeAPIClient()
 	}
-	return newEnvDockerAPIClient()
+	return newEnvAPIClient()
 }
 
-// newEnvDockerAPIClient returns a docker client based on the environment variables set.
+// newEnvAPIClient returns a docker client based on the environment variables set.
 // It will "negotiate" the highest possible API version supported by both the client
 // and the server if there is a mismatch.
-func newEnvDockerAPIClient() (DockerAPIClient, error) {
+func newEnvAPIClient() (APIClient, error) {
 	cli, err := client.NewEnvClient()
 	if err != nil {
 		return nil, fmt.Errorf("Error getting docker client: %s", err)
@@ -83,13 +83,13 @@ func newEnvDockerAPIClient() (DockerAPIClient, error) {
 	return cli, nil
 }
 
-// newMinikubeDockerAPIClient returns a docker client using the environment variables
+// newMinikubeAPIClient returns a docker client using the environment variables
 // provided by minikube.
-func newMinikubeDockerAPIClient() (DockerAPIClient, error) {
+func newMinikubeAPIClient() (APIClient, error) {
 	env, err := getMinikubeDockerEnv()
 	if err != nil {
 		logrus.Warnf("Could not get minikube docker env, falling back to local docker daemon")
-		return newEnvDockerAPIClient()
+		return newEnvAPIClient()
 	}
 
 	var httpclient *http.Client

@@ -26,7 +26,7 @@ type ChecksumTagger struct {
 }
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the sha256 checksum of the image
-func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir string, opts *TagOptions) (string, error) {
+func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir string, opts *Options) (string, error) {
 	if opts == nil {
 		return "", fmt.Errorf("Tag options not provided")
 	}

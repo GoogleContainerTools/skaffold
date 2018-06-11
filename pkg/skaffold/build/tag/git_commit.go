@@ -33,7 +33,7 @@ type GitCommit struct {
 }
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the git commit.
-func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *TagOptions) (string, error) {
+func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *Options) (string, error) {
 	repo, err := git.PlainOpenWithOptions(workingDir, &git.PlainOpenOptions{DetectDotGit: true})
 	if err != nil {
 		return "", errors.Wrap(err, "opening git repo")

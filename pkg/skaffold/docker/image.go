@@ -46,7 +46,7 @@ type BuildOptions struct {
 }
 
 // RunBuild performs a docker build and returns nothing
-func RunBuild(ctx context.Context, cli DockerAPIClient, opts *BuildOptions) error {
+func RunBuild(ctx context.Context, cli APIClient, opts *BuildOptions) error {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", opts.ContextDir, opts.Dockerfile)
 
 	// Like `docker build`, we ignore the errors
@@ -88,7 +88,7 @@ func StreamDockerMessages(dst io.Writer, src io.Reader) error {
 	return jsonmessage.DisplayJSONMessagesStream(src, dst, fd, false, nil)
 }
 
-func RunPush(ctx context.Context, cli DockerAPIClient, ref string, out io.Writer) error {
+func RunPush(ctx context.Context, cli APIClient, ref string, out io.Writer) error {
 	registryAuth, err := encodedRegistryAuth(ctx, cli, DefaultAuthHelper, ref)
 	if err != nil {
 		return errors.Wrapf(err, "getting auth config for %s", ref)
@@ -139,7 +139,7 @@ func addTag(ref name.Reference, targetRef name.Reference, auth authn.Authenticat
 // Digest returns the image digest for a corresponding reference.
 // The digest is of the form
 // sha256:<image_id>
-func Digest(ctx context.Context, cli DockerAPIClient, ref string) (string, error) {
+func Digest(ctx context.Context, cli APIClient, ref string) (string, error) {
 	args := filters.KeyValuePair{Key: "reference", Value: ref}
 	filters := filters.NewArgs(args)
 	imageList, err := cli.ImageList(ctx, types.ImageListOptions{

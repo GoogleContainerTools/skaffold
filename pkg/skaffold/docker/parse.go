@@ -194,7 +194,7 @@ func retrieveImage(image string) (*v1.ConfigFile, error) {
 		return cachedCfg.(*v1.ConfigFile), nil
 	}
 
-	client, err := NewDockerAPIClient()
+	client, err := NewAPIClient()
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +217,7 @@ func retrieveImage(image string) (*v1.ConfigFile, error) {
 	return cfg, nil
 }
 
-func retrieveLocalImage(client DockerAPIClient, image string) ([]byte, error) {
+func retrieveLocalImage(client APIClient, image string) ([]byte, error) {
 	_, raw, err := client.ImageInspectWithRaw(context.Background(), image)
 	if err != nil {
 		return nil, err

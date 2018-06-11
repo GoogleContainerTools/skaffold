@@ -34,12 +34,12 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		description   string
 		expectedName  string
 		createGitRepo func(string)
-		opts          *TagOptions
+		opts          *Options
 		shouldErr     bool
 	}{
 		{
 			description: "success",
-			opts: &TagOptions{
+			opts: &Options{
 				ImageName: "test",
 				Digest:    "sha256:12345abcde",
 			},
@@ -53,7 +53,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description: "use tag over commit",
-			opts: &TagOptions{
+			opts: &Options{
 				ImageName: "test",
 				Digest:    "sha256:12345abcde",
 			},
@@ -72,7 +72,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description: "dirty",
-			opts: &TagOptions{
+			opts: &Options{
 				ImageName: "test",
 			},
 			expectedName: "test:eefe1b9-dirty-af8de1fde8be4367",
@@ -86,7 +86,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description: "ignore tag when dirty",
-			opts: &TagOptions{
+			opts: &Options{
 				ImageName: "test",
 				Digest:    "sha256:12345abcde",
 			},
@@ -102,7 +102,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description: "untracked",
-			opts: &TagOptions{
+			opts: &Options{
 				ImageName: "test",
 			},
 			expectedName: "test:eefe1b9-dirty-bfe9b4566c9d3fec",
@@ -116,7 +116,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description: "one file deleted",
-			opts: &TagOptions{
+			opts: &Options{
 				ImageName: "test",
 			},
 			expectedName: "test:279d53f-dirty-6a3ce511c689eda7",
@@ -131,7 +131,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description: "two files deleted",
-			opts: &TagOptions{
+			opts: &Options{
 				ImageName: "test",
 			},
 			expectedName: "test:279d53f-dirty-d48c11ed65c37a09", // Must be <> than when only one file is deleted
@@ -146,7 +146,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description: "rename",
-			opts: &TagOptions{
+			opts: &Options{
 				ImageName: "test",
 			},
 			expectedName: "test:eefe1b9-dirty-9c858d88cc0bf792",
@@ -160,7 +160,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description: "rename to different name",
-			opts: &TagOptions{
+			opts: &Options{
 				ImageName: "test",
 			},
 			expectedName: "test:eefe1b9-dirty-6534adc17ccd1cf4", // Must be <> each time a new name is used
@@ -202,7 +202,7 @@ func TestGenerateFullyQualifiedImageNameFromSubDirectory(t *testing.T) {
 		mkdir("sub/sub").
 		commit("initial")
 
-	opts := &TagOptions{ImageName: "test"}
+	opts := &Options{ImageName: "test"}
 	c := &GitCommit{}
 
 	name1, err := c.GenerateFullyQualifiedImageName(tmpDir, opts)

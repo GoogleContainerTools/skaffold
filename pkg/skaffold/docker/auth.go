@@ -78,7 +78,7 @@ func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
 	return cf.GetCredentialsStore("").GetAll()
 }
 
-func encodedRegistryAuth(ctx context.Context, cli DockerAPIClient, a AuthConfigHelper, image string) (string, error) {
+func encodedRegistryAuth(ctx context.Context, cli APIClient, a AuthConfigHelper, image string) (string, error) {
 	ref, err := reference.ParseNormalizedNamed(image)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing image name for registry")
@@ -108,7 +108,7 @@ func encodedRegistryAuth(ctx context.Context, cli DockerAPIClient, a AuthConfigH
 	return base64.URLEncoding.EncodeToString(buf), nil
 }
 
-func officialRegistry(ctx context.Context, cli DockerAPIClient) string {
+func officialRegistry(ctx context.Context, cli APIClient) string {
 	serverAddress := registry.IndexServer
 
 	// The daemon `/info` endpoint informs us of the default registry being used.
