@@ -63,3 +63,7 @@
   name = "github.com/google/go-containerregistry"
   revision = "dc0a77702ddab8c3dc5630eca7c026d571c1c9b7"
 
+
+[[constraint]]
+  name = "github.com/google/go-github"
+  version = "15.0.0"
