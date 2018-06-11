@@ -31,7 +31,7 @@ type Transform func(vc util.VersionedConfig) (util.VersionedConfig, error)
 // Map of schema version to transform functions
 // If there are n schema versions, this should always contain (n-1) entries,
 // since the last schema version should not have a transform
-var transformers map[string]Transform = map[string]Transform{
+var transformers = map[string]Transform{
 	v1alpha1.Version: transform.ToV1Alpha2,
 }
 
