@@ -108,3 +108,27 @@ func TestExpandPathsGlob(t *testing.T) {
 		})
 	}
 }
+
+func TestDefaultConfigFilenameAlternate(t *testing.T) {
+	testDir, cleanup := testutil.TempDir(t)
+	defer cleanup()
+
+	files := map[string]string{
+		"skaffold.yml": "foo",
+	}
+	if err := setupFiles(testDir, files); err != nil {
+		t.Fatalf("Error setting up fs: %s", err)
+	}
+
+	for file := range files {
+		path := filepath.Join(testDir, "skaffold.yaml")
+		expectedContents := files[file]
+		actualContents, err := ReadConfiguration(path)
+		if err != nil {
+			t.Errorf("Error '%s' reading configuration file %s", err, path)
+		}
+		if expectedContents != string(actualContents) {
+			t.Errorf("File contents don't match. %s != %s", actualContents, expectedContents)
+		}
+	}
+}

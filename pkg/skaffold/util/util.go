@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 func RandomID() string {
@@ -120,7 +121,18 @@ func ReadConfiguration(filename string) ([]byte, error) {
 	case strings.HasPrefix(filename, "http://") || strings.HasPrefix(filename, "https://"):
 		return download(filename)
 	default:
-		return ioutil.ReadFile(filename)
+		directory := filepath.Dir(filename)
+		baseName := filepath.Base(filename)
+		if baseName != "skaffold.yaml" {
+			return ioutil.ReadFile(filename)
+		}
+		contents, err := ioutil.ReadFile(filename)
+		if err != nil {
+			logrus.Infof("Could not open skaffold.yaml: \"%s\"", err)
+			logrus.Infof("Trying to read from skaffold.yml instead")
+			return ioutil.ReadFile(filepath.Join(directory, "skaffold.yml"))
+		}
+		return contents, err
 	}
 }
 
