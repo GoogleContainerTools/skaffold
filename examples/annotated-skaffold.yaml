@@ -110,15 +110,17 @@ deploy:
     # helm releases to deploy.
     # releases:
     # - name: skaffold-helm
-    #   chartPath: skaffold-helm
-    #   valuesFilePath: helm-skaffold-values.yaml
-    #   values:
-    #     image: skaffold-helm
-    #   namespace: skaffold
-    #   version: ""
-    #
-    #   # setValues get appended to the helm deploy with --set.
-    #   setValues:
+    #  chartPath: skaffold-helm
+    #  valuesFilePath: helm-skaffold-values.yaml
+    #  valuesFilePaths:
+    #    - helm-skaffold-values.yaml
+    #    - helm-skaffold-other-values.yaml
+    #  values:
+    #    image: skaffold-helm
+    #  namespace: skaffold
+    #  version: ""
+      # setValues get appended to the helm deploy with --set.
+    #  setValues:
     #    key: "value"
     #
     #   # packaged section allows to package chart setting specific version
