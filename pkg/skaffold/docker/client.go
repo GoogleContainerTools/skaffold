@@ -19,7 +19,6 @@ package docker
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"os/exec"
 	"path/filepath"
@@ -38,7 +37,6 @@ import (
 
 type APIClient interface {
 	client.CommonAPIClient
-	io.Closer
 }
 
 var (
