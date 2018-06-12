@@ -1,11 +1,15 @@
 package deploy
 
 import (
+	"bytes"
 	"context"
 	"io"
+	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/pkg/errors"
 )
 
 type ComposeDeployer struct {
@@ -21,41 +25,33 @@ func NewComposeDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) *Compose
 }
 
 func (c *ComposeDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Build) error {
-	// loader := compose.Compose{}
-	// opt := kobject.ConvertOptions{}
-	// kObj, err := loader.LoadFile([]string{c.ComposeDeploy.ComposeFile})
-	// if err != nil {
-	// 	return err
-	// }
-	// t := &kubernetes.Kubernetes{Opt: opt}
-	// objs, err := t.Transform(kObj, opt)
-	// fmt.Println(objs)
-	// list := &api.List{}
-	// // convert objects to versioned and add them to list
-	// for _, object := range objs {
-	// 	versionedObject, err := convertToVersion(object, v1.GroupVersion{})
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
-
-	// 	list.Items = append(list.Items, versionedObject)
-
-	// }
-	// // version list itself
-	// listVersion := v1.GroupVersion{Group: "", Version: "v1"}
-	// convertedList, err := convertToVersion(list, listVersion)
-	// if err != nil {
-	// 	return err
-	// }
-	// data, err := yaml.Marshal(convertedList)
-	// if err != nil {
-	// 	return fmt.Errorf("error in marshalling the List: %v", err)
-	// }
+	manifests, err := buildKomposeManifests()
+	if err != nil {
+		return errors.Wrap(err, "generating kompose manifests")
+	}
+	if err := applyManifests(manifests, out, c.kubeContext, builds); err != nil {
+		return errors.Wrap(err, "applying manifests")
+	}
 	return nil
 }
 
-func (c *ComposeDeployer) Cleanup(context.Context, io.Writer) error {
+func buildKomposeManifests() (io.Reader, error) {
+	cmd := exec.Command("kompose", "convert", "--stdout")
+	out, err := util.DefaultExecCommand.RunCmdOut(cmd)
+	if err != nil {
+		return nil, errors.Wrap(err, "running kustomize build")
+	}
+	return bytes.NewReader(out), nil
+}
+
+func (c *ComposeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
+	manifests, err := buildKomposeManifests()
+	if err != nil {
+		return errors.Wrap(err, "generating kompose manifests")
+	}
+	if err := kubectl(manifests, out, c.kubeContext, "delete", "-f", "-"); err != nil {
+		return errors.Wrap(err, "kubectl delete")
+	}
 	return nil
 }
 
