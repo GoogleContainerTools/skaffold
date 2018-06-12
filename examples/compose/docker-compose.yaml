@@ -1,0 +1,9 @@
+version: '3'
+services:
+  hello-compose:
+    build: .
+    image: "hello-compose"
+    ports:
+     - "5000:5000"
+  redis:
+    image: "redis:alpine"

@@ -112,6 +112,11 @@ type DeployType struct {
 	HelmDeploy      *HelmDeploy      `yaml:"helm"`
 	KubectlDeploy   *KubectlDeploy   `yaml:"kubectl"`
 	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize"`
+	ComposeDeploy   *ComposeDeploy   `yaml:"compose"`
+}
+
+type ComposeDeploy struct {
+	ComposeFile string `yaml:"composeFile"`
 }
 
 // KubectlDeploy contains the configuration needed for deploying with `kubectl apply`
@@ -176,7 +181,7 @@ func (c *SkaffoldConfig) Parse(contents []byte, useDefaults bool) error {
 	}
 
 	if useDefaults {
-		if err := c.setDefaultValues(); err != nil {
+		if err := c.SetDefaultValues(); err != nil {
 			return errors.Wrap(err, "applying default values")
 		}
 	}
@@ -184,7 +189,7 @@ func (c *SkaffoldConfig) Parse(contents []byte, useDefaults bool) error {
 	return nil
 }
 
-func (c *SkaffoldConfig) setDefaultValues() error {
+func (c *SkaffoldConfig) SetDefaultValues() error {
 	c.defaultToLocalBuild()
 	c.defaultToDockerArtifacts()
 	c.setDefaultTagger()
@@ -271,7 +276,7 @@ func (c *SkaffoldConfig) ApplyProfiles(profiles []string) error {
 	}
 
 	c.Profiles = nil
-	if err := c.setDefaultValues(); err != nil {
+	if err := c.SetDefaultValues(); err != nil {
 		return errors.Wrap(err, "applying default values")
 	}
 

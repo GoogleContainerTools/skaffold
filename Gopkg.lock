@@ -48,6 +48,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/beorn7/perks"
+  packages = ["quantile"]
+  revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
+
+[[projects]]
+  branch = "master"
   name = "github.com/containerd/continuity"
   packages = ["pathdriver"]
   revision = "d3c23511c1bf5851696cba83143d9cbcd666869b"
@@ -67,19 +73,24 @@
 [[projects]]
   name = "github.com/docker/cli"
   packages = [
+    "cli/compose/interpolation",
+    "cli/compose/loader",
+    "cli/compose/schema",
+    "cli/compose/template",
+    "cli/compose/types",
     "cli/config",
     "cli/config/configfile",
     "cli/config/credentials",
     "opts"
   ]
-  revision = "b5df4f69db84a16479f16a4bc789d9b5664a47b9"
+  revision = "4cb3c70f36baeade76879694a587358be2a74854"
 
 [[projects]]
   name = "github.com/docker/distribution"
   packages = [
     ".",
-    "context",
     "digestset",
+    "metrics",
     "reference",
     "registry/api/errcode",
     "registry/api/v2",
@@ -88,10 +99,9 @@
     "registry/client/auth/challenge",
     "registry/client/transport",
     "registry/storage/cache",
-    "registry/storage/cache/memory",
-    "uuid"
+    "registry/storage/cache/memory"
   ]
-  revision = "edc3ab29cdff8694dd6feb85cfeb4b5f1b38ed9c"
+  revision = "83389a148052d74ac602f5f1d62f86ff2f3c4aa5"
 
 [[projects]]
   name = "github.com/docker/docker"
@@ -112,8 +122,8 @@
     "api/types/time",
     "api/types/versions",
     "api/types/volume",
-    "builder/dockerfile/command",
     "builder/dockerignore",
+    "client",
     "errdefs",
     "pkg/fileutils",
     "pkg/homedir",
@@ -123,6 +133,7 @@
     "pkg/longpath",
     "pkg/mount",
     "pkg/progress",
+    "pkg/streamformatter",
     "pkg/stringid",
     "pkg/system",
     "pkg/tarsum",
@@ -131,7 +142,7 @@
     "registry",
     "registry/resumable"
   ]
-  revision = "e1f98e8ab3cb5ae5c0f452cdd81ac4a954279e62"
+  revision = "162ba6016def672690ee4a1f3978368853a1e149"
 
 [[projects]]
   name = "github.com/docker/docker-credential-helpers"
@@ -152,6 +163,11 @@
   ]
   revision = "3ede32e2033de7505e6500d6c868c2b9ed9f169d"
   version = "v0.3.0"
+
+[[projects]]
+  name = "github.com/docker/go-metrics"
+  packages = ["."]
+  revision = "d466d4f6fd960e01820085bd7e1a24426ee7ef18"
 
 [[projects]]
   name = "github.com/docker/go-units"
@@ -337,23 +353,37 @@
   version = "0.4"
 
 [[projects]]
+  name = "github.com/mattn/go-shellwords"
+  packages = ["."]
+  revision = "02e3cf038dcea8290e44424da473dd12be796a8a"
+  version = "v1.0.3"
+
+[[projects]]
+  name = "github.com/matttproud/golang_protobuf_extensions"
+  packages = ["pbutil"]
+  revision = "c12348ce28de40eed0136aa2b644d0ee0650e56c"
+  version = "v1.0.1"
+
+[[projects]]
   branch = "master"
   name = "github.com/mitchellh/go-homedir"
   packages = ["."]
   revision = "3864e76763d94a6df2f9960b16a20a33da9f9a66"
 
 [[projects]]
-  name = "github.com/moby/moby"
+  branch = "master"
+  name = "github.com/mitchellh/mapstructure"
+  packages = ["."]
+  revision = "bb74f1db0675b241733089d5a1faa5dd8b0ef57b"
+
+[[projects]]
+  name = "github.com/moby/buildkit"
   packages = [
-    "builder/dockerfile/parser",
-    "builder/dockerfile/shell",
-    "client",
-    "pkg/homedir",
-    "pkg/jsonmessage",
-    "pkg/streamformatter",
-    "pkg/term"
+    "frontend/dockerfile/command",
+    "frontend/dockerfile/parser",
+    "frontend/dockerfile/shell"
   ]
-  revision = "e1f98e8ab3cb5ae5c0f452cdd81ac4a954279e62"
+  revision = "43e758232a0ac7d50c6a11413186e16684fc1e4f"
 
 [[projects]]
   name = "github.com/modern-go/concurrent"
@@ -401,6 +431,39 @@
   version = "v0.8.0"
 
 [[projects]]
+  name = "github.com/prometheus/client_golang"
+  packages = ["prometheus"]
+  revision = "c5b7fccd204277076155f10851dad72b76a49317"
+  version = "v0.8.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/prometheus/client_model"
+  packages = ["go"]
+  revision = "99fa1f4be8e564e8a6b613da7fa6f46c9edafc6c"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/prometheus/common"
+  packages = [
+    "expfmt",
+    "internal/bitbucket.org/ww/goautoneg",
+    "model"
+  ]
+  revision = "7600349dcfe1abd18d72d3a1770870d9800a7801"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/prometheus/procfs"
+  packages = [
+    ".",
+    "internal/util",
+    "nfs",
+    "xfs"
+  ]
+  revision = "94663424ae5ae9856b40a9f170762b4197024661"
+
+[[projects]]
   name = "github.com/sergi/go-diff"
   packages = ["diffmatchpatch"]
   revision = "1744e2970ca51c86172c8190fadad617561ed6e7"
@@ -440,6 +503,23 @@
   name = "github.com/xanzy/ssh-agent"
   packages = ["."]
   revision = "ba9c9e33906f58169366275e3450db66139a31a9"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/xeipuuv/gojsonpointer"
+  packages = ["."]
+  revision = "4e3ac2762d5f479393488629ee9370b50873b3a6"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/xeipuuv/gojsonreference"
+  packages = ["."]
+  revision = "bd5ef7bd5415a7ac448318e64f11a24cd21e594b"
+
+[[projects]]
+  name = "github.com/xeipuuv/gojsonschema"
+  packages = ["."]
+  revision = "0c8571ac0ce161a5feb57375a9cdf148c98c0f70"
 
 [[projects]]
   branch = "master"
@@ -866,6 +946,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "df48c18b75b9ba278460ae5fc6d9f60c492541fde4a2ef9ff61624bf592cb4b3"
+  inputs-digest = "52370f9a42a8a17d546c4301b077fd0cf892129264a8ea9ac9298468a398f800"
   solver-name = "gps-cdcl"
   solver-version = 1

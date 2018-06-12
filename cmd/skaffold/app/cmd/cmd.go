@@ -18,13 +18,19 @@ package cmd
 
 import (
 	"io"
+	"os"
+	"path/filepath"
+	"strings"
 
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+	"github.com/docker/cli/cli/compose/loader"
+	"github.com/docker/cli/cli/compose/types"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -99,6 +105,14 @@ func readConfiguration(filename string) (*config.SkaffoldConfig, error) {
 		return nil, errors.Wrap(err, "read skaffold config")
 	}
 
+	if filename == "docker-compose.yaml" {
+		cfg, err := newConfigForCompose(filename, buf)
+		if err != nil {
+			return nil, errors.Wrap(err, "converting compose config to skaffold config")
+		}
+		return cfg, nil
+	}
+
 	apiVersion := &config.APIVersion{}
 	if err := yaml.Unmarshal(buf, apiVersion); err != nil {
 		return nil, errors.Wrap(err, "parsing api version")
@@ -123,4 +137,73 @@ func readConfiguration(filename string) (*config.SkaffoldConfig, error) {
 	}
 
 	return latestConfig, nil
+}
+
+func newConfigForCompose(filename string, buf []byte) (*config.SkaffoldConfig, error) {
+	parsedComposeFile, err := loader.ParseYAML(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	configFile := types.ConfigFile{
+		Filename: filename,
+		Config:   parsedComposeFile,
+	}
+
+	configDetails := types.ConfigDetails{
+		WorkingDir:  filepath.Dir(filename),
+		ConfigFiles: []types.ConfigFile{configFile},
+		Environment: environ(),
+	}
+	composeCfg, err := loader.Load(configDetails)
+	if err != nil {
+		return nil, err
+	}
+	return convertToSkaffoldConfig(composeCfg), nil
+}
+
+func convertToSkaffoldConfig(composeCfg *types.Config) *config.SkaffoldConfig {
+	cfg := &config.SkaffoldConfig{
+		Build: v1alpha2.BuildConfig{
+			BuildType: v1alpha2.BuildType{
+				LocalBuild: &v1alpha2.LocalBuild{},
+			},
+			Artifacts: []*v1alpha2.Artifact{},
+		},
+		Deploy: v1alpha2.DeployConfig{
+			DeployType: v1alpha2.DeployType{
+				ComposeDeploy: &v1alpha2.ComposeDeploy{},
+			},
+		},
+	}
+	if err := cfg.SetDefaultValues(); err != nil {
+		logrus.Fatal(err)
+	}
+	for _, s := range composeCfg.Services {
+		if s.Build.Context == "" {
+			continue
+		}
+		cfg.Build.Artifacts = append(cfg.Build.Artifacts, &v1alpha2.Artifact{
+			ImageName: s.Image,
+			ArtifactType: v1alpha2.ArtifactType{
+				DockerArtifact: &v1alpha2.DockerArtifact{
+					DockerfilePath: s.Build.Dockerfile,
+					BuildArgs:      s.Build.Args,
+				},
+			},
+		})
+	}
+	if err := cfg.SetDefaultValues(); err != nil {
+		logrus.Fatal(err)
+	}
+	return cfg
+}
+
+func environ() map[string]string {
+	m := map[string]string{}
+	for _, kv := range os.Environ() {
+		kvSplit := strings.Split(kv, "=")
+		m[kvSplit[0]] = kvSplit[1]
+	}
+	return m
 }
