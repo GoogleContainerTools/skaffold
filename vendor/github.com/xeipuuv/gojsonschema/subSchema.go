@@ -28,7 +28,6 @@ package gojsonschema
 
 import (
 	"errors"
-	"math/big"
 	"regexp"
 	"strings"
 
@@ -36,9 +35,8 @@ import (
 )
 
 const (
-	KEY_SCHEMA                = "$schema"
-	KEY_ID                    = "id"
-	KEY_ID_NEW                = "$id"
+	KEY_SCHEMA                = "$subSchema"
+	KEY_ID                    = "$id"
 	KEY_REF                   = "$ref"
 	KEY_TITLE                 = "title"
 	KEY_DESCRIPTION           = "description"
@@ -48,7 +46,6 @@ const (
 	KEY_PROPERTIES            = "properties"
 	KEY_PATTERN_PROPERTIES    = "patternProperties"
 	KEY_ADDITIONAL_PROPERTIES = "additionalProperties"
-	KEY_PROPERTY_NAMES        = "propertyNames"
 	KEY_DEFINITIONS           = "definitions"
 	KEY_MULTIPLE_OF           = "multipleOf"
 	KEY_MINIMUM               = "minimum"
@@ -66,22 +63,17 @@ const (
 	KEY_MIN_ITEMS             = "minItems"
 	KEY_MAX_ITEMS             = "maxItems"
 	KEY_UNIQUE_ITEMS          = "uniqueItems"
-	KEY_CONTAINS              = "contains"
-	KEY_CONST                 = "const"
 	KEY_ENUM                  = "enum"
 	KEY_ONE_OF                = "oneOf"
 	KEY_ANY_OF                = "anyOf"
 	KEY_ALL_OF                = "allOf"
 	KEY_NOT                   = "not"
-	KEY_IF                    = "if"
-	KEY_THEN                  = "then"
-	KEY_ELSE                  = "else"
 )
 
 type subSchema struct {
 
 	// basic subSchema meta properties
-	id          *gojsonreference.JsonReference
+	id          *string
 	title       *string
 	description *string
 
@@ -94,18 +86,22 @@ type subSchema struct {
 	ref *gojsonreference.JsonReference
 	// Schema referenced
 	refSchema *subSchema
+	// Json reference
+	subSchema *gojsonreference.JsonReference
 
 	// hierarchy
 	parent                      *subSchema
+	definitions                 map[string]*subSchema
+	definitionsChildren         []*subSchema
 	itemsChildren               []*subSchema
 	itemsChildrenIsSingleSchema bool
 	propertiesChildren          []*subSchema
 
 	// validation : number / integer
-	multipleOf       *big.Float
-	maximum          *big.Float
+	multipleOf       *float64
+	maximum          *float64
 	exclusiveMaximum bool
-	minimum          *big.Float
+	minimum          *float64
 	exclusiveMinimum bool
 
 	// validation : string
@@ -122,43 +118,27 @@ type subSchema struct {
 	dependencies         map[string]interface{}
 	additionalProperties interface{}
 	patternProperties    map[string]*subSchema
-	propertyNames        *subSchema
 
 	// validation : array
 	minItems    *int
 	maxItems    *int
 	uniqueItems bool
-	contains    *subSchema
 
 	additionalItems interface{}
 
 	// validation : all
-	_const *string //const is a golang keyword
-	enum   []string
+	enum []string
 
 	// validation : subSchema
 	oneOf []*subSchema
 	anyOf []*subSchema
 	allOf []*subSchema
 	not   *subSchema
-	_if   *subSchema // if/else are golang keywords
-	_then *subSchema
-	_else *subSchema
-}
-
-func (s *subSchema) AddConst(i interface{}) error {
-
-	is, err := marshalWithoutNumber(i)
-	if err != nil {
-		return err
-	}
-	s._const = is
-	return nil
 }
 
 func (s *subSchema) AddEnum(i interface{}) error {
 
-	is, err := marshalWithoutNumber(i)
+	is, err := marshalToJsonString(i)
 	if err != nil {
 		return err
 	}
@@ -177,7 +157,7 @@ func (s *subSchema) AddEnum(i interface{}) error {
 
 func (s *subSchema) ContainsEnum(i interface{}) (bool, error) {
 
-	is, err := marshalWithoutNumber(i)
+	is, err := marshalToJsonString(i)
 	if err != nil {
 		return false, err
 	}
@@ -201,18 +181,6 @@ func (s *subSchema) SetNot(subSchema *subSchema) {
 	s.not = subSchema
 }
 
-func (s *subSchema) SetIf(subSchema *subSchema) {
-	s._if = subSchema
-}
-
-func (s *subSchema) SetThen(subSchema *subSchema) {
-	s._then = subSchema
-}
-
-func (s *subSchema) SetElse(subSchema *subSchema) {
-	s._else = subSchema
-}
-
 func (s *subSchema) AddRequired(value string) error {
 
 	if isStringInSlice(s.required, value) {
@@ -225,6 +193,10 @@ func (s *subSchema) AddRequired(value string) error {
 	s.required = append(s.required, value)
 
 	return nil
+}
+
+func (s *subSchema) AddDefinitionChild(child *subSchema) {
+	s.definitionsChildren = append(s.definitionsChildren, child)
 }
 
 func (s *subSchema) AddItemsChild(child *subSchema) {

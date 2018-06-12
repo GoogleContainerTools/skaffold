@@ -62,7 +62,6 @@ func (p *schemaReferencePool) Add(ref string, sch *subSchema) {
 	if internalLogEnabled {
 		internalLog(fmt.Sprintf("Add Schema Reference %s to pool", ref))
 	}
-	if _, ok := p.documents[ref]; !ok {
-		p.documents[ref] = sch
-	}
+
+	p.documents[ref] = sch
 }

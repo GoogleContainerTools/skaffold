@@ -27,6 +27,14 @@
   name = "github.com/docker/cli"
   revision = "4cb3c70f36baeade76879694a587358be2a74854"
 
+[[override]]
+ name = "github.com/docker/go-metrics"
+ revision = "d466d4f6fd960e01820085bd7e1a24426ee7ef18"
+
+[[override]]
+  name = "github.com/xeipuuv/gojsonschema"
+  revision = "0c8571ac0ce161a5feb57375a9cdf148c98c0f70"
+
 [[constraint]]
   name = "github.com/moby/buildkit"
   revision = "43e758232a0ac7d50c6a11413186e16684fc1e4f"

@@ -3,6 +3,7 @@ package gojsonschema
 import (
 	"net"
 	"net/url"
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -11,7 +12,7 @@ import (
 type (
 	// FormatChecker is the interface all formatters added to FormatCheckerChain must implement
 	FormatChecker interface {
-		IsFormat(input interface{}) bool
+		IsFormat(input string) bool
 	}
 
 	// FormatCheckerChain holds the formatters
@@ -124,50 +125,32 @@ func (c *FormatCheckerChain) IsFormat(name string, input interface{}) bool {
 		return false
 	}
 
-	return f.IsFormat(input)
-}
-
-func (f EmailFormatChecker) IsFormat(input interface{}) bool {
-
-	asString, ok := input.(string)
-	if ok == false {
+	if !isKind(input, reflect.String) {
 		return false
 	}
 
-	return rxEmail.MatchString(asString)
+	inputString := input.(string)
+
+	return f.IsFormat(inputString)
 }
 
-// Credit: https://github.com/asaskevich/govalidator
-func (f IPV4FormatChecker) IsFormat(input interface{}) bool {
-
-	asString, ok := input.(string)
-	if ok == false {
-		return false
-	}
-
-	ip := net.ParseIP(asString)
-	return ip != nil && strings.Contains(asString, ".")
+func (f EmailFormatChecker) IsFormat(input string) bool {
+	return rxEmail.MatchString(input)
 }
 
 // Credit: https://github.com/asaskevich/govalidator
-func (f IPV6FormatChecker) IsFormat(input interface{}) bool {
-
-	asString, ok := input.(string)
-	if ok == false {
-		return false
-	}
-
-	ip := net.ParseIP(asString)
-	return ip != nil && strings.Contains(asString, ":")
+func (f IPV4FormatChecker) IsFormat(input string) bool {
+	ip := net.ParseIP(input)
+	return ip != nil && strings.Contains(input, ".")
 }
 
-func (f DateTimeFormatChecker) IsFormat(input interface{}) bool {
+// Credit: https://github.com/asaskevich/govalidator
+func (f IPV6FormatChecker) IsFormat(input string) bool {
+	ip := net.ParseIP(input)
+	return ip != nil && strings.Contains(input, ":")
+}
 
-	asString, ok := input.(string)
-	if ok == false {
-		return false
-	}
-
+func (f DateTimeFormatChecker) IsFormat(input string) bool {
 	formats := []string{
 		"15:04:05",
 		"15:04:05Z07:00",
@@ -177,7 +160,7 @@ func (f DateTimeFormatChecker) IsFormat(input interface{}) bool {
 	}
 
 	for _, format := range formats {
-		if _, err := time.Parse(format, asString); err == nil {
+		if _, err := time.Parse(format, input); err == nil {
 			return true
 		}
 	}
@@ -185,14 +168,8 @@ func (f DateTimeFormatChecker) IsFormat(input interface{}) bool {
 	return false
 }
 
-func (f URIFormatChecker) IsFormat(input interface{}) bool {
-
-	asString, ok := input.(string)
-	if ok == false {
-		return false
-	}
-
-	u, err := url.Parse(asString)
+func (f URIFormatChecker) IsFormat(input string) bool {
+	u, err := url.Parse(input)
 	if err != nil || u.Scheme == "" {
 		return false
 	}
@@ -200,49 +177,25 @@ func (f URIFormatChecker) IsFormat(input interface{}) bool {
 	return true
 }
 
-func (f URIReferenceFormatChecker) IsFormat(input interface{}) bool {
-
-	asString, ok := input.(string)
-	if ok == false {
-		return false
-	}
-
-	_, err := url.Parse(asString)
+func (f URIReferenceFormatChecker) IsFormat(input string) bool {
+	_, err := url.Parse(input)
 	return err == nil
 }
 
-func (f HostnameFormatChecker) IsFormat(input interface{}) bool {
-
-	asString, ok := input.(string)
-	if ok == false {
-		return false
-	}
-
-	return rxHostname.MatchString(asString) && len(asString) < 256
+func (f HostnameFormatChecker) IsFormat(input string) bool {
+	return rxHostname.MatchString(input) && len(input) < 256
 }
 
-func (f UUIDFormatChecker) IsFormat(input interface{}) bool {
-
-	asString, ok := input.(string)
-	if ok == false {
-		return false
-	}
-
-	return rxUUID.MatchString(asString)
+func (f UUIDFormatChecker) IsFormat(input string) bool {
+	return rxUUID.MatchString(input)
 }
 
 // IsFormat implements FormatChecker interface.
-func (f RegexFormatChecker) IsFormat(input interface{}) bool {
-
-	asString, ok := input.(string)
-	if ok == false {
-		return false
-	}
-
-	if asString == "" {
+func (f RegexFormatChecker) IsFormat(input string) bool {
+	if input == "" {
 		return true
 	}
-	_, err := regexp.Compile(asString)
+	_, err := regexp.Compile(input)
 	if err != nil {
 		return false
 	}

@@ -165,10 +165,9 @@
   version = "v0.3.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/docker/go-metrics"
   packages = ["."]
-  revision = "399ea8c73916000c64c2c76e8da00ca82f8387ab"
+  revision = "d466d4f6fd960e01820085bd7e1a24426ee7ef18"
 
 [[projects]]
   name = "github.com/docker/go-units"
@@ -433,10 +432,7 @@
 
 [[projects]]
   name = "github.com/prometheus/client_golang"
-  packages = [
-    "prometheus",
-    "prometheus/promhttp"
-  ]
+  packages = ["prometheus"]
   revision = "c5b7fccd204277076155f10851dad72b76a49317"
   version = "v0.8.0"
 
@@ -521,10 +517,9 @@
   revision = "bd5ef7bd5415a7ac448318e64f11a24cd21e594b"
 
 [[projects]]
-  branch = "master"
   name = "github.com/xeipuuv/gojsonschema"
   packages = ["."]
-  revision = "9ff6d6c47f3f5de55acc6f464d6e3719b02818ae"
+  revision = "0c8571ac0ce161a5feb57375a9cdf148c98c0f70"
 
 [[projects]]
   branch = "master"
@@ -951,6 +946,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8a371abf6d9d517ac4d5524ea4123da20aca48ae80d9ed188df083ed54f55ec8"
+  inputs-digest = "52370f9a42a8a17d546c4301b077fd0cf892129264a8ea9ac9298468a398f800"
   solver-name = "gps-cdcl"
   solver-version = 1
