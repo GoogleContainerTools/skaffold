@@ -197,6 +197,12 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 		args = append(args, "-f", r.ValuesFilePath)
 	}
 
+	if len(r.ValuesFilePaths) != 0 {
+		for _, filePath := range r.ValuesFilePaths {
+			args = append(args, "-f", filePath)
+		}
+	}
+
 	setValues := r.SetValues
 	if setValues == nil {
 		setValues = map[string]string{}
