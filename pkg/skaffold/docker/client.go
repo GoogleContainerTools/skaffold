@@ -72,7 +72,7 @@ func newAPIClient(kubeContext string) (APIClient, error) {
 // It will "negotiate" the highest possible API version supported by both the client
 // and the server if there is a mismatch.
 func newEnvAPIClient() (APIClient, error) {
-	cli, err := client.NewEnvClient()
+	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting docker client: %s", err)
 	}
