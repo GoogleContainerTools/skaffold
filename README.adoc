@@ -198,6 +198,10 @@ $ skaffold run
 = Community
 - link:https://groups.google.com/forum/#!forum/skaffold-users[skaffold-users mailing list]
 - link:https://kubernetes.slack.com/messages/CABQMSZA6/[#skaffold on Kubernetes Slack]
+
+There is a bi-weekly Skaffold users meeting at 9:30am-10am PST hosted on hangouts under "skaffold". 
+Everyone is welcome to add suggestions to the link:https://docs.google.com/document/d/1mnCC_fAI3pmg3Vb2nMJyPk8Qtjjuapw_BTyqI_dX7sk/edit[agenda] and attend. 
+Join the link:https://groups.google.com/forum/#!forum/skaffold-users[skaffold-users mailing list] to get the calendar invite directly on your calendar.
 //end::community[]
 
 
