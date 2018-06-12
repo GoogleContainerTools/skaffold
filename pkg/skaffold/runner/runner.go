@@ -118,6 +118,9 @@ func getDeployer(cfg *v1alpha2.DeployConfig, kubeContext string, namespace strin
 	case cfg.KustomizeDeploy != nil:
 		return deploy.NewKustomizeDeployer(cfg, kubeContext), nil
 
+	case cfg.ComposeDeploy != nil:
+		return deploy.NewComposeDeployer(cfg, kubeContext), nil
+
 	default:
 		return nil, fmt.Errorf("Unknown deployer for config %+v", cfg)
 	}
