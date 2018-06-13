@@ -89,7 +89,7 @@ release: cross docs
         		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) .
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-*  gs://$(RELEASE_BUCKET)/releases/$(VERSION)/
 	gsutil -m cp -r $(DOCS_DIR)/* gs://$(RELEASE_BUCKET)/releases/$(VERSION)/docs/
-	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* gs://$(RELEASE_BUCKET)/latest/
+	gsutil -m cp -r gs://$(RELEASE_BUCKET)/releases/$(VERSION)/* gs://$(RELEASE_BUCKET)/releases/latest/
 
 .PHONY: release-build
 release-build: cross docs
@@ -99,7 +99,7 @@ release-build: cross docs
     		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) .
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* gs://$(RELEASE_BUCKET)/builds/$(COMMIT)/
 	gsutil -m cp -r $(DOCS_DIR)/* gs://$(RELEASE_BUCKET)/releases/$(COMMIT)/docs/
-	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* gs://$(RELEASE_BUCKET)/builds/latest/
+	gsutil -m cp -r gs://$(RELEASE_BUCKET)/builds/$(COMMIT)/* gs://$(RELEASE_BUCKET)/builds/latest/
 
 .PHONY: release-build-in-docker
 release-build-in-docker:
