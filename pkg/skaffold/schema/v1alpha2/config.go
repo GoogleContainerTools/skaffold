@@ -97,8 +97,10 @@ type GoogleCloudBuild struct {
 // KanikoBuild contains the fields needed to do a on-cluster build using
 // the kaniko image
 type KanikoBuild struct {
-	GCSBucket  string `yaml:"gcsBucket,omitempty"`
-	PullSecret string `yaml:"pullSecret,omitempty"`
+	GCSBucket      string `yaml:"gcsBucket,omitempty"`
+	PullSecret     string `yaml:"pullSecret,omitempty"`
+	PullSecretName string `yaml:"pullSecretName,omitempty"`
+	Namespace      string `yaml:"namespace,omitempty"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps
@@ -200,7 +202,8 @@ func (c *SkaffoldConfig) setDefaultValues() error {
 	c.setDefaultTagger()
 	c.setDefaultDockerfiles()
 	c.setDefaultWorkspaces()
-	return c.expandKanikoSecretPath()
+	c.setDefaultNamespace()
+	return c.setDefaultSecret()
 }
 
 func (c *SkaffoldConfig) defaultToLocalBuild() {
@@ -248,17 +251,31 @@ func (c *SkaffoldConfig) setDefaultWorkspaces() {
 	}
 }
 
-func (c *SkaffoldConfig) expandKanikoSecretPath() error {
-	if c.Build.KanikoBuild == nil || c.Build.KanikoBuild.PullSecret == "" {
+func (c *SkaffoldConfig) setDefaultNamespace() {
+	if c.Build.KanikoBuild == nil {
+		return
+	}
+	if c.Build.KanikoBuild.Namespace == "" {
+		c.Build.KanikoBuild.Namespace = "default"
+	}
+}
+
+func (c *SkaffoldConfig) setDefaultSecret() error {
+	if c.Build.KanikoBuild == nil {
 		return nil
 	}
+	if c.Build.KanikoBuild.PullSecret != "" {
+		absPath, err := homedir.Expand(c.Build.KanikoBuild.PullSecret)
+		if err != nil {
+			return fmt.Errorf("unable to expand pullSecret %s", c.Build.KanikoBuild.PullSecret)
+		}
 
-	absPath, err := homedir.Expand(c.Build.KanikoBuild.PullSecret)
-	if err != nil {
-		return fmt.Errorf("unable to expand pullSecret %s", c.Build.KanikoBuild.PullSecret)
+		c.Build.KanikoBuild.PullSecret = absPath
+		return nil
 	}
-
-	c.Build.KanikoBuild.PullSecret = absPath
+	if c.Build.KanikoBuild.PullSecretName == "" {
+		c.Build.KanikoBuild.PullSecret = "kaniko-secret"
+	}
 	return nil
 }
 

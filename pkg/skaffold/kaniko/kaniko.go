@@ -54,10 +54,11 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 		return "", errors.Wrap(err, "starting log streamer")
 	}
 	imageDst := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
-	p, err := client.CoreV1().Pods("default").Create(&v1.Pod{
+	p, err := client.CoreV1().Pods(cfg.Namespace).Create(&v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   "kaniko",
-			Labels: map[string]string{"kaniko": "kaniko"},
+			Name:      "kaniko",
+			Labels:    map[string]string{"kaniko": "kaniko"},
+			Namespace: cfg.Namespace,
 		},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
@@ -90,7 +91,7 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 					Name: "kaniko-secret",
 					VolumeSource: v1.VolumeSource{
 						Secret: &v1.SecretVolumeSource{
-							SecretName: "kaniko-secret",
+							SecretName: cfg.PullSecretName,
 						},
 					},
 				},
@@ -105,14 +106,14 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 
 	defer func() {
 		imageList.Remove(constants.DefaultKanikoImage)
-		if err := client.CoreV1().Pods("default").Delete(p.Name, &metav1.DeleteOptions{
+		if err := client.CoreV1().Pods(cfg.Namespace).Delete(p.Name, &metav1.DeleteOptions{
 			GracePeriodSeconds: new(int64),
 		}); err != nil {
 			logrus.Fatalf("deleting pod: %s", err)
 		}
 	}()
 
-	if err := kubernetes.WaitForPodComplete(client.CoreV1().Pods("default"), p.Name); err != nil {
+	if err := kubernetes.WaitForPodComplete(client.CoreV1().Pods(cfg.Namespace), p.Name); err != nil {
 		return "", errors.Wrap(err, "waiting for pod to complete")
 	}
 

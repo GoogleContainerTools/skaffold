@@ -57,7 +57,7 @@ func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tag
 
 	if k.KanikoBuild.PullSecret == "" {
 		logrus.Debug("No pull secret specified. Checking for one in the cluster.")
-		if _, err := client.CoreV1().Secrets("default").Get("kaniko-secret", metav1.GetOptions{}); err != nil {
+		if _, err := client.CoreV1().Secrets(k.KanikoBuild.Namespace).Get(k.KanikoBuild.PullSecretName, metav1.GetOptions{}); err != nil {
 			return nil, errors.Wrap(err, "checking for existing kaniko secret")
 		}
 	} else {
@@ -66,9 +66,9 @@ func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tag
 			return nil, errors.Wrap(err, "reading secret")
 		}
 
-		_, err = client.CoreV1().Secrets("default").Create(&v1.Secret{
+		_, err = client.CoreV1().Secrets(k.KanikoBuild.Namespace).Create(&v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:   "kaniko-secret",
+				Name:   k.KanikoBuild.PullSecretName,
 				Labels: map[string]string{"kaniko": "kaniko"},
 			},
 			Data: map[string][]byte{
@@ -79,7 +79,7 @@ func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tag
 			logrus.Warnf("creating secret: %s", err)
 		}
 		defer func() {
-			if err := client.CoreV1().Secrets("default").Delete("kaniko-secret", &metav1.DeleteOptions{}); err != nil {
+			if err := client.CoreV1().Secrets(k.KanikoBuild.Namespace).Delete(k.KanikoBuild.PullSecretName, &metav1.DeleteOptions{}); err != nil {
 				logrus.Warnf("deleting secret")
 			}
 		}()
