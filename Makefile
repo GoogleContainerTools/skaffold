@@ -27,6 +27,10 @@ ORG := github.com/GoogleContainerTools
 PROJECT := skaffold
 REPOPATH ?= $(ORG)/$(PROJECT)
 RELEASE_BUCKET ?= $(PROJECT)
+GSC_BUILD_PATH ?= gs://$(RELEASE_BUCKET)/builds/$(COMMIT)
+GSC_BUILD_LATEST ?= gs://$(RELEASE_BUCKET)/builds/latest
+GSC_RELEASE_PATH ?= gs://$(RELEASE_BUCKET)/releases/$(VERSION)
+GSC_RELEASE_LATEST ?= gs://$(RELEASE_BUCKET)/releases/latest
 
 REMOTE_INTEGRATION ?= false
 GCP_PROJECT ?= k8s-skaffold
@@ -87,9 +91,9 @@ release: cross docs
         		-f deploy/skaffold/Dockerfile \
         		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
         		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) .
-	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-*  gs://$(RELEASE_BUCKET)/releases/$(VERSION)/
-	gsutil -m cp -r $(DOCS_DIR)/* gs://$(RELEASE_BUCKET)/releases/$(VERSION)/docs/
-	gsutil -m cp -r gs://$(RELEASE_BUCKET)/releases/$(VERSION)/* gs://$(RELEASE_BUCKET)/releases/latest/
+	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_RELEASE_PATH)/
+	gsutil -m cp -r $(DOCS_DIR)/* $(GSC_RELEASE_PATH)/docs/
+	gsutil -m cp -r $(GSC_RELEASE_PATH)/* $(GSC_RELEASE_LATEST)
 
 .PHONY: release-in-docker
 release-in-docker:
@@ -109,9 +113,9 @@ release-build: cross docs
     		-f deploy/skaffold/Dockerfile \
     		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
     		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) .
-	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* gs://$(RELEASE_BUCKET)/builds/$(COMMIT)/
-	gsutil -m cp -r $(DOCS_DIR)/* gs://$(RELEASE_BUCKET)/releases/$(COMMIT)/docs/
-	gsutil -m cp -r gs://$(RELEASE_BUCKET)/builds/$(COMMIT)/* gs://$(RELEASE_BUCKET)/builds/latest/
+	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_BUILD_PATH)/
+	gsutil -m cp -r $(DOCS_DIR)/* $(GSC_BUILD_PATH)/docs/
+	gsutil -m cp -r $(GSC_BUILD_PATH)/* $(GSC_BUILD_LATEST)
 
 .PHONY: release-build-in-docker
 release-build-in-docker:
