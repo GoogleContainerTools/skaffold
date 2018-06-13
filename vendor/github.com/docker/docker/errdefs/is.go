@@ -1,4 +1,4 @@
-package errdefs
+package errdefs // import "github.com/docker/docker/errdefs"
 
 type causer interface {
 	Cause() error
@@ -21,7 +21,7 @@ func getImplementer(err error) error {
 		ErrDeadline,
 		ErrDataLoss,
 		ErrUnknown:
-		return e
+		return err
 	case causer:
 		return getImplementer(e.Cause())
 	default:
@@ -47,7 +47,7 @@ func IsConflict(err error) bool {
 	return ok
 }
 
-// IsUnauthorized returns if the the passed in error is an ErrUnauthorized
+// IsUnauthorized returns if the passed in error is an ErrUnauthorized
 func IsUnauthorized(err error) bool {
 	_, ok := getImplementer(err).(ErrUnauthorized)
 	return ok

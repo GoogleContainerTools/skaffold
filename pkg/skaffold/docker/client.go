@@ -19,7 +19,6 @@ package docker
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"os/exec"
 	"path/filepath"
@@ -30,15 +29,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/api"
+	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/tlsconfig"
-	"github.com/moby/moby/client"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 type APIClient interface {
 	client.CommonAPIClient
-	io.Closer
 }
 
 var (
@@ -74,7 +72,7 @@ func newAPIClient(kubeContext string) (APIClient, error) {
 // It will "negotiate" the highest possible API version supported by both the client
 // and the server if there is a mismatch.
 func newEnvAPIClient() (APIClient, error) {
-	cli, err := client.NewEnvClient()
+	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting docker client: %s", err)
 	}

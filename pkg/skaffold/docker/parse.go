@@ -29,8 +29,8 @@ import (
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/fileutils"
 	"github.com/google/go-containerregistry/pkg/v1"
-	"github.com/moby/moby/builder/dockerfile/parser"
-	"github.com/moby/moby/builder/dockerfile/shell"
+	"github.com/moby/buildkit/frontend/dockerfile/parser"
+	"github.com/moby/buildkit/frontend/dockerfile/shell"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
