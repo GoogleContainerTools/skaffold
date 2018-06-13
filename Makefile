@@ -91,6 +91,18 @@ release: cross docs
 	gsutil -m cp -r $(DOCS_DIR)/* gs://$(RELEASE_BUCKET)/releases/$(VERSION)/docs/
 	gsutil -m cp -r gs://$(RELEASE_BUCKET)/releases/$(VERSION)/* gs://$(RELEASE_BUCKET)/releases/latest/
 
+.PHONY: release-in-docker
+release-in-docker:
+	docker build \
+    		-f deploy/skaffold/Dockerfile \
+    		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
+    		--target builder \
+    		.
+	docker run \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
+		gcr.io/$(GCP_PROJECT)/skaffold-builder make -j release RELEASE_BUCKET=$(RELEASE_BUCKET) GCP_PROJECT=$(GCP_PROJECT)
+
 .PHONY: release-build
 release-build: cross docs
 	docker build \
@@ -111,19 +123,7 @@ release-build-in-docker:
 	docker run \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
-		gcr.io/$(GCP_PROJECT)/skaffold-builder make release-build RELEASE_BUCKET=$(RELEASE_BUCKET) GCP_PROJECT=$(GCP_PROJECT)
-
-.PHONY: release-in-docker
-release-in-docker:
-	docker build \
-    		-f deploy/skaffold/Dockerfile \
-    		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
-    		--target builder \
-    		.
-	docker run \
-		-v /var/run/docker.sock:/var/run/docker.sock \
-		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
-		gcr.io/$(GCP_PROJECT)/skaffold-builder make release RELEASE_BUCKET=$(RELEASE_BUCKET) GCP_PROJECT=$(GCP_PROJECT)
+		gcr.io/$(GCP_PROJECT)/skaffold-builder make -j release-build RELEASE_BUCKET=$(RELEASE_BUCKET) GCP_PROJECT=$(GCP_PROJECT)
 
 .PHONY: clean
 clean:

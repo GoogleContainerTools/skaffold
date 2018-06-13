@@ -3,7 +3,12 @@ Dan Lorenc <dlorenc@google.com>; Matt Rickard <mrick@google.com>; David Gageot <
 :toc: left
 :icons: font
 :imagesdir: img
+ifdef::pdf[]
+:source-highlighter: rouge
+endif::[]
+ifndef::pdf[]
 :source-highlighter: pygments
+endif::[]
 :pygments-css: style
 :stylesheet: css/skaffold.css
 :linkcss: css/skaffold.css

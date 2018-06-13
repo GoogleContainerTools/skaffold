@@ -65,7 +65,7 @@ RUN apt-get install --no-install-recommends --no-install-suggests -y \
         apt-transport-https && \
     gem install  --no-document "asciidoctor-pdf:${ASCIIDOCTOR_PDF_VERSION}" \
         asciidoctor:${ASCIIDOCTOR_VERSION} \
-        pygments.rb && \
+        pygments.rb rouge && \
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
     apt-key fingerprint 0EBFCD88 && \
     add-apt-repository \
