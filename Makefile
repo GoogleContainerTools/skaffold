@@ -130,7 +130,7 @@ clean:
 integration-in-docker:
 	docker build \
 		-f deploy/skaffold/Dockerfile \
-		--target integration
+		--target integration \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-integration .
 	docker run \
 		-v /var/run/docker.sock:/var/run/docker.sock \
