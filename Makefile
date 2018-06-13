@@ -22,6 +22,7 @@ VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 GOOS ?= $(shell go env GOOS)
 GOARCH = amd64
 BUILD_DIR ?= ./out
+DOCS_DIR ?= ./docs/generated
 ORG := github.com/GoogleContainerTools
 PROJECT := skaffold
 REPOPATH ?= $(ORG)/$(PROJECT)
@@ -86,7 +87,8 @@ release: cross docs
         		-f deploy/skaffold/Dockerfile \
         		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
         		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) .
-	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* gs://$(RELEASE_BUCKET)/releases/$(VERSION)/
+	gsutil -m cp  gs://$(RELEASE_BUCKET)/releases/$(VERSION)/
+	gsutil -m cp $(DOCS_DIR)/* gs://$(RELEASE_BUCKET)/releases/$(VERSION)/docs/
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* gs://$(RELEASE_BUCKET)/latest/
 
 .PHONY: release-build
@@ -96,6 +98,7 @@ release-build: cross docs
     		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
     		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) .
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* gs://$(RELEASE_BUCKET)/builds/$(COMMIT)/
+	gsutil -m cp $(DOCS_DIR)/* gs://$(RELEASE_BUCKET)/releases/$(COMMIT)/docs/
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* gs://$(RELEASE_BUCKET)/builds/latest/
 
 .PHONY: release-build-in-docker
