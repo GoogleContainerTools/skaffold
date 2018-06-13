@@ -1,21 +1,39 @@
 # using default substitutions, provided by Google Container Builder
 # see: https://cloud.google.com/container-builder/docs/configuring-builds/substitute-variable-values#using_default_substitutions
 steps:
-# Build the container that will do the go build.
+
+# Download the latest version of the builder image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/k8s-skaffold/skaffold:$COMMIT_SHA', '-f', 'deploy/skaffold/Dockerfile', '.']
-# Do the go build.
-  - name: 'gcr.io/k8s-skaffold/skaffold:$COMMIT_SHA'
-    args: ['make', 'cross', 'docs']
-# Upload to GCS.
-  - name: 'gcr.io/cloud-builders/gsutil'
-    args: ['cp', '-r', 'out/skaffold-*', 'gs://skaffold/builds/$COMMIT_SHA/']
-# Upload docs to GCS.
-  - name: 'gcr.io/cloud-builders/gsutil'
-    args: ['cp', '-r', 'docs/generated/*', 'gs://skaffold/builds/$COMMIT_SHA/docs/']
-# Bump the latest build
-# Upload to GCS.
-  - name: 'gcr.io/cloud-builders/gsutil'
-    args: ['cp', '-r', 'gs://skaffold/builds/$COMMIT_SHA/*', 'gs://skaffold/builds/latest/']
-images: ['gcr.io/k8s-skaffold/skaffold:$COMMIT_SHA']
-timeout: 20m
+    entrypoint: 'bash'
+    args:
+    - '-c'
+    - |
+      docker pull gcr.io/$PROJECT_ID/skaffold-builder:latest || exit 0
+# until https://github.com/GoogleCloudPlatform/cloud-builders/issues/253 is fixed
+
+# Rebuild the builder image if necessary
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+    - 'build'
+    - '-t'
+    - 'gcr.io/$PROJECT_ID/skaffold-builder:latest'
+    - '-f'
+    - 'deploy/skaffold/Dockerfile'
+    - '--cache-from'
+    - 'gcr.io/$PROJECT_ID/skaffold-builder:latest'
+    - '--target'
+    - 'builder'
+    - '.'
+
+# Do the go build & push the results to GCS
+  - name: 'gcr.io/$PROJECT_ID/skaffold-builder:latest'
+    args:
+    - 'make'
+    - 'release-build'
+    - 'RELEASE_BUCKET=$_RELEASE_BUCKET'
+    - 'GCP_PROJECT=$PROJECT_ID'
+
+images:
+- 'gcr.io/$PROJECT_ID/skaffold-builder:latest'
+- 'gcr.io/$PROJECT_ID/skaffold:$COMMIT_SHA'
+timeout: 1200s
