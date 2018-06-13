@@ -160,6 +160,17 @@ func TestRun(t *testing.T) {
 			},
 			dir: "../examples/kustomize",
 		},
+		{
+			description: "kaniko example",
+			args:        []string{"run"},
+			pods: []testObject{
+				{
+					name: "getting-started",
+				},
+			},
+			dir:        "../examples/kaniko",
+			remoteOnly: true,
+		},
 	}
 
 	for _, testCase := range testCases {
