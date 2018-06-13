@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -42,7 +43,13 @@ func NewKanikoBuilder(cfg *v1alpha2.BuildConfig) (*KanikoBuilder, error) {
 	}, nil
 }
 
-func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]Build, error) {
+func (k *KanikoBuilder) Labels() map[string]string {
+	return map[string]string{
+		constants.Labels.Builder: "kaniko",
+	}
+}
+
+func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]Artifact, error) {
 	client, err := kubernetes.GetClientset()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting kubernetes client")
@@ -72,7 +79,7 @@ func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tag
 	}()
 
 	// TODO(r2d4): parallel builds
-	var builds []Build
+	var builds []Artifact
 
 	for _, artifact := range artifacts {
 		initialTag, err := kaniko.RunKanikoBuild(ctx, out, artifact, k.KanikoBuild)
@@ -97,7 +104,7 @@ func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tag
 			return nil, errors.Wrap(err, "tagging image")
 		}
 
-		builds = append(builds, Build{
+		builds = append(builds, Artifact{
 			ImageName: artifact.ImageName,
 			Tag:       tag,
 		})

@@ -44,3 +44,19 @@ const (
 	// DefaultKanikoImage is v0.1.0
 	DefaultKanikoImage = "gcr.io/kaniko-project/executor:v0.1.0@sha256:501056bf52f3a96f151ccbeb028715330d5d5aa6647e7572ce6c6c55f91ab374"
 )
+
+var Labels = struct {
+	TagPolicy        string
+	Deployer         string
+	Builder          string
+	DockerAPIVersion string
+	DefaultLabels    map[string]string
+}{
+	DefaultLabels: map[string]string{
+		"deployed-with": "skaffold",
+	},
+	TagPolicy:        "skaffold-tag-policy",
+	Deployer:         "skaffold-deployer",
+	Builder:          "skaffold-builder",
+	DockerAPIVersion: "docker-api-version",
+}

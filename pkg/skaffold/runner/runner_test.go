@@ -36,21 +36,25 @@ import (
 )
 
 type TestBuilder struct {
-	built  []build.Build
+	built  []build.Artifact
 	errors []error
 }
 
-func (t *TestBuilder) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Build, error) {
+func (t *TestBuilder) Labels() map[string]string {
+	return map[string]string{}
+}
+
+func (t *TestBuilder) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
 	if len(t.errors) > 0 {
 		err := t.errors[0]
 		t.errors = t.errors[1:]
 		return nil, err
 	}
 
-	var builds []build.Build
+	var builds []build.Artifact
 
 	for _, artifact := range artifacts {
-		builds = append(builds, build.Build{
+		builds = append(builds, build.Artifact{
 			ImageName: artifact.ImageName,
 		})
 	}
@@ -60,21 +64,25 @@ func (t *TestBuilder) Build(ctx context.Context, w io.Writer, tagger tag.Tagger,
 }
 
 type TestDeployer struct {
-	deployed []build.Build
+	deployed []build.Artifact
 	err      error
+}
+
+func (t *TestDeployer) Labels() map[string]string {
+	return map[string]string{}
 }
 
 func (t *TestDeployer) Dependencies() ([]string, error) {
 	return nil, nil
 }
 
-func (t *TestDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Build) error {
+func (t *TestDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]deploy.Artifact, error) {
 	if t.err != nil {
-		return t.err
+		return nil, t.err
 	}
 
 	t.deployed = builds
-	return nil
+	return nil, nil
 }
 
 func (t *TestDeployer) Cleanup(ctx context.Context, out io.Writer) error {

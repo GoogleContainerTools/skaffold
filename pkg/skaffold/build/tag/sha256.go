@@ -19,10 +19,18 @@ package tag
 import (
 	"fmt"
 	"strings"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
 // ChecksumTagger tags an image by the sha256 of the image tarball
 type ChecksumTagger struct {
+}
+
+func (c *ChecksumTagger) Labels() map[string]string {
+	return map[string]string{
+		constants.Labels.TagPolicy: "sha256",
+	}
 }
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the sha256 checksum of the image

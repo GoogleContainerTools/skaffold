@@ -20,6 +20,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
@@ -40,8 +41,14 @@ func NewEnvTemplateTagger(t string) (Tagger, error) {
 	}, nil
 }
 
+func (t *envTemplateTagger) Labels() map[string]string {
+	return map[string]string{
+		constants.Labels.TagPolicy: "envTemplateTagger",
+	}
+}
+
 // GenerateFullyQualifiedImageName tags an image with the custom tag
-func (c *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir string, opts *Options) (string, error) {
+func (t *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir string, opts *Options) (string, error) {
 	customMap := map[string]string{}
 
 	customMap["IMAGE_NAME"] = opts.ImageName
@@ -55,5 +62,5 @@ func (c *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir string, o
 		}
 	}
 
-	return util.ExecuteEnvTemplate(c.Template, customMap)
+	return util.ExecuteEnvTemplate(t.Template, customMap)
 }

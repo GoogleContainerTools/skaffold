@@ -50,7 +50,7 @@ func NewCmdBuild(out io.Writer) *cobra.Command {
 
 // BuildOutput is the output of `skaffold build`.
 type BuildOutput struct {
-	Builds []build.Build
+	Builds []build.Artifact
 }
 
 func runBuild(out io.Writer, filename string) error {

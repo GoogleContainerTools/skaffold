@@ -19,6 +19,8 @@ package tag
 import (
 	"fmt"
 	"time"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
 const tagTime = "2006-01-02_15-04-05.999_MST"
@@ -37,6 +39,12 @@ func NewDateTimeTagger(format, timezone string) Tagger {
 		Format:   format,
 		TimeZone: timezone,
 		timeFn:   func() time.Time { return time.Now() },
+	}
+}
+
+func (tagger *dateTimeTagger) Labels() map[string]string {
+	return map[string]string{
+		constants.Labels.TagPolicy: "dateTimeTagger",
 	}
 }
 

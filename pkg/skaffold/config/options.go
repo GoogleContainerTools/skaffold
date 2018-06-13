@@ -16,6 +16,10 @@ limitations under the License.
 
 package config
 
+import (
+	"fmt"
+)
+
 // SkaffoldOptions are options that are set by command line arguments not included
 // in the config file itself
 type SkaffoldOptions struct {
@@ -24,4 +28,16 @@ type SkaffoldOptions struct {
 	Profiles     []string
 	CustomTag    string
 	Namespace    string
+}
+
+// Labels returns a map of labels to be applied to all deployed
+// k8s objects during the duration of the run
+func (opts *SkaffoldOptions) Labels() map[string]string {
+	labels := map[string]string{
+		"cleanup": fmt.Sprintf("%t", opts.Cleanup),
+	}
+	if opts.Namespace != "" {
+		labels["namespace"] = opts.Namespace
+	}
+	return labels
 }

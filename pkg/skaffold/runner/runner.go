@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
@@ -43,7 +44,33 @@ type SkaffoldRunner struct {
 	watch.WatcherFactory
 	build.DependencyMapFactory
 
-	builds []build.Build
+	opts   *config.SkaffoldOptions
+	builds []build.Artifact
+}
+
+func (r *SkaffoldRunner) Labels() map[string]string {
+	labels := map[string]string{}
+	if r.opts != nil {
+		for k, v := range r.opts.Labels() {
+			labels[k] = v
+		}
+	}
+	if r.Builder != nil {
+		for k, v := range r.Builder.Labels() {
+			labels[k] = v
+		}
+	}
+	if r.Deployer != nil {
+		for k, v := range r.Deployer.Labels() {
+			labels[k] = v
+		}
+	}
+	if r.Tagger != nil {
+		for k, v := range r.Tagger.Labels() {
+			labels[k] = v
+		}
+	}
+	return labels
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
@@ -154,16 +181,18 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*v1
 		return errors.Wrap(err, "build step")
 	}
 
-	if err := r.Deploy(ctx, out, bRes); err != nil {
+	dRes, err := r.Deploy(ctx, out, bRes)
+	if err != nil {
 		return errors.Wrap(err, "deploy step")
 	}
+	label.LabelDeployResults(r.Labels(), dRes)
 
 	return nil
 }
 
 // Dev watches for changes and runs the skaffold build and deploy
 // pipeline until interrrupted by the user.
-func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact) ([]build.Build, error) {
+func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
 	depMap, err := r.DependencyMapFactory(artifacts)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting path to dependency map")
@@ -213,14 +242,18 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 		// Make sure all artifacts are redeployed. Not only those that were just rebuilt.
 		r.builds = mergeWithPreviousBuilds(bRes, r.builds)
 
-		return r.Deploy(ctx, out, r.builds)
+		dRes, err := r.Deploy(ctx, out, r.builds)
+		label.LabelDeployResults(r.Labels(), dRes)
+		return err
 	}
 
 	onDeployChange := func(changedPaths []string) error {
 		logger.Mute()
 		defer logger.Unmute()
 
-		return r.Deploy(ctx, out, r.builds)
+		dRes, err := r.Deploy(ctx, out, r.builds)
+		label.LabelDeployResults(r.Labels(), dRes)
+		return err
 	}
 
 	if err := onChange(depMap.Paths()); err != nil {
@@ -244,13 +277,13 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 	return r.builds, g.Wait()
 }
 
-func mergeWithPreviousBuilds(builds, previous []build.Build) []build.Build {
+func mergeWithPreviousBuilds(builds, previous []build.Artifact) []build.Artifact {
 	updatedBuilds := map[string]bool{}
 	for _, build := range builds {
 		updatedBuilds[build.ImageName] = true
 	}
 
-	var merged []build.Build
+	var merged []build.Artifact
 	merged = append(merged, builds...)
 
 	for _, b := range previous {

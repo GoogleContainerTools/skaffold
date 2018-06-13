@@ -75,7 +75,13 @@ func NewGoogleCloudBuilder(cfg *v1alpha2.BuildConfig) (*GoogleCloudBuilder, erro
 	return &GoogleCloudBuilder{cfg}, nil
 }
 
-func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]Build, error) {
+func (cb *GoogleCloudBuilder) Labels() map[string]string {
+	return map[string]string{
+		constants.Labels.Builder: "google-cloud-builder",
+	}
+}
+
+func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]Artifact, error) {
 	client, err := google.DefaultClient(ctx, cloudbuild.CloudPlatformScope)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting google client")
@@ -93,7 +99,7 @@ func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger t
 	}
 	defer c.Close()
 
-	var builds []Build
+	var builds []Artifact
 	for _, artifact := range artifacts {
 		build, err := cb.buildArtifact(ctx, out, tagger, cbclient, c, artifact)
 		if err != nil {
@@ -105,7 +111,7 @@ func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger t
 	return builds, nil
 }
 
-func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, cbclient *cloudbuild.Service, c *cstorage.Client, artifact *v1alpha2.Artifact) (*Build, error) {
+func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, cbclient *cloudbuild.Service, c *cstorage.Client, artifact *v1alpha2.Artifact) (*Artifact, error) {
 	logrus.Infof("Building artifact: %+v", artifact)
 
 	// need to format build args as strings to pass to container builder docker
@@ -220,7 +226,7 @@ watch:
 		return nil, errors.Wrap(err, "tagging image")
 	}
 
-	return &Build{
+	return &Artifact{
 		ImageName: artifact.ImageName,
 		Tag:       newTag,
 	}, nil
