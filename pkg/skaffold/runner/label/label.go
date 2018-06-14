@@ -17,6 +17,7 @@ limitations under the License.
 package label
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -32,6 +33,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"k8s.io/apimachinery/pkg/types"
+	patch "k8s.io/apimachinery/pkg/util/strategicpatch"
 )
 
 // retry 3 times to give the object time to propagate to the API server
@@ -86,67 +90,81 @@ func updateRuntimeObject(client clientgo.Interface, labels map[string]string, re
 	}
 	var err error
 	obj := *res.Obj
+	originalJSON, _ := json.Marshal(obj)
+	modifiedObj := obj.DeepCopyObject()
 	switch obj.(type) {
 	case *corev1.Pod:
-		p := obj.(*corev1.Pod)
-		addSkaffoldLabels(labels, &p.ObjectMeta)
-		pods := client.CoreV1().Pods(retrieveNamespace(res.Namespace, p.ObjectMeta))
-		_, err = pods.UpdateStatus(p)
+		apiObject := modifiedObj.(*corev1.Pod)
+		addSkaffoldLabels(labels, &apiObject.ObjectMeta)
+		modifiedJSON, _ := json.Marshal(modifiedObj)
+		p, _ := patch.CreateTwoWayMergePatch(originalJSON, modifiedJSON, apiObject)
+		_, err = client.CoreV1().Pods(retrieveNamespace(res.Namespace, apiObject.ObjectMeta)).Patch(apiObject.Name, types.StrategicMergePatchType, p)
 	case *appsv1.Deployment:
-		d := obj.(*appsv1.Deployment)
-		addSkaffoldLabels(labels, &d.ObjectMeta)
-		deployments := client.AppsV1().Deployments(retrieveNamespace(res.Namespace, d.ObjectMeta))
-		_, err = deployments.Update(d)
+		apiObject := modifiedObj.(*appsv1.Deployment)
+		addSkaffoldLabels(labels, &apiObject.ObjectMeta)
+		modifiedJSON, _ := json.Marshal(modifiedObj)
+		p, _ := patch.CreateTwoWayMergePatch(originalJSON, modifiedJSON, apiObject)
+		_, err = client.AppsV1().Deployments(retrieveNamespace(res.Namespace, apiObject.ObjectMeta)).Patch(apiObject.Name, types.StrategicMergePatchType, p)
 	case *appsv1beta1.Deployment:
-		d := obj.(*appsv1beta1.Deployment)
-		addSkaffoldLabels(labels, &d.ObjectMeta)
-		deployments := client.AppsV1beta1().Deployments(retrieveNamespace(res.Namespace, d.ObjectMeta))
-		_, err = deployments.Update(d)
+		apiObject := modifiedObj.(*appsv1beta1.Deployment)
+		addSkaffoldLabels(labels, &apiObject.ObjectMeta)
+		modifiedJSON, _ := json.Marshal(modifiedObj)
+		p, _ := patch.CreateTwoWayMergePatch(originalJSON, modifiedJSON, apiObject)
+		_, err = client.AppsV1beta1().Deployments(retrieveNamespace(res.Namespace, apiObject.ObjectMeta)).Patch(apiObject.Name, types.StrategicMergePatchType, p)
 	case *appsv1beta2.Deployment:
-		d := obj.(*appsv1beta2.Deployment)
-		addSkaffoldLabels(labels, &d.ObjectMeta)
-		deployments := client.AppsV1beta2().Deployments(retrieveNamespace(res.Namespace, d.ObjectMeta))
-		_, err = deployments.Update(d)
+		apiObject := modifiedObj.(*appsv1beta2.Deployment)
+		addSkaffoldLabels(labels, &apiObject.ObjectMeta)
+		modifiedJSON, _ := json.Marshal(modifiedObj)
+		p, _ := patch.CreateTwoWayMergePatch(originalJSON, modifiedJSON, apiObject)
+		_, err = client.AppsV1beta2().Deployments(retrieveNamespace(res.Namespace, apiObject.ObjectMeta)).Patch(apiObject.Name, types.StrategicMergePatchType, p)
 	case *extensionsv1beta1.Deployment:
-		d := obj.(*extensionsv1beta1.Deployment)
-		addSkaffoldLabels(labels, &d.ObjectMeta)
-		deployments := client.ExtensionsV1beta1().Deployments(retrieveNamespace(res.Namespace, d.ObjectMeta))
-		_, err = deployments.Update(d)
+		apiObject := modifiedObj.(*extensionsv1beta1.Deployment)
+		addSkaffoldLabels(labels, &apiObject.ObjectMeta)
+		modifiedJSON, _ := json.Marshal(modifiedObj)
+		p, _ := patch.CreateTwoWayMergePatch(originalJSON, modifiedJSON, apiObject)
+		_, err = client.ExtensionsV1beta1().Deployments(retrieveNamespace(res.Namespace, apiObject.ObjectMeta)).Patch(apiObject.Name, types.StrategicMergePatchType, p)
 	case *corev1.Service:
-		s := obj.(*corev1.Service)
-		addSkaffoldLabels(labels, &s.ObjectMeta)
-		services := client.CoreV1().Services(retrieveNamespace(res.Namespace, s.ObjectMeta))
-		_, err = services.UpdateStatus(s)
+		apiObject := modifiedObj.(*corev1.Service)
+		addSkaffoldLabels(labels, &apiObject.ObjectMeta)
+		modifiedJSON, _ := json.Marshal(modifiedObj)
+		p, _ := patch.CreateTwoWayMergePatch(originalJSON, modifiedJSON, apiObject)
+		_, err = client.CoreV1().Services(retrieveNamespace(res.Namespace, apiObject.ObjectMeta)).Patch(apiObject.Name, types.StrategicMergePatchType, p)
 	case *appsv1.StatefulSet:
-		s := obj.(*appsv1.StatefulSet)
-		addSkaffoldLabels(labels, &s.ObjectMeta)
-		sets := client.AppsV1().StatefulSets(retrieveNamespace(res.Namespace, s.ObjectMeta))
-		_, err = sets.UpdateStatus(s)
+		apiObject := modifiedObj.(*appsv1.StatefulSet)
+		addSkaffoldLabels(labels, &apiObject.ObjectMeta)
+		modifiedJSON, _ := json.Marshal(modifiedObj)
+		p, _ := patch.CreateTwoWayMergePatch(originalJSON, modifiedJSON, apiObject)
+		_, err = client.AppsV1().StatefulSets(retrieveNamespace(res.Namespace, apiObject.ObjectMeta)).Patch(apiObject.Name, types.StrategicMergePatchType, p)
 	case *appsv1beta1.StatefulSet:
-		s := obj.(*appsv1beta1.StatefulSet)
-		addSkaffoldLabels(labels, &s.ObjectMeta)
-		sets := client.AppsV1beta1().StatefulSets(retrieveNamespace(res.Namespace, s.ObjectMeta))
-		_, err = sets.UpdateStatus(s)
+		apiObject := modifiedObj.(*appsv1beta1.StatefulSet)
+		addSkaffoldLabels(labels, &apiObject.ObjectMeta)
+		modifiedJSON, _ := json.Marshal(modifiedObj)
+		p, _ := patch.CreateTwoWayMergePatch(originalJSON, modifiedJSON, apiObject)
+		_, err = client.AppsV1beta1().StatefulSets(retrieveNamespace(res.Namespace, apiObject.ObjectMeta)).Patch(apiObject.Name, types.StrategicMergePatchType, p)
 	case *appsv1beta2.StatefulSet:
-		s := obj.(*appsv1beta2.StatefulSet)
-		addSkaffoldLabels(labels, &s.ObjectMeta)
-		sets := client.AppsV1beta2().StatefulSets(retrieveNamespace(res.Namespace, s.ObjectMeta))
-		_, err = sets.UpdateStatus(s)
+		apiObject := modifiedObj.(*appsv1beta2.StatefulSet)
+		addSkaffoldLabels(labels, &apiObject.ObjectMeta)
+		modifiedJSON, _ := json.Marshal(modifiedObj)
+		p, _ := patch.CreateTwoWayMergePatch(originalJSON, modifiedJSON, apiObject)
+		_, err = client.AppsV1beta2().StatefulSets(retrieveNamespace(res.Namespace, apiObject.ObjectMeta)).Patch(apiObject.Name, types.StrategicMergePatchType, p)
 	case *extensionsv1beta1.DaemonSet:
-		s := obj.(*extensionsv1beta1.DaemonSet)
-		addSkaffoldLabels(labels, &s.ObjectMeta)
-		sets := client.ExtensionsV1beta1().DaemonSets(retrieveNamespace(res.Namespace, s.ObjectMeta))
-		_, err = sets.UpdateStatus(s)
+		apiObject := modifiedObj.(*extensionsv1beta1.DaemonSet)
+		addSkaffoldLabels(labels, &apiObject.ObjectMeta)
+		modifiedJSON, _ := json.Marshal(modifiedObj)
+		p, _ := patch.CreateTwoWayMergePatch(originalJSON, modifiedJSON, apiObject)
+		_, err = client.ExtensionsV1beta1().DaemonSets(retrieveNamespace(res.Namespace, apiObject.ObjectMeta)).Patch(apiObject.Name, types.StrategicMergePatchType, p)
 	case *appsv1.ReplicaSet:
-		rs := obj.(*appsv1.ReplicaSet)
-		addSkaffoldLabels(labels, &rs.ObjectMeta)
-		sets := client.AppsV1().ReplicaSets(retrieveNamespace(res.Namespace, rs.ObjectMeta))
-		_, err = sets.UpdateStatus(rs)
+		apiObject := modifiedObj.(*appsv1.ReplicaSet)
+		addSkaffoldLabels(labels, &apiObject.ObjectMeta)
+		modifiedJSON, _ := json.Marshal(modifiedObj)
+		p, _ := patch.CreateTwoWayMergePatch(originalJSON, modifiedJSON, apiObject)
+		_, err = client.AppsV1().ReplicaSets(retrieveNamespace(res.Namespace, apiObject.ObjectMeta)).Patch(apiObject.Name, types.StrategicMergePatchType, p)
 	case *appsv1beta2.ReplicaSet:
-		rs := obj.(*appsv1beta2.ReplicaSet)
-		addSkaffoldLabels(labels, &rs.ObjectMeta)
-		sets := client.AppsV1beta2().ReplicaSets(retrieveNamespace(res.Namespace, rs.ObjectMeta))
-		_, err = sets.UpdateStatus(rs)
+		apiObject := modifiedObj.(*appsv1beta2.ReplicaSet)
+		addSkaffoldLabels(labels, &apiObject.ObjectMeta)
+		modifiedJSON, _ := json.Marshal(modifiedObj)
+		p, _ := patch.CreateTwoWayMergePatch(originalJSON, modifiedJSON, apiObject)
+		_, err = client.AppsV1beta2().ReplicaSets(retrieveNamespace(res.Namespace, apiObject.ObjectMeta)).Patch(apiObject.Name, types.StrategicMergePatchType, p)
 	default:
 		logrus.Infof("unknown runtime.Object, skipping label")
 		return nil

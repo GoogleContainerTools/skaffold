@@ -31,8 +31,8 @@
     "autorest/azure",
     "autorest/date"
   ]
-  revision = "76796dcb80ab6491bf22e344402023c081a7a282"
-  version = "v10.11.1"
+  revision = "f04d503958a4fe854c1b41667c73f8813c9dd9c3"
+  version = "v10.11.2"
 
 [[projects]]
   name = "github.com/Microsoft/go-winio"
@@ -294,7 +294,7 @@
     "openstack/utils",
     "pagination"
   ]
-  revision = "47c3c30bf85ec19977636ed6715f47ec0b4f5977"
+  revision = "6cd928389e7eefe1715e188b97fdd07b09a55e62"
 
 [[projects]]
   name = "github.com/gorilla/context"
@@ -574,7 +574,7 @@
     "unix",
     "windows"
   ]
-  revision = "8883426083c04a2627e6e59d84d5f6fb63d16c91"
+  revision = "8014b7b116a67fea23fbb82cd834c9ad656ea44b"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -948,6 +948,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "312927acfe431a29aca3634505dd52698f6cb1285dcf8738b5f70d0a10e1acab"
+  inputs-digest = "034783fc12bf1a413c89d14f83491cba58dd1481e1e989d535d7a6e5fbfb676c"
   solver-name = "gps-cdcl"
   solver-version = 1
