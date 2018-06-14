@@ -22,10 +22,15 @@ VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 GOOS ?= $(shell go env GOOS)
 GOARCH = amd64
 BUILD_DIR ?= ./out
+DOCS_DIR ?= ./docs/generated
 ORG := github.com/GoogleContainerTools
 PROJECT := skaffold
 REPOPATH ?= $(ORG)/$(PROJECT)
 RELEASE_BUCKET ?= $(PROJECT)
+GSC_BUILD_PATH ?= gs://$(RELEASE_BUCKET)/builds/$(COMMIT)
+GSC_BUILD_LATEST ?= gs://$(RELEASE_BUCKET)/builds/latest
+GSC_RELEASE_PATH ?= gs://$(RELEASE_BUCKET)/releases/$(VERSION)
+GSC_RELEASE_LATEST ?= gs://$(RELEASE_BUCKET)/releases/latest
 
 REMOTE_INTEGRATION ?= false
 GCP_PROJECT ?= k8s-skaffold
@@ -81,23 +86,62 @@ integration: install $(BUILD_DIR)/$(PROJECT)
 	go test -v -tags integration $(REPOPATH)/integration -timeout 10m --remote=$(REMOTE_INTEGRATION)
 
 .PHONY: release
-release: cross
-	gsutil cp $(BUILD_DIR)/$(PROJECT)-* gs://$(RELEASE_BUCKET)/releases/$(VERSION)/
-	gsutil cp $(BUILD_DIR)/$(PROJECT)-* gs://$(RELEASE_BUCKET)/latest/
+release: cross docs
+	docker build \
+        		-f deploy/skaffold/Dockerfile \
+        		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
+        		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) .
+	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_RELEASE_PATH)/
+	gsutil -m cp -r $(DOCS_DIR)/* $(GSC_RELEASE_PATH)/docs/
+	gsutil -m cp -r $(GSC_RELEASE_PATH)/* $(GSC_RELEASE_LATEST)
+
+.PHONY: release-in-docker
+release-in-docker:
+	docker build \
+    		-f deploy/skaffold/Dockerfile \
+    		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
+    		--target builder \
+    		.
+	docker run \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
+		gcr.io/$(GCP_PROJECT)/skaffold-builder make -j release RELEASE_BUCKET=$(RELEASE_BUCKET) GCP_PROJECT=$(GCP_PROJECT)
+
+.PHONY: release-build
+release-build: cross docs
+	docker build \
+    		-f deploy/skaffold/Dockerfile \
+    		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
+    		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) .
+	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_BUILD_PATH)/
+	gsutil -m cp -r $(DOCS_DIR)/* $(GSC_BUILD_PATH)/docs/
+	gsutil -m cp -r $(GSC_BUILD_PATH)/* $(GSC_BUILD_LATEST)
+
+.PHONY: release-build-in-docker
+release-build-in-docker:
+	docker build \
+    		-f deploy/skaffold/Dockerfile \
+    		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
+    		--target builder \
+    		.
+	docker run \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
+		gcr.io/$(GCP_PROJECT)/skaffold-builder make -j release-build RELEASE_BUCKET=$(RELEASE_BUCKET) GCP_PROJECT=$(GCP_PROJECT)
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) $(DOCS_DIR)
 
 .PHONY: integration-in-docker
 integration-in-docker:
 	docker build \
 		-f deploy/skaffold/Dockerfile \
+		--target integration \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-integration .
 	docker run \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
-		-v $(PWD):/go/src/$(REPOPATH) \
 		-v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
 		-e REMOTE_INTEGRATION=true \
 		-e DOCKER_CONFIG=/root/.docker \
@@ -106,23 +150,28 @@ integration-in-docker:
 
 .PHONY: docs
 docs:
-	rm -rf docs/generated
-	mkdir -p docs/generated
-	cp -R docs/css docs/generated/
-	docker run -v $(PWD):/documents/ asciidoctor/docker-asciidoctor \
-		asciidoctor \
-		-a version="$(VERSION)" \
-		-a commit="$(COMMIT)" \
-		-a data-uri \
-		-d book \
-		-D docs/generated/ \
-		docs/index.adoc
-	docker run -v $(PWD):/documents/ asciidoctor/docker-asciidoctor \
-		asciidoctor-pdf \
-		-a version="$(VERSION)" \
-		-a commit="$(COMMIT)" \
-		-a allow-uri-read \
-		-d book \
-		-a pdf \
-		-D docs/generated/ \
-		docs/index.adoc
+	hack/build_docs.sh $(VERSION) $(COMMIT)
+
+.PHONY: docs-in-docker
+docs-in-docker:
+	docker build \
+		-f deploy/skaffold/Dockerfile \
+		-t skaffold-builder \
+		--target builder \
+		.
+	docker run \
+		-v $(PWD):/go/src/$(REPOPATH) \
+		skaffold-builder make docs
+
+.PHONY: submit-build-trigger
+submit-build-trigger:
+	gcloud container builds submit . \
+		--config=deploy/cloudbuild.yaml \
+		--substitutions="_RELEASE_BUCKET=$(RELEASE_BUCKET),COMMIT_SHA=$(COMMIT)"
+
+.PHONY: submit-release-trigger
+submit-release-trigger:
+	gcloud container builds submit . \
+		--config=deploy/cloudbuild-release.yaml \
+		--substitutions="_RELEASE_BUCKET=$(RELEASE_BUCKET),TAG_NAME=$(VERSION)"
+
