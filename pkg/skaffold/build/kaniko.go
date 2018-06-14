@@ -24,7 +24,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -68,7 +67,7 @@ func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tag
 			return nil, errors.Wrap(err, "reading secret")
 		}
 
-		_, err = client.CoreV1().Secrets(k.KanikoBuild.Namespace).Create(&v1.Secret{
+		if _, err := client.CoreV1().Secrets(k.KanikoBuild.Namespace).Create(&v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   k.KanikoBuild.PullSecretName,
 				Labels: map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
@@ -76,8 +75,7 @@ func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tag
 			Data: map[string][]byte{
 				constants.DefaultKanikoSecretName: secretData,
 			},
-		})
-		if err != nil {
+		}); err != nil {
 			logrus.Warnf("creating secret: %s", err)
 		}
 		defer func() {
