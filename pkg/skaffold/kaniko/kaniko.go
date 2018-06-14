@@ -57,7 +57,7 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 	p, err := client.CoreV1().Pods(cfg.Namespace).Create(&v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kaniko",
-			Labels:    map[string]string{"kaniko": "kaniko"},
+			Labels:    map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
 			Namespace: cfg.Namespace,
 		},
 		Spec: v1.PodSpec{
@@ -74,7 +74,7 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 					},
 					VolumeMounts: []v1.VolumeMount{
 						{
-							Name:      "kaniko-secret",
+							Name:      constants.DefaultKanikoSecretName,
 							MountPath: "/secret",
 						},
 					},
@@ -88,7 +88,7 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 			},
 			Volumes: []v1.Volume{
 				{
-					Name: "kaniko-secret",
+					Name: constants.DefaultKanikoSecretName,
 					VolumeSource: v1.VolumeSource{
 						Secret: &v1.SecretVolumeSource{
 							SecretName: cfg.PullSecretName,

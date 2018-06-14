@@ -21,6 +21,8 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -69,10 +71,10 @@ func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tag
 		_, err = client.CoreV1().Secrets(k.KanikoBuild.Namespace).Create(&v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   k.KanikoBuild.PullSecretName,
-				Labels: map[string]string{"kaniko": "kaniko"},
+				Labels: map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
 			},
 			Data: map[string][]byte{
-				"kaniko-secret": secretData,
+				constants.DefaultKanikoSecretName: secretData,
 			},
 		})
 		if err != nil {

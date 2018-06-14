@@ -202,8 +202,8 @@ func (c *SkaffoldConfig) setDefaultValues() error {
 	c.setDefaultTagger()
 	c.setDefaultDockerfiles()
 	c.setDefaultWorkspaces()
-	c.setDefaultNamespace()
-	return c.setDefaultSecret()
+	c.setDefaultKanikoNamespace()
+	return c.setDefaultKanikoSecret()
 }
 
 func (c *SkaffoldConfig) defaultToLocalBuild() {
@@ -251,7 +251,7 @@ func (c *SkaffoldConfig) setDefaultWorkspaces() {
 	}
 }
 
-func (c *SkaffoldConfig) setDefaultNamespace() {
+func (c *SkaffoldConfig) setDefaultKanikoNamespace() {
 	if c.Build.KanikoBuild == nil {
 		return
 	}
@@ -260,7 +260,7 @@ func (c *SkaffoldConfig) setDefaultNamespace() {
 	}
 }
 
-func (c *SkaffoldConfig) setDefaultSecret() error {
+func (c *SkaffoldConfig) setDefaultKanikoSecret() error {
 	if c.Build.KanikoBuild == nil {
 		return nil
 	}
