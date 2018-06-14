@@ -137,6 +137,16 @@ type HelmRelease struct {
 	SetValues      map[string]string      `yaml:"setValues"`
 	Wait           bool                   `yaml:"wait"`
 	Overrides      map[string]interface{} `yaml:"overrides"`
+	Packaged       *HelmPackaged          `yaml:"packaged"`
+}
+
+// HelmPackaged represents parameters for packaging helm chart.
+type HelmPackaged struct {
+	// Version sets the version on the chart to this semver version.
+	Version string `yaml:"version"`
+
+	// AppVersion set the appVersion on the chart to this version
+	AppVersion string `yaml:"appVersion"`
 }
 
 // Artifact represents items that need to be built, along with the context in which

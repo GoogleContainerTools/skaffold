@@ -295,3 +295,29 @@ func TestParseHelmRelease(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractChartFilename(t *testing.T) {
+	testCases := map[string]struct {
+		input     string
+		tmp       string
+		output    string
+		shouldErr bool
+	}{
+		"1": {
+			input:     "Successfully packaged chart and saved it to: /var/folders/gm/rrs_712142x8vymmd7xq7h340000gn/T/foo-1.2.3-dirty.tgz\n",
+			tmp:       "/var/folders/gm/rrs_712142x8vymmd7xq7h340000gn/T/",
+			output:    "foo-1.2.3-dirty.tgz",
+			shouldErr: false,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			out, err := extractChartFilename(tc.input, tc.tmp)
+			testutil.CheckError(t, tc.shouldErr, err)
+			if out != tc.output {
+				t.Errorf("Expected output to be %q but got %q", tc.output, out)
+			}
+		})
+	}
+}
