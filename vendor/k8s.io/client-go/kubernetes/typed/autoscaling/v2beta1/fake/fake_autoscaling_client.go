@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -30,6 +30,10 @@ type FakeAutoscalingV2beta1 struct {
 
 func (c *FakeAutoscalingV2beta1) HorizontalPodAutoscalers(namespace string) v2beta1.HorizontalPodAutoscalerInterface {
 	return &FakeHorizontalPodAutoscalers{c, namespace}
+}
+
+func (c *FakeAutoscalingV2beta1) VerticalPodAutoscalers(namespace string) v2beta1.VerticalPodAutoscalerInterface {
+	return &FakeVerticalPodAutoscalers{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate
