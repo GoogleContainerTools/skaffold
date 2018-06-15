@@ -24,6 +24,8 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	// k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 	// "k8s.io/client-go/kubernetes/scheme"
@@ -128,9 +130,29 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 
 	var args []string
 	if !isInstalled {
-		args = append(args, "install", "--name", releaseName, r.ChartPath)
+		args = append(args, "install", "--name", releaseName)
 	} else {
-		args = append(args, "upgrade", releaseName, r.ChartPath)
+		args = append(args, "upgrade", releaseName)
+	}
+
+	// There are 2 strategies:
+	// 1) Deploy chart directly from filesystem path or from repository
+	//    (like stable/kubernetes-dashboard). Version only applies to a
+	//    chart from repository.
+	// 2) Package chart into a .tgz archive with specific version and then deploy
+	//    that packaged chart. This way user can apply any version and appVersion
+	//    for the chart.
+	if r.Packaged == nil {
+		if r.Version != "" {
+			args = append(args, "--version", r.Version)
+		}
+		args = append(args, r.ChartPath)
+	} else {
+		chartPath, err := h.packageChart(r)
+		if err != nil {
+			return nil, errors.WithMessage(err, "cannot package chart")
+		}
+		args = append(args, chartPath)
 	}
 
 	var ns string
@@ -161,9 +183,6 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 	if r.ValuesFilePath != "" {
 		args = append(args, "-f", r.ValuesFilePath)
 	}
-	if r.Version != "" {
-		args = append(args, "--version", r.Version)
-	}
 
 	if len(r.SetValues) != 0 {
 		for k, v := range r.SetValues {
@@ -182,6 +201,41 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 	}
 
 	return h.getDeployResults(ns, r.Name), helmErr
+}
+
+// packageChart packages the chart and returns path to the chart archive file.
+// If this function returns an error, it will always be wrapped.
+func (h *HelmDeployer) packageChart(r v1alpha2.HelmRelease) (string, error) {
+	tmp := os.TempDir()
+	packageArgs := []string{"package", r.ChartPath, "--destination", tmp}
+	if r.Packaged.Version != "" {
+		v, err := concretize(r.Packaged.Version)
+		if err != nil {
+			return "", errors.Wrap(err, `concretize "packaged.version" template`)
+		}
+		packageArgs = append(packageArgs, "--version", v)
+	}
+	if r.Packaged.AppVersion != "" {
+		av, err := concretize(r.Packaged.AppVersion)
+		if err != nil {
+			return "", errors.Wrap(err, `concretize "packaged.appVersion" template`)
+		}
+		packageArgs = append(packageArgs, "--app-version", av)
+	}
+
+	buf := &bytes.Buffer{}
+	err := h.helm(buf, packageArgs...)
+	output := strings.TrimSpace(buf.String())
+	if err != nil {
+		return "", errors.Wrapf(err, "package chart into a .tgz archive (%s)", output)
+	}
+
+	fpath, err := extractChartFilename(output, tmp)
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(tmp, fpath), nil
 }
 
 func (h *HelmDeployer) getReleaseInfo(release string) (*bufio.Reader, error) {
@@ -224,4 +278,26 @@ func evaluateReleaseName(nameTemplate string) (string, error) {
 	}
 
 	return util.ExecuteEnvTemplate(tmpl, nil)
+}
+
+// concretize parses and executes template s with OS environment variables.
+// If s is not a template but a simple string, returns unchanged s.
+func concretize(s string) (string, error) {
+	tmpl, err := util.ParseEnvTemplate(s)
+	if err != nil {
+		return "", errors.Wrap(err, "parsing template")
+	}
+
+	tmpl.Option("missingkey=error")
+	return util.ExecuteEnvTemplate(tmpl, nil)
+}
+
+func extractChartFilename(s, tmp string) (string, error) {
+	s = strings.TrimSpace(s)
+	idx := strings.Index(s, tmp)
+	if idx == -1 {
+		return "", errors.New("cannot locate packaged chart archive")
+	}
+
+	return s[idx+len(tmp):], nil
 }
