@@ -65,7 +65,7 @@ image::intro.gif[Demo]
 
 = Getting Started with Local Tooling
 
-For getting started with Google Kubernetes Engine and Container Builder link:docs/quickstart-gke.adoc[go here.
+For getting started with Google Kubernetes Engine and Container Builder link:docs/quickstart-gke.adoc[go here].
 Otherwise continue
 below to get started with a local Kubernetes cluster.
 
