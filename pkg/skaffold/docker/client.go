@@ -17,9 +17,12 @@ limitations under the License.
 package docker
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -43,10 +46,15 @@ var (
 	dockerAPIClientOnce sync.Once
 	dockerAPIClient     APIClient
 	dockerAPIClientErr  error
+	procVerDetect       bool
+	isWsl               bool
 )
 
 // NewAPIClient guesses the docker client to use based on current kubernetes context.
 func NewAPIClient() (APIClient, error) {
+	procVerDetect = false
+	isWsl = false
+
 	dockerAPIClientOnce.Do(func() {
 		kubeContext, err := kubernetes.CurrentContext()
 		if err != nil {
@@ -86,7 +94,7 @@ func newEnvAPIClient() (APIClient, error) {
 func newMinikubeAPIClient() (APIClient, error) {
 	env, err := getMinikubeDockerEnv()
 	if err != nil {
-		logrus.Warnf("Could not get minikube docker env, falling back to local docker daemon")
+		logrus.Warnf("Could not get minikube docker env, falling back to local docker daemon: %s", err)
 		return newEnvAPIClient()
 	}
 
@@ -123,8 +131,44 @@ func newMinikubeAPIClient() (APIClient, error) {
 	return client.NewClient(host, version, httpclient, nil)
 }
 
+func detectWsl() (bool, error) {
+	if !procVerDetect {
+		procVerDetect = true
+		if _, err := os.Stat("/proc/version"); err == nil {
+			b, err := ioutil.ReadFile("/proc/version")
+			if err != nil {
+				return false, errors.Wrap(err, "read /proc/version")
+			}
+
+			if bytes.Contains(b, []byte("Microsoft")) {
+				isWsl = true
+			}
+		}
+	}
+	return isWsl, nil
+}
+
+func getMiniKubeFilename() (string, error) {
+	const winMiniKubeEnv = "SKAFFOLD_WINDOWS_MINIKUBE"
+	if found, _ := detectWsl(); found {
+		filename, envExists := os.LookupEnv(winMiniKubeEnv)
+		if !envExists {
+			return "", fmt.Errorf("Unable to find minikube.exe. Please set %s environment variable", winMiniKubeEnv)
+		}
+		if _, err := os.Stat(filename); os.IsNotExist(err) {
+			return "", fmt.Errorf("Unable to find minikube.exe. File not found %s", filename)
+		}
+		return filename, nil
+	}
+	return "minikube", nil
+}
+
 func getMinikubeDockerEnv() (map[string]string, error) {
-	cmd := exec.Command("minikube", "docker-env", "--shell", "none")
+	miniKubeFilename, err := getMiniKubeFilename()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting minikube filename")
+	}
+	cmd := exec.Command(miniKubeFilename, "docker-env", "--shell", "none")
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting minikube env")
@@ -141,5 +185,16 @@ func getMinikubeDockerEnv() (map[string]string, error) {
 		}
 		env[kv[0]] = kv[1]
 	}
+
+	if found, _ := detectWsl(); found {
+		cmd := exec.Command("wslpath", env["DOCKER_CERT_PATH"])
+		out, err := util.RunCmdOut(cmd)
+		if err == nil {
+			env["DOCKER_CERT_PATH"] = strings.TrimRight(string(out), "\n")
+		} else {
+			return nil, fmt.Errorf("Can't run wslpath: %s", err)
+		}
+	}
+
 	return env, nil
 }
