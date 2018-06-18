@@ -32,8 +32,8 @@ func CreateTar(w io.Writer, root string, paths []string) error {
 	defer tw.Close()
 
 	for _, p := range paths {
-		tarPath := filepath.ToSlash(filepath.Join(root, p))
-
+		tarPath := filepath.ToSlash(p)
+		p := filepath.Join(root, p)
 		if err := addFileToTar(p, tarPath, tw); err != nil {
 			return err
 		}
@@ -56,7 +56,6 @@ func addFileToTar(p string, tarPath string, tw *tar.Writer) error {
 	switch mode := fi.Mode(); {
 	case mode.IsRegular():
 		tarHeader, err := tar.FileInfoHeader(fi, tarPath)
-		
 		if err != nil {
 			return err
 		}

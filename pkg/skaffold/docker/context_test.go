@@ -43,7 +43,6 @@ func TestDockerContext(t *testing.T) {
 	ioutil.WriteFile(filepath.Join(tmpDir, "Dockerfile"), []byte("FROM alpine\nCOPY ./files /files"), 0644)
 	ioutil.WriteFile(filepath.Join(tmpDir, "ignored.txt"), []byte(""), 0644)
 	ioutil.WriteFile(filepath.Join(tmpDir, "alsoignored.txt"), []byte(""), 0644)
-
 	reader, writer := io.Pipe()
 	go func() {
 		err := CreateDockerTarContext(writer, "Dockerfile", tmpDir)
