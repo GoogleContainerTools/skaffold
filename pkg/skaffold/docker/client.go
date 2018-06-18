@@ -46,15 +46,10 @@ var (
 	dockerAPIClientOnce sync.Once
 	dockerAPIClient     APIClient
 	dockerAPIClientErr  error
-	procVerDetect       bool
-	isWsl               bool
 )
 
 // NewAPIClient guesses the docker client to use based on current kubernetes context.
 func NewAPIClient() (APIClient, error) {
-	procVerDetect = false
-	isWsl = false
-
 	dockerAPIClientOnce.Do(func() {
 		kubeContext, err := kubernetes.CurrentContext()
 		if err != nil {
@@ -132,28 +127,24 @@ func newMinikubeAPIClient() (APIClient, error) {
 }
 
 func detectWsl() (bool, error) {
-	if !procVerDetect {
-		procVerDetect = true
-		if _, err := os.Stat("/proc/version"); err == nil {
-			b, err := ioutil.ReadFile("/proc/version")
-			if err != nil {
-				return false, errors.Wrap(err, "read /proc/version")
-			}
+	if _, err := os.Stat("/proc/version"); err == nil {
+		b, err := ioutil.ReadFile("/proc/version")
+		if err != nil {
+			return false, errors.Wrap(err, "read /proc/version")
+		}
 
-			if bytes.Contains(b, []byte("Microsoft")) {
-				isWsl = true
-			}
+		if bytes.Contains(b, []byte("Microsoft")) {
+			return true, nil
 		}
 	}
-	return isWsl, nil
+	return false, nil
 }
 
 func getMiniKubeFilename() (string, error) {
-	const winMiniKubeEnv = "SKAFFOLD_WINDOWS_MINIKUBE"
 	if found, _ := detectWsl(); found {
-		filename, envExists := os.LookupEnv(winMiniKubeEnv)
-		if !envExists {
-			return "", fmt.Errorf("Unable to find minikube.exe. Please set %s environment variable", winMiniKubeEnv)
+		filename, err := exec.LookPath("minikube.exe")
+		if err != nil {
+			return "", fmt.Errorf("Unable to find minikube.exe. Please add it to PATH environment variable")
 		}
 		if _, err := os.Stat(filename); os.IsNotExist(err) {
 			return "", fmt.Errorf("Unable to find minikube.exe. File not found %s", filename)
