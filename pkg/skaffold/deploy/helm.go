@@ -111,7 +111,7 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 		fmt.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
 		isInstalled = false
 	}
-	params, err := JoinTagsToBuildResult(builds, r.Values)
+	params, err := joinTagsToBuildResult(builds, r.Values)
 	if err != nil {
 		return nil, errors.Wrap(err, "matching build results to chart values")
 	}
