@@ -76,7 +76,7 @@ func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tag
 				constants.DefaultKanikoSecretName: secretData,
 			},
 		}); err != nil {
-			logrus.Warnf("creating secret: %s", err)
+			return nil, errors.Wrapf(err, "creating secret: %s", err)
 		}
 		defer func() {
 			if err := client.CoreV1().Secrets(k.KanikoBuild.Namespace).Delete(k.KanikoBuild.PullSecretName, &metav1.DeleteOptions{}); err != nil {

@@ -165,7 +165,7 @@ func TestRun(t *testing.T) {
 			args:        []string{"run"},
 			pods: []testObject{
 				{
-					name: "getting-started",
+					name: "getting-started-kaniko",
 				},
 			},
 			dir:        "../examples/kaniko",
