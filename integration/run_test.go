@@ -128,7 +128,7 @@ func TestRun(t *testing.T) {
 					name: "getting-started",
 				},
 			},
-			dir: "../examples/environment-variables",
+			dir: "../examples/tagging-with-environment-variables",
 			env: map[string]string{"FOO": "foo"},
 		},
 		{
