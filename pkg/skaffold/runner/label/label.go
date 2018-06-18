@@ -57,65 +57,11 @@ const (
 	appsv1Beta2ReplicaSet
 )
 
-// converter is responsible for determining whether an object can be converted to a given type
-type converter func(runtime.Object) bool
-
 // patcher is responsible for applying a given patch to the provided object
 type patcher func(clientgo.Interface, string, string, []byte) error
 
 // objectMeta is responsible for returning a generic runtime.Object's metadata
-type objectMeta func(runtime.Object) *metav1.ObjectMeta
-
-var converters = map[objectType]converter{
-	corev1Pod: func(r runtime.Object) bool {
-		_, ok := r.(*corev1.Pod)
-		return ok
-	},
-	appsv1Deployment: func(r runtime.Object) bool {
-		_, ok := r.(*appsv1.Deployment)
-		return ok
-	},
-	appsv1Beta1Deployment: func(r runtime.Object) bool {
-		_, ok := r.(*appsv1beta1.Deployment)
-		return ok
-	},
-	appsv1Beta2Deployment: func(r runtime.Object) bool {
-		_, ok := r.(*appsv1beta2.Deployment)
-		return ok
-	},
-	extensionsv1Beta1Deployment: func(r runtime.Object) bool {
-		_, ok := r.(*extensionsv1beta1.Deployment)
-		return ok
-	},
-	corev1Service: func(r runtime.Object) bool {
-		_, ok := r.(*corev1.Service)
-		return ok
-	},
-	appv1StatefulSet: func(r runtime.Object) bool {
-		_, ok := r.(*appsv1.StatefulSet)
-		return ok
-	},
-	appsv1Beta1StatefulSet: func(r runtime.Object) bool {
-		_, ok := r.(*appsv1beta1.StatefulSet)
-		return ok
-	},
-	appsv1Beta2StatefulSet: func(r runtime.Object) bool {
-		_, ok := r.(*appsv1beta2.StatefulSet)
-		return ok
-	},
-	extensionsv1Beta1DaemonSet: func(r runtime.Object) bool {
-		_, ok := r.(*extensionsv1beta1.DaemonSet)
-		return ok
-	},
-	appsv1ReplicaSet: func(r runtime.Object) bool {
-		_, ok := r.(*appsv1.ReplicaSet)
-		return ok
-	},
-	appsv1Beta2ReplicaSet: func(r runtime.Object) bool {
-		_, ok := r.(*appsv1beta2.ReplicaSet)
-		return ok
-	},
-}
+type objectMeta func(runtime.Object) (*metav1.ObjectMeta, bool)
 
 var patchers = map[objectType]patcher{
 	corev1Pod: func(client clientgo.Interface, ns string, name string, p []byte) error {
@@ -169,41 +115,89 @@ var patchers = map[objectType]patcher{
 }
 
 var objectMetas = map[objectType]objectMeta{
-	corev1Pod: func(r runtime.Object) *metav1.ObjectMeta {
-		return &(r.(*corev1.Pod).ObjectMeta)
+	corev1Pod: func(r runtime.Object) (*metav1.ObjectMeta, bool) {
+		obj, ok := r.(*corev1.Pod)
+		if !ok {
+			return nil, ok
+		}
+		return &obj.ObjectMeta, ok
 	},
-	appsv1Deployment: func(r runtime.Object) *metav1.ObjectMeta {
-		return &(r.(*appsv1.Deployment).ObjectMeta)
+	appsv1Deployment: func(r runtime.Object) (*metav1.ObjectMeta, bool) {
+		obj, ok := r.(*appsv1.Deployment)
+		if !ok {
+			return nil, ok
+		}
+		return &obj.ObjectMeta, ok
 	},
-	appsv1Beta1Deployment: func(r runtime.Object) *metav1.ObjectMeta {
-		return &(r.(*appsv1beta1.Deployment).ObjectMeta)
+	appsv1Beta1Deployment: func(r runtime.Object) (*metav1.ObjectMeta, bool) {
+		obj, ok := r.(*appsv1beta1.Deployment)
+		if !ok {
+			return nil, ok
+		}
+		return &obj.ObjectMeta, ok
 	},
-	appsv1Beta2Deployment: func(r runtime.Object) *metav1.ObjectMeta {
-		return &(r.(*appsv1beta2.Deployment).ObjectMeta)
+	appsv1Beta2Deployment: func(r runtime.Object) (*metav1.ObjectMeta, bool) {
+		obj, ok := r.(*appsv1beta2.Deployment)
+		if !ok {
+			return nil, ok
+		}
+		return &obj.ObjectMeta, ok
 	},
-	extensionsv1Beta1Deployment: func(r runtime.Object) *metav1.ObjectMeta {
-		return &(r.(*extensionsv1beta1.Deployment).ObjectMeta)
+	extensionsv1Beta1Deployment: func(r runtime.Object) (*metav1.ObjectMeta, bool) {
+		obj, ok := r.(*extensionsv1beta1.Deployment)
+		if !ok {
+			return nil, ok
+		}
+		return &obj.ObjectMeta, ok
 	},
-	corev1Service: func(r runtime.Object) *metav1.ObjectMeta {
-		return &(r.(*corev1.Service).ObjectMeta)
+	corev1Service: func(r runtime.Object) (*metav1.ObjectMeta, bool) {
+		obj, ok := r.(*corev1.Service)
+		if !ok {
+			return nil, ok
+		}
+		return &obj.ObjectMeta, ok
 	},
-	appv1StatefulSet: func(r runtime.Object) *metav1.ObjectMeta {
-		return &(r.(*appsv1.StatefulSet).ObjectMeta)
+	appv1StatefulSet: func(r runtime.Object) (*metav1.ObjectMeta, bool) {
+		obj, ok := r.(*appsv1.StatefulSet)
+		if !ok {
+			return nil, ok
+		}
+		return &obj.ObjectMeta, ok
 	},
-	appsv1Beta1StatefulSet: func(r runtime.Object) *metav1.ObjectMeta {
-		return &(r.(*appsv1beta1.StatefulSet).ObjectMeta)
+	appsv1Beta1StatefulSet: func(r runtime.Object) (*metav1.ObjectMeta, bool) {
+		obj, ok := r.(*appsv1beta1.StatefulSet)
+		if !ok {
+			return nil, ok
+		}
+		return &obj.ObjectMeta, ok
 	},
-	appsv1Beta2StatefulSet: func(r runtime.Object) *metav1.ObjectMeta {
-		return &(r.(*appsv1beta1.StatefulSet).ObjectMeta)
+	appsv1Beta2StatefulSet: func(r runtime.Object) (*metav1.ObjectMeta, bool) {
+		obj, ok := r.(*appsv1beta1.StatefulSet)
+		if !ok {
+			return nil, ok
+		}
+		return &obj.ObjectMeta, ok
 	},
-	extensionsv1Beta1DaemonSet: func(r runtime.Object) *metav1.ObjectMeta {
-		return &(r.(*extensionsv1beta1.DaemonSet).ObjectMeta)
+	extensionsv1Beta1DaemonSet: func(r runtime.Object) (*metav1.ObjectMeta, bool) {
+		obj, ok := r.(*extensionsv1beta1.DaemonSet)
+		if !ok {
+			return nil, ok
+		}
+		return &obj.ObjectMeta, ok
 	},
-	appsv1ReplicaSet: func(r runtime.Object) *metav1.ObjectMeta {
-		return &(r.(*appsv1.ReplicaSet).ObjectMeta)
+	appsv1ReplicaSet: func(r runtime.Object) (*metav1.ObjectMeta, bool) {
+		obj, ok := r.(*appsv1.ReplicaSet)
+		if !ok {
+			return nil, ok
+		}
+		return &obj.ObjectMeta, ok
 	},
-	appsv1Beta2ReplicaSet: func(r runtime.Object) *metav1.ObjectMeta {
-		return &(r.(*appsv1beta2.ReplicaSet).ObjectMeta)
+	appsv1Beta2ReplicaSet: func(r runtime.Object) (*metav1.ObjectMeta, bool) {
+		obj, ok := r.(*appsv1beta2.ReplicaSet)
+		if !ok {
+			return nil, ok
+		}
+		return &obj.ObjectMeta, ok
 	},
 }
 
@@ -259,12 +253,11 @@ func updateRuntimeObject(client clientgo.Interface, labels map[string]string, re
 	}
 	var err error
 	applied := false
-	obj := *res.Obj
-	originalJSON, _ := json.Marshal(obj)
-	modifiedObj := obj.DeepCopyObject()
-	for typeStr, c := range converters {
-		if applied = c(modifiedObj); applied {
-			metadata := objectMetas[typeStr](modifiedObj)
+	var metadata *metav1.ObjectMeta
+	originalJSON, _ := json.Marshal(*res.Obj)
+	modifiedObj := (*res.Obj).DeepCopyObject()
+	for typeStr, m := range objectMetas {
+		if metadata, applied = m(modifiedObj); applied {
 			addSkaffoldLabels(labels, metadata)
 			modifiedJSON, _ := json.Marshal(modifiedObj)
 			p, _ := patch.CreateTwoWayMergePatch(originalJSON, modifiedJSON, modifiedObj)
