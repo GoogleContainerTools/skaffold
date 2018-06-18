@@ -72,7 +72,7 @@ type GoogleCloudBuilder struct {
 }
 
 func NewGoogleCloudBuilder(cfg *v1alpha2.BuildConfig) (*GoogleCloudBuilder, error) {
-	return &GoogleCloudBuilder{cfg}, nil
+	return &GoogleCloudBuilder{BuildConfig: cfg}, nil
 }
 
 func (cb *GoogleCloudBuilder) Labels() map[string]string {

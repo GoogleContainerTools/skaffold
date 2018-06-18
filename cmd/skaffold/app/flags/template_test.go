@@ -27,7 +27,7 @@ type templateData struct {
 }
 
 var (
-	data             = &templateData{"test"}
+	data             = &templateData{Field: "test"}
 	rawTemplate      = "{{.Field}}"
 	expectedFlagType = "*flags.TemplateFlag"
 )
