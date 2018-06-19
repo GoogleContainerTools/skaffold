@@ -1,3 +1,5 @@
+// +build !windows
+
 /*
 Copyright 2018 The Skaffold Authors
 
@@ -20,7 +22,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -28,8 +29,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func Test_addFileToTar(t *testing.T) {
-	// Setup a few files in a tempdir. We can't use afero here because it doesn't support symlinks.
+// Creating symlinks requires extra privileges on Windows
+func Test_addLinksToTar(t *testing.T) {
 	testDir, cleanup := testutil.TempDir(t)
 	defer cleanup()
 
@@ -39,10 +40,26 @@ func Test_addFileToTar(t *testing.T) {
 		"bar/baz": "baz3",
 	}
 	if err := setupFiles(testDir, files); err != nil {
-		t.Fatalf("Error setting up fs: %s", err)
+		t.Fatalf("Error setting up files: %s", err)
 	}
 
-	// Add all the files to a tar.
+	links := map[string]string{
+		"foo.link":     "./foo",
+		"bar.link":     "./bar/bat",
+		"bat/baz.link": "../bar/baz",
+	}
+
+	for src, dst := range links {
+		srcPath := filepath.Join(testDir, src)
+		if err := os.MkdirAll(filepath.Dir(srcPath), 0750); err != nil {
+			t.Fatalf("Error setting up test dirs: %s", err)
+		}
+		if err := os.Symlink(dst, srcPath); err != nil {
+			t.Fatalf("Error setting up links: %s", err)
+		}
+	}
+
+	// Add all the files and links to a tar.
 	var b bytes.Buffer
 	tw := tar.NewWriter(&b)
 	for p := range files {
@@ -51,9 +68,15 @@ func Test_addFileToTar(t *testing.T) {
 			t.Fatalf("addFileToTar() error = %v", err)
 		}
 	}
+	for l := range links {
+		path := filepath.Join(testDir, l)
+		if err := addFileToTar(path, l, tw); err != nil {
+			t.Fatalf("addFileToTar() error = %v", err)
+		}
+	}
 	tw.Close()
 
-	// Make sure the contents match.
+	// Make sure the links match.
 	tr := tar.NewReader(&b)
 	for {
 		hdr, err := tr.Next()
@@ -63,29 +86,16 @@ func Test_addFileToTar(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error reading tar: %s", err)
 		}
-		expectedContents, ok := files[hdr.Name]
-		if !ok {
-			t.Errorf("Unexpected file in tar: %s", hdr.Name)
+		_, isFile := files[hdr.Name]
+		if isFile {
+			continue
 		}
-		actualContents, err := ioutil.ReadAll(tr)
-		if err != nil {
-			t.Errorf("Error %s reading file %s from tar", err, hdr.Name)
+		link, isLink := links[hdr.Name]
+		if !isLink {
+			t.Errorf("Unexpected file/link in tar: %s", hdr.Name)
 		}
-		if expectedContents != string(actualContents) {
-			t.Errorf("File contents don't match. %s != %s", actualContents, expectedContents)
-		}
-	}
-}
-
-func setupFiles(path string, files map[string]string) error {
-	for p, c := range files {
-		path := filepath.Join(path, p)
-		if err := os.MkdirAll(filepath.Dir(path), 0750); err != nil {
-			return err
-		}
-		if err := ioutil.WriteFile(path, []byte(c), 0644); err != nil {
-			return err
+		if hdr.Linkname != link {
+			t.Errorf("Link destination doesn't match. %s != %s.", link, hdr.Linkname)
 		}
 	}
-	return nil
 }
