@@ -128,16 +128,17 @@ type HelmDeploy struct {
 type KustomizeDeploy struct{}
 
 type HelmRelease struct {
-	Name           string                 `yaml:"name"`
-	ChartPath      string                 `yaml:"chartPath"`
-	ValuesFilePath string                 `yaml:"valuesFilePath"`
-	Values         map[string]string      `yaml:"values,omitempty"`
-	Namespace      string                 `yaml:"namespace"`
-	Version        string                 `yaml:"version"`
-	SetValues      map[string]string      `yaml:"setValues"`
-	Wait           bool                   `yaml:"wait"`
-	Overrides      map[string]interface{} `yaml:"overrides"`
-	Packaged       *HelmPackaged          `yaml:"packaged"`
+	Name              string                 `yaml:"name"`
+	ChartPath         string                 `yaml:"chartPath"`
+	ValuesFilePath    string                 `yaml:"valuesFilePath"`
+	Values            map[string]string      `yaml:"values,omitempty"`
+	Namespace         string                 `yaml:"namespace"`
+	Version           string                 `yaml:"version"`
+	SetValues         map[string]string      `yaml:"setValues"`
+	SetValueTemplates map[string]string      `yaml:"setValueTemplates"`
+	Wait              bool                   `yaml:"wait"`
+	Overrides         map[string]interface{} `yaml:"overrides"`
+	Packaged          *HelmPackaged          `yaml:"packaged"`
 }
 
 // HelmPackaged represents parameters for packaging helm chart.

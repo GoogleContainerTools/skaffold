@@ -25,12 +25,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	// k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 	// "k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -188,11 +190,39 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 		args = append(args, "-f", r.ValuesFilePath)
 	}
 
-	if len(r.SetValues) != 0 {
-		for k, v := range r.SetValues {
-			setOpts = append(setOpts, "--set")
-			setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v))
+	setValues := r.SetValues
+	if setValues == nil {
+		setValues = map[string]string{}
+	}
+	if len(r.SetValueTemplates) != 0 {
+		envMap := map[string]string{}
+		for idx, b := range builds {
+			suffix := ""
+			if idx > 0 {
+				suffix = strconv.Itoa(idx + 1)
+			}
+			m := tag.CreateEnvVarMap(b.ImageName, extractTag(b.Tag))
+			for k, v := range m {
+				envMap[k+suffix] = v
+			}
+			fmt.Printf("EnvVarMap: %#v\n", envMap)
 		}
+		for k, v := range r.SetValueTemplates {
+			t, err := util.ParseEnvTemplate(v)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to parse setValueTemplates")
+			}
+			result, err := util.ExecuteEnvTemplate(t, envMap)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to generate setValueTemplates")
+			} else {
+				setValues[k] = result
+			}
+		}
+	}
+	for k, v := range setValues {
+		setOpts = append(setOpts, "--set")
+		setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v))
 	}
 	if r.Wait {
 		args = append(args, "--wait")
@@ -201,6 +231,20 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 
 	helmErr := h.helm(out, args...)
 	return h.getDeployResults(ns, r.Name), helmErr
+}
+
+// imageName if the given string includes a fully qualified docker image name then lets trim just the tag part out
+func extractTag(imageName string) string {
+	idx := strings.LastIndex(imageName, "/")
+	if idx < 0 {
+		return imageName
+	}
+	tag := imageName[idx+1:]
+	idx = strings.Index(tag, ":")
+	if idx > 0 {
+		return tag[idx+1:]
+	}
+	return tag
 }
 
 // packageChart packages the chart and returns path to the chart archive file.
