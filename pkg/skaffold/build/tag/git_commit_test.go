@@ -1,3 +1,5 @@
+// +build !windows
+
 /*
 Copyright 2018 The Skaffold Authors
 
@@ -29,6 +31,8 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 )
 
+// These tests do not run on windows
+// See: https://github.com/src-d/go-git/issues/378
 func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 	tests := []struct {
 		description   string
