@@ -1,0 +1,7 @@
+build: off
+clone_folder: c:\gopath\src\github.com\GoogleContainerTools\skaffold
+environment:
+  GOPATH: c:\gopath
+stack: go 1.10
+test_script:
+  - go test ./...
