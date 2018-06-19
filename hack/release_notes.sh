@@ -17,6 +17,6 @@
 # a simple little utility to list PRs for release notes:
 # Run ./hack/release_notes.sh --help for more info
 
-go build -o out/listpullreqs ./hack/release_note/listpullreqs.go
+go build -o out/listpullreqs ./hack/release_notes/listpullreqs.go
 chmod +x out/listpullreqs
 out/listpullreqs $@
