@@ -35,6 +35,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+var warner Warner = &logrusWarner{}
+
 // KubectlDeployer deploys workflows using kubectl CLI.
 type KubectlDeployer struct {
 	*v1alpha2.KubectlDeploy
@@ -244,7 +246,7 @@ func (l *manifestList) replaceImages(builds []build.Artifact) (manifestList, err
 
 	for name, replacement := range replacements {
 		if !replacement.found {
-			logrus.Warnf("image [%s] is not used by the deployment", name)
+			warner.Warnf("image [%s] is not used by the deployment", name)
 		}
 	}
 
@@ -269,7 +271,7 @@ func recursiveReplaceImage(i interface{}, replacements map[string]*replacement) 
 			image := v.(string)
 			parsed, err := docker.ParseReference(image)
 			if err != nil {
-				logrus.Warnf("Couldn't parse image: %s", v)
+				warner.Warnf("Couldn't parse image: %s", v)
 				continue
 			}
 
