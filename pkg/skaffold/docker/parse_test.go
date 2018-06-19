@@ -221,7 +221,7 @@ func TestGetDependencies(t *testing.T) {
 			description: "onbuild test",
 			dockerfile:  onbuild,
 			workspace:   ".",
-			expected:    []string{"Dockerfile", "bar", "docker/bar", "docker/nginx.conf", "file", "server.go", "test.conf", "worker.go"},
+			expected:    []string{"Dockerfile", "bar", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf"), "file", "server.go", "test.conf", "worker.go"},
 		},
 		{
 			description: "onbuild error",
