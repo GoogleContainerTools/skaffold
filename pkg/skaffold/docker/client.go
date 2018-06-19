@@ -17,9 +17,12 @@ limitations under the License.
 package docker
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -86,7 +89,7 @@ func newEnvAPIClient() (APIClient, error) {
 func newMinikubeAPIClient() (APIClient, error) {
 	env, err := getMinikubeDockerEnv()
 	if err != nil {
-		logrus.Warnf("Could not get minikube docker env, falling back to local docker daemon")
+		logrus.Warnf("Could not get minikube docker env, falling back to local docker daemon: %s", err)
 		return newEnvAPIClient()
 	}
 
@@ -123,8 +126,40 @@ func newMinikubeAPIClient() (APIClient, error) {
 	return client.NewClient(host, version, httpclient, nil)
 }
 
+func detectWsl() (bool, error) {
+	if _, err := os.Stat("/proc/version"); err == nil {
+		b, err := ioutil.ReadFile("/proc/version")
+		if err != nil {
+			return false, errors.Wrap(err, "read /proc/version")
+		}
+
+		if bytes.Contains(b, []byte("Microsoft")) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func getMiniKubeFilename() (string, error) {
+	if found, _ := detectWsl(); found {
+		filename, err := exec.LookPath("minikube.exe")
+		if err != nil {
+			return "", fmt.Errorf("Unable to find minikube.exe. Please add it to PATH environment variable")
+		}
+		if _, err := os.Stat(filename); os.IsNotExist(err) {
+			return "", fmt.Errorf("Unable to find minikube.exe. File not found %s", filename)
+		}
+		return filename, nil
+	}
+	return "minikube", nil
+}
+
 func getMinikubeDockerEnv() (map[string]string, error) {
-	cmd := exec.Command("minikube", "docker-env", "--shell", "none")
+	miniKubeFilename, err := getMiniKubeFilename()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting minikube filename")
+	}
+	cmd := exec.Command(miniKubeFilename, "docker-env", "--shell", "none")
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting minikube env")
@@ -141,5 +176,16 @@ func getMinikubeDockerEnv() (map[string]string, error) {
 		}
 		env[kv[0]] = kv[1]
 	}
+
+	if found, _ := detectWsl(); found {
+		cmd := exec.Command("wslpath", env["DOCKER_CERT_PATH"])
+		out, err := util.RunCmdOut(cmd)
+		if err == nil {
+			env["DOCKER_CERT_PATH"] = strings.TrimRight(string(out), "\n")
+		} else {
+			return nil, fmt.Errorf("Can't run wslpath: %s", err)
+		}
+	}
+
 	return env, nil
 }
