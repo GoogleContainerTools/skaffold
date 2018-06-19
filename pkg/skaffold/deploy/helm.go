@@ -171,14 +171,18 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot marshal overrides to create overrides values.yaml")
 		}
-		overridesFile, err := os.Create("skaffold-overrides.yaml")
+		overridesFile, err := os.Create(constants.HelmOverridesFilename)
 		if err != nil {
-			return nil, errors.Wrap(err, "cannot create file skaffold-overrides.yaml")
+			return nil, errors.Wrapf(err, "cannot create file %s", constants.HelmOverridesFilename)
 		}
+		defer func() {
+			overridesFile.Close()
+			os.Remove(constants.HelmOverridesFilename)
+		}()
 		if _, err := overridesFile.WriteString(string(overrides)); err != nil {
-			return nil, errors.Wrap(err, "failed to write file skaffold-overrides.yaml")
+			return nil, errors.Wrapf(err, "failed to write file %s", constants.HelmOverridesFilename)
 		}
-		args = append(args, "-f", "skaffold-overrides.yaml")
+		args = append(args, "-f", constants.HelmOverridesFilename)
 	}
 	if r.ValuesFilePath != "" {
 		args = append(args, "-f", r.ValuesFilePath)
@@ -196,10 +200,6 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 	args = append(args, setOpts...)
 
 	helmErr := h.helm(out, args...)
-	if len(r.Overrides) != 0 {
-		os.Remove("skaffold-overrides.yaml")
-	}
-
 	return h.getDeployResults(ns, r.Name), helmErr
 }
 

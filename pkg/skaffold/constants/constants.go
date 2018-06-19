@@ -39,6 +39,8 @@ const (
 	DefaultDockerForDesktopContext = "docker-for-desktop"
 	GCSBucketSuffix                = "_cloudbuild"
 
+	HelmOverridesFilename = "skaffold-overrides.yaml"
+
 	DefaultKustomizationPath = "."
 
 	// DefaultKanikoImage is v0.1.0
