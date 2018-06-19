@@ -66,32 +66,43 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 	}
 	client := kubeclient.CoreV1()
 
-	a.startTime = time.Now()
-
-	watcher, err := client.Pods("").Watch(meta_v1.ListOptions{
-		IncludeUninitialized: true,
-	})
-	if err != nil {
-		return err
-	}
-
 	go func() {
+	retryLoop:
 		for {
-			select {
-			case <-ctx.Done():
+			a.startTime = time.Now()
+
+			watcher, err := client.Pods("").Watch(meta_v1.ListOptions{
+				IncludeUninitialized: true,
+			})
+
+			if err != nil {
+				logrus.Errorf("initializing pod watcher %s", err)
 				return
-			case evt := <-watcher.ResultChan():
-				if evt.Type != watch.Added && evt.Type != watch.Modified {
-					continue
-				}
+			}
 
-				pod, ok := evt.Object.(*v1.Pod)
-				if !ok {
-					continue
-				}
+		eventLoop:
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case evt, ok := <-watcher.ResultChan():
+					if !ok {
+						// expected: server connection timeout
+						continue retryLoop
+					}
 
-				if a.podSelector.Select(pod) {
-					a.streamLogs(ctx, client, pod)
+					if evt.Type != watch.Added && evt.Type != watch.Modified {
+						continue eventLoop
+					}
+
+					pod, ok := evt.Object.(*v1.Pod)
+					if !ok {
+						continue eventLoop
+					}
+
+					if a.podSelector.Select(pod) {
+						a.streamLogs(ctx, client, pod)
+					}
 				}
 			}
 		}
