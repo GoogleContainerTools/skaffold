@@ -6,6 +6,7 @@ build:
   kaniko:
     gcsBucket: skaffold-kaniko
     pullSecretName: e2esecret
+    namespace: default
 deploy:
   kubectl:
     manifests:

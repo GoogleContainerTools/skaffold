@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	homedir "github.com/mitchellh/go-homedir"
 
 	"github.com/pkg/errors"
@@ -202,6 +203,9 @@ func (c *SkaffoldConfig) setDefaultValues() error {
 	c.setDefaultTagger()
 	c.setDefaultDockerfiles()
 	c.setDefaultWorkspaces()
+	if err := c.setDefaultKanikoNamespace(); err != nil {
+		return err
+	}
 	return c.setDefaultKanikoSecret()
 }
 
@@ -248,6 +252,20 @@ func (c *SkaffoldConfig) setDefaultWorkspaces() {
 			artifact.Workspace = "."
 		}
 	}
+}
+
+func (c *SkaffoldConfig) setDefaultKanikoNamespace() error {
+	if c.Build.KanikoBuild == nil {
+		return nil
+	}
+	if c.Build.KanikoBuild.Namespace == "" {
+		cfg, err := kubectx.CurrentConfig()
+		if err != nil {
+			return err
+		}
+		c.Build.KanikoBuild.Namespace = cfg.Contexts[cfg.CurrentContext].Namespace
+	}
+	return nil
 }
 
 func (c *SkaffoldConfig) setDefaultKanikoSecret() error {

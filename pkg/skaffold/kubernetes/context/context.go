@@ -14,34 +14,40 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubernetes
+package context
 
 import (
 	"sync"
 
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 var (
-	currentContextOnce sync.Once
-	currentContext     string
-	currentContextErr  error
+	currentConfigOnce sync.Once
+	currentConfig     clientcmdapi.Config
+	currentConfigErr  error
 )
 
-func CurrentContext() (string, error) {
-	currentContextOnce.Do(func() {
+func CurrentConfig() (clientcmdapi.Config, error) {
+	currentConfigOnce.Do(func() {
 		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 		kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
-
 		cfg, err := kubeConfig.RawConfig()
 		if err != nil {
-			currentContextErr = errors.Wrap(err, "loading kubeconfig")
+			currentConfigErr = errors.Wrap(err, "loading kubeconfig")
 			return
 		}
-
-		currentContext = cfg.CurrentContext
+		currentConfig = cfg
 	})
+	return currentConfig, currentConfigErr
+}
 
-	return currentContext, currentContextErr
+func CurrentContext() (string, error) {
+	cfg, err := CurrentConfig()
+	if err != nil {
+		return "", err
+	}
+	return cfg.CurrentContext, nil
 }
