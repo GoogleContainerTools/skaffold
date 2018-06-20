@@ -46,6 +46,16 @@ COPY test.conf /etc/test2
 CMD nginx
 `
 
+const wildcards = `
+FROM nginx
+ADD *.go /tmp
+`
+
+const wildcardsMatchesNone = `
+FROM nginx
+ADD *.none /tmp
+`
+
 const multiStageDockerfile = `
 FROM golang:1.9.2
 WORKDIR /go/src/github.com/r2d4/leeroy/
@@ -106,9 +116,11 @@ var ImageConfigs = map[string]*v1.ConfigFile{
 			},
 		},
 	},
-	"ubuntu:14.04": {Config: v1.Config{}},
-	"nginx":        {Config: v1.Config{}},
-	"busybox":      {Config: v1.Config{}},
+	"golang:1.9.2":           {Config: v1.Config{}},
+	"gcr.io/distroless/base": {Config: v1.Config{}},
+	"ubuntu:14.04":           {Config: v1.Config{}},
+	"nginx":                  {Config: v1.Config{}},
+	"busybox":                {Config: v1.Config{}},
 	"oneport": {
 		Config: v1.Config{
 			ExposedPorts: map[string]struct{}{
@@ -153,6 +165,18 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  addNginx,
 			workspace:   "docker",
 			expected:    []string{"Dockerfile", "nginx.conf"},
+		},
+		{
+			description: "wildcards",
+			dockerfile:  wildcards,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "server.go", "worker.go"},
+		},
+		{
+			description: "wildcards matches none",
+			dockerfile:  wildcardsMatchesNone,
+			workspace:   ".",
+			shouldErr:   true,
 		},
 		{
 			description: "bad read",
@@ -212,10 +236,10 @@ func TestGetDependencies(t *testing.T) {
 		},
 		{
 			description: "dockerignore with context in parent directory",
-			dockerfile:  contextDockerfile,
+			dockerfile:  copyDirectory,
 			workspace:   "docker/..",
-			ignore:      "bar\ndocker/*",
-			expected:    []string{"Dockerfile", "file", "server.go", "test.conf", "worker.go"},
+			ignore:      "bar\ndocker/*\n*.go",
+			expected:    []string{"Dockerfile", "file", "test.conf"},
 		},
 		{
 			description: "onbuild test",
