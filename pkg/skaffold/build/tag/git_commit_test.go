@@ -168,6 +168,56 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			subDir: "sub/sub",
 		},
 		{
+			description:  "clean artifact1 in tagged repo",
+			expectedName: "test:v1",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					mkdir("artifact1").write("artifact1/source.go", []byte("code")).
+					mkdir("artifact2").write("artifact2/source.go", []byte("code")).
+					add("artifact1/source.go", "artifact2/source.go").
+					commit("initial").tag("v1")
+			},
+			subDir: "artifact1",
+		},
+		{
+			description:  "clean artifact2 in tagged repo",
+			expectedName: "test:v1",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					mkdir("artifact1").write("artifact1/source.go", []byte("code")).
+					mkdir("artifact2").write("artifact2/source.go", []byte("code")).
+					add("artifact1/source.go", "artifact2/source.go").
+					commit("initial").tag("v1")
+			},
+			subDir: "artifact2",
+		},
+		{
+			description:  "clean artifact in dirty repo",
+			expectedName: "test:0c60cb8-dirty-7dc1463a47f98a7b",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					mkdir("artifact1").write("artifact1/source.go", []byte("code")).
+					mkdir("artifact2").write("artifact2/source.go", []byte("code")).
+					add("artifact1/source.go", "artifact2/source.go").
+					commit("initial").tag("v1").
+					write("artifact2/source.go", []byte("updated code"))
+			},
+			subDir: "artifact1",
+		},
+		{
+			description:  "updated artifact in dirty repo",
+			expectedName: "test:0c60cb8-dirty-7dc1463a47f98a7b",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					mkdir("artifact1").write("artifact1/source.go", []byte("code")).
+					mkdir("artifact2").write("artifact2/source.go", []byte("code")).
+					add("artifact1/source.go", "artifact2/source.go").
+					commit("initial").tag("v1").
+					write("artifact2/source.go", []byte("updated code"))
+			},
+			subDir: "artifact2",
+		},
+		{
 			description:   "failure",
 			createGitRepo: func(dir string) {},
 			shouldErr:     true,
