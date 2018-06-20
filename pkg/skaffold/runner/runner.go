@@ -108,6 +108,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 		Tagger:               tagger,
 		WatcherFactory:       watch.NewWatcher,
 		DependencyMapFactory: build.NewDependencyMap,
+		opts:                 opts,
 	}, nil
 }
 
