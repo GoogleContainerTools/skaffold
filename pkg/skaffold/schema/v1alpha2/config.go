@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	homedir "github.com/mitchellh/go-homedir"
 
 	"github.com/pkg/errors"
@@ -97,8 +98,10 @@ type GoogleCloudBuild struct {
 // KanikoBuild contains the fields needed to do a on-cluster build using
 // the kaniko image
 type KanikoBuild struct {
-	GCSBucket  string `yaml:"gcsBucket,omitempty"`
-	PullSecret string `yaml:"pullSecret,omitempty"`
+	GCSBucket      string `yaml:"gcsBucket,omitempty"`
+	PullSecret     string `yaml:"pullSecret,omitempty"`
+	PullSecretName string `yaml:"pullSecretName,omitempty"`
+	Namespace      string `yaml:"namespace,omitempty"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps
@@ -200,7 +203,10 @@ func (c *SkaffoldConfig) setDefaultValues() error {
 	c.setDefaultTagger()
 	c.setDefaultDockerfiles()
 	c.setDefaultWorkspaces()
-	return c.expandKanikoSecretPath()
+	if err := c.setDefaultKanikoNamespace(); err != nil {
+		return err
+	}
+	return c.setDefaultKanikoSecret()
 }
 
 func (c *SkaffoldConfig) defaultToLocalBuild() {
@@ -248,17 +254,36 @@ func (c *SkaffoldConfig) setDefaultWorkspaces() {
 	}
 }
 
-func (c *SkaffoldConfig) expandKanikoSecretPath() error {
-	if c.Build.KanikoBuild == nil || c.Build.KanikoBuild.PullSecret == "" {
+func (c *SkaffoldConfig) setDefaultKanikoNamespace() error {
+	if c.Build.KanikoBuild == nil {
 		return nil
 	}
-
-	absPath, err := homedir.Expand(c.Build.KanikoBuild.PullSecret)
-	if err != nil {
-		return fmt.Errorf("unable to expand pullSecret %s", c.Build.KanikoBuild.PullSecret)
+	if c.Build.KanikoBuild.Namespace == "" {
+		cfg, err := kubectx.CurrentConfig()
+		if err != nil {
+			return err
+		}
+		c.Build.KanikoBuild.Namespace = cfg.Contexts[cfg.CurrentContext].Namespace
 	}
+	return nil
+}
 
-	c.Build.KanikoBuild.PullSecret = absPath
+func (c *SkaffoldConfig) setDefaultKanikoSecret() error {
+	if c.Build.KanikoBuild == nil {
+		return nil
+	}
+	if c.Build.KanikoBuild.PullSecret != "" {
+		absPath, err := homedir.Expand(c.Build.KanikoBuild.PullSecret)
+		if err != nil {
+			return fmt.Errorf("unable to expand pullSecret %s", c.Build.KanikoBuild.PullSecret)
+		}
+
+		c.Build.KanikoBuild.PullSecret = absPath
+		return nil
+	}
+	if c.Build.KanikoBuild.PullSecretName == "" {
+		c.Build.KanikoBuild.PullSecret = constants.DefaultKanikoSecretName
+	}
 	return nil
 }
 

@@ -29,7 +29,7 @@ import (
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/api"
 	"github.com/docker/docker/client"
@@ -51,7 +51,7 @@ var (
 // NewAPIClient guesses the docker client to use based on current kubernetes context.
 func NewAPIClient() (APIClient, error) {
 	dockerAPIClientOnce.Do(func() {
-		kubeContext, err := kubernetes.CurrentContext()
+		kubeContext, err := kubectx.CurrentContext()
 		if err != nil {
 			dockerAPIClientErr = errors.Wrap(err, "getting current cluster context")
 			return
