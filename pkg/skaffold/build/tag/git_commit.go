@@ -18,12 +18,9 @@ package tag
 
 import (
 	"bufio"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -35,8 +32,7 @@ import (
 )
 
 // GitCommit tags an image by the git commit it was built at.
-type GitCommit struct {
-}
+type GitCommit struct{}
 
 func (c *GitCommit) Labels() map[string]string {
 	return map[string]string{
@@ -60,27 +56,33 @@ func generateNameGitShellOut(workingDir string, opts *Options) (string, error) {
 		return "", errors.Wrap(err, "getting git root")
 	}
 
-	revision, err := runGit(root, "rev-parse", "HEAD")
+	commitHash, err := runGit(root, "rev-parse", "HEAD")
 	if err != nil {
 		return "", errors.Wrap(err, "getting current revision")
 	}
 
-	status, err := runGit(root, "status", "--porcelain")
+	currentTag := commitHash[0:7]
+
+	status, err := runGitLines(root, "status", "--porcelain")
 	if err != nil {
 		return "", errors.Wrap(err, "getting git status")
 	}
 
-	currentTag := revision[0:7]
-	if status == "" {
-		tags, err := runGit(root, "describe", "--tags", "--always")
-		if err != nil {
-			return "", errors.Wrap(err, "getting tags")
-		}
-
-		return commitOrTag(currentTag, lines(tags), opts), nil
+	dirty, err := isDirty(root, workingDir, stripStatus(status))
+	if err != nil {
+		return "", errors.Wrap(err, "getting status for workingDir")
 	}
 
-	return dirtyTag(root, opts, currentTag, lines(status))
+	if dirty {
+		return dirtyTag(currentTag, opts), nil
+	}
+
+	tags, err := runGitLines(root, "describe", "--tags", "--always")
+	if err != nil {
+		return "", errors.Wrap(err, "getting tags")
+	}
+
+	return commitOrTag(currentTag, tags, opts), nil
 }
 
 func generateNameGoGit(workingDir string, opts *Options) (string, error) {
@@ -108,26 +110,31 @@ func generateNameGoGit(workingDir string, opts *Options) (string, error) {
 		return "", errors.Wrap(err, "reading status")
 	}
 
-	if status.IsClean() {
-		tagrefs, err := repo.Tags()
-		if err != nil {
-			return "", errors.Wrap(err, "determining git tag")
-		}
-
-		var tags []string
-		if err = tagrefs.ForEach(func(t *plumbing.Reference) error {
-			if t.Hash() == head.Hash() {
-				tags = append(tags, t.Name().Short())
-			}
-			return nil
-		}); err != nil {
-			return "", errors.Wrap(err, "determining git tag")
-		}
-
-		return commitOrTag(currentTag, tags, opts), nil
+	dirty, err := isDirty(root, workingDir, changedPaths(status))
+	if err != nil {
+		return "", errors.Wrap(err, "getting status for workingDir")
 	}
 
-	return dirtyTag(root, opts, currentTag, changes(status))
+	if dirty {
+		return dirtyTag(currentTag, opts), nil
+	}
+
+	tagrefs, err := repo.Tags()
+	if err != nil {
+		return "", errors.Wrap(err, "determining git tag")
+	}
+
+	var tags []string
+	if err = tagrefs.ForEach(func(t *plumbing.Reference) error {
+		if t.Hash() == head.Hash() {
+			tags = append(tags, t.Name().Short())
+		}
+		return nil
+	}); err != nil {
+		return "", errors.Wrap(err, "determining git tag")
+	}
+
+	return commitOrTag(currentTag, tags, opts), nil
 }
 
 func runGit(workingDir string, arg ...string) (string, error) {
@@ -142,6 +149,25 @@ func runGit(workingDir string, arg ...string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
+func runGitLines(workingDir string, arg ...string) ([]string, error) {
+	out, err := runGit(workingDir, arg...)
+	if err != nil {
+		return nil, err
+	}
+
+	var lines []string
+
+	scanner := bufio.NewScanner(strings.NewReader(out))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line != "" {
+			lines = append(lines, line)
+		}
+	}
+
+	return lines, nil
+}
+
 func commitOrTag(currentTag string, tags []string, opts *Options) string {
 	if len(tags) > 0 {
 		currentTag = tags[0]
@@ -150,74 +176,59 @@ func commitOrTag(currentTag string, tags []string, opts *Options) string {
 	return fmt.Sprintf("%s:%s", opts.ImageName, currentTag)
 }
 
-// The file state is dirty. To generate a unique suffix, let's hash the diffs
-// of all modified files.
-// We add a -dirty-unique-id suffix to work well with local iterations.
-func dirtyTag(root string, opts *Options, currentTag string, lines []string) (string, error) {
-	h := sha256.New()
-	for _, statusLine := range lines {
-		if strings.HasPrefix(statusLine, "??") {
-			statusLine = statusLine[1:]
-		}
+func stripStatus(lines []string) []string {
+	var paths []string
 
-		if _, err := h.Write([]byte(statusLine)); err != nil {
-			return "", errors.Wrap(err, "adding status line to hash")
-		}
+	for _, line := range lines {
+		path := strings.Fields(line)[1]
+		paths = append(paths, path)
+	}
 
-		// If the file has been deleted, there's no diff to generate.
-		if strings.HasPrefix(statusLine, "D") {
-			continue
-		}
+	return paths
+}
 
-		changedPath := filepath.Join(root, strings.Trim(statusLine[2:], " "))
-		diff, err := runGit(root, "diff", changedPath)
-		if err != nil {
-			return "", errors.Wrap(err, "reading diff")
-		}
+func isDirty(root, workingDir string, changes []string) (bool, error) {
+	root, err := normalizePath(root)
+	if err != nil {
+		return false, errors.Wrap(err, "normalizing path")
+	}
 
-		if _, err := h.Write([]byte(diff)); err != nil {
-			return "", errors.Wrap(err, "adding diff to hash")
+	absWorkingDir, err := normalizePath(workingDir)
+	if err != nil {
+		return false, errors.Wrap(err, "normalizing path")
+	}
+
+	for _, change := range changes {
+		if strings.HasPrefix(filepath.Join(root, change), absWorkingDir) {
+			return true, nil
 		}
 	}
 
-	sha := h.Sum(nil)
-	shaStr := hex.EncodeToString(sha[:])[:16]
-	fqn := fmt.Sprintf("%s:%s-dirty-%s", opts.ImageName, currentTag, shaStr)
-	return fqn, nil
+	return false, nil
 }
 
-func lines(text string) []string {
-	var lines []string
+func dirtyTag(currentTag string, opts *Options) string {
+	shortDigest := strings.TrimPrefix(opts.Digest, "sha256:")[0:7]
 
-	scanner := bufio.NewScanner(strings.NewReader(text))
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line != "" {
-			lines = append(lines, line)
-		}
-	}
-
-	return lines
+	return fmt.Sprintf("%s:%s-dirty-%s", opts.ImageName, currentTag, shortDigest)
 }
 
-// changes returns the same output as git status --porcelain.
-// The order is important because we generate a sha256 out of it.
-func changes(status git.Status) []string {
-	var changes []string
+func changedPaths(status git.Status) []string {
+	var paths []string
 
 	for path, change := range status {
 		if change.Worktree != git.Unmodified {
-			changes = append(changes, path)
+			paths = append(paths, path)
 		}
 	}
 
-	sort.Strings(changes)
+	return paths
+}
 
-	var lines []string
-	for _, changedPath := range changes {
-		status := status[changedPath].Worktree
-		lines = append(lines, fmt.Sprintf("%c %s", status, changedPath))
+func normalizePath(path string) (string, error) {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
 	}
-
-	return lines
+	return filepath.EvalSymlinks(abs)
 }

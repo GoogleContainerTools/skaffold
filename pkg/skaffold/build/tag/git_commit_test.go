@@ -68,7 +68,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description:  "dirty",
-			expectedName: "test:eefe1b9-dirty-af8de1fde8be4367",
+			expectedName: "test:eefe1b9-dirty-abababa",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -79,7 +79,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description:  "ignore tag when dirty",
-			expectedName: "test:eefe1b9-dirty-af8de1fde8be4367",
+			expectedName: "test:eefe1b9-dirty-abababa",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -91,7 +91,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description:  "untracked",
-			expectedName: "test:eefe1b9-dirty-bfe9b4566c9d3fec",
+			expectedName: "test:eefe1b9-dirty-abababa",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -101,8 +101,8 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description:  "one file deleted",
-			expectedName: "test:279d53f-dirty-6a3ce511c689eda7",
+			description:  "deleted file",
+			expectedName: "test:279d53f-dirty-abababa",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source1.go", []byte("code1")).
@@ -113,20 +113,8 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description:  "two files deleted",
-			expectedName: "test:279d53f-dirty-d48c11ed65c37a09", // Must be <> than when only one file is deleted
-			createGitRepo: func(dir string) {
-				gitInit(t, dir).
-					write("source1.go", []byte("code1")).
-					write("source2.go", []byte("code2")).
-					add("source1.go", "source2.go").
-					commit("initial").
-					delete("source1.go", "source2.go")
-			},
-		},
-		{
 			description:  "rename",
-			expectedName: "test:eefe1b9-dirty-9c858d88cc0bf792",
+			expectedName: "test:eefe1b9-dirty-abababa",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -136,34 +124,12 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description:  "rename to different name",
-			expectedName: "test:eefe1b9-dirty-6534adc17ccd1cf4", // Must be <> each time a new name is used
-			createGitRepo: func(dir string) {
-				gitInit(t, dir).
-					write("source.go", []byte("code")).
-					add("source.go").
-					commit("initial").
-					rename("source.go", "source3.go")
-			},
-		},
-		{
 			description:  "sub directory",
 			expectedName: "test:a7b32a6",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					mkdir("sub/sub").
 					commit("initial")
-			},
-			subDir: "sub/sub",
-		},
-		{
-			description:  "sub directory with dirty status",
-			expectedName: "test:a7b32a6-dirty-83715cdc64e43ee9",
-			createGitRepo: func(dir string) {
-				gitInit(t, dir).
-					mkdir("sub/sub").
-					commit("initial").
-					write("source.go", []byte("updated code"))
 			},
 			subDir: "sub/sub",
 		},
@@ -193,7 +159,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description:  "clean artifact in dirty repo",
-			expectedName: "test:0c60cb8-dirty-7dc1463a47f98a7b",
+			expectedName: "test:v1",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					mkdir("artifact1").write("artifact1/source.go", []byte("code")).
@@ -206,7 +172,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description:  "updated artifact in dirty repo",
-			expectedName: "test:0c60cb8-dirty-7dc1463a47f98a7b",
+			expectedName: "test:0c60cb8-dirty-abababa",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					mkdir("artifact1").write("artifact1/source.go", []byte("code")).
@@ -234,6 +200,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 
 			opts := &Options{
 				ImageName: "test",
+				Digest:    "sha256:ababababababababababa",
 			}
 
 			c := &GitCommit{}
