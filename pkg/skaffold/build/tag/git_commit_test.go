@@ -46,7 +46,6 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			description: "success",
 			opts: &Options{
 				ImageName: "test",
-				Digest:    "sha256:12345abcde",
 			},
 			expectedName: "test:eefe1b9",
 			createGitRepo: func(dir string) {
@@ -60,7 +59,6 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			description: "use tag over commit",
 			opts: &Options{
 				ImageName: "test",
-				Digest:    "sha256:12345abcde",
 			},
 			expectedName: "test:v2",
 			createGitRepo: func(dir string) {
@@ -93,7 +91,6 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			description: "ignore tag when dirty",
 			opts: &Options{
 				ImageName: "test",
-				Digest:    "sha256:12345abcde",
 			},
 			expectedName: "test:eefe1b9-dirty-8b8c4dad90faa822",
 			createGitRepo: func(dir string) {
