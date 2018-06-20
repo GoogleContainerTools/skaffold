@@ -4,8 +4,9 @@ build:
   artifacts:
   - imageName: gcr.io/k8s-skaffold/skaffold-example
   kaniko:
-    gcsBucket: k8s-skaffold
-    pullSecret: ~/secrets/kaniko/kaniko.json
+    gcsBucket: skaffold-kaniko
+    pullSecretName: e2esecret
+    namespace: default
 deploy:
   kubectl:
     manifests:
