@@ -275,15 +275,15 @@ func recursiveReplaceImage(i interface{}, replacements map[string]*replacement) 
 				continue
 			}
 
-			if parsed.FullyQualified {
-				// TODO(1.0.0): Remove this warning.
-				logrus.Infof("Not replacing fully qualified image: %s (see #565)", v)
-				continue
-			}
-
 			if img, present := replacements[parsed.BaseName]; present {
-				t[k] = img.tag
-				img.found = true
+				if parsed.FullyQualified {
+					if img.tag == image {
+						img.found = true
+					}
+				} else {
+					t[k] = img.tag
+					img.found = true
+				}
 			}
 		}
 	}
