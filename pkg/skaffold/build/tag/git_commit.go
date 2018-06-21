@@ -169,7 +169,7 @@ func dirtyTag(root string, opts *Options, currentTag string, lines []string) (st
 			continue
 		}
 
-		changedPath := statusLine[2:]
+		changedPath := strings.Trim(statusLine[2:], " ")
 		f, err := os.Open(filepath.Join(root, changedPath))
 		if err != nil {
 			return "", errors.Wrap(err, "reading diff")
