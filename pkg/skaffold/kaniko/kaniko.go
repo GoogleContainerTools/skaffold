@@ -56,9 +56,9 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 	imageDst := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
 	p, err := client.CoreV1().Pods(cfg.Namespace).Create(&v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "kaniko",
-			Labels:    map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
-			Namespace: cfg.Namespace,
+			GenerateName: "kaniko",
+			Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
+			Namespace:    cfg.Namespace,
 		},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
