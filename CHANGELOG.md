@@ -1,3 +1,48 @@
+# v0.8.0 Release - 06/21/2018
+
+New Features
+* cloudbuild: publish skaffold images on commit and tag [#655](https://github.com/GoogleContainerTools/skaffold/pull/655)
+* Asciidocs and refdocs tooling [#648](https://github.com/GoogleContainerTools/skaffold/pull/648)
+* Add support for skaffold.yml as a default config file fixes #225 [#665](https://github.com/GoogleContainerTools/skaffold/pull/665)
+* adds helper script for release notes [#662](https://github.com/GoogleContainerTools/skaffold/pull/662)
+* docs: add weekly meeting snippet [#675](https://github.com/GoogleContainerTools/skaffold/pull/675)
+* Add labels to all k8s objects deployed by skaffold [#644](https://github.com/GoogleContainerTools/skaffold/pull/644)
+* Implement packaging for helm deployment [#682](https://github.com/GoogleContainerTools/skaffold/pull/682)
+* mv tagPolicy:env example [#697](https://github.com/GoogleContainerTools/skaffold/pull/697)
+* windows: add appveyor [#702](https://github.com/GoogleContainerTools/skaffold/pull/702)
+* add WSL support [#694](https://github.com/GoogleContainerTools/skaffold/pull/694)
+* Add labels from options [#716](https://github.com/GoogleContainerTools/skaffold/pull/716)
+* Add tests for helm deployment with `packaged' option [#696](https://github.com/GoogleContainerTools/skaffold/pull/696)
+* Fix issue #404 - Allow to use bazel subtarget [#689](https://github.com/GoogleContainerTools/skaffold/pull/689)
+* fix: allow environment variables to be used in helm values [#707](https://github.com/GoogleContainerTools/skaffold/pull/707)
+* Improve Kaniko code and ns handling [#722](https://github.com/GoogleContainerTools/skaffold/pull/722)
+* Support wildcards in Dockerfiles [#712](https://github.com/GoogleContainerTools/skaffold/pull/712)
+
+Bug Fixes
+
+* make: fix release path [#650](https://github.com/GoogleContainerTools/skaffold/pull/650)
+* Fixing the licence [#652](https://github.com/GoogleContainerTools/skaffold/pull/652)
+* typo fix [#660](https://github.com/GoogleContainerTools/skaffold/pull/660)
+* Ignore missing authConfigs during docker build [#664](https://github.com/GoogleContainerTools/skaffold/pull/664)
+* lint fixes [#669](https://github.com/GoogleContainerTools/skaffold/pull/669)
+* Fix hack/dep.sh on travisCI [#680](https://github.com/GoogleContainerTools/skaffold/pull/680)
+* Use git binary or fallback to go-git [#639](https://github.com/GoogleContainerTools/skaffold/pull/639)
+* Fix git detection [#683](https://github.com/GoogleContainerTools/skaffold/pull/683)
+* remove extraneous space [#688](https://github.com/GoogleContainerTools/skaffold/pull/688)
+* Create and apply patch when adding labels to API objects [#687](https://github.com/GoogleContainerTools/skaffold/pull/687)
+* Fix issue with 100% CPU usage in logs.go. [#704](https://github.com/GoogleContainerTools/skaffold/pull/704)
+
+Updates
+
+* Remove fsnotify [#646](https://github.com/GoogleContainerTools/skaffold/pull/646)
+* Update go-containerregistry [#651](https://github.com/GoogleContainerTools/skaffold/pull/651)
+* cloudbuild: increase timeout to 20m [#658](https://github.com/GoogleContainerTools/skaffold/pull/658)
+* Update docker libraries [#676](https://github.com/GoogleContainerTools/skaffold/pull/676)
+* Update apimachinery and client-go to kubernetes-1.11.0-beta2 [#684](https://github.com/GoogleContainerTools/skaffold/pull/684)
+* Update release_notes.sh [#710](https://github.com/GoogleContainerTools/skaffold/pull/710)
+* Remove unused imports [#724](https://github.com/GoogleContainerTools/skaffold/pull/724)
+
+
 # v0.7.0 Release - 06/07/2018
 
 
