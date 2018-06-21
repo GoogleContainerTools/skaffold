@@ -27,9 +27,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	// k8syaml "k8s.io/apimachinery/pkg/util/yaml"
-	// "k8s.io/client-go/kubernetes/scheme"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
