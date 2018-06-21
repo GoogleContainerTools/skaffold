@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/labels"
 	"github.com/sirupsen/logrus"
 
 	clientgo "k8s.io/client-go/kubernetes"
@@ -44,20 +45,20 @@ import (
 type withLabels struct {
 	deploy.Deployer
 
-	labels map[string]string
+	labellers []labels.Labeller
 }
 
 // WithLabels creates a deployer that sets labels on deployed resources.
-func WithLabels(d deploy.Deployer, labels map[string]string) deploy.Deployer {
+func WithLabels(d deploy.Deployer, labellers ...labels.Labeller) deploy.Deployer {
 	return &withLabels{
-		Deployer: d,
-		labels:   labels,
+		Deployer:  d,
+		labellers: labellers,
 	}
 }
 
 func (w *withLabels) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) ([]deploy.Artifact, error) {
 	dRes, err := w.Deployer.Deploy(ctx, out, artifacts)
-	labelDeployResults(w.labels, dRes)
+	labelDeployResults(labels.Merge(w.labellers...), dRes)
 	return dRes, err
 }
 
