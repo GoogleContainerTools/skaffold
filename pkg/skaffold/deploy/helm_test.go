@@ -20,8 +20,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
 	"os/exec"
 	"testing"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
@@ -33,6 +38,13 @@ var testBuilds = []build.Artifact{
 	{
 		ImageName: "skaffold-helm",
 		Tag:       "skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184",
+	},
+}
+
+var testBuildsFoo = []build.Artifact{
+	{
+		ImageName: "foo",
+		Tag:       "foo:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184",
 	},
 }
 
@@ -67,6 +79,26 @@ var testDeployConfigParameterUnmatched = &v1alpha2.DeployConfig{
 					ChartPath: "examples/test",
 					Values: map[string]string{
 						"image.tag": "skaffold-helm-unmatched",
+					},
+				},
+			},
+		},
+	},
+}
+
+var testDeployFooWithPackaged = &v1alpha2.DeployConfig{
+	DeployType: v1alpha2.DeployType{
+		HelmDeploy: &v1alpha2.HelmDeploy{
+			Releases: []v1alpha2.HelmRelease{
+				{
+					Name:      "foo",
+					ChartPath: "testdata/foo",
+					Values: map[string]string{
+						"image.tag": "foo",
+					},
+					Packaged: &v1alpha2.HelmPackaged{
+						Version:    "0.1.2",
+						AppVersion: "1.2.3",
 					},
 				},
 			},
@@ -154,6 +186,12 @@ HOOKS:
 MANIFEST:
 `
 
+// TestMain disables logrus output before running tests.
+func TestMain(m *testing.M) {
+	logrus.SetOutput(ioutil.Discard)
+	os.Exit(m.Run())
+}
+
 func TestHelmDeploy(t *testing.T) {
 	var tests = []struct {
 		description string
@@ -214,6 +252,34 @@ func TestHelmDeploy(t *testing.T) {
 			deployer:  NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace),
 			builds:    testBuilds,
 		},
+		{
+			description: "should package chart and deploy",
+			cmd: &MockHelm{
+				t:          t,
+				packageOut: bytes.NewBufferString("Packaged to " + os.TempDir() + "foo-0.1.2.tgz"),
+			},
+			shouldErr: false,
+			deployer: NewHelmDeployer(
+				testDeployFooWithPackaged,
+				testKubeContext,
+				testNamespace,
+			),
+			builds: testBuildsFoo,
+		},
+		{
+			description: "should fail to deploy when packaging fails",
+			cmd: &MockHelm{
+				t:             t,
+				packageResult: fmt.Errorf("packaging failed"),
+			},
+			shouldErr: true,
+			deployer: NewHelmDeployer(
+				testDeployFooWithPackaged,
+				testKubeContext,
+				testNamespace,
+			),
+			builds: testBuildsFoo,
+		},
 	}
 
 	for _, tt := range tests {
@@ -234,6 +300,9 @@ type MockHelm struct {
 	installResult error
 	upgradeResult error
 	depResult     error
+
+	packageOut    io.Reader
+	packageResult error
 }
 
 func (m *MockHelm) RunCmdOut(c *exec.Cmd) ([]byte, error) {
@@ -259,6 +328,13 @@ func (m *MockHelm) RunCmd(c *exec.Cmd) error {
 		return m.upgradeResult
 	case "dep":
 		return m.depResult
+	case "package":
+		if m.packageOut != nil {
+			if _, err := io.Copy(c.Stdout, m.packageOut); err != nil {
+				m.t.Errorf("Failed to copy stdout")
+			}
+		}
+		return m.packageResult
 	default:
 		m.t.Errorf("Unknown helm command: %+v", c)
 		return nil

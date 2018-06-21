@@ -50,7 +50,7 @@ type Deployer interface {
 	Cleanup(context.Context, io.Writer) error
 }
 
-func JoinTagsToBuildResult(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {
+func joinTagsToBuildResult(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {
 	imageToBuildResult := map[string]build.Artifact{}
 	for _, build := range builds {
 		imageToBuildResult[build.ImageName] = build
