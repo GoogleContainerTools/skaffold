@@ -30,6 +30,37 @@ import (
 	"github.com/pkg/errors"
 )
 
+func trimTarget(buildTarget string) string {
+
+	//TODO(r2d4): strip off leading //:, bad
+	trimmedTarget := strings.TrimPrefix(buildTarget, "//")
+	// Useful if root target "//:target"
+	trimmedTarget = strings.TrimPrefix(trimmedTarget, ":")
+
+	return trimmedTarget
+}
+
+func buildTarPath(buildTarget string) string {
+	tarPath := trimTarget(buildTarget)
+	tarPath = strings.Replace(tarPath, ":", string(os.PathSeparator), 1)
+
+	return tarPath
+}
+
+func buildImageTag(buildTarget string) string {
+	imageTag := trimTarget(buildTarget)
+	imageTag = strings.TrimPrefix(imageTag, ":")
+
+	//TODO(r2d4): strip off trailing .tar, even worse
+	imageTag = strings.TrimSuffix(imageTag, ".tar")
+
+	if strings.Contains(imageTag, ":") {
+		return fmt.Sprintf("/%s", imageTag)
+	}
+
+	return fmt.Sprintf(":%s", imageTag)
+}
+
 func (l *LocalBuilder) buildBazel(ctx context.Context, out io.Writer, a *v1alpha2.Artifact) (string, error) {
 	cmd := exec.Command("bazel", "build", a.BazelArtifact.BuildTarget)
 	cmd.Dir = a.Workspace
@@ -39,10 +70,9 @@ func (l *LocalBuilder) buildBazel(ctx context.Context, out io.Writer, a *v1alpha
 		return "", errors.Wrap(err, "running command")
 	}
 
-	//TODO(r2d4): strip off leading //:, bad
-	tarPath := strings.TrimPrefix(a.BazelArtifact.BuildTarget, "//:")
-	//TODO(r2d4): strip off trailing .tar, even worse
-	imageTag := strings.TrimSuffix(tarPath, ".tar")
+	tarPath := buildTarPath(a.BazelArtifact.BuildTarget)
+
+	imageTag := buildImageTag(a.BazelArtifact.BuildTarget)
 
 	imageTar, err := os.Open(filepath.Join(a.Workspace, "bazel-bin", tarPath))
 	if err != nil {
@@ -61,5 +91,5 @@ func (l *LocalBuilder) buildBazel(ctx context.Context, out io.Writer, a *v1alpha
 		return "", errors.Wrap(err, "reading from image load response")
 	}
 
-	return fmt.Sprintf("bazel:%s", imageTag), nil
+	return fmt.Sprintf("bazel%s", imageTag), nil
 }
