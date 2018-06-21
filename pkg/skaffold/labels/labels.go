@@ -14,18 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package tag
+package labels
 
-import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/labels"
-
-// Tagger is an interface for tag strategies to be implemented against
-type Tagger interface {
-	labels.Labeller
-
-	GenerateFullyQualifiedImageName(workingDir string, tagOpts *Options) (string, error)
+// Labeller can give key/value labels to set on deployed resources.
+type Labeller interface {
+	Labels() map[string]string
 }
 
-type Options struct {
-	ImageName string
-	Digest    string
+// Merge merges the labels from multiple sources.
+func Merge(sources ...Labeller) map[string]string {
+	merged := make(map[string]string)
+
+	for _, src := range sources {
+		if src != nil {
+			for k, v := range src.Labels() {
+				merged[k] = v
+			}
+		}
+	}
+
+	return merged
 }

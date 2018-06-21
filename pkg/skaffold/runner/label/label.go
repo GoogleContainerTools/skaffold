@@ -17,9 +17,12 @@ limitations under the License.
 package label
 
 import (
+	"context"
 	"encoding/json"
+	"io"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -37,6 +40,26 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	patch "k8s.io/apimachinery/pkg/util/strategicpatch"
 )
+
+type withLabels struct {
+	deploy.Deployer
+
+	labels map[string]string
+}
+
+// WithLabels creates a deployer that sets labels on deployed resources.
+func WithLabels(d deploy.Deployer, labels map[string]string) deploy.Deployer {
+	return &withLabels{
+		Deployer: d,
+		labels:   labels,
+	}
+}
+
+func (w *withLabels) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) ([]deploy.Artifact, error) {
+	dRes, err := w.Deployer.Deploy(ctx, out, artifacts)
+	labelDeployResults(w.labels, dRes)
+	return dRes, err
+}
 
 type objectType int
 
@@ -205,14 +228,14 @@ var objectMetas = map[objectType]objectMeta{
 const tries int = 3
 const sleeptime time.Duration = 300 * time.Millisecond
 
-//nolint
-func LabelDeployResults(labels map[string]string, results []deploy.Artifact) {
+func labelDeployResults(labels map[string]string, results []deploy.Artifact) {
 	// use the kubectl client to update all k8s objects with a skaffold watermark
 	client, err := kubernetes.Client()
 	if err != nil {
 		logrus.Warnf("error retrieving kubernetes client: %s", err.Error())
 		return
 	}
+
 	for _, res := range results {
 		err = nil
 		for i := 0; i < tries; i++ {

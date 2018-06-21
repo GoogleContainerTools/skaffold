@@ -23,7 +23,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/label"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -73,11 +72,6 @@ func runDeploy(out io.Writer, filename string) error {
 		})
 	}
 
-	dRes, err := r.Deploy(ctx, deployOut, builds)
-	if err != nil {
-		return errors.Wrap(err, "deploy step")
-	}
-	label.LabelDeployResults(r.Labels(), dRes)
-
-	return nil
+	_, err = r.Deploy(ctx, deployOut, builds)
+	return err
 }

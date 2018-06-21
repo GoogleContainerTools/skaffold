@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/labels"
 )
 
 // Artifact contains all information about a completed deployment
@@ -35,8 +36,7 @@ type Artifact struct {
 // Deployer is the Deploy API of skaffold and responsible for deploying
 // the build results to a Kubernetes cluster
 type Deployer interface {
-	// Labels returns a list of labels to be attached to each deployed Kubernetes object
-	Labels() map[string]string
+	labels.Labeller
 
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster.
