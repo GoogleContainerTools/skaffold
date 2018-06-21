@@ -95,8 +95,35 @@ func readDockerfile(workspace, dockerfilePath string) ([]string, error) {
 
 	dispatchInstructions(res)
 
+	expandedPaths := make(map[string]bool)
+	for p := range depMap {
+		path := filepath.Join(workspace, p)
+
+		if _, err := os.Stat(path); err == nil {
+			expandedPaths[p] = true
+			continue
+		}
+
+		files, err := filepath.Glob(path)
+		if err != nil {
+			return nil, errors.Wrap(err, "invalid glob pattern")
+		}
+		if files == nil {
+			return nil, fmt.Errorf("file pattern must match at least one file %s", path)
+		}
+
+		for _, f := range files {
+			rel, err := filepath.Rel(workspace, f)
+			if err != nil {
+				return nil, fmt.Errorf("getting relative path of %s", f)
+			}
+
+			expandedPaths[rel] = true
+		}
+	}
+
 	var deps []string
-	for dep := range depMap {
+	for dep := range expandedPaths {
 		deps = append(deps, dep)
 	}
 	logrus.Infof("Found dependencies for dockerfile %s", deps)
