@@ -28,9 +28,6 @@ import (
 	"strconv"
 	"strings"
 
-	// k8syaml "k8s.io/apimachinery/pkg/util/yaml"
-	// "k8s.io/client-go/kubernetes/scheme"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
