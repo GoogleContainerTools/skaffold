@@ -103,8 +103,9 @@ func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger t
 	for _, artifact := range artifacts {
 		build, err := cb.buildArtifact(ctx, out, tagger, cbclient, c, artifact)
 		if err != nil {
-			return nil, errors.Wrapf(err, "building artifact %s", artifact.ImageName)
+			return nil, errors.Wrapf(err, "building [%s]", artifact.ImageName)
 		}
+
 		builds = append(builds, *build)
 	}
 
@@ -112,7 +113,7 @@ func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger t
 }
 
 func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, cbclient *cloudbuild.Service, c *cstorage.Client, artifact *v1alpha2.Artifact) (*Artifact, error) {
-	logrus.Infof("Building artifact: %+v", artifact)
+	fmt.Fprintf(out, "Building [%s]...\n", artifact.ImageName)
 
 	// need to format build args as strings to pass to container builder docker
 	var buildArgs []string

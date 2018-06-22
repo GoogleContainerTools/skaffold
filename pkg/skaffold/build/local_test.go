@@ -17,7 +17,6 @@ limitations under the License.
 package build
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -80,7 +79,7 @@ func TestLocalRun(t *testing.T) {
 	}{
 		{
 			description: "single build",
-			out:         &bytes.Buffer{},
+			out:         ioutil.Discard,
 			config: &v1alpha2.BuildConfig{
 				Artifacts: []*v1alpha2.Artifact{
 					{
@@ -108,7 +107,7 @@ func TestLocalRun(t *testing.T) {
 		},
 		{
 			description: "subset build",
-			out:         &bytes.Buffer{},
+			out:         ioutil.Discard,
 			config: &v1alpha2.BuildConfig{
 				Artifacts: []*v1alpha2.Artifact{
 					{
@@ -159,7 +158,7 @@ func TestLocalRun(t *testing.T) {
 		},
 		{
 			description: "error image build",
-			out:         &bytes.Buffer{},
+			out:         ioutil.Discard,
 			config: &v1alpha2.BuildConfig{
 				Artifacts: []*v1alpha2.Artifact{
 					{
@@ -176,7 +175,7 @@ func TestLocalRun(t *testing.T) {
 		},
 		{
 			description: "error image tag",
-			out:         &bytes.Buffer{},
+			out:         ioutil.Discard,
 			config: &v1alpha2.BuildConfig{
 				Artifacts: []*v1alpha2.Artifact{
 					{
@@ -225,6 +224,7 @@ func TestLocalRun(t *testing.T) {
 		},
 		{
 			description: "error tagger",
+			out:         ioutil.Discard,
 			config: &v1alpha2.BuildConfig{
 				Artifacts: []*v1alpha2.Artifact{
 					{
