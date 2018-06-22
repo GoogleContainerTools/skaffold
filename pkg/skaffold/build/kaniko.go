@@ -18,6 +18,7 @@ package build
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 
@@ -64,9 +65,11 @@ func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tag
 	var builds []Artifact
 
 	for _, artifact := range artifacts {
+		fmt.Fprintf(out, "Building [%s]...\n", artifact.ImageName)
+
 		initialTag, err := kaniko.RunKanikoBuild(ctx, out, artifact, k.KanikoBuild)
 		if err != nil {
-			return nil, errors.Wrapf(err, "running kaniko build for %s", artifact.ImageName)
+			return nil, errors.Wrapf(err, "kaniko build for [%s]", artifact.ImageName)
 		}
 
 		digest, err := docker.RemoteDigest(initialTag)

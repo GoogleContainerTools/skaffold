@@ -99,9 +99,11 @@ func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagg
 	var builds []Artifact
 
 	for _, artifact := range artifacts {
+		fmt.Fprintf(out, "Building [%s]...\n", artifact.ImageName)
+
 		initialTag, err := l.runBuildForArtifact(ctx, out, artifact)
 		if err != nil {
-			return nil, errors.Wrap(err, "running build for artifact")
+			return nil, errors.Wrapf(err, "building [%s]", artifact.ImageName)
 		}
 
 		digest, err := docker.Digest(ctx, l.api, initialTag)
