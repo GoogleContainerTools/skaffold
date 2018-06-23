@@ -21,7 +21,6 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/labels"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 )
 
@@ -36,7 +35,7 @@ type Artifact struct {
 // This could include pushing to a authorized repository or loading the nodes with the image.
 // If artifacts is supplied, the builder should only rebuild those artifacts.
 type Builder interface {
-	labels.Labeller
+	Labels() map[string]string
 
 	Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]Artifact, error)
 }

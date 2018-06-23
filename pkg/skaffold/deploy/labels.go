@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package label
+package deploy
 
 import (
 	"context"
@@ -24,13 +24,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/labels"
 	"github.com/sirupsen/logrus"
-
-	clientgo "k8s.io/client-go/kubernetes"
-
 	appsv1 "k8s.io/api/apps/v1"
 	appsv1beta1 "k8s.io/api/apps/v1beta1"
 	appsv1beta2 "k8s.io/api/apps/v1beta2"
@@ -40,26 +35,49 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	patch "k8s.io/apimachinery/pkg/util/strategicpatch"
+	clientgo "k8s.io/client-go/kubernetes"
 )
 
-type withLabels struct {
-	deploy.Deployer
+// Labeller can give key/value labels to set on deployed resources.
+type Labeller interface {
+	Labels() map[string]string
+}
 
-	labellers []labels.Labeller
+type withLabels struct {
+	Deployer
+
+	labellers []Labeller
 }
 
 // WithLabels creates a deployer that sets labels on deployed resources.
-func WithLabels(d deploy.Deployer, labellers ...labels.Labeller) deploy.Deployer {
+func WithLabels(d Deployer, labellers ...Labeller) Deployer {
 	return &withLabels{
 		Deployer:  d,
 		labellers: labellers,
 	}
 }
 
-func (w *withLabels) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) ([]deploy.Artifact, error) {
+func (w *withLabels) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) ([]Artifact, error) {
 	dRes, err := w.Deployer.Deploy(ctx, out, artifacts)
-	labelDeployResults(labels.Merge(w.labellers...), dRes)
+
+	labelDeployResults(merge(w.labellers...), dRes)
+
 	return dRes, err
+}
+
+// merge merges the labels from multiple sources.
+func merge(sources ...Labeller) map[string]string {
+	merged := make(map[string]string)
+
+	for _, src := range sources {
+		if src != nil {
+			for k, v := range src.Labels() {
+				merged[k] = v
+			}
+		}
+	}
+
+	return merged
 }
 
 type objectType int
@@ -229,7 +247,7 @@ var objectMetas = map[objectType]objectMeta{
 const tries int = 3
 const sleeptime time.Duration = 300 * time.Millisecond
 
-func labelDeployResults(labels map[string]string, results []deploy.Artifact) {
+func labelDeployResults(labels map[string]string, results []Artifact) {
 	// use the kubectl client to update all k8s objects with a skaffold watermark
 	client, err := kubernetes.Client()
 	if err != nil {
@@ -271,7 +289,7 @@ func retrieveNamespace(ns string, m metav1.ObjectMeta) string {
 }
 
 // TODO(nkubala): change this to use the client-go dynamic client or something equally clean
-func updateRuntimeObject(client clientgo.Interface, labels map[string]string, res deploy.Artifact) error {
+func updateRuntimeObject(client clientgo.Interface, labels map[string]string, res Artifact) error {
 	for k, v := range constants.Labels.DefaultLabels {
 		labels[k] = v
 	}

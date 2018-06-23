@@ -29,7 +29,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
@@ -71,7 +70,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 		return nil, errors.Wrap(err, "parsing skaffold deploy config")
 	}
 
-	deployer = label.WithLabels(deployer, opts, builder, deployer, tagger)
+	deployer = deploy.WithLabels(deployer, opts, builder, deployer, tagger)
 	builder, deployer = WithTimings(builder, deployer)
 	if opts.Notification {
 		deployer = WithNotification(deployer)
