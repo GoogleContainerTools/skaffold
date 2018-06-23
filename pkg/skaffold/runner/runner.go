@@ -29,7 +29,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
@@ -45,33 +44,7 @@ type SkaffoldRunner struct {
 	watch.WatcherFactory
 	build.DependencyMapFactory
 
-	opts   *config.SkaffoldOptions
 	builds []build.Artifact
-}
-
-func (r *SkaffoldRunner) Labels() map[string]string {
-	labels := map[string]string{}
-	if r.opts != nil {
-		for k, v := range r.opts.Labels() {
-			labels[k] = v
-		}
-	}
-	if r.Builder != nil {
-		for k, v := range r.Builder.Labels() {
-			labels[k] = v
-		}
-	}
-	if r.Deployer != nil {
-		for k, v := range r.Deployer.Labels() {
-			labels[k] = v
-		}
-	}
-	if r.Tagger != nil {
-		for k, v := range r.Tagger.Labels() {
-			labels[k] = v
-		}
-	}
-	return labels
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
@@ -81,6 +54,11 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 		return nil, errors.Wrap(err, "getting current cluster context")
 	}
 	logrus.Infof("Using kubectl context: %s", kubeContext)
+
+	tagger, err := getTagger(cfg.Build.TagPolicy, opts.CustomTag)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing skaffold tag config")
+	}
 
 	builder, err := getBuilder(&cfg.Build, kubeContext)
 	if err != nil {
@@ -92,14 +70,10 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 		return nil, errors.Wrap(err, "parsing skaffold deploy config")
 	}
 
+	deployer = deploy.WithLabels(deployer, opts, builder, deployer, tagger)
 	builder, deployer = WithTimings(builder, deployer)
 	if opts.Notification {
 		deployer = WithNotification(deployer)
-	}
-
-	tagger, err := getTagger(cfg.Build.TagPolicy, opts.CustomTag)
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing skaffold tag config")
 	}
 
 	return &SkaffoldRunner{
@@ -108,7 +82,6 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 		Tagger:               tagger,
 		WatcherFactory:       watch.NewWatcher,
 		DependencyMapFactory: build.NewDependencyMap,
-		opts:                 opts,
 	}, nil
 }
 
@@ -183,11 +156,10 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*v1
 		return errors.Wrap(err, "build step")
 	}
 
-	dRes, err := r.Deploy(ctx, out, bRes)
+	_, err = r.Deploy(ctx, out, bRes)
 	if err != nil {
 		return errors.Wrap(err, "deploy step")
 	}
-	label.LabelDeployResults(r.Labels(), dRes)
 
 	return nil
 }
@@ -220,45 +192,26 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 	colorPicker := kubernetes.NewColorPicker(artifacts)
 	logger := kubernetes.NewLogAggregator(out, imageList, colorPicker)
 
-	onChange := func(changedPaths []string) error {
-		logger.Mute()
-		defer logger.Unmute()
-
-		changedArtifacts := depMap.ArtifactsForPaths(changedPaths)
-
-		bRes, err := r.Builder.Build(ctx, out, r.Tagger, changedArtifacts)
-		if err != nil {
-			if r.builds == nil {
-				return errors.Wrap(err, "exiting dev mode because the first build failed")
-			}
-
-			logrus.Warnln("Skipping Deploy due to build error:", err)
-			return nil
-		}
-
-		// Update which images are logged.
-		for _, build := range bRes {
-			imageList.Add(build.Tag)
-		}
-
-		// Make sure all artifacts are redeployed. Not only those that were just rebuilt.
-		r.builds = mergeWithPreviousBuilds(bRes, r.builds)
-
-		dRes, err := r.Deploy(ctx, out, r.builds)
-		label.LabelDeployResults(r.Labels(), dRes)
-		return err
-	}
-
 	onDeployChange := func(changedPaths []string) error {
 		logger.Mute()
-		defer logger.Unmute()
 
-		dRes, err := r.Deploy(ctx, out, r.builds)
-		label.LabelDeployResults(r.Labels(), dRes)
+		_, err := r.Deploy(ctx, out, r.builds)
+
+		logger.Unmute()
 		return err
 	}
 
-	if err := onChange(depMap.Paths()); err != nil {
+	onArtifactChange := func(changedPaths []string) error {
+		logger.Mute()
+
+		changedArtifacts := depMap.ArtifactsForPaths(changedPaths)
+		_, err = r.buildAndDeploy(ctx, out, changedArtifacts, imageList)
+
+		logger.Unmute()
+		return err
+	}
+
+	if err := onArtifactChange(depMap.Paths()); err != nil {
 		return nil, errors.Wrap(err, "first build")
 	}
 
@@ -270,13 +223,36 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 	// Watch files and rebuild
 	g, watchCtx := errgroup.WithContext(ctx)
 	g.Go(func() error {
-		return watcher.Start(watchCtx, out, onChange)
+		return watcher.Start(watchCtx, out, onArtifactChange)
 	})
 	g.Go(func() error {
 		return deployWatcher.Start(watchCtx, ioutil.Discard, onDeployChange)
 	})
 
 	return r.builds, g.Wait()
+}
+
+// buildAndDeploy builds a subset of the artifacts and deploys everything.
+func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact, images *kubernetes.ImageList) ([]deploy.Artifact, error) {
+	bRes, err := r.Builder.Build(ctx, out, r.Tagger, artifacts)
+	if err != nil {
+		if r.builds == nil {
+			return nil, errors.Wrap(err, "exiting dev mode because the first build failed")
+		}
+
+		logrus.Warnln("Skipping Deploy due to build error:", err)
+		return nil, nil
+	}
+
+	// Update which images are logged.
+	for _, build := range bRes {
+		images.Add(build.Tag)
+	}
+
+	// Make sure all artifacts are redeployed. Not only those that were just rebuilt.
+	r.builds = mergeWithPreviousBuilds(bRes, r.builds)
+
+	return r.Deploy(ctx, out, r.builds)
 }
 
 func mergeWithPreviousBuilds(builds, previous []build.Artifact) []build.Artifact {
