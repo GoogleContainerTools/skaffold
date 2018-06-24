@@ -26,12 +26,11 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/sirupsen/logrus"
 )
 
 var testBuilds = []build.Artifact{
@@ -48,59 +47,47 @@ var testBuildsFoo = []build.Artifact{
 	},
 }
 
-var testDeployConfig = &v1alpha2.DeployConfig{
-	DeployType: v1alpha2.DeployType{
-		HelmDeploy: &v1alpha2.HelmDeploy{
-			Releases: []v1alpha2.HelmRelease{
-				{
-					Name:      "skaffold-helm",
-					ChartPath: "examples/test",
-					Values: map[string]string{
-						"image.tag": "skaffold-helm",
-					},
-					Overrides: map[string]interface{}{
-						"foo": "bar",
-					},
-					SetValues: map[string]string{
-						"some.key": "somevalue",
-					},
-				},
+var testDeployConfig = &v1alpha2.HelmDeploy{
+	Releases: []v1alpha2.HelmRelease{
+		{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Values: map[string]string{
+				"image.tag": "skaffold-helm",
+			},
+			Overrides: map[string]interface{}{
+				"foo": "bar",
+			},
+			SetValues: map[string]string{
+				"some.key": "somevalue",
 			},
 		},
 	},
 }
 
-var testDeployConfigParameterUnmatched = &v1alpha2.DeployConfig{
-	DeployType: v1alpha2.DeployType{
-		HelmDeploy: &v1alpha2.HelmDeploy{
-			Releases: []v1alpha2.HelmRelease{
-				{
-					Name:      "skaffold-helm",
-					ChartPath: "examples/test",
-					Values: map[string]string{
-						"image.tag": "skaffold-helm-unmatched",
-					},
-				},
+var testDeployConfigParameterUnmatched = &v1alpha2.HelmDeploy{
+	Releases: []v1alpha2.HelmRelease{
+		{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Values: map[string]string{
+				"image.tag": "skaffold-helm-unmatched",
 			},
 		},
 	},
 }
 
-var testDeployFooWithPackaged = &v1alpha2.DeployConfig{
-	DeployType: v1alpha2.DeployType{
-		HelmDeploy: &v1alpha2.HelmDeploy{
-			Releases: []v1alpha2.HelmRelease{
-				{
-					Name:      "foo",
-					ChartPath: "testdata/foo",
-					Values: map[string]string{
-						"image.tag": "foo",
-					},
-					Packaged: &v1alpha2.HelmPackaged{
-						Version:    "0.1.2",
-						AppVersion: "1.2.3",
-					},
-				},
+var testDeployFooWithPackaged = &v1alpha2.HelmDeploy{
+	Releases: []v1alpha2.HelmRelease{
+		{
+			Name:      "foo",
+			ChartPath: "testdata/foo",
+			Values: map[string]string{
+				"image.tag": "foo",
+			},
+			Packaged: &v1alpha2.HelmPackaged{
+				Version:    "0.1.2",
+				AppVersion: "1.2.3",
 			},
 		},
 	},
