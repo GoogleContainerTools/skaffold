@@ -112,13 +112,13 @@ func getDeployer(cfg *v1alpha2.DeployConfig, kubeContext string, namespace strin
 		if err != nil {
 			return nil, errors.Wrap(err, "finding current directory")
 		}
-		return deploy.NewKubectlDeployer(cwd, cfg, kubeContext), nil
+		return deploy.NewKubectlDeployer(cwd, cfg.KubectlDeploy, kubeContext), nil
 
 	case cfg.HelmDeploy != nil:
-		return deploy.NewHelmDeployer(cfg, kubeContext, namespace), nil
+		return deploy.NewHelmDeployer(cfg.HelmDeploy, kubeContext, namespace), nil
 
 	case cfg.KustomizeDeploy != nil:
-		return deploy.NewKustomizeDeployer(cfg, kubeContext), nil
+		return deploy.NewKustomizeDeployer(cfg.KustomizeDeploy, kubeContext), nil
 
 	default:
 		return nil, fmt.Errorf("Unknown deployer for config %+v", cfg)

@@ -31,14 +31,15 @@ import (
 )
 
 type KustomizeDeployer struct {
-	*v1alpha2.DeployConfig
+	*v1alpha2.KustomizeDeploy
+
 	kubeContext string
 }
 
-func NewKustomizeDeployer(cfg *v1alpha2.DeployConfig, kubeContext string) *KustomizeDeployer {
+func NewKustomizeDeployer(cfg *v1alpha2.KustomizeDeploy, kubeContext string) *KustomizeDeployer {
 	return &KustomizeDeployer{
-		DeployConfig: cfg,
-		kubeContext:  kubeContext,
+		KustomizeDeploy: cfg,
+		kubeContext:     kubeContext,
 	}
 }
 

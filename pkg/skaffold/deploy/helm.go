@@ -39,18 +39,19 @@ import (
 )
 
 type HelmDeployer struct {
-	*v1alpha2.DeployConfig
+	*v1alpha2.HelmDeploy
+
 	kubeContext string
 	namespace   string
 }
 
 // NewHelmDeployer returns a new HelmDeployer for a DeployConfig filled
 // with the needed configuration for `helm`
-func NewHelmDeployer(cfg *v1alpha2.DeployConfig, kubeContext string, namespace string) *HelmDeployer {
+func NewHelmDeployer(cfg *v1alpha2.HelmDeploy, kubeContext string, namespace string) *HelmDeployer {
 	return &HelmDeployer{
-		DeployConfig: cfg,
-		kubeContext:  kubeContext,
-		namespace:    namespace,
+		HelmDeploy:  cfg,
+		kubeContext: kubeContext,
+		namespace:   namespace,
 	}
 }
 
@@ -62,7 +63,7 @@ func (h *HelmDeployer) Labels() map[string]string {
 
 func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
 	deployResults := []Artifact{}
-	for _, r := range h.HelmDeploy.Releases {
+	for _, r := range h.Releases {
 		results, err := h.deployRelease(out, r, builds)
 		if err != nil {
 			releaseName, _ := evaluateReleaseName(r.Name)
@@ -80,7 +81,7 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 
 // Cleanup deletes what was deployed by calling Deploy.
 func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
-	for _, r := range h.HelmDeploy.Releases {
+	for _, r := range h.Releases {
 		if err := h.deleteRelease(out, r); err != nil {
 			releaseName, _ := evaluateReleaseName(r.Name)
 			return errors.Wrapf(err, "deploying %s", releaseName)

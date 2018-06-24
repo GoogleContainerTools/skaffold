@@ -59,7 +59,7 @@ spec:
 func TestKubectlDeploy(t *testing.T) {
 	var tests = []struct {
 		description string
-		cfg         *v1alpha2.DeployConfig
+		cfg         *v1alpha2.KubectlDeploy
 		builds      []build.Artifact
 		command     util.Command
 		shouldErr   bool
@@ -67,12 +67,8 @@ func TestKubectlDeploy(t *testing.T) {
 		{
 			description: "parameter mismatch",
 			shouldErr:   true,
-			cfg: &v1alpha2.DeployConfig{
-				DeployType: v1alpha2.DeployType{
-					KubectlDeploy: &v1alpha2.KubectlDeploy{
-						Manifests: []string{"test/deployment.yaml"},
-					},
-				},
+			cfg: &v1alpha2.KubectlDeploy{
+				Manifests: []string{"test/deployment.yaml"},
 			},
 			builds: []build.Artifact{
 				{
@@ -84,12 +80,8 @@ func TestKubectlDeploy(t *testing.T) {
 		{
 			description: "missing manifest file",
 			shouldErr:   true,
-			cfg: &v1alpha2.DeployConfig{
-				DeployType: v1alpha2.DeployType{
-					KubectlDeploy: &v1alpha2.KubectlDeploy{
-						Manifests: []string{"test/deployment.yaml"},
-					},
-				},
+			cfg: &v1alpha2.KubectlDeploy{
+				Manifests: []string{"test/deployment.yaml"},
 			},
 			builds: []build.Artifact{
 				{
@@ -100,12 +92,8 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success",
-			cfg: &v1alpha2.DeployConfig{
-				DeployType: v1alpha2.DeployType{
-					KubectlDeploy: &v1alpha2.KubectlDeploy{
-						Manifests: []string{"test/deployment.yaml"},
-					},
-				},
+			cfg: &v1alpha2.KubectlDeploy{
+				Manifests: []string{"test/deployment.yaml"},
 			},
 			command: testutil.NewFakeCmd("kubectl --context kubecontext apply -f -", nil),
 			builds: []build.Artifact{
@@ -118,12 +106,8 @@ func TestKubectlDeploy(t *testing.T) {
 		{
 			description: "deploy command error",
 			shouldErr:   true,
-			cfg: &v1alpha2.DeployConfig{
-				DeployType: v1alpha2.DeployType{
-					KubectlDeploy: &v1alpha2.KubectlDeploy{
-						Manifests: []string{"test/deployment.yaml"},
-					},
-				},
+			cfg: &v1alpha2.KubectlDeploy{
+				Manifests: []string{"test/deployment.yaml"},
 			},
 			command: testutil.NewFakeCmd("kubectl --context kubecontext apply -f -", fmt.Errorf("")),
 			builds: []build.Artifact{
@@ -159,29 +143,21 @@ func TestKubectlDeploy(t *testing.T) {
 func TestKubectlCleanup(t *testing.T) {
 	var tests = []struct {
 		description string
-		cfg         *v1alpha2.DeployConfig
+		cfg         *v1alpha2.KubectlDeploy
 		command     util.Command
 		shouldErr   bool
 	}{
 		{
 			description: "cleanup success",
-			cfg: &v1alpha2.DeployConfig{
-				DeployType: v1alpha2.DeployType{
-					KubectlDeploy: &v1alpha2.KubectlDeploy{
-						Manifests: []string{"test/deployment.yaml"},
-					},
-				},
+			cfg: &v1alpha2.KubectlDeploy{
+				Manifests: []string{"test/deployment.yaml"},
 			},
 			command: testutil.NewFakeCmd("kubectl --context kubecontext delete -f -", nil),
 		},
 		{
 			description: "cleanup error",
-			cfg: &v1alpha2.DeployConfig{
-				DeployType: v1alpha2.DeployType{
-					KubectlDeploy: &v1alpha2.KubectlDeploy{
-						Manifests: []string{"test/deployment.yaml"},
-					},
-				},
+			cfg: &v1alpha2.KubectlDeploy{
+				Manifests: []string{"test/deployment.yaml"},
 			},
 			command:   testutil.NewFakeCmd("kubectl --context kubecontext delete -f -", errors.New("BUG")),
 			shouldErr: true,

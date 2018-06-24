@@ -37,7 +37,7 @@ import (
 
 // KubectlDeployer deploys workflows using kubectl CLI.
 type KubectlDeployer struct {
-	*v1alpha2.DeployConfig
+	*v1alpha2.KubectlDeploy
 
 	workingDir  string
 	kubeContext string
@@ -45,11 +45,11 @@ type KubectlDeployer struct {
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(workingDir string, cfg *v1alpha2.DeployConfig, kubeContext string) *KubectlDeployer {
+func NewKubectlDeployer(workingDir string, cfg *v1alpha2.KubectlDeploy, kubeContext string) *KubectlDeployer {
 	return &KubectlDeployer{
-		DeployConfig: cfg,
-		workingDir:   workingDir,
-		kubeContext:  kubeContext,
+		KubectlDeploy: cfg,
+		workingDir:    workingDir,
+		kubeContext:   kubeContext,
 	}
 }
 
@@ -141,7 +141,7 @@ func parseManifestsForDeploys(manifests manifestList) ([]Artifact, error) {
 
 // readManifests reads the manifests to deploy/delete.
 func (k *KubectlDeployer) readManifests() (manifestList, error) {
-	files, err := k.manifestFiles(k.KubectlDeploy.Manifests)
+	files, err := k.manifestFiles(k.Manifests)
 	if err != nil {
 		return nil, errors.Wrap(err, "expanding user manifest list")
 	}
@@ -159,7 +159,7 @@ func (k *KubectlDeployer) readManifests() (manifestList, error) {
 		}
 	}
 
-	for _, m := range k.KubectlDeploy.RemoteManifests {
+	for _, m := range k.RemoteManifests {
 		manifest, err := k.readRemoteManifest(m)
 		if err != nil {
 			return nil, errors.Wrap(err, "get remote manifests")
