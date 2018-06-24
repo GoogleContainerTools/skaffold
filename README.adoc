@@ -82,7 +82,7 @@ You will need the following components to get started with Skaffold:
 . Kubernetes Cluster
    -  link:https://kubernetes.io/docs/tasks/tools/install-minikube/[Minikube],
       link:https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-container-cluster[GKE],
-      link:https://docs.docker.com/docker-for-windows/install/[Docker for Mac (Edge)] and link:https://docs.docker.com/docker-for-mac/install/[Docker for Windows (Edge)]
+      link:https://docs.docker.com/docker-for-mac/install/[Docker for Mac (Edge)] and link:https://docs.docker.com/docker-for-windows/install/[Docker for Windows (Edge)]
       have been tested but any Kubernetes cluster will work.
 
 . link:https://kubernetes.io/docs/tasks/tools/install-kubectl/[kubectl]
