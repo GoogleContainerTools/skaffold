@@ -18,8 +18,11 @@ package docker
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
@@ -36,35 +39,26 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type BuildOptions struct {
-	ImageName   string
-	Dockerfile  string
-	ContextDir  string
-	ProgressBuf io.Writer
-	BuildBuf    io.Writer
-	BuildArgs   map[string]*string
-	CacheFrom   []string
-}
-
 // RunBuild performs a docker build and returns nothing
-func RunBuild(ctx context.Context, cli APIClient, opts *BuildOptions) error {
-	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", opts.ContextDir, opts.Dockerfile)
+func RunBuild(ctx context.Context, out io.Writer, cli APIClient, workspace string, opts types.ImageBuildOptions) error {
+	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, opts.Dockerfile)
+
+	// Add a sanity check to check if the dockerfile exists before running the build
+	if _, err := os.Stat(filepath.Join(workspace, opts.Dockerfile)); err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("Could not find dockerfile: %s", opts.Dockerfile)
+		}
+		return errors.Wrap(err, "stat dockerfile")
+	}
 
 	// Like `docker build`, we ignore the errors
 	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
 	authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs()
-
-	imageBuildOpts := types.ImageBuildOptions{
-		Tags:        []string{opts.ImageName},
-		Dockerfile:  opts.Dockerfile,
-		BuildArgs:   opts.BuildArgs,
-		AuthConfigs: authConfigs,
-		CacheFrom:   opts.CacheFrom,
-	}
+	opts.AuthConfigs = authConfigs
 
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := CreateDockerTarContext(buildCtxWriter, opts.Dockerfile, opts.ContextDir)
+		err := CreateDockerTarContext(buildCtxWriter, opts.Dockerfile, workspace)
 		if err != nil {
 			buildCtxWriter.CloseWithError(errors.Wrap(err, "creating docker context"))
 			return
@@ -72,15 +66,15 @@ func RunBuild(ctx context.Context, cli APIClient, opts *BuildOptions) error {
 		buildCtxWriter.Close()
 	}()
 
-	progressOutput := streamformatter.NewProgressOutput(opts.ProgressBuf)
+	progressOutput := streamformatter.NewProgressOutput(out)
 	body := progress.NewProgressReader(buildCtx, progressOutput, 0, "", "Sending build context to Docker daemon")
 
-	resp, err := cli.ImageBuild(ctx, body, imageBuildOpts)
+	resp, err := cli.ImageBuild(ctx, body, opts)
 	if err != nil {
 		return errors.Wrap(err, "docker build")
 	}
 	defer resp.Body.Close()
-	return StreamDockerMessages(opts.BuildBuf, resp.Body)
+	return StreamDockerMessages(out, resp.Body)
 }
 
 // StreamDockerMessages streams formatted json output from the docker daemon

@@ -20,14 +20,13 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/docker/docker/api/types"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -76,14 +75,14 @@ func (l *LocalBuilder) Labels() map[string]string {
 }
 
 func (l *LocalBuilder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *v1alpha2.Artifact) (string, error) {
-	if artifact.DockerArtifact != nil {
-		return l.buildDocker(ctx, out, artifact)
+	switch {
+	case artifact.DockerArtifact != nil:
+		return l.buildDocker(ctx, out, artifact.Workspace, artifact.DockerArtifact)
+	case artifact.BazelArtifact != nil:
+		return l.buildBazel(ctx, out, artifact.Workspace, artifact.BazelArtifact)
+	default:
+		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 	}
-	if artifact.BazelArtifact != nil {
-		return l.buildBazel(ctx, out, artifact)
-	}
-
-	return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 }
 
 // Build runs a docker build on the host and tags the resulting image with
@@ -141,24 +140,14 @@ func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagg
 	return builds, nil
 }
 
-func (l *LocalBuilder) buildDocker(ctx context.Context, out io.Writer, a *v1alpha2.Artifact) (string, error) {
-	// Add a sanity check to check if the dockerfile exists before running the build
-	if _, err := os.Stat(filepath.Join(a.Workspace, a.DockerArtifact.DockerfilePath)); err != nil {
-		if os.IsNotExist(err) {
-			return "", fmt.Errorf("Could not find dockerfile: %s", a.DockerArtifact.DockerfilePath)
-		}
-		return "", errors.Wrap(err, "stat dockerfile")
-	}
-
+func (l *LocalBuilder) buildDocker(ctx context.Context, out io.Writer, workspace string, a *v1alpha2.DockerArtifact) (string, error) {
 	initialTag := util.RandomID()
-	err := docker.RunBuild(ctx, l.api, &docker.BuildOptions{
-		ImageName:   initialTag,
-		Dockerfile:  a.DockerArtifact.DockerfilePath,
-		ContextDir:  a.Workspace,
-		ProgressBuf: out,
-		BuildBuf:    out,
-		BuildArgs:   a.DockerArtifact.BuildArgs,
-		CacheFrom:   a.DockerArtifact.CacheFrom,
+
+	err := docker.RunBuild(ctx, out, l.api, workspace, types.ImageBuildOptions{
+		Tags:       []string{initialTag},
+		Dockerfile: a.DockerfilePath,
+		BuildArgs:  a.BuildArgs,
+		CacheFrom:  a.CacheFrom,
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "running build")
