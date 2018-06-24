@@ -53,7 +53,8 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *Opt
 func generateNameGitShellOut(workingDir string, opts *Options) (string, error) {
 	root, err := runGit(workingDir, "rev-parse", "--show-toplevel")
 	if err != nil {
-		return "", errors.Wrap(err, "getting git root")
+		logrus.Warnln("Using digest instead of git commit", err)
+		return nonGitTag(opts), nil
 	}
 
 	commitHash, err := runGit(root, "rev-parse", "HEAD")
@@ -88,7 +89,8 @@ func generateNameGitShellOut(workingDir string, opts *Options) (string, error) {
 func generateNameGoGit(workingDir string, opts *Options) (string, error) {
 	repo, err := git.PlainOpenWithOptions(workingDir, &git.PlainOpenOptions{DetectDotGit: true})
 	if err != nil {
-		return "", errors.Wrap(err, "opening git repo")
+		logrus.Warnln("Using digest instead of git commit", err)
+		return nonGitTag(opts), nil
 	}
 
 	w, err := repo.Worktree()
@@ -207,10 +209,16 @@ func isDirty(root, workingDir string, changes []string) (bool, error) {
 	return false, nil
 }
 
-func dirtyTag(currentTag string, opts *Options) string {
-	shortDigest := strings.TrimPrefix(opts.Digest, "sha256:")[0:7]
+func shortDigest(opts *Options) string {
+	return strings.TrimPrefix(opts.Digest, "sha256:")[0:7]
+}
 
-	return fmt.Sprintf("%s:%s-dirty-%s", opts.ImageName, currentTag, shortDigest)
+func dirtyTag(currentTag string, opts *Options) string {
+	return fmt.Sprintf("%s:%s-dirty-%s", opts.ImageName, currentTag, shortDigest(opts))
+}
+
+func nonGitTag(opts *Options) string {
+	return fmt.Sprintf("%s:dirty-%s", opts.ImageName, shortDigest(opts))
 }
 
 func changedPaths(status git.Status) []string {

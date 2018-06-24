@@ -184,9 +184,11 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			subDir: "artifact2",
 		},
 		{
-			description:   "failure",
-			createGitRepo: func(dir string) {},
-			shouldErr:     true,
+			description:  "non git repo",
+			expectedName: "test:dirty-abababa",
+			createGitRepo: func(dir string) {
+				ioutil.WriteFile(filepath.Join(dir, "source.go"), []byte("code"), os.ModePerm)
+			},
 		},
 	}
 
