@@ -142,7 +142,6 @@ func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagg
 }
 
 func (l *LocalBuilder) buildDocker(ctx context.Context, out io.Writer, a *v1alpha2.Artifact) (string, error) {
-	initialTag := util.RandomID()
 	// Add a sanity check to check if the dockerfile exists before running the build
 	if _, err := os.Stat(filepath.Join(a.Workspace, a.DockerArtifact.DockerfilePath)); err != nil {
 		if os.IsNotExist(err) {
@@ -150,6 +149,8 @@ func (l *LocalBuilder) buildDocker(ctx context.Context, out io.Writer, a *v1alph
 		}
 		return "", errors.Wrap(err, "stat dockerfile")
 	}
+
+	initialTag := util.RandomID()
 	err := docker.RunBuild(ctx, l.api, &docker.BuildOptions{
 		ImageName:   initialTag,
 		Dockerfile:  a.DockerArtifact.DockerfilePath,
@@ -157,9 +158,11 @@ func (l *LocalBuilder) buildDocker(ctx context.Context, out io.Writer, a *v1alph
 		ProgressBuf: out,
 		BuildBuf:    out,
 		BuildArgs:   a.DockerArtifact.BuildArgs,
+		CacheFrom:   a.DockerArtifact.CacheFrom,
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "running build")
 	}
+
 	return fmt.Sprintf("%s:latest", initialTag), nil
 }

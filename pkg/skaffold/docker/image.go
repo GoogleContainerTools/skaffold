@@ -43,6 +43,7 @@ type BuildOptions struct {
 	ProgressBuf io.Writer
 	BuildBuf    io.Writer
 	BuildArgs   map[string]*string
+	CacheFrom   []string
 }
 
 // RunBuild performs a docker build and returns nothing
@@ -58,6 +59,7 @@ func RunBuild(ctx context.Context, cli APIClient, opts *BuildOptions) error {
 		Dockerfile:  opts.Dockerfile,
 		BuildArgs:   opts.BuildArgs,
 		AuthConfigs: authConfigs,
+		CacheFrom:   opts.CacheFrom,
 	}
 
 	buildCtx, buildCtxWriter := io.Pipe()
