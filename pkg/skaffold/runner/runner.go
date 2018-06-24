@@ -89,15 +89,15 @@ func getBuilder(cfg *v1alpha2.BuildConfig, kubeContext string) (build.Builder, e
 	switch {
 	case cfg.LocalBuild != nil:
 		logrus.Debugf("Using builder: local")
-		return build.NewLocalBuilder(cfg, kubeContext)
+		return build.NewLocalBuilder(cfg.LocalBuild, kubeContext)
 
 	case cfg.GoogleCloudBuild != nil:
 		logrus.Debugf("Using builder: google cloud")
-		return build.NewGoogleCloudBuilder(cfg)
+		return build.NewGoogleCloudBuilder(cfg.GoogleCloudBuild)
 
 	case cfg.KanikoBuild != nil:
 		logrus.Debugf("Using builder: kaniko")
-		return build.NewKanikoBuilder(cfg)
+		return build.NewKanikoBuilder(cfg.KanikoBuild)
 
 	default:
 		return nil, fmt.Errorf("Unknown builder for config %+v", cfg)

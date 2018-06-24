@@ -34,7 +34,7 @@ import (
 
 // LocalBuilder uses the host docker daemon to build and tag the image
 type LocalBuilder struct {
-	*v1alpha2.BuildConfig
+	*v1alpha2.LocalBuild
 
 	api          docker.APIClient
 	localCluster bool
@@ -42,23 +42,23 @@ type LocalBuilder struct {
 }
 
 // NewLocalBuilder returns an new instance of a LocalBuilder
-func NewLocalBuilder(cfg *v1alpha2.BuildConfig, kubeContext string) (*LocalBuilder, error) {
+func NewLocalBuilder(cfg *v1alpha2.LocalBuild, kubeContext string) (*LocalBuilder, error) {
 	api, err := docker.NewAPIClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
 
 	l := &LocalBuilder{
-		BuildConfig: cfg,
+		LocalBuild: cfg,
 
 		kubeContext:  kubeContext,
 		api:          api,
 		localCluster: kubeContext == constants.DefaultMinikubeContext || kubeContext == constants.DefaultDockerForDesktopContext,
 	}
 
-	if cfg.LocalBuild.SkipPush == nil {
+	if cfg.SkipPush == nil {
 		logrus.Debugf("skipPush value not present. defaulting to cluster default %t (minikube=true, d4d=true, gke=false)", l.localCluster)
-		cfg.LocalBuild.SkipPush = &l.localCluster
+		cfg.SkipPush = &l.localCluster
 	}
 
 	return l, nil
@@ -126,7 +126,7 @@ func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagg
 		if _, err := io.WriteString(out, fmt.Sprintf("Successfully tagged %s\n", tag)); err != nil {
 			return nil, errors.Wrap(err, "writing tag status")
 		}
-		if !*l.LocalBuild.SkipPush {
+		if !*l.SkipPush {
 			if err := docker.RunPush(ctx, l.api, tag, out); err != nil {
 				return nil, errors.Wrap(err, "running push")
 			}
