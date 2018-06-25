@@ -63,6 +63,21 @@ func StrSliceContains(sl []string, s string) bool {
 	return false
 }
 
+func UniqueStrSlice(values []string) []string {
+	var unique []string
+
+	m := make(map[string]bool)
+	for _, value := range values {
+		m[value] = true
+	}
+	for value := range m {
+		unique = append(unique, value)
+	}
+
+	sort.Strings(unique)
+	return unique
+}
+
 // ExpandPathsGlob expands paths according to filepath.Glob patterns
 // Returns a list of unique files that match the glob patterns passed in.
 func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {

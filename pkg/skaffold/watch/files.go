@@ -23,7 +23,9 @@ import (
 	"sort"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 //TODO(@r2d4): Figure out best UX to support configuring this blacklist
@@ -59,25 +61,11 @@ func NewFileWatcher(dirs []string, pollInterval time.Duration) (FileWatcher, err
 	}, nil
 }
 
-func uniqueDirs(dirs []string) []string {
-	var unique []string
-
-	m := make(map[string]bool)
-	for _, dir := range dirs {
-		m[dir] = true
-	}
-	for dir := range m {
-		unique = append(unique, dir)
-	}
-
-	sort.Strings(unique)
-	return unique
-}
-
 func walk(dirs []string) (fileMap, error) {
 	m := make(fileMap)
 
-	for _, dir := range uniqueDirs(dirs) {
+	uniqueDirs := util.UniqueStrSlice(dirs)
+	for _, dir := range uniqueDirs {
 		err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
@@ -153,7 +141,7 @@ func (w *fileWatcher) Run(ctx context.Context, callback FileChangedFn) error {
 
 			changesSinceLastTick := computeDiff(previousFiles, files)
 			if len(changesSinceLastTick) > 0 {
-				// fmt.Println("First change detected")
+				logrus.Debugln("First change detected")
 			} else if len(previousDiff) > 0 {
 				diff := computeDiff(w.files, files)
 				if len(diff) > 0 {
