@@ -80,7 +80,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			opts: &Options{
 				ImageName: "test",
 			},
-			expectedName: "test:eefe1b9-dirty-af8de1fde8be4367",
+			expectedName: "test:eefe1b9-dirty-8b8c4dad90faa822",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -95,7 +95,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 				ImageName: "test",
 				Digest:    "sha256:12345abcde",
 			},
-			expectedName: "test:eefe1b9-dirty-af8de1fde8be4367",
+			expectedName: "test:eefe1b9-dirty-8b8c4dad90faa822",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -110,7 +110,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			opts: &Options{
 				ImageName: "test",
 			},
-			expectedName: "test:eefe1b9-dirty-bfe9b4566c9d3fec",
+			expectedName: "test:eefe1b9-dirty-e0bc2923501f63b7",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -154,7 +154,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			opts: &Options{
 				ImageName: "test",
 			},
-			expectedName: "test:eefe1b9-dirty-9c858d88cc0bf792",
+			expectedName: "test:eefe1b9-dirty-c9417af5dc664b60",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -168,7 +168,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			opts: &Options{
 				ImageName: "test",
 			},
-			expectedName: "test:eefe1b9-dirty-6534adc17ccd1cf4", // Must be <> each time a new name is used
+			expectedName: "test:eefe1b9-dirty-91fd2028ff0a5cf3", // Must be <> each time a new name is used
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -195,7 +195,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			opts: &Options{
 				ImageName: "test",
 			},
-			expectedName: "test:a7b32a6-dirty-83715cdc64e43ee9",
+			expectedName: "test:a7b32a6-dirty-2dfb095d0f4830ad",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					mkdir("sub/sub").

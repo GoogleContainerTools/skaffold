@@ -21,8 +21,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"io"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
@@ -152,7 +150,8 @@ func commitOrTag(currentTag string, tags []string, opts *Options) string {
 	return fmt.Sprintf("%s:%s", opts.ImageName, currentTag)
 }
 
-// The file state is dirty. To generate a unique suffix, let's hash all the modified files.
+// The file state is dirty. To generate a unique suffix, let's hash the diffs
+// of all modified files.
 // We add a -dirty-unique-id suffix to work well with local iterations.
 func dirtyTag(root string, opts *Options, currentTag string, lines []string) (string, error) {
 	h := sha256.New()
@@ -162,25 +161,23 @@ func dirtyTag(root string, opts *Options, currentTag string, lines []string) (st
 		}
 
 		if _, err := h.Write([]byte(statusLine)); err != nil {
-			return "", errors.Wrap(err, "adding deleted file to diff")
+			return "", errors.Wrap(err, "adding status line to hash")
 		}
 
+		// If the file has been deleted, there's no diff to generate.
 		if strings.HasPrefix(statusLine, "D") {
 			continue
 		}
 
-		changedPath := strings.Trim(statusLine[2:], " ")
-		f, err := os.Open(filepath.Join(root, changedPath))
+		changedPath := filepath.Join(root, strings.Trim(statusLine[2:], " "))
+		diff, err := runGit(root, "diff", changedPath)
 		if err != nil {
 			return "", errors.Wrap(err, "reading diff")
 		}
 
-		if _, err := io.Copy(h, f); err != nil {
-			f.Close()
-			return "", errors.Wrap(err, "reading diff")
+		if _, err := h.Write([]byte(diff)); err != nil {
+			return "", errors.Wrap(err, "adding diff to hash")
 		}
-
-		f.Close()
 	}
 
 	sha := h.Sum(nil)
