@@ -18,97 +18,53 @@ package watch
 
 import (
 	"context"
-	"fmt"
-	"io"
-	"os"
-	"sort"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 )
 
-// WatcherFactory can build Watchers from a list of files to be watched for changes
-type WatcherFactory func(paths []string) (Watcher, error)
+// Factory is used to create Watchers.
+type Factory func(files []string, artifacts []*v1alpha2.Artifact, pollInterval time.Duration) CompositeWatcher
 
-// Watcher provides a watch trigger for the skaffold pipeline to begin
-type Watcher interface {
-	// Start watches a set of files for changes, and calls `onChange`
-	// on each file change.
-	Start(ctx context.Context, out io.Writer, onChange func([]string) error) error
+// CompositeWatcher can watch both files and artifacts.
+type CompositeWatcher interface {
+	Run(ctx context.Context, onFileChange FileChangedFn, onArtifactChange ArtifactChangedFn) error
 }
 
-// mtimeWatcher uses polling on file mTimes.
-type mtimeWatcher struct {
-	files map[string]time.Time
+type compositeWatcher struct {
+	files        []string
+	artifacts    []*v1alpha2.Artifact
+	pollInterval time.Duration
 }
 
-func (m *mtimeWatcher) Start(ctx context.Context, out io.Writer, onChange func([]string) error) error {
-	c := time.NewTicker(2 * time.Second)
-	defer c.Stop()
-
-	changedPaths := map[string]bool{}
-
-	fmt.Fprintln(out, "Watching for changes...")
-	for {
-		select {
-		case <-c.C:
-			// add things to changedpaths
-			for f := range m.files {
-				fi, err := os.Stat(f)
-				if err != nil {
-					return errors.Wrapf(err, "statting file %s", f)
-				}
-				mtime, ok := m.files[f]
-				if !ok {
-					logrus.Warningf("file %s not found.", f)
-					continue
-				}
-				if mtime != fi.ModTime() {
-					m.files[f] = fi.ModTime()
-					changedPaths[f] = true
-				}
-			}
-			if len(changedPaths) > 0 {
-				if err := onChange(sortedPaths(changedPaths)); err != nil {
-					return errors.Wrap(err, "change callback")
-				}
-				logrus.Debugf("Files changed: %v", changedPaths)
-				changedPaths = map[string]bool{}
-			}
-		case <-ctx.Done():
-			return nil
-		}
+// NewCompositeWatcher creates a CompositeWatcher that watches both files and artifacts.
+func NewCompositeWatcher(files []string, artifacts []*v1alpha2.Artifact, pollInterval time.Duration) CompositeWatcher {
+	return &compositeWatcher{
+		files:        files,
+		artifacts:    artifacts,
+		pollInterval: pollInterval,
 	}
 }
 
-// NewWatcher creates a new Watcher on a list of files.
-func NewWatcher(paths []string) (Watcher, error) {
-	logrus.Info("Starting mtime file watcher.")
-
-	sort.Strings(paths)
-
-	files := map[string]time.Time{}
-	for _, p := range paths {
-		fi, err := os.Stat(p)
-		if err != nil {
-			return nil, errors.Wrapf(err, "statting file %s", p)
-		}
-		files[p] = fi.ModTime()
+func (w *compositeWatcher) Run(ctx context.Context, onFileChange FileChangedFn, onArtifactChange ArtifactChangedFn) error {
+	artifactWatcher, err := NewArtifactWatcher(w.artifacts, w.pollInterval)
+	if err != nil {
+		return errors.Wrap(err, "watching artifacts")
 	}
 
-	return &mtimeWatcher{
-		files: files,
-	}, nil
-}
-
-func sortedPaths(changedPaths map[string]bool) []string {
-	var paths []string
-
-	for path := range changedPaths {
-		paths = append(paths, path)
+	fileWatcher, err := NewFileWatcher(w.files, w.pollInterval)
+	if err != nil {
+		return errors.Wrap(err, "watching files")
 	}
 
-	sort.Strings(paths)
-	return paths
+	g, watchCtx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		return artifactWatcher.Run(watchCtx, onArtifactChange)
+	})
+	g.Go(func() error {
+		return fileWatcher.Run(watchCtx, onFileChange)
+	})
+	return g.Wait()
 }
