@@ -4,17 +4,16 @@ build:
   tagPolicy:
     sha256: {}
   artifacts:
-  - imageName: skaffold-helm
+  - imageName: gcr.io/k8s-skaffold/skaffold-helm
 deploy:
   helm:
     releases:
     - name: skaffold-helm
       chartPath: skaffold-helm
-      namespace: skaffold
       #wait: true
       #valuesFilePath: helm-skaffold-values.yaml
       values:
-        image: skaffold-helm
+        image: gcr.io/k8s-skaffold/skaffold-helm
       #overrides builds an override values.yaml file to run with the helm deploy
       #overrides:
       # some:
