@@ -58,8 +58,8 @@ func readDockerfile(workspace, dockerfilePath string) ([]string, error) {
 		return nil, errors.Wrap(err, "parsing dockerfile")
 	}
 
+	var copied [][]string
 	envs := map[string]string{}
-	depMap := map[string]struct{}{}
 	// First process onbuilds, if present.
 	onbuildsImages := [][]string{}
 	for _, value := range res.AST.Children {
@@ -77,7 +77,10 @@ func readDockerfile(workspace, dockerfilePath string) ([]string, error) {
 		for _, value := range r.AST.Children {
 			switch value.Value {
 			case add, copy:
-				processCopy(value, depMap, envs)
+				files, _ := processCopy(value, envs)
+				if len(files) > 0 {
+					copied = append(copied, files)
+				}
 			case env:
 				envs[value.Next.Value] = value.Next.Next.Value
 			}
@@ -96,29 +99,38 @@ func readDockerfile(workspace, dockerfilePath string) ([]string, error) {
 	dispatchInstructions(res)
 
 	expandedPaths := make(map[string]bool)
-	for p := range depMap {
-		path := filepath.Join(workspace, p)
+	for _, files := range copied {
+		matchesOne := false
 
-		if _, err := os.Stat(path); err == nil {
-			expandedPaths[p] = true
-			continue
-		}
-
-		files, err := filepath.Glob(path)
-		if err != nil {
-			return nil, errors.Wrap(err, "invalid glob pattern")
-		}
-		if files == nil {
-			return nil, fmt.Errorf("file pattern must match at least one file %s", path)
-		}
-
-		for _, f := range files {
-			rel, err := filepath.Rel(workspace, f)
-			if err != nil {
-				return nil, fmt.Errorf("getting relative path of %s", f)
+		for _, p := range files {
+			path := filepath.Join(workspace, p)
+			if _, err := os.Stat(path); err == nil {
+				expandedPaths[p] = true
+				matchesOne = true
+				continue
 			}
 
-			expandedPaths[rel] = true
+			files, err := filepath.Glob(path)
+			if err != nil {
+				return nil, errors.Wrap(err, "invalid glob pattern")
+			}
+			if files == nil {
+				continue
+			}
+
+			for _, f := range files {
+				rel, err := filepath.Rel(workspace, f)
+				if err != nil {
+					return nil, fmt.Errorf("getting relative path of %s", f)
+				}
+
+				expandedPaths[rel] = true
+			}
+			matchesOne = true
+		}
+
+		if !matchesOne {
+			return nil, fmt.Errorf("file pattern %s must match at least one file", files)
 		}
 	}
 
@@ -262,7 +274,9 @@ func retrieveRemoteConfig(identifier string) (*v1.ConfigFile, error) {
 	return img.ConfigFile()
 }
 
-func processCopy(value *parser.Node, paths map[string]struct{}, envs map[string]string) error {
+func processCopy(value *parser.Node, envs map[string]string) ([]string, error) {
+	var copied []string
+
 	slex := shell.NewLex('\\')
 	for {
 		// Skip last node, since it is the destination, and stop if we arrive at a comment
@@ -271,22 +285,23 @@ func processCopy(value *parser.Node, paths map[string]struct{}, envs map[string]
 		}
 		src, err := processShellWord(slex, value.Next.Value, envs)
 		if err != nil {
-			return errors.Wrap(err, "processing word")
+			return nil, errors.Wrap(err, "processing word")
 		}
 		// If the --from flag is provided, we are dealing with a multi-stage dockerfile
 		// Adding a dependency from a different stage does not imply a source dependency
 		if hasMultiStageFlag(value.Flags) {
-			return nil
+			return nil, nil
 		}
 		if !strings.HasPrefix(src, "http://") && !strings.HasPrefix(src, "https://") {
-			paths[src] = struct{}{}
+			copied = append(copied, src)
 		} else {
 			logrus.Debugf("Skipping watch on remote dependency %s", src)
 		}
 
 		value = value.Next
 	}
-	return nil
+
+	return copied, nil
 }
 
 func processShellWord(lex *shell.Lex, word string, envs map[string]string) (string, error) {
