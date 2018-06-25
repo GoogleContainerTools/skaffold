@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -55,6 +56,15 @@ spec:
         image: leeroy-web
         ports:
         - containerPort: 8080`
+
+type fakeWarner struct {
+	warnings []string
+}
+
+func (l *fakeWarner) Warnf(format string, args ...interface{}) {
+	l.warnings = append(l.warnings, fmt.Sprintf(format, args...))
+	sort.Strings(l.warnings)
+}
 
 func TestKubectlDeploy(t *testing.T) {
 	var tests = []struct {
@@ -203,6 +213,8 @@ spec:
     name: other
   - image: gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883
     name: digest
+  - image: skaffold/usedbyfqn:TAG
+  - image: skaffold/usedwrongfqn:OTHER
 `)}
 
 	builds := []build.Artifact{{
@@ -211,6 +223,15 @@ spec:
 	}, {
 		ImageName: "skaffold/other",
 		Tag:       "skaffold/other:OTHER_TAG",
+	}, {
+		ImageName: "skaffold/unused",
+		Tag:       "skaffold/unused:TAG",
+	}, {
+		ImageName: "skaffold/usedbyfqn",
+		Tag:       "skaffold/usedbyfqn:TAG",
+	}, {
+		ImageName: "skaffold/usedwrongfqn",
+		Tag:       "skaffold/usedwrongfqn:TAG",
 	}}
 
 	expected := manifestList{[]byte(`
@@ -230,11 +251,21 @@ spec:
     name: other
   - image: gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883
     name: digest
+  - image: skaffold/usedbyfqn:TAG
+  - image: skaffold/usedwrongfqn:OTHER
 `)}
+
+	defer func(w Warner) { warner = w }(warner)
+	fakeWarner := &fakeWarner{}
+	warner = fakeWarner
 
 	resultManifest, err := manifests.replaceImages(builds)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
+	testutil.CheckErrorAndDeepEqual(t, false, err, []string{
+		"image [skaffold/unused] is not used by the deployment",
+		"image [skaffold/usedwrongfqn] is not used by the deployment",
+	}, fakeWarner.warnings)
 }
 
 func TestReplaceEmptyManifest(t *testing.T) {
