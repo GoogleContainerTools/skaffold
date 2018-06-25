@@ -35,6 +35,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// for testing
 var warner Warner = &logrusWarner{}
 
 // KubectlDeployer deploys workflows using kubectl CLI.
