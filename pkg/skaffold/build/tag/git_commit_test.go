@@ -38,16 +38,11 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		description   string
 		expectedName  string
 		createGitRepo func(string)
-		opts          *Options
 		subDir        string
 		shouldErr     bool
 	}{
 		{
-			description: "success",
-			opts: &Options{
-				ImageName: "test",
-				Digest:    "sha256:12345abcde",
-			},
+			description:  "success",
 			expectedName: "test:eefe1b9",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
@@ -57,11 +52,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description: "use tag over commit",
-			opts: &Options{
-				ImageName: "test",
-				Digest:    "sha256:12345abcde",
-			},
+			description:  "use tag over commit",
 			expectedName: "test:v2",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
@@ -76,11 +67,8 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description: "dirty",
-			opts: &Options{
-				ImageName: "test",
-			},
-			expectedName: "test:eefe1b9-dirty-8b8c4dad90faa822",
+			description:  "dirty",
+			expectedName: "test:eefe1b9-dirty-abababa",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -90,12 +78,8 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description: "ignore tag when dirty",
-			opts: &Options{
-				ImageName: "test",
-				Digest:    "sha256:12345abcde",
-			},
-			expectedName: "test:eefe1b9-dirty-8b8c4dad90faa822",
+			description:  "ignore tag when dirty",
+			expectedName: "test:eefe1b9-dirty-abababa",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -106,11 +90,8 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description: "untracked",
-			opts: &Options{
-				ImageName: "test",
-			},
-			expectedName: "test:eefe1b9-dirty-e0bc2923501f63b7",
+			description:  "untracked",
+			expectedName: "test:eefe1b9-dirty-abababa",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -120,11 +101,8 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description: "one file deleted",
-			opts: &Options{
-				ImageName: "test",
-			},
-			expectedName: "test:279d53f-dirty-6a3ce511c689eda7",
+			description:  "deleted file",
+			expectedName: "test:279d53f-dirty-abababa",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source1.go", []byte("code1")).
@@ -135,26 +113,8 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description: "two files deleted",
-			opts: &Options{
-				ImageName: "test",
-			},
-			expectedName: "test:279d53f-dirty-d48c11ed65c37a09", // Must be <> than when only one file is deleted
-			createGitRepo: func(dir string) {
-				gitInit(t, dir).
-					write("source1.go", []byte("code1")).
-					write("source2.go", []byte("code2")).
-					add("source1.go", "source2.go").
-					commit("initial").
-					delete("source1.go", "source2.go")
-			},
-		},
-		{
-			description: "rename",
-			opts: &Options{
-				ImageName: "test",
-			},
-			expectedName: "test:eefe1b9-dirty-c9417af5dc664b60",
+			description:  "rename",
+			expectedName: "test:eefe1b9-dirty-abababa",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -164,24 +124,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description: "rename to different name",
-			opts: &Options{
-				ImageName: "test",
-			},
-			expectedName: "test:eefe1b9-dirty-91fd2028ff0a5cf3", // Must be <> each time a new name is used
-			createGitRepo: func(dir string) {
-				gitInit(t, dir).
-					write("source.go", []byte("code")).
-					add("source.go").
-					commit("initial").
-					rename("source.go", "source3.go")
-			},
-		},
-		{
-			description: "sub directory",
-			opts: &Options{
-				ImageName: "test",
-			},
+			description:  "sub directory",
 			expectedName: "test:a7b32a6",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
@@ -191,23 +134,61 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			subDir: "sub/sub",
 		},
 		{
-			description: "sub directory with dirty status",
-			opts: &Options{
-				ImageName: "test",
-			},
-			expectedName: "test:a7b32a6-dirty-2dfb095d0f4830ad",
+			description:  "clean artifact1 in tagged repo",
+			expectedName: "test:v1",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
-					mkdir("sub/sub").
-					commit("initial").
-					write("source.go", []byte("updated code"))
+					mkdir("artifact1").write("artifact1/source.go", []byte("code")).
+					mkdir("artifact2").write("artifact2/source.go", []byte("code")).
+					add("artifact1/source.go", "artifact2/source.go").
+					commit("initial").tag("v1")
 			},
-			subDir: "sub/sub",
+			subDir: "artifact1",
 		},
 		{
-			description:   "failure",
-			createGitRepo: func(dir string) {},
-			shouldErr:     true,
+			description:  "clean artifact2 in tagged repo",
+			expectedName: "test:v1",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					mkdir("artifact1").write("artifact1/source.go", []byte("code")).
+					mkdir("artifact2").write("artifact2/source.go", []byte("code")).
+					add("artifact1/source.go", "artifact2/source.go").
+					commit("initial").tag("v1")
+			},
+			subDir: "artifact2",
+		},
+		{
+			description:  "clean artifact in dirty repo",
+			expectedName: "test:v1",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					mkdir("artifact1").write("artifact1/source.go", []byte("code")).
+					mkdir("artifact2").write("artifact2/source.go", []byte("code")).
+					add("artifact1/source.go", "artifact2/source.go").
+					commit("initial").tag("v1").
+					write("artifact2/source.go", []byte("updated code"))
+			},
+			subDir: "artifact1",
+		},
+		{
+			description:  "updated artifact in dirty repo",
+			expectedName: "test:0c60cb8-dirty-abababa",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					mkdir("artifact1").write("artifact1/source.go", []byte("code")).
+					mkdir("artifact2").write("artifact2/source.go", []byte("code")).
+					add("artifact1/source.go", "artifact2/source.go").
+					commit("initial").tag("v1").
+					write("artifact2/source.go", []byte("updated code"))
+			},
+			subDir: "artifact2",
+		},
+		{
+			description:  "non git repo",
+			expectedName: "test:dirty-abababa",
+			createGitRepo: func(dir string) {
+				ioutil.WriteFile(filepath.Join(dir, "source.go"), []byte("code"), os.ModePerm)
+			},
 		},
 	}
 
@@ -219,14 +200,19 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			tt.createGitRepo(tmpDir)
 			workspace := filepath.Join(tmpDir, tt.subDir)
 
+			opts := &Options{
+				ImageName: "test",
+				Digest:    "sha256:ababababababababababa",
+			}
+
 			c := &GitCommit{}
-			name, err := c.GenerateFullyQualifiedImageName(workspace, tt.opts)
+			name, err := c.GenerateFullyQualifiedImageName(workspace, opts)
 			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.expectedName, name)
 
-			name, err = generateNameGoGit(workspace, tt.opts)
+			name, err = generateNameGoGit(workspace, opts)
 			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.expectedName, name)
 
-			name, err = generateNameGitShellOut(workspace, tt.opts)
+			name, err = generateNameGitShellOut(workspace, opts)
 			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.expectedName, name)
 		})
 	}
