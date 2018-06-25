@@ -56,6 +56,11 @@ FROM nginx
 ADD *.none /tmp
 `
 
+const oneWilcardMatchesNone = `
+FROM nginx
+ADD *.go *.none /tmp
+`
+
 const multiStageDockerfile = `
 FROM golang:1.9.2
 WORKDIR /go/src/github.com/r2d4/leeroy/
@@ -177,6 +182,12 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  wildcardsMatchesNone,
 			workspace:   ".",
 			shouldErr:   true,
+		},
+		{
+			description: "one wilcard matches none",
+			dockerfile:  oneWilcardMatchesNone,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "server.go", "worker.go"},
 		},
 		{
 			description: "bad read",
