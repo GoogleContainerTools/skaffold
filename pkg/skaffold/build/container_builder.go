@@ -68,11 +68,13 @@ const (
 )
 
 type GoogleCloudBuilder struct {
-	*v1alpha2.BuildConfig
+	*v1alpha2.GoogleCloudBuild
 }
 
-func NewGoogleCloudBuilder(cfg *v1alpha2.BuildConfig) (*GoogleCloudBuilder, error) {
-	return &GoogleCloudBuilder{BuildConfig: cfg}, nil
+func NewGoogleCloudBuilder(cfg *v1alpha2.GoogleCloudBuild) (*GoogleCloudBuilder, error) {
+	return &GoogleCloudBuilder{
+		GoogleCloudBuild: cfg,
+	}, nil
 }
 
 func (cb *GoogleCloudBuilder) Labels() map[string]string {
@@ -124,8 +126,8 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 	}
 	logrus.Debugf("Build args: %s", buildArgs)
 
-	cbBucket := fmt.Sprintf("%s%s", cb.GoogleCloudBuild.ProjectID, constants.GCSBucketSuffix)
-	buildObject := fmt.Sprintf("source/%s-%s.tar.gz", cb.GoogleCloudBuild.ProjectID, util.RandomID())
+	cbBucket := fmt.Sprintf("%s%s", cb.ProjectID, constants.GCSBucketSuffix)
+	buildObject := fmt.Sprintf("source/%s-%s.tar.gz", cb.ProjectID, util.RandomID())
 
 	if err := cb.createBucketIfNotExists(ctx, cbBucket); err != nil {
 		return nil, errors.Wrap(err, "creating bucket if not exists")
@@ -141,7 +143,7 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 
 	args := append([]string{"build", "--tag", artifact.ImageName, "-f", artifact.DockerArtifact.DockerfilePath}, buildArgs...)
 	args = append(args, ".")
-	call := cbclient.Projects.Builds.Create(cb.GoogleCloudBuild.ProjectID, &cloudbuild.Build{
+	call := cbclient.Projects.Builds.Create(cb.ProjectID, &cloudbuild.Build{
 		LogsBucket: cbBucket,
 		Source: &cloudbuild.Source{
 			StorageSource: &cloudbuild.StorageSource{
@@ -173,7 +175,7 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 watch:
 	for {
 		logrus.Debugf("current offset %d", offset)
-		b, err := cbclient.Projects.Builds.Get(cb.GoogleCloudBuild.ProjectID, remoteID).Do()
+		b, err := cbclient.Projects.Builds.Get(cb.ProjectID, remoteID).Do()
 		if err != nil {
 			return nil, errors.Wrap(err, "getting build status")
 		}
@@ -284,7 +286,7 @@ func (cb *GoogleCloudBuilder) checkBucketProjectCorrect(ctx context.Context, buc
 	if err != nil {
 		return errors.Wrap(err, "getting storage client")
 	}
-	it := c.Buckets(ctx, cb.GoogleCloudBuild.ProjectID)
+	it := c.Buckets(ctx, cb.ProjectID)
 	// Set the prefix to the bucket we're looking for to only return that bucket and buckets with that prefix
 	// that we'll filter further later on
 	it.Prefix = bucket
@@ -322,11 +324,11 @@ func (cb *GoogleCloudBuilder) createBucketIfNotExists(ctx context.Context, bucke
 		return errors.Wrapf(err, "getting bucket %s", bucket)
 	}
 
-	if err := c.Bucket(bucket).Create(ctx, cb.GoogleCloudBuild.ProjectID, &cstorage.BucketAttrs{
+	if err := c.Bucket(bucket).Create(ctx, cb.ProjectID, &cstorage.BucketAttrs{
 		Name: bucket,
 	}); err != nil {
 		return err
 	}
-	logrus.Debugf("Created bucket %s in %s", bucket, cb.GoogleCloudBuild.ProjectID)
+	logrus.Debugf("Created bucket %s in %s", bucket, cb.ProjectID)
 	return nil
 }

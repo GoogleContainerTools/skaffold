@@ -68,7 +68,7 @@ func TestLocalRun(t *testing.T) {
 
 	var tests = []struct {
 		description  string
-		config       *v1alpha2.BuildConfig
+		config       *v1alpha2.LocalBuild
 		out          io.Writer
 		api          docker.APIClient
 		tagger       tag.Tagger
@@ -80,19 +80,15 @@ func TestLocalRun(t *testing.T) {
 		{
 			description: "single build",
 			out:         ioutil.Discard,
-			config: &v1alpha2.BuildConfig{
-				Artifacts: []*v1alpha2.Artifact{
-					{
-						ImageName: "gcr.io/test/image",
-						Workspace: tmp,
-						ArtifactType: v1alpha2.ArtifactType{
-							DockerArtifact: &v1alpha2.DockerArtifact{},
-						},
-					},
-				},
-				BuildType: v1alpha2.BuildType{
-					LocalBuild: &v1alpha2.LocalBuild{
-						SkipPush: util.BoolPtr(false),
+			config: &v1alpha2.LocalBuild{
+				SkipPush: util.BoolPtr(false),
+			},
+			artifacts: []*v1alpha2.Artifact{
+				{
+					ImageName: "gcr.io/test/image",
+					Workspace: tmp,
+					ArtifactType: v1alpha2.ArtifactType{
+						DockerArtifact: &v1alpha2.DockerArtifact{},
 					},
 				},
 			},
@@ -108,28 +104,8 @@ func TestLocalRun(t *testing.T) {
 		{
 			description: "subset build",
 			out:         ioutil.Discard,
-			config: &v1alpha2.BuildConfig{
-				Artifacts: []*v1alpha2.Artifact{
-					{
-						ImageName: "gcr.io/test/image",
-						Workspace: tmp,
-						ArtifactType: v1alpha2.ArtifactType{
-							DockerArtifact: &v1alpha2.DockerArtifact{},
-						},
-					},
-					{
-						ImageName: "gcr.io/test/image2",
-						Workspace: tmp,
-						ArtifactType: v1alpha2.ArtifactType{
-							DockerArtifact: &v1alpha2.DockerArtifact{},
-						},
-					},
-				},
-				BuildType: v1alpha2.BuildType{
-					LocalBuild: &v1alpha2.LocalBuild{
-						SkipPush: util.BoolPtr(true),
-					},
-				},
+			config: &v1alpha2.LocalBuild{
+				SkipPush: util.BoolPtr(true),
 			},
 			tagger: &tag.ChecksumTagger{},
 			artifacts: []*v1alpha2.Artifact{
@@ -152,22 +128,15 @@ func TestLocalRun(t *testing.T) {
 		{
 			description:  "local cluster bad writer",
 			out:          &testutil.BadWriter{},
-			config:       &v1alpha2.BuildConfig{},
+			config:       &v1alpha2.LocalBuild{},
 			shouldErr:    true,
 			localCluster: true,
 		},
 		{
 			description: "error image build",
 			out:         ioutil.Discard,
-			config: &v1alpha2.BuildConfig{
-				Artifacts: []*v1alpha2.Artifact{
-					{
-						ImageName: "test",
-						Workspace: ".",
-					},
-				},
-			},
-			tagger: &tag.ChecksumTagger{},
+			artifacts:   []*v1alpha2.Artifact{{}},
+			tagger:      &tag.ChecksumTagger{},
 			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{
 				ErrImageBuild: true,
 			}),
@@ -176,15 +145,8 @@ func TestLocalRun(t *testing.T) {
 		{
 			description: "error image tag",
 			out:         ioutil.Discard,
-			config: &v1alpha2.BuildConfig{
-				Artifacts: []*v1alpha2.Artifact{
-					{
-						ImageName: "test",
-						Workspace: ".",
-					},
-				},
-			},
-			tagger: &tag.ChecksumTagger{},
+			artifacts:   []*v1alpha2.Artifact{{}},
+			tagger:      &tag.ChecksumTagger{},
 			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{
 				ErrImageTag: true,
 			}),
@@ -193,30 +155,16 @@ func TestLocalRun(t *testing.T) {
 		{
 			description: "bad writer",
 			out:         &testutil.BadWriter{},
-			config: &v1alpha2.BuildConfig{
-				Artifacts: []*v1alpha2.Artifact{
-					{
-						ImageName: "test",
-						Workspace: ".",
-					},
-				},
-			},
-			tagger:    &tag.ChecksumTagger{},
-			api:       testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
-			shouldErr: true,
+			artifacts:   []*v1alpha2.Artifact{{}},
+			tagger:      &tag.ChecksumTagger{},
+			api:         testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
+			shouldErr:   true,
 		},
 		{
 			description: "error image list",
 			out:         &testutil.BadWriter{},
-			config: &v1alpha2.BuildConfig{
-				Artifacts: []*v1alpha2.Artifact{
-					{
-						ImageName: "test",
-						Workspace: ".",
-					},
-				},
-			},
-			tagger: &tag.ChecksumTagger{},
+			artifacts:   []*v1alpha2.Artifact{{}},
+			tagger:      &tag.ChecksumTagger{},
 			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{
 				ErrImageList: true,
 			}),
@@ -225,29 +173,19 @@ func TestLocalRun(t *testing.T) {
 		{
 			description: "error tagger",
 			out:         ioutil.Discard,
-			config: &v1alpha2.BuildConfig{
-				Artifacts: []*v1alpha2.Artifact{
-					{
-						ImageName: "test",
-						Workspace: ".",
-					},
-				},
-			},
-			tagger:    &FakeTagger{Err: fmt.Errorf("")},
-			api:       testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
-			shouldErr: true,
+			artifacts:   []*v1alpha2.Artifact{{}},
+			tagger:      &FakeTagger{Err: fmt.Errorf("")},
+			api:         testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
+			shouldErr:   true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			l := LocalBuilder{
-				BuildConfig:  test.config,
+				LocalBuild:   test.config,
 				api:          test.api,
 				localCluster: test.localCluster,
-			}
-			if test.artifacts == nil {
-				test.artifacts = test.config.Artifacts
 			}
 
 			res, err := l.Build(context.Background(), test.out, test.tagger, test.artifacts)

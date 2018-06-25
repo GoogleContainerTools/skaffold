@@ -36,13 +36,13 @@ import (
 
 // KanikoBuilder can build docker artifacts on Kubernetes, using Kaniko.
 type KanikoBuilder struct {
-	*v1alpha2.BuildConfig
+	*v1alpha2.KanikoBuild
 }
 
 // NewKanikoBuilder creates a KanikoBuilder.
-func NewKanikoBuilder(cfg *v1alpha2.BuildConfig) (*KanikoBuilder, error) {
+func NewKanikoBuilder(cfg *v1alpha2.KanikoBuild) (*KanikoBuilder, error) {
 	return &KanikoBuilder{
-		BuildConfig: cfg,
+		KanikoBuild: cfg,
 	}, nil
 }
 
@@ -104,26 +104,26 @@ func (k *KanikoBuilder) setupSecret() (func(), error) {
 		return nil, errors.Wrap(err, "getting kubernetes client")
 	}
 
-	secrets := client.CoreV1().Secrets(k.KanikoBuild.Namespace)
+	secrets := client.CoreV1().Secrets(k.Namespace)
 
-	if k.KanikoBuild.PullSecret == "" {
+	if k.PullSecret == "" {
 		logrus.Debug("No pull secret specified. Checking for one in the cluster.")
 
-		if _, err := secrets.Get(k.KanikoBuild.PullSecretName, metav1.GetOptions{}); err != nil {
+		if _, err := secrets.Get(k.PullSecretName, metav1.GetOptions{}); err != nil {
 			return nil, errors.Wrap(err, "checking for existing kaniko secret")
 		}
 
 		return func() {}, nil
 	}
 
-	secretData, err := ioutil.ReadFile(k.KanikoBuild.PullSecret)
+	secretData, err := ioutil.ReadFile(k.PullSecret)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading secret")
 	}
 
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   k.KanikoBuild.PullSecretName,
+			Name:   k.PullSecretName,
 			Labels: map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
 		},
 		Data: map[string][]byte{
@@ -136,7 +136,7 @@ func (k *KanikoBuilder) setupSecret() (func(), error) {
 	}
 
 	return func() {
-		if err := secrets.Delete(k.KanikoBuild.PullSecretName, &metav1.DeleteOptions{}); err != nil {
+		if err := secrets.Delete(k.PullSecretName, &metav1.DeleteOptions{}); err != nil {
 			logrus.Warnf("deleting secret")
 		}
 	}, nil
