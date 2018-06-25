@@ -97,6 +97,7 @@ func TestRun(t *testing.T) {
 		env                  map[string]string
 
 		remoteOnly bool
+		cleanup    func(t *testing.T)
 	}
 
 	var testCases = []testRunCase{
@@ -171,6 +172,24 @@ func TestRun(t *testing.T) {
 			dir:        "../examples/kaniko",
 			remoteOnly: true,
 		},
+		{
+			description: "helm example",
+			args:        []string{"run"},
+			deployments: []testObject{
+				{
+					name: "skaffold-helm",
+				},
+			},
+			dir:        "../examples/helm-deployment",
+			remoteOnly: true,
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("helm", "delete", "--purge", "skaffold-helm")
+				output, err := util.RunCmdOut(cmd)
+				if err != nil {
+					t.Fatalf("skaffold: %s %v", output, err)
+				}
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -211,6 +230,10 @@ func TestRun(t *testing.T) {
 					}
 					testCase.deploymentValidation(t, deployment)
 				}
+
+				if testCase.cleanup != nil {
+					testCase.cleanup(t)
+				}
 			}
 		})
 	}
@@ -233,7 +256,12 @@ func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
 		t.Fatalf("kubectl config set-context --namespace: %v", err)
 	}
 
-	return ns, func() { client.CoreV1().Namespaces().Delete(ns.Name, &meta_v1.DeleteOptions{}); return }
+	os.Setenv("SKAFFOLD_DEPLOY_NAMESPACE", namespaceName)
+
+	return ns, func() {
+		client.CoreV1().Namespaces().Delete(ns.Name, &meta_v1.DeleteOptions{})
+		os.Setenv("SKAFFOLD_DEPLOY_NAMESPACE", "")
+	}
 }
 func TestFix(t *testing.T) {
 	_, deleteNs := setupNamespace(t)
