@@ -49,6 +49,10 @@ build:
       buildArgs:
         key1: "value1"
         key2: "value2"
+      # Images to consider as cache sources
+      cacheFrom:
+      - image1
+      - image2
 
     # bazel requires bazel CLI to be installed and the artifacts sources to
     # contain Bazel configuration files.

@@ -61,20 +61,19 @@ func buildImageTag(buildTarget string) string {
 	return fmt.Sprintf(":%s", imageTag)
 }
 
-func (l *LocalBuilder) buildBazel(ctx context.Context, out io.Writer, a *v1alpha2.Artifact) (string, error) {
-	cmd := exec.Command("bazel", "build", a.BazelArtifact.BuildTarget)
-	cmd.Dir = a.Workspace
+func (l *LocalBuilder) buildBazel(ctx context.Context, out io.Writer, workspace string, a *v1alpha2.BazelArtifact) (string, error) {
+	cmd := exec.Command("bazel", "build", a.BuildTarget)
+	cmd.Dir = workspace
 	cmd.Stdout = out
 	cmd.Stderr = out
 	if err := cmd.Run(); err != nil {
 		return "", errors.Wrap(err, "running command")
 	}
 
-	tarPath := buildTarPath(a.BazelArtifact.BuildTarget)
+	tarPath := buildTarPath(a.BuildTarget)
+	imageTag := buildImageTag(a.BuildTarget)
 
-	imageTag := buildImageTag(a.BazelArtifact.BuildTarget)
-
-	imageTar, err := os.Open(filepath.Join(a.Workspace, "bazel-bin", tarPath))
+	imageTar, err := os.Open(filepath.Join(workspace, "bazel-bin", tarPath))
 	if err != nil {
 		return "", errors.Wrap(err, "opening image tarball")
 	}

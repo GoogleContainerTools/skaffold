@@ -20,10 +20,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/docker/docker/api/types"
 )
 
 func TestMain(m *testing.M) {
@@ -116,11 +119,17 @@ func TestRunBuild(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			tmp, cleanup := testutil.TempDir(t)
+			defer cleanup()
+
+			ioutil.WriteFile(filepath.Join(tmp, "Dockerfile"), []byte{}, os.ModePerm)
+
 			api := testutil.NewFakeImageAPIClient(test.tagToImageID, test.testOpts)
-			err := RunBuild(context.Background(), api, &BuildOptions{
+			err := RunBuild(context.Background(), ioutil.Discard, api, tmp, types.ImageBuildOptions{
 				Dockerfile: "Dockerfile",
-				ImageName:  "finalimage",
+				Tags:       []string{"finalimage"},
 			})
+
 			testutil.CheckError(t, test.shouldErr, err)
 		})
 	}
