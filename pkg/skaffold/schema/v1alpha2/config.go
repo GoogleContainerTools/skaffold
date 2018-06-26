@@ -128,7 +128,9 @@ type HelmDeploy struct {
 	Releases []HelmRelease `yaml:"releases,omitempty"`
 }
 
-type KustomizeDeploy struct{}
+type KustomizeDeploy struct {
+	KustomizePath string `yaml:"kustomizePath,omitempty"`
+}
 
 type HelmRelease struct {
 	Name              string                 `yaml:"name"`
@@ -205,6 +207,7 @@ func (c *SkaffoldConfig) setDefaultValues() error {
 	c.setDefaultTagger()
 	c.setDefaultDockerfiles()
 	c.setDefaultWorkspaces()
+	c.setDefaultKustomizePath()
 	if err := c.setDefaultKanikoNamespace(); err != nil {
 		return err
 	}
@@ -238,6 +241,12 @@ func (c *SkaffoldConfig) setDefaultTagger() {
 	}
 
 	c.Build.TagPolicy = TagPolicy{GitTagger: &GitTagger{}}
+}
+
+func (c *SkaffoldConfig) setDefaultKustomizePath() {
+	if c.Deploy.KustomizeDeploy != nil && c.Deploy.KustomizeDeploy.KustomizePath == "" {
+		c.Deploy.KustomizeDeploy.KustomizePath = constants.DefaultKustomizationPath
+	}
 }
 
 func (c *SkaffoldConfig) setDefaultDockerfiles() {
