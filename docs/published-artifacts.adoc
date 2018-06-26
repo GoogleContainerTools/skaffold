@@ -12,7 +12,7 @@ https://storage.googleapis.com/skaffold/builds/latest/skaffold-linux-amd64.sha25
 https://storage.googleapis.com/skaffold/builds/latest/skaffold-windows-amd64.exe
 https://storage.googleapis.com/skaffold/builds/latest/skaffold-windows-amd64.exe.sha256
 
-Documention
+Documentation
 
 https://storage.googleapis.com/skaffold/builds/latest/docs/index.html
 https://storage.googleapis.com/skaffold/builds/latest/docs/index.pdf
@@ -67,7 +67,7 @@ https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64.sha
 https://storage.googleapis.com/skaffold/releases/latest/skaffold-windows-amd64.exe
 https://storage.googleapis.com/skaffold/releases/latest/skaffold-windows-amd64.exe.sha256
 
-Documention
+Documentation
 
 https://storage.googleapis.com/skaffold/releases/latest/docs/index.html
 https://storage.googleapis.com/skaffold/releases/latest/docs/index.pdf
