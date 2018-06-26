@@ -50,7 +50,7 @@ func (k *KustomizeDeployer) Labels() map[string]string {
 }
 
 func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
-	manifests, err := buildManifests(constants.DefaultKustomizationPath)
+	manifests, err := buildManifests(k.KustomizePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "kustomize")
 	}
