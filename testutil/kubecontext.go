@@ -14,20 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package context
+package testutil
 
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
 )
 
-func TestCurrentContext(t *testing.T) {
-	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
-	defer restore()
+// SetupFakeKubernetesContext replaces the current kubernetes configuration
+// file to setup a fixed current context.
+func SetupFakeKubernetesContext(t *testing.T, config api.Config) func() {
+	kubeConfig, cleanup := TempFile(t, "config", []byte{})
 
-	context, err := CurrentContext()
+	if err := clientcmd.WriteToFile(config, kubeConfig); err != nil {
+		t.Fatalf("writing temp kubeconfig")
+	}
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, "cluster1", context)
+	unsetEnvs := SetEnvs(t, map[string]string{"KUBECONFIG": kubeConfig})
+
+	return func() {
+		cleanup()
+		unsetEnvs(t)
+	}
 }
