@@ -39,6 +39,8 @@ include::quickstart-gke.adoc[leveloffset=+1]
 
 include::concepts.adoc[]
 
+include::published-artifacts.adoc[]
+
 include::../examples/README.adoc[]
 
 = Advanced topics
