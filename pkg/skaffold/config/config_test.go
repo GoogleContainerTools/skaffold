@@ -67,6 +67,16 @@ build:
   kaniko:
     gcsBucket: demo
 `
+	completeKanikoConfig = `
+apiVersion: skaffold/v1alpha2
+kind: Config
+build:
+  kaniko:
+    gcsBucket: demo
+    pullSecret: /secret.json
+    pullSecretName: secret-name
+    namespace: nskaniko
+`
 	badConfig = "bad config"
 )
 
@@ -114,7 +124,16 @@ func TestParseConfig(t *testing.T) {
 			description: "Minimal Kaniko config",
 			config:      minimalKanikoConfig,
 			expected: config(
-				withKanikoBuild("demo", "kaniko-secret",
+				withKanikoBuild("demo", "kaniko-secret", "default", "",
+					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
+				),
+			),
+		},
+		{
+			description: "Complete Kaniko config",
+			config:      completeKanikoConfig,
+			expected: config(
+				withKanikoBuild("demo", "secret-name", "nskaniko", "/secret.json",
 					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
 				),
 			),
@@ -162,11 +181,13 @@ func withGCBBuild(id string, ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldC
 	}
 }
 
-func withKanikoBuild(bucket, secretName string, ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldConfig) {
+func withKanikoBuild(bucket, secretName, namespace, secret string, ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldConfig) {
 	return func(cfg *SkaffoldConfig) {
 		b := v1alpha2.BuildConfig{BuildType: v1alpha2.BuildType{KanikoBuild: &v1alpha2.KanikoBuild{
 			GCSBucket:      bucket,
 			PullSecretName: secretName,
+			Namespace:      namespace,
+			PullSecret:     secret,
 		}}}
 		for _, op := range ops {
 			op(&b)

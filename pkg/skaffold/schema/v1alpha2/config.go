@@ -266,16 +266,23 @@ func (c *SkaffoldConfig) setDefaultWorkspaces() {
 }
 
 func (c *SkaffoldConfig) setDefaultKanikoNamespace() error {
+	kaniko := c.Build.KanikoBuild
 	if c.Build.KanikoBuild == nil {
 		return nil
 	}
-	if c.Build.KanikoBuild.Namespace == "" {
+
+	if kaniko.Namespace == "" {
 		cfg, err := kubectx.CurrentConfig()
 		if err != nil {
 			return err
 		}
-		c.Build.KanikoBuild.Namespace = cfg.Contexts[cfg.CurrentContext].Namespace
+		kaniko.Namespace = cfg.Contexts[cfg.CurrentContext].Namespace
 	}
+
+	if kaniko.Namespace == "" {
+		kaniko.Namespace = "default"
+	}
+
 	return nil
 }
 
