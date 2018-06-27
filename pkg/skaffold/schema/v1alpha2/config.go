@@ -280,21 +280,25 @@ func (c *SkaffoldConfig) setDefaultKanikoNamespace() error {
 }
 
 func (c *SkaffoldConfig) setDefaultKanikoSecret() error {
+	kaniko := c.Build.KanikoBuild
 	if c.Build.KanikoBuild == nil {
 		return nil
 	}
-	if c.Build.KanikoBuild.PullSecret != "" {
-		absPath, err := homedir.Expand(c.Build.KanikoBuild.PullSecret)
+
+	if kaniko.PullSecretName == "" {
+		kaniko.PullSecretName = constants.DefaultKanikoSecretName
+	}
+
+	if kaniko.PullSecret != "" {
+		absPath, err := homedir.Expand(kaniko.PullSecret)
 		if err != nil {
-			return fmt.Errorf("unable to expand pullSecret %s", c.Build.KanikoBuild.PullSecret)
+			return fmt.Errorf("unable to expand pullSecret %s", kaniko.PullSecret)
 		}
 
-		c.Build.KanikoBuild.PullSecret = absPath
+		kaniko.PullSecret = absPath
 		return nil
 	}
-	if c.Build.KanikoBuild.PullSecretName == "" {
-		c.Build.KanikoBuild.PullSecret = constants.DefaultKanikoSecretName
-	}
+
 	return nil
 }
 
