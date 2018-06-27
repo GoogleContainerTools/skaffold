@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -50,6 +51,16 @@ func NewKanikoBuilder(cfg *v1alpha2.KanikoBuild) *KanikoBuilder {
 func (k *KanikoBuilder) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.Builder: "kaniko",
+	}
+}
+
+func (k *KanikoBuilder) BuildInfo() status.BuilderInfo {
+	return status.BuilderInfo{
+		Name:           "Kaniko",
+		Namespace:      k.Namespace,
+		GCSBucket:      k.GCSBucket,
+		PullSecretName: k.PullSecretName,
+		PullSecret:     k.PullSecret,
 	}
 }
 

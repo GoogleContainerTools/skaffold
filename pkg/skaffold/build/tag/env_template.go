@@ -17,10 +17,12 @@ limitations under the License.
 package tag
 
 import (
+	"fmt"
 	"strings"
 	"text/template"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
@@ -44,6 +46,13 @@ func NewEnvTemplateTagger(t string) (Tagger, error) {
 func (t *envTemplateTagger) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.TagPolicy: "envTemplateTagger",
+	}
+}
+
+func (t *envTemplateTagger) TaggerInfo() status.TaggerInfo {
+	return status.TaggerInfo{
+		Name:     "Env Template Tagger",
+		Template: fmt.Sprintf("%+v", t.Template),
 	}
 }
 

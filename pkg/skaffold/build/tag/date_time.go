@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 )
 
 const tagTime = "2006-01-02_15-04-05.999_MST"
@@ -45,6 +46,12 @@ func NewDateTimeTagger(format, timezone string) Tagger {
 func (tagger *dateTimeTagger) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.TagPolicy: "dateTimeTagger",
+	}
+}
+
+func (tagger *dateTimeTagger) TaggerInfo() status.TaggerInfo {
+	return status.TaggerInfo{
+		Name: "Datetime Tagger",
 	}
 }
 

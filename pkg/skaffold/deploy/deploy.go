@@ -22,6 +22,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -46,6 +47,10 @@ type Deployer interface {
 
 	// Cleanup deletes what was deployed by calling Deploy.
 	Cleanup(context.Context, io.Writer) error
+
+	// DeployInfo returns relevant attributes about the deployer to be
+	// outputted to the user.
+	DeployInfo() status.DeployerInfo
 }
 
 func joinTagsToBuildResult(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {

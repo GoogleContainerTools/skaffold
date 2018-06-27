@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -37,6 +38,12 @@ type GitCommit struct{}
 func (c *GitCommit) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.TagPolicy: "git-commit",
+	}
+}
+
+func (c *GitCommit) TaggerInfo() status.TaggerInfo {
+	return status.TaggerInfo{
+		Name: "Git Commit Tagger",
 	}
 }
 

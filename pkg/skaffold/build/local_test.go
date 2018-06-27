@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
@@ -44,6 +45,10 @@ func (f *FakeTagger) GenerateFullyQualifiedImageName(workingDir string, tagOpts 
 
 func (f *FakeTagger) Labels() map[string]string {
 	return map[string]string{}
+}
+
+func (f *FakeTagger) TaggerInfo() status.TaggerInfo {
+	return status.TaggerInfo{}
 }
 
 type testAuthHelper struct{}

@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 )
 
 // ChecksumTagger tags an image by the sha256 of the image tarball
@@ -30,6 +31,12 @@ type ChecksumTagger struct {
 func (c *ChecksumTagger) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.TagPolicy: "sha256",
+	}
+}
+
+func (c *ChecksumTagger) TaggerInfo() status.TaggerInfo {
+	return status.TaggerInfo{
+		Name: "Checksum Tagger",
 	}
 }
 

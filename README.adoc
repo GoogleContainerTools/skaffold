@@ -55,6 +55,14 @@ Use for:
 
 -  Continuous integration or continuous deployment pipelines
 -  Sanity checking after iterating on your application
+
+=== skaffold fix
+Automatically updates a older version of a skaffold config to the latest version, setting defaults where appropriate.
+Useful for running an updated version of skaffold on a repository which was set up with an older version.
+
+=== skaffold status
+Prints information about the skaffold runner to the console. Useful for sanity checking how skaffold is set up to run
+on a repository without actually building and deploying to a cluster, as well as debugging a skaffold config.
 //end::operatingmodes[]
 
 //tag::demo[]
