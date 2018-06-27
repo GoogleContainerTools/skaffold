@@ -22,6 +22,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 const (
@@ -81,6 +82,9 @@ build:
 )
 
 func TestParseConfig(t *testing.T) {
+	cleanup := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
+	defer cleanup()
+
 	var tests = []struct {
 		description string
 		config      string

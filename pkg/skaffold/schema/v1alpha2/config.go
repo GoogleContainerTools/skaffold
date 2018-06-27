@@ -276,7 +276,11 @@ func (c *SkaffoldConfig) setDefaultKanikoNamespace() error {
 		if err != nil {
 			return err
 		}
-		kaniko.Namespace = cfg.Contexts[cfg.CurrentContext].Namespace
+
+		current, present := cfg.Contexts[cfg.CurrentContext]
+		if present {
+			kaniko.Namespace = current.Namespace
+		}
 	}
 
 	if kaniko.Namespace == "" {
