@@ -35,7 +35,7 @@ func helperCommandContext(s ...string) (cmd *exec.Cmd) {
 }
 
 func helperCommand(s ...string) *exec.Cmd {
-	return helperCommandContext( s...)
+	return helperCommandContext(s...)
 }
 
 func TestHelperProcess(*testing.T) {
