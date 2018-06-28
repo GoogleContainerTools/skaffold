@@ -96,7 +96,7 @@ func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 
 func (k *KustomizeDeployer) Dependencies() ([]string, error) {
 	// TODO(r2d4): parse kustomization yaml and add base and patches as dependencies
-	return []string{constants.DefaultKustomizationPath}, nil
+	return []string{k.KustomizePath}, nil
 }
 
 func buildManifests(kustomization string) (io.Reader, error) {
