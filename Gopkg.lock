@@ -35,6 +35,38 @@
   version = "v10.11.2"
 
 [[projects]]
+  name = "github.com/GoogleContainerTools/skaffold"
+  packages = [
+    "cmd/skaffold/app",
+    "cmd/skaffold/app/cmd",
+    "cmd/skaffold/app/cmd/docker",
+    "cmd/skaffold/app/flags",
+    "pkg/skaffold/bazel",
+    "pkg/skaffold/build",
+    "pkg/skaffold/build/tag",
+    "pkg/skaffold/config",
+    "pkg/skaffold/config/transform",
+    "pkg/skaffold/constants",
+    "pkg/skaffold/deploy",
+    "pkg/skaffold/docker",
+    "pkg/skaffold/kaniko",
+    "pkg/skaffold/kubernetes",
+    "pkg/skaffold/kubernetes/context",
+    "pkg/skaffold/runner",
+    "pkg/skaffold/runner/label",
+    "pkg/skaffold/schema",
+    "pkg/skaffold/schema/util",
+    "pkg/skaffold/schema/v1alpha1",
+    "pkg/skaffold/schema/v1alpha2",
+    "pkg/skaffold/util",
+    "pkg/skaffold/version",
+    "pkg/skaffold/watch",
+    "testutil"
+  ]
+  revision = "2d0ee1ef0e40bf9b032ce62e400f26373fa36e3b"
+  version = "v0.8.0"
+
+[[projects]]
   name = "github.com/Microsoft/go-winio"
   packages = ["."]
   revision = "7da180ee92d8bd8bb8c37fc560e673e6557c392f"
@@ -948,6 +980,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "034783fc12bf1a413c89d14f83491cba58dd1481e1e989d535d7a6e5fbfb676c"
+  inputs-digest = "ac5a4df772cbd87578df6456a80786aafe4ed25db3b8653b480fe0a9e673080a"
   solver-name = "gps-cdcl"
   solver-version = 1

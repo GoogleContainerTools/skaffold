@@ -1,0 +1,106 @@
+/*
+Copyright 2018 The Skaffold Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package util
+
+import (
+	"testing"
+	"os/exec"
+	"os"
+	"context"
+	"github.com/skaffold/testutil"
+	"fmt"
+)
+
+const stdinCloseTestString = "Some test string."
+func helperCommandContext(t *testing.T, ctx context.Context, s ...string) (cmd *exec.Cmd) {
+
+	cs := []string{"-test.run=TestHelperProcess", "--"}
+	cs = append(cs, s...)
+	if ctx != nil {
+		cmd = exec.CommandContext(ctx, os.Args[0], cs...)
+	} else {
+		cmd = exec.Command(os.Args[0], cs...)
+	}
+	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
+	return cmd
+}
+
+func helperCommand(t *testing.T, s ...string) *exec.Cmd {
+	return helperCommandContext(t, nil, s...)
+}
+
+func TestHelperProcess(*testing.T) {
+	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
+		return
+	}
+	defer os.Exit(0)
+
+	args := os.Args
+	for len(args) > 0 {
+		if args[0] == "--" {
+			args = args[1:]
+			break
+		}
+		args = args[1:]
+	}
+	if len(args) == 0 {
+		fmt.Fprintf(os.Stderr, "No command\n")
+		os.Exit(2)
+	}
+
+	cmd, args := args[0], args[1:]
+	switch cmd {
+	case "skaffold":
+		iargs := []interface{}{}
+		for _, s := range args {
+			iargs = append(iargs, s)
+		}
+		fmt.Println(iargs...)
+	default:
+		fmt.Fprintf(os.Stderr, "Unknown command %q\n", cmd)
+		os.Exit(2)
+	}
+}
+
+func TestCmd_RunCmd(t *testing.T) {
+	tests := []struct{
+		name string
+		cmd *exec.Cmd
+		want string
+		shouldErr bool
+	}{
+		{
+			name: "skaffold test",
+			cmd: helperCommand(t, "skaffold", "dev"),
+			want: "dev\n",
+			shouldErr: false,
+		},
+		{
+			name: "unknown command test",
+			cmd: helperCommand(t, "foo", "bar"),
+			want: "",
+			shouldErr: true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := RunCmdOut(test.cmd)
+
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.want, string(got))
+		})
+	}
+}
