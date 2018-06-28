@@ -21,7 +21,7 @@ import (
 	"os/exec"
 	"os"
 	"context"
-	"github.com/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 	"fmt"
 )
 
@@ -76,7 +76,7 @@ func TestHelperProcess(*testing.T) {
 	}
 }
 
-func TestCmd_RunCmd(t *testing.T) {
+func TestCmd_RunCmdOut(t *testing.T) {
 	tests := []struct{
 		name string
 		cmd *exec.Cmd
