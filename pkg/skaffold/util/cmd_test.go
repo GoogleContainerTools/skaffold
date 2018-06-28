@@ -19,13 +19,14 @@ package util
 import (
 	"context"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"os"
 	"os/exec"
 	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func helperCommandContext(t *testing.T, ctx context.Context, s ...string) (cmd *exec.Cmd) {
+func helperCommandContext(ctx context.Context, s ...string) (cmd *exec.Cmd) {
 
 	cs := []string{"-test.run=TestHelperProcess", "--"}
 	cs = append(cs, s...)
@@ -38,8 +39,8 @@ func helperCommandContext(t *testing.T, ctx context.Context, s ...string) (cmd *
 	return cmd
 }
 
-func helperCommand(t *testing.T, s ...string) *exec.Cmd {
-	return helperCommandContext(t, nil, s...)
+func helperCommand(s ...string) *exec.Cmd {
+	return helperCommandContext(nil, s...)
 }
 
 func TestHelperProcess(*testing.T) {
@@ -84,13 +85,13 @@ func TestCmd_RunCmdOut(t *testing.T) {
 	}{
 		{
 			name:      "skaffold test",
-			cmd:       helperCommand(t, "skaffold", "dev"),
+			cmd:       helperCommand("skaffold", "dev"),
 			want:      "dev\n",
 			shouldErr: false,
 		},
 		{
 			name:      "unknown command test",
-			cmd:       helperCommand(t, "foo", "bar"),
+			cmd:       helperCommand("foo", "bar"),
 			want:      "",
 			shouldErr: true,
 		},
