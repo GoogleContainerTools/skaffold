@@ -78,10 +78,8 @@ func generateNameGitShellOut(workingDir string, opts *Options) (string, error) {
 		return dirtyTag(currentTag, opts), nil
 	}
 
-	tags, err := runGitLines(root, "describe", "--tags", "--always")
-	if err != nil {
-		return "", errors.Wrap(err, "getting tags")
-	}
+	// Ignore error. It means there's no tag.
+	tags, _ := runGitLines(root, "describe", "--tags", "--exact-match")
 
 	return commitOrTag(currentTag, tags, opts), nil
 }

@@ -101,6 +101,20 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
+			description:  "don't use tag if not exact match",
+			expectedName: "test:3cec6b9",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source.go", []byte("code")).
+					add("source.go").
+					commit("initial").
+					tag("v1").
+					write("source.go", []byte("updated code")).
+					add("source.go").
+					commit("changes")
+			},
+		},
+		{
 			description:  "deleted file",
 			expectedName: "test:279d53f-dirty-abababa",
 			createGitRepo: func(dir string) {
