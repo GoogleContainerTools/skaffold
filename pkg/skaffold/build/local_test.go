@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
+	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 type FakeTagger struct {
@@ -56,10 +57,8 @@ func TestLocalRun(t *testing.T) {
 	defer func(h docker.AuthConfigHelper) { docker.DefaultAuthHelper = h }(docker.DefaultAuthHelper)
 	docker.DefaultAuthHelper = testAuthHelper{}
 
-	// Set a bad KUBECONFIG path so we don't parse a real one that happens to be
-	// present on the host
-	unsetEnvs := testutil.SetEnvs(t, map[string]string{"KUBECONFIG": "badpath"})
-	defer unsetEnvs(t)
+	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
+	defer restore()
 
 	tmp, cleanup := testutil.TempDir(t)
 	defer cleanup()

@@ -22,6 +22,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 const (
@@ -60,10 +61,30 @@ build:
 deploy:
   kubectl: {}
 `
+	minimalKanikoConfig = `
+apiVersion: skaffold/v1alpha2
+kind: Config
+build:
+  kaniko:
+    gcsBucket: demo
+`
+	completeKanikoConfig = `
+apiVersion: skaffold/v1alpha2
+kind: Config
+build:
+  kaniko:
+    gcsBucket: demo
+    pullSecret: /secret.json
+    pullSecretName: secret-name
+    namespace: nskaniko
+`
 	badConfig = "bad config"
 )
 
 func TestParseConfig(t *testing.T) {
+	cleanup := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
+	defer cleanup()
+
 	var tests = []struct {
 		description string
 		config      string
@@ -104,6 +125,24 @@ func TestParseConfig(t *testing.T) {
 			),
 		},
 		{
+			description: "Minimal Kaniko config",
+			config:      minimalKanikoConfig,
+			expected: config(
+				withKanikoBuild("demo", "kaniko-secret", "default", "",
+					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
+				),
+			),
+		},
+		{
+			description: "Complete Kaniko config",
+			config:      completeKanikoConfig,
+			expected: config(
+				withKanikoBuild("demo", "secret-name", "nskaniko", "/secret.json",
+					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
+				),
+			),
+		},
+		{
 			description: "Bad config",
 			config:      badConfig,
 			shouldErr:   true,
@@ -139,6 +178,21 @@ func withLocalBuild(ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldConfig) {
 func withGCBBuild(id string, ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldConfig) {
 	return func(cfg *SkaffoldConfig) {
 		b := v1alpha2.BuildConfig{BuildType: v1alpha2.BuildType{GoogleCloudBuild: &v1alpha2.GoogleCloudBuild{ProjectID: id}}}
+		for _, op := range ops {
+			op(&b)
+		}
+		cfg.Build = b
+	}
+}
+
+func withKanikoBuild(bucket, secretName, namespace, secret string, ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldConfig) {
+	return func(cfg *SkaffoldConfig) {
+		b := v1alpha2.BuildConfig{BuildType: v1alpha2.BuildType{KanikoBuild: &v1alpha2.KanikoBuild{
+			GCSBucket:      bucket,
+			PullSecretName: secretName,
+			Namespace:      namespace,
+			PullSecret:     secret,
+		}}}
 		for _, op := range ops {
 			op(&b)
 		}
