@@ -74,9 +74,18 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 	return deployResults, nil
 }
 
-// Not implemented
 func (h *HelmDeployer) Dependencies() ([]string, error) {
-	return nil, nil
+	var deps []string
+	for _, release := range h.Releases {
+		deps = append(deps, release.ValuesFilePath)
+		filepath.Walk(release.ChartPath, func(path string, info os.FileInfo, err error) error {
+			if !info.IsDir() {
+				deps = append(deps, path)
+			}
+			return nil
+		})
+	}
+	return deps, nil
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
