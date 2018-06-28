@@ -25,8 +25,6 @@ import (
 	"testing"
 )
 
-const stdinCloseTestString = "Some test string."
-
 func helperCommandContext(t *testing.T, ctx context.Context, s ...string) (cmd *exec.Cmd) {
 
 	cs := []string{"-test.run=TestHelperProcess", "--"}
