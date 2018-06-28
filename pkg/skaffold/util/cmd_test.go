@@ -17,7 +17,6 @@ limitations under the License.
 package util
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -26,21 +25,17 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func helperCommandContext(ctx context.Context, s ...string) (cmd *exec.Cmd) {
+func helperCommandContext(s ...string) (cmd *exec.Cmd) {
 
 	cs := []string{"-test.run=TestHelperProcess", "--"}
 	cs = append(cs, s...)
-	if ctx != nil {
-		cmd = exec.CommandContext(ctx, os.Args[0], cs...)
-	} else {
-		cmd = exec.Command(os.Args[0], cs...)
-	}
+	cmd = exec.Command(os.Args[0], cs...)
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
 	return cmd
 }
 
 func helperCommand(s ...string) *exec.Cmd {
-	return helperCommandContext(nil, s...)
+	return helperCommandContext( s...)
 }
 
 func TestHelperProcess(*testing.T) {
