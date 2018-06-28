@@ -1,3 +1,31 @@
+# v0.9.0 Release - 6/28/2018
+New Features:
+* Print the image name that's being built [#732](https://github.com/GoogleContainerTools/skaffold/pull/732)
+* Publish windows binaries on AppVeyor [#738](https://github.com/GoogleContainerTools/skaffold/pull/738)
+* Add labeling for profiles [#736](https://github.com/GoogleContainerTools/skaffold/pull/736)
+* Improve Git tagger [#714](https://github.com/GoogleContainerTools/skaffold/pull/714)
+* Support docker build --cache-from [#737](https://github.com/GoogleContainerTools/skaffold/pull/737)
+* Add custom kustomization path [#749](https://github.com/GoogleContainerTools/skaffold/pull/749)
+* Use tags only in case of perfect match [#755](https://github.com/GoogleContainerTools/skaffold/pull/755)
+
+Bug Fixes:
+* fixed a bug in dirtyTag which may leave extra whitespaces in changedPath [#721](https://github.com/GoogleContainerTools/skaffold/pull/721)
+* Remove duplication in code handling labels [#723](https://github.com/GoogleContainerTools/skaffold/pull/723)
+* Fix: Links for D4M Edge and D4W Edge were swapped [#735](https://github.com/GoogleContainerTools/skaffold/pull/735)
+* Fix bug where dirty submodules broke hash generation [#711](https://github.com/GoogleContainerTools/skaffold/pull/711)
+* Remove warning for an image that’s built and used by fqn [#713](https://github.com/GoogleContainerTools/skaffold/pull/713)
+* Don’t always fail if some COPY patterns don't match any file [#744](https://github.com/GoogleContainerTools/skaffold/pull/744)
+* Fix dev loop [#758](https://github.com/GoogleContainerTools/skaffold/pull/758)
+* Fix kaniko defaults [#756](https://github.com/GoogleContainerTools/skaffold/pull/756)
+* Don’t complain when object is not found during cleanup [#759](https://github.com/GoogleContainerTools/skaffold/pull/759)
+
+Updates:
+* Deployers should only rely on their specific config [#739](https://github.com/GoogleContainerTools/skaffold/pull/739)
+* Builders should only rely on their specific config [#740](https://github.com/GoogleContainerTools/skaffold/pull/740)
+* e2e test for helm deployments. [#743](https://github.com/GoogleContainerTools/skaffold/pull/743)
+* New code to watch file changes [#620](https://github.com/GoogleContainerTools/skaffold/pull/620)
+* docs: add info about published artifacts [#751](https://github.com/GoogleContainerTools/skaffold/pull/751)
+
 # v0.8.0 Release - 06/21/2018
 
 New Features
