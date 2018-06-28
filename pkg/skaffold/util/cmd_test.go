@@ -26,6 +26,7 @@ import (
 )
 
 const stdinCloseTestString = "Some test string."
+
 func helperCommandContext(t *testing.T, ctx context.Context, s ...string) (cmd *exec.Cmd) {
 
 	cs := []string{"-test.run=TestHelperProcess", "--"}
@@ -77,22 +78,22 @@ func TestHelperProcess(*testing.T) {
 }
 
 func TestCmd_RunCmdOut(t *testing.T) {
-	tests := []struct{
-		name string
-		cmd *exec.Cmd
-		want string
+	tests := []struct {
+		name      string
+		cmd       *exec.Cmd
+		want      string
 		shouldErr bool
 	}{
 		{
-			name: "skaffold test",
-			cmd: helperCommand(t, "skaffold", "dev"),
-			want: "dev\n",
+			name:      "skaffold test",
+			cmd:       helperCommand(t, "skaffold", "dev"),
+			want:      "dev\n",
 			shouldErr: false,
 		},
 		{
-			name: "unknown command test",
-			cmd: helperCommand(t, "foo", "bar"),
-			want: "",
+			name:      "unknown command test",
+			cmd:       helperCommand(t, "foo", "bar"),
+			want:      "",
 			shouldErr: true,
 		},
 	}
