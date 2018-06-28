@@ -17,12 +17,12 @@ limitations under the License.
 package util
 
 import (
-	"testing"
-	"os/exec"
-	"os"
 	"context"
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/testutil"
+	"os"
+	"os/exec"
+	"testing"
 )
 
 const stdinCloseTestString = "Some test string."
