@@ -90,7 +90,7 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		return errors.Wrap(err, "reading manifests")
 	}
 
-	if err := kubectl(manifests.reader(), out, k.kubeContext, "delete", "--ignore-not-found=true", "-f", "-"); err != nil {
+	if err := kubectl(manifests.reader(), out, k.kubeContext, "delete", "--grace-period=1", "--ignore-not-found=true", "-f", "-"); err != nil {
 		return errors.Wrap(err, "deleting manifests")
 	}
 

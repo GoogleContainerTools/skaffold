@@ -162,14 +162,14 @@ func TestKubectlCleanup(t *testing.T) {
 			cfg: &v1alpha2.KubectlDeploy{
 				Manifests: []string{"test/deployment.yaml"},
 			},
-			command: testutil.NewFakeCmd("kubectl --context kubecontext delete --ignore-not-found=true -f -", nil),
+			command: testutil.NewFakeCmd("kubectl --context kubecontext delete --grace-period=1 --ignore-not-found=true -f -", nil),
 		},
 		{
 			description: "cleanup error",
 			cfg: &v1alpha2.KubectlDeploy{
 				Manifests: []string{"test/deployment.yaml"},
 			},
-			command:   testutil.NewFakeCmd("kubectl --context kubecontext delete --ignore-not-found=true -f -", errors.New("BUG")),
+			command:   testutil.NewFakeCmd("kubectl --context kubecontext delete --grace-period=1 --ignore-not-found=true -f -", errors.New("BUG")),
 			shouldErr: true,
 		},
 	}
