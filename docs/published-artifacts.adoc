@@ -17,6 +17,11 @@ Documentation
 https://storage.googleapis.com/skaffold/builds/latest/docs/index.html
 https://storage.googleapis.com/skaffold/builds/latest/docs/index.pdf
 
+Docker image
+----
+gcr.io/k8s-skaffold/skaffold:latest
+----
+
 === Per Commit
 A skaffold docker image with most builder and deploy dependencies is tagged with each commit
 

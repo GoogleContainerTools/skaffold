@@ -112,6 +112,7 @@ release-build: cross docs
 	docker build \
     		-f deploy/skaffold/Dockerfile \
     		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
+    		-t gcr.io/$(GCP_PROJECT)/skaffold:latest \
     		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) .
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_BUILD_PATH)/
 	gsutil -m cp -r $(DOCS_DIR)/* $(GSC_BUILD_PATH)/docs/
