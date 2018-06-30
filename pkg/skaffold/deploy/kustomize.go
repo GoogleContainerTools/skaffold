@@ -84,7 +84,7 @@ func newManifestList(r io.Reader) (manifestList, error) {
 }
 
 func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
-	manifests, err := buildManifests(constants.DefaultKustomizationPath)
+	manifests, err := buildManifests(k.KustomizeDeploy.KustomizePath)
 	if err != nil {
 		return errors.Wrap(err, "kustomize")
 	}
