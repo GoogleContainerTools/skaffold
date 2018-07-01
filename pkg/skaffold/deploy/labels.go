@@ -157,7 +157,7 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 		return errors.Wrapf(err, "patching resource %s/%s", namespace, name)
 	}
 
-	return err
+	return nil
 }
 
 func resolveNamespace(ns string) (string, error) {
