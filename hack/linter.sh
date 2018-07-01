@@ -16,9 +16,11 @@
 
 set -e -o pipefail
 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 if ! [ -x "$(command -v golangci-lint)" ]; then
 	echo "Installing GolangCI-Lint"
-	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	${DIR}/install_golint.sh -b $GOPATH/bin v1.8.1
 fi
 
 golangci-lint run \
