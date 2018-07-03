@@ -12,7 +12,7 @@ image::http://gstatic.com/cloudssh/images/open-btn.svg[Open in Cloud Shell]
 
 . Create a Kubernetes Engine cluster if you don't already have one.
 [source,shell]
-gcloud container clusters create skaffold --zone us-west.a
+gcloud container clusters create skaffold --zone us-west1-a
 
 . Clone the Skaffold repository then change directories to the sample application.
 [source,shell]
