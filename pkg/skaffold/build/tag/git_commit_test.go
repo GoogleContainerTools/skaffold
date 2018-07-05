@@ -204,6 +204,13 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 				ioutil.WriteFile(filepath.Join(dir, "source.go"), []byte("code"), os.ModePerm)
 			},
 		},
+		{
+			description:  "git repo with no commit",
+			expectedName: "test:dirty-abababa",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir)
+			},
+		},
 	}
 
 	for _, tt := range tests {
