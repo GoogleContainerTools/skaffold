@@ -28,12 +28,14 @@ import (
 var DependenciesForArtifact = dependenciesForArtifact
 
 func dependenciesForArtifact(a *v1alpha2.Artifact) ([]string, error) {
-	if a.DockerArtifact != nil {
-		return docker.GetDependencies(a.DockerArtifact.DockerfilePath, a.Workspace)
-	}
-	if a.BazelArtifact != nil {
-		return bazel.GetDependencies(a)
-	}
+	switch {
+	case a.DockerArtifact != nil:
+		return docker.GetDependencies(a.Workspace, a.DockerArtifact.DockerfilePath)
 
-	return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
+	case a.BazelArtifact != nil:
+		return bazel.GetDependencies(a)
+
+	default:
+		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
+	}
 }

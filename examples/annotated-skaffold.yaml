@@ -84,8 +84,9 @@ build:
   # See https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster
   # Example
   # kaniko:
-    # gcsBucket: k8s-skaffold
-    # pullSecret: /a/secret/path/serviceaccount.json
+  #   gcsBucket: k8s-skaffold
+  #   pullSecret: /a/secret/path/serviceaccount.json
+  #   namespace: default
 
 # The deploy section has all the information needed to deploy. Along with build:
 # it is a required section.
