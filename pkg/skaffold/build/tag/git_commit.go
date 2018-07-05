@@ -53,13 +53,12 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *Opt
 func generateNameGitShellOut(workingDir string, opts *Options) (string, error) {
 	root, err := runGit(workingDir, "rev-parse", "--show-toplevel")
 	if err != nil {
-		logrus.Warnln("Using digest instead of git commit", err)
-		return nonGitTag(opts), nil
+		return fallbackOnDigest(opts, err), nil
 	}
 
 	commitHash, err := runGit(root, "rev-parse", "HEAD")
 	if err != nil {
-		return "", errors.Wrap(err, "getting current revision")
+		return fallbackOnDigest(opts, err), nil
 	}
 
 	currentTag := commitHash[0:7]
@@ -87,19 +86,18 @@ func generateNameGitShellOut(workingDir string, opts *Options) (string, error) {
 func generateNameGoGit(workingDir string, opts *Options) (string, error) {
 	repo, err := git.PlainOpenWithOptions(workingDir, &git.PlainOpenOptions{DetectDotGit: true})
 	if err != nil {
-		logrus.Warnln("Using digest instead of git commit", err)
-		return nonGitTag(opts), nil
+		return fallbackOnDigest(opts, err), nil
 	}
 
 	w, err := repo.Worktree()
 	if err != nil {
-		return "", errors.Wrap(err, "reading worktree")
+		return fallbackOnDigest(opts, err), nil
 	}
 	root := w.Filesystem.Root()
 
 	head, err := repo.Head()
 	if err != nil {
-		return "", errors.Wrap(err, "determining current git commit")
+		return fallbackOnDigest(opts, err), nil
 	}
 
 	commitHash := head.Hash().String()
@@ -215,7 +213,9 @@ func dirtyTag(currentTag string, opts *Options) string {
 	return fmt.Sprintf("%s:%s-dirty-%s", opts.ImageName, currentTag, shortDigest(opts))
 }
 
-func nonGitTag(opts *Options) string {
+func fallbackOnDigest(opts *Options, err error) string {
+	logrus.Warnln("Using digest instead of git commit:", err)
+
 	return fmt.Sprintf("%s:dirty-%s", opts.ImageName, shortDigest(opts))
 }
 
