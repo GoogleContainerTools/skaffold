@@ -30,7 +30,7 @@ deploy:
       namespace: skaffold
       values:
         image: skaffold-helm
-      valuesFilePaths:
+      valuesFilePath:
         - helm-skaffold-values.yaml
 ```
 
