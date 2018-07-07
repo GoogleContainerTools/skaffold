@@ -47,7 +47,7 @@ type DepsOutput struct {
 }
 
 func runDeps(out io.Writer, filename, context string) error {
-	deps, err := docker.GetDependencies(filename, context)
+	deps, err := docker.GetDependencies(context, filename)
 	if err != nil {
 		return errors.Wrap(err, "getting dockerfile dependencies")
 	}

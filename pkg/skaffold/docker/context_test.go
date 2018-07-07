@@ -45,7 +45,7 @@ func TestDockerContext(t *testing.T) {
 	ioutil.WriteFile(filepath.Join(tmpDir, "alsoignored.txt"), []byte(""), 0644)
 	reader, writer := io.Pipe()
 	go func() {
-		err := CreateDockerTarContext(writer, "Dockerfile", tmpDir)
+		err := CreateDockerTarContext(writer, tmpDir, "Dockerfile")
 		if err != nil {
 			writer.CloseWithError(err)
 		} else {

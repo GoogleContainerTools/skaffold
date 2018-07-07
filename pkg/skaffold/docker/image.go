@@ -18,11 +18,8 @@ package docker
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
@@ -43,14 +40,6 @@ import (
 func RunBuild(ctx context.Context, out io.Writer, cli APIClient, workspace string, opts types.ImageBuildOptions) error {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, opts.Dockerfile)
 
-	// Add a sanity check to check if the dockerfile exists before running the build
-	if _, err := os.Stat(filepath.Join(workspace, opts.Dockerfile)); err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Errorf("Could not find dockerfile: %s", opts.Dockerfile)
-		}
-		return errors.Wrap(err, "stat dockerfile")
-	}
-
 	// Like `docker build`, we ignore the errors
 	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
 	authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs()
@@ -58,7 +47,7 @@ func RunBuild(ctx context.Context, out io.Writer, cli APIClient, workspace strin
 
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := CreateDockerTarContext(buildCtxWriter, opts.Dockerfile, workspace)
+		err := CreateDockerTarContext(buildCtxWriter, workspace, opts.Dockerfile)
 		if err != nil {
 			buildCtxWriter.CloseWithError(errors.Wrap(err, "creating docker context"))
 			return

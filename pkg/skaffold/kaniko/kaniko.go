@@ -37,7 +37,7 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 
 	initialTag := util.RandomID()
 	tarName := "context.tar.gz" // TODO(r2d4): until this is configurable upstream
-	if err := docker.UploadContextToGCS(ctx, dockerfilePath, artifact.Workspace, cfg.GCSBucket, tarName); err != nil {
+	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, dockerfilePath, cfg.GCSBucket, tarName); err != nil {
 		return "", errors.Wrap(err, "uploading tar to gcs")
 	}
 
@@ -53,6 +53,7 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 	if err := logger.Start(ctx); err != nil {
 		return "", errors.Wrap(err, "starting log streamer")
 	}
+
 	imageDst := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
 	p, err := client.CoreV1().Pods(cfg.Namespace).Create(&v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -99,7 +100,6 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 			RestartPolicy: v1.RestartPolicyNever,
 		},
 	})
-
 	if err != nil {
 		return "", errors.Wrap(err, "creating kaniko pod")
 	}

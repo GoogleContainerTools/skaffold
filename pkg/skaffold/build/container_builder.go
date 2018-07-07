@@ -71,10 +71,10 @@ type GoogleCloudBuilder struct {
 	*v1alpha2.GoogleCloudBuild
 }
 
-func NewGoogleCloudBuilder(cfg *v1alpha2.GoogleCloudBuild) (*GoogleCloudBuilder, error) {
+func NewGoogleCloudBuilder(cfg *v1alpha2.GoogleCloudBuild) *GoogleCloudBuilder {
 	return &GoogleCloudBuilder{
 		GoogleCloudBuild: cfg,
-	}, nil
+	}
 }
 
 func (cb *GoogleCloudBuilder) Labels() map[string]string {
@@ -137,7 +137,7 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 	}
 
 	fmt.Fprintf(out, "Pushing code to gs://%s/%s\n", cbBucket, buildObject)
-	if err := docker.UploadContextToGCS(ctx, artifact.DockerArtifact.DockerfilePath, artifact.Workspace, cbBucket, buildObject); err != nil {
+	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact.DockerfilePath, cbBucket, buildObject); err != nil {
 		return nil, errors.Wrap(err, "uploading source tarball")
 	}
 
