@@ -9,7 +9,7 @@ In this file you define the tools you will be using and their configuration.
 There are 3 main phases in the Skaffold workflow definition.
 
 ==== 1. Build
-In the build phase, Skaffold will use the tool of your choice to build an artifac.
+In the build phase, Skaffold will use the tool of your choice to build an artifact.
 Artifacts are Docker images
 that you would like to deploy into your Kubernetes cluster when changes are made to them.
 
