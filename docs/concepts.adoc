@@ -14,7 +14,7 @@ Artifacts are Docker images
 that you would like to deploy into your Kubernetes cluster when changes are made to them.
 
 ==== 2. Push
-In the push phase, Skaffold ensures that your image is uploaded to the registry referenced in the image nam.
+In the push phase, Skaffold ensures that your image is uploaded to the registry referenced in the image name.
 Before
 running Skaffold you should ensure that you are able to push to your configured image registry.
 
