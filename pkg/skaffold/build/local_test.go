@@ -182,11 +182,12 @@ func TestLocalRun(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			l := LocalBuilder{
+				Tagger:       test.tagger,
 				api:          test.api,
 				localCluster: test.localCluster,
 			}
 
-			res, err := l.Build(context.Background(), test.out, test.tagger, test.artifacts)
+			res, err := l.Build(context.Background(), test.out, test.artifacts)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
 		})
 	}

@@ -36,12 +36,14 @@ import (
 
 // KanikoBuilder can build docker artifacts on Kubernetes, using Kaniko.
 type KanikoBuilder struct {
+	tag.Tagger
 	*v1alpha2.KanikoBuild
 }
 
 // NewKanikoBuilder creates a KanikoBuilder.
-func NewKanikoBuilder(cfg *v1alpha2.KanikoBuild) *KanikoBuilder {
+func NewKanikoBuilder(t tag.Tagger, cfg *v1alpha2.KanikoBuild) *KanikoBuilder {
 	return &KanikoBuilder{
+		Tagger:      t,
 		KanikoBuild: cfg,
 	}
 }
@@ -54,7 +56,7 @@ func (k *KanikoBuilder) Labels() map[string]string {
 }
 
 // Build builds a list of artifacts with Kaniko.
-func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]Artifact, error) {
+func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact) ([]Artifact, error) {
 	teardown, err := k.setupSecret()
 	if err != nil {
 		return nil, errors.Wrap(err, "setting up secret")
@@ -77,7 +79,7 @@ func (k *KanikoBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tag
 			return nil, errors.Wrap(err, "getting digest")
 		}
 
-		tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.Options{
+		tag, err := k.Tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.Options{
 			ImageName: artifact.ImageName,
 			Digest:    digest,
 		})

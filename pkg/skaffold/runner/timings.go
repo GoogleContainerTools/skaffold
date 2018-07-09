@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 )
@@ -43,11 +42,11 @@ type withTimings struct {
 	deploy.Deployer
 }
 
-func (w withTimings) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
+func (w withTimings) Build(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
 	start := time.Now()
 	fmt.Fprintln(out, "Starting build...")
 
-	bRes, err := w.Builder.Build(ctx, out, tagger, artifacts)
+	bRes, err := w.Builder.Build(ctx, out, artifacts)
 	if err == nil {
 		fmt.Fprintln(out, "Build complete in", time.Since(start))
 	}
