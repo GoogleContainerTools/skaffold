@@ -18,7 +18,6 @@ package gcp
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -28,6 +27,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"k8s.io/apimachinery/pkg/util/net"
