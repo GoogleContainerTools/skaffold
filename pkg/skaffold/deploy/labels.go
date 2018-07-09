@@ -117,15 +117,15 @@ func labelDeployResults(labels map[string]string, results []Artifact) {
 }
 
 func addLabels(labels map[string]string, accessor metav1.Object) {
-	for k, v := range constants.Labels.DefaultLabels {
-		labels[k] = v
-	}
-
 	objLabels := accessor.GetLabels()
 	if objLabels == nil {
 		objLabels = make(map[string]string)
 	}
-
+	for k, v := range constants.Labels.DefaultLabels {
+		if _, ok := objLabels[k]; !ok {
+			objLabels[k] = v
+		}
+	}
 	for key, value := range labels {
 		objLabels[key] = value
 	}
@@ -170,7 +170,7 @@ func resolveNamespace(ns string) (string, error) {
 	}
 
 	current, present := cfg.Contexts[cfg.CurrentContext]
-	if present {
+	if present && current.Namespace != "" {
 		return current.Namespace, nil
 	}
 	return "default", nil
