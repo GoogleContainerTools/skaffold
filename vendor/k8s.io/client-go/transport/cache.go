@@ -43,9 +43,7 @@ type tlsCacheKey struct {
 	caData     string
 	certData   string
 	keyData    string
-	getCert    string
 	serverName string
-	dial       string
 }
 
 func (t tlsCacheKey) String() string {
@@ -53,7 +51,7 @@ func (t tlsCacheKey) String() string {
 	if len(t.keyData) > 0 {
 		keyText = "<redacted>"
 	}
-	return fmt.Sprintf("insecure:%v, caData:%#v, certData:%#v, keyData:%s, getCert: %s, serverName:%s, dial:%s", t.insecure, t.caData, t.certData, keyText, t.getCert, t.serverName, t.dial)
+	return fmt.Sprintf("insecure:%v, caData:%#v, certData:%#v, keyData:%s, serverName:%s", t.insecure, t.caData, t.certData, keyText, t.serverName)
 }
 
 func (c *tlsTransportCache) get(config *Config) (http.RoundTripper, error) {
@@ -77,7 +75,7 @@ func (c *tlsTransportCache) get(config *Config) (http.RoundTripper, error) {
 		return nil, err
 	}
 	// The options didn't require a custom TLS config
-	if tlsConfig == nil && config.Dial == nil {
+	if tlsConfig == nil {
 		return http.DefaultTransport, nil
 	}
 
@@ -86,7 +84,7 @@ func (c *tlsTransportCache) get(config *Config) (http.RoundTripper, error) {
 		dial = (&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
-		}).DialContext
+		}).Dial
 	}
 	// Cache a single transport for these options
 	c.transports[key] = utilnet.SetTransportDefaults(&http.Transport{
@@ -94,7 +92,7 @@ func (c *tlsTransportCache) get(config *Config) (http.RoundTripper, error) {
 		TLSHandshakeTimeout: 10 * time.Second,
 		TLSClientConfig:     tlsConfig,
 		MaxIdleConnsPerHost: idleConnsPerHost,
-		DialContext:         dial,
+		Dial:                dial,
 	})
 	return c.transports[key], nil
 }
@@ -110,8 +108,6 @@ func tlsConfigKey(c *Config) (tlsCacheKey, error) {
 		caData:     string(c.TLS.CAData),
 		certData:   string(c.TLS.CertData),
 		keyData:    string(c.TLS.KeyData),
-		getCert:    fmt.Sprintf("%p", c.TLS.GetCert),
 		serverName: c.TLS.ServerName,
-		dial:       fmt.Sprintf("%p", c.Dial),
 	}, nil
 }

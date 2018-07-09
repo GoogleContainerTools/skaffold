@@ -41,19 +41,19 @@
 
 [[constraint]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.11.0-beta.2"
+  version = "kubernetes-1.10.0"
 
 [[constraint]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.11.0-beta.2"
+  version = "kubernetes-1.10.0"
 
 [[constraint]]
   name = "k8s.io/api"
-  version = "kubernetes-1.11.0-beta.2"
+  version = "kubernetes-1.10.0"
 
 [[override]]
   name = "github.com/Azure/go-autorest"
-  version = "v10.6.2"
+  version = "v9.1.0"
 
 [[constraint]]
   name = "cloud.google.com/go"
