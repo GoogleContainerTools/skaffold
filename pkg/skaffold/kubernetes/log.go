@@ -35,6 +35,7 @@ import (
 
 // Client is for tests
 var Client = GetClientset
+var DynamicClient = GetDynamicClient
 
 // LogAggregator aggregates the logs for all the deployed pods.
 type LogAggregator struct {

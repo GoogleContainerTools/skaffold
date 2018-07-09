@@ -842,6 +842,7 @@
   packages = [
     "discovery",
     "discovery/fake",
+    "dynamic",
     "kubernetes",
     "kubernetes/fake",
     "kubernetes/scheme",
@@ -948,6 +949,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "034783fc12bf1a413c89d14f83491cba58dd1481e1e989d535d7a6e5fbfb676c"
+  inputs-digest = "fb2d9bb478862a716d93eb7a0e3c8c449be8bed8e687f44b287dd2051129eb64"
   solver-name = "gps-cdcl"
   solver-version = 1
