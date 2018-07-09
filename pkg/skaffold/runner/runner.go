@@ -41,7 +41,6 @@ const PollInterval = 500 * time.Millisecond
 type SkaffoldRunner struct {
 	build.Builder
 	deploy.Deployer
-	tag.Tagger
 
 	watchFactory watch.Factory
 	builds       []build.Artifact
@@ -60,7 +59,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 		return nil, errors.Wrap(err, "parsing skaffold tag config")
 	}
 
-	builder, err := getBuilder(&cfg.Build, kubeContext)
+	builder, err := getBuilder(tagger, &cfg.Build, kubeContext)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold build config")
 	}
@@ -79,24 +78,23 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 	return &SkaffoldRunner{
 		Builder:      builder,
 		Deployer:     deployer,
-		Tagger:       tagger,
 		watchFactory: watch.NewCompositeWatcher,
 	}, nil
 }
 
-func getBuilder(cfg *v1alpha2.BuildConfig, kubeContext string) (build.Builder, error) {
+func getBuilder(t tag.Tagger, cfg *v1alpha2.BuildConfig, kubeContext string) (build.Builder, error) {
 	switch {
 	case cfg.LocalBuild != nil:
 		logrus.Debugf("Using builder: local")
-		return build.NewLocalBuilder(cfg.LocalBuild, kubeContext)
+		return build.NewLocalBuilder(t, cfg.LocalBuild, kubeContext)
 
 	case cfg.GoogleCloudBuild != nil:
 		logrus.Debugf("Using builder: google cloud")
-		return build.NewGoogleCloudBuilder(cfg.GoogleCloudBuild), nil
+		return build.NewGoogleCloudBuilder(t, cfg.GoogleCloudBuild), nil
 
 	case cfg.KanikoBuild != nil:
 		logrus.Debugf("Using builder: kaniko")
-		return build.NewKanikoBuilder(cfg.KanikoBuild), nil
+		return build.NewKanikoBuilder(t, cfg.KanikoBuild), nil
 
 	default:
 		return nil, fmt.Errorf("Unknown builder for config %+v", cfg)
@@ -150,7 +148,7 @@ func getTagger(t v1alpha2.TagPolicy, customTag string) (tag.Tagger, error) {
 
 // Run builds artifacts ad then deploys them.
 func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact) error {
-	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
+	bRes, err := r.Build(ctx, out, artifacts)
 	if err != nil {
 		return errors.Wrap(err, "build step")
 	}
@@ -214,7 +212,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact, images *kubernetes.ImageList) error {
 	firstRun := r.builds == nil
 
-	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
+	bRes, err := r.Build(ctx, out, artifacts)
 	if err != nil {
 		if firstRun {
 			return errors.Wrap(err, "exiting dev mode because the first build failed")

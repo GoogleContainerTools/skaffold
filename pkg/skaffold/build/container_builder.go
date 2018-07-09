@@ -68,11 +68,13 @@ const (
 )
 
 type GoogleCloudBuilder struct {
+	tag.Tagger
 	*v1alpha2.GoogleCloudBuild
 }
 
-func NewGoogleCloudBuilder(cfg *v1alpha2.GoogleCloudBuild) *GoogleCloudBuilder {
+func NewGoogleCloudBuilder(t tag.Tagger, cfg *v1alpha2.GoogleCloudBuild) *GoogleCloudBuilder {
 	return &GoogleCloudBuilder{
+		Tagger:           t,
 		GoogleCloudBuild: cfg,
 	}
 }
@@ -83,7 +85,7 @@ func (cb *GoogleCloudBuilder) Labels() map[string]string {
 	}
 }
 
-func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]Artifact, error) {
+func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact) ([]Artifact, error) {
 	client, err := google.DefaultClient(ctx, cloudbuild.CloudPlatformScope)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting google client")
@@ -103,7 +105,7 @@ func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger t
 
 	var builds []Artifact
 	for _, artifact := range artifacts {
-		build, err := cb.buildArtifact(ctx, out, tagger, cbclient, c, artifact)
+		build, err := cb.buildArtifact(ctx, out, cbclient, c, artifact)
 		if err != nil {
 			return nil, errors.Wrapf(err, "building [%s]", artifact.ImageName)
 		}
@@ -114,7 +116,7 @@ func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger t
 	return builds, nil
 }
 
-func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, cbclient *cloudbuild.Service, c *cstorage.Client, artifact *v1alpha2.Artifact) (*Artifact, error) {
+func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, cbclient *cloudbuild.Service, c *cstorage.Client, artifact *v1alpha2.Artifact) (*Artifact, error) {
 	fmt.Fprintf(out, "Building [%s]...\n", artifact.ImageName)
 
 	// need to format build args as strings to pass to container builder docker
@@ -216,7 +218,7 @@ watch:
 	builtTag := fmt.Sprintf("%s@%s", artifact.ImageName, imageID)
 	logrus.Infof("Image built at %s", builtTag)
 
-	newTag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.Options{
+	newTag, err := cb.Tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.Options{
 		ImageName: artifact.ImageName,
 		Digest:    imageID,
 	})

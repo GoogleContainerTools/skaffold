@@ -31,6 +31,8 @@ import (
 
 // LocalBuilder uses the host docker daemon to build and tag the image
 type LocalBuilder struct {
+	tag.Tagger
+
 	api          docker.APIClient
 	localCluster bool
 	pushImages   bool
@@ -38,7 +40,7 @@ type LocalBuilder struct {
 }
 
 // NewLocalBuilder returns an new instance of a LocalBuilder
-func NewLocalBuilder(cfg *v1alpha2.LocalBuild, kubeContext string) (*LocalBuilder, error) {
+func NewLocalBuilder(t tag.Tagger, cfg *v1alpha2.LocalBuild, kubeContext string) (*LocalBuilder, error) {
 	api, err := docker.NewAPIClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
@@ -54,6 +56,7 @@ func NewLocalBuilder(cfg *v1alpha2.LocalBuild, kubeContext string) (*LocalBuilde
 	}
 
 	return &LocalBuilder{
+		Tagger:       t,
 		kubeContext:  kubeContext,
 		api:          api,
 		localCluster: localCluster,
@@ -74,7 +77,7 @@ func (l *LocalBuilder) Labels() map[string]string {
 
 // Build runs a docker build on the host and tags the resulting image with
 // its checksum. It streams build progress to the writer argument.
-func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]Artifact, error) {
+func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact) ([]Artifact, error) {
 	if l.localCluster {
 		if _, err := fmt.Fprintf(out, "Found [%s] context, using local docker daemon.\n", l.kubeContext); err != nil {
 			return nil, errors.Wrap(err, "writing status")
@@ -85,7 +88,7 @@ func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagg
 	var built []Artifact
 
 	for _, artifact := range artifacts {
-		tag, err := l.buildArtifact(ctx, out, tagger, artifact)
+		tag, err := l.buildArtifact(ctx, out, l.Tagger, artifact)
 		if err != nil {
 			return nil, errors.Wrapf(err, "building [%s]", artifact.ImageName)
 		}

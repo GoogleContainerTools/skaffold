@@ -37,6 +37,7 @@ import (
 )
 
 type TestBuilder struct {
+	tag.Tagger
 	built  []build.Artifact
 	errors []error
 }
@@ -45,7 +46,7 @@ func (t *TestBuilder) Labels() map[string]string {
 	return map[string]string{}
 }
 
-func (t *TestBuilder) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
+func (t *TestBuilder) Build(ctx context.Context, w io.Writer, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
 	if len(t.errors) > 0 {
 		err := t.errors[0]
 		t.errors = t.errors[1:]
@@ -242,7 +243,9 @@ func TestRun(t *testing.T) {
 					},
 				},
 			},
-			builder: &TestBuilder{},
+			builder: &TestBuilder{
+				Tagger: &tag.ChecksumTagger{},
+			},
 			deployer: &TestDeployer{
 				errors: []error{fmt.Errorf("")},
 			},
@@ -255,7 +258,6 @@ func TestRun(t *testing.T) {
 			runner := &SkaffoldRunner{
 				Builder:  test.builder,
 				Deployer: test.deployer,
-				Tagger:   &tag.ChecksumTagger{},
 			}
 			err := runner.Run(context.Background(), ioutil.Discard, test.config.Build.Artifacts)
 
@@ -323,7 +325,6 @@ func TestDev(t *testing.T) {
 			runner := &SkaffoldRunner{
 				Builder:      test.builder,
 				Deployer:     test.deployer,
-				Tagger:       &tag.ChecksumTagger{},
 				watchFactory: test.watcherFactory,
 			}
 			_, err := runner.Dev(context.Background(), ioutil.Discard, nil)
