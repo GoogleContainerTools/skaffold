@@ -82,21 +82,7 @@ func (l *LocalBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagg
 	}
 	defer l.api.Close()
 
-	var built []Artifact
-
-	for _, artifact := range artifacts {
-		tag, err := l.buildArtifact(ctx, out, tagger, artifact)
-		if err != nil {
-			return nil, errors.Wrapf(err, "building [%s]", artifact.ImageName)
-		}
-
-		built = append(built, Artifact{
-			ImageName: artifact.ImageName,
-			Tag:       tag,
-		})
-	}
-
-	return built, nil
+	return buildArtifactsInParallel(ctx, out, tagger, artifacts, l.buildArtifact)
 }
 
 func (l *LocalBuilder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *v1alpha2.Artifact) (string, error) {
