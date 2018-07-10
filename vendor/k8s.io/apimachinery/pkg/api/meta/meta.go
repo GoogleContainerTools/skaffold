@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/golang/glog"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -110,7 +109,6 @@ func Accessor(obj interface{}) (metav1.Object, error) {
 		}
 		return nil, errNotObject
 	default:
-		spew.Dump(t)
 		return nil, errNotObject
 	}
 }
