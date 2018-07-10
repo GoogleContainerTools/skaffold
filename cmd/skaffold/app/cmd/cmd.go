@@ -68,6 +68,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 }
 
 func AddDevFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVar(&opts.GitRepository, "git-repository", "", "Watch a git repository instead of local files")
 	cmd.Flags().BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
 }
 

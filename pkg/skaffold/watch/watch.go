@@ -20,13 +20,14 @@ import (
 	"context"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 )
 
 // Factory is used to create Watchers.
-type Factory func(files []string, artifacts []*v1alpha2.Artifact, pollInterval time.Duration) CompositeWatcher
+type Factory func(files []string, artifacts []*v1alpha2.Artifact, pollInterval time.Duration, opts *config.SkaffoldOptions) CompositeWatcher
 
 // CompositeWatcher can watch both files and artifacts.
 type CompositeWatcher interface {
@@ -37,19 +38,21 @@ type compositeWatcher struct {
 	files        []string
 	artifacts    []*v1alpha2.Artifact
 	pollInterval time.Duration
+	opts         *config.SkaffoldOptions
 }
 
 // NewCompositeWatcher creates a CompositeWatcher that watches both files and artifacts.
-func NewCompositeWatcher(files []string, artifacts []*v1alpha2.Artifact, pollInterval time.Duration) CompositeWatcher {
+func NewCompositeWatcher(files []string, artifacts []*v1alpha2.Artifact, pollInterval time.Duration, opts *config.SkaffoldOptions) CompositeWatcher {
 	return &compositeWatcher{
 		files:        files,
 		artifacts:    artifacts,
 		pollInterval: pollInterval,
+		opts:         opts,
 	}
 }
 
 func (w *compositeWatcher) Run(ctx context.Context, onFileChange FileChangedFn, onArtifactChange ArtifactChangedFn) error {
-	artifactWatcher, err := NewArtifactWatcher(w.artifacts, w.pollInterval)
+	artifactWatcher, err := NewArtifactWatcher(w.artifacts, w.pollInterval, w.opts.GitRepository)
 	if err != nil {
 		return errors.Wrap(err, "watching artifacts")
 	}
