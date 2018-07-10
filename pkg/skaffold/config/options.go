@@ -45,5 +45,8 @@ func (opts *SkaffoldOptions) Labels() map[string]string {
 	if len(opts.Profiles) > 0 {
 		labels["profiles"] = strings.Join(opts.Profiles, ",")
 	}
+	if opts.GitRepository != "" {
+		labels["git-repo"] = opts.GitRepository
+	}
 	return labels
 }
