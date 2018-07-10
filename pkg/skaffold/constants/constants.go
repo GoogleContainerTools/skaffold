@@ -53,6 +53,10 @@ const (
 	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
 
 	DefaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
+
+	DefaultKnativeBuild              = "build.yaml"
+	DefaultKnativeSecretName         = "knative-secret"
+	DefaultKnativeServiceAccountName = "knative-sa"
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}

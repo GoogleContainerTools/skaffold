@@ -392,17 +392,6 @@
   revision = "9cad4c3443a7200dd6400aef47183728de563a38"
 
 [[projects]]
-  branch = "master"
-  digest = "1:13e2fa5735a82a5fb044f290cfd0dba633d1c5e516b27da0509e0dbb3515a18e"
-  name = "github.com/hashicorp/golang-lru"
-  packages = [
-    ".",
-    "simplelru",
-  ]
-  pruneopts = "NUT"
-  revision = "0fb14efe8c47ae851c0034ed7a448854d3d34cf3"
-
-[[projects]]
   digest = "1:65300ccc4bcb38b107b868155c303312978981e56bca707c81efec57575b5e06"
   name = "github.com/imdario/mergo"
   packages = ["."]
@@ -449,6 +438,19 @@
   pruneopts = "NUT"
   revision = "9fc7bb800b555d63157c65a904c86a2cc7b4e795"
   version = "0.4"
+
+[[projects]]
+  digest = "1:afa85f21d724d676df6b4206adc1c22120a94c5c1b4b3538836d9b959b4f394d"
+  name = "github.com/knative/build"
+  packages = [
+    "pkg/apis/build",
+    "pkg/apis/build/v1alpha1",
+    "pkg/client/clientset/versioned/scheme",
+    "pkg/client/clientset/versioned/typed/build/v1alpha1",
+    "pkg/logs",
+  ]
+  pruneopts = "NUT"
+  revision = "dd8f92ed1cc2e49d98c26a94270a40c9ea7da9b8"
 
 [[projects]]
   digest = "1:5985ef4caf91ece5d54817c11ea25f182697534f8ae6521eadcd628c142ac4b6"
@@ -954,13 +956,12 @@
   version = "kubernetes-1.11.0"
 
 [[projects]]
-  digest = "1:1863cb213bf50c1505c7ef97e78ce4e641e4fda9b4e7dc666ad57b094fdaffe8"
+  digest = "1:a20e293fab86a640f5cd1e730c24909d9940ed936e25242031395fea9e317de2"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/errors",
     "pkg/api/meta",
     "pkg/api/resource",
-    "pkg/apis/meta/internalversion",
     "pkg/apis/meta/v1",
     "pkg/apis/meta/v1/unstructured",
     "pkg/apis/meta/v1beta1",
@@ -978,9 +979,7 @@
     "pkg/runtime/serializer/versioning",
     "pkg/selection",
     "pkg/types",
-    "pkg/util/cache",
     "pkg/util/clock",
-    "pkg/util/diff",
     "pkg/util/errors",
     "pkg/util/framer",
     "pkg/util/intstr",
@@ -1004,7 +1003,7 @@
   version = "kubernetes-1.11.0"
 
 [[projects]]
-  digest = "1:e2b3fd620e6fae74ad469d89b9bf503c1fc35cd757e845e0c2ca9926efe5502c"
+  digest = "1:c691f4bc79e06635eb4f8f0ce82cc32fc2fbb2ce1b978bcfec4180c2ce67ef53"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -1086,23 +1085,19 @@
     "testing",
     "third_party/forked/golang/template",
     "tools/auth",
-    "tools/cache",
     "tools/clientcmd",
     "tools/clientcmd/api",
     "tools/clientcmd/api/latest",
     "tools/clientcmd/api/v1",
     "tools/metrics",
-    "tools/pager",
     "tools/reference",
     "transport",
-    "util/buffer",
     "util/cert",
     "util/connrotation",
     "util/flowcontrol",
     "util/homedir",
     "util/integer",
     "util/jsonpath",
-    "util/retry",
   ]
   pruneopts = "NUT"
   revision = "7d04d0e2a0a1a4d4a1cd6baa432a2301492e4e65"
@@ -1145,6 +1140,9 @@
     "github.com/google/go-containerregistry/pkg/v1/remote/transport",
     "github.com/google/go-github/github",
     "github.com/karrick/godirwalk",
+    "github.com/knative/build/pkg/apis/build/v1alpha1",
+    "github.com/knative/build/pkg/client/clientset/versioned/typed/build/v1alpha1",
+    "github.com/knative/build/pkg/logs",
     "github.com/mitchellh/go-homedir",
     "github.com/moby/buildkit/frontend/dockerfile/command",
     "github.com/moby/buildkit/frontend/dockerfile/parser",
@@ -1169,7 +1167,6 @@
     "k8s.io/apimachinery/pkg/api/meta",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/fields",
-    "k8s.io/apimachinery/pkg/labels",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/types",
@@ -1185,7 +1182,6 @@
     "k8s.io/client-go/kubernetes/typed/core/v1",
     "k8s.io/client-go/plugin/pkg/client/auth",
     "k8s.io/client-go/rest",
-    "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/clientcmd/api",
   ]

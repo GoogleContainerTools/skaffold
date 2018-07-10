@@ -106,6 +106,15 @@ build:
   #   namespace: default
   #   timeout: 20m
 
+  # Docker artifacts can be built on a Kubernetes cluster with Knative Build CRD.
+  # Example
+  # knative:
+  #   gcsBucket: k8s-skaffold
+  #   namespace: default
+  #   secret: ""
+  #   secretName: knative-secret
+  #   serviceAccountName: knative-sa
+
 # The deploy section has all the information needed to deploy. Along with build:
 # it is a required section.
 deploy:

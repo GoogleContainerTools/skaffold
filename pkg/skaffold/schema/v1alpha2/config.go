@@ -74,6 +74,7 @@ type BuildType struct {
 	LocalBuild       *LocalBuild       `yaml:"local" yamltags:"oneOf=build"`
 	GoogleCloudBuild *GoogleCloudBuild `yaml:"googleCloudBuild" yamltags:"oneOf=build"`
 	KanikoBuild      *KanikoBuild      `yaml:"kaniko" yamltags:"oneOf=build"`
+	KnativeBuild     *KnativeBuild     `yaml:"knative" yamltags:"oneOf=build"`
 }
 
 // LocalBuild contains the fields needed to do a build on the local docker daemon
@@ -102,6 +103,16 @@ type KanikoBuild struct {
 	PullSecretName string `yaml:"pullSecretName,omitempty"`
 	Namespace      string `yaml:"namespace,omitempty"`
 	Timeout        string `yaml:"timeout,omitempty"`
+}
+
+// KnativeBuild contains the fields needed to do a on-cluster build using
+// the knative build CRD
+type KnativeBuild struct {
+	GCSBucket          string `yaml:"gcsBucket,omitempty"`
+	Secret             string `yaml:"secret,omitempty"`
+	SecretName         string `yaml:"secretName,omitempty"`
+	ServiceAccountName string `yaml:"serviceAccountName,omitempty"`
+	Namespace          string `yaml:"namespace,omitempty"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps

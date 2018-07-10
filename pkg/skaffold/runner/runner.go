@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/knative"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -110,6 +111,10 @@ func getBuilder(cfg *v1alpha2.BuildConfig, kubeContext string) (build.Builder, e
 	case cfg.KanikoBuild != nil:
 		logrus.Debugf("Using builder: kaniko")
 		return kaniko.NewBuilder(cfg.KanikoBuild), nil
+
+	case cfg.KnativeBuild != nil:
+		logrus.Debugf("Using builder: knative")
+		return knative.NewBuilder(cfg.KnativeBuild), nil
 
 	default:
 		return nil, fmt.Errorf("Unknown builder for config %+v", cfg)

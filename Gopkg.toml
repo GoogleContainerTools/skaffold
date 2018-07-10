@@ -39,15 +39,15 @@
   name = "github.com/docker/distribution"
   revision = "83389a148052d74ac602f5f1d62f86ff2f3c4aa5"
 
-[[constraint]]
+[[override]]
   name = "k8s.io/apimachinery"
   version = "kubernetes-1.11.0"
 
-[[constraint]]
+[[override]]
   name = "k8s.io/client-go"
   version = "kubernetes-1.11.0"
 
-[[constraint]]
+[[override]]
   name = "k8s.io/api"
   version = "kubernetes-1.11.0"
 
@@ -74,3 +74,7 @@
 [[constraint]]
   name = "github.com/google/go-github"
   version = "15.0.0"
+
+[[constraint]]
+  name = "github.com/knative/build"
+  revision = "dd8f92ed1cc2e49d98c26a94270a40c9ea7da9b8"

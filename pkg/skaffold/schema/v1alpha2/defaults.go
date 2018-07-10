@@ -34,10 +34,17 @@ func (c *SkaffoldConfig) setDefaultValues() error {
 	c.setDefaultKustomizePath()
 	c.setDefaultKubectlManifests()
 	c.setDefaultKanikoTimeout()
+
 	if err := c.setDefaultKanikoNamespace(); err != nil {
 		return err
 	}
 	if err := c.setDefaultKanikoSecret(); err != nil {
+		return err
+	}
+	if err := c.setDefaultKnativeNamespace(); err != nil {
+		return err
+	}
+	if err := c.setDefaultKnativeSecret(); err != nil {
 		return err
 	}
 
@@ -148,6 +155,24 @@ func (c *SkaffoldConfig) setDefaultKanikoTimeout() {
 	}
 }
 
+func (c *SkaffoldConfig) setDefaultKnativeNamespace() error {
+	knative := c.Build.KnativeBuild
+	if knative == nil {
+		return nil
+	}
+
+	if knative.Namespace == "" {
+		ns, err := currentNamespace()
+		if err != nil {
+			return errors.Wrap(err, "getting current namespace")
+		}
+
+		knative.Namespace = ns
+	}
+
+	return nil
+}
+
 func (c *SkaffoldConfig) setDefaultKanikoSecret() error {
 	kaniko := c.Build.KanikoBuild
 	if kaniko == nil {
@@ -165,6 +190,32 @@ func (c *SkaffoldConfig) setDefaultKanikoSecret() error {
 		}
 
 		kaniko.PullSecret = absPath
+		return nil
+	}
+
+	return nil
+}
+
+func (c *SkaffoldConfig) setDefaultKnativeSecret() error {
+	knative := c.Build.KnativeBuild
+	if knative == nil {
+		return nil
+	}
+
+	if knative.SecretName == "" {
+		knative.SecretName = constants.DefaultKnativeSecretName
+	}
+	if knative.ServiceAccountName == "" {
+		knative.SecretName = constants.DefaultKnativeServiceAccountName
+	}
+
+	if knative.Secret != "" {
+		absPath, err := homedir.Expand(knative.Secret)
+		if err != nil {
+			return fmt.Errorf("unable to expand pullSecret %s", knative.Secret)
+		}
+
+		knative.Secret = absPath
 		return nil
 	}
 
