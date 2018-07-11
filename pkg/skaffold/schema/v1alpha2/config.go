@@ -114,8 +114,18 @@ type DeployType struct {
 
 // KubectlDeploy contains the configuration needed for deploying with `kubectl apply`
 type KubectlDeploy struct {
-	Manifests       []string `yaml:"manifests,omitempty"`
-	RemoteManifests []string `yaml:"remoteManifests,omitempty"`
+	Manifests       []string     `yaml:"manifests,omitempty"`
+	RemoteManifests []string     `yaml:"remoteManifests,omitempty"`
+	Flags           KubectlFlags `yaml:"flags,omitempty"`
+}
+
+// KubectlFlags describes additional options flags that are passed on the command
+// line to kubectl either on every command (Global), on creations (Apply)
+// or deletions (Delete).
+type KubectlFlags struct {
+	Global []string `yaml:"global,omitempty"`
+	Apply  []string `yaml:"apply,omitempty"`
+	Delete []string `yaml:"delete,omitempty"`
 }
 
 // HelmDeploy contains the configuration needed for deploying with helm
@@ -124,7 +134,8 @@ type HelmDeploy struct {
 }
 
 type KustomizeDeploy struct {
-	KustomizePath string `yaml:"kustomizePath,omitempty"`
+	KustomizePath string       `yaml:"kustomizePath,omitempty"`
+	Flags         KubectlFlags `yaml:"flags,omitempty"`
 }
 
 type HelmRelease struct {

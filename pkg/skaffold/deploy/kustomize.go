@@ -62,7 +62,7 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 	if err != nil {
 		return nil, errors.Wrap(err, "replacing images")
 	}
-	if err := kubectl(manifestList.reader(), out, k.kubeContext, "apply", "-f", "-"); err != nil {
+	if err := kubectl(manifestList.reader(), out, k.kubeContext, k.Flags.Global, "apply", k.Flags.Apply, "-f", "-"); err != nil {
 		return nil, errors.Wrap(err, "running kubectl")
 	}
 	return parseManifestsForDeploys(manifestList)
@@ -88,7 +88,7 @@ func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	if err != nil {
 		return errors.Wrap(err, "kustomize")
 	}
-	if err := kubectl(manifests, out, k.kubeContext, "delete", "-f", "-"); err != nil {
+	if err := kubectl(manifests, out, k.kubeContext, k.Flags.Global, "delete", k.Flags.Delete, "-f", "-"); err != nil {
 		return errors.Wrap(err, "kubectl delete")
 	}
 	return nil
