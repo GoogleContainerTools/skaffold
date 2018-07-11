@@ -85,7 +85,9 @@ type LocalBuild struct {
 // GoogleCloudBuild contains the fields needed to do a remote build on
 // Google Container Builder.
 type GoogleCloudBuild struct {
-	ProjectID string `yaml:"projectId"`
+	ProjectID   string `yaml:"projectId"`
+	DiskSizeGb  int64  `yaml:"diskSizeGb,omitempty"`
+	MachineType string `yaml:"machineType,omitempty"`
 }
 
 // KanikoBuild contains the fields needed to do a on-cluster build using
