@@ -137,5 +137,8 @@ profiles:
   - name: gcb
     build:
       googleCloudBuild:
-        projectId: k8s-skaffold
         # Google Cloud Build's project id
+        projectId: k8s-skaffold
+        # diskSizeGb: 200
+        # machineType: "N1_HIGHCPU_8"|"N1_HIGHCPU_32"
+

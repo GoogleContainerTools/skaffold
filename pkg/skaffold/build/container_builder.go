@@ -148,6 +148,10 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 			},
 		},
 		Images: []string{artifact.ImageName},
+		Options: &cloudbuild.BuildOptions{
+			DiskSizeGb:  cb.DiskSizeGb,
+			MachineType: cb.MachineType,
+		},
 	})
 	op, err := call.Context(ctx).Do()
 	if err != nil {
