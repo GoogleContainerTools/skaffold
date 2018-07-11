@@ -89,23 +89,45 @@ func (r Result) extractIntoPtr(to interface{}, label string) error {
 		if typeOfV.Kind() == reflect.Struct {
 			if typeOfV.NumField() > 0 && typeOfV.Field(0).Anonymous {
 				newSlice := reflect.MakeSlice(reflect.SliceOf(typeOfV), 0, 0)
-				newType := reflect.New(typeOfV).Elem()
 
 				for _, v := range m[label].([]interface{}) {
+					// For each iteration of the slice, we create a new struct.
+					// This is to work around a bug where elements of a slice
+					// are reused and not overwritten when the same copy of the
+					// struct is used:
+					//
+					// https://github.com/golang/go/issues/21092
+					// https://github.com/golang/go/issues/24155
+					// https://play.golang.org/p/NHo3ywlPZli
+					newType := reflect.New(typeOfV).Elem()
+
 					b, err := json.Marshal(v)
 					if err != nil {
 						return err
 					}
 
+					// This is needed for structs with an UnmarshalJSON method.
+					// Technically this is just unmarshalling the response into
+					// a struct that is never used, but it's good enough to
+					// trigger the UnmarshalJSON method.
 					for i := 0; i < newType.NumField(); i++ {
 						s := newType.Field(i).Addr().Interface()
-						err = json.NewDecoder(bytes.NewReader(b)).Decode(s)
+
+						// Unmarshal is used rather than NewDecoder to also work
+						// around the above-mentioned bug.
+						err = json.Unmarshal(b, s)
 						if err != nil {
 							return err
 						}
 					}
+
 					newSlice = reflect.Append(newSlice, newType)
 				}
+
+				// "to" should now be properly modeled to receive the
+				// JSON response body and unmarshal into all the correct
+				// fields of the struct or composed extension struct
+				// at the end of this method.
 				toValue.Set(newSlice)
 			}
 		}

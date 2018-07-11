@@ -13,6 +13,39 @@ var (
 	ErrCrossedBoundary = errors.New("chroot boundary crossed")
 )
 
+// Capability holds the supported features of a billy filesystem. This does
+// not mean that the capability has to be supported by the underlying storage.
+// For example, a billy filesystem may support WriteCapability but the
+// storage be mounted in read only mode.
+type Capability uint64
+
+const (
+	// WriteCapability means that the fs is writable.
+	WriteCapability Capability = 1 << iota
+	// ReadCapability means that the fs is readable.
+	ReadCapability
+	// ReadAndWriteCapability is the ability to open a file in read and write mode.
+	ReadAndWriteCapability
+	// SeekCapability means it is able to move position inside the file.
+	SeekCapability
+	// TruncateCapability means that a file can be truncated.
+	TruncateCapability
+	// LockCapability is the ability to lock a file.
+	LockCapability
+
+	// DefaultCapabilities lists all capable features supported by filesystems
+	// without Capability interface. This list should not be changed until a
+	// major version is released.
+	DefaultCapabilities Capability = WriteCapability | ReadCapability |
+		ReadAndWriteCapability | SeekCapability | TruncateCapability |
+		LockCapability
+
+	// AllCapabilities lists all capable features.
+	AllCapabilities Capability = WriteCapability | ReadCapability |
+		ReadAndWriteCapability | SeekCapability | TruncateCapability |
+		LockCapability
+)
+
 // Filesystem abstract the operations in a storage-agnostic interface.
 // Each method implementation mimics the behavior of the equivalent functions
 // at the os package from the standard library.
@@ -142,4 +175,28 @@ type File interface {
 	Unlock() error
 	// Truncate the file.
 	Truncate(size int64) error
+}
+
+// Capable interface can return the available features of a filesystem.
+type Capable interface {
+	// Capabilities returns the capabilities of a filesystem in bit flags.
+	Capabilities() Capability
+}
+
+// Capabilities returns the features supported by a filesystem. If the FS
+// does not implement Capable interface it returns all features.
+func Capabilities(fs Basic) Capability {
+	capable, ok := fs.(Capable)
+	if !ok {
+		return DefaultCapabilities
+	}
+
+	return capable.Capabilities()
+}
+
+// CapabilityCheck tests the filesystem for the provided capabilities and
+// returns true in case it supports all of them.
+func CapabilityCheck(fs Basic, capabilities Capability) bool {
+	fsCaps := Capabilities(fs)
+	return fsCaps&capabilities == capabilities
 }
