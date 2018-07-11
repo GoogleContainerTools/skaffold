@@ -59,7 +59,10 @@ build:
   googleCloudBuild:
     projectId: ID
 deploy:
-  kubectl: {}
+  kubectl:
+   manifests:
+   - dep.yaml
+   - svc.yaml
 `
 	minimalKanikoConfig = `
 apiVersion: skaffold/v1alpha2
@@ -109,7 +112,7 @@ func TestParseConfig(t *testing.T) {
 					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
 					withDockerArtifact("example", ".", "Dockerfile"),
 				),
-				withKubectlDeploy(),
+				withKubectlDeploy("k8s/*.yaml"),
 			),
 		},
 		{
@@ -121,7 +124,7 @@ func TestParseConfig(t *testing.T) {
 					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
 					withBazelArtifact("image2", "./examples/app2", "//:example.tar"),
 				),
-				withKubectlDeploy(),
+				withKubectlDeploy("dep.yaml", "svc.yaml"),
 			),
 		},
 		{
@@ -200,11 +203,13 @@ func withKanikoBuild(bucket, secretName, namespace, secret string, ops ...func(*
 	}
 }
 
-func withKubectlDeploy() func(*SkaffoldConfig) {
+func withKubectlDeploy(manifests ...string) func(*SkaffoldConfig) {
 	return func(cfg *SkaffoldConfig) {
 		cfg.Deploy = v1alpha2.DeployConfig{
 			DeployType: v1alpha2.DeployType{
-				KubectlDeploy: &v1alpha2.KubectlDeploy{},
+				KubectlDeploy: &v1alpha2.KubectlDeploy{
+					Manifests: manifests,
+				},
 			},
 		}
 	}
