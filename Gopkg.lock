@@ -31,14 +31,14 @@
     "autorest/azure",
     "autorest/date"
   ]
-  revision = "f04d503958a4fe854c1b41667c73f8813c9dd9c3"
-  version = "v10.11.2"
+  revision = "1f7cd6cfe0adea687ad44a512dfe76140f804318"
+  version = "v10.12.0"
 
 [[projects]]
   name = "github.com/Microsoft/go-winio"
   packages = ["."]
-  revision = "7da180ee92d8bd8bb8c37fc560e673e6557c392f"
-  version = "v0.4.7"
+  revision = "67921128fb397dd80339870d2193d6b1e6856fd4"
+  version = "v0.4.8"
 
 [[projects]]
   branch = "master"
@@ -146,8 +146,8 @@
     "credentials",
     "pass"
   ]
-  revision = "d68f9aeca33f5fd3f08eeae5e9d175edf4e731d1"
-  version = "v0.6.0"
+  revision = "5241b46610f2491efdf9d1c85f1ddf5b02f6d962"
+  version = "v0.6.1"
 
 [[projects]]
   name = "github.com/docker/go-connections"
@@ -294,7 +294,7 @@
     "openstack/utils",
     "pagination"
   ]
-  revision = "6cd928389e7eefe1715e188b97fdd07b09a55e62"
+  revision = "45c2d035713fa44f366921035a44610ac5d45beb"
 
 [[projects]]
   name = "github.com/gorilla/context"
@@ -386,8 +386,8 @@
 [[projects]]
   name = "github.com/modern-go/reflect2"
   packages = ["."]
-  revision = "1df9eeb2bb81f327b96228865c5687bc2194af3f"
-  version = "1.0.0"
+  revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
+  version = "1.0.1"
 
 [[projects]]
   name = "github.com/opencontainers/go-digest"
@@ -465,7 +465,7 @@
     "nfs",
     "xfs"
   ]
-  revision = "7d6f385de8bea29190f15ba9931442a0eaef9af7"
+  revision = "ae68e2d4c00fed4943b5f6698d504a5fe083da8a"
 
 [[projects]]
   name = "github.com/sergi/go-diff"
@@ -503,10 +503,10 @@
   version = "v1.3.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/xanzy/ssh-agent"
   packages = ["."]
-  revision = "ba9c9e33906f58169366275e3450db66139a31a9"
+  revision = "640f0ab560aeb89d523bb6ac322b1244d5c3796c"
+  version = "v0.2.0"
 
 [[projects]]
   branch = "master"
@@ -530,7 +530,7 @@
     "ssh/knownhosts",
     "ssh/terminal"
   ]
-  revision = "a8fb68e7206f8c78be19b432c58eb52a6aa34462"
+  revision = "a49355c7e3f8fe157a85be2f77e6e269a0f89602"
 
 [[projects]]
   branch = "master"
@@ -547,7 +547,7 @@
     "proxy",
     "trace"
   ]
-  revision = "db08ff08e8622530d9ed3a0e8ac279f6d4c02196"
+  revision = "039a4258aec0ad3c79b905677cceeab13b296a77"
 
 [[projects]]
   branch = "master"
@@ -559,7 +559,7 @@
     "jws",
     "jwt"
   ]
-  revision = "1e0a3fa8ba9a5c9eb35c271780101fdaf1b205d7"
+  revision = "ef147856a6ddbb60760db74283d2424e98c87bff"
 
 [[projects]]
   branch = "master"
@@ -574,7 +574,7 @@
     "unix",
     "windows"
   ]
-  revision = "8014b7b116a67fea23fbb82cd834c9ad656ea44b"
+  revision = "1b2967e3c290b7c545b3db0deeda16e9be4f98a2"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -633,8 +633,8 @@
     "internal/urlfetch",
     "urlfetch"
   ]
-  revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
-  version = "v1.0.0"
+  revision = "b1f26356af11148e710935ed1ac8a7f5702c7612"
+  version = "v1.1.0"
 
 [[projects]]
   branch = "master"
@@ -644,7 +644,7 @@
     "googleapis/iam/v1",
     "googleapis/rpc/status"
   ]
-  revision = "32ee49c4dd805befd833990acba36cb75042378c"
+  revision = "e92b116572682a5b432ddd840aeaba2a559eeff1"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -653,15 +653,16 @@
     "balancer",
     "balancer/base",
     "balancer/roundrobin",
-    "channelz",
     "codes",
     "connectivity",
     "credentials",
     "encoding",
     "encoding/proto",
-    "grpclb/grpc_lb_v1/messages",
     "grpclog",
     "internal",
+    "internal/backoff",
+    "internal/channelz",
+    "internal/grpcrand",
     "keepalive",
     "metadata",
     "naming",
@@ -674,8 +675,8 @@
     "tap",
     "transport"
   ]
-  revision = "7a6a684ca69eb4cae85ad0a484f2e531598c047b"
-  version = "v1.12.2"
+  revision = "168a6198bcb0ef175f7dacec0b8691fc141dc9b8"
+  version = "v1.13.0"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
@@ -692,8 +693,8 @@
     "osfs",
     "util"
   ]
-  revision = "df053870ae7070b0350624ba5a22161ba3796cc0"
-  version = "v4.1.1"
+  revision = "83cf655d40b15b427014d7875d10850f96edba14"
+  version = "v4.2.0"
 
 [[projects]]
   name = "gopkg.in/src-d/go-git.v4"
@@ -944,7 +945,7 @@
   branch = "master"
   name = "k8s.io/kube-openapi"
   packages = ["pkg/util/proto"]
-  revision = "bf40560368791a7dddfeea9b3cfcf89b34139f44"
+  revision = "0cf8f7e6ed1d2e3d47d02e3b6e559369af24d803"
 
 [solve-meta]
   analyzer-name = "dep"
