@@ -47,6 +47,8 @@ const (
 	DefaultKanikoSecretName = "kaniko-secret"
 )
 
+var DefaultKubectlManifests = []string{"k8s/*.yaml"}
+
 var Labels = struct {
 	TagPolicy        string
 	Deployer         string

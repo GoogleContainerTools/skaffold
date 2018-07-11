@@ -30,6 +30,7 @@ func (c *SkaffoldConfig) setDefaultValues() error {
 	c.defaultToLocalBuild()
 	c.setDefaultTagger()
 	c.setDefaultKustomizePath()
+	c.setDefaultKubectlManifests()
 	if err := c.setDefaultKanikoNamespace(); err != nil {
 		return err
 	}
@@ -66,6 +67,12 @@ func (c *SkaffoldConfig) setDefaultTagger() {
 func (c *SkaffoldConfig) setDefaultKustomizePath() {
 	if c.Deploy.KustomizeDeploy != nil && c.Deploy.KustomizeDeploy.KustomizePath == "" {
 		c.Deploy.KustomizeDeploy.KustomizePath = constants.DefaultKustomizationPath
+	}
+}
+
+func (c *SkaffoldConfig) setDefaultKubectlManifests() {
+	if c.Deploy.KubectlDeploy != nil && len(c.Deploy.KubectlDeploy.Manifests) == 0 {
+		c.Deploy.KubectlDeploy.Manifests = constants.DefaultKubectlManifests
 	}
 }
 
