@@ -99,6 +99,12 @@ deploy:
     # manifests to deploy from files.
     manifests:
     - ../examples/getting-started/k8s-*
+    # kubectl can be passed additional option flags either on every command (Global),
+    # on creations (Apply) or deletions (Delete).
+    # flags:
+    #   global: [""]
+    #   apply: [""]
+    #   delete: [""]
 
     # manifests to deploy from remote cluster.
     # The path to where these manifests live in remote kubernetes cluster.
@@ -106,6 +112,16 @@ deploy:
     # remoteManifests:
     # - deployment/web-app1
     # - namespace:deployment/web-app2
+
+ # kustomize:
+    # kustomizePath: "kustomization.yaml"
+    # kustomize deploys manifests with kubectl.
+    # kubectl can be passed additional option flags either on every command (Global),
+    # on creations (Apply) or deletions (Delete).
+    # flags:
+    #   global: [""]
+    #   apply: [""]
+    #   delete: [""]
 
  # helm:
     # helm releases to deploy.

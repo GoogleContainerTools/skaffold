@@ -75,7 +75,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return nil, errors.Wrap(err, "replacing images in manifests")
 	}
 
-	err = kubectl(manifests.reader(), out, k.kubeContext, "apply", "-f", "-")
+	err = kubectl(manifests.reader(), out, k.kubeContext, k.Flags.Global, "apply", k.Flags.Apply, "-f", "-")
 	if err != nil {
 		return nil, errors.Wrap(err, "deploying manifests")
 	}
@@ -90,7 +90,7 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		return errors.Wrap(err, "reading manifests")
 	}
 
-	if err := kubectl(manifests.reader(), out, k.kubeContext, "delete", "--grace-period=1", "--ignore-not-found=true", "-f", "-"); err != nil {
+	if err := kubectl(manifests.reader(), out, k.kubeContext, k.Flags.Global, "delete", k.Flags.Delete, "--grace-period=1", "--ignore-not-found=true", "-f", "-"); err != nil {
 		return errors.Wrap(err, "deleting manifests")
 	}
 
@@ -101,8 +101,12 @@ func (k *KubectlDeployer) Dependencies() ([]string, error) {
 	return k.manifestFiles(k.KubectlDeploy.Manifests)
 }
 
-func kubectl(in io.Reader, out io.Writer, kubeContext string, arg ...string) error {
-	args := append([]string{"--context", kubeContext}, arg...)
+func kubectl(in io.Reader, out io.Writer, kubeContext string, globalFlags []string, command string, commandFlags []string, arg ...string) error {
+	args := []string{"--context", kubeContext}
+	args = append(args, globalFlags...)
+	args = append(args, command)
+	args = append(args, commandFlags...)
+	args = append(args, arg...)
 
 	cmd := exec.Command("kubectl", args...)
 	cmd.Stdin = in
@@ -182,10 +186,10 @@ func (k *KubectlDeployer) readRemoteManifest(name string) ([]byte, error) {
 		args = append(args, "--namespace", parts[0])
 		name = parts[1]
 	}
-	args = append(args, "get", name, "-o", "yaml")
+	args = append(args, name, "-o", "yaml")
 
 	var manifest bytes.Buffer
-	err := kubectl(nil, &manifest, k.kubeContext, args...)
+	err := kubectl(nil, &manifest, k.kubeContext, k.Flags.Global, "get", nil, args...)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting manifest")
 	}
