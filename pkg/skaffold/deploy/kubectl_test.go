@@ -138,7 +138,7 @@ func TestKubectlDeploy(t *testing.T) {
 					Delete: []string{"ignored"},
 				},
 			},
-			command: testutil.NewFakeCmd("kubectl --context kubecontext -v=0 apply --overwrite=true -f -", fmt.Errorf("")),
+			command: testutil.NewFakeCmd("kubectl --context kubecontext -v=0 apply -f -", fmt.Errorf("")),
 			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",
@@ -181,14 +181,14 @@ func TestKubectlCleanup(t *testing.T) {
 			cfg: &v1alpha2.KubectlDeploy{
 				Manifests: []string{"test/deployment.yaml"},
 			},
-			command: testutil.NewFakeCmd("kubectl --context kubecontext delete --grace-period=1 --ignore-not-found=true -f -", nil),
+			command: testutil.NewFakeCmd("kubectl --context kubecontext delete --ignore-not-found=true -f -", nil),
 		},
 		{
 			description: "cleanup error",
 			cfg: &v1alpha2.KubectlDeploy{
 				Manifests: []string{"test/deployment.yaml"},
 			},
-			command:   testutil.NewFakeCmd("kubectl --context kubecontext delete --grace-period=1 --ignore-not-found=true -f -", errors.New("BUG")),
+			command:   testutil.NewFakeCmd("kubectl --context kubecontext delete --ignore-not-found=true -f -", errors.New("BUG")),
 			shouldErr: true,
 		},
 		{
@@ -198,10 +198,10 @@ func TestKubectlCleanup(t *testing.T) {
 				Flags: v1alpha2.KubectlFlags{
 					Global: []string{"-v=0"},
 					Apply:  []string{"ignored"},
-					Delete: []string{"--cascade=false"},
+					Delete: []string{"--grace-period=1"},
 				},
 			},
-			command: testutil.NewFakeCmd("kubectl --context kubecontext -v=0 delete --cascade=false --grace-period=1 --ignore-not-found=true -f -", nil),
+			command: testutil.NewFakeCmd("kubectl --context kubecontext -v=0 delete --grace-period=1 --ignore-not-found=true -f -", nil),
 		},
 	}
 
