@@ -46,6 +46,7 @@ type SkaffoldRunner struct {
 
 	watchFactory watch.Factory
 	builds       []build.Artifact
+	status.ConfigInfo
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
@@ -78,6 +79,9 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 	}
 
 	return &SkaffoldRunner{
+		ConfigInfo: status.ConfigInfo{
+			Profiles: cfg.AppliedProfiles,
+		},
 		Builder:      builder,
 		Deployer:     deployer,
 		Tagger:       tagger,
@@ -214,6 +218,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 // Status returns information about the builder/tagger/deployer.
 func (r *SkaffoldRunner) Status() (*status.Status, error) {
 	return &status.Status{
+		ConfigInfo:   r.ConfigInfo,
 		BuilderInfo:  r.BuildInfo(),
 		TaggerInfo:   r.TaggerInfo(),
 		DeployerInfo: r.DeployInfo(),

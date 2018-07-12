@@ -21,7 +21,8 @@ import (
 )
 
 const DefaultTemplate = `
---- Skaffold Status ---
+--- Skaffold Status ---{{if .ConfigInfo.Profiles}}
+Applied Profiles: {{range $prof := .ConfigInfo.Profiles}}{{$prof}} {{end}}{{end}}
 
 -- Builder
 Type: {{.BuilderInfo.Name}}{{if .BuilderInfo.ProjectID}}
@@ -65,9 +66,14 @@ Helm Releases:
 `
 
 type Status struct {
+	ConfigInfo
 	BuilderInfo
 	TaggerInfo
 	DeployerInfo
+}
+
+type ConfigInfo struct {
+	Profiles []string
 }
 
 type BuilderInfo struct {
