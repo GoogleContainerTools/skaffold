@@ -81,7 +81,8 @@ func TestApplyProfiles(t *testing.T) {
 						GitTagger: &v1alpha2.GitTagger{},
 					},
 				},
-				Deploy: v1alpha2.DeployConfig{},
+				Deploy:          v1alpha2.DeployConfig{},
+				AppliedProfiles: []string{"profile"},
 			},
 		},
 		{
@@ -122,7 +123,8 @@ func TestApplyProfiles(t *testing.T) {
 						LocalBuild: &v1alpha2.LocalBuild{},
 					},
 				},
-				Deploy: v1alpha2.DeployConfig{},
+				Deploy:          v1alpha2.DeployConfig{},
+				AppliedProfiles: []string{"dev"},
 			},
 		},
 		{
@@ -175,7 +177,8 @@ func TestApplyProfiles(t *testing.T) {
 						LocalBuild: &v1alpha2.LocalBuild{},
 					},
 				},
-				Deploy: v1alpha2.DeployConfig{},
+				Deploy:          v1alpha2.DeployConfig{},
+				AppliedProfiles: []string{"profile"},
 			},
 		},
 		{
@@ -213,6 +216,7 @@ func TestApplyProfiles(t *testing.T) {
 						HelmDeploy: &v1alpha2.HelmDeploy{},
 					},
 				},
+				AppliedProfiles: []string{"profile"},
 			},
 		},
 	}
