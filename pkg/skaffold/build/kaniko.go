@@ -40,10 +40,10 @@ type KanikoBuilder struct {
 }
 
 // NewKanikoBuilder creates a KanikoBuilder.
-func NewKanikoBuilder(cfg *v1alpha2.KanikoBuild) (*KanikoBuilder, error) {
+func NewKanikoBuilder(cfg *v1alpha2.KanikoBuild) *KanikoBuilder {
 	return &KanikoBuilder{
 		KanikoBuild: cfg,
-	}, nil
+	}
 }
 
 // Labels gives labels to be set on artifacts deployed with Kaniko.

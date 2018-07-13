@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 
+	cstorage "cloud.google.com/go/storage"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -36,10 +37,11 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 	dockerfilePath := artifact.DockerArtifact.DockerfilePath
 
 	initialTag := util.RandomID()
-	tarName := "context.tar.gz" // TODO(r2d4): until this is configurable upstream
-	if err := docker.UploadContextToGCS(ctx, dockerfilePath, artifact.Workspace, cfg.GCSBucket, tarName); err != nil {
+	tarName := fmt.Sprintf("context-%s.tar.gz", initialTag)
+	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, dockerfilePath, cfg.GCSBucket, tarName); err != nil {
 		return "", errors.Wrap(err, "uploading tar to gcs")
 	}
+	defer gcsDelete(ctx, cfg.GCSBucket, tarName)
 
 	client, err := kubernetes.GetClientset()
 	if err != nil {
@@ -53,6 +55,7 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 	if err := logger.Start(ctx); err != nil {
 		return "", errors.Wrap(err, "starting log streamer")
 	}
+
 	imageDst := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
 	p, err := client.CoreV1().Pods(cfg.Namespace).Create(&v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -68,7 +71,7 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 					ImagePullPolicy: v1.PullIfNotPresent,
 					Args: []string{
 						fmt.Sprintf("--dockerfile=%s", dockerfilePath),
-						fmt.Sprintf("--bucket=%s", cfg.GCSBucket),
+						fmt.Sprintf("--context=gs://%s/%s", cfg.GCSBucket, tarName),
 						fmt.Sprintf("--destination=%s", imageDst),
 						fmt.Sprintf("-v=%s", logrus.GetLevel().String()),
 					},
@@ -99,7 +102,6 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 			RestartPolicy: v1.RestartPolicyNever,
 		},
 	})
-
 	if err != nil {
 		return "", errors.Wrap(err, "creating kaniko pod")
 	}
@@ -118,4 +120,14 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 	}
 
 	return imageDst, nil
+}
+
+func gcsDelete(ctx context.Context, bucket, path string) error {
+	c, err := cstorage.NewClient(ctx)
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+
+	return c.Bucket(bucket).Object(path).Delete(ctx)
 }

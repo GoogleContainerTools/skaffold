@@ -17,14 +17,7 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"fmt"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	homedir "github.com/mitchellh/go-homedir"
-
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -92,7 +85,9 @@ type LocalBuild struct {
 // GoogleCloudBuild contains the fields needed to do a remote build on
 // Google Container Builder.
 type GoogleCloudBuild struct {
-	ProjectID string `yaml:"projectId"`
+	ProjectID   string `yaml:"projectId"`
+	DiskSizeGb  int64  `yaml:"diskSizeGb,omitempty"`
+	MachineType string `yaml:"machineType,omitempty"`
 }
 
 // KanikoBuild contains the fields needed to do a on-cluster build using
@@ -119,8 +114,18 @@ type DeployType struct {
 
 // KubectlDeploy contains the configuration needed for deploying with `kubectl apply`
 type KubectlDeploy struct {
-	Manifests       []string `yaml:"manifests,omitempty"`
-	RemoteManifests []string `yaml:"remoteManifests,omitempty"`
+	Manifests       []string     `yaml:"manifests,omitempty"`
+	RemoteManifests []string     `yaml:"remoteManifests,omitempty"`
+	Flags           KubectlFlags `yaml:"flags,omitempty"`
+}
+
+// KubectlFlags describes additional options flags that are passed on the command
+// line to kubectl either on every command (Global), on creations (Apply)
+// or deletions (Delete).
+type KubectlFlags struct {
+	Global []string `yaml:"global,omitempty"`
+	Apply  []string `yaml:"apply,omitempty"`
+	Delete []string `yaml:"delete,omitempty"`
 }
 
 // HelmDeploy contains the configuration needed for deploying with helm
@@ -128,7 +133,10 @@ type HelmDeploy struct {
 	Releases []HelmRelease `yaml:"releases,omitempty"`
 }
 
-type KustomizeDeploy struct{}
+type KustomizeDeploy struct {
+	KustomizePath string       `yaml:"kustomizePath,omitempty"`
+	Flags         KubectlFlags `yaml:"flags,omitempty"`
+}
 
 type HelmRelease struct {
 	Name              string                 `yaml:"name"`
@@ -197,139 +205,4 @@ func (c *SkaffoldConfig) Parse(contents []byte, useDefaults bool) error {
 	}
 
 	return nil
-}
-
-func (c *SkaffoldConfig) setDefaultValues() error {
-	c.defaultToLocalBuild()
-	c.defaultToDockerArtifacts()
-	c.setDefaultTagger()
-	c.setDefaultDockerfiles()
-	c.setDefaultWorkspaces()
-	if err := c.setDefaultKanikoNamespace(); err != nil {
-		return err
-	}
-	return c.setDefaultKanikoSecret()
-}
-
-func (c *SkaffoldConfig) defaultToLocalBuild() {
-	if c.Build.BuildType != (BuildType{}) {
-		return
-	}
-
-	logrus.Debugf("Defaulting build type to local build")
-	c.Build.BuildType.LocalBuild = &LocalBuild{}
-}
-
-func (c *SkaffoldConfig) defaultToDockerArtifacts() {
-	for _, artifact := range c.Build.Artifacts {
-		if artifact.ArtifactType != (ArtifactType{}) {
-			continue
-		}
-
-		artifact.ArtifactType = ArtifactType{
-			DockerArtifact: &DockerArtifact{},
-		}
-	}
-}
-
-func (c *SkaffoldConfig) setDefaultTagger() {
-	if c.Build.TagPolicy != (TagPolicy{}) {
-		return
-	}
-
-	c.Build.TagPolicy = TagPolicy{GitTagger: &GitTagger{}}
-}
-
-func (c *SkaffoldConfig) setDefaultDockerfiles() {
-	for _, artifact := range c.Build.Artifacts {
-		if artifact.DockerArtifact != nil && artifact.DockerArtifact.DockerfilePath == "" {
-			artifact.DockerArtifact.DockerfilePath = constants.DefaultDockerfilePath
-		}
-	}
-}
-
-func (c *SkaffoldConfig) setDefaultWorkspaces() {
-	for _, artifact := range c.Build.Artifacts {
-		if artifact.Workspace == "" {
-			artifact.Workspace = "."
-		}
-	}
-}
-
-func (c *SkaffoldConfig) setDefaultKanikoNamespace() error {
-	if c.Build.KanikoBuild == nil {
-		return nil
-	}
-	if c.Build.KanikoBuild.Namespace == "" {
-		cfg, err := kubectx.CurrentConfig()
-		if err != nil {
-			return err
-		}
-		c.Build.KanikoBuild.Namespace = cfg.Contexts[cfg.CurrentContext].Namespace
-	}
-	return nil
-}
-
-func (c *SkaffoldConfig) setDefaultKanikoSecret() error {
-	if c.Build.KanikoBuild == nil {
-		return nil
-	}
-	if c.Build.KanikoBuild.PullSecret != "" {
-		absPath, err := homedir.Expand(c.Build.KanikoBuild.PullSecret)
-		if err != nil {
-			return fmt.Errorf("unable to expand pullSecret %s", c.Build.KanikoBuild.PullSecret)
-		}
-
-		c.Build.KanikoBuild.PullSecret = absPath
-		return nil
-	}
-	if c.Build.KanikoBuild.PullSecretName == "" {
-		c.Build.KanikoBuild.PullSecret = constants.DefaultKanikoSecretName
-	}
-	return nil
-}
-
-// ApplyProfiles returns configuration modified by the application
-// of a list of profiles.
-func (c *SkaffoldConfig) ApplyProfiles(profiles []string) error {
-	var err error
-
-	byName := profilesByName(c.Profiles)
-	for _, name := range profiles {
-		profile, present := byName[name]
-		if !present {
-			return fmt.Errorf("couldn't find profile %s", name)
-		}
-
-		err = applyProfile(c, profile)
-		if err != nil {
-			return errors.Wrapf(err, "applying profile %s", name)
-		}
-	}
-
-	c.Profiles = nil
-	if err := c.setDefaultValues(); err != nil {
-		return errors.Wrap(err, "applying default values")
-	}
-
-	return nil
-}
-
-func applyProfile(config *SkaffoldConfig, profile Profile) error {
-	logrus.Infof("Applying profile: %s", profile.Name)
-
-	buf, err := yaml.Marshal(profile)
-	if err != nil {
-		return err
-	}
-
-	return yaml.Unmarshal(buf, config)
-}
-
-func profilesByName(profiles []Profile) map[string]Profile {
-	byName := make(map[string]Profile)
-	for _, profile := range profiles {
-		byName[profile.Name] = profile
-	}
-	return byName
 }

@@ -43,10 +43,11 @@ const (
 
 	DefaultKustomizationPath = "."
 
-	// DefaultKanikoImage is v0.1.0
-	DefaultKanikoImage      = "gcr.io/kaniko-project/executor:v0.1.0@sha256:501056bf52f3a96f151ccbeb028715330d5d5aa6647e7572ce6c6c55f91ab374"
+	DefaultKanikoImage      = "gcr.io/kaniko-project/executor:v0.2.0@sha256:bebe80bb97950d88b8d8eab315a58e0bc50307135cf25147d7e0b8f3db50a84a"
 	DefaultKanikoSecretName = "kaniko-secret"
 )
+
+var DefaultKubectlManifests = []string{"k8s/*.yaml"}
 
 var Labels = struct {
 	TagPolicy        string

@@ -66,7 +66,7 @@ func (t *TestBuilder) Build(ctx context.Context, w io.Writer, tagger tag.Tagger,
 
 type TestDeployer struct {
 	deployed []build.Artifact
-	err      error
+	errors   []error
 }
 
 func (t *TestDeployer) Labels() map[string]string {
@@ -78,8 +78,10 @@ func (t *TestDeployer) Dependencies() ([]string, error) {
 }
 
 func (t *TestDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]deploy.Artifact, error) {
-	if t.err != nil {
-		return nil, t.err
+	if len(t.errors) > 0 {
+		err := t.errors[0]
+		t.errors = t.errors[1:]
+		return nil, err
 	}
 
 	t.deployed = builds
@@ -242,7 +244,7 @@ func TestRun(t *testing.T) {
 			},
 			builder: &TestBuilder{},
 			deployer: &TestDeployer{
-				err: fmt.Errorf(""),
+				errors: []error{fmt.Errorf("")},
 			},
 			shouldErr: true,
 		},
@@ -269,12 +271,23 @@ func TestDev(t *testing.T) {
 	var tests = []struct {
 		description    string
 		builder        build.Builder
+		deployer       deploy.Deployer
 		watcherFactory watch.Factory
 		shouldErr      bool
 	}{
 		{
 			description: "fails to build the first time",
 			builder: &TestBuilder{
+				errors: []error{fmt.Errorf("")},
+			},
+			deployer:       &TestDeployer{},
+			watcherFactory: NewWatcherFactory(nil),
+			shouldErr:      true,
+		},
+		{
+			description: "fails to deploy the first time",
+			builder:     &TestBuilder{},
+			deployer: &TestDeployer{
 				errors: []error{fmt.Errorf("")},
 			},
 			watcherFactory: NewWatcherFactory(nil),
@@ -285,11 +298,21 @@ func TestDev(t *testing.T) {
 			builder: &TestBuilder{
 				errors: []error{nil, fmt.Errorf("")},
 			},
+			deployer:       &TestDeployer{},
+			watcherFactory: NewWatcherFactory(nil, nil),
+		},
+		{
+			description: "ignore subsequent deploy errors",
+			builder:     &TestBuilder{},
+			deployer: &TestDeployer{
+				errors: []error{nil, fmt.Errorf("")},
+			},
 			watcherFactory: NewWatcherFactory(nil, nil),
 		},
 		{
 			description:    "fail to watch files",
 			builder:        &TestBuilder{},
+			deployer:       &TestDeployer{},
 			watcherFactory: NewWatcherFactory(fmt.Errorf("")),
 			shouldErr:      true,
 		},
@@ -299,7 +322,7 @@ func TestDev(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			runner := &SkaffoldRunner{
 				Builder:      test.builder,
-				Deployer:     &TestDeployer{},
+				Deployer:     test.deployer,
 				Tagger:       &tag.ChecksumTagger{},
 				watchFactory: test.watcherFactory,
 			}

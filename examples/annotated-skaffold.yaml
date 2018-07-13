@@ -84,8 +84,9 @@ build:
   # See https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster
   # Example
   # kaniko:
-    # gcsBucket: k8s-skaffold
-    # pullSecret: /a/secret/path/serviceaccount.json
+  #   gcsBucket: k8s-skaffold
+  #   pullSecret: /a/secret/path/serviceaccount.json
+  #   namespace: default
 
 # The deploy section has all the information needed to deploy. Along with build:
 # it is a required section.
@@ -98,6 +99,12 @@ deploy:
     # manifests to deploy from files.
     manifests:
     - ../examples/getting-started/k8s-*
+    # kubectl can be passed additional option flags either on every command (Global),
+    # on creations (Apply) or deletions (Delete).
+    # flags:
+    #   global: [""]
+    #   apply: [""]
+    #   delete: [""]
 
     # manifests to deploy from remote cluster.
     # The path to where these manifests live in remote kubernetes cluster.
@@ -105,6 +112,16 @@ deploy:
     # remoteManifests:
     # - deployment/web-app1
     # - namespace:deployment/web-app2
+
+ # kustomize:
+    # kustomizePath: "kustomization.yaml"
+    # kustomize deploys manifests with kubectl.
+    # kubectl can be passed additional option flags either on every command (Global),
+    # on creations (Apply) or deletions (Delete).
+    # flags:
+    #   global: [""]
+    #   apply: [""]
+    #   delete: [""]
 
  # helm:
     # helm releases to deploy.
@@ -136,5 +153,8 @@ profiles:
   - name: gcb
     build:
       googleCloudBuild:
-        projectId: k8s-skaffold
         # Google Cloud Build's project id
+        projectId: k8s-skaffold
+        # diskSizeGb: 200
+        # machineType: "N1_HIGHCPU_8"|"N1_HIGHCPU_32"
+
