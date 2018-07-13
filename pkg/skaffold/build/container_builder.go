@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	cstorage "cloud.google.com/go/storage"
@@ -30,6 +31,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+	"github.com/docker/distribution/reference"
+	"github.com/docker/docker/registry"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/google"
@@ -71,10 +74,10 @@ type GoogleCloudBuilder struct {
 	*v1alpha2.GoogleCloudBuild
 }
 
-func NewGoogleCloudBuilder(cfg *v1alpha2.GoogleCloudBuild) (*GoogleCloudBuilder, error) {
+func NewGoogleCloudBuilder(cfg *v1alpha2.GoogleCloudBuild) *GoogleCloudBuilder {
 	return &GoogleCloudBuilder{
 		GoogleCloudBuild: cfg,
-	}, nil
+	}
 }
 
 func (cb *GoogleCloudBuilder) Labels() map[string]string {
@@ -84,38 +87,28 @@ func (cb *GoogleCloudBuilder) Labels() map[string]string {
 }
 
 func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]Artifact, error) {
+	return buildArtifactsInParallel(ctx, out, tagger, artifacts, cb.buildArtifact)
+}
+
+func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *v1alpha2.Artifact) (string, error) {
+	fmt.Fprintf(out, "Building [%s]...\n", artifact.ImageName)
+
 	client, err := google.DefaultClient(ctx, cloudbuild.CloudPlatformScope)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting google client")
+		return "", errors.Wrap(err, "getting google client")
 	}
 
 	cbclient, err := cloudbuild.New(client)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting builder")
+		return "", errors.Wrap(err, "getting builder")
 	}
-
 	cbclient.UserAgent = version.UserAgent()
+
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting cloud storage client")
+		return "", errors.Wrap(err, "getting cloud storage client")
 	}
 	defer c.Close()
-
-	var builds []Artifact
-	for _, artifact := range artifacts {
-		build, err := cb.buildArtifact(ctx, out, tagger, cbclient, c, artifact)
-		if err != nil {
-			return nil, errors.Wrapf(err, "building [%s]", artifact.ImageName)
-		}
-
-		builds = append(builds, *build)
-	}
-
-	return builds, nil
-}
-
-func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, cbclient *cloudbuild.Service, c *cstorage.Client, artifact *v1alpha2.Artifact) (*Artifact, error) {
-	fmt.Fprintf(out, "Building [%s]...\n", artifact.ImageName)
 
 	// need to format build args as strings to pass to container builder docker
 	var buildArgs []string
@@ -126,24 +119,29 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 	}
 	logrus.Debugf("Build args: %s", buildArgs)
 
-	cbBucket := fmt.Sprintf("%s%s", cb.ProjectID, constants.GCSBucketSuffix)
-	buildObject := fmt.Sprintf("source/%s-%s.tar.gz", cb.ProjectID, util.RandomID())
-
-	if err := cb.createBucketIfNotExists(ctx, cbBucket); err != nil {
-		return nil, errors.Wrap(err, "creating bucket if not exists")
+	projectID, err := cb.guessProjectID(artifact)
+	if err != nil {
+		return "", errors.Wrap(err, "getting projectID")
 	}
-	if err := cb.checkBucketProjectCorrect(ctx, cbBucket); err != nil {
-		return nil, errors.Wrap(err, "checking bucket is in correct project")
+
+	cbBucket := fmt.Sprintf("%s%s", projectID, constants.GCSBucketSuffix)
+	buildObject := fmt.Sprintf("source/%s-%s.tar.gz", projectID, util.RandomID())
+
+	if err := cb.createBucketIfNotExists(ctx, projectID, cbBucket); err != nil {
+		return "", errors.Wrap(err, "creating bucket if not exists")
+	}
+	if err := cb.checkBucketProjectCorrect(ctx, projectID, cbBucket); err != nil {
+		return "", errors.Wrap(err, "checking bucket is in correct project")
 	}
 
 	fmt.Fprintf(out, "Pushing code to gs://%s/%s\n", cbBucket, buildObject)
-	if err := docker.UploadContextToGCS(ctx, artifact.DockerArtifact.DockerfilePath, artifact.Workspace, cbBucket, buildObject); err != nil {
-		return nil, errors.Wrap(err, "uploading source tarball")
+	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact.DockerfilePath, cbBucket, buildObject); err != nil {
+		return "", errors.Wrap(err, "uploading source tarball")
 	}
 
 	args := append([]string{"build", "--tag", artifact.ImageName, "-f", artifact.DockerArtifact.DockerfilePath}, buildArgs...)
 	args = append(args, ".")
-	call := cbclient.Projects.Builds.Create(cb.ProjectID, &cloudbuild.Build{
+	call := cbclient.Projects.Builds.Create(projectID, &cloudbuild.Build{
 		LogsBucket: cbBucket,
 		Source: &cloudbuild.Source{
 			StorageSource: &cloudbuild.StorageSource{
@@ -158,15 +156,19 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 			},
 		},
 		Images: []string{artifact.ImageName},
+		Options: &cloudbuild.BuildOptions{
+			DiskSizeGb:  cb.DiskSizeGb,
+			MachineType: cb.MachineType,
+		},
 	})
 	op, err := call.Context(ctx).Do()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create build")
+		return "", errors.Wrap(err, "could not create build")
 	}
 
 	remoteID, err := getBuildID(op)
 	if err != nil {
-		return nil, errors.Wrapf(err, "getting build ID from op")
+		return "", errors.Wrapf(err, "getting build ID from op")
 	}
 	logsObject := fmt.Sprintf("log-%s.txt", remoteID)
 	fmt.Fprintf(out, "Logs at available at \nhttps://console.cloud.google.com/m/cloudstorage/b/%s/o/%s\n", cbBucket, logsObject)
@@ -175,19 +177,19 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 watch:
 	for {
 		logrus.Debugf("current offset %d", offset)
-		b, err := cbclient.Projects.Builds.Get(cb.ProjectID, remoteID).Do()
+		b, err := cbclient.Projects.Builds.Get(projectID, remoteID).Do()
 		if err != nil {
-			return nil, errors.Wrap(err, "getting build status")
+			return "", errors.Wrap(err, "getting build status")
 		}
 
 		r, err := cb.getLogs(ctx, offset, cbBucket, logsObject)
 		if err != nil {
-			return nil, errors.Wrap(err, "getting logs")
+			return "", errors.Wrap(err, "getting logs")
 		}
 		if r != nil {
 			written, err := io.Copy(out, r)
 			if err != nil {
-				return nil, errors.Wrap(err, "copying logs to stdout")
+				return "", errors.Wrap(err, "copying logs to stdout")
 			}
 			offset += written
 			r.Close()
@@ -197,20 +199,20 @@ watch:
 		case StatusSuccess:
 			imageID, err = getImageID(b)
 			if err != nil {
-				return nil, errors.Wrap(err, "getting image id from finished build")
+				return "", errors.Wrap(err, "getting image id from finished build")
 			}
 			break watch
 		case StatusFailure, StatusInternalError, StatusTimeout, StatusCancelled:
-			return nil, fmt.Errorf("cloud build failed: %s", b.Status)
+			return "", fmt.Errorf("cloud build failed: %s", b.Status)
 		default:
-			return nil, fmt.Errorf("unknown status: %s", b.Status)
+			return "", fmt.Errorf("unknown status: %s", b.Status)
 		}
 
 		time.Sleep(RetryDelay)
 	}
 
 	if err := c.Bucket(cbBucket).Object(buildObject).Delete(ctx); err != nil {
-		return nil, errors.Wrap(err, "cleaning up source tar after build")
+		return "", errors.Wrap(err, "cleaning up source tar after build")
 	}
 	logrus.Infof("Deleted object %s", buildObject)
 	builtTag := fmt.Sprintf("%s@%s", artifact.ImageName, imageID)
@@ -222,17 +224,43 @@ watch:
 	})
 
 	if err != nil {
-		return nil, errors.Wrap(err, "generating tag")
+		return "", errors.Wrap(err, "generating tag")
 	}
 
 	if err := docker.AddTag(builtTag, newTag); err != nil {
-		return nil, errors.Wrap(err, "tagging image")
+		return "", errors.Wrap(err, "tagging image")
 	}
 
-	return &Artifact{
-		ImageName: artifact.ImageName,
-		Tag:       newTag,
-	}, nil
+	return newTag, nil
+}
+
+func (cb *GoogleCloudBuilder) guessProjectID(artifact *v1alpha2.Artifact) (string, error) {
+	if cb.ProjectID != "" {
+		return cb.ProjectID, nil
+	}
+
+	ref, err := reference.ParseNormalizedNamed(artifact.ImageName)
+	if err != nil {
+		return "", errors.Wrap(err, "parsing image name for registry")
+	}
+
+	repoInfo, err := registry.ParseRepositoryInfo(ref)
+	if err != nil {
+		return "", err
+	}
+
+	index := repoInfo.Index
+	if !index.Official {
+		switch index.Name {
+		case "gcr.io", "us.gcr.io", "eu.gcr.io", "asia.gcr.io", "staging-k8s.gcr.io":
+			parts := strings.Split(repoInfo.Name.String(), "/")
+			if len(parts) >= 2 {
+				return parts[1], nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("unable to guess GCP projectID from image name [%s]", artifact.ImageName)
 }
 
 func getBuildID(op *cloudbuild.Operation) (string, error) {
@@ -281,12 +309,12 @@ func (cb *GoogleCloudBuilder) getLogs(ctx context.Context, offset int64, bucket,
 	return r, nil
 }
 
-func (cb *GoogleCloudBuilder) checkBucketProjectCorrect(ctx context.Context, bucket string) error {
+func (cb *GoogleCloudBuilder) checkBucketProjectCorrect(ctx context.Context, projectID, bucket string) error {
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
 		return errors.Wrap(err, "getting storage client")
 	}
-	it := c.Buckets(ctx, cb.ProjectID)
+	it := c.Buckets(ctx, projectID)
 	// Set the prefix to the bucket we're looking for to only return that bucket and buckets with that prefix
 	// that we'll filter further later on
 	it.Prefix = bucket
@@ -306,7 +334,7 @@ func (cb *GoogleCloudBuilder) checkBucketProjectCorrect(ctx context.Context, buc
 
 }
 
-func (cb *GoogleCloudBuilder) createBucketIfNotExists(ctx context.Context, bucket string) error {
+func (cb *GoogleCloudBuilder) createBucketIfNotExists(ctx context.Context, projectID, bucket string) error {
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
 		return errors.Wrap(err, "getting storage client")
@@ -324,11 +352,11 @@ func (cb *GoogleCloudBuilder) createBucketIfNotExists(ctx context.Context, bucke
 		return errors.Wrapf(err, "getting bucket %s", bucket)
 	}
 
-	if err := c.Bucket(bucket).Create(ctx, cb.ProjectID, &cstorage.BucketAttrs{
+	if err := c.Bucket(bucket).Create(ctx, projectID, &cstorage.BucketAttrs{
 		Name: bucket,
 	}); err != nil {
 		return err
 	}
-	logrus.Debugf("Created bucket %s in %s", bucket, cb.ProjectID)
+	logrus.Debugf("Created bucket %s in %s", bucket, projectID)
 	return nil
 }

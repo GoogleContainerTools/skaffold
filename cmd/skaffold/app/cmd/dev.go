@@ -54,7 +54,7 @@ func dev(out io.Writer, filename string) error {
 		catchCtrlC(cancel)
 	}
 
-	errDev := devLoop(ctx, out, filename)
+	errDev := devLoop(ctx, cancel, out, filename)
 
 	if opts.Cleanup {
 		if err := delete(out, filename); err != nil {
@@ -65,7 +65,7 @@ func dev(out io.Writer, filename string) error {
 	return errDev
 }
 
-func devLoop(ctx context.Context, out io.Writer, filename string) error {
+func devLoop(ctx context.Context, cancelMainLoop context.CancelFunc, out io.Writer, filename string) error {
 	watcher, err := watch.NewFileWatcher([]string{filename}, runner.PollInterval)
 	if err != nil {
 		return errors.Wrap(err, "watching configuration")
@@ -85,7 +85,10 @@ func devLoop(ctx context.Context, out io.Writer, filename string) error {
 				ctxDev, cancelDev := context.WithCancel(ctx)
 				c <- cancelDev
 				if err := runDev(ctxDev, out, filename); err != nil {
-					logrus.Warnln("dev:", err)
+					logrus.Errorln("dev:", err)
+					cancelMainLoop()
+					devLoop.Done()
+					return
 				}
 			}
 		}

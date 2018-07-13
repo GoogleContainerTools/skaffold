@@ -33,12 +33,16 @@ func CreateTar(w io.Writer, root string, paths []string) error {
 
 	for _, p := range paths {
 		tarPath := filepath.ToSlash(p)
-		p := filepath.Join(root, p)
+
+		if !filepath.IsAbs(p) {
+			p = filepath.Join(root, p)
+		}
+
 		if err := addFileToTar(p, tarPath, tw); err != nil {
 			return err
 		}
-
 	}
+
 	return nil
 }
 

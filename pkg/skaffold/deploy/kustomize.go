@@ -50,7 +50,7 @@ func (k *KustomizeDeployer) Labels() map[string]string {
 }
 
 func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
-	manifests, err := buildManifests(constants.DefaultKustomizationPath)
+	manifests, err := buildManifests(k.KustomizePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "kustomize")
 	}
@@ -62,7 +62,7 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 	if err != nil {
 		return nil, errors.Wrap(err, "replacing images")
 	}
-	if err := kubectl(manifestList.reader(), out, k.kubeContext, "apply", "-f", "-"); err != nil {
+	if err := kubectl(manifestList.reader(), out, k.kubeContext, k.Flags.Global, "apply", k.Flags.Apply, "-f", "-"); err != nil {
 		return nil, errors.Wrap(err, "running kubectl")
 	}
 	return parseManifestsForDeploys(manifestList)
@@ -84,11 +84,11 @@ func newManifestList(r io.Reader) (manifestList, error) {
 }
 
 func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
-	manifests, err := buildManifests(constants.DefaultKustomizationPath)
+	manifests, err := buildManifests(k.KustomizeDeploy.KustomizePath)
 	if err != nil {
 		return errors.Wrap(err, "kustomize")
 	}
-	if err := kubectl(manifests, out, k.kubeContext, "delete", "-f", "-"); err != nil {
+	if err := kubectl(manifests, out, k.kubeContext, k.Flags.Global, "delete", k.Flags.Delete, "-f", "-"); err != nil {
 		return errors.Wrap(err, "kubectl delete")
 	}
 	return nil
@@ -96,7 +96,7 @@ func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 
 func (k *KustomizeDeployer) Dependencies() ([]string, error) {
 	// TODO(r2d4): parse kustomization yaml and add base and patches as dependencies
-	return []string{constants.DefaultKustomizationPath}, nil
+	return []string{k.KustomizePath}, nil
 }
 
 func buildManifests(kustomization string) (io.Reader, error) {

@@ -11,14 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# Bump these on release
-VERSION_MAJOR ?= 0
-VERSION_MINOR ?= 8
-VERSION_BUILD ?= 0
-
-VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
-
 GOOS ?= $(shell go env GOOS)
 GOARCH = amd64
 BUILD_DIR ?= ./out
@@ -42,6 +34,7 @@ BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
 VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
 COMMIT = $(shell git rev-parse HEAD)
+VERSION = $(shell git describe --always --tags --dirty)
 
 GO_LDFLAGS :="
 GO_LDFLAGS += -X $(VERSION_PACKAGE).version=$(VERSION)
@@ -60,10 +53,10 @@ $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
 	GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -tags $(GO_BUILD_TAGS) -o $@ $(BUILD_PACKAGE)
 
 %.sha256: %
-	shasum -a 256 $< &> $@
+	shasum -a 256 $< > $@
 
 %.exe: %
-	mv $< $@
+	cp $< $@
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
@@ -112,6 +105,7 @@ release-build: cross docs
 	docker build \
     		-f deploy/skaffold/Dockerfile \
     		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
+    		-t gcr.io/$(GCP_PROJECT)/skaffold:latest \
     		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) .
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_BUILD_PATH)/
 	gsutil -m cp -r $(DOCS_DIR)/* $(GSC_BUILD_PATH)/docs/

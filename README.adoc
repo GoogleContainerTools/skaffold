@@ -1,15 +1,16 @@
-= Skaffold
 //tag::title[]
 :toc: macro
 ifndef::imagesdir[]
 :imagesdir: docs/img
 endif::[]
+image::skaffold.png[Skaffold, 222,93]
 //end::title[]
-
+---
 [caption="Build status", link="https://travis-ci.org/GoogleContainerTools/skaffold"]
 image::https://travis-ci.org/GoogleContainerTools/skaffold.svg?branch=master[Build Status]
-
 //tag::intro[]
+
+
 Skaffold is a command line tool that facilitates continuous development for Kubernetes applications.
 You can iterate on your application source code locally then deploy to local or remote Kubernetes clusters.
 Skaffold handles the workflow for building, pushing and deploying your application.
@@ -93,10 +94,7 @@ You will need the following components to get started with Skaffold:
 . Docker image registry
    -  Your docker client should be configured to push to an external docker image repository.
 If you're using a minikube or Docker for Desktop cluster, you can skip this requirement.
-   -  If you are using Google Container Registry (GCR), choose one of the following:
-        . Use `gcloud`'s Docker credential helper: Run link:https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker[`gcloud auth configure-docker`]
-        . Install and configure GCR's standalone cred helper: link:https://github.com/GoogleCloudPlatform/docker-credential-gcr#installation-and-usage[`docker-credential-gcr`]
-        . Run `gcloud docker -a` before each development session.
+   -  If you are using Google Container Registry (GCR), you can use `gcloud` and run link:https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker[`gcloud auth configure-docker`] to configure Docker with GCR credentials. If you don't have `gcloud`, you can install a standalone helper – link:https://github.com/GoogleCloudPlatform/docker-credential-gcr#installation-and-usage[`docker-credential-gcr`].
 
 == Iterative Development
 

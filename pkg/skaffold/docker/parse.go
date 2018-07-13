@@ -45,11 +45,10 @@ const (
 // RetrieveImage is overriden for unit testing
 var RetrieveImage = retrieveImage
 
-func readDockerfile(workspace, dockerfilePath string) ([]string, error) {
-	path := filepath.Join(workspace, dockerfilePath)
-	f, err := os.Open(path)
+func readDockerfile(workspace, absDockerfilePath string) ([]string, error) {
+	f, err := os.Open(absDockerfilePath)
 	if err != nil {
-		return nil, errors.Wrapf(err, "opening dockerfile: %s", path)
+		return nil, errors.Wrapf(err, "opening dockerfile: %s", absDockerfilePath)
 	}
 	defer f.Close()
 
@@ -143,8 +142,13 @@ func readDockerfile(workspace, dockerfilePath string) ([]string, error) {
 	return deps, nil
 }
 
-func GetDependencies(dockerfilePath, workspace string) ([]string, error) {
-	deps, err := readDockerfile(workspace, dockerfilePath)
+func GetDependencies(workspace, dockerfilePath string) ([]string, error) {
+	absDockerfilePath := dockerfilePath
+	if !filepath.IsAbs(dockerfilePath) {
+		absDockerfilePath = filepath.Join(workspace, dockerfilePath)
+	}
+
+	deps, err := readDockerfile(workspace, absDockerfilePath)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +200,11 @@ func GetDependencies(dockerfilePath, workspace string) ([]string, error) {
 	}
 
 	// Always add dockerfile even if it's .dockerignored. The daemon will need it anyways.
-	files[dockerfilePath] = true
+	if !filepath.IsAbs(dockerfilePath) {
+		files[dockerfilePath] = true
+	} else {
+		files[absDockerfilePath] = true
+	}
 
 	// Ignore .dockerignore
 	delete(files, ".dockerignore")

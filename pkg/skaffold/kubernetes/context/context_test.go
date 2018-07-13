@@ -17,27 +17,17 @@ limitations under the License.
 package context
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/tools/clientcmd/api"
-
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 func TestCurrentContext(t *testing.T) {
-	tmpDir := os.TempDir()
-	kubeConfig := filepath.Join(tmpDir, "config")
-	defer os.Remove(kubeConfig)
-	if err := clientcmd.WriteToFile(api.Config{
-		CurrentContext: "cluster1",
-	}, kubeConfig); err != nil {
-		t.Fatalf("writing temp kubeconfig")
-	}
-	unsetEnvs := testutil.SetEnvs(t, map[string]string{"KUBECONFIG": kubeConfig})
-	defer unsetEnvs(t)
+	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
+	defer restore()
+
 	context, err := CurrentContext()
+
 	testutil.CheckErrorAndDeepEqual(t, false, err, "cluster1", context)
 }
