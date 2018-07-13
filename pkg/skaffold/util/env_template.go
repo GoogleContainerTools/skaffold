@@ -56,5 +56,6 @@ func ExecuteEnvTemplate(envTemplate *template.Template, customMap map[string]str
 	if err := envTemplate.Execute(&buf, envMap); err != nil {
 		return "", errors.Wrap(err, "executing template")
 	}
+	logrus.Infof("envTemplate is ", buf)
 	return buf.String(), nil
 }

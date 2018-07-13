@@ -141,14 +141,9 @@ func addBuildArgs(args []string, artifact *v1alpha2.Artifact) []string {
 		return args
 	}
 
-	withBuildArgs := make([]string, len(args)+len(artifact.DockerArtifact.BuildArgs))
-	copy(withBuildArgs, args)
-
-	i := len(args)
 	for k, v := range artifact.DockerArtifact.BuildArgs {
-		withBuildArgs[i] = fmt.Sprintf("--build-arg=%s=%s", k, *v)
-		i = i + 1
+		args = append(args, fmt.Sprintf("--build-arg=%s=%s", k, *v))
 	}
 
-	return withBuildArgs
+	return args
 }
