@@ -69,12 +69,12 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 					Name:            "kaniko",
 					Image:           constants.DefaultKanikoImage,
 					ImagePullPolicy: v1.PullIfNotPresent,
-					Args: []string{
+					Args: addBuildArgs([]string{
 						fmt.Sprintf("--dockerfile=%s", dockerfilePath),
 						fmt.Sprintf("--context=gs://%s/%s", cfg.GCSBucket, tarName),
 						fmt.Sprintf("--destination=%s", imageDst),
 						fmt.Sprintf("-v=%s", logrus.GetLevel().String()),
-					},
+					}, artifact),
 					VolumeMounts: []v1.VolumeMount{
 						{
 							Name:      constants.DefaultKanikoSecretName,
@@ -130,4 +130,25 @@ func gcsDelete(ctx context.Context, bucket, path string) error {
 	defer c.Close()
 
 	return c.Bucket(bucket).Object(path).Delete(ctx)
+}
+
+func addBuildArgs(args []string, artifact *v1alpha2.Artifact) []string {
+	if artifact.DockerArtifact == nil {
+		return args
+	}
+
+	if artifact.DockerArtifact.BuildArgs == nil || len(artifact.DockerArtifact.BuildArgs) == 0 {
+		return args
+	}
+
+	withBuildArgs := make([]string, len(args)+len(artifact.DockerArtifact.BuildArgs))
+	copy(withBuildArgs, args)
+
+	i := len(args)
+	for k, v := range artifact.DockerArtifact.BuildArgs {
+		withBuildArgs[i] = fmt.Sprintf("--build-arg=%s=%s", k, *v)
+		i = i + 1
+	}
+
+	return withBuildArgs
 }
