@@ -1,8 +1,8 @@
 package reflect2
 
 import (
-	"reflect"
 	"unsafe"
+	"reflect"
 )
 
 type iface struct {
