@@ -26,7 +26,6 @@ import (
 )
 
 func helperCommandContext(s ...string) (cmd *exec.Cmd) {
-
 	cs := []string{"-test.run=TestHelperProcess", "--"}
 	cs = append(cs, s...)
 	cmd = exec.Command(os.Args[0], cs...)
@@ -38,6 +37,7 @@ func helperCommand(s ...string) *exec.Cmd {
 	return helperCommandContext(s...)
 }
 
+//adapted from https://npf.io/2015/06/testing-exec-command
 func TestHelperProcess(*testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return

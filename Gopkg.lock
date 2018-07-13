@@ -35,6 +35,37 @@
   version = "v10.11.2"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/GoogleContainerTools/skaffold"
+  packages = [
+    "cmd/skaffold/app",
+    "cmd/skaffold/app/cmd",
+    "cmd/skaffold/app/cmd/docker",
+    "cmd/skaffold/app/flags",
+    "pkg/skaffold/bazel",
+    "pkg/skaffold/build",
+    "pkg/skaffold/build/tag",
+    "pkg/skaffold/config",
+    "pkg/skaffold/config/transform",
+    "pkg/skaffold/constants",
+    "pkg/skaffold/deploy",
+    "pkg/skaffold/docker",
+    "pkg/skaffold/kaniko",
+    "pkg/skaffold/kubernetes",
+    "pkg/skaffold/kubernetes/context",
+    "pkg/skaffold/runner",
+    "pkg/skaffold/schema",
+    "pkg/skaffold/schema/util",
+    "pkg/skaffold/schema/v1alpha1",
+    "pkg/skaffold/schema/v1alpha2",
+    "pkg/skaffold/util",
+    "pkg/skaffold/version",
+    "pkg/skaffold/watch",
+    "testutil"
+  ]
+  revision = "1d9f94434d61e9e75ea8387b52bba26fbc4c5982"
+
+[[projects]]
   name = "github.com/Microsoft/go-winio"
   packages = ["."]
   revision = "7da180ee92d8bd8bb8c37fc560e673e6557c392f"
@@ -386,8 +417,8 @@
 [[projects]]
   name = "github.com/modern-go/reflect2"
   packages = ["."]
-  revision = "1df9eeb2bb81f327b96228865c5687bc2194af3f"
-  version = "1.0.0"
+  revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
+  version = "1.0.1"
 
 [[projects]]
   name = "github.com/opencontainers/go-digest"
@@ -949,6 +980,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2f20762e774baeea8657ad1c449e834474a0e8219b59856f02ed5d6472c86b9b"
+  inputs-digest = "b3045b7694a3221c42a8fe649b229d1e9f59ad43ad8d7909eae668cac996cc6d"
   solver-name = "gps-cdcl"
   solver-version = 1
