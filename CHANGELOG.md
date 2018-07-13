@@ -1,3 +1,37 @@
+# v0.10.0 Release - 7/13/2018
+New Features:
+* kustomize: use custom path in deploy deps [#766](https://github.com/GoogleContainerTools/skaffold/pull/766)
+* helm: add deploy dependency paths [#765](https://github.com/GoogleContainerTools/skaffold/pull/765)
+* Use digest when the git repo has no commit [#794](https://github.com/GoogleContainerTools/skaffold/pull/794)
+* GCB now builds artifacts in // [#805](https://github.com/GoogleContainerTools/skaffold/pull/805)
+* Default kubectl manifests to `k8s/*.yaml` [#810](https://github.com/GoogleContainerTools/skaffold/pull/810)
+* Support disk size and machine type for GCB [#808](https://github.com/GoogleContainerTools/skaffold/pull/808)
+* Support additional flags for kubectl commands [#807](https://github.com/GoogleContainerTools/skaffold/pull/807)
+* Try to guess GCB projectID from the image name [#809](https://github.com/GoogleContainerTools/skaffold/pull/809)
+
+Bug Fixes:
+* kustomize: cleanup custom kustomize path [#781](https://github.com/GoogleContainerTools/skaffold/pull/781)
+* corrected region typo [#792](https://github.com/GoogleContainerTools/skaffold/pull/792)
+* Fixed a small typo in docs [#797](https://github.com/GoogleContainerTools/skaffold/pull/797)
+* Small code changes [#796](https://github.com/GoogleContainerTools/skaffold/pull/796)
+
+Updates:
+* docs: alphabetize readme peoples [#764](https://github.com/GoogleContainerTools/skaffold/pull/764)
+* makefile: redirection for checksums [#768](https://github.com/GoogleContainerTools/skaffold/pull/768)
+* brew: remove version from formula [#763](https://github.com/GoogleContainerTools/skaffold/pull/763)
+* Add the logo [#774](https://github.com/GoogleContainerTools/skaffold/pull/774)
+* ci: also push latest skaffold image on commit [#773](https://github.com/GoogleContainerTools/skaffold/pull/773)
+* tests: pin golangci-lint version to v1.8.1 [#780](https://github.com/GoogleContainerTools/skaffold/pull/780)
+* Remove dead code [#784](https://github.com/GoogleContainerTools/skaffold/pull/784)
+* Improve GCR docs [#795](https://github.com/GoogleContainerTools/skaffold/pull/795)
+* Extract code to build a single artifact locally [#798](https://github.com/GoogleContainerTools/skaffold/pull/798)
+* Use dynamic client for labels [#782](https://github.com/GoogleContainerTools/skaffold/pull/782)
+* Update Kaniko to v0.2.0 [#803](https://github.com/GoogleContainerTools/skaffold/pull/803)
+* Upgrade k8s dependency to 1.11.0 [#804](https://github.com/GoogleContainerTools/skaffold/pull/804)
+* Fix missing logs [#786](https://github.com/GoogleContainerTools/skaffold/pull/786)
+* calculate version from git [#814](https://github.com/GoogleContainerTools/skaffold/pull/814)
+* logs: use namespace flag when streaming pods [#819](https://github.com/GoogleContainerTools/skaffold/pull/819)
+
 # v0.9.0 Release - 6/28/2018
 New Features:
 * Print the image name that's being built [#732](https://github.com/GoogleContainerTools/skaffold/pull/732)
