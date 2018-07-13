@@ -34,7 +34,7 @@ BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
 VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
 COMMIT = $(shell git rev-parse HEAD)
-VERSION = $(shell git describe --always --tags --dirty)
+VERSION ?= $(shell git describe --always --tags --dirty)
 
 GO_LDFLAGS :="
 GO_LDFLAGS += -X $(VERSION_PACKAGE).version=$(VERSION)
