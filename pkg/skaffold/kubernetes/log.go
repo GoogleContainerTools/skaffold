@@ -136,7 +136,7 @@ func (a *LogAggregator) streamLogs(ctx context.Context, client corev1.PodsGetter
 				sinceSeconds = 1
 			}
 
-			cmd := exec.CommandContext(ctx, "kubectl", "logs", fmt.Sprintf("--since=%ds", sinceSeconds), "-f", pod.Name, "-c", container.Name)
+			cmd := exec.CommandContext(ctx, "kubectl", "logs", fmt.Sprintf("--since=%ds", sinceSeconds), "-f", pod.Name, "-c", container.Name, "--namespace", pod.Namespace)
 			cmd.Stdout = tw
 			cmd.Run()
 		}()
