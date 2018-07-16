@@ -245,7 +245,13 @@ func (f Future) PollingURL() string {
 // It makes the final GET call to retrieve the resultant payload.
 func (f Future) GetResult(sender autorest.Sender) (*http.Response, error) {
 	if f.pt.finalGetURL() == "" {
-		return nil, nil
+		// we can end up in this situation if the async operation returns a 200
+		// with no polling URLs.  in that case return the response which should
+		// contain the JSON payload (only do this for successful terminal cases).
+		if lr := f.pt.latestResponse(); lr != nil && f.pt.hasSucceeded() {
+			return lr, nil
+		}
+		return nil, autorest.NewError("Future", "GetResult", "missing URL for retrieving result")
 	}
 	req, err := http.NewRequest(http.MethodGet, f.pt.finalGetURL(), nil)
 	if err != nil {
@@ -342,6 +348,10 @@ func (pt *pollingTrackerBase) initializeState() error {
 	case http.StatusOK:
 		if ps := pt.getProvisioningState(); ps != nil {
 			pt.State = *ps
+			if pt.hasFailed() {
+				pt.updateErrorFromResponse()
+				return pt.pollingError()
+			}
 		} else {
 			pt.State = operationSucceeded
 		}
@@ -358,6 +368,7 @@ func (pt *pollingTrackerBase) initializeState() error {
 	default:
 		pt.State = operationFailed
 		pt.updateErrorFromResponse()
+		return pt.pollingError()
 	}
 	return nil
 }
@@ -416,6 +427,7 @@ func (pt *pollingTrackerBase) pollForStatus(sender autorest.Sender) error {
 
 // attempts to unmarshal a ServiceError type from the response body.
 // if that fails then make a best attempt at creating something meaningful.
+// NOTE: this assumes that the async operation has failed.
 func (pt *pollingTrackerBase) updateErrorFromResponse() {
 	var err error
 	if pt.resp.ContentLength != 0 {
@@ -425,8 +437,7 @@ func (pt *pollingTrackerBase) updateErrorFromResponse() {
 		re := respErr{}
 		defer pt.resp.Body.Close()
 		var b []byte
-		b, err = ioutil.ReadAll(pt.resp.Body)
-		if err != nil {
+		if b, err = ioutil.ReadAll(pt.resp.Body); err != nil {
 			goto Default
 		}
 		if err = json.Unmarshal(b, &re); err != nil {
@@ -439,19 +450,28 @@ func (pt *pollingTrackerBase) updateErrorFromResponse() {
 				goto Default
 			}
 		}
-		if re.ServiceError != nil {
+		// the unmarshaller will ensure re.ServiceError is non-nil
+		// even if there was no content unmarshalled so check the code.
+		if re.ServiceError.Code != "" {
 			pt.Err = re.ServiceError
 			return
 		}
 	}
 Default:
 	se := &ServiceError{
-		Code:    fmt.Sprintf("HTTP status code %v", pt.resp.StatusCode),
-		Message: pt.resp.Status,
+		Code:    pt.pollingStatus(),
+		Message: "The async operation failed.",
 	}
 	if err != nil {
 		se.InnerError = make(map[string]interface{})
 		se.InnerError["unmarshalError"] = err.Error()
+	}
+	// stick the response body into the error object in hopes
+	// it contains something useful to help diagnose the failure.
+	if len(pt.rawBody) > 0 {
+		se.AdditionalInfo = []map[string]interface{}{
+			pt.rawBody,
+		}
 	}
 	pt.Err = se
 }

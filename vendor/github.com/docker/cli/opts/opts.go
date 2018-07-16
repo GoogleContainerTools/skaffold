@@ -6,6 +6,7 @@ import (
 	"net"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/docker/docker/api/types/filters"
@@ -485,4 +486,39 @@ func (m *MemSwapBytes) String() string {
 func (m *MemSwapBytes) UnmarshalJSON(s []byte) error {
 	b := MemBytes(*m)
 	return b.UnmarshalJSON(s)
+}
+
+// NullableBool is a type for tri-state boolean options
+type NullableBool struct {
+	b *bool
+}
+
+// Type returns the type
+func (n *NullableBool) Type() string {
+	return ""
+}
+
+// Value returns the value in *bool
+func (n *NullableBool) Value() *bool {
+	return n.b
+}
+
+// Set sets the value. If value is empty string or "auto", nil is set.
+// Otherwise true or false are set based on flag.Bool behavior.
+func (n *NullableBool) Set(value string) error {
+	if value != "auto" && value != "" {
+		b, err := strconv.ParseBool(value)
+		if err != nil {
+			return err
+		}
+		n.b = &b
+	}
+	return nil
+}
+
+func (n *NullableBool) String() string {
+	if n.b == nil {
+		return "auto"
+	}
+	return strconv.FormatBool(*n.b)
 }

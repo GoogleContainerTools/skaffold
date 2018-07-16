@@ -24,7 +24,7 @@ import (
 type MountableLayer struct {
 	v1.Layer
 
-	Repository name.Repository
+	Reference name.Reference
 }
 
 // mountableImage wraps the v1.Layer references returned by the embedded v1.Image
@@ -33,7 +33,7 @@ type MountableLayer struct {
 type mountableImage struct {
 	v1.Image
 
-	Repository name.Repository
+	Reference name.Reference
 }
 
 // Layers implements v1.Image
@@ -45,8 +45,8 @@ func (mi *mountableImage) Layers() ([]v1.Layer, error) {
 	mls := make([]v1.Layer, 0, len(ls))
 	for _, l := range ls {
 		mls = append(mls, &MountableLayer{
-			Layer:      l,
-			Repository: mi.Repository,
+			Layer:     l,
+			Reference: mi.Reference,
 		})
 	}
 	return mls, nil
@@ -59,8 +59,8 @@ func (mi *mountableImage) LayerByDigest(d v1.Hash) (v1.Layer, error) {
 		return nil, err
 	}
 	return &MountableLayer{
-		Layer:      l,
-		Repository: mi.Repository,
+		Layer:     l,
+		Reference: mi.Reference,
 	}, nil
 }
 
@@ -71,7 +71,7 @@ func (mi *mountableImage) LayerByDiffID(d v1.Hash) (v1.Layer, error) {
 		return nil, err
 	}
 	return &MountableLayer{
-		Layer:      l,
-		Repository: mi.Repository,
+		Layer:     l,
+		Reference: mi.Reference,
 	}, nil
 }

@@ -2,15 +2,13 @@ package user
 
 import (
 	"errors"
+	"fmt"
 	"syscall"
 )
 
 var (
 	// The current operating system does not provide the required data for user lookups.
 	ErrUnsupported = errors.New("user lookup: operating system does not provide passwd-formatted data")
-	// No matching entries found in file.
-	ErrNoPasswdEntries = errors.New("no matching entries in passwd file")
-	ErrNoGroupEntries  = errors.New("no matching entries in group file")
 )
 
 func lookupUser(filter func(u User) bool) (User, error) {
@@ -29,7 +27,7 @@ func lookupUser(filter func(u User) bool) (User, error) {
 
 	// No user entries found.
 	if len(users) == 0 {
-		return User{}, ErrNoPasswdEntries
+		return User{}, fmt.Errorf("no matching entries in passwd file")
 	}
 
 	// Assume the first entry is the "correct" one.
@@ -77,7 +75,7 @@ func lookupGroup(filter func(g Group) bool) (Group, error) {
 
 	// No user entries found.
 	if len(groups) == 0 {
-		return Group{}, ErrNoGroupEntries
+		return Group{}, fmt.Errorf("no matching entries in group file")
 	}
 
 	// Assume the first entry is the "correct" one.
