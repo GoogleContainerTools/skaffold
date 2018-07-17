@@ -22,6 +22,10 @@ import os
 import re
 import sys
 
+
+SKIPPED_DIRS = ["Godeps", "third_party", ".git", "vendor", "examples", "testdata"]
+SKIPPED_FILES = ["install_golint.sh"]
+
 parser = argparse.ArgumentParser()
 parser.add_argument("filenames", help="list of files to check, all files if unspecified", nargs='*')
 
@@ -103,17 +107,11 @@ def file_passes(filename, refs, regexs):
 def file_extension(filename):
     return os.path.splitext(filename)[1].split(".")[-1].lower()
 
-skipped_dirs = ['Godeps', 'third_party', '.git', "vendor", "examples", './hack/install_golint.sh']
-
 def normalize_files(files):
     newfiles = []
-    for pathname in files:
-        if any(x in pathname for x in skipped_dirs):
-            continue
-        newfiles.append(pathname)
-    for i, pathname in enumerate(newfiles):
+    for i, pathname in enumerate(files):
         if not os.path.isabs(pathname):
-            newfiles[i] = os.path.join(args.rootdir, pathname)
+            newfiles.append(os.path.join(args.rootdir, pathname))
     return newfiles
 
 def get_files(extensions):
@@ -122,17 +120,14 @@ def get_files(extensions):
         files = args.filenames
     else:
         for root, dirs, walkfiles in os.walk(args.rootdir):
-            # don't visit certain dirs. This is just a performance improvement
-            # as we would prune these later in normalize_files(). But doing it
-            # cuts down the amount of filesystem walking we do and cuts down
-            # the size of the file list
-            for d in skipped_dirs:
+            for d in SKIPPED_DIRS:
                 if d in dirs:
                     dirs.remove(d)
 
             for name in walkfiles:
-                pathname = os.path.join(root, name)
-                files.append(pathname)
+                if name not in SKIPPED_FILES:
+                    pathname = os.path.join(root, name)
+                    files.append(pathname)
 
     files = normalize_files(files)
     outfiles = []
