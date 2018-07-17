@@ -128,7 +128,14 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 	var setOpts []string
 	for k, v := range params {
 		setOpts = append(setOpts, "--set")
-		setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v.Tag))
+		if r.ImageStrategy.HelmImageConfig.HelmFQNConfig != nil {
+			setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v.Tag))
+		} else {
+			tagSplit := strings.Split(v.Tag, ":")
+			imageRepository := fmt.Sprintf("%s.repository=%s", k, tagSplit[0])
+			imageTag := fmt.Sprintf("%s.tag=%s", k, tagSplit[1])
+			setOpts = append(setOpts, imageRepository, imageTag)
+		}
 	}
 
 	// First build dependencies.
