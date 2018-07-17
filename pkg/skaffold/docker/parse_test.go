@@ -290,7 +290,7 @@ func TestGetDependencies(t *testing.T) {
 				ioutil.WriteFile(filepath.Join(workspace, ".dockerignore"), []byte(test.ignore), 0644)
 			}
 
-			deps, err := GetDependencies(workspace, "Dockerfile")
+			deps, err := GetDependencies(map[string]*string{}, workspace, "Dockerfile")
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
 		})
 	}

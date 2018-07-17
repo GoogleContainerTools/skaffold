@@ -29,23 +29,17 @@ import (
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/fileutils"
 	"github.com/google/go-containerregistry/pkg/v1"
+	"github.com/moby/buildkit/frontend/dockerfile/command"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	add  = "add"
-	copy = "copy"
-	env  = "env"
-	from = "from"
-)
-
 // RetrieveImage is overriden for unit testing
 var RetrieveImage = retrieveImage
 
-func readDockerfile(workspace, absDockerfilePath string) ([]string, error) {
+func readDockerfile(buildArgs map[string]*string, workspace, absDockerfilePath string) ([]string, error) {
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "opening dockerfile: %s", absDockerfilePath)
@@ -59,11 +53,42 @@ func readDockerfile(workspace, absDockerfilePath string) ([]string, error) {
 
 	var copied [][]string
 	envs := map[string]string{}
-	// First process onbuilds, if present.
+
+	// First process all build args, and replace if necessary.
+	for i, value := range res.AST.Children {
+		switch value.Value {
+		case command.Arg:
+			var val string
+			arg := strings.Split(value.Original, " ")[1]
+			valuePtr := buildArgs[arg]
+			if valuePtr == nil {
+				logrus.Warnf("arg %s referenced in dockerfile but not provided in build args", arg)
+			} else {
+				val = *valuePtr
+				if val == "" {
+					logrus.Warnf("empty build arg provided in skaffold config: %s", arg)
+					break
+				}
+				// we have a non-empty arg: replace it in all subsequent nodes
+				for j := i; j < len(res.AST.Children); j++ {
+					currentNode := res.AST.Children[j]
+					for {
+						if currentNode == nil {
+							break
+						}
+						currentNode.Value = strings.Replace(currentNode.Value, "$"+arg, val, -1)
+						currentNode = currentNode.Next
+					}
+				}
+			}
+		}
+	}
+
+	// Then process onbuilds, if present.
 	onbuildsImages := [][]string{}
 	for _, value := range res.AST.Children {
 		switch value.Value {
-		case from:
+		case command.From:
 			onbuilds, err := processBaseImage(value)
 			if err != nil {
 				logrus.Warnf("Error processing base image for onbuild triggers: %s. Dependencies may be incomplete.", err)
@@ -75,12 +100,12 @@ func readDockerfile(workspace, absDockerfilePath string) ([]string, error) {
 	var dispatchInstructions = func(r *parser.Result) {
 		for _, value := range r.AST.Children {
 			switch value.Value {
-			case add, copy:
+			case command.Add, command.Copy:
 				files, _ := processCopy(value, envs)
 				if len(files) > 0 {
 					copied = append(copied, files)
 				}
-			case env:
+			case command.Env:
 				envs[value.Next.Value] = value.Next.Next.Value
 			}
 		}
@@ -142,13 +167,13 @@ func readDockerfile(workspace, absDockerfilePath string) ([]string, error) {
 	return deps, nil
 }
 
-func GetDependencies(workspace, dockerfilePath string) ([]string, error) {
+func GetDependencies(buildArgs map[string]*string, workspace, dockerfilePath string) ([]string, error) {
 	absDockerfilePath := dockerfilePath
 	if !filepath.IsAbs(dockerfilePath) {
 		absDockerfilePath = filepath.Join(workspace, dockerfilePath)
 	}
 
-	deps, err := readDockerfile(workspace, absDockerfilePath)
+	deps, err := readDockerfile(buildArgs, workspace, absDockerfilePath)
 	if err != nil {
 		return nil, err
 	}

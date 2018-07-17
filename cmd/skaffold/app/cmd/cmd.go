@@ -19,11 +19,9 @@ package cmd
 import (
 	"io"
 
-	yaml "gopkg.in/yaml.v2"
-
+	cmdutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -94,33 +92,13 @@ func SetUpLogs(out io.Writer, level string) error {
 }
 
 func readConfiguration(filename string) (*config.SkaffoldConfig, error) {
-	buf, err := util.ReadConfiguration(filename)
-	if err != nil {
-		return nil, errors.Wrap(err, "read skaffold config")
-	}
-
-	apiVersion := &config.APIVersion{}
-	if err := yaml.Unmarshal(buf, apiVersion); err != nil {
-		return nil, errors.Wrap(err, "parsing api version")
-	}
-
-	if apiVersion.Version != config.LatestVersion {
-		return nil, errors.New("Config version out of date: run `skaffold fix`")
-	}
-
-	cfg, err := config.GetConfig(buf, true)
+	config, err := cmdutil.ParseConfig(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold config")
 	}
-
-	// we already ensured that the versions match in the previous block,
-	// so this type assertion is safe.
-	latestConfig := cfg.(*config.SkaffoldConfig)
-
-	err = latestConfig.ApplyProfiles(opts.Profiles)
+	err = config.ApplyProfiles(opts.Profiles)
 	if err != nil {
 		return nil, errors.Wrap(err, "applying profiles")
 	}
-
-	return latestConfig, nil
+	return config, nil
 }

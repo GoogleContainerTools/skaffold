@@ -30,7 +30,7 @@ var DependenciesForArtifact = dependenciesForArtifact
 func dependenciesForArtifact(a *v1alpha2.Artifact) ([]string, error) {
 	switch {
 	case a.DockerArtifact != nil:
-		return docker.GetDependencies(a.Workspace, a.DockerArtifact.DockerfilePath)
+		return docker.GetDependencies(map[string]*string{}, a.Workspace, a.DockerArtifact.DockerfilePath)
 
 	case a.BazelArtifact != nil:
 		return bazel.GetDependencies(a)

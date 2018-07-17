@@ -47,7 +47,7 @@ func RunBuild(ctx context.Context, out io.Writer, cli APIClient, workspace strin
 
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := CreateDockerTarContext(buildCtxWriter, workspace, opts.Dockerfile)
+		err := CreateDockerTarContext(opts.BuildArgs, buildCtxWriter, workspace, opts.Dockerfile)
 		if err != nil {
 			buildCtxWriter.CloseWithError(errors.Wrap(err, "creating docker context"))
 			return

@@ -17,5 +17,5 @@ limitations under the License.
 package docker
 
 var (
-	filename, context string
+	filename, dockerfile, context string
 )
