@@ -25,8 +25,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func CreateDockerTarContext(w io.Writer, context, dockerfilePath string) error {
-	paths, err := GetDependencies(context, dockerfilePath)
+func CreateDockerTarContext(buildArgs map[string]*string, w io.Writer, context, dockerfilePath string) error {
+	paths, err := GetDependencies(buildArgs, context, dockerfilePath)
 	if err != nil {
 		return errors.Wrap(err, "getting relative tar paths")
 	}
@@ -36,8 +36,8 @@ func CreateDockerTarContext(w io.Writer, context, dockerfilePath string) error {
 	return nil
 }
 
-func CreateDockerTarGzContext(w io.Writer, context, dockerfilePath string) error {
-	paths, err := GetDependencies(context, dockerfilePath)
+func CreateDockerTarGzContext(buildArgs map[string]*string, w io.Writer, context, dockerfilePath string) error {
+	paths, err := GetDependencies(buildArgs, context, dockerfilePath)
 	if err != nil {
 		return errors.Wrap(err, "getting relative tar paths")
 	}
@@ -55,7 +55,7 @@ func UploadContextToGCS(ctx context.Context, context, dockerfilePath, bucket, ob
 	defer c.Close()
 
 	w := c.Bucket(bucket).Object(objectName).NewWriter(ctx)
-	if err := CreateDockerTarGzContext(w, context, dockerfilePath); err != nil {
+	if err := CreateDockerTarGzContext(map[string]*string{}, w, context, dockerfilePath); err != nil {
 		return errors.Wrap(err, "uploading targz to google storage")
 	}
 	return w.Close()

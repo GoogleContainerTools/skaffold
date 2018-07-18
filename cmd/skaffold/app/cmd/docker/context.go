@@ -22,7 +22,9 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	cmdutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -38,13 +40,15 @@ func NewCmdContext(out io.Writer) *cobra.Command {
 			return runContext(out, filename, context)
 		},
 	}
-	cmd.Flags().StringVarP(&filename, "filename", "f", "Dockerfile", "Dockerfile path")
-	cmd.Flags().StringVarP(&context, "context", "c", ".", "Dockerfile context path")
-	cmd.Flags().StringVarP(&output, "output", "o", "context.tar.gz", "Output filename.")
+	AddDockerFlags(cmd)
 	return cmd
 }
 
 func runContext(out io.Writer, filename, context string) error {
+	config, err := cmdutil.ParseConfig(filename)
+	if err != nil {
+		return errors.Wrap(err, "parsing skaffold config")
+	}
 	dockerFilePath, err := filepath.Abs(filename)
 	logrus.Info(filename)
 	logrus.Info(dockerFilePath)
@@ -56,7 +60,7 @@ func runContext(out io.Writer, filename, context string) error {
 	// This prevents recursion problems, where the output file can end up
 	// in the context itself during creation.
 	var b bytes.Buffer
-	if err := docker.CreateDockerTarGzContext(&b, context, dockerFilePath); err != nil {
+	if err := docker.CreateDockerTarGzContext(getBuildArgsForDockerfile(config, dockerfile), &b, context, dockerFilePath); err != nil {
 		return err
 	}
 	return ioutil.WriteFile(output, b.Bytes(), 0644)

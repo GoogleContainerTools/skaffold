@@ -113,6 +113,15 @@ FROM noimage:latest
 ADD ./file /etc/file
 `
 
+const copyServerGoBuildArg = `
+FROM ubuntu:14.04
+ARG FOO
+COPY $FOO .
+CMD $FOO
+`
+
+var fooArg = "server.go" // used for build args
+
 var ImageConfigs = map[string]*v1.ConfigFile{
 	"golang:onbuild": {
 		Config: v1.Config{
@@ -154,6 +163,7 @@ func TestGetDependencies(t *testing.T) {
 		dockerfile  string
 		workspace   string
 		ignore      string
+		buildArgs   map[string]*string
 
 		expected  []string
 		badReader bool
@@ -264,6 +274,13 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "file"},
 		},
+		{
+			description: "build args",
+			dockerfile:  copyServerGoBuildArg,
+			workspace:   ".",
+			buildArgs:   map[string]*string{"FOO": &fooArg},
+			expected:    []string{"Dockerfile", "server.go"},
+		},
 	}
 
 	RetrieveImage = mockRetrieveImage
@@ -290,7 +307,7 @@ func TestGetDependencies(t *testing.T) {
 				ioutil.WriteFile(filepath.Join(workspace, ".dockerignore"), []byte(test.ignore), 0644)
 			}
 
-			deps, err := GetDependencies(workspace, "Dockerfile")
+			deps, err := GetDependencies(test.buildArgs, workspace, "Dockerfile")
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
 		})
 	}
