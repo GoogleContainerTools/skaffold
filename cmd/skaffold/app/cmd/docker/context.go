@@ -39,10 +39,7 @@ func NewCmdContext(out io.Writer) *cobra.Command {
 			return runContext(out, filename, context)
 		},
 	}
-	cmd.Flags().StringVarP(&filename, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
-	cmd.Flags().StringVarP(&dockerfile, "dockerfile", "d", "Dockerfile", "Dockerfile path")
-	cmd.Flags().StringVarP(&context, "context", "c", ".", "Dockerfile context path")
-	cmd.Flags().StringVarP(&output, "output", "o", "context.tar.gz", "Output filename.")
+	AddDockerFlags(cmd)
 	return cmd
 }
 

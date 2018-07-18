@@ -16,6 +16,17 @@ limitations under the License.
 
 package docker
 
+import (
+	"github.com/spf13/cobra"
+)
+
 var (
 	filename, dockerfile, context string
 )
+
+func AddDockerFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&filename, "filename", "f", "", "Filename or URL to the pipeline file")
+	cmd.Flags().StringVarP(&dockerfile, "dockerfile", "d", "Dockerfile", "Dockerfile path")
+	cmd.Flags().StringVarP(&context, "context", "c", "", "Dockerfile context path")
+	cmd.Flags().VarP(depsFormatFlag, "output", "o", depsFormatFlag.Usage())
+}

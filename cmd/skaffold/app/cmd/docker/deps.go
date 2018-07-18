@@ -18,6 +18,8 @@ package docker
 
 import (
 	"io"
+	"path/filepath"
+	"strings"
 
 	cmdutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/util"
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
@@ -39,10 +41,7 @@ func NewCmdDeps(out io.Writer) *cobra.Command {
 			return runDeps(out, filename, dockerfile, context)
 		},
 	}
-	cmd.Flags().StringVarP(&filename, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
-	cmd.Flags().StringVarP(&dockerfile, "dockerfile", "d", "Dockerfile", "Dockerfile path")
-	cmd.Flags().StringVarP(&context, "context", "c", ".", "Dockerfile context path")
-	cmd.Flags().VarP(depsFormatFlag, "output", "o", depsFormatFlag.Usage())
+	AddDockerFlags(cmd)
 	return cmd
 }
 
@@ -51,11 +50,24 @@ type DepsOutput struct {
 }
 
 func runDeps(out io.Writer, filename, dockerfile, context string) error {
+	// if we don't have a context, infer from the provided dockerfile path
+	if context == "" {
+		context = filepath.Dir(dockerfile)
+	}
+	// if we don't have a skaffold.yaml, use the one in the docker context dir
+	if filename == "" {
+		filename = filepath.Join(context, "skaffold.yaml")
+	}
 	config, err := cmdutil.ParseConfig(filename)
 	if err != nil {
 		return err
 	}
-	deps, err := docker.GetDependencies(getBuildArgsForDockerfile(config, dockerfile), context, dockerfile)
+	// normalize the provided dockerfile path WRT to the context
+	normalizedPath, err := normalizeDockerfilePath(dockerfile, context)
+	if err != nil {
+		return errors.Wrap(err, "normalizing dockerfile path")
+	}
+	deps, err := docker.GetDependencies(getBuildArgsForDockerfile(config, normalizedPath), context, normalizedPath)
 	if err != nil {
 		return errors.Wrap(err, "getting dockerfile dependencies")
 	}
@@ -67,10 +79,29 @@ func runDeps(out io.Writer, filename, dockerfile, context string) error {
 	return nil
 }
 
+func normalizeDockerfilePath(dockerfile, context string) (string, error) {
+	if !filepath.IsAbs(dockerfile) {
+		if !strings.HasPrefix(dockerfile, context) {
+			dockerfile = filepath.Join(context, dockerfile)
+		}
+	}
+	return filepath.Abs(dockerfile)
+}
+
 func getBuildArgsForDockerfile(config *config.SkaffoldConfig, dockerfile string) map[string]*string {
+	var err error
 	for _, artifact := range config.Build.Artifacts {
-		if artifact.DockerArtifact != nil && artifact.DockerArtifact.DockerfilePath == dockerfile {
-			return artifact.DockerArtifact.BuildArgs
+		if artifact.DockerArtifact != nil {
+			artifactPath := artifact.DockerArtifact.DockerfilePath
+			if artifact.Workspace != "" {
+				artifactPath, err = normalizeDockerfilePath(artifactPath, artifact.Workspace)
+				if err != nil {
+					logrus.Warnf("normalizing artifact dockerfile path: %s\n", err.Error())
+				}
+			}
+			if artifactPath == dockerfile {
+				return artifact.DockerArtifact.BuildArgs
+			}
 		}
 	}
 	logrus.Infof("no build args found for dockerfile %s", dockerfile)
