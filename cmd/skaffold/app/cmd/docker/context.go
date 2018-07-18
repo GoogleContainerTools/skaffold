@@ -24,6 +24,7 @@ import (
 
 	cmdutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -46,7 +47,7 @@ func NewCmdContext(out io.Writer) *cobra.Command {
 func runContext(out io.Writer, filename, context string) error {
 	config, err := cmdutil.ParseConfig(filename)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "parsing skaffold config")
 	}
 	dockerFilePath, err := filepath.Abs(filename)
 	logrus.Info(filename)

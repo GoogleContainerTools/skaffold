@@ -60,7 +60,7 @@ func runDeps(out io.Writer, filename, dockerfile, context string) error {
 	}
 	config, err := cmdutil.ParseConfig(filename)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "parsing skaffold config")
 	}
 	// normalize the provided dockerfile path WRT to the context
 	normalizedPath, err := normalizeDockerfilePath(dockerfile, context)

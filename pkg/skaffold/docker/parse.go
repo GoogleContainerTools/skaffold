@@ -39,7 +39,7 @@ import (
 // RetrieveImage is overriden for unit testing
 var RetrieveImage = retrieveImage
 
-func readDockerfile(buildArgs map[string]*string, workspace, absDockerfilePath string) ([]string, error) {
+func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*string) ([]string, error) {
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "opening dockerfile: %s", absDockerfilePath)
@@ -173,7 +173,7 @@ func GetDependencies(buildArgs map[string]*string, workspace, dockerfilePath str
 		absDockerfilePath = filepath.Join(workspace, dockerfilePath)
 	}
 
-	deps, err := readDockerfile(buildArgs, workspace, absDockerfilePath)
+	deps, err := readDockerfile(workspace, absDockerfilePath, buildArgs)
 	if err != nil {
 		return nil, err
 	}
