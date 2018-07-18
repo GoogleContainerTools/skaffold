@@ -137,7 +137,7 @@ func addBuildArgs(args []string, artifact *v1alpha2.Artifact) []string {
 		return args
 	}
 
-	if artifact.DockerArtifact.BuildArgs == nil || len(artifact.DockerArtifact.BuildArgs) == 0 {
+	if len(artifact.DockerArtifact.BuildArgs) == 0 {
 		return args
 	}
 
