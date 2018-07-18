@@ -13,14 +13,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# Ignore these paths in the following tests.
-ignore="vendor\|out\|testdata"
-BOILERPLATEDIR=./hack/boilerplate
-# Grep returns a non-zero exit code if we don't match anything, which is good in this case.
-set +e
-files=$(python ${BOILERPLATEDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BOILERPLATEDIR} | grep -v $ignore)
 set -e
+
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+BOILERPLATEDIR=$DIR/boilerplate
+
+files=$(python ${BOILERPLATEDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BOILERPLATEDIR})
+
 if [[ ! -z ${files} ]]; then
 	echo "Boilerplate missing in:"
     echo "${files}"
