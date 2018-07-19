@@ -132,9 +132,8 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 			setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v.Tag))
 		} else {
 			tagSplit := strings.Split(v.Tag, ":")
-			imageRepository := fmt.Sprintf("%s.repository=%s", k, tagSplit[0])
-			imageTag := fmt.Sprintf("%s.tag=%s", k, tagSplit[1])
-			setOpts = append(setOpts, imageRepository, imageTag)
+			imageRepositoryTag := fmt.Sprintf("%s.repository=%s,%s.tag=%s", k, tagSplit[0], k, tagSplit[1])
+			setOpts = append(setOpts, imageRepositoryTag)
 		}
 	}
 
