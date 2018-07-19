@@ -20,51 +20,76 @@ import (
 	"context"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/pkg/errors"
-	"golang.org/x/sync/errgroup"
 )
 
-// Factory is used to create Watchers.
-type Factory func(files []string, artifacts []*v1alpha2.Artifact, pollInterval time.Duration) CompositeWatcher
+// Factory creates Watcher instances.
+type Factory func() Watcher
 
-// CompositeWatcher can watch both files and artifacts.
-type CompositeWatcher interface {
-	Run(ctx context.Context, onFileChange FileChangedFn, onArtifactChange ArtifactChangedFn) error
+// Watcher monitors files changes for multiples components.
+type Watcher interface {
+	Register(deps func() ([]string, error), onChange func()) error
+	Run(ctx context.Context, pollInterval time.Duration, onChange func() error) error
 }
 
-type compositeWatcher struct {
-	files        []string
-	artifacts    []*v1alpha2.Artifact
-	pollInterval time.Duration
+type watchList []*component
+
+// NewWatcher creates a new Watcher.
+func NewWatcher() Watcher {
+	return &watchList{}
 }
 
-// NewCompositeWatcher creates a CompositeWatcher that watches both files and artifacts.
-func NewCompositeWatcher(files []string, artifacts []*v1alpha2.Artifact, pollInterval time.Duration) CompositeWatcher {
-	return &compositeWatcher{
-		files:        files,
-		artifacts:    artifacts,
-		pollInterval: pollInterval,
-	}
+type component struct {
+	deps     func() ([]string, error)
+	onChange func()
+	state    fileMap
 }
 
-func (w *compositeWatcher) Run(ctx context.Context, onFileChange FileChangedFn, onArtifactChange ArtifactChangedFn) error {
-	artifactWatcher, err := NewArtifactWatcher(w.artifacts, w.pollInterval)
+// Register adds a new component to the watch list.
+func (w *watchList) Register(deps func() ([]string, error), onChange func()) error {
+	state, err := stat(deps)
 	if err != nil {
-		return errors.Wrap(err, "watching artifacts")
+		return errors.Wrap(err, "listing files")
 	}
 
-	fileWatcher, err := NewFileWatcher(w.files, w.pollInterval)
-	if err != nil {
-		return errors.Wrap(err, "watching files")
-	}
+	*w = append(*w, &component{
+		deps:     deps,
+		onChange: onChange,
+		state:    state,
+	})
+	return nil
+}
 
-	g, watchCtx := errgroup.WithContext(ctx)
-	g.Go(func() error {
-		return artifactWatcher.Run(watchCtx, onArtifactChange)
-	})
-	g.Go(func() error {
-		return fileWatcher.Run(watchCtx, onFileChange)
-	})
-	return g.Wait()
+// Run watches files until the context is cancelled or an error occurs.
+func (w *watchList) Run(ctx context.Context, pollInterval time.Duration, onChange func() error) error {
+	ticker := time.NewTicker(pollInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-ticker.C:
+			changed := 0
+
+			for _, component := range *w {
+				state, err := stat(component.deps)
+				if err != nil {
+					return errors.Wrap(err, "listing files")
+				}
+
+				if hasChanged(component.state, state) {
+					component.onChange()
+					component.state = state
+					changed++
+				}
+			}
+
+			if changed > 0 {
+				if err := onChange(); err != nil {
+					return errors.Wrap(err, "calling final callback")
+				}
+			}
+		}
+	}
 }

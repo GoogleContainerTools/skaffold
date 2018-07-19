@@ -31,17 +31,17 @@ func NewCmdDelete(out io.Writer) *cobra.Command {
 		Short: "Delete the deployed resources",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return delete(out, filename)
+			return delete(out)
 		},
 	}
 	AddRunDevFlags(cmd)
 	return cmd
 }
 
-func delete(out io.Writer, filename string) error {
+func delete(out io.Writer) error {
 	ctx := context.Background()
 
-	runner, _, err := newRunner(filename)
+	runner, _, err := newRunner(opts)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}

@@ -21,8 +21,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
@@ -31,6 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
@@ -39,7 +42,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const PollInterval = 500 * time.Millisecond
+const PollInterval = 1000 * time.Millisecond
+
+// ErrorConfigurationChanged is a special error that's returned when the skaffold configuration was changed.
+var ErrorConfigurationChanged = errors.New("configuration changed")
 
 // SkaffoldRunner is responsible for running the skaffold build and deploy pipeline.
 type SkaffoldRunner struct {
@@ -47,6 +53,7 @@ type SkaffoldRunner struct {
 	deploy.Deployer
 	tag.Tagger
 
+	opts         *config.SkaffoldOptions
 	watchFactory watch.Factory
 	builds       []build.Artifact
 }
@@ -84,7 +91,8 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 		Builder:      builder,
 		Deployer:     deployer,
 		Tagger:       tagger,
-		watchFactory: watch.NewCompositeWatcher,
+		opts:         opts,
+		watchFactory: watch.NewWatcher,
 	}, nil
 }
 
@@ -174,44 +182,72 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 	colorPicker := kubernetes.NewColorPicker(artifacts)
 	logger := kubernetes.NewLogAggregator(out, imageList, colorPicker)
 
-	deployDeps, err := r.Dependencies()
-	if err != nil {
-		return nil, errors.Wrap(err, "getting deploy dependencies")
-	}
-	logrus.Infof("Deployer dependencies: %s", deployDeps)
-
-	onDeploymentsChange := func(changedPaths []string) error {
+	// Create watcher and register artifacts to build current state of files.
+	changed := changes{}
+	onChange := func() error {
 		logger.Mute()
-		_, err := r.Deploy(ctx, out, r.builds)
-		if err != nil {
-			logrus.Warnln("Skipping Deploy due to error:", err)
+
+		var err error
+
+		switch {
+		case changed.needsReload:
+			err = ErrorConfigurationChanged
+		case len(changed.diryArtifacts) > 0:
+			err = r.buildAndDeploy(ctx, out, changed.diryArtifacts, imageList)
+		case changed.needsRedeploy:
+			if _, err := r.Deploy(ctx, out, r.builds); err != nil {
+				logrus.Warnln("Skipping Deploy due to error:", err)
+			}
 		}
-		logger.Unmute()
 
 		color.Default.Fprintln(out, "Watching for changes...")
-		return nil
-	}
-
-	onArtifactChange := func(changes []*v1alpha2.Artifact) error {
-		logger.Mute()
-		err := r.buildAndDeploy(ctx, out, changes, imageList)
+		changed.reset()
 		logger.Unmute()
 
-		color.Default.Fprintln(out, "Watching for changes...")
 		return err
 	}
 
-	if err := onArtifactChange(artifacts); err != nil {
+	watcher := r.watchFactory()
+
+	// Watch artifacts
+	for i := range artifacts {
+		artifact := artifacts[i]
+
+		if err := watcher.Register(
+			func() ([]string, error) { return dependenciesForArtifact(artifact) },
+			func() { changed.Add(artifact) },
+		); err != nil {
+			return nil, errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
+		}
+	}
+
+	// Watch deployment configuration
+	if err := watcher.Register(
+		func() ([]string, error) { return r.Dependencies() },
+		func() { changed.needsRedeploy = true },
+	); err != nil {
+		return nil, errors.Wrap(err, "watching files for deployer")
+	}
+
+	// Watch Skaffold configuration
+	if err := watcher.Register(
+		func() ([]string, error) { return []string{r.opts.ConfigurationFile}, nil },
+		func() { changed.needsReload = true },
+	); err != nil {
+		return nil, errors.Wrapf(err, "watching skaffold configuration %s", r.opts.ConfigurationFile)
+	}
+
+	// First run
+	if err := r.buildAndDeploy(ctx, out, artifacts, imageList); err != nil {
 		return nil, errors.Wrap(err, "first run")
 	}
 
 	// Start logs
-	if err = logger.Start(ctx); err != nil {
+	if err := logger.Start(ctx); err != nil {
 		return nil, errors.Wrap(err, "starting logger")
 	}
 
-	watcher := r.watchFactory(deployDeps, artifacts, PollInterval)
-	return nil, watcher.Run(ctx, onDeploymentsChange, onArtifactChange)
+	return nil, watcher.Run(ctx, PollInterval, onChange)
 }
 
 // buildAndDeploy builds a subset of the artifacts and deploys everything.
@@ -265,4 +301,32 @@ func mergeWithPreviousBuilds(builds, previous []build.Artifact) []build.Artifact
 	}
 
 	return merged
+}
+
+func dependenciesForArtifact(a *v1alpha2.Artifact) ([]string, error) {
+	var (
+		paths []string
+		err   error
+	)
+
+	switch {
+	case a.DockerArtifact != nil:
+		paths, err = docker.GetDependencies(a.Workspace, a.DockerArtifact)
+
+	case a.BazelArtifact != nil:
+		paths, err = bazel.GetDependencies(a.Workspace, a.BazelArtifact)
+
+	default:
+		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	var p []string
+	for _, path := range paths {
+		p = append(p, filepath.Join(a.Workspace, path))
+	}
+	return p, nil
 }
