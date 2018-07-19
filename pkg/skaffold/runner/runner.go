@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
@@ -90,7 +91,7 @@ func getBuilder(cfg *v1alpha2.BuildConfig, kubeContext string) (build.Builder, e
 	switch {
 	case cfg.LocalBuild != nil:
 		logrus.Debugf("Using builder: local")
-		return build.NewLocalBuilder(cfg.LocalBuild, kubeContext)
+		return local.NewBuilder(cfg.LocalBuild, kubeContext)
 
 	case cfg.GoogleCloudBuild != nil:
 		logrus.Debugf("Using builder: google cloud")

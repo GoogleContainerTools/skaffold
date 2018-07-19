@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package build
+package local
 
 import (
 	"context"
@@ -30,8 +30,39 @@ import (
 	"github.com/pkg/errors"
 )
 
-func trimTarget(buildTarget string) string {
+func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace string, a *v1alpha2.BazelArtifact) (string, error) {
+	cmd := exec.Command("bazel", "build", a.BuildTarget)
+	cmd.Dir = workspace
+	cmd.Stdout = out
+	cmd.Stderr = out
+	if err := cmd.Run(); err != nil {
+		return "", errors.Wrap(err, "running command")
+	}
 
+	tarPath := buildTarPath(a.BuildTarget)
+	imageTag := buildImageTag(a.BuildTarget)
+
+	imageTar, err := os.Open(filepath.Join(workspace, "bazel-bin", tarPath))
+	if err != nil {
+		return "", errors.Wrap(err, "opening image tarball")
+	}
+	defer imageTar.Close()
+
+	resp, err := b.api.ImageLoad(ctx, imageTar, false)
+	if err != nil {
+		return "", errors.Wrap(err, "loading image into docker daemon")
+	}
+	defer resp.Body.Close()
+
+	err = docker.StreamDockerMessages(out, resp.Body)
+	if err != nil {
+		return "", errors.Wrap(err, "reading from image load response")
+	}
+
+	return fmt.Sprintf("bazel%s", imageTag), nil
+}
+
+func trimTarget(buildTarget string) string {
 	//TODO(r2d4): strip off leading //:, bad
 	trimmedTarget := strings.TrimPrefix(buildTarget, "//")
 	// Useful if root target "//:target"
@@ -59,36 +90,4 @@ func buildImageTag(buildTarget string) string {
 	}
 
 	return fmt.Sprintf(":%s", imageTag)
-}
-
-func (l *LocalBuilder) buildBazel(ctx context.Context, out io.Writer, workspace string, a *v1alpha2.BazelArtifact) (string, error) {
-	cmd := exec.Command("bazel", "build", a.BuildTarget)
-	cmd.Dir = workspace
-	cmd.Stdout = out
-	cmd.Stderr = out
-	if err := cmd.Run(); err != nil {
-		return "", errors.Wrap(err, "running command")
-	}
-
-	tarPath := buildTarPath(a.BuildTarget)
-	imageTag := buildImageTag(a.BuildTarget)
-
-	imageTar, err := os.Open(filepath.Join(workspace, "bazel-bin", tarPath))
-	if err != nil {
-		return "", errors.Wrap(err, "opening image tarball")
-	}
-	defer imageTar.Close()
-
-	resp, err := l.api.ImageLoad(ctx, imageTar, false)
-	if err != nil {
-		return "", errors.Wrap(err, "loading image into docker daemon")
-	}
-	defer resp.Body.Close()
-
-	err = docker.StreamDockerMessages(out, resp.Body)
-	if err != nil {
-		return "", errors.Wrap(err, "reading from image load response")
-	}
-
-	return fmt.Sprintf("bazel%s", imageTag), nil
 }

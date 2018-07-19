@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package build
+package local
 
 import (
 	"context"
@@ -28,10 +28,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (l *LocalBuilder) buildDocker(ctx context.Context, out io.Writer, workspace string, a *v1alpha2.DockerArtifact) (string, error) {
+func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace string, a *v1alpha2.DockerArtifact) (string, error) {
 	initialTag := util.RandomID()
 
-	err := docker.RunBuild(ctx, out, l.api, workspace, types.ImageBuildOptions{
+	err := docker.RunBuild(ctx, out, b.api, workspace, types.ImageBuildOptions{
 		Tags:       []string{initialTag},
 		Dockerfile: a.DockerfilePath,
 		BuildArgs:  a.BuildArgs,
