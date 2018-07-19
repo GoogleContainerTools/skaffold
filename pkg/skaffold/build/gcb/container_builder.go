@@ -14,25 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package build
+package gcb
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	cstorage "cloud.google.com/go/storage"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	"github.com/docker/distribution/reference"
-	"github.com/docker/docker/registry"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/google"
@@ -41,56 +39,12 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-const (
-	// StatusUnknown "STATUS_UNKNOWN" - Status of the build is unknown.
-	StatusUnknown = "STATUS_UNKNOWN"
-
-	// StatusQueued "QUEUED" - Build is queued; work has not yet begun.
-	StatusQueued = "QUEUED"
-
-	// StatusWorking "WORKING" - Build is being executed.
-	StatusWorking = "WORKING"
-
-	// StatusSuccess  "SUCCESS" - Build finished successfully.
-	StatusSuccess = "SUCCESS"
-
-	// StatusFailure  "FAILURE" - Build failed to complete successfully.
-	StatusFailure = "FAILURE"
-
-	// StatusInternalError  "INTERNAL_ERROR" - Build failed due to an internal cause.
-	StatusInternalError = "INTERNAL_ERROR"
-
-	// StatusTimeout  "TIMEOUT" - Build took longer than was allowed.
-	StatusTimeout = "TIMEOUT"
-
-	// StatusCancelled  "CANCELLED" - Build was canceled by a user.
-	StatusCancelled = "CANCELLED"
-
-	// RetryDelay is the time to wait in between polling the status of the cloud build
-	RetryDelay = 1 * time.Second
-)
-
-type GoogleCloudBuilder struct {
-	*v1alpha2.GoogleCloudBuild
+// Build builds a list of artifacts with GCB.
+func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
+	return build.InParallel(ctx, out, tagger, artifacts, b.buildArtifact)
 }
 
-func NewGoogleCloudBuilder(cfg *v1alpha2.GoogleCloudBuild) *GoogleCloudBuilder {
-	return &GoogleCloudBuilder{
-		GoogleCloudBuild: cfg,
-	}
-}
-
-func (cb *GoogleCloudBuilder) Labels() map[string]string {
-	return map[string]string{
-		constants.Labels.Builder: "google-cloud-builder",
-	}
-}
-
-func (cb *GoogleCloudBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]Artifact, error) {
-	return buildArtifactsInParallel(ctx, out, tagger, artifacts, cb.buildArtifact)
-}
-
-func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *v1alpha2.Artifact) (string, error) {
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *v1alpha2.Artifact) (string, error) {
 	fmt.Fprintf(out, "Building [%s]...\n", artifact.ImageName)
 
 	client, err := google.DefaultClient(ctx, cloudbuild.CloudPlatformScope)
@@ -119,7 +73,7 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 	}
 	logrus.Debugf("Build args: %s", buildArgs)
 
-	projectID, err := cb.guessProjectID(artifact)
+	projectID, err := b.guessProjectID(artifact)
 	if err != nil {
 		return "", errors.Wrap(err, "getting projectID")
 	}
@@ -127,10 +81,10 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 	cbBucket := fmt.Sprintf("%s%s", projectID, constants.GCSBucketSuffix)
 	buildObject := fmt.Sprintf("source/%s-%s.tar.gz", projectID, util.RandomID())
 
-	if err := cb.createBucketIfNotExists(ctx, projectID, cbBucket); err != nil {
+	if err := b.createBucketIfNotExists(ctx, projectID, cbBucket); err != nil {
 		return "", errors.Wrap(err, "creating bucket if not exists")
 	}
-	if err := cb.checkBucketProjectCorrect(ctx, projectID, cbBucket); err != nil {
+	if err := b.checkBucketProjectCorrect(ctx, projectID, cbBucket); err != nil {
 		return "", errors.Wrap(err, "checking bucket is in correct project")
 	}
 
@@ -157,8 +111,8 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 		},
 		Images: []string{artifact.ImageName},
 		Options: &cloudbuild.BuildOptions{
-			DiskSizeGb:  cb.DiskSizeGb,
-			MachineType: cb.MachineType,
+			DiskSizeGb:  b.DiskSizeGb,
+			MachineType: b.MachineType,
 		},
 	})
 	op, err := call.Context(ctx).Do()
@@ -177,12 +131,12 @@ func (cb *GoogleCloudBuilder) buildArtifact(ctx context.Context, out io.Writer, 
 watch:
 	for {
 		logrus.Debugf("current offset %d", offset)
-		b, err := cbclient.Projects.Builds.Get(projectID, remoteID).Do()
+		cb, err := cbclient.Projects.Builds.Get(projectID, remoteID).Do()
 		if err != nil {
 			return "", errors.Wrap(err, "getting build status")
 		}
 
-		r, err := cb.getLogs(ctx, offset, cbBucket, logsObject)
+		r, err := b.getLogs(ctx, offset, cbBucket, logsObject)
 		if err != nil {
 			return "", errors.Wrap(err, "getting logs")
 		}
@@ -194,18 +148,18 @@ watch:
 			offset += written
 			r.Close()
 		}
-		switch b.Status {
+		switch cb.Status {
 		case StatusQueued, StatusWorking, StatusUnknown:
 		case StatusSuccess:
-			imageID, err = getImageID(b)
+			imageID, err = getImageID(cb)
 			if err != nil {
 				return "", errors.Wrap(err, "getting image id from finished build")
 			}
 			break watch
 		case StatusFailure, StatusInternalError, StatusTimeout, StatusCancelled:
-			return "", fmt.Errorf("cloud build failed: %s", b.Status)
+			return "", fmt.Errorf("cloud build failed: %s", cb.Status)
 		default:
-			return "", fmt.Errorf("unknown status: %s", b.Status)
+			return "", fmt.Errorf("unknown status: %s", cb.Status)
 		}
 
 		time.Sleep(RetryDelay)
@@ -234,35 +188,6 @@ watch:
 	return newTag, nil
 }
 
-func (cb *GoogleCloudBuilder) guessProjectID(artifact *v1alpha2.Artifact) (string, error) {
-	if cb.ProjectID != "" {
-		return cb.ProjectID, nil
-	}
-
-	ref, err := reference.ParseNormalizedNamed(artifact.ImageName)
-	if err != nil {
-		return "", errors.Wrap(err, "parsing image name for registry")
-	}
-
-	repoInfo, err := registry.ParseRepositoryInfo(ref)
-	if err != nil {
-		return "", err
-	}
-
-	index := repoInfo.Index
-	if !index.Official {
-		switch index.Name {
-		case "gcr.io", "us.gcr.io", "eu.gcr.io", "asia.gcr.io", "staging-k8s.gcr.io":
-			parts := strings.Split(repoInfo.Name.String(), "/")
-			if len(parts) >= 2 {
-				return parts[1], nil
-			}
-		}
-	}
-
-	return "", fmt.Errorf("unable to guess GCP projectID from image name [%s]", artifact.ImageName)
-}
-
 func getBuildID(op *cloudbuild.Operation) (string, error) {
 	if op.Metadata == nil {
 		return "", errors.New("missing Metadata in operation")
@@ -284,7 +209,7 @@ func getImageID(b *cloudbuild.Build) (string, error) {
 	return b.Results.Images[0].Digest, nil
 }
 
-func (cb *GoogleCloudBuilder) getLogs(ctx context.Context, offset int64, bucket, objectName string) (io.ReadCloser, error) {
+func (b *Builder) getLogs(ctx context.Context, offset int64, bucket, objectName string) (io.ReadCloser, error) {
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting storage client")
@@ -309,7 +234,7 @@ func (cb *GoogleCloudBuilder) getLogs(ctx context.Context, offset int64, bucket,
 	return r, nil
 }
 
-func (cb *GoogleCloudBuilder) checkBucketProjectCorrect(ctx context.Context, projectID, bucket string) error {
+func (b *Builder) checkBucketProjectCorrect(ctx context.Context, projectID, bucket string) error {
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
 		return errors.Wrap(err, "getting storage client")
@@ -331,10 +256,9 @@ func (cb *GoogleCloudBuilder) checkBucketProjectCorrect(ctx context.Context, pro
 			return nil
 		}
 	}
-
 }
 
-func (cb *GoogleCloudBuilder) createBucketIfNotExists(ctx context.Context, projectID, bucket string) error {
+func (b *Builder) createBucketIfNotExists(ctx context.Context, projectID, bucket string) error {
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
 		return errors.Wrap(err, "getting storage client")

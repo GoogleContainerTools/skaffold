@@ -31,7 +31,8 @@ const bufferedLinesPerArtifact = 10000
 
 type artifactBuilder func(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *v1alpha2.Artifact) (string, error)
 
-func buildArtifactsInParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
+// InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
+func InParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
