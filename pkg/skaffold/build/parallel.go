@@ -50,6 +50,8 @@ func InParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts
 		r, w := io.Pipe()
 
 		go func() {
+			fmt.Fprintf(w, "Building [%s]...\n", artifacts[i].ImageName)
+
 			tags[i], errs[i] = buildArtifact(ctx, w, tagger, artifacts[i])
 			w.Close()
 		}()

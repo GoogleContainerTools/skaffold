@@ -18,7 +18,6 @@ package kaniko
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -41,8 +40,6 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *v1alpha2.Artifact) (string, error) {
-	fmt.Fprintf(out, "Building [%s]...\n", artifact.ImageName)
-
 	initialTag, err := runKaniko(ctx, out, artifact, b.KanikoBuild)
 	if err != nil {
 		return "", errors.Wrapf(err, "kaniko build for [%s]", artifact.ImageName)
