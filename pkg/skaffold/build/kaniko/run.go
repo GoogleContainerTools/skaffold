@@ -39,7 +39,7 @@ import (
 
 const kanikoContainerName = "kaniko"
 
-func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artifact, cfg *v1alpha2.KanikoBuild) (string, error) {
+func runKaniko(ctx context.Context, out io.Writer, artifact *v1alpha2.Artifact, cfg *v1alpha2.KanikoBuild) (string, error) {
 	dockerfilePath := artifact.DockerArtifact.DockerfilePath
 
 	initialTag := util.RandomID()
