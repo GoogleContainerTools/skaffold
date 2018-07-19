@@ -63,7 +63,7 @@ var testDeployConfig = &v1alpha2.HelmDeploy{
 				"some.key": "somevalue",
 			},
 			ImageStrategy: v1alpha2.HelmImageStrategy{
-				v1alpha2.HelmImageConfig{
+				HelmImageConfig: v1alpha2.HelmImageConfig{
 					HelmFQNConfig: &v1alpha2.HelmFQNConfig{},
 				},
 			},
