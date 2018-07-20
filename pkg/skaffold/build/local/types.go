@@ -29,6 +29,8 @@ import (
 
 // Builder uses the host docker daemon to build and tag the image.
 type Builder struct {
+	cfg *v1alpha2.LocalBuild
+
 	api          docker.APIClient
 	localCluster bool
 	pushImages   bool
@@ -54,6 +56,7 @@ func NewBuilder(cfg *v1alpha2.LocalBuild, kubeContext string) (*Builder, error) 
 	}
 
 	return &Builder{
+		cfg:          cfg,
 		kubeContext:  kubeContext,
 		api:          api,
 		localCluster: localCluster,

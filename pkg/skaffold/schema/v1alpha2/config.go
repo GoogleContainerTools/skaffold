@@ -79,7 +79,9 @@ type BuildType struct {
 // LocalBuild contains the fields needed to do a build on the local docker daemon
 // and optionally push to a repository.
 type LocalBuild struct {
-	SkipPush *bool `yaml:"skipPush"`
+	SkipPush     *bool `yaml:"skipPush"`
+	UseDockerCLI bool  `yaml:"useDockerCLI"`
+	UseBuildkit  bool  `yaml:"useBuildkit"`
 }
 
 // GoogleCloudBuild contains the fields needed to do a remote build on
