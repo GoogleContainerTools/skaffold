@@ -196,7 +196,7 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 
 	if len(r.ValuesFilePath) != 0 {
 		for _, filePath := range r.ValuesFilePath {
-			args = append(args, "-f", filePath)
+			args = append(args, "-f", string(filePath))
 		}
 	}
 

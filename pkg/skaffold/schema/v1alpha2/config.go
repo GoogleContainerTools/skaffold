@@ -136,7 +136,6 @@ type HelmRelease struct {
 	Name              string                 `yaml:"name"`
 	ChartPath         string                 `yaml:"chartPath"`
 	ValuesFilePath    string                 `yaml:"valuesFilePath"`
-	ValuesFilePaths []string               `yaml:"valuesFilePaths"`	
 	Values            map[string]string      `yaml:"values,omitempty"`
 	Namespace         string                 `yaml:"namespace"`
 	Version           string                 `yaml:"version"`

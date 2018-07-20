@@ -56,16 +56,10 @@ func ToV1alpha3(vc util.VersionedConfig) (util.VersionedConfig, error) {
 	newConfig := &v1alpha3.SkaffoldConfig{
 		APIVersion: v1alpha3.Version,
 		Kind:       oldConfig.Kind,
-		Deploy: oldConfig.DeployConfig{
-			DeployType: oldConfig.DeployType{
-				HelmDeploy:    newHelmDeploy,
-				KubectlDeploy: oldConfig.KubectlDeploy,
+		Deploy: v1alpha3.DeployConfig{
+			DeployType: v1alpha3.DeployType{
+				HelmDeploy: newHelmDeploy,
 			},
-		},
-		Build: v1alpha3.BuildConfig{
-			Artifacts: oldConfig.Artifacts,
-			BuildType: oldConfig.BuildType,
-			TagPolicy: oldConfig.tagPolicy,
 		},
 	}
 	return newConfig, nil
