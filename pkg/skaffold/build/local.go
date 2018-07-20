@@ -35,6 +35,8 @@ type LocalBuilder struct {
 	localCluster bool
 	pushImages   bool
 	kubeContext  string
+
+	alreadyTagged map[string]string
 }
 
 // NewLocalBuilder returns an new instance of a LocalBuilder
@@ -126,6 +128,13 @@ func (l *LocalBuilder) buildArtifact(ctx context.Context, out io.Writer, tagger 
 		return "", fmt.Errorf("digest not found")
 	}
 
+	if l.alreadyTagged == nil {
+		l.alreadyTagged = make(map[string]string)
+	}
+	if tag, present := l.alreadyTagged[digest]; present {
+		return tag, nil
+	}
+
 	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.Options{
 		ImageName: artifact.ImageName,
 		Digest:    digest,
@@ -143,6 +152,8 @@ func (l *LocalBuilder) buildArtifact(ctx context.Context, out io.Writer, tagger 
 			return "", errors.Wrap(err, "pushing")
 		}
 	}
+
+	l.alreadyTagged[digest] = tag
 
 	return tag, nil
 }
