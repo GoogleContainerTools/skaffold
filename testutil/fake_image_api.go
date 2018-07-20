@@ -35,11 +35,10 @@ type FakeImageAPIClient struct {
 }
 
 type FakeImageAPIOptions struct {
-	ErrImageBuild     bool
-	ErrImageList      bool
-	ErrImageListEmpty bool
-	ErrImageTag       bool
-	ErrImagePush      bool
+	ErrImageBuild   bool
+	ErrImageInspect bool
+	ErrImageTag     bool
+	ErrImagePush    bool
 
 	BuildImageID string
 
@@ -78,28 +77,17 @@ func (f *FakeImageAPIClient) ImageBuild(ctx context.Context, context io.Reader, 
 	}, nil
 }
 
-func (f *FakeImageAPIClient) ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error) {
-	if f.opts.ErrImageList {
-		return nil, fmt.Errorf("")
+func (f *FakeImageAPIClient) ImageInspectWithRaw(ctx context.Context, ref string) (types.ImageInspect, []byte, error) {
+	if f.opts.ErrImageInspect {
+		return types.ImageInspect{}, nil, fmt.Errorf("")
 	}
-	if f.opts.ErrImageListEmpty {
-		return []types.ImageSummary{}, nil
+
+	imageID, ok := f.tagToImageID[ref]
+	if !ok {
+		return types.ImageInspect{}, nil, nil
 	}
-	ret := []types.ImageSummary{}
-	if options.Filters.Contains("reference") {
-		refs := options.Filters.Get("reference")
-		for _, ref := range refs {
-			imageID, ok := f.tagToImageID[ref]
-			if !ok {
-				continue
-			}
-			ret = append(ret, types.ImageSummary{
-				ID:       imageID,
-				RepoTags: []string{ref},
-			})
-		}
-	}
-	return ret, nil
+
+	return types.ImageInspect{ID: imageID}, nil, nil
 }
 
 func (f *FakeImageAPIClient) ImageTag(ctx context.Context, image, ref string) error {

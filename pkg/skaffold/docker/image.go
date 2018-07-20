@@ -22,7 +22,7 @@ import (
 	"net/http"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/progress"
 	"github.com/docker/docker/pkg/streamformatter"
@@ -125,22 +125,15 @@ func addTag(ref name.Reference, targetRef name.Reference, auth authn.Authenticat
 // The digest is of the form
 // sha256:<image_id>
 func Digest(ctx context.Context, cli APIClient, ref string) (string, error) {
-	args := filters.KeyValuePair{Key: "reference", Value: ref}
-	filters := filters.NewArgs(args)
-	imageList, err := cli.ImageList(ctx, types.ImageListOptions{
-		Filters: filters,
-	})
+	image, _, err := cli.ImageInspectWithRaw(ctx, ref)
 	if err != nil {
-		return "", errors.Wrap(err, "getting image id")
-	}
-	for _, image := range imageList {
-		for _, tag := range image.RepoTags {
-			if tag == ref {
-				return image.ID, nil
-			}
+		if client.IsErrNotFound(err) {
+			return "", nil
 		}
+		return "", errors.Wrap(err, "inspecting image")
 	}
-	return "", nil
+
+	return image.ID, nil
 }
 
 func remoteImage(identifier string) (v1.Image, error) {

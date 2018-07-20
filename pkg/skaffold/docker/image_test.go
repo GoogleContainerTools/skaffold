@@ -146,13 +146,13 @@ func TestDigest(t *testing.T) {
 			expected: "sha256:123abc",
 		},
 		{
-			description: "image list error",
+			description: "image inspect error",
 			imageName:   "test",
 			tagToImageID: map[string]string{
 				"test:latest": "sha256:123abc",
 			},
 			testOpts: &testutil.FakeImageAPIOptions{
-				ErrImageList: true,
+				ErrImageInspect: true,
 			},
 			shouldErr: true,
 		},
@@ -168,7 +168,9 @@ func TestDigest(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			api := testutil.NewFakeImageAPIClient(test.tagToImageID, test.testOpts)
+
 			digest, err := Digest(context.Background(), api, test.imageName)
+
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, digest)
 		})
 	}
