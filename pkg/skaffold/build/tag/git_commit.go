@@ -51,15 +51,13 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *Opt
 }
 
 func generateNameGitShellOut(workingDir string, opts *Options) (string, error) {
-	root, err := runGit(workingDir, "rev-parse", "--show-toplevel")
+	rootAndHash, err := runGitLines(workingDir, "rev-parse", "--show-toplevel", "HEAD")
 	if err != nil {
 		return fallbackOnDigest(opts, err), nil
 	}
 
-	commitHash, err := runGit(root, "rev-parse", "HEAD")
-	if err != nil {
-		return fallbackOnDigest(opts, err), nil
-	}
+	root := rootAndHash[0]
+	commitHash := rootAndHash[1]
 
 	currentTag := commitHash[0:7]
 
