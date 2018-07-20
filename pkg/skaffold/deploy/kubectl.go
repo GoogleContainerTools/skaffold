@@ -70,6 +70,10 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return nil, errors.Wrap(err, "reading manifests")
 	}
 
+	if manifests.Empty() {
+		return []Artifact{}, nil
+	}
+
 	manifests, err = manifests.replaceImages(builds)
 	if err != nil {
 		return nil, errors.Wrap(err, "replacing images in manifests")
@@ -213,6 +217,10 @@ func (l *manifestList) String() string {
 		str += string(bytes.TrimSpace(manifest))
 	}
 	return str
+}
+
+func (l *manifestList) Empty() bool {
+	return len(*l) == 0
 }
 
 func (l *manifestList) reader() io.Reader {
