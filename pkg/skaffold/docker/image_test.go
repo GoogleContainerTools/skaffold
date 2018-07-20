@@ -25,8 +25,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestMain(m *testing.M) {
@@ -173,5 +176,22 @@ func TestDigest(t *testing.T) {
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, digest)
 		})
+	}
+}
+
+func TestGetBuildArgs(t *testing.T) {
+	artifact := &v1alpha2.DockerArtifact{
+		BuildArgs: map[string]*string{
+			"key1": util.StringPtr("value1"),
+			"key2": nil,
+		},
+	}
+
+	arg := GetBuildArgs(artifact)
+	expected := []string{"--build-arg", "key1=value1", "--build-arg", "key2"}
+
+	if diff := cmp.Diff(arg, expected); diff != "" {
+		t.Errorf("%T differ (-got, +want): %s", expected, diff)
+		return
 	}
 }

@@ -56,6 +56,14 @@ func runKaniko(ctx context.Context, out io.Writer, artifact *v1alpha2.Artifact, 
 	pods := client.CoreV1().Pods(cfg.Namespace)
 
 	imageDst := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
+	args := []string{
+		fmt.Sprintf("--dockerfile=%s", dockerfilePath),
+		fmt.Sprintf("--context=gs://%s/%s", cfg.GCSBucket, tarName),
+		fmt.Sprintf("--destination=%s", imageDst),
+		fmt.Sprintf("-v=%s", logrus.GetLevel().String()),
+	}
+	args = append(args, docker.GetBuildArgs(artifact.DockerArtifact)...)
+
 	p, err := pods.Create(&v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kaniko",
@@ -68,36 +76,25 @@ func runKaniko(ctx context.Context, out io.Writer, artifact *v1alpha2.Artifact, 
 					Name:            kanikoContainerName,
 					Image:           constants.DefaultKanikoImage,
 					ImagePullPolicy: v1.PullIfNotPresent,
-					Args: addBuildArgs([]string{
-						fmt.Sprintf("--dockerfile=%s", dockerfilePath),
-						fmt.Sprintf("--context=gs://%s/%s", cfg.GCSBucket, tarName),
-						fmt.Sprintf("--destination=%s", imageDst),
-						fmt.Sprintf("-v=%s", logrus.GetLevel().String()),
-					}, artifact),
-					VolumeMounts: []v1.VolumeMount{
-						{
-							Name:      constants.DefaultKanikoSecretName,
-							MountPath: "/secret",
-						},
-					},
-					Env: []v1.EnvVar{
-						{
-							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-							Value: "/secret/kaniko-secret",
-						},
-					},
+					Args:            args,
+					VolumeMounts: []v1.VolumeMount{{
+						Name:      constants.DefaultKanikoSecretName,
+						MountPath: "/secret",
+					}},
+					Env: []v1.EnvVar{{
+						Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+						Value: "/secret/kaniko-secret",
+					}},
 				},
 			},
-			Volumes: []v1.Volume{
-				{
-					Name: constants.DefaultKanikoSecretName,
-					VolumeSource: v1.VolumeSource{
-						Secret: &v1.SecretVolumeSource{
-							SecretName: cfg.PullSecretName,
-						},
+			Volumes: []v1.Volume{{
+				Name: constants.DefaultKanikoSecretName,
+				VolumeSource: v1.VolumeSource{
+					Secret: &v1.SecretVolumeSource{
+						SecretName: cfg.PullSecretName,
 					},
 				},
-			},
+			}},
 			RestartPolicy: v1.RestartPolicyNever,
 		},
 	})
@@ -161,20 +158,4 @@ func gcsDelete(ctx context.Context, bucket, path string) error {
 	defer c.Close()
 
 	return c.Bucket(bucket).Object(path).Delete(ctx)
-}
-
-func addBuildArgs(args []string, artifact *v1alpha2.Artifact) []string {
-	if artifact.DockerArtifact == nil {
-		return args
-	}
-
-	if len(artifact.DockerArtifact.BuildArgs) == 0 {
-		return args
-	}
-
-	for k, v := range artifact.DockerArtifact.BuildArgs {
-		args = append(args, fmt.Sprintf("--build-arg=%s=%s", k, *v))
-	}
-
-	return args
 }
