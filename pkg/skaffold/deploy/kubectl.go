@@ -42,8 +42,9 @@ var warner Warner = &logrusWarner{}
 type KubectlDeployer struct {
 	*v1alpha2.KubectlDeploy
 
-	workingDir  string
-	kubeContext string
+	workingDir         string
+	kubeContext        string
+	previousDeployment manifestList
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
@@ -79,12 +80,18 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return nil, errors.Wrap(err, "replacing images in manifests")
 	}
 
-	err = kubectl(manifests.reader(), out, k.kubeContext, k.Flags.Global, "apply", k.Flags.Apply, "-f", "-")
+	// Only redeploy modified or new manifests
+	// TODO(dgageot): should we delete a manifest that was deployed and is not anymore?
+	updated := k.previousDeployment.diff(manifests)
+	logrus.Debugln(len(manifests), "manifests to deploy.", len(manifests), "are updated or new")
+	k.previousDeployment = manifests
+
+	err = kubectl(updated.reader(), out, k.kubeContext, k.Flags.Global, "apply", k.Flags.Apply, "-f", "-")
 	if err != nil {
 		return nil, errors.Wrap(err, "deploying manifests")
 	}
 
-	return parseManifestsForDeploys(manifests)
+	return parseManifestsForDeploys(updated)
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
@@ -221,6 +228,27 @@ func (l *manifestList) String() string {
 
 func (l *manifestList) Empty() bool {
 	return len(*l) == 0
+}
+
+func (l *manifestList) diff(manifests manifestList) manifestList {
+	if l == nil {
+		return manifests
+	}
+
+	oldManifests := map[string]bool{}
+	for _, oldManifest := range *l {
+		oldManifests[string(oldManifest)] = true
+	}
+
+	var updated manifestList
+
+	for _, manifest := range manifests {
+		if !oldManifests[string(manifest)] {
+			updated = append(updated, manifest)
+		}
+	}
+
+	return updated
 }
 
 func (l *manifestList) reader() io.Reader {
