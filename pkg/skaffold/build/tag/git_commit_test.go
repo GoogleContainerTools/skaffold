@@ -229,12 +229,6 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			c := &GitCommit{}
 			name, err := c.GenerateFullyQualifiedImageName(workspace, opts)
 			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.expectedName, name)
-
-			name, err = generateNameGoGit(workspace, opts)
-			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.expectedName, name)
-
-			name, err = generateNameGitShellOut(workspace, opts)
-			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.expectedName, name)
 		})
 	}
 }

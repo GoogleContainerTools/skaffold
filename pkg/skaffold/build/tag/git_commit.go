@@ -17,23 +17,21 @@ limitations under the License.
 package tag
 
 import (
-	"bufio"
+	"bytes"
 	"fmt"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	git "gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/plumbing"
 )
 
 // GitCommit tags an image by the git commit it was built at.
 type GitCommit struct{}
 
+// Labels are labels specific to the git tagger.
 func (c *GitCommit) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.TagPolicy: "git-commit",
@@ -42,95 +40,24 @@ func (c *GitCommit) Labels() map[string]string {
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the git commit.
 func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *Options) (string, error) {
-	if _, err := exec.LookPath("git"); err == nil {
-		return generateNameGitShellOut(workingDir, opts)
-	}
-
-	logrus.Warn("git binary not found. Falling back on a go git implementation. Some features might not work.")
-	return generateNameGoGit(workingDir, opts)
-}
-
-func generateNameGitShellOut(workingDir string, opts *Options) (string, error) {
-	rootAndHash, err := runGitLines(workingDir, "rev-parse", "--show-toplevel", "HEAD")
+	hash, err := runGit(workingDir, "rev-parse", "--short", "HEAD")
 	if err != nil {
 		return fallbackOnDigest(opts, err), nil
 	}
 
-	root := rootAndHash[0]
-	commitHash := rootAndHash[1]
-
-	currentTag := commitHash[0:7]
-
-	status, err := runGitLines(root, "status", "--porcelain")
+	changes, err := runGit(workingDir, "status", ".", "--porcelain")
 	if err != nil {
 		return "", errors.Wrap(err, "getting git status")
 	}
 
-	dirty, err := isDirty(root, workingDir, stripStatus(status))
-	if err != nil {
-		return "", errors.Wrap(err, "getting status for workingDir")
-	}
-
-	if dirty {
-		return dirtyTag(currentTag, opts), nil
+	if len(changes) > 0 {
+		return dirtyTag(hash, opts), nil
 	}
 
 	// Ignore error. It means there's no tag.
-	tags, _ := runGitLines(root, "describe", "--tags", "--exact-match")
+	tag, _ := runGit(workingDir, "describe", "--tags", "--exact-match")
 
-	return commitOrTag(currentTag, tags, opts), nil
-}
-
-func generateNameGoGit(workingDir string, opts *Options) (string, error) {
-	repo, err := git.PlainOpenWithOptions(workingDir, &git.PlainOpenOptions{DetectDotGit: true})
-	if err != nil {
-		return fallbackOnDigest(opts, err), nil
-	}
-
-	w, err := repo.Worktree()
-	if err != nil {
-		return fallbackOnDigest(opts, err), nil
-	}
-	root := w.Filesystem.Root()
-
-	head, err := repo.Head()
-	if err != nil {
-		return fallbackOnDigest(opts, err), nil
-	}
-
-	commitHash := head.Hash().String()
-	currentTag := commitHash[0:7]
-
-	status, err := w.Status()
-	if err != nil {
-		return "", errors.Wrap(err, "reading status")
-	}
-
-	dirty, err := isDirty(root, workingDir, changedPaths(status))
-	if err != nil {
-		return "", errors.Wrap(err, "getting status for workingDir")
-	}
-
-	if dirty {
-		return dirtyTag(currentTag, opts), nil
-	}
-
-	tagrefs, err := repo.Tags()
-	if err != nil {
-		return "", errors.Wrap(err, "determining git tag")
-	}
-
-	var tags []string
-	if err = tagrefs.ForEach(func(t *plumbing.Reference) error {
-		if t.Hash() == head.Hash() {
-			tags = append(tags, t.Name().Short())
-		}
-		return nil
-	}); err != nil {
-		return "", errors.Wrap(err, "determining git tag")
-	}
-
-	return commitOrTag(currentTag, tags, opts), nil
+	return commitOrTag(hash, tag, opts), nil
 }
 
 func runGit(workingDir string, arg ...string) (string, error) {
@@ -142,65 +69,15 @@ func runGit(workingDir string, arg ...string) (string, error) {
 		return "", err
 	}
 
-	return strings.TrimSpace(string(out)), nil
+	return string(bytes.TrimSpace(out)), nil
 }
 
-func runGitLines(workingDir string, arg ...string) ([]string, error) {
-	out, err := runGit(workingDir, arg...)
-	if err != nil {
-		return nil, err
-	}
-
-	var lines []string
-
-	scanner := bufio.NewScanner(strings.NewReader(out))
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line != "" {
-			lines = append(lines, line)
-		}
-	}
-
-	return lines, nil
-}
-
-func commitOrTag(currentTag string, tags []string, opts *Options) string {
-	if len(tags) > 0 {
-		currentTag = tags[0]
+func commitOrTag(currentTag string, tag string, opts *Options) string {
+	if len(tag) > 0 {
+		currentTag = tag
 	}
 
 	return fmt.Sprintf("%s:%s", opts.ImageName, currentTag)
-}
-
-func stripStatus(lines []string) []string {
-	var paths []string
-
-	for _, line := range lines {
-		path := strings.Fields(line)[1]
-		paths = append(paths, path)
-	}
-
-	return paths
-}
-
-func isDirty(root, workingDir string, changes []string) (bool, error) {
-	root, err := normalizePath(root)
-	if err != nil {
-		return false, errors.Wrap(err, "normalizing path")
-	}
-
-	absWorkingDir, err := normalizePath(workingDir)
-	if err != nil {
-		return false, errors.Wrap(err, "normalizing path")
-	}
-
-	for _, change := range changes {
-		if strings.HasPrefix(filepath.Join(root, change), absWorkingDir) {
-			return true, nil
-		}
-	}
-
-	return false, nil
 }
 
 func shortDigest(opts *Options) string {
@@ -215,24 +92,4 @@ func fallbackOnDigest(opts *Options, err error) string {
 	logrus.Warnln("Using digest instead of git commit:", err)
 
 	return fmt.Sprintf("%s:dirty-%s", opts.ImageName, shortDigest(opts))
-}
-
-func changedPaths(status git.Status) []string {
-	var paths []string
-
-	for path, change := range status {
-		if change.Worktree != git.Unmodified {
-			paths = append(paths, path)
-		}
-	}
-
-	return paths
-}
-
-func normalizePath(path string) (string, error) {
-	abs, err := filepath.Abs(path)
-	if err != nil {
-		return "", err
-	}
-	return filepath.EvalSymlinks(abs)
 }
