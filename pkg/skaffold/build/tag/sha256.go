@@ -24,9 +24,9 @@ import (
 )
 
 // ChecksumTagger tags an image by the sha256 of the image tarball
-type ChecksumTagger struct {
-}
+type ChecksumTagger struct{}
 
+// Labels are labels specific to the sha256 tagger.
 func (c *ChecksumTagger) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.TagPolicy: "sha256",
@@ -38,10 +38,12 @@ func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir string, opts
 	if opts == nil {
 		return "", fmt.Errorf("Tag options not provided")
 	}
-	digestSplit := strings.Split(opts.Digest, ":")
-	if len(digestSplit) != 2 {
-		return "", fmt.Errorf("Digest wrong format: %s, expected sha256:<checksum>", digestSplit)
+
+	digest := opts.Digest
+	sha256 := strings.TrimPrefix(opts.Digest, "sha256:")
+	if sha256 == digest {
+		return "", fmt.Errorf("Digest wrong format: %s, expected sha256:<checksum>", digest)
 	}
-	checksum := digestSplit[1]
-	return fmt.Sprintf("%s:%s", opts.ImageName, checksum), nil
+
+	return fmt.Sprintf("%s:%s", opts.ImageName, sha256), nil
 }
