@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 )
 
 // Artifact is the result corresponding to each successful build.
@@ -38,4 +39,8 @@ type Builder interface {
 	Labels() map[string]string
 
 	Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]Artifact, error)
+
+	// BuildInfo returns relevant attributes about the builder to be
+	// outputted to the user.
+	BuildInfo() status.BuilderInfo
 }

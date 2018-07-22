@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 )
 
 type CustomTag struct {
@@ -29,6 +30,13 @@ type CustomTag struct {
 func (c *CustomTag) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.TagPolicy: "custom",
+	}
+}
+
+func (c *CustomTag) TaggerInfo() status.TaggerInfo {
+	return status.TaggerInfo{
+		Name: "Custom",
+		Tag:  c.Tag,
 	}
 }
 

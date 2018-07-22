@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -45,6 +46,7 @@ type SkaffoldRunner struct {
 
 	watchFactory watch.Factory
 	builds       []build.Artifact
+	status.ConfigInfo
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
@@ -77,6 +79,9 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 	}
 
 	return &SkaffoldRunner{
+		ConfigInfo: status.ConfigInfo{
+			Profiles: cfg.AppliedProfiles,
+		},
 		Builder:      builder,
 		Deployer:     deployer,
 		Tagger:       tagger,
@@ -148,7 +153,7 @@ func getTagger(t v1alpha2.TagPolicy, customTag string) (tag.Tagger, error) {
 	}
 }
 
-// Run builds artifacts ad then deploys them.
+// Run builds artifacts and then deploys them.
 func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact) error {
 	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
 	if err != nil {
@@ -208,6 +213,16 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 
 	watcher := r.watchFactory(deployDeps, artifacts, PollInterval)
 	return nil, watcher.Run(ctx, onDeploymentsChange, onArtifactChange)
+}
+
+// Status returns information about the builder/tagger/deployer.
+func (r *SkaffoldRunner) Status() (*status.Status, error) {
+	return &status.Status{
+		ConfigInfo:   r.ConfigInfo,
+		BuilderInfo:  r.BuildInfo(),
+		TaggerInfo:   r.TaggerInfo(),
+		DeployerInfo: r.DeployInfo(),
+	}, nil
 }
 
 // buildAndDeploy builds a subset of the artifacts and deploys everything.

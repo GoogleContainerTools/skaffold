@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
@@ -46,6 +47,14 @@ func NewKustomizeDeployer(cfg *v1alpha2.KustomizeDeploy, kubeContext string) *Ku
 func (k *KustomizeDeployer) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.Deployer: "kustomize",
+	}
+}
+
+func (k *KustomizeDeployer) DeployInfo() status.DeployerInfo {
+	return status.DeployerInfo{
+		Name:          "Kustomize",
+		KustomizePath: k.KustomizePath,
+		KubeContext:   k.kubeContext,
 	}
 }
 

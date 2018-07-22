@@ -16,11 +16,19 @@ limitations under the License.
 
 package tag
 
+import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
+)
+
 // Tagger is an interface for tag strategies to be implemented against
 type Tagger interface {
 	Labels() map[string]string
 
 	GenerateFullyQualifiedImageName(workingDir string, tagOpts *Options) (string, error)
+
+	// TaggerInfo prints relevant information about the tagger
+	// to the provided writer.
+	TaggerInfo() status.TaggerInfo
 }
 
 type Options struct {

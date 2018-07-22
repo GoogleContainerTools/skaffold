@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -62,9 +63,22 @@ func (k *KubectlDeployer) Labels() map[string]string {
 	}
 }
 
-// Deploy templates the provided manifests with a simple `find and replace` and
-// runs `kubectl apply` on those manifests
-func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
+func (k *KubectlDeployer) DeployInfo() status.DeployerInfo {
+	files, err := k.manifestFiles(k.Manifests)
+	if err != nil {
+		logrus.Warn(err.Error())
+	}
+
+	return status.DeployerInfo{
+		Name:                "Kubectl",
+		WorkingDir:          k.workingDir,
+		KubeContext:         k.kubeContext,
+		ManifestPaths:       files,
+		RemoteManifestPaths: k.RemoteManifests,
+	}
+}
+
+func (k *KubectlDeployer) processManifestsForDeploy(builds []build.Artifact) (manifestList, error) {
 	manifests, err := k.readManifests()
 	if err != nil {
 		return nil, errors.Wrap(err, "reading manifests")
@@ -77,6 +91,16 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	manifests, err = manifests.replaceImages(builds)
 	if err != nil {
 		return nil, errors.Wrap(err, "replacing images in manifests")
+	}
+	return manifests, nil
+}
+
+// Deploy templates the provided manifests with a simple `find and replace` and
+// runs `kubectl apply` on those manifests
+func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
+	manifests, err := k.processManifestsForDeploy(builds)
+	if err != nil {
+		return nil, err
 	}
 
 	err = kubectl(manifests.reader(), out, k.kubeContext, k.Flags.Global, "apply", k.Flags.Apply, "-f", "-")

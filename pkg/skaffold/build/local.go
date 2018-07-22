@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -70,6 +71,13 @@ func (l *LocalBuilder) Labels() map[string]string {
 		labels[constants.Labels.DockerAPIVersion] = fmt.Sprintf("%v", v.APIVersion)
 	}
 	return labels
+}
+
+func (l *LocalBuilder) BuildInfo() status.BuilderInfo {
+	return status.BuilderInfo{
+		Name:        "Local Builder",
+		KubeContext: l.kubeContext,
+	}
 }
 
 // Build runs a docker build on the host and tags the resulting image with

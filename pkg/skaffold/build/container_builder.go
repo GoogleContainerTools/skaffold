@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/docker/distribution/reference"
@@ -83,6 +84,13 @@ func NewGoogleCloudBuilder(cfg *v1alpha2.GoogleCloudBuild) *GoogleCloudBuilder {
 func (cb *GoogleCloudBuilder) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.Builder: "google-cloud-builder",
+	}
+}
+
+func (cb *GoogleCloudBuilder) BuildInfo() status.BuilderInfo {
+	return status.BuilderInfo{
+		Name:      "Google Cloud Builder",
+		ProjectID: cb.ProjectID,
 	}
 }
 

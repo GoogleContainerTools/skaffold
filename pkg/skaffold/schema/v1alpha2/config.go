@@ -30,6 +30,8 @@ type SkaffoldConfig struct {
 	Build    BuildConfig  `yaml:"build,omitempty"`
 	Deploy   DeployConfig `yaml:"deploy,omitempty"`
 	Profiles []Profile    `yaml:"profiles,omitempty"`
+
+	AppliedProfiles []string
 }
 
 func (c *SkaffoldConfig) GetVersion() string {

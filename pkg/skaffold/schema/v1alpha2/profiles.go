@@ -58,7 +58,9 @@ func applyProfile(config *SkaffoldConfig, profile Profile) error {
 		return err
 	}
 
-	return yaml.Unmarshal(buf, config)
+	err = yaml.Unmarshal(buf, config)
+	config.AppliedProfiles = append(config.AppliedProfiles, profile.Name)
+	return err
 }
 
 func profilesByName(profiles []Profile) map[string]Profile {

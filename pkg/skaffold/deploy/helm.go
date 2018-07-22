@@ -32,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -58,6 +59,14 @@ func NewHelmDeployer(cfg *v1alpha2.HelmDeploy, kubeContext string, namespace str
 func (h *HelmDeployer) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.Deployer: "helm",
+	}
+}
+
+func (h *HelmDeployer) DeployInfo() status.DeployerInfo {
+	return status.DeployerInfo{
+		Name:      "Helm",
+		Namespace: h.namespace,
+		Releases:  h.Releases,
 	}
 }
 

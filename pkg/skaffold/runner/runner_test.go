@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	clientgo "k8s.io/client-go/kubernetes"
@@ -43,6 +44,10 @@ type TestBuilder struct {
 
 func (t *TestBuilder) Labels() map[string]string {
 	return map[string]string{}
+}
+
+func (t *TestBuilder) BuildInfo() status.BuilderInfo {
+	return status.BuilderInfo{}
 }
 
 func (t *TestBuilder) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
@@ -71,6 +76,10 @@ type TestDeployer struct {
 
 func (t *TestDeployer) Labels() map[string]string {
 	return map[string]string{}
+}
+
+func (t *TestDeployer) DeployInfo() status.DeployerInfo {
+	return status.DeployerInfo{}
 }
 
 func (t *TestDeployer) Dependencies() ([]string, error) {
