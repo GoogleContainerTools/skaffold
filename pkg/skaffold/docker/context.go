@@ -19,11 +19,25 @@ package docker
 import (
 	"context"
 	"io"
+	"path/filepath"
+	"strings"
 
 	cstorage "cloud.google.com/go/storage"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
+
+// NormalizeDockerfilePath returns the absolute path to the dockerfile.
+func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
+	if filepath.IsAbs(dockerfile) {
+		return dockerfile, nil
+	}
+
+	if !strings.HasPrefix(dockerfile, context) {
+		dockerfile = filepath.Join(context, dockerfile)
+	}
+	return filepath.Abs(dockerfile)
+}
 
 func CreateDockerTarContext(buildArgs map[string]*string, w io.Writer, context, dockerfilePath string) error {
 	paths, err := GetDependencies(buildArgs, context, dockerfilePath)

@@ -22,7 +22,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
@@ -35,12 +34,12 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace stri
 	initialTag := util.RandomID()
 
 	if b.cfg.UseDockerCLI || b.cfg.UseBuildkit {
-		absDockerfilePath := a.DockerfilePath
-		if !filepath.IsAbs(a.DockerfilePath) {
-			absDockerfilePath = filepath.Join(workspace, a.DockerfilePath)
+		dockerfilePath, err := docker.NormalizeDockerfilePath(workspace, a.DockerfilePath)
+		if err != nil {
+			return "", errors.Wrap(err, "normalizing dockerfile path")
 		}
 
-		args := []string{"build", workspace, "--file", absDockerfilePath, "-t", initialTag}
+		args := []string{"build", workspace, "--file", dockerfilePath, "-t", initialTag}
 		args = append(args, docker.GetBuildArgs(a)...)
 		for _, from := range a.CacheFrom {
 			args = append(args, "--cache-from", from)
@@ -53,8 +52,7 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace stri
 		cmd.Stdout = out
 		cmd.Stderr = out
 
-		err := util.RunCmd(cmd)
-		if err != nil {
+		if err := util.RunCmd(cmd); err != nil {
 			return "", errors.Wrap(err, "running build")
 		}
 	} else {

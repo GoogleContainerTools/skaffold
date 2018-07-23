@@ -19,7 +19,6 @@ package docker
 import (
 	"io"
 	"path/filepath"
-	"strings"
 
 	cmdutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/util"
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
@@ -63,7 +62,7 @@ func runDeps(out io.Writer, filename, dockerfile, context string) error {
 		return errors.Wrap(err, "parsing skaffold config")
 	}
 	// normalize the provided dockerfile path WRT to the context
-	normalizedPath, err := normalizeDockerfilePath(dockerfile, context)
+	normalizedPath, err := docker.NormalizeDockerfilePath(context, dockerfile)
 	if err != nil {
 		return errors.Wrap(err, "normalizing dockerfile path")
 	}
@@ -79,22 +78,13 @@ func runDeps(out io.Writer, filename, dockerfile, context string) error {
 	return nil
 }
 
-func normalizeDockerfilePath(dockerfile, context string) (string, error) {
-	if !filepath.IsAbs(dockerfile) {
-		if !strings.HasPrefix(dockerfile, context) {
-			dockerfile = filepath.Join(context, dockerfile)
-		}
-	}
-	return filepath.Abs(dockerfile)
-}
-
 func getBuildArgsForDockerfile(config *config.SkaffoldConfig, dockerfile string) map[string]*string {
 	var err error
 	for _, artifact := range config.Build.Artifacts {
 		if artifact.DockerArtifact != nil {
 			artifactPath := artifact.DockerArtifact.DockerfilePath
 			if artifact.Workspace != "" {
-				artifactPath, err = normalizeDockerfilePath(artifactPath, artifact.Workspace)
+				artifactPath, err = docker.NormalizeDockerfilePath(artifact.Workspace, artifactPath)
 				if err != nil {
 					logrus.Warnf("normalizing artifact dockerfile path: %s\n", err.Error())
 				}
