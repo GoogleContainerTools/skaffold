@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
@@ -139,7 +140,7 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 			},
-			expectedBuilder:  &build.LocalBuilder{},
+			expectedBuilder:  &local.Builder{},
 			expectedDeployer: &deploy.KubectlDeployer{},
 		},
 		{
@@ -165,7 +166,7 @@ func TestNewForConfig(t *testing.T) {
 				Build: v1alpha2.BuildConfig{},
 			},
 			shouldErr:        true,
-			expectedBuilder:  &build.LocalBuilder{},
+			expectedBuilder:  &local.Builder{},
 			expectedDeployer: &deploy.KubectlDeployer{},
 		},
 		{
@@ -178,7 +179,7 @@ func TestNewForConfig(t *testing.T) {
 					},
 				}},
 			shouldErr:        true,
-			expectedBuilder:  &build.LocalBuilder{},
+			expectedBuilder:  &local.Builder{},
 			expectedDeployer: &deploy.KubectlDeployer{},
 		},
 		{

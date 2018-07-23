@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package build
+package gcb
 
 import (
 	"testing"
@@ -65,7 +65,7 @@ func TestGuessProjectID(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			builder := NewGoogleCloudBuilder(test.config)
+			builder := NewBuilder(test.config)
 
 			projectID, err := builder.guessProjectID(test.artifact)
 

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package build
+package local
 
 import (
 	"context"
@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
@@ -72,7 +73,7 @@ func TestLocalRun(t *testing.T) {
 		api          docker.APIClient
 		tagger       tag.Tagger
 		artifacts    []*v1alpha2.Artifact
-		expected     []Artifact
+		expected     []build.Artifact
 		localCluster bool
 		shouldErr    bool
 	}{
@@ -93,7 +94,7 @@ func TestLocalRun(t *testing.T) {
 			},
 			tagger: &tag.ChecksumTagger{},
 			api:    testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
-			expected: []Artifact{
+			expected: []build.Artifact{
 				{
 					ImageName: "gcr.io/test/image",
 					Tag:       "gcr.io/test/image:imageid",
@@ -117,7 +118,7 @@ func TestLocalRun(t *testing.T) {
 				},
 			},
 			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
-			expected: []Artifact{
+			expected: []build.Artifact{
 				{
 					ImageName: "gcr.io/test/image",
 					Tag:       "gcr.io/test/image:imageid",
@@ -181,7 +182,7 @@ func TestLocalRun(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			l := LocalBuilder{
+			l := Builder{
 				api:          test.api,
 				localCluster: test.localCluster,
 			}

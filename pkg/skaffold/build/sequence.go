@@ -21,25 +21,28 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/docker/docker/api/types"
 	"github.com/pkg/errors"
 )
 
-func (l *LocalBuilder) buildDocker(ctx context.Context, out io.Writer, workspace string, a *v1alpha2.DockerArtifact) (string, error) {
-	initialTag := util.RandomID()
+// InSequence builds a list of artifacts in sequence.
+func InSequence(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
+	var builds []Artifact
 
-	err := docker.RunBuild(ctx, out, l.api, workspace, types.ImageBuildOptions{
-		Tags:       []string{initialTag},
-		Dockerfile: a.DockerfilePath,
-		BuildArgs:  a.BuildArgs,
-		CacheFrom:  a.CacheFrom,
-	})
-	if err != nil {
-		return "", errors.Wrap(err, "running build")
+	for _, artifact := range artifacts {
+		fmt.Fprintf(out, "Building [%s]...\n", artifact.ImageName)
+
+		tag, err := buildArtifact(ctx, out, tagger, artifact)
+		if err != nil {
+			return nil, errors.Wrapf(err, "building [%s]", artifact.ImageName)
+		}
+
+		builds = append(builds, Artifact{
+			ImageName: artifact.ImageName,
+			Tag:       tag,
+		})
 	}
 
-	return fmt.Sprintf("%s:latest", initialTag), nil
+	return builds, nil
 }
