@@ -20,6 +20,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sync"
+	"sync/atomic"
+	"time"
 
 	cstorage "cloud.google.com/go/storage"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -29,9 +32,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
+
+const kanikoContainerName = "kaniko"
 
 func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artifact, cfg *v1alpha2.KanikoBuild) (string, error) {
 	dockerfilePath := artifact.DockerArtifact.DockerfilePath
@@ -47,17 +53,10 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 	if err != nil {
 		return "", errors.Wrap(err, "")
 	}
-
-	imageList := kubernetes.NewImageList()
-	imageList.Add(constants.DefaultKanikoImage)
-
-	logger := kubernetes.NewLogAggregator(out, imageList, kubernetes.NewColorPicker([]*v1alpha2.Artifact{artifact}))
-	if err := logger.Start(ctx); err != nil {
-		return "", errors.Wrap(err, "starting log streamer")
-	}
+	pods := client.CoreV1().Pods(cfg.Namespace)
 
 	imageDst := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
-	p, err := client.CoreV1().Pods(cfg.Namespace).Create(&v1.Pod{
+	p, err := pods.Create(&v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kaniko",
 			Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
@@ -66,7 +65,7 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				{
-					Name:            "kaniko",
+					Name:            kanikoContainerName,
 					Image:           constants.DefaultKanikoImage,
 					ImagePullPolicy: v1.PullIfNotPresent,
 					Args: addBuildArgs([]string{
@@ -106,20 +105,52 @@ func RunKanikoBuild(ctx context.Context, out io.Writer, artifact *v1alpha2.Artif
 		return "", errors.Wrap(err, "creating kaniko pod")
 	}
 
+	waitForLogs := streamLogs(out, p.Name, pods)
+
 	defer func() {
-		imageList.Remove(constants.DefaultKanikoImage)
-		if err := client.CoreV1().Pods(cfg.Namespace).Delete(p.Name, &metav1.DeleteOptions{
+		if err := pods.Delete(p.Name, &metav1.DeleteOptions{
 			GracePeriodSeconds: new(int64),
 		}); err != nil {
 			logrus.Fatalf("deleting pod: %s", err)
 		}
 	}()
 
-	if err := kubernetes.WaitForPodComplete(client.CoreV1().Pods(cfg.Namespace), p.Name); err != nil {
+	if err := kubernetes.WaitForPodComplete(pods, p.Name); err != nil {
 		return "", errors.Wrap(err, "waiting for pod to complete")
 	}
 
+	waitForLogs()
+
 	return imageDst, nil
+}
+
+func streamLogs(out io.Writer, name string, pods corev1.PodInterface) func() {
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	var retry int32 = 1
+	go func() {
+		defer wg.Done()
+
+		for atomic.LoadInt32(&retry) == 1 {
+			r, err := pods.GetLogs(name, &v1.PodLogOptions{
+				Follow:    true,
+				Container: kanikoContainerName,
+			}).Stream()
+			if err == nil {
+				io.Copy(out, r)
+				return
+			}
+
+			logrus.Debugln("unable to get kaniko pod logs:", err)
+			time.Sleep(1 * time.Second)
+		}
+	}()
+
+	return func() {
+		atomic.StoreInt32(&retry, 0)
+		wg.Wait()
+	}
 }
 
 func gcsDelete(ctx context.Context, bucket, path string) error {
