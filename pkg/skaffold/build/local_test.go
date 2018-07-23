@@ -160,12 +160,12 @@ func TestLocalRun(t *testing.T) {
 			shouldErr:   true,
 		},
 		{
-			description: "error image list",
+			description: "error image inspect",
 			out:         &testutil.BadWriter{},
 			artifacts:   []*v1alpha2.Artifact{{}},
 			tagger:      &tag.ChecksumTagger{},
 			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{
-				ErrImageList: true,
+				ErrImageInspect: true,
 			}),
 			shouldErr: true,
 		},
