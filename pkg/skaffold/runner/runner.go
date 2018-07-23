@@ -23,6 +23,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
@@ -170,8 +172,10 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*v1
 // pipeline until interrrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
 	imageList := kubernetes.NewImageList()
-	colorPicker := kubernetes.NewColorPicker(artifacts)
-	logger := kubernetes.NewLogAggregator(out, imageList, colorPicker)
+	colorPicker := kubernetes.NewColorPicker(out, artifacts)
+	logger := kubernetes.NewLogAggregator(imageList, colorPicker)
+
+	formatter := output.NewColorFormatter(out, output.SkaffoldOutputColor)
 
 	deployDeps, err := r.Dependencies()
 	if err != nil {
@@ -187,7 +191,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 		}
 		logger.Unmute()
 
-		fmt.Fprintln(out, "Watching for changes...")
+		formatter.Println("Watching for changes...")
 		return nil
 	}
 
@@ -196,7 +200,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 		err := r.buildAndDeploy(ctx, out, changes, imageList)
 		logger.Unmute()
 
-		fmt.Fprintln(out, "Watching for changes...")
+		formatter.Println("Watching for changes...")
 		return err
 	}
 

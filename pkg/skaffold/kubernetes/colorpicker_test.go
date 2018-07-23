@@ -19,29 +19,21 @@ package kubernetes
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	v1 "k8s.io/api/core/v1"
 )
-
-func TestColorSprint(t *testing.T) {
-	colored := colorCodeWhite.Sprint("TEXT")
-
-	expected := "\033[97mTEXT\033[0m"
-	if colored != expected {
-		t.Errorf("Expected %s. Got %s", expected, colored)
-	}
-}
 
 func TestColorPicker(t *testing.T) {
 	var tests = []struct {
 		description   string
 		pod           *v1.Pod
-		expectedColor color
+		expectedColor output.Color
 	}{
 		{
 			description:   "not found",
 			pod:           &v1.Pod{},
-			expectedColor: colorCodeWhite,
+			expectedColor: output.ColorCodeNone,
 		},
 		{
 			description: "found",
@@ -78,17 +70,17 @@ func TestColorPicker(t *testing.T) {
 		},
 	}
 
-	picker := NewColorPicker([]*v1alpha2.Artifact{
+	picker := NewColorPicker(nil, []*v1alpha2.Artifact{
 		{ImageName: "image"},
 		{ImageName: "second"},
 	})
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			color := picker.Pick(test.pod)
+			formatter := picker.Pick(test.pod)
 
-			if color != test.expectedColor {
-				t.Errorf("Expected color %d. Got %d", test.expectedColor, color)
+			if formatter.Color != test.expectedColor {
+				t.Errorf("Expected color %d. Got %d", test.expectedColor, formatter.Color)
 			}
 		})
 	}

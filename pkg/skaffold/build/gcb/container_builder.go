@@ -23,6 +23,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+
 	cstorage "cloud.google.com/go/storage"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -45,6 +47,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *v1alpha2.Artifact) (string, error) {
+	formatter := output.NewColorFormatter(out, output.SkaffoldOutputColor)
 	client, err := google.DefaultClient(ctx, cloudbuild.CloudPlatformScope)
 	if err != nil {
 		return "", errors.Wrap(err, "getting google client")
@@ -86,7 +89,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "checking bucket is in correct project")
 	}
 
-	fmt.Fprintf(out, "Pushing code to gs://%s/%s\n", cbBucket, buildObject)
+	formatter.Printf("Pushing code to gs://%s/%s\n", cbBucket, buildObject)
 	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact.DockerfilePath, cbBucket, buildObject); err != nil {
 		return "", errors.Wrap(err, "uploading source tarball")
 	}
@@ -123,7 +126,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrapf(err, "getting build ID from op")
 	}
 	logsObject := fmt.Sprintf("log-%s.txt", remoteID)
-	fmt.Fprintf(out, "Logs at available at \nhttps://console.cloud.google.com/m/cloudstorage/b/%s/o/%s\n", cbBucket, logsObject)
+	formatter.Printf("Logs at available at \nhttps://console.cloud.google.com/m/cloudstorage/b/%s/o/%s\n", cbBucket, logsObject)
 	var imageID string
 	offset := int64(0)
 watch:
