@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: {{ .Chart.Name }}
-          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          image: {{ .Values.image }}
           imagePullPolicy: {{ .Values.pullPolicy }}
           command: ["/bin/bash", "-c", "--" ]
           args: ["while true; do sleep 30; done;"]

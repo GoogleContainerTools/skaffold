@@ -62,11 +62,6 @@ var testDeployConfig = &v1alpha2.HelmDeploy{
 			SetValues: map[string]string{
 				"some.key": "somevalue",
 			},
-			ImageStrategy: v1alpha2.HelmImageStrategy{
-				HelmImageConfig: v1alpha2.HelmImageConfig{
-					HelmFQNConfig: &v1alpha2.HelmFQNConfig{},
-				},
-			},
 		},
 	},
 }
@@ -84,6 +79,11 @@ var testDeployHelmStyleConfig = &v1alpha2.HelmDeploy{
 			},
 			SetValues: map[string]string{
 				"some.key": "somevalue",
+			},
+			ImageStrategy: v1alpha2.HelmImageStrategy{
+				HelmImageConfig: v1alpha2.HelmImageConfig{
+					HelmConventionConfig: &v1alpha2.HelmConventionConfig{},
+				},
 			},
 		},
 	},
