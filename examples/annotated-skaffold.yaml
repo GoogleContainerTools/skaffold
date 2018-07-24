@@ -62,19 +62,27 @@ build:
 # This next section is where you'll put your specific builder configuration.
   # Valid builders are `local`, `googleCloudBuild` and `kaniko.
   # Defaults to `local: {}`
-  # Example
+
+  # Pushing the images can be skipped. If no value is specified, it'll default to
+  # `true` on minikube or Docker for Desktop, for even faster build and deploy cycles.
+  # `false` on other types of kubernetes clusters that require pushing the images.
+  # skaffold defers to your ~/.docker/config for authentication information.
+  # If you're using Google Container Registry, make sure that you have gcloud and
+  # docker-credentials-helper-gcr configured correctly.
+  #
+  # By default, the local builder connects to the Docker daemon with Go code to build
+  # images. If `useDockerCLI` is set, skaffold will simply shell out to the docker CLI.
+  # `useBuildkit` can also be set to activate the experimental BuildKit feature.
+  #
   # local:
-    # Pushing the images can be skipped. If no value is specified, it'll default to
-    # `true` on minikube or Docker for Desktop, for even faster build and deploy cycles.
-    # `false` on other types of kubernetes clusters that require pushing the images.
-    # Skaffold defers to your ~/.docker/config for authentication information.
-    # If you're using Google Container Registry, make sure that you have gcloud and
-    # docker-credentials-helper-gcr configured correctly.
-    # skipPush: true
+  #   skipPush: true
+  #   useDockerCLI: false
+  #   useBuildkit: false
 
   # Docker artifacts can be built on Google Container Builder. The projectId then needs
   # to be provided and the currently logged user should be given permissions to trigger
   # new builds on GCB.
+  #
   #  googleCloudBuild:
   #   projectId: YOUR_PROJECT
 
@@ -82,7 +90,7 @@ build:
   # Sources will be sent to a GCS bucket whose name is provided.
   # Kaniko also needs access to a service account to push the final image.
   # See https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster
-  # Example
+  #
   # kaniko:
   #   gcsBucket: k8s-skaffold
   #   pullSecret: /a/secret/path/serviceaccount.json

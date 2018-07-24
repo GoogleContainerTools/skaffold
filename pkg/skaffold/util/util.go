@@ -127,6 +127,12 @@ func BoolPtr(b bool) *bool {
 	return &o
 }
 
+// StringPtr returns a pointer to a string
+func StringPtr(s string) *string {
+	o := s
+	return &o
+}
+
 func ReadConfiguration(filename string) ([]byte, error) {
 	switch {
 	case filename == "":

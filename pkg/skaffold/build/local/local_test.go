@@ -183,6 +183,7 @@ func TestLocalRun(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			l := Builder{
+				cfg:          test.config,
 				api:          test.api,
 				localCluster: test.localCluster,
 			}

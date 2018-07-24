@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
@@ -31,14 +33,38 @@ import (
 func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace string, a *v1alpha2.DockerArtifact) (string, error) {
 	initialTag := util.RandomID()
 
-	err := docker.RunBuild(ctx, out, b.api, workspace, types.ImageBuildOptions{
-		Tags:       []string{initialTag},
-		Dockerfile: a.DockerfilePath,
-		BuildArgs:  a.BuildArgs,
-		CacheFrom:  a.CacheFrom,
-	})
-	if err != nil {
-		return "", errors.Wrap(err, "running build")
+	if b.cfg.UseDockerCLI || b.cfg.UseBuildkit {
+		dockerfilePath, err := docker.NormalizeDockerfilePath(workspace, a.DockerfilePath)
+		if err != nil {
+			return "", errors.Wrap(err, "normalizing dockerfile path")
+		}
+
+		args := []string{"build", workspace, "--file", dockerfilePath, "-t", initialTag}
+		args = append(args, docker.GetBuildArgs(a)...)
+		for _, from := range a.CacheFrom {
+			args = append(args, "--cache-from", from)
+		}
+
+		cmd := exec.Command("docker", args...)
+		if b.cfg.UseBuildkit {
+			cmd.Env = append(os.Environ(), "DOCKER_BUILDKIT=1")
+		}
+		cmd.Stdout = out
+		cmd.Stderr = out
+
+		if err := util.RunCmd(cmd); err != nil {
+			return "", errors.Wrap(err, "running build")
+		}
+	} else {
+		err := docker.RunBuild(ctx, out, b.api, workspace, types.ImageBuildOptions{
+			Tags:       []string{initialTag},
+			Dockerfile: a.DockerfilePath,
+			BuildArgs:  a.BuildArgs,
+			CacheFrom:  a.CacheFrom,
+		})
+		if err != nil {
+			return "", errors.Wrap(err, "running build")
+		}
 	}
 
 	return fmt.Sprintf("%s:latest", initialTag), nil

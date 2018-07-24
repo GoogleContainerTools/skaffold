@@ -168,9 +168,9 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 }
 
 func GetDependencies(buildArgs map[string]*string, workspace, dockerfilePath string) ([]string, error) {
-	absDockerfilePath := dockerfilePath
-	if !filepath.IsAbs(dockerfilePath) {
-		absDockerfilePath = filepath.Join(workspace, dockerfilePath)
+	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
+	if err != nil {
+		return nil, errors.Wrap(err, "normalizing dockerfile path")
 	}
 
 	deps, err := readDockerfile(workspace, absDockerfilePath, buildArgs)

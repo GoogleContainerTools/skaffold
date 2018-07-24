@@ -18,9 +18,12 @@ package docker
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
+	"sort"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
@@ -162,4 +165,28 @@ func RemoteDigest(identifier string) (string, error) {
 	}
 
 	return h.String(), nil
+}
+
+// GetBuildArgs gives the build args flags for docker build.
+func GetBuildArgs(a *v1alpha2.DockerArtifact) []string {
+	var args []string
+
+	var keys []string
+	for k := range a.BuildArgs {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		args = append(args, "--build-arg")
+
+		v := a.BuildArgs[k]
+		if v == nil {
+			args = append(args, k)
+		} else {
+			args = append(args, fmt.Sprintf("%s=%s", k, *v))
+		}
+	}
+
+	return args
 }
