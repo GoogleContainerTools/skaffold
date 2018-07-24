@@ -243,11 +243,9 @@ func TestRun(t *testing.T) {
 }
 
 func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
-	namespaceName := util.RandomID()
 	ns, err := client.CoreV1().Namespaces().Create(&v1.Namespace{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name:      namespaceName,
-			Namespace: namespaceName,
+			GenerateName: "skaffold",
 		},
 	})
 	if err != nil {
