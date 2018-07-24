@@ -21,7 +21,6 @@ package integration
 import (
 	"bytes"
 	"flag"
-	"fmt"
 	"os"
 	"os/exec"
 	"testing"
@@ -34,18 +33,16 @@ import (
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
 
-var gkeZone = flag.String("gke-zone", "us-central1-a", "gke zone")
-var gkeClusterName = flag.String("gke-cluster-name", "integration-tests", "name of the integration test cluster")
-var gcpProject = flag.String("gcp-project", "k8s-skaffold", "the gcp project where the integration test cluster lives")
-var remote = flag.Bool("remote", false, "if true, run tests on a remote GKE cluster")
+var (
+	gkeZone        = flag.String("gke-zone", "us-central1-a", "gke zone")
+	gkeClusterName = flag.String("gke-cluster-name", "integration-tests", "name of the integration test cluster")
+	gcpProject     = flag.String("gcp-project", "k8s-skaffold", "the gcp project where the integration test cluster lives")
+	remote         = flag.Bool("remote", false, "if true, run tests on a remote GKE cluster")
 
-var client kubernetes.Interface
-
-var context *api.Context
+	client kubernetes.Interface
+)
 
 func TestMain(m *testing.M) {
 	flag.Parse()
@@ -62,95 +59,57 @@ func TestMain(m *testing.M) {
 		logrus.Fatalf("Test setup error: getting kubernetes client: %s", err)
 	}
 
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
-
-	cfg, err := kubeConfig.RawConfig()
-	if err != nil {
-		logrus.Fatalf("loading kubeconfig: %s", err)
-	}
-
-	context = cfg.Contexts[cfg.CurrentContext]
-
 	exitCode := m.Run()
-
-	// Reset default context and namespace
-	if err := exec.Command("kubectl", "config", "set-context", context.Cluster, "--namespace", context.Namespace).Run(); err != nil {
-		logrus.Warn(err)
-	}
 
 	os.Exit(exitCode)
 }
 
 func TestRun(t *testing.T) {
-	type testObject struct {
-		name string
-	}
-
 	type testRunCase struct {
 		description          string
 		dir                  string
+		filename             string
 		args                 []string
-		deployments          []testObject
-		pods                 []testObject
+		deployments          []string
+		pods                 []string
 		deploymentValidation func(t *testing.T, d *appsv1.Deployment)
-		env                  map[string]string
+		env                  []string
 
 		remoteOnly bool
-		cleanup    func(t *testing.T)
 	}
 
 	var testCases = []testRunCase{
 		{
 			description: "getting-started example",
 			args:        []string{"run"},
-			pods: []testObject{
-				{
-					name: "getting-started",
-				},
-			},
-			dir: "../examples/getting-started",
+			pods:        []string{"getting-started"},
+			dir:         "../examples/getting-started",
 		},
 		{
 			description: "annotated getting-started example",
-			args:        []string{"run", "-f", "annotated-skaffold.yaml"},
-			pods: []testObject{
-				{
-					name: "getting-started",
-				},
-			},
-			dir: "../examples",
+			args:        []string{"run"},
+			filename:    "annotated-skaffold.yaml",
+			pods:        []string{"getting-started"},
+			dir:         "../examples",
 		},
 		{
 			description: "getting-started envTagger",
 			args:        []string{"run"},
-			pods: []testObject{
-				{
-					name: "getting-started",
-				},
-			},
-			dir: "../examples/tagging-with-environment-variables",
-			env: map[string]string{"FOO": "foo"},
+			pods:        []string{"getting-started"},
+			dir:         "../examples/tagging-with-environment-variables",
+			env:         []string{"FOO=foo"},
 		},
 		{
 			description: "gcb builder example",
 			args:        []string{"run", "-p", "gcb"},
-			pods: []testObject{
-				{
-					name: "getting-started",
-				},
-			},
-			dir:        "../examples/getting-started",
-			remoteOnly: true,
+			pods:        []string{"getting-started"},
+			dir:         "../examples/getting-started",
+			remoteOnly:  true,
 		},
 		{
 			description: "deploy kustomize",
 			args:        []string{"deploy", "--images", "index.docker.io/library/busybox:1"},
-			deployments: []testObject{
-				{
-					name: "kustomize-test",
-				},
-			},
+			deployments: []string{"kustomize-test"},
 			deploymentValidation: func(t *testing.T, d *appsv1.Deployment) {
 				if d == nil {
 					t.Fatalf("Could not find deployment")
@@ -164,31 +123,16 @@ func TestRun(t *testing.T) {
 		{
 			description: "kaniko example",
 			args:        []string{"run"},
-			pods: []testObject{
-				{
-					name: "getting-started-kaniko",
-				},
-			},
-			dir:        "../examples/kaniko",
-			remoteOnly: true,
+			pods:        []string{"getting-started-kaniko"},
+			dir:         "../examples/kaniko",
+			remoteOnly:  true,
 		},
 		{
 			description: "helm example",
 			args:        []string{"run"},
-			deployments: []testObject{
-				{
-					name: "skaffold-helm",
-				},
-			},
-			dir:        "../examples/helm-deployment",
-			remoteOnly: true,
-			cleanup: func(t *testing.T) {
-				cmd := exec.Command("helm", "delete", "--purge", "skaffold-helm")
-				output, err := util.RunCmdOut(cmd)
-				if err != nil {
-					t.Fatalf("skaffold: %s %v", output, err)
-				}
-			},
+			deployments: []string{"skaffold-helm"},
+			dir:         "../examples/helm-deployment",
+			remoteOnly:  true,
 		},
 	}
 
@@ -201,42 +145,48 @@ func TestRun(t *testing.T) {
 			ns, deleteNs := setupNamespace(t)
 			defer deleteNs()
 
-			args := []string{"--namespace", ns.Name}
+			args := []string{}
 			args = append(args, testCase.args...)
+			args = append(args, "--namespace", ns.Name)
+			if testCase.filename != "" {
+				args = append(args, "-f", testCase.filename)
+			}
 
 			cmd := exec.Command("skaffold", args...)
-			env := os.Environ()
-			for k, v := range testCase.env {
-				env = append(env, fmt.Sprintf("%s=%s", k, v))
-			}
-			cmd.Env = env
+			cmd.Env = append(os.Environ(), testCase.env...)
 			cmd.Dir = testCase.dir
-			output, err := util.RunCmdOut(cmd)
-			if err != nil {
+			if output, err := util.RunCmdOut(cmd); err != nil {
 				t.Fatalf("skaffold: %s %v", output, err)
 			}
 
 			for _, p := range testCase.pods {
-				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(ns.Name), p.name); err != nil {
+				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(ns.Name), p); err != nil {
 					t.Fatalf("Timed out waiting for pod ready")
 				}
 			}
 
 			for _, d := range testCase.deployments {
-				if err := kubernetesutil.WaitForDeploymentToStabilize(client, ns.Name, d.name, 10*time.Minute); err != nil {
+				if err := kubernetesutil.WaitForDeploymentToStabilize(client, ns.Name, d, 10*time.Minute); err != nil {
 					t.Fatalf("Timed out waiting for deployment to stabilize")
 				}
 				if testCase.deploymentValidation != nil {
-					deployment, err := client.AppsV1().Deployments(ns.Name).Get(d.name, meta_v1.GetOptions{})
+					deployment, err := client.AppsV1().Deployments(ns.Name).Get(d, meta_v1.GetOptions{})
 					if err != nil {
 						t.Fatalf("Could not find deployment: %s %s", ns.Name, d)
 					}
 					testCase.deploymentValidation(t, deployment)
 				}
+			}
 
-				if testCase.cleanup != nil {
-					testCase.cleanup(t)
-				}
+			// Cleanup
+			args = []string{"delete", "--namespace", ns.Name}
+			if testCase.filename != "" {
+				args = append(args, "-f", testCase.filename)
+			}
+			cmd = exec.Command("skaffold", args...)
+			cmd.Dir = testCase.dir
+			if output, err := util.RunCmdOut(cmd); err != nil {
+				t.Fatalf("skaffold delete: %s %v", output, err)
 			}
 		})
 	}

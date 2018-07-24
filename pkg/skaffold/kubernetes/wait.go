@@ -39,7 +39,7 @@ import (
 
 func WaitForPodReady(pods corev1.PodInterface, podName string) error {
 	logrus.Infof("Waiting for %s to be scheduled", podName)
-	err := wait.PollImmediate(time.Millisecond*500, time.Second*10, func() (bool, error) {
+	err := wait.PollImmediate(time.Millisecond*500, time.Second*30, func() (bool, error) {
 		_, err := pods.Get(podName, meta_v1.GetOptions{
 			IncludeUninitialized: true,
 		})
