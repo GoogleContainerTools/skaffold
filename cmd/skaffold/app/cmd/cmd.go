@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"strings"
 
 	cmdutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -29,6 +31,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -78,6 +81,9 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdFix(out))
 
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic")
+
+	setFlagsFromEnvVariables(rootCmd.Commands())
+
 	return rootCmd
 }
 
@@ -98,6 +104,26 @@ func updateCheck(ch chan string) error {
 		ch <- fmt.Sprintf("There is a new version (%s) of skaffold available. Download it at %s\n", latest, constants.LatestDownloadURL)
 	}
 	return nil
+}
+
+// Each flag can also be set with an env variable whose name starts with `SKAFFOLD_`.
+func setFlagsFromEnvVariables(commands []*cobra.Command) {
+	for _, cmd := range commands {
+		cmd.Flags().VisitAll(func(f *pflag.Flag) {
+			// special case for backward compatibility.
+			if f.Name == "namespace" {
+				if val, present := os.LookupEnv("SKAFFOLD_DEPLOY_NAMESPACE"); present {
+					logrus.Warnln("Using SKAFFOLD_DEPLOY_NAMESPACE env variable is deprecated. Please use SKAFFOLD_NAMESPACE instead.")
+					cmd.Flags().Set(f.Name, val)
+				}
+			}
+
+			envVar := fmt.Sprintf("SKAFFOLD_%s", strings.Replace(strings.ToUpper(f.Name), "-", "_", -1))
+			if val, present := os.LookupEnv(envVar); present {
+				cmd.Flags().Set(f.Name, val)
+			}
+		})
+	}
 }
 
 func AddDevFlags(cmd *cobra.Command) {

@@ -34,12 +34,14 @@ type KustomizeDeployer struct {
 	*v1alpha2.KustomizeDeploy
 
 	kubeContext string
+	namespace   string
 }
 
-func NewKustomizeDeployer(cfg *v1alpha2.KustomizeDeploy, kubeContext string) *KustomizeDeployer {
+func NewKustomizeDeployer(cfg *v1alpha2.KustomizeDeploy, kubeContext string, namespace string) *KustomizeDeployer {
 	return &KustomizeDeployer{
 		KustomizeDeploy: cfg,
 		kubeContext:     kubeContext,
+		namespace:       namespace,
 	}
 }
 
@@ -62,7 +64,7 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 	if err != nil {
 		return nil, errors.Wrap(err, "replacing images")
 	}
-	if err := kubectl(manifestList.reader(), out, k.kubeContext, k.Flags.Global, "apply", k.Flags.Apply, "-f", "-"); err != nil {
+	if err := k.kubectl(manifestList.reader(), out, "apply", k.Flags.Apply, "-f", "-"); err != nil {
 		return nil, errors.Wrap(err, "running kubectl")
 	}
 	return parseManifestsForDeploys(manifestList)
@@ -84,11 +86,11 @@ func newManifestList(r io.Reader) (manifestList, error) {
 }
 
 func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
-	manifests, err := buildManifests(k.KustomizeDeploy.KustomizePath)
+	manifests, err := buildManifests(k.KustomizePath)
 	if err != nil {
 		return errors.Wrap(err, "kustomize")
 	}
-	if err := kubectl(manifests, out, k.kubeContext, k.Flags.Global, "delete", k.Flags.Delete, "-f", "-"); err != nil {
+	if err := k.kubectl(manifests, out, "delete", k.Flags.Delete, "-f", "-"); err != nil {
 		return errors.Wrap(err, "kubectl delete")
 	}
 	return nil
@@ -106,4 +108,23 @@ func buildManifests(kustomization string) (io.Reader, error) {
 		return nil, errors.Wrap(err, "running kustomize build")
 	}
 	return bytes.NewReader(out), nil
+}
+
+// TODO(dgageot): this code is already in KubectlDeployer
+func (k *KustomizeDeployer) kubectl(in io.Reader, out io.Writer, command string, commandFlags []string, arg ...string) error {
+	args := []string{"--context", k.kubeContext}
+	if k.namespace != "" {
+		args = append(args, "--namespace", k.namespace)
+	}
+	args = append(args, k.Flags.Global...)
+	args = append(args, command)
+	args = append(args, commandFlags...)
+	args = append(args, arg...)
+
+	cmd := exec.Command("kubectl", args...)
+	cmd.Stdin = in
+	cmd.Stdout = out
+	cmd.Stderr = out
+
+	return util.RunCmd(cmd)
 }

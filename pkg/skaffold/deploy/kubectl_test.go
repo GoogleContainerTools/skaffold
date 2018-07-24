@@ -105,7 +105,7 @@ func TestKubectlDeploy(t *testing.T) {
 			cfg: &v1alpha2.KubectlDeploy{
 				Manifests: []string{"test/deployment.yaml"},
 			},
-			command: testutil.NewFakeCmd("kubectl --context kubecontext apply -f -", nil),
+			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace apply -f -", nil),
 			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",
@@ -119,7 +119,7 @@ func TestKubectlDeploy(t *testing.T) {
 			cfg: &v1alpha2.KubectlDeploy{
 				Manifests: []string{"test/deployment.yaml"},
 			},
-			command: testutil.NewFakeCmd("kubectl --context kubecontext apply -f -", fmt.Errorf("")),
+			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace apply -f -", fmt.Errorf("")),
 			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",
@@ -138,7 +138,7 @@ func TestKubectlDeploy(t *testing.T) {
 					Delete: []string{"ignored"},
 				},
 			},
-			command: testutil.NewFakeCmd("kubectl --context kubecontext -v=0 apply -f -", fmt.Errorf("")),
+			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace -v=0 apply -f -", fmt.Errorf("")),
 			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",
@@ -161,7 +161,7 @@ func TestKubectlDeploy(t *testing.T) {
 				util.DefaultExecCommand = test.command
 			}
 
-			k := NewKubectlDeployer(tmp, test.cfg, testKubeContext)
+			k := NewKubectlDeployer(tmp, test.cfg, testKubeContext, testNamespace)
 			_, err := k.Deploy(context.Background(), &bytes.Buffer{}, test.builds)
 
 			testutil.CheckError(t, test.shouldErr, err)
@@ -181,14 +181,14 @@ func TestKubectlCleanup(t *testing.T) {
 			cfg: &v1alpha2.KubectlDeploy{
 				Manifests: []string{"test/deployment.yaml"},
 			},
-			command: testutil.NewFakeCmd("kubectl --context kubecontext delete --ignore-not-found=true -f -", nil),
+			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -", nil),
 		},
 		{
 			description: "cleanup error",
 			cfg: &v1alpha2.KubectlDeploy{
 				Manifests: []string{"test/deployment.yaml"},
 			},
-			command:   testutil.NewFakeCmd("kubectl --context kubecontext delete --ignore-not-found=true -f -", errors.New("BUG")),
+			command:   testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -", errors.New("BUG")),
 			shouldErr: true,
 		},
 		{
@@ -201,7 +201,7 @@ func TestKubectlCleanup(t *testing.T) {
 					Delete: []string{"--grace-period=1"},
 				},
 			},
-			command: testutil.NewFakeCmd("kubectl --context kubecontext -v=0 delete --grace-period=1 --ignore-not-found=true -f -", nil),
+			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace -v=0 delete --grace-period=1 --ignore-not-found=true -f -", nil),
 		},
 	}
 
@@ -218,7 +218,7 @@ func TestKubectlCleanup(t *testing.T) {
 				util.DefaultExecCommand = test.command
 			}
 
-			k := NewKubectlDeployer(tmp, test.cfg, testKubeContext)
+			k := NewKubectlDeployer(tmp, test.cfg, testKubeContext, testNamespace)
 			err := k.Cleanup(context.Background(), &bytes.Buffer{})
 
 			testutil.CheckError(t, test.shouldErr, err)

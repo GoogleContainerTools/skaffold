@@ -201,7 +201,10 @@ func TestRun(t *testing.T) {
 			ns, deleteNs := setupNamespace(t)
 			defer deleteNs()
 
-			cmd := exec.Command("skaffold", testCase.args...)
+			args := []string{"--namespace", ns.Name}
+			args = append(args, testCase.args...)
+
+			cmd := exec.Command("skaffold", args...)
 			env := os.Environ()
 			for k, v := range testCase.env {
 				env = append(env, fmt.Sprintf("%s=%s", k, v))
@@ -251,20 +254,12 @@ func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
 		t.Fatalf("creating namespace: %s", err)
 	}
 
-	kubectlCmd := exec.Command("kubectl", "config", "set-context", context.Cluster, "--namespace", ns.Name)
-	if err := util.RunCmd(kubectlCmd); err != nil {
-		t.Fatalf("kubectl config set-context --namespace: %v", err)
-	}
-
-	os.Setenv("SKAFFOLD_DEPLOY_NAMESPACE", namespaceName)
-
 	return ns, func() {
 		client.CoreV1().Namespaces().Delete(ns.Name, &meta_v1.DeleteOptions{})
-		os.Setenv("SKAFFOLD_DEPLOY_NAMESPACE", "")
 	}
 }
 func TestFix(t *testing.T) {
-	_, deleteNs := setupNamespace(t)
+	ns, deleteNs := setupNamespace(t)
 	defer deleteNs()
 
 	fixCmd := exec.Command("skaffold", "fix", "-f", "skaffold.yaml")
@@ -274,7 +269,7 @@ func TestFix(t *testing.T) {
 		t.Fatalf("testing error: %v", err)
 	}
 
-	runCmd := exec.Command("skaffold", "run", "-f", "-")
+	runCmd := exec.Command("skaffold", "run", "--namespace", ns.Name, "-f", "-")
 	runCmd.Dir = "testdata/old-config"
 	runCmd.Stdin = bytes.NewReader(out)
 	err = util.RunCmd(runCmd)
