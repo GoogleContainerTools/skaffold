@@ -43,10 +43,6 @@ include::published-artifacts.adoc[]
 
 include::../examples/README.adoc[]
 
-= Advanced topics
-
-include::docker-commands.adoc[]
-
 = Contributing
 
 include::../CONTRIBUTING.adoc[leveloffset=+1]
