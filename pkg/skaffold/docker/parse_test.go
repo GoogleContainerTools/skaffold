@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-containerregistry/pkg/v1"
 )
@@ -307,7 +308,11 @@ func TestGetDependencies(t *testing.T) {
 				ioutil.WriteFile(filepath.Join(workspace, ".dockerignore"), []byte(test.ignore), 0644)
 			}
 
-			deps, err := GetDependencies(test.buildArgs, workspace, "Dockerfile")
+			deps, err := GetDependencies(workspace, &v1alpha2.DockerArtifact{
+				BuildArgs:      test.buildArgs,
+				DockerfilePath: "Dockerfile",
+			})
+
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
 		})
 	}

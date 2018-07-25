@@ -44,7 +44,7 @@ func runKaniko(ctx context.Context, out io.Writer, artifact *v1alpha2.Artifact, 
 
 	initialTag := util.RandomID()
 	tarName := fmt.Sprintf("context-%s.tar.gz", initialTag)
-	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, dockerfilePath, cfg.GCSBucket, tarName); err != nil {
+	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact, cfg.GCSBucket, tarName); err != nil {
 		return "", errors.Wrap(err, "uploading tar to gcs")
 	}
 	defer gcsDelete(ctx, cfg.GCSBucket, tarName)

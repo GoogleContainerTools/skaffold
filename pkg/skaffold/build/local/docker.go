@@ -26,7 +26,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/docker/docker/api/types"
 	"github.com/pkg/errors"
 )
 
@@ -56,13 +55,7 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace stri
 			return "", errors.Wrap(err, "running build")
 		}
 	} else {
-		err := docker.RunBuild(ctx, out, b.api, workspace, types.ImageBuildOptions{
-			Tags:       []string{initialTag},
-			Dockerfile: a.DockerfilePath,
-			BuildArgs:  a.BuildArgs,
-			CacheFrom:  a.CacheFrom,
-		})
-		if err != nil {
+		if err := docker.BuildArtifact(ctx, out, b.api, workspace, a, initialTag); err != nil {
 			return "", errors.Wrap(err, "running build")
 		}
 	}

@@ -22,13 +22,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/docker/docker/api/types"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -96,7 +94,7 @@ func TestRunPush(t *testing.T) {
 	}
 }
 
-func TestRunBuild(t *testing.T) {
+func TestRunBuildArtifact(t *testing.T) {
 	var tests = []testImageAPI{
 		{
 			description:  "build",
@@ -122,16 +120,9 @@ func TestRunBuild(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			tmp, cleanup := testutil.TempDir(t)
-			defer cleanup()
-
-			ioutil.WriteFile(filepath.Join(tmp, "Dockerfile"), []byte{}, os.ModePerm)
-
 			api := testutil.NewFakeImageAPIClient(test.tagToImageID, test.testOpts)
-			err := RunBuild(context.Background(), ioutil.Discard, api, tmp, types.ImageBuildOptions{
-				Dockerfile: "Dockerfile",
-				Tags:       []string{"finalimage"},
-			})
+
+			err := BuildArtifact(context.Background(), ioutil.Discard, api, ".", &v1alpha2.DockerArtifact{}, "finalimage")
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})

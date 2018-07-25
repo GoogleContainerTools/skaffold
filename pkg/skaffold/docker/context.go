@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	cstorage "cloud.google.com/go/storage"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
@@ -39,29 +40,33 @@ func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 	return filepath.Abs(dockerfile)
 }
 
-func CreateDockerTarContext(buildArgs map[string]*string, w io.Writer, context, dockerfilePath string) error {
-	paths, err := GetDependencies(buildArgs, context, dockerfilePath)
+func CreateDockerTarContext(w io.Writer, workspace string, a *v1alpha2.DockerArtifact) error {
+	paths, err := GetDependencies(workspace, a)
 	if err != nil {
 		return errors.Wrap(err, "getting relative tar paths")
 	}
-	if err := util.CreateTar(w, context, paths); err != nil {
+
+	if err := util.CreateTar(w, workspace, paths); err != nil {
 		return errors.Wrap(err, "creating tar gz")
 	}
+
 	return nil
 }
 
-func CreateDockerTarGzContext(buildArgs map[string]*string, w io.Writer, context, dockerfilePath string) error {
-	paths, err := GetDependencies(buildArgs, context, dockerfilePath)
+func CreateDockerTarGzContext(w io.Writer, workspace string, a *v1alpha2.DockerArtifact) error {
+	paths, err := GetDependencies(workspace, a)
 	if err != nil {
 		return errors.Wrap(err, "getting relative tar paths")
 	}
-	if err := util.CreateTarGz(w, context, paths); err != nil {
+
+	if err := util.CreateTarGz(w, workspace, paths); err != nil {
 		return errors.Wrap(err, "creating tar gz")
 	}
+
 	return nil
 }
 
-func UploadContextToGCS(ctx context.Context, context, dockerfilePath, bucket, objectName string) error {
+func UploadContextToGCS(ctx context.Context, workspace string, a *v1alpha2.DockerArtifact, bucket, objectName string) error {
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
 		return err
@@ -69,7 +74,7 @@ func UploadContextToGCS(ctx context.Context, context, dockerfilePath, bucket, ob
 	defer c.Close()
 
 	w := c.Bucket(bucket).Object(objectName).NewWriter(ctx)
-	if err := CreateDockerTarGzContext(map[string]*string{}, w, context, dockerfilePath); err != nil {
+	if err := CreateDockerTarGzContext(w, workspace, a); err != nil {
 		return errors.Wrap(err, "uploading targz to google storage")
 	}
 	return w.Close()

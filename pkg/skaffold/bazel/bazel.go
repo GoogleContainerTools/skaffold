@@ -35,9 +35,10 @@ func query(target string) string {
 }
 
 // GetDependencies finds the sources dependencies for the given bazel artifact.
-func GetDependencies(a *v1alpha2.Artifact) ([]string, error) {
-	cmd := exec.Command("bazel", "query", query(a.BazelArtifact.BuildTarget), "--noimplicit_deps", "--order_output=no")
-	cmd.Dir = a.Workspace
+// All paths are relative to the workspace.
+func GetDependencies(workspace string, a *v1alpha2.BazelArtifact) ([]string, error) {
+	cmd := exec.Command("bazel", "query", query(a.BuildTarget), "--noimplicit_deps", "--order_output=no")
+	cmd.Dir = workspace
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting bazel dependencies")
@@ -59,7 +60,7 @@ func GetDependencies(a *v1alpha2.Artifact) ([]string, error) {
 		deps = append(deps, depToPath(l))
 	}
 
-	if _, err := os.Stat(filepath.Join(a.Workspace, "WORKSPACE")); err == nil {
+	if _, err := os.Stat(filepath.Join(workspace, "WORKSPACE")); err == nil {
 		deps = append(deps, "WORKSPACE")
 	}
 
