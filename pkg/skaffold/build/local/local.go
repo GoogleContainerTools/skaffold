@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/pkg/errors"
@@ -30,7 +31,7 @@ import (
 
 // Build runs a docker build on the host and tags the resulting image with
 // its checksum. It streams build progress to the writer argument.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
+func (b *Builder) Build(ctx context.Context, out *color.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
 	if b.localCluster {
 		if _, err := fmt.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext); err != nil {
 			return nil, errors.Wrap(err, "writing status")
@@ -42,8 +43,8 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 	return build.InSequence(ctx, out, tagger, artifacts, b.buildArtifact)
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *v1alpha2.Artifact) (string, error) {
-	initialTag, err := b.runBuildForArtifact(ctx, out, artifact)
+func (b *Builder) buildArtifact(ctx context.Context, out *color.Writer, tagger tag.Tagger, artifact *v1alpha2.Artifact) (string, error) {
+	initialTag, err := b.runBuildForArtifact(ctx, out.Out, artifact)
 	if err != nil {
 		return "", errors.Wrap(err, "build artifact")
 	}
@@ -76,7 +77,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	}
 
 	if b.pushImages {
-		if err := docker.RunPush(ctx, b.api, tag, out); err != nil {
+		if err := docker.RunPush(ctx, b.api, tag, out.Out); err != nil {
 			return "", errors.Wrap(err, "pushing")
 		}
 	}

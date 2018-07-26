@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 
 	yaml "gopkg.in/yaml.v2"
@@ -27,13 +26,14 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func NewCmdFix(out io.Writer) *cobra.Command {
+func NewCmdFix(out *color.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fix",
 		Short: "Converts old skaffold.yaml to newest schema version",
@@ -61,7 +61,7 @@ func NewCmdFix(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func runFix(out io.Writer, cfg schemautil.VersionedConfig) error {
+func runFix(out *color.Writer, cfg schemautil.VersionedConfig) error {
 	cfg, err := schema.RunTransform(cfg)
 	if err != nil {
 		return err
@@ -74,9 +74,10 @@ func runFix(out io.Writer, cfg schemautil.VersionedConfig) error {
 		if err := ioutil.WriteFile(filename, newCfg, 0644); err != nil {
 			return errors.Wrap(err, "writing config file")
 		}
+
 		fmt.Fprintf(out, "New config at version %s generated and written to %s\n", cfg.GetVersion(), filename)
 	} else {
-		out.Write(newCfg)
+		out.Out.Write(newCfg)
 	}
 	return nil
 }

@@ -30,6 +30,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -61,7 +62,7 @@ func (h *HelmDeployer) Labels() map[string]string {
 	}
 }
 
-func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
+func (h *HelmDeployer) Deploy(ctx context.Context, out *color.Writer, builds []build.Artifact) ([]Artifact, error) {
 	deployResults := []Artifact{}
 	for _, r := range h.Releases {
 		results, err := h.deployRelease(out, r, builds)
@@ -109,14 +110,14 @@ func (h *HelmDeployer) helm(out io.Writer, arg ...string) error {
 	return util.RunCmd(cmd)
 }
 
-func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, builds []build.Artifact) ([]Artifact, error) {
+func (h *HelmDeployer) deployRelease(out *color.Writer, r v1alpha2.HelmRelease, builds []build.Artifact) ([]Artifact, error) {
 	isInstalled := true
 
 	releaseName, err := evaluateReleaseName(r.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot parse the release name template")
 	}
-	if err := h.helm(out, "get", releaseName); err != nil {
+	if err := h.helm(out.Out, "get", releaseName); err != nil {
 		fmt.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
 		isInstalled = false
 	}
@@ -133,7 +134,7 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 
 	// First build dependencies.
 	logrus.Infof("Building helm dependencies...")
-	if err := h.helm(out, "dep", "build", r.ChartPath); err != nil {
+	if err := h.helm(out.Out, "dep", "build", r.ChartPath); err != nil {
 		return nil, errors.Wrap(err, "building helm dependencies")
 	}
 

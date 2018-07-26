@@ -24,6 +24,7 @@ import (
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -49,7 +50,7 @@ func (k *KustomizeDeployer) Labels() map[string]string {
 	}
 }
 
-func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
+func (k *KustomizeDeployer) Deploy(ctx context.Context, out *color.Writer, builds []build.Artifact) ([]Artifact, error) {
 	manifests, err := buildManifests(k.KustomizePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "kustomize")

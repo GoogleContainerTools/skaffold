@@ -18,14 +18,14 @@ package cmd
 
 import (
 	"context"
-	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
 // NewCmdRun describes the CLI command to run a pipeline.
-func NewCmdRun(out io.Writer) *cobra.Command {
+func NewCmdRun(out *color.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Runs a pipeline file",
@@ -40,7 +40,7 @@ func NewCmdRun(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func run(out io.Writer, filename string) error {
+func run(out *color.Writer, filename string) error {
 	ctx := context.Background()
 
 	runner, config, err := newRunner(filename)

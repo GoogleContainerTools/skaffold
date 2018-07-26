@@ -18,10 +18,10 @@ package cmd
 
 import (
 	"context"
-	"io"
 	"io/ioutil"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -32,7 +32,7 @@ var (
 )
 
 // NewCmdDeploy describes the CLI command to deploy artifacts.
-func NewCmdDeploy(out io.Writer) *cobra.Command {
+func NewCmdDeploy(out *color.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deploy",
 		Short: "Deploys the artifacts",
@@ -47,7 +47,7 @@ func NewCmdDeploy(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func runDeploy(out io.Writer, filename string) error {
+func runDeploy(out *color.Writer, filename string) error {
 	ctx := context.Background()
 
 	r, _, err := newRunner(filename)
@@ -57,7 +57,7 @@ func runDeploy(out io.Writer, filename string) error {
 
 	deployOut := out
 	if quietFlag {
-		deployOut = ioutil.Discard
+		deployOut = color.NewWriter(ioutil.Discard, color.None)
 	}
 
 	var builds []build.Artifact

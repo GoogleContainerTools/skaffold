@@ -19,6 +19,8 @@ package cmd
 import (
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+
 	cmdutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -41,6 +43,7 @@ var rootCmd = &cobra.Command{
 }
 
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
+	writer := color.NewWriter(out, color.SkaffoldOutputColor)
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if err := SetUpLogs(err, v); err != nil {
 			return err
@@ -51,15 +54,15 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	}
 
 	rootCmd.SilenceErrors = true
-	rootCmd.AddCommand(NewCmdCompletion(out))
-	rootCmd.AddCommand(NewCmdVersion(out))
-	rootCmd.AddCommand(NewCmdRun(out))
-	rootCmd.AddCommand(NewCmdDev(out))
-	rootCmd.AddCommand(NewCmdBuild(out))
-	rootCmd.AddCommand(NewCmdDeploy(out))
-	rootCmd.AddCommand(NewCmdDelete(out))
-	rootCmd.AddCommand(NewCmdFix(out))
-	rootCmd.AddCommand(NewCmdDocker(out))
+	rootCmd.AddCommand(NewCmdCompletion(writer))
+	rootCmd.AddCommand(NewCmdVersion(writer))
+	rootCmd.AddCommand(NewCmdRun(writer))
+	rootCmd.AddCommand(NewCmdDev(writer))
+	rootCmd.AddCommand(NewCmdBuild(writer))
+	rootCmd.AddCommand(NewCmdDeploy(writer))
+	rootCmd.AddCommand(NewCmdDelete(writer))
+	rootCmd.AddCommand(NewCmdFix(writer))
+	rootCmd.AddCommand(NewCmdDocker(writer))
 
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic")
 	return rootCmd

@@ -14,21 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package color
 
 import (
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/spf13/cobra"
+	"testing"
 )
 
-func NewCmdDocker(out *color.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "docker",
-		Short: "A set of commands related to developing with docker",
-	}
+func TestColorSprint(t *testing.T) {
+	c := Red.Sprint("TEXT")
 
-	cmd.AddCommand(docker.NewCmdDeps(out.Out))
-	cmd.AddCommand(docker.NewCmdContext(out.Out))
-	return cmd
+	expected := "\033[31mTEXT\033[0m"
+	if c != expected {
+		t.Errorf("Expected %s. Got %s", expected, c)
+	}
 }

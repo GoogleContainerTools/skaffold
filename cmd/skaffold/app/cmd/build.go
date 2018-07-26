@@ -18,11 +18,11 @@ package cmd
 
 import (
 	"context"
-	"io"
 	"io/ioutil"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -33,7 +33,7 @@ var (
 )
 
 // NewCmdBuild describes the CLI command to build artifacts.
-func NewCmdBuild(out io.Writer) *cobra.Command {
+func NewCmdBuild(out *color.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "build",
 		Short: "Builds the artifacts",
@@ -53,7 +53,7 @@ type BuildOutput struct {
 	Builds []build.Artifact
 }
 
-func runBuild(out io.Writer, filename string) error {
+func runBuild(out *color.Writer, filename string) error {
 	ctx := context.Background()
 
 	runner, config, err := newRunner(filename)
@@ -63,7 +63,7 @@ func runBuild(out io.Writer, filename string) error {
 
 	buildOut := out
 	if quietFlag {
-		buildOut = ioutil.Discard
+		buildOut = color.NewWriter(ioutil.Discard, color.None)
 	}
 
 	bRes, err := runner.Build(ctx, buildOut, runner.Tagger, config.Build.Artifacts)
@@ -72,7 +72,7 @@ func runBuild(out io.Writer, filename string) error {
 	}
 
 	cmdOut := BuildOutput{Builds: bRes}
-	if err := buildFormatFlag.Template().Execute(out, cmdOut); err != nil {
+	if err := buildFormatFlag.Template().Execute(out.Out, cmdOut); err != nil {
 		return errors.Wrap(err, "executing template")
 	}
 	return nil

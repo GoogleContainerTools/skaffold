@@ -17,9 +17,9 @@ limitations under the License.
 package cmd
 
 import (
-	"io"
 	"os"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/spf13/cobra"
 )
 
@@ -40,6 +40,6 @@ eval "$(skaffold completion bash)"`,
 	},
 }
 
-func NewCmdCompletion(out io.Writer) *cobra.Command {
+func NewCmdCompletion(out *color.Writer) *cobra.Command {
 	return completionCmd
 }

@@ -27,6 +27,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -162,7 +163,7 @@ func TestKubectlDeploy(t *testing.T) {
 			}
 
 			k := NewKubectlDeployer(tmp, test.cfg, testKubeContext)
-			_, err := k.Deploy(context.Background(), &bytes.Buffer{}, test.builds)
+			_, err := k.Deploy(context.Background(), color.NewWriter(&bytes.Buffer{}, color.None), test.builds)
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})

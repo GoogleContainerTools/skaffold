@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -46,7 +47,7 @@ func (t *TestBuilder) Labels() map[string]string {
 	return map[string]string{}
 }
 
-func (t *TestBuilder) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
+func (t *TestBuilder) Build(ctx context.Context, w *color.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
 	if len(t.errors) > 0 {
 		err := t.errors[0]
 		t.errors = t.errors[1:]
@@ -78,7 +79,7 @@ func (t *TestDeployer) Dependencies() ([]string, error) {
 	return nil, nil
 }
 
-func (t *TestDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]deploy.Artifact, error) {
+func (t *TestDeployer) Deploy(ctx context.Context, out *color.Writer, builds []build.Artifact) ([]deploy.Artifact, error) {
 	if len(t.errors) > 0 {
 		err := t.errors[0]
 		t.errors = t.errors[1:]
@@ -258,7 +259,7 @@ func TestRun(t *testing.T) {
 				Deployer: test.deployer,
 				Tagger:   &tag.ChecksumTagger{},
 			}
-			err := runner.Run(context.Background(), ioutil.Discard, test.config.Build.Artifacts)
+			err := runner.Run(context.Background(), color.NewWriter(ioutil.Discard, color.None), test.config.Build.Artifacts)
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})
@@ -327,7 +328,7 @@ func TestDev(t *testing.T) {
 				Tagger:       &tag.ChecksumTagger{},
 				watchFactory: test.watcherFactory,
 			}
-			_, err := runner.Dev(context.Background(), ioutil.Discard, nil)
+			_, err := runner.Dev(context.Background(), color.NewWriter(ioutil.Discard, color.None), nil)
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})
@@ -354,7 +355,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 
 	// All artifacts are changed
 	runner.watchFactory = NewWatcherFactory(nil, artifacts)
-	_, err := runner.Dev(ctx, ioutil.Discard, artifacts)
+	_, err := runner.Dev(ctx, color.NewWriter(ioutil.Discard, color.None), artifacts)
 
 	if err != nil {
 		t.Errorf("Didn't expect an error. Got %s", err)
@@ -368,7 +369,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 
 	// Only one is changed
 	runner.watchFactory = NewWatcherFactory(nil, artifacts[1:])
-	_, err = runner.Dev(ctx, ioutil.Discard, artifacts)
+	_, err = runner.Dev(ctx, color.NewWriter(ioutil.Discard, color.None), artifacts)
 
 	if err != nil {
 		t.Errorf("Didn't expect an error. Got %s", err)

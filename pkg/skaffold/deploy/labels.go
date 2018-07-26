@@ -20,10 +20,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
@@ -59,7 +59,7 @@ func WithLabels(d Deployer, labellers ...Labeller) Deployer {
 	}
 }
 
-func (w *withLabels) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) ([]Artifact, error) {
+func (w *withLabels) Deploy(ctx context.Context, out *color.Writer, artifacts []build.Artifact) ([]Artifact, error) {
 	dRes, err := w.Deployer.Deploy(ctx, out, artifacts)
 
 	labelDeployResults(merge(w.labellers...), dRes)

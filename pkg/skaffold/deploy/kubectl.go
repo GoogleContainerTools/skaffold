@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
@@ -64,7 +65,7 @@ func (k *KubectlDeployer) Labels() map[string]string {
 
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
+func (k *KubectlDeployer) Deploy(ctx context.Context, out *color.Writer, builds []build.Artifact) ([]Artifact, error) {
 	manifests, err := k.readManifests()
 	if err != nil {
 		return nil, errors.Wrap(err, "reading manifests")
@@ -79,7 +80,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return nil, errors.Wrap(err, "replacing images in manifests")
 	}
 
-	err = kubectl(manifests.reader(), out, k.kubeContext, k.Flags.Global, "apply", k.Flags.Apply, "-f", "-")
+	err = kubectl(manifests.reader(), out.Out, k.kubeContext, k.Flags.Global, "apply", k.Flags.Apply, "-f", "-")
 	if err != nil {
 		return nil, errors.Wrap(err, "deploying manifests")
 	}

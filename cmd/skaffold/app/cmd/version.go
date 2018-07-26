@@ -20,6 +20,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -27,12 +28,12 @@ import (
 
 var versionFlag = flags.NewTemplateFlag("{{.Version}}\n", version.Info{})
 
-func NewCmdVersion(out io.Writer) *cobra.Command {
+func NewCmdVersion(out *color.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print the version information",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return RunVersion(out, cmd)
+			return RunVersion(out.Out, cmd)
 		},
 	}
 

@@ -23,16 +23,17 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/pkg/errors"
 )
 
 const bufferedLinesPerArtifact = 10000
 
-type artifactBuilder func(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *v1alpha2.Artifact) (string, error)
+type artifactBuilder func(ctx context.Context, out *color.Writer, tagger tag.Tagger, artifact *v1alpha2.Artifact) (string, error)
 
 // InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
-func InParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
+func InParallel(ctx context.Context, out *color.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -48,11 +49,13 @@ func InParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts
 		outputs[i] = lines
 
 		r, w := io.Pipe()
+		writer := color.NewWriter(w, color.SkaffoldOutputColor)
 
 		go func() {
-			fmt.Fprintf(w, "Building [%s]...\n", artifacts[i].ImageName)
+			// Log to the pipe, output will be collected and printed later
+			fmt.Fprintf(writer, "Building [%s]...\n", artifacts[i].ImageName)
 
-			tags[i], errs[i] = buildArtifact(ctx, w, tagger, artifacts[i])
+			tags[i], errs[i] = buildArtifact(ctx, writer, tagger, artifacts[i])
 			w.Close()
 		}()
 
@@ -70,7 +73,8 @@ func InParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts
 
 	for i, artifact := range artifacts {
 		for line := range outputs[i] {
-			fmt.Fprintln(out, line)
+			// Color will already be applied if needed directly to the pipe
+			fmt.Fprintln(out.Out, line)
 		}
 
 		if errs[i] != nil {

@@ -18,12 +18,12 @@ package cmd
 
 import (
 	"context"
-	"io"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
@@ -32,7 +32,7 @@ import (
 )
 
 // NewCmdDev describes the CLI command to run a pipeline in development mode.
-func NewCmdDev(out io.Writer) *cobra.Command {
+func NewCmdDev(out *color.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "dev",
 		Short: "Runs a pipeline file in development mode",
@@ -46,7 +46,7 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func dev(out io.Writer, filename string) error {
+func dev(out *color.Writer, filename string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -65,7 +65,7 @@ func dev(out io.Writer, filename string) error {
 	return errDev
 }
 
-func devLoop(ctx context.Context, cancelMainLoop context.CancelFunc, out io.Writer, filename string) error {
+func devLoop(ctx context.Context, cancelMainLoop context.CancelFunc, out *color.Writer, filename string) error {
 	watcher, err := watch.NewFileWatcher([]string{filename}, runner.PollInterval)
 	if err != nil {
 		return errors.Wrap(err, "watching configuration")
@@ -110,7 +110,7 @@ func devLoop(ctx context.Context, cancelMainLoop context.CancelFunc, out io.Writ
 	return errRun
 }
 
-func runDev(ctx context.Context, out io.Writer, filename string) error {
+func runDev(ctx context.Context, out *color.Writer, filename string) error {
 	runner, config, err := newRunner(filename)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")

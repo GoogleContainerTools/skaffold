@@ -19,9 +19,9 @@ package runner
 import (
 	"context"
 	"fmt"
-	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 )
 
@@ -41,7 +41,7 @@ type withNotification struct {
 	deploy.Deployer
 }
 
-func (w withNotification) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]deploy.Artifact, error) {
+func (w withNotification) Deploy(ctx context.Context, out *color.Writer, builds []build.Artifact) ([]deploy.Artifact, error) {
 	res, err := w.Deployer.Deploy(ctx, out, builds)
 	if err != nil {
 		return nil, err

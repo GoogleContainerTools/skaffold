@@ -18,14 +18,14 @@ package cmd
 
 import (
 	"context"
-	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
 // NewCmdDelete describes the CLI command to delete deployed resources.
-func NewCmdDelete(out io.Writer) *cobra.Command {
+func NewCmdDelete(out *color.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete the deployed resources",
@@ -38,7 +38,7 @@ func NewCmdDelete(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func delete(out io.Writer, filename string) error {
+func delete(out *color.Writer, filename string) error {
 	ctx := context.Background()
 
 	runner, _, err := newRunner(filename)
@@ -46,5 +46,5 @@ func delete(out io.Writer, filename string) error {
 		return errors.Wrap(err, "creating runner")
 	}
 
-	return runner.Cleanup(ctx, out)
+	return runner.Cleanup(ctx, out.Out)
 }

@@ -18,9 +18,9 @@ package build
 
 import (
 	"context"
-	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 )
 
@@ -37,5 +37,5 @@ type Artifact struct {
 type Builder interface {
 	Labels() map[string]string
 
-	Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]Artifact, error)
+	Build(ctx context.Context, out *color.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]Artifact, error)
 }

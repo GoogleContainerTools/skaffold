@@ -19,7 +19,6 @@ package runner
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"time"
 
@@ -28,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -152,7 +152,7 @@ func getTagger(t v1alpha2.TagPolicy, customTag string) (tag.Tagger, error) {
 }
 
 // Run builds artifacts ad then deploys them.
-func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact) error {
+func (r *SkaffoldRunner) Run(ctx context.Context, out *color.Writer, artifacts []*v1alpha2.Artifact) error {
 	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
 	if err != nil {
 		return errors.Wrap(err, "build step")
@@ -168,10 +168,10 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*v1
 
 // Dev watches for changes and runs the skaffold build and deploy
 // pipeline until interrrupted by the user.
-func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
+func (r *SkaffoldRunner) Dev(ctx context.Context, out *color.Writer, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
 	imageList := kubernetes.NewImageList()
 	colorPicker := kubernetes.NewColorPicker(artifacts)
-	logger := kubernetes.NewLogAggregator(out, imageList, colorPicker)
+	logger := kubernetes.NewLogAggregator(out.Out, imageList, colorPicker)
 
 	deployDeps, err := r.Dependencies()
 	if err != nil {
@@ -214,7 +214,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 }
 
 // buildAndDeploy builds a subset of the artifacts and deploys everything.
-func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact, images *kubernetes.ImageList) error {
+func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, out *color.Writer, artifacts []*v1alpha2.Artifact, images *kubernetes.ImageList) error {
 	firstRun := r.builds == nil
 
 	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
