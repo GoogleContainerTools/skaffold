@@ -29,6 +29,7 @@ import (
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/fileutils"
 	"github.com/google/go-containerregistry/pkg/v1"
+	"github.com/karrick/godirwalk"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
@@ -194,34 +195,60 @@ func GetDependencies(buildArgs map[string]*string, workspace, dockerfilePath str
 		}
 	}
 
+	pExclude, err := fileutils.NewPatternMatcher(excludes)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid exclude patterns")
+	}
+
 	// Walk the workspace
 	files := make(map[string]bool)
 	for _, dep := range deps {
-		filepath.Walk(filepath.Join(workspace, dep), func(fpath string, info os.FileInfo, err error) error {
+		dep = filepath.Clean(dep)
+		absDep := filepath.Join(workspace, dep)
+
+		fi, err := os.Stat(absDep)
+		if err != nil {
+			return nil, errors.Wrapf(err, "stating file %s")
+		}
+
+		switch mode := fi.Mode(); {
+		case mode.IsDir():
+			if err := godirwalk.Walk(absDep, &godirwalk.Options{
+				Unsorted: true,
+				Callback: func(fpath string, info *godirwalk.Dirent) error {
+					relPath, err := filepath.Rel(workspace, fpath)
+					if err != nil {
+						return err
+					}
+
+					ignored, err := pExclude.Matches(relPath)
+					if err != nil {
+						return err
+					}
+
+					if info.IsDir() {
+						if ignored {
+							return filepath.SkipDir
+						}
+					} else if !ignored {
+						files[relPath] = true
+					}
+
+					return nil
+				},
+			}); err != nil {
+				return nil, errors.Wrapf(err, "walking folder %s", absDep)
+			}
+		case mode.IsRegular():
+			ignored, err := pExclude.Matches(dep)
 			if err != nil {
-				return err
+				return nil, err
 			}
 
-			relPath, err := filepath.Rel(workspace, fpath)
-			if err != nil {
-				return err
+			if !ignored {
+				files[dep] = true
 			}
-
-			ignored, err := fileutils.Matches(relPath, excludes)
-			if err != nil {
-				return err
-			}
-
-			if info.IsDir() && ignored {
-				return filepath.SkipDir
-			}
-
-			if !info.IsDir() && !ignored {
-				files[relPath] = true
-			}
-
-			return nil
-		})
+		}
 	}
 
 	// Always add dockerfile even if it's .dockerignored. The daemon will need it anyways.

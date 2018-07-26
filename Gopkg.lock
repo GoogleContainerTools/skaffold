@@ -351,6 +351,12 @@
   version = "1.1.4"
 
 [[projects]]
+  name = "github.com/karrick/godirwalk"
+  packages = ["."]
+  revision = "5cc8b3875be6c21825a1b54d3029ed415c93c4f7"
+  version = "v1.7.1"
+
+[[projects]]
   name = "github.com/kevinburke/ssh_config"
   packages = ["."]
   revision = "9fc7bb800b555d63157c65a904c86a2cc7b4e795"
@@ -386,8 +392,8 @@
 [[projects]]
   name = "github.com/modern-go/reflect2"
   packages = ["."]
-  revision = "1df9eeb2bb81f327b96228865c5687bc2194af3f"
-  version = "1.0.0"
+  revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
+  version = "1.0.1"
 
 [[projects]]
   name = "github.com/opencontainers/go-digest"
@@ -949,6 +955,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2f20762e774baeea8657ad1c449e834474a0e8219b59856f02ed5d6472c86b9b"
+  inputs-digest = "7278396ccf206b3d666ad236fe29fd44d427b285268a0c253037e9279a8b865b"
   solver-name = "gps-cdcl"
   solver-version = 1
