@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -88,6 +89,24 @@ var testDeployFooWithPackaged = &v1alpha2.HelmDeploy{
 			Packaged: &v1alpha2.HelmPackaged{
 				Version:    "0.1.2",
 				AppVersion: "1.2.3",
+			},
+		},
+	},
+}
+
+var testDeployWithTemplatedName = &v1alpha2.HelmDeploy{
+	Releases: []v1alpha2.HelmRelease{
+		{
+			Name:      "{{.USER}}-skaffold-helm",
+			ChartPath: "examples/test",
+			Values: map[string]string{
+				"image.tag": "skaffold-helm",
+			},
+			Overrides: map[string]interface{}{
+				"foo": "bar",
+			},
+			SetValues: map[string]string{
+				"some.key": "somevalue",
 			},
 		},
 	},
@@ -267,6 +286,12 @@ func TestHelmDeploy(t *testing.T) {
 			),
 			builds: testBuildsFoo,
 		},
+		{
+			description: "deploy and get templated release name",
+			cmd:         &MockHelm{t: t},
+			deployer:    NewHelmDeployer(testDeployWithTemplatedName, testKubeContext, testNamespace),
+			builds:      testBuilds,
+		},
 	}
 
 	for _, tt := range tests {
@@ -304,6 +329,12 @@ func (m *MockHelm) RunCmd(c *exec.Cmd) error {
 
 	if c.Args[1] != "--kube-context" || c.Args[2] != testKubeContext {
 		m.t.Errorf("Invalid kubernetes context %v", c)
+	}
+
+	if c.Args[3] == "get" || c.Args[3] == "upgrade" {
+		if releaseName := c.Args[4]; strings.Contains(releaseName, "{{") {
+			m.t.Errorf("Invalid release name: %v", releaseName)
+		}
 	}
 
 	switch c.Args[3] {

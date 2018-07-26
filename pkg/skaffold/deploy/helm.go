@@ -236,7 +236,7 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 	args = append(args, setOpts...)
 
 	helmErr := h.helm(out, args...)
-	return h.getDeployResults(ns, r.Name), helmErr
+	return h.getDeployResults(ns, releaseName), helmErr
 }
 
 // imageName if the given string includes a fully qualified docker image name then lets trim just the tag part out
