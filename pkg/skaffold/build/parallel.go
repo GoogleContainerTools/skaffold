@@ -72,7 +72,7 @@ func InParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts
 
 	for i, artifact := range artifacts {
 		for line := range outputs[i] {
-			color.Fprintln(out, color.Default, line)
+			color.Default.Fprintln(out, line)
 		}
 
 		if errs[i] != nil {

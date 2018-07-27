@@ -118,7 +118,7 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 		return nil, errors.Wrap(err, "cannot parse the release name template")
 	}
 	if err := h.helm(out, "get", releaseName); err != nil {
-		color.Fprintf(out, color.Red, "Helm release %s not installed. Installing...\n", releaseName)
+		color.Red.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
 		isInstalled = false
 	}
 	params, err := joinTagsToBuildResult(builds, r.Values)
@@ -213,7 +213,7 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 			for k, v := range m {
 				envMap[k+suffix] = v
 			}
-			color.Fprintf(out, color.Default, "EnvVarMap: %#v\n", envMap)
+			color.Default.Fprintf(out, "EnvVarMap: %#v\n", envMap)
 		}
 		for k, v := range r.SetValueTemplates {
 			t, err := util.ParseEnvTemplate(v)

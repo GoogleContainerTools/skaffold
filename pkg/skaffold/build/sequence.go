@@ -31,7 +31,7 @@ func InSequence(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts
 	var builds []Artifact
 
 	for _, artifact := range artifacts {
-		color.Fprintf(out, color.Default, "Building [%s]...\n", artifact.ImageName)
+		color.Default.Fprintf(out, "Building [%s]...\n", artifact.ImageName)
 
 		tag, err := buildArtifact(ctx, out, tagger, artifact)
 		if err != nil {

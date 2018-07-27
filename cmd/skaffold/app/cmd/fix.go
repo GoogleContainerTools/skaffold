@@ -48,7 +48,7 @@ func NewCmdFix(out io.Writer) *cobra.Command {
 				return
 			}
 			if cfg.GetVersion() == config.LatestVersion {
-				color.Fprintln(out, color.Default, "config is already latest version")
+				color.Default.Fprintln(out, "config is already latest version")
 				return
 			}
 			if err := runFix(out, cfg); err != nil {
@@ -74,7 +74,7 @@ func runFix(out io.Writer, cfg schemautil.VersionedConfig) error {
 		if err := ioutil.WriteFile(filename, newCfg, 0644); err != nil {
 			return errors.Wrap(err, "writing config file")
 		}
-		color.Fprintf(out, color.Default, "New config at version %s generated and written to %s\n", cfg.GetVersion(), filename)
+		color.Default.Fprintf(out, "New config at version %s generated and written to %s\n", cfg.GetVersion(), filename)
 	} else {
 		out.Write(newCfg)
 	}

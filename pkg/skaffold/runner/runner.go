@@ -188,7 +188,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 		}
 		logger.Unmute()
 
-		color.Fprintln(out, color.Default, "Watching for changes...")
+		color.Default.Fprintln(out, "Watching for changes...")
 		return nil
 	}
 
@@ -197,7 +197,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 		err := r.buildAndDeploy(ctx, out, changes, imageList)
 		logger.Unmute()
 
-		color.Fprintln(out, color.Default, "Watching for changes...")
+		color.Default.Fprintln(out, "Watching for changes...")
 		return err
 	}
 
