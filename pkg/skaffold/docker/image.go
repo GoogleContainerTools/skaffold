@@ -39,18 +39,17 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// RunBuild performs a docker build and returns nothing
-func RunBuild(ctx context.Context, out io.Writer, cli APIClient, workspace string, opts types.ImageBuildOptions) error {
-	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, opts.Dockerfile)
+// BuildArtifact performs a docker build and returns nothing
+func BuildArtifact(ctx context.Context, out io.Writer, cli APIClient, workspace string, a *v1alpha2.DockerArtifact, initialTag string) error {
+	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
 
 	// Like `docker build`, we ignore the errors
 	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
 	authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs()
-	opts.AuthConfigs = authConfigs
 
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := CreateDockerTarContext(opts.BuildArgs, buildCtxWriter, workspace, opts.Dockerfile)
+		err := CreateDockerTarContext(buildCtxWriter, workspace, a)
 		if err != nil {
 			buildCtxWriter.CloseWithError(errors.Wrap(err, "creating docker context"))
 			return
@@ -61,11 +60,18 @@ func RunBuild(ctx context.Context, out io.Writer, cli APIClient, workspace strin
 	progressOutput := streamformatter.NewProgressOutput(out)
 	body := progress.NewProgressReader(buildCtx, progressOutput, 0, "", "Sending build context to Docker daemon")
 
-	resp, err := cli.ImageBuild(ctx, body, opts)
+	resp, err := cli.ImageBuild(ctx, body, types.ImageBuildOptions{
+		Tags:        []string{initialTag},
+		Dockerfile:  a.DockerfilePath,
+		BuildArgs:   a.BuildArgs,
+		CacheFrom:   a.CacheFrom,
+		AuthConfigs: authConfigs,
+	})
 	if err != nil {
 		return errors.Wrap(err, "docker build")
 	}
 	defer resp.Body.Close()
+
 	return StreamDockerMessages(out, resp.Body)
 }
 

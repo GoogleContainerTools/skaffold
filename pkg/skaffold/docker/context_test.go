@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -36,6 +37,11 @@ func TestDockerContext(t *testing.T) {
 		RetrieveImage = retrieveImage
 	}()
 
+	artifact := &v1alpha2.DockerArtifact{
+		DockerfilePath: "Dockerfile",
+		BuildArgs:      map[string]*string{},
+	}
+
 	os.Mkdir(filepath.Join(tmpDir, "files"), 0750)
 	ioutil.WriteFile(filepath.Join(tmpDir, "files", "ignored.txt"), []byte(""), 0644)
 	ioutil.WriteFile(filepath.Join(tmpDir, "files", "included.txt"), []byte(""), 0644)
@@ -45,7 +51,7 @@ func TestDockerContext(t *testing.T) {
 	ioutil.WriteFile(filepath.Join(tmpDir, "alsoignored.txt"), []byte(""), 0644)
 	reader, writer := io.Pipe()
 	go func() {
-		err := CreateDockerTarContext(map[string]*string{}, writer, tmpDir, "Dockerfile")
+		err := CreateDockerTarContext(writer, tmpDir, artifact)
 		if err != nil {
 			writer.CloseWithError(err)
 		} else {

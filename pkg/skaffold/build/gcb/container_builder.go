@@ -87,7 +87,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	}
 
 	fmt.Fprintf(out, "Pushing code to gs://%s/%s\n", cbBucket, buildObject)
-	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact.DockerfilePath, cbBucket, buildObject); err != nil {
+	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact, cbBucket, buildObject); err != nil {
 		return "", errors.Wrap(err, "uploading source tarball")
 	}
 

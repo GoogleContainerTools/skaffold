@@ -18,11 +18,13 @@ package watch
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/bazel"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -112,7 +114,7 @@ func matchesAny(artifact *v1alpha2.Artifact, files []string) (bool, error) {
 		return false, nil
 	}
 
-	deps, err := build.DependenciesForArtifact(artifact)
+	deps, err := dependenciesForArtifact(artifact)
 	if err != nil {
 		return false, errors.Wrap(err, "getting dependencies for artifact")
 	}
@@ -126,6 +128,20 @@ func matchesAny(artifact *v1alpha2.Artifact, files []string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+// All paths are relative to the workspace.
+func dependenciesForArtifact(a *v1alpha2.Artifact) ([]string, error) {
+	switch {
+	case a.DockerArtifact != nil:
+		return docker.GetDependencies(a.Workspace, a.DockerArtifact)
+
+	case a.BazelArtifact != nil:
+		return bazel.GetDependencies(a.Workspace, a.BazelArtifact)
+
+	default:
+		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
+	}
 }
 
 // inWorkspace filters out the paths that are not in the artifact's workspace.
