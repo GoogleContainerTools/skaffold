@@ -185,7 +185,7 @@ func (a *LogAggregator) streamRequest(ctx context.Context, header string, rc io.
 		}
 
 		if _, err := fmt.Fprintf(a.output, "%s %s", header, line); err != nil {
-			return errors.Wrap(err, "writing to out")
+			return errors.Wrap(err, "writing to log to out")
 		}
 	}
 	logrus.Infof("%s exited", header)

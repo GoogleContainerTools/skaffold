@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 
@@ -27,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -48,7 +48,7 @@ func NewCmdFix(out io.Writer) *cobra.Command {
 				return
 			}
 			if cfg.GetVersion() == config.LatestVersion {
-				fmt.Fprintln(out, "config is already latest version")
+				color.Fprintln(out, color.Default, "config is already latest version")
 				return
 			}
 			if err := runFix(out, cfg); err != nil {
@@ -74,7 +74,7 @@ func runFix(out io.Writer, cfg schemautil.VersionedConfig) error {
 		if err := ioutil.WriteFile(filename, newCfg, 0644); err != nil {
 			return errors.Wrap(err, "writing config file")
 		}
-		fmt.Fprintf(out, "New config at version %s generated and written to %s\n", cfg.GetVersion(), filename)
+		color.Fprintf(out, color.Default, "New config at version %s generated and written to %s\n", cfg.GetVersion(), filename)
 	} else {
 		out.Write(newCfg)
 	}

@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -187,7 +188,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 		}
 		logger.Unmute()
 
-		fmt.Fprintln(out, "Watching for changes...")
+		color.Fprintln(out, color.Default, "Watching for changes...")
 		return nil
 	}
 
@@ -196,7 +197,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 		err := r.buildAndDeploy(ctx, out, changes, imageList)
 		logger.Unmute()
 
-		fmt.Fprintln(out, "Watching for changes...")
+		color.Fprintln(out, color.Default, "Watching for changes...")
 		return err
 	}
 
