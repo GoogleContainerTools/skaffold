@@ -23,11 +23,12 @@ import (
 // SkaffoldOptions are options that are set by command line arguments not included
 // in the config file itself
 type SkaffoldOptions struct {
-	Cleanup      bool
-	Notification bool
-	Profiles     []string
-	CustomTag    string
-	Namespace    string
+	Cleanup       bool
+	Notification  bool
+	Profiles      []string
+	CustomTag     string
+	Namespace     string
+	GitRepository string
 }
 
 // Labels returns a map of labels to be applied to all deployed
@@ -43,6 +44,9 @@ func (opts *SkaffoldOptions) Labels() map[string]string {
 	}
 	if len(opts.Profiles) > 0 {
 		labels["profiles"] = strings.Join(opts.Profiles, ",")
+	}
+	if opts.GitRepository != "" {
+		labels["git-repo"] = opts.GitRepository
 	}
 	return labels
 }

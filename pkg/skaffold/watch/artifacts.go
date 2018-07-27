@@ -42,10 +42,16 @@ type artifactWatcher struct {
 }
 
 // NewArtifactWatcher creates an ArtifactWatcher for a list of artifacts.
-func NewArtifactWatcher(artifacts []*v1alpha2.Artifact, pollInterval time.Duration) (ArtifactWatcher, error) {
-	fileWatcher, err := NewFileWatcher(workingDirs(artifacts), pollInterval)
-	if err != nil {
-		return nil, errors.Wrap(err, "creating file watcher")
+func NewArtifactWatcher(artifacts []*v1alpha2.Artifact, pollInterval time.Duration, gitRepository string) (ArtifactWatcher, error) {
+	var fileWatcher FileWatcher
+	var err error
+	if gitRepository != "" {
+		fileWatcher = NewGitFileWatcher(gitRepository, pollInterval)
+	} else {
+		fileWatcher, err = NewFileWatcher(workingDirs(artifacts), pollInterval)
+		if err != nil {
+			return nil, errors.Wrap(err, "creating file watcher")
+		}
 	}
 
 	return &artifactWatcher{

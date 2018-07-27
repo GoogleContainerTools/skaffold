@@ -102,7 +102,7 @@ type TestWatcher struct {
 }
 
 func NewWatcherFactory(err error, changes ...[]*v1alpha2.Artifact) watch.Factory {
-	return func(files []string, artifacts []*v1alpha2.Artifact, pollInterval time.Duration) watch.CompositeWatcher {
+	return func(files []string, artifacts []*v1alpha2.Artifact, pollInterval time.Duration, opts *config.SkaffoldOptions) watch.CompositeWatcher {
 		return &TestWatcher{
 			changes: changes,
 			err:     err,

@@ -48,6 +48,7 @@ type SkaffoldRunner struct {
 
 	watchFactory watch.Factory
 	builds       []build.Artifact
+	opts         *config.SkaffoldOptions
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
@@ -84,6 +85,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 		Deployer:     deployer,
 		Tagger:       tagger,
 		watchFactory: watch.NewCompositeWatcher,
+		opts:         opts,
 	}, nil
 }
 
@@ -209,7 +211,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 		return nil, errors.Wrap(err, "starting logger")
 	}
 
-	watcher := r.watchFactory(deployDeps, artifacts, PollInterval)
+	watcher := r.watchFactory(deployDeps, artifacts, PollInterval, r.opts)
 	return nil, watcher.Run(ctx, onDeploymentsChange, onArtifactChange)
 }
 
