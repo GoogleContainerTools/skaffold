@@ -100,17 +100,31 @@ func TestFileWatcher(t *testing.T) {
 				ctx, cancel := context.WithCancel(context.Background())
 
 				defer cancel()
+				watcherCallbackCalled := make(chan bool)
 				go watcher.Run(ctx, func(actual []string) error {
 					expected := prependParentDir(tmp, test.expectedChanges)
 					if diff := cmp.Diff(expected, actual); diff != "" {
 						t.Errorf("Expected %+v, Actual %+v", expected, actual)
 					}
-
+					watcherCallbackCalled <- true
 					return nil
 				})
 
+				ticker := time.NewTicker(10 * time.Millisecond)
+				<-ticker.C
+
 				for _, p := range prependParentDir(tmp, test.writes) {
 					write(t, p, "CONTENT")
+				}
+
+				<-ticker.C
+				<-ticker.C
+				ticker.Stop()
+
+				select {
+				case <-watcherCallbackCalled:
+				case <-time.After(5 * 10 * time.Millisecond):
+					t.Errorf("Watcher callback was not called")
 				}
 			})
 		}
