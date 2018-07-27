@@ -18,12 +18,12 @@ package runner
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 )
@@ -45,22 +45,22 @@ type withTimings struct {
 
 func (w withTimings) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
 	start := time.Now()
-	fmt.Fprintln(out, "Starting build...")
+	color.Default.Fprintln(out, "Starting build...")
 
 	bRes, err := w.Builder.Build(ctx, out, tagger, artifacts)
 	if err == nil {
-		fmt.Fprintln(out, "Build complete in", time.Since(start))
+		color.Default.Fprintln(out, "Build complete in", time.Since(start))
 	}
 	return bRes, err
 }
 
 func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]deploy.Artifact, error) {
 	start := time.Now()
-	fmt.Fprintln(out, "Starting deploy...")
+	color.Default.Fprintln(out, "Starting deploy...")
 
 	dRes, err := w.Deployer.Deploy(ctx, out, builds)
 	if err == nil {
-		fmt.Fprintln(out, "Deploy complete in", time.Since(start))
+		color.Default.Fprintln(out, "Deploy complete in", time.Since(start))
 	}
 	return dRes, err
 }
@@ -78,11 +78,11 @@ func (w withTimings) Labels() map[string]string {
 
 func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {
 	start := time.Now()
-	fmt.Fprintln(out, "Cleaning up...")
+	color.Default.Fprintln(out, "Cleaning up...")
 
 	err := w.Deployer.Cleanup(ctx, out)
 	if err == nil {
-		fmt.Fprintln(out, "Cleanup complete in", time.Since(start))
+		color.Default.Fprintln(out, "Cleanup complete in", time.Since(start))
 	}
 	return err
 }

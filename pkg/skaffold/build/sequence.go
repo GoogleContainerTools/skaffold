@@ -18,10 +18,10 @@ package build
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/pkg/errors"
 )
@@ -31,7 +31,7 @@ func InSequence(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts
 	var builds []Artifact
 
 	for _, artifact := range artifacts {
-		fmt.Fprintf(out, "Building [%s]...\n", artifact.ImageName)
+		color.Default.Fprintf(out, "Building [%s]...\n", artifact.ImageName)
 
 		tag, err := buildArtifact(ctx, out, tagger, artifact)
 		if err != nil {

@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/pkg/errors"
@@ -32,7 +33,7 @@ import (
 // its checksum. It streams build progress to the writer argument.
 func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
 	if b.localCluster {
-		if _, err := fmt.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext); err != nil {
+		if _, err := color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext); err != nil {
 			return nil, errors.Wrap(err, "writing status")
 		}
 	}
