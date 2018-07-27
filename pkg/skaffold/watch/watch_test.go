@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -31,6 +32,7 @@ func TestFileWatcher(t *testing.T) {
 	watchers := []string{"mtime", "fsnotify"}
 	var tests = []struct {
 		description     string
+		createDirs      []string
 		createFiles     []string
 		watchFiles      []string
 		writes          []string
@@ -58,6 +60,14 @@ func TestFileWatcher(t *testing.T) {
 			writes:          []string{"a", "b"},
 			expectedChanges: []string{"a"},
 		},
+		{
+			description:     "handle git submodules",
+			createDirs:      []string{"submodule"},
+			createFiles:     []string{"submodule/.git", "submodule/a", "submodule/b", "submodule/c"},
+			watchFiles:      []string{"submodule"},
+			writes:          []string{"submodule/a", "submodule/b"},
+			expectedChanges: []string{"submodule/a", "submodule/b"},
+		},
 	}
 
 	for _, watcher := range watchers {
@@ -65,6 +75,10 @@ func TestFileWatcher(t *testing.T) {
 			t.Run(fmt.Sprintf("%s %s", test.description, watcher), func(t *testing.T) {
 				tmp, teardown := testutil.TempDir(t)
 				defer teardown()
+
+				for _, p := range test.createDirs {
+					mkdir(t, tmp, p)
+				}
 
 				for _, p := range prependParentDir(tmp, test.createFiles) {
 					write(t, p, "")
@@ -88,7 +102,6 @@ func TestFileWatcher(t *testing.T) {
 				defer cancel()
 				go watcher.Run(ctx, func(actual []string) error {
 					expected := prependParentDir(tmp, test.expectedChanges)
-
 					if diff := cmp.Diff(expected, actual); diff != "" {
 						t.Errorf("Expected %+v, Actual %+v", expected, actual)
 					}
@@ -101,6 +114,12 @@ func TestFileWatcher(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func mkdir(t *testing.T, parentDir string, path string) {
+	if err := os.Mkdir(filepath.Join(parentDir, path), 0777); err != nil {
+		t.Fatalf("creating directory: %s", err)
 	}
 }
 
