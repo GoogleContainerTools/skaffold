@@ -26,6 +26,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -142,9 +143,9 @@ func (a *LogAggregator) streamLogs(ctx context.Context, client corev1.PodsGetter
 		}()
 
 		color := a.colorPicker.Pick(pod)
-		prefix := color.Sprint(prefix(pod, container))
+		prefix := prefix(pod, container)
 		go func() {
-			if err := a.streamRequest(ctx, prefix, tr); err != nil {
+			if err := a.streamRequest(ctx, color, prefix, tr); err != nil {
 				logrus.Errorf("streaming request %s", err)
 			}
 			a.trackedContainers.remove(containerID)
@@ -161,7 +162,7 @@ func prefix(pod *v1.Pod, container v1.ContainerStatus) string {
 	return fmt.Sprintf("[%s]", container.Name)
 }
 
-func (a *LogAggregator) streamRequest(ctx context.Context, header string, rc io.Reader) error {
+func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Color, header string, rc io.Reader) error {
 	r := bufio.NewReader(rc)
 	for {
 		select {
@@ -184,8 +185,11 @@ func (a *LogAggregator) streamRequest(ctx context.Context, header string, rc io.
 			continue
 		}
 
-		if _, err := fmt.Fprintf(a.output, "%s %s", header, line); err != nil {
-			return errors.Wrap(err, "writing to log to out")
+		if _, err := color.Fprintf(a.output, headerColor, "%s ", header); err != nil {
+			return errors.Wrap(err, "writing pod prefix header to out")
+		}
+		if _, err := fmt.Fprint(a.output, string(line)); err != nil {
+			return errors.Wrap(err, "writing pod log to out")
 		}
 	}
 	logrus.Infof("%s exited", header)
