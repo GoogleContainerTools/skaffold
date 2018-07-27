@@ -18,9 +18,10 @@ package runner
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"time"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -44,23 +45,27 @@ type withTimings struct {
 }
 
 func (w withTimings) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
+	formatter := output.NewColorFormatter(out, output.SkaffoldOutputColor)
+
 	start := time.Now()
-	fmt.Fprintln(out, "Starting build...")
+	formatter.Println("Starting build...")
 
 	bRes, err := w.Builder.Build(ctx, out, tagger, artifacts)
 	if err == nil {
-		fmt.Fprintln(out, "Build complete in", time.Since(start))
+		formatter.Printf("Build complete in %s\n", time.Since(start))
 	}
 	return bRes, err
 }
 
 func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]deploy.Artifact, error) {
+	formatter := output.NewColorFormatter(out, output.SkaffoldOutputColor)
+
 	start := time.Now()
-	fmt.Fprintln(out, "Starting deploy...")
+	formatter.Println("Starting deploy...")
 
 	dRes, err := w.Deployer.Deploy(ctx, out, builds)
 	if err == nil {
-		fmt.Fprintln(out, "Deploy complete in", time.Since(start))
+		formatter.Printf("Deploy complete in %s\n", time.Since(start))
 	}
 	return dRes, err
 }
@@ -77,12 +82,14 @@ func (w withTimings) Labels() map[string]string {
 }
 
 func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {
+	formatter := output.NewColorFormatter(out, output.SkaffoldOutputColor)
+
 	start := time.Now()
-	fmt.Fprintln(out, "Cleaning up...")
+	formatter.Println("Cleaning up...")
 
 	err := w.Deployer.Cleanup(ctx, out)
 	if err == nil {
-		fmt.Fprintln(out, "Cleanup complete in", time.Since(start))
+		formatter.Printf("Cleanup complete in %s\n", time.Since(start))
 	}
 	return err
 }

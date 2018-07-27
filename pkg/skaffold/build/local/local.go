@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -31,8 +33,9 @@ import (
 // Build runs a docker build on the host and tags the resulting image with
 // its checksum. It streams build progress to the writer argument.
 func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
+	formatter := output.NewColorFormatter(out, output.SkaffoldOutputColor)
 	if b.localCluster {
-		if _, err := fmt.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext); err != nil {
+		if _, err := formatter.Printf("Found [%s] context, using local docker daemon.\n", b.kubeContext); err != nil {
 			return nil, errors.Wrap(err, "writing status")
 		}
 	}

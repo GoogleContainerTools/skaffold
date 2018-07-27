@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/pkg/errors"
@@ -50,6 +52,7 @@ func InParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts
 		r, w := io.Pipe()
 
 		go func() {
+			// Log to the pipe, output will be collected and printed later
 			fmt.Fprintf(w, "Building [%s]...\n", artifacts[i].ImageName)
 
 			tags[i], errs[i] = buildArtifact(ctx, w, tagger, artifacts[i])
@@ -67,10 +70,11 @@ func InParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts
 
 	// Print logs and collect results in order.
 	var built []Artifact
+	formatter := output.NewColorFormatter(out, output.SkaffoldOutputColor)
 
 	for i, artifact := range artifacts {
 		for line := range outputs[i] {
-			fmt.Fprintln(out, line)
+			formatter.Println(line)
 		}
 
 		if errs[i] != nil {

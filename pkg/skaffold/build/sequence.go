@@ -18,8 +18,9 @@ package build
 
 import (
 	"context"
-	"fmt"
 	"io"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
@@ -29,9 +30,10 @@ import (
 // InSequence builds a list of artifacts in sequence.
 func InSequence(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
 	var builds []Artifact
+	formatter := output.NewColorFormatter(out, output.SkaffoldOutputColor)
 
 	for _, artifact := range artifacts {
-		fmt.Fprintf(out, "Building [%s]...\n", artifact.ImageName)
+		formatter.Printf("Building [%s]...\n", artifact.ImageName)
 
 		tag, err := buildArtifact(ctx, out, tagger, artifact)
 		if err != nil {

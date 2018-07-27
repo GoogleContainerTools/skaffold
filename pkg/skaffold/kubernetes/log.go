@@ -26,6 +26,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -40,7 +42,6 @@ var DynamicClient = GetDynamicClient
 
 // LogAggregator aggregates the logs for all the deployed pods.
 type LogAggregator struct {
-	output      io.Writer
 	podSelector PodSelector
 	colorPicker ColorPicker
 
@@ -50,9 +51,8 @@ type LogAggregator struct {
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
-func NewLogAggregator(out io.Writer, podSelector PodSelector, colorPicker ColorPicker) *LogAggregator {
+func NewLogAggregator(podSelector PodSelector, colorPicker ColorPicker) *LogAggregator {
 	return &LogAggregator{
-		output:      out,
 		podSelector: podSelector,
 		colorPicker: colorPicker,
 		trackedContainers: trackedContainers{
@@ -141,10 +141,10 @@ func (a *LogAggregator) streamLogs(ctx context.Context, client corev1.PodsGetter
 			cmd.Run()
 		}()
 
-		color := a.colorPicker.Pick(pod)
-		prefix := color.Sprint(prefix(pod, container))
+		formatter := a.colorPicker.Pick(pod)
+		prefix := prefix(pod, container)
 		go func() {
-			if err := a.streamRequest(ctx, prefix, tr); err != nil {
+			if err := a.streamRequest(ctx, formatter, prefix, tr); err != nil {
 				logrus.Errorf("streaming request %s", err)
 			}
 			a.trackedContainers.remove(containerID)
@@ -161,7 +161,7 @@ func prefix(pod *v1.Pod, container v1.ContainerStatus) string {
 	return fmt.Sprintf("[%s]", container.Name)
 }
 
-func (a *LogAggregator) streamRequest(ctx context.Context, header string, rc io.Reader) error {
+func (a *LogAggregator) streamRequest(ctx context.Context, formatter output.ColorFormatter, header string, rc io.Reader) error {
 	r := bufio.NewReader(rc)
 	for {
 		select {
@@ -184,7 +184,7 @@ func (a *LogAggregator) streamRequest(ctx context.Context, header string, rc io.
 			continue
 		}
 
-		if _, err := fmt.Fprintf(a.output, "%s %s", header, line); err != nil {
+		if _, err := formatter.PrintWithPrefix(header, string(line)); err != nil {
 			return errors.Wrap(err, "writing to out")
 		}
 	}

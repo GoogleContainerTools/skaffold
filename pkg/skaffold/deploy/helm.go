@@ -28,6 +28,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -110,6 +112,8 @@ func (h *HelmDeployer) helm(out io.Writer, arg ...string) error {
 }
 
 func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, builds []build.Artifact) ([]Artifact, error) {
+	formatter := output.NewColorFormatter(out, output.SkaffoldOutputColor)
+
 	isInstalled := true
 
 	releaseName, err := evaluateReleaseName(r.Name)
@@ -117,7 +121,7 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 		return nil, errors.Wrap(err, "cannot parse the release name template")
 	}
 	if err := h.helm(out, "get", releaseName); err != nil {
-		fmt.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
+		formatter.Printf("Helm release %s not installed. Installing...\n", releaseName)
 		isInstalled = false
 	}
 	params, err := joinTagsToBuildResult(builds, r.Values)
@@ -212,7 +216,7 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 			for k, v := range m {
 				envMap[k+suffix] = v
 			}
-			fmt.Printf("EnvVarMap: %#v\n", envMap)
+			formatter.Printf("EnvVarMap: %#v\n", envMap)
 		}
 		for k, v := range r.SetValueTemplates {
 			t, err := util.ParseEnvTemplate(v)
