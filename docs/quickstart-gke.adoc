@@ -39,7 +39,7 @@ sed -i -e s#k8s-skaffold#${GOOGLE_CLOUD_PROJECT}#g skaffold.yaml
 sed -i -e s#k8s-skaffold#${GOOGLE_CLOUD_PROJECT}#g k8s-pod.yaml
 
 . Take a look at the contents of `skaffold.yaml`.
-You'll notice a profile named `gcb` that will be using Google Container Builder to build
+You'll notice a profile named `gcb` that will be using Google Cloud Build to build
    and push your image.
 The deploy section is configured to use kubectl to apply the Kubernetes manifests.
 [source,shell]

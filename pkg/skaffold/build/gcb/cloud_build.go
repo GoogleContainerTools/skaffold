@@ -40,7 +40,7 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-// Build builds a list of artifacts with GCB.
+// Build builds a list of artifacts with Google Cloud Build.
 func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
 	return build.InParallel(ctx, out, tagger, artifacts, b.buildArtifact)
 }

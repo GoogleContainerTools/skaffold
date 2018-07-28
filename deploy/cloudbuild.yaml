@@ -1,4 +1,4 @@
-# using default substitutions, provided by Google Container Builder
+# using default substitutions, provided by Google Cloud Build
 # see: https://cloud.google.com/container-builder/docs/configuring-builds/substitute-variable-values#using_default_substitutions
 steps:
 

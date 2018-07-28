@@ -52,21 +52,21 @@ const (
 	RetryDelay = 1 * time.Second
 )
 
-// Builder builds artifacts with GCB.
+// Builder builds artifacts with Google Cloud Build.
 type Builder struct {
 	*v1alpha2.GoogleCloudBuild
 }
 
-// NewBuilder creates a new Builder that builds artifacts with GCB.
+// NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
 func NewBuilder(cfg *v1alpha2.GoogleCloudBuild) *Builder {
 	return &Builder{
 		GoogleCloudBuild: cfg,
 	}
 }
 
-// Labels are labels specific to GCB builder.
+// Labels are labels specific to Google Cloud Build.
 func (b *Builder) Labels() map[string]string {
 	return map[string]string{
-		constants.Labels.Builder: "google-cloud-builder",
+		constants.Labels.Builder: "google-cloud-build",
 	}
 }

@@ -79,9 +79,12 @@ build:
   #   useDockerCLI: false
   #   useBuildkit: false
 
-  # Docker artifacts can be built on Google Container Builder. The projectId then needs
+  # Docker artifacts can be built on Google Cloud Build. The projectId then needs
   # to be provided and the currently logged user should be given permissions to trigger
-  # new builds on GCB.
+  # new builds on Cloud Builder.
+  # If the projectId is not specified, Skaffold will try to guess it from the image names.
+  # For eg. If the artifact image name is gcr.io/myproject/image, then Skaffold will use
+  # the `myproject` GCP project.
   #
   #  googleCloudBuild:
   #   projectId: YOUR_PROJECT
