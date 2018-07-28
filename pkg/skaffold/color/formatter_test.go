@@ -68,7 +68,7 @@ func TestFprintln(t *testing.T) {
 	IsTerminal = func(_ io.Writer) bool { return true }
 
 	var b bytes.Buffer
-	n, err := Green.Fprintln(&b, "2 less chars!")
+	n, err := Green.Fprintln(&b, "2", "less", "chars!")
 	expected := "\033[32m2 less chars!\033[0m\n"
 	compareText(t, expected, b.String(), 23, n, err)
 }
@@ -101,10 +101,11 @@ func TestFprintlnNoTTY(t *testing.T) {
 	IsTerminal = func(_ io.Writer) bool { return false }
 
 	var b bytes.Buffer
-	n, err := Green.Fprintln(&b, "2 less chars!")
+	n, err := Green.Fprintln(&b, "2", "less", "chars!")
 	expected := "2 less chars!\n"
 	compareText(t, expected, b.String(), 14, n, err)
 }
+
 func TestFprintfNoTTY(t *testing.T) {
 	orgIsTerminal := IsTerminal
 	defer func() { IsTerminal = orgIsTerminal }()
