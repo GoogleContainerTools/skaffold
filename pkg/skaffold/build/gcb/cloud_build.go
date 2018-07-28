@@ -102,17 +102,16 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 				Object: buildObject,
 			},
 		},
-		Steps: []*cloudbuild.BuildStep{
-			{
-				Name: "gcr.io/cloud-builders/docker",
-				Args: args,
-			},
-		},
+		Steps: []*cloudbuild.BuildStep{{
+			Name: "gcr.io/cloud-builders/docker",
+			Args: args,
+		}},
 		Images: []string{artifact.ImageName},
 		Options: &cloudbuild.BuildOptions{
 			DiskSizeGb:  b.DiskSizeGb,
 			MachineType: b.MachineType,
 		},
+		Timeout: b.Timeout,
 	})
 	op, err := call.Context(ctx).Do()
 	if err != nil {

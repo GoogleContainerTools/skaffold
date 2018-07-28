@@ -88,6 +88,9 @@ build:
   #
   #  googleCloudBuild:
   #   projectId: YOUR_PROJECT
+  #   diskSizeGb: 200
+  #   machineType: "N1_HIGHCPU_8"|"N1_HIGHCPU_32"
+  #   timeout: 10000S
 
   # Docker artifacts can be built on a Kubernetes cluster with Kaniko.
   # Sources will be sent to a GCS bucket whose name is provided.
@@ -165,8 +168,5 @@ profiles:
   - name: gcb
     build:
       googleCloudBuild:
-        # Google Cloud Build's project id
         projectId: k8s-skaffold
-        # diskSizeGb: 200
-        # machineType: "N1_HIGHCPU_8"|"N1_HIGHCPU_32"
 
