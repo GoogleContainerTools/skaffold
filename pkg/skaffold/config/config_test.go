@@ -181,7 +181,10 @@ func withLocalBuild(ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldConfig) {
 
 func withGoogleCloudBuild(id string, ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldConfig) {
 	return func(cfg *SkaffoldConfig) {
-		b := v1alpha2.BuildConfig{BuildType: v1alpha2.BuildType{GoogleCloudBuild: &v1alpha2.GoogleCloudBuild{ProjectID: id}}}
+		b := v1alpha2.BuildConfig{BuildType: v1alpha2.BuildType{GoogleCloudBuild: &v1alpha2.GoogleCloudBuild{
+			ProjectID:   id,
+			DockerImage: "gcr.io/cloud-builders/docker",
+		}}}
 		for _, op := range ops {
 			op(&b)
 		}

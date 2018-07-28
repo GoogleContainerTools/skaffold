@@ -75,7 +75,9 @@ func TestApplyProfiles(t *testing.T) {
 						},
 					},
 					BuildType: v1alpha2.BuildType{
-						GoogleCloudBuild: &v1alpha2.GoogleCloudBuild{},
+						GoogleCloudBuild: &v1alpha2.GoogleCloudBuild{
+							DockerImage: "gcr.io/cloud-builders/docker",
+						},
 					},
 					TagPolicy: v1alpha2.TagPolicy{
 						GitTagger: &v1alpha2.GitTagger{},

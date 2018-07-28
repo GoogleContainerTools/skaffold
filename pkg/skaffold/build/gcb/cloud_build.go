@@ -96,7 +96,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 			},
 		},
 		Steps: []*cloudbuild.BuildStep{{
-			Name: "gcr.io/cloud-builders/docker",
+			Name: b.DockerImage,
 			Args: args,
 		}},
 		Images: []string{artifact.ImageName},

@@ -51,6 +51,8 @@ const (
 	DefaultKanikoTimeout    = "20m"
 
 	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
+
+	DefaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}
