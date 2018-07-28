@@ -63,15 +63,6 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	}
 	defer c.Close()
 
-	// need to format build args as strings to pass to container builder docker
-	var buildArgs []string
-	for k, v := range artifact.DockerArtifact.BuildArgs {
-		if v != nil {
-			buildArgs = append(buildArgs, []string{"--build-arg", fmt.Sprintf("%s=%s", k, *v)}...)
-		}
-	}
-	logrus.Debugf("Build args: %s", buildArgs)
-
 	projectID, err := b.guessProjectID(artifact)
 	if err != nil {
 		return "", errors.Wrap(err, "getting projectID")
@@ -92,8 +83,10 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "uploading source tarball")
 	}
 
-	args := append([]string{"build", "--tag", artifact.ImageName, "-f", artifact.DockerArtifact.DockerfilePath}, buildArgs...)
+	args := append([]string{"build", "--tag", artifact.ImageName, "-f", artifact.DockerArtifact.DockerfilePath})
+	args = append(args, docker.GetBuildArgs(artifact.DockerArtifact)...)
 	args = append(args, ".")
+
 	call := cbclient.Projects.Builds.Create(projectID, &cloudbuild.Build{
 		LogsBucket: cbBucket,
 		Source: &cloudbuild.Source{
@@ -218,6 +211,7 @@ func (b *Builder) getLogs(ctx context.Context, offset int64, bucket, objectName 
 	if err != nil {
 		if gerr, ok := err.(*googleapi.Error); ok {
 			switch gerr.Code {
+			// case http.
 			case 404, 416, 429, 503:
 				logrus.Debugf("Status Code: %d, %s", gerr.Code, gerr.Body)
 				return nil, nil
