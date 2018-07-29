@@ -29,7 +29,6 @@ import (
 )
 
 //TODO(@r2d4): Figure out best UX to support configuring this blacklist
-var ignoredFiles = []string{}
 var ignoredDirs = []string{"vendor", ".git"}
 
 // FileChangedFn is a function called when files where changed.
@@ -72,7 +71,7 @@ func walk(dirs []string) (fileMap, error) {
 				return err
 			}
 
-			if isIgnored(info.Name(), info.IsDir()) {
+			if info.IsDir() && isIgnored(info.Name()) {
 				return filepath.SkipDir
 			}
 
@@ -115,14 +114,8 @@ func computeDiff(prev, curr fileMap) []string {
 	return changes
 }
 
-func isIgnored(path string, isDir bool) bool {
-	var files []string
-	if isDir {
-		files = ignoredDirs
-	} else {
-		files = ignoredFiles
-	}
-	for _, i := range files {
+func isIgnored(path string) bool {
+	for _, i := range ignoredDirs {
 		if path == i {
 			return true
 		}
