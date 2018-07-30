@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -62,41 +63,24 @@ var (
 	Default = Blue
 )
 
-func wrapTextIfTerminal(out io.Writer, c Color, a ...interface{}) string {
-	if IsTerminal(out) {
-		return c.Sprint(a...)
-	}
-	return fmt.Sprint(a...)
-}
-
-// Sprint will format the operands such that they are surrounded by the ANSI escape sequence
-// required to display the text to the terminal in color.
-func (c Color) Sprint(a ...interface{}) string {
-	text := fmt.Sprint(a...)
-	return fmt.Sprintf("\033[%dm%s\033[0m", c, text)
-}
-
-// Sprintf will format the operands according ot the format specifier and wrap the resulting text
-// with the ANSI escape sequence required to display the text to the terminal in color.
-func (c Color) Sprintf(format string, a ...interface{}) string {
-	formatSpecifier := c.Sprint(format)
-	return fmt.Sprintf(formatSpecifier, a...)
-}
-
 // Fprint wraps the operands in c's ANSI escape codes, and outputs the result to
 // out. If out is not a terminal, the escape codes will not be added.
 // It returns the number of bytes written and any errors encountered.
 func (c Color) Fprint(out io.Writer, a ...interface{}) (n int, err error) {
-	t := wrapTextIfTerminal(out, c, a...)
-	return fmt.Fprint(out, t)
+	if IsTerminal(out) {
+		return fmt.Fprintf(out, "\033[%dm%s\033[0m", c, fmt.Sprint(a...))
+	}
+	return fmt.Fprint(out, a...)
 }
 
 // Fprintln wraps the operands in c's ANSI escape codes, and outputs the result to
 // out, followed by a newline. If out is not a terminal, the escape codes will not be added.
 // It returns the number of bytes written and any errors encountered.
 func (c Color) Fprintln(out io.Writer, a ...interface{}) (n int, err error) {
-	t := wrapTextIfTerminal(out, c, a...)
-	return fmt.Fprintln(out, t)
+	if IsTerminal(out) {
+		return fmt.Fprintf(out, "\033[%dm%s\033[0m\n", c, strings.TrimSuffix(fmt.Sprintln(a...), "\n"))
+	}
+	return fmt.Fprintln(out, a...)
 }
 
 // Fprintf applies formats according to the format specifier (and the optional interfaces provided),
@@ -104,13 +88,10 @@ func (c Color) Fprintln(out io.Writer, a ...interface{}) (n int, err error) {
 // out, followed by a newline. If out is not a terminal, the escape codes will not be added.
 // It returns the number of bytes written and any errors encountered.
 func (c Color) Fprintf(out io.Writer, format string, a ...interface{}) (n int, err error) {
-	var t string
 	if IsTerminal(out) {
-		t = c.Sprintf(format, a...)
-	} else {
-		t = fmt.Sprintf(format, a...)
+		return fmt.Fprintf(out, "\033[%dm%s\033[0m", c, fmt.Sprintf(format, a...))
 	}
-	return fmt.Fprint(out, t)
+	return fmt.Fprintf(out, format, a...)
 }
 
 // This implementation comes from logrus (https://github.com/sirupsen/logrus/blob/master/terminal_check_notappengine.go),

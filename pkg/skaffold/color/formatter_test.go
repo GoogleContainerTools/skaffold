@@ -35,26 +35,9 @@ func compareText(t *testing.T, expected, actual string, expectedN int, actualN i
 	}
 }
 
-func TestColorSprint(t *testing.T) {
-	c := Red.Sprint("TEXT")
-	expected := "\033[31mTEXT\033[0m"
-	if c != expected {
-		t.Errorf("Expected %s. Got %s", expected, c)
-	}
-}
-
-func TestColorSprintf(t *testing.T) {
-	c := Green.Sprintf("A GREAT NUMBER IS %d", 5)
-	expected := "\033[32mA GREAT NUMBER IS 5\033[0m"
-	if c != expected {
-		t.Errorf("Expected %s. Got %s", expected, c)
-	}
-}
-
 func TestFprint(t *testing.T) {
-	orgIsTerminal := IsTerminal
-	defer func() { IsTerminal = orgIsTerminal }()
-	IsTerminal = func(_ io.Writer) bool { return true }
+	defer func(f func(io.Writer) bool) { IsTerminal = f }(IsTerminal)
+	IsTerminal = func(io.Writer) bool { return true }
 
 	var b bytes.Buffer
 	n, err := Green.Fprint(&b, "It's not easy being")
@@ -63,20 +46,18 @@ func TestFprint(t *testing.T) {
 }
 
 func TestFprintln(t *testing.T) {
-	orgIsTerminal := IsTerminal
-	defer func() { IsTerminal = orgIsTerminal }()
-	IsTerminal = func(_ io.Writer) bool { return true }
+	defer func(f func(io.Writer) bool) { IsTerminal = f }(IsTerminal)
+	IsTerminal = func(io.Writer) bool { return true }
 
 	var b bytes.Buffer
-	n, err := Green.Fprintln(&b, "2 less chars!")
+	n, err := Green.Fprintln(&b, "2", "less", "chars!")
 	expected := "\033[32m2 less chars!\033[0m\n"
 	compareText(t, expected, b.String(), 23, n, err)
 }
 
 func TestFprintf(t *testing.T) {
-	orgIsTerminal := IsTerminal
-	defer func() { IsTerminal = orgIsTerminal }()
-	IsTerminal = func(_ io.Writer) bool { return true }
+	defer func(f func(io.Writer) bool) { IsTerminal = f }(IsTerminal)
+	IsTerminal = func(io.Writer) bool { return true }
 
 	var b bytes.Buffer
 	n, err := Green.Fprintf(&b, "It's been %d %s", 1, "week")
@@ -85,10 +66,6 @@ func TestFprintf(t *testing.T) {
 }
 
 func TestFprintNoTTY(t *testing.T) {
-	orgIsTerminal := IsTerminal
-	defer func() { IsTerminal = orgIsTerminal }()
-	IsTerminal = func(_ io.Writer) bool { return false }
-
 	var b bytes.Buffer
 	expected := "It's not easy being"
 	n, err := Green.Fprint(&b, expected)
@@ -96,20 +73,13 @@ func TestFprintNoTTY(t *testing.T) {
 }
 
 func TestFprintlnNoTTY(t *testing.T) {
-	orgIsTerminal := IsTerminal
-	defer func() { IsTerminal = orgIsTerminal }()
-	IsTerminal = func(_ io.Writer) bool { return false }
-
 	var b bytes.Buffer
-	n, err := Green.Fprintln(&b, "2 less chars!")
+	n, err := Green.Fprintln(&b, "2", "less", "chars!")
 	expected := "2 less chars!\n"
 	compareText(t, expected, b.String(), 14, n, err)
 }
-func TestFprintfNoTTY(t *testing.T) {
-	orgIsTerminal := IsTerminal
-	defer func() { IsTerminal = orgIsTerminal }()
-	IsTerminal = func(_ io.Writer) bool { return false }
 
+func TestFprintfNoTTY(t *testing.T) {
 	var b bytes.Buffer
 	n, err := Green.Fprintf(&b, "It's been %d %s", 1, "week")
 	expected := "It's been 1 week"
