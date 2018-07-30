@@ -16,7 +16,7 @@
 
 set -e -o pipefail
 
-DEP_VERSION=v0.4.1
+DEP_VERSION=v0.5.0
 DEP_DIR="$GOPATH/src/github.com/golang/dep"
 
 install_dep() {
