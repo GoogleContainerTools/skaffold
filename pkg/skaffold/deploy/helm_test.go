@@ -54,7 +54,7 @@ var testDeployConfig = &v1alpha2.HelmDeploy{
 			Name:      "skaffold-helm",
 			ChartPath: "examples/test",
 			Values: map[string]string{
-				"image.tag": "skaffold-helm",
+				"image": "skaffold-helm",
 			},
 			Overrides: map[string]interface{}{
 				"foo": "bar",
@@ -66,13 +66,36 @@ var testDeployConfig = &v1alpha2.HelmDeploy{
 	},
 }
 
+var testDeployHelmStyleConfig = &v1alpha2.HelmDeploy{
+	Releases: []v1alpha2.HelmRelease{
+		{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Values: map[string]string{
+				"image": "skaffold-helm",
+			},
+			Overrides: map[string]interface{}{
+				"foo": "bar",
+			},
+			SetValues: map[string]string{
+				"some.key": "somevalue",
+			},
+			ImageStrategy: v1alpha2.HelmImageStrategy{
+				HelmImageConfig: v1alpha2.HelmImageConfig{
+					HelmConventionConfig: &v1alpha2.HelmConventionConfig{},
+				},
+			},
+		},
+	},
+}
+
 var testDeployConfigParameterUnmatched = &v1alpha2.HelmDeploy{
 	Releases: []v1alpha2.HelmRelease{
 		{
 			Name:      "skaffold-helm",
 			ChartPath: "examples/test",
 			Values: map[string]string{
-				"image.tag": "skaffold-helm-unmatched",
+				"image": "skaffold-helm-unmatched",
 			},
 		},
 	},
@@ -84,7 +107,7 @@ var testDeployFooWithPackaged = &v1alpha2.HelmDeploy{
 			Name:      "foo",
 			ChartPath: "testdata/foo",
 			Values: map[string]string{
-				"image.tag": "foo",
+				"image": "foo",
 			},
 			Packaged: &v1alpha2.HelmPackaged{
 				Version:    "0.1.2",
@@ -222,11 +245,40 @@ func TestHelmDeploy(t *testing.T) {
 		{
 			description: "get failure should install not upgrade",
 			cmd: &MockHelm{
-				t:             t,
-				getResult:     fmt.Errorf("not found"),
+				t:         t,
+				getResult: fmt.Errorf("not found"),
+				installMatcher: func(cmd *exec.Cmd) bool {
+					expected := map[string]bool{fmt.Sprintf("image=%s", testBuilds[0].Tag): true}
+					for _, arg := range cmd.Args {
+						if expected[arg] {
+							return true
+						}
+					}
+					return false
+				},
 				upgradeResult: fmt.Errorf("should not have called upgrade"),
 			},
 			deployer: NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace),
+			builds:   testBuilds,
+		},
+		{
+			description: "get failure should install not upgrade with helm image strategy",
+			cmd: &MockHelm{
+				t:         t,
+				getResult: fmt.Errorf("not found"),
+				installMatcher: func(cmd *exec.Cmd) bool {
+					builds := strings.Split(testBuilds[0].Tag, ":")
+					expected := map[string]bool{fmt.Sprintf("image.repository=%s,image.tag=%s", builds[0], builds[1]): true}
+					for _, arg := range cmd.Args {
+						if expected[arg] {
+							return true
+						}
+					}
+					return false
+				},
+				upgradeResult: fmt.Errorf("should not have called upgrade"),
+			},
+			deployer: NewHelmDeployer(testDeployHelmStyleConfig, testKubeContext, testNamespace),
 			builds:   testBuilds,
 		},
 		{
@@ -305,13 +357,18 @@ func TestHelmDeploy(t *testing.T) {
 	}
 }
 
+type CommandMatcher func(*exec.Cmd) bool
+
 type MockHelm struct {
 	t *testing.T
 
-	getResult     error
-	installResult error
-	upgradeResult error
-	depResult     error
+	getResult      error
+	getMatcher     CommandMatcher
+	installResult  error
+	installMatcher CommandMatcher
+	upgradeResult  error
+	upgradeMatcher CommandMatcher
+	depResult      error
 
 	packageOut    io.Reader
 	packageResult error
@@ -339,10 +396,19 @@ func (m *MockHelm) RunCmd(c *exec.Cmd) error {
 
 	switch c.Args[3] {
 	case "get":
+		if m.getMatcher != nil && !m.getMatcher(c) {
+			m.t.Errorf("get matcher failed to match cmd")
+		}
 		return m.getResult
 	case "install":
+		if m.installMatcher != nil && !m.installMatcher(c) {
+			m.t.Errorf("install matcher failed to match cmd")
+		}
 		return m.installResult
 	case "upgrade":
+		if m.upgradeMatcher != nil && !m.upgradeMatcher(c) {
+			m.t.Errorf("upgrade matcher failed to match cmd")
+		}
 		return m.upgradeResult
 	case "dep":
 		return m.depResult

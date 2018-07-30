@@ -152,6 +152,7 @@ type HelmRelease struct {
 	Wait              bool                   `yaml:"wait"`
 	Overrides         map[string]interface{} `yaml:"overrides"`
 	Packaged          *HelmPackaged          `yaml:"packaged"`
+	ImageStrategy     HelmImageStrategy      `yaml:"imageStrategy"`
 }
 
 // HelmPackaged represents parameters for packaging helm chart.
@@ -161,6 +162,24 @@ type HelmPackaged struct {
 
 	// AppVersion set the appVersion on the chart to this version
 	AppVersion string `yaml:"appVersion"`
+}
+
+type HelmImageStrategy struct {
+	HelmImageConfig `yaml:",inline"`
+}
+
+type HelmImageConfig struct {
+	HelmFQNConfig        *HelmFQNConfig        `yaml:"fqn"`
+	HelmConventionConfig *HelmConventionConfig `yaml:"helm"`
+}
+
+// HelmFQNConfig represents image config to use the FullyQualifiedImageName as param to set
+type HelmFQNConfig struct {
+	Property string `yaml:"property"`
+}
+
+// HelmConventionConfig represents image config in the syntax of image.repository and image.tag
+type HelmConventionConfig struct {
 }
 
 // Artifact represents items that need to be built, along with the context in which
