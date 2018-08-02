@@ -17,11 +17,14 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
+	"fmt"
 	"io"
 
 	cmdutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -33,6 +36,8 @@ var (
 	v         string
 	filename  string
 	overwrite bool
+
+	updateMsg = make(chan string)
 )
 
 var rootCmd = &cobra.Command{
@@ -47,7 +52,20 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 		}
 		rootCmd.SilenceUsage = true
 		logrus.Infof("Skaffold %+v", version.Get())
+		go func() {
+			if err := updateCheck(updateMsg); err != nil {
+				logrus.Infof("update check failed: %s", err)
+			}
+		}()
 		return nil
+	}
+
+	rootCmd.PersistentPostRun = func(cmd *cobra.Command, args []string) {
+		select {
+		case msg := <-updateMsg:
+			fmt.Fprintf(out, "%s\n", msg)
+		default:
+		}
 	}
 
 	rootCmd.SilenceErrors = true
@@ -62,6 +80,25 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic")
 	return rootCmd
+}
+
+func updateCheck(ch chan string) error {
+	if !update.IsUpdateCheckEnabled() {
+		logrus.Debugf("Update check not enabled, skipping.")
+		return nil
+	}
+	current, err := version.ParseVersion(version.Get().Version)
+	if err != nil {
+		return errors.Wrap(err, "parsing current semver, skipping update check")
+	}
+	latest, err := update.GetLatestVersion(context.Background())
+	if err != nil {
+		return errors.Wrap(err, "getting latest version")
+	}
+	if latest.GT(current) {
+		ch <- fmt.Sprintf("There is a new version (%s) of skaffold available.", latest)
+	}
+	return nil
 }
 
 func AddDevFlags(cmd *cobra.Command) {

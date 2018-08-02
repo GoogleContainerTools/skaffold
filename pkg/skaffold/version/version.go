@@ -19,6 +19,10 @@ package version
 import (
 	"fmt"
 	"runtime"
+	"strings"
+
+	"github.com/blang/semver"
+	"github.com/pkg/errors"
 )
 
 var version, gitCommit, gitTreeState, buildDate string
@@ -51,4 +55,14 @@ func Get() *Info {
 
 func UserAgent() string {
 	return fmt.Sprintf("skaffold/%s/%s", platform, version)
+}
+
+func ParseVersion(version string) (semver.Version, error) {
+	// Strip the leading 'v' in our version strings
+	version = strings.TrimSpace(version)
+	v, err := semver.Parse(strings.TrimLeft(version, "v"))
+	if err != nil {
+		return semver.Version{}, errors.Wrap(err, "parsing semver")
+	}
+	return v, nil
 }
