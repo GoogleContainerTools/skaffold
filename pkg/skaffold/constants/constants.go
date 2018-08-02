@@ -17,6 +17,9 @@ limitations under the License.
 package constants
 
 import (
+	"fmt"
+	"runtime"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -50,6 +53,8 @@ const (
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}
+
+var LatestDownloadURL = fmt.Sprintf("https://storage.googleapis.com/skaffold/releases/latest/skaffold-%s-%s", runtime.GOOS, runtime.GOARCH)
 
 var Labels = struct {
 	TagPolicy        string

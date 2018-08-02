@@ -96,7 +96,7 @@ func updateCheck(ch chan string) error {
 		return errors.Wrap(err, "getting latest version")
 	}
 	if latest.GT(current) {
-		ch <- fmt.Sprintf("There is a new version (%s) of skaffold available.", latest)
+		ch <- fmt.Sprintf("There is a new version (%s) of skaffold available. Download it at %s\n", latest, constants.LatestDownloadURL)
 	}
 	return nil
 }
