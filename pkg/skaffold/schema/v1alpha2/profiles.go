@@ -18,17 +18,15 @@ package v1alpha2
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 )
 
 // ApplyProfiles returns configuration modified by the application
 // of a list of profiles.
 func (c *SkaffoldConfig) ApplyProfiles(profiles []string) error {
-	var err error
-
 	byName := profilesByName(c.Profiles)
 	for _, name := range profiles {
 		profile, present := byName[name]
@@ -36,13 +34,8 @@ func (c *SkaffoldConfig) ApplyProfiles(profiles []string) error {
 			return fmt.Errorf("couldn't find profile %s", name)
 		}
 
-		err = applyProfile(c, profile)
-		if err != nil {
-			return errors.Wrapf(err, "applying profile %s", name)
-		}
+		applyProfile(c, profile)
 	}
-
-	c.Profiles = nil
 	if err := c.setDefaultValues(); err != nil {
 		return errors.Wrap(err, "applying default values")
 	}
@@ -50,15 +43,22 @@ func (c *SkaffoldConfig) ApplyProfiles(profiles []string) error {
 	return nil
 }
 
-func applyProfile(config *SkaffoldConfig, profile Profile) error {
-	logrus.Infof("Applying profile: %s", profile.Name)
+func applyProfile(config *SkaffoldConfig, profile Profile) {
+	logrus.Infof("applying profile: %s", profile.Name)
 
-	buf, err := yaml.Marshal(profile)
-	if err != nil {
-		return err
+	// this intentionally removes the Profiles field from the returned config
+	*config = SkaffoldConfig{
+		APIVersion: config.APIVersion,
+		Kind:       config.Kind,
+		Build: BuildConfig{
+			Artifacts: getArtifactsForProfile(config, profile),
+			TagPolicy: overlayProfile(config.Build.TagPolicy, profile.Build.TagPolicy).(TagPolicy),
+			BuildType: overlayProfile(config.Build.BuildType, profile.Build.BuildType).(BuildType),
+		},
+		Deploy: DeployConfig{
+			DeployType: overlayProfile(config.Deploy.DeployType, profile.Deploy.DeployType).(DeployType),
+		},
 	}
-
-	return yaml.Unmarshal(buf, config)
 }
 
 func profilesByName(profiles []Profile) map[string]Profile {
@@ -67,4 +67,48 @@ func profilesByName(profiles []Profile) map[string]Profile {
 		byName[profile.Name] = profile
 	}
 	return byName
+}
+
+func getArtifactsForProfile(config *SkaffoldConfig, profile Profile) []*Artifact {
+	if profile.Build.Artifacts == nil || len(profile.Build.Artifacts) == 0 {
+		return config.Build.Artifacts
+	}
+	if config.Build.Artifacts == nil || len(config.Build.Artifacts) == 0 {
+		return profile.Build.Artifacts
+	}
+
+	// artifacts are preserved from original config, so add them to the profile if they're not already there
+	// we use a map to dedupe the artifacts before adding them to the profile
+	artifactMap := map[string]*Artifact{}
+	for _, a := range profile.Build.Artifacts {
+		artifactMap[a.ImageName] = a
+	}
+	for _, a := range config.Build.Artifacts {
+		if _, ok := artifactMap[a.ImageName]; !ok {
+			artifactMap[a.ImageName] = a
+		}
+	}
+	combinedArtifacts := []*Artifact{}
+	for _, artifact := range artifactMap {
+		combinedArtifacts = append(combinedArtifacts, artifact)
+	}
+	return combinedArtifacts
+}
+
+func overlayProfile(config interface{}, profile interface{}) interface{} {
+	v := reflect.ValueOf(profile) // the profile itself
+	t := reflect.TypeOf(profile)  // the type of the profile, used for getting struct field types
+	logrus.Debugf("overlaying profile on config for field %s", t.Name())
+	for i := 0; i < v.NumField(); i++ {
+		fieldType := t.Field(i)              // the field type (e.g. 'LocalBuild' for BuildConfig)
+		fieldValue := v.Field(i).Interface() // the value of the field itself
+		if fieldValue != nil && !reflect.ValueOf(fieldValue).IsNil() {
+			ret := reflect.New(t)                                                   // New(t) returns a Value representing pointer to new zero value for type t
+			ret.Elem().FieldByName(fieldType.Name).Set(reflect.ValueOf(fieldValue)) // set the value
+			return reflect.Indirect(ret).Interface()                                // since ret is a pointer, dereference it
+		}
+	}
+	// if we're here, we didn't find any values set in the profile config. just return the original.
+	logrus.Infof("no values found in profile for field %s, using original config values", t.Name())
+	return config
 }
