@@ -65,6 +65,14 @@
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
 
 [[projects]]
+  digest = "1:aba270497eb2d49f5cba6f4162d524b9a1195a24cbce8be20bf56a0051f47deb"
+  name = "github.com/blang/semver"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "2ee87856327ba09384cabd113bc6b5d174e9ec0f"
+  version = "v3.5.1"
+
+[[projects]]
   branch = "master"
   digest = "1:fc8dbcc2a5de7c093e167828ebbdf551641761d2ad75431d3a167d467a264115"
   name = "github.com/containerd/continuity"
@@ -1121,6 +1129,7 @@
   analyzer-version = 1
   input-imports = [
     "cloud.google.com/go/storage",
+    "github.com/blang/semver",
     "github.com/docker/cli/cli/config",
     "github.com/docker/distribution/reference",
     "github.com/docker/docker/api",
