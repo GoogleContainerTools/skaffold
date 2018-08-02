@@ -19,9 +19,9 @@ package v1alpha2
 import (
 	"fmt"
 
+	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 )
 
 // ApplyProfiles returns configuration modified by the application
@@ -36,7 +36,7 @@ func (c *SkaffoldConfig) ApplyProfiles(profiles []string) error {
 			return fmt.Errorf("couldn't find profile %s", name)
 		}
 
-		err = applyProfile(c, profile)
+		err = applyProfile(c, &profile)
 		if err != nil {
 			return errors.Wrapf(err, "applying profile %s", name)
 		}
@@ -50,15 +50,31 @@ func (c *SkaffoldConfig) ApplyProfiles(profiles []string) error {
 	return nil
 }
 
-func applyProfile(config *SkaffoldConfig, profile Profile) error {
+func applyProfile(config *SkaffoldConfig, profile *Profile) error {
 	logrus.Infof("Applying profile: %s", profile.Name)
 
-	buf, err := yaml.Marshal(profile)
-	if err != nil {
-		return err
+	// artifacts are preserved from original config, so add them to the profile if they're not already there
+	// we use a map to dedupe the artifacts before adding them to the profile
+	artifactMap := map[string]*Artifact{}
+	for _, a := range profile.Build.Artifacts {
+		artifactMap[a.ImageName] = a
+	}
+	for _, a := range config.Build.Artifacts {
+		if _, ok := artifactMap[a.ImageName]; !ok {
+			artifactMap[a.ImageName] = a
+		}
+	}
+	combinedArtifacts := []*Artifact{}
+	for _, artifact := range artifactMap {
+		combinedArtifacts = append(combinedArtifacts, artifact)
+	}
+	if len(combinedArtifacts) == 0 {
+		profile.Build.Artifacts = nil
+	} else {
+		profile.Build.Artifacts = combinedArtifacts
 	}
 
-	return yaml.Unmarshal(buf, config)
+	return copier.Copy(config, profile)
 }
 
 func profilesByName(profiles []Profile) map[string]Profile {

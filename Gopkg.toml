@@ -74,3 +74,7 @@
 [[constraint]]
   name = "github.com/google/go-github"
   version = "15.0.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/jinzhu/copier"

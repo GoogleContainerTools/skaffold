@@ -419,6 +419,14 @@
   revision = "d14ea06fba99483203c19d92cfcd13ebe73135f4"
 
 [[projects]]
+  branch = "master"
+  digest = "1:6c2f939d99ad2074a4113c36aa93fa792ede8ff0b8cdb97634b41b9c5da7fab6"
+  name = "github.com/jinzhu/copier"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "7e38e58719c33e0d44d585c4ab477a30f8cb82dd"
+
+[[projects]]
   digest = "1:0243cffa4a3410f161ee613dfdd903a636d07e838a42d341da95d81f42cd1d41"
   name = "github.com/json-iterator/go"
   packages = ["."]
@@ -1143,6 +1151,7 @@
     "github.com/google/go-containerregistry/pkg/v1/remote",
     "github.com/google/go-containerregistry/pkg/v1/remote/transport",
     "github.com/google/go-github/github",
+    "github.com/jinzhu/copier",
     "github.com/karrick/godirwalk",
     "github.com/mitchellh/go-homedir",
     "github.com/moby/buildkit/frontend/dockerfile/command",
