@@ -1,3 +1,34 @@
+
+# v0.11.0 Release - 8/02/2018
+New Features: 
+* Pass buildArgs to Kaniko [#822](https://github.com/GoogleContainerTools/skaffold/pull/822)
+* Add pop of color to terminal output with a color formatter [#857](https://github.com/GoogleContainerTools/skaffold/pull/857)
+
+Bug Fixes:
+* Substitute build args from config into parsed Dockerfile before processing deps [#828](https://github.com/GoogleContainerTools/skaffold/pull/828)
+* Fix color.Fprintln bug [#861](https://github.com/GoogleContainerTools/skaffold/pull/861)
+* Issue #836: Use releaseName to get release info. [#855](https://github.com/GoogleContainerTools/skaffold/pull/855)
+* Switch to gcr for the kaniko builder example. [#845](https://github.com/GoogleContainerTools/skaffold/pull/845)
+
+Updates:
+* boilerplate.sh: fail if python script not found; run from any dir [#827](https://github.com/GoogleContainerTools/skaffold/pull/827)
+* Revert to default grace period [#815](https://github.com/GoogleContainerTools/skaffold/pull/815)
+* Skip the deployment if no manifests are defined [#832](https://github.com/GoogleContainerTools/skaffold/pull/832)
+* Slightly faster git tagger [#839](https://github.com/GoogleContainerTools/skaffold/pull/839)
+* Don’t tag the same images twice [#842](https://github.com/GoogleContainerTools/skaffold/pull/842)
+* Faster code to get image digest [#838](https://github.com/GoogleContainerTools/skaffold/pull/838)
+* Simpler code to print Kaniko logs [#831](https://github.com/GoogleContainerTools/skaffold/pull/831)
+* Simpler sha256 tagger code [#847](https://github.com/GoogleContainerTools/skaffold/pull/847)
+* Move builders to sub packages [#830](https://github.com/GoogleContainerTools/skaffold/pull/830)
+* Shell out docker build [#840](https://github.com/GoogleContainerTools/skaffold/pull/840)
+* Don’t redeploy twice the same manifest in a dev loop [#843](https://github.com/GoogleContainerTools/skaffold/pull/843)
+* Remove `skaffold docker` commands [#853](https://github.com/GoogleContainerTools/skaffold/pull/853)
+* Find docker deps 10x faster [#837](https://github.com/GoogleContainerTools/skaffold/pull/837)
+* Simplify docker related code. [#854](https://github.com/GoogleContainerTools/skaffold/pull/854)
+* add support for helm image convention vs fqn setting [#826](https://github.com/GoogleContainerTools/skaffold/pull/826)
+* Update dep to v0.5.0 [#862](https://github.com/GoogleContainerTools/skaffold/pull/862)
+
+
 # v0.10.0 Release - 7/13/2018
 New Features:
 * kustomize: use custom path in deploy deps [#766](https://github.com/GoogleContainerTools/skaffold/pull/766)
