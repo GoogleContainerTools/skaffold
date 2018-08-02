@@ -36,7 +36,7 @@ func (c *SkaffoldConfig) ApplyProfiles(profiles []string) error {
 			return fmt.Errorf("couldn't find profile %s", name)
 		}
 
-		err = applyProfile(c, &profile)
+		err = applyProfile(c, profile)
 		if err != nil {
 			return errors.Wrapf(err, "applying profile %s", name)
 		}
@@ -50,7 +50,7 @@ func (c *SkaffoldConfig) ApplyProfiles(profiles []string) error {
 	return nil
 }
 
-func applyProfile(config *SkaffoldConfig, profile *Profile) error {
+func applyProfile(config *SkaffoldConfig, profile Profile) error {
 	logrus.Infof("Applying profile: %s", profile.Name)
 
 	// artifacts are preserved from original config, so add them to the profile if they're not already there

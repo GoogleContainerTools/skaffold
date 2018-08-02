@@ -211,7 +211,7 @@ func GetDependencies(workspace string, a *v1alpha2.DockerArtifact) ([]string, er
 
 		fi, err := os.Stat(absDep)
 		if err != nil {
-			return nil, errors.Wrapf(err, "stating file %s")
+			return nil, errors.Wrapf(err, "stating file %s", absDep)
 		}
 
 		switch mode := fi.Mode(); {
