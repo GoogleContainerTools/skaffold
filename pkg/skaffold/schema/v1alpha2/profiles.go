@@ -51,12 +51,12 @@ func applyProfile(config *SkaffoldConfig, profile Profile) {
 		APIVersion: config.APIVersion,
 		Kind:       config.Kind,
 		Build: BuildConfig{
-			Artifacts: getArtifactsForProfile(config, profile),
-			TagPolicy: overlayProfile(config.Build.TagPolicy, profile.Build.TagPolicy).(TagPolicy),
-			BuildType: overlayProfile(config.Build.BuildType, profile.Build.BuildType).(BuildType),
+			Artifacts: overlayProfileField(config.Build.Artifacts, profile.Build.Artifacts).([]*Artifact),
+			TagPolicy: overlayProfileField(config.Build.TagPolicy, profile.Build.TagPolicy).(TagPolicy),
+			BuildType: overlayProfileField(config.Build.BuildType, profile.Build.BuildType).(BuildType),
 		},
 		Deploy: DeployConfig{
-			DeployType: overlayProfile(config.Deploy.DeployType, profile.Deploy.DeployType).(DeployType),
+			DeployType: overlayProfileField(config.Deploy.DeployType, profile.Deploy.DeployType).(DeployType),
 		},
 	}
 }
@@ -69,46 +69,32 @@ func profilesByName(profiles []Profile) map[string]Profile {
 	return byName
 }
 
-func getArtifactsForProfile(config *SkaffoldConfig, profile Profile) []*Artifact {
-	if profile.Build.Artifacts == nil || len(profile.Build.Artifacts) == 0 {
-		return config.Build.Artifacts
-	}
-	if config.Build.Artifacts == nil || len(config.Build.Artifacts) == 0 {
-		return profile.Build.Artifacts
-	}
-
-	// artifacts are preserved from original config, so add them to the profile if they're not already there
-	// we use a map to dedupe the artifacts before adding them to the profile
-	artifactMap := map[string]*Artifact{}
-	for _, a := range profile.Build.Artifacts {
-		artifactMap[a.ImageName] = a
-	}
-	for _, a := range config.Build.Artifacts {
-		if _, ok := artifactMap[a.ImageName]; !ok {
-			artifactMap[a.ImageName] = a
-		}
-	}
-	combinedArtifacts := []*Artifact{}
-	for _, artifact := range artifactMap {
-		combinedArtifacts = append(combinedArtifacts, artifact)
-	}
-	return combinedArtifacts
-}
-
-func overlayProfile(config interface{}, profile interface{}) interface{} {
+func overlayProfileField(config interface{}, profile interface{}) interface{} {
 	v := reflect.ValueOf(profile) // the profile itself
 	t := reflect.TypeOf(profile)  // the type of the profile, used for getting struct field types
 	logrus.Debugf("overlaying profile on config for field %s", t.Name())
-	for i := 0; i < v.NumField(); i++ {
-		fieldType := t.Field(i)              // the field type (e.g. 'LocalBuild' for BuildConfig)
-		fieldValue := v.Field(i).Interface() // the value of the field itself
-		if fieldValue != nil && !reflect.ValueOf(fieldValue).IsNil() {
-			ret := reflect.New(t)                                                   // New(t) returns a Value representing pointer to new zero value for type t
-			ret.Elem().FieldByName(fieldType.Name).Set(reflect.ValueOf(fieldValue)) // set the value
-			return reflect.Indirect(ret).Interface()                                // since ret is a pointer, dereference it
+	switch v.Kind() {
+	case reflect.Struct:
+		for i := 0; i < v.NumField(); i++ {
+			fieldType := t.Field(i)              // the field type (e.g. 'LocalBuild' for BuildConfig)
+			fieldValue := v.Field(i).Interface() // the value of the field itself
+			if fieldValue != nil && !reflect.ValueOf(fieldValue).IsNil() {
+				ret := reflect.New(t)                                                   // New(t) returns a Value representing pointer to new zero value for type t
+				ret.Elem().FieldByName(fieldType.Name).Set(reflect.ValueOf(fieldValue)) // set the value
+				return reflect.Indirect(ret).Interface()                                // since ret is a pointer, dereference it
+			}
 		}
+		// if we're here, we didn't find any values set in the profile config. just return the original.
+		logrus.Infof("no values found in profile for field %s, using original config values", t.Name())
+		return config
+	case reflect.Slice:
+		// either return the values provided in the profile, or the original values if none were provided.
+		if v.Len() == 0 {
+			return config
+		}
+		return v.Interface()
+	default:
+		logrus.Warnf("unknown field type in profile overlay: %s. falling back to original config values", v.Kind())
+		return config
 	}
-	// if we're here, we didn't find any values set in the profile config. just return the original.
-	logrus.Infof("no values found in profile for field %s, using original config values", t.Name())
-	return config
 }
