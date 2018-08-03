@@ -60,13 +60,26 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 	for i, value := range res.AST.Children {
 		switch value.Value {
 		case command.Arg:
-			var val string
-			arg := strings.Split(value.Original, " ")[1]
-			valuePtr := buildArgs[arg]
-			if valuePtr == nil {
-				logrus.Warnf("arg %s referenced in dockerfile but not provided in build args", arg)
+			var val, defaultValue, arg string
+			argSetting := strings.Fields(value.Original)[1]
+
+			argValues := strings.Split(argSetting, "=")
+
+			if len(argValues) > 1 {
+				arg, defaultValue = argValues[0], argValues[1]
 			} else {
-				val = *valuePtr
+				arg = argValues[0]
+			}
+
+			valuePtr := buildArgs[arg]
+			if valuePtr == nil && defaultValue == "" {
+				logrus.Warnf("arg %s referenced in dockerfile but not provided with default or in build args", arg)
+			} else {
+				if valuePtr == nil {
+					val = defaultValue
+				} else {
+					val = *valuePtr
+				}
 				if val == "" {
 					logrus.Warnf("empty build arg provided in skaffold config: %s", arg)
 					break
@@ -79,6 +92,7 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 							break
 						}
 						currentNode.Value = strings.Replace(currentNode.Value, "$"+arg, val, -1)
+						currentNode.Value = strings.Replace(currentNode.Value, "${"+arg+"}", val, -1)
 						currentNode = currentNode.Next
 					}
 				}

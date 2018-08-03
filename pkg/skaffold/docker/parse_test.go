@@ -121,6 +121,27 @@ COPY $FOO .
 CMD $FOO
 `
 
+const copyServerGoBuildArgCurlyBraces = `
+FROM ubuntu:14.04
+ARG FOO
+COPY ${FOO} .
+CMD ${FOO}
+`
+
+const copyServerGoBuildArgExtraWhitespace = `
+FROM ubuntu:14.04
+ARG  FOO
+COPY $FOO .
+CMD $FOO
+`
+
+const copyServerGoBuildArgDefaultValue = `
+FROM ubuntu:14.04
+ARG FOO=server.go
+COPY $FOO .
+CMD $FOO
+`
+
 var fooArg = "server.go" // used for build args
 
 var ImageConfigs = map[string]*v1.ConfigFile{
@@ -278,6 +299,33 @@ func TestGetDependencies(t *testing.T) {
 		{
 			description: "build args",
 			dockerfile:  copyServerGoBuildArg,
+			workspace:   ".",
+			buildArgs:   map[string]*string{"FOO": &fooArg},
+			expected:    []string{"Dockerfile", "server.go"},
+		},
+		{
+			description: "build args with curly braces",
+			dockerfile:  copyServerGoBuildArgCurlyBraces,
+			workspace:   ".",
+			buildArgs:   map[string]*string{"FOO": &fooArg},
+			expected:    []string{"Dockerfile", "server.go"},
+		},
+		{
+			description: "build args with extra whitespace",
+			dockerfile:  copyServerGoBuildArgExtraWhitespace,
+			workspace:   ".",
+			buildArgs:   map[string]*string{"FOO": &fooArg},
+			expected:    []string{"Dockerfile", "server.go"},
+		},
+		{
+			description: "build args with default value and buildArgs unset",
+			dockerfile:  copyServerGoBuildArgDefaultValue,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "server.go"},
+		},
+		{
+			description: "build args with default value and buildArgs set",
+			dockerfile:  copyServerGoBuildArgDefaultValue,
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": &fooArg},
 			expected:    []string{"Dockerfile", "server.go"},
