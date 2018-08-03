@@ -17,6 +17,9 @@ limitations under the License.
 package constants
 
 import (
+	"fmt"
+	"runtime"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -45,9 +48,13 @@ const (
 
 	DefaultKanikoImage      = "gcr.io/kaniko-project/executor:v0.2.0@sha256:bebe80bb97950d88b8d8eab315a58e0bc50307135cf25147d7e0b8f3db50a84a"
 	DefaultKanikoSecretName = "kaniko-secret"
+
+	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}
+
+var LatestDownloadURL = fmt.Sprintf("https://storage.googleapis.com/skaffold/releases/latest/skaffold-%s-%s", runtime.GOOS, runtime.GOARCH)
 
 var Labels = struct {
 	TagPolicy        string
