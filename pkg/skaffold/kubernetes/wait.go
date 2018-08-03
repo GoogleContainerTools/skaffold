@@ -73,9 +73,9 @@ func WaitForPodReady(pods corev1.PodInterface, podName string) error {
 	})
 }
 
-func WaitForPodComplete(pods corev1.PodInterface, podName string) error {
+func WaitForPodComplete(pods corev1.PodInterface, podName string, timeout time.Duration) error {
 	logrus.Infof("Waiting for %s to be ready", podName)
-	return wait.PollImmediate(time.Millisecond*500, time.Minute*10, func() (bool, error) {
+	return wait.PollImmediate(time.Millisecond*500, timeout, func() (bool, error) {
 		pod, err := pods.Get(podName, meta_v1.GetOptions{
 			IncludeUninitialized: true,
 		})

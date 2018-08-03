@@ -38,6 +38,7 @@ import (
 )
 
 const kanikoContainerName = "kaniko"
+const kanikoTimeout = 20 * time.Minute
 
 func runKaniko(ctx context.Context, out io.Writer, artifact *v1alpha2.Artifact, cfg *v1alpha2.KanikoBuild) (string, error) {
 	dockerfilePath := artifact.DockerArtifact.DockerfilePath
@@ -112,7 +113,7 @@ func runKaniko(ctx context.Context, out io.Writer, artifact *v1alpha2.Artifact, 
 		}
 	}()
 
-	if err := kubernetes.WaitForPodComplete(pods, p.Name); err != nil {
+	if err := kubernetes.WaitForPodComplete(pods, p.Name, kanikoTimeout); err != nil {
 		return "", errors.Wrap(err, "waiting for pod to complete")
 	}
 
