@@ -99,6 +99,7 @@ type KanikoBuild struct {
 	PullSecret     string `yaml:"pullSecret,omitempty"`
 	PullSecretName string `yaml:"pullSecretName,omitempty"`
 	Namespace      string `yaml:"namespace,omitempty"`
+	Timeout        string `yaml:"timeout,omitempty"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps
