@@ -35,8 +35,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 	}
 	defer teardown()
 
-	// TODO(r2d4): parallel builds
-	return build.InSequence(ctx, out, tagger, artifacts, b.buildArtifact)
+	return build.InParallel(ctx, out, tagger, artifacts, b.buildArtifact)
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *v1alpha2.Artifact) (string, error) {
