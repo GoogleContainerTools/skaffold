@@ -95,6 +95,7 @@ build:
   #   gcsBucket: k8s-skaffold
   #   pullSecret: /a/secret/path/serviceaccount.json
   #   namespace: default
+  #   timeout: 20m
 
 # The deploy section has all the information needed to deploy. Along with build:
 # it is a required section.

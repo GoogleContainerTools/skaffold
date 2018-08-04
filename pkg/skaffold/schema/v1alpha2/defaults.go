@@ -31,6 +31,7 @@ func (c *SkaffoldConfig) setDefaultValues() error {
 	c.setDefaultTagger()
 	c.setDefaultKustomizePath()
 	c.setDefaultKubectlManifests()
+	c.setDefaultKanikoTimeout()
 	if err := c.setDefaultKanikoNamespace(); err != nil {
 		return err
 	}
@@ -112,6 +113,17 @@ func (c *SkaffoldConfig) setDefaultKanikoNamespace() error {
 	}
 
 	return nil
+}
+
+func (c *SkaffoldConfig) setDefaultKanikoTimeout() {
+	kaniko := c.Build.KanikoBuild
+	if kaniko == nil {
+		return
+	}
+
+	if kaniko.Timeout == "" {
+		kaniko.Timeout = constants.DefaultKanikoTimeout
+	}
 }
 
 func (c *SkaffoldConfig) setDefaultKanikoSecret() error {
