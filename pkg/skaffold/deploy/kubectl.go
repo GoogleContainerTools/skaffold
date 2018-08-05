@@ -72,7 +72,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	}
 
 	if manifests.Empty() {
-		return []Artifact{}, nil
+		return nil, nil
 	}
 
 	manifests, err = manifests.replaceImages(builds)
@@ -85,6 +85,9 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	updated := k.previousDeployment.diff(manifests)
 	logrus.Debugln(len(manifests), "manifests to deploy.", len(manifests), "are updated or new")
 	k.previousDeployment = manifests
+	if len(updated) == 0 {
+		return nil, nil
+	}
 
 	err = kubectl(updated.reader(), out, k.kubeContext, k.Flags.Global, "apply", k.Flags.Apply, "-f", "-")
 	if err != nil {
