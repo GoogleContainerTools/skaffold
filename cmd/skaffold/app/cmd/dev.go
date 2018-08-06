@@ -21,11 +21,9 @@ import (
 	"io"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -38,7 +36,7 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 		Short: "Runs a pipeline file in development mode",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return dev(out, filename)
+			return dev(out)
 		},
 	}
 	AddRunDevFlags(cmd)
@@ -46,91 +44,42 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func dev(out io.Writer, filename string) error {
+func dev(out io.Writer) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	if opts.Cleanup {
 		catchCtrlC(cancel)
+
+		defer func() {
+			if err := delete(out); err != nil {
+				logrus.Warnln("cleanup:", err)
+			}
+		}()
 	}
 
-	errDev := devLoop(ctx, cancel, out, filename)
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			r, config, err := newRunner(opts)
+			if err != nil {
+				return errors.Wrap(err, "creating runner")
+			}
 
-	if opts.Cleanup {
-		if err := delete(out, filename); err != nil {
-			logrus.Warnln("cleanup:", err)
-		}
-	}
-
-	return errDev
-}
-
-func devLoop(ctx context.Context, cancelMainLoop context.CancelFunc, out io.Writer, filename string) error {
-	watcher, err := watch.NewFileWatcher([]string{filename}, runner.PollInterval)
-	if err != nil {
-		return errors.Wrap(err, "watching configuration")
-	}
-
-	c := make(chan context.CancelFunc, 1)
-	var devLoop sync.WaitGroup
-	devLoop.Add(1)
-
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				devLoop.Done()
-				return
-			default:
-				ctxDev, cancelDev := context.WithCancel(ctx)
-				c <- cancelDev
-				if err := runDev(ctxDev, out, filename); err != nil {
-					logrus.Errorln("dev:", err)
-					cancelMainLoop()
-					devLoop.Done()
-					return
+			if _, err := r.Dev(ctx, out, config.Build.Artifacts); err != nil {
+				if errors.Cause(err) != runner.ErrorConfigurationChanged {
+					return err
 				}
 			}
 		}
-	}()
-
-	errRun := watcher.Run(ctx, func([]string) error {
-		cancelDev := <-c
-		cancelDev()
-		return nil
-	})
-
-	// Drain c to make sure the dev loop is not waiting for it
-	go func() {
-		for range c {
-		}
-	}()
-	devLoop.Wait()
-
-	return errRun
-}
-
-func runDev(ctx context.Context, out io.Writer, filename string) error {
-	runner, config, err := newRunner(filename)
-	if err != nil {
-		return errors.Wrap(err, "creating runner")
 	}
-
-	_, err = runner.Dev(ctx, out, config.Build.Artifacts)
-	if err != nil {
-		return errors.Wrap(err, "dev step")
-	}
-
-	return nil
 }
 
 func catchCtrlC(cancel context.CancelFunc) {
 	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt,
-		syscall.SIGTERM,
-		syscall.SIGINT,
-		syscall.SIGPIPE,
-	)
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGPIPE)
 
 	go func() {
 		<-signals

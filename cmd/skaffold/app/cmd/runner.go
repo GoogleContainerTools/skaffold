@@ -23,8 +23,8 @@ import (
 )
 
 // newRunner creates a SkaffoldRunner and returns the SkaffoldConfig associated with it.
-func newRunner(filename string) (*runner.SkaffoldRunner, *config.SkaffoldConfig, error) {
-	config, err := readConfiguration(filename)
+func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *config.SkaffoldConfig, error) {
+	config, err := readConfiguration(opts)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "reading configuration")
 	}

@@ -38,7 +38,7 @@ func NewCmdDeploy(out io.Writer) *cobra.Command {
 		Short: "Deploys the artifacts",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDeploy(out, filename)
+			return runDeploy(out)
 		},
 	}
 	AddRunDevFlags(cmd)
@@ -47,10 +47,10 @@ func NewCmdDeploy(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func runDeploy(out io.Writer, filename string) error {
+func runDeploy(out io.Writer) error {
 	ctx := context.Background()
 
-	r, _, err := newRunner(filename)
+	r, _, err := newRunner(opts)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}

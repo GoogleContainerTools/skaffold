@@ -23,11 +23,12 @@ import (
 // SkaffoldOptions are options that are set by command line arguments not included
 // in the config file itself
 type SkaffoldOptions struct {
-	Cleanup      bool
-	Notification bool
-	Profiles     []string
-	CustomTag    string
-	Namespace    string
+	ConfigurationFile string
+	Cleanup           bool
+	Notification      bool
+	Profiles          []string
+	CustomTag         string
+	Namespace         string
 }
 
 // Labels returns a map of labels to be applied to all deployed

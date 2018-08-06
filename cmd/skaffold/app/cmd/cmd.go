@@ -34,7 +34,6 @@ import (
 var (
 	opts      = &config.SkaffoldOptions{}
 	v         string
-	filename  string
 	overwrite bool
 
 	updateMsg = make(chan string)
@@ -106,14 +105,14 @@ func AddDevFlags(cmd *cobra.Command) {
 }
 
 func AddRunDevFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&filename, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
+	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
 	cmd.Flags().StringArrayVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
 	cmd.Flags().StringVarP(&opts.Namespace, "namespace", "n", "", "Run Helm deployments in the specified namespace")
 }
 
 func AddFixFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&filename, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
+	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&overwrite, "overwrite", false, "Overwrite original config with fixed config")
 }
 
@@ -127,8 +126,8 @@ func SetUpLogs(out io.Writer, level string) error {
 	return nil
 }
 
-func readConfiguration(filename string) (*config.SkaffoldConfig, error) {
-	config, err := cmdutil.ParseConfig(filename)
+func readConfiguration(opts *config.SkaffoldOptions) (*config.SkaffoldConfig, error) {
+	config, err := cmdutil.ParseConfig(opts.ConfigurationFile)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold config")
 	}

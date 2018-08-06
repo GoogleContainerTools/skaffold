@@ -31,7 +31,7 @@ func NewCmdRun(out io.Writer) *cobra.Command {
 		Short: "Runs a pipeline file",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return run(out, filename)
+			return run(out)
 		},
 	}
 	AddRunDevFlags(cmd)
@@ -40,10 +40,10 @@ func NewCmdRun(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func run(out io.Writer, filename string) error {
+func run(out io.Writer) error {
 	ctx := context.Background()
 
-	runner, config, err := newRunner(filename)
+	runner, config, err := newRunner(opts)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}

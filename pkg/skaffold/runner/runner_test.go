@@ -97,22 +97,31 @@ func resetClient()                               { kubernetes.Client = kubernete
 func fakeGetClient() (clientgo.Interface, error) { return fake.NewSimpleClientset(), nil }
 
 type TestWatcher struct {
-	changes [][]*v1alpha2.Artifact
-	err     error
+	changedArtifacts [][]int
+	changeCallbacks  []func()
+	err              error
 }
 
-func NewWatcherFactory(err error, changes ...[]*v1alpha2.Artifact) watch.Factory {
-	return func(files []string, artifacts []*v1alpha2.Artifact, pollInterval time.Duration) watch.CompositeWatcher {
+func NewWatcherFactory(err error, changedArtifacts ...[]int) watch.Factory {
+	return func() watch.Watcher {
 		return &TestWatcher{
-			changes: changes,
-			err:     err,
+			changedArtifacts: changedArtifacts,
+			err:              err,
 		}
 	}
 }
 
-func (t *TestWatcher) Run(ctx context.Context, onFileChange watch.FileChangedFn, onArtifactChange watch.ArtifactChangedFn) error {
-	for _, change := range t.changes {
-		onArtifactChange(change)
+func (t *TestWatcher) Register(deps func() ([]string, error), onChange func()) error {
+	t.changeCallbacks = append(t.changeCallbacks, onChange)
+	return nil
+}
+
+func (t *TestWatcher) Run(ctx context.Context, pollInterval time.Duration, onChange func() error) error {
+	for _, artifactIndices := range t.changedArtifacts {
+		for _, artifactIndex := range artifactIndices {
+			t.changeCallbacks[artifactIndex]()
+		}
+		onChange()
 	}
 	return t.err
 }
@@ -352,8 +361,8 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 
 	ctx := context.Background()
 
-	// All artifacts are changed
-	runner.watchFactory = NewWatcherFactory(nil, artifacts)
+	// Both artifacts are changed
+	runner.watchFactory = NewWatcherFactory(nil, []int{0, 1})
 	_, err := runner.Dev(ctx, ioutil.Discard, artifacts)
 
 	if err != nil {
@@ -367,7 +376,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	}
 
 	// Only one is changed
-	runner.watchFactory = NewWatcherFactory(nil, artifacts[1:])
+	runner.watchFactory = NewWatcherFactory(nil, []int{1})
 	_, err = runner.Dev(ctx, ioutil.Discard, artifacts)
 
 	if err != nil {

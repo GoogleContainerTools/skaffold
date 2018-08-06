@@ -39,7 +39,7 @@ func NewCmdBuild(out io.Writer) *cobra.Command {
 		Short: "Builds the artifacts",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runBuild(out, filename)
+			return runBuild(out)
 		},
 	}
 	AddRunDevFlags(cmd)
@@ -53,10 +53,10 @@ type BuildOutput struct {
 	Builds []build.Artifact
 }
 
-func runBuild(out io.Writer, filename string) error {
+func runBuild(out io.Writer) error {
 	ctx := context.Background()
 
-	runner, config, err := newRunner(filename)
+	runner, config, err := newRunner(opts)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}
