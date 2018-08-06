@@ -162,6 +162,16 @@ func TestRun(t *testing.T) {
 			dir: "../examples/kustomize",
 		},
 		{
+			description: "bazel example",
+			args:        []string{"run"},
+			pods: []testObject{
+				{
+					name: "bazel",
+				},
+			},
+			dir: "../examples/bazel",
+		},
+		{
 			description: "kaniko example",
 			args:        []string{"run"},
 			pods: []testObject{

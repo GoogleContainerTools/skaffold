@@ -46,6 +46,12 @@ RUN curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/v${K
     chmod +x kustomize_${KUSTOMIZE_VERSION}_linux_amd64 && \
     mv kustomize_${KUSTOMIZE_VERSION}_linux_amd64 /usr/local/bin/kustomize
 
+RUN echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list \
+  && curl https://bazel.build/bazel-release.pub.gpg | apt-key add -
+
+RUN apt-get update \
+  && apt-get install -y bazel
+
 ENV PATH /usr/local/go/bin:/go/bin:/google-cloud-sdk/bin:$PATH
 
 FROM runtime_deps as builder
