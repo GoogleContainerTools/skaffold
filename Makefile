@@ -82,6 +82,10 @@ install: $(GO_FILES) $(BUILD_DIR)
 integration: install $(BUILD_DIR)/$(PROJECT)
 	go test -v -tags integration $(REPOPATH)/integration -timeout 10m --remote=$(REMOTE_INTEGRATION)
 
+.PHONY: coverage
+coverage: $(BUILD_DIR)
+	go test -coverprofile=$(BUILD_DIR)/coverage.txt -covermode=atomic ./...
+
 .PHONY: release
 release: cross docs $(BUILD_DIR)/VERSION
 	docker build \

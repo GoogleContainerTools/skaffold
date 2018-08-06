@@ -10,3 +10,7 @@ before_script:
   - echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
 script:
   - make out/skaffold test
+  - make coverage
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

@@ -8,6 +8,8 @@ image::skaffold.png[Skaffold, 222,93]
 ---
 [caption="Build status", link="https://travis-ci.org/GoogleContainerTools/skaffold"]
 image::https://travis-ci.org/GoogleContainerTools/skaffold.svg?branch=master[Build Status]
+[caption="Code Coverage", link="https://codecov.io/gh/GoogleContainerTools/skaffold"]
+image::https://codecov.io/gh/GoogleContainerTools/skaffold/branch/master/graph/badge.svg[Code Coverage]
 //tag::intro[]
 
 
