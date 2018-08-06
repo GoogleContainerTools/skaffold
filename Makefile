@@ -86,6 +86,7 @@ integration: install $(BUILD_DIR)/$(PROJECT)
 release: cross docs $(BUILD_DIR)/VERSION
 	docker build \
         		-f deploy/skaffold/Dockerfile \
+        		-e VERSION=$(VERSION)		  \
         		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
         		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) .
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_RELEASE_PATH)/
