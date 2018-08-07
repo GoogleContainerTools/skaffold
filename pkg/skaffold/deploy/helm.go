@@ -222,11 +222,11 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 		for k, v := range r.SetValueTemplates {
 			t, err := util.ParseEnvTemplate(v)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to parse setValueTemplates")
+				return nil, errors.Wrap(err, "failed to parse setValueTemplates")
 			}
 			result, err := util.ExecuteEnvTemplate(t, envMap)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to generate setValueTemplates")
+				return nil, errors.Wrap(err, "failed to generate setValueTemplates")
 			}
 			setValues[k] = result
 		}

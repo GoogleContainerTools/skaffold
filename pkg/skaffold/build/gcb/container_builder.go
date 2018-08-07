@@ -121,7 +121,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 
 	remoteID, err := getBuildID(op)
 	if err != nil {
-		return "", errors.Wrapf(err, "getting build ID from op")
+		return "", errors.Wrap(err, "getting build ID from op")
 	}
 	logsObject := fmt.Sprintf("log-%s.txt", remoteID)
 	color.Default.Fprintf(out, "Logs at available at \nhttps://console.cloud.google.com/m/cloudstorage/b/%s/o/%s\n", cbBucket, logsObject)
