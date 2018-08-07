@@ -38,7 +38,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// RetrieveImage is overriden for unit testing
+// RetrieveImage is overridden for unit testing
 var RetrieveImage = retrieveImage
 
 func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*string) ([]string, error) {
