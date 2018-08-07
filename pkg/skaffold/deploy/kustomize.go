@@ -25,6 +25,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -33,13 +34,17 @@ import (
 type KustomizeDeployer struct {
 	*v1alpha2.KustomizeDeploy
 
-	kubeContext string
+	kubectl kubectl.CLI
 }
 
-func NewKustomizeDeployer(cfg *v1alpha2.KustomizeDeploy, kubeContext string) *KustomizeDeployer {
+func NewKustomizeDeployer(cfg *v1alpha2.KustomizeDeploy, kubeContext string, namespace string) *KustomizeDeployer {
 	return &KustomizeDeployer{
 		KustomizeDeploy: cfg,
-		kubeContext:     kubeContext,
+		kubectl: kubectl.CLI{
+			Namespace:   namespace,
+			KubeContext: kubeContext,
+			Flags:       cfg.Flags,
+		},
 	}
 }
 
@@ -62,7 +67,7 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 	if err != nil {
 		return nil, errors.Wrap(err, "replacing images")
 	}
-	if err := kubectl(manifestList.reader(), out, k.kubeContext, k.Flags.Global, "apply", k.Flags.Apply, "-f", "-"); err != nil {
+	if err := k.kubectl.Run(manifestList.reader(), out, "apply", k.Flags.Apply, "-f", "-"); err != nil {
 		return nil, errors.Wrap(err, "running kubectl")
 	}
 	return parseManifestsForDeploys(manifestList)
@@ -84,11 +89,11 @@ func newManifestList(r io.Reader) (manifestList, error) {
 }
 
 func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
-	manifests, err := buildManifests(k.KustomizeDeploy.KustomizePath)
+	manifests, err := buildManifests(k.KustomizePath)
 	if err != nil {
 		return errors.Wrap(err, "kustomize")
 	}
-	if err := kubectl(manifests, out, k.kubeContext, k.Flags.Global, "delete", k.Flags.Delete, "-f", "-"); err != nil {
+	if err := k.kubectl.Run(manifests, out, "delete", k.Flags.Delete, "-f", "-"); err != nil {
 		return errors.Wrap(err, "kubectl delete")
 	}
 	return nil

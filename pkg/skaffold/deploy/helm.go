@@ -176,8 +176,6 @@ func (h *HelmDeployer) deployRelease(out io.Writer, r v1alpha2.HelmRelease, buil
 		ns = h.namespace
 	} else if r.Namespace != "" {
 		ns = r.Namespace
-	} else {
-		ns = os.Getenv("SKAFFOLD_DEPLOY_NAMESPACE")
 	}
 	if ns != "" {
 		args = append(args, "--namespace", ns)

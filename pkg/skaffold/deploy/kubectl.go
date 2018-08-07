@@ -22,11 +22,11 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
-	"os/exec"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -42,18 +42,22 @@ var warner Warner = &logrusWarner{}
 type KubectlDeployer struct {
 	*v1alpha2.KubectlDeploy
 
+	kubectl            kubectl.CLI
 	workingDir         string
-	kubeContext        string
 	previousDeployment manifestList
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(workingDir string, cfg *v1alpha2.KubectlDeploy, kubeContext string) *KubectlDeployer {
+func NewKubectlDeployer(workingDir string, cfg *v1alpha2.KubectlDeploy, kubeContext string, namespace string) *KubectlDeployer {
 	return &KubectlDeployer{
 		KubectlDeploy: cfg,
 		workingDir:    workingDir,
-		kubeContext:   kubeContext,
+		kubectl: kubectl.CLI{
+			Namespace:   namespace,
+			KubeContext: kubeContext,
+			Flags:       cfg.Flags,
+		},
 	}
 }
 
@@ -89,7 +93,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return nil, nil
 	}
 
-	err = kubectl(updated.reader(), out, k.kubeContext, k.Flags.Global, "apply", k.Flags.Apply, "-f", "-")
+	err = k.kubectl.Run(updated.reader(), out, "apply", k.Flags.Apply, "-f", "-")
 	if err != nil {
 		return nil, errors.Wrap(err, "deploying manifests")
 	}
@@ -104,7 +108,7 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		return errors.Wrap(err, "reading manifests")
 	}
 
-	if err := kubectl(manifests.reader(), out, k.kubeContext, k.Flags.Global, "delete", k.Flags.Delete, "--ignore-not-found=true", "-f", "-"); err != nil {
+	if err := k.kubectl.Run(manifests.reader(), out, "delete", k.Flags.Delete, "--ignore-not-found=true", "-f", "-"); err != nil {
 		return errors.Wrap(err, "deleting manifests")
 	}
 
@@ -113,21 +117,6 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 
 func (k *KubectlDeployer) Dependencies() ([]string, error) {
 	return k.manifestFiles(k.KubectlDeploy.Manifests)
-}
-
-func kubectl(in io.Reader, out io.Writer, kubeContext string, globalFlags []string, command string, commandFlags []string, arg ...string) error {
-	args := []string{"--context", kubeContext}
-	args = append(args, globalFlags...)
-	args = append(args, command)
-	args = append(args, commandFlags...)
-	args = append(args, arg...)
-
-	cmd := exec.Command("kubectl", args...)
-	cmd.Stdin = in
-	cmd.Stdout = out
-	cmd.Stderr = out
-
-	return util.RunCmd(cmd)
 }
 
 func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
@@ -203,7 +192,7 @@ func (k *KubectlDeployer) readRemoteManifest(name string) ([]byte, error) {
 	args = append(args, name, "-o", "yaml")
 
 	var manifest bytes.Buffer
-	err := kubectl(nil, &manifest, k.kubeContext, k.Flags.Global, "get", nil, args...)
+	err := k.kubectl.Run(nil, &manifest, "get", nil, args...)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting manifest")
 	}
