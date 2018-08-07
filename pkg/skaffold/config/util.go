@@ -44,7 +44,7 @@ func GetConfig(contents []byte, useDefault bool) (util.VersionedConfig, error) {
 		cfg := schemaVersions[version]()
 		err := cfg.Parse(contents, useDefault)
 		if cfg.GetVersion() == version {
-			// Versions are same hence propogate the parse error.
+			// Versions are same hence propagate the parse error.
 			return cfg, err
 		}
 	}
