@@ -52,7 +52,7 @@ func transformToLatest(vc util.VersionedConfig, pos int) (util.VersionedConfig, 
 	transformer := transformers[config.Versions[pos]]
 	newConfig, err := transformer(vc)
 	if err != nil {
-		return nil, errors.Wrapf(err, "transforming skaffold config")
+		return nil, errors.Wrap(err, "transforming skaffold config")
 	}
 	return transformToLatest(newConfig, pos+1)
 }

@@ -32,7 +32,6 @@ import (
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 // Client is for tests
@@ -105,7 +104,7 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 					}
 
 					if a.podSelector.Select(pod) {
-						go a.streamLogs(ctx, client, pod)
+						go a.streamLogs(ctx, pod)
 					}
 				}
 			}
@@ -115,7 +114,7 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 	return nil
 }
 
-func (a *LogAggregator) streamLogs(ctx context.Context, client corev1.PodsGetter, pod *v1.Pod) error {
+func (a *LogAggregator) streamLogs(ctx context.Context, pod *v1.Pod) {
 	for _, container := range pod.Status.ContainerStatuses {
 		containerID := container.ContainerID
 		if containerID == "" || !container.Ready {
@@ -151,8 +150,6 @@ func (a *LogAggregator) streamLogs(ctx context.Context, client corev1.PodsGetter
 			a.trackedContainers.remove(containerID)
 		}()
 	}
-
-	return nil
 }
 
 func prefix(pod *v1.Pod, container v1.ContainerStatus) string {
