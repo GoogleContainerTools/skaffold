@@ -123,12 +123,8 @@ func TestRun(t *testing.T) {
 		{
 			description: "bazel example",
 			args:        []string{"run"},
-			pods: []testObject{
-				{
-					name: "bazel",
-				},
-			},
-			dir: "../examples/bazel",
+			pods:        []string{"bazel"},
+			dir:         "../examples/bazel",
 		},
 		{
 			description: "kaniko example",
