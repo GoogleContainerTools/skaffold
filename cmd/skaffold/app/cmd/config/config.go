@@ -24,5 +24,5 @@ type ContextConfig struct {
 }
 
 type ContextValues struct {
-	DefaultRepo string `yaml:"default-repo,omitempty"`
+	// config values are added here
 }

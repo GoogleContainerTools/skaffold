@@ -17,15 +17,12 @@ limitations under the License.
 package config
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
@@ -33,19 +30,23 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+const defaultConfigLocation = ".skaffold/config"
+
 func resolveKubectlContext() {
 	if kubectx != "" {
 		return
 	}
-	var buf bytes.Buffer
-	w := bufio.NewWriter(&buf)
-	k := kubectl.CLI{}
 
-	if err := k.Run(nil, w, "config", nil, "current-context"); err != nil {
+	context, err := context.CurrentContext()
+	if err != nil {
 		logrus.Warn(errors.Wrap(err, "retrieving current kubectl context"))
 		kubectx = "default"
 	}
-	kubectx = strings.Replace(buf.String(), "\n", "", -1)
+	if context == "" {
+		logrus.Infof("no context currently set, falling back to default")
+		kubectx = "default"
+	}
+	kubectx = context
 }
 
 func resolveConfigFile() error {
@@ -60,10 +61,11 @@ func resolveConfigFile() error {
 			configFile = absPath
 		}
 	} else {
-		configFile, err = homedir.Expand(defaultConfigLocation)
+		home, err := homedir.Dir()
 		if err != nil {
-			return err
+			return errors.Wrap(err, "retrieving home directory")
 		}
+		configFile = filepath.Join(home, defaultConfigLocation)
 	}
 	_, err = os.Stat(configFile)
 	// TODO(nkubala): create default config?
