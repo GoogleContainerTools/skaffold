@@ -18,54 +18,55 @@ package watch
 
 import (
 	"os"
+	"time"
 
 	"github.com/pkg/errors"
 )
 
-type fileMap map[string]os.FileInfo
+type fileMap struct {
+	count        int
+	lastModified time.Time
+}
 
 func stat(deps func() ([]string, error)) (fileMap, error) {
 	paths, err := deps()
 	if err != nil {
-		return nil, errors.Wrap(err, "listing files")
+		return fileMap{}, errors.Wrap(err, "listing files")
 	}
 
-	fm := make(fileMap)
+	last, err := lastModified(paths)
+	if err != nil {
+		return fileMap{}, err
+	}
+
+	return fileMap{
+		count:        len(paths),
+		lastModified: last,
+	}, nil
+}
+
+func lastModified(paths []string) (time.Time, error) {
+	var last time.Time
 
 	for _, path := range paths {
-		fm[path], err = os.Stat(path)
+		stat, err := os.Stat(path)
 		if err != nil {
-			return nil, errors.Wrapf(err, "stating file [%s]", path)
+			return last, errors.Wrapf(err, "unable to stat file %s: %v")
+		}
+
+		if stat.IsDir() {
+			continue // Ignore time changes on directories
+		}
+
+		modTime := stat.ModTime()
+		if modTime.After(last) {
+			last = modTime
 		}
 	}
 
-	return fm, nil
+	return last, nil
 }
 
 func hasChanged(prev, curr fileMap) bool {
-	if len(prev) != len(curr) {
-		return true
-	}
-
-	for k, prevV := range prev {
-		currV, ok := curr[k]
-		if !ok {
-			// Deleted
-			return true
-		}
-		if prevV.ModTime() != currV.ModTime() {
-			// Ignore directory time changes
-			if !currV.IsDir() && !prevV.IsDir() {
-				return true
-			}
-		}
-	}
-	for k := range curr {
-		if _, ok := prev[k]; !ok {
-			// Created
-			return true
-		}
-	}
-
-	return false
+	return prev.count != curr.count || !prev.lastModified.Equal(curr.lastModified)
 }
