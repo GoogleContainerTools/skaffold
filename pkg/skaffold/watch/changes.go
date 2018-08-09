@@ -31,6 +31,7 @@ func stat(deps func() ([]string, error)) (fileMap, error) {
 	}
 
 	fm := make(fileMap)
+
 	for _, path := range paths {
 		fm[path], err = os.Stat(path)
 		if err != nil {
