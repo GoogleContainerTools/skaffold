@@ -120,7 +120,7 @@ func TestParseConfig(t *testing.T) {
 			description: "Complete config",
 			config:      completeConfig,
 			expected: config(
-				withGCBBuild("ID",
+				withGoogleCloudBuild("ID",
 					withTagPolicy(v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}}),
 					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
 					withBazelArtifact("image2", "./examples/app2", "//:example.tar"),
@@ -179,9 +179,12 @@ func withLocalBuild(ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldConfig) {
 	}
 }
 
-func withGCBBuild(id string, ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldConfig) {
+func withGoogleCloudBuild(id string, ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldConfig) {
 	return func(cfg *SkaffoldConfig) {
-		b := v1alpha2.BuildConfig{BuildType: v1alpha2.BuildType{GoogleCloudBuild: &v1alpha2.GoogleCloudBuild{ProjectID: id}}}
+		b := v1alpha2.BuildConfig{BuildType: v1alpha2.BuildType{GoogleCloudBuild: &v1alpha2.GoogleCloudBuild{
+			ProjectID:   id,
+			DockerImage: "gcr.io/cloud-builders/docker",
+		}}}
 		for _, op := range ops {
 			op(&b)
 		}

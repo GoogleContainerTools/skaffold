@@ -40,7 +40,7 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-// Build builds a list of artifacts with GCB.
+// Build builds a list of artifacts with Google Cloud Build.
 func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
 	return build.InParallel(ctx, out, tagger, artifacts, b.buildArtifact)
 }
@@ -63,15 +63,6 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	}
 	defer c.Close()
 
-	// need to format build args as strings to pass to container builder docker
-	var buildArgs []string
-	for k, v := range artifact.DockerArtifact.BuildArgs {
-		if v != nil {
-			buildArgs = append(buildArgs, []string{"--build-arg", fmt.Sprintf("%s=%s", k, *v)}...)
-		}
-	}
-	logrus.Debugf("Build args: %s", buildArgs)
-
 	projectID, err := b.guessProjectID(artifact)
 	if err != nil {
 		return "", errors.Wrap(err, "getting projectID")
@@ -92,28 +83,8 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "uploading source tarball")
 	}
 
-	args := append([]string{"build", "--tag", artifact.ImageName, "-f", artifact.DockerArtifact.DockerfilePath}, buildArgs...)
-	args = append(args, ".")
-	call := cbclient.Projects.Builds.Create(projectID, &cloudbuild.Build{
-		LogsBucket: cbBucket,
-		Source: &cloudbuild.Source{
-			StorageSource: &cloudbuild.StorageSource{
-				Bucket: cbBucket,
-				Object: buildObject,
-			},
-		},
-		Steps: []*cloudbuild.BuildStep{
-			{
-				Name: "gcr.io/cloud-builders/docker",
-				Args: args,
-			},
-		},
-		Images: []string{artifact.ImageName},
-		Options: &cloudbuild.BuildOptions{
-			DiskSizeGb:  b.DiskSizeGb,
-			MachineType: b.MachineType,
-		},
-	})
+	desc := b.buildDescription(artifact, cbBucket, buildObject)
+	call := cbclient.Projects.Builds.Create(projectID, desc)
 	op, err := call.Context(ctx).Do()
 	if err != nil {
 		return "", errors.Wrap(err, "could not create build")
@@ -187,6 +158,32 @@ watch:
 	return newTag, nil
 }
 
+func (b *Builder) buildDescription(artifact *v1alpha2.Artifact, bucket, object string) *cloudbuild.Build {
+	args := append([]string{"build", "--tag", artifact.ImageName, "-f", artifact.DockerArtifact.DockerfilePath})
+	args = append(args, docker.GetBuildArgs(artifact.DockerArtifact)...)
+	args = append(args, ".")
+
+	return &cloudbuild.Build{
+		LogsBucket: bucket,
+		Source: &cloudbuild.Source{
+			StorageSource: &cloudbuild.StorageSource{
+				Bucket: bucket,
+				Object: object,
+			},
+		},
+		Steps: []*cloudbuild.BuildStep{{
+			Name: b.DockerImage,
+			Args: args,
+		}},
+		Images: []string{artifact.ImageName},
+		Options: &cloudbuild.BuildOptions{
+			DiskSizeGb:  b.DiskSizeGb,
+			MachineType: b.MachineType,
+		},
+		Timeout: b.Timeout,
+	}
+}
+
 func getBuildID(op *cloudbuild.Operation) (string, error) {
 	if op.Metadata == nil {
 		return "", errors.New("missing Metadata in operation")
@@ -219,6 +216,7 @@ func (b *Builder) getLogs(ctx context.Context, offset int64, bucket, objectName 
 	if err != nil {
 		if gerr, ok := err.(*googleapi.Error); ok {
 			switch gerr.Code {
+			// case http.
 			case 404, 416, 429, 503:
 				logrus.Debugf("Status Code: %d, %s", gerr.Code, gerr.Body)
 				return nil, nil

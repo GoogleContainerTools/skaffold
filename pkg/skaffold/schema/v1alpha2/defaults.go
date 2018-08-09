@@ -28,6 +28,7 @@ import (
 
 func (c *SkaffoldConfig) setDefaultValues() error {
 	c.defaultToLocalBuild()
+	c.setDefaultCloudBuildDockerImage()
 	c.setDefaultTagger()
 	c.setDefaultKustomizePath()
 	c.setDefaultKubectlManifests()
@@ -55,6 +56,17 @@ func (c *SkaffoldConfig) defaultToLocalBuild() {
 
 	logrus.Debugf("Defaulting build type to local build")
 	c.Build.BuildType.LocalBuild = &LocalBuild{}
+}
+
+func (c *SkaffoldConfig) setDefaultCloudBuildDockerImage() {
+	cloudBuild := c.Build.BuildType.GoogleCloudBuild
+	if cloudBuild == nil {
+		return
+	}
+
+	if cloudBuild.DockerImage == "" {
+		cloudBuild.DockerImage = constants.DefaultCloudBuildDockerImage
+	}
 }
 
 func (c *SkaffoldConfig) setDefaultTagger() {
