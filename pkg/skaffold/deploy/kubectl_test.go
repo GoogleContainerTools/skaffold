@@ -20,9 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"sort"
 	"testing"
 
@@ -78,7 +75,7 @@ func TestKubectlDeploy(t *testing.T) {
 			description: "parameter mismatch",
 			shouldErr:   true,
 			cfg: &v1alpha2.KubectlDeploy{
-				Manifests: []string{"test/deployment.yaml"},
+				Manifests: []string{"deployment.yaml"},
 			},
 			builds: []build.Artifact{
 				{
@@ -91,7 +88,7 @@ func TestKubectlDeploy(t *testing.T) {
 			description: "missing manifest file",
 			shouldErr:   true,
 			cfg: &v1alpha2.KubectlDeploy{
-				Manifests: []string{"test/deployment.yaml"},
+				Manifests: []string{"deployment.yaml"},
 			},
 			builds: []build.Artifact{
 				{
@@ -103,7 +100,7 @@ func TestKubectlDeploy(t *testing.T) {
 		{
 			description: "deploy success",
 			cfg: &v1alpha2.KubectlDeploy{
-				Manifests: []string{"test/deployment.yaml"},
+				Manifests: []string{"deployment.yaml"},
 			},
 			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace apply -f -", nil),
 			builds: []build.Artifact{
@@ -117,7 +114,7 @@ func TestKubectlDeploy(t *testing.T) {
 			description: "deploy command error",
 			shouldErr:   true,
 			cfg: &v1alpha2.KubectlDeploy{
-				Manifests: []string{"test/deployment.yaml"},
+				Manifests: []string{"deployment.yaml"},
 			},
 			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace apply -f -", fmt.Errorf("")),
 			builds: []build.Artifact{
@@ -131,7 +128,7 @@ func TestKubectlDeploy(t *testing.T) {
 			description: "additional flags",
 			shouldErr:   true,
 			cfg: &v1alpha2.KubectlDeploy{
-				Manifests: []string{"test/deployment.yaml"},
+				Manifests: []string{"deployment.yaml"},
 				Flags: v1alpha2.KubectlFlags{
 					Global: []string{"-v=0"},
 					Apply:  []string{"--overwrite=true"},
@@ -148,11 +145,10 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 	}
 
-	tmp, cleanup := testutil.TempDir(t)
+	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	os.MkdirAll(filepath.Join(tmp, "test"), 0750)
-	ioutil.WriteFile(filepath.Join(tmp, "test", "deployment.yaml"), []byte(deploymentYAML), 0644)
+	tmpDir.Write("deployment.yaml", deploymentYAML)
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
@@ -161,7 +157,7 @@ func TestKubectlDeploy(t *testing.T) {
 				util.DefaultExecCommand = test.command
 			}
 
-			k := NewKubectlDeployer(tmp, test.cfg, testKubeContext, testNamespace)
+			k := NewKubectlDeployer(tmpDir.Root(), test.cfg, testKubeContext, testNamespace)
 			_, err := k.Deploy(context.Background(), &bytes.Buffer{}, test.builds)
 
 			testutil.CheckError(t, test.shouldErr, err)
@@ -179,14 +175,14 @@ func TestKubectlCleanup(t *testing.T) {
 		{
 			description: "cleanup success",
 			cfg: &v1alpha2.KubectlDeploy{
-				Manifests: []string{"test/deployment.yaml"},
+				Manifests: []string{"deployment.yaml"},
 			},
 			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -", nil),
 		},
 		{
 			description: "cleanup error",
 			cfg: &v1alpha2.KubectlDeploy{
-				Manifests: []string{"test/deployment.yaml"},
+				Manifests: []string{"deployment.yaml"},
 			},
 			command:   testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -", errors.New("BUG")),
 			shouldErr: true,
@@ -194,7 +190,7 @@ func TestKubectlCleanup(t *testing.T) {
 		{
 			description: "additional flags",
 			cfg: &v1alpha2.KubectlDeploy{
-				Manifests: []string{"test/deployment.yaml"},
+				Manifests: []string{"deployment.yaml"},
 				Flags: v1alpha2.KubectlFlags{
 					Global: []string{"-v=0"},
 					Apply:  []string{"ignored"},
@@ -205,11 +201,10 @@ func TestKubectlCleanup(t *testing.T) {
 		},
 	}
 
-	tmp, cleanup := testutil.TempDir(t)
+	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	os.MkdirAll(filepath.Join(tmp, "test"), 0750)
-	ioutil.WriteFile(filepath.Join(tmp, "test", "deployment.yaml"), []byte(deploymentYAML), 0644)
+	tmpDir.Write("deployment.yaml", deploymentYAML)
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
@@ -218,7 +213,7 @@ func TestKubectlCleanup(t *testing.T) {
 				util.DefaultExecCommand = test.command
 			}
 
-			k := NewKubectlDeployer(tmp, test.cfg, testKubeContext, testNamespace)
+			k := NewKubectlDeployer(tmpDir.Root(), test.cfg, testKubeContext, testNamespace)
 			err := k.Cleanup(context.Background(), &bytes.Buffer{})
 
 			testutil.CheckError(t, test.shouldErr, err)

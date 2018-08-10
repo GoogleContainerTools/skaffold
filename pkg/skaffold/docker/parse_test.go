@@ -18,8 +18,6 @@ package docker
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -339,23 +337,22 @@ func TestGetDependencies(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			tmpDir, cleanup := testutil.TempDir(t)
+			tmpDir, cleanup := testutil.NewTempDir(t)
 			defer cleanup()
 
-			os.MkdirAll(filepath.Join(tmpDir, "docker"), 0750)
 			for _, file := range []string{"docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file"} {
-				ioutil.WriteFile(filepath.Join(tmpDir, file), []byte(""), 0644)
+				tmpDir.Write(file, "")
 			}
 
-			workspace := filepath.Join(tmpDir, test.workspace)
 			if !test.badReader {
-				ioutil.WriteFile(filepath.Join(workspace, "Dockerfile"), []byte(test.dockerfile), 0644)
+				tmpDir.Write(test.workspace+"/Dockerfile", test.dockerfile)
 			}
 
 			if test.ignore != "" {
-				ioutil.WriteFile(filepath.Join(workspace, ".dockerignore"), []byte(test.ignore), 0644)
+				tmpDir.Write(test.workspace+"/.dockerignore", test.ignore)
 			}
 
+			workspace := tmpDir.Path(test.workspace)
 			deps, err := GetDependencies(workspace, &v1alpha2.DockerArtifact{
 				BuildArgs:      test.buildArgs,
 				DockerfilePath: "Dockerfile",

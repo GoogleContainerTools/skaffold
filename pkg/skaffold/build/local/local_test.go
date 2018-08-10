@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -61,10 +60,10 @@ func TestLocalRun(t *testing.T) {
 	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
 	defer restore()
 
-	tmp, cleanup := testutil.TempDir(t)
+	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	ioutil.WriteFile(filepath.Join(tmp, "Dockerfile"), []byte(""), 0640)
+	tmpDir.Write("Dockerfile", "")
 
 	var tests = []struct {
 		description  string
@@ -86,7 +85,7 @@ func TestLocalRun(t *testing.T) {
 			artifacts: []*v1alpha2.Artifact{
 				{
 					ImageName: "gcr.io/test/image",
-					Workspace: tmp,
+					Workspace: tmpDir.Root(),
 					ArtifactType: v1alpha2.ArtifactType{
 						DockerArtifact: &v1alpha2.DockerArtifact{},
 					},
@@ -111,7 +110,7 @@ func TestLocalRun(t *testing.T) {
 			artifacts: []*v1alpha2.Artifact{
 				{
 					ImageName: "gcr.io/test/image",
-					Workspace: tmp,
+					Workspace: tmpDir.Root(),
 					ArtifactType: v1alpha2.ArtifactType{
 						DockerArtifact: &v1alpha2.DockerArtifact{},
 					},

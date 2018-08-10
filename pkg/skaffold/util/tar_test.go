@@ -21,16 +21,13 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func Test_addFileToTar(t *testing.T) {
-	// Setup a few files in a tempdir. We can't use afero here because it doesn't support symlinks.
-	testDir, cleanup := testutil.TempDir(t)
+	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
 	files := map[string]string{
@@ -38,15 +35,15 @@ func Test_addFileToTar(t *testing.T) {
 		"bar/bat": "baz2",
 		"bar/baz": "baz3",
 	}
-	if err := setupFiles(testDir, files); err != nil {
-		t.Fatalf("Error setting up fs: %s", err)
+	for p, c := range files {
+		tmpDir.Write(p, c)
 	}
 
 	// Add all the files to a tar.
 	var b bytes.Buffer
 	tw := tar.NewWriter(&b)
 	for p := range files {
-		path := filepath.Join(testDir, p)
+		path := tmpDir.Path(p)
 		if err := addFileToTar(path, p, tw); err != nil {
 			t.Fatalf("addFileToTar() error = %v", err)
 		}
@@ -75,17 +72,4 @@ func Test_addFileToTar(t *testing.T) {
 			t.Errorf("File contents don't match. %s != %s", actualContents, expectedContents)
 		}
 	}
-}
-
-func setupFiles(path string, files map[string]string) error {
-	for p, c := range files {
-		path := filepath.Join(path, p)
-		if err := os.MkdirAll(filepath.Dir(path), 0750); err != nil {
-			return err
-		}
-		if err := ioutil.WriteFile(path, []byte(c), 0644); err != nil {
-			return err
-		}
-	}
-	return nil
 }

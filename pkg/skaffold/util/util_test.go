@@ -17,9 +17,6 @@ limitations under the License.
 package util
 
 import (
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -64,13 +61,11 @@ func TestSupportedKubernetesFormats(t *testing.T) {
 }
 
 func TestExpandPathsGlob(t *testing.T) {
-	tmp, cleanup := testutil.TempDir(t)
+	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	os.MkdirAll(filepath.Join(tmp, "dir", "sub_dir"), 0700)
-	os.MkdirAll(filepath.Join(tmp, "dir_b", "sub_dir_b"), 0700)
-	ioutil.WriteFile(filepath.Join(tmp, "dir_b", "sub_dir_b", "file"), []byte(""), 0650)
-	ioutil.WriteFile(filepath.Join(tmp, "dir", "sub_dir", "file"), []byte(""), 0650)
+	tmpDir.Write("dir/sub_dir/file", "")
+	tmpDir.Write("dir_b/sub_dir_b/file", "")
 
 	var tests = []struct {
 		description string
@@ -81,17 +76,17 @@ func TestExpandPathsGlob(t *testing.T) {
 		{
 			description: "match exact filename",
 			in:          []string{"dir/sub_dir/file"},
-			out:         []string{filepath.Join(tmp, "dir", "sub_dir", "file")},
+			out:         []string{tmpDir.Path("dir/sub_dir/file")},
 		},
 		{
 			description: "match leaf directory glob",
 			in:          []string{"dir/sub_dir/*"},
-			out:         []string{filepath.Join(tmp, "dir", "sub_dir", "file")},
+			out:         []string{tmpDir.Path("dir/sub_dir/file")},
 		},
 		{
 			description: "match top level glob",
 			in:          []string{"dir*"},
-			out:         []string{filepath.Join(tmp, "dir", "sub_dir", "file"), filepath.Join(tmp, "dir_b", "sub_dir_b", "file")},
+			out:         []string{tmpDir.Path("dir/sub_dir/file"), tmpDir.Path("dir_b/sub_dir_b/file")},
 		},
 		{
 			description: "error unmatched glob",
@@ -102,7 +97,7 @@ func TestExpandPathsGlob(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
-			actual, err := ExpandPathsGlob(tmp, tt.in)
+			actual, err := ExpandPathsGlob(tmpDir.Root(), tt.in)
 
 			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.out, actual)
 		})
@@ -110,25 +105,12 @@ func TestExpandPathsGlob(t *testing.T) {
 }
 
 func TestDefaultConfigFilenameAlternate(t *testing.T) {
-	testDir, cleanup := testutil.TempDir(t)
+	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	files := map[string]string{
-		"skaffold.yml": "foo",
-	}
-	if err := setupFiles(testDir, files); err != nil {
-		t.Fatalf("Error setting up fs: %s", err)
-	}
+	tmpDir.Write("skaffold.yml", "foo")
 
-	for file := range files {
-		path := filepath.Join(testDir, "skaffold.yaml")
-		expectedContents := files[file]
-		actualContents, err := ReadConfiguration(path)
-		if err != nil {
-			t.Errorf("Error '%s' reading configuration file %s", err, path)
-		}
-		if expectedContents != string(actualContents) {
-			t.Errorf("File contents don't match. %s != %s", actualContents, expectedContents)
-		}
-	}
+	content, err := ReadConfiguration(tmpDir.Path("skaffold.yaml"))
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, []byte("foo"), content)
 }
