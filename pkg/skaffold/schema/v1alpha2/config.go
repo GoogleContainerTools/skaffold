@@ -119,9 +119,10 @@ type DeployType struct {
 
 // KubectlDeploy contains the configuration needed for deploying with `kubectl apply`
 type KubectlDeploy struct {
-	Manifests       []string     `yaml:"manifests,omitempty"`
-	RemoteManifests []string     `yaml:"remoteManifests,omitempty"`
-	Flags           KubectlFlags `yaml:"flags,omitempty"`
+	Manifests       []string          `yaml:"manifests,omitempty"`
+	RemoteManifests []string          `yaml:"remoteManifests,omitempty"`
+	Flags           KubectlFlags      `yaml:"flags,omitempty"`
+	Values          map[string]string `yaml:"values,omitempty"`
 }
 
 // KubectlFlags describes additional options flags that are passed on the command
