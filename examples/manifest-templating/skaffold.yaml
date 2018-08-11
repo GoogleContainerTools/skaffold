@@ -1,0 +1,19 @@
+apiVersion: skaffold/v1alpha2
+kind: Config
+build:
+  artifacts:
+  - imageName: gcr.io/k8s-skaffold/skaffold-example
+deploy:
+  kubectl:
+    manifests:
+      - k8s-*
+    values:
+      Name: my-pod
+profiles:
+  - name: prod
+    deploy:
+      kubectl:
+        manifests:
+          - k8s-*
+        values:
+          Name: my-production-pod

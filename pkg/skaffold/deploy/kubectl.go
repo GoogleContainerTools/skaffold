@@ -79,6 +79,11 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return nil, nil
 	}
 
+	manifests, err = manifests.substituteVariables(k.Values)
+	if err != nil {
+		return nil, errors.Wrap(err, "substituting variables in manifests")
+	}
+
 	manifests, err = manifests.replaceImages(builds)
 	if err != nil {
 		return nil, errors.Wrap(err, "replacing images in manifests")
@@ -245,6 +250,40 @@ func (l *manifestList) diff(manifests manifestList) manifestList {
 
 func (l *manifestList) reader() io.Reader {
 	return strings.NewReader(l.String())
+}
+
+func (l *manifestList) substituteVariables(values map[string]string) (manifestList, error) {
+	var updatedManifests manifestList
+
+	for _, manifest := range *l {
+		// replace vars
+		tmpl, err := util.ParseEnvTemplate(string(manifest[:]))
+		if err != nil {
+			return nil, errors.Wrap(err, "parsing manifest template")
+		}
+
+		rendered, err := util.ExecuteEnvTemplate(tmpl, values)
+		if err != nil {
+			return nil, errors.Wrap(err, "substituting variables in manifest template")
+		}
+
+		m := make(map[interface{}]interface{})
+		if err := yaml.Unmarshal([]byte(rendered), &m); err != nil {
+			return nil, errors.Wrap(err, "reading kubernetes YAML")
+		}
+
+		if len(m) == 0 {
+			continue
+		}
+
+		updatedManifest, err := yaml.Marshal(m)
+		if err != nil {
+			return nil, errors.Wrap(err, "marshalling yaml")
+		}
+
+		updatedManifests = append(updatedManifests, updatedManifest)
+	}
+	return updatedManifests, nil
 }
 
 func (l *manifestList) replaceImages(builds []build.Artifact) (manifestList, error) {
