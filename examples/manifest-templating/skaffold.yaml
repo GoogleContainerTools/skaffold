@@ -10,7 +10,10 @@ deploy:
     values:
       Name: my-pod
 profiles:
-  - name: gcb
-    build:
-      googleCloudBuild:
-        projectId: k8s-skaffold
+  - name: prod
+    deploy:
+      kubectl:
+        manifests:
+          - k8s-*
+        values:
+          Name: my-production-pod
