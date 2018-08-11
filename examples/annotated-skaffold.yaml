@@ -53,6 +53,8 @@ build:
       cacheFrom:
       - image1
       - image2
+      # Dockerfile target name to build.
+      # target: stageName
 
     # bazel requires bazel CLI to be installed and the artifacts sources to
     # contain Bazel configuration files.

@@ -210,6 +210,7 @@ type DockerArtifact struct {
 	DockerfilePath string             `yaml:"dockerfilePath,omitempty"`
 	BuildArgs      map[string]*string `yaml:"buildArgs,omitempty"`
 	CacheFrom      []string           `yaml:"cacheFrom,omitempty"`
+	Target         string             `yaml:"target,omitempty"`
 }
 
 type BazelArtifact struct {

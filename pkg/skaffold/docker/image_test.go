@@ -171,18 +171,53 @@ func TestDigest(t *testing.T) {
 }
 
 func TestGetBuildArgs(t *testing.T) {
-	artifact := &v1alpha2.DockerArtifact{
-		BuildArgs: map[string]*string{
-			"key1": util.StringPtr("value1"),
-			"key2": nil,
+	tests := []struct {
+		description string
+		artifact    *v1alpha2.DockerArtifact
+		want        []string
+	}{
+		{
+			description: "build args",
+			artifact: &v1alpha2.DockerArtifact{
+				BuildArgs: map[string]*string{
+					"key1": util.StringPtr("value1"),
+					"key2": nil,
+				},
+			},
+			want: []string{"--build-arg", "key1=value1", "--build-arg", "key2"},
+		},
+		{
+			description: "cache from",
+			artifact: &v1alpha2.DockerArtifact{
+				CacheFrom: []string{"gcr.io/foo/bar", "baz:latest"},
+			},
+			want: []string{"--cache-from", "gcr.io/foo/bar", "--cache-from", "baz:latest"},
+		},
+		{
+			description: "target",
+			artifact: &v1alpha2.DockerArtifact{
+				Target: "stage1",
+			},
+			want: []string{"--target", "stage1"},
+		},
+		{
+			description: "all",
+			artifact: &v1alpha2.DockerArtifact{
+				BuildArgs: map[string]*string{
+					"key1": util.StringPtr("value1"),
+				},
+				CacheFrom: []string{"foo"},
+				Target:    "stage1",
+			},
+			want: []string{"--build-arg", "key1=value1", "--cache-from", "foo", "--target", "stage1"},
 		},
 	}
-
-	arg := GetBuildArgs(artifact)
-	expected := []string{"--build-arg", "key1=value1", "--build-arg", "key2"}
-
-	if diff := cmp.Diff(arg, expected); diff != "" {
-		t.Errorf("%T differ (-got, +want): %s", expected, diff)
-		return
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			result := GetBuildArgs(tt.artifact)
+			if diff := cmp.Diff(result, tt.want); diff != "" {
+				t.Errorf("%T differ (-got, +want): %s", tt.want, diff)
+			}
+		})
 	}
 }
