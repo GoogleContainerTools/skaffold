@@ -39,52 +39,59 @@ func NewCmdSet(out io.Writer) *cobra.Command {
 		},
 	}
 	AddConfigFlags(cmd)
+	AddSetFlags(cmd)
 	return cmd
 }
 
 func setConfigValue(name string, value interface{}) error {
+	cfg, err := getConfigForKubectx()
+	if err != nil {
+		return err
+	}
+
+	cfgValue := reflect.Indirect(reflect.ValueOf(cfg))
+	var fieldName string
+	for i := 0; i < cfgValue.NumField(); i++ {
+		fieldType := reflect.TypeOf(*cfg).Field(i)
+		fmt.Printf("fieldType: %+v\n", fieldType)
+		for _, tag := range strings.Split(fieldType.Tag.Get("yaml"), ",") {
+			if tag == name {
+				fieldName = fieldType.Name
+			}
+		}
+	}
+	if fieldName == "" {
+		return fmt.Errorf("%s is not a valid config field", name)
+	}
+	fieldValue := cfgValue.FieldByName(fieldName)
+
+	fieldType := fieldValue.Type()
+	val := reflect.ValueOf(value)
+
+	if fieldType != val.Type() {
+		return fmt.Errorf("%s is not a valid value for field %s", value, fieldName)
+	}
+
+	reflect.ValueOf(cfg).Elem().FieldByName(fieldName).Set(val)
+
+	return writeConfig(cfg)
+}
+
+func writeConfig(cfg *ContextConfig) error {
 	configs, err := readConfig()
 	if err != nil {
 		return err
 	}
-	var cfg *ContextConfig
-	for _, contextCfg := range *configs {
-		if kubectx == "all" || contextCfg.Context == kubectx {
-			cfg = contextCfg
-			cfgValue := reflect.ValueOf(cfg.Values)
-			var fieldName string
-			for i := 0; i < cfgValue.NumField(); i++ {
-				fieldType := reflect.TypeOf(cfg.Values).Field(i)
-				for _, tag := range strings.Split(fieldType.Tag.Get("yaml"), ",") {
-					if tag == name {
-						fieldName = fieldType.Name
-					}
-				}
+	if global {
+		configs.Global = cfg
+	} else {
+		for i, contextCfg := range configs.ContextConfigs {
+			if contextCfg.Kubectx == kubectx {
+				configs.ContextConfigs[i] = cfg
 			}
-			if fieldName == "" {
-				return fmt.Errorf("%s is not a valid config field", name)
-			}
-			fieldValue := cfgValue.FieldByName(fieldName)
-
-			fieldType := fieldValue.Type()
-			val := reflect.ValueOf(value)
-
-			if fieldType != val.Type() {
-				return fmt.Errorf("%s is not a valid value for field %s", value, fieldName)
-			}
-
-			reflect.ValueOf(&cfg.Values).Elem().FieldByName(fieldName).Set(val)
 		}
 	}
-	if cfg == nil {
-		return fmt.Errorf("no config entry found for kubectx %s", kubectx)
-	}
-
-	return writeConfig(configs)
-}
-
-func writeConfig(cfg *Config) error {
-	contents, err := yaml.Marshal(cfg)
+	contents, err := yaml.Marshal(configs)
 	if err != nil {
 		return errors.Wrap(err, "marshaling config")
 	}

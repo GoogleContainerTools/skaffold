@@ -21,8 +21,17 @@ import (
 )
 
 var configFile, kubectx string
+var showAll, global bool
 
 func AddConfigFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&configFile, "config", "c", "", "path to skaffold config")
 	cmd.Flags().StringVarP(&kubectx, "kubectx", "k", "", "kubectl context to set values against")
+}
+
+func AddListFlags(cmd *cobra.Command) {
+	cmd.Flags().BoolVarP(&showAll, "all", "a", false, "show values for all kubecontexts")
+}
+
+func AddSetFlags(cmd *cobra.Command) {
+	cmd.Flags().BoolVarP(&global, "global", "g", false, "set value for global config")
 }

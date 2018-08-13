@@ -16,13 +16,12 @@ limitations under the License.
 
 package config
 
-type Config = []*ContextConfig
-
-type ContextConfig struct {
-	Context string        `yaml:"context"`
-	Values  ContextValues `yaml:"values"`
+type Config struct {
+	Global         *ContextConfig
+	ContextConfigs []*ContextConfig `yaml:"kubeContexts"`
 }
 
-type ContextValues struct {
-	// config values are added here
+type ContextConfig struct {
+	Kubectx     string `yaml:"kubectx,omitempty"`
+	DefaultRepo string `yaml:"default-repo"`
 }

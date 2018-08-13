@@ -35,17 +35,30 @@ func NewCmdList(out io.Writer) *cobra.Command {
 		},
 	}
 	AddConfigFlags(cmd)
+	AddListFlags(cmd)
 	return cmd
 }
 
 func runList(out io.Writer) error {
-	configs, err := getConfigsForKubectx()
-	if err != nil {
-		return err
-	}
-	configYaml, err := yaml.Marshal(&configs)
-	if err != nil {
-		return errors.Wrap(err, "marshaling config")
+	var configYaml []byte
+	if showAll {
+		cfg, err := readConfig()
+		if err != nil {
+			return err
+		}
+		configYaml, err = yaml.Marshal(&cfg)
+		if err != nil {
+			return errors.Wrap(err, "marshaling config")
+		}
+	} else {
+		configs, err := getConfigForKubectx()
+		if err != nil {
+			return err
+		}
+		configYaml, err = yaml.Marshal(&configs)
+		if err != nil {
+			return errors.Wrap(err, "marshaling config")
+		}
 	}
 
 	out.Write(configYaml)

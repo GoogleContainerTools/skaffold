@@ -91,17 +91,20 @@ func readConfig() (*Config, error) {
 	return &config, nil
 }
 
-func getConfigsForKubectx() (*Config, error) {
-	configs, err := readConfig()
+// return the specific config to be modified based on the provided kubectx.
+// either returns the config corresponding to the provided or current context,
+// or the global config if that is specified (or if no current context is set).
+func getConfigForKubectx() (*ContextConfig, error) {
+	cfg, err := readConfig()
 	if err != nil {
 		return nil, err
 	}
-	if kubectx == "all" {
-		return configs, nil
+	if global {
+		return cfg.Global, nil
 	}
-	for _, cfg := range *configs {
-		if cfg.Context == kubectx {
-			return &[]*ContextConfig{cfg}, nil
+	for _, contextCfg := range cfg.ContextConfigs {
+		if contextCfg.Kubectx == kubectx {
+			return contextCfg, nil
 		}
 	}
 	return nil, fmt.Errorf("no config entry found for kubectx %s", kubectx)
