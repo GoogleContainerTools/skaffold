@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"reflect"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -49,30 +47,16 @@ func setConfigValue(name string, value interface{}) error {
 		return err
 	}
 
-	cfgValue := reflect.Indirect(reflect.ValueOf(cfg))
-	var fieldName string
-	for i := 0; i < cfgValue.NumField(); i++ {
-		fieldType := reflect.TypeOf(*cfg).Field(i)
-		fmt.Printf("fieldType: %+v\n", fieldType)
-		for _, tag := range strings.Split(fieldType.Tag.Get("yaml"), ",") {
-			if tag == name {
-				fieldName = fieldType.Name
-			}
+	switch name {
+	case "default-repo":
+		repoValue, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("provided value %v not a valid value for field default-repo", value)
 		}
-	}
-	if fieldName == "" {
+		cfg.DefaultRepo = repoValue
+	default:
 		return fmt.Errorf("%s is not a valid config field", name)
 	}
-	fieldValue := cfgValue.FieldByName(fieldName)
-
-	fieldType := fieldValue.Type()
-	val := reflect.ValueOf(value)
-
-	if fieldType != val.Type() {
-		return fmt.Errorf("%s is not a valid value for field %s", value, fieldName)
-	}
-
-	reflect.ValueOf(cfg).Elem().FieldByName(fieldName).Set(val)
 
 	return writeConfig(cfg)
 }

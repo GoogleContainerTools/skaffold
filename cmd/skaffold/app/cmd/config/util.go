@@ -93,7 +93,7 @@ func readConfig() (*Config, error) {
 
 // return the specific config to be modified based on the provided kubectx.
 // either returns the config corresponding to the provided or current context,
-// or the global config if that is specified (or if no current context is set).
+// or the global config if that is specified.
 func getConfigForKubectx() (*ContextConfig, error) {
 	cfg, err := readConfig()
 	if err != nil {
