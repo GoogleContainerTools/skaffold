@@ -19,10 +19,11 @@ package v1alpha2
 import (
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 // ApplyProfiles returns configuration modified by the application
@@ -62,15 +63,6 @@ func profilesByName(profiles []Profile) map[string]Profile {
 		byName[profile.Name] = profile
 	}
 	return byName
-}
-
-func isOneOf(field reflect.StructField) bool {
-	for _, tag := range strings.Split(field.Tag.Get("yamltags"), ",") {
-		if tag == "oneOf" {
-			return true
-		}
-	}
-	return false
 }
 
 // if we find a oneOf tag, the fields in this struct are themselves pointers to structs,
@@ -116,7 +108,7 @@ func overlayProfileField(config interface{}, profile interface{}) interface{} {
 	switch v.Kind() {
 	case reflect.Struct:
 		// check the first field of the struct for a oneOf yamltag.
-		if isOneOf(t.Field(0)) {
+		if util.IsOneOf(t.Field(0)) {
 			return overlayOneOfField(config, profile)
 		}
 		return overlayStructField(config, profile)
