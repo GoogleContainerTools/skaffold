@@ -16,6 +16,11 @@ limitations under the License.
 
 package util
 
+import (
+	"reflect"
+	"strings"
+)
+
 type VersionedConfig interface {
 	GetVersion() string
 	Parse([]byte, bool) error
@@ -23,4 +28,13 @@ type VersionedConfig interface {
 
 type Config interface {
 	Parse([]byte) (VersionedConfig, error)
+}
+
+func IsOneOf(field reflect.StructField) bool {
+	for _, tag := range strings.Split(field.Tag.Get("yamltags"), ",") {
+		if tag == "oneOf" {
+			return true
+		}
+	}
+	return false
 }

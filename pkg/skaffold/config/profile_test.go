@@ -26,21 +26,22 @@ import (
 func TestApplyProfiles(t *testing.T) {
 	tests := []struct {
 		description string
-		config      SkaffoldConfig
+		config      *SkaffoldConfig
 		profile     string
-		expected    SkaffoldConfig
+		expected    *SkaffoldConfig
 		shouldErr   bool
 	}{
 		{
 			description: "unknown profile",
-			config:      SkaffoldConfig{},
+			config:      &SkaffoldConfig{},
 			profile:     "profile",
+			expected:    &SkaffoldConfig{},
 			shouldErr:   true,
 		},
 		{
 			description: "build type",
 			profile:     "profile",
-			config: SkaffoldConfig{
+			config: &SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{
 					Artifacts: []*v1alpha2.Artifact{
 						{ImageName: "image"},
@@ -61,7 +62,7 @@ func TestApplyProfiles(t *testing.T) {
 					},
 				},
 			},
-			expected: SkaffoldConfig{
+			expected: &SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{
 					Artifacts: []*v1alpha2.Artifact{
 						{
@@ -89,7 +90,7 @@ func TestApplyProfiles(t *testing.T) {
 		{
 			description: "tag policy",
 			profile:     "dev",
-			config: SkaffoldConfig{
+			config: &SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{
 					Artifacts: []*v1alpha2.Artifact{
 						{ImageName: "image"},
@@ -106,7 +107,7 @@ func TestApplyProfiles(t *testing.T) {
 					},
 				},
 			},
-			expected: SkaffoldConfig{
+			expected: &SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{
 					Artifacts: []*v1alpha2.Artifact{
 						{
@@ -130,7 +131,7 @@ func TestApplyProfiles(t *testing.T) {
 		{
 			description: "artifacts",
 			profile:     "profile",
-			config: SkaffoldConfig{
+			config: &SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{
 					Artifacts: []*v1alpha2.Artifact{
 						{ImageName: "image"},
@@ -150,7 +151,7 @@ func TestApplyProfiles(t *testing.T) {
 					},
 				},
 			},
-			expected: SkaffoldConfig{
+			expected: &SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{
 					Artifacts: []*v1alpha2.Artifact{
 						{
@@ -183,7 +184,7 @@ func TestApplyProfiles(t *testing.T) {
 		{
 			description: "deploy",
 			profile:     "profile",
-			config: SkaffoldConfig{
+			config: &SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{},
 				Deploy: v1alpha2.DeployConfig{
 					DeployType: v1alpha2.DeployType{
@@ -201,7 +202,7 @@ func TestApplyProfiles(t *testing.T) {
 					},
 				},
 			},
-			expected: SkaffoldConfig{
+			expected: &SkaffoldConfig{
 				Build: v1alpha2.BuildConfig{
 					TagPolicy: v1alpha2.TagPolicy{
 						GitTagger: &v1alpha2.GitTagger{},

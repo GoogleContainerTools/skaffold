@@ -45,10 +45,10 @@ type BuildConfig struct {
 
 // TagPolicy contains all the configuration for the tagging step
 type TagPolicy struct {
-	GitTagger         *GitTagger         `yaml:"gitCommit"`
-	ShaTagger         *ShaTagger         `yaml:"sha256"`
-	EnvTemplateTagger *EnvTemplateTagger `yaml:"envTemplate"`
-	DateTimeTagger    *DateTimeTagger    `yaml:"dateTime"`
+	GitTagger         *GitTagger         `yaml:"gitCommit" yamltags:"oneOf"`
+	ShaTagger         *ShaTagger         `yaml:"sha256" yamltags:"oneOf"`
+	EnvTemplateTagger *EnvTemplateTagger `yaml:"envTemplate" yamltags:"oneOf"`
+	DateTimeTagger    *DateTimeTagger    `yaml:"dateTime" yamltags:"oneOf"`
 }
 
 // ShaTagger contains the configuration for the SHA tagger.
@@ -71,9 +71,9 @@ type DateTimeTagger struct {
 // BuildType contains the specific implementation and parameters needed
 // for the build step. Only one field should be populated.
 type BuildType struct {
-	LocalBuild       *LocalBuild       `yaml:"local"`
-	GoogleCloudBuild *GoogleCloudBuild `yaml:"googleCloudBuild"`
-	KanikoBuild      *KanikoBuild      `yaml:"kaniko"`
+	LocalBuild       *LocalBuild       `yaml:"local" yamltags:"oneOf"`
+	GoogleCloudBuild *GoogleCloudBuild `yaml:"googleCloudBuild" yamltags:"oneOf"`
+	KanikoBuild      *KanikoBuild      `yaml:"kaniko" yamltags:"oneOf"`
 }
 
 // LocalBuild contains the fields needed to do a build on the local docker daemon
@@ -112,9 +112,9 @@ type DeployConfig struct {
 // DeployType contains the specific implementation and parameters needed
 // for the deploy step. Only one field should be populated.
 type DeployType struct {
-	HelmDeploy      *HelmDeploy      `yaml:"helm"`
-	KubectlDeploy   *KubectlDeploy   `yaml:"kubectl"`
-	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize"`
+	HelmDeploy      *HelmDeploy      `yaml:"helm" yamltags:"oneOf"`
+	KubectlDeploy   *KubectlDeploy   `yaml:"kubectl" yamltags:"oneOf"`
+	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize" yamltags:"oneOf"`
 }
 
 // KubectlDeploy contains the configuration needed for deploying with `kubectl apply`
@@ -202,8 +202,8 @@ type Profile struct {
 }
 
 type ArtifactType struct {
-	DockerArtifact *DockerArtifact `yaml:"docker"`
-	BazelArtifact  *BazelArtifact  `yaml:"bazel"`
+	DockerArtifact *DockerArtifact `yaml:"docker" yamltags:"oneOf"`
+	BazelArtifact  *BazelArtifact  `yaml:"bazel" yamltags:"oneOf"`
 }
 
 type DockerArtifact struct {

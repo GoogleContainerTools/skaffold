@@ -95,7 +95,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrapf(err, "getting build ID from op")
 	}
 	logsObject := fmt.Sprintf("log-%s.txt", remoteID)
-	color.Default.Fprintf(out, "Logs at available at \nhttps://console.cloud.google.com/m/cloudstorage/b/%s/o/%s\n", cbBucket, logsObject)
+	color.Default.Fprintf(out, "Logs are available at \nhttps://console.cloud.google.com/m/cloudstorage/b/%s/o/%s\n", cbBucket, logsObject)
 	var imageID string
 	offset := int64(0)
 watch:

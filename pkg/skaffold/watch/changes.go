@@ -51,7 +51,7 @@ func lastModified(paths []string) (time.Time, error) {
 	for _, path := range paths {
 		stat, err := os.Stat(path)
 		if err != nil {
-			return last, errors.Wrapf(err, "unable to stat file %s: %v")
+			return last, errors.Wrapf(err, "unable to stat file %s", path)
 		}
 
 		if stat.IsDir() {
