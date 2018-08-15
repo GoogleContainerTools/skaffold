@@ -31,7 +31,7 @@ import (
 
 // Creating symlinks requires extra privileges on Windows
 func Test_addLinksToTar(t *testing.T) {
-	testDir, cleanup := testutil.TempDir(t)
+	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
 	files := map[string]string{
@@ -39,8 +39,8 @@ func Test_addLinksToTar(t *testing.T) {
 		"bar/bat": "baz2",
 		"bar/baz": "baz3",
 	}
-	if err := setupFiles(testDir, files); err != nil {
-		t.Fatalf("Error setting up files: %s", err)
+	for p, c := range files {
+		tmpDir.Write(p, c)
 	}
 
 	links := map[string]string{
@@ -50,7 +50,7 @@ func Test_addLinksToTar(t *testing.T) {
 	}
 
 	for src, dst := range links {
-		srcPath := filepath.Join(testDir, src)
+		srcPath := tmpDir.Path(src)
 		if err := os.MkdirAll(filepath.Dir(srcPath), 0750); err != nil {
 			t.Fatalf("Error setting up test dirs: %s", err)
 		}
@@ -63,14 +63,12 @@ func Test_addLinksToTar(t *testing.T) {
 	var b bytes.Buffer
 	tw := tar.NewWriter(&b)
 	for p := range files {
-		path := filepath.Join(testDir, p)
-		if err := addFileToTar(path, p, tw); err != nil {
+		if err := addFileToTar(tmpDir.Path(p), p, tw); err != nil {
 			t.Fatalf("addFileToTar() error = %v", err)
 		}
 	}
 	for l := range links {
-		path := filepath.Join(testDir, l)
-		if err := addFileToTar(path, l, tw); err != nil {
+		if err := addFileToTar(tmpDir.Path(l), l, tw); err != nil {
 			t.Fatalf("addFileToTar() error = %v", err)
 		}
 	}

@@ -17,103 +17,71 @@ limitations under the License.
 package watch
 
 import (
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/karrick/godirwalk"
 )
 
 func TestHasChanged(t *testing.T) {
 	var tests = []struct {
 		description     string
-		setup           func(folder string) error
-		update          func(folder string) error
+		setup           func(tmp *testutil.TempDir)
+		update          func(tmp *testutil.TempDir)
 		expectedChanged bool
 	}{
 		{
 			description: "no file",
-			setup:       func(string) error { return nil },
-			update:      func(string) error { return nil },
+			setup:       func(*testutil.TempDir) {},
+			update:      func(*testutil.TempDir) {},
 		},
 		{
 			description:     "added",
+			setup:           func(*testutil.TempDir) {},
+			update:          func(tmp *testutil.TempDir) { tmp.Write("added", "") },
 			expectedChanged: true,
-			setup:           func(string) error { return nil },
-			update: func(folder string) error {
-				return ioutil.WriteFile(filepath.Join(folder, "added.txt"), []byte{}, os.ModePerm)
-			},
 		},
 		{
 			description:     "removed",
+			setup:           func(tmp *testutil.TempDir) { tmp.Write("removed", "") },
+			update:          func(tmp *testutil.TempDir) { tmp.Remove("removed") },
 			expectedChanged: true,
-			setup: func(folder string) error {
-				return ioutil.WriteFile(filepath.Join(folder, "removed.txt"), []byte{}, os.ModePerm)
-			},
-			update: func(folder string) error {
-				return os.Remove(filepath.Join(folder, "removed.txt"))
-			},
 		},
 		{
 			description:     "modified",
+			setup:           func(tmp *testutil.TempDir) { tmp.Write("file", "") },
+			update:          func(tmp *testutil.TempDir) { tmp.Chtimes("file", time.Now().Add(2*time.Second)) },
 			expectedChanged: true,
-			setup: func(folder string) error {
-				return ioutil.WriteFile(filepath.Join(folder, "file.txt"), []byte("initial"), os.ModePerm)
-			},
-			update: func(folder string) error {
-				return os.Chtimes(filepath.Join(folder, "file.txt"), time.Now(), time.Now().Add(2*time.Second))
-			},
 		},
 		{
-			description:     "removed and added",
+			description: "removed and added",
+			setup:       func(tmp *testutil.TempDir) { tmp.Write("removed", "") },
+			update: func(tmp *testutil.TempDir) {
+				tmp.Remove("removed").Write("added", "").Chtimes("added", time.Now().Add(2*time.Second))
+			},
 			expectedChanged: true,
-			setup: func(folder string) error {
-				return ioutil.WriteFile(filepath.Join(folder, "removed.txt"), []byte{}, os.ModePerm)
-			},
-			update: func(folder string) error {
-				err := os.Remove(filepath.Join(folder, "removed.txt"))
-				if err != nil {
-					return err
-				}
-				err = ioutil.WriteFile(filepath.Join(folder, "added.txt"), []byte{}, os.ModePerm)
-				if err != nil {
-					return err
-				}
-				return os.Chtimes(filepath.Join(folder, "added.txt"), time.Now(), time.Now().Add(2*time.Second))
-			},
 		},
 		{
 			description:     "ignore modified directory",
+			setup:           func(tmp *testutil.TempDir) { tmp.Mkdir("dir") },
+			update:          func(tmp *testutil.TempDir) { tmp.Chtimes("dir", time.Now().Add(2*time.Second)) },
 			expectedChanged: false,
-			setup: func(folder string) error {
-				return os.Mkdir(filepath.Join(folder, "dir"), os.ModePerm)
-			},
-			update: func(folder string) error {
-				return os.Chtimes(filepath.Join(folder, "dir"), time.Now(), time.Now().Add(2*time.Second))
-			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			tmpDir, cleanup := testutil.TempDir(t)
-			defer cleanup()
+			tmpDir, tearDown := testutil.NewTempDir(t)
+			defer tearDown()
 
-			if err := test.setup(tmpDir); err != nil {
-				t.Fatal("Unable to setup test directory", err)
-			}
-			prev, err := stat(listFiles(tmpDir))
+			test.setup(tmpDir)
+			prev, err := stat(tmpDir.List)
 			if err != nil {
 				t.Fatal("Unable to setup test directory", err)
 			}
 
-			if err := test.update(tmpDir); err != nil {
-				t.Fatal("Unable to update test directory", err)
-			}
-			curr, err := stat(listFiles(tmpDir))
+			test.update(tmpDir)
+			curr, err := stat(tmpDir.List)
 			if err != nil {
 				t.Fatal("Unable to update test directory", err)
 			}
@@ -122,21 +90,5 @@ func TestHasChanged(t *testing.T) {
 
 			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedChanged, changed)
 		})
-	}
-}
-
-func listFiles(dir string) func() ([]string, error) {
-	return func() ([]string, error) {
-		var files []string
-
-		err := godirwalk.Walk(dir, &godirwalk.Options{
-			Unsorted: true,
-			Callback: func(path string, _ *godirwalk.Dirent) error {
-				files = append(files, path)
-				return nil
-			},
-		})
-
-		return files, err
 	}
 }

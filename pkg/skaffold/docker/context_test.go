@@ -19,9 +19,6 @@ package docker
 import (
 	"archive/tar"
 	"io"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
@@ -29,7 +26,7 @@ import (
 )
 
 func TestDockerContext(t *testing.T) {
-	tmpDir, cleanup := testutil.TempDir(t)
+	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
 	RetrieveImage = mockRetrieveImage
@@ -42,16 +39,16 @@ func TestDockerContext(t *testing.T) {
 		BuildArgs:      map[string]*string{},
 	}
 
-	os.Mkdir(filepath.Join(tmpDir, "files"), 0750)
-	ioutil.WriteFile(filepath.Join(tmpDir, "files", "ignored.txt"), []byte(""), 0644)
-	ioutil.WriteFile(filepath.Join(tmpDir, "files", "included.txt"), []byte(""), 0644)
-	ioutil.WriteFile(filepath.Join(tmpDir, ".dockerignore"), []byte("**/ignored.txt\nalsoignored.txt"), 0644)
-	ioutil.WriteFile(filepath.Join(tmpDir, "Dockerfile"), []byte("FROM alpine\nCOPY ./files /files"), 0644)
-	ioutil.WriteFile(filepath.Join(tmpDir, "ignored.txt"), []byte(""), 0644)
-	ioutil.WriteFile(filepath.Join(tmpDir, "alsoignored.txt"), []byte(""), 0644)
+	tmpDir.Write("files/ignored.txt", "")
+	tmpDir.Write("files/included.txt", "")
+	tmpDir.Write(".dockerignore", "**/ignored.txt\nalsoignored.txt")
+	tmpDir.Write("Dockerfile", "FROM alpine\nCOPY ./files /files")
+	tmpDir.Write("ignored.txt", "")
+	tmpDir.Write("alsoignored.txt", "")
+
 	reader, writer := io.Pipe()
 	go func() {
-		err := CreateDockerTarContext(writer, tmpDir, artifact)
+		err := CreateDockerTarContext(writer, tmpDir.Root(), artifact)
 		if err != nil {
 			writer.CloseWithError(err)
 		} else {

@@ -215,11 +215,11 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
-			tmpDir, cleanup := testutil.TempDir(t)
+			tmpDir, cleanup := testutil.NewTempDir(t)
 			defer cleanup()
 
-			tt.createGitRepo(tmpDir)
-			workspace := filepath.Join(tmpDir, tt.subDir)
+			tt.createGitRepo(tmpDir.Root())
+			workspace := tmpDir.Path(tt.subDir)
 
 			opts := &Options{
 				ImageName: "test",
