@@ -17,10 +17,8 @@ limitations under the License.
 package deploy
 
 import (
-	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -29,12 +27,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type KustomizeDeployer struct {
 	*v1alpha2.KustomizeDeploy
 
-	kubectl kubectl.CLI
+	kubectl            kubectl.CLI
+	previousDeployment manifestList
 }
 
 func NewKustomizeDeployer(cfg *v1alpha2.KustomizeDeploy, kubeContext string, namespace string) *KustomizeDeployer {
@@ -55,47 +55,46 @@ func (k *KustomizeDeployer) Labels() map[string]string {
 }
 
 func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
-	manifests, err := buildManifests(k.KustomizePath)
-	if err != nil {
-		return nil, errors.Wrap(err, "kustomize")
-	}
-	manifestList, err := newManifestList(manifests)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting manifest list")
-	}
-	manifestList, err = manifestList.replaceImages(builds)
-	if err != nil {
-		return nil, errors.Wrap(err, "replacing images")
-	}
-	if err := k.kubectl.Run(manifestList.reader(), out, "apply", k.Flags.Apply, "-f", "-"); err != nil {
-		return nil, errors.Wrap(err, "running kubectl")
-	}
-	return parseManifestsForDeploys(manifestList)
-}
-
-func newManifestList(r io.Reader) (manifestList, error) {
-	var manifests manifestList
-	buf, err := ioutil.ReadAll(r)
+	manifests, err := k.readManifests()
 	if err != nil {
 		return nil, errors.Wrap(err, "reading manifests")
 	}
 
-	parts := bytes.Split(buf, []byte("\n---"))
-	for _, part := range parts {
-		manifests = append(manifests, part)
+	if manifests.Empty() {
+		return nil, nil
 	}
 
-	return manifests, nil
+	manifests, err = manifests.replaceImages(builds)
+	if err != nil {
+		return nil, errors.Wrap(err, "replacing images in manifests")
+	}
+
+	// Only redeploy modified or new manifests
+	// TODO(dgageot): should we delete a manifest that was deployed and is not anymore?
+	updated := k.previousDeployment.diff(manifests)
+	logrus.Debugln(len(manifests), "manifests to deploy.", len(manifests), "are updated or new")
+	k.previousDeployment = manifests
+	if len(updated) == 0 {
+		return nil, nil
+	}
+
+	if err := k.kubectl.Run(manifests.reader(), out, "apply", k.Flags.Apply, "-f", "-"); err != nil {
+		return nil, errors.Wrap(err, "kubectl apply")
+	}
+
+	return parseManifestsForDeploys(updated)
 }
 
 func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
-	manifests, err := buildManifests(k.KustomizePath)
+	manifests, err := k.readManifests()
 	if err != nil {
-		return errors.Wrap(err, "kustomize")
+		return errors.Wrap(err, "reading manifests")
 	}
-	if err := k.kubectl.Run(manifests, out, "delete", k.Flags.Delete, "-f", "-"); err != nil {
+
+	if err := k.kubectl.Run(manifests.reader(), out, "delete", k.Flags.Delete, "--ignore-not-found=true", "-f", "-"); err != nil {
 		return errors.Wrap(err, "kubectl delete")
 	}
+
 	return nil
 }
 
@@ -104,11 +103,14 @@ func (k *KustomizeDeployer) Dependencies() ([]string, error) {
 	return []string{k.KustomizePath}, nil
 }
 
-func buildManifests(kustomization string) (io.Reader, error) {
-	cmd := exec.Command("kustomize", "build", kustomization)
-	out, err := util.DefaultExecCommand.RunCmdOut(cmd)
+func (k *KustomizeDeployer) readManifests() (manifestList, error) {
+	cmd := exec.Command("kustomize", "build", k.KustomizePath)
+	out, err := util.RunCmdOut(cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "running kustomize build")
+		return nil, errors.Wrap(err, "kustomize build")
 	}
-	return bytes.NewReader(out), nil
+
+	var manifests manifestList
+	manifests.append(out)
+	return manifests, nil
 }

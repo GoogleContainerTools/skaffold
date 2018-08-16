@@ -93,9 +93,8 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return nil, nil
 	}
 
-	err = k.kubectl.Run(updated.reader(), out, "apply", k.Flags.Apply, "-f", "-")
-	if err != nil {
-		return nil, errors.Wrap(err, "deploying manifests")
+	if err := k.kubectl.Run(manifests.reader(), out, "apply", k.Flags.Apply, "-f", "-"); err != nil {
+		return nil, errors.Wrap(err, "kubectl apply")
 	}
 
 	return parseManifestsForDeploys(updated)
@@ -109,7 +108,7 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	}
 
 	if err := k.kubectl.Run(manifests.reader(), out, "delete", k.Flags.Delete, "--ignore-not-found=true", "-f", "-"); err != nil {
-		return errors.Wrap(err, "deleting manifests")
+		return errors.Wrap(err, "kubectl delete")
 	}
 
 	return nil
@@ -155,18 +154,15 @@ func (k *KubectlDeployer) readManifests() (manifestList, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "expanding user manifest list")
 	}
-	var manifests manifestList
 
+	var manifests manifestList
 	for _, manifest := range files {
 		buf, err := ioutil.ReadFile(manifest)
 		if err != nil {
 			return nil, errors.Wrap(err, "reading manifest")
 		}
 
-		parts := bytes.Split(buf, []byte("\n---"))
-		for _, part := range parts {
-			manifests = append(manifests, part)
-		}
+		manifests.append(buf)
 	}
 
 	for _, m := range k.RemoteManifests {
@@ -220,6 +216,13 @@ func (l *manifestList) String() string {
 
 func (l *manifestList) Empty() bool {
 	return len(*l) == 0
+}
+
+func (l *manifestList) append(buf []byte) {
+	parts := bytes.Split(buf, []byte("\n---"))
+	for _, part := range parts {
+		*l = append(*l, part)
+	}
 }
 
 func (l *manifestList) diff(manifests manifestList) manifestList {
