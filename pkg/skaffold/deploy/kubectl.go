@@ -37,9 +37,8 @@ import (
 type KubectlDeployer struct {
 	*v1alpha2.KubectlDeploy
 
-	workingDir         string
-	kubectl            kubectl.CLI
-	previousDeployment kubectl.ManifestList
+	workingDir string
+	kubectl    kubectl.CLI
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
@@ -79,17 +78,9 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return nil, errors.Wrap(err, "replacing images in manifests")
 	}
 
-	// Only redeploy modified or new manifests
-	// TODO(dgageot): should we delete a manifest that was deployed and is not anymore?
-	updated := k.previousDeployment.Diff(manifests)
-	logrus.Debugln(len(manifests), "manifests to deploy.", len(manifests), "are updated or new")
-	k.previousDeployment = manifests
-	if len(updated) == 0 {
-		return nil, nil
-	}
-
-	if err := k.kubectl.Run(manifests.Reader(), out, "apply", k.Flags.Apply, "-f", "-"); err != nil {
-		return nil, errors.Wrap(err, "kubectl apply")
+	updated, err := k.kubectl.Apply(out, manifests)
+	if err != nil {
+		return nil, errors.Wrap(err, "apply")
 	}
 
 	return parseManifestsForDeploys(updated)
@@ -102,7 +93,11 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		return errors.Wrap(err, "reading manifests")
 	}
 
-	return k.kubectl.Detete(out, manifests)
+	if err := k.kubectl.Detete(out, manifests); err != nil {
+		return errors.Wrap(err, "delete")
+	}
+
+	return nil
 }
 
 func (k *KubectlDeployer) Dependencies() ([]string, error) {
