@@ -34,7 +34,7 @@ type KustomizeDeployer struct {
 	*v1alpha2.KustomizeDeploy
 
 	kubectl            kubectl.CLI
-	previousDeployment manifestList
+	previousDeployment kubectl.ManifestList
 }
 
 func NewKustomizeDeployer(cfg *v1alpha2.KustomizeDeploy, kubeContext string, namespace string) *KustomizeDeployer {
@@ -60,25 +60,25 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 		return nil, errors.Wrap(err, "reading manifests")
 	}
 
-	if manifests.Empty() {
+	if len(manifests) == 0 {
 		return nil, nil
 	}
 
-	manifests, err = manifests.replaceImages(builds)
+	manifests, err = manifests.ReplaceImages(builds)
 	if err != nil {
 		return nil, errors.Wrap(err, "replacing images in manifests")
 	}
 
 	// Only redeploy modified or new manifests
 	// TODO(dgageot): should we delete a manifest that was deployed and is not anymore?
-	updated := k.previousDeployment.diff(manifests)
+	updated := k.previousDeployment.Diff(manifests)
 	logrus.Debugln(len(manifests), "manifests to deploy.", len(manifests), "are updated or new")
 	k.previousDeployment = manifests
 	if len(updated) == 0 {
 		return nil, nil
 	}
 
-	if err := k.kubectl.Run(manifests.reader(), out, "apply", k.Flags.Apply, "-f", "-"); err != nil {
+	if err := k.kubectl.Run(manifests.Reader(), out, "apply", k.Flags.Apply, "-f", "-"); err != nil {
 		return nil, errors.Wrap(err, "kubectl apply")
 	}
 
@@ -91,7 +91,7 @@ func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		return errors.Wrap(err, "reading manifests")
 	}
 
-	if err := k.kubectl.Run(manifests.reader(), out, "delete", k.Flags.Delete, "--ignore-not-found=true", "-f", "-"); err != nil {
+	if err := k.kubectl.Run(manifests.Reader(), out, "delete", k.Flags.Delete, "--ignore-not-found=true", "-f", "-"); err != nil {
 		return errors.Wrap(err, "kubectl delete")
 	}
 
@@ -103,14 +103,14 @@ func (k *KustomizeDeployer) Dependencies() ([]string, error) {
 	return []string{k.KustomizePath}, nil
 }
 
-func (k *KustomizeDeployer) readManifests() (manifestList, error) {
+func (k *KustomizeDeployer) readManifests() (kubectl.ManifestList, error) {
 	cmd := exec.Command("kustomize", "build", k.KustomizePath)
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "kustomize build")
 	}
 
-	var manifests manifestList
-	manifests.append(out)
+	var manifests kubectl.ManifestList
+	manifests.Append(out)
 	return manifests, nil
 }
