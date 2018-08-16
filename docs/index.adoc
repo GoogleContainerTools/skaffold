@@ -45,7 +45,11 @@ include::../examples/README.adoc[]
 
 = Contributing
 
-include::../CONTRIBUTING.adoc[leveloffset=+1]
+See http://github.com/GoogleContainerTools/skaffold/tree/master/CONTRIBUTING.md[CONTRIBUTING.md]
+
+== Development
+
+See http://github.com/GoogleContainerTools/skaffold/tree/master/DEVELOPMENT.md[DEVELOPMENT.md]
 
 == Code of conduct
 

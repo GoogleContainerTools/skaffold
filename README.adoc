@@ -108,8 +108,9 @@ git clone https://github.com/GoogleContainerTools/skaffold
 [source,shell]
 cd examples/getting-started
 
-. Run `skaffold dev`.
+. Replace `k8s-project` with your GCP project ID.
 
+. Run `skaffold dev`.
 [source,console]
 $ skaffold dev
 Starting build...
