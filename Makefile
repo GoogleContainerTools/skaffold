@@ -59,7 +59,7 @@ $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
 	cp $< $@
 
 .PHONY: $(BUILD_DIR)/VERSION
-$(BUILD_DIR)/VERSION:
+$(BUILD_DIR)/VERSION: $(BUILD_DIR)
 	@ echo $(VERSION) > $@
 
 $(BUILD_DIR):
@@ -94,7 +94,7 @@ release: cross docs $(BUILD_DIR)/VERSION
         		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
         		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) .
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_RELEASE_PATH)/
-	gsutil -m cp $(BUILD_DIR)/VERISON $(GSC_RELEASE_PATH)/VERISON
+	gsutil -m cp $(BUILD_DIR)/VERSION $(GSC_RELEASE_PATH)/VERSION
 	gsutil -m cp -r $(DOCS_DIR)/* $(GSC_RELEASE_PATH)/docs/
 	gsutil -m cp -r $(GSC_RELEASE_PATH)/* $(GSC_RELEASE_LATEST)
 
