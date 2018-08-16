@@ -1,3 +1,29 @@
+# v0.12.0 Release - 8/16/2018
+New Features:
+* Update check [#866](https://github.com/GoogleContainerTools/skaffold/pull/866)
+* Simpler and faster git tagger [#846](https://github.com/GoogleContainerTools/skaffold/pull/846)
+* Support setting namespace for every deployer [#852](https://github.com/GoogleContainerTools/skaffold/pull/852)
+* Improve Cloud Build builder [#874](https://github.com/GoogleContainerTools/skaffold/pull/874)
+* Improve file change tracking [#888](https://github.com/GoogleContainerTools/skaffold/pull/888)
+
+
+Bug Fixes:
+* Run Kaniko builds in parallel [#876](https://github.com/GoogleContainerTools/skaffold/pull/876)
+* Do not run kubectl if nothing has changed [#877](https://github.com/GoogleContainerTools/skaffold/pull/877)
+* fix version in released docker image [#878](https://github.com/GoogleContainerTools/skaffold/pull/878)
+* Fix integration tests [#881](https://github.com/GoogleContainerTools/skaffold/pull/881)
+
+Updates:
+* Run Kaniko builds in parallel [#876](https://github.com/GoogleContainerTools/skaffold/pull/876)
+* Watch mode 4th edition [#833](https://github.com/GoogleContainerTools/skaffold/pull/833)
+* add bazel to skaffold docker image, add integration test for bazel [#879](https://github.com/GoogleContainerTools/skaffold/pull/879)
+* Add missing filename to error message [#880](https://github.com/GoogleContainerTools/skaffold/pull/880)
+* Fix minor lint errors surfaced by the 'misspell' and 'unparam' lint modules [#883](https://github.com/GoogleContainerTools/skaffold/pull/883)
+* Update golangci-lint to v1.9.3 and enable misspell+unparam modules [#884](https://github.com/GoogleContainerTools/skaffold/pull/884)
+* add codecov to travis and repo [#885](https://github.com/GoogleContainerTools/skaffold/pull/885)
+* Add test helper to handle actions on tmp dirs [#893](https://github.com/GoogleContainerTools/skaffold/pull/893)
+* Use reflection to overlay profile onto config [#872](https://github.com/GoogleContainerTools/skaffold/pull/872)
+
 
 # v0.11.0 Release - 8/02/2018
 New Features: 
