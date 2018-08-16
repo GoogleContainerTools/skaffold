@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/pkg/errors"
 )
 
 // CLI holds parameters to run kubectl.
@@ -29,6 +30,15 @@ type CLI struct {
 	Namespace   string
 	KubeContext string
 	Flags       v1alpha2.KubectlFlags
+}
+
+// Detete runs `kubectl delete` on a list of manifests.
+func (c *CLI) Detete(out io.Writer, manifests ManifestList) error {
+	if err := c.Run(manifests.Reader(), out, "delete", c.Flags.Delete, "--ignore-not-found=true", "-f", "-"); err != nil {
+		return errors.Wrap(err, "kubectl delete")
+	}
+
+	return nil
 }
 
 // Run shells out kubectl CLI.

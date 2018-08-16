@@ -102,11 +102,7 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		return errors.Wrap(err, "reading manifests")
 	}
 
-	if err := k.kubectl.Run(manifests.Reader(), out, "delete", k.Flags.Delete, "--ignore-not-found=true", "-f", "-"); err != nil {
-		return errors.Wrap(err, "kubectl delete")
-	}
-
-	return nil
+	return k.kubectl.Detete(out, manifests)
 }
 
 func (k *KubectlDeployer) Dependencies() ([]string, error) {
