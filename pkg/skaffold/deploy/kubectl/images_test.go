@@ -54,6 +54,7 @@ spec:
     name: digest
   - image: skaffold/usedbyfqn:TAG
   - image: skaffold/usedwrongfqn:OTHER
+  - image: in valid
 `)}
 
 	builds := []build.Artifact{{
@@ -92,6 +93,7 @@ spec:
     name: digest
   - image: skaffold/usedbyfqn:TAG
   - image: skaffold/usedwrongfqn:OTHER
+  - image: in valid
 `)}
 
 	defer func(w Warner) { warner = w }(warner)
@@ -102,6 +104,7 @@ spec:
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
 	testutil.CheckErrorAndDeepEqual(t, false, err, []string{
+		"Couldn't parse image: in valid",
 		"image [skaffold/unused] is not used by the deployment",
 		"image [skaffold/usedwrongfqn] is not used by the deployment",
 	}, fakeWarner.warnings)
