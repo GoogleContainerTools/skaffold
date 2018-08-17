@@ -17,10 +17,8 @@ limitations under the License.
 package deploy
 
 import (
-	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -55,47 +53,38 @@ func (k *KustomizeDeployer) Labels() map[string]string {
 }
 
 func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
-	manifests, err := buildManifests(k.KustomizePath)
-	if err != nil {
-		return nil, errors.Wrap(err, "kustomize")
-	}
-	manifestList, err := newManifestList(manifests)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting manifest list")
-	}
-	manifestList, err = manifestList.replaceImages(builds)
-	if err != nil {
-		return nil, errors.Wrap(err, "replacing images")
-	}
-	if err := k.kubectl.Run(manifestList.reader(), out, "apply", k.Flags.Apply, "-f", "-"); err != nil {
-		return nil, errors.Wrap(err, "running kubectl")
-	}
-	return parseManifestsForDeploys(manifestList)
-}
-
-func newManifestList(r io.Reader) (manifestList, error) {
-	var manifests manifestList
-	buf, err := ioutil.ReadAll(r)
+	manifests, err := k.readManifests()
 	if err != nil {
 		return nil, errors.Wrap(err, "reading manifests")
 	}
 
-	parts := bytes.Split(buf, []byte("\n---"))
-	for _, part := range parts {
-		manifests = append(manifests, part)
+	if len(manifests) == 0 {
+		return nil, nil
 	}
 
-	return manifests, nil
+	manifests, err = manifests.ReplaceImages(builds)
+	if err != nil {
+		return nil, errors.Wrap(err, "replacing images in manifests")
+	}
+
+	updated, err := k.kubectl.Apply(out, manifests)
+	if err != nil {
+		return nil, errors.Wrap(err, "apply")
+	}
+
+	return parseManifestsForDeploys(updated)
 }
 
 func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
-	manifests, err := buildManifests(k.KustomizePath)
+	manifests, err := k.readManifests()
 	if err != nil {
-		return errors.Wrap(err, "kustomize")
+		return errors.Wrap(err, "reading manifests")
 	}
-	if err := k.kubectl.Run(manifests, out, "delete", k.Flags.Delete, "-f", "-"); err != nil {
-		return errors.Wrap(err, "kubectl delete")
+
+	if err := k.kubectl.Detete(out, manifests); err != nil {
+		return errors.Wrap(err, "delete")
 	}
+
 	return nil
 }
 
@@ -104,11 +93,14 @@ func (k *KustomizeDeployer) Dependencies() ([]string, error) {
 	return []string{k.KustomizePath}, nil
 }
 
-func buildManifests(kustomization string) (io.Reader, error) {
-	cmd := exec.Command("kustomize", "build", kustomization)
-	out, err := util.DefaultExecCommand.RunCmdOut(cmd)
+func (k *KustomizeDeployer) readManifests() (kubectl.ManifestList, error) {
+	cmd := exec.Command("kustomize", "build", k.KustomizePath)
+	out, err := util.RunCmdOut(cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "running kustomize build")
+		return nil, errors.Wrap(err, "kustomize build")
 	}
-	return bytes.NewReader(out), nil
+
+	var manifests kubectl.ManifestList
+	manifests.Append(out)
+	return manifests, nil
 }

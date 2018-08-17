@@ -22,6 +22,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // CLI holds parameters to run kubectl.
@@ -29,6 +31,35 @@ type CLI struct {
 	Namespace   string
 	KubeContext string
 	Flags       v1alpha2.KubectlFlags
+
+	previousApply ManifestList
+}
+
+// Detete runs `kubectl delete` on a list of manifests.
+func (c *CLI) Detete(out io.Writer, manifests ManifestList) error {
+	if err := c.Run(manifests.Reader(), out, "delete", c.Flags.Delete, "--ignore-not-found=true", "-f", "-"); err != nil {
+		return errors.Wrap(err, "kubectl delete")
+	}
+
+	return nil
+}
+
+// Apply runs `kubectl apply` on a list of manifests.
+func (c *CLI) Apply(out io.Writer, manifests ManifestList) (ManifestList, error) {
+	// Only redeploy modified or new manifests
+	// TODO(dgageot): should we delete a manifest that was deployed and is not anymore?
+	updated := c.previousApply.Diff(manifests)
+	logrus.Debugln(len(manifests), "manifests to deploy.", len(manifests), "are updated or new")
+	c.previousApply = manifests
+	if len(updated) == 0 {
+		return nil, nil
+	}
+
+	if err := c.Run(manifests.Reader(), out, "apply", c.Flags.Apply, "-f", "-"); err != nil {
+		return nil, errors.Wrap(err, "kubectl apply")
+	}
+
+	return updated, nil
 }
 
 // Run shells out kubectl CLI.

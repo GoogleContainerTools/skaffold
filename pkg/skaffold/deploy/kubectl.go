@@ -27,24 +27,18 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 )
-
-// for testing
-var warner Warner = &logrusWarner{}
 
 // KubectlDeployer deploys workflows using kubectl CLI.
 type KubectlDeployer struct {
 	*v1alpha2.KubectlDeploy
 
-	kubectl            kubectl.CLI
-	workingDir         string
-	previousDeployment manifestList
+	workingDir string
+	kubectl    kubectl.CLI
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
@@ -75,27 +69,18 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return nil, errors.Wrap(err, "reading manifests")
 	}
 
-	if manifests.Empty() {
+	if len(manifests) == 0 {
 		return nil, nil
 	}
 
-	manifests, err = manifests.replaceImages(builds)
+	manifests, err = manifests.ReplaceImages(builds)
 	if err != nil {
 		return nil, errors.Wrap(err, "replacing images in manifests")
 	}
 
-	// Only redeploy modified or new manifests
-	// TODO(dgageot): should we delete a manifest that was deployed and is not anymore?
-	updated := k.previousDeployment.diff(manifests)
-	logrus.Debugln(len(manifests), "manifests to deploy.", len(manifests), "are updated or new")
-	k.previousDeployment = manifests
-	if len(updated) == 0 {
-		return nil, nil
-	}
-
-	err = k.kubectl.Run(updated.reader(), out, "apply", k.Flags.Apply, "-f", "-")
+	updated, err := k.kubectl.Apply(out, manifests)
 	if err != nil {
-		return nil, errors.Wrap(err, "deploying manifests")
+		return nil, errors.Wrap(err, "apply")
 	}
 
 	return parseManifestsForDeploys(updated)
@@ -108,8 +93,8 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		return errors.Wrap(err, "reading manifests")
 	}
 
-	if err := k.kubectl.Run(manifests.reader(), out, "delete", k.Flags.Delete, "--ignore-not-found=true", "-f", "-"); err != nil {
-		return errors.Wrap(err, "deleting manifests")
+	if err := k.kubectl.Detete(out, manifests); err != nil {
+		return errors.Wrap(err, "delete")
 	}
 
 	return nil
@@ -140,7 +125,7 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 	return filteredManifests, nil
 }
 
-func parseManifestsForDeploys(manifests manifestList) ([]Artifact, error) {
+func parseManifestsForDeploys(manifests kubectl.ManifestList) ([]Artifact, error) {
 	results := []Artifact{}
 	for _, manifest := range manifests {
 		b := bufio.NewReader(bytes.NewReader(manifest))
@@ -150,23 +135,20 @@ func parseManifestsForDeploys(manifests manifestList) ([]Artifact, error) {
 }
 
 // readManifests reads the manifests to deploy/delete.
-func (k *KubectlDeployer) readManifests() (manifestList, error) {
+func (k *KubectlDeployer) readManifests() (kubectl.ManifestList, error) {
 	files, err := k.manifestFiles(k.Manifests)
 	if err != nil {
 		return nil, errors.Wrap(err, "expanding user manifest list")
 	}
-	var manifests manifestList
 
+	var manifests kubectl.ManifestList
 	for _, manifest := range files {
 		buf, err := ioutil.ReadFile(manifest)
 		if err != nil {
 			return nil, errors.Wrap(err, "reading manifest")
 		}
 
-		parts := bytes.Split(buf, []byte("\n---"))
-		for _, part := range parts {
-			manifests = append(manifests, part)
-		}
+		manifests.Append(buf)
 	}
 
 	for _, m := range k.RemoteManifests {
@@ -198,126 +180,4 @@ func (k *KubectlDeployer) readRemoteManifest(name string) ([]byte, error) {
 	}
 
 	return manifest.Bytes(), nil
-}
-
-type replacement struct {
-	tag   string
-	found bool
-}
-
-type manifestList [][]byte
-
-func (l *manifestList) String() string {
-	var str string
-	for i, manifest := range *l {
-		if i != 0 {
-			str += "\n---\n"
-		}
-		str += string(bytes.TrimSpace(manifest))
-	}
-	return str
-}
-
-func (l *manifestList) Empty() bool {
-	return len(*l) == 0
-}
-
-func (l *manifestList) diff(manifests manifestList) manifestList {
-	if l == nil {
-		return manifests
-	}
-
-	oldManifests := map[string]bool{}
-	for _, oldManifest := range *l {
-		oldManifests[string(oldManifest)] = true
-	}
-
-	var updated manifestList
-
-	for _, manifest := range manifests {
-		if !oldManifests[string(manifest)] {
-			updated = append(updated, manifest)
-		}
-	}
-
-	return updated
-}
-
-func (l *manifestList) reader() io.Reader {
-	return strings.NewReader(l.String())
-}
-
-func (l *manifestList) replaceImages(builds []build.Artifact) (manifestList, error) {
-	replacements := map[string]*replacement{}
-	for _, build := range builds {
-		replacements[build.ImageName] = &replacement{
-			tag: build.Tag,
-		}
-	}
-
-	var updatedManifests manifestList
-
-	for _, manifest := range *l {
-		m := make(map[interface{}]interface{})
-		if err := yaml.Unmarshal(manifest, &m); err != nil {
-			return nil, errors.Wrap(err, "reading kubernetes YAML")
-		}
-
-		if len(m) == 0 {
-			continue
-		}
-
-		recursiveReplaceImage(m, replacements)
-
-		updatedManifest, err := yaml.Marshal(m)
-		if err != nil {
-			return nil, errors.Wrap(err, "marshalling yaml")
-		}
-
-		updatedManifests = append(updatedManifests, updatedManifest)
-	}
-
-	for name, replacement := range replacements {
-		if !replacement.found {
-			warner.Warnf("image [%s] is not used by the deployment", name)
-		}
-	}
-
-	logrus.Debugln("manifests with tagged images", updatedManifests.String())
-
-	return updatedManifests, nil
-}
-
-func recursiveReplaceImage(i interface{}, replacements map[string]*replacement) {
-	switch t := i.(type) {
-	case []interface{}:
-		for _, v := range t {
-			recursiveReplaceImage(v, replacements)
-		}
-	case map[interface{}]interface{}:
-		for k, v := range t {
-			if k.(string) != "image" {
-				recursiveReplaceImage(v, replacements)
-				continue
-			}
-
-			image := v.(string)
-			parsed, err := docker.ParseReference(image)
-			if err != nil {
-				warner.Warnf("Couldn't parse image: %s", v)
-				continue
-			}
-
-			if img, present := replacements[parsed.BaseName]; present {
-				if parsed.FullyQualified {
-					if img.tag == image {
-						img.found = true
-					}
-				} else {
-					t[k] = img.tag
-					img.found = true
-				}
-			}
-		}
-	}
 }
