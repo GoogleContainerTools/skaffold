@@ -60,7 +60,7 @@ build:
     #  target: //:skaffold_example.tar
 
 # This next section is where you'll put your specific builder configuration.
-  # Valid builders are `local`, `googleCloudBuild` and `kaniko.
+  # Valid builders are `local`, `googleCloudBuild` and `kaniko`.
   # Defaults to `local: {}`
 
   # Pushing the images can be skipped. If no value is specified, it'll default to
