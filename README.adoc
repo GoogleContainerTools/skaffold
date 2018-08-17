@@ -185,6 +185,20 @@ $ skaffold run
 
 //end::getting_started_local[]
 
+
+== Documentation
+
+Documentation for latest release: 
+
+- HTML: https://storage.googleapis.com/skaffold/releases/latest/docs/index.html  
+- PDF: https://storage.googleapis.com/skaffold/releases/latest/docs/index.pdf  
+
+Documentation for latest build: 
+
+- HTML: https://storage.googleapis.com/skaffold/builds/latest/docs/index.html  
+- PDF: https://storage.googleapis.com/skaffold/builds/latest/docs/index.pdf  
+
+
 //tag::more_examples[]
 = More examples
 
