@@ -1,7 +1,7 @@
 == Examples
 :icons: font
 
-To run any of the examples, just replace `k8s-project` with your GCP project ID.
+To run any of the examples, replace `k8s-project` with your GCP project ID.
 
 ifndef::env-github[]
 
