@@ -120,6 +120,10 @@ make docs
 
 And then open the generated docs/generated folder for `index.html` and `index.pdf`.
 
+Once PRs with doc changes are merged, they will get automatically published to the docs
+for [the latest build](https://storage.googleapis.com/skaffold/builds/latest/docs/index.html)
+which at release time will be published with [the latest release](https://storage.googleapis.com/skaffold/releases/latest/docs/index.html).
+
 ## Creating a PR
 
 When you have changes you would like to propose to skaffold, you will need to:
