@@ -43,6 +43,7 @@ func (f FakeReaderCloser) Close() error             { return nil }
 func (f FakeReaderCloser) Read([]byte) (int, error) { return 0, f.Err }
 
 func CheckErrorAndDeepEqual(t *testing.T, shouldErr bool, err error, expected, actual interface{}) {
+	t.Helper()
 	if err := checkErr(shouldErr, err); err != nil {
 		t.Error(err)
 		return
@@ -54,6 +55,7 @@ func CheckErrorAndDeepEqual(t *testing.T, shouldErr bool, err error, expected, a
 }
 
 func CheckErrorAndTypeEquality(t *testing.T, shouldErr bool, err error, expected, actual interface{}) {
+	t.Helper()
 	if err := checkErr(shouldErr, err); err != nil {
 		t.Error(err)
 		return
@@ -68,6 +70,7 @@ func CheckErrorAndTypeEquality(t *testing.T, shouldErr bool, err error, expected
 }
 
 func CheckError(t *testing.T, shouldErr bool, err error) {
+	t.Helper()
 	if err := checkErr(shouldErr, err); err != nil {
 		t.Error(err)
 	}
