@@ -37,11 +37,9 @@ func IsUpdateCheckEnabled() bool {
 	if version.Get().GitTreeState == "dirty" {
 		return false
 	}
+
 	v := os.Getenv(constants.UpdateCheckEnvironmentVariable)
-	if v == "" || strings.ToLower(v) == "true" {
-		return true
-	}
-	return false
+	return v == "" || strings.ToLower(v) == "true"
 }
 
 var latestVersionURL = fmt.Sprintf("https://storage.googleapis.com/skaffold/releases/latest/VERSION")
