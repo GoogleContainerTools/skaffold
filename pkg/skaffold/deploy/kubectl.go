@@ -64,7 +64,7 @@ func (k *KubectlDeployer) Labels() map[string]string {
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
-	manifests, err := k.readManifests()
+	manifests, err := k.readManifests(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading manifests")
 	}
@@ -78,7 +78,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return nil, errors.Wrap(err, "replacing images in manifests")
 	}
 
-	updated, err := k.kubectl.Apply(out, manifests)
+	updated, err := k.kubectl.Apply(ctx, out, manifests)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply")
 	}
@@ -88,12 +88,12 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 
 // Cleanup deletes what was deployed by calling Deploy.
 func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
-	manifests, err := k.readManifests()
+	manifests, err := k.readManifests(ctx)
 	if err != nil {
 		return errors.Wrap(err, "reading manifests")
 	}
 
-	if err := k.kubectl.Detete(out, manifests); err != nil {
+	if err := k.kubectl.Detete(ctx, out, manifests); err != nil {
 		return errors.Wrap(err, "delete")
 	}
 
@@ -135,7 +135,7 @@ func parseManifestsForDeploys(manifests kubectl.ManifestList) ([]Artifact, error
 }
 
 // readManifests reads the manifests to deploy/delete.
-func (k *KubectlDeployer) readManifests() (kubectl.ManifestList, error) {
+func (k *KubectlDeployer) readManifests(ctx context.Context) (kubectl.ManifestList, error) {
 	files, err := k.manifestFiles(k.Manifests)
 	if err != nil {
 		return nil, errors.Wrap(err, "expanding user manifest list")
@@ -152,7 +152,7 @@ func (k *KubectlDeployer) readManifests() (kubectl.ManifestList, error) {
 	}
 
 	for _, m := range k.RemoteManifests {
-		manifest, err := k.readRemoteManifest(m)
+		manifest, err := k.readRemoteManifest(ctx, m)
 		if err != nil {
 			return nil, errors.Wrap(err, "get remote manifests")
 		}
@@ -165,7 +165,7 @@ func (k *KubectlDeployer) readManifests() (kubectl.ManifestList, error) {
 	return manifests, nil
 }
 
-func (k *KubectlDeployer) readRemoteManifest(name string) ([]byte, error) {
+func (k *KubectlDeployer) readRemoteManifest(ctx context.Context, name string) ([]byte, error) {
 	var args []string
 	if parts := strings.Split(name, ":"); len(parts) > 1 {
 		args = append(args, "--namespace", parts[0])
@@ -174,7 +174,7 @@ func (k *KubectlDeployer) readRemoteManifest(name string) ([]byte, error) {
 	args = append(args, name, "-o", "yaml")
 
 	var manifest bytes.Buffer
-	err := k.kubectl.Run(nil, &manifest, "get", nil, args...)
+	err := k.kubectl.Run(ctx, nil, &manifest, "get", nil, args...)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting manifest")
 	}

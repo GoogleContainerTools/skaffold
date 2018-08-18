@@ -17,6 +17,7 @@ limitations under the License.
 package kubectl
 
 import (
+	"context"
 	"io"
 	"os/exec"
 
@@ -36,8 +37,8 @@ type CLI struct {
 }
 
 // Detete runs `kubectl delete` on a list of manifests.
-func (c *CLI) Detete(out io.Writer, manifests ManifestList) error {
-	if err := c.Run(manifests.Reader(), out, "delete", c.Flags.Delete, "--ignore-not-found=true", "-f", "-"); err != nil {
+func (c *CLI) Detete(ctx context.Context, out io.Writer, manifests ManifestList) error {
+	if err := c.Run(ctx, manifests.Reader(), out, "delete", c.Flags.Delete, "--ignore-not-found=true", "-f", "-"); err != nil {
 		return errors.Wrap(err, "kubectl delete")
 	}
 
@@ -45,7 +46,7 @@ func (c *CLI) Detete(out io.Writer, manifests ManifestList) error {
 }
 
 // Apply runs `kubectl apply` on a list of manifests.
-func (c *CLI) Apply(out io.Writer, manifests ManifestList) (ManifestList, error) {
+func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) (ManifestList, error) {
 	// Only redeploy modified or new manifests
 	// TODO(dgageot): should we delete a manifest that was deployed and is not anymore?
 	updated := c.previousApply.Diff(manifests)
@@ -55,7 +56,7 @@ func (c *CLI) Apply(out io.Writer, manifests ManifestList) (ManifestList, error)
 		return nil, nil
 	}
 
-	if err := c.Run(manifests.Reader(), out, "apply", c.Flags.Apply, "-f", "-"); err != nil {
+	if err := c.Run(ctx, manifests.Reader(), out, "apply", c.Flags.Apply, "-f", "-"); err != nil {
 		return nil, errors.Wrap(err, "kubectl apply")
 	}
 
@@ -63,7 +64,7 @@ func (c *CLI) Apply(out io.Writer, manifests ManifestList) (ManifestList, error)
 }
 
 // Run shells out kubectl CLI.
-func (c *CLI) Run(in io.Reader, out io.Writer, command string, commandFlags []string, arg ...string) error {
+func (c *CLI) Run(ctx context.Context, in io.Reader, out io.Writer, command string, commandFlags []string, arg ...string) error {
 	args := []string{"--context", c.KubeContext}
 	if c.Namespace != "" {
 		args = append(args, "--namespace", c.Namespace)
@@ -73,7 +74,7 @@ func (c *CLI) Run(in io.Reader, out io.Writer, command string, commandFlags []st
 	args = append(args, commandFlags...)
 	args = append(args, arg...)
 
-	cmd := exec.Command("kubectl", args...)
+	cmd := exec.CommandContext(ctx, "kubectl", args...)
 	cmd.Stdin = in
 	cmd.Stdout = out
 	cmd.Stderr = out
