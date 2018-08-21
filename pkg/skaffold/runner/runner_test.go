@@ -266,6 +266,7 @@ func TestRun(t *testing.T) {
 				Builder:  test.builder,
 				Deployer: test.deployer,
 				Tagger:   &tag.ChecksumTagger{},
+				opts:     &config.SkaffoldOptions{},
 			}
 			err := runner.Run(context.Background(), ioutil.Discard, test.config.Build.Artifacts)
 
