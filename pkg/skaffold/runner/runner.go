@@ -191,6 +191,8 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*v1
 		select {
 		case <-ctx.Done():
 			return nil
+		default:
+			continue
 		}
 	}
 }
