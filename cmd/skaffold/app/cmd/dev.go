@@ -19,9 +19,6 @@ package cmd
 import (
 	"context"
 	"io"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/pkg/errors"
@@ -75,14 +72,4 @@ func dev(out io.Writer) error {
 			}
 		}
 	}
-}
-
-func catchCtrlC(cancel context.CancelFunc) {
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGPIPE)
-
-	go func() {
-		<-signals
-		cancel()
-	}()
 }
