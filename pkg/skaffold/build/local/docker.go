@@ -40,9 +40,6 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace stri
 
 		args := []string{"build", workspace, "--file", dockerfilePath, "-t", initialTag}
 		args = append(args, docker.GetBuildArgs(a)...)
-		for _, from := range a.CacheFrom {
-			args = append(args, "--cache-from", from)
-		}
 
 		cmd := exec.Command("docker", args...)
 		if b.cfg.UseBuildkit {

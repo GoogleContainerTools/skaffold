@@ -66,6 +66,7 @@ func BuildArtifact(ctx context.Context, out io.Writer, cli APIClient, workspace 
 		BuildArgs:   a.BuildArgs,
 		CacheFrom:   a.CacheFrom,
 		AuthConfigs: authConfigs,
+		Target:      a.Target,
 	})
 	if err != nil {
 		return errors.Wrap(err, "docker build")
@@ -192,6 +193,14 @@ func GetBuildArgs(a *v1alpha2.DockerArtifact) []string {
 		} else {
 			args = append(args, fmt.Sprintf("%s=%s", k, *v))
 		}
+	}
+
+	for _, from := range a.CacheFrom {
+		args = append(args, "--cache-from", from)
+	}
+
+	if a.Target != "" {
+		args = append(args, "--target", a.Target)
 	}
 
 	return args
