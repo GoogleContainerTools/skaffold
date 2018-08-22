@@ -62,50 +62,47 @@ func NewLogAggregator(out io.Writer, podSelector PodSelector, colorPicker ColorP
 }
 
 func (a *LogAggregator) Start(ctx context.Context) error {
+	a.startTime = time.Now()
+
 	kubeclient, err := Client()
 	if err != nil {
 		return errors.Wrap(err, "getting k8s client")
 	}
 	client := kubeclient.CoreV1()
 
+	var forever int64 = 3600 * 24 * 365 * 100
+	watcher, err := client.Pods("").Watch(meta_v1.ListOptions{
+		IncludeUninitialized: true,
+		TimeoutSeconds:       &forever,
+	})
+
+	if err != nil {
+		return errors.Wrap(err, "initializing pod watcher")
+	}
+
 	go func() {
-	retryLoop:
+		defer watcher.Stop()
+
 		for {
-			a.startTime = time.Now()
-
-			watcher, err := client.Pods("").Watch(meta_v1.ListOptions{
-				IncludeUninitialized: true,
-			})
-
-			if err != nil {
-				logrus.Errorf("initializing pod watcher %s", err)
+			select {
+			case <-ctx.Done():
 				return
-			}
-
-		eventLoop:
-			for {
-				select {
-				case <-ctx.Done():
-					watcher.Stop()
+			case evt, ok := <-watcher.ResultChan():
+				if !ok {
 					return
-				case evt, ok := <-watcher.ResultChan():
-					if !ok {
-						// expected: server connection timeout
-						continue retryLoop
-					}
+				}
 
-					if evt.Type != watch.Added && evt.Type != watch.Modified {
-						continue eventLoop
-					}
+				if evt.Type != watch.Added && evt.Type != watch.Modified {
+					continue
+				}
 
-					pod, ok := evt.Object.(*v1.Pod)
-					if !ok {
-						continue eventLoop
-					}
+				pod, ok := evt.Object.(*v1.Pod)
+				if !ok {
+					continue
+				}
 
-					if a.podSelector.Select(pod) {
-						go a.streamLogs(ctx, pod)
-					}
+				if a.podSelector.Select(pod) {
+					go a.streamLogs(ctx, pod)
 				}
 			}
 		}
@@ -128,18 +125,16 @@ func (a *LogAggregator) streamLogs(ctx context.Context, pod *v1.Pod) {
 
 		logrus.Infof("Stream logs from pod: %s container: %s", pod.Name, container.Name)
 
-		tr, tw := io.Pipe()
-		go func() {
-			sinceSeconds := int64(time.Since(a.startTime).Seconds() + 0.5)
-			// 0s means all the logs
-			if sinceSeconds == 0 {
-				sinceSeconds = 1
-			}
+		sinceSeconds := int64(time.Since(a.startTime).Seconds() + 0.5)
+		// 0s means all the logs
+		if sinceSeconds == 0 {
+			sinceSeconds = 1
+		}
 
-			cmd := exec.CommandContext(ctx, "kubectl", "logs", fmt.Sprintf("--since=%ds", sinceSeconds), "-f", pod.Name, "-c", container.Name, "--namespace", pod.Namespace)
-			cmd.Stdout = tw
-			cmd.Run()
-		}()
+		tr, tw := io.Pipe()
+		cmd := exec.CommandContext(ctx, "kubectl", "logs", fmt.Sprintf("--since=%ds", sinceSeconds), "-f", pod.Name, "-c", container.Name, "--namespace", pod.Namespace)
+		cmd.Stdout = tw
+		go cmd.Run()
 
 		color := a.colorPicker.Pick(pod)
 		prefix := prefix(pod, container)
