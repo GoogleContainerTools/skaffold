@@ -48,6 +48,7 @@ import (
 const NoDockerfile = "None (image not built from these sources)"
 
 var outfile string
+var skipBuild bool
 
 func NewCmdInit(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
@@ -64,6 +65,7 @@ func NewCmdInit(out io.Writer) *cobra.Command {
 
 func AddInitFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&outfile, "file", "f", "", "File to write generated skaffold config")
+	cmd.Flags().BoolVar(&skipBuild, "skip-build", false, "Skip generating build artifacts in skaffold config")
 }
 
 func doInit(out io.Writer) error {
@@ -107,17 +109,22 @@ func doInit(out io.Writer) error {
 			logrus.Infof("invalid k8s yaml %s: %s", file, err.Error())
 		}
 	}
-	if len(dockerfiles) == 0 {
-		return errors.New("one or more valid Dockerfiles must be present to run skaffold; please provide at least one Dockerfile and try again")
-	}
 
-	if len(k8sConfigs) == 0 {
-		return errors.New("one or more valid kubernetes manifests is required to run skaffold")
-	}
+	var pairs []dockerfilePair
+	// conditionally generate build artifacts
+	if !skipBuild {
+		if len(dockerfiles) == 0 {
+			return errors.New("one or more valid Dockerfiles must be present to run skaffold; please provide at least one Dockerfile and try again")
+		}
 
-	pairs, err := resolveDockerfileImages(dockerfiles, images)
-	if err != nil {
-		return errors.Wrap(err, "resolving dockerfile/image pairs")
+		if len(k8sConfigs) == 0 {
+			return errors.New("one or more valid kubernetes manifests is required to run skaffold")
+		}
+
+		pairs, err = resolveDockerfileImages(dockerfiles, images)
+		if err != nil {
+			return errors.Wrap(err, "resolving dockerfile/image pairs")
+		}
 	}
 
 	cfg, err := generateSkaffoldConfig(k8sConfigs, pairs)
@@ -185,14 +192,19 @@ func generateSkaffoldConfig(k8sConfigs []string, dockerfilePairs []dockerfilePai
 		return nil, errors.Wrap(err, "generating default config")
 	}
 
-	var artifacts []*v1alpha2.Artifact
-	for _, pair := range dockerfilePairs {
-		artifacts = append(artifacts, &v1alpha2.Artifact{
-			ImageName: pair.ImageName,
-			Workspace: pair.Dockerfile,
-		})
+	if len(dockerfilePairs) > 0 {
+		var artifacts []*v1alpha2.Artifact
+		for _, pair := range dockerfilePairs {
+			artifacts = append(artifacts, &v1alpha2.Artifact{
+				ImageName: pair.ImageName,
+				Workspace: pair.Dockerfile,
+			})
+		}
+		config.Build.Artifacts = artifacts
+	} else {
+		// explicitly remove build config if we don't have any generated build artifacts
+		config.Build = v1alpha2.BuildConfig{}
 	}
-	config.Build.Artifacts = artifacts
 
 	config.Deploy = v1alpha2.DeployConfig{
 		DeployType: v1alpha2.DeployType{
