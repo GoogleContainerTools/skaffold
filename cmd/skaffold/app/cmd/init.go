@@ -43,6 +43,12 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
+// NoDockerfile allows users to specify they don't want to build
+// an image we parse out from a kubernetes manifest
+const NoDockerfile = "None (image not built from these sources)"
+
+var outfile string
+
 func NewCmdInit(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
@@ -52,22 +58,23 @@ func NewCmdInit(out io.Writer) *cobra.Command {
 			return doInit(out)
 		},
 	}
-	AddRunDevFlags(cmd)
+	AddInitFlags(cmd)
 	return cmd
+}
+
+func AddInitFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&outfile, "file", "f", "", "File to write generated skaffold config")
 }
 
 func doInit(out io.Writer) error {
 	rootDir := "."
-	yamlFiles := []string{}
-	k8sConfigs := []string{}
-	dockerfiles := []string{}
-	images := []string{}
+	var potentialConfigs, k8sConfigs, dockerfiles, images []string
 	err := filepath.Walk(rootDir, func(path string, f os.FileInfo, err error) error {
 		if f.IsDir() {
 			return nil
 		}
-		if filepath.Ext(path) == ".yaml" || filepath.Ext(path) == ".yml" {
-			yamlFiles = append(yamlFiles, path)
+		if util.IsSupportedKubernetesFormat(path) {
+			potentialConfigs = append(potentialConfigs, path)
 		}
 		// try and parse dockerfile
 		b, err := ioutil.ReadFile(path)
@@ -84,7 +91,7 @@ func doInit(out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	for _, file := range yamlFiles {
+	for _, file := range potentialConfigs {
 		config, err := cmdutil.ParseConfig(file)
 		if err == nil && config != nil {
 			out.Write([]byte(fmt.Sprintf("pre-existing skaffold yaml %s found: exiting\n", file)))
@@ -105,7 +112,7 @@ func doInit(out io.Writer) error {
 	}
 
 	if len(k8sConfigs) == 0 {
-		return errors.New("one or more valid kubernetes configs is required to run skaffold")
+		return errors.New("one or more valid kubernetes manifests is required to run skaffold")
 	}
 
 	pairs, err := resolveDockerfileImages(dockerfiles, images)
@@ -117,13 +124,19 @@ func doInit(out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	out.Write(cfg)
+	if outfile != "" {
+		if err := ioutil.WriteFile(outfile, cfg, 0644); err != nil {
+			return errors.Wrap(err, "writing config to file")
+		}
+	} else {
+		out.Write(cfg)
+	}
 
 	return nil
 }
 
-// For each image parsed from all k8s yamls, prompt the user for the
-// Dockerfile that builds the referenced image
+// For each image parsed from all k8s manifests, prompt the user for
+// the dockerfile that builds the referenced image
 func resolveDockerfileImages(dockerfiles []string, images []string) ([]dockerfilePair, error) {
 	// if we only have 1 image and 1 dockerfile, don't bother prompting
 	if len(images) == 1 && len(dockerfiles) == 1 {
@@ -134,19 +147,31 @@ func resolveDockerfileImages(dockerfiles []string, images []string) ([]dockerfil
 	}
 	pairs := []dockerfilePair{}
 	for _, image := range images {
-		var selectedDockerfile string
-		prompt := &survey.Select{
-			Message: fmt.Sprintf("Choose the dockerfile to build image %s", image),
-			Options: dockerfiles,
+		pair := promptUserForDockerfile(image, dockerfiles)
+		if pair.Dockerfile != NoDockerfile {
+			pairs = append(pairs, pair)
+			dockerfiles = util.RemoveFromSlice(dockerfiles, pair.Dockerfile)
 		}
-		survey.AskOne(prompt, &selectedDockerfile, nil)
-		pairs = append(pairs, dockerfilePair{
-			Dockerfile: selectedDockerfile,
-			ImageName:  image,
-		})
-		dockerfiles = util.RemoveFromSlice(dockerfiles, selectedDockerfile)
+		images = util.RemoveFromSlice(images, pair.ImageName)
+	}
+	if len(dockerfiles) > 0 {
+		logrus.Warnf("unused dockerfiles found in repository: %v", dockerfiles)
 	}
 	return pairs, nil
+}
+
+func promptUserForDockerfile(image string, dockerfiles []string) dockerfilePair {
+	var selectedDockerfile string
+	options := append(dockerfiles, NoDockerfile)
+	prompt := &survey.Select{
+		Message: fmt.Sprintf("Choose the dockerfile to build image %s", image),
+		Options: options,
+	}
+	survey.AskOne(prompt, &selectedDockerfile, nil)
+	return dockerfilePair{
+		Dockerfile: selectedDockerfile,
+		ImageName:  image,
+	}
 }
 
 func generateSkaffoldConfig(k8sConfigs []string, dockerfilePairs []dockerfilePair) ([]byte, error) {
@@ -155,7 +180,6 @@ func generateSkaffoldConfig(k8sConfigs []string, dockerfilePairs []dockerfilePai
 	logrus.Info("generating skaffold config")
 
 	var err error
-
 	config, err := config.NewConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "generating default config")
@@ -219,7 +243,6 @@ func parseKubernetesYaml(filepath string) ([]string, error) {
 		}
 
 		images = append(images, parseImagesFromYaml(m)...)
-
 		objects = append(objects, obj)
 	}
 	if len(objects) == 0 {
