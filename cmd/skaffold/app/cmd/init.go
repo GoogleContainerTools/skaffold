@@ -25,6 +25,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -49,6 +50,7 @@ const NoDockerfile = "None (image not built from these sources)"
 
 var outfile string
 var skipBuild bool
+var cliArtifacts []string
 
 func NewCmdInit(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
@@ -66,6 +68,7 @@ func NewCmdInit(out io.Writer) *cobra.Command {
 func AddInitFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&outfile, "file", "f", "", "File to write generated skaffold config")
 	cmd.Flags().BoolVar(&skipBuild, "skip-build", false, "Skip generating build artifacts in skaffold config")
+	cmd.Flags().StringArrayVarP(&cliArtifacts, "artifact", "a", nil, "'='-delimited dockerfile/image pair to generate build artifact\n(example: --artifact=/web/Dockerfile.web=gcr.io/web-project/image)")
 }
 
 func doInit(out io.Writer) error {
@@ -121,9 +124,16 @@ func doInit(out io.Writer) error {
 			return errors.New("one or more valid kubernetes manifests is required to run skaffold")
 		}
 
-		pairs, err = resolveDockerfileImages(dockerfiles, images)
-		if err != nil {
-			return errors.Wrap(err, "resolving dockerfile/image pairs")
+		if cliArtifacts != nil {
+			pairs, err = processCliArtifacts(cliArtifacts)
+			if err != nil {
+				return errors.Wrap(err, "processing cli artifacts")
+			}
+		} else {
+			pairs, err = resolveDockerfileImages(dockerfiles, images)
+			if err != nil {
+				return errors.Wrap(err, "resolving dockerfile/image pairs")
+			}
 		}
 	}
 
@@ -140,6 +150,21 @@ func doInit(out io.Writer) error {
 	}
 
 	return nil
+}
+
+func processCliArtifacts(artifacts []string) ([]dockerfilePair, error) {
+	var pairs []dockerfilePair
+	for _, artifact := range artifacts {
+		parts := strings.Split(artifact, "=")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("malformed artifact provided: %s", artifact)
+		}
+		pairs = append(pairs, dockerfilePair{
+			Dockerfile: parts[0],
+			ImageName:  parts[1],
+		})
+	}
+	return pairs, nil
 }
 
 // For each image parsed from all k8s manifests, prompt the user for
