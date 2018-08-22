@@ -177,24 +177,17 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*v1
 	}
 	// If tail is true, stream logs from deployed objects
 	imageList := kubernetes.NewImageList()
-	for _, build := range bRes {
-		imageList.Add(build.Tag)
+	for _, b := range bRes {
+		imageList.Add(b.Tag)
 	}
 	colorPicker := kubernetes.NewColorPicker(artifacts)
 	logger := kubernetes.NewLogAggregator(out, imageList, colorPicker)
-
 	if err := logger.Start(ctx); err != nil {
 		return errors.Wrap(err, "starting logger")
 	}
 
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		default:
-			continue
-		}
-	}
+	<-ctx.Done()
+	return nil
 }
 
 // Dev watches for changes and runs the skaffold build and deploy

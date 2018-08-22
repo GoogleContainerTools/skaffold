@@ -35,7 +35,7 @@ func NewCmdRun(out io.Writer) *cobra.Command {
 		},
 	}
 	AddRunDevFlags(cmd)
-	AddRunFlags(cmd)
+	AddRunDeployFlags(cmd)
 
 	cmd.Flags().StringVarP(&opts.CustomTag, "tag", "t", "", "The optional custom tag to use for images which overrides the current Tagger configuration")
 	return cmd

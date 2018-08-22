@@ -130,7 +130,7 @@ func AddDevFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
 }
 
-func AddRunFlags(cmd *cobra.Command) {
+func AddRunDeployFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.Tail, "tail", false, "Stream logs from deployed objects")
 }
 
