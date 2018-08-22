@@ -111,6 +111,16 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 	return nil
 }
 
+func sinceSeconds(d time.Duration) int64 {
+	since := int64((d + 999*time.Millisecond).Truncate(1 * time.Second).Seconds())
+	if since != 0 {
+		return since
+	}
+
+	// 0 means all the logs. So we ask for the logs since 1s.
+	return 1
+}
+
 func (a *LogAggregator) streamLogs(ctx context.Context, pod *v1.Pod) {
 	for _, container := range pod.Status.ContainerStatuses {
 		containerID := container.ContainerID
@@ -125,14 +135,13 @@ func (a *LogAggregator) streamLogs(ctx context.Context, pod *v1.Pod) {
 
 		logrus.Infof("Stream logs from pod: %s container: %s", pod.Name, container.Name)
 
-		sinceSeconds := int64(time.Since(a.startTime).Seconds() + 0.5)
-		// 0s means all the logs
-		if sinceSeconds == 0 {
-			sinceSeconds = 1
-		}
+		// In theory, it's more precise to use --since-time='' but there can be a time
+		// difference between the user's machine and the server.
+		// So we use --since=Xs and round up to the nearest second to not lose any log.
+		sinceSeconds := fmt.Sprintf("--since=%ds", sinceSeconds(time.Since(a.startTime)))
 
 		tr, tw := io.Pipe()
-		cmd := exec.CommandContext(ctx, "kubectl", "logs", fmt.Sprintf("--since=%ds", sinceSeconds), "-f", pod.Name, "-c", container.Name, "--namespace", pod.Namespace)
+		cmd := exec.CommandContext(ctx, "kubectl", "logs", sinceSeconds, "-f", pod.Name, "-c", container.Name, "--namespace", pod.Namespace)
 		cmd.Stdout = tw
 		go cmd.Run()
 
