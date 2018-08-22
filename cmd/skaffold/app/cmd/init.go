@@ -19,8 +19,6 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
-	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"os"
@@ -28,12 +26,14 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"gopkg.in/AlecAivazis/survey.v1"
 	yaml "gopkg.in/yaml.v2"
 
 	cmdutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 
 	dockerParse "github.com/GoogleContainerTools/kaniko/pkg/dockerfile"
@@ -74,7 +74,7 @@ func AddInitFlags(cmd *cobra.Command) {
 func doInit(out io.Writer) error {
 	rootDir := "."
 	var potentialConfigs, k8sConfigs, dockerfiles, images []string
-	err := filepath.Walk(rootDir, func(path string, f os.FileInfo, err error) error {
+	err := filepath.Walk(rootDir, func(path string, f os.FileInfo, e error) error {
 		if f.IsDir() {
 			return nil
 		}
@@ -130,10 +130,7 @@ func doInit(out io.Writer) error {
 				return errors.Wrap(err, "processing cli artifacts")
 			}
 		} else {
-			pairs, err = resolveDockerfileImages(dockerfiles, images)
-			if err != nil {
-				return errors.Wrap(err, "resolving dockerfile/image pairs")
-			}
+			pairs = resolveDockerfileImages(dockerfiles, images)
 		}
 	}
 
@@ -169,13 +166,13 @@ func processCliArtifacts(artifacts []string) ([]dockerfilePair, error) {
 
 // For each image parsed from all k8s manifests, prompt the user for
 // the dockerfile that builds the referenced image
-func resolveDockerfileImages(dockerfiles []string, images []string) ([]dockerfilePair, error) {
+func resolveDockerfileImages(dockerfiles []string, images []string) []dockerfilePair {
 	// if we only have 1 image and 1 dockerfile, don't bother prompting
 	if len(images) == 1 && len(dockerfiles) == 1 {
 		return []dockerfilePair{{
 			Dockerfile: dockerfiles[0],
 			ImageName:  images[0],
-		}}, nil
+		}}
 	}
 	pairs := []dockerfilePair{}
 	for _, image := range images {
@@ -189,7 +186,7 @@ func resolveDockerfileImages(dockerfiles []string, images []string) ([]dockerfil
 	if len(dockerfiles) > 0 {
 		logrus.Warnf("unused dockerfiles found in repository: %v", dockerfiles)
 	}
-	return pairs, nil
+	return pairs
 }
 
 func promptUserForDockerfile(image string, dockerfiles []string) dockerfilePair {
