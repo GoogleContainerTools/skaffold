@@ -23,7 +23,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -78,21 +77,5 @@ func runDeploy(out io.Writer) error {
 		return err
 	}
 
-	if !opts.Tail {
-		return nil
-	}
-	// If tail is true, stream logs from deployed objects
-	imageList := kubernetes.NewImageList()
-	for _, b := range builds {
-		imageList.Add(b.Tag)
-	}
-	colorPicker := kubernetes.NewColorPicker(config.Build.Artifacts)
-	logger := kubernetes.NewLogAggregator(out, imageList, colorPicker)
-
-	if err := logger.Start(ctx); err != nil {
-		return errors.Wrap(err, "starting logger")
-	}
-
-	<-ctx.Done()
-	return nil
+	return r.TailLogs(ctx, out, config.Build.Artifacts, builds)
 }

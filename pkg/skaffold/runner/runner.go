@@ -172,14 +172,20 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*v1
 		return errors.Wrap(err, "deploy step")
 	}
 
+	return r.TailLogs(ctx, out, artifacts, bRes)
+}
+
+// TailLogs prints the logs for deployed artifacts.
+func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact, bRes []build.Artifact) error {
 	if !r.opts.Tail {
 		return nil
 	}
-	// If tail is true, stream logs from deployed objects
+
 	imageList := kubernetes.NewImageList()
 	for _, b := range bRes {
 		imageList.Add(b.Tag)
 	}
+
 	colorPicker := kubernetes.NewColorPicker(artifacts)
 	logger := kubernetes.NewLogAggregator(out, imageList, colorPicker)
 	if err := logger.Start(ctx); err != nil {
