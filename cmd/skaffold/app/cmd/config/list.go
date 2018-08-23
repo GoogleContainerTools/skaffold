@@ -17,11 +17,12 @@ limitations under the License.
 package config
 
 import (
-	yaml "gopkg.in/yaml.v2"
 	"io"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	yaml "gopkg.in/yaml.v2"
 )
 
 func NewCmdList(out io.Writer) *cobra.Command {

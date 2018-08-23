@@ -53,7 +53,6 @@ func setConfigValue(name string, value interface{}) error {
 	var fieldName string
 	for i := 0; i < cfgValue.NumField(); i++ {
 		fieldType := reflect.TypeOf(*cfg).Field(i)
-		fmt.Printf("fieldType: %+v\n", fieldType)
 		for _, tag := range strings.Split(fieldType.Tag.Get("yaml"), ",") {
 			if tag == name {
 				fieldName = fieldType.Name
