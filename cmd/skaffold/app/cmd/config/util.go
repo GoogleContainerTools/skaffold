@@ -76,11 +76,8 @@ func resolveConfigFile() error {
 	return nil
 }
 
-func readConfig() (*Config, error) {
-	if err := resolveConfigFile(); err != nil {
-		return nil, errors.Wrap(err, "resolving config file location")
-	}
-	contents, err := ioutil.ReadFile(configFile)
+func ReadConfigForFile(filename string) (*Config, error) {
+	contents, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading global config")
 	}
@@ -89,6 +86,13 @@ func readConfig() (*Config, error) {
 		return nil, errors.Wrap(err, "unmarshalling global skaffold config")
 	}
 	return &config, nil
+}
+
+func readConfig() (*Config, error) {
+	if err := resolveConfigFile(); err != nil {
+		return nil, errors.Wrap(err, "resolving config file location")
+	}
+	return ReadConfigForFile(configFile)
 }
 
 // return the specific config to be modified based on the provided kubectx.
