@@ -358,6 +358,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	runner := &SkaffoldRunner{
 		Builder:  builder,
 		Deployer: deployer,
+		opts:     &config.SkaffoldOptions{},
 	}
 
 	ctx := context.Background()

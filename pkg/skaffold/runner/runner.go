@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/bazel"
@@ -234,6 +235,10 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 	for i := range artifacts {
 		artifact := artifacts[i]
 
+		if !r.shouldWatch(artifact) {
+			continue
+		}
+
 		if err := watcher.Register(
 			func() ([]string, error) { return dependenciesForArtifact(artifact) },
 			func() { changed.Add(artifact) },
@@ -269,6 +274,20 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 	}
 
 	return nil, watcher.Run(ctx, PollInterval, onChange)
+}
+
+func (r *SkaffoldRunner) shouldWatch(artifact *v1alpha2.Artifact) bool {
+	if len(r.opts.Watch) == 0 {
+		return true
+	}
+
+	for _, watchExpression := range r.opts.Watch {
+		if strings.Contains(artifact.ImageName, watchExpression) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // buildAndDeploy builds a subset of the artifacts and deploys everything.
