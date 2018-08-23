@@ -39,7 +39,9 @@ func NewCmdDelete(out io.Writer) *cobra.Command {
 }
 
 func delete(out io.Writer) error {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	catchCtrlC(cancel)
 
 	runner, _, err := newRunner(opts)
 	if err != nil {

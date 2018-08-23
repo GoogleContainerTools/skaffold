@@ -42,7 +42,9 @@ func NewCmdRun(out io.Writer) *cobra.Command {
 }
 
 func run(out io.Writer) error {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	catchCtrlC(cancel)
 
 	runner, config, err := newRunner(opts)
 	if err != nil {

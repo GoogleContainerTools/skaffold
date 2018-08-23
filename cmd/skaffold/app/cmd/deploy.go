@@ -49,7 +49,9 @@ func NewCmdDeploy(out io.Writer) *cobra.Command {
 }
 
 func runDeploy(out io.Writer) error {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	catchCtrlC(cancel)
 
 	r, config, err := newRunner(opts)
 	if err != nil {
