@@ -217,7 +217,10 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 
 		color.Default.Fprintln(out, "Watching for changes...")
 		changed.reset()
-		logger.Unmute()
+
+		if err == nil {
+			logger.Unmute()
+		}
 
 		return err
 	}
