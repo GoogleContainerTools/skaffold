@@ -10,7 +10,7 @@ build:
     gitCommit: {}
 
     # Tag the image with the checksum of the built image (image id).
-    sha256: {}
+    # sha256: {}
 
     # Tag the image with a configurable template string.
     # The template must be in the golang text/template syntax: https://golang.org/pkg/text/template/
