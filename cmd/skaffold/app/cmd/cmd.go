@@ -130,6 +130,10 @@ func AddDevFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
 }
 
+func AddRunDeployFlags(cmd *cobra.Command) {
+	cmd.Flags().BoolVar(&opts.Tail, "tail", false, "Stream logs from deployed objects")
+}
+
 func AddRunDevFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")

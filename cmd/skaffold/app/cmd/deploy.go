@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -42,6 +43,7 @@ func NewCmdDeploy(out io.Writer) *cobra.Command {
 		},
 	}
 	AddRunDevFlags(cmd)
+	AddRunDeployFlags(cmd)
 	cmd.Flags().StringSliceVar(&images, "images", nil, "A list of images to deploy")
 	cmd.Flags().BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the deploy output")
 	return cmd
@@ -50,7 +52,7 @@ func NewCmdDeploy(out io.Writer) *cobra.Command {
 func runDeploy(out io.Writer) error {
 	ctx := context.Background()
 
-	r, _, err := newRunner(opts)
+	r, config, err := newRunner(opts)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}
@@ -72,6 +74,25 @@ func runDeploy(out io.Writer) error {
 		})
 	}
 
-	_, err = r.Deploy(ctx, deployOut, builds)
-	return err
+	if _, err := r.Deploy(ctx, deployOut, builds); err != nil {
+		return err
+	}
+
+	if !opts.Tail {
+		return nil
+	}
+	// If tail is true, stream logs from deployed objects
+	imageList := kubernetes.NewImageList()
+	for _, b := range builds {
+		imageList.Add(b.Tag)
+	}
+	colorPicker := kubernetes.NewColorPicker(config.Build.Artifacts)
+	logger := kubernetes.NewLogAggregator(out, imageList, colorPicker)
+
+	if err := logger.Start(ctx); err != nil {
+		return errors.Wrap(err, "starting logger")
+	}
+
+	<-ctx.Done()
+	return nil
 }

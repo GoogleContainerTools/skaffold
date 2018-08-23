@@ -26,6 +26,7 @@ type SkaffoldOptions struct {
 	ConfigurationFile string
 	Cleanup           bool
 	Notification      bool
+	Tail              bool
 	Profiles          []string
 	CustomTag         string
 	Namespace         string
