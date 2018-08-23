@@ -160,7 +160,7 @@ func getTagger(t v1alpha2.TagPolicy, customTag string) (tag.Tagger, error) {
 	}
 }
 
-// Run builds artifacts ad then deploys them.
+// Run builds artifacts and then deploys them.
 func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact) error {
 	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
 	if err != nil {
