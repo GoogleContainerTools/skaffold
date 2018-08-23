@@ -18,7 +18,45 @@ package bazel
 
 import (
 	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
+
+func TestGetDependenciesWithWorkspace(t *testing.T) {
+	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+	util.DefaultExecCommand = testutil.NewFakeCmdOut(
+		"bazel query kind('source file', deps('target')) union buildfiles('target') --noimplicit_deps --order_output=no",
+		"@ignored\n//external/ignored\n\n//:dep1\n//:dep2\n",
+		nil,
+	)
+
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+	tmpDir.Write("WORKSPACE", "")
+
+	deps, err := GetDependencies(tmpDir.Root(), &v1alpha2.BazelArtifact{
+		BuildTarget: "target",
+	})
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, []string{"dep1", "dep2", "WORKSPACE"}, deps)
+}
+
+func TestGetDependenciesWithoutWorkspace(t *testing.T) {
+	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+	util.DefaultExecCommand = testutil.NewFakeCmdOut(
+		"bazel query kind('source file', deps('target2')) union buildfiles('target2') --noimplicit_deps --order_output=no",
+		"@ignored\n//external/ignored\n\n//:dep3\n",
+		nil,
+	)
+
+	deps, err := GetDependencies(".", &v1alpha2.BazelArtifact{
+		BuildTarget: "target2",
+	})
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, []string{"dep3"}, deps)
+}
 
 func TestQuery(t *testing.T) {
 	query := query("//:skaffold_example.tar")

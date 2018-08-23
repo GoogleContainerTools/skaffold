@@ -53,7 +53,7 @@ func (k *KustomizeDeployer) Labels() map[string]string {
 }
 
 func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
-	manifests, err := k.readManifests()
+	manifests, err := k.readManifests(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading manifests")
 	}
@@ -67,7 +67,7 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 		return nil, errors.Wrap(err, "replacing images in manifests")
 	}
 
-	updated, err := k.kubectl.Apply(out, manifests)
+	updated, err := k.kubectl.Apply(ctx, out, manifests)
 	if err != nil {
 		return nil, errors.Wrap(err, "apply")
 	}
@@ -76,12 +76,12 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 }
 
 func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
-	manifests, err := k.readManifests()
+	manifests, err := k.readManifests(ctx)
 	if err != nil {
 		return errors.Wrap(err, "reading manifests")
 	}
 
-	if err := k.kubectl.Detete(out, manifests); err != nil {
+	if err := k.kubectl.Detete(ctx, out, manifests); err != nil {
 		return errors.Wrap(err, "delete")
 	}
 
@@ -93,8 +93,8 @@ func (k *KustomizeDeployer) Dependencies() ([]string, error) {
 	return []string{k.KustomizePath}, nil
 }
 
-func (k *KustomizeDeployer) readManifests() (kubectl.ManifestList, error) {
-	cmd := exec.Command("kustomize", "build", k.KustomizePath)
+func (k *KustomizeDeployer) readManifests(ctx context.Context) (kubectl.ManifestList, error) {
+	cmd := exec.CommandContext(ctx, "kustomize", "build", k.KustomizePath)
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "kustomize build")

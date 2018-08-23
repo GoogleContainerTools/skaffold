@@ -18,7 +18,6 @@ package update
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -30,6 +29,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const latestVersionURL = "https://storage.googleapis.com/skaffold/releases/latest/VERSION"
+
 // IsUpdateCheckEnabled returns whether or not the update check is enabled
 // It is true by default, but setting it to any other value than true will disable the check
 func IsUpdateCheckEnabled() bool {
@@ -37,14 +38,10 @@ func IsUpdateCheckEnabled() bool {
 	if version.Get().GitTreeState == "dirty" {
 		return false
 	}
-	v := os.Getenv(constants.UpdateCheckEnvironmentVariable)
-	if v == "" || strings.ToLower(v) == "true" {
-		return true
-	}
-	return false
-}
 
-var latestVersionURL = fmt.Sprintf("https://storage.googleapis.com/skaffold/releases/latest/VERSION")
+	v := os.Getenv(constants.UpdateCheckEnvironmentVariable)
+	return v == "" || strings.ToLower(v) == "true"
+}
 
 // GetLatestVersion uses a VERSION file stored on GCS to determine the latest released version of skaffold
 func GetLatestVersion(ctx context.Context) (semver.Version, error) {

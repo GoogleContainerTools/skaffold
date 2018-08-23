@@ -192,8 +192,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 		switch {
 		case changed.needsReload:
 			err = ErrorConfigurationChanged
-		case len(changed.diryArtifacts) > 0:
-			err = r.buildAndDeploy(ctx, out, changed.diryArtifacts, imageList)
+		case len(changed.dirtyArtifacts) > 0:
+			err = r.buildAndDeploy(ctx, out, changed.dirtyArtifacts, imageList)
 		case changed.needsRedeploy:
 			if _, err := r.Deploy(ctx, out, r.builds); err != nil {
 				logrus.Warnln("Skipping Deploy due to error:", err)

@@ -49,7 +49,7 @@ type colorPicker struct {
 	imageColors map[string]color.Color
 }
 
-// NewColorPicker creates a new ColorPicker. For each artfact, a color will be selected
+// NewColorPicker creates a new ColorPicker. For each artifact, a color will be selected
 // sequentially from `colorCodes`. If all colors are used, the first color will be used
 // again. The formatter for the associated color will then be returned by `Pick` each
 // time it is called for the artifact and can be used to write to out in that color.

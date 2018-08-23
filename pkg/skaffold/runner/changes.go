@@ -21,17 +21,17 @@ import (
 )
 
 type changes struct {
-	diryArtifacts []*v1alpha2.Artifact
-	needsRedeploy bool
-	needsReload   bool
+	dirtyArtifacts []*v1alpha2.Artifact
+	needsRedeploy  bool
+	needsReload    bool
 }
 
 func (c *changes) Add(a *v1alpha2.Artifact) {
-	c.diryArtifacts = append(c.diryArtifacts, a)
+	c.dirtyArtifacts = append(c.dirtyArtifacts, a)
 }
 
 func (c *changes) reset() {
-	c.diryArtifacts = nil
+	c.dirtyArtifacts = nil
 	c.needsRedeploy = false
 	c.needsReload = false
 }
