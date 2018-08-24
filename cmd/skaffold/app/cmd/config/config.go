@@ -22,6 +22,6 @@ type Config struct {
 }
 
 type ContextConfig struct {
-	Kubectx     string `yaml:"kubectx,omitempty"`
+	Kubecontext string `yaml:"kube-context,omitempty"`
 	DefaultRepo string `yaml:"default-repo"`
 }

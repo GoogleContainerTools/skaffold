@@ -33,20 +33,20 @@ import (
 const defaultConfigLocation = ".skaffold/config"
 
 func resolveKubectlContext() {
-	if kubectx != "" {
+	if kubecontext != "" {
 		return
 	}
 
 	context, err := context.CurrentContext()
 	if err != nil {
 		logrus.Warn(errors.Wrap(err, "retrieving current kubectl context"))
-		kubectx = "default"
+		kubecontext = "default"
 	}
 	if context == "" {
 		logrus.Infof("no context currently set, falling back to default")
-		kubectx = "default"
+		kubecontext = "default"
 	}
-	kubectx = context
+	kubecontext = context
 }
 
 func resolveConfigFile() error {
@@ -95,7 +95,7 @@ func readConfig() (*Config, error) {
 	return ReadConfigForFile(configFile)
 }
 
-// return the specific config to be modified based on the provided kubectx.
+// return the specific config to be modified based on the provided kube context.
 // either returns the config corresponding to the provided or current context,
 // or the global config if that is specified (or if no current context is set).
 func getConfigForKubectx() (*ContextConfig, error) {
@@ -107,9 +107,34 @@ func getConfigForKubectx() (*ContextConfig, error) {
 		return cfg.Global, nil
 	}
 	for _, contextCfg := range cfg.ContextConfigs {
-		if contextCfg.Kubectx == kubectx {
+		if contextCfg.Kubecontext == kubecontext {
 			return contextCfg, nil
 		}
 	}
-	return nil, fmt.Errorf("no config entry found for kubectx %s", kubectx)
+	return nil, fmt.Errorf("no config entry found for kube-context %s", kubecontext)
+}
+
+func getOrCreateConfigForKubectx() (*ContextConfig, error) {
+	cfg, err := readConfig()
+	if err != nil {
+		return nil, err
+	}
+	if global {
+		return cfg.Global, nil
+	}
+	for _, contextCfg := range cfg.ContextConfigs {
+		if contextCfg.Kubecontext == kubecontext {
+			return contextCfg, nil
+		}
+	}
+	newCfg := &ContextConfig{
+		Kubecontext: kubecontext,
+	}
+	cfg.ContextConfigs = append(cfg.ContextConfigs, newCfg)
+
+	if err := writeFullConfig(cfg); err != nil {
+		return nil, err
+	}
+
+	return newCfg, nil
 }

@@ -52,11 +52,11 @@ func runList(out io.Writer) error {
 			return errors.Wrap(err, "marshaling config")
 		}
 	} else {
-		configs, err := getConfigForKubectx()
+		config, err := getConfigForKubectx()
 		if err != nil {
 			return err
 		}
-		configYaml, err = yaml.Marshal(&configs)
+		configYaml, err = yaml.Marshal(&config)
 		if err != nil {
 			return errors.Wrap(err, "marshaling config")
 		}

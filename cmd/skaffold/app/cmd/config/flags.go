@@ -20,12 +20,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var configFile, kubectx string
+var configFile, kubecontext string
 var showAll, global bool
 
 func AddConfigFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&configFile, "config", "c", "", "path to skaffold config")
-	cmd.Flags().StringVarP(&kubectx, "kubectx", "k", "", "kubectl context to set values against")
+	cmd.Flags().StringVarP(&kubecontext, "kube-context", "k", "", "kubectl context to set values against")
 }
 
 func AddListFlags(cmd *cobra.Command) {

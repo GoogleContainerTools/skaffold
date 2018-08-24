@@ -31,7 +31,7 @@ var baseConfig = &config.Config{
 	},
 	ContextConfigs: []*config.ContextConfig{
 		{
-			Kubectx:     "test-context",
+			Kubecontext: "test-context",
 			DefaultRepo: "context-local-repository",
 		},
 	},
@@ -64,31 +64,3 @@ func TestReadConfig(t *testing.T) {
 		testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedCfg, cfg)
 	}
 }
-
-// func TestSetConfig(t *testing.T) {
-// 	c, _ := yaml.Marshal(*baseConfig)
-// 	cfg, teardown := testutil.TempFile(t, "config", c)
-// 	defer teardown()
-
-// 	var tests = []struct {
-
-// 		expectedCfg *config.Config
-// 		shouldErr   bool
-// 	}{
-// 		{
-// 			filename:  "",
-// 			shouldErr: true,
-// 		},
-// 		{
-// 			filename:    cfg,
-// 			expectedCfg: baseConfig,
-// 			shouldErr:   false,
-// 		},
-// 	}
-
-// 	for _, test := range tests {
-// 		cfg, err := config.ReadConfigForFile(test.filename)
-
-// 		testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedCfg, cfg)
-// 	}
-// }

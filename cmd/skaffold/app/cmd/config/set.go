@@ -44,7 +44,7 @@ func NewCmdSet(out io.Writer) *cobra.Command {
 }
 
 func setConfigValue(name string, value interface{}) error {
-	cfg, err := getConfigForKubectx()
+	cfg, err := getOrCreateConfigForKubectx()
 	if err != nil {
 		return err
 	}
@@ -77,20 +77,24 @@ func setConfigValue(name string, value interface{}) error {
 }
 
 func writeConfig(cfg *ContextConfig) error {
-	configs, err := readConfig()
+	fullConfig, err := readConfig()
 	if err != nil {
 		return err
 	}
 	if global {
-		configs.Global = cfg
+		fullConfig.Global = cfg
 	} else {
-		for i, contextCfg := range configs.ContextConfigs {
-			if contextCfg.Kubectx == kubectx {
-				configs.ContextConfigs[i] = cfg
+		for i, contextCfg := range fullConfig.ContextConfigs {
+			if contextCfg.Kubecontext == kubecontext {
+				fullConfig.ContextConfigs[i] = cfg
 			}
 		}
 	}
-	contents, err := yaml.Marshal(configs)
+	return writeFullConfig(fullConfig)
+}
+
+func writeFullConfig(cfg *Config) error {
+	contents, err := yaml.Marshal(cfg)
 	if err != nil {
 		return errors.Wrap(err, "marshaling config")
 	}
