@@ -44,10 +44,9 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 func dev(out io.Writer) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	catchCtrlC(cancel)
 
 	if opts.Cleanup {
-		catchCtrlC(cancel)
-
 		defer func() {
 			if err := delete(out); err != nil {
 				logrus.Warnln("cleanup:", err)

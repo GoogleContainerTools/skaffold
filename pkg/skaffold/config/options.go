@@ -40,6 +40,9 @@ func (opts *SkaffoldOptions) Labels() map[string]string {
 	if opts.Cleanup {
 		labels["cleanup"] = "true"
 	}
+	if opts.Tail {
+		labels["tail"] = "true"
+	}
 	if opts.Namespace != "" {
 		labels["namespace"] = opts.Namespace
 	}
