@@ -1,5 +1,3 @@
-// +build integration
-
 /*
 Copyright 2018 The Skaffold Authors
 
@@ -22,7 +20,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"math/rand"
 	"os"
 	"os/exec"
 	"strings"
@@ -246,7 +243,7 @@ func TestListConfig(t *testing.T) {
 		},
 		ContextConfigs: []*config.ContextConfig{
 			{
-				Kubectx:     "test-context",
+				Kubecontext: "test-context",
 				DefaultRepo: "context-local-repository",
 			},
 		},
@@ -273,7 +270,7 @@ func TestListConfig(t *testing.T) {
 			expectedOutput: []string{
 				"global:",
 				"default-repo: global-repository",
-				"kubectx: test-context",
+				"kube-context: test-context",
 				"default-repo: context-local-repository",
 			},
 		},
@@ -309,7 +306,7 @@ func TestSetConfig(t *testing.T) {
 		},
 		ContextConfigs: []*config.ContextConfig{
 			{
-				Kubectx:     "test-context",
+				Kubecontext: "test-context",
 				DefaultRepo: "context-local-repository",
 			},
 		},
@@ -345,7 +342,7 @@ func TestSetConfig(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			value := randomString()
+			value := util.RandomID()
 			args := []string{"config", "set", test.key, value}
 			args = append(args, "-c", cfg)
 			if test.kubectx != "" {
@@ -378,13 +375,4 @@ func TestSetConfig(t *testing.T) {
 			}
 		})
 	}
-}
-
-func randomString() string {
-	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	b := make([]rune, 16)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return string(b)
 }

@@ -17,7 +17,7 @@ limitations under the License.
 package config
 
 type Config struct {
-	Global         *ContextConfig
+	Global         *ContextConfig   `yaml:"global,omitempty"`
 	ContextConfigs []*ContextConfig `yaml:"kubeContexts"`
 }
 

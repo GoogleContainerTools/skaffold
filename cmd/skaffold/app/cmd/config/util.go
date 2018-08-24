@@ -67,13 +67,8 @@ func resolveConfigFile() error {
 		}
 		configFile = filepath.Join(home, defaultConfigLocation)
 	}
-	_, err = os.Stat(configFile)
-	// TODO(nkubala): create default config?
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_, err = os.OpenFile(configFile, os.O_RDWR|os.O_CREATE, 0644)
+	return err
 }
 
 func ReadConfigForFile(filename string) (*Config, error) {
@@ -120,6 +115,13 @@ func getOrCreateConfigForKubectx() (*ContextConfig, error) {
 		return nil, err
 	}
 	if global {
+		if cfg.Global == nil {
+			newCfg := &ContextConfig{}
+			cfg.Global = newCfg
+			if err := writeFullConfig(cfg); err != nil {
+				return nil, err
+			}
+		}
 		return cfg.Global, nil
 	}
 	for _, contextCfg := range cfg.ContextConfigs {
