@@ -33,10 +33,9 @@ import (
 
 	cmdutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-
-	dockerParse "github.com/GoogleContainerTools/kaniko/pkg/dockerfile"
 
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -82,12 +81,7 @@ func doInit(out io.Writer) error {
 			potentialConfigs = append(potentialConfigs, path)
 		}
 		// try and parse dockerfile
-		b, err := ioutil.ReadFile(path)
-		if err != nil {
-			return errors.Wrap(err, "reading potential dockerfile")
-		}
-		instructions, err := dockerParse.Parse(b)
-		if err == nil && len(instructions) > 0 {
+		if docker.ValidateDockerfile(path) {
 			logrus.Infof("existing dockerfile found: %s", path)
 			dockerfiles = append(dockerfiles, path)
 		}

@@ -12,7 +12,7 @@ import (
 // The scratch buffer argument is ignored by this architecture.
 //
 // Please send PR or link to article if you know of a more performant way of
-// enumerating directory contents and hopefully mode types on Windows.
+// enumerating directory contents and mode types on Windows.
 
 func readdirents(osDirname string, _ []byte) (Dirents, error) {
 	dh, err := os.Open(osDirname)

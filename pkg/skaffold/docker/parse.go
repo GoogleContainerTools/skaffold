@@ -41,6 +41,27 @@ import (
 // RetrieveImage is overridden for unit testing
 var RetrieveImage = retrieveImage
 
+func ValidateDockerfile(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		logrus.Warnf("opening file %s: %s", path, err.Error())
+		return false
+	}
+	res, err := parser.Parse(f)
+	if err != nil || res == nil {
+		return false
+	}
+	// validate each node contains valid dockerfile directive
+	for _, child := range res.AST.Children {
+		_, ok := command.Commands[child.Value]
+		if !ok {
+			return false
+		}
+	}
+
+	return true
+}
+
 func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*string) ([]string, error) {
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {

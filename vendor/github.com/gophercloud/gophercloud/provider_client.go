@@ -295,7 +295,11 @@ func (client *ProviderClient) Request(method, url string, options *RequestOpts) 
 						seeker.Seek(0, 0)
 					}
 				}
+				// make a new call to request with a nil reauth func in order to avoid infinite loop
+				reauthFunc := client.ReauthFunc
+				client.ReauthFunc = nil
 				resp, err = client.Request(method, url, options)
+				client.ReauthFunc = reauthFunc
 				if err != nil {
 					switch err.(type) {
 					case *ErrUnexpectedResponseCode:

@@ -144,14 +144,15 @@ func (r *remoteImage) RawManifest() ([]byte, error) {
 		if digest.String() != dgst.DigestStr() {
 			return nil, fmt.Errorf("manifest digest: %q does not match requested digest: %q for %q", digest, dgst.DigestStr(), r.ref)
 		}
-	} else if checksum := resp.Header.Get("Docker-Content-Digest"); checksum != "" && checksum != digest.String() {
-		err := fmt.Errorf("manifest digest: %q does not match Docker-Content-Digest: %q for %q", digest, checksum, r.ref)
-		if r.ref.Context().RegistryStr() == name.DefaultRegistry {
-			// TODO(docker/distribution#2395): Remove this check.
-		} else {
-			// When pulling by tag, we can only validate that the digest matches what the registry told us it should be.
-			return nil, err
-		}
+	} else {
+		// Do nothing for tags; I give up.
+		//
+		// We'd like to validate that the "Docker-Content-Digest" header matches what is returned by the registry,
+		// but so many registries implement this incorrectly that it's not worth checking.
+		//
+		// For reference:
+		// https://github.com/docker/distribution/issues/2395
+		// https://github.com/GoogleContainerTools/kaniko/issues/298
 	}
 
 	r.manifest = manifest
