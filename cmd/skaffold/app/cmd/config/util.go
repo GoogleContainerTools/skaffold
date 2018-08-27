@@ -19,10 +19,10 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
@@ -50,7 +50,6 @@ func resolveKubectlContext() {
 }
 
 func resolveConfigFile() error {
-	var err error
 	if configFile != "" {
 		// we had a config provided as a flag, expand it and return
 		if !filepath.IsAbs(configFile) {
@@ -67,8 +66,7 @@ func resolveConfigFile() error {
 		}
 		configFile = filepath.Join(home, defaultConfigLocation)
 	}
-	_, err = os.OpenFile(configFile, os.O_RDWR|os.O_CREATE, 0644)
-	return err
+	return util.VerifyOrCreateFile(configFile)
 }
 
 func ReadConfigForFile(filename string) (*Config, error) {

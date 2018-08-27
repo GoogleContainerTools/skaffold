@@ -1,3 +1,5 @@
+// +build integration
+
 /*
 Copyright 2018 The Skaffold Authors
 

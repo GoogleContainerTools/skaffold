@@ -35,7 +35,11 @@ func NewCmdSet(out io.Writer) *cobra.Command {
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			resolveKubectlContext()
-			return setConfigValue(args[0], args[1])
+			err := setConfigValue(args[0], args[1])
+			if err == nil {
+				logConfigChangeForUser(out, args[0], args[1])
+			}
+			return err
 		},
 	}
 	AddConfigFlags(cmd)
@@ -103,4 +107,12 @@ func writeFullConfig(cfg *Config) error {
 		return errors.Wrap(err, "writing config file")
 	}
 	return nil
+}
+
+func logConfigChangeForUser(out io.Writer, key string, value string) {
+	if global {
+		out.Write([]byte(fmt.Sprintf("set global value %s to %s\n", key, value)))
+	} else {
+		out.Write([]byte(fmt.Sprintf("set value %s to %s for context %s\n", key, value, kubecontext)))
+	}
 }
