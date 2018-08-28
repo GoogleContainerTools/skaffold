@@ -146,6 +146,13 @@ To test a release on your own project:
 gcloud builds submit --config deploy/cloudbuild-release.yaml --substitutions=_RELEASE_BUCKET=<personal-bucket>,TAG_NAME=testrelease_v1234
 ```                                                      
 
+Note: if gcloud submit fails with something similar to the error message below, run `dep ensure && dep prune` to remove the broken symlinks   
+```
+ERROR: gcloud crashed (OSError): [Errno 2] No such file or directory: './vendor/github.com/karrick/godirwalk/testdata/symlinks/file-symlink'
+
+```
+
+
 To just run a release without Google Cloud Build only using your local Docker daemon, you can run: 
 
 ```

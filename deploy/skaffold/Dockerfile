@@ -90,8 +90,9 @@ WORKDIR /go/src/github.com/GoogleContainerTools/skaffold
 COPY . .
 
 FROM builder as integration
+ARG VERSION
 
-RUN make out/skaffold-linux-amd64 && mv out/skaffold-linux-amd64 /usr/bin/skaffold
+RUN make out/skaffold-linux-amd64 VERSION=$VERSION && mv out/skaffold-linux-amd64 /usr/bin/skaffold
 
 CMD ["make", "integration"]
 
