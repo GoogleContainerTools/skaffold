@@ -124,6 +124,34 @@ Once PRs with doc changes are merged, they will get automatically published to t
 for [the latest build](https://storage.googleapis.com/skaffold/builds/latest/docs/index.html)
 which at release time will be published with [the latest release](https://storage.googleapis.com/skaffold/releases/latest/docs/index.html).
 
+## Testing and contributing to the Skaffold release process 
+
+Skaffold release process works with Google Cloud Build within our own project `k8s-skaffold` and the skaffold release bucket, `gs://skaffold`. 
+
+In order to be able to iterate/fix the release process you can pass in your own project and bucket as parameters to the build. 
+
+We continuously release **builds** under `gs://skaffold/builds`. This is done by triggering `cloudbuild.yaml` on every push to master. 
+
+To run a build on your own project: 
+
+```
+gcloud builds submit --config deploy/cloudbuild.yaml --substitutions=_RELEASE_BUCKET=<personal-bucket>,COMMIT_SHA=$(git rev-parse HEAD)
+```  
+
+We **release** stable versions under `gs://skaffold/releases`. This is done by triggering `cloudbuild-release.yaml` on every new tag in our Github repo.
+
+To test a release on your own project:
+                                                          
+```
+gcloud builds submit --config deploy/cloudbuild-release.yaml --substitutions=_RELEASE_BUCKET=<personal-bucket>,TAG_NAME=testrelease_v1234
+```                                                      
+
+To just run a release without Google Cloud Build only using your local Docker daemon, you can run: 
+
+```
+make -j release GCP_PROJECT=<personalproject> RELEASE_BUCKET=<personal-bucket>
+``` 
+
 ## Creating a PR
 
 When you have changes you would like to propose to skaffold, you will need to:
