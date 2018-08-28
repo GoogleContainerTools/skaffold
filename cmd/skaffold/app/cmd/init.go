@@ -33,6 +33,7 @@ import (
 
 	cmdutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -197,6 +198,34 @@ func promptUserForDockerfile(image string, dockerfiles []string) dockerfilePair 
 	}
 }
 
+func processBuildArtifacts(pairs []dockerfilePair) v1alpha2.BuildConfig {
+	var config v1alpha2.BuildConfig
+
+	if len(pairs) > 0 {
+		var artifacts []*v1alpha2.Artifact
+		for _, pair := range pairs {
+			workspace := filepath.Dir(pair.Dockerfile)
+			dockerfilePath := filepath.Base(pair.Dockerfile)
+			a := &v1alpha2.Artifact{
+				ImageName: pair.ImageName,
+			}
+			if workspace != "." {
+				a.Workspace = workspace
+			}
+			if dockerfilePath != constants.DefaultDockerfilePath {
+				a.ArtifactType = v1alpha2.ArtifactType{
+					DockerArtifact: &v1alpha2.DockerArtifact{
+						DockerfilePath: dockerfilePath,
+					},
+				}
+			}
+			artifacts = append(artifacts, a)
+		}
+		config.Artifacts = artifacts
+	}
+	return config
+}
+
 func generateSkaffoldConfig(k8sConfigs []string, dockerfilePairs []dockerfilePair) ([]byte, error) {
 	// if we're here, the user has no skaffold yaml so we need to generate one
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
@@ -207,20 +236,7 @@ func generateSkaffoldConfig(k8sConfigs []string, dockerfilePairs []dockerfilePai
 	if err != nil {
 		return nil, errors.Wrap(err, "generating default config")
 	}
-
-	if len(dockerfilePairs) > 0 {
-		var artifacts []*v1alpha2.Artifact
-		for _, pair := range dockerfilePairs {
-			artifacts = append(artifacts, &v1alpha2.Artifact{
-				ImageName: pair.ImageName,
-				Workspace: pair.Dockerfile,
-			})
-		}
-		config.Build.Artifacts = artifacts
-	} else {
-		// explicitly remove build config if we don't have any generated build artifacts
-		config.Build = v1alpha2.BuildConfig{}
-	}
+	config.Build = processBuildArtifacts(dockerfilePairs)
 
 	config.Deploy = v1alpha2.DeployConfig{
 		DeployType: v1alpha2.DeployType{
