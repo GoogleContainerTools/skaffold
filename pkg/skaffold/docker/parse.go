@@ -102,10 +102,23 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 
 	// Then process onbuilds, if present.
 	onbuildsImages := [][]string{}
+	stages := map[string]bool{}
 	for _, value := range res.AST.Children {
 		switch value.Value {
 		case command.From:
-			onbuilds, err := processBaseImage(value)
+			imageName := value.Next.Value
+			if _, found := stages[imageName]; found {
+				continue
+			}
+
+			next := value.Next.Next
+			if next != nil && strings.ToLower(next.Value) == "as" {
+				if next.Next != nil {
+					stages[next.Next.Value] = true
+				}
+			}
+
+			onbuilds, err := processBaseImage(imageName)
 			if err != nil {
 				logrus.Warnf("Error processing base image for onbuild triggers: %s. Dependencies may be incomplete.", err)
 			}
@@ -287,18 +300,18 @@ func GetDependencies(workspace string, a *v1alpha2.DockerArtifact) ([]string, er
 	return dependencies, nil
 }
 
-func processBaseImage(value *parser.Node) ([]string, error) {
-	base := value.Next.Value
-	logrus.Debugf("Checking base image %s for ONBUILD triggers.", base)
-	if strings.ToLower(base) == "scratch" {
-		logrus.Debugf("SCRATCH base image found, skipping check: %s", base)
+func processBaseImage(baseImageName string) ([]string, error) {
+	if strings.ToLower(baseImageName) == "scratch" {
 		return nil, nil
 	}
-	img, err := RetrieveImage(base)
+
+	logrus.Debugf("Checking base image %s for ONBUILD triggers.", baseImageName)
+	img, err := RetrieveImage(baseImageName)
 	if err != nil {
 		return nil, err
 	}
-	logrus.Debugf("Found onbuild triggers %v in image %s", img.Config.OnBuild, base)
+
+	logrus.Debugf("Found onbuild triggers %v in image %s", img.Config.OnBuild, baseImageName)
 	return img.Config.OnBuild, nil
 }
 

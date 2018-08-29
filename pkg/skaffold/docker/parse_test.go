@@ -140,6 +140,11 @@ COPY $FOO .
 CMD $FOO
 `
 
+const fromStage = `
+FROM ubuntu:14.04 as base
+FROM base as dist
+`
+
 var fooArg = "server.go" // used for build args
 
 var ImageConfigs = map[string]*v1.ConfigFile{
@@ -171,6 +176,10 @@ var ImageConfigs = map[string]*v1.ConfigFile{
 }
 
 func mockRetrieveImage(image string) (*v1.ConfigFile, error) {
+	if image == "base" {
+		panic("we should never retrieve images which are stage names")
+	}
+
 	if cfg, ok := ImageConfigs[image]; ok {
 		return cfg, nil
 	}
@@ -327,6 +336,12 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": &fooArg},
 			expected:    []string{"Dockerfile", "server.go"},
+		},
+		{
+			description: "fromStage",
+			dockerfile:  fromStage,
+			workspace:   ".",
+			expected:    []string{"Dockerfile"},
 		},
 	}
 
