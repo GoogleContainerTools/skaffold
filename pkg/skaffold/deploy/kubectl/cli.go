@@ -62,7 +62,7 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 	buf := bytes.NewBuffer([]byte{})
 	writer := bufio.NewWriter(buf)
 	if err := c.Run(ctx, manifests.Reader(), writer, "apply", c.Flags.Apply, "-f", "-"); err != nil {
-		if !strings.Contains(string(buf.Bytes()), "field is immutable") {
+		if !strings.Contains(buf.String(), "field is immutable") {
 			return nil, err
 		}
 		// If the output contains the string 'field is immutable', we want to delete the object and recreate it
