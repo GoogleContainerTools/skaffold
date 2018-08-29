@@ -36,8 +36,8 @@ type CLI struct {
 	previousApply ManifestList
 }
 
-// Detete runs `kubectl delete` on a list of manifests.
-func (c *CLI) Detete(ctx context.Context, out io.Writer, manifests ManifestList) error {
+// Delete runs `kubectl delete` on a list of manifests.
+func (c *CLI) Delete(ctx context.Context, out io.Writer, manifests ManifestList) error {
 	if err := c.Run(ctx, manifests.Reader(), out, "delete", c.Flags.Delete, "--ignore-not-found=true", "-f", "-"); err != nil {
 		return errors.Wrap(err, "kubectl delete")
 	}
