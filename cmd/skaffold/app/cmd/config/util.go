@@ -30,7 +30,8 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-const defaultConfigLocation = ".skaffold/config"
+const defaultConfigDir = ".skaffold"
+const defaultConfigFile = "config"
 
 func resolveKubectlContext() {
 	if kubecontext != "" {
@@ -40,31 +41,21 @@ func resolveKubectlContext() {
 	context, err := context.CurrentContext()
 	if err != nil {
 		logrus.Warn(errors.Wrap(err, "retrieving current kubectl context"))
-		kubecontext = "default"
 	}
 	if context == "" {
-		logrus.Infof("no context currently set, falling back to default")
-		kubecontext = "default"
+		logrus.Infof("no kubectl context currently set, using global values")
+		global = true
 	}
 	kubecontext = context
 }
 
 func resolveConfigFile() error {
-	if configFile != "" {
-		// we had a config provided as a flag, expand it and return
-		if !filepath.IsAbs(configFile) {
-			absPath, err := filepath.Abs(configFile)
-			if err != nil {
-				return err
-			}
-			configFile = absPath
-		}
-	} else {
+	if configFile == "" {
 		home, err := homedir.Dir()
 		if err != nil {
 			return errors.Wrap(err, "retrieving home directory")
 		}
-		configFile = filepath.Join(home, defaultConfigLocation)
+		configFile = filepath.Join(home, defaultConfigDir, defaultConfigFile)
 	}
 	return util.VerifyOrCreateFile(configFile)
 }

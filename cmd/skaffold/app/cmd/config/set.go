@@ -35,11 +35,11 @@ func NewCmdSet(out io.Writer) *cobra.Command {
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			resolveKubectlContext()
-			err := setConfigValue(args[0], args[1])
-			if err == nil {
-				logConfigChangeForUser(out, args[0], args[1])
+			if err := setConfigValue(args[0], args[1]); err != nil {
+				return err
 			}
-			return err
+			logConfigChangeForUser(out, args[0], args[1])
+			return nil
 		},
 	}
 	AddConfigFlags(cmd)

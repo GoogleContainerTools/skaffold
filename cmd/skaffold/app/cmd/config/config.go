@@ -16,11 +16,15 @@ limitations under the License.
 
 package config
 
+// Config is the top level struct for the global Skaffold config
+// It is unrelated to the SkaffoldConfig object (parsed from the skaffold.yaml)
 type Config struct {
 	Global         *ContextConfig   `yaml:"global,omitempty"`
 	ContextConfigs []*ContextConfig `yaml:"kubeContexts"`
 }
 
+// ContextConfig is the context-specific config information provided in
+// the global Skaffold config.
 type ContextConfig struct {
 	Kubecontext string `yaml:"kube-context,omitempty"`
 	DefaultRepo string `yaml:"default-repo"`

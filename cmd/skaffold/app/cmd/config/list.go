@@ -47,6 +47,9 @@ func runList(out io.Writer) error {
 		if err != nil {
 			return err
 		}
+		if cfg == nil || (cfg.Global == nil && len(cfg.ContextConfigs) == 0) { // empty config
+			return nil
+		}
 		configYaml, err = yaml.Marshal(&cfg)
 		if err != nil {
 			return errors.Wrap(err, "marshaling config")
@@ -55,6 +58,9 @@ func runList(out io.Writer) error {
 		config, err := getConfigForKubectx()
 		if err != nil {
 			return err
+		}
+		if config == nil { // empty config
+			return nil
 		}
 		configYaml, err = yaml.Marshal(&config)
 		if err != nil {
