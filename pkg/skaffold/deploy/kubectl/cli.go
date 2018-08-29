@@ -17,9 +17,12 @@ limitations under the License.
 package kubectl
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"io"
 	"os/exec"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -56,8 +59,25 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 		return nil, nil
 	}
 
-	if err := c.Run(ctx, manifests.Reader(), out, "apply", c.Flags.Apply, "-f", "-"); err != nil {
-		return nil, errors.Wrap(err, "kubectl apply")
+	buf := bytes.NewBuffer([]byte{})
+	writer := bufio.NewWriter(buf)
+	if err := c.Run(ctx, manifests.Reader(), writer, "apply", c.Flags.Apply, "-f", "-"); err != nil {
+		if !strings.Contains(string(buf.Bytes()), "field is immutable") {
+			return nil, err
+		}
+		// If the output contains the string 'field is immutable', we want to delete the object and recreate it
+		// See Issue #891 for more information
+		if err := c.Detete(ctx, out, manifests); err != nil {
+			return nil, errors.Wrap(err, "deleting manifest")
+		}
+		if err := c.Run(ctx, manifests.Reader(), out, "apply", c.Flags.Apply, "-f", "-"); err != nil {
+			return nil, errors.Wrap(err, "kubectl apply after deletion")
+		}
+	} else {
+		// Write output to out
+		if _, err := out.Write(buf.Bytes()); err != nil {
+			return nil, errors.Wrap(err, "writing to out")
+		}
 	}
 
 	return updated, nil
