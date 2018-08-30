@@ -39,8 +39,8 @@ type CLI struct {
 	previousApply ManifestList
 }
 
-// Detete runs `kubectl delete` on a list of manifests.
-func (c *CLI) Detete(ctx context.Context, out io.Writer, manifests ManifestList) error {
+// Delete runs `kubectl delete` on a list of manifests.
+func (c *CLI) Delete(ctx context.Context, out io.Writer, manifests ManifestList) error {
 	if err := c.Run(ctx, manifests.Reader(), out, "delete", c.Flags.Delete, "--ignore-not-found=true", "-f", "-"); err != nil {
 		return errors.Wrap(err, "kubectl delete")
 	}
@@ -67,7 +67,7 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 		}
 		// If the output contains the string 'field is immutable', we want to delete the object and recreate it
 		// See Issue #891 for more information
-		if err := c.Detete(ctx, out, manifests); err != nil {
+		if err := c.Delete(ctx, out, manifests); err != nil {
 			return nil, errors.Wrap(err, "deleting manifest")
 		}
 		if err := c.Run(ctx, manifests.Reader(), out, "apply", c.Flags.Apply, "-f", "-"); err != nil {

@@ -151,3 +151,20 @@ func download(url string) ([]byte, error) {
 
 	return ioutil.ReadAll(resp.Body)
 }
+
+// VerifyOrCreateFile checks if a file exists at the given path,
+// and if not, creates all parent directories and creates the file.
+func VerifyOrCreateFile(path string) error {
+	_, err := os.Stat(path)
+	if err != nil && os.IsNotExist(err) {
+		dir := filepath.Dir(path)
+		if err = os.MkdirAll(dir, 0744); err != nil {
+			return errors.Wrap(err, "creating parent directory")
+		}
+		if _, err = os.Create(path); err != nil {
+			return errors.Wrap(err, "creating file")
+		}
+		return nil
+	}
+	return err
+}

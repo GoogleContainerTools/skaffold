@@ -1,3 +1,30 @@
+# v0.13.0 Release - 8/16/2018
+
+New Features:
+* Add --tail flag to stream logs with skaffold run [#914](https://github.com/GoogleContainerTools/skaffold/pull/914)
+* Add DEVELOPMENT.md [#901](https://github.com/GoogleContainerTools/skaffold/pull/901)
+
+Bug Fixes: 
+* fixes `skaffold version` in the released docker image [#933](https://github.com/GoogleContainerTools/skaffold/pull/933)
+
+Updates:
+* as a base for future features - global skaffold config [#896](https://github.com/GoogleContainerTools/skaffold/pull/896)
+* Remove duplication in kustomize deployer [#900](https://github.com/GoogleContainerTools/skaffold/pull/900)
+* update readme with documentation links [#908](https://github.com/GoogleContainerTools/skaffold/pull/908)
+* Fix a typo in "annotated-skaffold.yaml" [#907](https://github.com/GoogleContainerTools/skaffold/pull/907)
+* Decouple visiting manifests and replacing images [#909](https://github.com/GoogleContainerTools/skaffold/pull/909)
+* Add a simple test for Watcher [#898](https://github.com/GoogleContainerTools/skaffold/pull/898)
+* Add test for signal handling [#917](https://github.com/GoogleContainerTools/skaffold/pull/917)
+* Add the --target flag as a parameter to the docker builder. [#894](https://github.com/GoogleContainerTools/skaffold/pull/894)
+* Misc improvements [#911](https://github.com/GoogleContainerTools/skaffold/pull/911)
+* Add --tail flag to stream logs with skaffold run [#914](https://github.com/GoogleContainerTools/skaffold/pull/914)
+* Extract code to tail logs [#924](https://github.com/GoogleContainerTools/skaffold/pull/924)
+* Improve logs [#918](https://github.com/GoogleContainerTools/skaffold/pull/918)
+* Add yamltags [#388](https://github.com/GoogleContainerTools/skaffold/pull/388)
+* adding wrapper script for release note generation  [#935](https://github.com/GoogleContainerTools/skaffold/pull/935)
+* detete -> delete [#941](https://github.com/GoogleContainerTools/skaffold/pull/941)
+
+
 # v0.12.0 Release - 8/16/2018
 New Features:
 * Update check [#866](https://github.com/GoogleContainerTools/skaffold/pull/866)
