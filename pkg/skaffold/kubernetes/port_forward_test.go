@@ -1,3 +1,19 @@
+/*
+Copyright 2018 The Skaffold Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package kubernetes
 
 import (
@@ -56,7 +72,7 @@ func TestPortForwardPod(t *testing.T) {
 				8080: true,
 			},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-8080": &portForwardEntry{
+				"containername-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -64,17 +80,17 @@ func TestPortForwardPod(t *testing.T) {
 				},
 			},
 			pods: []*v1.Pod{
-				&v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "podname",
 						ResourceVersion: "1",
 					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
-							v1.Container{
+							{
 								Name: "containername",
 								Ports: []v1.ContainerPort{
-									v1.ContainerPort{
+									{
 										ContainerPort: 8080,
 									},
 								},
@@ -90,17 +106,17 @@ func TestPortForwardPod(t *testing.T) {
 			shouldErr:       true,
 			expectedEntries: map[string]*portForwardEntry{},
 			pods: []*v1.Pod{
-				&v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "podname",
 						ResourceVersion: "10000000000a",
 					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
-							v1.Container{
+							{
 								Name: "containername",
 								Ports: []v1.ContainerPort{
-									v1.ContainerPort{
+									{
 										ContainerPort: 8080,
 									},
 								},
@@ -118,7 +134,7 @@ func TestPortForwardPod(t *testing.T) {
 			forwarder: newTestForwarder(fmt.Errorf(""), nil),
 			shouldErr: true,
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-8080": &portForwardEntry{
+				"containername-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -126,17 +142,17 @@ func TestPortForwardPod(t *testing.T) {
 				},
 			},
 			pods: []*v1.Pod{
-				&v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "podname",
 						ResourceVersion: "1",
 					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
-							v1.Container{
+							{
 								Name: "containername",
 								Ports: []v1.ContainerPort{
-									v1.ContainerPort{
+									{
 										ContainerPort: 8080,
 									},
 								},
@@ -153,13 +169,13 @@ func TestPortForwardPod(t *testing.T) {
 				50051: true,
 			},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-8080": &portForwardEntry{
+				"containername-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
 					port:            8080,
 				},
-				"containername2-50051": &portForwardEntry{
+				"containername2-50051": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
@@ -167,17 +183,17 @@ func TestPortForwardPod(t *testing.T) {
 				},
 			},
 			pods: []*v1.Pod{
-				&v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "podname",
 						ResourceVersion: "1",
 					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
-							v1.Container{
+							{
 								Name: "containername",
 								Ports: []v1.ContainerPort{
-									v1.ContainerPort{
+									{
 										ContainerPort: 8080,
 									},
 								},
@@ -185,17 +201,17 @@ func TestPortForwardPod(t *testing.T) {
 						},
 					},
 				},
-				&v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "podname2",
 						ResourceVersion: "1",
 					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
-							v1.Container{
+							{
 								Name: "containername2",
 								Ports: []v1.ContainerPort{
-									v1.ContainerPort{
+									{
 										ContainerPort: 50051,
 									},
 								},
@@ -211,7 +227,7 @@ func TestPortForwardPod(t *testing.T) {
 				8080: true,
 			},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-8080": &portForwardEntry{
+				"containername-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -219,17 +235,17 @@ func TestPortForwardPod(t *testing.T) {
 				},
 			},
 			pods: []*v1.Pod{
-				&v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "podname",
 						ResourceVersion: "1",
 					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
-							v1.Container{
+							{
 								Name: "containername",
 								Ports: []v1.ContainerPort{
-									v1.ContainerPort{
+									{
 										ContainerPort: 8080,
 									},
 								},
@@ -237,17 +253,17 @@ func TestPortForwardPod(t *testing.T) {
 						},
 					},
 				},
-				&v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "podname2",
 						ResourceVersion: "1",
 					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
-							v1.Container{
+							{
 								Name: "containername2",
 								Ports: []v1.ContainerPort{
-									v1.ContainerPort{
+									{
 										ContainerPort: 8080,
 									},
 								},
@@ -263,7 +279,7 @@ func TestPortForwardPod(t *testing.T) {
 				8080: true,
 			},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-8080": &portForwardEntry{
+				"containername-8080": {
 					resourceVersion: 2,
 					podName:         "podname",
 					containerName:   "containername",
@@ -271,17 +287,17 @@ func TestPortForwardPod(t *testing.T) {
 				},
 			},
 			pods: []*v1.Pod{
-				&v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "podname",
 						ResourceVersion: "1",
 					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
-							v1.Container{
+							{
 								Name: "containername",
 								Ports: []v1.ContainerPort{
-									v1.ContainerPort{
+									{
 										ContainerPort: 8080,
 									},
 								},
@@ -289,17 +305,17 @@ func TestPortForwardPod(t *testing.T) {
 						},
 					},
 				},
-				&v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "podname",
 						ResourceVersion: "2",
 					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
-							v1.Container{
+							{
 								Name: "containername",
 								Ports: []v1.ContainerPort{
-									v1.ContainerPort{
+									{
 										ContainerPort: 8080,
 									},
 								},
