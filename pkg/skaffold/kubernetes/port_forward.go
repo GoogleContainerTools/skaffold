@@ -110,7 +110,7 @@ func (p *PortForwarder) cleanupPorts() {
 	p.forwardedPods.Range(func(k, v interface{}) bool {
 		entry := v.(*portForwardEntry)
 		if err := p.Stop(entry); err != nil {
-			logrus.Warnf("cleaning up port forwards", err)
+			logrus.Warnf("cleaning up port forwards: %s", err)
 		}
 		return false
 	})
