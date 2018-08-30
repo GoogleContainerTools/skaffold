@@ -33,6 +33,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 )
 
+// PortForwarder is responsible for selecting pods satisfying a certain condition and port-forwarding the exposed
+// container ports within those pods. It also tracks and manages the port-forward connections.
 type PortForwarder struct {
 	Forwarder
 
@@ -55,6 +57,7 @@ type portForwardEntry struct {
 	cmd *exec.Cmd
 }
 
+// Forwarder is an interface that can modify and manage port-forward processes
 type Forwarder interface {
 	Forward(*portForwardEntry) error
 	Stop(*portForwardEntry) error
@@ -62,6 +65,8 @@ type Forwarder interface {
 
 type kubectlForwader struct{}
 
+// Forward port-forwards a pod using kubectl port-forward
+// It returns an error only if the process fails or was terminated by a signal other than SIGTERM
 func (*kubectlForwader) Forward(pfe *portForwardEntry) error {
 	portNumber := fmt.Sprintf("%d", pfe.port)
 	cmd := exec.Command("kubectl", "port-forward", fmt.Sprintf("pod/%s", pfe.podName), portNumber, portNumber)
@@ -73,6 +78,7 @@ func (*kubectlForwader) Forward(pfe *portForwardEntry) error {
 	return nil
 }
 
+// Stop terminates an existing kubectl port-forward command using SIGTERM
 func (*kubectlForwader) Stop(p *portForwardEntry) error {
 	logrus.Debugf("Terminating port-forward %s", p.String())
 	if p.cmd == nil {
@@ -84,6 +90,7 @@ func (*kubectlForwader) Stop(p *portForwardEntry) error {
 	return nil
 }
 
+// NewPortForwarder returns a struct that tracks and port-forwards pods as they are created and modified
 func NewPortForwarder(out io.Writer, podSelector PodSelector) *PortForwarder {
 	return &PortForwarder{
 		Forwarder:      &kubectlForwader{},
@@ -104,6 +111,7 @@ func (p *PortForwarder) cleanupPorts() {
 	})
 }
 
+// Start begins a pod watcher that port forwards any pods involving containers with exposed ports.
 func (p *PortForwarder) Start(ctx context.Context) error {
 	watcher, err := PodWatcher()
 	if err != nil {
@@ -194,6 +202,8 @@ func (p *PortForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
 	return nil
 }
 
+// IsTerminatedError returns true if the error is type exec.ExitError and the corresponding process was terminated by SIGTERM
+// This error is given when a exec.Command is ran and terminated with a SIGTERM.
 func IsTerminatedError(err error) bool {
 	exitError, ok := err.(*exec.ExitError)
 	if !ok {
@@ -203,10 +213,12 @@ func IsTerminatedError(err error) bool {
 	return ws.Signal() == syscall.SIGTERM
 }
 
+// Key is an identifer for the lock on a port during the skaffold dev cycle.
 func (p *portForwardEntry) key() string {
 	return fmt.Sprintf("%s-%d", p.containerName, p.port)
 }
 
+// String is a utility function that returns the port forward entry as a user-readable string
 func (p *portForwardEntry) String() string {
 	return fmt.Sprintf("%s/%s:%d", p.podName, p.containerName, p.port)
 }
