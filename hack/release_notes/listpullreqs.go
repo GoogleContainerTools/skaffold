@@ -72,7 +72,7 @@ func printPullRequests() {
 	repositoryCommits := comparison.Commits
 
 	mergeRe := regexp.MustCompile("Merge pull request #(.*) from.*")
-	pullRequestCommitRe := regexp.MustCompile(".* \\(#(.*)\\)")
+	pullRequestCommitRe := regexp.MustCompile(`.* \(#(.*)\)`)
 	for idx := range repositoryCommits {
 		commit := repositoryCommits[idx]
 		msg := *commit.Commit.Message
