@@ -1,3 +1,22 @@
+# v0.13.0 Release - 8/16/2018
+
+New Features:
+* Add --tail flag to stream logs with skaffold run [#914](https://github.com/GoogleContainerTools/skaffold/pull/914)
+
+Updates:
+* Remove duplication in kustomize deployer [#900](https://github.com/GoogleContainerTools/skaffold/pull/900)
+* update readme with documentation links [#908](https://github.com/GoogleContainerTools/skaffold/pull/908)
+* Fix a typo in "annotated-skaffold.yaml" [#907](https://github.com/GoogleContainerTools/skaffold/pull/907)
+* Decouple visiting manifests and replacing images [#909](https://github.com/GoogleContainerTools/skaffold/pull/909)
+* Add a simple test for Watcher [#898](https://github.com/GoogleContainerTools/skaffold/pull/898)
+* Add test for signal handling [#917](https://github.com/GoogleContainerTools/skaffold/pull/917)
+* Misc improvements [#911](https://github.com/GoogleContainerTools/skaffold/pull/911)
+* Extract code to tail logs [#924](https://github.com/GoogleContainerTools/skaffold/pull/924)
+* Improve logs [#918](https://github.com/GoogleContainerTools/skaffold/pull/918)
+* Add yamltags [#388](https://github.com/GoogleContainerTools/skaffold/pull/388)
+* (work in progress towards new features) Global skaffold config [#896](https://github.com/GoogleContainerTools/skaffold/pull/896)
+
+
 # v0.12.0 Release - 8/16/2018
 New Features:
 * Update check [#866](https://github.com/GoogleContainerTools/skaffold/pull/866)

@@ -71,15 +71,20 @@ func printPullRequests() {
 
 	repositoryCommits := comparison.Commits
 
-	re := regexp.MustCompile("Merge pull request #(.*) from.*")
+	mergeRe := regexp.MustCompile("Merge pull request #(.*) from.*")
+	pullRequestCommitRe := regexp.MustCompile(".* \\(#(.*)\\)")
 	for idx := range repositoryCommits {
 		commit := repositoryCommits[idx]
 		msg := *commit.Commit.Message
-		match := re.FindStringSubmatch(msg)
+		match := mergeRe.FindStringSubmatch(msg)
 		if match == nil {
-			continue
+			match = pullRequestCommitRe.FindStringSubmatch(msg)
+			if match == nil {
+				continue
+			}
 		}
 		prID, _ := strconv.Atoi(match[1])
+
 		pullRequest, _, _ := client.PullRequests.Get(context.Background(), org, repo, prID)
 		fmt.Printf("* %s [#%d](https://github.com/%s/%s/pull/%d)\n", pullRequest.GetTitle(), prID, org, repo, prID)
 	}
