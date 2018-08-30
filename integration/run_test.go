@@ -193,7 +193,15 @@ func TestRun(t *testing.T) {
 			}
 
 			// Cleanup
-			cleanupTest(t, ns, testCase.dir, testCase.filename)
+			args = []string{"delete", "--namespace", ns.Name}
+			if testCase.filename != "" {
+				args = append(args, "-f", testCase.filename)
+			}
+			cmd = exec.Command("skaffold", args...)
+			cmd.Dir = testCase.dir
+			if output, err := util.RunCmdOut(cmd); err != nil {
+				t.Fatalf("skaffold delete: %s %v", output, err)
+			}
 		})
 	}
 }
@@ -268,7 +276,7 @@ func TestDev(t *testing.T) {
 			cmd.Dir = testCase.dir
 			go func() {
 				if output, err := util.RunCmdOut(cmd); err != nil {
-					t.Fatalf("skaffold: %s %v", output, err)
+					logrus.Warnf("skaffold: %s %v", output, err)
 				}
 			}()
 
@@ -285,21 +293,8 @@ func TestDev(t *testing.T) {
 				}
 			}
 
-			// Cleanup
-			cleanupTest(t, ns, testCase.dir, "")
+			// No cleanup, since exiting skaffold dev should clean up automatically
 		})
-	}
-}
-
-func cleanupTest(t *testing.T, ns *v1.Namespace, dir, filename string) {
-	args := []string{"delete", "--namespace", ns.Name}
-	if filename != "" {
-		args = append(args, "-f", filename)
-	}
-	cmd := exec.Command("skaffold", args...)
-	cmd.Dir = dir
-	if output, err := util.RunCmdOut(cmd); err != nil {
-		t.Fatalf("skaffold delete: %s %v", output, err)
 	}
 }
 
