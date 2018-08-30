@@ -38,6 +38,7 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -202,6 +203,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 	imageList := kubernetes.NewImageList()
 	colorPicker := kubernetes.NewColorPicker(artifacts)
 	logger := kubernetes.NewLogAggregator(out, imageList, colorPicker)
+	portForwarder := kubernetes.NewPortForwarder(out, imageList)
 
 	// Create watcher and register artifacts to build current state of files.
 	changed := changes{}
@@ -266,6 +268,10 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 	// Start logs
 	if err := logger.Start(ctx); err != nil {
 		return nil, errors.Wrap(err, "starting logger")
+	}
+
+	if err := portForwarder.Start(ctx); err != nil {
+		return nil, errors.Wrap(err, "starting port-forwarder")
 	}
 
 	return nil, watcher.Run(ctx, PollInterval, onChange)
