@@ -18,7 +18,6 @@ package kubernetes
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -336,7 +335,7 @@ func TestPortForwardPod(t *testing.T) {
 			p.Forwarder = test.forwarder
 
 			for _, pod := range test.pods {
-				err := p.portForwardPod(context.Background(), pod)
+				err := p.portForwardPod(pod)
 				testutil.CheckError(t, test.shouldErr, err)
 			}
 

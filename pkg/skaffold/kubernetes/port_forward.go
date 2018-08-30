@@ -78,7 +78,7 @@ func (*kubectlForwader) Forward(pfe *portForwardEntry) error {
 	cmd.Stderr = buf
 
 	if err := cmd.Run(); err != nil && !IsTerminatedError(err) {
-		return errors.Wrapf(err, "port forwarding pod: %s, port: %s, err: %s", pfe.podName, portNumber, string(buf.Bytes()))
+		return errors.Wrapf(err, "port forwarding pod: %s, port: %s, err: %s", pfe.podName, portNumber, buf.String())
 	}
 	return nil
 }
@@ -149,7 +149,7 @@ func (p *PortForwarder) Start(ctx context.Context) error {
 				}
 				if p.podSelector.Select(pod) && pod.Status.Phase == v1.PodRunning && pod.DeletionTimestamp == nil {
 					go func() {
-						if err := p.portForwardPod(ctx, pod); err != nil {
+						if err := p.portForwardPod(pod); err != nil {
 							logrus.Warnf("port forwarding pod failed: %s", err)
 						}
 					}()
@@ -161,7 +161,7 @@ func (p *PortForwarder) Start(ctx context.Context) error {
 	return nil
 }
 
-func (p *PortForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
+func (p *PortForwarder) portForwardPod(pod *v1.Pod) error {
 	resourceVersion, err := strconv.Atoi(pod.ResourceVersion)
 	if err != nil {
 		return errors.Wrap(err, "converting resource version to integer")
