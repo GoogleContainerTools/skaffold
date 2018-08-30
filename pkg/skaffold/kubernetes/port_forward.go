@@ -17,6 +17,7 @@ limitations under the License.
 package kubernetes
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -26,7 +27,6 @@ import (
 	"syscall"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -68,21 +68,26 @@ type kubectlForwader struct{}
 // Forward port-forwards a pod using kubectl port-forward
 // It returns an error only if the process fails or was terminated by a signal other than SIGTERM
 func (*kubectlForwader) Forward(pfe *portForwardEntry) error {
+	logrus.Debugf("Port forwarding %s", pfe)
 	portNumber := fmt.Sprintf("%d", pfe.port)
 	cmd := exec.Command("kubectl", "port-forward", fmt.Sprintf("pod/%s", pfe.podName), portNumber, portNumber)
 	pfe.cmd = cmd
 
-	if err := util.RunCmd(cmd); err != nil && !IsTerminatedError(err) {
-		return errors.Wrapf(err, "port forwarding pod: %s, port: %s", pfe.podName, portNumber)
+	buf := &bytes.Buffer{}
+	cmd.Stdout = buf
+	cmd.Stderr = buf
+
+	if err := cmd.Run(); err != nil && !IsTerminatedError(err) {
+		return errors.Wrapf(err, "port forwarding pod: %s, port: %s, err: %s", pfe.podName, portNumber, string(buf.Bytes()))
 	}
 	return nil
 }
 
 // Stop terminates an existing kubectl port-forward command using SIGTERM
 func (*kubectlForwader) Stop(p *portForwardEntry) error {
-	logrus.Debugf("Terminating port-forward %s", p.String())
+	logrus.Debugf("Terminating port-forward %s", p)
 	if p.cmd == nil {
-		return fmt.Errorf("No port-forward command found for %s", p.String())
+		return fmt.Errorf("No port-forward command found for %s", p)
 	}
 	if err := p.cmd.Process.Signal(syscall.SIGTERM); err != nil {
 		return errors.Wrap(err, "terminating port-forward process")
@@ -180,7 +185,6 @@ func (p *PortForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
 
 			if ok {
 				prevEntry := v.(*portForwardEntry)
-
 				// Check if this is a new generation of pod
 				if entry.resourceVersion > prevEntry.resourceVersion {
 					if err := p.Stop(prevEntry); err != nil {
@@ -190,12 +194,11 @@ func (p *PortForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
 			}
 
 			color.Default.Fprintln(p.output, fmt.Sprintf("Port Forwarding %s %d -> %d", entry.podName, entry.port, entry.port))
+			p.forwardedPods.Store(entry.key(), entry)
+			p.forwardedPorts.Store(entry.port, entry.containerName)
 			if err := p.Forward(entry); err != nil {
 				return errors.Wrap(err, "port forwarding")
 			}
-
-			p.forwardedPods.Store(entry.key(), entry)
-			p.forwardedPorts.Store(entry.port, entry.containerName)
 		}
 	}
 
