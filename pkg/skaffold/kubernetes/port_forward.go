@@ -34,6 +34,8 @@ import (
 )
 
 type PortForwarder struct {
+	Forwarder
+
 	output      io.Writer
 	podSelector PodSelector
 
@@ -53,8 +55,38 @@ type portForwardEntry struct {
 	cmd *exec.Cmd
 }
 
+type Forwarder interface {
+	Forward(*portForwardEntry) error
+	Stop(*portForwardEntry) error
+}
+
+type kubectlForwader struct{}
+
+func (*kubectlForwader) Forward(pfe *portForwardEntry) error {
+	portNumber := fmt.Sprintf("%d", pfe.port)
+	cmd := exec.Command("kubectl", "port-forward", fmt.Sprintf("pod/%s", pfe.podName), portNumber, portNumber)
+	pfe.cmd = cmd
+
+	if err := util.RunCmd(cmd); err != nil && !IsTerminatedError(err) {
+		return errors.Wrapf(err, "port forwarding pod: %s, port: %s", pfe.podName, portNumber)
+	}
+	return nil
+}
+
+func (*kubectlForwader) Stop(p *portForwardEntry) error {
+	logrus.Debugf("Terminating port-forward %s", p.String())
+	if p.cmd == nil {
+		return fmt.Errorf("No port-forward command found for %s", p.String())
+	}
+	if err := p.cmd.Process.Signal(syscall.SIGTERM); err != nil {
+		return errors.Wrap(err, "terminating port-forward process")
+	}
+	return nil
+}
+
 func NewPortForwarder(out io.Writer, podSelector PodSelector) *PortForwarder {
 	return &PortForwarder{
+		Forwarder:      &kubectlForwader{},
 		output:         out,
 		podSelector:    podSelector,
 		forwardedPods:  &sync.Map{},
@@ -65,7 +97,7 @@ func NewPortForwarder(out io.Writer, podSelector PodSelector) *PortForwarder {
 func (p *PortForwarder) cleanupPorts() {
 	p.forwardedPods.Range(func(k, v interface{}) bool {
 		entry := v.(*portForwardEntry)
-		if err := entry.stop(); err != nil {
+		if err := p.Stop(entry); err != nil {
 			logrus.Warnf("cleaning up port forwards", err)
 		}
 		return false
@@ -143,33 +175,22 @@ func (p *PortForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
 
 				// Check if this is a new generation of pod
 				if entry.resourceVersion > prevEntry.resourceVersion {
-					if err := prevEntry.stop(); err != nil {
+					if err := p.Stop(prevEntry); err != nil {
 						return errors.Wrap(err, "terminating port-forward process")
 					}
 				}
 			}
 
-			if err := p.forward(entry); err != nil {
+			color.Default.Fprintln(p.output, fmt.Sprintf("Port Forwarding %s %d -> %d", entry.podName, entry.port, entry.port))
+			if err := p.Forward(entry); err != nil {
 				return errors.Wrap(err, "port forwarding")
 			}
+
+			p.forwardedPods.Store(entry.key(), entry)
+			p.forwardedPorts.Store(entry.port, entry.containerName)
 		}
 	}
 
-	return nil
-}
-
-func (p *PortForwarder) forward(pfe *portForwardEntry) error {
-	portNumber := fmt.Sprintf("%d", pfe.port)
-	color.Default.Fprintln(p.output, fmt.Sprintf("Port Forwarding %s %d -> %d", pfe.podName, pfe.port, pfe.port))
-	cmd := exec.Command("kubectl", "port-forward", fmt.Sprintf("pod/%s", pfe.podName), portNumber, portNumber)
-	pfe.cmd = cmd
-
-	p.forwardedPods.Store(pfe.key(), pfe)
-	p.forwardedPorts.Store(pfe.port, pfe.containerName)
-
-	if err := util.RunCmd(cmd); err != nil && !IsTerminatedError(err) {
-		return errors.Wrapf(err, "port forwarding pod: %s, port: %s", pfe.podName, portNumber)
-	}
 	return nil
 }
 
@@ -188,15 +209,4 @@ func (p *portForwardEntry) key() string {
 
 func (p *portForwardEntry) String() string {
 	return fmt.Sprintf("%s/%s:%d", p.podName, p.containerName, p.port)
-}
-
-func (p *portForwardEntry) stop() error {
-	logrus.Debugf("Terminating port-forward %s", p.String())
-	if p.cmd == nil {
-		return fmt.Errorf("No port-forward command found for %s", p.String())
-	}
-	if err := p.cmd.Process.Signal(syscall.SIGTERM); err != nil {
-		return errors.Wrap(err, "terminating port-forward process")
-	}
-	return nil
 }
