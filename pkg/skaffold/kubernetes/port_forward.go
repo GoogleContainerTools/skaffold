@@ -117,6 +117,7 @@ func (p *PortForwarder) cleanupPorts() {
 }
 
 // Start begins a pod watcher that port forwards any pods involving containers with exposed ports.
+// TODO(r2d4): merge this event loop with pod watcher from log writer
 func (p *PortForwarder) Start(ctx context.Context) error {
 	watcher, err := PodWatcher()
 	if err != nil {
