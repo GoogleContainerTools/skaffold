@@ -66,6 +66,25 @@ var testDeployConfig = &v1alpha2.HelmDeploy{
 	},
 }
 
+var testDeployRecreatePodsConfig = &v1alpha2.HelmDeploy{
+	Releases: []v1alpha2.HelmRelease{
+		{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Values: map[string]string{
+				"image": "skaffold-helm",
+			},
+			Overrides: map[string]interface{}{
+				"foo": "bar",
+			},
+			SetValues: map[string]string{
+				"some.key": "somevalue",
+			},
+			RecreatePods: true,
+		},
+	},
+}
+
 var testDeployHelmStyleConfig = &v1alpha2.HelmDeploy{
 	Releases: []v1alpha2.HelmRelease{
 		{
@@ -233,6 +252,12 @@ func TestHelmDeploy(t *testing.T) {
 			description: "deploy success",
 			cmd:         &MockHelm{t: t},
 			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace),
+			builds:      testBuilds,
+		},
+		{
+			description: "deploy success with recreatePods",
+			cmd:         &MockHelm{t: t},
+			deployer:    NewHelmDeployer(testDeployRecreatePodsConfig, testKubeContext, testNamespace),
 			builds:      testBuilds,
 		},
 		{

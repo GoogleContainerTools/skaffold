@@ -153,6 +153,7 @@ type HelmRelease struct {
 	SetValues         map[string]string      `yaml:"setValues"`
 	SetValueTemplates map[string]string      `yaml:"setValueTemplates"`
 	Wait              bool                   `yaml:"wait"`
+	RecreatePods      bool                   `yaml:"recreatePods"`
 	Overrides         map[string]interface{} `yaml:"overrides"`
 	Packaged          *HelmPackaged          `yaml:"packaged"`
 	ImageStrategy     HelmImageStrategy      `yaml:"imageStrategy"`

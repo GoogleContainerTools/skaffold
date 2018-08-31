@@ -14,6 +14,8 @@ deploy:
       #valuesFilePath: helm-skaffold-values.yaml
       values:
         image: gcr.io/k8s-skaffold/skaffold-helm
+      #recreatePods will pass --recreate-pods to helm upgrade
+      #recreatePods: true
       #overrides builds an override values.yaml file to run with the helm deploy
       #overrides:
       # some:
