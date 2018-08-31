@@ -391,3 +391,53 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 		t.Errorf("Expected 2 artifacts to be deployed. Got %d", len(deployer.deployed))
 	}
 }
+
+func TestShouldWatch(t *testing.T) {
+	var tests = []struct {
+		description   string
+		watch         []string
+		expectedMatch bool
+	}{
+		{
+			description:   "match all",
+			watch:         nil,
+			expectedMatch: true,
+		},
+		{
+			description:   "match full name",
+			watch:         []string{"domain/image"},
+			expectedMatch: true,
+		},
+		{
+			description:   "match partial name",
+			watch:         []string{"image"},
+			expectedMatch: true,
+		},
+		{
+			description:   "match any",
+			watch:         []string{"other", "image"},
+			expectedMatch: true,
+		},
+		{
+			description:   "no match",
+			watch:         []string{"other"},
+			expectedMatch: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			runner := &SkaffoldRunner{
+				opts: &config.SkaffoldOptions{
+					Watch: test.watch,
+				},
+			}
+
+			match := runner.shouldWatch(&v1alpha2.Artifact{
+				ImageName: "domain/image",
+			})
+
+			testutil.CheckDeepEqual(t, test.expectedMatch, match)
+		})
+	}
+}
