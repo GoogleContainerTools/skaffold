@@ -140,7 +140,7 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 		return errors.Wrap(err, "getting metadata accessor")
 	}
 	name := accessor.GetName()
-	namespace := accessor.GetNamespace()
+	namespace := res.Namespace
 	addLabels(labels, accessor)
 
 	modifiedJSON, _ := json.Marshal(modifiedObj)
