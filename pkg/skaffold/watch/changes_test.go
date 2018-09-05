@@ -88,7 +88,7 @@ func TestHasChanged(t *testing.T) {
 
 			changed := hasChanged(prev, curr)
 
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedChanged, changed)
+			testutil.CheckDeepEqual(t, test.expectedChanged, changed)
 		})
 	}
 }

@@ -69,5 +69,5 @@ func TestBuildDescription(t *testing.T) {
 		Timeout: "10m",
 	}
 
-	testutil.CheckErrorAndDeepEqual(t, false, nil, expected, *desc)
+	testutil.CheckDeepEqual(t, expected, *desc)
 }
