@@ -29,10 +29,9 @@ func TestDockerContext(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	RetrieveImage = mockRetrieveImage
-	defer func() {
-		RetrieveImage = retrieveImage
-	}()
+	imageFetcher := fakeImageFetcher{}
+	RetrieveImage = imageFetcher.fetch
+	defer func() { RetrieveImage = retrieveImage }()
 
 	artifact := &v1alpha2.DockerArtifact{
 		DockerfilePath: "Dockerfile",
