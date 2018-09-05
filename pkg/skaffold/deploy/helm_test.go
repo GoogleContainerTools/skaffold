@@ -24,6 +24,9 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"reflect"
+	"sort"
 	"strings"
 	"testing"
 
@@ -477,6 +480,71 @@ func TestExtractChartFilename(t *testing.T) {
 			testutil.CheckError(t, tc.shouldErr, err)
 			if out != tc.output {
 				t.Errorf("Expected output to be %q but got %q", tc.output, out)
+			}
+		})
+	}
+}
+
+func testDeployConfigWithPaths(chartPath string, valuesFilePath string) *v1alpha2.HelmDeploy {
+	return &v1alpha2.HelmDeploy{
+		Releases: []v1alpha2.HelmRelease{
+			{
+				Name:           "skaffold-helm",
+				ChartPath:      chartPath,
+				ValuesFilePath: valuesFilePath,
+				Values: map[string]string{
+					"image": "skaffold-helm",
+				},
+				Overrides: map[string]interface{}{
+					"foo": "bar",
+				},
+				SetValues: map[string]string{
+					"some.key": "somevalue",
+				},
+			},
+		},
+	}
+}
+
+func TestHelmDependencies(t *testing.T) {
+	var tests = []struct {
+		description    string
+		files          []string
+		valuesFilePath string
+		output         func(folder *testutil.TempDir) []string
+	}{
+		{
+			description: "charts dir is excluded",
+			files:       []string{"Chart.yaml", "charts/xyz.tar", "templates/deploy.yaml"},
+			output: func(folder *testutil.TempDir) []string {
+				return []string{filepath.Join(folder.Root(), "Chart.yaml"), filepath.Join(folder.Root(), "templates/deploy.yaml")}
+			},
+		},
+		{
+			description:    "values file is included",
+			files:          []string{"Chart.yaml"},
+			valuesFilePath: "/tmp/values.yaml",
+			output: func(folder *testutil.TempDir) []string {
+				return []string{filepath.Join(folder.Root(), "Chart.yaml"), "/tmp/values.yaml"}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			folder, cleanup := testutil.NewTempDir(t)
+			defer cleanup()
+			deployer := NewHelmDeployer(testDeployConfigWithPaths(folder.Root(), tt.valuesFilePath), testKubeContext, testNamespace)
+			for _, file := range tt.files {
+				folder.Write(file, "test")
+			}
+
+			deps, _ := deployer.Dependencies()
+			output := tt.output(folder)
+			sort.Strings(output)
+			sort.Strings(deps)
+			if !reflect.DeepEqual(deps, output) {
+				t.Errorf("Expected chart dependencies to be %q but got %q", output, deps)
 			}
 		})
 	}
