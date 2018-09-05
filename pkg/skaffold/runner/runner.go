@@ -220,6 +220,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 
 		switch {
 		case changed.needsReload:
+			logger.Stop()
 			return ErrorConfigurationChanged
 		case len(changed.dirtyArtifacts) > 0:
 			bRes, err := r.Build(ctx, out, r.Tagger, changed.dirtyArtifacts)
