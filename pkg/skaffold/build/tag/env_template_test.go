@@ -44,6 +44,15 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			name:     "env",
+			template: "{{.IMAGE_NAME}}:{{.BRANCH}}",
+			env:      []string{"BRANCH=feature/GID-001"},
+			opts: &Options{
+				ImageName: "foo",
+			},
+			want: "foo:feature-GID-001",
+		},
+		{
+			name:     "env",
 			template: "{{.FOO}}-{{.BAZ}}:latest",
 			env:      []string{"FOO=BAR", "BAZ=BAT"},
 			opts: &Options{

@@ -17,13 +17,18 @@ limitations under the License.
 package tag
 
 import (
+	"regexp"
 	"strings"
 	"text/template"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
+
+// These are some characters that are not allowed in the tag_name (after ':')
+var normalizeName = regexp.MustCompile("[_/@%]")
 
 // envTemplateTagger implements Tagger
 type envTemplateTagger struct {
@@ -50,7 +55,25 @@ func (t *envTemplateTagger) Labels() map[string]string {
 // GenerateFullyQualifiedImageName tags an image with the custom tag
 func (t *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir string, opts *Options) (string, error) {
 	customMap := CreateEnvVarMap(opts.ImageName, opts.Digest)
-	return util.ExecuteEnvTemplate(t.Template, customMap)
+	fqin, err := util.ExecuteEnvTemplate(t.Template, customMap)
+	if err != nil {
+		return "", err
+	}
+	return normalizeFQIN(fqin), nil
+}
+
+// Normalise FQIN to have a valid tag.
+func normalizeFQIN(fqin string) string {
+	fqinSplit := strings.Split(fqin, ":")
+	if len(fqinSplit) > 1 {
+		lastValue := len(fqinSplit) - 1
+		var normalized = normalizeName.ReplaceAll([]byte(fqinSplit[lastValue]), []byte("-"))
+		logrus.Debugf("Normalizing '%s' to '%s' using regex '%s'", fqinSplit[lastValue], normalized,
+			normalizeName.String())
+		fqinSplit[lastValue] = string(normalized)
+		fqin = strings.Join(fqinSplit, ":")
+	}
+	return fqin
 }
 
 // CreateEnvVarMap creates a set of environment variables for use in Templates from the given
