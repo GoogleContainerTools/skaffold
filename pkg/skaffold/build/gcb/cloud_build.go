@@ -158,32 +158,6 @@ watch:
 	return newTag, nil
 }
 
-func (b *Builder) buildDescription(artifact *v1alpha2.Artifact, bucket, object string) *cloudbuild.Build {
-	args := append([]string{"build", "--tag", artifact.ImageName, "-f", artifact.DockerArtifact.DockerfilePath})
-	args = append(args, docker.GetBuildArgs(artifact.DockerArtifact)...)
-	args = append(args, ".")
-
-	return &cloudbuild.Build{
-		LogsBucket: bucket,
-		Source: &cloudbuild.Source{
-			StorageSource: &cloudbuild.StorageSource{
-				Bucket: bucket,
-				Object: object,
-			},
-		},
-		Steps: []*cloudbuild.BuildStep{{
-			Name: b.DockerImage,
-			Args: args,
-		}},
-		Images: []string{artifact.ImageName},
-		Options: &cloudbuild.BuildOptions{
-			DiskSizeGb:  b.DiskSizeGb,
-			MachineType: b.MachineType,
-		},
-		Timeout: b.Timeout,
-	}
-}
-
 func getBuildID(op *cloudbuild.Operation) (string, error) {
 	if op.Metadata == nil {
 		return "", errors.New("missing Metadata in operation")

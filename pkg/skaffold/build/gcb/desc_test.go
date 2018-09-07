@@ -71,3 +71,35 @@ func TestBuildDescription(t *testing.T) {
 
 	testutil.CheckDeepEqual(t, expected, *desc)
 }
+
+func TestPullCacheFrom(t *testing.T) {
+	artifact := &v1alpha2.Artifact{
+		ImageName: "nginx",
+		ArtifactType: v1alpha2.ArtifactType{
+			DockerArtifact: &v1alpha2.DockerArtifact{
+				DockerfilePath: "Dockerfile",
+				CacheFrom:      []string{"from/image1", "from/image2"},
+			},
+		},
+	}
+
+	builder := Builder{
+		GoogleCloudBuild: &v1alpha2.GoogleCloudBuild{
+			DockerImage: "docker/docker",
+		},
+	}
+	desc := builder.buildDescription(artifact, "bucket", "object")
+
+	expected := []*cloudbuild.BuildStep{{
+		Name: "docker/docker",
+		Args: []string{"pull", "from/image1"},
+	}, {
+		Name: "docker/docker",
+		Args: []string{"pull", "from/image2"},
+	}, {
+		Name: "docker/docker",
+		Args: []string{"build", "--tag", "nginx", "-f", "Dockerfile", "--cache-from", "from/image1", "--cache-from", "from/image2", "."},
+	}}
+
+	testutil.CheckDeepEqual(t, expected, desc.Steps)
+}
