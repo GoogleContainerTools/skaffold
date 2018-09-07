@@ -207,26 +207,43 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 	// Create watcher and register artifacts to build current state of files.
 	changed := changes{}
 	onChange := func() error {
-		logger.Mute()
+		hasError := true
 
-		var err error
+		logger.Mute()
+		defer func() {
+			changed.reset()
+			color.Default.Fprintln(out, "Watching for changes...")
+			if !hasError {
+				logger.Unmute()
+			}
+		}()
 
 		switch {
 		case changed.needsReload:
-			err = ErrorConfigurationChanged
+			logger.Stop()
+			return ErrorConfigurationChanged
 		case len(changed.dirtyArtifacts) > 0:
-			err = r.buildAndDeploy(ctx, out, changed.dirtyArtifacts, imageList)
+			bRes, err := r.Build(ctx, out, r.Tagger, changed.dirtyArtifacts)
+			if err != nil {
+				logrus.Warnln("Skipping Deploy due to build error:", err)
+				return nil
+			}
+
+			r.updateBuiltImages(imageList, bRes)
+
+			if _, err = r.Deploy(ctx, out, r.builds); err != nil {
+				logrus.Warnln("Skipping Deploy due to error:", err)
+				return nil
+			}
 		case changed.needsRedeploy:
 			if _, err := r.Deploy(ctx, out, r.builds); err != nil {
 				logrus.Warnln("Skipping Deploy due to error:", err)
+				return nil
 			}
 		}
 
-		color.Default.Fprintln(out, "Watching for changes...")
-		changed.reset()
-		logger.Unmute()
-
-		return err
+		hasError = false
+		return nil
 	}
 
 	watcher := r.watchFactory()
@@ -264,8 +281,16 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 	}
 
 	// First run
-	if err := r.buildAndDeploy(ctx, out, artifacts, imageList); err != nil {
-		return nil, errors.Wrap(err, "first run")
+	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
+	if err != nil {
+		return nil, errors.Wrap(err, "exiting dev mode because the first build failed")
+	}
+
+	r.updateBuiltImages(imageList, bRes)
+
+	_, err = r.Deploy(ctx, out, r.builds)
+	if err != nil {
+		return nil, errors.Wrap(err, "exiting dev mode because the first deploy failed")
 	}
 
 	// Start logs
@@ -290,20 +315,7 @@ func (r *SkaffoldRunner) shouldWatch(artifact *v1alpha2.Artifact) bool {
 	return false
 }
 
-// buildAndDeploy builds a subset of the artifacts and deploys everything.
-func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact, images *kubernetes.ImageList) error {
-	firstRun := r.builds == nil
-
-	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
-	if err != nil {
-		if firstRun {
-			return errors.Wrap(err, "exiting dev mode because the first build failed")
-		}
-
-		logrus.Warnln("Skipping Deploy due to build error:", err)
-		return nil
-	}
-
+func (r *SkaffoldRunner) updateBuiltImages(images *kubernetes.ImageList, bRes []build.Artifact) {
 	// Update which images are logged.
 	for _, build := range bRes {
 		images.Add(build.Tag)
@@ -311,18 +323,6 @@ func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, out io.Writer, arti
 
 	// Make sure all artifacts are redeployed. Not only those that were just rebuilt.
 	r.builds = mergeWithPreviousBuilds(bRes, r.builds)
-
-	_, err = r.Deploy(ctx, out, r.builds)
-	if err != nil {
-		if firstRun {
-			return errors.Wrap(err, "exiting dev mode because the first deploy failed")
-		}
-
-		logrus.Warnln("Skipping Deploy due to error:", err)
-		return nil
-	}
-
-	return nil
 }
 
 func mergeWithPreviousBuilds(builds, previous []build.Artifact) []build.Artifact {
