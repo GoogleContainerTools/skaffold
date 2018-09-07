@@ -23,8 +23,47 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/sirupsen/logrus"
 )
+
+func ToV1alpha3(vc util.VersionedConfig) (util.VersionedConfig, error) {
+	if vc.GetVersion() != v1alpha1.Version {
+		return nil, fmt.Errorf("Incompatible version: %s", vc.GetVersion())
+	}
+	oldConfig := vc.(*v1alpha2.SkaffoldConfig)
+
+	var newHelmDeploy *v1alpha3.HelmDeploy
+	if oldConfig.Deploy.DeployType.HelmDeploy != nil {
+		newReleases := make([]v1alpha3.HelmRelease, 0)
+		for _, release := range oldConfig.Deploy.DeployType.HelmDeploy.Releases {
+			newReleases = append(newReleases, v1alpha3.HelmRelease{
+				Name:              release.Name,
+				ChartPath:         release.ChartPath,
+				Values:            release.Values,
+				Namespace:         release.Namespace,
+				Version:           release.Version,
+				SetValues:         release.SetValues,
+				SetValueTemplates: release.SetValueTemplates,
+				Wait:              release.Wait,
+				Overrides:         release.Overrides,
+			})
+		}
+		newHelmDeploy = &v1alpha3.HelmDeploy{
+			Releases: newReleases,
+		}
+	}
+	newConfig := &v1alpha3.SkaffoldConfig{
+		APIVersion: v1alpha3.Version,
+		Kind:       oldConfig.Kind,
+		Deploy: v1alpha3.DeployConfig{
+			DeployType: v1alpha3.DeployType{
+				HelmDeploy: newHelmDeploy,
+			},
+		},
+	}
+	return newConfig, nil
+}
 
 func ToV1Alpha2(vc util.VersionedConfig) (util.VersionedConfig, error) {
 	if vc.GetVersion() != v1alpha1.Version {

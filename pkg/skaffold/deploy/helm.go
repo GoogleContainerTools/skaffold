@@ -201,8 +201,11 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r v1alp
 		}
 		args = append(args, "-f", constants.HelmOverridesFilename)
 	}
-	if r.ValuesFilePath != "" {
-		args = append(args, "-f", r.ValuesFilePath)
+
+	if len(r.ValuesFilePath) != 0 {
+		for _, filePath := range r.ValuesFilePath {
+			args = append(args, "-f", string(filePath))
+		}
 	}
 
 	setValues := r.SetValues
