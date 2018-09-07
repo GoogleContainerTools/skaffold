@@ -27,6 +27,8 @@ const (
 	// DefaultLogLevel is the default global verbosity
 	DefaultLogLevel = logrus.WarnLevel
 
+	DefaultAWSRegion = "us-west-2"
+
 	// DefaultDockerfilePath is the dockerfile path is given relative to the
 	// context directory
 	DefaultDockerfilePath = "Dockerfile"
