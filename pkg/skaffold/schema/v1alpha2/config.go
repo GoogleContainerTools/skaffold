@@ -97,11 +97,49 @@ type GoogleCloudBuild struct {
 // KanikoBuild contains the fields needed to do a on-cluster build using
 // the kaniko image
 type KanikoBuild struct {
-	GCSBucket      string `yaml:"gcsBucket,omitempty"`
-	PullSecret     string `yaml:"pullSecret,omitempty"`
-	PullSecretName string `yaml:"pullSecretName,omitempty"`
-	Namespace      string `yaml:"namespace,omitempty"`
-	Timeout        string `yaml:"timeout,omitempty"`
+	ContextType    `yaml:",inline"`
+	Env            []*Env         `yaml:"env,omitempty"`
+	Volumes        []*Volume      `yaml:"volumes,omitempty"`
+	VolumeMounts   []*VolumeMount `yaml:"volumeMounts,omitempty"`
+	PullSecret     string         `yaml:"pullSecret,omitempty"`
+	PullSecretName string         `yaml:"pullSecretName,omitempty"`
+	Namespace      string         `yaml:"namespace,omitempty"`
+	Timeout        string         `yaml:"timeout,omitempty"`
+}
+
+type ContextType struct {
+	GcsContext      *GcsContext      `yaml:"gcs" yamltags:"oneOf=context"`
+	LocalDirContext *LocalDirContext `yaml:"localDir" yamltags:"oneOf=context"`
+	S3Context       *S3Context       `yaml:"s3" yamltags:"oneOf=context"`
+}
+
+type Env struct {
+	Name  string `yaml:"name,omitempty"`
+	Value string `yaml:"value,omitempty"`
+}
+
+type VolumeMount struct {
+	Name      string `yaml:"name,omitempty"`
+	MountPath string `yaml:"mountPath,omitempty"`
+}
+
+type Volume struct {
+	Name     string `yaml:"name,omitempty"`
+	HostPath string `yaml:"hostPath,omitempty"`
+	Secret   string `yaml:"secret,omitempty"`
+}
+
+type GcsContext struct {
+	GCSBucket string `yaml:"bucket,omitempty"`
+}
+
+type S3Context struct {
+	S3Bucket string `yaml:"bucket,omitempty"`
+	Region string `yaml:"region,omitempty"`
+}
+
+type LocalDirContext struct {
+	Path string `yaml:"path,omitempty"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps

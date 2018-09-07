@@ -47,6 +47,7 @@ func (c *SkaffoldConfig) setDefaultValues() error {
 	if err := c.setDefaultKanikoSecret(); err != nil {
 		return err
 	}
+	c.setDefaultAWSRegion()
 
 	for _, a := range c.Build.Artifacts {
 		c.defaultToDockerArtifact(a)
@@ -172,6 +173,20 @@ func (c *SkaffoldConfig) setDefaultKanikoSecret() error {
 		}
 
 		kaniko.PullSecret = absPath
+		return nil
+	}
+
+	return nil
+}
+
+func (c *SkaffoldConfig) setDefaultAWSRegion() error {
+	kaniko := c.Build.KanikoBuild
+	if kaniko == nil {
+		return nil
+	}
+
+	if kaniko.ContextType.S3Context != nil {
+		kaniko.ContextType.S3Context.Region = constants.DefaultAWSRegion
 		return nil
 	}
 
