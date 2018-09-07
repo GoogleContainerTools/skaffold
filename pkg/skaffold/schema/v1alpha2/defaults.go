@@ -28,6 +28,7 @@ import (
 
 func (c *SkaffoldConfig) setDefaultValues() error {
 	c.defaultToLocalBuild()
+	c.defaultToKubectlDeploy()
 	c.setDefaultCloudBuildDockerImage()
 	c.setDefaultTagger()
 	c.setDefaultKustomizePath()
@@ -56,6 +57,15 @@ func (c *SkaffoldConfig) defaultToLocalBuild() {
 
 	logrus.Debugf("Defaulting build type to local build")
 	c.Build.BuildType.LocalBuild = &LocalBuild{}
+}
+
+func (c *SkaffoldConfig) defaultToKubectlDeploy() {
+	if c.Deploy.DeployType != (DeployType{}) {
+		return
+	}
+
+	logrus.Debugf("Defaulting deploy type to kubectl")
+	c.Deploy.DeployType.KubectlDeploy = &KubectlDeploy{}
 }
 
 func (c *SkaffoldConfig) setDefaultCloudBuildDockerImage() {

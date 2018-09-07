@@ -50,7 +50,13 @@ func TestApplyProfiles(t *testing.T) {
 						LocalBuild: &v1alpha2.LocalBuild{},
 					},
 				},
-				Deploy: v1alpha2.DeployConfig{},
+				Deploy: v1alpha2.DeployConfig{
+					DeployType: v1alpha2.DeployType{
+						KubectlDeploy: &v1alpha2.KubectlDeploy{
+							Manifests: []string{"k8s/*.yaml"},
+						},
+					},
+				},
 				Profiles: []v1alpha2.Profile{
 					{
 						Name: "profile",
@@ -84,7 +90,13 @@ func TestApplyProfiles(t *testing.T) {
 						GitTagger: &v1alpha2.GitTagger{},
 					},
 				},
-				Deploy: v1alpha2.DeployConfig{},
+				Deploy: v1alpha2.DeployConfig{
+					DeployType: v1alpha2.DeployType{
+						KubectlDeploy: &v1alpha2.KubectlDeploy{
+							Manifests: []string{"k8s/*.yaml"},
+						},
+					},
+				},
 			},
 		},
 		{
@@ -97,7 +109,13 @@ func TestApplyProfiles(t *testing.T) {
 					},
 					TagPolicy: v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}},
 				},
-				Deploy: v1alpha2.DeployConfig{},
+				Deploy: v1alpha2.DeployConfig{
+					DeployType: v1alpha2.DeployType{
+						KubectlDeploy: &v1alpha2.KubectlDeploy{
+							Manifests: []string{"k8s/*.yaml"},
+						},
+					},
+				},
 				Profiles: []v1alpha2.Profile{
 					{
 						Name: "dev",
@@ -125,7 +143,13 @@ func TestApplyProfiles(t *testing.T) {
 						LocalBuild: &v1alpha2.LocalBuild{},
 					},
 				},
-				Deploy: v1alpha2.DeployConfig{},
+				Deploy: v1alpha2.DeployConfig{
+					DeployType: v1alpha2.DeployType{
+						KubectlDeploy: &v1alpha2.KubectlDeploy{
+							Manifests: []string{"k8s/*.yaml"},
+						},
+					},
+				},
 			},
 		},
 		{
@@ -138,7 +162,13 @@ func TestApplyProfiles(t *testing.T) {
 					},
 					TagPolicy: v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}},
 				},
-				Deploy: v1alpha2.DeployConfig{},
+				Deploy: v1alpha2.DeployConfig{
+					DeployType: v1alpha2.DeployType{
+						KubectlDeploy: &v1alpha2.KubectlDeploy{
+							Manifests: []string{"k8s/*.yaml"},
+						},
+					},
+				},
 				Profiles: []v1alpha2.Profile{
 					{
 						Name: "profile",
@@ -178,7 +208,13 @@ func TestApplyProfiles(t *testing.T) {
 						LocalBuild: &v1alpha2.LocalBuild{},
 					},
 				},
-				Deploy: v1alpha2.DeployConfig{},
+				Deploy: v1alpha2.DeployConfig{
+					DeployType: v1alpha2.DeployType{
+						KubectlDeploy: &v1alpha2.KubectlDeploy{
+							Manifests: []string{"k8s/*.yaml"},
+						},
+					},
+				},
 			},
 		},
 		{

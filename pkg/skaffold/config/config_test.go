@@ -117,6 +117,7 @@ func TestParseConfig(t *testing.T) {
 				withLocalBuild(
 					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
 				),
+				withKubectlDeploy("k8s/*.yaml"),
 			),
 		},
 		{
@@ -149,6 +150,7 @@ func TestParseConfig(t *testing.T) {
 				withKanikoBuild("demo", "kaniko-secret", "default", "", "20m",
 					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
 				),
+				withKubectlDeploy("k8s/*.yaml"),
 			),
 		},
 		{
@@ -158,6 +160,7 @@ func TestParseConfig(t *testing.T) {
 				withKanikoBuild("demo", "secret-name", "nskaniko", "/secret.json", "120m",
 					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
 				),
+				withKubectlDeploy("k8s/*.yaml"),
 			),
 		},
 		{
