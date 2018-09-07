@@ -33,226 +33,114 @@ func TestApplyProfiles(t *testing.T) {
 	}{
 		{
 			description: "unknown profile",
-			config:      &SkaffoldConfig{},
+			config:      config(),
 			profile:     "profile",
-			expected:    &SkaffoldConfig{},
+			expected:    config(),
 			shouldErr:   true,
 		},
 		{
 			description: "build type",
 			profile:     "profile",
-			config: &SkaffoldConfig{
-				Build: v1alpha2.BuildConfig{
-					Artifacts: []*v1alpha2.Artifact{
-						{ImageName: "image"},
-					},
-					BuildType: v1alpha2.BuildType{
-						LocalBuild: &v1alpha2.LocalBuild{},
-					},
-				},
-				Deploy: v1alpha2.DeployConfig{
-					DeployType: v1alpha2.DeployType{
-						KubectlDeploy: &v1alpha2.KubectlDeploy{
-							Manifests: []string{"k8s/*.yaml"},
-						},
-					},
-				},
-				Profiles: []v1alpha2.Profile{
-					{
-						Name: "profile",
-						Build: v1alpha2.BuildConfig{
-							BuildType: v1alpha2.BuildType{
-								GoogleCloudBuild: &v1alpha2.GoogleCloudBuild{},
+			config: config(
+				withLocalBuild(
+					withGitTagger(),
+					withDockerArtifact("image", ".", "Dockerfile"),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+				withProfiles(v1alpha2.Profile{
+					Name: "profile",
+					Build: v1alpha2.BuildConfig{
+						BuildType: v1alpha2.BuildType{
+							GoogleCloudBuild: &v1alpha2.GoogleCloudBuild{
+								ProjectID: "my-project",
 							},
 						},
 					},
-				},
-			},
-			expected: &SkaffoldConfig{
-				Build: v1alpha2.BuildConfig{
-					Artifacts: []*v1alpha2.Artifact{
-						{
-							ImageName: "image",
-							Workspace: ".",
-							ArtifactType: v1alpha2.ArtifactType{
-								DockerArtifact: &v1alpha2.DockerArtifact{
-									DockerfilePath: "Dockerfile",
-								},
-							},
-						},
-					},
-					BuildType: v1alpha2.BuildType{
-						GoogleCloudBuild: &v1alpha2.GoogleCloudBuild{
-							DockerImage: "gcr.io/cloud-builders/docker",
-						},
-					},
-					TagPolicy: v1alpha2.TagPolicy{
-						GitTagger: &v1alpha2.GitTagger{},
-					},
-				},
-				Deploy: v1alpha2.DeployConfig{
-					DeployType: v1alpha2.DeployType{
-						KubectlDeploy: &v1alpha2.KubectlDeploy{
-							Manifests: []string{"k8s/*.yaml"},
-						},
-					},
-				},
-			},
+				}),
+			),
+			expected: config(
+				withGoogleCloudBuild("my-project",
+					withGitTagger(),
+					withDockerArtifact("image", ".", "Dockerfile"),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+			),
 		},
 		{
 			description: "tag policy",
 			profile:     "dev",
-			config: &SkaffoldConfig{
-				Build: v1alpha2.BuildConfig{
-					Artifacts: []*v1alpha2.Artifact{
-						{ImageName: "image"},
+			config: config(
+				withLocalBuild(
+					withGitTagger(),
+					withDockerArtifact("image", ".", "Dockerfile"),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+				withProfiles(v1alpha2.Profile{
+					Name: "dev",
+					Build: v1alpha2.BuildConfig{
+						TagPolicy: v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}},
 					},
-					TagPolicy: v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}},
-				},
-				Deploy: v1alpha2.DeployConfig{
-					DeployType: v1alpha2.DeployType{
-						KubectlDeploy: &v1alpha2.KubectlDeploy{
-							Manifests: []string{"k8s/*.yaml"},
-						},
-					},
-				},
-				Profiles: []v1alpha2.Profile{
-					{
-						Name: "dev",
-						Build: v1alpha2.BuildConfig{
-							TagPolicy: v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}},
-						},
-					},
-				},
-			},
-			expected: &SkaffoldConfig{
-				Build: v1alpha2.BuildConfig{
-					Artifacts: []*v1alpha2.Artifact{
-						{
-							ImageName: "image",
-							Workspace: ".",
-							ArtifactType: v1alpha2.ArtifactType{
-								DockerArtifact: &v1alpha2.DockerArtifact{
-									DockerfilePath: "Dockerfile",
-								},
-							},
-						},
-					},
-					TagPolicy: v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}},
-					BuildType: v1alpha2.BuildType{
-						LocalBuild: &v1alpha2.LocalBuild{},
-					},
-				},
-				Deploy: v1alpha2.DeployConfig{
-					DeployType: v1alpha2.DeployType{
-						KubectlDeploy: &v1alpha2.KubectlDeploy{
-							Manifests: []string{"k8s/*.yaml"},
-						},
-					},
-				},
-			},
+				}),
+			),
+			expected: config(
+				withLocalBuild(
+					withShaTagger(),
+					withDockerArtifact("image", ".", "Dockerfile"),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+			),
 		},
 		{
 			description: "artifacts",
 			profile:     "profile",
-			config: &SkaffoldConfig{
-				Build: v1alpha2.BuildConfig{
-					Artifacts: []*v1alpha2.Artifact{
-						{ImageName: "image"},
-					},
-					TagPolicy: v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}},
-				},
-				Deploy: v1alpha2.DeployConfig{
-					DeployType: v1alpha2.DeployType{
-						KubectlDeploy: &v1alpha2.KubectlDeploy{
-							Manifests: []string{"k8s/*.yaml"},
+			config: config(
+				withLocalBuild(
+					withGitTagger(),
+					withDockerArtifact("image", ".", "Dockerfile"),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+				withProfiles(v1alpha2.Profile{
+					Name: "profile",
+					Build: v1alpha2.BuildConfig{
+						Artifacts: []*v1alpha2.Artifact{
+							{ImageName: "image"},
+							{ImageName: "imageProd"},
 						},
 					},
-				},
-				Profiles: []v1alpha2.Profile{
-					{
-						Name: "profile",
-						Build: v1alpha2.BuildConfig{
-							Artifacts: []*v1alpha2.Artifact{
-								{ImageName: "image"},
-								{ImageName: "imageProd"},
-							},
-						},
-					},
-				},
-			},
-			expected: &SkaffoldConfig{
-				Build: v1alpha2.BuildConfig{
-					Artifacts: []*v1alpha2.Artifact{
-						{
-							ImageName: "image",
-							Workspace: ".",
-							ArtifactType: v1alpha2.ArtifactType{
-								DockerArtifact: &v1alpha2.DockerArtifact{
-									DockerfilePath: "Dockerfile",
-								},
-							},
-						},
-						{
-							ImageName: "imageProd",
-							Workspace: ".",
-							ArtifactType: v1alpha2.ArtifactType{
-								DockerArtifact: &v1alpha2.DockerArtifact{
-									DockerfilePath: "Dockerfile",
-								},
-							},
-						},
-					},
-					TagPolicy: v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}},
-					BuildType: v1alpha2.BuildType{
-						LocalBuild: &v1alpha2.LocalBuild{},
-					},
-				},
-				Deploy: v1alpha2.DeployConfig{
-					DeployType: v1alpha2.DeployType{
-						KubectlDeploy: &v1alpha2.KubectlDeploy{
-							Manifests: []string{"k8s/*.yaml"},
-						},
-					},
-				},
-			},
+				}),
+			),
+			expected: config(
+				withLocalBuild(
+					withGitTagger(),
+					withDockerArtifact("image", ".", "Dockerfile"),
+					withDockerArtifact("imageProd", ".", "Dockerfile"),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+			),
 		},
 		{
 			description: "deploy",
 			profile:     "profile",
-			config: &SkaffoldConfig{
-				Build: v1alpha2.BuildConfig{},
-				Deploy: v1alpha2.DeployConfig{
-					DeployType: v1alpha2.DeployType{
-						KubectlDeploy: &v1alpha2.KubectlDeploy{},
-					},
-				},
-				Profiles: []v1alpha2.Profile{
-					{
-						Name: "profile",
-						Deploy: v1alpha2.DeployConfig{
-							DeployType: v1alpha2.DeployType{
-								HelmDeploy: &v1alpha2.HelmDeploy{},
-							},
+			config: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+				withProfiles(v1alpha2.Profile{
+					Name: "profile",
+					Deploy: v1alpha2.DeployConfig{
+						DeployType: v1alpha2.DeployType{
+							HelmDeploy: &v1alpha2.HelmDeploy{},
 						},
 					},
-				},
-			},
-			expected: &SkaffoldConfig{
-				Build: v1alpha2.BuildConfig{
-					TagPolicy: v1alpha2.TagPolicy{
-						GitTagger: &v1alpha2.GitTagger{},
-					},
-					BuildType: v1alpha2.BuildType{
-						LocalBuild: &v1alpha2.LocalBuild{},
-					},
-				},
-				Deploy: v1alpha2.DeployConfig{
-					DeployType: v1alpha2.DeployType{
-						HelmDeploy: &v1alpha2.HelmDeploy{},
-					},
-				},
-			},
+				}),
+			),
+			expected: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withHelmDeploy(),
+			),
 		},
 	}
 

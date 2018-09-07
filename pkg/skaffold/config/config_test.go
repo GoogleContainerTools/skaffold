@@ -115,7 +115,7 @@ func TestParseConfig(t *testing.T) {
 			config:      minimalConfig,
 			expected: config(
 				withLocalBuild(
-					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
+					withGitTagger(),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
 			),
@@ -125,7 +125,7 @@ func TestParseConfig(t *testing.T) {
 			config:      simpleConfig,
 			expected: config(
 				withLocalBuild(
-					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
+					withGitTagger(),
 					withDockerArtifact("example", ".", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
@@ -136,7 +136,7 @@ func TestParseConfig(t *testing.T) {
 			config:      completeConfig,
 			expected: config(
 				withGoogleCloudBuild("ID",
-					withTagPolicy(v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}}),
+					withShaTagger(),
 					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
 					withBazelArtifact("image2", "./examples/app2", "//:example.tar"),
 				),
@@ -148,7 +148,7 @@ func TestParseConfig(t *testing.T) {
 			config:      minimalKanikoConfig,
 			expected: config(
 				withKanikoBuild("demo", "kaniko-secret", "default", "", "20m",
-					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
+					withGitTagger(),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
 			),
@@ -158,7 +158,7 @@ func TestParseConfig(t *testing.T) {
 			config:      completeKanikoConfig,
 			expected: config(
 				withKanikoBuild("demo", "secret-name", "nskaniko", "/secret.json", "120m",
-					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
+					withGitTagger(),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
 			),
@@ -242,6 +242,16 @@ func withKubectlDeploy(manifests ...string) func(*SkaffoldConfig) {
 	}
 }
 
+func withHelmDeploy() func(*SkaffoldConfig) {
+	return func(cfg *SkaffoldConfig) {
+		cfg.Deploy = v1alpha2.DeployConfig{
+			DeployType: v1alpha2.DeployType{
+				HelmDeploy: &v1alpha2.HelmDeploy{},
+			},
+		}
+	}
+}
+
 func withDockerArtifact(image, workspace, dockerfile string) func(*v1alpha2.BuildConfig) {
 	return func(cfg *v1alpha2.BuildConfig) {
 		cfg.Artifacts = append(cfg.Artifacts, &v1alpha2.Artifact{
@@ -272,4 +282,18 @@ func withBazelArtifact(image, workspace, target string) func(*v1alpha2.BuildConf
 
 func withTagPolicy(tagPolicy v1alpha2.TagPolicy) func(*v1alpha2.BuildConfig) {
 	return func(cfg *v1alpha2.BuildConfig) { cfg.TagPolicy = tagPolicy }
+}
+
+func withGitTagger() func(*v1alpha2.BuildConfig) {
+	return withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}})
+}
+
+func withShaTagger() func(*v1alpha2.BuildConfig) {
+	return withTagPolicy(v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}})
+}
+
+func withProfiles(profiles ...v1alpha2.Profile) func(*SkaffoldConfig) {
+	return func(cfg *SkaffoldConfig) {
+		cfg.Profiles = profiles
+	}
 }
