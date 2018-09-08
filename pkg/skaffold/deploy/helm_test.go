@@ -24,9 +24,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"reflect"
-	"sort"
 	"strings"
 	"testing"
 
@@ -380,6 +377,7 @@ func TestHelmDeploy(t *testing.T) {
 			util.DefaultExecCommand = tt.cmd
 
 			_, err := tt.deployer.Deploy(context.Background(), &bytes.Buffer{}, tt.builds)
+
 			testutil.CheckError(t, tt.shouldErr, err)
 		})
 	}
@@ -460,19 +458,17 @@ func TestParseHelmRelease(t *testing.T) {
 		shouldErr bool
 	}{
 		{
-			name:      "parse valid deployment yaml",
-			yaml:      []byte(validDeployYaml),
-			shouldErr: false,
+			name: "parse valid deployment yaml",
+			yaml: []byte(validDeployYaml),
+		},
+		{
+			name: "parse valid service yaml",
+			yaml: []byte(validServiceYaml),
 		},
 		{
 			name:      "parse invalid deployment yaml",
 			yaml:      []byte(invalidDeployYaml),
 			shouldErr: true,
-		},
-		{
-			name:      "parse valid service yaml",
-			yaml:      []byte(validServiceYaml),
-			shouldErr: false,
 		},
 	}
 
@@ -485,50 +481,12 @@ func TestParseHelmRelease(t *testing.T) {
 }
 
 func TestExtractChartFilename(t *testing.T) {
-	testCases := map[string]struct {
-		input     string
-		tmp       string
-		output    string
-		shouldErr bool
-	}{
-		"1": {
-			input:     "Successfully packaged chart and saved it to: /var/folders/gm/rrs_712142x8vymmd7xq7h340000gn/T/foo-1.2.3-dirty.tgz\n",
-			tmp:       "/var/folders/gm/rrs_712142x8vymmd7xq7h340000gn/T/",
-			output:    "foo-1.2.3-dirty.tgz",
-			shouldErr: false,
-		},
-	}
+	out, err := extractChartFilename(
+		"Successfully packaged chart and saved it to: /var/folders/gm/rrs_712142x8vymmd7xq7h340000gn/T/foo-1.2.3-dirty.tgz\n",
+		"/var/folders/gm/rrs_712142x8vymmd7xq7h340000gn/T/",
+	)
 
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			out, err := extractChartFilename(tc.input, tc.tmp)
-			testutil.CheckError(t, tc.shouldErr, err)
-			if out != tc.output {
-				t.Errorf("Expected output to be %q but got %q", tc.output, out)
-			}
-		})
-	}
-}
-
-func testDeployConfigWithPaths(chartPath string, valuesFilePath string) *v1alpha2.HelmDeploy {
-	return &v1alpha2.HelmDeploy{
-		Releases: []v1alpha2.HelmRelease{
-			{
-				Name:           "skaffold-helm",
-				ChartPath:      chartPath,
-				ValuesFilePath: valuesFilePath,
-				Values: map[string]string{
-					"image": "skaffold-helm",
-				},
-				Overrides: map[string]interface{}{
-					"foo": "bar",
-				},
-				SetValues: map[string]string{
-					"some.key": "somevalue",
-				},
-			},
-		},
-	}
+	testutil.CheckErrorAndDeepEqual(t, false, err, "foo-1.2.3-dirty.tgz", out)
 }
 
 func TestHelmDependencies(t *testing.T) {
@@ -536,21 +494,21 @@ func TestHelmDependencies(t *testing.T) {
 		description    string
 		files          []string
 		valuesFilePath string
-		output         func(folder *testutil.TempDir) []string
+		expected       func(folder *testutil.TempDir) []string
 	}{
 		{
 			description: "charts dir is excluded",
 			files:       []string{"Chart.yaml", "charts/xyz.tar", "templates/deploy.yaml"},
-			output: func(folder *testutil.TempDir) []string {
-				return []string{filepath.Join(folder.Root(), "Chart.yaml"), filepath.Join(folder.Root(), "templates/deploy.yaml")}
+			expected: func(folder *testutil.TempDir) []string {
+				return []string{folder.Path("Chart.yaml"), folder.Path("templates/deploy.yaml")}
 			},
 		},
 		{
 			description:    "values file is included",
 			files:          []string{"Chart.yaml"},
-			valuesFilePath: "/tmp/values.yaml",
-			output: func(folder *testutil.TempDir) []string {
-				return []string{filepath.Join(folder.Root(), "Chart.yaml"), "/tmp/values.yaml"}
+			valuesFilePath: "/folder/values.yaml",
+			expected: func(folder *testutil.TempDir) []string {
+				return []string{"/folder/values.yaml", folder.Path("Chart.yaml")}
 			},
 		},
 	}
@@ -559,18 +517,26 @@ func TestHelmDependencies(t *testing.T) {
 		t.Run(tt.description, func(t *testing.T) {
 			folder, cleanup := testutil.NewTempDir(t)
 			defer cleanup()
-			deployer := NewHelmDeployer(testDeployConfigWithPaths(folder.Root(), tt.valuesFilePath), testKubeContext, testNamespace)
 			for _, file := range tt.files {
-				folder.Write(file, "test")
+				folder.Write(file, "")
 			}
 
-			deps, _ := deployer.Dependencies()
-			output := tt.output(folder)
-			sort.Strings(output)
-			sort.Strings(deps)
-			if !reflect.DeepEqual(deps, output) {
-				t.Errorf("Expected chart dependencies to be %q but got %q", output, deps)
-			}
+			deployer := NewHelmDeployer(&v1alpha2.HelmDeploy{
+				Releases: []v1alpha2.HelmRelease{
+					{
+						Name:           "skaffold-helm",
+						ChartPath:      folder.Root(),
+						ValuesFilePath: tt.valuesFilePath,
+						Values:         map[string]string{"image": "skaffold-helm"},
+						Overrides:      map[string]interface{}{"foo": "bar"},
+						SetValues:      map[string]string{"some.key": "somevalue"},
+					},
+				},
+			}, testKubeContext, testNamespace)
+
+			deps, err := deployer.Dependencies()
+
+			testutil.CheckErrorAndDeepEqual(t, false, err, tt.expected(folder), deps)
 		})
 	}
 }

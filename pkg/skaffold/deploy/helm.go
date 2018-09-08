@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -89,6 +90,7 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 			return nil
 		})
 	}
+	sort.Strings(deps)
 	return deps, nil
 }
 
