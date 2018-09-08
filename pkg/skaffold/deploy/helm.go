@@ -152,6 +152,9 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r v1alp
 		args = append(args, "install", "--name", releaseName)
 	} else {
 		args = append(args, "upgrade", releaseName)
+		if r.RecreatePods {
+			args = append(args, "--recreate-pods")
+		}
 	}
 
 	// There are 2 strategies:

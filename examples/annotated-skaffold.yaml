@@ -151,6 +151,7 @@ deploy:
     #     image: skaffold-helm
     #   namespace: skaffold
     #   version: ""
+    #   recreatePods: false
     #
     #   # setValues get appended to the helm deploy with --set.
     #   setValues:
