@@ -89,6 +89,10 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 }
 
 func updateCheck(ch chan string) error {
+	if quietFlag {
+		logrus.Debugf("Update check is disabled because of quiet mode")
+		return nil
+	}
 	if !update.IsUpdateCheckEnabled() {
 		logrus.Debugf("Update check not enabled, skipping.")
 		return nil
