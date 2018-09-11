@@ -73,11 +73,7 @@ func merge(sources ...Labeller) map[string]string {
 	merged := make(map[string]string)
 
 	for _, src := range sources {
-		if src != nil {
-			for k, v := range src.Labels() {
-				merged[k] = v
-			}
-		}
+		copyMap(merged, src.Labels())
 	}
 
 	return merged
@@ -118,19 +114,13 @@ func labelDeployResults(labels map[string]string, results []Artifact) {
 }
 
 func addLabels(labels map[string]string, accessor metav1.Object) {
-	objLabels := accessor.GetLabels()
-	if objLabels == nil {
-		objLabels = make(map[string]string)
-	}
-	for k, v := range constants.Labels.DefaultLabels {
-		if _, ok := objLabels[k]; !ok {
-			objLabels[k] = v
-		}
-	}
-	for key, value := range labels {
-		objLabels[key] = value
-	}
-	accessor.SetLabels(objLabels)
+	kv := make(map[string]string)
+
+	copyMap(kv, constants.Labels.DefaultLabels)
+	copyMap(kv, accessor.GetLabels())
+	copyMap(kv, labels)
+
+	accessor.SetLabels(kv)
 }
 
 func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInterface, labels map[string]string, res Artifact) error {
@@ -201,4 +191,10 @@ func groupVersionResource(disco discovery.DiscoveryInterface, gvk schema.GroupVe
 	}
 
 	return schema.GroupVersionResource{}, fmt.Errorf("Could not find resource for %s", gvk.String())
+}
+
+func copyMap(dest, from map[string]string) {
+	for k, v := range from {
+		dest[k] = v
+	}
 }
