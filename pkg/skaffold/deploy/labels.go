@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -140,6 +141,13 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 		return errors.Wrap(err, "getting metadata accessor")
 	}
 	name := accessor.GetName()
+
+	kind := modifiedObj.GetObjectKind().GroupVersionKind().Kind
+	if strings.EqualFold(kind, "Service") {
+		logrus.Debugf("Labels are not applied to service [%s] because of issue: https://github.com/GoogleContainerTools/skaffold/issues/887", name)
+		return nil
+	}
+
 	namespace := res.Namespace
 	addLabels(labels, accessor)
 
