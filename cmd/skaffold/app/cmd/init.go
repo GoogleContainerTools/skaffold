@@ -78,6 +78,9 @@ func doInit(out io.Writer) error {
 		if f.IsDir() {
 			return nil
 		}
+		if strings.HasPrefix(path, ".") {
+			return nil
+		}
 		if util.IsSupportedKubernetesFormat(path) {
 			potentialConfigs = append(potentialConfigs, path)
 		}
@@ -170,7 +173,11 @@ func resolveDockerfileImages(dockerfiles []string, images []string) []dockerfile
 		}}
 	}
 	pairs := []dockerfilePair{}
-	for _, image := range images {
+	for {
+		if len(images) == 0 {
+			break
+		}
+		image := images[0]
 		pair := promptUserForDockerfile(image, dockerfiles)
 		if pair.Dockerfile != NoDockerfile {
 			pairs = append(pairs, pair)
@@ -188,8 +195,9 @@ func promptUserForDockerfile(image string, dockerfiles []string) dockerfilePair 
 	var selectedDockerfile string
 	options := append(dockerfiles, NoDockerfile)
 	prompt := &survey.Select{
-		Message: fmt.Sprintf("Choose the dockerfile to build image %s", image),
-		Options: options,
+		Message:  fmt.Sprintf("Choose the dockerfile to build image %s", image),
+		Options:  options,
+		PageSize: 15,
 	}
 	survey.AskOne(prompt, &selectedDockerfile, nil)
 	return dockerfilePair{

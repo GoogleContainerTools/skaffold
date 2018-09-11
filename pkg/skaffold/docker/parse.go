@@ -48,7 +48,7 @@ func ValidateDockerfile(path string) bool {
 		return false
 	}
 	res, err := parser.Parse(f)
-	if err != nil || res == nil {
+	if err != nil || res == nil || len(res.AST.Children) == 0 {
 		return false
 	}
 	// validate each node contains valid dockerfile directive
