@@ -25,6 +25,9 @@ import (
 	cstorage "cloud.google.com/go/storage"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/pkg/errors"
 )
 
@@ -78,4 +81,36 @@ func UploadContextToGCS(ctx context.Context, workspace string, a *v1alpha2.Docke
 		return errors.Wrap(err, "uploading targz to google storage")
 	}
 	return w.Close()
+	return nil
+}
+
+func UploadContextToS3(ctx context.Context, workspace string, a *v1alpha2.DockerArtifact, bucket, objectName string, region string) error {
+	pr, pw := io.Pipe()
+
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String(region)},
+	)
+
+	if err != nil {
+		return errors.Wrap(err, "creating aws session")
+	}
+
+	go func() {
+		_ = CreateDockerTarGzContext(pw, workspace, a)
+		pw.Close()
+	}()
+
+	uploader := s3manager.NewUploader(sess)
+
+	_, err = uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(objectName),
+		Body:   pr,
+	})
+
+	if err != nil {
+		return errors.Wrap(err, "failed to upload to s3")
+	}
+
+	return nil
 }
