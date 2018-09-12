@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -72,11 +73,7 @@ func merge(sources ...Labeller) map[string]string {
 	merged := make(map[string]string)
 
 	for _, src := range sources {
-		if src != nil {
-			for k, v := range src.Labels() {
-				merged[k] = v
-			}
-		}
+		copyMap(merged, src.Labels())
 	}
 
 	return merged
@@ -117,19 +114,13 @@ func labelDeployResults(labels map[string]string, results []Artifact) {
 }
 
 func addLabels(labels map[string]string, accessor metav1.Object) {
-	objLabels := accessor.GetLabels()
-	if objLabels == nil {
-		objLabels = make(map[string]string)
-	}
-	for k, v := range constants.Labels.DefaultLabels {
-		if _, ok := objLabels[k]; !ok {
-			objLabels[k] = v
-		}
-	}
-	for key, value := range labels {
-		objLabels[key] = value
-	}
-	accessor.SetLabels(objLabels)
+	kv := make(map[string]string)
+
+	copyMap(kv, constants.Labels.DefaultLabels)
+	copyMap(kv, accessor.GetLabels())
+	copyMap(kv, labels)
+
+	accessor.SetLabels(kv)
 }
 
 func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInterface, labels map[string]string, res Artifact) error {
@@ -140,6 +131,13 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 		return errors.Wrap(err, "getting metadata accessor")
 	}
 	name := accessor.GetName()
+
+	kind := modifiedObj.GetObjectKind().GroupVersionKind().Kind
+	if strings.EqualFold(kind, "Service") {
+		logrus.Debugf("Labels are not applied to service [%s] because of issue: https://github.com/GoogleContainerTools/skaffold/issues/887", name)
+		return nil
+	}
+
 	namespace := res.Namespace
 	addLabels(labels, accessor)
 
@@ -193,4 +191,10 @@ func groupVersionResource(disco discovery.DiscoveryInterface, gvk schema.GroupVe
 	}
 
 	return schema.GroupVersionResource{}, fmt.Errorf("Could not find resource for %s", gvk.String())
+}
+
+func copyMap(dest, from map[string]string) {
+	for k, v := range from {
+		dest[k] = v
+	}
 }
