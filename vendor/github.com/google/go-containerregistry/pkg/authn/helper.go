@@ -76,7 +76,7 @@ func (h *helper) Authorization() (string, error) {
 
 	// If we see this specific message, it means the domain wasn't found
 	// and we should fall back on anonymous auth.
-	output := out.String()
+	output := strings.TrimSpace(out.String())
 	if output == magicNotFoundMessage {
 		return Anonymous.Authorization()
 	}

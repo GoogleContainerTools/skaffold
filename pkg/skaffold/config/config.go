@@ -24,3 +24,7 @@ import (
 type SkaffoldConfig = v1alpha2.SkaffoldConfig
 
 const LatestVersion string = v1alpha2.Version
+
+func NewConfig() (*SkaffoldConfig, error) {
+	return v1alpha2.NewConfig()
+}

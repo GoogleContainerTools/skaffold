@@ -123,7 +123,7 @@ func addTag(ref name.Reference, targetRef name.Reference, auth authn.Authenticat
 		return err
 	}
 
-	img, err := remote.Image(ref, auth, tr)
+	img, err := remote.Image(ref, remote.WithAuth(auth), remote.WithTransport(tr))
 	if err != nil {
 		return err
 	}
@@ -157,7 +157,7 @@ func remoteImage(identifier string) (v1.Image, error) {
 		return nil, errors.Wrap(err, "getting default keychain auth")
 	}
 
-	return remote.Image(ref, auth, http.DefaultTransport)
+	return remote.Image(ref, remote.WithAuth(auth), remote.WithTransport(http.DefaultTransport))
 }
 
 func RemoteDigest(identifier string) (string, error) {

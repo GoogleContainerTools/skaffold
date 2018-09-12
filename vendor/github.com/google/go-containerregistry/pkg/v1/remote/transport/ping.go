@@ -63,7 +63,7 @@ func parseChallenge(suffix string) map[string]string {
 func ping(reg name.Registry, t http.RoundTripper) (*pingResp, error) {
 	client := http.Client{Transport: t}
 
-	url := fmt.Sprintf("%s://%s/v2/", Scheme(reg), reg.Name())
+	url := fmt.Sprintf("%s://%s/v2/", reg.Scheme(), reg.Name())
 	resp, err := client.Get(url)
 	if err != nil {
 		return nil, err

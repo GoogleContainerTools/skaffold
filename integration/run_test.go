@@ -22,8 +22,10 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -301,6 +303,64 @@ func TestListConfig(t *testing.T) {
 	}
 }
 
+func TestInit(t *testing.T) {
+	type testCase struct {
+		name string
+		dir  string
+		args []string
+	}
+
+	tests := []testCase{
+		{
+			name: "getting-started",
+			dir:  "../examples/getting-started",
+		},
+		{
+			name: "microservices",
+			dir:  "../examples/microservices",
+			args: []string{
+				"-a", "leeroy-app/Dockerfile=gcr.io/k8s-skaffold/leeroy-app",
+				"-a", "leeroy-web/Dockerfile=gcr.io/k8s-skaffold/leeroy-web",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			oldYamlPath := filepath.Join(test.dir, "skaffold.yaml")
+			oldYaml, err := removeOldSkaffoldYaml(oldYamlPath)
+			if err != nil {
+				t.Fatalf("removing original skaffold.yaml: %s", err)
+			}
+			defer restoreOldSkaffoldYaml(oldYaml, oldYamlPath)
+
+			generatedYaml := "skaffold.yaml.out"
+			defer func() {
+				err := os.Remove(filepath.Join(test.dir, generatedYaml))
+				if err != nil {
+					t.Errorf("error removing generated skaffold yaml: %v", err)
+				}
+			}()
+			initArgs := []string{"init", "-f", generatedYaml}
+			initArgs = append(initArgs, test.args...)
+			initCmd := exec.Command("skaffold", initArgs...)
+			initCmd.Dir = test.dir
+
+			out, err := util.RunCmdOut(initCmd)
+			if err != nil {
+				t.Fatalf("running init: %v, output: %s", err, out)
+			}
+
+			runCmd := exec.Command("skaffold", "run", "-f", generatedYaml)
+			runCmd.Dir = test.dir
+			out, err = util.RunCmdOut(runCmd)
+			if err != nil {
+				t.Fatalf("running skaffold on generated yaml: %v, output: %s", err, out)
+			}
+		})
+	}
+}
+
 func TestSetConfig(t *testing.T) {
 	baseConfig := &config.Config{
 		Global: &config.ContextConfig{
@@ -377,4 +437,26 @@ func TestSetConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func removeOldSkaffoldYaml(path string) ([]byte, error) {
+	skaffoldYaml, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	if err = os.Remove(path); err != nil {
+		return nil, err
+	}
+	return skaffoldYaml, nil
+}
+
+func restoreOldSkaffoldYaml(contents []byte, path string) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(contents); err != nil {
+		return err
+	}
+	return nil
 }
