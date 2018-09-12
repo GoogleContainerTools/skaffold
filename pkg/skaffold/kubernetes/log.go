@@ -30,7 +30,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 )
 
@@ -69,18 +68,7 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 	a.cancel = cancel
 	a.startTime = time.Now()
 
-	kubeclient, err := Client()
-	if err != nil {
-		return errors.Wrap(err, "getting k8s client")
-	}
-	client := kubeclient.CoreV1()
-
-	var forever int64 = 3600 * 24 * 365 * 100
-	watcher, err := client.Pods("").Watch(meta_v1.ListOptions{
-		IncludeUninitialized: true,
-		TimeoutSeconds:       &forever,
-	})
-
+	watcher, err := PodWatcher()
 	if err != nil {
 		return errors.Wrap(err, "initializing pod watcher")
 	}
