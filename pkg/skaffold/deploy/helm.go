@@ -46,6 +46,7 @@ type HelmDeployer struct {
 
 	kubeContext string
 	namespace   string
+	defaultRepo string
 }
 
 // NewHelmDeployer returns a new HelmDeployer for a DeployConfig filled

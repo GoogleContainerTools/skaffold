@@ -81,7 +81,10 @@ func readConfig() (*Config, error) {
 // return the specific config to be modified based on the provided kube context.
 // either returns the config corresponding to the provided or current context,
 // or the global config if that is specified (or if no current context is set).
-func getConfigForKubectx() (*ContextConfig, error) {
+func GetConfigForKubectx() (*ContextConfig, error) {
+	resolveKubectlContext()
+	// TODO(nkubala): this call needs to be moved to its proper place
+	// currently doing it in the cmd handler for list(), this is not gonna work
 	cfg, err := readConfig()
 	if err != nil {
 		return nil, err

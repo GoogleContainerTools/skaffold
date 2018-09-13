@@ -17,6 +17,9 @@ limitations under the License.
 package kubectl
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -28,8 +31,8 @@ import (
 var warner Warner = &logrusWarner{}
 
 // ReplaceImages replaces image names in a list of manifests.
-func (l *ManifestList) ReplaceImages(builds []build.Artifact) (ManifestList, error) {
-	replacer := newImageReplacer(builds)
+func (l *ManifestList) ReplaceImages(builds []build.Artifact, defaultRepo string) (ManifestList, error) {
+	replacer := newImageReplacer(builds, defaultRepo)
 
 	updated, err := l.Visit(replacer)
 	if err != nil {
@@ -43,17 +46,19 @@ func (l *ManifestList) ReplaceImages(builds []build.Artifact) (ManifestList, err
 }
 
 type imageReplacer struct {
+	defaultRepo     string
 	tagsByImageName map[string]string
 	found           map[string]bool
 }
 
-func newImageReplacer(builds []build.Artifact) *imageReplacer {
+func newImageReplacer(builds []build.Artifact, defaultRepo string) *imageReplacer {
 	tagsByImageName := make(map[string]string)
 	for _, build := range builds {
 		tagsByImageName[build.ImageName] = build.Tag
 	}
 
 	return &imageReplacer{
+		defaultRepo:     defaultRepo,
 		tagsByImageName: tagsByImageName,
 		found:           make(map[string]bool),
 	}
@@ -64,20 +69,29 @@ func (r *imageReplacer) Matches(key string) bool {
 }
 
 func (r *imageReplacer) NewValue(key string, old interface{}) (bool, interface{}) {
-	image := old.(string)
+	image := r.substituteRepoIntoArtifact(old.(string))
 
+	// TODO(nkubala): do defaultRepo substitution here
+
+	fmt.Printf("parsing reference for image %s\n", image)
 	parsed, err := docker.ParseReference(image)
 	if err != nil {
 		warner.Warnf("Couldn't parse image: %s", image)
 		return false, nil
 	}
+	fmt.Printf("parsed reference base name: %s\n", parsed.BaseName)
+
+	// TODO: images are getting added to tagsByImageName BEFORE being subbed
 
 	if tag, present := r.tagsByImageName[parsed.BaseName]; present {
 		if parsed.FullyQualified {
+			fmt.Println("fully qualified")
 			if tag == image {
+				fmt.Println("tag == image, marking as found")
 				r.found[parsed.BaseName] = true
 			}
 		} else {
+			fmt.Println("not fully qualified, but marking as found")
 			r.found[parsed.BaseName] = true
 			return true, tag
 		}
@@ -92,4 +106,19 @@ func (r *imageReplacer) Check() {
 			warner.Warnf("image [%s] is not used by the deployment", imageName)
 		}
 	}
+}
+
+func (r *imageReplacer) substituteRepoIntoArtifact(originalImage string) string {
+	if strings.HasPrefix(r.defaultRepo, "gcr.io") {
+		if !strings.HasPrefix(originalImage, r.defaultRepo) {
+			return r.defaultRepo + "/" + originalImage
+		} else {
+			// TODO: this one is a little harder
+			return originalImage
+		}
+	} else {
+		// TODO: escape, concat, truncate to 256
+		return originalImage
+	}
+	return originalImage
 }

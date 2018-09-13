@@ -23,8 +23,11 @@ import (
 	"os"
 	"strings"
 
+	// configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
+	cmdutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	// "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
@@ -153,3 +156,47 @@ func SetUpLogs(out io.Writer, level string) error {
 	logrus.SetLevel(lvl)
 	return nil
 }
+
+func readConfiguration(opts *config.SkaffoldOptions) (*config.SkaffoldConfig, error) {
+	config, err := cmdutil.ParseConfig(opts.ConfigurationFile)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing skaffold config")
+	}
+	err = config.ApplyProfiles(opts.Profiles)
+	if err != nil {
+		return nil, errors.Wrap(err, "applying profiles")
+	}
+	// globalConfig, err := configutil.GetConfigForKubectx()
+	// if err != nil {
+	// 	return nil, errors.Wrap(err, "retrieving global config")
+	// }
+	// if err = applyDefaultRepo(config, globalConfig); err != nil {
+	// 	return nil, errors.Wrap(err, "substituting default repos")
+	// }
+	return config, nil
+}
+
+// func applyDefaultRepo(config *config.SkaffoldConfig, globalConfig *configutil.ContextConfig) error {
+// 	fmt.Printf("default repo: %s\n", globalConfig.DefaultRepo)
+// 	for _, artifact := range config.Build.Artifacts {
+// 		fmt.Printf("artifact: %+v\n", artifact)
+// 		substituteRepoIntoArtifact(globalConfig.DefaultRepo, artifact)
+// 		fmt.Printf("artifact: %+v\n", artifact)
+// 	}
+// 	return nil
+// }
+
+// func substituteRepoIntoArtifact(repo string, artifact *v1alpha2.Artifact) error {
+// 	if strings.HasPrefix(repo, "gcr.io") {
+// 		if !strings.HasPrefix(artifact.ImageName, repo) {
+// 			artifact.ImageName = repo + "/" + artifact.ImageName
+// 		} else {
+// 			// TODO: this one is a little harder
+// 			return nil
+// 		}
+// 	} else {
+// 		// TODO: escape, concat, truncate to 256
+// 		return nil
+// 	}
+// 	return nil
+// }

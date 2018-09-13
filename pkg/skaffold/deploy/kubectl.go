@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -38,13 +39,14 @@ import (
 type KubectlDeployer struct {
 	*latest.KubectlDeploy
 
-	workingDir string
-	kubectl    kubectl.CLI
+	workingDir  string
+	kubectl     kubectl.CLI
+	defaultRepo string
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(workingDir string, cfg *latest.KubectlDeploy, kubeContext string, namespace string) *KubectlDeployer {
+func NewKubectlDeployer(workingDir string, cfg *latest.KubectlDeploy, kubeContext string, namespace string, defaultRepo string) *KubectlDeployer {
 	return &KubectlDeployer{
 		KubectlDeploy: cfg,
 		workingDir:    workingDir,
@@ -53,6 +55,7 @@ func NewKubectlDeployer(workingDir string, cfg *latest.KubectlDeploy, kubeContex
 			KubeContext: kubeContext,
 			Flags:       cfg.Flags,
 		},
+		defaultRepo: defaultRepo,
 	}
 }
 
@@ -79,9 +82,17 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return nil, nil
 	}
 
-	manifests, err = manifests.ReplaceImages(builds)
+	for _, manifest := range manifests {
+		fmt.Printf("before replacing, manifest: %s", string(manifest))
+	}
+	// fmt.Printf("before replacing, manifests: %+v\n", manifests)
+
+	manifests, err = manifests.ReplaceImages(builds, k.defaultRepo)
 	if err != nil {
 		return nil, errors.Wrap(err, "replacing images in manifests")
+	}
+	for _, manifest := range manifests {
+		fmt.Printf("after replacing, manifest: %s", string(manifest))
 	}
 
 	updated, err := k.kubectl.Apply(ctx, out, manifests)
