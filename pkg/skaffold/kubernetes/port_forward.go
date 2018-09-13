@@ -63,11 +63,11 @@ type Forwarder interface {
 	Stop(*portForwardEntry) error
 }
 
-type kubectlForwader struct{}
+type kubectlForwarder struct{}
 
 // Forward port-forwards a pod using kubectl port-forward
 // It returns an error only if the process fails or was terminated by a signal other than SIGTERM
-func (*kubectlForwader) Forward(pfe *portForwardEntry) error {
+func (*kubectlForwarder) Forward(pfe *portForwardEntry) error {
 	logrus.Debugf("Port forwarding %s", pfe)
 	portNumber := fmt.Sprintf("%d", pfe.port)
 	cmd := exec.Command("kubectl", "port-forward", fmt.Sprintf("pod/%s", pfe.podName), portNumber, portNumber)
@@ -84,7 +84,7 @@ func (*kubectlForwader) Forward(pfe *portForwardEntry) error {
 }
 
 // Stop terminates an existing kubectl port-forward command using SIGTERM
-func (*kubectlForwader) Stop(p *portForwardEntry) error {
+func (*kubectlForwarder) Stop(p *portForwardEntry) error {
 	logrus.Debugf("Terminating port-forward %s", p)
 	if p.cmd == nil {
 		return fmt.Errorf("No port-forward command found for %s", p)
@@ -98,7 +98,7 @@ func (*kubectlForwader) Stop(p *portForwardEntry) error {
 // NewPortForwarder returns a struct that tracks and port-forwards pods as they are created and modified
 func NewPortForwarder(out io.Writer, podSelector PodSelector) *PortForwarder {
 	return &PortForwarder{
-		Forwarder:      &kubectlForwader{},
+		Forwarder:      &kubectlForwarder{},
 		output:         out,
 		podSelector:    podSelector,
 		forwardedPods:  &sync.Map{},
