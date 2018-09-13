@@ -230,7 +230,7 @@ func TestFix(t *testing.T) {
 			directory: "testdata/v1alpha1",
 		},
 		{
-			name:      "test v1alpha2 to v1alpha3 kaniko fix",
+			name:      "test v1alpha2 to v1alpha3 fix",
 			directory: "testdata/v1alpha2",
 		},
 	}
