@@ -17,14 +17,12 @@ limitations under the License.
 package kubectl
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // for testing
@@ -69,29 +67,20 @@ func (r *imageReplacer) Matches(key string) bool {
 }
 
 func (r *imageReplacer) NewValue(key string, old interface{}) (bool, interface{}) {
-	image := r.substituteRepoIntoArtifact(old.(string))
+	image := r.substituteRepoIntoImage(old.(string))
 
-	// TODO(nkubala): do defaultRepo substitution here
-
-	fmt.Printf("parsing reference for image %s\n", image)
 	parsed, err := docker.ParseReference(image)
 	if err != nil {
 		warner.Warnf("Couldn't parse image: %s", image)
 		return false, nil
 	}
-	fmt.Printf("parsed reference base name: %s\n", parsed.BaseName)
-
-	// TODO: images are getting added to tagsByImageName BEFORE being subbed
 
 	if tag, present := r.tagsByImageName[parsed.BaseName]; present {
 		if parsed.FullyQualified {
-			fmt.Println("fully qualified")
 			if tag == image {
-				fmt.Println("tag == image, marking as found")
 				r.found[parsed.BaseName] = true
 			}
 		} else {
-			fmt.Println("not fully qualified, but marking as found")
 			r.found[parsed.BaseName] = true
 			return true, tag
 		}
@@ -108,17 +97,6 @@ func (r *imageReplacer) Check() {
 	}
 }
 
-func (r *imageReplacer) substituteRepoIntoArtifact(originalImage string) string {
-	if strings.HasPrefix(r.defaultRepo, "gcr.io") {
-		if !strings.HasPrefix(originalImage, r.defaultRepo) {
-			return r.defaultRepo + "/" + originalImage
-		} else {
-			// TODO: this one is a little harder
-			return originalImage
-		}
-	} else {
-		// TODO: escape, concat, truncate to 256
-		return originalImage
-	}
-	return originalImage
+func (r *imageReplacer) substituteRepoIntoImage(originalImage string) string {
+	return util.SubstituteDefaultRepoIntoImage(r.defaultRepo, originalImage)
 }

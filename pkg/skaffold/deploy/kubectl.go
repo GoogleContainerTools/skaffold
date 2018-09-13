@@ -20,7 +20,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -82,17 +81,9 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return nil, nil
 	}
 
-	for _, manifest := range manifests {
-		fmt.Printf("before replacing, manifest: %s", string(manifest))
-	}
-	// fmt.Printf("before replacing, manifests: %+v\n", manifests)
-
 	manifests, err = manifests.ReplaceImages(builds, k.defaultRepo)
 	if err != nil {
 		return nil, errors.Wrap(err, "replacing images in manifests")
-	}
-	for _, manifest := range manifests {
-		fmt.Printf("after replacing, manifest: %s", string(manifest))
 	}
 
 	updated, err := k.kubectl.Apply(ctx, out, manifests)
