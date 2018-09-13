@@ -70,7 +70,7 @@ type kubectlForwarder struct{}
 func (*kubectlForwarder) Forward(pfe *portForwardEntry) error {
 	logrus.Debugf("Port forwarding %s", pfe)
 	portNumber := fmt.Sprintf("%d", pfe.port)
-	cmd := exec.Command("kubectl", "port-forward", fmt.Sprintf("pod/%s", pfe.podName), portNumber, portNumber)
+	cmd := exec.Command("kubectl", "port-forward", pfe.podName, portNumber, portNumber)
 	pfe.cmd = cmd
 
 	buf := &bytes.Buffer{}
