@@ -1,3 +1,27 @@
+# v0.14.0 Release - 9/13/2018
+
+New Features:
+* Allow `skaffold dev —watch image` [#925](https://github.com/GoogleContainerTools/skaffold/pull/925)
+* Port forward pods automatically during `skaffold dev` [#945](https://github.com/GoogleContainerTools/skaffold/pull/945)
+* Add skaffold 'init' [#919](https://github.com/GoogleContainerTools/skaffold/pull/919)
+
+Bug Fixes:
+* Get namespace for updating objects from build artifact [#951](https://github.com/GoogleContainerTools/skaffold/pull/951)
+* Remove service labeling temporarily [#965](https://github.com/GoogleContainerTools/skaffold/pull/965)
+* Don't prefix pod names when port forwarding [#976](https://github.com/GoogleContainerTools/skaffold/pull/976)
+
+Updates:
+* Don’t compute onbuild triggers for images that are stage names [#938](https://github.com/GoogleContainerTools/skaffold/pull/938)
+* Don't unmute logs if an error happened [#928](https://github.com/GoogleContainerTools/skaffold/pull/928)
+* Exclude helm dependency chart packages from watched files [#932](https://github.com/GoogleContainerTools/skaffold/pull/932)
+* Pass --recreate-pods to helm by default in dev mode [#946](https://github.com/GoogleContainerTools/skaffold/pull/946)
+* Default to kubectl deploy [#956](https://github.com/GoogleContainerTools/skaffold/pull/956)
+* Simplify helm tests [#957](https://github.com/GoogleContainerTools/skaffold/pull/957)
+* Pull 'cache-from' images on Google Cloud Build [#958](https://github.com/GoogleContainerTools/skaffold/pull/958)
+* update check respected quiet flag [#964](https://github.com/GoogleContainerTools/skaffold/pull/964)
+* Fix typo in portforwarder [#975](https://github.com/GoogleContainerTools/skaffold/pull/975)
+
+
 # v0.13.0 Release - 8/16/2018
 
 New Features:
