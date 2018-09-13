@@ -23,7 +23,7 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
@@ -40,7 +40,7 @@ import (
 )
 
 // BuildArtifact performs a docker build and returns nothing
-func BuildArtifact(ctx context.Context, out io.Writer, cli APIClient, workspace string, a *v1alpha2.DockerArtifact, initialTag string) error {
+func BuildArtifact(ctx context.Context, out io.Writer, cli APIClient, workspace string, a *v1alpha3.DockerArtifact, initialTag string) error {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
 
 	// Like `docker build`, we ignore the errors
@@ -175,7 +175,7 @@ func RemoteDigest(identifier string) (string, error) {
 }
 
 // GetBuildArgs gives the build args flags for docker build.
-func GetBuildArgs(a *v1alpha2.DockerArtifact) []string {
+func GetBuildArgs(a *v1alpha3.DockerArtifact) []string {
 	var args []string
 
 	var keys []string

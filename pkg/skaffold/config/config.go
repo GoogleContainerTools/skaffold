@@ -17,14 +17,14 @@ limitations under the License.
 package config
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 )
 
 // SkaffoldConfig references the most recent skaffold config version
-type SkaffoldConfig = v1alpha2.SkaffoldConfig
+type SkaffoldConfig = v1alpha3.SkaffoldConfig
 
-const LatestVersion string = v1alpha2.Version
+const LatestVersion string = v1alpha3.Version
 
 func NewConfig() (*SkaffoldConfig, error) {
-	return v1alpha2.NewConfig()
+	return v1alpha3.NewConfig()
 }

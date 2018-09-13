@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -35,7 +35,7 @@ import (
 
 // KubectlDeployer deploys workflows using kubectl CLI.
 type KubectlDeployer struct {
-	*v1alpha2.KubectlDeploy
+	*v1alpha3.KubectlDeploy
 
 	workingDir string
 	kubectl    kubectl.CLI
@@ -43,7 +43,7 @@ type KubectlDeployer struct {
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(workingDir string, cfg *v1alpha2.KubectlDeploy, kubeContext string, namespace string) *KubectlDeployer {
+func NewKubectlDeployer(workingDir string, cfg *v1alpha3.KubectlDeploy, kubeContext string, namespace string) *KubectlDeployer {
 	return &KubectlDeployer{
 		KubectlDeploy: cfg,
 		workingDir:    workingDir,

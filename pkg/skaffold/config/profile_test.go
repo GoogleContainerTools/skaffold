@@ -19,7 +19,7 @@ package config
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -47,11 +47,11 @@ func TestApplyProfiles(t *testing.T) {
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
-				withProfiles(v1alpha2.Profile{
+				withProfiles(v1alpha3.Profile{
 					Name: "profile",
-					Build: v1alpha2.BuildConfig{
-						BuildType: v1alpha2.BuildType{
-							GoogleCloudBuild: &v1alpha2.GoogleCloudBuild{
+					Build: v1alpha3.BuildConfig{
+						BuildType: v1alpha3.BuildType{
+							GoogleCloudBuild: &v1alpha3.GoogleCloudBuild{
 								ProjectID: "my-project",
 							},
 						},
@@ -75,10 +75,10 @@ func TestApplyProfiles(t *testing.T) {
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
-				withProfiles(v1alpha2.Profile{
+				withProfiles(v1alpha3.Profile{
 					Name: "dev",
-					Build: v1alpha2.BuildConfig{
-						TagPolicy: v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}},
+					Build: v1alpha3.BuildConfig{
+						TagPolicy: v1alpha3.TagPolicy{ShaTagger: &v1alpha3.ShaTagger{}},
 					},
 				}),
 			),
@@ -99,10 +99,10 @@ func TestApplyProfiles(t *testing.T) {
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
-				withProfiles(v1alpha2.Profile{
+				withProfiles(v1alpha3.Profile{
 					Name: "profile",
-					Build: v1alpha2.BuildConfig{
-						Artifacts: []*v1alpha2.Artifact{
+					Build: v1alpha3.BuildConfig{
+						Artifacts: []*v1alpha3.Artifact{
 							{ImageName: "image"},
 							{ImageName: "imageProd"},
 						},
@@ -126,11 +126,11 @@ func TestApplyProfiles(t *testing.T) {
 					withGitTagger(),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
-				withProfiles(v1alpha2.Profile{
+				withProfiles(v1alpha3.Profile{
 					Name: "profile",
-					Deploy: v1alpha2.DeployConfig{
-						DeployType: v1alpha2.DeployType{
-							HelmDeploy: &v1alpha2.HelmDeploy{},
+					Deploy: v1alpha3.DeployConfig{
+						DeployType: v1alpha3.DeployType{
+							HelmDeploy: &v1alpha3.HelmDeploy{},
 						},
 					},
 				}),
