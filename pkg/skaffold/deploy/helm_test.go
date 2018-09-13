@@ -28,7 +28,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/sirupsen/logrus"
@@ -48,8 +48,8 @@ var testBuildsFoo = []build.Artifact{
 	},
 }
 
-var testDeployConfig = &v1alpha2.HelmDeploy{
-	Releases: []v1alpha2.HelmRelease{
+var testDeployConfig = &v1alpha3.HelmDeploy{
+	Releases: []v1alpha3.HelmRelease{
 		{
 			Name:      "skaffold-helm",
 			ChartPath: "examples/test",
@@ -66,8 +66,8 @@ var testDeployConfig = &v1alpha2.HelmDeploy{
 	},
 }
 
-var testDeployRecreatePodsConfig = &v1alpha2.HelmDeploy{
-	Releases: []v1alpha2.HelmRelease{
+var testDeployRecreatePodsConfig = &v1alpha3.HelmDeploy{
+	Releases: []v1alpha3.HelmRelease{
 		{
 			Name:      "skaffold-helm",
 			ChartPath: "examples/test",
@@ -85,8 +85,8 @@ var testDeployRecreatePodsConfig = &v1alpha2.HelmDeploy{
 	},
 }
 
-var testDeployHelmStyleConfig = &v1alpha2.HelmDeploy{
-	Releases: []v1alpha2.HelmRelease{
+var testDeployHelmStyleConfig = &v1alpha3.HelmDeploy{
+	Releases: []v1alpha3.HelmRelease{
 		{
 			Name:      "skaffold-helm",
 			ChartPath: "examples/test",
@@ -99,17 +99,17 @@ var testDeployHelmStyleConfig = &v1alpha2.HelmDeploy{
 			SetValues: map[string]string{
 				"some.key": "somevalue",
 			},
-			ImageStrategy: v1alpha2.HelmImageStrategy{
-				HelmImageConfig: v1alpha2.HelmImageConfig{
-					HelmConventionConfig: &v1alpha2.HelmConventionConfig{},
+			ImageStrategy: v1alpha3.HelmImageStrategy{
+				HelmImageConfig: v1alpha3.HelmImageConfig{
+					HelmConventionConfig: &v1alpha3.HelmConventionConfig{},
 				},
 			},
 		},
 	},
 }
 
-var testDeployConfigParameterUnmatched = &v1alpha2.HelmDeploy{
-	Releases: []v1alpha2.HelmRelease{
+var testDeployConfigParameterUnmatched = &v1alpha3.HelmDeploy{
+	Releases: []v1alpha3.HelmRelease{
 		{
 			Name:      "skaffold-helm",
 			ChartPath: "examples/test",
@@ -120,15 +120,15 @@ var testDeployConfigParameterUnmatched = &v1alpha2.HelmDeploy{
 	},
 }
 
-var testDeployFooWithPackaged = &v1alpha2.HelmDeploy{
-	Releases: []v1alpha2.HelmRelease{
+var testDeployFooWithPackaged = &v1alpha3.HelmDeploy{
+	Releases: []v1alpha3.HelmRelease{
 		{
 			Name:      "foo",
 			ChartPath: "testdata/foo",
 			Values: map[string]string{
 				"image": "foo",
 			},
-			Packaged: &v1alpha2.HelmPackaged{
+			Packaged: &v1alpha3.HelmPackaged{
 				Version:    "0.1.2",
 				AppVersion: "1.2.3",
 			},
@@ -136,8 +136,8 @@ var testDeployFooWithPackaged = &v1alpha2.HelmDeploy{
 	},
 }
 
-var testDeployWithTemplatedName = &v1alpha2.HelmDeploy{
-	Releases: []v1alpha2.HelmRelease{
+var testDeployWithTemplatedName = &v1alpha3.HelmDeploy{
+	Releases: []v1alpha3.HelmRelease{
 		{
 			Name:      "{{.USER}}-skaffold-helm",
 			ChartPath: "examples/test",
@@ -521,8 +521,8 @@ func TestHelmDependencies(t *testing.T) {
 				folder.Write(file, "")
 			}
 
-			deployer := NewHelmDeployer(&v1alpha2.HelmDeploy{
-				Releases: []v1alpha2.HelmRelease{
+			deployer := NewHelmDeployer(&v1alpha3.HelmDeploy{
+				Releases: []v1alpha3.HelmRelease{
 					{
 						Name:           "skaffold-helm",
 						ChartPath:      folder.Root(),

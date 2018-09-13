@@ -1,4 +1,4 @@
-apiVersion: skaffold/v1alpha2
+apiVersion: skaffold/v1alpha3
 kind: Config
 build:
   # tagPolicy determines how skaffold is going to tag your images.
@@ -101,7 +101,8 @@ build:
   # See https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster
   #
   # kaniko:
-  #   gcsBucket: k8s-skaffold
+  #   buildContext:
+  #     gcsBucket: k8s-skaffold
   #   pullSecret: /a/secret/path/serviceaccount.json
   #   namespace: default
   #   timeout: 20m

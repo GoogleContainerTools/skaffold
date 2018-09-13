@@ -19,7 +19,7 @@ package bazel
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -36,7 +36,7 @@ func TestGetDependenciesWithWorkspace(t *testing.T) {
 	defer cleanup()
 	tmpDir.Write("WORKSPACE", "")
 
-	deps, err := GetDependencies(tmpDir.Root(), &v1alpha2.BazelArtifact{
+	deps, err := GetDependencies(tmpDir.Root(), &v1alpha3.BazelArtifact{
 		BuildTarget: "target",
 	})
 
@@ -51,7 +51,7 @@ func TestGetDependenciesWithoutWorkspace(t *testing.T) {
 		nil,
 	)
 
-	deps, err := GetDependencies(".", &v1alpha2.BazelArtifact{
+	deps, err := GetDependencies(".", &v1alpha3.BazelArtifact{
 		BuildTarget: "target2",
 	})
 

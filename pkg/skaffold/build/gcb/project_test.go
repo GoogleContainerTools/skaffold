@@ -19,46 +19,46 @@ package gcb
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestGuessProjectID(t *testing.T) {
 	var tests = []struct {
 		description string
-		config      *v1alpha2.GoogleCloudBuild
-		artifact    *v1alpha2.Artifact
+		config      *v1alpha3.GoogleCloudBuild
+		artifact    *v1alpha3.Artifact
 		expected    string
 		shouldErr   bool
 	}{
 		{
 			description: "fixed projectId",
-			config:      &v1alpha2.GoogleCloudBuild{ProjectID: "fixed"},
-			artifact:    &v1alpha2.Artifact{ImageName: "any"},
+			config:      &v1alpha3.GoogleCloudBuild{ProjectID: "fixed"},
+			artifact:    &v1alpha3.Artifact{ImageName: "any"},
 			expected:    "fixed",
 		},
 		{
 			description: "gcr.io",
-			config:      &v1alpha2.GoogleCloudBuild{},
-			artifact:    &v1alpha2.Artifact{ImageName: "gcr.io/project/image"},
+			config:      &v1alpha3.GoogleCloudBuild{},
+			artifact:    &v1alpha3.Artifact{ImageName: "gcr.io/project/image"},
 			expected:    "project",
 		},
 		{
 			description: "eu.gcr.io",
-			config:      &v1alpha2.GoogleCloudBuild{},
-			artifact:    &v1alpha2.Artifact{ImageName: "gcr.io/project/image"},
+			config:      &v1alpha3.GoogleCloudBuild{},
+			artifact:    &v1alpha3.Artifact{ImageName: "gcr.io/project/image"},
 			expected:    "project",
 		},
 		{
 			description: "docker hub",
-			config:      &v1alpha2.GoogleCloudBuild{},
-			artifact:    &v1alpha2.Artifact{ImageName: "project/image"},
+			config:      &v1alpha3.GoogleCloudBuild{},
+			artifact:    &v1alpha3.Artifact{ImageName: "project/image"},
 			shouldErr:   true,
 		},
 		{
 			description: "invalid GCR image",
-			config:      &v1alpha2.GoogleCloudBuild{},
-			artifact:    &v1alpha2.Artifact{ImageName: "gcr.io"},
+			config:      &v1alpha3.GoogleCloudBuild{},
+			artifact:    &v1alpha3.Artifact{ImageName: "gcr.io"},
 			shouldErr:   true,
 		},
 	}

@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-containerregistry/pkg/v1"
@@ -373,7 +373,7 @@ func TestGetDependencies(t *testing.T) {
 			}
 
 			workspace := tmpDir.Path(test.workspace)
-			deps, err := GetDependencies(workspace, &v1alpha2.DockerArtifact{
+			deps, err := GetDependencies(workspace, &v1alpha3.DockerArtifact{
 				BuildArgs:      test.buildArgs,
 				DockerfilePath: "Dockerfile",
 			})

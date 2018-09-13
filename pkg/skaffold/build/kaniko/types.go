@@ -18,16 +18,16 @@ package kaniko
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 )
 
 // Builder builds docker artifacts on Kubernetes, using Kaniko.
 type Builder struct {
-	*v1alpha2.KanikoBuild
+	*v1alpha3.KanikoBuild
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Kaniko.
-func NewBuilder(cfg *v1alpha2.KanikoBuild) *Builder {
+func NewBuilder(cfg *v1alpha3.KanikoBuild) *Builder {
 	return &Builder{
 		KanikoBuild: cfg,
 	}

@@ -26,7 +26,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/fileutils"
 	"github.com/google/go-containerregistry/pkg/v1"
@@ -219,7 +219,7 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 
 // GetDependencies finds the sources dependencies for the given docker artifact.
 // All paths are relative to the workspace.
-func GetDependencies(workspace string, a *v1alpha2.DockerArtifact) ([]string, error) {
+func GetDependencies(workspace string, a *v1alpha3.DockerArtifact) ([]string, error) {
 	absDockerfilePath, err := NormalizeDockerfilePath(workspace, a.DockerfilePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "normalizing dockerfile path")

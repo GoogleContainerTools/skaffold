@@ -23,6 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config/transform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/pkg/errors"
 )
 
@@ -33,6 +34,7 @@ type Transform func(vc util.VersionedConfig) (util.VersionedConfig, error)
 // since the last schema version should not have a transform
 var transformers = map[string]Transform{
 	v1alpha1.Version: transform.ToV1Alpha2,
+	v1alpha2.Version: transform.ToV1Alpha3,
 }
 
 func RunTransform(vc util.VersionedConfig) (util.VersionedConfig, error) {

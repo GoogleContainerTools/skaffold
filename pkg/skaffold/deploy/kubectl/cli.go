@@ -21,7 +21,7 @@ import (
 	"io"
 	"os/exec"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -31,7 +31,7 @@ import (
 type CLI struct {
 	Namespace   string
 	KubeContext string
-	Flags       v1alpha2.KubectlFlags
+	Flags       v1alpha3.KubectlFlags
 
 	previousApply ManifestList
 }

@@ -17,15 +17,19 @@ limitations under the License.
 package transform
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
+// ToV1Alpha2 transforms v1alpha1 configs to v1alpha2
 func ToV1Alpha2(vc util.VersionedConfig) (util.VersionedConfig, error) {
 	if vc.GetVersion() != v1alpha1.Version {
 		return nil, fmt.Errorf("Incompatible version: %s", vc.GetVersion())
@@ -114,4 +118,67 @@ func ToV1Alpha2(vc util.VersionedConfig) (util.VersionedConfig, error) {
 		},
 	}
 	return newConfig, nil
+}
+
+// ToV1Alpha3 transforms configs from v1alpha2 to v1alpha3
+func ToV1Alpha3(vc util.VersionedConfig) (util.VersionedConfig, error) {
+	if vc.GetVersion() != v1alpha2.Version {
+		return nil, fmt.Errorf("Incompatible version: %s", vc.GetVersion())
+	}
+	oldConfig := vc.(*v1alpha2.SkaffoldConfig)
+
+	// convert v1alpha2.Deploy to v1alpha3.Deploy (should be the same)
+	var newDeploy v1alpha3.DeployConfig
+	if err := convert(oldConfig.Deploy, &newDeploy); err != nil {
+		return nil, errors.Wrap(err, "converting deploy config")
+	}
+
+	// convert v1alpha2.Profiles to v1alpha3.Profiles (should be the same)
+	var newProfiles []v1alpha3.Profile
+	if oldConfig.Profiles != nil {
+		if err := convert(oldConfig.Profiles, &newProfiles); err != nil {
+			return nil, errors.Wrap(err, "converting new profile")
+		}
+	}
+
+	// convert v1alpha2.Build to v1alpha3.Build (different only for kaniko)
+	oldKanikoBuilder := oldConfig.Build.KanikoBuild
+	oldConfig.Build.KanikoBuild = nil
+
+	// copy over old build config to new build config
+	var newBuild v1alpha3.BuildConfig
+	if err := convert(oldConfig.Build, &newBuild); err != nil {
+		return nil, errors.Wrap(err, "converting new build")
+	}
+	// if the kaniko build was set, then convert it
+	if oldKanikoBuilder != nil {
+		newBuild.BuildType.KanikoBuild = &v1alpha3.KanikoBuild{
+			BuildContext: v1alpha3.KanikoBuildContext{
+				GCSBucket: oldKanikoBuilder.GCSBucket,
+			},
+			Namespace:      oldKanikoBuilder.Namespace,
+			PullSecret:     oldKanikoBuilder.PullSecret,
+			PullSecretName: oldKanikoBuilder.PullSecretName,
+			Timeout:        oldKanikoBuilder.Timeout,
+		}
+	}
+	newConfig := &v1alpha3.SkaffoldConfig{
+		APIVersion: v1alpha3.Version,
+		Kind:       oldConfig.Kind,
+		Deploy:     newDeploy,
+		Build:      newBuild,
+		Profiles:   newProfiles,
+	}
+	return newConfig, nil
+}
+
+func convert(old interface{}, new interface{}) error {
+	o, err := json.Marshal(old)
+	if err != nil {
+		return errors.Wrap(err, "marshalling old")
+	}
+	if err := json.Unmarshal(o, &new); err != nil {
+		return errors.Wrap(err, "unmarshalling new")
+	}
+	return nil
 }

@@ -18,11 +18,11 @@ package gcb
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 )
 
-func (b *Builder) buildDescription(artifact *v1alpha2.Artifact, bucket, object string) *cloudbuild.Build {
+func (b *Builder) buildDescription(artifact *v1alpha3.Artifact, bucket, object string) *cloudbuild.Build {
 	var steps []*cloudbuild.BuildStep
 
 	for _, cacheFrom := range artifact.DockerArtifact.CacheFrom {

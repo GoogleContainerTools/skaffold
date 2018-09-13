@@ -35,7 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -206,23 +206,23 @@ func promptUserForDockerfile(image string, dockerfiles []string) dockerfilePair 
 	}
 }
 
-func processBuildArtifacts(pairs []dockerfilePair) v1alpha2.BuildConfig {
-	var config v1alpha2.BuildConfig
+func processBuildArtifacts(pairs []dockerfilePair) v1alpha3.BuildConfig {
+	var config v1alpha3.BuildConfig
 
 	if len(pairs) > 0 {
-		var artifacts []*v1alpha2.Artifact
+		var artifacts []*v1alpha3.Artifact
 		for _, pair := range pairs {
 			workspace := filepath.Dir(pair.Dockerfile)
 			dockerfilePath := filepath.Base(pair.Dockerfile)
-			a := &v1alpha2.Artifact{
+			a := &v1alpha3.Artifact{
 				ImageName: pair.ImageName,
 			}
 			if workspace != "." {
 				a.Workspace = workspace
 			}
 			if dockerfilePath != constants.DefaultDockerfilePath {
-				a.ArtifactType = v1alpha2.ArtifactType{
-					DockerArtifact: &v1alpha2.DockerArtifact{
+				a.ArtifactType = v1alpha3.ArtifactType{
+					DockerArtifact: &v1alpha3.DockerArtifact{
 						DockerfilePath: dockerfilePath,
 					},
 				}
@@ -246,9 +246,9 @@ func generateSkaffoldConfig(k8sConfigs []string, dockerfilePairs []dockerfilePai
 	}
 	config.Build = processBuildArtifacts(dockerfilePairs)
 
-	config.Deploy = v1alpha2.DeployConfig{
-		DeployType: v1alpha2.DeployType{
-			KubectlDeploy: &v1alpha2.KubectlDeploy{
+	config.Deploy = v1alpha3.DeployConfig{
+		DeployType: v1alpha3.DeployType{
+			KubectlDeploy: &v1alpha3.KubectlDeploy{
 				Manifests: k8sConfigs,
 			},
 		},

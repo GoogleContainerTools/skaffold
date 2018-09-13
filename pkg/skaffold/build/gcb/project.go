@@ -20,13 +20,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/registry"
 	"github.com/pkg/errors"
 )
 
-func (b *Builder) guessProjectID(artifact *v1alpha2.Artifact) (string, error) {
+func (b *Builder) guessProjectID(artifact *v1alpha3.Artifact) (string, error) {
 	if b.ProjectID != "" {
 		return b.ProjectID, nil
 	}
