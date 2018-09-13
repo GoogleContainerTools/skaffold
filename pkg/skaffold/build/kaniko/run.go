@@ -65,7 +65,7 @@ func runKaniko(ctx context.Context, out io.Writer, artifact *v1alpha2.Artifact, 
 		return "", errors.Wrap(err, "")
 	}
 
-	podConfig := buildPodConfig(*artifact, *cfg, imageDst, initialTag, buildContext)
+	podConfig := buildPodConfig(*artifact, *cfg, imageDst, buildContext)
 	pods := client.CoreV1().Pods(cfg.Namespace)
 	p, err := pods.Create(podConfig)
 
@@ -97,7 +97,7 @@ func runKaniko(ctx context.Context, out io.Writer, artifact *v1alpha2.Artifact, 
 	return imageDst, nil
 }
 
-func buildPodConfig(artifact v1alpha2.Artifact, cfg v1alpha2.KanikoBuild, imageDst string, initialTag string, buildContext string) *v1.Pod {
+func buildPodConfig(artifact v1alpha2.Artifact, cfg v1alpha2.KanikoBuild, imageDst string, buildContext string) *v1.Pod {
 	containers := []v1.Container{}
 
 	args := []string{

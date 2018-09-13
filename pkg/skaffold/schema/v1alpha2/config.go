@@ -135,7 +135,7 @@ type GcsContext struct {
 
 type S3Context struct {
 	S3Bucket string `yaml:"bucket,omitempty"`
-	Region string `yaml:"region,omitempty"`
+	Region   string `yaml:"region,omitempty"`
 }
 
 type LocalDirContext struct {

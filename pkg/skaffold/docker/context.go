@@ -81,7 +81,6 @@ func UploadContextToGCS(ctx context.Context, workspace string, a *v1alpha2.Docke
 		return errors.Wrap(err, "uploading targz to google storage")
 	}
 	return w.Close()
-	return nil
 }
 
 func UploadContextToS3(ctx context.Context, workspace string, a *v1alpha2.DockerArtifact, bucket, objectName string, region string) error {

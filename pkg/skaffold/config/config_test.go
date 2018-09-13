@@ -83,14 +83,16 @@ apiVersion: skaffold/v1alpha2
 kind: Config
 build:
   kaniko:
-    gcsBucket: demo
+    gcs:
+      bucket: demo
 `
 	completeKanikoConfig = `
 apiVersion: skaffold/v1alpha2
 kind: Config
 build:
   kaniko:
-    gcsBucket: demo
+    gcs:
+      bucket: demo
     pullSecret: /secret.json
     pullSecretName: secret-name
     namespace: nskaniko
@@ -217,7 +219,11 @@ func withGoogleCloudBuild(id string, ops ...func(*v1alpha2.BuildConfig)) func(*S
 func withKanikoBuild(bucket, secretName, namespace, secret string, timeout string, ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldConfig) {
 	return func(cfg *SkaffoldConfig) {
 		b := v1alpha2.BuildConfig{BuildType: v1alpha2.BuildType{KanikoBuild: &v1alpha2.KanikoBuild{
-			GCSBucket:      bucket,
+			ContextType: v1alpha2.ContextType{
+				GcsContext: &v1alpha2.GcsContext{
+					GCSBucket: bucket,
+				},
+			},
 			PullSecretName: secretName,
 			Namespace:      namespace,
 			PullSecret:     secret,
