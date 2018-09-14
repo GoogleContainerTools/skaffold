@@ -142,6 +142,13 @@ func TestRun(t *testing.T) {
 			remoteOnly:  true,
 		},
 		{
+			description: "kaniko local example",
+			args:        []string{"run"},
+			pods:        []string{"getting-started-kaniko"},
+			dir:         "../examples/kaniko-local",
+			remoteOnly:  true,
+		},
+		{
 			description: "helm example",
 			args:        []string{"run"},
 			deployments: []string{"skaffold-helm"},

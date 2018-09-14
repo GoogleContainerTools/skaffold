@@ -203,7 +203,7 @@ func configMapCreate(artifact *v1alpha3.Artifact, ns, tag string) error {
 	logrus.Infof("Creating config map %s", configMapName(tag))
 	paths, err := docker.GetDependencies(artifact.Workspace, artifact.DockerArtifact)
 	if err != nil {
-		return errors.Wrap(err, "getting relative tar paths")
+		return errors.Wrap(err, "getting sources for configmap")
 	}
 	var files []string
 	for _, path := range paths {
