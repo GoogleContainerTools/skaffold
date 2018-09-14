@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os/exec"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -43,11 +45,53 @@ func runKaniko(ctx context.Context, out io.Writer, artifact *v1alpha3.Artifact, 
 	dockerfilePath := artifact.DockerArtifact.DockerfilePath
 
 	initialTag := util.RandomID()
-	tarName := fmt.Sprintf("context-%s.tar.gz", initialTag)
-	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact, cfg.BuildContext.GCSBucket, tarName); err != nil {
-		return "", errors.Wrap(err, "uploading tar to gcs")
+	volumes := []v1.Volume{{
+		Name: constants.DefaultKanikoSecretName,
+		VolumeSource: v1.VolumeSource{
+			Secret: &v1.SecretVolumeSource{
+				SecretName: cfg.PullSecretName,
+			},
+		},
+	}}
+
+	volumeMounts := []v1.VolumeMount{{
+		Name:      constants.DefaultKanikoSecretName,
+		MountPath: "/secret",
+	}}
+
+	context := ""
+	if cfg.BuildContext.GCSBucket != "" {
+		tarName := fmt.Sprintf("context-%s.tar.gz", initialTag)
+		if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact, cfg.BuildContext.GCSBucket, tarName); err != nil {
+			return "", errors.Wrap(err, "uploading tar to gcs")
+		}
+		defer gcsDelete(ctx, cfg.BuildContext.GCSBucket, tarName)
+		context = fmt.Sprintf("gs://%s/%s", cfg.BuildContext.GCSBucket, tarName)
+	} else if cfg.BuildContext.LocalDir {
+		// Create the config map
+		if err := configMapCreate(artifact, cfg.Namespace, initialTag); err != nil {
+			return "", errors.Wrap(err, "creating config map")
+		}
+		defer configMapDelete(initialTag, cfg.Namespace)
+		// Add the config map to volumes
+		volumes = append(volumes, v1.Volume{
+			Name: constants.DefaultKanikoConfigMapName,
+			VolumeSource: v1.VolumeSource{
+				ConfigMap: &v1.ConfigMapVolumeSource{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: configMapName(initialTag),
+					},
+				},
+			},
+		})
+		volumeMounts = append(volumeMounts, v1.VolumeMount{
+			Name:      constants.DefaultKanikoConfigMapName,
+			MountPath: constants.DefaultKanikoConfigMapMountPath,
+		})
+		// the configMap stores symlinks to the files at the specified MountPath and stores the
+		// actual files themselves at MountPath/..data
+		context = fmt.Sprintf("dir://%s", filepath.Join(constants.DefaultKanikoConfigMapMountPath, "..data"))
 	}
-	defer gcsDelete(ctx, cfg.BuildContext.GCSBucket, tarName)
 
 	client, err := kubernetes.GetClientset()
 	if err != nil {
@@ -58,7 +102,7 @@ func runKaniko(ctx context.Context, out io.Writer, artifact *v1alpha3.Artifact, 
 	imageDst := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
 	args := []string{
 		fmt.Sprintf("--dockerfile=%s", dockerfilePath),
-		fmt.Sprintf("--context=gs://%s/%s", cfg.BuildContext.GCSBucket, tarName),
+		fmt.Sprintf("--context=%s", context),
 		fmt.Sprintf("--destination=%s", imageDst),
 		fmt.Sprintf("-v=%s", logrus.GetLevel().String()),
 	}
@@ -77,24 +121,14 @@ func runKaniko(ctx context.Context, out io.Writer, artifact *v1alpha3.Artifact, 
 					Image:           constants.DefaultKanikoImage,
 					ImagePullPolicy: v1.PullIfNotPresent,
 					Args:            args,
-					VolumeMounts: []v1.VolumeMount{{
-						Name:      constants.DefaultKanikoSecretName,
-						MountPath: "/secret",
-					}},
+					VolumeMounts:    volumeMounts,
 					Env: []v1.EnvVar{{
 						Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 						Value: "/secret/kaniko-secret",
 					}},
 				},
 			},
-			Volumes: []v1.Volume{{
-				Name: constants.DefaultKanikoSecretName,
-				VolumeSource: v1.VolumeSource{
-					Secret: &v1.SecretVolumeSource{
-						SecretName: cfg.PullSecretName,
-					},
-				},
-			}},
+			Volumes:       volumes,
 			RestartPolicy: v1.RestartPolicyNever,
 		},
 	})
@@ -163,4 +197,28 @@ func gcsDelete(ctx context.Context, bucket, path string) error {
 	defer c.Close()
 
 	return c.Bucket(bucket).Object(path).Delete(ctx)
+}
+
+func configMapCreate(artifact *v1alpha3.Artifact, ns, tag string) error {
+	logrus.Infof("Creating config map %s", configMapName(tag))
+	paths, err := docker.GetDependencies(artifact.Workspace, artifact.DockerArtifact)
+	if err != nil {
+		return errors.Wrap(err, "getting relative tar paths")
+	}
+	var files []string
+	for _, path := range paths {
+		files = append(files, []string{"--from-file", path}...)
+	}
+	cmd := exec.Command("kubectl", append([]string{"create", "configmap", configMapName(tag)}, files...)...)
+	return util.RunCmd(cmd)
+}
+
+func configMapDelete(tag, ns string) error {
+	logrus.Infof("Deleting config map %s", configMapName(tag))
+	cmd := exec.Command("kubectl", "delete", "configmap", configMapName(tag), "-n", ns)
+	return util.RunCmd(cmd)
+}
+
+func configMapName(tag string) string {
+	return fmt.Sprintf("%s-%s", constants.DefaultKanikoConfigMapName, tag)
 }

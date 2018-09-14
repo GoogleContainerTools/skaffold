@@ -46,9 +46,11 @@ const (
 
 	DefaultKustomizationPath = "."
 
-	DefaultKanikoImage      = "gcr.io/kaniko-project/executor:v0.2.0@sha256:bebe80bb97950d88b8d8eab315a58e0bc50307135cf25147d7e0b8f3db50a84a"
-	DefaultKanikoSecretName = "kaniko-secret"
-	DefaultKanikoTimeout    = "20m"
+	DefaultKanikoImage              = "gcr.io/kaniko-project/executor:v0.2.0@sha256:bebe80bb97950d88b8d8eab315a58e0bc50307135cf25147d7e0b8f3db50a84a"
+	DefaultKanikoSecretName         = "kaniko-secret"
+	DefaultKanikoTimeout            = "20m"
+	DefaultKanikoConfigMapName      = "kaniko-configmap"
+	DefaultKanikoConfigMapMountPath = "/kaniko/buildcontext"
 
 	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
 

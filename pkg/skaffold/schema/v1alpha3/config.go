@@ -98,6 +98,7 @@ type GoogleCloudBuild struct {
 // a kaniko build context
 type KanikoBuildContext struct {
 	GCSBucket string `yaml:"gcsBucket,omitempty" yamltags:"oneOf=buildContext"`
+	LocalDir  bool   `yaml:"localDir,omitempty" yamltags:"oneOf=buildContext"`
 }
 
 // KanikoBuild contains the fields needed to do a on-cluster build using
