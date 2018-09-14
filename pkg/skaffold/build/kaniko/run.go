@@ -209,7 +209,7 @@ func configMapCreate(artifact *v1alpha3.Artifact, ns, tag string) error {
 	for _, path := range paths {
 		files = append(files, []string{"--from-file", path}...)
 	}
-	cmd := exec.Command("kubectl", append([]string{"create", "configmap", configMapName(tag)}, files...)...)
+	cmd := exec.Command("kubectl", append([]string{"create", "configmap", configMapName(tag), "-n", ns}, files...)...)
 	return util.RunCmd(cmd)
 }
 
