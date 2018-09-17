@@ -156,7 +156,7 @@ func getDeployer(cfg *latest.DeployConfig, kubeContext string, namespace string,
 
 	// HelmDeploy first, in case there are resources in Kubectl that depend on these...
 	if cfg.HelmDeploy != nil {
-		deployers = append(deployers, deploy.NewHelmDeployer(cfg.HelmDeploy, kubeContext, namespace))
+		deployers = append(deployers, deploy.NewHelmDeployer(cfg.HelmDeploy, kubeContext, namespace, defaultRepo))
 	}
 
 	if cfg.KubectlDeploy != nil {
