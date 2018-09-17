@@ -14,24 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gcb
+package gcp
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/registry"
 	"github.com/pkg/errors"
 )
 
-func (b *Builder) guessProjectID(artifact *v1alpha3.Artifact) (string, error) {
-	if b.ProjectID != "" {
-		return b.ProjectID, nil
-	}
-
-	ref, err := reference.ParseNormalizedNamed(artifact.ImageName)
+// ExtractProjectID extracts the GCP projectID from a docker image name
+// This only works if the imageName is pushed to gcr.io.
+func ExtractProjectID(imageName string) (string, error) {
+	ref, err := reference.ParseNormalizedNamed(imageName)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing image name for registry")
 	}
@@ -42,15 +39,12 @@ func (b *Builder) guessProjectID(artifact *v1alpha3.Artifact) (string, error) {
 	}
 
 	index := repoInfo.Index
-	if !index.Official {
-		switch index.Name {
-		case "gcr.io", "us.gcr.io", "eu.gcr.io", "asia.gcr.io", "staging-k8s.gcr.io":
-			parts := strings.Split(repoInfo.Name.String(), "/")
-			if len(parts) >= 2 {
-				return parts[1], nil
-			}
+	if index.Name == "gcr.io" || strings.HasSuffix(index.Name, ".gcr.io") {
+		parts := strings.Split(repoInfo.Name.String(), "/")
+		if len(parts) >= 2 {
+			return parts[1], nil
 		}
 	}
 
-	return "", fmt.Errorf("unable to guess GCP projectID from image name [%s]", artifact.ImageName)
+	return "", fmt.Errorf("unable to guess GCP projectID from image name [%s]", imageName)
 }

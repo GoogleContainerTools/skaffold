@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
@@ -63,9 +64,14 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	}
 	defer c.Close()
 
-	projectID, err := b.guessProjectID(artifact)
-	if err != nil {
-		return "", errors.Wrap(err, "getting projectID")
+	projectID := b.ProjectID
+	if projectID == "" {
+		guessedProjectID, err := gcp.ExtractProjectID(artifact.ImageName)
+		if err != nil {
+			return "", errors.Wrap(err, "extracting projectID from image name")
+		}
+
+		projectID = guessedProjectID
 	}
 
 	cbBucket := fmt.Sprintf("%s%s", projectID, constants.GCSBucketSuffix)
