@@ -491,10 +491,10 @@ func TestExtractChartFilename(t *testing.T) {
 
 func TestHelmDependencies(t *testing.T) {
 	var tests = []struct {
-		description    string
-		files          []string
-		valuesFilePath string
-		expected       func(folder *testutil.TempDir) []string
+		description string
+		files       []string
+		valuesFiles []string
+		expected    func(folder *testutil.TempDir) []string
 	}{
 		{
 			description: "charts dir is excluded",
@@ -504,9 +504,9 @@ func TestHelmDependencies(t *testing.T) {
 			},
 		},
 		{
-			description:    "values file is included",
-			files:          []string{"Chart.yaml"},
-			valuesFilePath: "/folder/values.yaml",
+			description: "values file is included",
+			files:       []string{"Chart.yaml"},
+			valuesFiles: []string{"/folder/values.yaml"},
 			expected: func(folder *testutil.TempDir) []string {
 				return []string{"/folder/values.yaml", folder.Path("Chart.yaml")}
 			},
@@ -524,12 +524,12 @@ func TestHelmDependencies(t *testing.T) {
 			deployer := NewHelmDeployer(&v1alpha3.HelmDeploy{
 				Releases: []v1alpha3.HelmRelease{
 					{
-						Name:           "skaffold-helm",
-						ChartPath:      folder.Root(),
-						ValuesFilePath: tt.valuesFilePath,
-						Values:         map[string]string{"image": "skaffold-helm"},
-						Overrides:      map[string]interface{}{"foo": "bar"},
-						SetValues:      map[string]string{"some.key": "somevalue"},
+						Name:        "skaffold-helm",
+						ChartPath:   folder.Root(),
+						ValuesFiles: tt.valuesFiles,
+						Values:      map[string]string{"image": "skaffold-helm"},
+						Overrides:   map[string]interface{}{"foo": "bar"},
+						SetValues:   map[string]string{"some.key": "somevalue"},
 					},
 				},
 			}, testKubeContext, testNamespace)

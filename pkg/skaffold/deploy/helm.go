@@ -79,9 +79,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 func (h *HelmDeployer) Dependencies() ([]string, error) {
 	var deps []string
 	for _, release := range h.Releases {
-		if release.ValuesFilePath != "" {
-			deps = append(deps, release.ValuesFilePath)
-		}
+		deps = append(deps, release.ValuesFiles...)
 		chartDepsDir := filepath.Join(release.ChartPath, "charts")
 		filepath.Walk(release.ChartPath, func(path string, info os.FileInfo, err error) error {
 			if !info.IsDir() && !strings.HasPrefix(path, chartDepsDir) {
@@ -206,8 +204,8 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r v1alp
 		}
 		args = append(args, "-f", constants.HelmOverridesFilename)
 	}
-	if r.ValuesFilePath != "" {
-		args = append(args, "-f", r.ValuesFilePath)
+	for _, valuesFile := range r.ValuesFiles {
+		args = append(args, "-f", valuesFile)
 	}
 
 	setValues := r.SetValues

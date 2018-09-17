@@ -152,7 +152,7 @@ type KustomizeDeploy struct {
 type HelmRelease struct {
 	Name              string                 `yaml:"name"`
 	ChartPath         string                 `yaml:"chartPath"`
-	ValuesFilePath    string                 `yaml:"valuesFilePath"`
+	ValuesFiles       []string               `yaml:"valuesFiles"`
 	Values            map[string]string      `yaml:"values,omitempty"`
 	Namespace         string                 `yaml:"namespace"`
 	Version           string                 `yaml:"version"`
