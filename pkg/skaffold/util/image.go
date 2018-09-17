@@ -21,6 +21,9 @@ import (
 )
 
 func SubstituteDefaultRepoIntoImage(defaultRepo string, originalImage string) string {
+	if defaultRepo == "" {
+		return originalImage
+	}
 	if strings.HasPrefix(defaultRepo, "gcr.io") {
 		if !strings.HasPrefix(originalImage, defaultRepo) {
 			return defaultRepo + "/" + originalImage

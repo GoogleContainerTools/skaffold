@@ -66,9 +66,17 @@ func (r *imageReplacer) Matches(key string) bool {
 	return key == "image"
 }
 
-func (r *imageReplacer) NewValue(key string, old interface{}) (bool, interface{}) {
-	image := r.substituteRepoIntoImage(old.(string))
+func (r *imageReplacer) NewValue(old interface{}) (bool, interface{}) {
+	image := old.(string)
+	found, tag := r.parseAndReplace(image)
+	if !found {
+		// no match, so try substituting in defaultRepo value
+		found, tag = r.parseAndReplace(r.substituteRepoIntoImage(image))
+	}
+	return found, tag
+}
 
+func (r *imageReplacer) parseAndReplace(image string) (bool, interface{}) {
 	parsed, err := docker.ParseReference(image)
 	if err != nil {
 		warner.Warnf("Couldn't parse image: %s", image)
@@ -85,7 +93,6 @@ func (r *imageReplacer) NewValue(key string, old interface{}) (bool, interface{}
 			return true, tag
 		}
 	}
-
 	return false, nil
 }
 

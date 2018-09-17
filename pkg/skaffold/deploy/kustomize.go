@@ -18,6 +18,7 @@ package deploy
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os/exec"
@@ -92,6 +93,9 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 	manifests, err = manifests.ReplaceImages(builds, k.defaultRepo)
 	if err != nil {
 		return nil, errors.Wrap(err, "replacing images in manifests")
+	}
+	for _, manifest := range manifests {
+		fmt.Printf("manifest: %s\n", string(manifest))
 	}
 
 	updated, err := k.kubectl.Apply(ctx, out, manifests)
