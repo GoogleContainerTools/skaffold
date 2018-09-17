@@ -222,20 +222,25 @@ func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
 }
 func TestFix(t *testing.T) {
 	tests := []struct {
-		name      string
-		directory string
+		name       string
+		directory  string
+		remoteOnly bool
 	}{
 		{
 			name:      "test v1alpha1 to v1alpha2 fix",
 			directory: "testdata/v1alpha1",
 		},
 		{
-			name:      "test v1alpha2 to v1alpha3 fix",
-			directory: "testdata/v1alpha2",
+			name:       "test v1alpha2 to v1alpha3 fix",
+			directory:  "testdata/v1alpha2",
+			remoteOnly: true,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			if !*remote && test.remoteOnly {
+				t.Skip("skipping remote only test")
+			}
 			ns, deleteNs := setupNamespace(t)
 			defer deleteNs()
 
