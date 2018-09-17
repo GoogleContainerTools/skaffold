@@ -14,60 +14,46 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gcb
+package gcp
 
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGuessProjectID(t *testing.T) {
+func TestExtractProjectID(t *testing.T) {
 	var tests = []struct {
 		description string
-		config      *v1alpha3.GoogleCloudBuild
-		artifact    *v1alpha3.Artifact
+		imageName   string
 		expected    string
 		shouldErr   bool
 	}{
 		{
-			description: "fixed projectId",
-			config:      &v1alpha3.GoogleCloudBuild{ProjectID: "fixed"},
-			artifact:    &v1alpha3.Artifact{ImageName: "any"},
-			expected:    "fixed",
-		},
-		{
 			description: "gcr.io",
-			config:      &v1alpha3.GoogleCloudBuild{},
-			artifact:    &v1alpha3.Artifact{ImageName: "gcr.io/project/image"},
+			imageName:   "gcr.io/project/image",
 			expected:    "project",
 		},
 		{
 			description: "eu.gcr.io",
-			config:      &v1alpha3.GoogleCloudBuild{},
-			artifact:    &v1alpha3.Artifact{ImageName: "gcr.io/project/image"},
+			imageName:   "gcr.io/project/image",
 			expected:    "project",
 		},
 		{
 			description: "docker hub",
-			config:      &v1alpha3.GoogleCloudBuild{},
-			artifact:    &v1alpha3.Artifact{ImageName: "project/image"},
+			imageName:   "project/image",
 			shouldErr:   true,
 		},
 		{
 			description: "invalid GCR image",
-			config:      &v1alpha3.GoogleCloudBuild{},
-			artifact:    &v1alpha3.Artifact{ImageName: "gcr.io"},
+			imageName:   "gcr.io",
 			shouldErr:   true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			builder := NewBuilder(test.config)
-
-			projectID, err := builder.guessProjectID(test.artifact)
+			projectID, err := ExtractProjectID(test.imageName)
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, projectID)
 		})
