@@ -83,8 +83,6 @@ func readConfig() (*Config, error) {
 // or the global config if that is specified (or if no current context is set).
 func GetConfigForKubectx() (*ContextConfig, error) {
 	resolveKubectlContext()
-	// TODO(nkubala): this call needs to be moved to its proper place
-	// currently doing it in the cmd handler for list(), this is not gonna work
 	cfg, err := readConfig()
 	if err != nil {
 		return nil, err
@@ -102,6 +100,7 @@ func GetConfigForKubectx() (*ContextConfig, error) {
 }
 
 func getOrCreateConfigForKubectx() (*ContextConfig, error) {
+	resolveKubectlContext()
 	cfg, err := readConfig()
 	if err != nil {
 		return nil, err

@@ -31,7 +31,6 @@ func NewCmdList(out io.Writer) *cobra.Command {
 		Short: "List all values set in the global skaffold config",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			resolveKubectlContext()
 			return runList(out)
 		},
 	}
