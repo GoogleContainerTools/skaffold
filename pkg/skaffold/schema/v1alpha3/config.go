@@ -34,6 +34,7 @@ type SkaffoldConfig struct {
 	Kind       string `yaml:"kind"`
 
 	Build    BuildConfig  `yaml:"build,omitempty"`
+	Test     []TestCase   `yaml:"test,omitempty"`
 	Deploy   DeployConfig `yaml:"deploy,omitempty"`
 	Profiles []Profile    `yaml:"profiles,omitempty"`
 }
@@ -114,6 +115,13 @@ type KanikoBuild struct {
 	PullSecretName string             `yaml:"pullSecretName,omitempty"`
 	Namespace      string             `yaml:"namespace,omitempty"`
 	Timeout        string             `yaml:"timeout,omitempty"`
+}
+
+// TestCase is a struct containing all the specified test
+// configuration for an image.
+type TestCase struct {
+	ImageName      string   `yaml:"imageName"`
+	StructureTests []string `yaml:"structureTests,omitempty"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps
@@ -201,9 +209,10 @@ type HelmConventionConfig struct {
 // Artifact represents items that need to be built, along with the context in which
 // they should be built.
 type Artifact struct {
-	ImageName    string `yaml:"imageName"`
-	Workspace    string `yaml:"workspace,omitempty"`
-	ArtifactType `yaml:",inline"`
+	ImageName          string `yaml:"imageName"`
+	Workspace          string `yaml:"workspace,omitempty"`
+	ArtifactType       `yaml:",inline"`
+	StructureTestFiles []string `yaml:"structureTestFiles"`
 }
 
 // Profile is additional configuration that overrides default
@@ -211,6 +220,7 @@ type Artifact struct {
 type Profile struct {
 	Name   string       `yaml:"name"`
 	Build  BuildConfig  `yaml:"build,omitempty"`
+	Test   []TestCase   `yaml:"test,omitempty"`
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
 }
 
