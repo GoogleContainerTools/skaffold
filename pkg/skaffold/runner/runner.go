@@ -17,6 +17,7 @@ limitations under the License.
 package runner
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -247,6 +248,24 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 		hasError = false
 		return nil
 	}
+
+	go func() {
+		reader := bufio.NewReader(os.Stdin)
+		for {
+			c, _, err := reader.ReadRune()
+			if err != nil {
+				logrus.Debugf("manual trigger error: %s", err)
+			}
+			switch c {
+			case 'b':
+				changed.dirtyArtifacts = artifacts
+				onChange()
+			case 'd':
+				changed.needsRedeploy = true
+				onChange()
+			}
+		}
+	}()
 
 	watcher := r.watchFactory()
 
