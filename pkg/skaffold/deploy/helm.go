@@ -143,7 +143,6 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r v1alp
 		}
 	}
 
-
 	// First build dependencies.
 	logrus.Infof("Building helm dependencies...")
 	if err := h.helm(ctx, out, "dep", "build", r.ChartPath); err != nil {
