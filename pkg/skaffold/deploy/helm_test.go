@@ -28,6 +28,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -292,9 +293,9 @@ func TestHelmDeploy(t *testing.T) {
 				t:         t,
 				getResult: fmt.Errorf("not found"),
 				installMatcher: func(cmd *exec.Cmd) bool {
-					buildTag := testBuilds[0].Tag
-					tagIndex := strings.LastIndex(buildTag, ":")
-					expected := map[string]bool{fmt.Sprintf("image.repository=%s,image.tag=%s", buildTag[0:tagIndex], buildTag[tagIndex+1:len(buildTag)-1]): true}
+					dockerRef, _ := docker.ParseReference(testBuilds[0].Tag)
+					tag := testBuilds[0].Tag[len(dockerRef.BaseName)+1:]
+					expected := map[string]bool{fmt.Sprintf("image.repository=%s,image.tag=%s", dockerRef.BaseName, tag): true}
 					for _, arg := range cmd.Args {
 						if expected[arg] {
 							return true
