@@ -37,7 +37,7 @@ import (
 var testBuilds = []build.Artifact{
 	{
 		ImageName: "skaffold-helm",
-		Tag:       "skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184",
+		Tag:       "docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184",
 	},
 }
 
@@ -292,8 +292,10 @@ func TestHelmDeploy(t *testing.T) {
 				t:         t,
 				getResult: fmt.Errorf("not found"),
 				installMatcher: func(cmd *exec.Cmd) bool {
-					builds := strings.Split(testBuilds[0].Tag, ":")
-					expected := map[string]bool{fmt.Sprintf("image.repository=%s,image.tag=%s", builds[0], builds[1]): true}
+					buildTag := testBuilds[0].Tag
+					tagIndex := strings.LastIndex(buildTag, ":")
+
+					expected := map[string]bool{fmt.Sprintf("image.repository=%s,image.tag=%s", buildTag[0:tagIndex], buildTag[tagIndex+1:len(buildTag)-1]): true}
 					for _, arg := range cmd.Args {
 						if expected[arg] {
 							return true

@@ -135,13 +135,15 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r v1alp
 	for k, v := range params {
 		setOpts = append(setOpts, "--set")
 		if r.ImageStrategy.HelmImageConfig.HelmConventionConfig != nil {
-			tagSplit := strings.Split(v.Tag, ":")
-			imageRepositoryTag := fmt.Sprintf("%s.repository=%s,%s.tag=%s", k, tagSplit[0], k, tagSplit[1])
+			tagIndex := strings.LastIndex(v.Tag, ":")
+
+			imageRepositoryTag := fmt.Sprintf("%s.repository=%s,%s.tag=%s", k, v.Tag[0:tagIndex], k, v.Tag[tagIndex+1:len(v.Tag)-1])
 			setOpts = append(setOpts, imageRepositoryTag)
 		} else {
 			setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v.Tag))
 		}
 	}
+
 
 	// First build dependencies.
 	logrus.Infof("Building helm dependencies...")
