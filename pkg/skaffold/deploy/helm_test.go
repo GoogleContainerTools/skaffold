@@ -294,8 +294,7 @@ func TestHelmDeploy(t *testing.T) {
 				getResult: fmt.Errorf("not found"),
 				installMatcher: func(cmd *exec.Cmd) bool {
 					dockerRef, _ := docker.ParseReference(testBuilds[0].Tag)
-					tag := testBuilds[0].Tag[len(dockerRef.BaseName)+1:]
-					expected := map[string]bool{fmt.Sprintf("image.repository=%s,image.tag=%s", dockerRef.BaseName, tag): true}
+					expected := map[string]bool{fmt.Sprintf("image.repository=%s,image.tag=%s", dockerRef.BaseName, dockerRef.Tag): true}
 					for _, arg := range cmd.Args {
 						if expected[arg] {
 							return true

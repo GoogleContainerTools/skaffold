@@ -137,8 +137,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r v1alp
 		setOpts = append(setOpts, "--set")
 		if r.ImageStrategy.HelmImageConfig.HelmConventionConfig != nil {
 			dockerRef, _ := docker.ParseReference(v.Tag)
-			tag := v.Tag[len(dockerRef.BaseName)+1:]
-			imageRepositoryTag := fmt.Sprintf("%s.repository=%s,%s.tag=%s", k, dockerRef.BaseName, k, tag)
+			imageRepositoryTag := fmt.Sprintf("%s.repository=%s,%s.tag=%s", k, dockerRef.BaseName, k, dockerRef.Tag)
 			setOpts = append(setOpts, imageRepositoryTag)
 		} else {
 			setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v.Tag))
