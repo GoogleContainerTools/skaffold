@@ -95,6 +95,15 @@ func (h *TempDir) Write(file, content string) *TempDir {
 	return h.failIfErr(ioutil.WriteFile(h.Path(file), []byte(content), os.ModePerm))
 }
 
+// WriteSymlink writes content to a file in the temp directory.
+func (h *TempDir) WriteSymlink(file, content string) *TempDir {
+	h.failIfErr(os.MkdirAll(filepath.Dir(h.Path(file)), os.ModePerm))
+	h.failIfErr(ioutil.WriteFile(h.Path(file), []byte(content), os.ModePerm))
+	symlink := filepath.Join(filepath.Dir(h.Path(file)), "link")
+	target := h.Path(file)
+	return h.failIfErr(os.Symlink(target, symlink))
+}
+
 // List lists all the files in the temp directory.
 func (h *TempDir) List() ([]string, error) {
 	var files []string

@@ -49,7 +49,7 @@ func lastModified(paths []string) (time.Time, error) {
 	var last time.Time
 
 	for _, path := range paths {
-		stat, err := os.Stat(path)
+		stat, err := os.Lstat(path)
 		if err != nil {
 			if os.IsNotExist(err) {
 				continue // Ignore files that don't exist

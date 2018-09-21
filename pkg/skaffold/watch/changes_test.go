@@ -67,6 +67,12 @@ func TestHasChanged(t *testing.T) {
 			update:          func(tmp *testutil.TempDir) { tmp.Chtimes("dir", time.Now().Add(2*time.Second)) },
 			expectedChanged: false,
 		},
+		{
+			description:     "broken symlink is handled",
+			setup:           func(tmp *testutil.TempDir) { tmp.WriteSymlink("symlink", "") },
+			update:          func(tmp *testutil.TempDir) { tmp.Remove("symlink") },
+			expectedChanged: true,
+		},
 	}
 
 	for _, test := range tests {
