@@ -27,19 +27,14 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-helm/helm-${HELM_VERSION}
     tar -zxvf helm-${HELM_VERSION}-linux-amd64.tar.gz && \
     mv linux-amd64/helm /usr/local/bin/helm
 
-ENV CLOUD_SDK_VERSION 193.0.0
+ENV CLOUD_SDK_VERSION 217.0.0
 RUN curl -LO https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz && \
  tar -zxvf google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz && \
     CLOUDSDK_PYTHON="python2.7" /google-cloud-sdk/install.sh --usage-reporting=false \
         --bash-completion=false \
         --disable-installation-options
-
-ENV DOCKER_CREDENTIAL_GCR_VERSION=1.4.3
-RUN curl -LO https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v${DOCKER_CREDENTIAL_GCR_VERSION}/docker-credential-gcr_linux_amd64-${DOCKER_CREDENTIAL_GCR_VERSION}.tar.gz && \
-    tar -zxvf docker-credential-gcr_linux_amd64-${DOCKER_CREDENTIAL_GCR_VERSION}.tar.gz && \
-    mv docker-credential-gcr /usr/bin/docker-credential-gcr && \
-    rm docker-credential-gcr_linux_amd64-${DOCKER_CREDENTIAL_GCR_VERSION}.tar.gz && \
-    docker-credential-gcr configure-docker
+ENV PATH=$PATH:/google-cloud-sdk/bin
+RUN /google-cloud-sdk/bin/gcloud auth configure-docker
 
 ENV KUSTOMIZE_VERSION=1.0.1
 RUN curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/v${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64 && \
