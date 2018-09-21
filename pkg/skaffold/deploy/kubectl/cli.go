@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 	"os/exec"
+	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -33,6 +34,8 @@ type CLI struct {
 	KubeContext string
 	Flags       v1alpha3.KubectlFlags
 
+	version       ClientVersion
+	versionOnce   sync.Once
 	previousApply ManifestList
 }
 
