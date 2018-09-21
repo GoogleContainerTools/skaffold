@@ -30,6 +30,8 @@ deploy:
       namespace: skaffold
       values:
         image: skaffold-helm
+      valuesFiles:
+        - helm-values-file.yaml
 ```
 
 This part tells skaffold to set the `image` parameter of the values file to the built skaffold-helm image and tag.

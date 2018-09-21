@@ -147,7 +147,9 @@ deploy:
     # releases:
     # - name: skaffold-helm
     #   chartPath: skaffold-helm
-    #   valuesFilePath: helm-skaffold-values.yaml
+    #   valuesFiles:
+    #   - first-values-file.yaml
+    #   - second-values-file.yaml
     #   values:
     #     image: skaffold-helm
     #   namespace: skaffold
