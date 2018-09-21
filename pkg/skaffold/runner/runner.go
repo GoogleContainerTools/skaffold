@@ -118,24 +118,35 @@ func getBuilder(cfg *v1alpha3.BuildConfig, kubeContext string) (build.Builder, e
 }
 
 func getDeployer(cfg *v1alpha3.DeployConfig, kubeContext string, namespace string) (deploy.Deployer, error) {
-	switch {
-	case cfg.KubectlDeploy != nil:
+	deployers := []deploy.Deployer{}
+
+	// HelmDeploy first, in case there are resources in Kubectl that depend on these...
+	if cfg.HelmDeploy != nil {
+		deployers = append(deployers, deploy.NewHelmDeployer(cfg.HelmDeploy, kubeContext, namespace))
+	}
+
+	if cfg.KubectlDeploy != nil {
 		// TODO(dgageot): this should be the folder containing skaffold.yaml. Should also be moved elsewhere.
 		cwd, err := os.Getwd()
 		if err != nil {
 			return nil, errors.Wrap(err, "finding current directory")
 		}
-		return deploy.NewKubectlDeployer(cwd, cfg.KubectlDeploy, kubeContext, namespace), nil
+		deployers = append(deployers, deploy.NewKubectlDeployer(cwd, cfg.KubectlDeploy, kubeContext, namespace))
+	}
 
-	case cfg.HelmDeploy != nil:
-		return deploy.NewHelmDeployer(cfg.HelmDeploy, kubeContext, namespace), nil
+	if cfg.KustomizeDeploy != nil {
+		deployers = append(deployers, deploy.NewKustomizeDeployer(cfg.KustomizeDeploy, kubeContext, namespace))
+	}
 
-	case cfg.KustomizeDeploy != nil:
-		return deploy.NewKustomizeDeployer(cfg.KustomizeDeploy, kubeContext, namespace), nil
-
-	default:
+	if len(deployers) == 0 {
 		return nil, fmt.Errorf("Unknown deployer for config %+v", cfg)
 	}
+
+	if len(deployers) == 1 {
+		return deployers[0], nil
+	}
+
+	return deploy.NewMultiDeployer(deployers), nil
 }
 
 func getTagger(t v1alpha3.TagPolicy, customTag string) (tag.Tagger, error) {
