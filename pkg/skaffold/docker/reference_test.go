@@ -79,8 +79,8 @@ func TestParseReference(t *testing.T) {
 			parsed, err := ParseReference(test.image)
 
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedName, parsed.BaseName)
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedTag, parsed.Tag)
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedFullyQualified, parsed.FullyQualified)
+			testutil.CheckDeepEqual(t, test.expectedTag, parsed.Tag)
+			testutil.CheckDeepEqual(t, test.expectedFullyQualified, parsed.FullyQualified)
 		})
 	}
 }
