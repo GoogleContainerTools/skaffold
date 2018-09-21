@@ -336,6 +336,9 @@ func TestDev(t *testing.T) {
 				Deployer:     test.deployer,
 				Tagger:       &tag.ChecksumTagger{},
 				watchFactory: test.watcherFactory,
+				opts: &config.SkaffoldOptions{
+					WatchPollInterval: 100,
+				},
 			}
 			_, err := runner.Dev(context.Background(), ioutil.Discard, nil)
 

@@ -44,8 +44,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const PollInterval = 1000 * time.Millisecond
-
 // ErrorConfigurationChanged is a special error that's returned when the skaffold configuration was changed.
 var ErrorConfigurationChanged = errors.New("configuration changed")
 
@@ -315,7 +313,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 		return nil, errors.Wrap(err, "starting port-forwarder")
 	}
 
-	return nil, watcher.Run(ctx, PollInterval, onChange)
+	pollInterval := time.Duration(r.opts.WatchPollInterval) * time.Millisecond
+	return nil, watcher.Run(ctx, pollInterval, onChange)
 }
 
 func (r *SkaffoldRunner) shouldWatch(artifact *v1alpha3.Artifact) bool {
