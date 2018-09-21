@@ -65,6 +65,8 @@ func (w *watchList) Run(ctx context.Context, pollInterval time.Duration, onChang
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
 
+	changedComponents := map[int]bool{}
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -72,23 +74,36 @@ func (w *watchList) Run(ctx context.Context, pollInterval time.Duration, onChang
 		case <-ticker.C:
 			changed := 0
 
-			for _, component := range *w {
+			for i, component := range *w {
 				state, err := stat(component.deps)
 				if err != nil {
 					return errors.Wrap(err, "listing files")
 				}
 
 				if hasChanged(component.state, state) {
-					component.onChange()
+					changedComponents[i] = true
 					component.state = state
 					changed++
 				}
 			}
 
-			if changed > 0 {
+			// Rapid file changes that are more frequent than the poll interval would trigger
+			// multiple rebuilds.
+			// To prevent that, we debounce changes that happen too quickly
+			// by waiting for a full turn where nothing happens and trigger a rebuild for
+			// the accumulated changes.
+			if changed == 0 && len(changedComponents) > 0 {
+				for i, component := range *w {
+					if changedComponents[i] {
+						component.onChange()
+					}
+				}
+
 				if err := onChange(); err != nil {
 					return errors.Wrap(err, "calling final callback")
 				}
+
+				changedComponents = map[int]bool{}
 			}
 		}
 	}
