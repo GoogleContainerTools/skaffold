@@ -25,7 +25,7 @@ import (
 )
 
 // Test is the entrypoint for running structure tests
-func (tr *TestRunner) Test(image string) error {
+func (tr *Runner) Test(image string) error {
 	logrus.Infof("running structure tests for files %v", tr.testFiles)
 	args := []string{"test", "--image", image}
 	for _, f := range tr.testFiles {

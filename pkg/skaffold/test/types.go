@@ -48,12 +48,12 @@ type FullTester struct {
 // tests runners to run all specified tests on an individual artifact.
 type ArtifactTester struct {
 	ImageName   string
-	TestRunners []TestRunner
+	TestRunners []Runner
 }
 
 // TestRunner is the lowest-level test executor in Skaffold, responsible for
 // running a single test on a single artifact image and returning its result.
 // Any new test type should implement this interface.
-type TestRunner interface {
+type Runner interface {
 	Test(image string) error
 }

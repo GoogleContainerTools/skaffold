@@ -16,12 +16,12 @@ limitations under the License.
 
 package structure
 
-type TestRunner struct {
+type Runner struct {
 	testFiles []string
 }
 
-func NewStructureTestRunner(files []string) (*TestRunner, error) {
-	return &TestRunner{
+func NewStructureTestRunner(files []string) (*Runner, error) {
+	return &Runner{
 		testFiles: files,
 	}, nil
 }
