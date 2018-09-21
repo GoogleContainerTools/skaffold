@@ -29,14 +29,17 @@ import (
 // This doesn't modify the ~/.docker/config.json. It's only in-memory
 func AutoConfigureGCRCredentialHelper(cf *configfile.ConfigFile, registry string) {
 	if registry != "gcr.io" && !strings.HasSuffix(registry, ".gcr.io") {
+		logrus.Debugln("Skipping credential configuration because registry is not gcr.")
 		return
 	}
 
 	if cf.CredentialHelpers != nil && cf.CredentialHelpers[registry] != "" {
+		logrus.Debugln("Skipping credential configuration because credentials are already configured.")
 		return
 	}
 
 	if path, _ := exec.LookPath("docker-credential-gcloud"); path == "" {
+		logrus.Debugln("Skipping credential configuration because docker-credential-gcloud is not on PATH.")
 		return
 	}
 
