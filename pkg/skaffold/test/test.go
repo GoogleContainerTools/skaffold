@@ -26,20 +26,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Test is the top level testing execution call.
-// it should return back the list of artifacts that passed the tests
-// in some form, so they can be deployed. It should also be responsible for
-// logging which artifacts were not deployed because their tests failed.
-func (t FullTester) Test(out io.Writer, bRes []build.Artifact) error {
-	t.resolveArtifactImageTags(bRes)
-	for _, aTester := range t.ArtifactTesters {
-		if err := aTester.RunTests(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // NewTester parses the provided test cases from the Skaffold config,
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
@@ -64,6 +50,34 @@ func NewTester(testCases *[]v1alpha3.TestCase) (Tester, error) {
 		ArtifactTesters: testers,
 		Dependencies:    deps,
 	}, nil
+}
+
+// TestDependencies returns the watch dependencies to the runner.
+func (t FullTester) TestDependencies() []string {
+	return t.Dependencies
+}
+
+// Test is the top level testing execution call. It serves as the
+// entrypoint to all individual tests.
+func (t FullTester) Test(out io.Writer, bRes []build.Artifact) error {
+	t.resolveArtifactImageTags(bRes)
+	for _, aTester := range t.ArtifactTesters {
+		if err := aTester.RunTests(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// RunTests serves as the entrypoint to each group of
+// artifact-specific tests.
+func (a *ArtifactTester) RunTests() error {
+	for _, t := range a.TestRunners {
+		if err := t.Test(a.ImageName); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // replace original test artifact images with tagged build artifact images
