@@ -19,7 +19,11 @@ package deploy
 import (
 	"context"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
+
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -88,9 +92,47 @@ func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
+func dependenciesForKustomization(dir string) ([]string, error) {
+	path := filepath.Join(dir, "kustomization.yaml")
+	deps := []string{path}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return deps, err
+	}
+	defer file.Close()
+
+	contents := struct {
+		Bases     []string `yaml:"bases"`
+		Resources []string `yaml:"resources"`
+		Patches   []string `yaml:"patches"`
+	}{}
+	decoder := yaml.NewDecoder(file)
+	err = decoder.Decode(&contents)
+	if err != nil {
+		return deps, err
+	}
+
+	for _, base := range contents.Bases {
+		baseDeps, err := dependenciesForKustomization(filepath.Join(dir, base))
+		deps = append(deps, baseDeps...)
+		if err != nil {
+			return deps, err
+		}
+	}
+
+	for _, resource := range contents.Resources {
+		deps = append(deps, filepath.Join(dir, resource))
+	}
+
+	for _, patch := range contents.Patches {
+		deps = append(deps, filepath.Join(dir, patch))
+	}
+
+	return deps, nil
+}
 func (k *KustomizeDeployer) Dependencies() ([]string, error) {
-	// TODO(r2d4): parse kustomization yaml and add base and patches as dependencies
-	return []string{k.KustomizePath}, nil
+	return dependenciesForKustomization(k.KustomizePath)
 }
 
 func (k *KustomizeDeployer) readManifests(ctx context.Context) (kubectl.ManifestList, error) {
