@@ -33,6 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -133,8 +134,11 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r v1alp
 	for k, v := range params {
 		setOpts = append(setOpts, "--set")
 		if r.ImageStrategy.HelmImageConfig.HelmConventionConfig != nil {
-			tagSplit := strings.Split(v.Tag, ":")
-			imageRepositoryTag := fmt.Sprintf("%s.repository=%s,%s.tag=%s", k, tagSplit[0], k, tagSplit[1])
+			dockerRef, err := docker.ParseReference(v.Tag)
+			if err != nil {
+				return nil, errors.Wrapf(err, "cannot parse the docker image reference %s", v.Tag)
+			}
+			imageRepositoryTag := fmt.Sprintf("%s.repository=%s,%s.tag=%s", k, dockerRef.BaseName, k, dockerRef.Tag)
 			setOpts = append(setOpts, imageRepositoryTag)
 		} else {
 			setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v.Tag))

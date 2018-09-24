@@ -28,6 +28,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -37,7 +38,7 @@ import (
 var testBuilds = []build.Artifact{
 	{
 		ImageName: "skaffold-helm",
-		Tag:       "skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184",
+		Tag:       "docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184",
 	},
 }
 
@@ -292,8 +293,12 @@ func TestHelmDeploy(t *testing.T) {
 				t:         t,
 				getResult: fmt.Errorf("not found"),
 				installMatcher: func(cmd *exec.Cmd) bool {
-					builds := strings.Split(testBuilds[0].Tag, ":")
-					expected := map[string]bool{fmt.Sprintf("image.repository=%s,image.tag=%s", builds[0], builds[1]): true}
+					dockerRef, err := docker.ParseReference(testBuilds[0].Tag)
+					if err != nil {
+						return false
+					}
+
+					expected := map[string]bool{fmt.Sprintf("image.repository=%s,image.tag=%s", dockerRef.BaseName, dockerRef.Tag): true}
 					for _, arg := range cmd.Args {
 						if expected[arg] {
 							return true
