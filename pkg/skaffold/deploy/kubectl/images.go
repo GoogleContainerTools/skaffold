@@ -70,8 +70,12 @@ func (r *imageReplacer) NewValue(old interface{}) (bool, interface{}) {
 	image := old.(string)
 	found, tag := r.parseAndReplace(image)
 	if !found {
+		subbedImage := r.substituteRepoIntoImage(image)
+		if image == subbedImage {
+			return found, tag
+		}
 		// no match, so try substituting in defaultRepo value
-		found, tag = r.parseAndReplace(r.substituteRepoIntoImage(image))
+		found, tag = r.parseAndReplace(subbedImage)
 	}
 	return found, tag
 }
