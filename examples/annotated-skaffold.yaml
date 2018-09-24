@@ -1,4 +1,4 @@
-apiVersion: skaffold/v1alpha3
+apiVersion: skaffold/v1alpha2
 kind: Config
 build:
   # tagPolicy determines how skaffold is going to tag your images.
@@ -101,8 +101,7 @@ build:
   # See https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster
   #
   # kaniko:
-  #   buildContext:
-  #     gcsBucket: k8s-skaffold
+  #   gcsBucket: k8s-skaffold
   #   pullSecret: /a/secret/path/serviceaccount.json
   #   namespace: default
   #   timeout: 20m
@@ -147,9 +146,7 @@ deploy:
     # releases:
     # - name: skaffold-helm
     #   chartPath: skaffold-helm
-    #   valuesFiles:
-    #   - first-values-file.yaml
-    #   - second-values-file.yaml
+    #   valuesFilePath: helm-skaffold-values.yaml
     #   values:
     #     image: skaffold-helm
     #   namespace: skaffold
