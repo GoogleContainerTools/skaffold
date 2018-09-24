@@ -135,7 +135,9 @@ func ToV1Alpha3(vc util.VersionedConfig) (util.VersionedConfig, error) {
 	// if the helm deploy config was set, then convert ValueFilePath to ValuesFiles
 	if oldHelmDeploy := oldConfig.Deploy.DeployType.HelmDeploy; oldHelmDeploy != nil {
 		for i, oldHelmRelease := range oldHelmDeploy.Releases {
-			newDeploy.DeployType.HelmDeploy.Releases[i].ValuesFiles = []string{oldHelmRelease.ValuesFilePath}
+			if oldHelmRelease.ValuesFilePath != "" {
+				newDeploy.DeployType.HelmDeploy.Releases[i].ValuesFiles = []string{oldHelmRelease.ValuesFilePath}
+			}
 		}
 	}
 
