@@ -2,6 +2,11 @@
 :icons: font
 
 To run any of the examples, replace `k8s-project` with your GCP project ID.
+These examples are made to work with the latest release of skaffold.
+
+If you are running skaffold at HEAD or have built it from source, please use the examples at integration/examples.
+
+If you wish to make changes to these examples, please edit the ones at integration/examples, as those will be synced on release.
 
 ifndef::env-github[]
 
