@@ -240,9 +240,10 @@ func TestNewForConfig(t *testing.T) {
 
 			testutil.CheckError(t, test.shouldErr, err)
 			if cfg != nil {
-				b, _, d := WithTimings(test.expectedBuilder, test.expectedTester, test.expectedDeployer)
+				b, _t, d := WithTimings(test.expectedBuilder, test.expectedTester, test.expectedDeployer)
 
 				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, b, cfg.Builder)
+				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, _t, cfg.Tester)
 				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, d, cfg.Deployer)
 			}
 		})

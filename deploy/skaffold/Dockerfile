@@ -47,7 +47,8 @@ RUN echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8
 RUN apt-get update \
   && apt-get install -y bazel
 
-RUN curl -LO https://storage.googleapis.com/container-structure-test/latest/container-structure-test-linux-amd64 \
+ENV CONTAINER_STRUCTURE_TEST_VERSION=1.5.0
+RUN curl -LO https://storage.googleapis.com/container-structure-test/v${CONTAINER_STRUCTURE_TEST_VERSION}/container-structure-test-linux-amd64 \
   && chmod +x container-structure-test-linux-amd64 \
   && mv container-structure-test-linux-amd64 /usr/local/bin/container-structure-test
 
