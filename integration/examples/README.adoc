@@ -1,0 +1,29 @@
+== Examples
+:icons: font
+
+To run any of the examples, replace `k8s-project` with your GCP project ID.
+
+ifndef::env-github[]
+
+link:{github-repo-tree}/examples[see on Github icon:github[]]
+
+include::./getting-started/README.adoc[]
+include::./microservices/README.adoc[]
+include::./tagging-with-environment-variables/README.adoc[]
+include::./helm-deployment/README.adoc[]
+include::./kustomize/README.adoc[]
+include::./kaniko/README.adoc[]
+include::./bazel/README.adoc[]
+endif::[]
+
+ifdef::env-github[]
+
+- link:./getting-started[]
+- link:./microservices[]
+- link:./tagging-with-environment-variables[]
+- link:./helm-deployment[]
+- link:./kustomize[]
+- link:./kaniko[]
+- link:./bazel[]
+
+endif::[]
