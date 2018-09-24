@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -35,8 +36,17 @@ func ParseConfig(filename string) (*config.SkaffoldConfig, error) {
 		return nil, errors.Wrap(err, "parsing api version")
 	}
 
-	if apiVersion.Version != config.LatestVersion {
+	parsedVersion, err := apiversion.ParseVersion(apiVersion.Version)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing api version")
+	}
+
+	if parsedVersion.LT(config.LatestAPIVersion) {
 		return nil, errors.New("Config version out of date: run `skaffold fix`")
+	}
+
+	if parsedVersion.GT(config.LatestAPIVersion) {
+		return nil, errors.New("Config version is too new for this version of skaffold: upgrade skaffold")
 	}
 
 	cfg, err := config.GetConfig(buf, true)
