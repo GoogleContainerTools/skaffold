@@ -70,7 +70,6 @@ RUN go build -o worker .
 FROM gcr.io/distroless/base
 WORKDIR /root/
 COPY --from=0 /go/src/github.com/r2d4/leeroy .
-CMD ["./worker"]
 `
 
 const envTest = `
@@ -84,7 +83,6 @@ const copyDirectory = `
 FROM nginx
 ADD . /etc/
 COPY ./file /etc/file
-CMD nginx
 `
 const multiFileCopy = `
 FROM ubuntu:14.04
@@ -100,7 +98,6 @@ const contextDockerfile = `
 FROM nginx
 ADD nginx.conf /etc/nginx
 COPY . /files
-CMD nginx
 `
 
 // This has an ONBUILD instruction of "COPY . /go/src/app"
@@ -117,28 +114,38 @@ const copyServerGoBuildArg = `
 FROM ubuntu:14.04
 ARG FOO
 COPY $FOO .
-CMD $FOO
+`
+
+const copyServerGoBuildArgSamePrefix = `
+FROM ubuntu:14.04
+ARG FOO=server.go
+ARG FOO2
+COPY $FOO2 .
 `
 
 const copyServerGoBuildArgCurlyBraces = `
 FROM ubuntu:14.04
 ARG FOO
 COPY ${FOO} .
-CMD ${FOO}
 `
 
 const copyServerGoBuildArgExtraWhitespace = `
 FROM ubuntu:14.04
 ARG  FOO
 COPY $FOO .
-CMD $FOO
 `
 
 const copyServerGoBuildArgDefaultValue = `
 FROM ubuntu:14.04
 ARG FOO=server.go
 COPY $FOO .
-CMD $FOO
+`
+
+const copyServerGoBuildArgRedefinedDefaultValue = `
+FROM ubuntu:14.04
+ARG FOO=server.go
+ARG FOO=worker.go
+COPY $FOO .
 `
 
 const fromStage = `
@@ -312,6 +319,14 @@ func TestGetDependencies(t *testing.T) {
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
+			description: "build args with same prefix",
+			dockerfile:  copyServerGoBuildArgSamePrefix,
+			workspace:   ".",
+			buildArgs:   map[string]*string{"FOO2": util.StringPtr("worker.go")},
+			expected:    []string{"Dockerfile", "worker.go"},
+			fetched:     []string{"ubuntu:14.04"},
+		},
+		{
 			description: "build args with curly braces",
 			dockerfile:  copyServerGoBuildArgCurlyBraces,
 			workspace:   ".",
@@ -328,17 +343,32 @@ func TestGetDependencies(t *testing.T) {
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
-			description: "build args with default value and buildArgs unset",
+			description: "build args with default value",
 			dockerfile:  copyServerGoBuildArgDefaultValue,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "server.go"},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
-			description: "build args with default value and buildArgs set",
+			description: "build args with redefined default value",
+			dockerfile:  copyServerGoBuildArgRedefinedDefaultValue,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "worker.go"},
+			fetched:     []string{"ubuntu:14.04"},
+		},
+		{
+			description: "override default build arg",
 			dockerfile:  copyServerGoBuildArgDefaultValue,
 			workspace:   ".",
-			buildArgs:   map[string]*string{"FOO": util.StringPtr("server.go")},
+			buildArgs:   map[string]*string{"FOO": util.StringPtr("worker.go")},
+			expected:    []string{"Dockerfile", "worker.go"},
+			fetched:     []string{"ubuntu:14.04"},
+		},
+		{
+			description: "ignore build arg and use default arg value",
+			dockerfile:  copyServerGoBuildArgDefaultValue,
+			workspace:   ".",
+			buildArgs:   map[string]*string{"FOO": nil},
 			expected:    []string{"Dockerfile", "server.go"},
 			fetched:     []string{"ubuntu:14.04"},
 		},

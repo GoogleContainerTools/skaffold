@@ -27,6 +27,7 @@ import (
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/fileutils"
 	"github.com/google/go-containerregistry/pkg/v1"
@@ -62,6 +63,33 @@ func ValidateDockerfile(path string) bool {
 	return true
 }
 
+func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) {
+	var key, value string
+
+	for _, node := range nodes {
+		switch node.Value {
+		case command.Arg:
+			// build arg's key
+			keyValue := strings.Split(node.Next.Value, "=")
+			key = keyValue[0]
+
+			// build arg's value
+			if buildArgs[key] != nil {
+				value = *buildArgs[key]
+			} else if len(keyValue) > 1 {
+				value = keyValue[1]
+			}
+		default:
+			if key != "" {
+				// replace $key with value
+				for curr := node; curr != nil; curr = curr.Next {
+					curr.Value = util.Expand(curr.Value, key, value)
+				}
+			}
+		}
+	}
+}
+
 func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*string) ([]string, error) {
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
@@ -74,52 +102,7 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 		return nil, errors.Wrap(err, "parsing dockerfile")
 	}
 
-	var copied [][]string
-	envs := map[string]string{}
-
-	// First process all build args, and replace if necessary.
-	for i, value := range res.AST.Children {
-		switch value.Value {
-		case command.Arg:
-			var val, defaultValue, arg string
-			argSetting := strings.Fields(value.Original)[1]
-
-			argValues := strings.Split(argSetting, "=")
-
-			if len(argValues) > 1 {
-				arg, defaultValue = argValues[0], argValues[1]
-			} else {
-				arg = argValues[0]
-			}
-
-			valuePtr := buildArgs[arg]
-			if valuePtr == nil && defaultValue == "" {
-				logrus.Warnf("arg %s referenced in dockerfile but not provided with default or in build args", arg)
-			} else {
-				if valuePtr == nil {
-					val = defaultValue
-				} else {
-					val = *valuePtr
-				}
-				if val == "" {
-					logrus.Warnf("empty build arg provided in skaffold config: %s", arg)
-					break
-				}
-				// we have a non-empty arg: replace it in all subsequent nodes
-				for j := i; j < len(res.AST.Children); j++ {
-					currentNode := res.AST.Children[j]
-					for {
-						if currentNode == nil {
-							break
-						}
-						currentNode.Value = strings.Replace(currentNode.Value, "$"+arg, val, -1)
-						currentNode.Value = strings.Replace(currentNode.Value, "${"+arg+"}", val, -1)
-						currentNode = currentNode.Next
-					}
-				}
-			}
-		}
-	}
+	expandBuildArgs(res.AST.Children, buildArgs)
 
 	// Then process onbuilds, if present.
 	onbuildsImages := [][]string{}
@@ -146,6 +129,9 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 			onbuildsImages = append(onbuildsImages, onbuilds)
 		}
 	}
+
+	var copied [][]string
+	envs := map[string]string{}
 
 	var dispatchInstructions = func(r *parser.Result) {
 		for _, value := range r.AST.Children {
