@@ -17,9 +17,9 @@ limitations under the License.
 package deploy
 
 import (
-	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -148,7 +148,7 @@ func TestKubectlDeploy(t *testing.T) {
 			}
 
 			k := NewKubectlDeployer(tmpDir.Root(), test.cfg, testKubeContext, testNamespace)
-			_, err := k.Deploy(context.Background(), &bytes.Buffer{}, test.builds)
+			_, err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})
@@ -204,7 +204,7 @@ func TestKubectlCleanup(t *testing.T) {
 			}
 
 			k := NewKubectlDeployer(tmpDir.Root(), test.cfg, testKubeContext, testNamespace)
-			err := k.Cleanup(context.Background(), &bytes.Buffer{})
+			err := k.Cleanup(context.Background(), ioutil.Discard)
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})

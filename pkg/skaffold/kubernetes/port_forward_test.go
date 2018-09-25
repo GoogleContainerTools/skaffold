@@ -17,8 +17,8 @@ limitations under the License.
 package kubernetes
 
 import (
-	"bytes"
 	"fmt"
+	"io/ioutil"
 	"reflect"
 	"testing"
 
@@ -328,7 +328,7 @@ func TestPortForwardPod(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			p := NewPortForwarder(&bytes.Buffer{}, NewImageList())
+			p := NewPortForwarder(ioutil.Discard, NewImageList())
 			if test.forwarder == nil {
 				test.forwarder = newTestForwarder(nil, nil)
 			}
