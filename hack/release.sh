@@ -12,8 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+EXAMPLES_DIR=${DIR}/../examples
+INTEGRATION_EXAMPLES_DIR=${DIR}/../integration/examples
+
 # you can pass your github token with --token here if you run out of requests
-go run hack/release_notes/listpullreqs.go
+go run ${DIR}/release_notes/listpullreqs.go
+
+# sync files from integration examples to examples/
+rm -rf ${EXAMPLES_DIR} && rm -rf ${INTEGRATION_EXAMPLES_DIR}/bazel/bazel-* && cp -r ${INTEGRATION_EXAMPLES_DIR} ${EXAMPLES_DIR}
 
 echo "Huge thank you for this release towards our contributors: "
 git log "$(git describe  --abbrev=0)".. --format="%aN" --reverse | sort | uniq | awk '{printf "- %s\n", $0 }'

@@ -1,12 +1,11 @@
-apiVersion: skaffold/v1alpha2
+apiVersion: skaffold/v1alpha3
 kind: Config
 build:
   artifacts:
   - imageName: gcr.io/k8s-skaffold/skaffold-example
-  kaniko:
-    gcsBucket: skaffold-kaniko
-    pullSecretName: e2esecret
-    namespace: default
+  tagPolicy:
+    envTemplate:
+      template: "{{.IMAGE_NAME}}:{{.FOO}}"
 deploy:
   kubectl:
     manifests:
