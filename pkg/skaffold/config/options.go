@@ -27,6 +27,7 @@ type SkaffoldOptions struct {
 	Cleanup           bool
 	Notification      bool
 	Tail              bool
+	PortForward       bool
 	Profiles          []string
 	CustomTag         string
 	Namespace         string
