@@ -35,15 +35,20 @@ import (
 
 // kustomization is the content of a kustomization.yaml file.
 type kustomization struct {
-	Bases           []string         `yaml:"bases"`
-	Resources       []string         `yaml:"resources"`
-	Patches         []string         `yaml:"patches"`
-	CRDs            []string         `yaml:"crds"`
-	PatchesJSON6902 []patcheJSON6902 `yaml:"patchesJson6902"`
+	Bases              []string             `yaml:"bases"`
+	Resources          []string             `yaml:"resources"`
+	Patches            []string             `yaml:"patches"`
+	CRDs               []string             `yaml:"crds"`
+	PatchesJSON6902    []patcheJSON6902     `yaml:"patchesJson6902"`
+	ConfigMapGenerator []configMapGenerator `yaml:"configMapGenerator"`
 }
 
 type patcheJSON6902 struct {
 	Path string `yaml:"path"`
+}
+
+type configMapGenerator struct {
+	Files []string `yaml:"files"`
 }
 
 // KustomizeDeployer deploys workflows using kustomize CLI.
@@ -134,17 +139,14 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 	}
 
 	deps = append(deps, path)
-	for _, file := range content.Resources {
-		deps = append(deps, filepath.Join(dir, file))
-	}
-	for _, file := range content.Patches {
-		deps = append(deps, filepath.Join(dir, file))
-	}
-	for _, file := range content.CRDs {
-		deps = append(deps, filepath.Join(dir, file))
-	}
+	deps = append(deps, joinPaths(dir, content.Resources)...)
+	deps = append(deps, joinPaths(dir, content.Patches)...)
+	deps = append(deps, joinPaths(dir, content.CRDs)...)
 	for _, patch := range content.PatchesJSON6902 {
 		deps = append(deps, filepath.Join(dir, patch.Path))
+	}
+	for _, generator := range content.ConfigMapGenerator {
+		deps = append(deps, joinPaths(dir, generator.Files)...)
 	}
 
 	return deps, nil

@@ -17,7 +17,6 @@ limitations under the License.
 package deploy
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -52,6 +51,13 @@ func TestDependenciesForKustomization(t *testing.T) {
 - path: path/patch2.json`,
 			expected: []string{"kustomization.yaml", "patch1.json", "path/patch2.json"},
 		},
+		{
+			description: "configMapGenerator",
+			yaml: `configMapGenerator:
+- files: [app1.properties]
+- files: [app2.properties, app3.properties]`,
+			expected: []string{"kustomization.yaml", "app1.properties", "app2.properties", "app3.properties"},
+		},
 	}
 
 	for _, test := range tests {
@@ -63,17 +69,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 
 			deps, err := dependenciesForKustomization(tmp.Root())
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, join(tmp.Root(), test.expected), deps)
+			testutil.CheckErrorAndDeepEqual(t, false, err, joinPaths(tmp.Root(), test.expected), deps)
 		})
 	}
-}
-
-func join(root string, paths []string) []string {
-	var list []string
-
-	for _, path := range paths {
-		list = append(list, filepath.Join(root, path))
-	}
-
-	return list
 }
