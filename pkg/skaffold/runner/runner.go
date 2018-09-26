@@ -38,6 +38,7 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 
 	"github.com/pkg/errors"
@@ -53,7 +54,11 @@ type SkaffoldRunner struct {
 	deploy.Deployer
 	test.Tester
 	tag.Tagger
+<<<<<<< HEAD
 	watch.Trigger
+=======
+	kubernetes.Syncer
+>>>>>>> 84d22e8e... [runner] add sync step to skaffold dev
 
 	opts         *config.SkaffoldOptions
 	watchFactory watch.Factory
@@ -104,7 +109,11 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		Tester:       tester,
 		Deployer:     deployer,
 		Tagger:       tagger,
+<<<<<<< HEAD
 		Trigger:      trigger,
+=======
+		Syncer:       &kubernetes.KubectlSyncer{},
+>>>>>>> 84d22e8e... [runner] add sync step to skaffold dev
 		opts:         opts,
 		watchFactory: watch.NewWatcher,
 	}, nil
@@ -299,7 +308,18 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 		if err := watcher.Register(
 			func() ([]string, error) { return dependenciesForArtifact(artifact) },
-			func(watch.Events) { changed.Add(artifact) },
+			func(e watch.WatchEvents) {
+				sync, err := r.shouldSync(artifact.ImageName, artifact.Sync, e)
+				if err != nil {
+					return errors.Wrap(err, "checking sync files")
+				}
+				if !sync {
+					changed.Add(artifact)
+				} else {
+					color.Default.Fprintln(out, "Synced:", "copied", append(e.Added, e.Modified...), "deleted", e.Deleted)
+				}
+				return nil
+			},
 		); err != nil {
 			return nil, errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
 		}
@@ -360,6 +380,52 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	r.Trigger.WatchForChanges(out)
 	return nil, watcher.Run(ctx, r.Trigger, onChange)
+}
+
+func (r *SkaffoldRunner) shouldSync(image string, syncPatterns map[string]string, e watch.WatchEvents) (bool, error) {
+	// If there are no changes, there is nothing to sync
+	if !e.HasChanged() {
+		return false, nil
+	}
+
+	toCopy, err := intersect(syncPatterns, append(e.Added, e.Modified...))
+	if err != nil {
+		return false, errors.Wrap(err, "intersecting sync map and added, modified files")
+	}
+	// The only error that intersect can return is a bad pattern, which is checked above
+	toDelete, _ := intersect(syncPatterns, e.Deleted)
+	if toCopy == nil || toDelete == nil {
+		return false, nil
+	}
+	if err := r.Syncer.DeleteFilesForImage(image, toDelete); err != nil {
+		return false, errors.Wrap(err, "deleting files for image")
+	}
+	if err := r.Syncer.CopyFilesForImage(image, toCopy); err != nil {
+		return false, errors.Wrap(err, "copying files for image")
+	}
+	return true, nil
+}
+
+func intersect(syncMap map[string]string, files []string) (map[string]string, error) {
+	ret := map[string]string{}
+	for _, f := range files {
+		for p, dst := range syncMap {
+			match, err := filepath.Match(p, f)
+			if err != nil {
+				return nil, errors.Wrap(err, "pattern error")
+			}
+			if !match {
+				return nil, nil
+			}
+			// If the source has special match characters,
+			// the destination must be a directory
+			if util.HasMeta(p) {
+				dst = filepath.Join(dst, f)
+			}
+			ret[f] = dst
+		}
+	}
+	return ret, nil
 }
 
 func (r *SkaffoldRunner) shouldWatch(artifact *latest.Artifact) bool {

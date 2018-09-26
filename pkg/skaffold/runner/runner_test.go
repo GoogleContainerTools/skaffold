@@ -110,6 +110,39 @@ func (t *TestDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
+type TestSyncer struct {
+	copyErr, deleteErr error
+	copies             map[string]string
+	deletes            []string
+}
+
+func NewTestSyncer() *TestSyncer {
+	return &TestSyncer{
+		copies: map[string]string{},
+	}
+}
+
+func NewTestSyncerWithErrors(copyErr, deleteErr error) *TestSyncer {
+	return &TestSyncer{
+		copies:    map[string]string{},
+		copyErr:   copyErr,
+		deleteErr: deleteErr,
+	}
+}
+
+func (t *TestSyncer) CopyFilesForImage(image string, f map[string]string) error {
+	for src, dst := range f {
+		t.copies[src] = dst
+	}
+	return t.copyErr
+}
+func (t *TestSyncer) DeleteFilesForImage(image string, f map[string]string) error {
+	for _, dst := range f {
+		t.deletes = append(t.deletes, dst)
+	}
+	return t.deleteErr
+}
+
 func resetClient()                               { kubernetes.Client = kubernetes.GetClientset }
 func fakeGetClient() (clientgo.Interface, error) { return fake.NewSimpleClientset(), nil }
 
@@ -420,6 +453,10 @@ func TestDev(t *testing.T) {
 				Trigger:      trigger,
 				watchFactory: test.watcherFactory,
 				opts:         opts,
+				opts: &config.SkaffoldOptions{
+					WatchPollInterval: 100,
+				},
+				Syncer: NewTestSyncer(),
 			}
 			_, err := runner.Dev(context.Background(), ioutil.Discard, nil)
 
@@ -450,6 +487,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 		Deployer: deployer,
 		Trigger:  trigger,
 		opts:     opts,
+		Syncer:   NewTestSyncer(),
 	}
 
 	ctx := context.Background()
@@ -531,4 +569,105 @@ func TestShouldWatch(t *testing.T) {
 			testutil.CheckDeepEqual(t, test.expectedMatch, match)
 		})
 	}
+}
+
+func TestShouldSync(t *testing.T) {
+	var tests = []struct {
+		description  string
+		syncPatterns map[string]string
+		evt          watch.WatchEvents
+		copies       map[string]string
+		deletes      []string
+		shouldErr    bool
+		expected     bool
+		syncer       *TestSyncer
+	}{
+		{
+			description: "match copy",
+			syncPatterns: map[string]string{
+				"*.html": ".",
+			},
+			evt: watch.WatchEvents{
+				Added: []string{"index.html"},
+			},
+			copies: map[string]string{
+				"index.html": "index.html",
+			},
+			syncer:   NewTestSyncer(),
+			expected: true,
+		},
+		{
+			description: "not copy syncable",
+			syncPatterns: map[string]string{
+				"*.html": ".",
+			},
+			evt: watch.WatchEvents{
+				Added:   []string{"main.go"},
+				Deleted: []string{"index.html"},
+			},
+			syncer:   NewTestSyncer(),
+			expected: false,
+		},
+		{
+			description: "not delete syncable",
+			syncPatterns: map[string]string{
+				"*.html": "/static",
+			},
+			evt: watch.WatchEvents{
+				Added:   []string{"index.html"},
+				Deleted: []string{"some/other/file"},
+			},
+			syncer:   NewTestSyncer(),
+			expected: false,
+		},
+		{
+			description: "err bad pattern",
+			syncPatterns: map[string]string{
+				"[*.html": "*",
+			},
+			evt: watch.WatchEvents{
+				Added:   []string{"index.html"},
+				Deleted: []string{"some/other/file"},
+			},
+			syncer:    NewTestSyncer(),
+			shouldErr: true,
+		},
+		{
+			description: "err copy",
+			syncPatterns: map[string]string{
+				"*.html": "*",
+			},
+			evt: watch.WatchEvents{
+				Added: []string{"index.html"},
+			},
+			syncer:    NewTestSyncerWithErrors(fmt.Errorf(""), nil),
+			shouldErr: true,
+		},
+		{
+			description: "err copy",
+			syncPatterns: map[string]string{
+				"*.html": "*",
+			},
+			evt: watch.WatchEvents{
+				Added: []string{"index.html"},
+			},
+			syncer:    NewTestSyncerWithErrors(nil, fmt.Errorf("")),
+			shouldErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			r := &SkaffoldRunner{
+				Syncer: test.syncer,
+			}
+			actual, err := r.shouldSync("", test.syncPatterns, test.evt)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
+			if test.expected {
+				testutil.CheckDeepEqual(t, test.copies, test.syncer.copies)
+				testutil.CheckDeepEqual(t, test.deletes, test.syncer.deletes)
+			}
+		})
+	}
+
 }
