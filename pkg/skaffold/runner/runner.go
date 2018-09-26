@@ -305,8 +305,10 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 	}
 
 	// Start logs
-	if err := logger.Start(ctx); err != nil {
-		return nil, errors.Wrap(err, "starting logger")
+	if r.opts.Tail {
+		if err := logger.Start(ctx); err != nil {
+			return nil, errors.Wrap(err, "starting logger")
+		}
 	}
 
 	if r.opts.PortForward {
