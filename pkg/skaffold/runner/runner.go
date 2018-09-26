@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -53,11 +54,8 @@ type SkaffoldRunner struct {
 	deploy.Deployer
 	test.Tester
 	tag.Tagger
-<<<<<<< HEAD
 	watch.Trigger
-=======
 	kubernetes.Syncer
->>>>>>> 84d22e8e... [runner] add sync step to skaffold dev
 
 	opts         *config.SkaffoldOptions
 	watchFactory watch.Factory
@@ -108,11 +106,8 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		Tester:       tester,
 		Deployer:     deployer,
 		Tagger:       tagger,
-<<<<<<< HEAD
 		Trigger:      trigger,
-=======
 		Syncer:       &kubernetes.KubectlSyncer{},
->>>>>>> 84d22e8e... [runner] add sync step to skaffold dev
 		opts:         opts,
 		watchFactory: watch.NewWatcher,
 	}, nil
@@ -307,7 +302,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 		if err := watcher.Register(
 			func() ([]string, error) { return dependenciesForArtifact(artifact) },
-			func(e watch.WatchEvents) {
+			func(e watch.Events) {
 				sync, err := r.shouldSync(artifact.ImageName, artifact.Sync, e)
 				if err != nil {
 					return errors.Wrap(err, "checking sync files")
@@ -381,7 +376,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	return nil, watcher.Run(ctx, r.Trigger, onChange)
 }
 
-func (r *SkaffoldRunner) shouldSync(image string, syncPatterns map[string]string, e watch.WatchEvents) (bool, error) {
+func (r *SkaffoldRunner) shouldSync(image string, syncPatterns map[string]string, e watch.Events) (bool, error) {
 	// If there are no changes, there is nothing to sync
 	if !e.HasChanged() {
 		return false, nil

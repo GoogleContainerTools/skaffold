@@ -44,8 +44,9 @@ func (*KubectlSyncer) DeleteFilesForImage(image string, syncMap map[string]strin
 	return perform(image, syncMap, deleteFileFn)
 }
 
+// TODO(r2d4): kubectl exec doesn't seem to take a namespace flag?
 func deleteFileFn(pod v1.Pod, container v1.Container, src, dst string) *exec.Cmd {
-	return exec.Command("kubectl", "exec", fmt.Sprintf("%s", pod.Name), "-c", container.Name, "--", "rm", "-rf", dst)
+	return exec.Command("kubectl", "exec", pod.Name, "-c", container.Name, "--", "rm", "-rf", dst)
 }
 
 func copyFileFn(pod v1.Pod, container v1.Container, src, dst string) *exec.Cmd {
