@@ -381,7 +381,7 @@ func TestHelmDeploy(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = tt.cmd
 
-			_, err := tt.deployer.Deploy(context.Background(), &bytes.Buffer{}, tt.builds)
+			_, err := tt.deployer.Deploy(context.Background(), ioutil.Discard, tt.builds)
 
 			testutil.CheckError(t, tt.shouldErr, err)
 		})

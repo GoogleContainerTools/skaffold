@@ -17,7 +17,6 @@ limitations under the License.
 package docker
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -88,7 +87,7 @@ func TestRunPush(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			api := testutil.NewFakeImageAPIClient(test.tagToImageID, test.testOpts)
-			err := RunPush(context.Background(), api, test.imageName, &bytes.Buffer{})
+			err := RunPush(context.Background(), api, test.imageName, ioutil.Discard)
 			testutil.CheckError(t, test.shouldErr, err)
 		})
 	}
