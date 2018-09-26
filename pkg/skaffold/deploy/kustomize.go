@@ -38,6 +38,7 @@ type kustomization struct {
 	Bases           []string         `yaml:"bases"`
 	Resources       []string         `yaml:"resources"`
 	Patches         []string         `yaml:"patches"`
+	CRDs            []string         `yaml:"crds"`
 	PatchesJSON6902 []patcheJSON6902 `yaml:"patchesJson6902"`
 }
 
@@ -137,6 +138,9 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 		deps = append(deps, filepath.Join(dir, file))
 	}
 	for _, file := range content.Patches {
+		deps = append(deps, filepath.Join(dir, file))
+	}
+	for _, file := range content.CRDs {
 		deps = append(deps, filepath.Join(dir, file))
 	}
 	for _, patch := range content.PatchesJSON6902 {

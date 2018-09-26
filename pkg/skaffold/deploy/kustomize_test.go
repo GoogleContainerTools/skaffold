@@ -32,20 +32,25 @@ func TestDependenciesForKustomization(t *testing.T) {
 	}{
 		{
 			description: "resources",
-			yaml:        `resources: [pod1.yaml, pod2.yaml]`,
-			expected:    []string{"kustomization.yaml", "pod1.yaml", "pod2.yaml"},
+			yaml:        `resources: [pod1.yaml, path/pod2.yaml]`,
+			expected:    []string{"kustomization.yaml", "pod1.yaml", "path/pod2.yaml"},
 		},
 		{
 			description: "paches",
-			yaml:        `patches: [patch1.yaml, patch2.yaml]`,
-			expected:    []string{"kustomization.yaml", "patch1.yaml", "patch2.yaml"},
+			yaml:        `patches: [patch1.yaml, path/patch2.yaml]`,
+			expected:    []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
+		},
+		{
+			description: "crds",
+			yaml:        `patches: [crd1.yaml, path/crd2.yaml]`,
+			expected:    []string{"kustomization.yaml", "crd1.yaml", "path/crd2.yaml"},
 		},
 		{
 			description: "patches json 6902",
 			yaml: `patchesJson6902:
 - path: patch1.json
-- path: patch2.json`,
-			expected: []string{"kustomization.yaml", "patch1.json", "patch2.json"},
+- path: path/patch2.json`,
+			expected: []string{"kustomization.yaml", "patch1.json", "path/patch2.json"},
 		},
 	}
 
