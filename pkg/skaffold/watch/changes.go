@@ -21,56 +21,75 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
-type fileMap struct {
-	count        int
-	lastModified time.Time
-}
+type fileMap map[string]time.Time
 
+// TODO(mrick): cached tree extension ala git
 func stat(deps func() ([]string, error)) (fileMap, error) {
+	state := fileMap{}
 	paths, err := deps()
 	if err != nil {
-		return fileMap{}, errors.Wrap(err, "listing files")
+		return state, errors.Wrap(err, "listing files")
 	}
-
-	last, err := lastModified(paths)
-	if err != nil {
-		return fileMap{}, err
-	}
-
-	return fileMap{
-		count:        len(paths),
-		lastModified: last,
-	}, nil
-}
-
-func lastModified(paths []string) (time.Time, error) {
-	var last time.Time
-
 	for _, path := range paths {
 		stat, err := os.Stat(path)
 		if err != nil {
-			if os.IsNotExist(err) {
-				continue // Ignore files that don't exist
-			}
-
-			return last, errors.Wrapf(err, "unable to stat file %s", path)
+			return nil, errors.Wrapf(err, "unable to stat file %s", path)
 		}
+		state[path] = stat.ModTime()
+	}
 
-		if stat.IsDir() {
-			continue // Ignore time changes on directories
+	return state, nil
+}
+
+type WatchEvents struct {
+	Added    []string
+	Modified []string
+	Deleted  []string
+}
+
+func (e WatchEvents) HasChanged() bool {
+	added, deleted, modified := len(e.Added), len(e.Deleted), len(e.Modified)
+	if added > 0 {
+		logrus.Debugf("[watch event] added: %s", e.Added)
+	}
+	if deleted > 0 {
+		logrus.Debugf("[watch event] deleted: %s", e.Deleted)
+	}
+	if modified > 0 {
+		logrus.Debugf("[watch event] modified: %s", e.Modified)
+	}
+	return added != 0 || deleted != 0 || modified != 0
+}
+
+func events(prev, curr fileMap) WatchEvents {
+	e := WatchEvents{}
+	for f, t := range prev {
+		modtime, ok := curr[f]
+		if !ok {
+			// file in prev but not in curr -> file deleted
+			e.Deleted = append(e.Deleted, f)
+			continue
 		}
-
-		modTime := stat.ModTime()
-		if modTime.After(last) {
-			last = modTime
+		if !modtime.Equal(t) {
+			// file in both prev and curr
+			// time not equal -> file modified
+			e.Modified = append(e.Modified, f)
+			continue
 		}
 	}
 
-	return last, nil
-}
+	for f := range curr {
+		// don't need to check case where file is in both curr and prev
+		// covered above
+		_, ok := prev[f]
+		if !ok {
+			// file in curr but not in prev -> file added
+			e.Added = append(e.Added, f)
+		}
+	}
 
-func hasChanged(prev, curr fileMap) bool {
-	return prev.count != curr.count || !prev.lastModified.Equal(curr.lastModified)
+	return e
 }
