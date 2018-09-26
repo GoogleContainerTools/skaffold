@@ -95,6 +95,12 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 	case artifact.BazelArtifact != nil:
 		return b.buildBazel(ctx, out, artifact.Workspace, artifact.BazelArtifact)
 
+	case artifact.JibMavenArtifact != nil:
+		return b.buildJibMaven(ctx, out, artifact.Workspace, artifact.JibMavenArtifact)
+
+	case artifact.JibGradleArtifact != nil:
+		return b.buildJibGradle(ctx, out, artifact.Workspace, artifact.JibGradleArtifact)
+
 	default:
 		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 	}

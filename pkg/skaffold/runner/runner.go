@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
@@ -371,6 +372,12 @@ func dependenciesForArtifact(a *v1alpha3.Artifact) ([]string, error) {
 
 	case a.BazelArtifact != nil:
 		paths, err = bazel.GetDependencies(a.Workspace, a.BazelArtifact)
+
+	case a.JibMavenArtifact != nil:
+		paths, err = jib.GetDependenciesMaven(a.Workspace, a.JibMavenArtifact)
+
+	case a.JibGradleArtifact != nil:
+		paths, err = jib.GetDependenciesGradle(a.Workspace, a.JibGradleArtifact)
 
 	default:
 		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
