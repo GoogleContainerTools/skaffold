@@ -33,6 +33,18 @@ import (
 	"github.com/pkg/errors"
 )
 
+// kustomization is the content of a kustomization.yaml file.
+type kustomization struct {
+	Bases           []string         `yaml:"bases"`
+	Resources       []string         `yaml:"resources"`
+	Patches         []string         `yaml:"patches"`
+	PatchesJSON6902 []patcheJSON6902 `yaml:"patchesJson6902"`
+}
+
+type patcheJSON6902 struct {
+	Path string `yaml:"path"`
+}
+
 // KustomizeDeployer deploys workflows using kustomize CLI.
 type KustomizeDeployer struct {
 	*v1alpha3.KustomizeDeploy
@@ -101,22 +113,17 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 	var deps []string
 
 	path := filepath.Join(dir, "kustomization.yaml")
-	kustomization, err := ioutil.ReadFile(path)
+	buf, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	contents := struct {
-		Bases     []string `yaml:"bases"`
-		Resources []string `yaml:"resources"`
-		Patches   []string `yaml:"patches"`
-	}{}
-
-	if err := yaml.Unmarshal(kustomization, &contents); err != nil {
+	content := kustomization{}
+	if err := yaml.Unmarshal(buf, &content); err != nil {
 		return nil, err
 	}
 
-	for _, base := range contents.Bases {
+	for _, base := range content.Bases {
 		baseDeps, err := dependenciesForKustomization(filepath.Join(dir, base))
 		if err != nil {
 			return nil, err
@@ -126,8 +133,15 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 	}
 
 	deps = append(deps, path)
-	deps = append(deps, joinPaths(dir, contents.Resources)...)
-	deps = append(deps, joinPaths(dir, contents.Patches)...)
+	for _, file := range content.Resources {
+		deps = append(deps, filepath.Join(dir, file))
+	}
+	for _, file := range content.Patches {
+		deps = append(deps, filepath.Join(dir, file))
+	}
+	for _, patch := range content.PatchesJSON6902 {
+		deps = append(deps, filepath.Join(dir, patch.Path))
+	}
 
 	return deps, nil
 }
