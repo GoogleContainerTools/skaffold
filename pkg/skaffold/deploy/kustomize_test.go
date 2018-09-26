@@ -58,6 +58,11 @@ func TestDependenciesForKustomization(t *testing.T) {
 - files: [app2.properties, app3.properties]`,
 			expected: []string{"kustomization.yaml", "app1.properties", "app2.properties", "app3.properties"},
 		},
+		{
+			description: "unknown base",
+			yaml:        `bases: [other]`,
+			shouldErr:   true,
+		},
 	}
 
 	for _, test := range tests {
@@ -69,7 +74,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 
 			deps, err := dependenciesForKustomization(tmp.Root())
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, joinPaths(tmp.Root(), test.expected), deps)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, joinPaths(tmp.Root(), test.expected), deps)
 		})
 	}
 }
