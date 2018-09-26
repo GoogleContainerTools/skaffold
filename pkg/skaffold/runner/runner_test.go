@@ -575,7 +575,7 @@ func TestShouldSync(t *testing.T) {
 	var tests = []struct {
 		description  string
 		syncPatterns map[string]string
-		evt          watch.WatchEvents
+		evt          watch.Events
 		copies       map[string]string
 		deletes      []string
 		shouldErr    bool
@@ -587,7 +587,7 @@ func TestShouldSync(t *testing.T) {
 			syncPatterns: map[string]string{
 				"*.html": ".",
 			},
-			evt: watch.WatchEvents{
+			evt: watch.Events{
 				Added: []string{"index.html"},
 			},
 			copies: map[string]string{
@@ -601,7 +601,7 @@ func TestShouldSync(t *testing.T) {
 			syncPatterns: map[string]string{
 				"*.html": ".",
 			},
-			evt: watch.WatchEvents{
+			evt: watch.Events{
 				Added:   []string{"main.go"},
 				Deleted: []string{"index.html"},
 			},
@@ -613,7 +613,7 @@ func TestShouldSync(t *testing.T) {
 			syncPatterns: map[string]string{
 				"*.html": "/static",
 			},
-			evt: watch.WatchEvents{
+			evt: watch.Events{
 				Added:   []string{"index.html"},
 				Deleted: []string{"some/other/file"},
 			},
@@ -625,7 +625,7 @@ func TestShouldSync(t *testing.T) {
 			syncPatterns: map[string]string{
 				"[*.html": "*",
 			},
-			evt: watch.WatchEvents{
+			evt: watch.Events{
 				Added:   []string{"index.html"},
 				Deleted: []string{"some/other/file"},
 			},
@@ -637,7 +637,7 @@ func TestShouldSync(t *testing.T) {
 			syncPatterns: map[string]string{
 				"*.html": "*",
 			},
-			evt: watch.WatchEvents{
+			evt: watch.Events{
 				Added: []string{"index.html"},
 			},
 			syncer:    NewTestSyncerWithErrors(fmt.Errorf(""), nil),
@@ -648,7 +648,7 @@ func TestShouldSync(t *testing.T) {
 			syncPatterns: map[string]string{
 				"*.html": "*",
 			},
-			evt: watch.WatchEvents{
+			evt: watch.Events{
 				Added: []string{"index.html"},
 			},
 			syncer:    NewTestSyncerWithErrors(nil, fmt.Errorf("")),
