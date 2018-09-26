@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: webserver
+spec:
+  containers:
+  - name: webserver
+    image: gcr.io/k8s-skaffold/webserver-example
+    ports:
+    - containerPort: 8080
