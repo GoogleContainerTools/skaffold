@@ -19,7 +19,7 @@ package deploy
 import (
 	"context"
 	"io"
-	"os"
+	"io/ioutil"
 	"os/exec"
 	"path/filepath"
 
@@ -98,43 +98,48 @@ func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 func dependenciesForKustomization(dir string) ([]string, error) {
-	path := filepath.Join(dir, "kustomization.yaml")
-	deps := []string{path}
+	var deps []string
 
-	file, err := os.Open(path)
+	path := filepath.Join(dir, "kustomization.yaml")
+	kustomization, err := ioutil.ReadFile(path)
 	if err != nil {
-		return deps, err
+		return nil, err
 	}
-	defer file.Close()
 
 	contents := struct {
 		Bases     []string `yaml:"bases"`
 		Resources []string `yaml:"resources"`
 		Patches   []string `yaml:"patches"`
 	}{}
-	decoder := yaml.NewDecoder(file)
-	err = decoder.Decode(&contents)
-	if err != nil {
-		return deps, err
+
+	if err := yaml.Unmarshal(kustomization, &contents); err != nil {
+		return nil, err
 	}
 
 	for _, base := range contents.Bases {
 		baseDeps, err := dependenciesForKustomization(filepath.Join(dir, base))
-		deps = append(deps, baseDeps...)
 		if err != nil {
-			return deps, err
+			return nil, err
 		}
+
+		deps = append(deps, baseDeps...)
 	}
 
-	for _, resource := range contents.Resources {
-		deps = append(deps, filepath.Join(dir, resource))
-	}
-
-	for _, patch := range contents.Patches {
-		deps = append(deps, filepath.Join(dir, patch))
-	}
+	deps = append(deps, path)
+	deps = append(deps, joinPaths(dir, contents.Resources)...)
+	deps = append(deps, joinPaths(dir, contents.Patches)...)
 
 	return deps, nil
+}
+
+func joinPaths(root string, paths []string) []string {
+	var list []string
+
+	for _, path := range paths {
+		list = append(list, filepath.Join(root, path))
+	}
+
+	return list
 }
 
 // Dependencies lists all the files that can change what needs to be deployed.
