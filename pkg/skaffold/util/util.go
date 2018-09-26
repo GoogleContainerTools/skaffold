@@ -107,6 +107,13 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 	return ret, nil
 }
 
+// HasMeta reports whether path contains any of the magic characters
+// recognized by filepath.Match.
+// This is a copy of filepath/match.go's hasMeta
+func HasMeta(path string) bool {
+	return strings.ContainsAny(path, "*?[")
+}
+
 // BoolPtr returns a pointer to a bool
 func BoolPtr(b bool) *bool {
 	o := b
