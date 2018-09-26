@@ -64,7 +64,6 @@ type SkaffoldRunner struct {
 	opts         *config.SkaffoldOptions
 	watchFactory watch.Factory
 	builds       []build.Artifact
-	// globalConfig *configutil.ContextConfig
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldPipeline
@@ -120,7 +119,6 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		Syncer:       &kubectl.Syncer{},
 		opts:         opts,
 		watchFactory: watch.NewWatcher,
-		// globalConfig: globalConfig,
 	}, nil
 }
 

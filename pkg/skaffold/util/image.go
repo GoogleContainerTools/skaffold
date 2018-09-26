@@ -17,23 +17,43 @@ limitations under the License.
 package util
 
 import (
+	"regexp"
 	"strings"
 )
+
+const maxLength = 255
+
+const gcr = "gcr.io"
+const escapeChars = "[/._:@]"
+const prefixRegexStr = "gcr.io/[a-zA-Z]+/"
+
+var escapeRegex = regexp.MustCompile(escapeChars)
+var prefixRegex = regexp.MustCompile(prefixRegexStr)
 
 func SubstituteDefaultRepoIntoImage(defaultRepo string, originalImage string) string {
 	if defaultRepo == "" {
 		return originalImage
 	}
-	if strings.HasPrefix(defaultRepo, "gcr.io") {
-		if !strings.HasPrefix(originalImage, defaultRepo) {
-			return defaultRepo + "/" + originalImage
-		} else {
-			// TODO: this one is a little harder
+	if strings.HasPrefix(defaultRepo, gcr) {
+		originalPrefix := prefixRegex.FindString(originalImage)
+		defaultRepoPrefix := prefixRegex.FindString(defaultRepo)
+
+		if originalPrefix == defaultRepoPrefix {
+			// prefixes match
+			return defaultRepo + "/" + originalImage[len(originalPrefix):]
+		} else if strings.HasPrefix(originalImage, defaultRepo) {
 			return originalImage
 		}
-	} else {
-		// TODO: escape, concat, truncate to 256
-		return originalImage
+		// prefixes don't match, concatenate and truncate
+		return truncate(defaultRepo + "/" + originalImage)
 	}
-	return originalImage
+	// TODO: check defaultRepo is < 256 chars when setting
+	return truncate(defaultRepo + "/" + escapeRegex.ReplaceAllString(originalImage, "_"))
+}
+
+func truncate(image string) string {
+	if len(image) > maxLength {
+		return image[0:maxLength]
+	}
+	return image
 }

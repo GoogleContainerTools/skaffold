@@ -180,10 +180,5 @@ func applyDefaultRepoSubstitution(config *config.SkaffoldConfig, globalConfig *c
 	for _, artifact := range config.Build.Artifacts {
 		artifact.ImageName = util.SubstituteDefaultRepoIntoImage(globalConfig.DefaultRepo, artifact.ImageName)
 	}
-	// TODO(nkubala): should we substitute into helm deploy values here?
-
-	// TODO(nkubala): do we also want to substitute into the deploy artifacts here? NO
-
-	//maybe we dont wanna do this at all here actually....
 	return nil
 }

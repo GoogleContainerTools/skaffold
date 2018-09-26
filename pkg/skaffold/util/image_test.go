@@ -46,6 +46,24 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 			defaultRepo:   "gcr.io/default",
 			expectedImage: "gcr.io/default/registry",
 		},
+		{
+			name:          "image has shared prefix with defaultRepo",
+			image:         "gcr.io/default/example/registry",
+			defaultRepo:   "gcr.io/default/repository",
+			expectedImage: "gcr.io/default/repository/example/registry",
+		},
+		{
+			name:          "aws",
+			image:         "gcr.io/some/registry",
+			defaultRepo:   "aws_account_id.dkr.ecr.region.amazonaws.com",
+			expectedImage: "aws_account_id.dkr.ecr.region.amazonaws.com/gcr_io_some_registry",
+		},
+		{
+			name:          "aws over 255 chars",
+			image:         "gcr.io/herewehaveanincrediblylongregistryname/herewealsohaveanabnormallylongimagename/doubtyouveseenanimagethislong/butyouneverknowdoyouimeanpeopledosomecrazystuffoutthere/goodluckpushingthistoanyregistrymyfriend",
+			defaultRepo:   "aws_account_id.dkr.ecr.region.amazonaws.com",
+			expectedImage: "aws_account_id.dkr.ecr.region.amazonaws.com/gcr_io_herewehaveanincrediblylongregistryname_herewealsohaveanabnormallylongimagename_doubtyouveseenanimagethislong_butyouneverknowdoyouimeanpeopledosomecrazystuffoutthere_goodluckpushingthistoanyregistrymyfrien",
+		},
 	}
 
 	for _, test := range tests {
