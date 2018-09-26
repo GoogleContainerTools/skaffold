@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -31,27 +32,23 @@ import (
 
 const testKubeContext = "kubecontext"
 
-const deploymentYAML = `apiVersion: apps/v1
-kind: Deployment
+const deploymentWebYAML = `apiVersion: v1
+kind: Pod
 metadata:
   name: leeroy-web
-  labels:
-    app: leeroy-web
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: leeroy-web
-  template:
-    metadata:
-      labels:
-        app: leeroy-web
-    spec:
-      containers:
-      - name: leeroy-web
-        image: leeroy-web
-        ports:
-        - containerPort: 8080`
+  containers:
+  - name: leeroy-web
+    image: leeroy-web`
+
+const deploymentAppYaml = `apiVersion: v1
+kind: Pod
+metadata:
+  name: leeroy-app
+spec:
+  containers:
+  - name: leeroy-app
+    image: leeroy-app`
 
 func TestKubectlDeploy(t *testing.T) {
 	var tests = []struct {
@@ -138,7 +135,7 @@ func TestKubectlDeploy(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	tmpDir.Write("deployment.yaml", deploymentYAML)
+	tmpDir.Write("deployment.yaml", deploymentWebYAML)
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
@@ -194,7 +191,7 @@ func TestKubectlCleanup(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	tmpDir.Write("deployment.yaml", deploymentYAML)
+	tmpDir.Write("deployment.yaml", deploymentWebYAML)
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
@@ -209,4 +206,40 @@ func TestKubectlCleanup(t *testing.T) {
 			testutil.CheckError(t, test.shouldErr, err)
 		})
 	}
+}
+
+func TestKubectlRedeploy(t *testing.T) {
+	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+	util.DefaultExecCommand = testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace apply -f -", nil)
+
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+	tmpDir.Write("deployment-web.yaml", deploymentWebYAML)
+	tmpDir.Write("deployment-app.yaml", deploymentAppYaml)
+
+	cfg := &v1alpha3.KubectlDeploy{
+		Manifests: []string{"deployment-web.yaml", "deployment-app.yaml"},
+	}
+	deployer := NewKubectlDeployer(tmpDir.Root(), cfg, testKubeContext, testNamespace)
+
+	// Deploy one manifest
+	deployed, err := deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
+		{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
+		{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
+	})
+	testutil.CheckErrorAndDeepEqual(t, false, err, 2, len(deployed))
+
+	// Deploy one manifest since only one image is updated
+	deployed, err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
+		{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
+		{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
+	})
+	testutil.CheckErrorAndDeepEqual(t, false, err, 1, len(deployed))
+
+	// Deploy zero manifest since no image is updated
+	deployed, err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
+		{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
+		{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
+	})
+	testutil.CheckErrorAndDeepEqual(t, false, err, 0, len(deployed))
 }
