@@ -1,0 +1,77 @@
+=== Example: File Sync with Skaffold
+:icons: font
+
+ifndef::env-github[]
+link:{github-repo-tree}/examples/webserver[see on Github icon:github[]]
+endif::[]
+
+In this example:
+
+* Deploy a basic golang webserver that serves static files
+* In development, sync static HTML files without triggering a rebuild or redeploy of the artifacts
+
+Not all file changes should require a complete rebuild and redeploy of the skaffold artifacts. 
+This tutorial shows how you can use the file sync feature of skaffold for very quick iterative development.
+
+==== Running the example on minikube
+
+From this directory, run
+
+```bash
+skaffold dev
+```
+
+Now in a different terminal, hit the webserver's endpoint to see index.html
+
+```bash
+$ curl localhost:8080
+Hello World!!
+```
+
+Now, edit the index.html file to contain something else. You'll see that skaffold syncs the file to the already running container, without rebuilding or redeploying.
+```bash
+echo "Hello skaffold" > index.html
+```
+
+You should see that skaffold has synced those changes in the other terminal
+```bash
+...
+Synced: copied [index.html] deleted []
+Watching for changes...
+```
+
+Now, lets add a new file that matches the glob pattern but wasn't in the original container.
+```bash
+echo "Dogs are great" > cats.html
+```
+
+Now you can see that change immediately.
+```bash
+$ curl localhost:8080/cats.html
+"Dogs are great" 
+```
+
+Delete the file
+```bash
+rm cats.html
+```
+
+Now you can see that change immediately
+```bash
+$ curl localhost:8080/cats.html
+404 page not found
+```
+
+==== Configuration walkthrough
+
+Let's walk through the first part of the skaffold.yaml
+
+```yaml
+  artifacts:
+  - imageName: gcr.io/k8s-skaffold/webserver-example
+    sync:
+      '*.html': '/static'
+```
+
+This will sync all files that match the *.html pattern to the /static/ folder in the container. 
+Sync can be multiple keys and the only restriction is that the destination must be a folder if the source is a pattern.
