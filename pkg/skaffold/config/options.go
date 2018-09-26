@@ -27,6 +27,7 @@ type SkaffoldOptions struct {
 	Cleanup           bool
 	Notification      bool
 	Tail              bool
+	TailDev           bool
 	PortForward       bool
 	Profiles          []string
 	CustomTag         string
@@ -43,7 +44,7 @@ func (opts *SkaffoldOptions) Labels() map[string]string {
 	if opts.Cleanup {
 		labels["cleanup"] = "true"
 	}
-	if opts.Tail {
+	if opts.Tail || opts.TailDev {
 		labels["tail"] = "true"
 	}
 	if opts.Namespace != "" {
