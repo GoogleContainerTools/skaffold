@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
@@ -44,9 +45,8 @@ func (*KubectlSyncer) DeleteFilesForImage(image string, syncMap map[string]strin
 	return perform(image, syncMap, deleteFileFn)
 }
 
-// TODO(r2d4): kubectl exec doesn't seem to take a namespace flag?
 func deleteFileFn(pod v1.Pod, container v1.Container, src, dst string) *exec.Cmd {
-	return exec.Command("kubectl", "exec", pod.Name, "-c", container.Name, "--", "rm", "-rf", dst)
+	return exec.Command("kubectl", "exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name, "--", "rm", "-rf", dst)
 }
 
 func copyFileFn(pod v1.Pod, container v1.Container, src, dst string) *exec.Cmd {
@@ -66,11 +66,16 @@ func perform(image string, files map[string]string, cmdFn func(v1.Pod, v1.Contai
 	for _, p := range pods.Items {
 		for _, c := range p.Spec.Containers {
 			if strings.HasPrefix(c.Image, image) {
+				var e errgroup.Group
 				for src, dst := range files {
-					cmd := cmdFn(p, c, src, dst)
-					if err := util.RunCmd(cmd); err != nil {
-						return errors.Wrapf(err, "syncing with kubectl")
-					}
+					src, dst := src, dst
+					e.Go(func() error {
+						cmd := cmdFn(p, c, src, dst)
+						return util.RunCmd(cmd)
+					})
+				}
+				if err := e.Wait(); err != nil {
+					return errors.Wrap(err, "syncing files:")
 				}
 			}
 		}
