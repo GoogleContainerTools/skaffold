@@ -303,7 +303,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		if err := watcher.Register(
 			func() ([]string, error) { return dependenciesForArtifact(artifact) },
 			func(e watch.Events) {
-				sync, err := r.shouldSync(artifact.ImageName, artifact.Sync, e)
+				sync, err := r.shouldSync(artifact.ImageName, artifact.Workspace, artifact.Sync, e)
 				if err != nil {
 					return errors.Wrap(err, "checking sync files")
 				}
@@ -376,18 +376,18 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	return nil, watcher.Run(ctx, r.Trigger, onChange)
 }
 
-func (r *SkaffoldRunner) shouldSync(image string, syncPatterns map[string]string, e watch.Events) (bool, error) {
-	// If there are no changes, there is nothing to sync
-	if !e.HasChanged() {
+func (r *SkaffoldRunner) shouldSync(image string, context string, syncPatterns map[string]string, e watch.Events) (bool, error) {
+	// If there are no changes, short circuit and don't sync anything
+	if !e.HasChanged() || syncPatterns == nil || len(syncPatterns) == 0 {
 		return false, nil
 	}
 
-	toCopy, err := intersect(syncPatterns, append(e.Added, e.Modified...))
+	toCopy, err := intersect(context, syncPatterns, append(e.Added, e.Modified...))
 	if err != nil {
 		return false, errors.Wrap(err, "intersecting sync map and added, modified files")
 	}
 	// The only error that intersect can return is a bad pattern, which is checked above
-	toDelete, _ := intersect(syncPatterns, e.Deleted)
+	toDelete, _ := intersect(context, syncPatterns, e.Deleted)
 	if toCopy == nil || toDelete == nil {
 		return false, nil
 	}
@@ -400,21 +400,28 @@ func (r *SkaffoldRunner) shouldSync(image string, syncPatterns map[string]string
 	return true, nil
 }
 
-func intersect(syncMap map[string]string, files []string) (map[string]string, error) {
+func intersect(context string, syncMap map[string]string, files []string) (map[string]string, error) {
 	ret := map[string]string{}
+	fmt.Println("context", context)
 	for _, f := range files {
+		relPath, err := filepath.Rel(context, f)
+		if err != nil {
+			return nil, errors.Wrapf(err, "changed file %s is not relative to context %s", f, context)
+		}
+		fmt.Println("relPath", relPath)
 		for p, dst := range syncMap {
-			match, err := filepath.Match(p, f)
+			match, err := filepath.Match(p, relPath)
 			if err != nil {
 				return nil, errors.Wrap(err, "pattern error")
 			}
+			fmt.Println("match", match, "pattern", p, "f", f, "dst", dst)
 			if !match {
 				return nil, nil
 			}
 			// If the source has special match characters,
 			// the destination must be a directory
 			if util.HasMeta(p) {
-				dst = filepath.Join(dst, f)
+				dst = filepath.Join(dst, filepath.Base(relPath))
 			}
 			ret[f] = dst
 		}
