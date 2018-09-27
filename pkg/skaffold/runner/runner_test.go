@@ -284,6 +284,39 @@ func TestNewForConfig(t *testing.T) {
 	}
 }
 
+func TestIntersect(t *testing.T) {
+	var tests = []struct {
+		description  string
+		syncPatterns map[string]string
+		files        []string
+		expected     map[string]string
+		shouldErr    bool
+	}{
+		{
+			description: "nil sync patterns doesn't sync",
+			expected:    map[string]string{},
+		},
+		{
+			description: "copy nested file to correct destination",
+			files:       []string{"static/index.html", "static/test.html"},
+			syncPatterns: map[string]string{
+				"static/*.html": "/html",
+			},
+			expected: map[string]string{
+				"static/index.html": "/html/index.html",
+				"static/test.html":  "/html/test.html",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			actual, err := intersect(test.syncPatterns, test.files)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
+		})
+	}
+}
+
 func TestRun(t *testing.T) {
 	var tests = []struct {
 		description string
