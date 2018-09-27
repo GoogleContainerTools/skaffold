@@ -24,10 +24,20 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (b *Builder) buildJibMaven(_ /*ctx*/ context.Context, _ /*out*/ io.Writer, _ /*workspace*/ string, _ /*a*/ *v1alpha3.JibMavenArtifact) (string, error) {
+func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace string, a *v1alpha3.JibMavenArtifact) (string, error) {
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	default:
+	}
 	return "", errors.New("buildJibMaven is unimplemented")
 }
 
-func (b *Builder) buildJibGradle(_ /*ctx*/ context.Context, _ /*out*/ io.Writer, _ /*workspace*/ string, _ /*a*/ *v1alpha3.JibGradleArtifact) (string, error) {
+func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace string, a *v1alpha3.JibGradleArtifact) (string, error) {
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	default:
+	}
 	return "", errors.New("buildJibGradle is unimplemented")
 }
