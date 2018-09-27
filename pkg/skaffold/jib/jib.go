@@ -33,6 +33,9 @@ func GetDependenciesMaven(workspace string, _ /*a*/ *v1alpha3.JibMavenArtifact, 
 	return getDependencies(workspace, "pom.xml", "mvn", "mvnw.cmd", isWindows, []string{"jib:_skaffold-files", "-q"}, "jib-maven")
 }
 
+// GetDependenciesGradle finds the source dependencies for the given jib-gradle artifact.
+// All paths are absolute.
+// TODO(coollog): Add support for multi-module projects.
 func GetDependenciesGradle(workspace string, _ /*a*/ *v1alpha3.JibGradleArtifact, isWindows bool) ([]string, error) {
 	return getDependencies(workspace, "build.gradle", "gradle", "gradlew.bat", isWindows, []string{"_jibSkaffoldFiles", "-q"}, "jib-gradle")
 }
