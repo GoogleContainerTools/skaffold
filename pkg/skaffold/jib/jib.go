@@ -21,10 +21,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-func GetDependenciesMaven(workspace string, a *v1alpha3.JibMavenArtifact) ([]string, error) {
+func GetDependenciesMaven(_ /*workspace*/ string, _ /*a*/ *v1alpha3.JibMavenArtifact) ([]string, error) {
 	return nil, errors.New("jib maven support is unimplemented")
 }
 
-func GetDependenciesGradle(workspace string, a *v1alpha3.JibGradleArtifact) ([]string, error) {
+func GetDependenciesGradle(_ /*workspace*/ string, _ /*a*/ *v1alpha3.JibGradleArtifact) ([]string, error) {
 	return nil, errors.New("jib gradle support is unimplemented")
 }
