@@ -120,34 +120,32 @@ func fromInstruction(node *parser.Node) from {
 }
 
 func onbuildImages(nodes []*parser.Node) [][]string {
-	var onbuildImages [][]string
+	var images [][]string
 
 	stages := map[string]bool{}
 	for _, from := range fromInstructions(nodes) {
-		if _, found := stages[from.image]; found {
+		stages[from.as] = true
+
+		if from.image == "scratch" {
 			continue
 		}
 
-		if from.as != "" {
-			stages[from.as] = true
-		}
-
-		if strings.ToLower(from.image) == "scratch" {
+		if _, found := stages[from.image]; found {
 			continue
 		}
 
 		logrus.Debugf("Checking base image %s for ONBUILD triggers.", from.image)
 		img, err := RetrieveImage(from.image)
 		if err != nil {
-			logrus.Warnf("Error processing base image for onbuild triggers: %s. Dependencies may be incomplete.", err)
+			logrus.Warnf("Error processing base image for ONBUILD triggers: %s. Dependencies may be incomplete.", err)
 			continue
 		}
 
-		logrus.Debugf("Found onbuild triggers %v in image %s", img.Config.OnBuild, from.image)
-		onbuildImages = append(onbuildImages, img.Config.OnBuild)
+		logrus.Debugf("Found ONBUILD triggers %v in image %s", img.Config.OnBuild, from.image)
+		images = append(images, img.Config.OnBuild)
 	}
 
-	return onbuildImages
+	return images
 }
 
 func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*string) ([]string, error) {

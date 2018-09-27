@@ -151,6 +151,7 @@ COPY $FOO .
 const fromStage = `
 FROM ubuntu:14.04 as base
 FROM base as dist
+FROM dist as prod
 `
 
 const fromStageIgnoreCase = `
@@ -383,14 +384,14 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  fromStage,
 			workspace:   ".",
 			expected:    []string{"Dockerfile"},
-			fetched:     []string{"ubuntu:14.04"}, // Don't fetch `base`
+			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "from base stage, ignoring case",
 			dockerfile:  fromStageIgnoreCase,
 			workspace:   ".",
 			expected:    []string{"Dockerfile"},
-			fetched:     []string{"ubuntu:14.04"}, // Don't fetch `base`
+			fetched:     []string{"ubuntu:14.04"},
 		},
 	}
 
