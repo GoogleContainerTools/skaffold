@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"time"
 
 	cstorage "cloud.google.com/go/storage"
@@ -253,9 +254,18 @@ func (b *Builder) createBucketIfNotExists(ctx context.Context, projectID, bucket
 		return errors.Wrapf(err, "getting bucket %s", bucket)
 	}
 
-	if err := c.Bucket(bucket).Create(ctx, projectID, &cstorage.BucketAttrs{
+	err = c.Bucket(bucket).Create(ctx, projectID, &cstorage.BucketAttrs{
 		Name: bucket,
-	}); err != nil {
+	})
+	if e, ok := err.(*googleapi.Error); ok {
+		if e.Code == http.StatusConflict {
+			// 409 errors are ok, there could have been a race condition or eventual consistency.
+			logrus.Debugf("Not creating bucket, got a 409 error indicating it already exists.")
+			return nil
+		}
+	}
+
+	if err != nil {
 		return err
 	}
 	logrus.Debugf("Created bucket %s in %s", bucket, projectID)
