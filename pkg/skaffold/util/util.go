@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -177,4 +178,27 @@ func RemoveFromSlice(s []string, target string) []string {
 		}
 	}
 	return s
+}
+
+// Expand replaces placeholders for a given key with a given value.
+// It supports the ${key} and the $key syntax.
+func Expand(text, key, value string) string {
+	text = strings.Replace(text, "${"+key+"}", value, -1)
+
+	indices := regexp.MustCompile(`\$`+key).FindAllStringIndex(text, -1)
+
+	for i := len(indices) - 1; i >= 0; i-- {
+		from := indices[i][0]
+		to := indices[i][1]
+
+		if to >= len(text) || !isAlphaNum(text[to]) {
+			text = text[0:from] + value + text[to:]
+		}
+	}
+
+	return text
+}
+
+func isAlphaNum(c uint8) bool {
+	return c == '_' || '0' <= c && c <= '9' || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z'
 }
