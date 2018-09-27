@@ -132,7 +132,7 @@ deploy:
     # - namespace:deployment/web-app2
 
  # kustomize:
-    # kustomizePath: "kustomization.yaml"
+    # kustomizePath: .
     # kustomize deploys manifests with kubectl.
     # kubectl can be passed additional option flags either on every command (Global),
     # on creations (Apply) or deletions (Delete).
