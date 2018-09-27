@@ -127,6 +127,11 @@ func (fs *OS) Readlink(link string) (string, error) {
 	return os.Readlink(link)
 }
 
+// Capabilities implements the Capable interface.
+func (fs *OS) Capabilities() billy.Capability {
+	return billy.DefaultCapabilities
+}
+
 // file is a wrapper for an os.File which adds support for file locking.
 type file struct {
 	*os.File

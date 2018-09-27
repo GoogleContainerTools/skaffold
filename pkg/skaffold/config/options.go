@@ -30,6 +30,8 @@ type SkaffoldOptions struct {
 	Profiles          []string
 	CustomTag         string
 	Namespace         string
+	Watch             []string
+	WatchPollInterval int
 }
 
 // Labels returns a map of labels to be applied to all deployed

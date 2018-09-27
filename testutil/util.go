@@ -42,6 +42,14 @@ type FakeReaderCloser struct {
 func (f FakeReaderCloser) Close() error             { return nil }
 func (f FakeReaderCloser) Read([]byte) (int, error) { return 0, f.Err }
 
+func CheckDeepEqual(t *testing.T, expected, actual interface{}) {
+	t.Helper()
+	if diff := cmp.Diff(actual, expected); diff != "" {
+		t.Errorf("%T differ (-got, +want): %s", expected, diff)
+		return
+	}
+}
+
 func CheckErrorAndDeepEqual(t *testing.T, shouldErr bool, err error, expected, actual interface{}) {
 	t.Helper()
 	if err := checkErr(shouldErr, err); err != nil {

@@ -22,12 +22,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
 
 // Versions is an ordered list of all schema versions.
 var Versions = []string{
 	v1alpha1.Version,
 	v1alpha2.Version,
+	v1alpha3.Version,
 }
 
 var schemaVersions = map[string]func() util.VersionedConfig{
@@ -37,6 +40,9 @@ var schemaVersions = map[string]func() util.VersionedConfig{
 	v1alpha2.Version: func() util.VersionedConfig {
 		return new(v1alpha2.SkaffoldConfig)
 	},
+	v1alpha3.Version: func() util.VersionedConfig {
+		return new(v1alpha3.SkaffoldConfig)
+	},
 }
 
 func GetConfig(contents []byte, useDefault bool) (util.VersionedConfig, error) {
@@ -45,6 +51,9 @@ func GetConfig(contents []byte, useDefault bool) (util.VersionedConfig, error) {
 		err := cfg.Parse(contents, useDefault)
 		if cfg.GetVersion() == version {
 			// Versions are same hence propagate the parse error.
+			if err := yamltags.ProcessStruct(cfg); err != nil {
+				return nil, err
+			}
 			return cfg, err
 		}
 	}

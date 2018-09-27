@@ -20,18 +20,18 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 const (
 	minimalConfig = `
-apiVersion: skaffold/v1alpha2
+apiVersion: skaffold/v1alpha3
 kind: Config
 `
 	simpleConfig = `
-apiVersion: skaffold/v1alpha2
+apiVersion: skaffold/v1alpha3
 kind: Config
 build:
   tagPolicy:
@@ -41,8 +41,22 @@ build:
 deploy:
   kubectl: {}
 `
+	// This config has two tag policies set.
+	invalidConfig = `
+apiVersion: skaffold/v1alpha3
+kind: Config
+build:
+  tagPolicy:
+    sha256: {}
+    gitCommit: {}
+  artifacts:
+  - imageName: example
+deploy:
+  name: example
+`
+
 	completeConfig = `
-apiVersion: skaffold/v1alpha2
+apiVersion: skaffold/v1alpha3
 kind: Config
 build:
   tagPolicy:
@@ -65,18 +79,20 @@ deploy:
    - svc.yaml
 `
 	minimalKanikoConfig = `
-apiVersion: skaffold/v1alpha2
+apiVersion: skaffold/v1alpha3
 kind: Config
 build:
   kaniko:
-    gcsBucket: demo
+    buildContext:
+      gcsBucket: demo
 `
 	completeKanikoConfig = `
-apiVersion: skaffold/v1alpha2
+apiVersion: skaffold/v1alpha3
 kind: Config
 build:
   kaniko:
-    gcsBucket: demo
+    buildContext:
+      gcsBucket: demo
     pullSecret: /secret.json
     pullSecretName: secret-name
     namespace: nskaniko
@@ -101,8 +117,9 @@ func TestParseConfig(t *testing.T) {
 			config:      minimalConfig,
 			expected: config(
 				withLocalBuild(
-					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
+					withGitTagger(),
 				),
+				withKubectlDeploy("k8s/*.yaml"),
 			),
 		},
 		{
@@ -110,7 +127,7 @@ func TestParseConfig(t *testing.T) {
 			config:      simpleConfig,
 			expected: config(
 				withLocalBuild(
-					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
+					withGitTagger(),
 					withDockerArtifact("example", ".", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
@@ -121,7 +138,7 @@ func TestParseConfig(t *testing.T) {
 			config:      completeConfig,
 			expected: config(
 				withGoogleCloudBuild("ID",
-					withTagPolicy(v1alpha2.TagPolicy{ShaTagger: &v1alpha2.ShaTagger{}}),
+					withShaTagger(),
 					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
 					withBazelArtifact("image2", "./examples/app2", "//:example.tar"),
 				),
@@ -133,8 +150,9 @@ func TestParseConfig(t *testing.T) {
 			config:      minimalKanikoConfig,
 			expected: config(
 				withKanikoBuild("demo", "kaniko-secret", "default", "", "20m",
-					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
+					withGitTagger(),
 				),
+				withKubectlDeploy("k8s/*.yaml"),
 			),
 		},
 		{
@@ -142,13 +160,19 @@ func TestParseConfig(t *testing.T) {
 			config:      completeKanikoConfig,
 			expected: config(
 				withKanikoBuild("demo", "secret-name", "nskaniko", "/secret.json", "120m",
-					withTagPolicy(v1alpha2.TagPolicy{GitTagger: &v1alpha2.GitTagger{}}),
+					withGitTagger(),
 				),
+				withKubectlDeploy("k8s/*.yaml"),
 			),
 		},
 		{
 			description: "Bad config",
 			config:      badConfig,
+			shouldErr:   true,
+		},
+		{
+			description: "two taggers defined",
+			config:      invalidConfig,
 			shouldErr:   true,
 		},
 	}
@@ -162,16 +186,16 @@ func TestParseConfig(t *testing.T) {
 }
 
 func config(ops ...func(*SkaffoldConfig)) *SkaffoldConfig {
-	cfg := &SkaffoldConfig{APIVersion: "skaffold/v1alpha2", Kind: "Config"}
+	cfg := &SkaffoldConfig{APIVersion: "skaffold/v1alpha3", Kind: "Config"}
 	for _, op := range ops {
 		op(cfg)
 	}
 	return cfg
 }
 
-func withLocalBuild(ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldConfig) {
+func withLocalBuild(ops ...func(*v1alpha3.BuildConfig)) func(*SkaffoldConfig) {
 	return func(cfg *SkaffoldConfig) {
-		b := v1alpha2.BuildConfig{BuildType: v1alpha2.BuildType{LocalBuild: &v1alpha2.LocalBuild{}}}
+		b := v1alpha3.BuildConfig{BuildType: v1alpha3.BuildType{LocalBuild: &v1alpha3.LocalBuild{}}}
 		for _, op := range ops {
 			op(&b)
 		}
@@ -179,9 +203,9 @@ func withLocalBuild(ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldConfig) {
 	}
 }
 
-func withGoogleCloudBuild(id string, ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldConfig) {
+func withGoogleCloudBuild(id string, ops ...func(*v1alpha3.BuildConfig)) func(*SkaffoldConfig) {
 	return func(cfg *SkaffoldConfig) {
-		b := v1alpha2.BuildConfig{BuildType: v1alpha2.BuildType{GoogleCloudBuild: &v1alpha2.GoogleCloudBuild{
+		b := v1alpha3.BuildConfig{BuildType: v1alpha3.BuildType{GoogleCloudBuild: &v1alpha3.GoogleCloudBuild{
 			ProjectID:   id,
 			DockerImage: "gcr.io/cloud-builders/docker",
 		}}}
@@ -192,10 +216,12 @@ func withGoogleCloudBuild(id string, ops ...func(*v1alpha2.BuildConfig)) func(*S
 	}
 }
 
-func withKanikoBuild(bucket, secretName, namespace, secret string, timeout string, ops ...func(*v1alpha2.BuildConfig)) func(*SkaffoldConfig) {
+func withKanikoBuild(bucket, secretName, namespace, secret string, timeout string, ops ...func(*v1alpha3.BuildConfig)) func(*SkaffoldConfig) {
 	return func(cfg *SkaffoldConfig) {
-		b := v1alpha2.BuildConfig{BuildType: v1alpha2.BuildType{KanikoBuild: &v1alpha2.KanikoBuild{
-			GCSBucket:      bucket,
+		b := v1alpha3.BuildConfig{BuildType: v1alpha3.BuildType{KanikoBuild: &v1alpha3.KanikoBuild{
+			BuildContext: v1alpha3.KanikoBuildContext{
+				GCSBucket: bucket,
+			},
 			PullSecretName: secretName,
 			Namespace:      namespace,
 			PullSecret:     secret,
@@ -210,9 +236,9 @@ func withKanikoBuild(bucket, secretName, namespace, secret string, timeout strin
 
 func withKubectlDeploy(manifests ...string) func(*SkaffoldConfig) {
 	return func(cfg *SkaffoldConfig) {
-		cfg.Deploy = v1alpha2.DeployConfig{
-			DeployType: v1alpha2.DeployType{
-				KubectlDeploy: &v1alpha2.KubectlDeploy{
+		cfg.Deploy = v1alpha3.DeployConfig{
+			DeployType: v1alpha3.DeployType{
+				KubectlDeploy: &v1alpha3.KubectlDeploy{
 					Manifests: manifests,
 				},
 			},
@@ -220,13 +246,23 @@ func withKubectlDeploy(manifests ...string) func(*SkaffoldConfig) {
 	}
 }
 
-func withDockerArtifact(image, workspace, dockerfile string) func(*v1alpha2.BuildConfig) {
-	return func(cfg *v1alpha2.BuildConfig) {
-		cfg.Artifacts = append(cfg.Artifacts, &v1alpha2.Artifact{
+func withHelmDeploy() func(*SkaffoldConfig) {
+	return func(cfg *SkaffoldConfig) {
+		cfg.Deploy = v1alpha3.DeployConfig{
+			DeployType: v1alpha3.DeployType{
+				HelmDeploy: &v1alpha3.HelmDeploy{},
+			},
+		}
+	}
+}
+
+func withDockerArtifact(image, workspace, dockerfile string) func(*v1alpha3.BuildConfig) {
+	return func(cfg *v1alpha3.BuildConfig) {
+		cfg.Artifacts = append(cfg.Artifacts, &v1alpha3.Artifact{
 			ImageName: image,
 			Workspace: workspace,
-			ArtifactType: v1alpha2.ArtifactType{
-				DockerArtifact: &v1alpha2.DockerArtifact{
+			ArtifactType: v1alpha3.ArtifactType{
+				DockerArtifact: &v1alpha3.DockerArtifact{
 					DockerfilePath: dockerfile,
 				},
 			},
@@ -234,13 +270,13 @@ func withDockerArtifact(image, workspace, dockerfile string) func(*v1alpha2.Buil
 	}
 }
 
-func withBazelArtifact(image, workspace, target string) func(*v1alpha2.BuildConfig) {
-	return func(cfg *v1alpha2.BuildConfig) {
-		cfg.Artifacts = append(cfg.Artifacts, &v1alpha2.Artifact{
+func withBazelArtifact(image, workspace, target string) func(*v1alpha3.BuildConfig) {
+	return func(cfg *v1alpha3.BuildConfig) {
+		cfg.Artifacts = append(cfg.Artifacts, &v1alpha3.Artifact{
 			ImageName: image,
 			Workspace: workspace,
-			ArtifactType: v1alpha2.ArtifactType{
-				BazelArtifact: &v1alpha2.BazelArtifact{
+			ArtifactType: v1alpha3.ArtifactType{
+				BazelArtifact: &v1alpha3.BazelArtifact{
 					BuildTarget: target,
 				},
 			},
@@ -248,6 +284,20 @@ func withBazelArtifact(image, workspace, target string) func(*v1alpha2.BuildConf
 	}
 }
 
-func withTagPolicy(tagPolicy v1alpha2.TagPolicy) func(*v1alpha2.BuildConfig) {
-	return func(cfg *v1alpha2.BuildConfig) { cfg.TagPolicy = tagPolicy }
+func withTagPolicy(tagPolicy v1alpha3.TagPolicy) func(*v1alpha3.BuildConfig) {
+	return func(cfg *v1alpha3.BuildConfig) { cfg.TagPolicy = tagPolicy }
+}
+
+func withGitTagger() func(*v1alpha3.BuildConfig) {
+	return withTagPolicy(v1alpha3.TagPolicy{GitTagger: &v1alpha3.GitTagger{}})
+}
+
+func withShaTagger() func(*v1alpha3.BuildConfig) {
+	return withTagPolicy(v1alpha3.TagPolicy{ShaTagger: &v1alpha3.ShaTagger{}})
+}
+
+func withProfiles(profiles ...v1alpha3.Profile) func(*SkaffoldConfig) {
+	return func(cfg *SkaffoldConfig) {
+		cfg.Profiles = profiles
+	}
 }

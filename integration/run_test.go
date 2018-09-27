@@ -21,14 +21,22 @@ package integration
 import (
 	"bytes"
 	"flag"
+	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/testutil"
+
 	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -83,27 +91,27 @@ func TestRun(t *testing.T) {
 			description: "getting-started example",
 			args:        []string{"run"},
 			pods:        []string{"getting-started"},
-			dir:         "../examples/getting-started",
+			dir:         "examples/getting-started",
 		},
 		{
 			description: "annotated getting-started example",
 			args:        []string{"run"},
 			filename:    "annotated-skaffold.yaml",
 			pods:        []string{"getting-started"},
-			dir:         "../examples",
+			dir:         "examples",
 		},
 		{
 			description: "getting-started envTagger",
 			args:        []string{"run"},
 			pods:        []string{"getting-started"},
-			dir:         "../examples/tagging-with-environment-variables",
+			dir:         "examples/tagging-with-environment-variables",
 			env:         []string{"FOO=foo"},
 		},
 		{
 			description: "gcb builder example",
 			args:        []string{"run", "-p", "gcb"},
 			pods:        []string{"getting-started"},
-			dir:         "../examples/getting-started",
+			dir:         "examples/getting-started",
 			remoteOnly:  true,
 		},
 		{
@@ -118,26 +126,26 @@ func TestRun(t *testing.T) {
 					t.Fatalf("Wrong image name in kustomized deployment: %s", d.Spec.Template.Spec.Containers[0].Image)
 				}
 			},
-			dir: "../examples/kustomize",
+			dir: "examples/kustomize",
 		},
 		{
 			description: "bazel example",
 			args:        []string{"run"},
 			pods:        []string{"bazel"},
-			dir:         "../examples/bazel",
+			dir:         "examples/bazel",
 		},
 		{
 			description: "kaniko example",
 			args:        []string{"run"},
 			pods:        []string{"getting-started-kaniko"},
-			dir:         "../examples/kaniko",
+			dir:         "examples/kaniko",
 			remoteOnly:  true,
 		},
 		{
 			description: "helm example",
 			args:        []string{"run"},
 			deployments: []string{"skaffold-helm"},
-			dir:         "../examples/helm-deployment",
+			dir:         "examples/helm-deployment",
 			remoteOnly:  true,
 		},
 	}
@@ -213,21 +221,264 @@ func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
 	}
 }
 func TestFix(t *testing.T) {
-	ns, deleteNs := setupNamespace(t)
-	defer deleteNs()
+	tests := []struct {
+		name       string
+		directory  string
+		remoteOnly bool
+	}{
+		{
+			name:      "test v1alpha1 to v1alpha2 fix",
+			directory: "testdata/v1alpha1",
+		},
+		{
+			name:       "test v1alpha2 to v1alpha3 fix",
+			directory:  "testdata/v1alpha2",
+			remoteOnly: true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if !*remote && test.remoteOnly {
+				t.Skip("skipping remote only test")
+			}
+			ns, deleteNs := setupNamespace(t)
+			defer deleteNs()
 
-	fixCmd := exec.Command("skaffold", "fix", "-f", "skaffold.yaml")
-	fixCmd.Dir = "testdata/old-config"
-	out, err := util.RunCmdOut(fixCmd)
-	if err != nil {
-		t.Fatalf("testing error: %v", err)
+			fixCmd := exec.Command("skaffold", "fix", "-f", "skaffold.yaml")
+			fixCmd.Dir = test.directory
+			out, err := util.RunCmdOut(fixCmd)
+			if err != nil {
+				t.Fatalf("testing error: %v", err)
+			}
+
+			runCmd := exec.Command("skaffold", "run", "--namespace", ns.Name, "-f", "-")
+			runCmd.Dir = test.directory
+			runCmd.Stdin = bytes.NewReader(out)
+			err = util.RunCmd(runCmd)
+			if err != nil {
+				t.Fatalf("testing error: %v", err)
+			}
+		})
+	}
+}
+
+func TestListConfig(t *testing.T) {
+	baseConfig := &config.Config{
+		Global: &config.ContextConfig{
+			DefaultRepo: "global-repository",
+		},
+		ContextConfigs: []*config.ContextConfig{
+			{
+				Kubecontext: "test-context",
+				DefaultRepo: "context-local-repository",
+			},
+		},
 	}
 
-	runCmd := exec.Command("skaffold", "run", "--namespace", ns.Name, "-f", "-")
-	runCmd.Dir = "testdata/old-config"
-	runCmd.Stdin = bytes.NewReader(out)
-	err = util.RunCmd(runCmd)
-	if err != nil {
-		t.Fatalf("testing error: %v", err)
+	c, _ := yaml.Marshal(*baseConfig)
+	cfg, teardown := testutil.TempFile(t, "config", c)
+	defer teardown()
+
+	type testListCase struct {
+		description    string
+		kubectx        string
+		expectedOutput []string
 	}
+
+	var tests = []testListCase{
+		{
+			description:    "list for test-context",
+			kubectx:        "test-context",
+			expectedOutput: []string{"default-repo: context-local-repository"},
+		},
+		{
+			description: "list all",
+			expectedOutput: []string{
+				"global:",
+				"default-repo: global-repository",
+				"kube-context: test-context",
+				"default-repo: context-local-repository",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			args := []string{"config", "list", "-c", cfg}
+			if test.kubectx != "" {
+				args = append(args, "-k", test.kubectx)
+			} else {
+				args = append(args, "--all")
+			}
+			cmd := exec.Command("skaffold", args...)
+			rawOut, err := util.RunCmdOut(cmd)
+			if err != nil {
+				t.Error(err)
+			}
+			out := string(rawOut)
+			for _, output := range test.expectedOutput {
+				if !strings.Contains(out, output) {
+					t.Errorf("expected output %s not found in output: %s", output, out)
+				}
+			}
+		})
+	}
+}
+
+func TestInit(t *testing.T) {
+	type testCase struct {
+		name string
+		dir  string
+		args []string
+	}
+
+	tests := []testCase{
+		{
+			name: "getting-started",
+			dir:  "../examples/getting-started",
+		},
+		{
+			name: "microservices",
+			dir:  "../examples/microservices",
+			args: []string{
+				"-a", "leeroy-app/Dockerfile=gcr.io/k8s-skaffold/leeroy-app",
+				"-a", "leeroy-web/Dockerfile=gcr.io/k8s-skaffold/leeroy-web",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			oldYamlPath := filepath.Join(test.dir, "skaffold.yaml")
+			oldYaml, err := removeOldSkaffoldYaml(oldYamlPath)
+			if err != nil {
+				t.Fatalf("removing original skaffold.yaml: %s", err)
+			}
+			defer restoreOldSkaffoldYaml(oldYaml, oldYamlPath)
+
+			generatedYaml := "skaffold.yaml.out"
+			defer func() {
+				err := os.Remove(filepath.Join(test.dir, generatedYaml))
+				if err != nil {
+					t.Errorf("error removing generated skaffold yaml: %v", err)
+				}
+			}()
+			initArgs := []string{"init", "-f", generatedYaml}
+			initArgs = append(initArgs, test.args...)
+			initCmd := exec.Command("skaffold", initArgs...)
+			initCmd.Dir = test.dir
+
+			out, err := util.RunCmdOut(initCmd)
+			if err != nil {
+				t.Fatalf("running init: %v, output: %s", err, out)
+			}
+
+			runCmd := exec.Command("skaffold", "run", "-f", generatedYaml)
+			runCmd.Dir = test.dir
+			out, err = util.RunCmdOut(runCmd)
+			if err != nil {
+				t.Fatalf("running skaffold on generated yaml: %v, output: %s", err, out)
+			}
+		})
+	}
+}
+
+func TestSetConfig(t *testing.T) {
+	baseConfig := &config.Config{
+		Global: &config.ContextConfig{
+			DefaultRepo: "global-repository",
+		},
+		ContextConfigs: []*config.ContextConfig{
+			{
+				Kubecontext: "test-context",
+				DefaultRepo: "context-local-repository",
+			},
+		},
+	}
+
+	c, _ := yaml.Marshal(*baseConfig)
+	cfg, teardown := testutil.TempFile(t, "config", c)
+	defer teardown()
+
+	type testSetCase struct {
+		description string
+		kubectx     string
+		key         string
+		shouldErr   bool
+	}
+
+	var tests = []testSetCase{
+		{
+			description: "set default-repo for context",
+			kubectx:     "test-context",
+			key:         "default-repo",
+		},
+		{
+			description: "set global default-repo",
+			key:         "default-repo",
+		},
+		{
+			description: "fail to set unrecognized value",
+			key:         "doubt-this-will-ever-be-a-config-value",
+			shouldErr:   true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			value := util.RandomID()
+			args := []string{"config", "set", test.key, value}
+			args = append(args, "-c", cfg)
+			if test.kubectx != "" {
+				args = append(args, "-k", test.kubectx)
+			} else {
+				args = append(args, "--global")
+			}
+			cmd := exec.Command("skaffold", args...)
+			if err := util.RunCmd(cmd); err != nil {
+				if test.shouldErr {
+					return
+				}
+				t.Error(err)
+			}
+
+			listArgs := []string{"config", "list", "-c", cfg}
+			if test.kubectx != "" {
+				listArgs = append(listArgs, "-k", test.kubectx)
+			} else {
+				listArgs = append(listArgs, "--all")
+			}
+			listCmd := exec.Command("skaffold", listArgs...)
+			out, err := util.RunCmdOut(listCmd)
+			if err != nil {
+				t.Error(err)
+			}
+			t.Log(string(out))
+			if !strings.Contains(string(out), fmt.Sprintf("%s: %s", test.key, value)) {
+				t.Errorf("value %s not set correctly", test.key)
+			}
+		})
+	}
+}
+
+func removeOldSkaffoldYaml(path string) ([]byte, error) {
+	skaffoldYaml, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	if err = os.Remove(path); err != nil {
+		return nil, err
+	}
+	return skaffoldYaml, nil
+}
+
+func restoreOldSkaffoldYaml(contents []byte, path string) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(contents); err != nil {
+		return err
+	}
+	return nil
 }

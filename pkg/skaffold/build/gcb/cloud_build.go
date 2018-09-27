@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"time"
 
 	cstorage "cloud.google.com/go/storage"
@@ -29,7 +30,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
@@ -41,11 +43,11 @@ import (
 )
 
 // Build builds a list of artifacts with Google Cloud Build.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha3.Artifact) ([]build.Artifact, error) {
 	return build.InParallel(ctx, out, tagger, artifacts, b.buildArtifact)
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *v1alpha2.Artifact) (string, error) {
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *v1alpha3.Artifact) (string, error) {
 	client, err := google.DefaultClient(ctx, cloudbuild.CloudPlatformScope)
 	if err != nil {
 		return "", errors.Wrap(err, "getting google client")
@@ -63,9 +65,14 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	}
 	defer c.Close()
 
-	projectID, err := b.guessProjectID(artifact)
-	if err != nil {
-		return "", errors.Wrap(err, "getting projectID")
+	projectID := b.ProjectID
+	if projectID == "" {
+		guessedProjectID, err := gcp.ExtractProjectID(artifact.ImageName)
+		if err != nil {
+			return "", errors.Wrap(err, "extracting projectID from image name")
+		}
+
+		projectID = guessedProjectID
 	}
 
 	cbBucket := fmt.Sprintf("%s%s", projectID, constants.GCSBucketSuffix)
@@ -158,32 +165,6 @@ watch:
 	return newTag, nil
 }
 
-func (b *Builder) buildDescription(artifact *v1alpha2.Artifact, bucket, object string) *cloudbuild.Build {
-	args := append([]string{"build", "--tag", artifact.ImageName, "-f", artifact.DockerArtifact.DockerfilePath})
-	args = append(args, docker.GetBuildArgs(artifact.DockerArtifact)...)
-	args = append(args, ".")
-
-	return &cloudbuild.Build{
-		LogsBucket: bucket,
-		Source: &cloudbuild.Source{
-			StorageSource: &cloudbuild.StorageSource{
-				Bucket: bucket,
-				Object: object,
-			},
-		},
-		Steps: []*cloudbuild.BuildStep{{
-			Name: b.DockerImage,
-			Args: args,
-		}},
-		Images: []string{artifact.ImageName},
-		Options: &cloudbuild.BuildOptions{
-			DiskSizeGb:  b.DiskSizeGb,
-			MachineType: b.MachineType,
-		},
-		Timeout: b.Timeout,
-	}
-}
-
 func getBuildID(op *cloudbuild.Operation) (string, error) {
 	if op.Metadata == nil {
 		return "", errors.New("missing Metadata in operation")
@@ -273,9 +254,18 @@ func (b *Builder) createBucketIfNotExists(ctx context.Context, projectID, bucket
 		return errors.Wrapf(err, "getting bucket %s", bucket)
 	}
 
-	if err := c.Bucket(bucket).Create(ctx, projectID, &cstorage.BucketAttrs{
+	err = c.Bucket(bucket).Create(ctx, projectID, &cstorage.BucketAttrs{
 		Name: bucket,
-	}); err != nil {
+	})
+	if e, ok := err.(*googleapi.Error); ok {
+		if e.Code == http.StatusConflict {
+			// 409 errors are ok, there could have been a race condition or eventual consistency.
+			logrus.Debugf("Not creating bucket, got a 409 error indicating it already exists.")
+			return nil
+		}
+	}
+
+	if err != nil {
 		return err
 	}
 	logrus.Debugf("Created bucket %s in %s", bucket, projectID)

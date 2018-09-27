@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
@@ -64,6 +65,9 @@ func (credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
 	if err != nil {
 		return types.AuthConfig{}, errors.Wrap(err, "docker config")
 	}
+
+	gcp.AutoConfigureGCRCredentialHelper(cf, registry)
+
 	return cf.GetAuthConfig(registry)
 }
 

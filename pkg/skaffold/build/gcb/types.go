@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 )
 
 const (
@@ -54,11 +54,11 @@ const (
 
 // Builder builds artifacts with Google Cloud Build.
 type Builder struct {
-	*v1alpha2.GoogleCloudBuild
+	*v1alpha3.GoogleCloudBuild
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
-func NewBuilder(cfg *v1alpha2.GoogleCloudBuild) *Builder {
+func NewBuilder(cfg *v1alpha3.GoogleCloudBuild) *Builder {
 	return &Builder{
 		GoogleCloudBuild: cfg,
 	}

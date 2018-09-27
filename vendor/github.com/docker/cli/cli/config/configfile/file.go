@@ -46,7 +46,7 @@ type ConfigFile struct {
 	PruneFilters         []string                    `json:"pruneFilters,omitempty"`
 	Proxies              map[string]ProxyConfig      `json:"proxies,omitempty"`
 	Experimental         string                      `json:"experimental,omitempty"`
-	Orchestrator         string                      `json:"orchestrator,omitempty"`
+	StackOrchestrator    string                      `json:"stackOrchestrator,omitempty"`
 	Kubernetes           *KubernetesConfig           `json:"kubernetes,omitempty"`
 }
 

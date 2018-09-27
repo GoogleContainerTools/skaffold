@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/bazel"
@@ -36,13 +37,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
-
-const PollInterval = 1000 * time.Millisecond
 
 // ErrorConfigurationChanged is a special error that's returned when the skaffold configuration was changed.
 var ErrorConfigurationChanged = errors.New("configuration changed")
@@ -96,7 +96,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 	}, nil
 }
 
-func getBuilder(cfg *v1alpha2.BuildConfig, kubeContext string) (build.Builder, error) {
+func getBuilder(cfg *v1alpha3.BuildConfig, kubeContext string) (build.Builder, error) {
 	switch {
 	case cfg.LocalBuild != nil:
 		logrus.Debugf("Using builder: local")
@@ -115,28 +115,39 @@ func getBuilder(cfg *v1alpha2.BuildConfig, kubeContext string) (build.Builder, e
 	}
 }
 
-func getDeployer(cfg *v1alpha2.DeployConfig, kubeContext string, namespace string) (deploy.Deployer, error) {
-	switch {
-	case cfg.KubectlDeploy != nil:
+func getDeployer(cfg *v1alpha3.DeployConfig, kubeContext string, namespace string) (deploy.Deployer, error) {
+	deployers := []deploy.Deployer{}
+
+	// HelmDeploy first, in case there are resources in Kubectl that depend on these...
+	if cfg.HelmDeploy != nil {
+		deployers = append(deployers, deploy.NewHelmDeployer(cfg.HelmDeploy, kubeContext, namespace))
+	}
+
+	if cfg.KubectlDeploy != nil {
 		// TODO(dgageot): this should be the folder containing skaffold.yaml. Should also be moved elsewhere.
 		cwd, err := os.Getwd()
 		if err != nil {
 			return nil, errors.Wrap(err, "finding current directory")
 		}
-		return deploy.NewKubectlDeployer(cwd, cfg.KubectlDeploy, kubeContext, namespace), nil
+		deployers = append(deployers, deploy.NewKubectlDeployer(cwd, cfg.KubectlDeploy, kubeContext, namespace))
+	}
 
-	case cfg.HelmDeploy != nil:
-		return deploy.NewHelmDeployer(cfg.HelmDeploy, kubeContext, namespace), nil
+	if cfg.KustomizeDeploy != nil {
+		deployers = append(deployers, deploy.NewKustomizeDeployer(cfg.KustomizeDeploy, kubeContext, namespace))
+	}
 
-	case cfg.KustomizeDeploy != nil:
-		return deploy.NewKustomizeDeployer(cfg.KustomizeDeploy, kubeContext, namespace), nil
-
-	default:
+	if len(deployers) == 0 {
 		return nil, fmt.Errorf("Unknown deployer for config %+v", cfg)
 	}
+
+	if len(deployers) == 1 {
+		return deployers[0], nil
+	}
+
+	return deploy.NewMultiDeployer(deployers), nil
 }
 
-func getTagger(t v1alpha2.TagPolicy, customTag string) (tag.Tagger, error) {
+func getTagger(t v1alpha3.TagPolicy, customTag string) (tag.Tagger, error) {
 	switch {
 	case customTag != "":
 		return &tag.CustomTag{
@@ -161,7 +172,7 @@ func getTagger(t v1alpha2.TagPolicy, customTag string) (tag.Tagger, error) {
 }
 
 // Run builds artifacts and then deploys them.
-func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact) error {
+func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*v1alpha3.Artifact) error {
 	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
 	if err != nil {
 		return errors.Wrap(err, "build step")
@@ -176,7 +187,7 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*v1
 }
 
 // TailLogs prints the logs for deployed artifacts.
-func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact, bRes []build.Artifact) error {
+func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, artifacts []*v1alpha3.Artifact, bRes []build.Artifact) error {
 	if !r.opts.Tail {
 		return nil
 	}
@@ -198,34 +209,52 @@ func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, artifacts 
 
 // Dev watches for changes and runs the skaffold build and deploy
 // pipeline until interrrupted by the user.
-func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
+func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1alpha3.Artifact) ([]build.Artifact, error) {
 	imageList := kubernetes.NewImageList()
 	colorPicker := kubernetes.NewColorPicker(artifacts)
 	logger := kubernetes.NewLogAggregator(out, imageList, colorPicker)
+	portForwarder := kubernetes.NewPortForwarder(out, imageList)
 
 	// Create watcher and register artifacts to build current state of files.
 	changed := changes{}
 	onChange := func() error {
-		logger.Mute()
+		hasError := true
 
-		var err error
+		logger.Mute()
+		defer func() {
+			changed.reset()
+			color.Default.Fprintln(out, "Watching for changes...")
+			if !hasError {
+				logger.Unmute()
+			}
+		}()
 
 		switch {
 		case changed.needsReload:
-			err = ErrorConfigurationChanged
+			logger.Stop()
+			return ErrorConfigurationChanged
 		case len(changed.dirtyArtifacts) > 0:
-			err = r.buildAndDeploy(ctx, out, changed.dirtyArtifacts, imageList)
+			bRes, err := r.Build(ctx, out, r.Tagger, changed.dirtyArtifacts)
+			if err != nil {
+				logrus.Warnln("Skipping Deploy due to build error:", err)
+				return nil
+			}
+
+			r.updateBuiltImages(imageList, bRes)
+
+			if _, err = r.Deploy(ctx, out, r.builds); err != nil {
+				logrus.Warnln("Skipping Deploy due to error:", err)
+				return nil
+			}
 		case changed.needsRedeploy:
 			if _, err := r.Deploy(ctx, out, r.builds); err != nil {
 				logrus.Warnln("Skipping Deploy due to error:", err)
+				return nil
 			}
 		}
 
-		color.Default.Fprintln(out, "Watching for changes...")
-		changed.reset()
-		logger.Unmute()
-
-		return err
+		hasError = false
+		return nil
 	}
 
 	watcher := r.watchFactory()
@@ -233,6 +262,10 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 	// Watch artifacts
 	for i := range artifacts {
 		artifact := artifacts[i]
+
+		if !r.shouldWatch(artifact) {
+			continue
+		}
 
 		if err := watcher.Register(
 			func() ([]string, error) { return dependenciesForArtifact(artifact) },
@@ -259,8 +292,16 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 	}
 
 	// First run
-	if err := r.buildAndDeploy(ctx, out, artifacts, imageList); err != nil {
-		return nil, errors.Wrap(err, "first run")
+	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
+	if err != nil {
+		return nil, errors.Wrap(err, "exiting dev mode because the first build failed")
+	}
+
+	r.updateBuiltImages(imageList, bRes)
+
+	_, err = r.Deploy(ctx, out, r.builds)
+	if err != nil {
+		return nil, errors.Wrap(err, "exiting dev mode because the first deploy failed")
 	}
 
 	// Start logs
@@ -268,23 +309,29 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 		return nil, errors.Wrap(err, "starting logger")
 	}
 
-	return nil, watcher.Run(ctx, PollInterval, onChange)
-}
-
-// buildAndDeploy builds a subset of the artifacts and deploys everything.
-func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, out io.Writer, artifacts []*v1alpha2.Artifact, images *kubernetes.ImageList) error {
-	firstRun := r.builds == nil
-
-	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
-	if err != nil {
-		if firstRun {
-			return errors.Wrap(err, "exiting dev mode because the first build failed")
-		}
-
-		logrus.Warnln("Skipping Deploy due to build error:", err)
-		return nil
+	if err := portForwarder.Start(ctx); err != nil {
+		return nil, errors.Wrap(err, "starting port-forwarder")
 	}
 
+	pollInterval := time.Duration(r.opts.WatchPollInterval) * time.Millisecond
+	return nil, watcher.Run(ctx, pollInterval, onChange)
+}
+
+func (r *SkaffoldRunner) shouldWatch(artifact *v1alpha3.Artifact) bool {
+	if len(r.opts.Watch) == 0 {
+		return true
+	}
+
+	for _, watchExpression := range r.opts.Watch {
+		if strings.Contains(artifact.ImageName, watchExpression) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (r *SkaffoldRunner) updateBuiltImages(images *kubernetes.ImageList, bRes []build.Artifact) {
 	// Update which images are logged.
 	for _, build := range bRes {
 		images.Add(build.Tag)
@@ -292,18 +339,6 @@ func (r *SkaffoldRunner) buildAndDeploy(ctx context.Context, out io.Writer, arti
 
 	// Make sure all artifacts are redeployed. Not only those that were just rebuilt.
 	r.builds = mergeWithPreviousBuilds(bRes, r.builds)
-
-	_, err = r.Deploy(ctx, out, r.builds)
-	if err != nil {
-		if firstRun {
-			return errors.Wrap(err, "exiting dev mode because the first deploy failed")
-		}
-
-		logrus.Warnln("Skipping Deploy due to error:", err)
-		return nil
-	}
-
-	return nil
 }
 
 func mergeWithPreviousBuilds(builds, previous []build.Artifact) []build.Artifact {
@@ -324,7 +359,7 @@ func mergeWithPreviousBuilds(builds, previous []build.Artifact) []build.Artifact
 	return merged
 }
 
-func dependenciesForArtifact(a *v1alpha2.Artifact) ([]string, error) {
+func dependenciesForArtifact(a *v1alpha3.Artifact) ([]string, error) {
 	var (
 		paths []string
 		err   error

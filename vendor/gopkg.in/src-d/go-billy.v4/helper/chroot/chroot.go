@@ -217,6 +217,11 @@ func (fs *ChrootHelper) Underlying() billy.Basic {
 	return fs.underlying
 }
 
+// Capabilities implements the Capable interface.
+func (fs *ChrootHelper) Capabilities() billy.Capability {
+	return billy.Capabilities(fs.underlying)
+}
+
 type file struct {
 	billy.File
 	name string

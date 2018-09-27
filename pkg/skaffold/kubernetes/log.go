@@ -30,7 +30,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 )
 
@@ -46,6 +45,7 @@ type LogAggregator struct {
 
 	muted             int32
 	startTime         time.Time
+	cancel            context.CancelFunc
 	trackedContainers trackedContainers
 }
 
@@ -61,21 +61,14 @@ func NewLogAggregator(out io.Writer, podSelector PodSelector, colorPicker ColorP
 	}
 }
 
+// Start starts a logger that listens to pods and tail their logs
+// if they are matched by the `podSelector`.
 func (a *LogAggregator) Start(ctx context.Context) error {
+	cancelCtx, cancel := context.WithCancel(ctx)
+	a.cancel = cancel
 	a.startTime = time.Now()
 
-	kubeclient, err := Client()
-	if err != nil {
-		return errors.Wrap(err, "getting k8s client")
-	}
-	client := kubeclient.CoreV1()
-
-	var forever int64 = 3600 * 24 * 365 * 100
-	watcher, err := client.Pods("").Watch(meta_v1.ListOptions{
-		IncludeUninitialized: true,
-		TimeoutSeconds:       &forever,
-	})
-
+	watcher, err := PodWatcher()
 	if err != nil {
 		return errors.Wrap(err, "initializing pod watcher")
 	}
@@ -85,7 +78,7 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 
 		for {
 			select {
-			case <-ctx.Done():
+			case <-cancelCtx.Done():
 				return
 			case evt, ok := <-watcher.ResultChan():
 				if !ok {
@@ -102,13 +95,18 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 				}
 
 				if a.podSelector.Select(pod) {
-					go a.streamLogs(ctx, pod)
+					go a.streamLogs(cancelCtx, pod)
 				}
 			}
 		}
 	}()
 
 	return nil
+}
+
+// Stop stops the logger.
+func (a *LogAggregator) Stop() {
+	a.cancel()
 }
 
 func sinceSeconds(d time.Duration) int64 {

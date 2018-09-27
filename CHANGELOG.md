@@ -1,3 +1,54 @@
+# v0.14.0 Release - 9/13/2018
+
+New Features:
+* Allow `skaffold dev —watch image` [#925](https://github.com/GoogleContainerTools/skaffold/pull/925)
+* Port forward pods automatically during `skaffold dev` [#945](https://github.com/GoogleContainerTools/skaffold/pull/945)
+* Add skaffold 'init' [#919](https://github.com/GoogleContainerTools/skaffold/pull/919)
+
+Bug Fixes:
+* Get namespace for updating objects from build artifact [#951](https://github.com/GoogleContainerTools/skaffold/pull/951)
+* Remove service labeling temporarily [#965](https://github.com/GoogleContainerTools/skaffold/pull/965)
+* Don't prefix pod names when port forwarding [#976](https://github.com/GoogleContainerTools/skaffold/pull/976)
+
+Updates:
+* Don’t compute onbuild triggers for images that are stage names [#938](https://github.com/GoogleContainerTools/skaffold/pull/938)
+* Don't unmute logs if an error happened [#928](https://github.com/GoogleContainerTools/skaffold/pull/928)
+* Exclude helm dependency chart packages from watched files [#932](https://github.com/GoogleContainerTools/skaffold/pull/932)
+* Pass --recreate-pods to helm by default in dev mode [#946](https://github.com/GoogleContainerTools/skaffold/pull/946)
+* Default to kubectl deploy [#956](https://github.com/GoogleContainerTools/skaffold/pull/956)
+* Simplify helm tests [#957](https://github.com/GoogleContainerTools/skaffold/pull/957)
+* Pull 'cache-from' images on Google Cloud Build [#958](https://github.com/GoogleContainerTools/skaffold/pull/958)
+* update check respected quiet flag [#964](https://github.com/GoogleContainerTools/skaffold/pull/964)
+* Fix typo in portforwarder [#975](https://github.com/GoogleContainerTools/skaffold/pull/975)
+
+
+# v0.13.0 Release - 8/16/2018
+
+New Features:
+* Add --tail flag to stream logs with skaffold run [#914](https://github.com/GoogleContainerTools/skaffold/pull/914)
+* Add DEVELOPMENT.md [#901](https://github.com/GoogleContainerTools/skaffold/pull/901)
+
+Bug Fixes: 
+* fixes `skaffold version` in the released docker image [#933](https://github.com/GoogleContainerTools/skaffold/pull/933)
+
+Updates:
+* as a base for future features - global skaffold config [#896](https://github.com/GoogleContainerTools/skaffold/pull/896)
+* Remove duplication in kustomize deployer [#900](https://github.com/GoogleContainerTools/skaffold/pull/900)
+* update readme with documentation links [#908](https://github.com/GoogleContainerTools/skaffold/pull/908)
+* Fix a typo in "annotated-skaffold.yaml" [#907](https://github.com/GoogleContainerTools/skaffold/pull/907)
+* Decouple visiting manifests and replacing images [#909](https://github.com/GoogleContainerTools/skaffold/pull/909)
+* Add a simple test for Watcher [#898](https://github.com/GoogleContainerTools/skaffold/pull/898)
+* Add test for signal handling [#917](https://github.com/GoogleContainerTools/skaffold/pull/917)
+* Add the --target flag as a parameter to the docker builder. [#894](https://github.com/GoogleContainerTools/skaffold/pull/894)
+* Misc improvements [#911](https://github.com/GoogleContainerTools/skaffold/pull/911)
+* Add --tail flag to stream logs with skaffold run [#914](https://github.com/GoogleContainerTools/skaffold/pull/914)
+* Extract code to tail logs [#924](https://github.com/GoogleContainerTools/skaffold/pull/924)
+* Improve logs [#918](https://github.com/GoogleContainerTools/skaffold/pull/918)
+* Add yamltags [#388](https://github.com/GoogleContainerTools/skaffold/pull/388)
+* adding wrapper script for release note generation  [#935](https://github.com/GoogleContainerTools/skaffold/pull/935)
+* detete -> delete [#941](https://github.com/GoogleContainerTools/skaffold/pull/941)
+
+
 # v0.12.0 Release - 8/16/2018
 New Features:
 * Update check [#866](https://github.com/GoogleContainerTools/skaffold/pull/866)

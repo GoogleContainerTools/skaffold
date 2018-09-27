@@ -20,8 +20,9 @@ import (
 	"context"
 	"io"
 	"os/exec"
+	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -31,13 +32,15 @@ import (
 type CLI struct {
 	Namespace   string
 	KubeContext string
-	Flags       v1alpha2.KubectlFlags
+	Flags       v1alpha3.KubectlFlags
 
+	version       ClientVersion
+	versionOnce   sync.Once
 	previousApply ManifestList
 }
 
-// Detete runs `kubectl delete` on a list of manifests.
-func (c *CLI) Detete(ctx context.Context, out io.Writer, manifests ManifestList) error {
+// Delete runs `kubectl delete` on a list of manifests.
+func (c *CLI) Delete(ctx context.Context, out io.Writer, manifests ManifestList) error {
 	if err := c.Run(ctx, manifests.Reader(), out, "delete", c.Flags.Delete, "--ignore-not-found=true", "-f", "-"); err != nil {
 		return errors.Wrap(err, "kubectl delete")
 	}
@@ -50,13 +53,13 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 	// Only redeploy modified or new manifests
 	// TODO(dgageot): should we delete a manifest that was deployed and is not anymore?
 	updated := c.previousApply.Diff(manifests)
-	logrus.Debugln(len(manifests), "manifests to deploy.", len(manifests), "are updated or new")
+	logrus.Debugln(len(manifests), "manifests to deploy.", len(updated), "are updated or new")
 	c.previousApply = manifests
 	if len(updated) == 0 {
 		return nil, nil
 	}
 
-	if err := c.Run(ctx, manifests.Reader(), out, "apply", c.Flags.Apply, "-f", "-"); err != nil {
+	if err := c.Run(ctx, updated.Reader(), out, "apply", c.Flags.Apply, "-f", "-"); err != nil {
 		return nil, errors.Wrap(err, "kubectl apply")
 	}
 

@@ -91,6 +91,7 @@ release: cross docs $(BUILD_DIR)/VERSION
 	docker build \
         		-f deploy/skaffold/Dockerfile \
         		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
+        		--build-arg VERSION=$(VERSION) \
         		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) .
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_RELEASE_PATH)/
 	gsutil -m cp $(BUILD_DIR)/VERSION $(GSC_RELEASE_PATH)/VERSION
@@ -107,7 +108,7 @@ release-in-docker:
 	docker run \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
-		gcr.io/$(GCP_PROJECT)/skaffold-builder make -j release RELEASE_BUCKET=$(RELEASE_BUCKET) GCP_PROJECT=$(GCP_PROJECT)
+		gcr.io/$(GCP_PROJECT)/skaffold-builder make -j release VERSION=$(VERSION) RELEASE_BUCKET=$(RELEASE_BUCKET) GCP_PROJECT=$(GCP_PROJECT)
 
 .PHONY: release-build
 release-build: cross docs

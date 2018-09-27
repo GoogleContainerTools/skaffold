@@ -1,0 +1,4 @@
+apiVersion: skaffold/v1alpha3
+kind: Config
+deploy:
+  kustomize: {}
