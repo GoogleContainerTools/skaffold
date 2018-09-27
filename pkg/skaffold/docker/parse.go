@@ -69,27 +69,32 @@ func ValidateDockerfile(path string) bool {
 }
 
 func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) {
-	var key, value string
+	for i, node := range nodes {
+		if node.Value != command.Arg {
+			continue
+		}
 
-	for _, node := range nodes {
-		switch node.Value {
-		case command.Arg:
-			// build arg's key
-			keyValue := strings.Split(node.Next.Value, "=")
-			key = keyValue[0]
+		// build arg's key
+		keyValue := strings.Split(node.Next.Value, "=")
+		key := keyValue[0]
 
-			// build arg's value
-			if buildArgs[key] != nil {
-				value = *buildArgs[key]
-			} else if len(keyValue) > 1 {
-				value = keyValue[1]
+		// build arg's value
+		var value string
+		if buildArgs[key] != nil {
+			value = *buildArgs[key]
+		} else if len(keyValue) > 1 {
+			value = keyValue[1]
+		}
+
+		for _, node := range nodes[i+1:] {
+			// Stop replacements if an arg is redefined with the same key
+			if node.Value == command.Arg && strings.Split(node.Next.Value, "=")[0] == key {
+				break
 			}
-		default:
-			if key != "" {
-				// replace $key with value
-				for curr := node; curr != nil; curr = curr.Next {
-					curr.Value = util.Expand(curr.Value, key, value)
-				}
+
+			// replace $key with value
+			for curr := node; curr != nil; curr = curr.Next {
+				curr.Value = util.Expand(curr.Value, key, value)
 			}
 		}
 	}

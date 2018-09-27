@@ -148,6 +148,14 @@ ARG FOO=worker.go
 COPY $FOO .
 `
 
+const copyServerGoBuildArgsAtTheTop = `
+FROM ubuntu:14.04
+ARG FOO=server.go
+ARG FOO2=ignored
+ARG FOO3=ignored
+COPY $FOO .
+`
+
 const fromStage = `
 FROM ubuntu:14.04 as base
 FROM base as dist
@@ -361,6 +369,13 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  copyWorkerGoBuildArgRedefinedDefaultValue,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "worker.go"},
+			fetched:     []string{"ubuntu:14.04"},
+		},
+		{
+			description: "build args all defined a the top",
+			dockerfile:  copyServerGoBuildArgsAtTheTop,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "server.go"},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
