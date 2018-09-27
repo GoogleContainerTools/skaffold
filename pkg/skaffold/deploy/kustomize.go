@@ -39,11 +39,11 @@ type kustomization struct {
 	Resources          []string             `yaml:"resources"`
 	Patches            []string             `yaml:"patches"`
 	CRDs               []string             `yaml:"crds"`
-	PatchesJSON6902    []patcheJSON6902     `yaml:"patchesJson6902"`
+	PatchesJSON6902    []patchJSON6902      `yaml:"patchesJson6902"`
 	ConfigMapGenerator []configMapGenerator `yaml:"configMapGenerator"`
 }
 
-type patcheJSON6902 struct {
+type patchJSON6902 struct {
 	Path string `yaml:"path"`
 }
 
