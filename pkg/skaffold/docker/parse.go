@@ -39,6 +39,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type from struct {
+	image string
+	as    string
+}
+
 // RetrieveImage is overridden for unit testing
 var RetrieveImage = retrieveImage
 
@@ -90,6 +95,63 @@ func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) {
 	}
 }
 
+func fromInstructions(nodes []*parser.Node) []from {
+	var list []from
+
+	for _, node := range nodes {
+		if node.Value != command.From {
+			continue
+		}
+
+		list = append(list, fromInstruction(node))
+	}
+
+	return list
+}
+
+func fromInstruction(node *parser.Node) from {
+	var as string
+	if next := node.Next.Next; next != nil && strings.ToLower(next.Value) == "as" && next.Next != nil {
+		as = next.Next.Value
+	}
+
+	return from{
+		image: node.Next.Value,
+		as:    as,
+	}
+}
+
+func onbuildImages(nodes []*parser.Node) [][]string {
+	var onbuildImages [][]string
+
+	stages := map[string]bool{}
+	for _, from := range fromInstructions(nodes) {
+		if _, found := stages[from.image]; found {
+			continue
+		}
+
+		if from.as != "" {
+			stages[from.as] = true
+		}
+
+		if strings.ToLower(from.image) == "scratch" {
+			continue
+		}
+
+		logrus.Debugf("Checking base image %s for ONBUILD triggers.", from.image)
+		img, err := RetrieveImage(from.image)
+		if err != nil {
+			logrus.Warnf("Error processing base image for onbuild triggers: %s. Dependencies may be incomplete.", err)
+			continue
+		}
+
+		logrus.Debugf("Found onbuild triggers %v in image %s", img.Config.OnBuild, from.image)
+		onbuildImages = append(onbuildImages, img.Config.OnBuild)
+	}
+
+	return onbuildImages
+}
+
 func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*string) ([]string, error) {
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
@@ -103,32 +165,7 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 	}
 
 	expandBuildArgs(res.AST.Children, buildArgs)
-
-	// Then process onbuilds, if present.
-	onbuildsImages := [][]string{}
-	stages := map[string]bool{}
-	for _, value := range res.AST.Children {
-		switch value.Value {
-		case command.From:
-			imageName := value.Next.Value
-			if _, found := stages[imageName]; found {
-				continue
-			}
-
-			next := value.Next.Next
-			if next != nil && strings.ToLower(next.Value) == "as" {
-				if next.Next != nil {
-					stages[next.Next.Value] = true
-				}
-			}
-
-			onbuilds, err := processBaseImage(imageName)
-			if err != nil {
-				logrus.Warnf("Error processing base image for onbuild triggers: %s. Dependencies may be incomplete.", err)
-			}
-			onbuildsImages = append(onbuildsImages, onbuilds)
-		}
-	}
+	onbuildImages := onbuildImages(res.AST.Children)
 
 	var copied [][]string
 	envs := map[string]string{}
@@ -146,7 +183,7 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 			}
 		}
 	}
-	for _, image := range onbuildsImages {
+	for _, image := range onbuildImages {
 		for _, ob := range image {
 			obRes, err := parser.Parse(strings.NewReader(ob))
 			if err != nil {
@@ -305,21 +342,6 @@ func GetDependencies(workspace string, a *latest.DockerArtifact) ([]string, erro
 	sort.Strings(dependencies)
 
 	return dependencies, nil
-}
-
-func processBaseImage(baseImageName string) ([]string, error) {
-	if strings.ToLower(baseImageName) == "scratch" {
-		return nil, nil
-	}
-
-	logrus.Debugf("Checking base image %s for ONBUILD triggers.", baseImageName)
-	img, err := RetrieveImage(baseImageName)
-	if err != nil {
-		return nil, err
-	}
-
-	logrus.Debugf("Found onbuild triggers %v in image %s", img.Config.OnBuild, baseImageName)
-	return img.Config.OnBuild, nil
 }
 
 var imageCache sync.Map
