@@ -153,6 +153,12 @@ FROM ubuntu:14.04 as base
 FROM base as dist
 `
 
+const fromStageIgnoreCase = `
+FROM ubuntu:14.04 as BASE
+FROM base as dist
+FROM DIST as prod
+`
+
 type fakeImageFetcher struct {
 	fetched []string
 }
@@ -375,6 +381,13 @@ func TestGetDependencies(t *testing.T) {
 		{
 			description: "from base stage",
 			dockerfile:  fromStage,
+			workspace:   ".",
+			expected:    []string{"Dockerfile"},
+			fetched:     []string{"ubuntu:14.04"}, // Don't fetch `base`
+		},
+		{
+			description: "from base stage, ignoring case",
+			dockerfile:  fromStageIgnoreCase,
 			workspace:   ".",
 			expected:    []string{"Dockerfile"},
 			fetched:     []string{"ubuntu:14.04"}, // Don't fetch `base`

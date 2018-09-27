@@ -99,11 +99,9 @@ func fromInstructions(nodes []*parser.Node) []from {
 	var list []from
 
 	for _, node := range nodes {
-		if node.Value != command.From {
-			continue
+		if node.Value == command.From {
+			list = append(list, fromInstruction(node))
 		}
-
-		list = append(list, fromInstruction(node))
 	}
 
 	return list
@@ -116,8 +114,8 @@ func fromInstruction(node *parser.Node) from {
 	}
 
 	return from{
-		image: node.Next.Value,
-		as:    as,
+		image: strings.ToLower(node.Next.Value),
+		as:    strings.ToLower(as),
 	}
 }
 
