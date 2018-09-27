@@ -1,4 +1,4 @@
-apiVersion: skaffold/v1alpha2
+apiVersion: skaffold/v1alpha3
 kind: Config
 build:
   # tagPolicy determines how skaffold is going to tag your images.
@@ -92,7 +92,7 @@ build:
   #   projectId: YOUR_PROJECT
   #   diskSizeGb: 200
   #   machineType: "N1_HIGHCPU_8"|"N1_HIGHCPU_32"
-  #   timeout: 10000s
+  #   timeout: 10000S
   #   dockerImage: gcr.io/cloud-builders/docker
 
   # Docker artifacts can be built on a Kubernetes cluster with Kaniko.
@@ -101,7 +101,8 @@ build:
   # See https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster
   #
   # kaniko:
-  #   gcsBucket: k8s-skaffold
+  #   buildContext:
+  #     gcsBucket: k8s-skaffold
   #   pullSecret: /a/secret/path/serviceaccount.json
   #   namespace: default
   #   timeout: 20m
@@ -109,7 +110,7 @@ build:
 # The deploy section has all the information needed to deploy. Along with build:
 # it is a required section.
 deploy:
-  # The type of the deployment method can be `kubectl`, `kustomize`, or `helm`.
+  # The type of the deployment method can be `kubectl` or `helm`.
 
   # The kubectl deployer uses  a client side `kubectl apply` to apply the manifests to the cluster.
   # You'll need a kubectl CLI version installed that's compatible with your cluster.
@@ -132,7 +133,7 @@ deploy:
     # - namespace:deployment/web-app2
 
  # kustomize:
-    # kustomizePath: .
+    # kustomizePath: "kustomization.yaml"
     # kustomize deploys manifests with kubectl.
     # kubectl can be passed additional option flags either on every command (Global),
     # on creations (Apply) or deletions (Delete).
@@ -146,7 +147,9 @@ deploy:
     # releases:
     # - name: skaffold-helm
     #   chartPath: skaffold-helm
-    #   valuesFilePath: helm-skaffold-values.yaml
+    #   valuesFiles:
+    #   - first-values-file.yaml
+    #   - second-values-file.yaml
     #   values:
     #     image: skaffold-helm
     #   namespace: skaffold
