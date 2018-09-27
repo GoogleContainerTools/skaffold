@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"fmt"
+
 	"github.com/google/go-github/github"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -81,7 +82,8 @@ func printPullRequests() {
 		}
 
 		listSize = len(pullRequests)
-	}}
+	}
+}
 
 func getClient() *github.Client {
 	if len(token) <= 0 {
@@ -94,4 +96,3 @@ func getClient() *github.Client {
 	tc := oauth2.NewClient(ctx, ts)
 	return github.NewClient(tc)
 }
-
