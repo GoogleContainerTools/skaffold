@@ -164,11 +164,11 @@ func joinPaths(root string, paths []string) []string {
 
 // Dependencies lists all the files that can change what needs to be deployed.
 func (k *KustomizeDeployer) Dependencies() ([]string, error) {
-	return dependenciesForKustomization(k.KustomizePath)
+	return dependenciesForKustomization(k.Path)
 }
 
 func (k *KustomizeDeployer) readManifests(ctx context.Context) (kubectl.ManifestList, error) {
-	cmd := exec.CommandContext(ctx, "kustomize", "build", k.KustomizePath)
+	cmd := exec.CommandContext(ctx, "kustomize", "build", k.Path)
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "kustomize build")
