@@ -20,19 +20,95 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestGetDependenciesMaven(t *testing.T) {
-	// placeholder test
+	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+	util.DefaultExecCommand = testutil.NewFakeCmdOut(
+		"mvn jib:_skaffold-files -q",
+		"dep1\ndep2",
+		nil,
+	)
+
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+	tmpDir.Write("pom.xml", "")
+
+	deps, err := GetDependenciesMaven(tmpDir.Root(), &v1alpha3.JibMavenArtifact{}, false)
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, []string{"dep1", "dep2"}, deps)
+}
+
+func TestGetDependenciesMavenOnWindows(t *testing.T) {
+	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+	util.DefaultExecCommand = testutil.NewFakeCmdOut(
+		"mvn jib:_skaffold-files -q",
+		"dep1\ndep2",
+		nil,
+	)
+
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+	tmpDir.Write("pom.xml", "")
+
+	deps, err := GetDependenciesMaven(tmpDir.Root(), &v1alpha3.JibMavenArtifact{}, true)
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, []string{"dep1", "dep2"}, deps)
+}
+
+func TestGetDependenciesMavenWithWrapper(t *testing.T) {
+	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+	util.DefaultExecCommand = testutil.NewFakeCmdOut(
+		"./mvnw jib:_skaffold-files -q",
+		"dep1\ndep2",
+		nil,
+	)
+
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+	tmpDir.Write("pom.xml", "")
+	tmpDir.Write("mvnw", "")
+
+	deps, err := GetDependenciesMaven(tmpDir.Root(), &v1alpha3.JibMavenArtifact{}, false)
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, []string{"dep1", "dep2"}, deps)
+}
+
+func TestGetDependenciesMavenWithWrapperOnWindows(t *testing.T) {
+	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+	util.DefaultExecCommand = testutil.NewFakeCmdOut(
+		"call mvnw.cmd jib:_skaffold-files -q",
+		"dep1\ndep2",
+		nil,
+	)
+
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+	tmpDir.Write("pom.xml", "")
+	tmpDir.Write("mvnw.cmd", "")
+
+	deps, err := GetDependenciesMaven(tmpDir.Root(), &v1alpha3.JibMavenArtifact{}, true)
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, []string{"dep1", "dep2"}, deps)
+}
+
+func TestGetDependenciesMavenNoPomXml(t *testing.T) {
+	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+	util.DefaultExecCommand = testutil.NewFakeCmd(
+		"ignored",
+		nil,
+	)
+
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	deps, err := GetDependenciesMaven(tmpDir.Root(), &v1alpha3.JibMavenArtifact{})
+	_, err := GetDependenciesMaven(tmpDir.Root(), &v1alpha3.JibMavenArtifact{}, false)
 
-	var nilReturnValue []string
-	// function currently errors with unimplimented error
-	testutil.CheckErrorAndDeepEqual(t, true, err, nilReturnValue, deps)
+	if err.Error() != "no pom.xml found" {
+		t.Errorf("Unexpected error message %s", err.Error())
+	}
 }
 
 func TestGetDependenciesGradle(t *testing.T) {
