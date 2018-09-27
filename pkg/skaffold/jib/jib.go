@@ -30,38 +30,50 @@ import (
 // All paths are absolute.
 // TODO(coollog): Add support for multi-module projects.
 func GetDependenciesMaven(workspace string, _ /*a*/ *v1alpha3.JibMavenArtifact, isWindows bool) ([]string, error) {
-	if !exists(workspace, "pom.xml") {
-		return nil, errors.New("no pom.xml found")
-	}
-
-	mavenSubcommand := []string{"jib:_skaffold-files", "-q"}
-
-	mavenExecutable := "mvn"
-	if isWindows {
-		if exists(workspace, "mvnw.cmd") {
-			mavenExecutable = "call"
-			mavenSubcommand = append([]string{"mvnw.cmd"}, mavenSubcommand...)
-		}
-	} else if exists(workspace, "mvnw") {
-		mavenExecutable = "./mvnw"
-	}
-
-	cmd := exec.Command(mavenExecutable, mavenSubcommand...)
-	cmd.Dir = workspace
-	stdout, err := util.RunCmdOut(cmd)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting jib-maven dependencies")
-	}
-
-	deps := strings.Split(string(stdout), "\n")
-	return deps, nil
+	return getDependencies(workspace, "pom.xml", "mvn", "mvnw.cmd", isWindows, []string{"jib:_skaffold-files", "-q"}, "jib-maven")
 }
 
-func GetDependenciesGradle(_ /*workspace*/ string, _ /*a*/ *v1alpha3.JibGradleArtifact) ([]string, error) {
-	return nil, errors.New("jib gradle support is unimplemented")
+func GetDependenciesGradle(workspace string, _ /*a*/ *v1alpha3.JibGradleArtifact, isWindows bool) ([]string, error) {
+	return getDependencies(workspace, "build.gradle", "gradle", "gradlew.bat", isWindows, []string{"_jibSkaffoldFiles", "-q"}, "jib-gradle")
 }
 
 func exists(workspace string, filename string) bool {
 	_, err := os.Stat(filepath.Join(workspace, filename))
 	return err == nil
+}
+
+func getDependencies(workspace string, buildFile string, defaultExecutable string, windowsExecutable string, isWindows bool, subCommand []string, artifactName string) ([]string, error) {
+	if !exists(workspace, buildFile) {
+		return nil, errors.Errorf("no %s found", buildFile)
+	}
+
+	executable := defaultExecutable
+	if isWindows {
+		if exists(workspace, windowsExecutable) {
+			executable = "call"
+			subCommand = append([]string{windowsExecutable}, subCommand...)
+		}
+	} else {
+		wrapperExecutable := defaultExecutable + "w"
+		if exists(workspace, wrapperExecutable) {
+			executable = "./" + wrapperExecutable
+		}
+	}
+
+	cmd := exec.Command(executable, subCommand...)
+	cmd.Dir = workspace
+	stdout, err := util.RunCmdOut(cmd)
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting %s dependencies", artifactName)
+	}
+
+	lines := strings.Split(string(stdout), "\n")
+	var deps []string
+	for _, l := range lines {
+		if l == "" {
+			continue
+		}
+		deps = append(deps, l)
+	}
+	return deps, nil
 }

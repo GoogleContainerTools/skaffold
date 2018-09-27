@@ -382,7 +382,7 @@ func dependenciesForArtifact(a *v1alpha3.Artifact) ([]string, error) {
 		paths, err = jib.GetDependenciesMaven(a.Workspace, a.JibMavenArtifact, runtime.GOOS == "windows")
 
 	case a.JibGradleArtifact != nil:
-		paths, err = jib.GetDependenciesGradle(a.Workspace, a.JibGradleArtifact)
+		paths, err = jib.GetDependenciesGradle(a.Workspace, a.JibGradleArtifact, runtime.GOOS == "windows")
 
 	default:
 		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)

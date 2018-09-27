@@ -28,7 +28,7 @@ func TestGetDependenciesMaven(t *testing.T) {
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 	util.DefaultExecCommand = testutil.NewFakeCmdOut(
 		"mvn jib:_skaffold-files -q",
-		"dep1\ndep2",
+		"dep1\ndep2\n\n\n",
 		nil,
 	)
 
@@ -45,7 +45,7 @@ func TestGetDependenciesMavenOnWindows(t *testing.T) {
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 	util.DefaultExecCommand = testutil.NewFakeCmdOut(
 		"mvn jib:_skaffold-files -q",
-		"dep1\ndep2",
+		"\n\ndep1\ndep2",
 		nil,
 	)
 
@@ -62,7 +62,7 @@ func TestGetDependenciesMavenWithWrapper(t *testing.T) {
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 	util.DefaultExecCommand = testutil.NewFakeCmdOut(
 		"./mvnw jib:_skaffold-files -q",
-		"dep1\ndep2",
+		"\ndep1\ndep2\n",
 		nil,
 	)
 
@@ -80,7 +80,7 @@ func TestGetDependenciesMavenWithWrapperOnWindows(t *testing.T) {
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 	util.DefaultExecCommand = testutil.NewFakeCmdOut(
 		"call mvnw.cmd jib:_skaffold-files -q",
-		"dep1\ndep2",
+		"\n\ndep1\ndep2\n\n",
 		nil,
 	)
 
@@ -112,13 +112,88 @@ func TestGetDependenciesMavenNoPomXml(t *testing.T) {
 }
 
 func TestGetDependenciesGradle(t *testing.T) {
-	// placeholder test
+	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+	util.DefaultExecCommand = testutil.NewFakeCmdOut(
+		"gradle _jibSkaffoldFiles -q",
+		"dep1\ndep2\n\n\n",
+		nil,
+	)
+
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+	tmpDir.Write("build.gradle", "")
+
+	deps, err := GetDependenciesGradle(tmpDir.Root(), &v1alpha3.JibGradleArtifact{}, false)
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, []string{"dep1", "dep2"}, deps)
+}
+
+func TestGetDependenciesGradleOnWindows(t *testing.T) {
+	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+	util.DefaultExecCommand = testutil.NewFakeCmdOut(
+		"gradle _jibSkaffoldFiles -q",
+		"\n\ndep1\ndep2",
+		nil,
+	)
+
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+	tmpDir.Write("build.gradle", "")
+
+	deps, err := GetDependenciesGradle(tmpDir.Root(), &v1alpha3.JibGradleArtifact{}, true)
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, []string{"dep1", "dep2"}, deps)
+}
+
+func TestGetDependenciesGradleWithWrapper(t *testing.T) {
+	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+	util.DefaultExecCommand = testutil.NewFakeCmdOut(
+		"./gradlew _jibSkaffoldFiles -q",
+		"\ndep1\ndep2\n",
+		nil,
+	)
+
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+	tmpDir.Write("build.gradle", "")
+	tmpDir.Write("gradlew", "")
+
+	deps, err := GetDependenciesGradle(tmpDir.Root(), &v1alpha3.JibGradleArtifact{}, false)
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, []string{"dep1", "dep2"}, deps)
+}
+
+func TestGetDependenciesGradleWithWrapperOnWindows(t *testing.T) {
+	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+	util.DefaultExecCommand = testutil.NewFakeCmdOut(
+		"call gradlew.bat _jibSkaffoldFiles -q",
+		"\n\ndep1\ndep2\n\n",
+		nil,
+	)
+
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+	tmpDir.Write("build.gradle", "")
+	tmpDir.Write("gradlew.bat", "")
+
+	deps, err := GetDependenciesGradle(tmpDir.Root(), &v1alpha3.JibGradleArtifact{}, true)
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, []string{"dep1", "dep2"}, deps)
+}
+
+func TestGetDependenciesGradleNoPomXml(t *testing.T) {
+	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+	util.DefaultExecCommand = testutil.NewFakeCmd(
+		"ignored",
+		nil,
+	)
+
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	deps, err := GetDependenciesGradle(tmpDir.Root(), &v1alpha3.JibGradleArtifact{})
+	_, err := GetDependenciesGradle(tmpDir.Root(), &v1alpha3.JibGradleArtifact{}, false)
 
-	var nilReturnValue []string
-	// function currently errors with unimplimented error
-	testutil.CheckErrorAndDeepEqual(t, true, err, nilReturnValue, deps)
+	if err.Error() != "no build.gradle found" {
+		t.Errorf("Unexpected error message %s", err.Error())
+	}
 }
