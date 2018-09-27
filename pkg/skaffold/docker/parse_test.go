@@ -116,7 +116,7 @@ ARG FOO
 COPY $FOO .
 `
 
-const copyServerGoBuildArgSamePrefix = `
+const copyWorkerGoBuildArgSamePrefix = `
 FROM ubuntu:14.04
 ARG FOO=server.go
 ARG FOO2
@@ -141,7 +141,7 @@ ARG FOO=server.go
 COPY $FOO .
 `
 
-const copyServerGoBuildArgRedefinedDefaultValue = `
+const copyWorkerGoBuildArgRedefinedDefaultValue = `
 FROM ubuntu:14.04
 ARG FOO=server.go
 ARG FOO=worker.go
@@ -327,7 +327,7 @@ func TestGetDependencies(t *testing.T) {
 		},
 		{
 			description: "build args with same prefix",
-			dockerfile:  copyServerGoBuildArgSamePrefix,
+			dockerfile:  copyWorkerGoBuildArgSamePrefix,
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO2": util.StringPtr("worker.go")},
 			expected:    []string{"Dockerfile", "worker.go"},
@@ -358,7 +358,7 @@ func TestGetDependencies(t *testing.T) {
 		},
 		{
 			description: "build args with redefined default value",
-			dockerfile:  copyServerGoBuildArgRedefinedDefaultValue,
+			dockerfile:  copyWorkerGoBuildArgRedefinedDefaultValue,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "worker.go"},
 			fetched:     []string{"ubuntu:14.04"},
