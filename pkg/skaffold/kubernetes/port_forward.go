@@ -217,7 +217,7 @@ func IsTerminatedError(err error) bool {
 	return ws.Signal() == syscall.SIGTERM
 }
 
-// Key is an identifer for the lock on a port during the skaffold dev cycle.
+// Key is an identifier for the lock on a port during the skaffold dev cycle.
 func (p *portForwardEntry) key() string {
 	return fmt.Sprintf("%s-%d", p.containerName, p.port)
 }
