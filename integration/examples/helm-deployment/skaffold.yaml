@@ -4,7 +4,7 @@ build:
   tagPolicy:
     sha256: {}
   artifacts:
-  - imageName: gcr.io/k8s-skaffold/skaffold-helm
+  - image: gcr.io/k8s-skaffold/skaffold-helm
 deploy:
   helm:
     releases:
