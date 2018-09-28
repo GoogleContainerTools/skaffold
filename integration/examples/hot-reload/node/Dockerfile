@@ -1,4 +1,3 @@
-FROM node:6.10.3
+FROM gcr.io/k8s-skaffold/nodemon
 CMD ["nodemon", "server.js"]
-RUN npm install -g nodemon
 COPY *.js .
