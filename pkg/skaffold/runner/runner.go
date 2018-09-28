@@ -403,19 +403,16 @@ func (r *SkaffoldRunner) shouldSync(image string, context string, syncPatterns m
 
 func intersect(context string, syncMap map[string]string, files []string) (map[string]string, error) {
 	ret := map[string]string{}
-	fmt.Println("context", context)
 	for _, f := range files {
 		relPath, err := filepath.Rel(context, f)
 		if err != nil {
 			return nil, errors.Wrapf(err, "changed file %s is not relative to context %s", f, context)
 		}
-		fmt.Println("relPath", relPath)
 		for p, dst := range syncMap {
 			match, err := filepath.Match(p, relPath)
 			if err != nil {
 				return nil, errors.Wrap(err, "pattern error")
 			}
-			fmt.Println("match", match, "pattern", p, "f", f, "dst", dst)
 			if !match {
 				return nil, nil
 			}
