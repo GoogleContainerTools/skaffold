@@ -6,11 +6,11 @@ build:
     workspace: node
     sync:
       '*.js': .
-  - imageName: gcr.io/k8s-skaffold/react-example
-    workspace: react
+  - imageName: gcr.io/k8s-skaffold/python-reload
+    workspace: python
     sync:
-      src/*: .
+      '*.py': .
 deploy:
   kubectl:
     manifests:
-    - node/k8s/**
+    - "**/k8s"
