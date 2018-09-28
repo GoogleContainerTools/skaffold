@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -111,9 +112,9 @@ func (t *TestDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 type TestSyncer struct {
-	copyErr, deleteErr error
-	copies             map[string]string
-	deletes            []string
+	err     error
+	copies  map[string]string
+	deletes []string
 }
 
 func NewTestSyncer() *TestSyncer {
@@ -122,25 +123,24 @@ func NewTestSyncer() *TestSyncer {
 	}
 }
 
-func NewTestSyncerWithErrors(copyErr, deleteErr error) *TestSyncer {
+func NewTestSyncerWithError(err error) *TestSyncer {
 	return &TestSyncer{
-		copies:    map[string]string{},
-		copyErr:   copyErr,
-		deleteErr: deleteErr,
+		copies: map[string]string{},
+		err:    err,
 	}
 }
 
-func (t *TestSyncer) CopyFilesForImage(image string, f map[string]string) error {
-	for src, dst := range f {
+func (t *TestSyncer) Sync(s *sync.SyncItem) error {
+	if t.err != nil {
+		return t.err
+	}
+	for src, dst := range s.Copy {
 		t.copies[src] = dst
 	}
-	return t.copyErr
-}
-func (t *TestSyncer) DeleteFilesForImage(image string, f map[string]string) error {
-	for _, dst := range f {
+	for _, dst := range s.Delete {
 		t.deletes = append(t.deletes, dst)
 	}
-	return t.deleteErr
+	return nil
 }
 
 func resetClient()                               { kubernetes.Client = kubernetes.GetClientset }
@@ -280,60 +280,6 @@ func TestNewForConfig(t *testing.T) {
 				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, _t, cfg.Tester)
 				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, d, cfg.Deployer)
 			}
-		})
-	}
-}
-
-func TestIntersect(t *testing.T) {
-	var tests = []struct {
-		description  string
-		syncPatterns map[string]string
-		files        []string
-		context      string
-		expected     map[string]string
-		shouldErr    bool
-	}{
-		{
-			description: "nil sync patterns doesn't sync",
-			expected:    map[string]string{},
-		},
-		{
-			description: "copy nested file to correct destination",
-			files:       []string{"static/index.html", "static/test.html"},
-			syncPatterns: map[string]string{
-				"static/*.html": "/html",
-			},
-			expected: map[string]string{
-				"static/index.html": "/html/index.html",
-				"static/test.html":  "/html/test.html",
-			},
-		},
-		{
-			description: "file not in . copies to correct destination",
-			files:       []string{"node/server.js"},
-			context:     "node",
-			syncPatterns: map[string]string{
-				"*.js": "/",
-			},
-			expected: map[string]string{
-				"node/server.js": "/server.js",
-			},
-		},
-		{
-			description: "file change not relative to context throws error",
-			files:       []string{"node/server.js", "/something/test.js"},
-			context:     "node",
-			syncPatterns: map[string]string{
-				"*.js": "/",
-			},
-			shouldErr: true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			actual, err := intersect(test.context, test.syncPatterns, test.files)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
 		})
 	}
 }
@@ -623,106 +569,4 @@ func TestShouldWatch(t *testing.T) {
 			testutil.CheckDeepEqual(t, test.expectedMatch, match)
 		})
 	}
-}
-
-func TestShouldSync(t *testing.T) {
-	var tests = []struct {
-		description  string
-		syncPatterns map[string]string
-		evt          watch.Events
-		copies       map[string]string
-		deletes      []string
-		context      string
-		shouldErr    bool
-		expected     bool
-		syncer       *TestSyncer
-	}{
-		{
-			description: "match copy",
-			syncPatterns: map[string]string{
-				"*.html": ".",
-			},
-			evt: watch.Events{
-				Added: []string{"index.html"},
-			},
-			copies: map[string]string{
-				"index.html": "index.html",
-			},
-			syncer:   NewTestSyncer(),
-			expected: true,
-		},
-		{
-			description: "not copy syncable",
-			syncPatterns: map[string]string{
-				"*.html": ".",
-			},
-			evt: watch.Events{
-				Added:   []string{"main.go"},
-				Deleted: []string{"index.html"},
-			},
-			syncer:   NewTestSyncer(),
-			expected: false,
-		},
-		{
-			description: "not delete syncable",
-			syncPatterns: map[string]string{
-				"*.html": "/static",
-			},
-			evt: watch.Events{
-				Added:   []string{"index.html"},
-				Deleted: []string{"some/other/file"},
-			},
-			syncer:   NewTestSyncer(),
-			expected: false,
-		},
-		{
-			description: "err bad pattern",
-			syncPatterns: map[string]string{
-				"[*.html": "*",
-			},
-			evt: watch.Events{
-				Added:   []string{"index.html"},
-				Deleted: []string{"some/other/file"},
-			},
-			syncer:    NewTestSyncer(),
-			shouldErr: true,
-		},
-		{
-			description: "err copy",
-			syncPatterns: map[string]string{
-				"*.html": "*",
-			},
-			evt: watch.Events{
-				Added: []string{"index.html"},
-			},
-			syncer:    NewTestSyncerWithErrors(fmt.Errorf(""), nil),
-			shouldErr: true,
-		},
-		{
-			description: "err copy",
-			syncPatterns: map[string]string{
-				"*.html": "*",
-			},
-			evt: watch.Events{
-				Added: []string{"index.html"},
-			},
-			syncer:    NewTestSyncerWithErrors(nil, fmt.Errorf("")),
-			shouldErr: true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			r := &SkaffoldRunner{
-				Syncer: test.syncer,
-			}
-			actual, err := r.shouldSync(test.context, "", test.syncPatterns, test.evt)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
-			if test.expected {
-				testutil.CheckDeepEqual(t, test.copies, test.syncer.copies)
-				testutil.CheckDeepEqual(t, test.deletes, test.syncer.deletes)
-			}
-		})
-	}
-
 }
