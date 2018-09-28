@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -70,7 +70,7 @@ func TestColorPicker(t *testing.T) {
 		},
 	}
 
-	picker := NewColorPicker([]*v1alpha3.Artifact{
+	picker := NewColorPicker([]*latest.Artifact{
 		{ImageName: "image"},
 		{ImageName: "second"},
 	})

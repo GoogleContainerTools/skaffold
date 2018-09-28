@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -178,6 +179,42 @@ func ToV1Alpha3(vc util.VersionedConfig) (util.VersionedConfig, error) {
 		Profiles:   newProfiles,
 	}
 	return newConfig, nil
+}
+
+// ToV1Alpha4 transforms configs from v1alpha3 to v1alpha4
+func ToV1Alpha4(vc util.VersionedConfig) (util.VersionedConfig, error) {
+	if vc.GetVersion() != v1alpha3.Version {
+		return nil, fmt.Errorf("Incompatible version: %s", vc.GetVersion())
+	}
+	oldConfig := vc.(*v1alpha3.SkaffoldConfig)
+
+	// convert v1alpha3.Deploy to v1alpha4.Deploy (should be the same)
+	var newDeploy v1alpha4.DeployConfig
+	if err := convert(oldConfig.Deploy, &newDeploy); err != nil {
+		return nil, errors.Wrap(err, "converting deploy config")
+	}
+
+	// convert v1alpha3.Profiles to v1alpha4.Profiles (should be the same)
+	var newProfiles []v1alpha4.Profile
+	if oldConfig.Profiles != nil {
+		if err := convert(oldConfig.Profiles, &newProfiles); err != nil {
+			return nil, errors.Wrap(err, "converting new profile")
+		}
+	}
+
+	// convert v1alpha3.Build to v1alpha4.Build (should be the same)
+	var newBuild v1alpha4.BuildConfig
+	if err := convert(oldConfig.Build, &newBuild); err != nil {
+		return nil, errors.Wrap(err, "converting new build")
+	}
+
+	return &v1alpha4.SkaffoldConfig{
+		APIVersion: v1alpha4.Version,
+		Kind:       oldConfig.Kind,
+		Deploy:     newDeploy,
+		Build:      newBuild,
+		Profiles:   newProfiles,
+	}, nil
 }
 
 func convert(old interface{}, new interface{}) error {
