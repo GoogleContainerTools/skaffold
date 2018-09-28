@@ -1,0 +1,16 @@
+apiVersion: skaffold/v1alpha3
+kind: Config
+build:
+  artifacts:
+  - imageName: gcr.io/k8s-skaffold/node-example
+    workspace: node
+    sync:
+      '*.js': .
+  - imageName: gcr.io/k8s-skaffold/react-example
+    workspace: react
+    sync:
+      src/*: .
+deploy:
+  kubectl:
+    manifests:
+    - node/k8s/**

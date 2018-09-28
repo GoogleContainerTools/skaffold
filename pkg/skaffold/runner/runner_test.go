@@ -289,6 +289,7 @@ func TestIntersect(t *testing.T) {
 		description  string
 		syncPatterns map[string]string
 		files        []string
+		context      string
 		expected     map[string]string
 		shouldErr    bool
 	}{
@@ -307,11 +308,31 @@ func TestIntersect(t *testing.T) {
 				"static/test.html":  "/html/test.html",
 			},
 		},
+		{
+			description: "file not in . copies to correct destination",
+			files:       []string{"node/server.js"},
+			context:     "node",
+			syncPatterns: map[string]string{
+				"*.js": "/",
+			},
+			expected: map[string]string{
+				"node/server.js": "/server.js",
+			},
+		},
+		{
+			description: "file change not relative to context throws error",
+			files:       []string{"node/server.js", "/something/test.js"},
+			context:     "node",
+			syncPatterns: map[string]string{
+				"*.js": "/",
+			},
+			shouldErr: true,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			actual, err := intersect(test.syncPatterns, test.files)
+			actual, err := intersect(test.context, test.syncPatterns, test.files)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
 		})
 	}
@@ -611,6 +632,7 @@ func TestShouldSync(t *testing.T) {
 		evt          watch.Events
 		copies       map[string]string
 		deletes      []string
+		context      string
 		shouldErr    bool
 		expected     bool
 		syncer       *TestSyncer
@@ -694,7 +716,7 @@ func TestShouldSync(t *testing.T) {
 			r := &SkaffoldRunner{
 				Syncer: test.syncer,
 			}
-			actual, err := r.shouldSync("", test.syncPatterns, test.evt)
+			actual, err := r.shouldSync(test.context, "", test.syncPatterns, test.evt)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
 			if test.expected {
 				testutil.CheckDeepEqual(t, test.copies, test.syncer.copies)
