@@ -124,8 +124,8 @@ func fromInstruction(node *parser.Node) from {
 	}
 }
 
-func onbuildImages(nodes []*parser.Node) [][]string {
-	var images [][]string
+func onbuildInstructions(nodes []*parser.Node) ([]*parser.Node, error) {
+	var instructions []string
 
 	stages := map[string]bool{}
 	for _, from := range fromInstructions(nodes) {
@@ -147,10 +147,34 @@ func onbuildImages(nodes []*parser.Node) [][]string {
 		}
 
 		logrus.Debugf("Found ONBUILD triggers %v in image %s", img.Config.OnBuild, from.image)
-		images = append(images, img.Config.OnBuild)
+		instructions = append(instructions, img.Config.OnBuild...)
 	}
 
-	return images
+	obRes, err := parser.Parse(strings.NewReader(strings.Join(instructions, "\n")))
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing ONBUILD instructions")
+	}
+
+	return obRes.AST.Children, nil
+}
+
+func copiedFiles(nodes []*parser.Node) ([][]string, error) {
+	var copied [][]string
+
+	envs := map[string]string{}
+	for _, node := range nodes {
+		switch node.Value {
+		case command.Add, command.Copy:
+			files, _ := processCopy(node, envs)
+			if len(files) > 0 {
+				copied = append(copied, files)
+			}
+		case command.Env:
+			envs[node.Next.Value] = node.Next.Next.Value
+		}
+	}
+
+	return copied, nil
 }
 
 func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*string) ([]string, error) {
@@ -166,36 +190,21 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 	}
 
 	expandBuildArgs(res.AST.Children, buildArgs)
-	onbuildImages := onbuildImages(res.AST.Children)
 
-	var copied [][]string
-	envs := map[string]string{}
-
-	var dispatchInstructions = func(r *parser.Result) {
-		for _, value := range r.AST.Children {
-			switch value.Value {
-			case command.Add, command.Copy:
-				files, _ := processCopy(value, envs)
-				if len(files) > 0 {
-					copied = append(copied, files)
-				}
-			case command.Env:
-				envs[value.Next.Value] = value.Next.Next.Value
-			}
-		}
-	}
-	for _, image := range onbuildImages {
-		for _, ob := range image {
-			obRes, err := parser.Parse(strings.NewReader(ob))
-			if err != nil {
-				return nil, err
-			}
-			dispatchInstructions(obRes)
-		}
+	instructions, err := onbuildInstructions(res.AST.Children)
+	if err != nil {
+		return nil, errors.Wrap(err, "listing ONBUILD instructions")
 	}
 
-	dispatchInstructions(res)
+	copied, err := copiedFiles(append(instructions, res.AST.Children...))
+	if err != nil {
+		return nil, errors.Wrap(err, "listing copied files")
+	}
 
+	return expandPaths(workspace, copied)
+}
+
+func expandPaths(workspace string, copied [][]string) ([]string, error) {
 	expandedPaths := make(map[string]bool)
 	for _, files := range copied {
 		matchesOne := false
