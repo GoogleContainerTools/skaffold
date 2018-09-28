@@ -144,10 +144,9 @@ type HelmDeploy struct {
 	Releases []HelmRelease `yaml:"releases,omitempty"`
 }
 
-// KustomizeDeploy contains the configuration needed for deploying with kustomize.
 type KustomizeDeploy struct {
-	Path  string       `yaml:"path,omitempty"`
-	Flags KubectlFlags `yaml:"flags,omitempty"`
+	KustomizePath string       `yaml:"kustomizePath,omitempty"`
+	Flags         KubectlFlags `yaml:"flags,omitempty"`
 }
 
 type HelmRelease struct {
