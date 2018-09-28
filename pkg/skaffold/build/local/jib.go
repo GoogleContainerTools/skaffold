@@ -62,8 +62,8 @@ func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace s
 
 // Maven and Gradle projects often provide a wrapper to ensure a particular
 // builder version is used.  This function tries to resolve a wrapper
-// or otherwise resolves the builder installation.
-func findBuilder(builderName string, wrapperScriptName string, workspace string) (string, error) {
+// or otherwise resolves the builder executable.
+func findBuilder(builderExecutable string, wrapperScriptName string, workspace string) (string, error) {
 	wrapperFile := filepath.Join(workspace, wrapperScriptName)
 	info, error := os.Stat(wrapperFile)
 	if error == nil && !info.IsDir() {
@@ -81,5 +81,5 @@ func findBuilder(builderName string, wrapperScriptName string, workspace string)
 			return filepath.Abs(cmdFile)
 		}
 	}
-	return exec.LookPath(builderName)
+	return exec.LookPath(builderExecutable)
 }
