@@ -18,6 +18,7 @@ package watch
 
 import (
 	"os"
+	"sort"
 	"time"
 
 	"github.com/pkg/errors"
@@ -44,13 +45,13 @@ func stat(deps func() ([]string, error)) (fileMap, error) {
 	return state, nil
 }
 
-type WatchEvents struct {
+type Events struct {
 	Added    []string
 	Modified []string
 	Deleted  []string
 }
 
-func (e WatchEvents) HasChanged() bool {
+func (e Events) HasChanged() bool {
 	added, deleted, modified := len(e.Added), len(e.Deleted), len(e.Modified)
 	if added > 0 {
 		logrus.Debugf("[watch event] added: %s", e.Added)
@@ -64,8 +65,8 @@ func (e WatchEvents) HasChanged() bool {
 	return added != 0 || deleted != 0 || modified != 0
 }
 
-func events(prev, curr fileMap) WatchEvents {
-	e := WatchEvents{}
+func events(prev, curr fileMap) Events {
+	e := Events{}
 	for f, t := range prev {
 		modtime, ok := curr[f]
 		if !ok {
@@ -91,5 +92,12 @@ func events(prev, curr fileMap) WatchEvents {
 		}
 	}
 
+	sortEvt(e)
 	return e
+}
+
+func sortEvt(e Events) {
+	sort.Strings(e.Added)
+	sort.Strings(e.Modified)
+	sort.Strings(e.Deleted)
 }

@@ -26,11 +26,9 @@ import (
 // Factory creates Watcher instances.
 type Factory func() Watcher
 
-type ChangeFn func(WatchEvents) error
-
 // Watcher monitors files changes for multiples components.
 type Watcher interface {
-	Register(deps func() ([]string, error), onChange ChangeFn) error
+	Register(deps func() ([]string, error), onChange func(Events)) error
 	Run(ctx context.Context, pollInterval time.Duration, onChange func() error) error
 }
 
@@ -43,13 +41,13 @@ func NewWatcher() Watcher {
 
 type component struct {
 	deps     func() ([]string, error)
-	onChange ChangeFn
+	onChange func(Events)
 	state    fileMap
-	events   WatchEvents
+	events   Events
 }
 
 // Register adds a new component to the watch list.
-func (w *watchList) Register(deps func() ([]string, error), onChange ChangeFn) error {
+func (w *watchList) Register(deps func() ([]string, error), onChange func(Events)) error {
 	state, err := stat(deps)
 	if err != nil {
 		return errors.Wrap(err, "listing files")
@@ -76,7 +74,7 @@ func (w *watchList) Run(ctx context.Context, pollInterval time.Duration, onChang
 			return nil
 		case <-ticker.C:
 			changed := 0
-			var e WatchEvents
+			var e Events
 			for i, component := range *w {
 				state, err := stat(component.deps)
 				if err != nil {
@@ -100,9 +98,7 @@ func (w *watchList) Run(ctx context.Context, pollInterval time.Duration, onChang
 			if changed == 0 && len(changedComponents) > 0 {
 				for i, component := range *w {
 					if changedComponents[i] {
-						if err := component.onChange(component.events); err != nil {
-							return errors.Wrap(err, "calling component callback")
-						}
+						component.onChange(component.events)
 					}
 				}
 

@@ -108,9 +108,8 @@ func newCallback() *callback {
 	}
 }
 
-func (c *callback) call(e WatchEvents) error {
+func (c *callback) call(e Events) {
 	c.wg.Done()
-	return nil
 }
 
 func (c *callback) callNoErr() error {

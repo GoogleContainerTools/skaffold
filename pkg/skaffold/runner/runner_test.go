@@ -98,28 +98,36 @@ func fakeGetClient() (clientgo.Interface, error) { return fake.NewSimpleClientse
 
 type TestWatcher struct {
 	changedArtifacts [][]int
-	changeCallbacks  []func()
+	changeCallbacks  []func(watch.Events)
+	events           []watch.Events
 	err              error
 }
 
-func NewWatcherFactory(err error, changedArtifacts ...[]int) watch.Factory {
+func NewWatcherFactory(err error, events []watch.Events, changedArtifacts ...[]int) watch.Factory {
 	return func() watch.Watcher {
 		return &TestWatcher{
 			changedArtifacts: changedArtifacts,
+			events:           events,
 			err:              err,
 		}
 	}
 }
 
-func (t *TestWatcher) Register(deps func() ([]string, error), onChange func()) error {
+func (t *TestWatcher) Register(deps func() ([]string, error), onChange func(watch.Events)) error {
 	t.changeCallbacks = append(t.changeCallbacks, onChange)
 	return nil
 }
 
 func (t *TestWatcher) Run(ctx context.Context, pollInterval time.Duration, onChange func() error) error {
+	evts := watch.Events{}
+	if t.events != nil {
+		evts = t.events[0]
+		t.events = t.events[1:]
+	}
+
 	for _, artifactIndices := range t.changedArtifacts {
 		for _, artifactIndex := range artifactIndices {
-			t.changeCallbacks[artifactIndex]()
+			t.changeCallbacks[artifactIndex](evts)
 		}
 		onChange()
 	}
@@ -292,7 +300,7 @@ func TestDev(t *testing.T) {
 				errors: []error{fmt.Errorf("")},
 			},
 			deployer:       &TestDeployer{},
-			watcherFactory: NewWatcherFactory(nil),
+			watcherFactory: NewWatcherFactory(nil, nil),
 			shouldErr:      true,
 		},
 		{
@@ -301,7 +309,7 @@ func TestDev(t *testing.T) {
 			deployer: &TestDeployer{
 				errors: []error{fmt.Errorf("")},
 			},
-			watcherFactory: NewWatcherFactory(nil),
+			watcherFactory: NewWatcherFactory(nil, nil),
 			shouldErr:      true,
 		},
 		{
@@ -310,7 +318,7 @@ func TestDev(t *testing.T) {
 				errors: []error{nil, fmt.Errorf("")},
 			},
 			deployer:       &TestDeployer{},
-			watcherFactory: NewWatcherFactory(nil, nil),
+			watcherFactory: NewWatcherFactory(nil, nil, nil),
 		},
 		{
 			description: "ignore subsequent deploy errors",
@@ -318,13 +326,13 @@ func TestDev(t *testing.T) {
 			deployer: &TestDeployer{
 				errors: []error{nil, fmt.Errorf("")},
 			},
-			watcherFactory: NewWatcherFactory(nil, nil),
+			watcherFactory: NewWatcherFactory(nil, nil, nil),
 		},
 		{
 			description:    "fail to watch files",
 			builder:        &TestBuilder{},
 			deployer:       &TestDeployer{},
-			watcherFactory: NewWatcherFactory(fmt.Errorf("")),
+			watcherFactory: NewWatcherFactory(fmt.Errorf(""), nil),
 			shouldErr:      true,
 		},
 	}
@@ -367,7 +375,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	ctx := context.Background()
 
 	// Both artifacts are changed
-	runner.watchFactory = NewWatcherFactory(nil, []int{0, 1})
+	runner.watchFactory = NewWatcherFactory(nil, nil, []int{0, 1})
 	_, err := runner.Dev(ctx, ioutil.Discard, artifacts)
 
 	if err != nil {
@@ -381,7 +389,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	}
 
 	// Only one is changed
-	runner.watchFactory = NewWatcherFactory(nil, []int{1})
+	runner.watchFactory = NewWatcherFactory(nil, nil, []int{1})
 	_, err = runner.Dev(ctx, ioutil.Discard, artifacts)
 
 	if err != nil {
