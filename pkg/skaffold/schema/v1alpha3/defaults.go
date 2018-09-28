@@ -95,8 +95,13 @@ func (c *SkaffoldConfig) setDefaultTagger() {
 }
 
 func (c *SkaffoldConfig) setDefaultKustomizePath() {
-	if c.Deploy.KustomizeDeploy != nil && c.Deploy.KustomizeDeploy.KustomizePath == "" {
-		c.Deploy.KustomizeDeploy.KustomizePath = constants.DefaultKustomizationPath
+	kustomize := c.Deploy.KustomizeDeploy
+	if kustomize == nil {
+		return
+	}
+
+	if kustomize.Path == "" {
+		kustomize.Path = constants.DefaultKustomizationPath
 	}
 }
 

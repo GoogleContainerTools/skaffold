@@ -132,6 +132,7 @@ func ToV1Alpha3(vc util.VersionedConfig) (util.VersionedConfig, error) {
 	if err := convert(oldConfig.Deploy, &newDeploy); err != nil {
 		return nil, errors.Wrap(err, "converting deploy config")
 	}
+
 	// if the helm deploy config was set, then convert ValueFilePath to ValuesFiles
 	if oldHelmDeploy := oldConfig.Deploy.DeployType.HelmDeploy; oldHelmDeploy != nil {
 		for i, oldHelmRelease := range oldHelmDeploy.Releases {
@@ -139,6 +140,12 @@ func ToV1Alpha3(vc util.VersionedConfig) (util.VersionedConfig, error) {
 				newDeploy.DeployType.HelmDeploy.Releases[i].ValuesFiles = []string{oldHelmRelease.ValuesFilePath}
 			}
 		}
+	}
+
+	// the kustomize path parameter was renamed
+	kustomize := oldConfig.Deploy.KustomizeDeploy
+	if kustomize != nil {
+		newDeploy.KustomizeDeploy.Path = kustomize.KustomizePath
 	}
 
 	// convert v1alpha2.Profiles to v1alpha3.Profiles (should be the same)
