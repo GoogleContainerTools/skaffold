@@ -29,16 +29,16 @@ import (
 // GetDependenciesMaven finds the source dependencies for the given jib-maven artifact.
 // All paths are absolute.
 // TODO(coollog): Add support for multi-module projects.
-func GetDependenciesMaven(workspace string, a *v1alpha3.JibMavenArtifact, isWindows bool) ([]string, error) {
-	executable, subCommand := getCommandMaven(workspace, a, isWindows)
+func GetDependenciesMaven(workspace string, a *v1alpha3.JibMavenArtifact) ([]string, error) {
+	executable, subCommand := getCommandMaven(workspace, a)
 	return getDependencies(workspace, "pom.xml", executable, subCommand, "jib-maven")
 }
 
 // GetDependenciesGradle finds the source dependencies for the given jib-gradle artifact.
 // All paths are absolute.
 // TODO(coollog): Add support for multi-module projects.
-func GetDependenciesGradle(workspace string, a *v1alpha3.JibGradleArtifact, isWindows bool) ([]string, error) {
-	executable, subCommand := getCommandGradle(workspace, a, isWindows)
+func GetDependenciesGradle(workspace string, a *v1alpha3.JibGradleArtifact) ([]string, error) {
+	executable, subCommand := getCommandGradle(workspace, a)
 	return getDependencies(workspace, "build.gradle", executable, subCommand, "jib-gradle")
 }
 
@@ -63,46 +63,21 @@ func getDependencies(workspace string, buildFile string, executable string, subC
 }
 
 const (
-	mavenExecutable     = "mvn"
-	mavenWrapper        = "mvnw"
-	mavenWindowsWrapper = "mvnw.cmd"
-
-	gradleExecutable     = "gradle"
-	gradleWrapper        = "gradlew"
-	gradleWindowsWrapper = "gradlew.bat"
+	mavenExecutable  = "mvn"
+	gradleExecutable = "gradle"
 )
 
-func getCommandMaven(workspace string, a *v1alpha3.JibMavenArtifact, isWindows bool) (executable string, subCommand []string) {
+func getCommandMaven(workspace string, a *v1alpha3.JibMavenArtifact) (executable string, subCommand []string) {
 	subCommand = []string{"jib:_skaffold-files", "-q"}
 	if a.Profile != "" {
 		subCommand = append(subCommand, "-P", a.Profile)
 	}
 
-	return getCommand(workspace, mavenExecutable, subCommand, mavenWrapper, mavenWindowsWrapper, isWindows)
+	return getCommand(workspace, mavenExecutable, subCommand)
 }
 
-func getCommandGradle(workspace string, _ /* a */ *v1alpha3.JibGradleArtifact, isWindows bool) (executable string, subCommand []string) {
-	return getCommand(workspace, gradleExecutable, []string{"_jibSkaffoldFiles", "-q"}, gradleWrapper, gradleWindowsWrapper, isWindows)
-}
-
-func getCommand(workspace string, defaultExecutable string, defaultSubCommand []string, wrapper string, windowsWrapper string, isWindows bool) (executable string, subCommand []string) {
-	executable = defaultExecutable
-	subCommand = defaultSubCommand
-
-	if isWindows {
-		if exists(workspace, windowsWrapper) {
-			executable = "cmd.exe"
-			subCommand = append([]string{windowsWrapper}, subCommand...)
-			subCommand = append([]string{"/C"}, subCommand...)
-		}
-	} else {
-		wrapperExecutable := wrapper
-		if exists(workspace, wrapperExecutable) {
-			executable = "./" + wrapperExecutable
-		}
-	}
-
-	return executable, subCommand
+func getCommandGradle(workspace string, _ /* a */ *v1alpha3.JibGradleArtifact) (executable string, subCommand []string) {
+	return getCommand(workspace, gradleExecutable, []string{"_jibSkaffoldFiles", "-q"})
 }
 
 func getDepsFromStdout(stdout string) []string {

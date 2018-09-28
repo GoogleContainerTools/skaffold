@@ -43,7 +43,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"runtime"
 )
 
 // ErrorConfigurationChanged is a special error that's returned when the skaffold configuration was changed.
@@ -379,10 +378,10 @@ func dependenciesForArtifact(a *v1alpha3.Artifact) ([]string, error) {
 		paths, err = bazel.GetDependencies(a.Workspace, a.BazelArtifact)
 
 	case a.JibMavenArtifact != nil:
-		paths, err = jib.GetDependenciesMaven(a.Workspace, a.JibMavenArtifact, runtime.GOOS == "windows")
+		paths, err = jib.GetDependenciesMaven(a.Workspace, a.JibMavenArtifact)
 
 	case a.JibGradleArtifact != nil:
-		paths, err = jib.GetDependenciesGradle(a.Workspace, a.JibGradleArtifact, runtime.GOOS == "windows")
+		paths, err = jib.GetDependenciesGradle(a.Workspace, a.JibGradleArtifact)
 
 	default:
 		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
