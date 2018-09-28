@@ -19,15 +19,67 @@ package local
 import (
 	"context"
 	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/pkg/errors"
 )
 
-func (b *Builder) buildJibMaven(_ /*ctx*/ context.Context, _ /*out*/ io.Writer, _ /*workspace*/ string, _ /*a*/ *v1alpha3.JibMavenArtifact) (string, error) {
-	return "", errors.New("buildJibMaven is unimplemented")
+func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace string, a *v1alpha3.JibMavenArtifact, imageName string) (string, error) {
+	maven, err := findBuilder("mvn", "mvnw", workspace)
+	if err != nil {
+		return "", err
+	}
+	cmd := exec.CommandContext(ctx, maven, "prepare-package", "jib:build", "-Dimage="+imageName)
+	cmd.Dir = workspace
+	cmd.Stdout = out
+	cmd.Stderr = out
+	if err := cmd.Run(); err != nil {
+		return "", errors.Wrap(err, "running command")
+	}
+
+	return imageName, nil
 }
 
-func (b *Builder) buildJibGradle(_ /*ctx*/ context.Context, _ /*out*/ io.Writer, _ /*workspace*/ string, _ /*a*/ *v1alpha3.JibGradleArtifact) (string, error) {
-	return "", errors.New("buildJibGradle is unimplemented")
+func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace string, a *v1alpha3.JibGradleArtifact, imageName string) (string, error) {
+	gradle, err := findBuilder("gradle", "gradlew", workspace)
+	if err != nil {
+		return "", err
+	}
+	cmd := exec.CommandContext(ctx, gradle, ":jib", "--image="+imageName)
+	cmd.Dir = workspace
+	cmd.Stdout = out
+	cmd.Stderr = out
+	if err := cmd.Run(); err != nil {
+		return "", errors.Wrap(err, "running command")
+	}
+
+	return imageName, nil
+}
+
+// Maven and Gradle projects often provide a wrapper to ensure a particular
+// builder version is used.  This function tries to resolve a wrapper
+// or otherwise resolves the builder installation.
+func findBuilder(builderName string, wrapperScriptName string, workspace string) (string, error) {
+	wrapperFile := filepath.Join(workspace, wrapperScriptName)
+	info, error := os.Stat(wrapperFile)
+	if error == nil && !info.IsDir() {
+		return filepath.Abs(wrapperFile)
+	}
+	if runtime.GOOS == "windows" {
+		batFile := wrapperFile + ".cmd"
+		info, error := os.Stat(batFile)
+		if error == nil && !info.IsDir() {
+			return filepath.Abs(batFile)
+		}
+		cmdFile := wrapperFile + ".cmd"
+		info, error = os.Stat(cmdFile)
+		if error == nil && !info.IsDir() {
+			return filepath.Abs(cmdFile)
+		}
+	}
+	return exec.LookPath(builderName)
 }
