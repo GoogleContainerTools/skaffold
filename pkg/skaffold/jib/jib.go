@@ -42,13 +42,21 @@ func GetDependenciesGradle(workspace string, a *v1alpha3.JibGradleArtifact) ([]s
 	return getDependencies(workspace, "build.gradle", executable, subCommand, "jib-gradle")
 }
 
-func exists(workspace string, filename string) bool {
-	_, err := os.Stat(filepath.Join(workspace, filename))
-	return err == nil
+// resolveFile resolves the absolute path of the file named filename in directory workspace, erroring if it is not a file
+func resolveFile(workspace string, filename string) (string, error) {
+	file := filepath.Join(workspace, filename)
+	info, err := os.Stat(file)
+	if err != nil {
+		return "", err
+	}
+	if info.IsDir() {
+		return "", errors.Errorf("%s is a directory", file)
+	}
+	return filepath.Abs(file)
 }
 
 func getDependencies(workspace string, buildFile string, executable string, subCommand []string, artifactName string) ([]string, error) {
-	if !exists(workspace, buildFile) {
+	if _, err := resolveFile(workspace, buildFile); err != nil {
 		return nil, errors.Errorf("no %s found", buildFile)
 	}
 

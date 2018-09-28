@@ -24,8 +24,7 @@ func getCommand(workspace string, defaultExecutable string, defaultSubCommand []
 	executable = defaultExecutable
 	subCommand = defaultSubCommand
 
-	wrapperExecutable := getWrapper()
-	if exists(workspace, wrapperExecutable) {
+	if wrapperExecutable, err := resolveFile(workspace, getWrapper()); err == nil {
 		executable = "cmd.exe"
 		subCommand = append([]string{wrapperExecutable}, subCommand...)
 		subCommand = append([]string{"/C"}, subCommand...)
