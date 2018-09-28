@@ -4,3 +4,4 @@ examples/bazel/bazel-*
 .idea/
 docs/generated
 docs/public
+docs/.firebase
