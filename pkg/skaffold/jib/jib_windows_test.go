@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGetCommandMavenWindows(t *testing.T) {
+func TestGetCommandMavenWithWrapper(t *testing.T) {
 	var tests = []struct {
 		description        string
 		jibMavenArtifact   v1alpha3.JibMavenArtifact
@@ -41,7 +41,7 @@ func TestGetCommandMavenWindows(t *testing.T) {
 			expectedSubCommand: []string{"/C", "mvnw.cmd", "jib:_skaffold-files", "-q"},
 		},
 		{
-			description:        "maven with profile",
+			description:        "maven with wrapper and profile",
 			jibMavenArtifact:   v1alpha3.JibMavenArtifact{Profile: "profile"},
 			filesInWorkspace:   []string{"mvnw.cmd"},
 			expectedExecutable: "cmd.exe",
@@ -68,7 +68,7 @@ func TestGetCommandMavenWindows(t *testing.T) {
 	}
 }
 
-func TestGetCommandGradleWindows(t *testing.T) {
+func TestGetCommandGradleWithWrapper(t *testing.T) {
 	var tests = []struct {
 		description        string
 		jibGradleArtifact  v1alpha3.JibGradleArtifact

@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGetCommandMaven(t *testing.T) {
+func TestGetCommandMavenWithWrapper(t *testing.T) {
 	var tests = []struct {
 		description        string
 		jibMavenArtifact   v1alpha3.JibMavenArtifact
@@ -36,15 +36,15 @@ func TestGetCommandMaven(t *testing.T) {
 		{
 			description:        "maven with wrapper",
 			jibMavenArtifact:   v1alpha3.JibMavenArtifact{},
-			filesInWorkspace:   []string{"mvnw.cmd"},
-			expectedExecutable: "cmd.exe",
-			expectedSubCommand: []string{"/C", "mvnw.cmd", "jib:_skaffold-files", "-q"},
+			filesInWorkspace:   []string{"mvnw"},
+			expectedExecutable: "mvnw",
+			expectedSubCommand: []string{"jib:_skaffold-files", "-q"},
 		},
 		{
-			description:        "maven with profile",
+			description:        "maven with wrapper and profile",
 			jibMavenArtifact:   v1alpha3.JibMavenArtifact{Profile: "profile"},
-			filesInWorkspace:   []string{},
-			expectedExecutable: "mvn",
+			filesInWorkspace:   []string{"mvnw"},
+			expectedExecutable: "mvnw",
 			expectedSubCommand: []string{"jib:_skaffold-files", "-q", "-P", "profile"},
 		},
 	}
@@ -60,7 +60,9 @@ func TestGetCommandMaven(t *testing.T) {
 
 			executable, subCommand := getCommandMaven(tmpDir.Root(), &test.jibMavenArtifact)
 
-			if executable != test.expectedExecutable {
+			expectedExecutable, err := resolveFile(tmpDir.Root(), test.expectedExecutable)
+			testutil.CheckError(t, false, err)
+			if executable != expectedExecutable {
 				t.Errorf("Expected executable %s. Got %s", test.expectedExecutable, executable)
 			}
 			testutil.CheckDeepEqual(t, test.expectedSubCommand, subCommand)
@@ -68,7 +70,7 @@ func TestGetCommandMaven(t *testing.T) {
 	}
 }
 
-func TestGetCommandGradle(t *testing.T) {
+func TestGetCommandGradleWithWrapper(t *testing.T) {
 	var tests = []struct {
 		description        string
 		jibGradleArtifact  v1alpha3.JibGradleArtifact
@@ -77,11 +79,11 @@ func TestGetCommandGradle(t *testing.T) {
 		expectedSubCommand []string
 	}{
 		{
-			description:        "gradle with wrapper on windows",
+			description:        "gradle with wrapper",
 			jibGradleArtifact:  v1alpha3.JibGradleArtifact{},
-			filesInWorkspace:   []string{"gradlew.bat"},
-			expectedExecutable: "cmd.exe",
-			expectedSubCommand: []string{"/C", "gradlew.bat", "_jibSkaffoldFiles", "-q"},
+			filesInWorkspace:   []string{"gradlew"},
+			expectedExecutable: "gradlew",
+			expectedSubCommand: []string{"_jibSkaffoldFiles", "-q"},
 		},
 	}
 
@@ -96,7 +98,9 @@ func TestGetCommandGradle(t *testing.T) {
 
 			executable, subCommand := getCommandGradle(tmpDir.Root(), &test.jibGradleArtifact)
 
-			if executable != test.expectedExecutable {
+			expectedExecutable, err := resolveFile(tmpDir.Root(), test.expectedExecutable)
+			testutil.CheckError(t, false, err)
+			if executable != expectedExecutable {
 				t.Errorf("Expected executable %s. Got %s", test.expectedExecutable, executable)
 			}
 			testutil.CheckDeepEqual(t, test.expectedSubCommand, subCommand)

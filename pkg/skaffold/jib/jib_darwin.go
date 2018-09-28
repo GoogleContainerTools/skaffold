@@ -16,15 +16,21 @@ limitations under the License.
 
 package jib
 
-func getWrapper() string {
-	return "gradlew"
+func getWrapper(defaultExecutable string) string {
+	switch defaultExecutable {
+	case gradleExecutable:
+		return "gradlew"
+	case mavenExecutable:
+		return "mvnw"
+	}
+	return defaultExecutable
 }
 
 func getCommand(workspace string, defaultExecutable string, defaultSubCommand []string) (executable string, subCommand []string) {
 	executable = defaultExecutable
 	subCommand = defaultSubCommand
 
-	if wrapperExecutable, err := resolveFile(workspace, getWrapper()); err == nil {
+	if wrapperExecutable, err := resolveFile(workspace, getWrapper(defaultExecutable)); err == nil {
 		executable = wrapperExecutable
 	}
 
