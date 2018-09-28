@@ -110,7 +110,7 @@ build:
 # The deploy section has all the information needed to deploy. Along with build:
 # it is a required section.
 deploy:
-  # The type of the deployment method can be `kubectl` or `helm`.
+  # The type of the deployment method can be `kubectl`, `helm` or `kustomize`.
 
   # The kubectl deployer uses  a client side `kubectl apply` to apply the manifests to the cluster.
   # You'll need a kubectl CLI version installed that's compatible with your cluster.
