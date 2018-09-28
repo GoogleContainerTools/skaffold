@@ -92,7 +92,7 @@ build:
   #   projectId: YOUR_PROJECT
   #   diskSizeGb: 200
   #   machineType: "N1_HIGHCPU_8"|"N1_HIGHCPU_32"
-  #   timeout: 10000S
+  #   timeout: 10000s
   #   dockerImage: gcr.io/cloud-builders/docker
 
   # Docker artifacts can be built on a Kubernetes cluster with Kaniko.
