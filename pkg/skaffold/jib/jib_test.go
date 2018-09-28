@@ -178,7 +178,7 @@ func TestGetDepsFromStdout(t *testing.T) {
 	}{
 		{
 			stdout:       "",
-			expectedDeps: []string{},
+			expectedDeps: nil,
 		},
 		{
 			stdout:       "deps1\ndeps2",
@@ -190,7 +190,7 @@ func TestGetDepsFromStdout(t *testing.T) {
 		},
 		{
 			stdout:       "\n\n\n",
-			expectedDeps: []string{},
+			expectedDeps: nil,
 		},
 		{
 			stdout:       "\n\ndeps1\n\ndeps2\n\n\n",

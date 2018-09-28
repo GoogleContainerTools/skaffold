@@ -82,7 +82,7 @@ func getCommandGradle(workspace string, _ /* a */ *v1alpha3.JibGradleArtifact) (
 
 func getDepsFromStdout(stdout string) []string {
 	lines := strings.Split(stdout, "\n")
-	deps := []string{}
+	var deps []string
 	for _, l := range lines {
 		if l == "" {
 			continue
