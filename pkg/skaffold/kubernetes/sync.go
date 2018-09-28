@@ -21,6 +21,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
@@ -30,19 +31,16 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type Syncer interface {
-	CopyFilesForImage(image string, syncMap map[string]string) error
-	DeleteFilesForImage(image string, syncMap map[string]string) error
-}
-
 type KubectlSyncer struct{}
 
-func (*KubectlSyncer) CopyFilesForImage(image string, syncMap map[string]string) error {
-	return perform(image, syncMap, copyFileFn)
-}
-
-func (*KubectlSyncer) DeleteFilesForImage(image string, syncMap map[string]string) error {
-	return perform(image, syncMap, deleteFileFn)
+func (k *KubectlSyncer) Sync(s *sync.SyncItem) error {
+	if err := perform(s.Image, s.Copy, copyFileFn); err != nil {
+		return errors.Wrap(err, "copying files")
+	}
+	if err := perform(s.Image, s.Delete, deleteFileFn); err != nil {
+		return errors.Wrap(err, "deleting files")
+	}
+	return nil
 }
 
 func deleteFileFn(pod v1.Pod, container v1.Container, src, dst string) *exec.Cmd {
