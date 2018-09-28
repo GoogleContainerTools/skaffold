@@ -309,8 +309,10 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 		return nil, errors.Wrap(err, "starting logger")
 	}
 
-	if err := portForwarder.Start(ctx); err != nil {
-		return nil, errors.Wrap(err, "starting port-forwarder")
+	if r.opts.PortForward {
+		if err := portForwarder.Start(ctx); err != nil {
+			return nil, errors.Wrap(err, "starting port-forwarder")
+		}
 	}
 
 	pollInterval := time.Duration(r.opts.WatchPollInterval) * time.Millisecond
