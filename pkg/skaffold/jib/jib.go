@@ -29,15 +29,17 @@ import (
 // GetDependenciesMaven finds the source dependencies for the given jib-maven artifact.
 // All paths are absolute.
 // TODO(coollog): Add support for multi-module projects.
-func GetDependenciesMaven(workspace string, _ /*a*/ *v1alpha3.JibMavenArtifact, isWindows bool) ([]string, error) {
-	return getDependencies(workspace, "pom.xml", "mvn", "mvnw.cmd", isWindows, []string{"jib:_skaffold-files", "-q"}, "jib-maven")
+func GetDependenciesMaven(workspace string, a *v1alpha3.JibMavenArtifact, isWindows bool) ([]string, error) {
+	executable, subCommand := getCommandMaven(workspace, a, isWindows)
+	return getDependencies(workspace, "pom.xml", executable, subCommand, "jib-maven")
 }
 
 // GetDependenciesGradle finds the source dependencies for the given jib-gradle artifact.
 // All paths are absolute.
 // TODO(coollog): Add support for multi-module projects.
-func GetDependenciesGradle(workspace string, _ /*a*/ *v1alpha3.JibGradleArtifact, isWindows bool) ([]string, error) {
-	return getDependencies(workspace, "build.gradle", "gradle", "gradlew.bat", isWindows, []string{"_jibSkaffoldFiles", "-q"}, "jib-gradle")
+func GetDependenciesGradle(workspace string, a *v1alpha3.JibGradleArtifact, isWindows bool) ([]string, error) {
+	executable, subCommand := getCommandGradle(workspace, a, isWindows)
+	return getDependencies(workspace, "build.gradle", executable, subCommand, "jib-gradle")
 }
 
 func exists(workspace string, filename string) bool {
@@ -45,22 +47,9 @@ func exists(workspace string, filename string) bool {
 	return err == nil
 }
 
-func getDependencies(workspace string, buildFile string, defaultExecutable string, windowsExecutable string, isWindows bool, subCommand []string, artifactName string) ([]string, error) {
+func getDependencies(workspace string, buildFile string, executable string, subCommand []string, artifactName string) ([]string, error) {
 	if !exists(workspace, buildFile) {
 		return nil, errors.Errorf("no %s found", buildFile)
-	}
-
-	executable := defaultExecutable
-	if isWindows {
-		if exists(workspace, windowsExecutable) {
-			executable = "call"
-			subCommand = append([]string{windowsExecutable}, subCommand...)
-		}
-	} else {
-		wrapperExecutable := defaultExecutable + "w"
-		if exists(workspace, wrapperExecutable) {
-			executable = "./" + wrapperExecutable
-		}
 	}
 
 	cmd := exec.Command(executable, subCommand...)
@@ -70,13 +59,60 @@ func getDependencies(workspace string, buildFile string, defaultExecutable strin
 		return nil, errors.Wrapf(err, "getting %s dependencies", artifactName)
 	}
 
-	lines := strings.Split(string(stdout), "\n")
-	var deps []string
+	return getDepsFromStdout(string(stdout)), nil
+}
+
+const (
+	mavenExecutable     = "mvn"
+	mavenWrapper        = "mvnw"
+	mavenWindowsWrapper = "mvnw.cmd"
+
+	gradleExecutable     = "gradle"
+	gradleWrapper        = "gradlew"
+	gradleWindowsWrapper = "gradlew.bat"
+)
+
+func getCommandMaven(workspace string, a *v1alpha3.JibMavenArtifact, isWindows bool) (executable string, subCommand []string) {
+	subCommand = []string{"jib:_skaffold-files", "-q"}
+	if a.Profile != "" {
+		subCommand = append(subCommand, "-P", a.Profile)
+	}
+
+	return getCommand(workspace, mavenExecutable, subCommand, mavenWrapper, mavenWindowsWrapper, isWindows)
+}
+
+func getCommandGradle(workspace string, _ /* a */ *v1alpha3.JibGradleArtifact, isWindows bool) (executable string, subCommand []string) {
+	return getCommand(workspace, gradleExecutable, []string{"_jibSkaffoldFiles", "-q"}, gradleWrapper, gradleWindowsWrapper, isWindows)
+}
+
+func getCommand(workspace string, defaultExecutable string, defaultSubCommand []string, wrapper string, windowsWrapper string, isWindows bool) (executable string, subCommand []string) {
+	executable = defaultExecutable
+	subCommand = defaultSubCommand
+
+	if isWindows {
+		if exists(workspace, windowsWrapper) {
+			executable = "cmd.exe"
+			subCommand = append([]string{windowsWrapper}, subCommand...)
+			subCommand = append([]string{"/C"}, subCommand...)
+		}
+	} else {
+		wrapperExecutable := wrapper
+		if exists(workspace, wrapperExecutable) {
+			executable = "./" + wrapperExecutable
+		}
+	}
+
+	return executable, subCommand
+}
+
+func getDepsFromStdout(stdout string) []string {
+	lines := strings.Split(stdout, "\n")
+	deps := []string{}
 	for _, l := range lines {
 		if l == "" {
 			continue
 		}
 		deps = append(deps, l)
 	}
-	return deps, nil
+	return deps
 }
