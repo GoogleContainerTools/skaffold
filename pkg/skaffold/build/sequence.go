@@ -22,7 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
 

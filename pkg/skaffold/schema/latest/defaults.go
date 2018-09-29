@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha4
+package latest
 
 import (
 	"fmt"
@@ -27,13 +27,8 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 )
 
-func (c *SkaffoldConfig) setBaseDefaultValues() error {
-	c.APIVersion = Version
-	c.Kind = "Config"
-	return nil
-}
-
-func (c *SkaffoldConfig) setDefaultValues() error {
+// SetDefaultValues makes sure default values are set.
+func (c *SkaffoldConfig) SetDefaultValues() error {
 	c.defaultToLocalBuild()
 	c.defaultToKubectlDeploy()
 	c.setDefaultCloudBuildDockerImage()

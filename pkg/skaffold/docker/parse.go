@@ -26,7 +26,7 @@ import (
 	"strings"
 	"sync"
 
-	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/fileutils"

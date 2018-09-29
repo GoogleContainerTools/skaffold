@@ -17,7 +17,7 @@ limitations under the License.
 package runner
 
 import (
-	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type changes struct {

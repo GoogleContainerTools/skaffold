@@ -19,7 +19,7 @@ package gcb
 import (
 	"testing"
 
-	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"

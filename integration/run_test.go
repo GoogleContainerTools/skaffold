@@ -222,49 +222,22 @@ func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
 }
 
 func TestFix(t *testing.T) {
-	tests := []struct {
-		name       string
-		directory  string
-		remoteOnly bool
-	}{
-		{
-			name:      "test v1alpha1 to v1alpha2 fix",
-			directory: "testdata/v1alpha1",
-		},
-		{
-			name:       "test v1alpha2 to v1alpha3 fix",
-			directory:  "testdata/v1alpha2",
-			remoteOnly: true,
-		},
-		{
-			name:       "test v1alpha3 to v1alpha4 fix",
-			directory:  "testdata/v1alpha3",
-			remoteOnly: true,
-		},
+	ns, deleteNs := setupNamespace(t)
+	defer deleteNs()
+
+	fixCmd := exec.Command("skaffold", "fix", "-f", "skaffold.yaml")
+	fixCmd.Dir = "testdata"
+	out, err := util.RunCmdOut(fixCmd)
+	if err != nil {
+		t.Fatalf("testing error: %v", err)
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			if !*remote && test.remoteOnly {
-				t.Skip("skipping remote only test")
-			}
-			ns, deleteNs := setupNamespace(t)
-			defer deleteNs()
 
-			fixCmd := exec.Command("skaffold", "fix", "-f", "skaffold.yaml")
-			fixCmd.Dir = test.directory
-			out, err := util.RunCmdOut(fixCmd)
-			if err != nil {
-				t.Fatalf("testing error: %v", err)
-			}
-
-			runCmd := exec.Command("skaffold", "run", "--namespace", ns.Name, "-f", "-")
-			runCmd.Dir = test.directory
-			runCmd.Stdin = bytes.NewReader(out)
-			err = util.RunCmd(runCmd)
-			if err != nil {
-				t.Fatalf("testing error: %v", err)
-			}
-		})
+	runCmd := exec.Command("skaffold", "run", "--namespace", ns.Name, "-f", "-")
+	runCmd.Dir = "testdata"
+	runCmd.Stdin = bytes.NewReader(out)
+	err = util.RunCmd(runCmd)
+	if err != nil {
+		t.Fatalf("testing error: %v", err)
 	}
 }
 

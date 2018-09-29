@@ -25,11 +25,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	cmdutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -92,11 +91,12 @@ func doInit(out io.Writer) error {
 		return err
 	}
 	for _, file := range potentialConfigs {
-		config, err := cmdutil.ParseConfig(file)
+		config, err := schema.ParseConfig(file, true)
 		if err == nil && config != nil {
 			out.Write([]byte(fmt.Sprintf("pre-existing skaffold yaml %s found: exiting\n", file)))
 			return nil
 		}
+
 		logrus.Debugf("%s is not a valid skaffold configuration: continuing", file)
 		imgs, err := parseKubernetesYaml(file)
 		if err == nil {
@@ -236,13 +236,15 @@ func generateSkaffoldConfig(k8sConfigs []string, dockerfilePairs []dockerfilePai
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	logrus.Info("generating skaffold config")
 
-	var err error
-	config, err := config.NewConfig()
-	if err != nil {
+	config := &latest.SkaffoldConfig{
+		APIVersion: latest.Version,
+		Kind:       "Config",
+	}
+	if err := config.SetDefaultValues(); err != nil {
 		return nil, errors.Wrap(err, "generating default config")
 	}
-	config.Build = processBuildArtifacts(dockerfilePairs)
 
+	config.Build = processBuildArtifacts(dockerfilePairs)
 	config.Deploy = latest.DeployConfig{
 		DeployType: latest.DeployType{
 			KubectlDeploy: &latest.KubectlDeploy{

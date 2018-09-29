@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	clientgo "k8s.io/client-go/kubernetes"
@@ -136,7 +136,7 @@ func TestNewForConfig(t *testing.T) {
 	}{
 		{
 			description: "local builder config",
-			config: &config.SkaffoldConfig{
+			config: &latest.SkaffoldConfig{
 				Build: latest.BuildConfig{
 					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
 					BuildType: latest.BuildType{
@@ -180,7 +180,7 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "unknown tagger",
-			config: &config.SkaffoldConfig{
+			config: &latest.SkaffoldConfig{
 				Build: latest.BuildConfig{
 					TagPolicy: latest.TagPolicy{},
 					BuildType: latest.BuildType{
@@ -193,7 +193,7 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "unknown deployer",
-			config: &config.SkaffoldConfig{
+			config: &latest.SkaffoldConfig{
 				Build: latest.BuildConfig{
 					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
 					BuildType: latest.BuildType{
@@ -222,7 +222,7 @@ func TestNewForConfig(t *testing.T) {
 func TestRun(t *testing.T) {
 	var tests = []struct {
 		description string
-		config      *config.SkaffoldConfig
+		config      *latest.SkaffoldConfig
 		builder     build.Builder
 		deployer    deploy.Deployer
 		shouldErr   bool

@@ -14,25 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package schema
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 const (
-	minimalConfig = `
-apiVersion: skaffold/v1alpha4
-kind: Config
-`
+	minimalConfig = ``
+
 	simpleConfig = `
-apiVersion: skaffold/v1alpha4
-kind: Config
 build:
   tagPolicy:
     gitCommit: {}
@@ -43,8 +41,6 @@ deploy:
 `
 	// This config has two tag policies set.
 	invalidConfig = `
-apiVersion: skaffold/v1alpha4
-kind: Config
 build:
   tagPolicy:
     sha256: {}
@@ -56,8 +52,6 @@ deploy:
 `
 
 	completeConfig = `
-apiVersion: skaffold/v1alpha4
-kind: Config
 build:
   tagPolicy:
     sha256: {}
@@ -79,16 +73,12 @@ deploy:
    - svc.yaml
 `
 	minimalKanikoConfig = `
-apiVersion: skaffold/v1alpha4
-kind: Config
 build:
   kaniko:
     buildContext:
       gcsBucket: demo
 `
 	completeKanikoConfig = `
-apiVersion: skaffold/v1alpha4
-kind: Config
 build:
   kaniko:
     buildContext:
@@ -179,22 +169,29 @@ func TestParseConfig(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			cfg, err := GetConfig([]byte(test.config), true)
+			tmp, cleanup := testutil.NewTempDir(t)
+			defer cleanup()
+
+			yaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, test.config)
+			tmp.Write("skaffold.yaml", yaml)
+
+			cfg, err := ParseConfig(tmp.Path("skaffold.yaml"), true)
+
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cfg)
 		})
 	}
 }
 
-func config(ops ...func(*SkaffoldConfig)) *SkaffoldConfig {
-	cfg := &SkaffoldConfig{APIVersion: "skaffold/v1alpha4", Kind: "Config"}
+func config(ops ...func(*latest.SkaffoldConfig)) *latest.SkaffoldConfig {
+	cfg := &latest.SkaffoldConfig{APIVersion: latest.Version, Kind: "Config"}
 	for _, op := range ops {
 		op(cfg)
 	}
 	return cfg
 }
 
-func withLocalBuild(ops ...func(*latest.BuildConfig)) func(*SkaffoldConfig) {
-	return func(cfg *SkaffoldConfig) {
+func withLocalBuild(ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
 		b := latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{}}}
 		for _, op := range ops {
 			op(&b)
@@ -203,8 +200,8 @@ func withLocalBuild(ops ...func(*latest.BuildConfig)) func(*SkaffoldConfig) {
 	}
 }
 
-func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*SkaffoldConfig) {
-	return func(cfg *SkaffoldConfig) {
+func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
 		b := latest.BuildConfig{BuildType: latest.BuildType{GoogleCloudBuild: &latest.GoogleCloudBuild{
 			ProjectID:   id,
 			DockerImage: "gcr.io/cloud-builders/docker",
@@ -216,8 +213,8 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*Ska
 	}
 }
 
-func withKanikoBuild(bucket, secretName, namespace, secret string, timeout string, ops ...func(*latest.BuildConfig)) func(*SkaffoldConfig) {
-	return func(cfg *SkaffoldConfig) {
+func withKanikoBuild(bucket, secretName, namespace, secret string, timeout string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
 		b := latest.BuildConfig{BuildType: latest.BuildType{KanikoBuild: &latest.KanikoBuild{
 			BuildContext: latest.KanikoBuildContext{
 				GCSBucket: bucket,
@@ -234,8 +231,8 @@ func withKanikoBuild(bucket, secretName, namespace, secret string, timeout strin
 	}
 }
 
-func withKubectlDeploy(manifests ...string) func(*SkaffoldConfig) {
-	return func(cfg *SkaffoldConfig) {
+func withKubectlDeploy(manifests ...string) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
 		cfg.Deploy = latest.DeployConfig{
 			DeployType: latest.DeployType{
 				KubectlDeploy: &latest.KubectlDeploy{
@@ -246,8 +243,8 @@ func withKubectlDeploy(manifests ...string) func(*SkaffoldConfig) {
 	}
 }
 
-func withHelmDeploy() func(*SkaffoldConfig) {
-	return func(cfg *SkaffoldConfig) {
+func withHelmDeploy() func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
 		cfg.Deploy = latest.DeployConfig{
 			DeployType: latest.DeployType{
 				HelmDeploy: &latest.HelmDeploy{},
@@ -296,8 +293,38 @@ func withShaTagger() func(*latest.BuildConfig) {
 	return withTagPolicy(latest.TagPolicy{ShaTagger: &latest.ShaTagger{}})
 }
 
-func withProfiles(profiles ...latest.Profile) func(*SkaffoldConfig) {
-	return func(cfg *SkaffoldConfig) {
+func withProfiles(profiles ...latest.Profile) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
 		cfg.Profiles = profiles
+	}
+}
+
+func TestCheckVersionIsLatest(t *testing.T) {
+	tests := []struct {
+		name      string
+		version   string
+		shouldErr bool
+	}{
+		{
+			name:    "latest api version",
+			version: latest.Version,
+		},
+		{
+			name:      "old api version",
+			version:   v1alpha1.Version,
+			shouldErr: true,
+		},
+		{
+			name:      "new api version",
+			version:   "skaffold/v9",
+			shouldErr: true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := CheckVersionIsLatest(test.version)
+
+			testutil.CheckError(t, test.shouldErr, err)
+		})
 	}
 }

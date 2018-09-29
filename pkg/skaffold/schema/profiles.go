@@ -14,21 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha3
+package schema
 
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // ApplyProfiles returns configuration modified by the application
 // of a list of profiles.
-func (c *SkaffoldConfig) ApplyProfiles(profiles []string) error {
+func ApplyProfiles(c *latest.SkaffoldConfig, profiles []string) error {
 	byName := profilesByName(c.Profiles)
 	for _, name := range profiles {
 		profile, present := byName[name]
@@ -38,27 +39,27 @@ func (c *SkaffoldConfig) ApplyProfiles(profiles []string) error {
 
 		applyProfile(c, profile)
 	}
-	if err := c.setDefaultValues(); err != nil {
+	if err := c.SetDefaultValues(); err != nil {
 		return errors.Wrap(err, "applying default values")
 	}
 
 	return nil
 }
 
-func applyProfile(config *SkaffoldConfig, profile Profile) {
+func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) {
 	logrus.Infof("applying profile: %s", profile.Name)
 
 	// this intentionally removes the Profiles field from the returned config
-	*config = SkaffoldConfig{
+	*config = latest.SkaffoldConfig{
 		APIVersion: config.APIVersion,
 		Kind:       config.Kind,
-		Build:      overlayProfileField(config.Build, profile.Build).(BuildConfig),
-		Deploy:     overlayProfileField(config.Deploy, profile.Deploy).(DeployConfig),
+		Build:      overlayProfileField(config.Build, profile.Build).(latest.BuildConfig),
+		Deploy:     overlayProfileField(config.Deploy, profile.Deploy).(latest.DeployConfig),
 	}
 }
 
-func profilesByName(profiles []Profile) map[string]Profile {
-	byName := make(map[string]Profile)
+func profilesByName(profiles []latest.Profile) map[string]latest.Profile {
+	byName := make(map[string]latest.Profile)
 	for _, profile := range profiles {
 		byName[profile.Name] = profile
 	}
@@ -108,7 +109,7 @@ func overlayProfileField(config interface{}, profile interface{}) interface{} {
 	switch v.Kind() {
 	case reflect.Struct:
 		// check the first field of the struct for a oneOf yamltag.
-		if util.IsOneOf(t.Field(0)) {
+		if isOneOf(t.Field(0)) {
 			return overlayOneOfField(config, profile)
 		}
 		return overlayStructField(config, profile)
@@ -122,4 +123,15 @@ func overlayProfileField(config interface{}, profile interface{}) interface{} {
 		logrus.Warnf("unknown field type in profile overlay: %s. falling back to original config values", v.Kind())
 		return config
 	}
+}
+
+func isOneOf(field reflect.StructField) bool {
+	for _, tag := range strings.Split(field.Tag.Get("yamltags"), ",") {
+		tagParts := strings.Split(tag, "=")
+
+		if tagParts[0] == "oneOf" {
+			return true
+		}
+	}
+	return false
 }
