@@ -165,7 +165,11 @@ func copiedFiles(nodes []*parser.Node) ([][]string, error) {
 	for _, node := range nodes {
 		switch node.Value {
 		case command.Add, command.Copy:
-			files, _ := processCopy(node, envs)
+			files, err := processCopy(node, envs)
+			if err != nil {
+				return nil, err
+			}
+
 			if len(files) > 0 {
 				copied = append(copied, files)
 			}
