@@ -195,8 +195,8 @@ type HelmConventionConfig struct {
 // Artifact represents items that need to be built, along with the context in which
 // they should be built.
 type Artifact struct {
-	ImageName    string `yaml:"imageName"`
-	Workspace    string `yaml:"workspace,omitempty"`
+	ImageName    string `yaml:"image"`
+	Workspace    string `yaml:"context,omitempty"`
 	ArtifactType `yaml:",inline"`
 }
 
@@ -213,13 +213,16 @@ type ArtifactType struct {
 	BazelArtifact  *BazelArtifact  `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
 }
 
+// DockerArtifact describes an artifact built from a Dockerfile,
+// usually using `docker build`.
 type DockerArtifact struct {
-	DockerfilePath string             `yaml:"dockerfilePath,omitempty"`
+	DockerfilePath string             `yaml:"dockerfile,omitempty"`
 	BuildArgs      map[string]*string `yaml:"buildArgs,omitempty"`
 	CacheFrom      []string           `yaml:"cacheFrom,omitempty"`
 	Target         string             `yaml:"target,omitempty"`
 }
 
+// BazelArtifact describes an artifact built with Bazel.
 type BazelArtifact struct {
 	BuildTarget string `yaml:"target"`
 }
