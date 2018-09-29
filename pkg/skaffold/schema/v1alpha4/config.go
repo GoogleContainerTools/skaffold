@@ -146,7 +146,7 @@ type HelmDeploy struct {
 
 // KustomizeDeploy contains the configuration needed for deploying with kustomize.
 type KustomizeDeploy struct {
-	KustomizePath string       `yaml:"kustomizePath,omitempty"`
+	KustomizePath string       `yaml:"path,omitempty"`
 	Flags         KubectlFlags `yaml:"flags,omitempty"`
 }
 
