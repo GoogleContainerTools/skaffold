@@ -21,7 +21,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 )
 
 // Artifact is the result corresponding to each successful build.
@@ -37,5 +37,5 @@ type Artifact struct {
 type Builder interface {
 	Labels() map[string]string
 
-	Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha3.Artifact) ([]Artifact, error)
+	Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]Artifact, error)
 }

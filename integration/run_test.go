@@ -220,6 +220,7 @@ func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
 		client.CoreV1().Namespaces().Delete(ns.Name, &meta_v1.DeleteOptions{})
 	}
 }
+
 func TestFix(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -233,6 +234,11 @@ func TestFix(t *testing.T) {
 		{
 			name:       "test v1alpha2 to v1alpha3 fix",
 			directory:  "testdata/v1alpha2",
+			remoteOnly: true,
+		},
+		{
+			name:       "test v1alpha3 to v1alpha4 fix",
+			directory:  "testdata/v1alpha3",
 			remoteOnly: true,
 		},
 	}

@@ -23,6 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
 
@@ -31,6 +32,7 @@ var Versions = []string{
 	v1alpha1.Version,
 	v1alpha2.Version,
 	v1alpha3.Version,
+	v1alpha4.Version,
 }
 
 var schemaVersions = map[string]func() util.VersionedConfig{
@@ -42,6 +44,9 @@ var schemaVersions = map[string]func() util.VersionedConfig{
 	},
 	v1alpha3.Version: func() util.VersionedConfig {
 		return new(v1alpha3.SkaffoldConfig)
+	},
+	v1alpha4.Version: func() util.VersionedConfig {
+		return new(v1alpha4.SkaffoldConfig)
 	},
 }
 

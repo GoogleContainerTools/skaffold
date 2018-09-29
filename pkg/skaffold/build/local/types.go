@@ -22,14 +22,14 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 // Builder uses the host docker daemon to build and tag the image.
 type Builder struct {
-	cfg *v1alpha3.LocalBuild
+	cfg *latest.LocalBuild
 
 	api          docker.APIClient
 	localCluster bool
@@ -40,7 +40,7 @@ type Builder struct {
 }
 
 // NewBuilder returns an new instance of a local Builder.
-func NewBuilder(cfg *v1alpha3.LocalBuild, kubeContext string) (*Builder, error) {
+func NewBuilder(cfg *latest.LocalBuild, kubeContext string) (*Builder, error) {
 	api, err := docker.NewAPIClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")

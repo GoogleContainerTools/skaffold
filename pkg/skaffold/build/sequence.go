@@ -22,12 +22,12 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	"github.com/pkg/errors"
 )
 
 // InSequence builds a list of artifacts in sequence.
-func InSequence(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha3.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
+func InSequence(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
 	var builds []Artifact
 
 	for _, artifact := range artifacts {

@@ -19,7 +19,7 @@ package config
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -47,11 +47,11 @@ func TestApplyProfiles(t *testing.T) {
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
-				withProfiles(v1alpha3.Profile{
+				withProfiles(latest.Profile{
 					Name: "profile",
-					Build: v1alpha3.BuildConfig{
-						BuildType: v1alpha3.BuildType{
-							GoogleCloudBuild: &v1alpha3.GoogleCloudBuild{
+					Build: latest.BuildConfig{
+						BuildType: latest.BuildType{
+							GoogleCloudBuild: &latest.GoogleCloudBuild{
 								ProjectID: "my-project",
 							},
 						},
@@ -75,10 +75,10 @@ func TestApplyProfiles(t *testing.T) {
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
-				withProfiles(v1alpha3.Profile{
+				withProfiles(latest.Profile{
 					Name: "dev",
-					Build: v1alpha3.BuildConfig{
-						TagPolicy: v1alpha3.TagPolicy{ShaTagger: &v1alpha3.ShaTagger{}},
+					Build: latest.BuildConfig{
+						TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
 					},
 				}),
 			),
@@ -99,10 +99,10 @@ func TestApplyProfiles(t *testing.T) {
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
-				withProfiles(v1alpha3.Profile{
+				withProfiles(latest.Profile{
 					Name: "profile",
-					Build: v1alpha3.BuildConfig{
-						Artifacts: []*v1alpha3.Artifact{
+					Build: latest.BuildConfig{
+						Artifacts: []*latest.Artifact{
 							{ImageName: "image"},
 							{ImageName: "imageProd"},
 						},
@@ -126,11 +126,11 @@ func TestApplyProfiles(t *testing.T) {
 					withGitTagger(),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
-				withProfiles(v1alpha3.Profile{
+				withProfiles(latest.Profile{
 					Name: "profile",
-					Deploy: v1alpha3.DeployConfig{
-						DeployType: v1alpha3.DeployType{
-							HelmDeploy: &v1alpha3.HelmDeploy{},
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							HelmDeploy: &latest.HelmDeploy{},
 						},
 					},
 				}),

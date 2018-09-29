@@ -19,17 +19,17 @@ package gcb
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 )
 
 func TestBuildDescription(t *testing.T) {
-	artifact := &v1alpha3.Artifact{
+	artifact := &latest.Artifact{
 		ImageName: "nginx",
-		ArtifactType: v1alpha3.ArtifactType{
-			DockerArtifact: &v1alpha3.DockerArtifact{
+		ArtifactType: latest.ArtifactType{
+			DockerArtifact: &latest.DockerArtifact{
 				DockerfilePath: "Dockerfile",
 				BuildArgs: map[string]*string{
 					"arg1": util.StringPtr("value1"),
@@ -40,7 +40,7 @@ func TestBuildDescription(t *testing.T) {
 	}
 
 	builder := Builder{
-		GoogleCloudBuild: &v1alpha3.GoogleCloudBuild{
+		GoogleCloudBuild: &latest.GoogleCloudBuild{
 			DockerImage: "docker/docker",
 			DiskSizeGb:  100,
 			MachineType: "n1-standard-1",
@@ -73,10 +73,10 @@ func TestBuildDescription(t *testing.T) {
 }
 
 func TestPullCacheFrom(t *testing.T) {
-	artifact := &v1alpha3.Artifact{
+	artifact := &latest.Artifact{
 		ImageName: "nginx",
-		ArtifactType: v1alpha3.ArtifactType{
-			DockerArtifact: &v1alpha3.DockerArtifact{
+		ArtifactType: latest.ArtifactType{
+			DockerArtifact: &latest.DockerArtifact{
 				DockerfilePath: "Dockerfile",
 				CacheFrom:      []string{"from/image1", "from/image2"},
 			},
@@ -84,7 +84,7 @@ func TestPullCacheFrom(t *testing.T) {
 	}
 
 	builder := Builder{
-		GoogleCloudBuild: &v1alpha3.GoogleCloudBuild{
+		GoogleCloudBuild: &latest.GoogleCloudBuild{
 			DockerImage: "docker/docker",
 		},
 	}

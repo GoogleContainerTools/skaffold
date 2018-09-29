@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/pkg/errors"
 )
 
@@ -35,6 +36,7 @@ type Transform func(vc util.VersionedConfig) (util.VersionedConfig, error)
 var transformers = map[string]Transform{
 	v1alpha1.Version: transform.ToV1Alpha2,
 	v1alpha2.Version: transform.ToV1Alpha3,
+	v1alpha3.Version: transform.ToV1Alpha4,
 }
 
 func RunTransform(vc util.VersionedConfig) (util.VersionedConfig, error) {

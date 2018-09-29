@@ -25,21 +25,18 @@ import (
 	"path/filepath"
 	"strings"
 
+	cmdutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"gopkg.in/AlecAivazis/survey.v1"
 	yaml "gopkg.in/yaml.v2"
-
-	cmdutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-
 	"k8s.io/apimachinery/pkg/runtime"
-
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
 )
@@ -206,23 +203,23 @@ func promptUserForDockerfile(image string, dockerfiles []string) dockerfilePair 
 	}
 }
 
-func processBuildArtifacts(pairs []dockerfilePair) v1alpha3.BuildConfig {
-	var config v1alpha3.BuildConfig
+func processBuildArtifacts(pairs []dockerfilePair) latest.BuildConfig {
+	var config latest.BuildConfig
 
 	if len(pairs) > 0 {
-		var artifacts []*v1alpha3.Artifact
+		var artifacts []*latest.Artifact
 		for _, pair := range pairs {
 			workspace := filepath.Dir(pair.Dockerfile)
 			dockerfilePath := filepath.Base(pair.Dockerfile)
-			a := &v1alpha3.Artifact{
+			a := &latest.Artifact{
 				ImageName: pair.ImageName,
 			}
 			if workspace != "." {
 				a.Workspace = workspace
 			}
 			if dockerfilePath != constants.DefaultDockerfilePath {
-				a.ArtifactType = v1alpha3.ArtifactType{
-					DockerArtifact: &v1alpha3.DockerArtifact{
+				a.ArtifactType = latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
 						DockerfilePath: dockerfilePath,
 					},
 				}
@@ -246,9 +243,9 @@ func generateSkaffoldConfig(k8sConfigs []string, dockerfilePairs []dockerfilePai
 	}
 	config.Build = processBuildArtifacts(dockerfilePairs)
 
-	config.Deploy = v1alpha3.DeployConfig{
-		DeployType: v1alpha3.DeployType{
-			KubectlDeploy: &v1alpha3.KubectlDeploy{
+	config.Deploy = latest.DeployConfig{
+		DeployType: latest.DeployType{
+			KubectlDeploy: &latest.KubectlDeploy{
 				Manifests: k8sConfigs,
 			},
 		},
