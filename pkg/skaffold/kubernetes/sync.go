@@ -73,7 +73,7 @@ func perform(image string, files map[string]string, cmdFn func(v1.Pod, v1.Contai
 					})
 				}
 				if err := e.Wait(); err != nil {
-					return errors.Wrap(err, "syncing files:")
+					return errors.Wrap(err, "syncing files")
 				}
 			}
 		}

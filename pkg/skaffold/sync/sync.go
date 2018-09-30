@@ -19,7 +19,7 @@ package sync
 import (
 	"path/filepath"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
@@ -35,7 +35,7 @@ type Item struct {
 	Delete map[string]string
 }
 
-func NewItem(a *v1alpha3.Artifact, e watch.Events) (*Item, error) {
+func NewItem(a *latest.Artifact, e watch.Events) (*Item, error) {
 	// If there are no changes, short circuit and don't sync anything
 	if !e.HasChanged() || a.Sync == nil || len(a.Sync) == 0 {
 		return nil, nil
