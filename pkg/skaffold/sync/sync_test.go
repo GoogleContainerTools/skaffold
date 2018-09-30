@@ -16,6 +16,7 @@ limitations under the License.
 package sync
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -61,18 +62,18 @@ func TestShouldSync(t *testing.T) {
 				Workspace: "node",
 			},
 			evt: watch.Events{
-				Added:    []string{"node/index.html"},
-				Modified: []string{"node/server.js"},
-				Deleted:  []string{"node/package.json"},
+				Added:    []string{filepath.Join("node", "index.html")},
+				Modified: []string{filepath.Join("node", "server.js")},
+				Deleted:  []string{filepath.Join("node", "package.json")},
 			},
 			expected: &Item{
 				Image: "test",
 				Copy: map[string]string{
-					"node/server.js":  "server.js",
-					"node/index.html": "index.html",
+					filepath.Join("node", "server.js"):  "server.js",
+					filepath.Join("node", "index.html"): "index.html",
 				},
 				Delete: map[string]string{
-					"node/package.json": "package.json",
+					filepath.Join("node", "package.json"): "package.json",
 				},
 			},
 		},
@@ -151,29 +152,29 @@ func TestIntersect(t *testing.T) {
 		},
 		{
 			description: "copy nested file to correct destination",
-			files:       []string{"static/index.html", "static/test.html"},
+			files:       []string{filepath.Join("static", "index.html"), filepath.Join("static", "test.html")},
 			syncPatterns: map[string]string{
-				"static/*.html": "/html",
+				filepath.Join("static", "*.html"): "/html",
 			},
 			expected: map[string]string{
-				"static/index.html": "/html/index.html",
-				"static/test.html":  "/html/test.html",
+				filepath.Join("static", "index.html"): "/html/index.html",
+				filepath.Join("static", "test.html"):  "/html/test.html",
 			},
 		},
 		{
 			description: "file not in . copies to correct destination",
-			files:       []string{"node/server.js"},
+			files:       []string{filepath.Join("node", "server.js")},
 			context:     "node",
 			syncPatterns: map[string]string{
 				"*.js": "/",
 			},
 			expected: map[string]string{
-				"node/server.js": "/server.js",
+				filepath.Join("node", "server.js"): "/server.js",
 			},
 		},
 		{
 			description: "file change not relative to context throws error",
-			files:       []string{"node/server.js", "/something/test.js"},
+			files:       []string{filepath.Join("node", "server.js"), filepath.Join("/", "something", "test.js")},
 			context:     "node",
 			syncPatterns: map[string]string{
 				"*.js": "/",
