@@ -17,8 +17,10 @@ limitations under the License.
 package watch
 
 import (
+	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -52,17 +54,23 @@ type Events struct {
 }
 
 func (e Events) HasChanged() bool {
+	return len(e.Added) != 0 || len(e.Deleted) != 0 || len(e.Modified) != 0
+}
+
+func (e *Events) String() string {
 	added, deleted, modified := len(e.Added), len(e.Deleted), len(e.Modified)
+
+	var sb strings.Builder
 	if added > 0 {
-		logrus.Debugf("[watch event] added: %s", e.Added)
+		sb.WriteString(fmt.Sprintf("[watch event] added: %s\n", e.Added))
 	}
 	if deleted > 0 {
-		logrus.Debugf("[watch event] deleted: %s", e.Deleted)
+		sb.WriteString(fmt.Sprintf("[watch event] deleted: %s\n", e.Deleted))
 	}
 	if modified > 0 {
-		logrus.Debugf("[watch event] modified: %s", e.Modified)
+		sb.WriteString(fmt.Sprintf("[watch event] modified: %s\n", e.Modified))
 	}
-	return added != 0 || deleted != 0 || modified != 0
+	return sb.String()
 }
 
 func events(prev, curr fileMap) Events {
@@ -93,6 +101,7 @@ func events(prev, curr fileMap) Events {
 	}
 
 	sortEvt(e)
+	logrus.Debug(e.String())
 	return e
 }
 
