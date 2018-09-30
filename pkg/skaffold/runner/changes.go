@@ -25,7 +25,7 @@ import (
 type changes struct {
 	dirtyArtifacts []*artifactChange
 	needsRebuild   []*latest.Artifact
-	needsResync    []*sync.SyncItem
+	needsResync    []*sync.Item
 	needsRedeploy  bool
 	needsReload    bool
 }
@@ -43,7 +43,7 @@ func (c *changes) AddRebuild(a *latest.Artifact) {
 	c.needsRebuild = append(c.needsRebuild, a)
 }
 
-func (c *changes) AddResync(s *sync.SyncItem) {
+func (c *changes) AddResync(s *sync.Item) {
 	c.needsResync = append(c.needsResync, s)
 }
 

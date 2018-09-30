@@ -1,5 +1,3 @@
-package sync
-
 /*
 Copyright 2018 The Skaffold Authors
 
@@ -16,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+package sync
+
 import (
 	"path/filepath"
 
@@ -26,16 +26,16 @@ import (
 )
 
 type Syncer interface {
-	Sync(s *SyncItem) error
+	Sync(s *Item) error
 }
 
-type SyncItem struct {
+type Item struct {
 	Image  string
 	Copy   map[string]string
 	Delete map[string]string
 }
 
-func NewSyncItem(a *v1alpha3.Artifact, e watch.Events) (*SyncItem, error) {
+func NewItem(a *v1alpha3.Artifact, e watch.Events) (*Item, error) {
 	// If there are no changes, short circuit and don't sync anything
 	if !e.HasChanged() || a.Sync == nil || len(a.Sync) == 0 {
 		return nil, nil
@@ -55,7 +55,7 @@ func NewSyncItem(a *v1alpha3.Artifact, e watch.Events) (*SyncItem, error) {
 		return nil, nil
 	}
 
-	return &SyncItem{
+	return &Item{
 		Image:  a.ImageName,
 		Copy:   toCopy,
 		Delete: toDelete,

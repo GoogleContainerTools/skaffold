@@ -123,14 +123,7 @@ func NewTestSyncer() *TestSyncer {
 	}
 }
 
-func NewTestSyncerWithError(err error) *TestSyncer {
-	return &TestSyncer{
-		copies: map[string]string{},
-		err:    err,
-	}
-}
-
-func (t *TestSyncer) Sync(s *sync.SyncItem) error {
+func (t *TestSyncer) Sync(s *sync.Item) error {
 	if t.err != nil {
 		return t.err
 	}

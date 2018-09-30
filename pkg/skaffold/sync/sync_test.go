@@ -29,7 +29,7 @@ func TestShouldSync(t *testing.T) {
 		artifact    *v1alpha3.Artifact
 		evt         watch.Events
 		shouldErr   bool
-		expected    *SyncItem
+		expected    *Item
 	}{
 		{
 			description: "match copy",
@@ -43,7 +43,7 @@ func TestShouldSync(t *testing.T) {
 			evt: watch.Events{
 				Added: []string{"index.html"},
 			},
-			expected: &SyncItem{
+			expected: &Item{
 				Image: "test",
 				Copy: map[string]string{
 					"index.html": "index.html",
@@ -65,7 +65,7 @@ func TestShouldSync(t *testing.T) {
 				Modified: []string{"node/server.js"},
 				Deleted:  []string{"node/package.json"},
 			},
-			expected: &SyncItem{
+			expected: &Item{
 				Image: "test",
 				Copy: map[string]string{
 					"node/server.js":  "server.js",
@@ -129,7 +129,7 @@ func TestShouldSync(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			actual, err := NewSyncItem(test.artifact, test.evt)
+			actual, err := NewItem(test.artifact, test.evt)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
 		})
 	}
