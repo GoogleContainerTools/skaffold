@@ -18,7 +18,7 @@ package sync
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -26,14 +26,14 @@ import (
 func TestShouldSync(t *testing.T) {
 	var tests = []struct {
 		description string
-		artifact    *v1alpha3.Artifact
+		artifact    *latest.Artifact
 		evt         watch.Events
 		shouldErr   bool
 		expected    *Item
 	}{
 		{
 			description: "match copy",
-			artifact: &v1alpha3.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "test",
 				Sync: map[string]string{
 					"*.html": ".",
@@ -53,7 +53,7 @@ func TestShouldSync(t *testing.T) {
 		},
 		{
 			description: "sync all",
-			artifact: &v1alpha3.Artifact{
+			artifact: &latest.Artifact{
 				ImageName: "test",
 				Sync: map[string]string{
 					"*": ".",
@@ -78,7 +78,7 @@ func TestShouldSync(t *testing.T) {
 		},
 		{
 			description: "not copy syncable",
-			artifact: &v1alpha3.Artifact{
+			artifact: &latest.Artifact{
 				Sync: map[string]string{
 					"*.html": ".",
 				},
@@ -91,7 +91,7 @@ func TestShouldSync(t *testing.T) {
 		},
 		{
 			description: "not delete syncable",
-			artifact: &v1alpha3.Artifact{
+			artifact: &latest.Artifact{
 				Sync: map[string]string{
 					"*.html": "/static",
 				},
@@ -104,7 +104,7 @@ func TestShouldSync(t *testing.T) {
 		},
 		{
 			description: "err bad pattern",
-			artifact: &v1alpha3.Artifact{
+			artifact: &latest.Artifact{
 				Sync: map[string]string{
 					"[*.html": "*",
 				},
@@ -118,7 +118,7 @@ func TestShouldSync(t *testing.T) {
 		},
 		{
 			description: "no change no sync",
-			artifact: &v1alpha3.Artifact{
+			artifact: &latest.Artifact{
 				Sync: map[string]string{
 					"[*.html": "*",
 				},

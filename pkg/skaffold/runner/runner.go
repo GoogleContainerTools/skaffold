@@ -39,7 +39,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 
 	"github.com/pkg/errors"
@@ -384,56 +383,6 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	r.Trigger.WatchForChanges(out)
 	return nil, watcher.Run(ctx, r.Trigger, onChange)
-}
-
-func (r *SkaffoldRunner) shouldSync(image string, context string, syncPatterns map[string]string, e watch.Events) (bool, error) {
-	// If there are no changes, short circuit and don't sync anything
-	if !e.HasChanged() || syncPatterns == nil || len(syncPatterns) == 0 {
-		return false, nil
-	}
-
-	toCopy, err := intersect(context, syncPatterns, append(e.Added, e.Modified...))
-	if err != nil {
-		return false, errors.Wrap(err, "intersecting sync map and added, modified files")
-	}
-	// The only error that intersect can return is a bad pattern, which is checked above
-	toDelete, _ := intersect(context, syncPatterns, e.Deleted)
-	if toCopy == nil || toDelete == nil {
-		return false, nil
-	}
-	if err := r.Syncer.DeleteFilesForImage(image, toDelete); err != nil {
-		return false, errors.Wrap(err, "deleting files for image")
-	}
-	if err := r.Syncer.CopyFilesForImage(image, toCopy); err != nil {
-		return false, errors.Wrap(err, "copying files for image")
-	}
-	return true, nil
-}
-
-func intersect(context string, syncMap map[string]string, files []string) (map[string]string, error) {
-	ret := map[string]string{}
-	for _, f := range files {
-		relPath, err := filepath.Rel(context, f)
-		if err != nil {
-			return nil, errors.Wrapf(err, "changed file %s is not relative to context %s", f, context)
-		}
-		for p, dst := range syncMap {
-			match, err := filepath.Match(p, relPath)
-			if err != nil {
-				return nil, errors.Wrap(err, "pattern error")
-			}
-			if !match {
-				return nil, nil
-			}
-			// If the source has special match characters,
-			// the destination must be a directory
-			if util.HasMeta(p) {
-				dst = filepath.Join(dst, filepath.Base(relPath))
-			}
-			ret[f] = dst
-		}
-	}
-	return ret, nil
 }
 
 func (r *SkaffoldRunner) shouldWatch(artifact *latest.Artifact) bool {
