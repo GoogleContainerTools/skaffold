@@ -17,6 +17,7 @@ limitations under the License.
 package sync
 
 import (
+	"path"
 	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -79,8 +80,10 @@ func intersect(context string, syncMap map[string]string, files []string) (map[s
 			}
 			// If the source has special match characters,
 			// the destination must be a directory
+			// The path package must be used here, since the destination is always
+			// a linux filesystem.
 			if util.HasMeta(p) {
-				dst = filepath.Join(dst, filepath.Base(relPath))
+				dst = path.Join(dst, filepath.Base(relPath))
 			}
 			ret[f] = dst
 		}
