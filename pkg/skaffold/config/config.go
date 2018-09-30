@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 )
 
@@ -24,6 +25,8 @@ import (
 type SkaffoldConfig = latest.SkaffoldConfig
 
 const LatestVersion string = latest.Version
+
+var LatestAPIVersion = apiversion.MustParse(LatestVersion)
 
 func NewConfig() (*SkaffoldConfig, error) {
 	return latest.NewConfig()
