@@ -256,7 +256,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}()
 
 		for _, a := range changed.dirtyArtifacts {
-			s, err := sync.NewSyncItem(a.artifact, a.events)
+			s, err := sync.NewItem(a.artifact, a.events)
 			if err != nil {
 				return errors.Wrap(err, "sync")
 			}

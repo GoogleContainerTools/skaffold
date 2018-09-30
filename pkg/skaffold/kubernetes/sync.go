@@ -33,7 +33,7 @@ import (
 
 type KubectlSyncer struct{}
 
-func (k *KubectlSyncer) Sync(s *sync.SyncItem) error {
+func (k *KubectlSyncer) Sync(s *sync.Item) error {
 	if err := perform(s.Image, s.Copy, copyFileFn); err != nil {
 		return errors.Wrap(err, "copying files")
 	}
