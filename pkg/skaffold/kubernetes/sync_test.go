@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	v1 "k8s.io/api/core/v1"
@@ -54,7 +55,8 @@ func fakeCmd(p v1.Pod, c v1.Container, src, dst string) *exec.Cmd {
 
 var pod = &v1.Pod{
 	ObjectMeta: metav1.ObjectMeta{
-		Name: "podname",
+		Name:   "podname",
+		Labels: constants.Labels.DefaultLabels,
 	},
 	Status: v1.PodStatus{
 		Phase: v1.PodRunning,

@@ -17,10 +17,12 @@ limitations under the License.
 package sync
 
 import (
+	"fmt"
 	"path"
 	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
@@ -36,7 +38,7 @@ type Item struct {
 	Delete map[string]string
 }
 
-func NewItem(a *latest.Artifact, e watch.Events) (*Item, error) {
+func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact) (*Item, error) {
 	// If there are no changes, short circuit and don't sync anything
 	if !e.HasChanged() || a.Sync == nil || len(a.Sync) == 0 {
 		return nil, nil
@@ -56,11 +58,25 @@ func NewItem(a *latest.Artifact, e watch.Events) (*Item, error) {
 		return nil, nil
 	}
 
+	tag := latestTag(a.ImageName, builds)
+	if tag == "" {
+		return nil, fmt.Errorf("Could not find latest tag for image %s in builds: %s", a.ImageName, builds)
+	}
+
 	return &Item{
-		Image:  a.ImageName,
+		Image:  tag,
 		Copy:   toCopy,
 		Delete: toDelete,
 	}, nil
+}
+
+func latestTag(image string, builds []build.Artifact) string {
+	for _, build := range builds {
+		if build.ImageName == image {
+			return build.Tag
+		}
+	}
+	return ""
 }
 
 func intersect(context string, syncMap map[string]string, files []string) (map[string]string, error) {

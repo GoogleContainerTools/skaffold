@@ -253,9 +253,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 				logger.Unmute()
 			}
 		}()
-
 		for _, a := range changed.dirtyArtifacts {
-			s, err := sync.NewItem(a.artifact, a.events)
+			s, err := sync.NewItem(a.artifact, a.events, r.builds)
 			if err != nil {
 				return errors.Wrap(err, "sync")
 			}
@@ -277,6 +276,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 					logrus.Warnln("Skipping build and deploy due to sync error:", err)
 					return nil
 				}
+				color.Default.Fprintf(out, "Synced files for %s...\nCopied: %s\nDeleted: %s\n", s.Image, s.Copy, s.Delete)
 			}
 		case len(changed.needsRebuild) > 0:
 			bRes, err := r.Build(ctx, out, r.Tagger, changed.needsRebuild)

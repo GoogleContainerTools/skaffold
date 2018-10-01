@@ -19,16 +19,19 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestShouldSync(t *testing.T) {
+func TestNewSyncItem(t *testing.T) {
 	var tests = []struct {
 		description string
 		artifact    *latest.Artifact
 		evt         watch.Events
+		builds      []build.Artifact
 		shouldErr   bool
 		expected    *Item
 	}{
@@ -41,16 +44,42 @@ func TestShouldSync(t *testing.T) {
 				},
 				Workspace: ".",
 			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
 			evt: watch.Events{
 				Added: []string{"index.html"},
 			},
 			expected: &Item{
-				Image: "test",
+				Image: "test:123",
 				Copy: map[string]string{
 					"index.html": "index.html",
 				},
 				Delete: map[string]string{},
 			},
+		},
+		{
+			description: "no tag for image",
+			artifact: &latest.Artifact{
+				ImageName: "notbuildyet",
+				Sync: map[string]string{
+					"*.html": ".",
+				},
+				Workspace: ".",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: watch.Events{
+				Added: []string{"index.html"},
+			},
+			shouldErr: true,
 		},
 		{
 			description: "sync all",
@@ -61,13 +90,19 @@ func TestShouldSync(t *testing.T) {
 				},
 				Workspace: "node",
 			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
 			evt: watch.Events{
 				Added:    []string{filepath.Join("node", "index.html")},
 				Modified: []string{filepath.Join("node", "server.js")},
 				Deleted:  []string{filepath.Join("node", "package.json")},
 			},
 			expected: &Item{
-				Image: "test",
+				Image: "test:123",
 				Copy: map[string]string{
 					filepath.Join("node", "server.js"):  "server.js",
 					filepath.Join("node", "index.html"): "index.html",
@@ -121,16 +156,22 @@ func TestShouldSync(t *testing.T) {
 			description: "no change no sync",
 			artifact: &latest.Artifact{
 				Sync: map[string]string{
-					"[*.html": "*",
+					"*.html": "*",
 				},
 				Workspace: ".",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			actual, err := NewItem(test.artifact, test.evt)
+			actual, err := NewItem(test.artifact, test.evt, test.builds)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
 		})
 	}
