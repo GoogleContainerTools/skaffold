@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -39,15 +39,15 @@ import (
 
 const kanikoContainerName = "kaniko"
 
-func runKaniko(ctx context.Context, out io.Writer, artifact *v1alpha2.Artifact, cfg *v1alpha2.KanikoBuild) (string, error) {
+func runKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, cfg *latest.KanikoBuild) (string, error) {
 	dockerfilePath := artifact.DockerArtifact.DockerfilePath
 
 	initialTag := util.RandomID()
 	tarName := fmt.Sprintf("context-%s.tar.gz", initialTag)
-	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact, cfg.GCSBucket, tarName); err != nil {
+	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact, cfg.BuildContext.GCSBucket, tarName); err != nil {
 		return "", errors.Wrap(err, "uploading tar to gcs")
 	}
-	defer gcsDelete(ctx, cfg.GCSBucket, tarName)
+	defer gcsDelete(ctx, cfg.BuildContext.GCSBucket, tarName)
 
 	client, err := kubernetes.GetClientset()
 	if err != nil {
@@ -58,7 +58,7 @@ func runKaniko(ctx context.Context, out io.Writer, artifact *v1alpha2.Artifact, 
 	imageDst := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
 	args := []string{
 		fmt.Sprintf("--dockerfile=%s", dockerfilePath),
-		fmt.Sprintf("--context=gs://%s/%s", cfg.GCSBucket, tarName),
+		fmt.Sprintf("--context=gs://%s/%s", cfg.BuildContext.GCSBucket, tarName),
 		fmt.Sprintf("--destination=%s", imageDst),
 		fmt.Sprintf("-v=%s", logrus.GetLevel().String()),
 	}

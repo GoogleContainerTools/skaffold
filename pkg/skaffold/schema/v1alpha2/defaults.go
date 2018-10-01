@@ -19,15 +19,23 @@ package v1alpha2
 import (
 	"fmt"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 )
+
+func (c *SkaffoldConfig) setBaseDefaultValues() error {
+	c.APIVersion = Version
+	c.Kind = "Config"
+	return nil
+}
 
 func (c *SkaffoldConfig) setDefaultValues() error {
 	c.defaultToLocalBuild()
+	c.defaultToKubectlDeploy()
 	c.setDefaultCloudBuildDockerImage()
 	c.setDefaultTagger()
 	c.setDefaultKustomizePath()
@@ -56,6 +64,15 @@ func (c *SkaffoldConfig) defaultToLocalBuild() {
 
 	logrus.Debugf("Defaulting build type to local build")
 	c.Build.BuildType.LocalBuild = &LocalBuild{}
+}
+
+func (c *SkaffoldConfig) defaultToKubectlDeploy() {
+	if c.Deploy.DeployType != (DeployType{}) {
+		return
+	}
+
+	logrus.Debugf("Defaulting deploy type to kubectl")
+	c.Deploy.DeployType.KubectlDeploy = &KubectlDeploy{}
 }
 
 func (c *SkaffoldConfig) setDefaultCloudBuildDockerImage() {

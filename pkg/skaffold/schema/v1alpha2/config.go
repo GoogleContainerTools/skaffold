@@ -45,10 +45,10 @@ type BuildConfig struct {
 
 // TagPolicy contains all the configuration for the tagging step
 type TagPolicy struct {
-	GitTagger         *GitTagger         `yaml:"gitCommit" yamltags:"oneOf=tag"`
-	ShaTagger         *ShaTagger         `yaml:"sha256" yamltags:"oneOf=tag"`
-	EnvTemplateTagger *EnvTemplateTagger `yaml:"envTemplate" yamltags:"oneOf=tag"`
-	DateTimeTagger    *DateTimeTagger    `yaml:"dateTime" yamltags:"oneOf=tag"`
+	GitTagger         *GitTagger         `yaml:"gitCommit,omitempty" yamltags:"oneOf=tag"`
+	ShaTagger         *ShaTagger         `yaml:"sha256,omitempty" yamltags:"oneOf=tag"`
+	EnvTemplateTagger *EnvTemplateTagger `yaml:"envTemplate,omitempty" yamltags:"oneOf=tag"`
+	DateTimeTagger    *DateTimeTagger    `yaml:"dateTime,omitempty" yamltags:"oneOf=tag"`
 }
 
 // ShaTagger contains the configuration for the SHA tagger.
@@ -71,17 +71,17 @@ type DateTimeTagger struct {
 // BuildType contains the specific implementation and parameters needed
 // for the build step. Only one field should be populated.
 type BuildType struct {
-	LocalBuild       *LocalBuild       `yaml:"local" yamltags:"oneOf=build"`
-	GoogleCloudBuild *GoogleCloudBuild `yaml:"googleCloudBuild" yamltags:"oneOf=build"`
-	KanikoBuild      *KanikoBuild      `yaml:"kaniko" yamltags:"oneOf=build"`
+	LocalBuild       *LocalBuild       `yaml:"local,omitempty" yamltags:"oneOf=build"`
+	GoogleCloudBuild *GoogleCloudBuild `yaml:"googleCloudBuild,omitempty" yamltags:"oneOf=build"`
+	KanikoBuild      *KanikoBuild      `yaml:"kaniko,omitempty" yamltags:"oneOf=build"`
 }
 
 // LocalBuild contains the fields needed to do a build on the local docker daemon
 // and optionally push to a repository.
 type LocalBuild struct {
-	SkipPush     *bool `yaml:"skipPush"`
-	UseDockerCLI bool  `yaml:"useDockerCLI"`
-	UseBuildkit  bool  `yaml:"useBuildkit"`
+	SkipPush     *bool `yaml:"skipPush,omitempty"`
+	UseDockerCLI bool  `yaml:"useDockerCLI,omitempty"`
+	UseBuildkit  bool  `yaml:"useBuildkit,omitempty"`
 }
 
 // GoogleCloudBuild contains the fields needed to do a remote build on
@@ -112,9 +112,9 @@ type DeployConfig struct {
 // DeployType contains the specific implementation and parameters needed
 // for the deploy step. Only one field should be populated.
 type DeployType struct {
-	HelmDeploy      *HelmDeploy      `yaml:"helm" yamltags:"oneOf=deploy"`
-	KubectlDeploy   *KubectlDeploy   `yaml:"kubectl" yamltags:"oneOf=deploy"`
-	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize" yamltags:"oneOf=deploy"`
+	HelmDeploy      *HelmDeploy      `yaml:"helm,omitempty" yamltags:"oneOf=deploy"`
+	KubectlDeploy   *KubectlDeploy   `yaml:"kubectl,omitempty" yamltags:"oneOf=deploy"`
+	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty" yamltags:"oneOf=deploy"`
 }
 
 // KubectlDeploy contains the configuration needed for deploying with `kubectl apply`
@@ -153,6 +153,7 @@ type HelmRelease struct {
 	SetValues         map[string]string      `yaml:"setValues"`
 	SetValueTemplates map[string]string      `yaml:"setValueTemplates"`
 	Wait              bool                   `yaml:"wait"`
+	RecreatePods      bool                   `yaml:"recreatePods"`
 	Overrides         map[string]interface{} `yaml:"overrides"`
 	Packaged          *HelmPackaged          `yaml:"packaged"`
 	ImageStrategy     HelmImageStrategy      `yaml:"imageStrategy"`
@@ -202,8 +203,8 @@ type Profile struct {
 }
 
 type ArtifactType struct {
-	DockerArtifact *DockerArtifact `yaml:"docker" yamltags:"oneOf=artifact"`
-	BazelArtifact  *BazelArtifact  `yaml:"bazel" yamltags:"oneOf=artifact"`
+	DockerArtifact *DockerArtifact `yaml:"docker,omitempty" yamltags:"oneOf=artifact"`
+	BazelArtifact  *BazelArtifact  `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
 }
 
 type DockerArtifact struct {
@@ -230,4 +231,15 @@ func (c *SkaffoldConfig) Parse(contents []byte, useDefaults bool) error {
 	}
 
 	return nil
+}
+
+func NewConfig() (*SkaffoldConfig, error) {
+	cfg := &SkaffoldConfig{}
+	if err := cfg.setBaseDefaultValues(); err != nil {
+		return nil, err
+	}
+	if err := cfg.setDefaultValues(); err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }

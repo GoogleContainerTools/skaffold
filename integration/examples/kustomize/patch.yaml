@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kustomize-test
+spec:
+  template:
+    spec:
+      containers:
+      - name: kustomize-test
+        image: index.docker.io/library/busybox
+        command:
+          - sleep
+          - "3600"

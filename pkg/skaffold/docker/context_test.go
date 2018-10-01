@@ -21,7 +21,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -29,12 +29,11 @@ func TestDockerContext(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	RetrieveImage = mockRetrieveImage
-	defer func() {
-		RetrieveImage = retrieveImage
-	}()
+	imageFetcher := fakeImageFetcher{}
+	RetrieveImage = imageFetcher.fetch
+	defer func() { RetrieveImage = retrieveImage }()
 
-	artifact := &v1alpha2.DockerArtifact{
+	artifact := &latest.DockerArtifact{
 		DockerfilePath: "Dockerfile",
 		BuildArgs:      map[string]*string{},
 	}

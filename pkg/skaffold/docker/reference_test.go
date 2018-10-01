@@ -27,42 +27,49 @@ func TestParseReference(t *testing.T) {
 		description            string
 		image                  string
 		expectedName           string
+		expectedTag            string
 		expectedFullyQualified bool
 	}{
 		{
 			description:            "port and tag",
 			image:                  "host:1234/user/container:tag",
 			expectedName:           "host:1234/user/container",
+			expectedTag:            "tag",
 			expectedFullyQualified: true,
 		},
 		{
 			description:            "port",
 			image:                  "host:1234/user/container",
 			expectedName:           "host:1234/user/container",
+			expectedTag:            "",
 			expectedFullyQualified: false,
 		},
 		{
 			description:            "tag",
 			image:                  "host/user/container:tag",
 			expectedName:           "host/user/container",
+			expectedTag:            "tag",
 			expectedFullyQualified: true,
 		},
 		{
 			description:            "latest",
 			image:                  "host/user/container:latest",
 			expectedName:           "host/user/container",
+			expectedTag:            "latest",
 			expectedFullyQualified: false,
 		},
 		{
 			description:            "digest",
 			image:                  "gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
 			expectedName:           "gcr.io/k8s-skaffold/example",
+			expectedTag:            "",
 			expectedFullyQualified: true,
 		},
 		{
 			description:            "docker library",
 			image:                  "nginx:latest",
 			expectedName:           "nginx",
+			expectedTag:            "latest",
 			expectedFullyQualified: false,
 		},
 	}
@@ -72,7 +79,8 @@ func TestParseReference(t *testing.T) {
 			parsed, err := ParseReference(test.image)
 
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedName, parsed.BaseName)
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedFullyQualified, parsed.FullyQualified)
+			testutil.CheckDeepEqual(t, test.expectedTag, parsed.Tag)
+			testutil.CheckDeepEqual(t, test.expectedFullyQualified, parsed.FullyQualified)
 		})
 	}
 }

@@ -1,0 +1,13 @@
+apiVersion: skaffold/v1alpha4
+kind: Config
+build:
+  artifacts:
+  - imageName: gcr.io/k8s-skaffold/leeroy-web
+    workspace: ./leeroy-web/
+  - imageName: gcr.io/k8s-skaffold/leeroy-app
+    workspace: ./leeroy-app/
+deploy:
+  kubectl:
+    manifests:
+    - ./leeroy-web/kubernetes/*
+    - ./leeroy-app/kubernetes/*

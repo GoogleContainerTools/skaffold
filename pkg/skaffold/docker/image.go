@@ -23,7 +23,7 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
@@ -40,7 +40,7 @@ import (
 )
 
 // BuildArtifact performs a docker build and returns nothing
-func BuildArtifact(ctx context.Context, out io.Writer, cli APIClient, workspace string, a *v1alpha2.DockerArtifact, initialTag string) error {
+func BuildArtifact(ctx context.Context, out io.Writer, cli APIClient, workspace string, a *latest.DockerArtifact, initialTag string) error {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
 
 	// Like `docker build`, we ignore the errors
@@ -123,7 +123,7 @@ func addTag(ref name.Reference, targetRef name.Reference, auth authn.Authenticat
 		return err
 	}
 
-	img, err := remote.Image(ref, auth, tr)
+	img, err := remote.Image(ref, remote.WithAuth(auth), remote.WithTransport(tr))
 	if err != nil {
 		return err
 	}
@@ -157,7 +157,7 @@ func remoteImage(identifier string) (v1.Image, error) {
 		return nil, errors.Wrap(err, "getting default keychain auth")
 	}
 
-	return remote.Image(ref, auth, http.DefaultTransport)
+	return remote.Image(ref, remote.WithAuth(auth), remote.WithTransport(http.DefaultTransport))
 }
 
 func RemoteDigest(identifier string) (string, error) {
@@ -175,7 +175,7 @@ func RemoteDigest(identifier string) (string, error) {
 }
 
 // GetBuildArgs gives the build args flags for docker build.
-func GetBuildArgs(a *v1alpha2.DockerArtifact) []string {
+func GetBuildArgs(a *latest.DockerArtifact) []string {
 	var args []string
 
 	var keys []string

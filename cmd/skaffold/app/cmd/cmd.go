@@ -80,6 +80,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdDelete(out))
 	rootCmd.AddCommand(NewCmdFix(out))
 	rootCmd.AddCommand(NewCmdConfig(out))
+	rootCmd.AddCommand(NewCmdInit(out))
 
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic")
 
@@ -89,6 +90,10 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 }
 
 func updateCheck(ch chan string) error {
+	if quietFlag {
+		logrus.Debugf("Update check is disabled because of quiet mode")
+		return nil
+	}
 	if !update.IsUpdateCheckEnabled() {
 		logrus.Debugf("Update check not enabled, skipping.")
 		return nil
@@ -129,6 +134,9 @@ func setFlagsFromEnvVariables(commands []*cobra.Command) {
 
 func AddDevFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
+	cmd.Flags().StringArrayVarP(&opts.Watch, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts.")
+	cmd.Flags().IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes.")
+	cmd.Flags().BoolVar(&opts.PortForward, "port-forward", true, "Port-forward exposed container ports within pods")
 }
 
 func AddRunDeployFlags(cmd *cobra.Command) {

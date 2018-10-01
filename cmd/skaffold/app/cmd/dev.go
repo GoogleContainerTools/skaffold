@@ -38,6 +38,7 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 	}
 	AddRunDevFlags(cmd)
 	AddDevFlags(cmd)
+	cmd.Flags().BoolVar(&opts.TailDev, "tail", true, "Stream logs from deployed objects")
 	return cmd
 }
 

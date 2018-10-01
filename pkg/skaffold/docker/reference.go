@@ -21,6 +21,7 @@ import "github.com/docker/distribution/reference"
 // ImageReference is a parsed image name.
 type ImageReference struct {
 	BaseName       string
+	Tag            string
 	FullyQualified bool
 }
 
@@ -37,8 +38,10 @@ func ParseReference(image string) (*ImageReference, error) {
 	}
 
 	fullyQualified := false
+	tag := ""
 	switch n := r.(type) {
 	case reference.Tagged:
+		tag = n.Tag()
 		fullyQualified = n.Tag() != "latest"
 	case reference.Digested:
 		fullyQualified = true
@@ -46,6 +49,7 @@ func ParseReference(image string) (*ImageReference, error) {
 
 	return &ImageReference{
 		BaseName:       baseName,
+		Tag:            tag,
 		FullyQualified: fullyQualified,
 	}, nil
 }

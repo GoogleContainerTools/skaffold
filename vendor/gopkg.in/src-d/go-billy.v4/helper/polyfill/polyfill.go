@@ -98,3 +98,8 @@ func (h *Polyfill) Root() string {
 func (h *Polyfill) Underlying() billy.Basic {
 	return h.Basic
 }
+
+// Capabilities implements the Capable interface.
+func (h *Polyfill) Capabilities() billy.Capability {
+	return billy.Capabilities(h.Basic)
+}

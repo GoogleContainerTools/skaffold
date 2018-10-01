@@ -1,4 +1,4 @@
-apiVersion: skaffold/v1alpha2
+apiVersion: skaffold/v1alpha3
 kind: Config
 build:
   tagPolicy:
@@ -11,9 +11,12 @@ deploy:
     - name: skaffold-helm
       chartPath: skaffold-helm
       #wait: true
-      #valuesFilePath: helm-skaffold-values.yaml
+      #valuesFiles:
+      #- helm-skaffold-values.yaml
       values:
         image: gcr.io/k8s-skaffold/skaffold-helm
+      #recreatePods will pass --recreate-pods to helm upgrade
+      #recreatePods: true
       #overrides builds an override values.yaml file to run with the helm deploy
       #overrides:
       # some:

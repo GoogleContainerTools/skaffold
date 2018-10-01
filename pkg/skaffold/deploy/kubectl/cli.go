@@ -17,14 +17,12 @@ limitations under the License.
 package kubectl
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"io"
 	"os/exec"
-	"strings"
+	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -34,8 +32,10 @@ import (
 type CLI struct {
 	Namespace   string
 	KubeContext string
-	Flags       v1alpha2.KubectlFlags
+	Flags       latest.KubectlFlags
 
+	version       ClientVersion
+	versionOnce   sync.Once
 	previousApply ManifestList
 }
 
@@ -53,34 +53,17 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 	// Only redeploy modified or new manifests
 	// TODO(dgageot): should we delete a manifest that was deployed and is not anymore?
 	updated := c.previousApply.Diff(manifests)
-	logrus.Debugln(len(manifests), "manifests to deploy.", len(manifests), "are updated or new")
+	logrus.Debugln(len(manifests), "manifests to deploy.", len(updated), "are updated or new")
 	c.previousApply = manifests
 	if len(updated) == 0 {
 		return nil, nil
 	}
-	for _, mfst := range manifests {
-		buf := bytes.NewBuffer([]byte{})
-		writer := bufio.NewWriter(buf)
-		ml := ManifestList{mfst}
-		if err := c.Run(ctx, ml.Reader(), writer, "apply", c.Flags.Apply, "-f", "-"); err != nil {
-			if !strings.Contains(buf.String(), "field is immutable") {
-				return nil, err
-			}
-			// If the output contains the string 'field is immutable', we want to delete the object and recreate it
-			// See Issue #891 for more information
-			if err := c.Delete(ctx, out, ml); err != nil {
-				return nil, errors.Wrap(err, "deleting manifest")
-			}
-			if err := c.Run(ctx, ml.Reader(), out, "apply", c.Flags.Apply, "-f", "-"); err != nil {
-				return nil, errors.Wrap(err, "kubectl apply after deletion")
-			}
-		} else {
-			// Write output to out
-			if _, err := out.Write(buf.Bytes()); err != nil {
-				return nil, errors.Wrap(err, "writing to out")
-			}
-		}
+
+	// Add --force flag to delete and redeploy image if changes can't be applied
+	if err := c.Run(ctx, updated.Reader(), out, "apply", c.Flags.Apply, "--force", "-f", "-"); err != nil {
+		return nil, errors.Wrap(err, "kubectl apply")
 	}
+
 	return updated, nil
 }
 

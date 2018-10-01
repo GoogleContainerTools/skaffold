@@ -1,0 +1,33 @@
+=== Example: Getting started with a simple go app
+:icons: font
+
+This is a simple example based on
+
+* *building* a single go file app and with a multistage `Dockerfile` using local docker to build
+* *tagging* using the default tagPolicy (`gitCommit`)
+* *deploying* a single container pod using `kubectl`
+
+ifndef::env-github[]
+==== link:{github-repo-tree}/examples/getting-started[Example files icon:github[]]
+
+[source,yaml, indent=3, title=skaffold.yaml]
+----
+include::skaffold.yaml[]
+----
+
+[source,go, indent=3, title=main.go, syntax=go]
+----
+include::main.go[]
+----
+
+[source,docker, indent=3, title=Dockerfile]
+----
+include::Dockerfile[]
+----
+
+[source,yaml, indent=3, title=k8s-pod.yaml]
+----
+include::k8s-pod.yaml[]
+----
+
+endif::[]

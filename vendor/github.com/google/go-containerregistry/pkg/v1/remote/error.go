@@ -83,7 +83,7 @@ const (
 	UnsupportedErrorCode         ErrorCode = "UNSUPPORTED"
 )
 
-func checkError(resp *http.Response, codes ...int) error {
+func CheckError(resp *http.Response, codes ...int) error {
 	for _, code := range codes {
 		if resp.StatusCode == code {
 			// This is one of the supported status codes.

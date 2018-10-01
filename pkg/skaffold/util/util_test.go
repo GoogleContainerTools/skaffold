@@ -114,3 +114,64 @@ func TestDefaultConfigFilenameAlternate(t *testing.T) {
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, []byte("foo"), content)
 }
+
+func TestExpand(t *testing.T) {
+	var tests = []struct {
+		description string
+		text        string
+		key         string
+		value       string
+		expected    string
+	}{
+		{
+			description: "${key} syntax",
+			text:        "BEFORE[${key}]AFTER",
+			key:         "key",
+			value:       "VALUE",
+			expected:    "BEFORE[VALUE]AFTER",
+		},
+		{
+			description: "$key syntax",
+			text:        "BEFORE[$key]AFTER",
+			key:         "key",
+			value:       "VALUE",
+			expected:    "BEFORE[VALUE]AFTER",
+		},
+		{
+			description: "replace all",
+			text:        "BEFORE[$key][${key}][$key][${key}]AFTER",
+			key:         "key",
+			value:       "VALUE",
+			expected:    "BEFORE[VALUE][VALUE][VALUE][VALUE]AFTER",
+		},
+		{
+			description: "ignore common prefix",
+			text:        "BEFORE[$key1][${key1}]AFTER",
+			key:         "key",
+			value:       "VALUE",
+			expected:    "BEFORE[$key1][${key1}]AFTER",
+		},
+		{
+			description: "just the ${key} placeholder",
+			text:        "${key}",
+			key:         "key",
+			value:       "VALUE",
+			expected:    "VALUE",
+		},
+		{
+			description: "just the $key placeholder",
+			text:        "$key",
+			key:         "key",
+			value:       "VALUE",
+			expected:    "VALUE",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			actual := Expand(test.text, test.key, test.value)
+
+			testutil.CheckDeepEqual(t, test.expected, actual)
+		})
+	}
+}

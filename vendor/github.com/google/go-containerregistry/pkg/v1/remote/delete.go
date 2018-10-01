@@ -42,7 +42,7 @@ func Delete(ref name.Reference, auth authn.Authenticator, t http.RoundTripper, d
 	c := &http.Client{Transport: tr}
 
 	u := url.URL{
-		Scheme: transport.Scheme(ref.Context().Registry),
+		Scheme: ref.Context().Registry.Scheme(),
 		Host:   ref.Context().RegistryStr(),
 		Path:   fmt.Sprintf("/v2/%s/manifests/%s", ref.Context().RepositoryStr(), ref.Identifier()),
 	}

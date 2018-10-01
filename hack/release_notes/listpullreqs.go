@@ -19,9 +19,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
-	"regexp"
-	"strconv"
 
 	"github.com/google/go-github/github"
 	"github.com/sirupsen/logrus"
@@ -59,34 +56,32 @@ func main() {
 func printPullRequests() {
 	client := getClient()
 
-	if len(fromTag) == 0 {
-		tags, _, _ := client.Repositories.ListTags(context.Background(), org, repo, &github.ListOptions{})
-		fromTag = tags[0].GetName()
-	}
+	releases, _, _ := client.Repositories.ListReleases(context.Background(), org, repo, &github.ListOptions{})
+	lastReleaseTime := *releases[0].PublishedAt
+	fmt.Println(fmt.Sprintf("Collecting pull request that were merged since the last release: %s (%s)", *releases[0].TagName, lastReleaseTime))
 
-	fmt.Println(fmt.Sprintf("Collecting PR commits between %s and %s...", fromTag, toTag))
-	fmt.Println("---------")
+	listSize := 1
+	for page := 0; listSize > 0; page++ {
+		pullRequests, _, _ := client.PullRequests.List(context.Background(), org, repo, &github.PullRequestListOptions{
+			State:     "closed",
+			Sort:      "updated",
+			Direction: "desc",
+			ListOptions: github.ListOptions{
+				PerPage: 100,
+				Page:    page,
+			},
+		})
 
-	comparison := commits(client)
-
-	repositoryCommits := comparison.Commits
-
-	mergeRe := regexp.MustCompile("Merge pull request #(.*) from.*")
-	pullRequestCommitRe := regexp.MustCompile(`.* \(#(.*)\)`)
-	for idx := range repositoryCommits {
-		commit := repositoryCommits[idx]
-		msg := *commit.Commit.Message
-		match := mergeRe.FindStringSubmatch(msg)
-		if match == nil {
-			match = pullRequestCommitRe.FindStringSubmatch(msg)
-			if match == nil {
-				continue
+		for idx := range pullRequests {
+			pr := pullRequests[idx]
+			if pr.MergedAt != nil {
+				if pr.GetMergedAt().After(lastReleaseTime.Time) {
+					fmt.Printf("* %s [#%d](https://github.com/%s/%s/pull/%d)\n", pr.GetTitle(), *pr.Number, org, repo, *pr.Number)
+				}
 			}
 		}
-		prID, _ := strconv.Atoi(match[1])
 
-		pullRequest, _, _ := client.PullRequests.Get(context.Background(), org, repo, prID)
-		fmt.Printf("* %s [#%d](https://github.com/%s/%s/pull/%d)\n", pullRequest.GetTitle(), prID, org, repo, prID)
+		listSize = len(pullRequests)
 	}
 }
 
@@ -100,13 +95,4 @@ func getClient() *github.Client {
 	)
 	tc := oauth2.NewClient(ctx, ts)
 	return github.NewClient(tc)
-}
-
-func commits(client *github.Client) *github.CommitsComparison {
-	commits, resp, e := client.Repositories.CompareCommits(context.Background(), org, repo, fromTag, toTag)
-	if e != nil {
-		fmt.Println(fmt.Errorf("error %s, %s", e, resp))
-		os.Exit(1)
-	}
-	return commits
 }
