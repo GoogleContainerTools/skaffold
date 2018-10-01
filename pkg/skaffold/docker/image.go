@@ -128,7 +128,7 @@ func addTag(ref name.Reference, targetRef name.Reference, auth authn.Authenticat
 		return err
 	}
 
-	return remote.Write(targetRef, img, auth, t, remote.WriteOptions{})
+	return remote.Write(targetRef, img, auth, t)
 }
 
 // Digest returns the image digest for a corresponding reference.

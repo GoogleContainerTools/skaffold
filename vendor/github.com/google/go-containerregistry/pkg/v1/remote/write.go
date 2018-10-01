@@ -28,16 +28,8 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 )
 
-// WriteOptions are used to expose optional information to guide or
-// control the image write.
-type WriteOptions struct {
-	// TODO(mattmoor): Expose "threads" to limit parallelism?
-}
-
 // Write pushes the provided img to the specified image reference.
-func Write(ref name.Reference, img v1.Image, auth authn.Authenticator, t http.RoundTripper,
-	wo WriteOptions) error {
-
+func Write(ref name.Reference, img v1.Image, auth authn.Authenticator, t http.RoundTripper) error {
 	ls, err := img.Layers()
 	if err != nil {
 		return err
@@ -52,7 +44,6 @@ func Write(ref name.Reference, img v1.Image, auth authn.Authenticator, t http.Ro
 		ref:     ref,
 		client:  &http.Client{Transport: tr},
 		img:     img,
-		options: wo,
 	}
 
 	bs, err := img.BlobSet()
@@ -92,7 +83,6 @@ type writer struct {
 	ref     name.Reference
 	client  *http.Client
 	img     v1.Image
-	options WriteOptions
 }
 
 // url returns a url.Url for the specified path in the context of this remote image reference.
