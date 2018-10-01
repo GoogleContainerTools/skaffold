@@ -221,17 +221,17 @@ func TestDev(t *testing.T) {
 	testCases := []testDevCase{
 		{
 			description: "delete and redeploy job",
-			dir:         "../examples/test-dev-job",
+			dir:         "examples/test-dev-job",
 			args:        []string{"dev"},
 			setup: func(t *testing.T) func(t *testing.T) {
 				// create foo
-				cmd := exec.Command("touch", "../examples/test-dev-job/foo")
+				cmd := exec.Command("touch", "examples/test-dev-job/foo")
 				if output, err := util.RunCmdOut(cmd); err != nil {
 					t.Fatalf("creating foo: %s %v", output, err)
 				}
 				return func(t *testing.T) {
 					// delete foo
-					cmd := exec.Command("rm", "../examples/test-dev-job/foo")
+					cmd := exec.Command("rm", "examples/test-dev-job/foo")
 					if output, err := util.RunCmdOut(cmd); err != nil {
 						t.Fatalf("creating foo: %s %v", output, err)
 					}
@@ -243,7 +243,7 @@ func TestDev(t *testing.T) {
 			jobValidation: func(t *testing.T, ns *v1.Namespace, j *batchv1.Job) {
 				originalUID := j.GetUID()
 				// Make a change to foo so that dev is forced to delete the job and redeploy
-				cmd := exec.Command("sh", "-c", "echo bar > ../examples/test-dev-job/foo")
+				cmd := exec.Command("sh", "-c", "echo bar > examples/test-dev-job/foo")
 				if output, err := util.RunCmdOut(cmd); err != nil {
 					t.Fatalf("creating bar: %s %v", output, err)
 				}
@@ -256,7 +256,7 @@ func TestDev(t *testing.T) {
 					return originalUID != newJob.GetUID(), nil
 				})
 				if err != nil {
-					t.Fatalf("original UID and new UID are the same, redeploy failed")
+					t.Fatalf("redeploy failed: %v", err)
 				}
 			},
 		},

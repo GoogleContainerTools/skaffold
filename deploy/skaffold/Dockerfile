@@ -18,7 +18,7 @@ RUN apt-get update && \
     apt-get install --no-install-recommends --no-install-suggests -y \
         python-dev
 
-ENV KUBECTL_VERSION v1.10.0
+ENV KUBECTL_VERSION v1.12.0
 RUN curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl  && \
     chmod +x /usr/local/bin/kubectl
 

@@ -187,7 +187,3 @@ func (k *KubectlDeployer) readRemoteManifest(ctx context.Context, name string) (
 
 	return manifest.Bytes(), nil
 }
-
-func checkKubectlVersion() error {
-
-}
