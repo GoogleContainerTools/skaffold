@@ -149,6 +149,16 @@ func ToV1Alpha3(vc util.VersionedConfig) (util.VersionedConfig, error) {
 			return nil, errors.Wrap(err, "converting new profile")
 		}
 	}
+	// if the helm deploy config was set for a profile, then convert ValueFilePath to ValuesFiles
+	for p, oldProfile := range oldConfig.Profiles {
+		if oldProfileHelmDeploy := oldProfile.Deploy.DeployType.HelmDeploy; oldProfileHelmDeploy != nil {
+			for i, oldProfileHelmRelease := range oldProfileHelmDeploy.Releases {
+				if oldProfileHelmRelease.ValuesFilePath != "" {
+					newProfiles[p].Deploy.DeployType.HelmDeploy.Releases[i].ValuesFiles = []string{oldProfileHelmRelease.ValuesFilePath}
+				}
+			}
+		}
+	}
 
 	// convert v1alpha2.Build to v1alpha3.Build (different only for kaniko)
 	oldKanikoBuilder := oldConfig.Build.KanikoBuild
