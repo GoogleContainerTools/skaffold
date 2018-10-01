@@ -38,14 +38,18 @@ func TestGetCommandMavenWithWrapper(t *testing.T) {
 			jibMavenArtifact:   v1alpha3.JibMavenArtifact{},
 			filesInWorkspace:   []string{"mvnw.cmd"},
 			expectedExecutable: "cmd.exe",
-			expectedSubCommand: []string{"/C", "mvnw.cmd", "jib:_skaffold-files", "-q"},
+			expectedSubCommand: func(workspace string) []string {
+				return []string{"/C", resolveFile(workspace, "mvnw.cmd"), "jib:_skaffold-files", "-q"}
+			},
 		},
 		{
 			description:        "maven with wrapper and profile",
 			jibMavenArtifact:   v1alpha3.JibMavenArtifact{Profile: "profile"},
 			filesInWorkspace:   []string{"mvnw.cmd"},
 			expectedExecutable: "cmd.exe",
-			expectedSubCommand: []string{"/c", "mvnw.cmd", "jib:_skaffold-files", "-q", "-P", "profile"},
+			expectedSubCommand: func(workspace string) []string {
+				return []string{"/c", resolveFile(workspace, "mvnw.cmd"), "jib:_skaffold-files", "-q", "-P", "profile"}
+			},
 		},
 	}
 
@@ -81,7 +85,9 @@ func TestGetCommandGradleWithWrapper(t *testing.T) {
 			jibGradleArtifact:  v1alpha3.JibGradleArtifact{},
 			filesInWorkspace:   []string{"gradlew.bat"},
 			expectedExecutable: "cmd.exe",
-			expectedSubCommand: []string{"/C", "gradlew.bat", "_jibSkaffoldFiles", "-q"},
+			expectedSubCommand: func(workspace string) []string {
+				return []string{"/C", resolveFile(workspace, "gradlew.bat"), "_jibSkaffoldFiles", "-q"}
+			},
 		},
 	}
 
@@ -99,7 +105,7 @@ func TestGetCommandGradleWithWrapper(t *testing.T) {
 			if executable != test.expectedExecutable {
 				t.Errorf("Expected executable %s. Got %s", test.expectedExecutable, executable)
 			}
-			testutil.CheckDeepEqual(t, test.expectedSubCommand, subCommand)
+			testutil.CheckDeepEqual(t, test.expectedSubCommand(tmpDir.Root()), subCommand)
 		})
 	}
 }
