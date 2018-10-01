@@ -21,6 +21,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/sirupsen/logrus"
@@ -51,19 +52,29 @@ func copyFileFn(pod v1.Pod, container v1.Container, src, dst string) *exec.Cmd {
 	return exec.Command("kubectl", "cp", src, fmt.Sprintf("%s/%s:%s", pod.Namespace, pod.Name, dst), "-c", container.Name)
 }
 
+func labelSelector() string {
+	var reqs []string
+	for k, v := range constants.Labels.DefaultLabels {
+		reqs = append(reqs, fmt.Sprintf("%s=%s", k, v))
+	}
+	return strings.Join(reqs, ",")
+}
+
 func perform(image string, files map[string]string, cmdFn func(v1.Pod, v1.Container, string, string) *exec.Cmd) error {
 	logrus.Info("Syncing files:", files)
 	client, err := Client()
 	if err != nil {
 		return errors.Wrap(err, "getting k8s client")
 	}
-	pods, err := client.CoreV1().Pods("").List(meta_v1.ListOptions{})
+	pods, err := client.CoreV1().Pods("").List(meta_v1.ListOptions{
+		LabelSelector: labelSelector(),
+	})
 	if err != nil {
 		return errors.Wrap(err, "getting pods")
 	}
 	for _, p := range pods.Items {
 		for _, c := range p.Spec.Containers {
-			if strings.HasPrefix(c.Image, image) {
+			if c.Image == image {
 				var e errgroup.Group
 				for src, dst := range files {
 					src, dst := src, dst
