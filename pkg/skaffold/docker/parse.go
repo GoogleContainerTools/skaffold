@@ -249,7 +249,7 @@ func expandPaths(workspace string, copied [][]string) ([]string, error) {
 	for dep := range expandedPaths {
 		deps = append(deps, dep)
 	}
-	// logrus.Infof("Found dependencies for dockerfile %s", deps)
+	logrus.Infof("Found dependencies for dockerfile %s", deps)
 
 	return deps, nil
 }
