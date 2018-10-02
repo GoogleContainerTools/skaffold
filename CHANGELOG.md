@@ -1,3 +1,10 @@
+# v0.15.1 Release - 10/02/2018
+
+This is a minor release to address an inconsistency in the `skaffold fix` upgrade:
+ 
+* Transform values files in profiles to v1alpha3 [#1070](https://github.com/GoogleContainerTools/skaffold/pull/1070)
+
+
 # v0.15.0 Release - 9/27/2018
 
 New Features:
