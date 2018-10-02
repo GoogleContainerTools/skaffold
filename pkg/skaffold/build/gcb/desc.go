@@ -18,7 +18,7 @@ package gcb
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 )
 

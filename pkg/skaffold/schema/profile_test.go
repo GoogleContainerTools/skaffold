@@ -14,21 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package schema
 
 import (
 	"testing"
 
-	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestApplyProfiles(t *testing.T) {
 	tests := []struct {
 		description string
-		config      *SkaffoldConfig
+		config      *latest.SkaffoldConfig
 		profile     string
-		expected    *SkaffoldConfig
+		expected    *latest.SkaffoldConfig
 		shouldErr   bool
 	}{
 		{
@@ -146,7 +146,7 @@ func TestApplyProfiles(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			err := test.config.ApplyProfiles([]string{test.profile})
+			err := ApplyProfiles(test.config, []string{test.profile})
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, test.config)
 		})

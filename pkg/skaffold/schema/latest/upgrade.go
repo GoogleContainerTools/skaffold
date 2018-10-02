@@ -14,20 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package latest
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
-	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
+	"errors"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// SkaffoldConfig references the most recent skaffold config version
-type SkaffoldConfig = latest.SkaffoldConfig
-
-const LatestVersion string = latest.Version
-
-var LatestAPIVersion = apiversion.MustParse(LatestVersion)
-
-func NewConfig() (*SkaffoldConfig, error) {
-	return latest.NewConfig()
+// Upgrade upgrades a configuration to the next version.
+func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
+	return nil, errors.New("not implemented yet")
 }
