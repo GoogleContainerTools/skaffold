@@ -17,10 +17,12 @@ limitations under the License.
 package cmd
 
 import (
+	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
@@ -41,10 +43,25 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 		return nil, nil, errors.Wrap(err, "applying profiles")
 	}
 
+	globalConfig, err := configutil.GetConfigForKubectx()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "retrieving global config")
+	}
+	if err = applyDefaultRepoSubstitution(config, globalConfig); err != nil {
+		return nil, nil, errors.Wrap(err, "substituting default repos")
+	}
+
 	runner, err := runner.NewForConfig(opts, config)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "creating runner")
 	}
 
 	return runner, config, nil
+}
+
+func applyDefaultRepoSubstitution(config *latest.SkaffoldConfig, globalConfig *configutil.ContextConfig) error {
+	for _, artifact := range config.Build.Artifacts {
+		artifact.ImageName = util.SubstituteDefaultRepoIntoImage(globalConfig.DefaultRepo, artifact.ImageName)
+	}
+	return nil
 }

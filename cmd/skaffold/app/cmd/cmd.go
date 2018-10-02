@@ -23,12 +23,9 @@ import (
 	"os"
 	"strings"
 
-	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
-	cmdutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -154,31 +151,5 @@ func SetUpLogs(out io.Writer, level string) error {
 		return errors.Wrap(err, "parsing log level")
 	}
 	logrus.SetLevel(lvl)
-	return nil
-}
-
-func readConfiguration(opts *config.SkaffoldOptions) (*config.SkaffoldConfig, error) {
-	config, err := cmdutil.ParseConfig(opts.ConfigurationFile)
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing skaffold config")
-	}
-	err = config.ApplyProfiles(opts.Profiles)
-	if err != nil {
-		return nil, errors.Wrap(err, "applying profiles")
-	}
-	globalConfig, err := configutil.GetConfigForKubectx()
-	if err != nil {
-		return nil, errors.Wrap(err, "retrieving global config")
-	}
-	if err = applyDefaultRepoSubstitution(config, globalConfig); err != nil {
-		return nil, errors.Wrap(err, "substituting default repos")
-	}
-	return config, nil
-}
-
-func applyDefaultRepoSubstitution(config *config.SkaffoldConfig, globalConfig *configutil.ContextConfig) error {
-	for _, artifact := range config.Build.Artifacts {
-		artifact.ImageName = util.SubstituteDefaultRepoIntoImage(globalConfig.DefaultRepo, artifact.ImageName)
-	}
 	return nil
 }
