@@ -22,22 +22,6 @@ import (
 	"path/filepath"
 )
 
-func buildMavenCommand(workspace string, args ...string) ([]string, error) {
-	maven, err := findBuilder("mvn", "mvnw", workspace)
-	if err != nil {
-		return nil, err
-	}
-	return append(maven, args...), nil
-}
-
-func buildGradleCommand(workspace string, args ...string) ([]string, error) {
-	gradle, err := findBuilder("gradle", "gradlew", workspace)
-	if err != nil {
-		return nil, err
-	}
-	return append(gradle, args...), nil
-}
-
 // Maven and Gradle projects often provide a wrapper to ensure a particular
 // builder version is used.  This function tries to resolve a wrapper
 // or otherwise resolves the builder executable.

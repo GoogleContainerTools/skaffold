@@ -17,11 +17,52 @@ limitations under the License.
 package local
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 	"testing"
 )
 
-func TestBuildGradle(t *testing.T) {
-	t.Error("unimplemented")
+func TestGenerateMavenCommand(t *testing.T) {
+	a := v1alpha3.JibMavenArtifact{}
+	expectedSubCommand := []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage=image"}
+	commandLine, err := generateMavenCommand(".", "image", &a)
+
+	testutil.CheckError(t, false, err)
+	testutil.CheckDeepEqual(t, expectedSubCommand, commandLine)
+}
+
+func TestGenerateMavenCommand_withProfile(t *testing.T) {
+	a := v1alpha3.JibMavenArtifact{ Profile: "profile"}
+	expectedSubCommand := []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage=image", "-Pprofile"}
+	commandLine, err := generateMavenCommand(".", "image", &a)
+
+	testutil.CheckError(t, false, err)
+	testutil.CheckDeepEqual(t, expectedSubCommand, commandLine)
+}
+
+func TestGenerateMavenCommand_withModule(t *testing.T) {
+	a := v1alpha3.JibMavenArtifact{ Module: "module"}
+	_, err := generateMavenCommand(".", "image", &a)
+
+	testutil.CheckError(t, true, err)
+}
+
+func TestGenerateGradleCommand(t *testing.T) {
+	a := v1alpha3.JibGradleArtifact{}
+	expectedSubCommand := []string{":jibDockerBuild", "--image=image"}
+	commandLine, err := generateGradleCommand(".", "image", &a)
+
+	testutil.CheckError(t, false, err)
+	testutil.CheckDeepEqual(t, expectedSubCommand, commandLine)
+}
+
+func TestGenerateGradleCommand_withProject(t *testing.T) {
+	a := v1alpha3.JibGradleArtifact{Project: "project"}
+	expectedSubCommand := []string{":project:jibDockerBuild", "--image=image"}
+	commandLine, err := generateGradleCommand(".", "image", &a)
+
+	testutil.CheckError(t, false, err)
+	testutil.CheckDeepEqual(t, expectedSubCommand, commandLine)
 }
 
 func TestGenerateJibImageRef_simple_noProject(t *testing.T) {
