@@ -57,9 +57,8 @@ var generateGradleCommandTests = []struct {
 
 func TestGenerateGradleCommand(t *testing.T) {
 	for _, tt := range generateGradleCommandTests {
-		commandLine, err := generateGradleCommand(".", "image", &tt.in)
+		commandLine := generateGradleCommand(".", "image", &tt.in)
 
-		testutil.CheckError(t, false, err)
 		testutil.CheckDeepEqual(t, tt.out, commandLine)
 	}
 }

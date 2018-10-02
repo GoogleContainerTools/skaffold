@@ -54,7 +54,7 @@ func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace st
 // generateMavenCommand generates the command-line to pass to maven for building a
 // project found in `workspace`.  The resulting image is added to the local docker daemon
 // and called `skaffoldImage`.
-func generateMavenCommand(workspace string, skaffoldImage string, a *v1alpha3.JibMavenArtifact) ([]string, error) {
+func generateMavenCommand(_ /*workspace*/ string, skaffoldImage string, a *v1alpha3.JibMavenArtifact) ([]string, error) {
 	if a.Module != "" {
 		// TODO: multi-module
 		return nil, errors.New("Maven multi-modules not supported yet")
@@ -73,10 +73,7 @@ func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace s
 	if err != nil {
 		return "", errors.Wrap(err, "Unable to find gradle executable")
 	}
-	gradleCommand, err := generateGradleCommand(workspace, skaffoldImage, a)
-	if err != nil {
-		return "", err
-	}
+	gradleCommand := generateGradleCommand(workspace, skaffoldImage, a)
 	commandLine := append(gradle, gradleCommand...)
 
 	err = executeBuildCommand(ctx, out, workspace, commandLine)
@@ -89,7 +86,7 @@ func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace s
 // generateGradleCommand generates the command-line to pass to gradle for building an
 // project in `workspace`.  The resulting image is added to the local docker daemon
 // and called `skaffoldImage`.
-func generateGradleCommand(workspace string, skaffoldImage string, a *v1alpha3.JibGradleArtifact) ([]string, error) {
+func generateGradleCommand(_ /*workspace*/ string, skaffoldImage string, a *v1alpha3.JibGradleArtifact) []string {
 	command := []string{}
 	if a.Project == "" {
 		command = append(command, ":jibDockerBuild")
@@ -98,7 +95,7 @@ func generateGradleCommand(workspace string, skaffoldImage string, a *v1alpha3.J
 		command = append(command, ":"+a.Project+":jibDockerBuild")
 	}
 	command = append(command, "--image="+skaffoldImage)
-	return command, nil
+	return command
 }
 
 // executeBuildCommand executes the command-line with the working directory set to `workspace`.
