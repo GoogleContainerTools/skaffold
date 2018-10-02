@@ -90,11 +90,15 @@ func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace s
 // project in `workspace`.  The resulting image is added to the local docker daemon
 // and called `skaffoldImage`.
 func generateGradleCommand(workspace string, skaffoldImage string, a *v1alpha3.JibGradleArtifact) ([]string, error) {
-	if a.Project != "" {
+	command := []string{}
+	if a.Project == "" {
+		command = append(command, ":jibDockerBuild")
+	} else {
 		// multi-module
-		return []string{":" + a.Project + ":jibDockerBuild", "--image="+skaffoldImage}, nil
+		command = append(command, ":" + a.Project + ":jibDockerBuild")
 	}
-	return []string{":jibDockerBuild", "--image="+skaffoldImage}, nil
+	command = append(command, "--image="+skaffoldImage)
+	return command, nil
 }
 
 // executeBuildCommand executes the command-line with the working directory set to `workspace`.
