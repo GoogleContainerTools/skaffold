@@ -60,6 +60,10 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 }
 
 func applyDefaultRepoSubstitution(config *latest.SkaffoldConfig, globalConfig *configutil.ContextConfig) error {
+	if globalConfig == nil {
+		// noop
+		return nil
+	}
 	for _, artifact := range config.Build.Artifacts {
 		artifact.ImageName = util.SubstituteDefaultRepoIntoImage(globalConfig.DefaultRepo, artifact.ImageName)
 	}
