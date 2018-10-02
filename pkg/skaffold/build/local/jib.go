@@ -38,12 +38,12 @@ func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace st
 	if err != nil {
 		return "", err
 	}
-	mavenCommand, err := generateMavenCommand(workspace, skaffoldImage, a) 
+	mavenCommand, err := generateMavenCommand(workspace, skaffoldImage, a)
 	if err != nil {
 		return "", err
 	}
 	commandLine := append(maven, mavenCommand...)
- 
+
 	err = executeBuildCommand(ctx, out, workspace, commandLine)
 	if err != nil {
 		return "", errors.Wrap(err, "maven build failed")
@@ -60,7 +60,7 @@ func generateMavenCommand(workspace string, skaffoldImage string, a *v1alpha3.Ji
 		return nil, errors.New("Maven multi-modules not supported yet")
 	}
 	// use mostly-qualified plugin ID in case jib is not a configured plugin
-	commandLine := []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage="+skaffoldImage}
+	commandLine := []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage=" + skaffoldImage}
 	if a.Profile != "" {
 		commandLine = append(commandLine, "-P"+a.Profile)
 	}
@@ -73,12 +73,12 @@ func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace s
 	if err != nil {
 		return "", err
 	}
-	gradleCommand, err := generateGradleCommand(workspace, skaffoldImage, a) 
+	gradleCommand, err := generateGradleCommand(workspace, skaffoldImage, a)
 	if err != nil {
 		return "", err
 	}
 	commandLine := append(gradle, gradleCommand...)
- 
+
 	err = executeBuildCommand(ctx, out, workspace, commandLine)
 	if err != nil {
 		return "", errors.Wrap(err, "gradle build failed")
@@ -95,7 +95,7 @@ func generateGradleCommand(workspace string, skaffoldImage string, a *v1alpha3.J
 		command = append(command, ":jibDockerBuild")
 	} else {
 		// multi-module
-		command = append(command, ":" + a.Project + ":jibDockerBuild")
+		command = append(command, ":"+a.Project+":jibDockerBuild")
 	}
 	command = append(command, "--image="+skaffoldImage)
 	return command, nil
@@ -119,12 +119,12 @@ func generateJibImageRef(workspace string, project string) string {
 		imageName += "_" + project
 	}
 	// if the workspace + project is a valid image name then use it
-	match, _ := regexp.MustParse(constants.RepositoryComponentRegex, imageName);
+	match, _ := regexp.MustParse(constants.RepositoryComponentRegex, imageName)
 	if match {
 		return imageName
 	}
 	// otherwise use a hash for a deterministic name
 	hasher := sha1.New()
 	io.WriteString(hasher, imageName)
-    return "jib__" + hex.EncodeToString(hasher.Sum(nil))
+	return "jib__" + hex.EncodeToString(hasher.Sum(nil))
 }
