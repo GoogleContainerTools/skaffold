@@ -30,7 +30,7 @@ func TestGetCommandMavenWithWrapper(t *testing.T) {
 		description        string
 		jibMavenArtifact   v1alpha3.JibMavenArtifact
 		filesInWorkspace   []string
-		expectedExecutable []string
+		expectedExecutable string
 		expectedSubCommand func(workspace string) []string
 	}{
 		{
