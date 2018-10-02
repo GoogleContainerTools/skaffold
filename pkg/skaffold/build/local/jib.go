@@ -36,7 +36,7 @@ func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace st
 
 	maven, err := findBuilder("mvn", "mvnw", workspace)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Unable to find maven executable")
 	}
 	mavenCommand, err := generateMavenCommand(workspace, skaffoldImage, a)
 	if err != nil {
@@ -71,7 +71,7 @@ func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace s
 	skaffoldImage := generateJibImageRef(workspace, a.Project)
 	gradle, err := findBuilder("gradle", "gradlew", workspace)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Unable to find gradle executable")
 	}
 	gradleCommand, err := generateGradleCommand(workspace, skaffoldImage, a)
 	if err != nil {
@@ -103,7 +103,7 @@ func generateGradleCommand(workspace string, skaffoldImage string, a *v1alpha3.J
 
 // executeBuildCommand executes the command-line with the working directory set to `workspace`.
 func executeBuildCommand(ctx context.Context, out io.Writer, workspace string, commandLine []string) error {
-	logrus.Infof("Building %s: %s", workspace, commandLine)
+	logrus.Infof("Building %v: %v", workspace, commandLine)
 	cmd := exec.CommandContext(ctx, commandLine[0], commandLine[1:]...)
 	cmd.Dir = workspace
 	cmd.Stdout = out
@@ -119,7 +119,7 @@ func generateJibImageRef(workspace string, project string) string {
 		imageName += "_" + project
 	}
 	// if the workspace + project is a valid image name then use it
-	match, _ := regexp.MustParse(constants.RepositoryComponentRegex, imageName)
+	match := regexp.MustCompile(constants.RepositoryComponentRegex).MatchString(imageName)
 	if match {
 		return imageName
 	}
