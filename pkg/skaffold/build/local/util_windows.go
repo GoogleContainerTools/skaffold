@@ -19,6 +19,8 @@ package local
 import (
 	"os/exec"
 	"path/filepath"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Maven and Gradle projects often provide a wrapper to ensure a particular
@@ -26,21 +28,21 @@ import (
 // or otherwise resolves the builder executable.
 func findBuilder(builderExecutable string, wrapperScriptName string, workspace string) ([]string, error) {
 	wrapperFile := filepath.Join(workspace, wrapperScriptName)
-	if isFile(wrapperFile) {
+	if util.IsFile(wrapperFile) {
 		path, err := filepath.Abs(wrapperFile)
 		if err != nil {
 			return nil, err
 		}
 		return []string{path}, nil
 	}
-	if cmdFile := wrapperFile + ".cmd"; isFile(cmdFile) {
+	if cmdFile := wrapperFile + ".cmd"; util.IsFile(cmdFile) {
 		path, err := filepath.Abs(cmdFile)
 		if err != nil {
 			return nil, err
 		}
 		return []string{"cmd", "/c", path}, nil
 	}
-	if batFile := wrapperFile + ".bat"; isFile(batFile) {
+	if batFile := wrapperFile + ".bat"; util.IsFile(batFile) {
 		path, err := filepath.Abs(batFile)
 		if err != nil {
 			return nil, err

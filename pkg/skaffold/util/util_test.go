@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -174,4 +175,20 @@ func TestExpand(t *testing.T) {
 			testutil.CheckDeepEqual(t, test.expected, actual)
 		})
 	}
+}
+
+func TestIsFile(t *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+	tmpDir.Write("file", "")
+	
+	if !IsFile(filepath.Join(tmpDir.Root(), "file")) {
+		t.Error("IsFile returned false for a file")
+	}	
+	if IsFile(tmpDir.Root()) {
+		t.Error("IsFile returned true for a directory")
+	}
+	if IsFile(filepath.Join(tmpDir.Root(), "does-not-exist")) {
+		t.Error("IsFile returned true for a non-existent file")
+	}	
 }

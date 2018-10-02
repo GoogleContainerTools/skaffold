@@ -1,3 +1,5 @@
+// +build !windows
+
 /*
 Copyright 2018 The Skaffold Authors
 
@@ -17,10 +19,27 @@ limitations under the License.
 package local
 
 import (
-	"os"
+	"os/exec"
+	"path/filepath"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func isFile(filePath string) bool {
-	info, error := os.Stat(filePath)
-	return error == nil && !info.IsDir()
+// Maven and Gradle projects often provide a wrapper to ensure a particular
+// builder version is used.  This function tries to resolve a wrapper
+// or otherwise resolves the builder executable.
+func findBuilder(builderExecutable string, wrapperScriptName string, workspace string) ([]string, error) {
+	wrapperFile := filepath.Join(workspace, wrapperScriptName)
+	if util.IsFile(wrapperFile) {
+		absolute, err := filepath.Abs(wrapperFile)
+		if err != nil {
+			return nil, err
+		}
+		return []string{absolute}, nil
+	}
+	path, err := exec.LookPath(builderExecutable)
+	if err != nil {
+		return nil, err
+	}
+	return []string{path}, nil
 }

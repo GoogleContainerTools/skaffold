@@ -64,6 +64,13 @@ func StrSliceContains(sl []string, s string) bool {
 	return false
 }
 
+// IsFile returns true if the provided `flePath` refers to a fail, and
+// false otherwise.
+func IsFile(filePath string) bool {
+	info, err := os.Stat(filePath)
+	return err == nil && !info.IsDir()
+}
+
 // ExpandPathsGlob expands paths according to filepath.Glob patterns
 // Returns a list of unique files that match the glob patterns passed in.
 func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
