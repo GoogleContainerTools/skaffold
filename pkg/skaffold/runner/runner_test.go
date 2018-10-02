@@ -295,15 +295,15 @@ func TestRun(t *testing.T) {
 		},
 		{
 			description: "run test error",
-			config: &v1alpha3.SkaffoldConfig{
-				Build: v1alpha3.BuildConfig{
-					Artifacts: []*v1alpha3.Artifact{
+			config: &latest.SkaffoldConfig{
+				Build: latest.BuildConfig{
+					Artifacts: []*latest.Artifact{
 						{
 							ImageName: "test",
 						},
 					},
 				},
-				Test: []v1alpha3.TestCase{
+				Test: []latest.TestCase{
 					{
 						ImageName:      "test",
 						StructureTests: []string{"fake_file.yaml"},
