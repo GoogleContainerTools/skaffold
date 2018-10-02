@@ -2,12 +2,12 @@ apiVersion: skaffold/v1alpha4
 kind: Config
 build:
   artifacts:
-  - imageName: gcr.io/k8s-skaffold/node-example
-    workspace: node
+  - image: gcr.io/k8s-skaffold/node-example
+    context: node
     sync:
       '*.js': .
-  - imageName: gcr.io/k8s-skaffold/python-reload
-    workspace: python
+  - image: gcr.io/k8s-skaffold/python-reload
+    context: python
     sync:
       '*.py': .
 deploy:
