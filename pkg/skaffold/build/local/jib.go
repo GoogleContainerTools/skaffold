@@ -119,7 +119,7 @@ func generateJibImageRef(workspace string, project string) string {
 		imageName += "_" + project
 	}
 	// if the workspace + project is a valid image name then use it
-	match, _ := regexp.MatchString(constants.RepositoryComponentRegex, imageName);
+	match, _ := regexp.MustParse(constants.RepositoryComponentRegex, imageName);
 	if match {
 		return imageName
 	}
