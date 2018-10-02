@@ -1,3 +1,5 @@
+// +build !windows
+
 /*
 Copyright 2018 The Skaffold Authors
 
@@ -27,25 +29,11 @@ import (
 func findBuilder(builderExecutable string, wrapperScriptName string, workspace string) ([]string, error) {
 	wrapperFile := filepath.Join(workspace, wrapperScriptName)
 	if isFile(wrapperFile) {
-		path, err := filepath.Abs(wrapperFile)
+		absolute, err := filepath.Abs(wrapperFile)
 		if err != nil {
 			return nil, err
 		}
-		return []string{path}, nil
-	}
-	if cmdFile := wrapperFile + ".cmd"; isFile(cmdFile) {
-		path, err := filepath.Abs(cmdFile)
-		if err != nil {
-			return nil, err
-		}
-		return []string{"cmd", "/c", path}, nil
-	}
-	if batFile := wrapperFile + ".bat"; isFile(batFile) {
-		path, err := filepath.Abs(batFile)
-		if err != nil {
-			return nil, err
-		}
-		return []string{"cmd", "/c", path}, nil
+		return []string{absolute}, nil
 	}
 	path, err := exec.LookPath(builderExecutable)
 	if err != nil {

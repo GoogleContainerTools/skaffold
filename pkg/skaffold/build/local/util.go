@@ -18,28 +18,7 @@ package local
 
 import (
 	"os"
-	"os/exec"
-	"path/filepath"
 )
-
-// Maven and Gradle projects often provide a wrapper to ensure a particular
-// builder version is used.  This function tries to resolve a wrapper
-// or otherwise resolves the builder executable.
-func findBuilder(builderExecutable string, wrapperScriptName string, workspace string) ([]string, error) {
-	wrapperFile := filepath.Join(workspace, wrapperScriptName)
-	if isFile(wrapperFile) {
-		absolute, err := filepath.Abs(wrapperFile)
-		if err != nil {
-			return nil, err
-		}
-		return []string{absolute}, nil
-	}
-	path, err := exec.LookPath(builderExecutable)
-	if err != nil {
-		return nil, err
-	}
-	return []string{path}, nil
-}
 
 func isFile(filePath string) bool {
 	info, error := os.Stat(filePath)
