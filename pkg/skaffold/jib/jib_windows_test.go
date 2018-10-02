@@ -68,7 +68,7 @@ func TestGetCommandMavenWithWrapper(t *testing.T) {
 			if executable != test.expectedExecutable {
 				t.Errorf("Expected executable %s. Got %s", test.expectedExecutable, executable)
 			}
-			testutil.CheckDeepEqual(t, test.expectedSubCommand, subCommand)
+			testutil.CheckDeepEqual(t, test.expectedSubCommand(tmpDir.Root()), subCommand)
 		})
 	}
 }
