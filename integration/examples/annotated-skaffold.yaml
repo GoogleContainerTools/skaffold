@@ -36,15 +36,15 @@ build:
   # you can include as many as you want here.
   artifacts:
     # The name of the image to be built.
-  - imageName: gcr.io/k8s-skaffold/skaffold-example
+  - image: gcr.io/k8s-skaffold/skaffold-example
     # The path to your dockerfile context. Defaults to ".".
-    workspace: ../examples/getting-started
+    context: ../examples/getting-started
 
     # Each artifact is of a given type among: `docker` and `bazel`.
     # If not specified, it defaults to `docker: {}`.
     docker:
       # Dockerfile's location relative to workspace. Defaults to "Dockerfile"
-      dockerfilePath: Dockerfile
+      dockerfile: Dockerfile
       # Key/value arguements passed to the docker build.
       buildArgs:
         key1: "value1"
@@ -133,7 +133,7 @@ deploy:
     # - namespace:deployment/web-app2
 
  # kustomize:
-    # kustomizePath: .
+    # path: .
     # kustomize deploys manifests with kubectl.
     # kubectl can be passed additional option flags either on every command (Global),
     # on creations (Apply) or deletions (Delete).

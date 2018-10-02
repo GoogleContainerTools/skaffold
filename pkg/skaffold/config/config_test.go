@@ -37,7 +37,7 @@ build:
   tagPolicy:
     gitCommit: {}
   artifacts:
-  - imageName: example
+  - image: example
 deploy:
   kubectl: {}
 `
@@ -50,7 +50,7 @@ build:
     sha256: {}
     gitCommit: {}
   artifacts:
-  - imageName: example
+  - image: example
 deploy:
   name: example
 `
@@ -62,12 +62,12 @@ build:
   tagPolicy:
     sha256: {}
   artifacts:
-  - imageName: image1
-    workspace: ./examples/app1
+  - image: image1
+    context: ./examples/app1
     docker:
-      dockerfilePath: Dockerfile.dev
-  - imageName: image2
-    workspace: ./examples/app2
+      dockerfile: Dockerfile.dev
+  - image: image2
+    context: ./examples/app2
     bazel:
       target: //:example.tar
   googleCloudBuild:

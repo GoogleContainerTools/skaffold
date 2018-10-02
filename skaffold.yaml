@@ -2,11 +2,9 @@ apiVersion: skaffold/v1alpha3
 kind: Config
 build:
   artifacts:
-  - imageName: gcr.io/k8s-skaffold/skaffold
-    workspace: .
+  - image: gcr.io/k8s-skaffold/skaffold
     docker:
-      dockerfilePath: deploy/skaffold/Dockerfile
-  local: {}
+      dockerfile: deploy/skaffold/Dockerfile
 deploy:
   kubectl:
     manifests:
