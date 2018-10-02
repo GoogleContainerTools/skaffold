@@ -145,7 +145,7 @@ func TestRun(t *testing.T) {
 			description: "kaniko local example",
 			args:        []string{"run"},
 			pods:        []string{"getting-started-kaniko"},
-			dir:         "../examples/kaniko-local",
+			dir:         "examples/kaniko-local",
 			remoteOnly:  true,
 		},
 		{

@@ -1,11 +1,11 @@
-apiVersion: skaffold/v1alpha3
+apiVersion: skaffold/v1alpha4
 kind: Config
 build:
   artifacts:
-  - imageName: gcr.io/k8s-skaffold/skaffold-example
+  - image: gcr.io/k8s-skaffold/skaffold-example
   kaniko:
     buildContext: 
-      localDir: true
+      localDir: {}
     pullSecretName: e2esecret
     namespace: default
 deploy:
