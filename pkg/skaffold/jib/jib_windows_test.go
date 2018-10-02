@@ -39,7 +39,7 @@ func TestGetCommandMavenWithWrapper(t *testing.T) {
 			filesInWorkspace:   []string{"mvnw.cmd"},
 			expectedExecutable: "cmd.exe",
 			expectedSubCommand: func(workspace string) []string {
-				return []string{"/C", resolveFile(workspace, "mvnw.cmd"), "jib:_skaffold-files", "-q"}
+				return []string{"/C", filepath.Join(workspace, "mvnw.cmd"), "jib:_skaffold-files", "-q"}
 			},
 		},
 		{
@@ -48,7 +48,7 @@ func TestGetCommandMavenWithWrapper(t *testing.T) {
 			filesInWorkspace:   []string{"mvnw.cmd"},
 			expectedExecutable: "cmd.exe",
 			expectedSubCommand: func(workspace string) []string {
-				return []string{"/c", resolveFile(workspace, "mvnw.cmd"), "jib:_skaffold-files", "-q", "-P", "profile"}
+				return []string{"/c", filepath.Join(workspace, "mvnw.cmd"), "jib:_skaffold-files", "-q", "-P", "profile"}
 			},
 		},
 	}
