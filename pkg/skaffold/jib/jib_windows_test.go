@@ -79,7 +79,7 @@ func TestGetCommandGradleWithWrapper(t *testing.T) {
 		jibGradleArtifact  v1alpha3.JibGradleArtifact
 		filesInWorkspace   []string
 		expectedExecutable string
-		expectedSubCommand []string
+		expectedSubCommand func(workspace string) []string
 	}{
 		{
 			description:        "gradle with wrapper",
@@ -87,7 +87,7 @@ func TestGetCommandGradleWithWrapper(t *testing.T) {
 			filesInWorkspace:   []string{"gradlew.bat"},
 			expectedExecutable: "cmd.exe",
 			expectedSubCommand: func(workspace string) []string {
-				return []string{"/C", resolveFile(workspace, "gradlew.bat"), "_jibSkaffoldFiles", "-q"}
+				return []string{"/C", filepath.Join(workspace, "gradlew.bat"), "_jibSkaffoldFiles", "-q"}
 			},
 		},
 	}
