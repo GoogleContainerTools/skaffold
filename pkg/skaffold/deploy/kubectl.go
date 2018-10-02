@@ -25,9 +25,10 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -35,7 +36,7 @@ import (
 
 // KubectlDeployer deploys workflows using kubectl CLI.
 type KubectlDeployer struct {
-	*v1alpha3.KubectlDeploy
+	*latest.KubectlDeploy
 
 	workingDir string
 	kubectl    kubectl.CLI
@@ -43,7 +44,7 @@ type KubectlDeployer struct {
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(workingDir string, cfg *v1alpha3.KubectlDeploy, kubeContext string, namespace string) *KubectlDeployer {
+func NewKubectlDeployer(workingDir string, cfg *latest.KubectlDeploy, kubeContext string, namespace string) *KubectlDeployer {
 	return &KubectlDeployer{
 		KubectlDeploy: cfg,
 		workingDir:    workingDir,
@@ -64,6 +65,8 @@ func (k *KubectlDeployer) Labels() map[string]string {
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
+	color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version())
+
 	manifests, err := k.readManifests(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading manifests")

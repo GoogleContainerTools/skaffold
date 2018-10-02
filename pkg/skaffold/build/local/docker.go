@@ -24,12 +24,12 @@ import (
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
-func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace string, a *v1alpha3.DockerArtifact) (string, error) {
+func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact) (string, error) {
 	initialTag := util.RandomID()
 
 	if b.cfg.UseDockerCLI || b.cfg.UseBuildkit {

@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-containerregistry/pkg/v1"
@@ -70,7 +70,6 @@ RUN go build -o worker .
 FROM gcr.io/distroless/base
 WORKDIR /root/
 COPY --from=0 /go/src/github.com/r2d4/leeroy .
-CMD ["./worker"]
 `
 
 const envTest = `
@@ -84,7 +83,6 @@ const copyDirectory = `
 FROM nginx
 ADD . /etc/
 COPY ./file /etc/file
-CMD nginx
 `
 const multiFileCopy = `
 FROM ubuntu:14.04
@@ -100,7 +98,6 @@ const contextDockerfile = `
 FROM nginx
 ADD nginx.conf /etc/nginx
 COPY . /files
-CMD nginx
 `
 
 // This has an ONBUILD instruction of "COPY . /go/src/app"
@@ -117,33 +114,58 @@ const copyServerGoBuildArg = `
 FROM ubuntu:14.04
 ARG FOO
 COPY $FOO .
-CMD $FOO
+`
+
+const copyWorkerGoBuildArgSamePrefix = `
+FROM ubuntu:14.04
+ARG FOO=server.go
+ARG FOO2
+COPY $FOO2 .
 `
 
 const copyServerGoBuildArgCurlyBraces = `
 FROM ubuntu:14.04
 ARG FOO
 COPY ${FOO} .
-CMD ${FOO}
 `
 
 const copyServerGoBuildArgExtraWhitespace = `
 FROM ubuntu:14.04
 ARG  FOO
 COPY $FOO .
-CMD $FOO
 `
 
 const copyServerGoBuildArgDefaultValue = `
 FROM ubuntu:14.04
 ARG FOO=server.go
 COPY $FOO .
-CMD $FOO
+`
+
+const copyWorkerGoBuildArgRedefinedDefaultValue = `
+FROM ubuntu:14.04
+ARG FOO=server.go
+ARG FOO=worker.go
+COPY $FOO .
+`
+
+const copyServerGoBuildArgsAtTheTop = `
+FROM ubuntu:14.04
+ARG FOO=server.go
+ARG FOO2=ignored
+ARG FOO3=ignored
+COPY $FOO .
 `
 
 const fromStage = `
 FROM ubuntu:14.04 as base
 FROM base as dist
+FROM dist as prod
+`
+
+const fromStageIgnoreCase = `
+FROM ubuntu:14.04 as BASE
+FROM base as dist
+FROM DIST as prod
 `
 
 type fakeImageFetcher struct {
@@ -312,6 +334,14 @@ func TestGetDependencies(t *testing.T) {
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
+			description: "build args with same prefix",
+			dockerfile:  copyWorkerGoBuildArgSamePrefix,
+			workspace:   ".",
+			buildArgs:   map[string]*string{"FOO2": util.StringPtr("worker.go")},
+			expected:    []string{"Dockerfile", "worker.go"},
+			fetched:     []string{"ubuntu:14.04"},
+		},
+		{
 			description: "build args with curly braces",
 			dockerfile:  copyServerGoBuildArgCurlyBraces,
 			workspace:   ".",
@@ -328,17 +358,39 @@ func TestGetDependencies(t *testing.T) {
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
-			description: "build args with default value and buildArgs unset",
+			description: "build args with default value",
 			dockerfile:  copyServerGoBuildArgDefaultValue,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "server.go"},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
-			description: "build args with default value and buildArgs set",
+			description: "build args with redefined default value",
+			dockerfile:  copyWorkerGoBuildArgRedefinedDefaultValue,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "worker.go"},
+			fetched:     []string{"ubuntu:14.04"},
+		},
+		{
+			description: "build args all defined a the top",
+			dockerfile:  copyServerGoBuildArgsAtTheTop,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "server.go"},
+			fetched:     []string{"ubuntu:14.04"},
+		},
+		{
+			description: "override default build arg",
 			dockerfile:  copyServerGoBuildArgDefaultValue,
 			workspace:   ".",
-			buildArgs:   map[string]*string{"FOO": util.StringPtr("server.go")},
+			buildArgs:   map[string]*string{"FOO": util.StringPtr("worker.go")},
+			expected:    []string{"Dockerfile", "worker.go"},
+			fetched:     []string{"ubuntu:14.04"},
+		},
+		{
+			description: "ignore build arg and use default arg value",
+			dockerfile:  copyServerGoBuildArgDefaultValue,
+			workspace:   ".",
+			buildArgs:   map[string]*string{"FOO": nil},
 			expected:    []string{"Dockerfile", "server.go"},
 			fetched:     []string{"ubuntu:14.04"},
 		},
@@ -347,7 +399,14 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  fromStage,
 			workspace:   ".",
 			expected:    []string{"Dockerfile"},
-			fetched:     []string{"ubuntu:14.04"}, // Don't fetch `base`
+			fetched:     []string{"ubuntu:14.04"},
+		},
+		{
+			description: "from base stage, ignoring case",
+			dockerfile:  fromStageIgnoreCase,
+			workspace:   ".",
+			expected:    []string{"Dockerfile"},
+			fetched:     []string{"ubuntu:14.04"},
 		},
 	}
 
@@ -373,7 +432,7 @@ func TestGetDependencies(t *testing.T) {
 			}
 
 			workspace := tmpDir.Path(test.workspace)
-			deps, err := GetDependencies(workspace, &v1alpha3.DockerArtifact{
+			deps, err := GetDependencies(workspace, &latest.DockerArtifact{
 				BuildArgs:      test.buildArgs,
 				DockerfilePath: "Dockerfile",
 			})

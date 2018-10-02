@@ -1,0 +1,179 @@
+apiVersion: skaffold/v1alpha4
+kind: Config
+build:
+  # tagPolicy determines how skaffold is going to tag your images.
+  # We provide a few strategies here, although you most likely won't need to care!
+  # The policy can `gitCommit`, `sha256` or `envTemplate`.
+  # If not specified, it defaults to `gitCommit: {}`.
+  tagPolicy:
+    # Tag the image with the git commit of your current repository.
+    gitCommit: {}
+
+    # Tag the image with the checksum of the built image (image id).
+    # sha256: {}
+
+    # Tag the image with a configurable template string.
+    # The template must be in the golang text/template syntax: https://golang.org/pkg/text/template/
+    # The template is compiled and executed against the current environment,
+    # with those variables injected:
+    #   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.
+    #   DIGEST       |  Digest of the newly built image. For eg. `sha256:27ffc7f352665cc50ae3cbcc4b2725e36062f1b38c611b6f95d6df9a7510de23`.
+    #   DIGEST_ALGO  |  Algorithm used by the digest: For eg. `sha256`.
+    #   DIGEST_HEX   |  Digest of the newly built image. For eg. `27ffc7f352665cc50ae3cbcc4b2725e36062f1b38c611b6f95d6df9a7510de23`.
+    # Example
+    # envTemplate:
+    #  template: "{{.RELEASE}}-{{.IMAGE_NAME}}"
+
+    # Tag the image with the build timestamp.
+    #  The format can be overridden with golang formats, see: https://golang.org/pkg/time/#Time.Format
+    #    Default format is "2006-01-02_15-04-05.999_MST
+    #  The timezone is by default the local timezone, this can be overridden, see https://golang.org/pkg/time/#Time.LoadLocation
+    # dateTime:
+    #   format: "2006-01-02"
+    #   timezone: "UTC"
+
+  # artifacts is a list of the actual images you're going to be building
+  # you can include as many as you want here.
+  artifacts:
+    # The name of the image to be built.
+  - image: gcr.io/k8s-skaffold/skaffold-example
+    # The path to your dockerfile context. Defaults to ".".
+    context: ../examples/getting-started
+
+    # Each artifact is of a given type among: `docker` and `bazel`.
+    # If not specified, it defaults to `docker: {}`.
+    docker:
+      # Dockerfile's location relative to workspace. Defaults to "Dockerfile"
+      dockerfile: Dockerfile
+      # Key/value arguements passed to the docker build.
+      buildArgs:
+        key1: "value1"
+        key2: "value2"
+      # Images to consider as cache sources
+      cacheFrom:
+      - image1
+      - image2
+      # Dockerfile target name to build.
+      # target: stageName
+
+    # bazel requires bazel CLI to be installed and the artifacts sources to
+    # contain Bazel configuration files.
+    # bazel:
+    #  target: //:skaffold_example.tar
+
+# This next section is where you'll put your specific builder configuration.
+  # Valid builders are `local`, `googleCloudBuild` and `kaniko`.
+  # Defaults to `local: {}`
+
+  # Pushing the images can be skipped. If no value is specified, it'll default to
+  # `true` on minikube or Docker for Desktop, for even faster build and deploy cycles.
+  # `false` on other types of kubernetes clusters that require pushing the images.
+  # skaffold defers to your ~/.docker/config for authentication information.
+  # If you're using Google Container Registry, make sure that you have gcloud and
+  # docker-credentials-helper-gcr configured correctly.
+  #
+  # By default, the local builder connects to the Docker daemon with Go code to build
+  # images. If `useDockerCLI` is set, skaffold will simply shell out to the docker CLI.
+  # `useBuildkit` can also be set to activate the experimental BuildKit feature.
+  #
+  # local:
+  #   skipPush: true
+  #   useDockerCLI: false
+  #   useBuildkit: false
+
+  # Docker artifacts can be built on Google Cloud Build. The projectId then needs
+  # to be provided and the currently logged user should be given permissions to trigger
+  # new builds on Cloud Build.
+  # If the projectId is not provided, Skaffold will try to guess it from the image name.
+  # For eg. If the artifact image name is gcr.io/myproject/image, then Skaffold will use
+  # the `myproject` GCP project.
+  # All the other parameters are also optional. The default values are listed here:
+  #  googleCloudBuild:
+  #   projectId: YOUR_PROJECT
+  #   diskSizeGb: 200
+  #   machineType: "N1_HIGHCPU_8"|"N1_HIGHCPU_32"
+  #   timeout: 10000s
+  #   dockerImage: gcr.io/cloud-builders/docker
+
+  # Docker artifacts can be built on a Kubernetes cluster with Kaniko.
+  # Sources will be sent to a GCS bucket whose name is provided.
+  # Kaniko also needs access to a service account to push the final image.
+  # See https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster
+  #
+  # kaniko:
+  #   buildContext:
+  #     gcsBucket: k8s-skaffold
+  #   pullSecret: /a/secret/path/serviceaccount.json
+  #   namespace: default
+  #   timeout: 20m
+
+# The deploy section has all the information needed to deploy. Along with build:
+# it is a required section.
+deploy:
+  # The type of the deployment method can be `kubectl`, `helm` or `kustomize`.
+
+  # The kubectl deployer uses  a client side `kubectl apply` to apply the manifests to the cluster.
+  # You'll need a kubectl CLI version installed that's compatible with your cluster.
+  kubectl:
+    # manifests to deploy from files.
+    manifests:
+    - ../examples/getting-started/k8s-*
+    # kubectl can be passed additional option flags either on every command (Global),
+    # on creations (Apply) or deletions (Delete).
+    # flags:
+    #   global: [""]
+    #   apply: [""]
+    #   delete: [""]
+
+    # manifests to deploy from remote cluster.
+    # The path to where these manifests live in remote kubernetes cluster.
+    # Example
+    # remoteManifests:
+    # - deployment/web-app1
+    # - namespace:deployment/web-app2
+
+ # kustomize:
+    # path: .
+    # kustomize deploys manifests with kubectl.
+    # kubectl can be passed additional option flags either on every command (Global),
+    # on creations (Apply) or deletions (Delete).
+    # flags:
+    #   global: [""]
+    #   apply: [""]
+    #   delete: [""]
+
+ # helm:
+    # helm releases to deploy.
+    # releases:
+    # - name: skaffold-helm
+    #   chartPath: skaffold-helm
+    #   valuesFiles:
+    #   - first-values-file.yaml
+    #   - second-values-file.yaml
+    #   values:
+    #     image: skaffold-helm
+    #   namespace: skaffold
+    #   version: ""
+    #   recreatePods: false
+    #
+    #   # setValues get appended to the helm deploy with --set.
+    #   setValues:
+    #    key: "value"
+    #
+    #   # packaged section allows to package chart setting specific version
+    #   # and/or appVersion using "helm package" command.
+    #   packaged:
+    #     # version is passed to "helm package --version" flag.
+    #     # Note that you can specify both static string or dynamic template.
+    #     version: {{ .CHART_VERSION }}-dirty
+    #     # appVersion is passed to "helm package --app-version" flag.
+    #     # Note that you can specify both static string or dynamic template.
+    #     appVersion: {{ .CHART_VERSION }}-dirty
+
+# profiles section has all the profile information which can be used to override any build or deploy configuration
+profiles:
+  - name: gcb
+    build:
+      googleCloudBuild:
+        projectId: k8s-skaffold
+

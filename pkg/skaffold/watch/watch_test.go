@@ -76,8 +76,11 @@ func TestWatch(t *testing.T) {
 
 			// Run the watcher
 			ctx, cancel := context.WithCancel(context.Background())
+			var stopped sync.WaitGroup
+			stopped.Add(1)
 			go func() {
 				err = watcher.Run(ctx, 10*time.Millisecond, somethingChanged.callNoErr)
+				stopped.Done()
 				testutil.CheckError(t, false, err)
 			}()
 
@@ -87,6 +90,7 @@ func TestWatch(t *testing.T) {
 			folderChanged.wait()
 			somethingChanged.wait()
 			cancel()
+			stopped.Wait() // Make sure the watcher is stopped before deleting the tmp folder
 		})
 	}
 }
@@ -104,7 +108,7 @@ func newCallback() *callback {
 	}
 }
 
-func (c *callback) call() {
+func (c *callback) call(e Events) {
 	c.wg.Done()
 }
 

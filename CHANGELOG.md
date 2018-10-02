@@ -1,3 +1,45 @@
+# v0.15.1 Release - 10/02/2018
+
+This is a minor release to address an inconsistency in the `skaffold fix` upgrade:
+ 
+* Transform values files in profiles to v1alpha3 [#1070](https://github.com/GoogleContainerTools/skaffold/pull/1070)
+
+
+# v0.15.0 Release - 9/27/2018
+
+New Features:
+* Added kustomize to deploy types [#1027](https://github.com/GoogleContainerTools/skaffold/pull/1027)
+* Basic support for watching Kustomize dependencies [#1015](https://github.com/GoogleContainerTools/skaffold/pull/1015)
+* Basic support for using kubectl and helm together [#586](https://github.com/GoogleContainerTools/skaffold/pull/586)
+* Add support for multiple helm values files [#985](https://github.com/GoogleContainerTools/skaffold/pull/985)
+* Add v1alpha3 Config [#982](https://github.com/GoogleContainerTools/skaffold/pull/982)
+
+Bug Fixes:
+* annotated.yaml: fix gcb timeout format [#1040](https://github.com/GoogleContainerTools/skaffold/pull/1040)
+* Catch a 409 when creating a bucket and continue. [#1044](https://github.com/GoogleContainerTools/skaffold/pull/1044)
+* Fix typo [#1045](https://github.com/GoogleContainerTools/skaffold/pull/1045)
+* Fix issues with build args replacement [#1028](https://github.com/GoogleContainerTools/skaffold/pull/1028)
+* prevent watcher failure if helm valuesFilePath not set [#930](https://github.com/GoogleContainerTools/skaffold/pull/930)
+* Correctly parse build tags that contain port numbers [#1001](https://github.com/GoogleContainerTools/skaffold/pull/1001)
+* FIX kubectl should only redeploy updated manifests [#1014](https://github.com/GoogleContainerTools/skaffold/pull/1014)
+* Fix race conditions in TestWatch [#987](https://github.com/GoogleContainerTools/skaffold/pull/987)
+
+Updates:
+* Simpler merged PR collection for release notes [#1054](https://github.com/GoogleContainerTools/skaffold/pull/1054)
+* Improve kustomize deployer [#1036](https://github.com/GoogleContainerTools/skaffold/pull/1036)
+* kustomizePath is a folder that defaults to . [#1030](https://github.com/GoogleContainerTools/skaffold/pull/1030)
+* Discard output in tests [#1021](https://github.com/GoogleContainerTools/skaffold/pull/1021)
+* Add a test for `kubectl should only redeploy updated manifests` [#1022](https://github.com/GoogleContainerTools/skaffold/pull/1022)
+* Examples versioning [#1019](https://github.com/GoogleContainerTools/skaffold/pull/1019)
+* add nkubala to MAINTAINERS [#993](https://github.com/GoogleContainerTools/skaffold/pull/993)
+* Debounce rapid file changes [#1005](https://github.com/GoogleContainerTools/skaffold/pull/1005)
+* Print kubectl client version [#991](https://github.com/GoogleContainerTools/skaffold/pull/991)
+* Auto configure authentication helper for gcr.io [#989](https://github.com/GoogleContainerTools/skaffold/pull/989)
+* Tweak the Dockerfile. [#1007](https://github.com/GoogleContainerTools/skaffold/pull/1007)
+* Skip kaniko-related test when running locally [#990](https://github.com/GoogleContainerTools/skaffold/pull/990)
+* Extract code from GCB [#986](https://github.com/GoogleContainerTools/skaffold/pull/986)
+
+
 # v0.14.0 Release - 9/13/2018
 
 New Features:

@@ -17,14 +17,13 @@ limitations under the License.
 package docker
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-cmp/cmp"
@@ -88,7 +87,7 @@ func TestRunPush(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			api := testutil.NewFakeImageAPIClient(test.tagToImageID, test.testOpts)
-			err := RunPush(context.Background(), api, test.imageName, &bytes.Buffer{})
+			err := RunPush(context.Background(), api, test.imageName, ioutil.Discard)
 			testutil.CheckError(t, test.shouldErr, err)
 		})
 	}
@@ -122,7 +121,7 @@ func TestRunBuildArtifact(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			api := testutil.NewFakeImageAPIClient(test.tagToImageID, test.testOpts)
 
-			err := BuildArtifact(context.Background(), ioutil.Discard, api, ".", &v1alpha3.DockerArtifact{}, "finalimage")
+			err := BuildArtifact(context.Background(), ioutil.Discard, api, ".", &latest.DockerArtifact{}, "finalimage")
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})
@@ -173,12 +172,12 @@ func TestDigest(t *testing.T) {
 func TestGetBuildArgs(t *testing.T) {
 	tests := []struct {
 		description string
-		artifact    *v1alpha3.DockerArtifact
+		artifact    *latest.DockerArtifact
 		want        []string
 	}{
 		{
 			description: "build args",
-			artifact: &v1alpha3.DockerArtifact{
+			artifact: &latest.DockerArtifact{
 				BuildArgs: map[string]*string{
 					"key1": util.StringPtr("value1"),
 					"key2": nil,
@@ -188,21 +187,21 @@ func TestGetBuildArgs(t *testing.T) {
 		},
 		{
 			description: "cache from",
-			artifact: &v1alpha3.DockerArtifact{
+			artifact: &latest.DockerArtifact{
 				CacheFrom: []string{"gcr.io/foo/bar", "baz:latest"},
 			},
 			want: []string{"--cache-from", "gcr.io/foo/bar", "--cache-from", "baz:latest"},
 		},
 		{
 			description: "target",
-			artifact: &v1alpha3.DockerArtifact{
+			artifact: &latest.DockerArtifact{
 				Target: "stage1",
 			},
 			want: []string{"--target", "stage1"},
 		},
 		{
 			description: "all",
-			artifact: &v1alpha3.DockerArtifact{
+			artifact: &latest.DockerArtifact{
 				BuildArgs: map[string]*string{
 					"key1": util.StringPtr("value1"),
 				},

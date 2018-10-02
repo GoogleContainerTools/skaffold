@@ -26,7 +26,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/fileutils"
 	"github.com/google/go-containerregistry/pkg/v1"
@@ -37,6 +38,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
+
+type from struct {
+	image string
+	as    string
+}
 
 // RetrieveImage is overridden for unit testing
 var RetrieveImage = retrieveImage
@@ -62,6 +68,119 @@ func ValidateDockerfile(path string) bool {
 	return true
 }
 
+func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) {
+	for i, node := range nodes {
+		if node.Value != command.Arg {
+			continue
+		}
+
+		// build arg's key
+		keyValue := strings.Split(node.Next.Value, "=")
+		key := keyValue[0]
+
+		// build arg's value
+		var value string
+		if buildArgs[key] != nil {
+			value = *buildArgs[key]
+		} else if len(keyValue) > 1 {
+			value = keyValue[1]
+		}
+
+		for _, node := range nodes[i+1:] {
+			// Stop replacements if an arg is redefined with the same key
+			if node.Value == command.Arg && strings.Split(node.Next.Value, "=")[0] == key {
+				break
+			}
+
+			// replace $key with value
+			for curr := node; curr != nil; curr = curr.Next {
+				curr.Value = util.Expand(curr.Value, key, value)
+			}
+		}
+	}
+}
+
+func fromInstructions(nodes []*parser.Node) []from {
+	var list []from
+
+	for _, node := range nodes {
+		if node.Value == command.From {
+			list = append(list, fromInstruction(node))
+		}
+	}
+
+	return list
+}
+
+func fromInstruction(node *parser.Node) from {
+	var as string
+	if next := node.Next.Next; next != nil && strings.ToLower(next.Value) == "as" && next.Next != nil {
+		as = next.Next.Value
+	}
+
+	return from{
+		image: strings.ToLower(node.Next.Value),
+		as:    strings.ToLower(as),
+	}
+}
+
+func onbuildInstructions(nodes []*parser.Node) ([]*parser.Node, error) {
+	var instructions []string
+
+	stages := map[string]bool{}
+	for _, from := range fromInstructions(nodes) {
+		stages[from.as] = true
+
+		if from.image == "scratch" {
+			continue
+		}
+
+		if _, found := stages[from.image]; found {
+			continue
+		}
+
+		logrus.Debugf("Checking base image %s for ONBUILD triggers.", from.image)
+		img, err := RetrieveImage(from.image)
+		if err != nil {
+			logrus.Warnf("Error processing base image for ONBUILD triggers: %s. Dependencies may be incomplete.", err)
+			continue
+		}
+
+		logrus.Debugf("Found ONBUILD triggers %v in image %s", img.Config.OnBuild, from.image)
+		instructions = append(instructions, img.Config.OnBuild...)
+	}
+
+	obRes, err := parser.Parse(strings.NewReader(strings.Join(instructions, "\n")))
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing ONBUILD instructions")
+	}
+
+	return obRes.AST.Children, nil
+}
+
+func copiedFiles(nodes []*parser.Node) ([][]string, error) {
+	var copied [][]string
+
+	envs := map[string]string{}
+	for _, node := range nodes {
+		switch node.Value {
+		case command.Add, command.Copy:
+			files, err := processCopy(node, envs)
+			if err != nil {
+				return nil, err
+			}
+
+			if len(files) > 0 {
+				copied = append(copied, files)
+			}
+		case command.Env:
+			envs[node.Next.Value] = node.Next.Next.Value
+		}
+	}
+
+	return copied, nil
+}
+
 func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*string) ([]string, error) {
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
@@ -74,104 +193,22 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 		return nil, errors.Wrap(err, "parsing dockerfile")
 	}
 
-	var copied [][]string
-	envs := map[string]string{}
+	expandBuildArgs(res.AST.Children, buildArgs)
 
-	// First process all build args, and replace if necessary.
-	for i, value := range res.AST.Children {
-		switch value.Value {
-		case command.Arg:
-			var val, defaultValue, arg string
-			argSetting := strings.Fields(value.Original)[1]
-
-			argValues := strings.Split(argSetting, "=")
-
-			if len(argValues) > 1 {
-				arg, defaultValue = argValues[0], argValues[1]
-			} else {
-				arg = argValues[0]
-			}
-
-			valuePtr := buildArgs[arg]
-			if valuePtr == nil && defaultValue == "" {
-				logrus.Warnf("arg %s referenced in dockerfile but not provided with default or in build args", arg)
-			} else {
-				if valuePtr == nil {
-					val = defaultValue
-				} else {
-					val = *valuePtr
-				}
-				if val == "" {
-					logrus.Warnf("empty build arg provided in skaffold config: %s", arg)
-					break
-				}
-				// we have a non-empty arg: replace it in all subsequent nodes
-				for j := i; j < len(res.AST.Children); j++ {
-					currentNode := res.AST.Children[j]
-					for {
-						if currentNode == nil {
-							break
-						}
-						currentNode.Value = strings.Replace(currentNode.Value, "$"+arg, val, -1)
-						currentNode.Value = strings.Replace(currentNode.Value, "${"+arg+"}", val, -1)
-						currentNode = currentNode.Next
-					}
-				}
-			}
-		}
+	instructions, err := onbuildInstructions(res.AST.Children)
+	if err != nil {
+		return nil, errors.Wrap(err, "listing ONBUILD instructions")
 	}
 
-	// Then process onbuilds, if present.
-	onbuildsImages := [][]string{}
-	stages := map[string]bool{}
-	for _, value := range res.AST.Children {
-		switch value.Value {
-		case command.From:
-			imageName := value.Next.Value
-			if _, found := stages[imageName]; found {
-				continue
-			}
-
-			next := value.Next.Next
-			if next != nil && strings.ToLower(next.Value) == "as" {
-				if next.Next != nil {
-					stages[next.Next.Value] = true
-				}
-			}
-
-			onbuilds, err := processBaseImage(imageName)
-			if err != nil {
-				logrus.Warnf("Error processing base image for onbuild triggers: %s. Dependencies may be incomplete.", err)
-			}
-			onbuildsImages = append(onbuildsImages, onbuilds)
-		}
+	copied, err := copiedFiles(append(instructions, res.AST.Children...))
+	if err != nil {
+		return nil, errors.Wrap(err, "listing copied files")
 	}
 
-	var dispatchInstructions = func(r *parser.Result) {
-		for _, value := range r.AST.Children {
-			switch value.Value {
-			case command.Add, command.Copy:
-				files, _ := processCopy(value, envs)
-				if len(files) > 0 {
-					copied = append(copied, files)
-				}
-			case command.Env:
-				envs[value.Next.Value] = value.Next.Next.Value
-			}
-		}
-	}
-	for _, image := range onbuildsImages {
-		for _, ob := range image {
-			obRes, err := parser.Parse(strings.NewReader(ob))
-			if err != nil {
-				return nil, err
-			}
-			dispatchInstructions(obRes)
-		}
-	}
+	return expandPaths(workspace, copied)
+}
 
-	dispatchInstructions(res)
-
+func expandPaths(workspace string, copied [][]string) ([]string, error) {
 	expandedPaths := make(map[string]bool)
 	for _, files := range copied {
 		matchesOne := false
@@ -219,7 +256,7 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 
 // GetDependencies finds the sources dependencies for the given docker artifact.
 // All paths are relative to the workspace.
-func GetDependencies(workspace string, a *v1alpha3.DockerArtifact) ([]string, error) {
+func GetDependencies(workspace string, a *latest.DockerArtifact) ([]string, error) {
 	absDockerfilePath, err := NormalizeDockerfilePath(workspace, a.DockerfilePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "normalizing dockerfile path")
@@ -319,21 +356,6 @@ func GetDependencies(workspace string, a *v1alpha3.DockerArtifact) ([]string, er
 	sort.Strings(dependencies)
 
 	return dependencies, nil
-}
-
-func processBaseImage(baseImageName string) ([]string, error) {
-	if strings.ToLower(baseImageName) == "scratch" {
-		return nil, nil
-	}
-
-	logrus.Debugf("Checking base image %s for ONBUILD triggers.", baseImageName)
-	img, err := RetrieveImage(baseImageName)
-	if err != nil {
-		return nil, err
-	}
-
-	logrus.Debugf("Found onbuild triggers %v in image %s", img.Config.OnBuild, baseImageName)
-	return img.Config.OnBuild, nil
 }
 
 var imageCache sync.Map

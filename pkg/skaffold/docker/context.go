@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	cstorage "cloud.google.com/go/storage"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
@@ -40,7 +40,7 @@ func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 	return filepath.Abs(dockerfile)
 }
 
-func CreateDockerTarContext(w io.Writer, workspace string, a *v1alpha3.DockerArtifact) error {
+func CreateDockerTarContext(w io.Writer, workspace string, a *latest.DockerArtifact) error {
 	paths, err := GetDependencies(workspace, a)
 	if err != nil {
 		return errors.Wrap(err, "getting relative tar paths")
@@ -53,7 +53,7 @@ func CreateDockerTarContext(w io.Writer, workspace string, a *v1alpha3.DockerArt
 	return nil
 }
 
-func CreateDockerTarGzContext(w io.Writer, workspace string, a *v1alpha3.DockerArtifact) error {
+func CreateDockerTarGzContext(w io.Writer, workspace string, a *latest.DockerArtifact) error {
 	paths, err := GetDependencies(workspace, a)
 	if err != nil {
 		return errors.Wrap(err, "getting relative tar paths")
@@ -66,7 +66,7 @@ func CreateDockerTarGzContext(w io.Writer, workspace string, a *v1alpha3.DockerA
 	return nil
 }
 
-func UploadContextToGCS(ctx context.Context, workspace string, a *v1alpha3.DockerArtifact, bucket, objectName string) error {
+func UploadContextToGCS(ctx context.Context, workspace string, a *latest.DockerArtifact, bucket, objectName string) error {
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
 		return err

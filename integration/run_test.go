@@ -91,27 +91,27 @@ func TestRun(t *testing.T) {
 			description: "getting-started example",
 			args:        []string{"run"},
 			pods:        []string{"getting-started"},
-			dir:         "../examples/getting-started",
+			dir:         "examples/getting-started",
 		},
 		{
 			description: "annotated getting-started example",
 			args:        []string{"run"},
 			filename:    "annotated-skaffold.yaml",
 			pods:        []string{"getting-started"},
-			dir:         "../examples",
+			dir:         "examples",
 		},
 		{
 			description: "getting-started envTagger",
 			args:        []string{"run"},
 			pods:        []string{"getting-started"},
-			dir:         "../examples/tagging-with-environment-variables",
+			dir:         "examples/tagging-with-environment-variables",
 			env:         []string{"FOO=foo"},
 		},
 		{
 			description: "gcb builder example",
 			args:        []string{"run", "-p", "gcb"},
 			pods:        []string{"getting-started"},
-			dir:         "../examples/getting-started",
+			dir:         "examples/getting-started",
 			remoteOnly:  true,
 		},
 		{
@@ -126,19 +126,19 @@ func TestRun(t *testing.T) {
 					t.Fatalf("Wrong image name in kustomized deployment: %s", d.Spec.Template.Spec.Containers[0].Image)
 				}
 			},
-			dir: "../examples/kustomize",
+			dir: "examples/kustomize",
 		},
 		{
 			description: "bazel example",
 			args:        []string{"run"},
 			pods:        []string{"bazel"},
-			dir:         "../examples/bazel",
+			dir:         "examples/bazel",
 		},
 		{
 			description: "kaniko example",
 			args:        []string{"run"},
 			pods:        []string{"getting-started-kaniko"},
-			dir:         "../examples/kaniko",
+			dir:         "examples/kaniko",
 			remoteOnly:  true,
 		},
 		{
@@ -152,7 +152,7 @@ func TestRun(t *testing.T) {
 			description: "helm example",
 			args:        []string{"run"},
 			deployments: []string{"skaffold-helm"},
-			dir:         "../examples/helm-deployment",
+			dir:         "examples/helm-deployment",
 			remoteOnly:  true,
 		},
 	}
@@ -227,40 +227,24 @@ func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
 		client.CoreV1().Namespaces().Delete(ns.Name, &meta_v1.DeleteOptions{})
 	}
 }
+
 func TestFix(t *testing.T) {
-	tests := []struct {
-		name      string
-		directory string
-	}{
-		{
-			name:      "test v1alpha1 to v1alpha2 fix",
-			directory: "testdata/v1alpha1",
-		},
-		{
-			name:      "test v1alpha2 to v1alpha3 fix",
-			directory: "testdata/v1alpha2",
-		},
+	ns, deleteNs := setupNamespace(t)
+	defer deleteNs()
+
+	fixCmd := exec.Command("skaffold", "fix", "-f", "skaffold.yaml")
+	fixCmd.Dir = "testdata"
+	out, err := util.RunCmdOut(fixCmd)
+	if err != nil {
+		t.Fatalf("testing error: %v", err)
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			ns, deleteNs := setupNamespace(t)
-			defer deleteNs()
 
-			fixCmd := exec.Command("skaffold", "fix", "-f", "skaffold.yaml")
-			fixCmd.Dir = test.directory
-			out, err := util.RunCmdOut(fixCmd)
-			if err != nil {
-				t.Fatalf("testing error: %v", err)
-			}
-
-			runCmd := exec.Command("skaffold", "run", "--namespace", ns.Name, "-f", "-")
-			runCmd.Dir = test.directory
-			runCmd.Stdin = bytes.NewReader(out)
-			err = util.RunCmd(runCmd)
-			if err != nil {
-				t.Fatalf("testing error: %v", err)
-			}
-		})
+	runCmd := exec.Command("skaffold", "run", "--namespace", ns.Name, "-f", "-")
+	runCmd.Dir = "testdata"
+	runCmd.Stdin = bytes.NewReader(out)
+	err = util.RunCmd(runCmd)
+	if err != nil {
+		t.Fatalf("testing error: %v", err)
 	}
 }
 

@@ -11,7 +11,8 @@ deploy:
     - name: skaffold-helm
       chartPath: skaffold-helm
       #wait: true
-      #valuesFilePath: helm-skaffold-values.yaml
+      #valuesFiles:
+      #- helm-skaffold-values.yaml
       values:
         image: gcr.io/k8s-skaffold/skaffold-helm
       #recreatePods will pass --recreate-pods to helm upgrade

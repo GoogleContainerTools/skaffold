@@ -20,8 +20,9 @@ import (
 	"context"
 	"io"
 	"os/exec"
+	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -31,8 +32,10 @@ import (
 type CLI struct {
 	Namespace   string
 	KubeContext string
-	Flags       v1alpha3.KubectlFlags
+	Flags       latest.KubectlFlags
 
+	version       ClientVersion
+	versionOnce   sync.Once
 	previousApply ManifestList
 }
 
@@ -50,13 +53,13 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 	// Only redeploy modified or new manifests
 	// TODO(dgageot): should we delete a manifest that was deployed and is not anymore?
 	updated := c.previousApply.Diff(manifests)
-	logrus.Debugln(len(manifests), "manifests to deploy.", len(manifests), "are updated or new")
+	logrus.Debugln(len(manifests), "manifests to deploy.", len(updated), "are updated or new")
 	c.previousApply = manifests
 	if len(updated) == 0 {
 		return nil, nil
 	}
 
-	if err := c.Run(ctx, manifests.Reader(), out, "apply", c.Flags.Apply, "-f", "-"); err != nil {
+	if err := c.Run(ctx, updated.Reader(), out, "apply", c.Flags.Apply, "-f", "-"); err != nil {
 		return nil, errors.Wrap(err, "kubectl apply")
 	}
 

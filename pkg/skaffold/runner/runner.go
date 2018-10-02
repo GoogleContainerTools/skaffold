@@ -37,14 +37,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
-
-const PollInterval = 1000 * time.Millisecond
 
 // ErrorConfigurationChanged is a special error that's returned when the skaffold configuration was changed.
 var ErrorConfigurationChanged = errors.New("configuration changed")
@@ -61,7 +59,7 @@ type SkaffoldRunner struct {
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
-func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*SkaffoldRunner, error) {
+func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*SkaffoldRunner, error) {
 	kubeContext, err := kubectx.CurrentContext()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting current cluster context")
@@ -98,7 +96,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *config.SkaffoldConfig) (*Sk
 	}, nil
 }
 
-func getBuilder(cfg *v1alpha3.BuildConfig, kubeContext string) (build.Builder, error) {
+func getBuilder(cfg *latest.BuildConfig, kubeContext string) (build.Builder, error) {
 	switch {
 	case cfg.LocalBuild != nil:
 		logrus.Debugf("Using builder: local")
@@ -117,28 +115,39 @@ func getBuilder(cfg *v1alpha3.BuildConfig, kubeContext string) (build.Builder, e
 	}
 }
 
-func getDeployer(cfg *v1alpha3.DeployConfig, kubeContext string, namespace string) (deploy.Deployer, error) {
-	switch {
-	case cfg.KubectlDeploy != nil:
+func getDeployer(cfg *latest.DeployConfig, kubeContext string, namespace string) (deploy.Deployer, error) {
+	deployers := []deploy.Deployer{}
+
+	// HelmDeploy first, in case there are resources in Kubectl that depend on these...
+	if cfg.HelmDeploy != nil {
+		deployers = append(deployers, deploy.NewHelmDeployer(cfg.HelmDeploy, kubeContext, namespace))
+	}
+
+	if cfg.KubectlDeploy != nil {
 		// TODO(dgageot): this should be the folder containing skaffold.yaml. Should also be moved elsewhere.
 		cwd, err := os.Getwd()
 		if err != nil {
 			return nil, errors.Wrap(err, "finding current directory")
 		}
-		return deploy.NewKubectlDeployer(cwd, cfg.KubectlDeploy, kubeContext, namespace), nil
+		deployers = append(deployers, deploy.NewKubectlDeployer(cwd, cfg.KubectlDeploy, kubeContext, namespace))
+	}
 
-	case cfg.HelmDeploy != nil:
-		return deploy.NewHelmDeployer(cfg.HelmDeploy, kubeContext, namespace), nil
+	if cfg.KustomizeDeploy != nil {
+		deployers = append(deployers, deploy.NewKustomizeDeployer(cfg.KustomizeDeploy, kubeContext, namespace))
+	}
 
-	case cfg.KustomizeDeploy != nil:
-		return deploy.NewKustomizeDeployer(cfg.KustomizeDeploy, kubeContext, namespace), nil
-
-	default:
+	if len(deployers) == 0 {
 		return nil, fmt.Errorf("Unknown deployer for config %+v", cfg)
 	}
+
+	if len(deployers) == 1 {
+		return deployers[0], nil
+	}
+
+	return deploy.NewMultiDeployer(deployers), nil
 }
 
-func getTagger(t v1alpha3.TagPolicy, customTag string) (tag.Tagger, error) {
+func getTagger(t latest.TagPolicy, customTag string) (tag.Tagger, error) {
 	switch {
 	case customTag != "":
 		return &tag.CustomTag{
@@ -163,7 +172,7 @@ func getTagger(t v1alpha3.TagPolicy, customTag string) (tag.Tagger, error) {
 }
 
 // Run builds artifacts and then deploys them.
-func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*v1alpha3.Artifact) error {
+func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
 	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
 	if err != nil {
 		return errors.Wrap(err, "build step")
@@ -178,7 +187,7 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*v1
 }
 
 // TailLogs prints the logs for deployed artifacts.
-func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, artifacts []*v1alpha3.Artifact, bRes []build.Artifact) error {
+func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, artifacts []*latest.Artifact, bRes []build.Artifact) error {
 	if !r.opts.Tail {
 		return nil
 	}
@@ -200,7 +209,7 @@ func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, artifacts 
 
 // Dev watches for changes and runs the skaffold build and deploy
 // pipeline until interrrupted by the user.
-func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1alpha3.Artifact) ([]build.Artifact, error) {
+func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	imageList := kubernetes.NewImageList()
 	colorPicker := kubernetes.NewColorPicker(artifacts)
 	logger := kubernetes.NewLogAggregator(out, imageList, colorPicker)
@@ -260,7 +269,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 
 		if err := watcher.Register(
 			func() ([]string, error) { return dependenciesForArtifact(artifact) },
-			func() { changed.Add(artifact) },
+			func(watch.Events) { changed.Add(artifact) },
 		); err != nil {
 			return nil, errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
 		}
@@ -269,7 +278,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 	// Watch deployment configuration
 	if err := watcher.Register(
 		func() ([]string, error) { return r.Dependencies() },
-		func() { changed.needsRedeploy = true },
+		func(watch.Events) { changed.needsRedeploy = true },
 	); err != nil {
 		return nil, errors.Wrap(err, "watching files for deployer")
 	}
@@ -277,7 +286,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 	// Watch Skaffold configuration
 	if err := watcher.Register(
 		func() ([]string, error) { return []string{r.opts.ConfigurationFile}, nil },
-		func() { changed.needsReload = true },
+		func(watch.Events) { changed.needsReload = true },
 	); err != nil {
 		return nil, errors.Wrapf(err, "watching skaffold configuration %s", r.opts.ConfigurationFile)
 	}
@@ -296,18 +305,23 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*v1
 	}
 
 	// Start logs
-	if err := logger.Start(ctx); err != nil {
-		return nil, errors.Wrap(err, "starting logger")
+	if r.opts.TailDev {
+		if err := logger.Start(ctx); err != nil {
+			return nil, errors.Wrap(err, "starting logger")
+		}
 	}
 
-	if err := portForwarder.Start(ctx); err != nil {
-		return nil, errors.Wrap(err, "starting port-forwarder")
+	if r.opts.PortForward {
+		if err := portForwarder.Start(ctx); err != nil {
+			return nil, errors.Wrap(err, "starting port-forwarder")
+		}
 	}
 
-	return nil, watcher.Run(ctx, PollInterval, onChange)
+	pollInterval := time.Duration(r.opts.WatchPollInterval) * time.Millisecond
+	return nil, watcher.Run(ctx, pollInterval, onChange)
 }
 
-func (r *SkaffoldRunner) shouldWatch(artifact *v1alpha3.Artifact) bool {
+func (r *SkaffoldRunner) shouldWatch(artifact *latest.Artifact) bool {
 	if len(r.opts.Watch) == 0 {
 		return true
 	}
@@ -349,7 +363,7 @@ func mergeWithPreviousBuilds(builds, previous []build.Artifact) []build.Artifact
 	return merged
 }
 
-func dependenciesForArtifact(a *v1alpha3.Artifact) ([]string, error) {
+func dependenciesForArtifact(a *latest.Artifact) ([]string, error) {
 	var (
 		paths []string
 		err   error
