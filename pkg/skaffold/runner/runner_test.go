@@ -371,7 +371,7 @@ func TestDev(t *testing.T) {
 			tester: &TestTester{
 				errors: []error{fmt.Errorf("")},
 			},
-			watcherFactory: NewWatcherFactory(nil),
+			watcherFactory: NewWatcherFactory(nil, nil),
 			shouldErr:      true,
 		},
 		{
