@@ -17,60 +17,100 @@ limitations under the License.
 package watch
 
 import (
+	"fmt"
 	"os"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
-type fileMap struct {
-	count        int
-	lastModified time.Time
-}
+type fileMap map[string]time.Time
 
+// TODO(mrick): cached tree extension ala git
 func stat(deps func() ([]string, error)) (fileMap, error) {
+	state := fileMap{}
 	paths, err := deps()
 	if err != nil {
-		return fileMap{}, errors.Wrap(err, "listing files")
+		return state, errors.Wrap(err, "listing files")
 	}
-
-	last, err := lastModified(paths)
-	if err != nil {
-		return fileMap{}, err
-	}
-
-	return fileMap{
-		count:        len(paths),
-		lastModified: last,
-	}, nil
-}
-
-func lastModified(paths []string) (time.Time, error) {
-	var last time.Time
-
 	for _, path := range paths {
 		stat, err := os.Stat(path)
 		if err != nil {
 			if os.IsNotExist(err) {
+				logrus.Debugf("could not stat dependency: %s", err)
 				continue // Ignore files that don't exist
 			}
-
-			return last, errors.Wrapf(err, "unable to stat file %s", path)
+			return nil, errors.Wrapf(err, "unable to stat file %s", path)
 		}
+		state[path] = stat.ModTime()
+	}
 
-		if stat.IsDir() {
-			continue // Ignore time changes on directories
+	return state, nil
+}
+
+type Events struct {
+	Added    []string
+	Modified []string
+	Deleted  []string
+}
+
+func (e Events) HasChanged() bool {
+	return len(e.Added) != 0 || len(e.Deleted) != 0 || len(e.Modified) != 0
+}
+
+func (e *Events) String() string {
+	added, deleted, modified := len(e.Added), len(e.Deleted), len(e.Modified)
+
+	var sb strings.Builder
+	if added > 0 {
+		sb.WriteString(fmt.Sprintf("[watch event] added: %s\n", e.Added))
+	}
+	if deleted > 0 {
+		sb.WriteString(fmt.Sprintf("[watch event] deleted: %s\n", e.Deleted))
+	}
+	if modified > 0 {
+		sb.WriteString(fmt.Sprintf("[watch event] modified: %s\n", e.Modified))
+	}
+	return sb.String()
+}
+
+func events(prev, curr fileMap) Events {
+	e := Events{}
+	for f, t := range prev {
+		modtime, ok := curr[f]
+		if !ok {
+			// file in prev but not in curr -> file deleted
+			e.Deleted = append(e.Deleted, f)
+			continue
 		}
-
-		modTime := stat.ModTime()
-		if modTime.After(last) {
-			last = modTime
+		if !modtime.Equal(t) {
+			// file in both prev and curr
+			// time not equal -> file modified
+			e.Modified = append(e.Modified, f)
+			continue
 		}
 	}
 
-	return last, nil
+	for f := range curr {
+		// don't need to check case where file is in both curr and prev
+		// covered above
+		_, ok := prev[f]
+		if !ok {
+			// file in curr but not in prev -> file added
+			e.Added = append(e.Added, f)
+		}
+	}
+
+	sortEvt(e)
+	logrus.Debug(e.String())
+	return e
 }
 
-func hasChanged(prev, curr fileMap) bool {
-	return prev.count != curr.count || !prev.lastModified.Equal(curr.lastModified)
+func sortEvt(e Events) {
+	sort.Strings(e.Added)
+	sort.Strings(e.Modified)
+	sort.Strings(e.Deleted)
 }
