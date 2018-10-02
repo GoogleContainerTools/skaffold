@@ -17,72 +17,68 @@ limitations under the License.
 package local
 
 import (
+	"testing"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"testing"
 )
 
+var generateMavenCommandTests = []struct {
+	in  v1alpha3.JibMavenArtifact
+	out []string
+}{
+	{v1alpha3.JibMavenArtifact{}, []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage=image"}},
+	{v1alpha3.JibMavenArtifact{Profile: "profile"}, []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage=image", "-Pprofile"}},
+}
+
 func TestGenerateMavenCommand(t *testing.T) {
-	a := v1alpha3.JibMavenArtifact{}
-	expectedSubCommand := []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage=image"}
-	commandLine, err := generateMavenCommand(".", "image", &a)
+	for _, tt := range generateMavenCommandTests {
+		commandLine, err := generateMavenCommand(".", "image", &tt.in)
 
-	testutil.CheckError(t, false, err)
-	testutil.CheckDeepEqual(t, expectedSubCommand, commandLine)
+		testutil.CheckError(t, false, err)
+		testutil.CheckDeepEqual(t, tt.out, commandLine)
+	}
 }
 
-func TestGenerateMavenCommand_withProfile(t *testing.T) {
-	a := v1alpha3.JibMavenArtifact{ Profile: "profile"}
-	expectedSubCommand := []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage=image", "-Pprofile"}
-	commandLine, err := generateMavenCommand(".", "image", &a)
-
-	testutil.CheckError(t, false, err)
-	testutil.CheckDeepEqual(t, expectedSubCommand, commandLine)
-}
-
-func TestGenerateMavenCommand_withModule(t *testing.T) {
-	a := v1alpha3.JibMavenArtifact{ Module: "module"}
+func TestGenerateMavenCommand_errorWithModule(t *testing.T) {
+	a := v1alpha3.JibMavenArtifact{Module: "module"}
 	_, err := generateMavenCommand(".", "image", &a)
 
 	testutil.CheckError(t, true, err)
 }
 
+var generateGradleCommandTests = []struct {
+	in  v1alpha3.JibGradleArtifact
+	out []string
+}{
+	{v1alpha3.JibGradleArtifact{}, []string{":jibDockerBuild", "--image=image"}},
+	{v1alpha3.JibGradleArtifact{Project: "project"}, []string{":project:jibDockerBuild", "--image=image"}},
+}
+
 func TestGenerateGradleCommand(t *testing.T) {
-	a := v1alpha3.JibGradleArtifact{}
-	expectedSubCommand := []string{":jibDockerBuild", "--image=image"}
-	commandLine, err := generateGradleCommand(".", "image", &a)
+	for _, tt := range generateGradleCommandTests {
+		commandLine, err := generateGradleCommand(".", "image", &tt.in)
 
-	testutil.CheckError(t, false, err)
-	testutil.CheckDeepEqual(t, expectedSubCommand, commandLine)
-}
-
-func TestGenerateGradleCommand_withProject(t *testing.T) {
-	a := v1alpha3.JibGradleArtifact{Project: "project"}
-	expectedSubCommand := []string{":project:jibDockerBuild", "--image=image"}
-	commandLine, err := generateGradleCommand(".", "image", &a)
-
-	testutil.CheckError(t, false, err)
-	testutil.CheckDeepEqual(t, expectedSubCommand, commandLine)
-}
-
-func TestGenerateJibImageRef_simple_noProject(t *testing.T) {
-	imageName := generateJibImageRef("simple", "")
-	assertEquals(t, "jibsimple", imageName)
-}
-
-func TestGenerateJibImageRef_simple_withProject(t *testing.T) {
-	imageName := generateJibImageRef("simple", "project")
-	assertEquals(t, "jibsimple_project", imageName)
-}
-
-func TestGenerateJibImageRef_complex(t *testing.T) {
-	imageName := generateJibImageRef("complex/workspace", "project")
-	assertEquals(t, "jib__965ec099f720d3ccc9c038c21ea4a598c9632883", imageName)
-}
-
-func assertEquals(t *testing.T, expected, computed string) {
-	if expected != computed {
-		t.Errorf("Expected '%s': '%s'", expected, computed)
+		testutil.CheckError(t, false, err)
+		testutil.CheckDeepEqual(t, tt.out, commandLine)
 	}
 }
 
+var generateJibImageRefTests = []struct {
+	workspace string
+	project   string
+	out       string
+}{
+	{"simple", "", "jibsimple"},
+	{"simple", "project", "jibsimple_project"},
+	{"complex/workspace", "project", "jib__965ec099f720d3ccc9c038c21ea4a598c9632883"},
+}
+
+func TestGenerateJibImageRef_simple_withProject(t *testing.T) {
+	for _, tt := range generateJibImageRefTests {
+		computed := generateJibImageRef(tt.workspace, tt.project)
+		if tt.out != computed {
+			t.Errorf("Expected '%s': '%s'", tt.out, computed)
+		}
+	}
+}
