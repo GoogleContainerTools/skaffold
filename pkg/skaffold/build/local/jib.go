@@ -24,6 +24,7 @@ import (
 	"os/exec"
 	"regexp"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -106,11 +107,6 @@ func executeBuildCommand(ctx context.Context, out io.Writer, workspace string, c
 	return util.RunCmd(cmd)
 }
 
-const (
-	// regexp matching valid image names
-	REPOSITORY_COMPONENT_REGEX string = `^[a-z\d]+(?:(?:[_.]|__|-+)[a-z\d]+)*$`
-)
-
 // jibBuildImageRef generates a valid image name for the workspace and project.
 // The image name is always prefixed with `jib`.
 func generateJibImageRef(workspace string, project string) string {
@@ -119,7 +115,7 @@ func generateJibImageRef(workspace string, project string) string {
 		imageName += "_" + project
 	}
 	// if the workspace + project is a valid image name then use it
-	match, _ := regexp.MatchString(REPOSITORY_COMPONENT_REGEX, imageName);
+	match, _ := regexp.MatchString(constants.RepositoryComponentRegex, imageName);
 	if match {
 		return imageName
 	}
