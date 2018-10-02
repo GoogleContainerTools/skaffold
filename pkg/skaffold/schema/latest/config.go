@@ -118,7 +118,7 @@ type KanikoBuild struct {
 }
 
 // TestCase is a struct containing all the specified test
-// configuration for an image
+// configuration for an image.
 type TestCase struct {
 	ImageName      string   `yaml:"image"`
 	StructureTests []string `yaml:"structureTests,omitempty"`

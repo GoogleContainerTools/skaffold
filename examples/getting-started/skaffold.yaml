@@ -3,10 +3,6 @@ kind: Config
 build:
   artifacts:
   - imageName: gcr.io/k8s-skaffold/skaffold-example
-test:
-  - imageName: gcr.io/k8s-skaffold/skaffold-example
-    structureTests:
-      - structure_test.yaml
 deploy:
   kubectl:
     manifests:
@@ -16,8 +12,3 @@ profiles:
     build:
       googleCloudBuild:
         projectId: k8s-skaffold
-  - name: test
-    test:
-      - imageName: gcr.io/k8s-skaffold/skaffold-example
-        structureTests:
-          - profile_structure_test.yaml

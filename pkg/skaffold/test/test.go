@@ -20,7 +20,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	latest "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test/structure"
 
 	"github.com/pkg/errors"
@@ -29,7 +29,7 @@ import (
 // NewTester parses the provided test cases from the Skaffold config,
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
-func NewTester(testCases *[]v1alpha3.TestCase) (Tester, error) {
+func NewTester(testCases *[]latest.TestCase) (Tester, error) {
 	testers := []*ArtifactTester{}
 	deps := []string{}
 	for _, testCase := range *testCases {
