@@ -16,6 +16,7 @@ limitations under the License.
 package watch
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -91,5 +92,86 @@ func TestEvents(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			testutil.CheckDeepEqual(t, test.expected, events(test.prev, test.current))
 		})
+	}
+}
+
+func TestStat(t *testing.T) {
+	var tests = []struct {
+		description string
+		setup       func(folder *testutil.TempDir)
+		expected    fileMap
+		shouldErr   bool
+	}{
+		{
+			description: "stat files",
+			setup: func(folder *testutil.TempDir) {
+				folder.Write("file", "content")
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			folder, cleanup := testutil.NewTempDir(t)
+			defer cleanup()
+
+			test.setup(folder)
+			list, _ := folder.List()
+
+			actual, err := stat(folder.List)
+			testutil.CheckError(t, test.shouldErr, err)
+			checkListInMap(t, list, actual)
+		})
+	}
+}
+
+func TestStatNotExist(t *testing.T) {
+	var tests = []struct {
+		description string
+		setup       func(folder *testutil.TempDir)
+		deps        []string
+		depsErr     error
+		expected    fileMap
+		shouldErr   bool
+	}{
+		{
+			description: "no error when deps returns nonexisting file",
+			setup: func(folder *testutil.TempDir) {
+				folder.Write("file", "content")
+			},
+			deps: []string{"file/that/doesnt/exist/anymore"},
+		},
+		{
+			description: "deps function error",
+			setup: func(folder *testutil.TempDir) {
+				folder.Write("file", "content")
+			},
+			deps:      []string{"file/that/doesnt/exist/anymore"},
+			depsErr:   fmt.Errorf(""),
+			shouldErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			folder, cleanup := testutil.NewTempDir(t)
+			defer cleanup()
+
+			test.setup(folder)
+
+			_, err := stat(func() ([]string, error) { return test.deps, test.depsErr })
+			testutil.CheckError(t, test.shouldErr, err)
+		})
+	}
+}
+
+func checkListInMap(t *testing.T, list []string, m fileMap) {
+	for _, f := range list {
+		if _, ok := m[f]; !ok {
+			t.Errorf("File %s not in map", f)
+		}
+	}
+	if len(list) != len(m) {
+		t.Errorf("List and map length differ %s, %s", list, m)
 	}
 }

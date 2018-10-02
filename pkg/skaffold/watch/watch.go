@@ -74,13 +74,12 @@ func (w *watchList) Run(ctx context.Context, pollInterval time.Duration, onChang
 			return nil
 		case <-ticker.C:
 			changed := 0
-			var e Events
 			for i, component := range *w {
 				state, err := stat(component.deps)
 				if err != nil {
 					return errors.Wrap(err, "listing files")
 				}
-				e = events(component.state, state)
+				e := events(component.state, state)
 
 				if e.HasChanged() {
 					changedComponents[i] = true

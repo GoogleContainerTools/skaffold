@@ -39,6 +39,10 @@ func stat(deps func() ([]string, error)) (fileMap, error) {
 	for _, path := range paths {
 		stat, err := os.Stat(path)
 		if err != nil {
+			if os.IsNotExist(err) {
+				logrus.Debugf("could not stat dependency: %s", err)
+				continue // Ignore files that don't exist
+			}
 			return nil, errors.Wrapf(err, "unable to stat file %s", path)
 		}
 		state[path] = stat.ModTime()
