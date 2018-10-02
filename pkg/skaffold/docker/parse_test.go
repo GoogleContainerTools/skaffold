@@ -116,7 +116,7 @@ ARG FOO
 COPY $FOO .
 `
 
-const copyServerGoBuildArgSamePrefix = `
+const copyWorkerGoBuildArgSamePrefix = `
 FROM ubuntu:14.04
 ARG FOO=server.go
 ARG FOO2
@@ -141,16 +141,31 @@ ARG FOO=server.go
 COPY $FOO .
 `
 
-const copyServerGoBuildArgRedefinedDefaultValue = `
+const copyWorkerGoBuildArgRedefinedDefaultValue = `
 FROM ubuntu:14.04
 ARG FOO=server.go
 ARG FOO=worker.go
 COPY $FOO .
 `
 
+const copyServerGoBuildArgsAtTheTop = `
+FROM ubuntu:14.04
+ARG FOO=server.go
+ARG FOO2=ignored
+ARG FOO3=ignored
+COPY $FOO .
+`
+
 const fromStage = `
 FROM ubuntu:14.04 as base
 FROM base as dist
+FROM dist as prod
+`
+
+const fromStageIgnoreCase = `
+FROM ubuntu:14.04 as BASE
+FROM base as dist
+FROM DIST as prod
 `
 
 type fakeImageFetcher struct {
@@ -320,7 +335,7 @@ func TestGetDependencies(t *testing.T) {
 		},
 		{
 			description: "build args with same prefix",
-			dockerfile:  copyServerGoBuildArgSamePrefix,
+			dockerfile:  copyWorkerGoBuildArgSamePrefix,
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO2": util.StringPtr("worker.go")},
 			expected:    []string{"Dockerfile", "worker.go"},
@@ -351,9 +366,16 @@ func TestGetDependencies(t *testing.T) {
 		},
 		{
 			description: "build args with redefined default value",
-			dockerfile:  copyServerGoBuildArgRedefinedDefaultValue,
+			dockerfile:  copyWorkerGoBuildArgRedefinedDefaultValue,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "worker.go"},
+			fetched:     []string{"ubuntu:14.04"},
+		},
+		{
+			description: "build args all defined a the top",
+			dockerfile:  copyServerGoBuildArgsAtTheTop,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "server.go"},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
@@ -377,7 +399,14 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  fromStage,
 			workspace:   ".",
 			expected:    []string{"Dockerfile"},
-			fetched:     []string{"ubuntu:14.04"}, // Don't fetch `base`
+			fetched:     []string{"ubuntu:14.04"},
+		},
+		{
+			description: "from base stage, ignoring case",
+			dockerfile:  fromStageIgnoreCase,
+			workspace:   ".",
+			expected:    []string{"Dockerfile"},
+			fetched:     []string{"ubuntu:14.04"},
 		},
 	}
 
