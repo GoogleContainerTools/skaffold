@@ -79,6 +79,11 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		return nil, errors.Wrap(err, "retrieving global config")
 	}
 
+	defaultRepo := ""
+	if globalConfig != nil {
+		defaultRepo = globalConfig.DefaultRepo
+	}
+
 	tagger, err := getTagger(cfg.Build.TagPolicy, opts.CustomTag)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold tag config")
@@ -94,7 +99,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		return nil, errors.Wrap(err, "parsing skaffold test config")
 	}
 
-	deployer, err := getDeployer(&cfg.Deploy, kubeContext, opts.Namespace, globalConfig.DefaultRepo)
+	deployer, err := getDeployer(&cfg.Deploy, kubeContext, opts.Namespace, defaultRepo)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold deploy config")
 	}
