@@ -6,7 +6,7 @@ build:
 test:
   - image: gcr.io/k8s-skaffold/skaffold-example
     structureTests:
-      - structure_test.yaml
+      - ./test/*
 deploy:
   kubectl:
     manifests:
@@ -20,4 +20,4 @@ profiles:
     test:
       - image: gcr.io/k8s-skaffold/skaffold-example
         structureTests:
-          - profile_structure_test.yaml
+          - ./test/profile_structure_test.yaml

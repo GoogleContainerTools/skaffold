@@ -18,10 +18,12 @@ package test
 
 import (
 	"io"
+	"os"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test/structure"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 
 	"github.com/pkg/errors"
 )
@@ -32,17 +34,27 @@ import (
 func NewTester(testCases *[]latest.TestCase) (Tester, error) {
 	testers := []*ArtifactTester{}
 	deps := []string{}
+	// TODO(nkubala): copied this from runner.getDeployer(), this should be moved somewhere else
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, errors.Wrap(err, "finding current directory")
+	}
 	for _, testCase := range *testCases {
 		testRunner := &ArtifactTester{
 			ImageName: testCase.ImageName,
 		}
 		if testCase.StructureTests != nil {
-			stRunner, err := structure.NewStructureTestRunner(testCase.StructureTests)
+			stFiles, err := util.ExpandPathsGlob(cwd, testCase.StructureTests)
+			if err != nil {
+				return FullTester{}, errors.Wrap(err, "expanding test file paths")
+			}
+			stRunner, err := structure.NewStructureTestRunner(stFiles)
 			if err != nil {
 				return FullTester{}, errors.Wrap(err, "retrieving structure test runner")
 			}
 			testRunner.TestRunners = append(testRunner.TestRunners, stRunner)
-			deps = append(deps, testCase.StructureTests...)
+
+			deps = append(deps, stFiles...)
 		}
 		testers = append(testers, testRunner)
 	}
