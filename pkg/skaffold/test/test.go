@@ -17,6 +17,7 @@ limitations under the License.
 package test
 
 import (
+	"context"
 	"io"
 	"os"
 
@@ -32,32 +33,38 @@ import (
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
 func NewTester(testCases *[]latest.TestCase) (Tester, error) {
-	testers := []*ArtifactTester{}
-	deps := []string{}
 	// TODO(nkubala): copied this from runner.getDeployer(), this should be moved somewhere else
 	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, errors.Wrap(err, "finding current directory")
 	}
+
+	testers := []*ArtifactTester{}
+	deps := []string{}
+
 	for _, testCase := range *testCases {
 		testRunner := &ArtifactTester{
 			ImageName: testCase.ImageName,
 		}
+
 		if testCase.StructureTests != nil {
 			stFiles, err := util.ExpandPathsGlob(cwd, testCase.StructureTests)
 			if err != nil {
 				return FullTester{}, errors.Wrap(err, "expanding test file paths")
 			}
+
 			stRunner, err := structure.NewStructureTestRunner(stFiles)
 			if err != nil {
 				return FullTester{}, errors.Wrap(err, "retrieving structure test runner")
 			}
-			testRunner.TestRunners = append(testRunner.TestRunners, stRunner)
 
+			testRunner.TestRunners = append(testRunner.TestRunners, stRunner)
 			deps = append(deps, stFiles...)
 		}
+
 		testers = append(testers, testRunner)
 	}
+
 	return FullTester{
 		ArtifactTesters: testers,
 		Dependencies:    deps,
@@ -71,10 +78,11 @@ func (t FullTester) TestDependencies() []string {
 
 // Test is the top level testing execution call. It serves as the
 // entrypoint to all individual tests.
-func (t FullTester) Test(out io.Writer, bRes []build.Artifact) error {
+func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
 	t.resolveArtifactImageTags(bRes)
+
 	for _, aTester := range t.ArtifactTesters {
-		if err := aTester.RunTests(); err != nil {
+		if err := aTester.RunTests(ctx, out); err != nil {
 			return err
 		}
 	}
@@ -83,12 +91,13 @@ func (t FullTester) Test(out io.Writer, bRes []build.Artifact) error {
 
 // RunTests serves as the entrypoint to each group of
 // artifact-specific tests.
-func (a *ArtifactTester) RunTests() error {
+func (a *ArtifactTester) RunTests(ctx context.Context, out io.Writer) error {
 	for _, t := range a.TestRunners {
-		if err := t.Test(a.ImageName); err != nil {
+		if err := t.Test(ctx, out, a.ImageName); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 

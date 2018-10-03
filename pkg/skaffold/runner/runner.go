@@ -191,7 +191,7 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*la
 		return errors.Wrap(err, "build step")
 	}
 
-	if err = r.Test(out, bRes); err != nil {
+	if err = r.Test(ctx, out, bRes); err != nil {
 		return errors.Wrap(err, "test step")
 	}
 
@@ -258,7 +258,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			}
 
 			r.updateBuiltImages(imageList, bRes)
-			if err := r.Test(out, bRes); err != nil {
+			if err := r.Test(ctx, out, bRes); err != nil {
 				logrus.Warnln("Skipping Deploy due to failed tests:", err)
 				return nil
 			}
@@ -268,7 +268,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 				return nil
 			}
 		case changed.needsRedeploy:
-			if err := r.Test(out, r.builds); err != nil {
+			if err := r.Test(ctx, out, r.builds); err != nil {
 				logrus.Warnln("Skipping Deploy due to failed tests:", err)
 				return nil
 			}
@@ -331,7 +331,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	r.updateBuiltImages(imageList, bRes)
-	if err := r.Test(out, bRes); err != nil {
+	if err := r.Test(ctx, out, bRes); err != nil {
 		return nil, errors.Wrap(err, "exiting dev mode because the first test run failed")
 	}
 
