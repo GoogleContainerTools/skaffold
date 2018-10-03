@@ -66,6 +66,7 @@ func StrSliceContains(sl []string, s string) bool {
 
 // IsFile returns true if the provided `flePath` refers to a fail, and
 // false otherwise.
+// TODO merge with AbsFile
 func IsFile(filePath string) bool {
 	info, err := os.Stat(filePath)
 	return err == nil && !info.IsDir()

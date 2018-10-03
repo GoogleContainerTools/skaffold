@@ -25,78 +25,9 @@ import (
 	"regexp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
-
-func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace string, a *v1alpha3.JibMavenArtifact) (string, error) {
-	skaffoldImage := generateJibImageRef(workspace, a.Module)
-
-	maven, err := findBuilder("mvn", "mvnw", workspace)
-	if err != nil {
-		return "", errors.Wrap(err, "Unable to find maven executable")
-	}
-	mavenCommand, err := generateMavenCommand(workspace, skaffoldImage, a)
-	if err != nil {
-		return "", err
-	}
-	commandLine := append(maven, mavenCommand...)
-
-	err = executeBuildCommand(ctx, out, workspace, commandLine)
-	if err != nil {
-		return "", errors.Wrap(err, "maven build failed")
-	}
-	return skaffoldImage, nil
-}
-
-// generateMavenCommand generates the command-line to pass to maven for building a
-// project found in `workspace`.  The resulting image is added to the local docker daemon
-// and called `skaffoldImage`.
-func generateMavenCommand(_ /*workspace*/ string, skaffoldImage string, a *v1alpha3.JibMavenArtifact) ([]string, error) {
-	if a.Module != "" {
-		// TODO: multi-module
-		return nil, errors.New("Maven multi-modules not supported yet")
-	}
-	// use mostly-qualified plugin ID in case jib is not a configured plugin
-	commandLine := []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage=" + skaffoldImage}
-	if a.Profile != "" {
-		commandLine = append(commandLine, "-P"+a.Profile)
-	}
-	return commandLine, nil
-}
-
-func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace string, a *v1alpha3.JibGradleArtifact) (string, error) {
-	skaffoldImage := generateJibImageRef(workspace, a.Project)
-	gradle, err := findBuilder("gradle", "gradlew", workspace)
-	if err != nil {
-		return "", errors.Wrap(err, "Unable to find gradle executable")
-	}
-	gradleCommand := generateGradleCommand(workspace, skaffoldImage, a)
-	commandLine := append(gradle, gradleCommand...)
-
-	err = executeBuildCommand(ctx, out, workspace, commandLine)
-	if err != nil {
-		return "", errors.Wrap(err, "gradle build failed")
-	}
-	return skaffoldImage, nil
-}
-
-// generateGradleCommand generates the command-line to pass to gradle for building an
-// project in `workspace`.  The resulting image is added to the local docker daemon
-// and called `skaffoldImage`.
-func generateGradleCommand(_ /*workspace*/ string, skaffoldImage string, a *v1alpha3.JibGradleArtifact) []string {
-	command := []string{}
-	if a.Project == "" {
-		command = append(command, ":jibDockerBuild")
-	} else {
-		// multi-module
-		command = append(command, ":"+a.Project+":jibDockerBuild")
-	}
-	command = append(command, "--image="+skaffoldImage)
-	return command
-}
 
 // executeBuildCommand executes the command-line with the working directory set to `workspace`.
 func executeBuildCommand(ctx context.Context, out io.Writer, workspace string, commandLine []string) error {

@@ -23,16 +23,16 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-var generateMavenCommandTests = []struct {
-	in  v1alpha3.JibMavenArtifact
-	out []string
-}{
-	{v1alpha3.JibMavenArtifact{}, []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage=image"}},
-	{v1alpha3.JibMavenArtifact{Profile: "profile"}, []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage=image", "-Pprofile"}},
-}
-
 func TestGenerateMavenCommand(t *testing.T) {
-	for _, tt := range generateMavenCommandTests {
+	var testCases = []struct {
+		in  v1alpha3.JibMavenArtifact
+		out []string
+	}{
+		{v1alpha3.JibMavenArtifact{}, []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage=image"}},
+		{v1alpha3.JibMavenArtifact{Profile: "profile"}, []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage=image", "-Pprofile"}},
+	}
+
+	for _, tt := range testCases {
 		commandLine, err := generateMavenCommand(".", "image", &tt.in)
 
 		testutil.CheckError(t, false, err)
@@ -47,37 +47,38 @@ func TestGenerateMavenCommand_errorWithModule(t *testing.T) {
 	testutil.CheckError(t, true, err)
 }
 
-var generateGradleCommandTests = []struct {
-	in  v1alpha3.JibGradleArtifact
-	out []string
-}{
-	{v1alpha3.JibGradleArtifact{}, []string{":jibDockerBuild", "--image=image"}},
-	{v1alpha3.JibGradleArtifact{Project: "project"}, []string{":project:jibDockerBuild", "--image=image"}},
-}
-
 func TestGenerateGradleCommand(t *testing.T) {
-	for _, tt := range generateGradleCommandTests {
+	var testCases = []struct {
+		in  v1alpha3.JibGradleArtifact
+		out []string
+	}{
+		{v1alpha3.JibGradleArtifact{}, []string{":jibDockerBuild", "--image=image"}},
+		{v1alpha3.JibGradleArtifact{Project: "project"}, []string{":project:jibDockerBuild", "--image=image"}},
+	}
+
+	for _, tt := range testCases {
 		commandLine := generateGradleCommand(".", "image", &tt.in)
 
 		testutil.CheckDeepEqual(t, tt.out, commandLine)
 	}
 }
 
-var generateJibImageRefTests = []struct {
-	workspace string
-	project   string
-	out       string
-}{
-	{"simple", "", "jibsimple"},
-	{"simple", "project", "jibsimple_project"},
-	{"complex/workspace", "project", "jib__965ec099f720d3ccc9c038c21ea4a598c9632883"},
-}
+func TestGenerateJibImageRef(t *testing.T) {
+	var testCases = []struct {
+		workspace string
+		project   string
+		out       string
+	}{
+		{"simple", "", "jibsimple"},
+		{"simple", "project", "jibsimple_project"},
+		{".", "project", "jib__d8c7cbe8892fe8442b7f6ef42026769ee6a01e67"},
+		{"complex/workspace", "project", "jib__965ec099f720d3ccc9c038c21ea4a598c9632883"},
+	}
 
-func TestGenerateJibImageRef_simple_withProject(t *testing.T) {
-	for _, tt := range generateJibImageRefTests {
+	for _, tt := range testCases {
 		computed := generateJibImageRef(tt.workspace, tt.project)
 		if tt.out != computed {
-			t.Errorf("Expected '%s': '%s'", tt.out, computed)
+			t.Errorf("Expected '%s' for '%s'/'%s': '%s'", tt.out, tt.workspace, tt.project, computed)
 		}
 	}
 }
