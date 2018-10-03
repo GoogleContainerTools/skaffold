@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	clientgo "k8s.io/client-go/kubernetes"
@@ -63,6 +64,23 @@ func (t *TestBuilder) Build(ctx context.Context, w io.Writer, tagger tag.Tagger,
 
 	t.built = builds
 	return builds, nil
+}
+
+type TestTester struct {
+	errors []error
+}
+
+func (t *TestTester) Test(out io.Writer, builds []build.Artifact) error {
+	if len(t.errors) > 0 {
+		err := t.errors[0]
+		t.errors = t.errors[1:]
+		return err
+	}
+	return nil
+}
+
+func (t *TestTester) TestDependencies() []string {
+	return []string{}
 }
 
 type TestDeployer struct {
@@ -140,6 +158,7 @@ func TestNewForConfig(t *testing.T) {
 		config           *latest.SkaffoldConfig
 		shouldErr        bool
 		expectedBuilder  build.Builder
+		expectedTester   test.Tester
 		expectedDeployer deploy.Deployer
 	}{
 		{
@@ -158,6 +177,7 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedBuilder:  &local.Builder{},
+			expectedTester:   &test.FullTester{},
 			expectedDeployer: &deploy.KubectlDeployer{},
 		},
 		{
@@ -184,6 +204,7 @@ func TestNewForConfig(t *testing.T) {
 			},
 			shouldErr:        true,
 			expectedBuilder:  &local.Builder{},
+			expectedTester:   &test.FullTester{},
 			expectedDeployer: &deploy.KubectlDeployer{},
 		},
 		{
@@ -197,6 +218,7 @@ func TestNewForConfig(t *testing.T) {
 				}},
 			shouldErr:        true,
 			expectedBuilder:  &local.Builder{},
+			expectedTester:   &test.FullTester{},
 			expectedDeployer: &deploy.KubectlDeployer{},
 		},
 		{
@@ -218,9 +240,10 @@ func TestNewForConfig(t *testing.T) {
 
 			testutil.CheckError(t, test.shouldErr, err)
 			if cfg != nil {
-				b, d := WithTimings(test.expectedBuilder, test.expectedDeployer)
+				b, _t, d := WithTimings(test.expectedBuilder, test.expectedTester, test.expectedDeployer)
 
 				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, b, cfg.Builder)
+				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, _t, cfg.Tester)
 				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, d, cfg.Deployer)
 			}
 		})
@@ -232,6 +255,7 @@ func TestRun(t *testing.T) {
 		description string
 		config      *latest.SkaffoldConfig
 		builder     build.Builder
+		tester      test.Tester
 		deployer    deploy.Deployer
 		shouldErr   bool
 	}{
@@ -239,6 +263,7 @@ func TestRun(t *testing.T) {
 			description: "run no error",
 			config:      &latest.SkaffoldConfig{},
 			builder:     &TestBuilder{},
+			tester:      &TestTester{},
 			deployer:    &TestDeployer{},
 		},
 		{
@@ -247,6 +272,7 @@ func TestRun(t *testing.T) {
 			builder: &TestBuilder{
 				errors: []error{fmt.Errorf("")},
 			},
+			tester:    &TestTester{},
 			shouldErr: true,
 		},
 		{
@@ -261,7 +287,31 @@ func TestRun(t *testing.T) {
 				},
 			},
 			builder: &TestBuilder{},
+			tester:  &TestTester{},
 			deployer: &TestDeployer{
+				errors: []error{fmt.Errorf("")},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "run test error",
+			config: &latest.SkaffoldConfig{
+				Build: latest.BuildConfig{
+					Artifacts: []*latest.Artifact{
+						{
+							ImageName: "test",
+						},
+					},
+				},
+				Test: []latest.TestCase{
+					{
+						ImageName:      "test",
+						StructureTests: []string{"fake_file.yaml"},
+					},
+				},
+			},
+			builder: &TestBuilder{},
+			tester: &TestTester{
 				errors: []error{fmt.Errorf("")},
 			},
 			shouldErr: true,
@@ -272,6 +322,7 @@ func TestRun(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			runner := &SkaffoldRunner{
 				Builder:  test.builder,
+				Tester:   test.tester,
 				Deployer: test.deployer,
 				Tagger:   &tag.ChecksumTagger{},
 				opts:     &config.SkaffoldOptions{},
@@ -290,6 +341,7 @@ func TestDev(t *testing.T) {
 	var tests = []struct {
 		description    string
 		builder        build.Builder
+		tester         test.Tester
 		deployer       deploy.Deployer
 		watcherFactory watch.Factory
 		shouldErr      bool
@@ -306,7 +358,17 @@ func TestDev(t *testing.T) {
 		{
 			description: "fails to deploy the first time",
 			builder:     &TestBuilder{},
+			tester:      &TestTester{},
 			deployer: &TestDeployer{
+				errors: []error{fmt.Errorf("")},
+			},
+			watcherFactory: NewWatcherFactory(nil, nil),
+			shouldErr:      true,
+		},
+		{
+			description: "fails to deploy due to failed tests",
+			builder:     &TestBuilder{},
+			tester: &TestTester{
 				errors: []error{fmt.Errorf("")},
 			},
 			watcherFactory: NewWatcherFactory(nil, nil),
@@ -317,12 +379,14 @@ func TestDev(t *testing.T) {
 			builder: &TestBuilder{
 				errors: []error{nil, fmt.Errorf("")},
 			},
+			tester:         &TestTester{},
 			deployer:       &TestDeployer{},
 			watcherFactory: NewWatcherFactory(nil, nil, nil),
 		},
 		{
 			description: "ignore subsequent deploy errors",
 			builder:     &TestBuilder{},
+			tester:      &TestTester{},
 			deployer: &TestDeployer{
 				errors: []error{nil, fmt.Errorf("")},
 			},
@@ -331,6 +395,7 @@ func TestDev(t *testing.T) {
 		{
 			description:    "fail to watch files",
 			builder:        &TestBuilder{},
+			tester:         &TestTester{},
 			deployer:       &TestDeployer{},
 			watcherFactory: NewWatcherFactory(fmt.Errorf(""), nil),
 			shouldErr:      true,
@@ -341,6 +406,7 @@ func TestDev(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			runner := &SkaffoldRunner{
 				Builder:      test.builder,
+				Tester:       test.tester,
 				Deployer:     test.deployer,
 				Tagger:       &tag.ChecksumTagger{},
 				watchFactory: test.watcherFactory,
@@ -360,6 +426,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	defer resetClient()
 
 	builder := &TestBuilder{}
+	tester := &TestTester{}
 	deployer := &TestDeployer{}
 	artifacts := []*latest.Artifact{
 		{ImageName: "image1"},
@@ -368,6 +435,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 
 	runner := &SkaffoldRunner{
 		Builder:  builder,
+		Tester:   tester,
 		Deployer: deployer,
 		opts:     &config.SkaffoldOptions{},
 	}
