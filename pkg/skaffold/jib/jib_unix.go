@@ -24,7 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func getCommand(workspace string, defaultExecutable string, wrapperExecutable string, args []string) *exec.Cmd {
+func getCommand(workspace, defaultExecutable, wrapperExecutable string, args []string) *exec.Cmd {
 	executable := defaultExecutable
 
 	if wrapperExecutable, err := util.AbsFile(workspace, wrapperExecutable); err == nil {
