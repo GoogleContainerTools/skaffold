@@ -35,10 +35,10 @@ type APIVersion struct {
 }
 
 var schemaVersions = map[string]func() util.VersionedConfig{
-	v1alpha1.Version: v1alpha1.NewSkaffoldConfig,
-	v1alpha2.Version: v1alpha2.NewSkaffoldConfig,
-	v1alpha3.Version: v1alpha3.NewSkaffoldConfig,
-	latest.Version:   latest.NewSkaffoldConfig,
+	v1alpha1.Version: v1alpha1.NewSkaffoldPipeline,
+	v1alpha2.Version: v1alpha2.NewSkaffoldPipeline,
+	v1alpha3.Version: v1alpha3.NewSkaffoldPipeline,
+	latest.Version:   latest.NewSkaffoldPipeline,
 }
 
 // ParseConfig reads a configuration file.

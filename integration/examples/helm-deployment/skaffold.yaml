@@ -1,5 +1,4 @@
 apiVersion: skaffold/v1alpha4
-kind: Config
 build:
   tagPolicy:
     sha256: {}

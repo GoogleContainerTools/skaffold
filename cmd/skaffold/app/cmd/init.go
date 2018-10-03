@@ -132,7 +132,7 @@ func doInit(out io.Writer) error {
 		}
 	}
 
-	cfg, err := generateSkaffoldConfig(k8sConfigs, pairs)
+	cfg, err := generateSkaffoldPipeline(k8sConfigs, pairs)
 	if err != nil {
 		return err
 	}
@@ -261,14 +261,13 @@ func processBuildArtifacts(pairs []dockerfilePair) latest.BuildConfig {
 	return config
 }
 
-func generateSkaffoldConfig(k8sConfigs []string, dockerfilePairs []dockerfilePair) ([]byte, error) {
+func generateSkaffoldPipeline(k8sConfigs []string, dockerfilePairs []dockerfilePair) ([]byte, error) {
 	// if we're here, the user has no skaffold yaml so we need to generate one
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	logrus.Info("generating skaffold config")
 
-	config := &latest.SkaffoldConfig{
+	config := &latest.SkaffoldPipeline{
 		APIVersion: latest.Version,
-		Kind:       "Config",
 	}
 	if err := config.SetDefaultValues(); err != nil {
 		return nil, errors.Wrap(err, "generating default config")
