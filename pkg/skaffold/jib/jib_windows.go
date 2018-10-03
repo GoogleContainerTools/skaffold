@@ -27,7 +27,7 @@ func getCommand(workspace string, defaultExecutable string, wrapperExecutable st
 	subCommand = defaultSubCommand
 
 	if wrapperExecutable, err := util.AbsFile(workspace, wrapperExecutable); err == nil {
-		executable = "cmd.exe"
+		executable = "cmd"
 		subCommand = append([]string{wrapperExecutable}, subCommand...)
 		subCommand = append([]string{"/c"}, subCommand...)
 	}

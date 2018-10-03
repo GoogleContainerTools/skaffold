@@ -18,40 +18,57 @@ limitations under the License.
 
 package jib
 
-//func TestGetCommandGradleWithWrapper(t *testing.T) {
-//	var tests = []struct {
-//		description        string
-//		jibGradleArtifact  v1alpha3.JibGradleArtifact
-//		filesInWorkspace   []string
-//		expectedExecutable string
-//		expectedSubCommand func(workspace string) []string
-//	}{
-//		{
-//			description:        "gradle with wrapper",
-//			jibGradleArtifact:  v1alpha3.JibGradleArtifact{},
-//			filesInWorkspace:   []string{"gradlew.bat"},
-//			expectedExecutable: "cmd.exe",
-//			expectedSubCommand: func(workspace string) []string {
-//				return []string{"/c", filepath.Join(workspace, "gradlew.bat"), "_jibSkaffoldFiles", "-q"}
-//			},
-//		},
-//	}
-//
-//	for _, test := range tests {
-//		t.Run(test.description, func(t *testing.T) {
-//			tmpDir, cleanup := testutil.NewTempDir(t)
-//			defer cleanup()
-//
-//			for _, file := range test.filesInWorkspace {
-//				tmpDir.Write(file, "")
-//			}
-//
-//			executable, subCommand := getCommandGradle(tmpDir.Root(), &test.jibGradleArtifact)
-//
-//			if executable != test.expectedExecutable {
-//				t.Errorf("Expected executable %s. Got %s", test.expectedExecutable, executable)
-//			}
-//			testutil.CheckDeepEqual(t, test.expectedSubCommand(tmpDir.Root()), subCommand)
-//		})
-//	}
-//}
+func TestGetCommand(t *testing.T) {
+	var tests = []struct {
+		description       string
+		defaultExecutable string
+		wrapperExecutable string
+		args              []string
+		filesInWorkspace  []string
+		expectedCmd       func(workspace string) *exec.Cmd
+	}{
+		{
+			description:       "wrapper not present",
+			defaultExecutable: "executable",
+			wrapperExecutable: "does-not-exist",
+			args:              []string{"arg1", "arg2"},
+			filesInWorkspace:  []string{},
+			expectedCmd: func(workspace string) *exec.Cmd {
+				cmd := exec.Command("executable", "arg1", "arg2")
+				cmd.Dir = workspace
+				return cmd
+			},
+		},
+		{
+			description:       "wrapper is present",
+			defaultExecutable: "executable",
+			wrapperExecutable: "wrapper",
+			args:              []string{"arg1", "arg2"},
+			filesInWorkspace:  []string{"wrapper"},
+			expectedCmd: func(workspace string) *exec.Cmd {
+				wrapper, err := util.AbsFile(workspace, "wrapper")
+				testutil.CheckError(t, false, err)
+				cmd := exec.Command("cmd", "/c", wrapper, "arg1", "arg2")
+				cmd.Dir = workspace
+				return cmd
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			tmpDir, cleanup := testutil.NewTempDir(t)
+			defer cleanup()
+
+			for _, file := range test.filesInWorkspace {
+				tmpDir.Write(file, "")
+			}
+
+			cmd := getCommand(tmpDir.Root(), test.defaultExecutable, test.wrapperExecutable, test.args)
+			expectedCmd := test.expectedCmd(tmpDir.Root())
+			testutil.CheckDeepEqual(t, expectedCmd.Path, cmd.Path)
+			testutil.CheckDeepEqual(t, expectedCmd.Args, cmd.Args)
+			testutil.CheckDeepEqual(t, expectedCmd.Dir, cmd.Dir)
+		})
+	}
+}

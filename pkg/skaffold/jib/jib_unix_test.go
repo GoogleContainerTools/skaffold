@@ -54,9 +54,9 @@ func TestGetCommand(t *testing.T) {
 			args:              []string{"arg1", "arg2"},
 			filesInWorkspace:  []string{"wrapper"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				executable, err := util.AbsFile(workspace, "wrapper")
+				wrapper, err := util.AbsFile(workspace, "wrapper")
 				testutil.CheckError(t, false, err)
-				cmd := exec.Command(executable, "arg1", "arg2")
+				cmd := exec.Command(wrapper, "arg1", "arg2")
 				cmd.Dir = workspace
 				return cmd
 			},
