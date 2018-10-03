@@ -70,7 +70,7 @@ type TestTester struct {
 	errors []error
 }
 
-func (t *TestTester) Test(out io.Writer, builds []build.Artifact) error {
+func (t *TestTester) Test(ctx context.Context, out io.Writer, builds []build.Artifact) error {
 	if len(t.errors) > 0 {
 		err := t.errors[0]
 		t.errors = t.errors[1:]

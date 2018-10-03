@@ -17,23 +17,30 @@ limitations under the License.
 package structure
 
 import (
+	"context"
+	"io"
 	"os/exec"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 // Test is the entrypoint for running structure tests
-func (tr *Runner) Test(image string) error {
-	logrus.Infof("running structure tests for files %v", tr.testFiles)
-	args := []string{"test", "--image", image}
+func (tr *Runner) Test(ctx context.Context, out io.Writer, image string) error {
+	logrus.Infof("Running structure tests for files %v", tr.testFiles)
+
+	args := []string{"test", "-v", "warn", "--image", image}
 	for _, f := range tr.testFiles {
 		args = append(args, "--config", f)
 	}
-	args = append(args, tr.testFiles...)
-	cmd := exec.Command("container-structure-test", args...)
 
-	_, err := util.RunCmdOut(cmd)
-	return err
+	cmd := exec.CommandContext(ctx, "container-structure-test", args...)
+	cmd.Stdout = out
+	cmd.Stderr = out
+
+	if err := cmd.Run(); err != nil {
+		return errors.Wrap(err, "running container-structure-test")
+	}
+
+	return nil
 }
