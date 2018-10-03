@@ -79,8 +79,8 @@ func (t *TestTester) Test(ctx context.Context, out io.Writer, builds []build.Art
 	return nil
 }
 
-func (t *TestTester) TestDependencies() []string {
-	return []string{}
+func (t *TestTester) TestDependencies() ([]string, error) {
+	return nil, nil
 }
 
 type TestDeployer struct {
