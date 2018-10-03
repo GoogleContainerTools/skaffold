@@ -1,4 +1,4 @@
-// +build !windows
+// +build linux darwin
 
 /*
 Copyright 2018 The Skaffold Authors
