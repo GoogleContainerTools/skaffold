@@ -67,5 +67,8 @@ func applyDefaultRepoSubstitution(config *latest.SkaffoldConfig, globalConfig *c
 	for _, artifact := range config.Build.Artifacts {
 		artifact.ImageName = util.SubstituteDefaultRepoIntoImage(globalConfig.DefaultRepo, artifact.ImageName)
 	}
+	for _, testCase := range config.Test {
+		testCase.ImageName = util.SubstituteDefaultRepoIntoImage(globalConfig.DefaultRepo, testCase.ImageName)
+	}
 	return nil
 }
