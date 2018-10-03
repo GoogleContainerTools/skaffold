@@ -20,14 +20,14 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
 
-func (b *Builder) buildJibMaven(_ /*ctx*/ context.Context, _ /*out*/ io.Writer, _ /*workspace*/ string, _ /*a*/ *v1alpha3.JibMavenArtifact) (string, error) {
+func (b *Builder) buildJibMaven(_ /*ctx*/ context.Context, _ /*out*/ io.Writer, _ /*workspace*/ string, _ /*a*/ *latest.JibMavenArtifact) (string, error) {
 	return "", errors.New("buildJibMaven is unimplemented")
 }
 
-func (b *Builder) buildJibGradle(_ /*ctx*/ context.Context, _ /*out*/ io.Writer, _ /*workspace*/ string, _ /*a*/ *v1alpha3.JibGradleArtifact) (string, error) {
+func (b *Builder) buildJibGradle(_ /*ctx*/ context.Context, _ /*out*/ io.Writer, _ /*workspace*/ string, _ /*a*/ *latest.JibGradleArtifact) (string, error) {
 	return "", errors.New("buildJibGradle is unimplemented")
 }

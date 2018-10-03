@@ -19,14 +19,14 @@ package jib
 import (
 	"os/exec"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
 
 // GetDependenciesMaven finds the source dependencies for the given jib-maven artifact.
 // All paths are absolute.
 // TODO(coollog): Add support for multi-module projects.
-func GetDependenciesMaven(workspace string, a *v1alpha3.JibMavenArtifact) ([]string, error) {
+func GetDependenciesMaven(workspace string, a *latest.JibMavenArtifact) ([]string, error) {
 	deps, err := getDependencies(getCommandMaven(workspace, a))
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jib-maven dependencies")
@@ -34,7 +34,7 @@ func GetDependenciesMaven(workspace string, a *v1alpha3.JibMavenArtifact) ([]str
 	return deps, nil
 }
 
-func getCommandMaven(workspace string, a *v1alpha3.JibMavenArtifact) *exec.Cmd {
+func getCommandMaven(workspace string, a *latest.JibMavenArtifact) *exec.Cmd {
 	args := []string{"jib:_skaffold-files", "-q"}
 	if a.Profile != "" {
 		args = append(args, "-P", a.Profile)

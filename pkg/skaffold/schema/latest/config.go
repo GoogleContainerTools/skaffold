@@ -225,8 +225,10 @@ type Profile struct {
 }
 
 type ArtifactType struct {
-	DockerArtifact *DockerArtifact `yaml:"docker,omitempty" yamltags:"oneOf=artifact"`
-	BazelArtifact  *BazelArtifact  `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
+	DockerArtifact    *DockerArtifact    `yaml:"docker,omitempty" yamltags:"oneOf=artifact"`
+	BazelArtifact     *BazelArtifact     `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
+	JibMavenArtifact  *JibMavenArtifact  `yaml:"jibMaven,omitempty" yamltags:"oneOf=artifact"`
+	JibGradleArtifact *JibGradleArtifact `yaml:"jibGradle,omitempty" yamltags:"oneOf=artifact"`
 }
 
 // DockerArtifact describes an artifact built from a Dockerfile,
@@ -241,6 +243,17 @@ type DockerArtifact struct {
 // BazelArtifact describes an artifact built with Bazel.
 type BazelArtifact struct {
 	BuildTarget string `yaml:"target"`
+}
+
+type JibMavenArtifact struct {
+	// Only multi-module
+	Module  string `yaml:"module"`
+	Profile string `yaml:"profile"`
+}
+
+type JibGradleArtifact struct {
+	// Only multi-module
+	Project string `yaml:"project"`
 }
 
 // Parse reads a SkaffoldConfig from yaml.

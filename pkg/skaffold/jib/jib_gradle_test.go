@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/pkg/errors"
@@ -52,12 +52,12 @@ func TestGetDependenciesGradle(t *testing.T) {
 
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = testutil.NewFakeCmdOut(
-				strings.Join(getCommandGradle(tmpDir.Root(), &v1alpha3.JibGradleArtifact{}).Args, " "),
+				strings.Join(getCommandGradle(tmpDir.Root(), &latest.JibGradleArtifact{}).Args, " "),
 				test.stdout,
 				test.err,
 			)
 
-			deps, err := GetDependenciesGradle(tmpDir.Root(), &v1alpha3.JibGradleArtifact{})
+			deps, err := GetDependenciesGradle(tmpDir.Root(), &latest.JibGradleArtifact{})
 			if test.err != nil {
 				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jib-gradle dependencies: "+test.err.Error(), err.Error())
 			} else {
@@ -70,13 +70,13 @@ func TestGetDependenciesGradle(t *testing.T) {
 func TestGetCommandGradle(t *testing.T) {
 	var tests = []struct {
 		description       string
-		jibGradleArtifact v1alpha3.JibGradleArtifact
+		jibGradleArtifact latest.JibGradleArtifact
 		filesInWorkspace  []string
 		expectedCmd       func(workspace string) *exec.Cmd
 	}{
 		{
 			description:       "gradle default",
-			jibGradleArtifact: v1alpha3.JibGradleArtifact{},
+			jibGradleArtifact: latest.JibGradleArtifact{},
 			filesInWorkspace:  []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
 				return getCommand(workspace, "gradle", "ignored", []string{"_jibSkaffoldFiles", "-q"})
@@ -84,7 +84,7 @@ func TestGetCommandGradle(t *testing.T) {
 		},
 		{
 			description:       "gradle with wrapper",
-			jibGradleArtifact: v1alpha3.JibGradleArtifact{},
+			jibGradleArtifact: latest.JibGradleArtifact{},
 			filesInWorkspace:  []string{getWrapperGradle()},
 			expectedCmd: func(workspace string) *exec.Cmd {
 				return getCommand(workspace, "ignored", getWrapperGradle(), []string{"_jibSkaffoldFiles", "-q"})
