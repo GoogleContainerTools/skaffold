@@ -30,6 +30,7 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 	}
 
 	// Parses stdout for the dependencies, one per line
+	// TODO(coollog) directories should be expanded recursively
 	lines := strings.Split(string(stdout), "\n")
 	var deps []string
 	for _, l := range lines {
