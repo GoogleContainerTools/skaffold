@@ -100,11 +100,15 @@ type GoogleCloudBuild struct {
 	DockerImage string `yaml:"dockerImage,omitempty"`
 }
 
+// LocalDir represents the local directory kaniko build context
+type LocalDir struct {
+}
+
 // KanikoBuildContext contains the different fields available to specify
 // a kaniko build context
 type KanikoBuildContext struct {
 	GCSBucket string    `yaml:"gcsBucket,omitempty" yamltags:"oneOf=buildContext"`
-	LocalDir  *struct{} `yaml:"localDir,omitempty" yamltags:"oneOf=buildContext"`
+	LocalDir  *LocalDir `yaml:"localDir,omitempty" yamltags:"oneOf=buildContext"`
 }
 
 // KanikoBuild contains the fields needed to do a on-cluster build using

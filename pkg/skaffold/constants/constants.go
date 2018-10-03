@@ -53,7 +53,7 @@ const (
 	DefaultKanikoEmptyDirName      = "kaniko-emptydir"
 	DefaultKanikoEmptyDirMountPath = "/kaniko/buildcontext"
 
-	DefaultDebianImage = "gcr.io/google-appengine/debian9"
+	DefaultAlpineImage = "alpine"
 
 	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
 

@@ -22,17 +22,16 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
@@ -76,7 +75,7 @@ func (g *LocalDir) Pod(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 	// Generate the init container, which will run until the /tmp/complete file is created
 	ic := v1.Container{
 		Name:  initContainer,
-		Image: constants.DefaultDebianImage,
+		Image: constants.DefaultAlpineImage,
 		Args: []string{"sh", "-c", `while true; do
 	sleep 1; if [ -f /tmp/complete ]; then break; fi
 done`},
@@ -93,9 +92,12 @@ done`},
 // Via kubectl exec, we extract the tarball to the empty dir
 // Then, via kubectl exec, create the /tmp/complete file via kubectl exec to complete the init container
 func (g *LocalDir) ModifyPod(p *v1.Pod) error {
-	// Wait for the init container to start running
-	if err := waitForInitContainer(p); err != nil {
-		return errors.Wrap(err, "waiting for init container")
+	client, err := kubernetes.GetClientset()
+	if err != nil {
+		return errors.Wrap(err, "getting clientset")
+	}
+	if err := kubernetes.WaitForPodInitialized(client.CoreV1().Pods(p.Namespace), p.Name); err != nil {
+		return errors.Wrap(err, "waiting for pod to initialize")
 	}
 	// Copy over the buildcontext tarball into the init container
 	copy := exec.Command("kubectl", "cp", g.tarPath, fmt.Sprintf("%s:/%s", p.Name, g.tarPath), "-c", initContainer, "-n", p.Namespace)
@@ -110,17 +112,6 @@ func (g *LocalDir) ModifyPod(p *v1.Pod) error {
 	// Generate a file to successfully terminate the init container
 	file := exec.Command("kubectl", "exec", p.Name, "-c", initContainer, "-n", p.Namespace, "--", "touch", "/tmp/complete")
 	return util.RunCmd(file)
-}
-
-// waitForInitContainer tries to exec into the init container until it doesn't fail
-func waitForInitContainer(p *v1.Pod) error {
-	return wait.PollImmediate(time.Millisecond*500, time.Minute*1, func() (bool, error) {
-		cmd := exec.Command("kubectl", "exec", p.Name, "-n", p.Namespace, "-c", p.Spec.InitContainers[0].Name, "--", "echo")
-		if err := util.RunCmd(cmd); err != nil {
-			return false, nil
-		}
-		return true, nil
-	})
 }
 
 // Cleanup deletes the buidcontext tarball stored on the local filesystem
