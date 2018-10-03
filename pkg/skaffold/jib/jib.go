@@ -36,7 +36,6 @@ func GetDependenciesMaven(workspace string, a *v1alpha3.JibMavenArtifact) ([]str
 
 // GetDependenciesGradle finds the source dependencies for the given jib-gradle artifact.
 // All paths are absolute.
-// TODO(coollog): Add support for multi-module projects.
 func GetDependenciesGradle(workspace string, a *v1alpha3.JibGradleArtifact) ([]string, error) {
 	executable, subCommand := getCommandGradle(workspace, a)
 	return getDependencies(workspace, "build.gradle", executable, subCommand, "jib-gradle")
