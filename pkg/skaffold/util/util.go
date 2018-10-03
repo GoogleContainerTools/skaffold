@@ -202,3 +202,16 @@ func Expand(text, key, value string) string {
 func isAlphaNum(c uint8) bool {
 	return c == '_' || '0' <= c && c <= '9' || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z'
 }
+
+// AbsFile resolves the absolute path of the file named filename in directory workspace, erroring if it is not a file
+func AbsFile(workspace string, filename string) (string, error) {
+	file := filepath.Join(workspace, filename)
+	info, err := os.Stat(file)
+	if err != nil {
+		return "", err
+	}
+	if info.IsDir() {
+		return "", errors.Errorf("%s is a directory", file)
+	}
+	return filepath.Abs(file)
+}

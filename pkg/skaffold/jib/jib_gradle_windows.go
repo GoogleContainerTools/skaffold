@@ -16,28 +16,6 @@ limitations under the License.
 
 package jib
 
-import (
-	"os/exec"
-	"strings"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-)
-
-func getDependencies(cmd *exec.Cmd) ([]string, error) {
-	stdout, err := util.RunCmdOut(cmd)
-	if err != nil {
-		return nil, err
-	}
-
-	// Parses stdout for the dependencies, one per line
-	// TODO(coollog) directories should be expanded recursively
-	lines := strings.Split(string(stdout), "\n")
-	var deps []string
-	for _, l := range lines {
-		if l == "" {
-			continue
-		}
-		deps = append(deps, l)
-	}
-	return deps, nil
+func getWrapperGradle() string {
+	return "gradlew.bat"
 }

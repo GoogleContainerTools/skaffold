@@ -17,32 +17,51 @@ limitations under the License.
 package jib
 
 import (
+	"os/exec"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGetDependenciesMaven(t *testing.T) {
-	// placeholder test
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
+func TestGetDependencies(t *testing.T) {
+	var tests = []struct {
+		stdout       string
+		expectedDeps []string
+	}{
+		{
+			stdout:       "",
+			expectedDeps: nil,
+		},
+		{
+			stdout:       "deps1\ndeps2",
+			expectedDeps: []string{"deps1", "deps2"},
+		},
+		{
+			stdout:       "deps1\ndeps2\n",
+			expectedDeps: []string{"deps1", "deps2"},
+		},
+		{
+			stdout:       "\n\n\n",
+			expectedDeps: nil,
+		},
+		{
+			stdout:       "\n\ndeps1\n\ndeps2\n\n\n",
+			expectedDeps: []string{"deps1", "deps2"},
+		},
+	}
 
-	deps, err := GetDependenciesMaven(tmpDir.Root(), &v1alpha3.JibMavenArtifact{})
+	for _, test := range tests {
+		t.Run("getDependencies", func(t *testing.T) {
+			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+			util.DefaultExecCommand = testutil.NewFakeCmdOut(
+				"ignored",
+				test.stdout,
+				nil,
+			)
 
-	var nilReturnValue []string
-	// function currently errors with unimplimented error
-	testutil.CheckErrorAndDeepEqual(t, true, err, nilReturnValue, deps)
-}
-
-func TestGetDependenciesGradle(t *testing.T) {
-	// placeholder test
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
-
-	deps, err := GetDependenciesGradle(tmpDir.Root(), &v1alpha3.JibGradleArtifact{})
-
-	var nilReturnValue []string
-	// function currently errors with unimplimented error
-	testutil.CheckErrorAndDeepEqual(t, true, err, nilReturnValue, deps)
+			deps, err := getDependencies(&exec.Cmd{Args: []string{"ignored"}})
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedDeps, deps)
+		})
+	}
 }

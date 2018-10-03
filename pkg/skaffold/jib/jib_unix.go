@@ -1,3 +1,5 @@
+// +build !windows
+
 /*
 Copyright 2018 The Skaffold Authors
 
@@ -18,26 +20,18 @@ package jib
 
 import (
 	"os/exec"
-	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func getDependencies(cmd *exec.Cmd) ([]string, error) {
-	stdout, err := util.RunCmdOut(cmd)
-	if err != nil {
-		return nil, err
+func getCommand(workspace, defaultExecutable, wrapperExecutable string, args []string) *exec.Cmd {
+	executable := defaultExecutable
+
+	if wrapperExecutable, err := util.AbsFile(workspace, wrapperExecutable); err == nil {
+		executable = wrapperExecutable
 	}
 
-	// Parses stdout for the dependencies, one per line
-	// TODO(coollog) directories should be expanded recursively
-	lines := strings.Split(string(stdout), "\n")
-	var deps []string
-	for _, l := range lines {
-		if l == "" {
-			continue
-		}
-		deps = append(deps, l)
-	}
-	return deps, nil
+	cmd := exec.Command(executable, args...)
+	cmd.Dir = workspace
+	return cmd
 }
