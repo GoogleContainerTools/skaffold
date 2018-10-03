@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v1alpha4
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -22,7 +22,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-const Version string = "skaffold/v1alpha5"
+const Version string = "skaffold/v1alpha4"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -115,23 +115,6 @@ type KanikoBuild struct {
 	PullSecretName string             `yaml:"pullSecretName,omitempty"`
 	Namespace      string             `yaml:"namespace,omitempty"`
 	Timeout        string             `yaml:"timeout,omitempty"`
-}
-
-// AzureContainerBuild contains the fields needed to do a build
-// on Azure Container Registry
-type AzureContainerBuild struct {
-	Credentials       AzureContainerBuildCredentials `yaml:"credentials,omitempty"`
-	ContainerRegistry string                         `yaml:"containerRegistry,omitempty"`
-	ResourceGroup     string                         `yaml:"resourceGroup,omitempty"`
-}
-
-// AzureContainerBuildCredentials contains the fields needed to
-// to authorize the azure sdk
-type AzureContainerBuildCredentials struct {
-	SubscriptionId string `yaml:"subscriptionId,omitempty"`
-	ClientId       string `yaml:"clientId,omitempty"`
-	ClientSecret   string `yaml:"clientSecret,omitempty"`
-	TenantId       string `yaml:"tenantId,omitempty"`
 }
 
 // TestCase is a struct containing all the specified test
