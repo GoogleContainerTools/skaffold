@@ -33,6 +33,7 @@ type SkaffoldOptions struct {
 	CustomTag         string
 	Namespace         string
 	Watch             []string
+	Trigger           string
 	WatchPollInterval int
 }
 
