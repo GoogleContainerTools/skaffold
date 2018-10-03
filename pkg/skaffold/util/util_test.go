@@ -189,7 +189,7 @@ func TestAbsFile(t *testing.T) {
 	testutil.CheckErrorAndDeepEqual(t, false, err, expectedFile, file)
 
 	_, err = AbsFile(tmpDir.Root(), "")
-	testutil.CheckErrorAndDeepEqual(t, true, err, tmpDir.Root() + " is a directory", err.Error())
+	testutil.CheckErrorAndDeepEqual(t, true, err, tmpDir.Root()+" is a directory", err.Error())
 
 	_, err = AbsFile(tmpDir.Root(), "does-not-exist")
 	testutil.CheckError(t, true, err)
