@@ -78,9 +78,10 @@ type DateTimeTagger struct {
 // BuildType contains the specific implementation and parameters needed
 // for the build step. Only one field should be populated.
 type BuildType struct {
-	LocalBuild       *LocalBuild       `yaml:"local,omitempty" yamltags:"oneOf=build"`
-	GoogleCloudBuild *GoogleCloudBuild `yaml:"googleCloudBuild,omitempty" yamltags:"oneOf=build"`
-	KanikoBuild      *KanikoBuild      `yaml:"kaniko,omitempty" yamltags:"oneOf=build"`
+	LocalBuild          *LocalBuild          `yaml:"local,omitempty" yamltags:"oneOf=build"`
+	GoogleCloudBuild    *GoogleCloudBuild    `yaml:"googleCloudBuild,omitempty" yamltags:"oneOf=build"`
+	KanikoBuild         *KanikoBuild         `yaml:"kaniko,omitempty" yamltags:"oneOf=build"`
+	AzureContainerBuild *AzureContainerBuild `yaml:"acr,omitempty" yamltags:"oneOf=build"`
 }
 
 // LocalBuild contains the fields needed to do a build on the local docker daemon
