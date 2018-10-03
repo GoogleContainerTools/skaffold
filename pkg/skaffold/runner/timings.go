@@ -25,25 +25,28 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 )
 
 // WithTimings creates a deployer that logs the duration of each phase.
-func WithTimings(b build.Builder, d deploy.Deployer) (build.Builder, deploy.Deployer) {
+func WithTimings(b build.Builder, t test.Tester, d deploy.Deployer) (build.Builder, test.Tester, deploy.Deployer) {
 	w := withTimings{
 		Builder:  b,
+		Tester:   t,
 		Deployer: d,
 	}
 
-	return w, w
+	return w, w, w
 }
 
 type withTimings struct {
 	build.Builder
+	test.Tester
 	deploy.Deployer
 }
 
-func (w withTimings) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha3.Artifact) ([]build.Artifact, error) {
+func (w withTimings) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	start := time.Now()
 	color.Default.Fprintln(out, "Starting build...")
 
@@ -52,6 +55,17 @@ func (w withTimings) Build(ctx context.Context, out io.Writer, tagger tag.Tagger
 		color.Default.Fprintln(out, "Build complete in", time.Since(start))
 	}
 	return bRes, err
+}
+
+func (w withTimings) Test(out io.Writer, builds []build.Artifact) error {
+	start := time.Now()
+	color.Default.Fprintln(out, "Starting test...")
+
+	err := w.Tester.Test(out, builds)
+	if err == nil {
+		color.Default.Fprintln(out, "Test complete in", time.Since(start))
+	}
+	return err
 }
 
 func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]deploy.Artifact, error) {

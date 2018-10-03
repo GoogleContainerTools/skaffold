@@ -26,11 +26,11 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
 
-func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace string, a *v1alpha3.BazelArtifact) (string, error) {
+func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace string, a *latest.BazelArtifact) (string, error) {
 	cmd := exec.CommandContext(ctx, "bazel", "build", a.BuildTarget)
 	cmd.Dir = workspace
 	cmd.Stdout = out

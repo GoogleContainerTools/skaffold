@@ -14,17 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package latest
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"errors"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// SkaffoldConfig references the most recent skaffold config version
-type SkaffoldConfig = v1alpha3.SkaffoldConfig
-
-const LatestVersion string = v1alpha3.Version
-
-func NewConfig() (*SkaffoldConfig, error) {
-	return v1alpha3.NewConfig()
+// Upgrade upgrades a configuration to the next version.
+func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
+	return nil, errors.New("not implemented yet")
 }

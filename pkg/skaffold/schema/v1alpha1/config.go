@@ -18,11 +18,17 @@ package v1alpha1
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 
 	yaml "gopkg.in/yaml.v2"
 )
 
 const Version string = "skaffold/v1alpha1"
+
+// NewSkaffoldConfig creates a SkaffoldConfig
+func NewSkaffoldConfig() util.VersionedConfig {
+	return new(SkaffoldConfig)
+}
 
 // SkaffoldConfig is the top level config object
 // that is parsed from a skaffold.yaml

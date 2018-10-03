@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/pkg/errors"
@@ -52,12 +52,12 @@ func TestGetDependenciesMaven(t *testing.T) {
 
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = testutil.NewFakeCmdOut(
-				strings.Join(getCommandMaven(tmpDir.Root(), &v1alpha3.JibMavenArtifact{}).Args, " "),
+				strings.Join(getCommandMaven(tmpDir.Root(), &latest.JibMavenArtifact{}).Args, " "),
 				test.stdout,
 				test.err,
 			)
 
-			deps, err := GetDependenciesMaven(tmpDir.Root(), &v1alpha3.JibMavenArtifact{})
+			deps, err := GetDependenciesMaven(tmpDir.Root(), &latest.JibMavenArtifact{})
 			if test.err != nil {
 				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jib-maven dependencies: "+test.err.Error(), err.Error())
 			} else {
@@ -70,13 +70,13 @@ func TestGetDependenciesMaven(t *testing.T) {
 func TestGetCommandMaven(t *testing.T) {
 	var tests = []struct {
 		description      string
-		jibMavenArtifact v1alpha3.JibMavenArtifact
+		jibMavenArtifact latest.JibMavenArtifact
 		filesInWorkspace []string
 		expectedCmd      func(workspace string) *exec.Cmd
 	}{
 		{
 			description:      "maven no profile",
-			jibMavenArtifact: v1alpha3.JibMavenArtifact{},
+			jibMavenArtifact: latest.JibMavenArtifact{},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
 				return getCommand(workspace, "mvn", "ignored", []string{"jib:_skaffold-files", "-q"})
@@ -84,7 +84,7 @@ func TestGetCommandMaven(t *testing.T) {
 		},
 		{
 			description:      "maven with profile",
-			jibMavenArtifact: v1alpha3.JibMavenArtifact{Profile: "profile"},
+			jibMavenArtifact: latest.JibMavenArtifact{Profile: "profile"},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
 				return getCommand(workspace, "mvn", "ignored", []string{"jib:_skaffold-files", "-q", "-P", "profile"})
@@ -92,7 +92,7 @@ func TestGetCommandMaven(t *testing.T) {
 		},
 		{
 			description:      "maven with wrapper no profile",
-			jibMavenArtifact: v1alpha3.JibMavenArtifact{},
+			jibMavenArtifact: latest.JibMavenArtifact{},
 			filesInWorkspace: []string{getWrapperMaven()},
 			expectedCmd: func(workspace string) *exec.Cmd {
 				return getCommand(workspace, "ignored", getWrapperMaven(), []string{"jib:_skaffold-files", "-q"})
@@ -100,7 +100,7 @@ func TestGetCommandMaven(t *testing.T) {
 		},
 		{
 			description:      "maven with wrapper and profile",
-			jibMavenArtifact: v1alpha3.JibMavenArtifact{Profile: "profile"},
+			jibMavenArtifact: latest.JibMavenArtifact{Profile: "profile"},
 			filesInWorkspace: []string{getWrapperMaven()},
 			expectedCmd: func(workspace string) *exec.Cmd {
 				return getCommand(workspace, "ignored", getWrapperMaven(), []string{"jib:_skaffold-files", "-q", "-P", "profile"})

@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
@@ -36,7 +36,7 @@ func query(target string) string {
 
 // GetDependencies finds the sources dependencies for the given bazel artifact.
 // All paths are relative to the workspace.
-func GetDependencies(workspace string, a *v1alpha3.BazelArtifact) ([]string, error) {
+func GetDependencies(workspace string, a *latest.BazelArtifact) ([]string, error) {
 	cmd := exec.Command("bazel", "query", query(a.BuildTarget), "--noimplicit_deps", "--order_output=no")
 	cmd.Dir = workspace
 	stdout, err := util.RunCmdOut(cmd)

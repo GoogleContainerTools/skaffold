@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -39,7 +39,7 @@ import (
 
 const kanikoContainerName = "kaniko"
 
-func runKaniko(ctx context.Context, out io.Writer, artifact *v1alpha3.Artifact, cfg *v1alpha3.KanikoBuild) (string, error) {
+func runKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, cfg *latest.KanikoBuild) (string, error) {
 	dockerfilePath := artifact.DockerArtifact.DockerfilePath
 
 	initialTag := util.RandomID()

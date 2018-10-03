@@ -108,7 +108,7 @@ func newCallback() *callback {
 	}
 }
 
-func (c *callback) call() {
+func (c *callback) call(e Events) {
 	c.wg.Done()
 }
 

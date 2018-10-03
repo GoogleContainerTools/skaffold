@@ -19,13 +19,13 @@ package jib
 import (
 	"os/exec"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
 
 // GetDependenciesGradle finds the source dependencies for the given jib-gradle artifact.
 // All paths are absolute.
-func GetDependenciesGradle(workspace string, a *v1alpha3.JibGradleArtifact) ([]string, error) {
+func GetDependenciesGradle(workspace string, a *latest.JibGradleArtifact) ([]string, error) {
 	cmd := getCommandGradle(workspace, a)
 	deps, err := getDependencies(cmd)
 	if err != nil {
@@ -34,6 +34,6 @@ func GetDependenciesGradle(workspace string, a *v1alpha3.JibGradleArtifact) ([]s
 	return deps, nil
 }
 
-func getCommandGradle(workspace string, _ /* a */ *v1alpha3.JibGradleArtifact) *exec.Cmd {
+func getCommandGradle(workspace string, _ /* a */ *latest.JibGradleArtifact) *exec.Cmd {
 	return getCommand(workspace, "gradle", getWrapperGradle(), []string{"_jibSkaffoldFiles", "-q"})
 }
