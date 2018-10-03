@@ -18,6 +18,14 @@ limitations under the License.
 
 package jib
 
+import (
+	"os/exec"
+	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/testutil"
+)
+
 func TestGetCommand(t *testing.T) {
 	var tests = []struct {
 		description       string
