@@ -19,11 +19,11 @@ limitations under the License.
 package jib
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"path/filepath"
 )
 
 func TestGetCommandMavenWithWrapper(t *testing.T) {
