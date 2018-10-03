@@ -24,7 +24,7 @@ import (
 )
 
 // Upgrade upgrades a configuration to the next version.
-func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
+func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	var tagPolicy next.TagPolicy
 	if config.Build.TagPolicy == constants.TagStrategySha256 {
 		tagPolicy = next.TagPolicy{
@@ -91,7 +91,7 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 		}
 	}
 
-	return &next.SkaffoldConfig{
+	return &next.SkaffoldPipeline{
 		APIVersion: next.Version,
 		Kind:       config.Kind,
 		Deploy: next.DeployConfig{

@@ -180,7 +180,7 @@ func (t *TestWatcher) Run(ctx context.Context, trigger watch.Trigger, onChange f
 func TestNewForConfig(t *testing.T) {
 	var tests = []struct {
 		description      string
-		config           *latest.SkaffoldConfig
+		config           *latest.SkaffoldPipeline
 		shouldErr        bool
 		expectedBuilder  build.Builder
 		expectedTester   test.Tester
@@ -188,7 +188,7 @@ func TestNewForConfig(t *testing.T) {
 	}{
 		{
 			description: "local builder config",
-			config: &latest.SkaffoldConfig{
+			config: &latest.SkaffoldPipeline{
 				Build: latest.BuildConfig{
 					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
 					BuildType: latest.BuildType{
@@ -207,7 +207,7 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "bad tagger config",
-			config: &latest.SkaffoldConfig{
+			config: &latest.SkaffoldPipeline{
 				Build: latest.BuildConfig{
 					TagPolicy: latest.TagPolicy{},
 					BuildType: latest.BuildType{
@@ -224,7 +224,7 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "unknown builder",
-			config: &latest.SkaffoldConfig{
+			config: &latest.SkaffoldPipeline{
 				Build: latest.BuildConfig{},
 			},
 			shouldErr:        true,
@@ -234,7 +234,7 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "unknown tagger",
-			config: &latest.SkaffoldConfig{
+			config: &latest.SkaffoldPipeline{
 				Build: latest.BuildConfig{
 					TagPolicy: latest.TagPolicy{},
 					BuildType: latest.BuildType{
@@ -248,7 +248,7 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "unknown deployer",
-			config: &latest.SkaffoldConfig{
+			config: &latest.SkaffoldPipeline{
 				Build: latest.BuildConfig{
 					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
 					BuildType: latest.BuildType{
@@ -280,7 +280,7 @@ func TestNewForConfig(t *testing.T) {
 func TestRun(t *testing.T) {
 	var tests = []struct {
 		description string
-		config      *latest.SkaffoldConfig
+		config      *latest.SkaffoldPipeline
 		builder     build.Builder
 		tester      test.Tester
 		deployer    deploy.Deployer
@@ -288,14 +288,14 @@ func TestRun(t *testing.T) {
 	}{
 		{
 			description: "run no error",
-			config:      &latest.SkaffoldConfig{},
+			config:      &latest.SkaffoldPipeline{},
 			builder:     &TestBuilder{},
 			tester:      &TestTester{},
 			deployer:    &TestDeployer{},
 		},
 		{
 			description: "run build error",
-			config:      &latest.SkaffoldConfig{},
+			config:      &latest.SkaffoldPipeline{},
 			builder: &TestBuilder{
 				errors: []error{fmt.Errorf("")},
 			},
@@ -304,7 +304,7 @@ func TestRun(t *testing.T) {
 		},
 		{
 			description: "run deploy error",
-			config: &latest.SkaffoldConfig{
+			config: &latest.SkaffoldPipeline{
 				Build: latest.BuildConfig{
 					Artifacts: []*latest.Artifact{
 						{
@@ -322,7 +322,7 @@ func TestRun(t *testing.T) {
 		},
 		{
 			description: "run test error",
-			config: &latest.SkaffoldConfig{
+			config: &latest.SkaffoldPipeline{
 				Build: latest.BuildConfig{
 					Artifacts: []*latest.Artifact{
 						{
