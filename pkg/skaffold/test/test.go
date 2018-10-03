@@ -39,75 +39,66 @@ func NewTester(testCases *[]latest.TestCase) (Tester, error) {
 		return nil, errors.Wrap(err, "finding current directory")
 	}
 
-	testers := []*ArtifactTester{}
-	deps := []string{}
-
-	for _, testCase := range *testCases {
-		testRunner := &ArtifactTester{
-			ImageName: testCase.ImageName,
-		}
-
-		if testCase.StructureTests != nil {
-			stFiles, err := util.ExpandPathsGlob(cwd, testCase.StructureTests)
-			if err != nil {
-				return FullTester{}, errors.Wrap(err, "expanding test file paths")
-			}
-
-			stRunner, err := structure.NewStructureTestRunner(stFiles)
-			if err != nil {
-				return FullTester{}, errors.Wrap(err, "retrieving structure test runner")
-			}
-
-			testRunner.TestRunners = append(testRunner.TestRunners, stRunner)
-			deps = append(deps, stFiles...)
-		}
-
-		testers = append(testers, testRunner)
-	}
-
 	return FullTester{
-		ArtifactTesters: testers,
-		Dependencies:    deps,
+		testCases:  testCases,
+		workingDir: cwd,
 	}, nil
 }
 
 // TestDependencies returns the watch dependencies to the runner.
-func (t FullTester) TestDependencies() []string {
-	return t.Dependencies
+func (t FullTester) TestDependencies() ([]string, error) {
+	var deps []string
+
+	for _, test := range *t.testCases {
+		if test.StructureTests == nil {
+			continue
+		}
+
+		files, err := util.ExpandPathsGlob(t.workingDir, test.StructureTests)
+		if err != nil {
+			return nil, errors.Wrap(err, "expanding test file paths")
+		}
+
+		deps = append(deps, files...)
+	}
+
+	return deps, nil
 }
 
 // Test is the top level testing execution call. It serves as the
 // entrypoint to all individual tests.
 func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
-	t.resolveArtifactImageTags(bRes)
-
-	for _, aTester := range t.ArtifactTesters {
-		if err := aTester.RunTests(ctx, out); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// RunTests serves as the entrypoint to each group of
-// artifact-specific tests.
-func (a *ArtifactTester) RunTests(ctx context.Context, out io.Writer) error {
-	for _, t := range a.TestRunners {
-		if err := t.Test(ctx, out, a.ImageName); err != nil {
-			return err
+	for _, test := range *t.testCases {
+		if err := t.runStructureTests(ctx, out, bRes, test); err != nil {
+			return errors.Wrap(err, "running structure tests")
 		}
 	}
 
 	return nil
 }
 
-// replace original test artifact images with tagged build artifact images
-func (t *FullTester) resolveArtifactImageTags(bRes []build.Artifact) {
-	for _, aTest := range t.ArtifactTesters {
-		for _, res := range bRes {
-			if aTest.ImageName == res.ImageName {
-				aTest.ImageName = res.Tag
-			}
+func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes []build.Artifact, testCase latest.TestCase) error {
+	if len(testCase.StructureTests) == 0 {
+		return nil
+	}
+
+	files, err := util.ExpandPathsGlob(t.workingDir, testCase.StructureTests)
+	if err != nil {
+		return errors.Wrap(err, "expanding test file paths")
+	}
+
+	runner := structure.NewRunner(files)
+	fqn := resolveArtifactImageTag(testCase.ImageName, bRes)
+
+	return runner.Test(ctx, out, fqn)
+}
+
+func resolveArtifactImageTag(imageName string, bRes []build.Artifact) string {
+	for _, res := range bRes {
+		if imageName == res.ImageName {
+			return res.Tag
 		}
 	}
+
+	return imageName
 }

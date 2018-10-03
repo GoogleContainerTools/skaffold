@@ -20,8 +20,9 @@ type Runner struct {
 	testFiles []string
 }
 
-func NewStructureTestRunner(files []string) (*Runner, error) {
+// NewRunner creates a new structure.Runner.
+func NewRunner(files []string) *Runner {
 	return &Runner{
 		testFiles: files,
-	}, nil
+	}
 }
