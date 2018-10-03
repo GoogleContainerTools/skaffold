@@ -16,25 +16,22 @@ limitations under the License.
 
 package jib
 
-func getWrapper(defaultExecutable string) string {
-	switch defaultExecutable {
-	case gradleExecutable:
-		return "gradlew.bat"
-	case mavenExecutable:
-		return "mvnw.cmd"
-	}
-	return defaultExecutable
-}
+import (
+	"os/exec"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+)
 
-func getCommand(workspace string, defaultExecutable string, defaultSubCommand []string) (executable string, subCommand []string) {
+func getCommand(workspace string, defaultExecutable string, wrapperExecutable string, defaultSubCommand []string) *exec.Cmd {
 	executable = defaultExecutable
 	subCommand = defaultSubCommand
 
-	if wrapperExecutable, err := resolveFile(workspace, getWrapper(defaultExecutable)); err == nil {
+	if wrapperExecutable, err := util.AbsFile(workspace, wrapperExecutable); err == nil {
 		executable = "cmd.exe"
 		subCommand = append([]string{wrapperExecutable}, subCommand...)
 		subCommand = append([]string{"/c"}, subCommand...)
 	}
 
-	return executable, subCommand
+	cmd := exec.Command(executable, subCommand...)
+	cmd.Dir = workspace
+	return cmd
 }
