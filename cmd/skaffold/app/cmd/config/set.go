@@ -38,7 +38,7 @@ func NewCmdSet(out io.Writer) *cobra.Command {
 			if err := setConfigValue(args[0], args[1]); err != nil {
 				return err
 			}
-			logConfigChangeForUser(out, args[0], args[1])
+			logSetConfigForUser(out, args[0], args[1])
 			return nil
 		},
 	}
@@ -71,11 +71,15 @@ func setConfigValue(name string, value interface{}) error {
 	fieldType := fieldValue.Type()
 	val := reflect.ValueOf(value)
 
-	if fieldType != val.Type() {
-		return fmt.Errorf("%s is not a valid value for field %s", value, fieldName)
+	if IsZero(val) {
+		v := reflect.ValueOf(cfg).Elem().FieldByName(fieldName)
+		v.Set(reflect.Zero(v.Type()))
+	} else {
+		if fieldType != val.Type() {
+			return fmt.Errorf("%s is not a valid value for field %s", value, fieldName)
+		}
+		reflect.ValueOf(cfg).Elem().FieldByName(fieldName).Set(val)
 	}
-
-	reflect.ValueOf(cfg).Elem().FieldByName(fieldName).Set(val)
 
 	return writeConfig(cfg)
 }
@@ -109,7 +113,7 @@ func writeFullConfig(cfg *Config) error {
 	return nil
 }
 
-func logConfigChangeForUser(out io.Writer, key string, value string) {
+func logSetConfigForUser(out io.Writer, key string, value string) {
 	if global {
 		out.Write([]byte(fmt.Sprintf("set global value %s to %s\n", key, value)))
 	} else {
