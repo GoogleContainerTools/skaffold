@@ -19,6 +19,8 @@ package util
 import (
 	"testing"
 
+	"path/filepath"
+
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -174,4 +176,21 @@ func TestExpand(t *testing.T) {
 			testutil.CheckDeepEqual(t, test.expected, actual)
 		})
 	}
+}
+
+func TestAbsFile(t *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+	tmpDir.Write("file", "")
+	expectedFile, err := filepath.Abs(filepath.Join(tmpDir.Root(), "file"))
+	testutil.CheckError(t, false, err)
+
+	file, err := AbsFile(tmpDir.Root(), "file")
+	testutil.CheckErrorAndDeepEqual(t, false, err, expectedFile, file)
+
+	file, err = AbsFile(tmpDir.Root(), "")
+	testutil.CheckErrorAndDeepEqual(t, true, err, tmpDir.Root()+" is a directory", err.Error())
+
+	file, err = AbsFile(tmpDir.Root(), "does-not-exist")
+	testutil.CheckError(t, true, err)
 }

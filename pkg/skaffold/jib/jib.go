@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-
 )
 
 func getDependencies(cmd *exec.Cmd) ([]string, error) {
@@ -30,7 +29,7 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 		return nil, err
 	}
 
-  // Parses stdout for the dependencies, one per line
+	// Parses stdout for the dependencies, one per line
 	lines := strings.Split(string(stdout), "\n")
 	var deps []string
 	for _, l := range lines {

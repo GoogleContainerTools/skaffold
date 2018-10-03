@@ -19,33 +19,47 @@ limitations under the License.
 package jib
 
 import (
+	"os/exec"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGetCommandMavenWithWrapper(t *testing.T) {
+func TestGetCommand(t *testing.T) {
 	var tests = []struct {
-		description        string
-		jibMavenArtifact   v1alpha3.JibMavenArtifact
-		filesInWorkspace   []string
-		expectedExecutable string
-		expectedSubCommand []string
+		description       string
+		defaultExecutable string
+		wrapperExecutable string
+		args              []string
+		filesInWorkspace  []string
+		expectedCmd       func(workspace string) *exec.Cmd
 	}{
 		{
-			description:        "maven with wrapper",
-			jibMavenArtifact:   v1alpha3.JibMavenArtifact{},
-			filesInWorkspace:   []string{"mvnw"},
-			expectedExecutable: "mvnw",
-			expectedSubCommand: []string{"jib:_skaffold-files", "-q"},
+			description:       "wrapper not present",
+			defaultExecutable: "executable",
+			wrapperExecutable: "does-not-exist",
+			args:              []string{"arg1", "arg2"},
+			filesInWorkspace:  []string{},
+			expectedCmd: func(workspace string) *exec.Cmd {
+				cmd := exec.Command("executable", "arg1", "arg2")
+				cmd.Dir = workspace
+				return cmd
+			},
 		},
 		{
-			description:        "maven with wrapper and profile",
-			jibMavenArtifact:   v1alpha3.JibMavenArtifact{Profile: "profile"},
-			filesInWorkspace:   []string{"mvnw"},
-			expectedExecutable: "mvnw",
-			expectedSubCommand: []string{"jib:_skaffold-files", "-q", "-P", "profile"},
+			description:       "wrapper is present",
+			defaultExecutable: "executable",
+			wrapperExecutable: "wrapper",
+			args:              []string{"arg1", "arg2"},
+			filesInWorkspace:  []string{"wrapper"},
+			expectedCmd: func(workspace string) *exec.Cmd {
+				executable, err := util.AbsFile(workspace, "wrapper")
+				testutil.CheckError(t, false, err)
+				cmd := exec.Command(executable, "arg1", "arg2")
+				cmd.Dir = workspace
+				return cmd
+			},
 		},
 	}
 
@@ -58,52 +72,11 @@ func TestGetCommandMavenWithWrapper(t *testing.T) {
 				tmpDir.Write(file, "")
 			}
 
-			executable, subCommand := getCommandMaven(tmpDir.Root(), &test.jibMavenArtifact)
-
-			expectedExecutable, err := resolveFile(tmpDir.Root(), test.expectedExecutable)
-			testutil.CheckError(t, false, err)
-			if executable != expectedExecutable {
-				t.Errorf("Expected executable %s. Got %s", test.expectedExecutable, executable)
-			}
-			testutil.CheckDeepEqual(t, test.expectedSubCommand, subCommand)
-		})
-	}
-}
-
-func TestGetCommandGradleWithWrapper(t *testing.T) {
-	var tests = []struct {
-		description        string
-		jibGradleArtifact  v1alpha3.JibGradleArtifact
-		filesInWorkspace   []string
-		expectedExecutable string
-		expectedSubCommand []string
-	}{
-		{
-			description:        "gradle with wrapper",
-			jibGradleArtifact:  v1alpha3.JibGradleArtifact{},
-			filesInWorkspace:   []string{"gradlew"},
-			expectedExecutable: "gradlew",
-			expectedSubCommand: []string{"_jibSkaffoldFiles", "-q"},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			tmpDir, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
-
-			for _, file := range test.filesInWorkspace {
-				tmpDir.Write(file, "")
-			}
-
-			executable, subCommand := getCommandGradle(tmpDir.Root(), &test.jibGradleArtifact)
-
-			expectedExecutable, err := resolveFile(tmpDir.Root(), test.expectedExecutable)
-			testutil.CheckError(t, false, err)
-			if executable != expectedExecutable {
-				t.Errorf("Expected executable %s. Got %s", test.expectedExecutable, executable)
-			}
-			testutil.CheckDeepEqual(t, test.expectedSubCommand, subCommand)
+			cmd := getCommand(tmpDir.Root(), test.defaultExecutable, test.wrapperExecutable, test.args)
+			expectedCmd := test.expectedCmd(tmpDir.Root())
+			testutil.CheckDeepEqual(t, expectedCmd.Path, cmd.Path)
+			testutil.CheckDeepEqual(t, expectedCmd.Args, cmd.Args)
+			testutil.CheckDeepEqual(t, expectedCmd.Dir, cmd.Dir)
 		})
 	}
 }

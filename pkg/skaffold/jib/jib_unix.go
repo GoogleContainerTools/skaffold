@@ -20,18 +20,18 @@ package jib
 
 import (
 	"os/exec"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func getCommand(workspace string, defaultExecutable string, wrapperExecutable string, defaultSubCommand []string) *exec.Cmd {
+func getCommand(workspace string, defaultExecutable string, wrapperExecutable string, args []string) *exec.Cmd {
 	executable := defaultExecutable
-	subCommand := defaultSubCommand
 
 	if wrapperExecutable, err := util.AbsFile(workspace, wrapperExecutable); err == nil {
 		executable = wrapperExecutable
 	}
 
-	cmd := exec.Command(executable, subCommand...)
+	cmd := exec.Command(executable, args...)
 	cmd.Dir = workspace
 	return cmd
 }

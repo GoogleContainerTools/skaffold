@@ -18,6 +18,7 @@ package jib
 
 import (
 	"os/exec"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 

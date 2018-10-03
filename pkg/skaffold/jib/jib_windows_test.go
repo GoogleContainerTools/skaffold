@@ -18,95 +18,40 @@ limitations under the License.
 
 package jib
 
-import (
-	"path/filepath"
-	"testing"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
-	"github.com/GoogleContainerTools/skaffold/testutil"
-)
-
-func TestGetCommandMavenWithWrapper(t *testing.T) {
-	var tests = []struct {
-		description        string
-		jibMavenArtifact   v1alpha3.JibMavenArtifact
-		filesInWorkspace   []string
-		expectedExecutable string
-		expectedSubCommand func(workspace string) []string
-	}{
-		{
-			description:        "maven with wrapper",
-			jibMavenArtifact:   v1alpha3.JibMavenArtifact{},
-			filesInWorkspace:   []string{"mvnw.cmd"},
-			expectedExecutable: "cmd.exe",
-			expectedSubCommand: func(workspace string) []string {
-				return []string{"/c", filepath.Join(workspace, "mvnw.cmd"), "jib:_skaffold-files", "-q"}
-			},
-		},
-		{
-			description:        "maven with wrapper and profile",
-			jibMavenArtifact:   v1alpha3.JibMavenArtifact{Profile: "profile"},
-			filesInWorkspace:   []string{"mvnw.cmd"},
-			expectedExecutable: "cmd.exe",
-			expectedSubCommand: func(workspace string) []string {
-				return []string{"/c", filepath.Join(workspace, "mvnw.cmd"), "jib:_skaffold-files", "-q", "-P", "profile"}
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			tmpDir, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
-
-			for _, file := range test.filesInWorkspace {
-				tmpDir.Write(file, "")
-			}
-
-			executable, subCommand := getCommandMaven(tmpDir.Root(), &test.jibMavenArtifact)
-
-			if executable != test.expectedExecutable {
-				t.Errorf("Expected executable %s. Got %s", test.expectedExecutable, executable)
-			}
-			testutil.CheckDeepEqual(t, test.expectedSubCommand(tmpDir.Root()), subCommand)
-		})
-	}
-}
-
-func TestGetCommandGradleWithWrapper(t *testing.T) {
-	var tests = []struct {
-		description        string
-		jibGradleArtifact  v1alpha3.JibGradleArtifact
-		filesInWorkspace   []string
-		expectedExecutable string
-		expectedSubCommand func(workspace string) []string
-	}{
-		{
-			description:        "gradle with wrapper",
-			jibGradleArtifact:  v1alpha3.JibGradleArtifact{},
-			filesInWorkspace:   []string{"gradlew.bat"},
-			expectedExecutable: "cmd.exe",
-			expectedSubCommand: func(workspace string) []string {
-				return []string{"/c", filepath.Join(workspace, "gradlew.bat"), "_jibSkaffoldFiles", "-q"}
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			tmpDir, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
-
-			for _, file := range test.filesInWorkspace {
-				tmpDir.Write(file, "")
-			}
-
-			executable, subCommand := getCommandGradle(tmpDir.Root(), &test.jibGradleArtifact)
-
-			if executable != test.expectedExecutable {
-				t.Errorf("Expected executable %s. Got %s", test.expectedExecutable, executable)
-			}
-			testutil.CheckDeepEqual(t, test.expectedSubCommand(tmpDir.Root()), subCommand)
-		})
-	}
-}
+//func TestGetCommandGradleWithWrapper(t *testing.T) {
+//	var tests = []struct {
+//		description        string
+//		jibGradleArtifact  v1alpha3.JibGradleArtifact
+//		filesInWorkspace   []string
+//		expectedExecutable string
+//		expectedSubCommand func(workspace string) []string
+//	}{
+//		{
+//			description:        "gradle with wrapper",
+//			jibGradleArtifact:  v1alpha3.JibGradleArtifact{},
+//			filesInWorkspace:   []string{"gradlew.bat"},
+//			expectedExecutable: "cmd.exe",
+//			expectedSubCommand: func(workspace string) []string {
+//				return []string{"/c", filepath.Join(workspace, "gradlew.bat"), "_jibSkaffoldFiles", "-q"}
+//			},
+//		},
+//	}
+//
+//	for _, test := range tests {
+//		t.Run(test.description, func(t *testing.T) {
+//			tmpDir, cleanup := testutil.NewTempDir(t)
+//			defer cleanup()
+//
+//			for _, file := range test.filesInWorkspace {
+//				tmpDir.Write(file, "")
+//			}
+//
+//			executable, subCommand := getCommandGradle(tmpDir.Root(), &test.jibGradleArtifact)
+//
+//			if executable != test.expectedExecutable {
+//				t.Errorf("Expected executable %s. Got %s", test.expectedExecutable, executable)
+//			}
+//			testutil.CheckDeepEqual(t, test.expectedSubCommand(tmpDir.Root()), subCommand)
+//		})
+//	}
+//}
