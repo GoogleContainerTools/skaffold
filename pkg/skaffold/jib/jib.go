@@ -17,14 +17,15 @@ limitations under the License.
 package jib
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
-	
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+
+	"github.com/pkg/errors"
 )
 
 // GetDependenciesMaven finds the source dependencies for the given jib-maven artifact.
