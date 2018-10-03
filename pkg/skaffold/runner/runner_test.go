@@ -30,7 +30,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	clientgo "k8s.io/client-go/kubernetes"
@@ -46,7 +47,7 @@ func (t *TestBuilder) Labels() map[string]string {
 	return map[string]string{}
 }
 
-func (t *TestBuilder) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*v1alpha3.Artifact) ([]build.Artifact, error) {
+func (t *TestBuilder) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	if len(t.errors) > 0 {
 		err := t.errors[0]
 		t.errors = t.errors[1:]
@@ -63,6 +64,23 @@ func (t *TestBuilder) Build(ctx context.Context, w io.Writer, tagger tag.Tagger,
 
 	t.built = builds
 	return builds, nil
+}
+
+type TestTester struct {
+	errors []error
+}
+
+func (t *TestTester) Test(out io.Writer, builds []build.Artifact) error {
+	if len(t.errors) > 0 {
+		err := t.errors[0]
+		t.errors = t.errors[1:]
+		return err
+	}
+	return nil
+}
+
+func (t *TestTester) TestDependencies() []string {
+	return []string{}
 }
 
 type TestDeployer struct {
@@ -98,28 +116,36 @@ func fakeGetClient() (clientgo.Interface, error) { return fake.NewSimpleClientse
 
 type TestWatcher struct {
 	changedArtifacts [][]int
-	changeCallbacks  []func()
+	changeCallbacks  []func(watch.Events)
+	events           []watch.Events
 	err              error
 }
 
-func NewWatcherFactory(err error, changedArtifacts ...[]int) watch.Factory {
+func NewWatcherFactory(err error, events []watch.Events, changedArtifacts ...[]int) watch.Factory {
 	return func() watch.Watcher {
 		return &TestWatcher{
 			changedArtifacts: changedArtifacts,
+			events:           events,
 			err:              err,
 		}
 	}
 }
 
-func (t *TestWatcher) Register(deps func() ([]string, error), onChange func()) error {
+func (t *TestWatcher) Register(deps func() ([]string, error), onChange func(watch.Events)) error {
 	t.changeCallbacks = append(t.changeCallbacks, onChange)
 	return nil
 }
 
 func (t *TestWatcher) Run(ctx context.Context, pollInterval time.Duration, onChange func() error) error {
+	evts := watch.Events{}
+	if t.events != nil {
+		evts = t.events[0]
+		t.events = t.events[1:]
+	}
+
 	for _, artifactIndices := range t.changedArtifacts {
 		for _, artifactIndex := range artifactIndices {
-			t.changeCallbacks[artifactIndex]()
+			t.changeCallbacks[artifactIndex](evts)
 		}
 		onChange()
 	}
@@ -129,41 +155,43 @@ func (t *TestWatcher) Run(ctx context.Context, pollInterval time.Duration, onCha
 func TestNewForConfig(t *testing.T) {
 	var tests = []struct {
 		description      string
-		config           *v1alpha3.SkaffoldConfig
+		config           *latest.SkaffoldConfig
 		shouldErr        bool
 		expectedBuilder  build.Builder
+		expectedTester   test.Tester
 		expectedDeployer deploy.Deployer
 	}{
 		{
 			description: "local builder config",
-			config: &config.SkaffoldConfig{
-				Build: v1alpha3.BuildConfig{
-					TagPolicy: v1alpha3.TagPolicy{ShaTagger: &v1alpha3.ShaTagger{}},
-					BuildType: v1alpha3.BuildType{
-						LocalBuild: &v1alpha3.LocalBuild{},
+			config: &latest.SkaffoldConfig{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
 					},
 				},
-				Deploy: v1alpha3.DeployConfig{
-					DeployType: v1alpha3.DeployType{
-						KubectlDeploy: &v1alpha3.KubectlDeploy{},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
 					},
 				},
 			},
 			expectedBuilder:  &local.Builder{},
+			expectedTester:   &test.FullTester{},
 			expectedDeployer: &deploy.KubectlDeployer{},
 		},
 		{
 			description: "bad tagger config",
-			config: &v1alpha3.SkaffoldConfig{
-				Build: v1alpha3.BuildConfig{
-					TagPolicy: v1alpha3.TagPolicy{},
-					BuildType: v1alpha3.BuildType{
-						LocalBuild: &v1alpha3.LocalBuild{},
+			config: &latest.SkaffoldConfig{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
 					},
 				},
-				Deploy: v1alpha3.DeployConfig{
-					DeployType: v1alpha3.DeployType{
-						KubectlDeploy: &v1alpha3.KubectlDeploy{},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
 					},
 				},
 			},
@@ -171,33 +199,35 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "unknown builder",
-			config: &v1alpha3.SkaffoldConfig{
-				Build: v1alpha3.BuildConfig{},
+			config: &latest.SkaffoldConfig{
+				Build: latest.BuildConfig{},
 			},
 			shouldErr:        true,
 			expectedBuilder:  &local.Builder{},
+			expectedTester:   &test.FullTester{},
 			expectedDeployer: &deploy.KubectlDeployer{},
 		},
 		{
 			description: "unknown tagger",
-			config: &config.SkaffoldConfig{
-				Build: v1alpha3.BuildConfig{
-					TagPolicy: v1alpha3.TagPolicy{},
-					BuildType: v1alpha3.BuildType{
-						LocalBuild: &v1alpha3.LocalBuild{},
+			config: &latest.SkaffoldConfig{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
 					},
 				}},
 			shouldErr:        true,
 			expectedBuilder:  &local.Builder{},
+			expectedTester:   &test.FullTester{},
 			expectedDeployer: &deploy.KubectlDeployer{},
 		},
 		{
 			description: "unknown deployer",
-			config: &config.SkaffoldConfig{
-				Build: v1alpha3.BuildConfig{
-					TagPolicy: v1alpha3.TagPolicy{ShaTagger: &v1alpha3.ShaTagger{}},
-					BuildType: v1alpha3.BuildType{
-						LocalBuild: &v1alpha3.LocalBuild{},
+			config: &latest.SkaffoldConfig{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
 					},
 				},
 			},
@@ -210,9 +240,10 @@ func TestNewForConfig(t *testing.T) {
 
 			testutil.CheckError(t, test.shouldErr, err)
 			if cfg != nil {
-				b, d := WithTimings(test.expectedBuilder, test.expectedDeployer)
+				b, _t, d := WithTimings(test.expectedBuilder, test.expectedTester, test.expectedDeployer)
 
 				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, b, cfg.Builder)
+				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, _t, cfg.Tester)
 				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, d, cfg.Deployer)
 			}
 		})
@@ -222,30 +253,33 @@ func TestNewForConfig(t *testing.T) {
 func TestRun(t *testing.T) {
 	var tests = []struct {
 		description string
-		config      *config.SkaffoldConfig
+		config      *latest.SkaffoldConfig
 		builder     build.Builder
+		tester      test.Tester
 		deployer    deploy.Deployer
 		shouldErr   bool
 	}{
 		{
 			description: "run no error",
-			config:      &v1alpha3.SkaffoldConfig{},
+			config:      &latest.SkaffoldConfig{},
 			builder:     &TestBuilder{},
+			tester:      &TestTester{},
 			deployer:    &TestDeployer{},
 		},
 		{
 			description: "run build error",
-			config:      &v1alpha3.SkaffoldConfig{},
+			config:      &latest.SkaffoldConfig{},
 			builder: &TestBuilder{
 				errors: []error{fmt.Errorf("")},
 			},
+			tester:    &TestTester{},
 			shouldErr: true,
 		},
 		{
 			description: "run deploy error",
-			config: &v1alpha3.SkaffoldConfig{
-				Build: v1alpha3.BuildConfig{
-					Artifacts: []*v1alpha3.Artifact{
+			config: &latest.SkaffoldConfig{
+				Build: latest.BuildConfig{
+					Artifacts: []*latest.Artifact{
 						{
 							ImageName: "test",
 						},
@@ -253,7 +287,31 @@ func TestRun(t *testing.T) {
 				},
 			},
 			builder: &TestBuilder{},
+			tester:  &TestTester{},
 			deployer: &TestDeployer{
+				errors: []error{fmt.Errorf("")},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "run test error",
+			config: &latest.SkaffoldConfig{
+				Build: latest.BuildConfig{
+					Artifacts: []*latest.Artifact{
+						{
+							ImageName: "test",
+						},
+					},
+				},
+				Test: []latest.TestCase{
+					{
+						ImageName:      "test",
+						StructureTests: []string{"fake_file.yaml"},
+					},
+				},
+			},
+			builder: &TestBuilder{},
+			tester: &TestTester{
 				errors: []error{fmt.Errorf("")},
 			},
 			shouldErr: true,
@@ -264,6 +322,7 @@ func TestRun(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			runner := &SkaffoldRunner{
 				Builder:  test.builder,
+				Tester:   test.tester,
 				Deployer: test.deployer,
 				Tagger:   &tag.ChecksumTagger{},
 				opts:     &config.SkaffoldOptions{},
@@ -282,6 +341,7 @@ func TestDev(t *testing.T) {
 	var tests = []struct {
 		description    string
 		builder        build.Builder
+		tester         test.Tester
 		deployer       deploy.Deployer
 		watcherFactory watch.Factory
 		shouldErr      bool
@@ -292,16 +352,26 @@ func TestDev(t *testing.T) {
 				errors: []error{fmt.Errorf("")},
 			},
 			deployer:       &TestDeployer{},
-			watcherFactory: NewWatcherFactory(nil),
+			watcherFactory: NewWatcherFactory(nil, nil),
 			shouldErr:      true,
 		},
 		{
 			description: "fails to deploy the first time",
 			builder:     &TestBuilder{},
+			tester:      &TestTester{},
 			deployer: &TestDeployer{
 				errors: []error{fmt.Errorf("")},
 			},
-			watcherFactory: NewWatcherFactory(nil),
+			watcherFactory: NewWatcherFactory(nil, nil),
+			shouldErr:      true,
+		},
+		{
+			description: "fails to deploy due to failed tests",
+			builder:     &TestBuilder{},
+			tester: &TestTester{
+				errors: []error{fmt.Errorf("")},
+			},
+			watcherFactory: NewWatcherFactory(nil, nil),
 			shouldErr:      true,
 		},
 		{
@@ -309,22 +379,25 @@ func TestDev(t *testing.T) {
 			builder: &TestBuilder{
 				errors: []error{nil, fmt.Errorf("")},
 			},
+			tester:         &TestTester{},
 			deployer:       &TestDeployer{},
-			watcherFactory: NewWatcherFactory(nil, nil),
+			watcherFactory: NewWatcherFactory(nil, nil, nil),
 		},
 		{
 			description: "ignore subsequent deploy errors",
 			builder:     &TestBuilder{},
+			tester:      &TestTester{},
 			deployer: &TestDeployer{
 				errors: []error{nil, fmt.Errorf("")},
 			},
-			watcherFactory: NewWatcherFactory(nil, nil),
+			watcherFactory: NewWatcherFactory(nil, nil, nil),
 		},
 		{
 			description:    "fail to watch files",
 			builder:        &TestBuilder{},
+			tester:         &TestTester{},
 			deployer:       &TestDeployer{},
-			watcherFactory: NewWatcherFactory(fmt.Errorf("")),
+			watcherFactory: NewWatcherFactory(fmt.Errorf(""), nil),
 			shouldErr:      true,
 		},
 	}
@@ -333,6 +406,7 @@ func TestDev(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			runner := &SkaffoldRunner{
 				Builder:      test.builder,
+				Tester:       test.tester,
 				Deployer:     test.deployer,
 				Tagger:       &tag.ChecksumTagger{},
 				watchFactory: test.watcherFactory,
@@ -352,14 +426,16 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	defer resetClient()
 
 	builder := &TestBuilder{}
+	tester := &TestTester{}
 	deployer := &TestDeployer{}
-	artifacts := []*v1alpha3.Artifact{
+	artifacts := []*latest.Artifact{
 		{ImageName: "image1"},
 		{ImageName: "image2"},
 	}
 
 	runner := &SkaffoldRunner{
 		Builder:  builder,
+		Tester:   tester,
 		Deployer: deployer,
 		opts:     &config.SkaffoldOptions{},
 	}
@@ -367,7 +443,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	ctx := context.Background()
 
 	// Both artifacts are changed
-	runner.watchFactory = NewWatcherFactory(nil, []int{0, 1})
+	runner.watchFactory = NewWatcherFactory(nil, nil, []int{0, 1})
 	_, err := runner.Dev(ctx, ioutil.Discard, artifacts)
 
 	if err != nil {
@@ -381,7 +457,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	}
 
 	// Only one is changed
-	runner.watchFactory = NewWatcherFactory(nil, []int{1})
+	runner.watchFactory = NewWatcherFactory(nil, nil, []int{1})
 	_, err = runner.Dev(ctx, ioutil.Discard, artifacts)
 
 	if err != nil {
@@ -436,7 +512,7 @@ func TestShouldWatch(t *testing.T) {
 				},
 			}
 
-			match := runner.shouldWatch(&v1alpha3.Artifact{
+			match := runner.shouldWatch(&latest.Artifact{
 				ImageName: "domain/image",
 			})
 

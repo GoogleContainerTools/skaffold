@@ -47,6 +47,11 @@ RUN echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8
 RUN apt-get update \
   && apt-get install -y bazel
 
+ENV CONTAINER_STRUCTURE_TEST_VERSION=1.5.0
+RUN curl -LO https://storage.googleapis.com/container-structure-test/v${CONTAINER_STRUCTURE_TEST_VERSION}/container-structure-test-linux-amd64 \
+  && chmod +x container-structure-test-linux-amd64 \
+  && mv container-structure-test-linux-amd64 /usr/local/bin/container-structure-test
+
 ENV PATH /usr/local/go/bin:/go/bin:/google-cloud-sdk/bin:$PATH
 
 FROM runtime_deps as builder
@@ -94,4 +99,3 @@ CMD ["make", "integration"]
 FROM runtime_deps as distribution
 
 COPY --from=integration /usr/bin/skaffold /usr/bin/skaffold
-

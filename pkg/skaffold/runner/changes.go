@@ -17,16 +17,16 @@ limitations under the License.
 package runner
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type changes struct {
-	dirtyArtifacts []*v1alpha3.Artifact
+	dirtyArtifacts []*latest.Artifact
 	needsRedeploy  bool
 	needsReload    bool
 }
 
-func (c *changes) Add(a *v1alpha3.Artifact) {
+func (c *changes) Add(a *latest.Artifact) {
 	c.dirtyArtifacts = append(c.dirtyArtifacts, a)
 }
 

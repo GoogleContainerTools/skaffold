@@ -16,27 +16,8 @@ limitations under the License.
 
 package util
 
-import (
-	"reflect"
-	"strings"
-)
-
 type VersionedConfig interface {
 	GetVersion() string
 	Parse([]byte, bool) error
-}
-
-type Config interface {
-	Parse([]byte) (VersionedConfig, error)
-}
-
-func IsOneOf(field reflect.StructField) bool {
-	for _, tag := range strings.Split(field.Tag.Get("yamltags"), ",") {
-		tagParts := strings.Split(tag, "=")
-
-		if tagParts[0] == "oneOf" {
-			return true
-		}
-	}
-	return false
+	Upgrade() (VersionedConfig, error)
 }

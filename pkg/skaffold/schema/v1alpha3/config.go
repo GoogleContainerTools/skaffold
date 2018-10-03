@@ -17,11 +17,17 @@ limitations under the License.
 package v1alpha3
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
 )
 
 const Version string = "skaffold/v1alpha3"
+
+// NewSkaffoldConfig creates a SkaffoldConfig
+func NewSkaffoldConfig() util.VersionedConfig {
+	return new(SkaffoldConfig)
+}
 
 type SkaffoldConfig struct {
 	APIVersion string `yaml:"apiVersion"`
@@ -144,10 +150,9 @@ type HelmDeploy struct {
 	Releases []HelmRelease `yaml:"releases,omitempty"`
 }
 
-// KustomizeDeploy contains the configuration needed for deploying with kustomize.
 type KustomizeDeploy struct {
-	Path  string       `yaml:"path,omitempty"`
-	Flags KubectlFlags `yaml:"flags,omitempty"`
+	KustomizePath string       `yaml:"kustomizePath,omitempty"`
+	Flags         KubectlFlags `yaml:"flags,omitempty"`
 }
 
 type HelmRelease struct {
@@ -196,9 +201,10 @@ type HelmConventionConfig struct {
 // Artifact represents items that need to be built, along with the context in which
 // they should be built.
 type Artifact struct {
-	ImageName    string `yaml:"imageName"`
-	Workspace    string `yaml:"workspace,omitempty"`
-	ArtifactType `yaml:",inline"`
+	ImageName          string `yaml:"imageName"`
+	Workspace          string `yaml:"workspace,omitempty"`
+	ArtifactType       `yaml:",inline"`
+	StructureTestFiles []string `yaml:"structureTestFiles"`
 }
 
 // Profile is additional configuration that overrides default
@@ -245,21 +251,10 @@ func (c *SkaffoldConfig) Parse(contents []byte, useDefaults bool) error {
 	}
 
 	if useDefaults {
-		if err := c.setDefaultValues(); err != nil {
+		if err := c.SetDefaultValues(); err != nil {
 			return errors.Wrap(err, "applying default values")
 		}
 	}
 
 	return nil
-}
-
-func NewConfig() (*SkaffoldConfig, error) {
-	cfg := &SkaffoldConfig{}
-	if err := cfg.setBaseDefaultValues(); err != nil {
-		return nil, err
-	}
-	if err := cfg.setDefaultValues(); err != nil {
-		return nil, err
-	}
-	return cfg, nil
 }

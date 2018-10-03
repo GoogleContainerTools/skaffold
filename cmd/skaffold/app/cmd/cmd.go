@@ -23,7 +23,6 @@ import (
 	"os"
 	"strings"
 
-	cmdutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
@@ -163,16 +162,4 @@ func SetUpLogs(out io.Writer, level string) error {
 	}
 	logrus.SetLevel(lvl)
 	return nil
-}
-
-func readConfiguration(opts *config.SkaffoldOptions) (*config.SkaffoldConfig, error) {
-	config, err := cmdutil.ParseConfig(opts.ConfigurationFile)
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing skaffold config")
-	}
-	err = config.ApplyProfiles(opts.Profiles)
-	if err != nil {
-		return nil, errors.Wrap(err, "applying profiles")
-	}
-	return config, nil
 }
