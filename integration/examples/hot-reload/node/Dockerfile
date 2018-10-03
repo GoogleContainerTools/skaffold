@@ -1,3 +1,3 @@
 FROM gcr.io/k8s-skaffold/nodemon
-CMD ["nodemon", "server.js"]
+CMD ["nodemon","--legacy-watch", "server.js"]
 COPY *.js .
