@@ -43,11 +43,12 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 		return nil, nil, errors.Wrap(err, "applying profiles")
 	}
 
-	globalConfig, err := configutil.GetConfigForKubectx()
+	defaultRepo, err := configutil.GetDefaultRepo(opts.DefaultRepo)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "retrieving global config")
+		return nil, nil, errors.Wrap(err, "getting default repo")
 	}
-	if err = applyDefaultRepoSubstitution(config, globalConfig); err != nil {
+
+	if err = applyDefaultRepoSubstitution(config, defaultRepo); err != nil {
 		return nil, nil, errors.Wrap(err, "substituting default repos")
 	}
 
@@ -59,16 +60,16 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 	return runner, config, nil
 }
 
-func applyDefaultRepoSubstitution(config *latest.SkaffoldConfig, globalConfig *configutil.ContextConfig) error {
-	if globalConfig == nil {
+func applyDefaultRepoSubstitution(config *latest.SkaffoldConfig, defaultRepo string) error {
+	if defaultRepo == "" {
 		// noop
 		return nil
 	}
 	for _, artifact := range config.Build.Artifacts {
-		artifact.ImageName = util.SubstituteDefaultRepoIntoImage(globalConfig.DefaultRepo, artifact.ImageName)
+		artifact.ImageName = util.SubstituteDefaultRepoIntoImage(defaultRepo, artifact.ImageName)
 	}
 	for _, testCase := range config.Test {
-		testCase.ImageName = util.SubstituteDefaultRepoIntoImage(globalConfig.DefaultRepo, testCase.ImageName)
+		testCase.ImageName = util.SubstituteDefaultRepoIntoImage(defaultRepo, testCase.ImageName)
 	}
 	return nil
 }

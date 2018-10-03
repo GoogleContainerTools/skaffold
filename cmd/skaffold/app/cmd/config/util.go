@@ -59,6 +59,8 @@ func resolveConfigFile() error {
 	return util.VerifyOrCreateFile(configFile)
 }
 
+// ReadConfigForFile reads the specified file and returns the contents
+// parsed into a Config struct.
 func ReadConfigForFile(filename string) (*Config, error) {
 	contents, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -78,8 +80,9 @@ func readConfig() (*Config, error) {
 	return ReadConfigForFile(configFile)
 }
 
-// return the specific config to be modified based on the provided kube context.
-// either returns the config corresponding to the provided or current context,
+// GetConfigForKubectx returns the specific config to be modified based on the
+// provided kube context.
+// Either returns the config corresponding to the provided or current context,
 // or the global config if that is specified (or if no current context is set).
 func GetConfigForKubectx() (*ContextConfig, error) {
 	resolveKubectlContext()
@@ -97,6 +100,15 @@ func GetConfigForKubectx() (*ContextConfig, error) {
 	}
 	logrus.Infof("no config entry found for kube-context %s", kubecontext)
 	return nil, nil
+}
+
+// GetGlobalConfig returns the global config values
+func GetGlobalConfig() (*ContextConfig, error) {
+	cfg, err := readConfig()
+	if err != nil {
+		return nil, err
+	}
+	return cfg.Global, nil
 }
 
 func getOrCreateConfigForKubectx() (*ContextConfig, error) {
@@ -130,4 +142,33 @@ func getOrCreateConfigForKubectx() (*ContextConfig, error) {
 	}
 
 	return newCfg, nil
+}
+
+func GetDefaultRepo(cliValue string) (string, error) {
+	// CLI flag takes precedence. If no default-repo specified from a flag,
+	// retrieve the value from the global config.
+	if cliValue != "" {
+		return cliValue, nil
+	}
+	cfg, err := GetConfigForKubectx()
+	if err != nil {
+		return "", errors.Wrap(err, "retrieving global config")
+	}
+	var defaultRepo string
+	if cfg != nil {
+		defaultRepo = cfg.DefaultRepo
+	}
+	if defaultRepo == "" {
+		// if we don't have a defaultRepo value set for the current context,
+		// retrieve the global config and use this value as a fallback
+		cfg, err := GetGlobalConfig()
+		if err != nil {
+			return "", errors.Wrap(err, "retrieving global config")
+		}
+		if cfg != nil {
+			defaultRepo = cfg.DefaultRepo
+		}
+	}
+
+	return defaultRepo, nil
 }

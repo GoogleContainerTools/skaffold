@@ -74,14 +74,9 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 	}
 	logrus.Infof("Using kubectl context: %s", kubeContext)
 
-	globalConfig, err := configutil.GetConfigForKubectx()
+	defaultRepo, err := configutil.GetDefaultRepo(opts.DefaultRepo)
 	if err != nil {
-		return nil, errors.Wrap(err, "retrieving global config")
-	}
-
-	defaultRepo := ""
-	if globalConfig != nil {
-		defaultRepo = globalConfig.DefaultRepo
+		return nil, errors.Wrap(err, "getting default repo")
 	}
 
 	tagger, err := getTagger(cfg.Build.TagPolicy, opts.CustomTag)
