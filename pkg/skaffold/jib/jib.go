@@ -20,11 +20,12 @@ import (
 	"os/exec"
 	"strings"
 
+	"os"
+	"path/filepath"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"os"
-	"path/filepath"
 )
 
 func getDependencies(cmd *exec.Cmd) ([]string, error) {

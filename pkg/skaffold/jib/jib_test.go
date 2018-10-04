@@ -21,9 +21,10 @@ import (
 	"testing"
 
 	"fmt"
+	"path/filepath"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"path/filepath"
 )
 
 func TestGetDependencies(t *testing.T) {

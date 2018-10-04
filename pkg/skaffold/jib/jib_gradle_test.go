@@ -22,11 +22,12 @@ import (
 	"testing"
 
 	"fmt"
+	"path/filepath"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/pkg/errors"
-	"path/filepath"
 )
 
 func TestGetDependenciesGradle(t *testing.T) {
