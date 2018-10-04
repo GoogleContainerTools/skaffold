@@ -23,7 +23,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -31,7 +30,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -54,6 +52,7 @@ type SkaffoldRunner struct {
 	deploy.Deployer
 	test.Tester
 	tag.Tagger
+	watch.Trigger
 
 	opts         *config.SkaffoldOptions
 	watchFactory watch.Factory
@@ -94,11 +93,17 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		deployer = WithNotification(deployer)
 	}
 
+	trigger, err := watch.NewTrigger(opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating watch trigger")
+	}
+
 	return &SkaffoldRunner{
 		Builder:      builder,
 		Tester:       tester,
 		Deployer:     deployer,
 		Tagger:       tagger,
+		Trigger:      trigger,
 		opts:         opts,
 		watchFactory: watch.NewWatcher,
 	}, nil
@@ -239,7 +244,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		logger.Mute()
 		defer func() {
 			changed.reset()
-			color.Default.Fprintln(out, "Watching for changes...")
+			r.Trigger.WatchForChanges(out)
 			if !hasError {
 				logger.Unmute()
 			}
@@ -352,8 +357,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 	}
 
-	pollInterval := time.Duration(r.opts.WatchPollInterval) * time.Millisecond
-	return nil, watcher.Run(ctx, pollInterval, onChange)
+	r.Trigger.WatchForChanges(out)
+	return nil, watcher.Run(ctx, r.Trigger, onChange)
 }
 
 func (r *SkaffoldRunner) shouldWatch(artifact *latest.Artifact) bool {

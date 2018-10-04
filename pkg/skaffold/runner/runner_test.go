@@ -22,7 +22,6 @@ import (
 	"io"
 	"io/ioutil"
 	"testing"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
@@ -136,7 +135,7 @@ func (t *TestWatcher) Register(deps func() ([]string, error), onChange func(watc
 	return nil
 }
 
-func (t *TestWatcher) Run(ctx context.Context, pollInterval time.Duration, onChange func() error) error {
+func (t *TestWatcher) Run(ctx context.Context, trigger watch.Trigger, onChange func() error) error {
 	evts := watch.Events{}
 	if t.events != nil {
 		evts = t.events[0]
@@ -236,7 +235,9 @@ func TestNewForConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			cfg, err := NewForConfig(&config.SkaffoldOptions{}, test.config)
+			cfg, err := NewForConfig(&config.SkaffoldOptions{
+				Trigger: "polling",
+			}, test.config)
 
 			testutil.CheckError(t, test.shouldErr, err)
 			if cfg != nil {
@@ -404,15 +405,21 @@ func TestDev(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			opts := &config.SkaffoldOptions{
+				WatchPollInterval: 100,
+				Trigger:           "polling",
+			}
+
+			trigger, _ := watch.NewTrigger(opts)
+
 			runner := &SkaffoldRunner{
 				Builder:      test.builder,
 				Tester:       test.tester,
 				Deployer:     test.deployer,
 				Tagger:       &tag.ChecksumTagger{},
+				Trigger:      trigger,
 				watchFactory: test.watcherFactory,
-				opts: &config.SkaffoldOptions{
-					WatchPollInterval: 100,
-				},
+				opts:         opts,
 			}
 			_, err := runner.Dev(context.Background(), ioutil.Discard, nil)
 
@@ -425,9 +432,13 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	kubernetes.Client = fakeGetClient
 	defer resetClient()
 
+	opts := &config.SkaffoldOptions{
+		Trigger: "polling",
+	}
 	builder := &TestBuilder{}
 	tester := &TestTester{}
 	deployer := &TestDeployer{}
+	trigger, _ := watch.NewTrigger(opts)
 	artifacts := []*latest.Artifact{
 		{ImageName: "image1"},
 		{ImageName: "image2"},
@@ -437,7 +448,8 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 		Builder:  builder,
 		Tester:   tester,
 		Deployer: deployer,
-		opts:     &config.SkaffoldOptions{},
+		Trigger:  trigger,
+		opts:     opts,
 	}
 
 	ctx := context.Background()
