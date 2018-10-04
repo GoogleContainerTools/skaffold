@@ -25,21 +25,17 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"gopkg.in/AlecAivazis/survey.v1"
 	yaml "gopkg.in/yaml.v2"
-
-	cmdutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-
 	"k8s.io/apimachinery/pkg/runtime"
-
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
 )
@@ -95,11 +91,12 @@ func doInit(out io.Writer) error {
 		return err
 	}
 	for _, file := range potentialConfigs {
-		config, err := cmdutil.ParseConfig(file)
+		config, err := schema.ParseConfig(file, true)
 		if err == nil && config != nil {
 			out.Write([]byte(fmt.Sprintf("pre-existing skaffold yaml %s found: exiting\n", file)))
 			return nil
 		}
+
 		logrus.Debugf("%s is not a valid skaffold configuration: continuing", file)
 		imgs, err := parseKubernetesYaml(file)
 		if err == nil {
@@ -206,23 +203,23 @@ func promptUserForDockerfile(image string, dockerfiles []string) dockerfilePair 
 	}
 }
 
-func processBuildArtifacts(pairs []dockerfilePair) v1alpha3.BuildConfig {
-	var config v1alpha3.BuildConfig
+func processBuildArtifacts(pairs []dockerfilePair) latest.BuildConfig {
+	var config latest.BuildConfig
 
 	if len(pairs) > 0 {
-		var artifacts []*v1alpha3.Artifact
+		var artifacts []*latest.Artifact
 		for _, pair := range pairs {
 			workspace := filepath.Dir(pair.Dockerfile)
 			dockerfilePath := filepath.Base(pair.Dockerfile)
-			a := &v1alpha3.Artifact{
+			a := &latest.Artifact{
 				ImageName: pair.ImageName,
 			}
 			if workspace != "." {
 				a.Workspace = workspace
 			}
 			if dockerfilePath != constants.DefaultDockerfilePath {
-				a.ArtifactType = v1alpha3.ArtifactType{
-					DockerArtifact: &v1alpha3.DockerArtifact{
+				a.ArtifactType = latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
 						DockerfilePath: dockerfilePath,
 					},
 				}
@@ -239,16 +236,18 @@ func generateSkaffoldConfig(k8sConfigs []string, dockerfilePairs []dockerfilePai
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	logrus.Info("generating skaffold config")
 
-	var err error
-	config, err := config.NewConfig()
-	if err != nil {
+	config := &latest.SkaffoldConfig{
+		APIVersion: latest.Version,
+		Kind:       "Config",
+	}
+	if err := config.SetDefaultValues(); err != nil {
 		return nil, errors.Wrap(err, "generating default config")
 	}
-	config.Build = processBuildArtifacts(dockerfilePairs)
 
-	config.Deploy = v1alpha3.DeployConfig{
-		DeployType: v1alpha3.DeployType{
-			KubectlDeploy: &v1alpha3.KubectlDeploy{
+	config.Build = processBuildArtifacts(dockerfilePairs)
+	config.Deploy = latest.DeployConfig{
+		DeployType: latest.DeployType{
+			KubectlDeploy: &latest.KubectlDeploy{
 				Manifests: k8sConfigs,
 			},
 		},

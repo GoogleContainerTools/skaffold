@@ -20,11 +20,11 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
 
-func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace string, a *v1alpha3.JibMavenArtifact) (string, error) {
+func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace string, a *latest.JibMavenArtifact) (string, error) {
 	skaffoldImage := generateJibImageRef(workspace, a.Module)
 
 	maven, err := findBuilder("mvn", "mvnw", workspace)
@@ -47,7 +47,7 @@ func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace st
 // generateMavenCommand generates the command-line to pass to maven for building a
 // project found in `workspace`.  The resulting image is added to the local docker daemon
 // and called `skaffoldImage`.
-func generateMavenCommand(_ /*workspace*/ string, skaffoldImage string, a *v1alpha3.JibMavenArtifact) ([]string, error) {
+func generateMavenCommand(_ /*workspace*/ string, skaffoldImage string, a *latest.JibMavenArtifact) ([]string, error) {
 	if a.Module != "" {
 		// TODO: multi-module
 		return nil, errors.New("Maven multi-modules not supported yet")

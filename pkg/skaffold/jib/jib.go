@@ -17,14 +17,27 @@ limitations under the License.
 package jib
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
-	"github.com/pkg/errors"
+	"os/exec"
+	"strings"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func GetDependenciesMaven(_ /*workspace*/ string, _ /*a*/ *v1alpha3.JibMavenArtifact) ([]string, error) {
-	return nil, errors.New("jib maven support is unimplemented")
-}
+func getDependencies(cmd *exec.Cmd) ([]string, error) {
+	stdout, err := util.RunCmdOut(cmd)
+	if err != nil {
+		return nil, err
+	}
 
-func GetDependenciesGradle(_ /*workspace*/ string, _ /*a*/ *v1alpha3.JibGradleArtifact) ([]string, error) {
-	return nil, errors.New("jib gradle support is unimplemented")
+	// Parses stdout for the dependencies, one per line
+	// TODO(coollog) directories should be expanded recursively
+	lines := strings.Split(string(stdout), "\n")
+	var deps []string
+	for _, l := range lines {
+		if l == "" {
+			continue
+		}
+		deps = append(deps, l)
+	}
+	return deps, nil
 }

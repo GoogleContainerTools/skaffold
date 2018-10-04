@@ -60,10 +60,10 @@ Let's walk through the first part of the skaffold.yaml
 
 ```yaml
   artifacts:
-  - imageName: gcr.io/k8s-skaffold/leeroy-web
-    workspace: ./leeroy-web/
-  - imageName: gcr.io/k8s-skaffold/leeroy-app
-    workspace: ./leeroy-app/
+  - image: gcr.io/k8s-skaffold/leeroy-web
+    context: ./leeroy-web/
+  - image: gcr.io/k8s-skaffold/leeroy-app
+    context: ./leeroy-app/
 ```
 
 We're deploying a `leeroy-web` image, which we build in the context of its subdirectory and a `leeroy-app` image built in a similar manner.

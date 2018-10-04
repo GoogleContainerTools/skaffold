@@ -19,17 +19,17 @@ package local
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestGenerateMavenCommand(t *testing.T) {
 	var testCases = []struct {
-		in  v1alpha3.JibMavenArtifact
+		in  latest.JibMavenArtifact
 		out []string
 	}{
-		{v1alpha3.JibMavenArtifact{}, []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage=image"}},
-		{v1alpha3.JibMavenArtifact{Profile: "profile"}, []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage=image", "-Pprofile"}},
+		{latest.JibMavenArtifact{}, []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Profile: "profile"}, []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage=image", "-Pprofile"}},
 	}
 
 	for _, tt := range testCases {
@@ -41,7 +41,7 @@ func TestGenerateMavenCommand(t *testing.T) {
 }
 
 func TestGenerateMavenCommand_errorWithModule(t *testing.T) {
-	a := v1alpha3.JibMavenArtifact{Module: "module"}
+	a := latest.JibMavenArtifact{Module: "module"}
 	_, err := generateMavenCommand(".", "image", &a)
 
 	testutil.CheckError(t, true, err)
@@ -49,11 +49,11 @@ func TestGenerateMavenCommand_errorWithModule(t *testing.T) {
 
 func TestGenerateGradleCommand(t *testing.T) {
 	var testCases = []struct {
-		in  v1alpha3.JibGradleArtifact
+		in  latest.JibGradleArtifact
 		out []string
 	}{
-		{v1alpha3.JibGradleArtifact{}, []string{":jibDockerBuild", "--image=image"}},
-		{v1alpha3.JibGradleArtifact{Project: "project"}, []string{":project:jibDockerBuild", "--image=image"}},
+		{latest.JibGradleArtifact{}, []string{":jibDockerBuild", "--image=image"}},
+		{latest.JibGradleArtifact{Project: "project"}, []string{":project:jibDockerBuild", "--image=image"}},
 	}
 
 	for _, tt := range testCases {

@@ -20,7 +20,6 @@ package local
 
 import (
 	"os/exec"
-	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -29,12 +28,7 @@ import (
 // builder version is used.  This function tries to resolve a wrapper
 // or otherwise resolves the builder executable.
 func findBuilder(builderExecutable string, wrapperScriptName string, workspace string) ([]string, error) {
-	wrapperFile := filepath.Join(workspace, wrapperScriptName)
-	if util.IsFile(wrapperFile) {
-		absolute, err := filepath.Abs(wrapperFile)
-		if err != nil {
-			return nil, err
-		}
+	if absolute, err := util.AbsFile(workspace, wrapperScriptName); err == nil {
 		return []string{absolute}, nil
 	}
 	path, err := exec.LookPath(builderExecutable)

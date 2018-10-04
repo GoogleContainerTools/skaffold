@@ -21,14 +21,13 @@ import (
 	"io/ioutil"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
+	"k8s.io/client-go/tools/clientcmd/api/latest"
 )
 
 func NewCmdFix(out io.Writer) *cobra.Command {
@@ -36,19 +35,17 @@ func NewCmdFix(out io.Writer) *cobra.Command {
 		Use:   "fix",
 		Short: "Converts old skaffold.yaml to newest schema version",
 		Run: func(cmd *cobra.Command, args []string) {
-			contents, err := util.ReadConfiguration(opts.ConfigurationFile)
-			if err != nil {
-				logrus.Errorf("fix: %s", err)
-			}
-			cfg, err := config.GetConfig(contents, false)
+			cfg, err := schema.ParseConfig(opts.ConfigurationFile, false)
 			if err != nil {
 				logrus.Error(err)
 				return
 			}
-			if cfg.GetVersion() == config.LatestVersion {
+
+			if cfg.GetVersion() == latest.Version {
 				color.Default.Fprintln(out, "config is already latest version")
 				return
 			}
+
 			if err := runFix(out, cfg); err != nil {
 				logrus.Errorf("fix: %s", err)
 			}
@@ -60,14 +57,16 @@ func NewCmdFix(out io.Writer) *cobra.Command {
 }
 
 func runFix(out io.Writer, cfg schemautil.VersionedConfig) error {
-	cfg, err := schema.RunTransform(cfg)
+	cfg, err := schema.UpgradeToLatest(cfg)
 	if err != nil {
 		return err
 	}
+
 	newCfg, err := yaml.Marshal(cfg)
 	if err != nil {
 		return errors.Wrap(err, "marshaling new config")
 	}
+
 	if overwrite {
 		if err := ioutil.WriteFile(opts.ConfigurationFile, newCfg, 0644); err != nil {
 			return errors.Wrap(err, "writing config file")
@@ -76,5 +75,6 @@ func runFix(out io.Writer, cfg schemautil.VersionedConfig) error {
 	} else {
 		out.Write(newCfg)
 	}
+
 	return nil
 }

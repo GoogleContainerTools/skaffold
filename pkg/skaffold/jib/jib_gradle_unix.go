@@ -1,3 +1,5 @@
+// +build !windows
+
 /*
 Copyright 2018 The Skaffold Authors
 
@@ -14,17 +16,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package jib
 
-import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
-)
-
-// SkaffoldConfig references the most recent skaffold config version
-type SkaffoldConfig = v1alpha3.SkaffoldConfig
-
-const LatestVersion string = v1alpha3.Version
-
-func NewConfig() (*SkaffoldConfig, error) {
-	return v1alpha3.NewConfig()
+func getWrapperGradle() string {
+	return "gradlew"
 }

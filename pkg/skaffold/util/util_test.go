@@ -177,18 +177,19 @@ func TestExpand(t *testing.T) {
 	}
 }
 
-func TestIsFile(t *testing.T) {
+func TestAbsFile(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 	tmpDir.Write("file", "")
+	expectedFile, err := filepath.Abs(filepath.Join(tmpDir.Root(), "file"))
+	testutil.CheckError(t, false, err)
 
-	if !IsFile(filepath.Join(tmpDir.Root(), "file")) {
-		t.Error("IsFile returned false for a file")
-	}
-	if IsFile(tmpDir.Root()) {
-		t.Error("IsFile returned true for a directory")
-	}
-	if IsFile(filepath.Join(tmpDir.Root(), "does-not-exist")) {
-		t.Error("IsFile returned true for a non-existent file")
-	}
+	file, err := AbsFile(tmpDir.Root(), "file")
+	testutil.CheckErrorAndDeepEqual(t, false, err, expectedFile, file)
+
+	_, err = AbsFile(tmpDir.Root(), "")
+	testutil.CheckErrorAndDeepEqual(t, true, err, tmpDir.Root()+" is a directory", err.Error())
+
+	_, err = AbsFile(tmpDir.Root(), "does-not-exist")
+	testutil.CheckError(t, true, err)
 }

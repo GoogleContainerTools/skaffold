@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
 
-func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace string, a *v1alpha3.JibGradleArtifact) (string, error) {
+func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace string, a *latest.JibGradleArtifact) (string, error) {
 	skaffoldImage := generateJibImageRef(workspace, a.Project)
 	gradle, err := findBuilder("gradle", "gradlew", workspace)
 	if err != nil {
@@ -44,7 +44,7 @@ func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace s
 // generateGradleCommand generates the command-line to pass to gradle for building an
 // project in `workspace`.  The resulting image is added to the local docker daemon
 // and called `skaffoldImage`.
-func generateGradleCommand(_ /*workspace*/ string, skaffoldImage string, a *v1alpha3.JibGradleArtifact) []string {
+func generateGradleCommand(_ /*workspace*/ string, skaffoldImage string, a *latest.JibGradleArtifact) []string {
 	var command []string
 	if a.Project == "" {
 		command = []string{":jibDockerBuild"}

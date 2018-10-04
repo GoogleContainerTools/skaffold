@@ -18,7 +18,6 @@ package local
 
 import (
 	"os/exec"
-	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -27,27 +26,14 @@ import (
 // builder version is used.  This function tries to resolve a wrapper
 // or otherwise resolves the builder executable.
 func findBuilder(builderExecutable string, wrapperScriptName string, workspace string) ([]string, error) {
-	wrapperFile := filepath.Join(workspace, wrapperScriptName)
-	if util.IsFile(wrapperFile) {
-		path, err := filepath.Abs(wrapperFile)
-		if err != nil {
-			return nil, err
-		}
+	if path, err := util.AbsFile(workspace, wrapperScriptName); err == nil {
 		return []string{path}, nil
 	}
-	if cmdFile := wrapperFile + ".cmd"; util.IsFile(cmdFile) {
-		path, err := filepath.Abs(cmdFile)
-		if err != nil {
-			return nil, err
-		}
-		return []string{"cmd", "/c", path}, nil
+	if cmdFile, err := util.AbsFile(workspace, wrapperScriptName+".cmd"); err == nil {
+		return []string{"cmd", "/c", cmdFile}, nil
 	}
-	if batFile := wrapperFile + ".bat"; util.IsFile(batFile) {
-		path, err := filepath.Abs(batFile)
-		if err != nil {
-			return nil, err
-		}
-		return []string{"cmd", "/c", path}, nil
+	if batFile, err := util.AbsFile(workspace, wrapperScriptName+".bat"); err == nil {
+		return []string{"cmd", "/c", batFile}, nil
 	}
 	path, err := exec.LookPath(builderExecutable)
 	if err != nil {

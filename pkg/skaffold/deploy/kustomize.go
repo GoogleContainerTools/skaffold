@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
@@ -53,13 +53,13 @@ type configMapGenerator struct {
 
 // KustomizeDeployer deploys workflows using kustomize CLI.
 type KustomizeDeployer struct {
-	*v1alpha3.KustomizeDeploy
+	*latest.KustomizeDeploy
 
 	kubectl kubectl.CLI
 }
 
 // NewKustomizeDeployer returns a new KustomizeDeployer.
-func NewKustomizeDeployer(cfg *v1alpha3.KustomizeDeploy, kubeContext string, namespace string) *KustomizeDeployer {
+func NewKustomizeDeployer(cfg *latest.KustomizeDeploy, kubeContext string, namespace string) *KustomizeDeployer {
 	return &KustomizeDeployer{
 		KustomizeDeploy: cfg,
 		kubectl: kubectl.CLI{
@@ -164,11 +164,11 @@ func joinPaths(root string, paths []string) []string {
 
 // Dependencies lists all the files that can change what needs to be deployed.
 func (k *KustomizeDeployer) Dependencies() ([]string, error) {
-	return dependenciesForKustomization(k.Path)
+	return dependenciesForKustomization(k.KustomizePath)
 }
 
 func (k *KustomizeDeployer) readManifests(ctx context.Context) (kubectl.ManifestList, error) {
-	cmd := exec.CommandContext(ctx, "kustomize", "build", k.Path)
+	cmd := exec.CommandContext(ctx, "kustomize", "build", k.KustomizePath)
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "kustomize build")

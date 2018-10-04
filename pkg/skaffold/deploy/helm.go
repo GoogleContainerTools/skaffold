@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -42,7 +42,7 @@ import (
 )
 
 type HelmDeployer struct {
-	*v1alpha3.HelmDeploy
+	*latest.HelmDeploy
 
 	kubeContext string
 	namespace   string
@@ -50,7 +50,7 @@ type HelmDeployer struct {
 
 // NewHelmDeployer returns a new HelmDeployer for a DeployConfig filled
 // with the needed configuration for `helm`
-func NewHelmDeployer(cfg *v1alpha3.HelmDeploy, kubeContext string, namespace string) *HelmDeployer {
+func NewHelmDeployer(cfg *latest.HelmDeploy, kubeContext string, namespace string) *HelmDeployer {
 	return &HelmDeployer{
 		HelmDeploy:  cfg,
 		kubeContext: kubeContext,
@@ -114,7 +114,7 @@ func (h *HelmDeployer) helm(ctx context.Context, out io.Writer, arg ...string) e
 	return util.RunCmd(cmd)
 }
 
-func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r v1alpha3.HelmRelease, builds []build.Artifact) ([]Artifact, error) {
+func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r latest.HelmRelease, builds []build.Artifact) ([]Artifact, error) {
 	isInstalled := true
 
 	releaseName, err := evaluateReleaseName(r.Name)
@@ -270,7 +270,7 @@ func extractTag(imageName string) string {
 
 // packageChart packages the chart and returns path to the chart archive file.
 // If this function returns an error, it will always be wrapped.
-func (h *HelmDeployer) packageChart(ctx context.Context, r v1alpha3.HelmRelease) (string, error) {
+func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (string, error) {
 	tmp := os.TempDir()
 	packageArgs := []string{"package", r.ChartPath, "--destination", tmp}
 	if r.Packaged.Version != "" {
@@ -323,7 +323,7 @@ func (h *HelmDeployer) getDeployResults(ctx context.Context, namespace string, r
 	return parseReleaseInfo(namespace, b)
 }
 
-func (h *HelmDeployer) deleteRelease(ctx context.Context, out io.Writer, r v1alpha3.HelmRelease) error {
+func (h *HelmDeployer) deleteRelease(ctx context.Context, out io.Writer, r latest.HelmRelease) error {
 	releaseName, err := evaluateReleaseName(r.Name)
 	if err != nil {
 		return errors.Wrap(err, "cannot parse the release name template")

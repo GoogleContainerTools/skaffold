@@ -22,7 +22,7 @@ import (
 	"os/exec"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -32,7 +32,7 @@ import (
 type CLI struct {
 	Namespace   string
 	KubeContext string
-	Flags       v1alpha3.KubectlFlags
+	Flags       latest.KubectlFlags
 
 	version       ClientVersion
 	versionOnce   sync.Once
