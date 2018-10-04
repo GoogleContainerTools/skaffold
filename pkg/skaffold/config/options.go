@@ -36,7 +36,7 @@ type SkaffoldOptions struct {
 	Trigger           string
 	CustomLabels      []string
 	WatchPollInterval int
-	DefaultRepo string
+	DefaultRepo       string
 }
 
 // Labels returns a map of labels to be applied to all deployed
