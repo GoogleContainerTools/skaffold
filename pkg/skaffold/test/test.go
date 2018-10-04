@@ -77,7 +77,7 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifa
 	return nil
 }
 
-func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes []build.Artifact, testCase latest.TestCase) error {
+func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes []build.Artifact, testCase *latest.TestCase) error {
 	if len(testCase.StructureTests) == 0 {
 		return nil
 	}
