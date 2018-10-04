@@ -432,8 +432,6 @@ func dependenciesForArtifact(a *latest.Artifact) ([]string, error) {
 			path = filepath.Join(a.Workspace, path)
 		}
 		p = append(p, path)
-
-		logrus.Info("watching: " + filepath.Join(a.Workspace, path))
 	}
 	return p, nil
 }
