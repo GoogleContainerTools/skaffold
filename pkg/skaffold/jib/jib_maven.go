@@ -25,8 +25,11 @@ import (
 
 // GetDependenciesMaven finds the source dependencies for the given jib-maven artifact.
 // All paths are absolute.
-// TODO(coollog): Add support for multi-module projects.
 func GetDependenciesMaven(workspace string, a *latest.JibMavenArtifact) ([]string, error) {
+	if a.Module != "" {
+		// TODO(coollog): Add support for multi-module projects.
+		return nil, errors.New("Maven multi-modules not supported yet")
+	}
 	deps, err := getDependencies(getCommandMaven(workspace, a))
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jibMaven dependencies")
