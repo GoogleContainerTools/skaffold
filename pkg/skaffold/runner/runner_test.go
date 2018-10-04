@@ -446,10 +446,7 @@ func TestDev(t *testing.T) {
 				Trigger:      trigger,
 				watchFactory: test.watcherFactory,
 				opts:         opts,
-				opts: &config.SkaffoldOptions{
-					WatchPollInterval: 100,
-				},
-				Syncer: NewTestSyncer(),
+				Syncer:       NewTestSyncer(),
 			}
 			_, err := runner.Dev(context.Background(), ioutil.Discard, nil)
 
