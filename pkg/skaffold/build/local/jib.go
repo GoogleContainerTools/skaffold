@@ -18,16 +18,40 @@ package local
 
 import (
 	"context"
+	"crypto/sha1"
+	"encoding/hex"
 	"io"
+	"os/exec"
+	"regexp"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/sirupsen/logrus"
 )
 
-func (b *Builder) buildJibMaven(_ /*ctx*/ context.Context, _ /*out*/ io.Writer, _ /*workspace*/ string, _ /*a*/ *latest.JibMavenArtifact) (string, error) {
-	return "", errors.New("buildJibMaven is unimplemented")
+// executeBuildCommand executes the command-line with the working directory set to `workspace`.
+func executeBuildCommand(ctx context.Context, out io.Writer, workspace string, commandLine []string) error {
+	logrus.Infof("Building %v: %v", workspace, commandLine)
+	cmd := exec.CommandContext(ctx, commandLine[0], commandLine[1:]...)
+	cmd.Dir = workspace
+	cmd.Stdout = out
+	cmd.Stderr = out
+	return util.RunCmd(cmd)
 }
 
-func (b *Builder) buildJibGradle(_ /*ctx*/ context.Context, _ /*out*/ io.Writer, _ /*workspace*/ string, _ /*a*/ *latest.JibGradleArtifact) (string, error) {
-	return "", errors.New("buildJibGradle is unimplemented")
+// jibBuildImageRef generates a valid image name for the workspace and project.
+// The image name is always prefixed with `jib`.
+func generateJibImageRef(workspace string, project string) string {
+	imageName := "jib" + workspace
+	if project != "" {
+		imageName += "_" + project
+	}
+	// if the workspace + project is a valid image name then use it
+	if regexp.MustCompile(constants.RepositoryComponentRegex).MatchString(imageName) {
+		return imageName
+	}
+	// otherwise use a hash for a deterministic name
+	hasher := sha1.New()
+	io.WriteString(hasher, imageName)
+	return "jib__" + hex.EncodeToString(hasher.Sum(nil))
 }

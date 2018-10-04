@@ -53,6 +53,9 @@ const (
 	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
 
 	DefaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
+
+	// A regex matching valid repository names (https://github.com/docker/distribution/blob/master/reference/reference.go)
+	RepositoryComponentRegex string = `^[a-z\d]+(?:(?:[_.]|__|-+)[a-z\d]+)*$`
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}

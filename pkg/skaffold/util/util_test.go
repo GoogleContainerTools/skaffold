@@ -17,9 +17,8 @@ limitations under the License.
 package util
 
 import (
-	"testing"
-
 	"path/filepath"
+	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
