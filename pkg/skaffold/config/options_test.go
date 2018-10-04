@@ -65,6 +65,25 @@ func TestLabels(t *testing.T) {
 				"profiles":  "p1,p2",
 			},
 		},
+		{
+			description: "custom labels",
+			options: SkaffoldOptions{
+				Cleanup: true,
+				CustomLabels: []string{
+					"one=first",
+					"two=second",
+					"three=",
+					"four",
+				},
+			},
+			expectedLabels: map[string]string{
+				"cleanup": "true",
+				"one":     "first",
+				"two":     "second",
+				"three":   "",
+				"four":    "",
+			},
+		},
 	}
 
 	for _, test := range tests {
