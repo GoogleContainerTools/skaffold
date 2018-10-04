@@ -96,7 +96,7 @@ func TestGetCommandGradle(t *testing.T) {
 		},
 		{
 			description:       "gradle default with project",
-			jibGradleArtifact: latest.JibGradleArtifact{Project:"project"},
+			jibGradleArtifact: latest.JibGradleArtifact{Project: "project"},
 			filesInWorkspace:  []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
 				return getCommand(workspace, "gradle", "ignored", []string{":project:_jibSkaffoldFiles", "-q"})
@@ -112,7 +112,7 @@ func TestGetCommandGradle(t *testing.T) {
 		},
 		{
 			description:       "gradle with wrapper and project",
-			jibGradleArtifact: latest.JibGradleArtifact{Project:"project"},
+			jibGradleArtifact: latest.JibGradleArtifact{Project: "project"},
 			filesInWorkspace:  []string{getWrapperGradle()},
 			expectedCmd: func(workspace string) *exec.Cmd {
 				return getCommand(workspace, "ignored", getWrapperGradle(), []string{":project:_jibSkaffoldFiles", "-q"})

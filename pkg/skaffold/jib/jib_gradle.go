@@ -17,11 +17,11 @@ limitations under the License.
 package jib
 
 import (
+	"fmt"
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
-	"fmt"
 )
 
 // GetDependenciesGradle finds the source dependencies for the given jib-gradle artifact.
