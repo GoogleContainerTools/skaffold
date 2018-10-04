@@ -21,6 +21,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
+	"fmt"
 )
 
 // GetDependenciesGradle finds the source dependencies for the given jib-gradle artifact.
@@ -34,6 +35,11 @@ func GetDependenciesGradle(workspace string, a *latest.JibGradleArtifact) ([]str
 	return deps, nil
 }
 
-func getCommandGradle(workspace string, _ /* a */ *latest.JibGradleArtifact) *exec.Cmd {
-	return getCommand(workspace, "gradle", getWrapperGradle(), []string{"_jibSkaffoldFiles", "-q"})
+func getCommandGradle(workspace string, a *latest.JibGradleArtifact) *exec.Cmd {
+	args := []string{"_jibSkaffoldFiles", "-q"}
+	if a.Project != "" {
+		// multi-module
+		args[0] = fmt.Sprintf(":%s:%s", a.Project, args[0])
+	}
+	return getCommand(workspace, "gradle", getWrapperGradle(), args)
 }
