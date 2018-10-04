@@ -428,7 +428,12 @@ func dependenciesForArtifact(a *latest.Artifact) ([]string, error) {
 
 	var p []string
 	for _, path := range paths {
-		p = append(p, filepath.Join(a.Workspace, path))
+		if !filepath.IsAbs(path) {
+			path = filepath.Join(a.Workspace, path)
+		}
+		p = append(p, path)
+
+		logrus.Info("watching: " + filepath.Join(a.Workspace, path))
 	}
 	return p, nil
 }

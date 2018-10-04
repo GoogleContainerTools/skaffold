@@ -29,7 +29,7 @@ func GetDependenciesGradle(workspace string, a *latest.JibGradleArtifact) ([]str
 	cmd := getCommandGradle(workspace, a)
 	deps, err := getDependencies(cmd)
 	if err != nil {
-		return nil, errors.Wrapf(err, "getting jib-gradle dependencies")
+		return nil, errors.Wrapf(err, "getting jibGradle dependencies")
 	}
 	return deps, nil
 }

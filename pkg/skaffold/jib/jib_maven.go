@@ -29,7 +29,7 @@ import (
 func GetDependenciesMaven(workspace string, a *latest.JibMavenArtifact) ([]string, error) {
 	deps, err := getDependencies(getCommandMaven(workspace, a))
 	if err != nil {
-		return nil, errors.Wrapf(err, "getting jib-maven dependencies")
+		return nil, errors.Wrapf(err, "getting jibMaven dependencies")
 	}
 	return deps, nil
 }

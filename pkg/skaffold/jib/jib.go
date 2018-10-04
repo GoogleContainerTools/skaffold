@@ -21,6 +21,10 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"os"
+	"path/filepath"
 )
 
 func getDependencies(cmd *exec.Cmd) ([]string, error) {
@@ -30,14 +34,34 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 	}
 
 	// Parses stdout for the dependencies, one per line
-	// TODO(coollog) directories should be expanded recursively
 	lines := strings.Split(string(stdout), "\n")
 	var deps []string
-	for _, l := range lines {
-		if l == "" {
+	for _, dep := range lines {
+		if dep == "" {
 			continue
 		}
-		deps = append(deps, l)
+
+		// Resolves directories recursively.
+		info, err := os.Stat(dep)
+		if err != nil {
+			if os.IsNotExist(err) {
+				logrus.Debugf("could not stat dependency: %s", err)
+				continue // Ignore files that don't exist
+			}
+			return nil, errors.Wrapf(err, "unable to stat file %s", dep)
+		}
+		if info.IsDir() {
+			err := filepath.Walk(dep, func(path string, info os.FileInfo, err error) error {
+				deps = append(deps, path)
+				return nil
+			})
+			if err != nil {
+				return nil, errors.Wrap(err, "filepath walk")
+			}
+			continue
+		}
+
+		deps = append(deps, dep)
 	}
 	return deps, nil
 }
