@@ -52,6 +52,7 @@ func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) {
 	// this intentionally removes the Profiles field from the returned config
 	*config = latest.SkaffoldPipeline{
 		APIVersion: config.APIVersion,
+		Kind:       config.Kind,
 		Build:      overlayProfileField(config.Build, profile.Build).(latest.BuildConfig),
 		Deploy:     overlayProfileField(config.Deploy, profile.Deploy).(latest.DeployConfig),
 		Test:       overlayProfileField(config.Test, profile.Test).([]latest.TestCase),

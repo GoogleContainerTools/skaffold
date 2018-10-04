@@ -31,6 +31,7 @@ func NewSkaffoldPipeline() util.VersionedConfig {
 
 type SkaffoldPipeline struct {
 	APIVersion string `yaml:"apiVersion"`
+	Kind       string `yaml:"kind"`
 
 	Build    BuildConfig  `yaml:"build,omitempty"`
 	Test     []TestCase   `yaml:"test,omitempty"`
