@@ -84,12 +84,12 @@ func intersect(context string, syncMap map[string]string, files []string) (map[s
 	for _, f := range files {
 		relPath, err := filepath.Rel(context, f)
 		if err != nil {
-			return nil, errors.Wrapf(err, "changed file %s is not relative to context %s", f, context)
+			return nil, errors.Wrapf(err, "changed file %s can't be found relative to context %s", f, context)
 		}
 		for p, dst := range syncMap {
 			match, err := filepath.Match(p, relPath)
 			if err != nil {
-				return nil, errors.Wrap(err, "pattern error")
+				return nil, errors.Wrapf(err, "pattern error for %s", relPath)
 			}
 			if !match {
 				return nil, nil
