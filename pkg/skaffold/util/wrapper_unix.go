@@ -19,6 +19,7 @@ limitations under the License.
 package util
 
 import (
+	"context"
 	"os/exec"
 
 	"github.com/sirupsen/logrus"
@@ -27,7 +28,7 @@ import (
 // CreateCommand creates an `exec.Cmd` that is configured to call the
 // executable (possibly using a wrapper in `workingDir`, when found) with the given arguments,
 // with working directory set to `workingDir`.
-func (cw CommandWrapper) CreateCommand(workingDir string, args []string) *exec.Cmd {
+func (cw CommandWrapper) CreateCommand(ctx context.Context, workingDir string, args []string) *exec.Cmd {
 	executable := cw.Executable
 
 	if cw.Wrapper != "" && !SkipWrapperCheck {
@@ -37,7 +38,7 @@ func (cw CommandWrapper) CreateCommand(workingDir string, args []string) *exec.C
 		}
 	}
 
-	cmd := exec.Command(executable, args...)
+	cmd := exec.CommandContext(ctx, executable, args...)
 	cmd.Dir = workingDir
 	return cmd
 }

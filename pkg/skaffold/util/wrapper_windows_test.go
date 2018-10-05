@@ -19,6 +19,7 @@ limitations under the License.
 package util
 
 import (
+	"context"
 	"os/exec"
 	"testing"
 
@@ -41,7 +42,7 @@ func TestGetCommand(t *testing.T) {
 			args:              []string{"arg1", "arg2"},
 			filesInWorkspace:  []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				cmd := exec.Command("executable", "arg1", "arg2")
+				cmd := exec.CommandContext(context.TODO(), "executable", "arg1", "arg2")
 				cmd.Dir = workspace
 				return cmd
 			},
@@ -55,7 +56,7 @@ func TestGetCommand(t *testing.T) {
 			expectedCmd: func(workspace string) *exec.Cmd {
 				wrapper, err := AbsFile(workspace, "wrapper")
 				testutil.CheckError(t, false, err)
-				cmd := exec.Command("cmd", "/c", wrapper, "arg1", "arg2")
+				cmd := exec.CommandContext(context.TODO(), "cmd", "/c", wrapper, "arg1", "arg2")
 				cmd.Dir = workspace
 				return cmd
 			},
@@ -72,7 +73,7 @@ func TestGetCommand(t *testing.T) {
 			}
 
 			definition := &CommandWrapper{Executable: test.defaultExecutable, Wrapper: test.wrapperExecutable}
-			cmd := definition.CreateCommand(tmpDir.Root(), test.args)
+			cmd := definition.CreateCommand(context.TODO(), tmpDir.Root(), test.args)
 
 			expectedCmd := test.expectedCmd(tmpDir.Root())
 			testutil.CheckDeepEqual(t, expectedCmd.Path, cmd.Path)
