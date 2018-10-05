@@ -115,6 +115,7 @@ type KanikoBuild struct {
 	PullSecretName string             `yaml:"pullSecretName,omitempty"`
 	Namespace      string             `yaml:"namespace,omitempty"`
 	Timeout        string             `yaml:"timeout,omitempty"`
+	Image          string             `yaml:"image,omitempty"`
 }
 
 // TestCase is a struct containing all the specified test

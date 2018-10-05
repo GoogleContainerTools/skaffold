@@ -84,22 +84,20 @@ func runKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, cf
 			Namespace:    cfg.Namespace,
 		},
 		Spec: v1.PodSpec{
-			Containers: []v1.Container{
-				{
-					Name:            kanikoContainerName,
-					Image:           constants.DefaultKanikoImage,
-					ImagePullPolicy: v1.PullIfNotPresent,
-					Args:            args,
-					VolumeMounts: []v1.VolumeMount{{
-						Name:      constants.DefaultKanikoSecretName,
-						MountPath: "/secret",
-					}},
-					Env: []v1.EnvVar{{
-						Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-						Value: "/secret/kaniko-secret",
-					}},
-				},
-			},
+			Containers: []v1.Container{{
+				Name:            kanikoContainerName,
+				Image:           cfg.Image,
+				ImagePullPolicy: v1.PullIfNotPresent,
+				Args:            args,
+				VolumeMounts: []v1.VolumeMount{{
+					Name:      constants.DefaultKanikoSecretName,
+					MountPath: "/secret",
+				}},
+				Env: []v1.EnvVar{{
+					Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+					Value: "/secret/kaniko-secret",
+				}},
+			}},
 			Volumes: []v1.Volume{{
 				Name: constants.DefaultKanikoSecretName,
 				VolumeSource: v1.VolumeSource{
