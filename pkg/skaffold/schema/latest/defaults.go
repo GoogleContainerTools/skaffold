@@ -28,7 +28,7 @@ import (
 )
 
 // SetDefaultValues makes sure default values are set.
-func (c *SkaffoldConfig) SetDefaultValues() error {
+func (c *SkaffoldPipeline) SetDefaultValues() error {
 	c.defaultToLocalBuild()
 	c.defaultToKubectlDeploy()
 	c.setDefaultCloudBuildDockerImage()
@@ -54,7 +54,7 @@ func (c *SkaffoldConfig) SetDefaultValues() error {
 	return nil
 }
 
-func (c *SkaffoldConfig) defaultToLocalBuild() {
+func (c *SkaffoldPipeline) defaultToLocalBuild() {
 	if c.Build.BuildType != (BuildType{}) {
 		return
 	}
@@ -63,7 +63,7 @@ func (c *SkaffoldConfig) defaultToLocalBuild() {
 	c.Build.BuildType.LocalBuild = &LocalBuild{}
 }
 
-func (c *SkaffoldConfig) defaultToKubectlDeploy() {
+func (c *SkaffoldPipeline) defaultToKubectlDeploy() {
 	if c.Deploy.DeployType != (DeployType{}) {
 		return
 	}
@@ -72,7 +72,7 @@ func (c *SkaffoldConfig) defaultToKubectlDeploy() {
 	c.Deploy.DeployType.KubectlDeploy = &KubectlDeploy{}
 }
 
-func (c *SkaffoldConfig) setDefaultCloudBuildDockerImage() {
+func (c *SkaffoldPipeline) setDefaultCloudBuildDockerImage() {
 	cloudBuild := c.Build.BuildType.GoogleCloudBuild
 	if cloudBuild == nil {
 		return
@@ -81,7 +81,7 @@ func (c *SkaffoldConfig) setDefaultCloudBuildDockerImage() {
 	cloudBuild.DockerImage = valueOrDefault(cloudBuild.DockerImage, constants.DefaultCloudBuildDockerImage)
 }
 
-func (c *SkaffoldConfig) setDefaultTagger() {
+func (c *SkaffoldPipeline) setDefaultTagger() {
 	if c.Build.TagPolicy != (TagPolicy{}) {
 		return
 	}
@@ -89,7 +89,7 @@ func (c *SkaffoldConfig) setDefaultTagger() {
 	c.Build.TagPolicy = TagPolicy{GitTagger: &GitTagger{}}
 }
 
-func (c *SkaffoldConfig) setDefaultKustomizePath() {
+func (c *SkaffoldPipeline) setDefaultKustomizePath() {
 	kustomize := c.Deploy.KustomizeDeploy
 	if kustomize == nil {
 		return
@@ -98,13 +98,13 @@ func (c *SkaffoldConfig) setDefaultKustomizePath() {
 	kustomize.KustomizePath = valueOrDefault(kustomize.KustomizePath, constants.DefaultKustomizationPath)
 }
 
-func (c *SkaffoldConfig) setDefaultKubectlManifests() {
+func (c *SkaffoldPipeline) setDefaultKubectlManifests() {
 	if c.Deploy.KubectlDeploy != nil && len(c.Deploy.KubectlDeploy.Manifests) == 0 {
 		c.Deploy.KubectlDeploy.Manifests = constants.DefaultKubectlManifests
 	}
 }
 
-func (c *SkaffoldConfig) defaultToDockerArtifact(a *Artifact) {
+func (c *SkaffoldPipeline) defaultToDockerArtifact(a *Artifact) {
 	if a.ArtifactType == (ArtifactType{}) {
 		a.ArtifactType = ArtifactType{
 			DockerArtifact: &DockerArtifact{},
@@ -112,17 +112,17 @@ func (c *SkaffoldConfig) defaultToDockerArtifact(a *Artifact) {
 	}
 }
 
-func (c *SkaffoldConfig) setDefaultDockerfile(a *Artifact) {
+func (c *SkaffoldPipeline) setDefaultDockerfile(a *Artifact) {
 	if a.DockerArtifact != nil {
 		a.DockerArtifact.DockerfilePath = valueOrDefault(a.DockerArtifact.DockerfilePath, constants.DefaultDockerfilePath)
 	}
 }
 
-func (c *SkaffoldConfig) setDefaultWorkspace(a *Artifact) {
+func (c *SkaffoldPipeline) setDefaultWorkspace(a *Artifact) {
 	a.Workspace = valueOrDefault(a.Workspace, ".")
 }
 
-func (c *SkaffoldConfig) withKanikoConfig(operations ...func(kaniko *KanikoBuild) error) error {
+func (c *SkaffoldPipeline) withKanikoConfig(operations ...func(kaniko *KanikoBuild) error) error {
 	if kaniko := c.Build.KanikoBuild; kaniko != nil {
 		for _, operation := range operations {
 			if err := operation(kaniko); err != nil {

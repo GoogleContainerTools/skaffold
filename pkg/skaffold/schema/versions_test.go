@@ -183,16 +183,16 @@ func TestParseConfig(t *testing.T) {
 	}
 }
 
-func config(ops ...func(*latest.SkaffoldConfig)) *latest.SkaffoldConfig {
-	cfg := &latest.SkaffoldConfig{APIVersion: latest.Version, Kind: "Config"}
+func config(ops ...func(*latest.SkaffoldPipeline)) *latest.SkaffoldPipeline {
+	cfg := &latest.SkaffoldPipeline{APIVersion: latest.Version, Kind: "Config"}
 	for _, op := range ops {
 		op(cfg)
 	}
 	return cfg
 }
 
-func withLocalBuild(ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldConfig) {
-	return func(cfg *latest.SkaffoldConfig) {
+func withLocalBuild(ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldPipeline) {
+	return func(cfg *latest.SkaffoldPipeline) {
 		b := latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{}}}
 		for _, op := range ops {
 			op(&b)
@@ -201,8 +201,8 @@ func withLocalBuild(ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldConfi
 	}
 }
 
-func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldConfig) {
-	return func(cfg *latest.SkaffoldConfig) {
+func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldPipeline) {
+	return func(cfg *latest.SkaffoldPipeline) {
 		b := latest.BuildConfig{BuildType: latest.BuildType{GoogleCloudBuild: &latest.GoogleCloudBuild{
 			ProjectID:   id,
 			DockerImage: "gcr.io/cloud-builders/docker",
@@ -214,8 +214,8 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 	}
 }
 
-func withKanikoBuild(bucket, secretName, namespace, secret string, timeout string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldConfig) {
-	return func(cfg *latest.SkaffoldConfig) {
+func withKanikoBuild(bucket, secretName, namespace, secret string, timeout string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldPipeline) {
+	return func(cfg *latest.SkaffoldPipeline) {
 		b := latest.BuildConfig{BuildType: latest.BuildType{KanikoBuild: &latest.KanikoBuild{
 			BuildContext: latest.KanikoBuildContext{
 				GCSBucket: bucket,
@@ -233,8 +233,8 @@ func withKanikoBuild(bucket, secretName, namespace, secret string, timeout strin
 	}
 }
 
-func withKubectlDeploy(manifests ...string) func(*latest.SkaffoldConfig) {
-	return func(cfg *latest.SkaffoldConfig) {
+func withKubectlDeploy(manifests ...string) func(*latest.SkaffoldPipeline) {
+	return func(cfg *latest.SkaffoldPipeline) {
 		cfg.Deploy = latest.DeployConfig{
 			DeployType: latest.DeployType{
 				KubectlDeploy: &latest.KubectlDeploy{
@@ -245,8 +245,8 @@ func withKubectlDeploy(manifests ...string) func(*latest.SkaffoldConfig) {
 	}
 }
 
-func withHelmDeploy() func(*latest.SkaffoldConfig) {
-	return func(cfg *latest.SkaffoldConfig) {
+func withHelmDeploy() func(*latest.SkaffoldPipeline) {
+	return func(cfg *latest.SkaffoldPipeline) {
 		cfg.Deploy = latest.DeployConfig{
 			DeployType: latest.DeployType{
 				HelmDeploy: &latest.HelmDeploy{},
@@ -295,8 +295,8 @@ func withShaTagger() func(*latest.BuildConfig) {
 	return withTagPolicy(latest.TagPolicy{ShaTagger: &latest.ShaTagger{}})
 }
 
-func withProfiles(profiles ...latest.Profile) func(*latest.SkaffoldConfig) {
-	return func(cfg *latest.SkaffoldConfig) {
+func withProfiles(profiles ...latest.Profile) func(*latest.SkaffoldPipeline) {
+	return func(cfg *latest.SkaffoldPipeline) {
 		cfg.Profiles = profiles
 	}
 }

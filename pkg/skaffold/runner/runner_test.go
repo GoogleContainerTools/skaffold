@@ -180,7 +180,7 @@ func (t *TestWatcher) Run(ctx context.Context, trigger watch.Trigger, onChange f
 func TestNewForConfig(t *testing.T) {
 	var tests = []struct {
 		description      string
-		config           *latest.SkaffoldConfig
+		pipeline         *latest.SkaffoldPipeline
 		shouldErr        bool
 		expectedBuilder  build.Builder
 		expectedTester   test.Tester
@@ -188,7 +188,7 @@ func TestNewForConfig(t *testing.T) {
 	}{
 		{
 			description: "local builder config",
-			config: &latest.SkaffoldConfig{
+			pipeline: &latest.SkaffoldPipeline{
 				Build: latest.BuildConfig{
 					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
 					BuildType: latest.BuildType{
@@ -207,7 +207,7 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "bad tagger config",
-			config: &latest.SkaffoldConfig{
+			pipeline: &latest.SkaffoldPipeline{
 				Build: latest.BuildConfig{
 					TagPolicy: latest.TagPolicy{},
 					BuildType: latest.BuildType{
@@ -224,7 +224,7 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "unknown builder",
-			config: &latest.SkaffoldConfig{
+			pipeline: &latest.SkaffoldPipeline{
 				Build: latest.BuildConfig{},
 			},
 			shouldErr:        true,
@@ -234,7 +234,7 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "unknown tagger",
-			config: &latest.SkaffoldConfig{
+			pipeline: &latest.SkaffoldPipeline{
 				Build: latest.BuildConfig{
 					TagPolicy: latest.TagPolicy{},
 					BuildType: latest.BuildType{
@@ -248,7 +248,7 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "unknown deployer",
-			config: &latest.SkaffoldConfig{
+			pipeline: &latest.SkaffoldPipeline{
 				Build: latest.BuildConfig{
 					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
 					BuildType: latest.BuildType{
@@ -263,7 +263,7 @@ func TestNewForConfig(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			cfg, err := NewForConfig(&config.SkaffoldOptions{
 				Trigger: "polling",
-			}, test.config)
+			}, test.pipeline)
 
 			testutil.CheckError(t, test.shouldErr, err)
 			if cfg != nil {
@@ -280,7 +280,7 @@ func TestNewForConfig(t *testing.T) {
 func TestRun(t *testing.T) {
 	var tests = []struct {
 		description string
-		config      *latest.SkaffoldConfig
+		pipeline    *latest.SkaffoldPipeline
 		builder     build.Builder
 		tester      test.Tester
 		deployer    deploy.Deployer
@@ -288,14 +288,14 @@ func TestRun(t *testing.T) {
 	}{
 		{
 			description: "run no error",
-			config:      &latest.SkaffoldConfig{},
+			pipeline:    &latest.SkaffoldPipeline{},
 			builder:     &TestBuilder{},
 			tester:      &TestTester{},
 			deployer:    &TestDeployer{},
 		},
 		{
 			description: "run build error",
-			config:      &latest.SkaffoldConfig{},
+			pipeline:    &latest.SkaffoldPipeline{},
 			builder: &TestBuilder{
 				errors: []error{fmt.Errorf("")},
 			},
@@ -304,7 +304,7 @@ func TestRun(t *testing.T) {
 		},
 		{
 			description: "run deploy error",
-			config: &latest.SkaffoldConfig{
+			pipeline: &latest.SkaffoldPipeline{
 				Build: latest.BuildConfig{
 					Artifacts: []*latest.Artifact{
 						{
@@ -322,7 +322,7 @@ func TestRun(t *testing.T) {
 		},
 		{
 			description: "run test error",
-			config: &latest.SkaffoldConfig{
+			pipeline: &latest.SkaffoldPipeline{
 				Build: latest.BuildConfig{
 					Artifacts: []*latest.Artifact{
 						{
@@ -354,7 +354,7 @@ func TestRun(t *testing.T) {
 				Tagger:   &tag.ChecksumTagger{},
 				opts:     &config.SkaffoldOptions{},
 			}
-			err := runner.Run(context.Background(), ioutil.Discard, test.config.Build.Artifacts)
+			err := runner.Run(context.Background(), ioutil.Discard, test.pipeline.Build.Artifacts)
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})

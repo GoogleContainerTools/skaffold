@@ -132,18 +132,18 @@ func doInit(out io.Writer) error {
 		}
 	}
 
-	cfg, err := generateSkaffoldConfig(k8sConfigs, pairs)
+	pipeline, err := generateSkaffoldPipeline(k8sConfigs, pairs)
 	if err != nil {
 		return err
 	}
 
 	if opts.ConfigurationFile == "-" {
-		out.Write(cfg)
+		out.Write(pipeline)
 		return nil
 	}
 
 	if !force {
-		fmt.Fprintln(out, string(cfg))
+		fmt.Fprintln(out, string(pipeline))
 
 		reader := bufio.NewReader(os.Stdin)
 	confirmLoop:
@@ -165,7 +165,7 @@ func doInit(out io.Writer) error {
 		}
 	}
 
-	if err := ioutil.WriteFile(opts.ConfigurationFile, cfg, 0644); err != nil {
+	if err := ioutil.WriteFile(opts.ConfigurationFile, pipeline, 0644); err != nil {
 		return errors.Wrap(err, "writing config to file")
 	}
 
@@ -261,21 +261,20 @@ func processBuildArtifacts(pairs []dockerfilePair) latest.BuildConfig {
 	return config
 }
 
-func generateSkaffoldConfig(k8sConfigs []string, dockerfilePairs []dockerfilePair) ([]byte, error) {
+func generateSkaffoldPipeline(k8sConfigs []string, dockerfilePairs []dockerfilePair) ([]byte, error) {
 	// if we're here, the user has no skaffold yaml so we need to generate one
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	logrus.Info("generating skaffold config")
 
-	config := &latest.SkaffoldConfig{
+	pipeline := &latest.SkaffoldPipeline{
 		APIVersion: latest.Version,
-		Kind:       "Config",
 	}
-	if err := config.SetDefaultValues(); err != nil {
-		return nil, errors.Wrap(err, "generating default config")
+	if err := pipeline.SetDefaultValues(); err != nil {
+		return nil, errors.Wrap(err, "generating default pipeline")
 	}
 
-	config.Build = processBuildArtifacts(dockerfilePairs)
-	config.Deploy = latest.DeployConfig{
+	pipeline.Build = processBuildArtifacts(dockerfilePairs)
+	pipeline.Deploy = latest.DeployConfig{
 		DeployType: latest.DeployType{
 			KubectlDeploy: &latest.KubectlDeploy{
 				Manifests: k8sConfigs,
@@ -283,12 +282,12 @@ func generateSkaffoldConfig(k8sConfigs []string, dockerfilePairs []dockerfilePai
 		},
 	}
 
-	cfgStr, err := yaml.Marshal(config)
+	pipelineStr, err := yaml.Marshal(pipeline)
 	if err != nil {
-		return nil, errors.Wrap(err, "marshaling generated config")
+		return nil, errors.Wrap(err, "marshaling generated pipeline")
 	}
 
-	return cfgStr, nil
+	return pipelineStr, nil
 }
 
 // parseKubernetesYaml attempts to parse k8s objects from a yaml file
