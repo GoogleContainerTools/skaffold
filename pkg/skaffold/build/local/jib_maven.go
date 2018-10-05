@@ -20,24 +20,25 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace string, a *latest.JibMavenArtifact) (string, error) {
 	skaffoldImage := generateJibImageRef(workspace, a.Module)
-
-	maven, err := findBuilder("mvn", "mvnw", workspace)
-	if err != nil {
-		return "", errors.Wrap(err, "Unable to find maven executable")
-	}
-	mavenCommand, err := generateMavenCommand(workspace, skaffoldImage, a)
+	commandLine, err := generateMavenCommand(workspace, skaffoldImage, a)
 	if err != nil {
 		return "", err
 	}
-	commandLine := append(maven, mavenCommand...)
 
-	err = executeBuildCommand(ctx, out, workspace, commandLine)
+	logrus.Infof("Building %v: %v", workspace, commandLine)
+	cmd := jib.MavenCommand.CreateCommand(ctx, workspace, commandLine)
+	cmd.Stdout = out
+	cmd.Stderr = out
+	err = util.RunCmd(cmd)
 	if err != nil {
 		return "", errors.Wrap(err, "maven build failed")
 	}

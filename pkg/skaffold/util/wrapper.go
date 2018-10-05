@@ -20,7 +20,8 @@ var SkipWrapperCheck = false
 
 // CommandWrapper defines an association between an executable command (like `gradle`)
 // and possible command wrappers (like `gradlew`).  `CreateCommand` uses this definition
-// to create a `Cmd` object.
+// to create a `Cmd` object.  Maven and Gradle projects often provide a wrapper script
+// to ensure a particular version of their builder is used.
 type CommandWrapper struct {
 	// Executable is the base name of the command, like `gradle`
 	Executable string

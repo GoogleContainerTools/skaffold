@@ -17,27 +17,13 @@ limitations under the License.
 package local
 
 import (
-	"context"
 	"crypto/sha1"
 	"encoding/hex"
 	"io"
-	"os/exec"
 	"regexp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/sirupsen/logrus"
 )
-
-// executeBuildCommand executes the command-line with the working directory set to `workspace`.
-func executeBuildCommand(ctx context.Context, out io.Writer, workspace string, commandLine []string) error {
-	logrus.Infof("Building %v: %v", workspace, commandLine)
-	cmd := exec.CommandContext(ctx, commandLine[0], commandLine[1:]...)
-	cmd.Dir = workspace
-	cmd.Stdout = out
-	cmd.Stderr = out
-	return util.RunCmd(cmd)
-}
 
 // jibBuildImageRef generates a valid image name for the workspace and project.
 // The image name is always prefixed with `jib`.
