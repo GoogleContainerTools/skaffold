@@ -35,20 +35,16 @@ import (
 type KubectlSyncer struct{}
 
 func (k *KubectlSyncer) Sync(ctx context.Context, s *sync.Item) error {
-	if len(s.Copy) > 0 {
-		logrus.Infoln("Copying files:", s.Copy, "to", s.Image)
+	logrus.Infoln("Copying files:", s.Copy, "to", s.Image)
 
-		if err := perform(ctx, s.Image, s.Copy, copyFileFn); err != nil {
-			return errors.Wrap(err, "copying files")
-		}
+	if err := perform(ctx, s.Image, s.Copy, copyFileFn); err != nil {
+		return errors.Wrap(err, "copying files")
 	}
 
-	if len(s.Delete) > 0 {
-		logrus.Infoln("Deleting files:", s.Delete, "from", s.Image)
+	logrus.Infoln("Deleting files:", s.Delete, "from", s.Image)
 
-		if err := perform(ctx, s.Image, s.Delete, deleteFileFn); err != nil {
-			return errors.Wrap(err, "deleting files")
-		}
+	if err := perform(ctx, s.Image, s.Delete, deleteFileFn); err != nil {
+		return errors.Wrap(err, "deleting files")
 	}
 
 	return nil
@@ -63,6 +59,10 @@ func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, src, ds
 }
 
 func perform(ctx context.Context, image string, files map[string]string, cmdFn func(context.Context, v1.Pod, v1.Container, string, string) *exec.Cmd) error {
+	if len(files) == 0 {
+		return nil
+	}
+
 	client, err := Client()
 	if err != nil {
 		return errors.Wrap(err, "getting k8s client")
