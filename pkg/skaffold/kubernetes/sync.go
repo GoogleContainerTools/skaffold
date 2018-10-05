@@ -35,12 +35,22 @@ import (
 type KubectlSyncer struct{}
 
 func (k *KubectlSyncer) Sync(s *sync.Item) error {
-	if err := perform(s.Image, s.Copy, copyFileFn); err != nil {
-		return errors.Wrap(err, "copying files")
+	if len(s.Copy) > 0 {
+		logrus.Infoln("Copying files:", s.Copy)
+
+		if err := perform(s.Image, s.Copy, copyFileFn); err != nil {
+			return errors.Wrap(err, "copying files")
+		}
 	}
-	if err := perform(s.Image, s.Delete, deleteFileFn); err != nil {
-		return errors.Wrap(err, "deleting files")
+
+	if len(s.Delete) > 0 {
+		logrus.Infoln("Deleting files:", s.Delete)
+
+		if err := perform(s.Image, s.Delete, deleteFileFn); err != nil {
+			return errors.Wrap(err, "deleting files")
+		}
 	}
+
 	return nil
 }
 
@@ -61,7 +71,6 @@ func labelSelector() string {
 }
 
 func perform(image string, files map[string]string, cmdFn func(v1.Pod, v1.Container, string, string) *exec.Cmd) error {
-	logrus.Info("Syncing files:", files)
 	client, err := Client()
 	if err != nil {
 		return errors.Wrap(err, "getting k8s client")
