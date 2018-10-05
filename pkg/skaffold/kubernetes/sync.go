@@ -37,7 +37,7 @@ type KubectlSyncer struct{}
 
 func (k *KubectlSyncer) Sync(ctx context.Context, s *sync.Item) error {
 	if len(s.Copy) > 0 {
-		logrus.Infoln("Copying files:", s.Copy)
+		logrus.Infoln("Copying files:", s.Copy, "to", s.Image)
 
 		if err := perform(ctx, s.Image, s.Copy, copyFileFn); err != nil {
 			return errors.Wrap(err, "copying files")
@@ -45,7 +45,7 @@ func (k *KubectlSyncer) Sync(ctx context.Context, s *sync.Item) error {
 	}
 
 	if len(s.Delete) > 0 {
-		logrus.Infoln("Deleting files:", s.Delete)
+		logrus.Infoln("Deleting files:", s.Delete, "from", s.Image)
 
 		if err := perform(ctx, s.Image, s.Delete, deleteFileFn); err != nil {
 			return errors.Wrap(err, "deleting files")
@@ -84,22 +84,35 @@ func perform(ctx context.Context, image string, files map[string]string, cmdFn f
 		return errors.Wrap(err, "getting pods")
 	}
 
+	performed := 0
 	for _, p := range pods.Items {
 		for _, c := range p.Spec.Containers {
-			if c.Image == image {
-				var e errgroup.Group
-				for src, dst := range files {
-					src, dst := src, dst
-					e.Go(func() error {
-						cmd := cmdFn(ctx, p, c, src, dst)
-						return util.RunCmd(cmd)
-					})
-				}
-				if err := e.Wait(); err != nil {
-					return errors.Wrap(err, "syncing files")
-				}
+			if c.Image != image {
+				continue
+			}
+
+			var e errgroup.Group
+			for src, dst := range files {
+				src, dst := src, dst
+				e.Go(func() error {
+					cmd := cmdFn(ctx, p, c, src, dst)
+					if err := util.RunCmd(cmd); err != nil {
+						return err
+					}
+
+					performed++
+					return nil
+				})
+			}
+			if err := e.Wait(); err != nil {
+				return errors.Wrap(err, "syncing files")
 			}
 		}
 	}
+
+	if performed != len(files) {
+		return errors.New("couldn't sync all the files")
+	}
+
 	return nil
 }
