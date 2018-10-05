@@ -27,6 +27,7 @@ import (
 	cstorage "cloud.google.com/go/storage"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -40,16 +41,25 @@ import (
 const kanikoContainerName = "kaniko"
 
 func runKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, cfg *latest.KanikoBuild) (string, error) {
+	initialTag := util.RandomID()
 	dockerfilePath := artifact.DockerArtifact.DockerfilePath
 
-	initialTag := util.RandomID()
+	bucket := cfg.BuildContext.GCSBucket
+	if bucket == "" {
+		guessedProjectID, err := gcp.ExtractProjectID(artifact.ImageName)
+		if err != nil {
+			return "", errors.Wrap(err, "extracting projectID from image name")
+		}
 
-	logrus.Debug("Upload sources to GCS")
+		bucket = guessedProjectID
+	}
+	logrus.Debugln("Upload sources to", bucket, "GCS bucket")
+
 	tarName := fmt.Sprintf("context-%s.tar.gz", initialTag)
-	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact, cfg.BuildContext.GCSBucket, tarName); err != nil {
+	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact, bucket, tarName); err != nil {
 		return "", errors.Wrap(err, "uploading sources to GCS")
 	}
-	defer gcsDelete(ctx, cfg.BuildContext.GCSBucket, tarName)
+	defer gcsDelete(ctx, bucket, tarName)
 
 	client, err := kubernetes.GetClientset()
 	if err != nil {
@@ -60,7 +70,7 @@ func runKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, cf
 	imageDst := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
 	args := []string{
 		fmt.Sprintf("--dockerfile=%s", dockerfilePath),
-		fmt.Sprintf("--context=gs://%s/%s", cfg.BuildContext.GCSBucket, tarName),
+		fmt.Sprintf("--context=gs://%s/%s", bucket, tarName),
 		fmt.Sprintf("--destination=%s", imageDst),
 		fmt.Sprintf("-v=%s", logrus.GetLevel().String()),
 	}
