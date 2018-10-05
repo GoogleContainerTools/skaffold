@@ -43,9 +43,11 @@ func runKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, cf
 	dockerfilePath := artifact.DockerArtifact.DockerfilePath
 
 	initialTag := util.RandomID()
+
+	logrus.Debug("Upload sources to GCS")
 	tarName := fmt.Sprintf("context-%s.tar.gz", initialTag)
 	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact, cfg.BuildContext.GCSBucket, tarName); err != nil {
-		return "", errors.Wrap(err, "uploading tar to gcs")
+		return "", errors.Wrap(err, "uploading sources to GCS")
 	}
 	defer gcsDelete(ctx, cfg.BuildContext.GCSBucket, tarName)
 
@@ -64,6 +66,7 @@ func runKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, cf
 	}
 	args = append(args, docker.GetBuildArgs(artifact.DockerArtifact)...)
 
+	logrus.Debug("Creating pod")
 	p, err := pods.Create(&v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kaniko",
