@@ -20,14 +20,12 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
-	"sync/atomic"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/sirupsen/logrus"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -73,8 +71,7 @@ func perform(ctx context.Context, image string, files map[string]string, cmdFn f
 		return errors.Wrap(err, "getting pods")
 	}
 
-	var performed int32
-	var e errgroup.Group
+	synced := map[string]bool{}
 
 	for _, p := range pods.Items {
 		for _, c := range p.Spec.Containers {
@@ -84,24 +81,16 @@ func perform(ctx context.Context, image string, files map[string]string, cmdFn f
 
 			for src, dst := range files {
 				cmd := cmdFn(ctx, p, c, src, dst)
+				if err := util.RunCmd(cmd); err != nil {
+					return err
+				}
 
-				e.Go(func() error {
-					if err := util.RunCmd(cmd); err != nil {
-						return err
-					}
-
-					atomic.AddInt32(&performed, 1)
-					return nil
-				})
+				synced[src] = true
 			}
 		}
 	}
 
-	if err := e.Wait(); err != nil {
-		return errors.Wrap(err, "syncing files")
-	}
-
-	if int(performed) != len(files) {
+	if len(synced) != len(files) {
 		return errors.New("couldn't sync all the files")
 	}
 
