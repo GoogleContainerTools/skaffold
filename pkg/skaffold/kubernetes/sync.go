@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"sync/atomic"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -72,33 +73,35 @@ func perform(ctx context.Context, image string, files map[string]string, cmdFn f
 		return errors.Wrap(err, "getting pods")
 	}
 
-	performed := 0
+	var performed int32
+	var e errgroup.Group
+
 	for _, p := range pods.Items {
 		for _, c := range p.Spec.Containers {
 			if c.Image != image {
 				continue
 			}
 
-			var e errgroup.Group
 			for src, dst := range files {
-				src, dst := src, dst
+				cmd := cmdFn(ctx, p, c, src, dst)
+
 				e.Go(func() error {
-					cmd := cmdFn(ctx, p, c, src, dst)
 					if err := util.RunCmd(cmd); err != nil {
 						return err
 					}
 
-					performed++
+					atomic.AddInt32(&performed, 1)
 					return nil
 				})
-			}
-			if err := e.Wait(); err != nil {
-				return errors.Wrap(err, "syncing files")
 			}
 		}
 	}
 
-	if performed != len(files) {
+	if err := e.Wait(); err != nil {
+		return errors.Wrap(err, "syncing files")
+	}
+
+	if int(performed) != len(files) {
 		return errors.New("couldn't sync all the files")
 	}
 
