@@ -7,7 +7,7 @@
         </div>
       {{ end }}
       <div class="name">
-        <strong>{{ .Site.Title }} {{ with .Site.Params.version }}<span class="version">{{ . }}</span>{{ end }}</strong>
+        <strong>{{ .Site.Title }} {{ with getenv "VERSION" }}<span class="version">{{ . }}</span>{{ end }}</strong>
         {{ with .Site.Params.subtitle }}
           <br>
           {{ . }}

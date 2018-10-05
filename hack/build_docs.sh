@@ -16,26 +16,15 @@
 
 set -x
 
-VERSION=$1
-COMMIT=$2
+export VERSION=$1
+export COMMIT=$2
+export BASE_URL=$3
 
-rm -rf docs/generated
-mkdir -p docs/generated
-cp -R docs/css docs/generated/
+rm -rf docs/public
 
-asciidoctor \
-    -a version="$VERSION" \
-    -a commit="$COMMIT" \
-    -a data-uri \
-    -d book \
-    -D docs/generated/ \
-    docs/index.adoc
+pushd docs
+echo "Generating skaffold site for version: $VERSION, commit: $COMMIT, baseURL: $BASE_URL"
+hugo --baseURL=${BASE_URL}
 
-asciidoctor-pdf \
-    -a version="$VERSION" \
-    -a commit="$COMMIT" \
-    -a allow-uri-read \
-    -d book \
-    -a pdf \
-    -D docs/generated/ \
-    docs/index.adoc
+popd
+

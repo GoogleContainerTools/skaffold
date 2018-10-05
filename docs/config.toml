@@ -13,7 +13,7 @@ enableEmoji = "true"
 	# General information
 	author = "Google"
 	description = "Skaffold: Easy and repeatable K8S development"
-	copyright = "Released under the MIT license"
+	copyright = "Released under the MIT license - "
 
 	subtitle = "Easy and Repeatable K8s Development"
 	version = ""

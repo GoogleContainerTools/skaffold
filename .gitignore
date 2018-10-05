@@ -2,6 +2,5 @@ out/
 examples/bazel/bazel-*
 *.new
 .idea/
-docs/generated
 docs/public
-docs/.firebase
+docs/.firebase*

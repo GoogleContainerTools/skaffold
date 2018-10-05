@@ -17,9 +17,9 @@
     </div>
     {{ end }}
 
-    {{ with .Site.Social.github }}
+    {{ with getenv "COMMIT" }}
     <div class="button button-github" role="button" aria-label="GitHub">
-      <a href="https://github.com/{{ . }}" title="@{{ . }} on GitHub" target="_blank" class="toggle-button icon icon-github"></a>
+      <a href="http://github.com/GoogleContainerTools/skaffold/tree/{{.}}" title="Skaffold on GitHub" target="_blank" class="toggle-button icon icon-github"></a>
     </div>
     {{ end }}
     
