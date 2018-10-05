@@ -54,6 +54,7 @@ func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact) (*Item
 		return nil, errors.Wrap(err, "intersecting sync map and deleted files")
 	}
 
+	// Something went wrong, don't sync, rebuild.
 	if toCopy == nil || toDelete == nil {
 		return nil, nil
 	}
