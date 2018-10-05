@@ -69,7 +69,7 @@ func CreateDockerTarGzContext(w io.Writer, workspace string, a *latest.DockerArt
 func UploadContextToGCS(ctx context.Context, workspace string, a *latest.DockerArtifact, bucket, objectName string) error {
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "creating GCS client")
 	}
 	defer c.Close()
 

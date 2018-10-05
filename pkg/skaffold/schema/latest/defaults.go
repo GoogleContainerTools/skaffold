@@ -19,12 +19,12 @@ package latest
 import (
 	"fmt"
 
-	homedir "github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	homedir "github.com/mitchellh/go-homedir"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // SetDefaultValues makes sure default values are set.
@@ -35,11 +35,13 @@ func (c *SkaffoldConfig) SetDefaultValues() error {
 	c.setDefaultTagger()
 	c.setDefaultKustomizePath()
 	c.setDefaultKubectlManifests()
-	c.setDefaultKanikoTimeout()
-	if err := c.setDefaultKanikoNamespace(); err != nil {
-		return err
-	}
-	if err := c.setDefaultKanikoSecret(); err != nil {
+
+	if err := c.withKanikoConfig(
+		setDefaultKanikoTimeout,
+		setDefaultKanikoImage,
+		setDefaultKanikoNamespace,
+		setDefaultKanikoSecret,
+	); err != nil {
 		return err
 	}
 
@@ -76,9 +78,7 @@ func (c *SkaffoldConfig) setDefaultCloudBuildDockerImage() {
 		return
 	}
 
-	if cloudBuild.DockerImage == "" {
-		cloudBuild.DockerImage = constants.DefaultCloudBuildDockerImage
-	}
+	cloudBuild.DockerImage = valueOrDefault(cloudBuild.DockerImage, constants.DefaultCloudBuildDockerImage)
 }
 
 func (c *SkaffoldConfig) setDefaultTagger() {
@@ -95,9 +95,7 @@ func (c *SkaffoldConfig) setDefaultKustomizePath() {
 		return
 	}
 
-	if kustomize.KustomizePath == "" {
-		kustomize.KustomizePath = constants.DefaultKustomizationPath
-	}
+	kustomize.KustomizePath = valueOrDefault(kustomize.KustomizePath, constants.DefaultKustomizationPath)
 }
 
 func (c *SkaffoldConfig) setDefaultKubectlManifests() {
@@ -115,23 +113,28 @@ func (c *SkaffoldConfig) defaultToDockerArtifact(a *Artifact) {
 }
 
 func (c *SkaffoldConfig) setDefaultDockerfile(a *Artifact) {
-	if a.DockerArtifact != nil && a.DockerArtifact.DockerfilePath == "" {
-		a.DockerArtifact.DockerfilePath = constants.DefaultDockerfilePath
+	if a.DockerArtifact != nil {
+		a.DockerArtifact.DockerfilePath = valueOrDefault(a.DockerArtifact.DockerfilePath, constants.DefaultDockerfilePath)
 	}
 }
 
 func (c *SkaffoldConfig) setDefaultWorkspace(a *Artifact) {
-	if a.Workspace == "" {
-		a.Workspace = "."
-	}
+	a.Workspace = valueOrDefault(a.Workspace, ".")
 }
 
-func (c *SkaffoldConfig) setDefaultKanikoNamespace() error {
-	kaniko := c.Build.KanikoBuild
-	if kaniko == nil {
-		return nil
+func (c *SkaffoldConfig) withKanikoConfig(operations ...func(kaniko *KanikoBuild) error) error {
+	if kaniko := c.Build.KanikoBuild; kaniko != nil {
+		for _, operation := range operations {
+			if err := operation(kaniko); err != nil {
+				return err
+			}
+		}
 	}
 
+	return nil
+}
+
+func setDefaultKanikoNamespace(kaniko *KanikoBuild) error {
 	if kaniko.Namespace == "" {
 		ns, err := currentNamespace()
 		if err != nil {
@@ -144,26 +147,18 @@ func (c *SkaffoldConfig) setDefaultKanikoNamespace() error {
 	return nil
 }
 
-func (c *SkaffoldConfig) setDefaultKanikoTimeout() {
-	kaniko := c.Build.KanikoBuild
-	if kaniko == nil {
-		return
-	}
-
-	if kaniko.Timeout == "" {
-		kaniko.Timeout = constants.DefaultKanikoTimeout
-	}
+func setDefaultKanikoTimeout(kaniko *KanikoBuild) error {
+	kaniko.Timeout = valueOrDefault(kaniko.Timeout, constants.DefaultKanikoTimeout)
+	return nil
 }
 
-func (c *SkaffoldConfig) setDefaultKanikoSecret() error {
-	kaniko := c.Build.KanikoBuild
-	if kaniko == nil {
-		return nil
-	}
+func setDefaultKanikoImage(kaniko *KanikoBuild) error {
+	kaniko.Image = valueOrDefault(kaniko.Image, constants.DefaultKanikoImage)
+	return nil
+}
 
-	if kaniko.PullSecretName == "" {
-		kaniko.PullSecretName = constants.DefaultKanikoSecretName
-	}
+func setDefaultKanikoSecret(kaniko *KanikoBuild) error {
+	kaniko.PullSecretName = valueOrDefault(kaniko.PullSecretName, constants.DefaultKanikoSecretName)
 
 	if kaniko.PullSecret != "" {
 		absPath, err := homedir.Expand(kaniko.PullSecret)
@@ -176,6 +171,13 @@ func (c *SkaffoldConfig) setDefaultKanikoSecret() error {
 	}
 
 	return nil
+}
+
+func valueOrDefault(v, def string) string {
+	if v != "" {
+		return v
+	}
+	return def
 }
 
 func currentNamespace() (string, error) {

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
@@ -223,6 +224,7 @@ func withKanikoBuild(bucket, secretName, namespace, secret string, timeout strin
 			Namespace:      namespace,
 			PullSecret:     secret,
 			Timeout:        timeout,
+			Image:          constants.DefaultKanikoImage,
 		}}}
 		for _, op := range ops {
 			op(&b)
