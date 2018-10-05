@@ -19,7 +19,7 @@ package schema
 import (
 	"github.com/pkg/errors"
 
-	version "github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
+	apiversion "github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
@@ -34,11 +34,29 @@ type APIVersion struct {
 	Version string `yaml:"apiVersion"`
 }
 
-var schemaVersions = map[string]func() util.VersionedConfig{
-	v1alpha1.Version: v1alpha1.NewSkaffoldPipeline,
-	v1alpha2.Version: v1alpha2.NewSkaffoldPipeline,
-	v1alpha3.Version: v1alpha3.NewSkaffoldPipeline,
-	latest.Version:   latest.NewSkaffoldPipeline,
+var schemaVersions = versions{
+	{v1alpha1.Version, v1alpha1.NewSkaffoldPipeline},
+	{v1alpha2.Version, v1alpha2.NewSkaffoldPipeline},
+	{v1alpha3.Version, v1alpha3.NewSkaffoldPipeline},
+	{latest.Version, latest.NewSkaffoldPipeline},
+}
+
+type version struct {
+	apiVersion string
+	factory    func() util.VersionedConfig
+}
+
+type versions []version
+
+// Find search the constructor for a given api version.
+func (v *versions) Find(apiVersion string) (func() util.VersionedConfig, bool) {
+	for _, version := range *v {
+		if version.apiVersion == apiVersion {
+			return version.factory, true
+		}
+	}
+
+	return nil, false
 }
 
 // ParseConfig reads a configuration file.
@@ -53,7 +71,7 @@ func ParseConfig(filename string, applyDefaults bool) (util.VersionedConfig, err
 		return nil, errors.Wrap(err, "parsing api version")
 	}
 
-	factory, present := schemaVersions[apiVersion.Version]
+	factory, present := schemaVersions.Find(apiVersion.Version)
 	if !present {
 		return nil, errors.Wrapf(err, "unknown version: %s", apiVersion.Version)
 	}
@@ -72,16 +90,16 @@ func ParseConfig(filename string, applyDefaults bool) (util.VersionedConfig, err
 
 // CheckVersionIsLatest checks that a given version is the most recent.
 func CheckVersionIsLatest(apiVersion string) error {
-	parsedVersion, err := version.Parse(apiVersion)
+	parsedVersion, err := apiversion.Parse(apiVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing api version")
 	}
 
-	if parsedVersion.LT(version.MustParse(latest.Version)) {
+	if parsedVersion.LT(apiversion.MustParse(latest.Version)) {
 		return errors.New("config version out of date: run `skaffold fix`")
 	}
 
-	if parsedVersion.GT(version.MustParse(latest.Version)) {
+	if parsedVersion.GT(apiversion.MustParse(latest.Version)) {
 		return errors.New("config version is too new for this version of skaffold: upgrade skaffold")
 	}
 
