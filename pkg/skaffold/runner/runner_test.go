@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -107,6 +108,31 @@ func (t *TestDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 }
 
 func (t *TestDeployer) Cleanup(ctx context.Context, out io.Writer) error {
+	return nil
+}
+
+type TestSyncer struct {
+	err     error
+	copies  map[string]string
+	deletes []string
+}
+
+func NewTestSyncer() *TestSyncer {
+	return &TestSyncer{
+		copies: map[string]string{},
+	}
+}
+
+func (t *TestSyncer) Sync(s *sync.Item) error {
+	if t.err != nil {
+		return t.err
+	}
+	for src, dst := range s.Copy {
+		t.copies[src] = dst
+	}
+	for _, dst := range s.Delete {
+		t.deletes = append(t.deletes, dst)
+	}
 	return nil
 }
 
@@ -420,6 +446,7 @@ func TestDev(t *testing.T) {
 				Trigger:      trigger,
 				watchFactory: test.watcherFactory,
 				opts:         opts,
+				Syncer:       NewTestSyncer(),
 			}
 			_, err := runner.Dev(context.Background(), ioutil.Discard, nil)
 
@@ -450,6 +477,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 		Deployer: deployer,
 		Trigger:  trigger,
 		opts:     opts,
+		Syncer:   NewTestSyncer(),
 	}
 
 	ctx := context.Background()

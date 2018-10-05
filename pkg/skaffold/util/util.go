@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -105,6 +106,17 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 	}
 	sort.Strings(ret)
 	return ret, nil
+}
+
+// HasMeta reports whether path contains any of the magic characters
+// recognized by filepath.Match.
+// This is a copy of filepath/match.go's hasMeta
+func HasMeta(path string) bool {
+	magicChars := `*?[`
+	if runtime.GOOS != "windows" {
+		magicChars = `*?[\`
+	}
+	return strings.ContainsAny(path, magicChars)
 }
 
 // BoolPtr returns a pointer to a bool

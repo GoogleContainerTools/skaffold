@@ -36,6 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 
@@ -53,6 +54,7 @@ type SkaffoldRunner struct {
 	test.Tester
 	tag.Tagger
 	watch.Trigger
+	sync.Syncer
 
 	opts         *config.SkaffoldOptions
 	watchFactory watch.Factory
@@ -104,6 +106,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		Deployer:     deployer,
 		Tagger:       tagger,
 		Trigger:      trigger,
+		Syncer:       &kubernetes.KubectlSyncer{},
 		opts:         opts,
 		watchFactory: watch.NewWatcher,
 	}, nil
@@ -249,13 +252,34 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 				logger.Unmute()
 			}
 		}()
+		for _, a := range changed.dirtyArtifacts {
+			s, err := sync.NewItem(a.artifact, a.events, r.builds)
+			if err != nil {
+				return errors.Wrap(err, "sync")
+			}
+			if s != nil {
+				changed.AddResync(s)
+			}
+			if s == nil {
+				changed.AddRebuild(a.artifact)
+			}
+		}
 
 		switch {
 		case changed.needsReload:
 			logger.Stop()
 			return ErrorConfigurationChanged
-		case len(changed.dirtyArtifacts) > 0:
-			bRes, err := r.Build(ctx, out, r.Tagger, changed.dirtyArtifacts)
+		case len(changed.needsResync) > 0:
+			for _, s := range changed.needsResync {
+				if err := r.Syncer.Sync(s); err != nil {
+					logrus.Warnln("Skipping build and deploy due to sync error:", err)
+					return nil
+				}
+				logrus.Infof("Synced %d files for %s", len(s.Copy)+len(s.Delete), s.Image)
+				logrus.Debugf("Synced files for %s...\nCopied: %s\nDeleted: %s\n", s.Image, s.Copy, s.Delete)
+			}
+		case len(changed.needsRebuild) > 0:
+			bRes, err := r.Build(ctx, out, r.Tagger, changed.needsRebuild)
 			if err != nil {
 				logrus.Warnln("Skipping Deploy due to build error:", err)
 				return nil
@@ -298,7 +322,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 		if err := watcher.Register(
 			func() ([]string, error) { return dependenciesForArtifact(artifact) },
-			func(watch.Events) { changed.Add(artifact) },
+			func(e watch.Events) { changed.AddDirtyArtifact(artifact, e) },
 		); err != nil {
 			return nil, errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
 		}
