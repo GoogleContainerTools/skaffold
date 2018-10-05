@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -270,12 +271,12 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			return ErrorConfigurationChanged
 		case len(changed.needsResync) > 0:
 			for _, s := range changed.needsResync {
-				if err := r.Syncer.Sync(s); err != nil {
+				color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
+
+				if err := r.Syncer.Sync(ctx, s); err != nil {
 					logrus.Warnln("Skipping build and deploy due to sync error:", err)
 					return nil
 				}
-				logrus.Infof("Synced %d files for %s", len(s.Copy)+len(s.Delete), s.Image)
-				logrus.Debugf("Synced files for %s...\nCopied: %s\nDeleted: %s\n", s.Image, s.Copy, s.Delete)
 			}
 		case len(changed.needsRebuild) > 0:
 			bRes, err := r.Build(ctx, out, r.Tagger, changed.needsRebuild)

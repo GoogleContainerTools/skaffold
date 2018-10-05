@@ -17,6 +17,7 @@ limitations under the License.
 package kubernetes
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -49,8 +50,8 @@ func (t *TestCmdRecorder) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	return nil, t.RunCmd(cmd)
 }
 
-func fakeCmd(p v1.Pod, c v1.Container, src, dst string) *exec.Cmd {
-	return exec.Command("copy", src, dst)
+func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, src, dst string) *exec.Cmd {
+	return exec.CommandContext(ctx, "copy", src, dst)
 }
 
 var pod = &v1.Pod{
@@ -76,7 +77,7 @@ func TestPerform(t *testing.T) {
 		description string
 		image       string
 		files       map[string]string
-		cmdFn       func(v1.Pod, v1.Container, string, string) *exec.Cmd
+		cmdFn       func(context.Context, v1.Pod, v1.Container, string, string) *exec.Cmd
 		cmdErr      error
 		clientErr   error
 		expected    []string
@@ -125,7 +126,9 @@ func TestPerform(t *testing.T) {
 			}
 
 			util.DefaultExecCommand = cmdRecord
-			err := perform(test.image, test.files, test.cmdFn)
+
+			err := perform(context.Background(), test.image, test.files, test.cmdFn)
+
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cmdRecord.cmds)
 		})
 	}
