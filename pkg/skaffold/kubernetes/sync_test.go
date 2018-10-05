@@ -111,6 +111,7 @@ func TestPerform(t *testing.T) {
 			image:       "gcr.io/different-pod:123",
 			files:       map[string]string{"test.go": "/test.go"},
 			cmdFn:       fakeCmd,
+			shouldErr:   true,
 		},
 	}
 
