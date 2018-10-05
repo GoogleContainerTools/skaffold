@@ -40,7 +40,7 @@ type Item struct {
 
 func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact) (*Item, error) {
 	// If there are no changes, short circuit and don't sync anything
-	if !e.HasChanged() || a.Sync == nil || len(a.Sync) == 0 {
+	if !e.HasChanged() || len(a.Sync) == 0 {
 		return nil, nil
 	}
 
