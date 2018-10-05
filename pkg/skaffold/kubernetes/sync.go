@@ -20,9 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
-	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/sirupsen/logrus"
@@ -63,23 +61,13 @@ func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, src, ds
 	return exec.CommandContext(ctx, "kubectl", "cp", src, fmt.Sprintf("%s/%s:%s", pod.Namespace, pod.Name, dst), "-c", container.Name)
 }
 
-func labelSelector() string {
-	var reqs []string
-	for k, v := range constants.Labels.DefaultLabels {
-		reqs = append(reqs, fmt.Sprintf("%s=%s", k, v))
-	}
-	return strings.Join(reqs, ",")
-}
-
 func perform(ctx context.Context, image string, files map[string]string, cmdFn func(context.Context, v1.Pod, v1.Container, string, string) *exec.Cmd) error {
 	client, err := Client()
 	if err != nil {
 		return errors.Wrap(err, "getting k8s client")
 	}
 
-	pods, err := client.CoreV1().Pods("").List(meta_v1.ListOptions{
-		LabelSelector: labelSelector(),
-	})
+	pods, err := client.CoreV1().Pods("").List(meta_v1.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "getting pods")
 	}
