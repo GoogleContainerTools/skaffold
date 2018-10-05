@@ -259,8 +259,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			}
 			if s != nil {
 				changed.AddResync(s)
-			}
-			if s == nil {
+			} else {
 				changed.AddRebuild(a.artifact)
 			}
 		}
