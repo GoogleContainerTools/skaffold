@@ -20,8 +20,11 @@ import (
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
+
+var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"}
 
 // GetDependenciesGradle finds the source dependencies for the given jib-gradle artifact.
 // All paths are absolute.
@@ -35,5 +38,5 @@ func GetDependenciesGradle(workspace string, a *latest.JibGradleArtifact) ([]str
 }
 
 func getCommandGradle(workspace string, _ /* a */ *latest.JibGradleArtifact) *exec.Cmd {
-	return getCommand(workspace, "gradle", getWrapperGradle(), []string{"_jibSkaffoldFiles", "-q"})
+	return GradleCommand.CreateCommand(workspace, []string{"_jibSkaffoldFiles", "-q"})
 }

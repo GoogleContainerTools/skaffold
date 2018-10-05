@@ -27,6 +27,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+func TestMavenWrapperDefinition(t *testing.T) {
+	if MavenCommand.Executable != "mvn" {
+		t.Error("GradleCommand executable should be 'mvn'")
+	}
+	if MavenCommand.Wrapper != "mvnw" {
+		t.Error("MavenCommand wrapper should be 'mvnw'")
+	}
+}
+
 func TestGetDependenciesMaven(t *testing.T) {
 	var tests = []struct {
 		description string
@@ -79,7 +88,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return getCommand(workspace, "mvn", "ignored", []string{"jib:_skaffold-files", "-q"})
+				return MavenCommand.CreateCommand(workspace, []string{"jib:_skaffold-files", "-q"})
 			},
 		},
 		{
@@ -87,23 +96,31 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{Profile: "profile"},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return getCommand(workspace, "mvn", "ignored", []string{"jib:_skaffold-files", "-q", "-P", "profile"})
+				return MavenCommand.CreateCommand(workspace, []string{"jib:_skaffold-files", "-q", "-P", "profile"})
 			},
 		},
 		{
 			description:      "maven with wrapper no profile",
 			jibMavenArtifact: latest.JibMavenArtifact{},
-			filesInWorkspace: []string{getWrapperMaven()},
+			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return getCommand(workspace, "ignored", getWrapperMaven(), []string{"jib:_skaffold-files", "-q"})
+				return MavenCommand.CreateCommand(workspace, []string{"jib:_skaffold-files", "-q"})
+			},
+		},
+		{
+			description:      "maven with wrapper no profile",
+			jibMavenArtifact: latest.JibMavenArtifact{},
+			filesInWorkspace: []string{"mvnw", "mvnw.cmd"},
+			expectedCmd: func(workspace string) *exec.Cmd {
+				return MavenCommand.CreateCommand(workspace, []string{"jib:_skaffold-files", "-q"})
 			},
 		},
 		{
 			description:      "maven with wrapper and profile",
 			jibMavenArtifact: latest.JibMavenArtifact{Profile: "profile"},
-			filesInWorkspace: []string{getWrapperMaven()},
+			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return getCommand(workspace, "ignored", getWrapperMaven(), []string{"jib:_skaffold-files", "-q", "-P", "profile"})
+				return MavenCommand.CreateCommand(workspace, []string{"jib:_skaffold-files", "-q", "-P", "profile"})
 			},
 		},
 	}

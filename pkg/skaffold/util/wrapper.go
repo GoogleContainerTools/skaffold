@@ -1,5 +1,3 @@
-// +build !windows
-
 /*
 Copyright 2018 The Skaffold Authors
 
@@ -16,8 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package jib
+package util
 
-func getWrapperGradle() string {
-	return "gradlew"
+var SkipWrapperCheck = false
+
+// CommandWrapper defines an association between an executable command (like `gradle`)
+// and possible command wrappers (like `gradlew`).  `CreateCommand` uses this definition
+// to create a `Cmd` object.
+type CommandWrapper struct {
+	// Executable is the base name of the command, like `gradle`
+	Executable string
+
+	// Wrapper is the optional base name of a command wrapper, like `gradlew`
+	Wrapper string
 }

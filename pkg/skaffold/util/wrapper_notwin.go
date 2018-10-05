@@ -16,22 +16,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package jib
+package util
 
 import (
 	"os/exec"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/sirupsen/logrus"
 )
 
-func getCommand(workspace, defaultExecutable, wrapperExecutable string, args []string) *exec.Cmd {
-	executable := defaultExecutable
+// CreateCommand creates an `exec.Cmd` that is configured to call the
+// executable (possibly using a wrapper in `workingDir`, when found) with the given arguments,
+// with working directory set to `workingDir`.
+func (cw CommandWrapper) CreateCommand(workingDir string, args []string) *exec.Cmd {
+	executable := cw.Executable
 
-	if wrapperExecutable, err := util.AbsFile(workspace, wrapperExecutable); err == nil {
-		executable = wrapperExecutable
+	if cw.Wrapper != "" && !SkipWrapperCheck {
+		if wrapperExecutable, err := AbsFile(workingDir, cw.Wrapper); err == nil {
+			logrus.Debugf("Using wrapper for %s: %s", cw.Wrapper, cw.Executable)
+			executable = wrapperExecutable
+		}
 	}
 
 	cmd := exec.Command(executable, args...)
-	cmd.Dir = workspace
+	cmd.Dir = workingDir
 	return cmd
 }

@@ -27,6 +27,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+func TestGradleWrapperDefinition(t *testing.T) {
+	if GradleCommand.Executable != "gradle" {
+		t.Error("GradleCommand executable should be 'gradle'")
+	}
+	if GradleCommand.Wrapper != "gradlew" {
+		t.Error("GradleCommand wrapper should be 'gradlew'")
+	}
+}
+
 func TestGetDependenciesGradle(t *testing.T) {
 	var tests = []struct {
 		description string
@@ -79,15 +88,15 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{},
 			filesInWorkspace:  []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return getCommand(workspace, "gradle", "ignored", []string{"_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(workspace, []string{"_jibSkaffoldFiles", "-q"})
 			},
 		},
 		{
 			description:       "gradle with wrapper",
 			jibGradleArtifact: latest.JibGradleArtifact{},
-			filesInWorkspace:  []string{getWrapperGradle()},
+			filesInWorkspace:  []string{"gradle", "gradle.cmd"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return getCommand(workspace, "ignored", getWrapperGradle(), []string{"_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(workspace, []string{"_jibSkaffoldFiles", "-q"})
 			},
 		},
 	}

@@ -20,8 +20,11 @@ import (
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
+
+var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 
 // GetDependenciesMaven finds the source dependencies for the given jib-maven artifact.
 // All paths are absolute.
@@ -40,5 +43,5 @@ func getCommandMaven(workspace string, a *latest.JibMavenArtifact) *exec.Cmd {
 		args = append(args, "-P", a.Profile)
 	}
 
-	return getCommand(workspace, "mvn", getWrapperMaven(), args)
+	return MavenCommand.CreateCommand(workspace, args)
 }
