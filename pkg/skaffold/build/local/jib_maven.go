@@ -34,10 +34,10 @@ func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace st
 		return "", err
 	}
 
-	logrus.Infof("Building %v: %v", workspace, commandLine)
 	cmd := jib.MavenCommand.CreateCommand(ctx, workspace, commandLine)
 	cmd.Stdout = out
 	cmd.Stderr = out
+	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
 	err = util.RunCmd(cmd)
 	if err != nil {
 		return "", errors.Wrap(err, "maven build failed")

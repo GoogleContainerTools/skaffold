@@ -32,10 +32,10 @@ func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace s
 	skaffoldImage := generateJibImageRef(workspace, a.Project)
 	commandLine := generateGradleCommand(workspace, skaffoldImage, a)
 
-	logrus.Infof("Building %v: %v", workspace, commandLine)
 	cmd := jib.GradleCommand.CreateCommand(ctx, workspace, commandLine)
 	cmd.Stdout = out
 	cmd.Stderr = out
+	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
 	err := util.RunCmd(cmd)
 	if err != nil {
 		return "", errors.Wrap(err, "gradle build failed")
