@@ -17,6 +17,7 @@ limitations under the License.
 package sync
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"path/filepath"
@@ -29,7 +30,7 @@ import (
 )
 
 type Syncer interface {
-	Sync(s *Item) error
+	Sync(context.Context, *Item) error
 }
 
 type Item struct {

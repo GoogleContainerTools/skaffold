@@ -123,7 +123,7 @@ func NewTestSyncer() *TestSyncer {
 	}
 }
 
-func (t *TestSyncer) Sync(s *sync.Item) error {
+func (t *TestSyncer) Sync(ctx context.Context, s *sync.Item) error {
 	if t.err != nil {
 		return t.err
 	}
