@@ -16,7 +16,6 @@ import (
 )
 
 func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-
 	return build.InParallel(ctx, out, tagger, artifacts, b.buildArtifact)
 }
 
