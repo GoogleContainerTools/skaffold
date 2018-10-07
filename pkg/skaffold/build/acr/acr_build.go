@@ -11,7 +11,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"io"
-	"path/filepath"
 )
 
 func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
@@ -50,17 +49,16 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "create fully qualified image name")
 	}
 
-	dockerFilePath := filepath.Join(artifact.Workspace, artifact.DockerArtifact.DockerfilePath)
 	buildRequest := cr.DockerBuildRequest{
 		ImageNames:     &[]string{imageTag},
 		IsPushEnabled:  &[]bool{true}[0], //who invented bool pointers
-		SourceLocation: &artifact.Workspace,
+		SourceLocation: result.RelativePath,
 		Platform: &cr.PlatformProperties{
 			Variant:      cr.V8,
 			Os:           cr.Linux,
 			Architecture: cr.Amd64,
 		},
-		DockerFilePath: &dockerFilePath,
+		DockerFilePath: &artifact.DockerArtifact.DockerfilePath,
 		Type:           cr.TypeDockerBuildRequest,
 	}
 	future, err := client.ScheduleRun(ctx, b.ResourceGroup, b.ContainerRegistry, buildRequest)
