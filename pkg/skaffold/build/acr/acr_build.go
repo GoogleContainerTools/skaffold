@@ -11,7 +11,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"io"
-	"os"
 	"path/filepath"
 )
 
@@ -43,11 +42,6 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "upload file to blob")
 	}
 
-	sourceLocation, err := os.Getwd()
-	if err != nil {
-		return "", errors.Wrap(err, "get source directory")
-	}
-
 	imageTag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.Options{
 		Digest:    util.RandomID(),
 		ImageName: artifact.ImageName,
@@ -56,11 +50,11 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "create fully qualified image name")
 	}
 
-	dockerFilePath := filepath.Join(sourceLocation, "Dockerfile")
+	dockerFilePath := filepath.Join(artifact.Workspace, artifact.DockerArtifact.DockerfilePath)
 	buildRequest := cr.DockerBuildRequest{
 		ImageNames:     &[]string{imageTag},
 		IsPushEnabled:  &[]bool{true}[0], //who invented bool pointers
-		SourceLocation: &sourceLocation,
+		SourceLocation: &artifact.Workspace,
 		Platform: &cr.PlatformProperties{
 			Variant:      cr.V8,
 			Os:           cr.Linux,
