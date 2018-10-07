@@ -1,6 +1,7 @@
 package acr
 
 import (
+	"bufio"
 	"context"
 	cr "github.com/Azure/azure-sdk-for-go/services/containerregistry/mgmt/2018-09-01/containerregistry"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -11,8 +12,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"io"
+	"net/http"
 	"regexp"
+	"time"
 )
+
+const BUILD_STATUS_HEADER = "x-ms-meta-Complete"
 
 func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	return build.InParallel(ctx, out, tagger, artifacts, b.buildArtifact)
@@ -72,12 +77,61 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "schedule build request")
 	}
 
-	err = future.WaitForCompletionRef(ctx, client.Client)
+	run, err := future.Result(client)
 	if err != nil {
-		return "", errors.Wrap(err, "wait for build completion")
+		return "", errors.Wrap(err, "get run id")
+	}
+	runId := *run.RunID
+
+	runsClient := cr.NewRunsClient(b.Credentials.SubscriptionId)
+	runsClient.Authorizer = client.Authorizer
+	logUrl, err := runsClient.GetLogSasURL(ctx, b.ResourceGroup, b.ContainerRegistry, runId)
+	if err != nil {
+		return "", errors.Wrap(err, "get log url")
+	}
+
+	err = pollBuildStatus(*logUrl.LogLink, out)
+	if err != nil {
+		return "", errors.Wrap(err, "polling build status")
 	}
 
 	return imageTag, nil
+}
+
+func pollBuildStatus(logUrl string, out io.Writer) error {
+	offset := int32(0)
+	for {
+		resp, err := http.Get(logUrl)
+		if err != nil {
+			return err
+		}
+
+		scanner := bufio.NewScanner(resp.Body)
+		line := int32(0)
+		for scanner.Scan() {
+			if line < offset {
+				continue
+			}
+			out.Write(scanner.Bytes())
+			line++
+			offset++
+		}
+		resp.Body.Close()
+
+		switch resp.Header.Get(BUILD_STATUS_HEADER) {
+		case "": //run succeeded when there is no status header
+			return nil
+		case "internalerror":
+		case "failed":
+			return errors.New("run failed")
+		case "timedout":
+			return errors.New("run timed out")
+		case "canceled":
+			return errors.New("run was canceled")
+		}
+
+		time.Sleep(2 * time.Second)
+	}
 }
 
 // ACR needs the image tag in the following format
