@@ -19,9 +19,10 @@ package acr
 import (
 	"bytes"
 	"fmt"
-	"github.com/pkg/errors"
 	"net/http"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 const VERSION = "2018-03-28"

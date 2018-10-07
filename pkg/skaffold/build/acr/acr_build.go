@@ -19,6 +19,11 @@ package acr
 import (
 	"bufio"
 	"context"
+	"io"
+	"net/http"
+	"regexp"
+	"time"
+
 	cr "github.com/Azure/azure-sdk-for-go/services/containerregistry/mgmt/2018-09-01/containerregistry"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -27,10 +32,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
-	"io"
-	"net/http"
-	"regexp"
-	"time"
 )
 
 const BuildStatusHeader = "x-ms-meta-Complete"
