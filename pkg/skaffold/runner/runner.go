@@ -19,11 +19,12 @@ package runner
 import (
 	"context"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/acr"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/acr"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
