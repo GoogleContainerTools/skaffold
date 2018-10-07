@@ -90,7 +90,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "get log url")
 	}
 
-	err = pollBuildStatus(*logUrl.LogLink, out)
+	err = streamBuildLogs(*logUrl.LogLink, out)
 	if err != nil {
 		return "", errors.Wrap(err, "polling build status")
 	}
@@ -98,7 +98,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	return imageTag, nil
 }
 
-func pollBuildStatus(logUrl string, out io.Writer) error {
+func streamBuildLogs(logUrl string, out io.Writer) error {
 	offset := int32(0)
 	for {
 		resp, err := http.Get(logUrl)
