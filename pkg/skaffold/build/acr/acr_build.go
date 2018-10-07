@@ -106,6 +106,12 @@ func pollBuildStatus(logUrl string, out io.Writer) error {
 			return err
 		}
 
+		if resp.StatusCode == http.StatusNotFound {
+			//if blob is not available yet, try again
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
 		scanner := bufio.NewScanner(resp.Body)
 		line := int32(0)
 		for scanner.Scan() {
