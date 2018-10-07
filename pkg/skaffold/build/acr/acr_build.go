@@ -115,12 +115,11 @@ func pollBuildStatus(logUrl string, out io.Writer) error {
 		scanner := bufio.NewScanner(resp.Body)
 		line := int32(0)
 		for scanner.Scan() {
-			if line < offset {
-				continue
+			if line > offset {
+				out.Write(scanner.Bytes())
+				line++
+				offset++
 			}
-			out.Write(scanner.Bytes())
-			line++
-			offset++
 		}
 		resp.Body.Close()
 
