@@ -147,7 +147,7 @@ func pollBuildStatus(logUrl string, out io.Writer) error {
 // ACR needs the image tag in the following format
 // <repository>:<tag>
 func getImageTagWithoutFQDN(imageTag string) (string, error) {
-	r, err := regexp.Compile(".*\\..*\\..*(/.*)")
+	r, err := regexp.Compile(".*\\..*\\..*/(.*)")
 	if err != nil {
 		return "", errors.Wrap(err, "create regexp")
 	}
