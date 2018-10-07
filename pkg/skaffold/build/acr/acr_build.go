@@ -123,16 +123,18 @@ func pollBuildStatus(logUrl string, out io.Writer) error {
 		}
 		resp.Body.Close()
 
-		switch resp.Header.Get(BUILD_STATUS_HEADER) {
-		case "": //run succeeded when there is no status header
-			return nil
-		case "internalerror":
-		case "failed":
-			return errors.New("run failed")
-		case "timedout":
-			return errors.New("run timed out")
-		case "canceled":
-			return errors.New("run was canceled")
+		if offset > 0 {
+			switch resp.Header.Get(BUILD_STATUS_HEADER) {
+			case "": //run succeeded when there is no status header
+				return nil
+			case "internalerror":
+			case "failed":
+				return errors.New("run failed")
+			case "timedout":
+				return errors.New("run timed out")
+			case "canceled":
+				return errors.New("run was canceled")
+			}
 		}
 
 		time.Sleep(2 * time.Second)
