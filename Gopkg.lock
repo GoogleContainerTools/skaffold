@@ -154,7 +154,7 @@
   revision = "83389a148052d74ac602f5f1d62f86ff2f3c4aa5"
 
 [[projects]]
-  digest = "1:073577db4fa3373afee77911b6ce47199b10729a675ff153fe8f5f74c9dead0a"
+  digest = "1:5a5ea972e858a83b5d9f4c8f3ae851eb7e60b89d64de5d034ad9cf04a1237646"
   name = "github.com/docker/docker"
   packages = [
     "api",
@@ -314,7 +314,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:69bfbe24383414dd3df13dca9a85ae8a4b8207dd773d6eb0774a1c96dbd9fab3"
+  digest = "1:93e99be14151cf268fff8f59ad41a99887d6ee7f1f02f36775945856a8df64f1"
   name = "github.com/google/go-containerregistry"
   packages = [
     "pkg/authn",
@@ -449,7 +449,7 @@
   version = "v1.1.5"
 
 [[projects]]
-  digest = "1:4a9c8275fd8178f78de23ba4fa6cf2c6f769897ffa5cc2f3f7be4befc2bc3b56"
+  digest = "1:f396528c1d6a75da6d0df8cd8425c8bec903ce55ebcb1a0e71643a4e93f45736"
   name = "github.com/karrick/godirwalk"
   packages = ["."]
   pruneopts = "NUT"
