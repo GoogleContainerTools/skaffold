@@ -3,6 +3,7 @@ package acr
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"github.com/pkg/errors"
 	"io"
 	"net/http"
@@ -13,28 +14,29 @@ const VERSION = "2018-03-28"
 
 type AzureBlobStorage struct {
 	UploadUrl string
-	Bytes     bytes.Buffer
+	Bytes     *bytes.Buffer
 }
 
 func NewBlobStorage(url string) AzureBlobStorage {
 	return AzureBlobStorage{
 		UploadUrl: url,
+		Bytes:     new(bytes.Buffer),
 	}
 }
 
-func (s AzureBlobStorage) Writer() io.Writer {
-	return bufio.NewWriter(&s.Bytes)
+func (s *AzureBlobStorage) Writer() io.Writer {
+	return bufio.NewWriter(s.Bytes)
 }
 
 func (s AzureBlobStorage) UploadFileToBlob() error {
-	req, err := http.NewRequest("PUT", s.UploadUrl, bytes.NewBuffer(s.Bytes.Bytes()))
+	req, err := http.NewRequest("PUT", s.UploadUrl, s.Bytes)
 	if err != nil {
 		return err
 	}
 	req.Header.Add("x-ms-blob-type", "BlockBlob")
 	req.Header.Add("x-ms-version", VERSION)
 	req.Header.Add("x-ms-date", time.Now().String())
-	req.Header.Add("Content-Length", string(s.Bytes.Len()))
+	req.Header.Add("Content-Length", fmt.Sprint(s.Bytes.Len()))
 
 	client := http.Client{}
 	response, err := client.Do(req)
