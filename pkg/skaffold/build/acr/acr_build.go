@@ -37,7 +37,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	}
 	blob := NewBlobStorage(*result.UploadURL)
 
-	err = docker.CreateDockerTarGzContext(blob.Writer(), artifact.Workspace, artifact.DockerArtifact)
+	err = docker.CreateDockerTarGzContext(blob.Buffer, artifact.Workspace, artifact.DockerArtifact)
 	if err != nil {
 		return "", errors.Wrap(err, "create context tar.gz")
 	}
