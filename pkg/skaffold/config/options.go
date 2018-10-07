@@ -33,6 +33,8 @@ type SkaffoldOptions struct {
 	CustomTag         string
 	Namespace         string
 	Watch             []string
+	Trigger           string
+	CustomLabels      []string
 	WatchPollInterval int
 }
 
@@ -52,6 +54,14 @@ func (opts *SkaffoldOptions) Labels() map[string]string {
 	}
 	if len(opts.Profiles) > 0 {
 		labels["profiles"] = strings.Join(opts.Profiles, ",")
+	}
+	for _, cl := range opts.CustomLabels {
+		l := strings.SplitN(cl, "=", 2)
+		if len(l) == 1 {
+			labels[l[0]] = ""
+			continue
+		}
+		labels[l[0]] = l[1]
 	}
 	return labels
 }

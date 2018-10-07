@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 type APIVersion struct {
@@ -36,11 +36,11 @@ type APIVersion struct {
 }
 
 var schemaVersions = map[string]func() util.VersionedConfig{
-	v1alpha1.Version: v1alpha1.NewSkaffoldConfig,
-	v1alpha2.Version: v1alpha2.NewSkaffoldConfig,
-	v1alpha3.Version: v1alpha3.NewSkaffoldConfig,
-	v1alpha4.Version: v1alpha4.NewSkaffoldConfig,
-	latest.Version:   latest.NewSkaffoldConfig,
+	v1alpha1.Version: v1alpha1.NewSkaffoldPipeline,
+	v1alpha2.Version: v1alpha2.NewSkaffoldPipeline,
+	v1alpha3.Version: v1alpha3.NewSkaffoldPipeline,
+	v1alpha4.Version: v1alpha4.NewSkaffoldPipeline,
+	latest.Version:   latest.NewSkaffoldPipeline,
 }
 
 // ParseConfig reads a configuration file.

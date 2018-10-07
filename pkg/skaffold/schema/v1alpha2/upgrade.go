@@ -25,7 +25,7 @@ import (
 )
 
 // Upgrade upgrades a configuration to the next version.
-func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
+func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
 	if err := convert(config.Deploy, &newDeploy); err != nil {
@@ -81,7 +81,7 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 		}
 	}
 
-	return &next.SkaffoldConfig{
+	return &next.SkaffoldPipeline{
 		APIVersion: next.Version,
 		Kind:       config.Kind,
 		Deploy:     newDeploy,

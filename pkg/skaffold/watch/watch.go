@@ -18,7 +18,6 @@ package watch
 
 import (
 	"context"
-	"time"
 
 	"github.com/pkg/errors"
 )
@@ -29,7 +28,7 @@ type Factory func() Watcher
 // Watcher monitors files changes for multiples components.
 type Watcher interface {
 	Register(deps func() ([]string, error), onChange func(Events)) error
-	Run(ctx context.Context, pollInterval time.Duration, onChange func() error) error
+	Run(ctx context.Context, trigger Trigger, onChange func() error) error
 }
 
 type watchList []*component
@@ -62,9 +61,9 @@ func (w *watchList) Register(deps func() ([]string, error), onChange func(Events
 }
 
 // Run watches files until the context is cancelled or an error occurs.
-func (w *watchList) Run(ctx context.Context, pollInterval time.Duration, onChange func() error) error {
-	ticker := time.NewTicker(pollInterval)
-	defer ticker.Stop()
+func (w *watchList) Run(ctx context.Context, trigger Trigger, onChange func() error) error {
+	t, cleanup := trigger.Start()
+	defer cleanup()
 
 	changedComponents := map[int]bool{}
 
@@ -72,7 +71,7 @@ func (w *watchList) Run(ctx context.Context, pollInterval time.Duration, onChang
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-ticker.C:
+		case <-t:
 			changed := 0
 			for i, component := range *w {
 				state, err := stat(component.deps)
@@ -94,7 +93,8 @@ func (w *watchList) Run(ctx context.Context, pollInterval time.Duration, onChang
 			// To prevent that, we debounce changes that happen too quickly
 			// by waiting for a full turn where nothing happens and trigger a rebuild for
 			// the accumulated changes.
-			if changed == 0 && len(changedComponents) > 0 {
+			debounce := trigger.Debounce()
+			if (!debounce && changed > 0) || (debounce && changed == 0 && len(changedComponents) > 0) {
 				for i, component := range *w {
 					if changedComponents[i] {
 						component.onChange(component.events)

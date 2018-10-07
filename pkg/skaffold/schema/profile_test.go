@@ -26,9 +26,9 @@ import (
 func TestApplyProfiles(t *testing.T) {
 	tests := []struct {
 		description string
-		config      *latest.SkaffoldConfig
+		config      *latest.SkaffoldPipeline
 		profile     string
-		expected    *latest.SkaffoldConfig
+		expected    *latest.SkaffoldPipeline
 		shouldErr   bool
 	}{
 		{

@@ -24,8 +24,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// newRunner creates a SkaffoldRunner and returns the SkaffoldConfig associated with it.
-func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.SkaffoldConfig, error) {
+// newRunner creates a SkaffoldRunner and returns the SkaffoldPipeline associated with it.
+func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.SkaffoldPipeline, error) {
 	parsed, err := schema.ParseConfig(opts.ConfigurationFile, true)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "parsing skaffold config")
@@ -35,7 +35,7 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 		return nil, nil, errors.Wrap(err, "invalid config")
 	}
 
-	config := parsed.(*latest.SkaffoldConfig)
+	config := parsed.(*latest.SkaffoldPipeline)
 	err = schema.ApplyProfiles(config, opts.Profiles)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "applying profiles")
