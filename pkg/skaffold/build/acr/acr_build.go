@@ -117,9 +117,9 @@ func pollBuildStatus(logUrl string, out io.Writer) error {
 		for scanner.Scan() {
 			if line > offset {
 				out.Write(scanner.Bytes())
-				line++
 				offset++
 			}
+			line++
 		}
 		resp.Body.Close()
 
