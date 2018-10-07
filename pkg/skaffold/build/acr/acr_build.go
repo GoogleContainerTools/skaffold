@@ -11,6 +11,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"io"
+	"regexp"
 )
 
 func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
@@ -49,6 +50,11 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "create fully qualified image name")
 	}
 
+	imageTag, err = getImageTagWithoutFQDN(imageTag)
+	if err != nil {
+		return "", errors.Wrap(err, "get azure image tag")
+	}
+
 	buildRequest := cr.DockerBuildRequest{
 		ImageNames:     &[]string{imageTag},
 		IsPushEnabled:  &[]bool{true}[0], //who invented bool pointers
@@ -72,4 +78,20 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	}
 
 	return imageTag, nil
+}
+
+// ACR needs the image tag in the following format
+// <registryName>/<repository>:<tag>
+func getImageTagWithoutFQDN(imageTag string) (string, error) {
+	r, err := regexp.Compile("(.*)\\..*\\..*(/.*)")
+	if err != nil {
+		return "", errors.Wrap(err, "create regexp")
+	}
+
+	matches := r.FindStringSubmatch(imageTag)
+	if len(matches) < 3 {
+		return "", errors.New("invalid image tag")
+	}
+
+	return matches[1] + matches[2], nil
 }
