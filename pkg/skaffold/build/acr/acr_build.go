@@ -115,8 +115,9 @@ func pollBuildStatus(logUrl string, out io.Writer) error {
 		scanner := bufio.NewScanner(resp.Body)
 		line := int32(0)
 		for scanner.Scan() {
-			if line > offset {
+			if line >= offset {
 				out.Write(scanner.Bytes())
+				out.Write([]byte("\n"))
 				offset++
 			}
 			line++
@@ -125,8 +126,8 @@ func pollBuildStatus(logUrl string, out io.Writer) error {
 
 		if offset > 0 {
 			switch resp.Header.Get(BUILD_STATUS_HEADER) {
-			case "": //run succeeded when there is no status header
-				return nil
+			case "":
+				continue
 			case "internalerror":
 			case "failed":
 				return errors.New("run failed")
@@ -134,6 +135,8 @@ func pollBuildStatus(logUrl string, out io.Writer) error {
 				return errors.New("run timed out")
 			case "canceled":
 				return errors.New("run was canceled")
+			default:
+				return nil
 			}
 		}
 
