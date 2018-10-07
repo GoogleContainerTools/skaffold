@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-const BUILD_STATUS_HEADER = "x-ms-meta-Complete"
+const BuildStatusHeader = "x-ms-meta-Complete"
 
 func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	return build.InParallel(ctx, out, tagger, artifacts, b.buildArtifact)
@@ -125,7 +125,7 @@ func pollBuildStatus(logUrl string, out io.Writer) error {
 		resp.Body.Close()
 
 		if offset > 0 {
-			switch resp.Header.Get(BUILD_STATUS_HEADER) {
+			switch resp.Header.Get(BuildStatusHeader) {
 			case "":
 				continue
 			case "internalerror":
@@ -145,17 +145,17 @@ func pollBuildStatus(logUrl string, out io.Writer) error {
 }
 
 // ACR needs the image tag in the following format
-// <registryName>/<repository>:<tag>
+// <repository>:<tag>
 func getImageTagWithoutFQDN(imageTag string) (string, error) {
-	r, err := regexp.Compile("(.*)\\..*\\..*(/.*)")
+	r, err := regexp.Compile(".*\\..*\\..*(/.*)")
 	if err != nil {
 		return "", errors.Wrap(err, "create regexp")
 	}
 
 	matches := r.FindStringSubmatch(imageTag)
-	if len(matches) < 3 {
+	if len(matches) < 2 {
 		return "", errors.New("invalid image tag")
 	}
 
-	return matches[1] + matches[2], nil
+	return matches[1], nil
 }

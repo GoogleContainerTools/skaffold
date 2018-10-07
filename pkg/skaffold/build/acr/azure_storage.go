@@ -22,6 +22,8 @@ func NewBlobStorage(url string) AzureBlobStorage {
 	}
 }
 
+//Maximum supported file size is currently 256Mb
+//as stated here https://docs.microsoft.com/en-us/rest/api/storageservices/put-blob#remarks
 func (s AzureBlobStorage) UploadFileToBlob() error {
 	req, err := http.NewRequest("PUT", s.UploadUrl, s.Buffer)
 	if err != nil {
