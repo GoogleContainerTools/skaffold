@@ -27,13 +27,13 @@ import (
 const VERSION = "2018-03-28"
 
 type AzureBlobStorage struct {
-	UploadUrl string
+	UploadURL string
 	Buffer    *bytes.Buffer
 }
 
 func NewBlobStorage(url string) AzureBlobStorage {
 	return AzureBlobStorage{
-		UploadUrl: url,
+		UploadURL: url,
 		Buffer:    new(bytes.Buffer),
 	}
 }
@@ -41,7 +41,7 @@ func NewBlobStorage(url string) AzureBlobStorage {
 //Maximum supported file size is currently 256Mb
 //as stated here https://docs.microsoft.com/en-us/rest/api/storageservices/put-blob#remarks
 func (s AzureBlobStorage) UploadFileToBlob() error {
-	req, err := http.NewRequest("PUT", s.UploadUrl, s.Buffer)
+	req, err := http.NewRequest("PUT", s.UploadURL, s.Buffer)
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func (s AzureBlobStorage) UploadFileToBlob() error {
 	}
 
 	if response.StatusCode != http.StatusCreated {
-		return errors.New("couldn't file to blob.")
+		return errors.New("couldn't push tar to blob")
 	}
 	return nil
 }

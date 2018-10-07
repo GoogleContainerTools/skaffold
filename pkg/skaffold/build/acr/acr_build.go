@@ -40,8 +40,8 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error) {
-	client := cr.NewRegistriesClient(b.Credentials.SubscriptionId)
-	authorizer, err := auth.NewClientCredentialsConfig(b.Credentials.ClientId, b.Credentials.ClientSecret, b.Credentials.TenantId).Authorizer()
+	client := cr.NewRegistriesClient(b.Credentials.SubscriptionID)
+	authorizer, err := auth.NewClientCredentialsConfig(b.Credentials.ClientID, b.Credentials.ClientSecret, b.Credentials.TenantID).Authorizer()
 	if err != nil {
 		return "", errors.Wrap(err, "authorizing client")
 	}
@@ -97,16 +97,16 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	if err != nil {
 		return "", errors.Wrap(err, "get run id")
 	}
-	runId := *run.RunID
+	runID := *run.RunID
 
-	runsClient := cr.NewRunsClient(b.Credentials.SubscriptionId)
+	runsClient := cr.NewRunsClient(b.Credentials.SubscriptionID)
 	runsClient.Authorizer = client.Authorizer
-	logUrl, err := runsClient.GetLogSasURL(ctx, b.ResourceGroup, b.ContainerRegistry, runId)
+	logURL, err := runsClient.GetLogSasURL(ctx, b.ResourceGroup, b.ContainerRegistry, runID)
 	if err != nil {
 		return "", errors.Wrap(err, "get log url")
 	}
 
-	err = streamBuildLogs(*logUrl.LogLink, out)
+	err = streamBuildLogs(*logURL.LogLink, out)
 	if err != nil {
 		return "", errors.Wrap(err, "polling build status")
 	}
@@ -114,10 +114,10 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	return imageTag, nil
 }
 
-func streamBuildLogs(logUrl string, out io.Writer) error {
+func streamBuildLogs(logURL string, out io.Writer) error {
 	offset := int32(0)
 	for {
-		resp, err := http.Get(logUrl)
+		resp, err := http.Get(logURL)
 		if err != nil {
 			return err
 		}

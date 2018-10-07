@@ -130,10 +130,10 @@ type AzureContainerBuild struct {
 // AzureContainerBuildCredentials contains the fields needed to
 // to authorize the azure sdk
 type AzureContainerBuildCredentials struct {
-	SubscriptionId string `yaml:"subscriptionId,omitempty"`
-	ClientId       string `yaml:"clientId,omitempty"`
+	SubscriptionID string `yaml:"subscriptionId,omitempty"`
+	ClientID       string `yaml:"clientId,omitempty"`
 	ClientSecret   string `yaml:"clientSecret,omitempty"`
-	TenantId       string `yaml:"tenantId,omitempty"`
+	TenantID       string `yaml:"tenantId,omitempty"`
 }
 
 // TestCase is a struct containing all the specified test
