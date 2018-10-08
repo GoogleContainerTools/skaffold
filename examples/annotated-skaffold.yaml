@@ -77,6 +77,7 @@ build:
   # `useBuildkit` can also be set to activate the experimental BuildKit feature.
   #
   # local:
+  #   false by default for local clusters, true for remote clusters
   #   push: false
   #   useDockerCLI: false
   #   useBuildkit: false
