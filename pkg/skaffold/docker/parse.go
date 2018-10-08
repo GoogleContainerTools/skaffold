@@ -304,6 +304,10 @@ func GetDependencies(workspace string, a *latest.DockerArtifact) ([]string, erro
 			if err := godirwalk.Walk(absDep, &godirwalk.Options{
 				Unsorted: true,
 				Callback: func(fpath string, info *godirwalk.Dirent) error {
+					if fpath == absDep {
+						return nil
+					}
+
 					relPath, err := filepath.Rel(workspace, fpath)
 					if err != nil {
 						return err
