@@ -86,7 +86,7 @@ type BuildType struct {
 // LocalBuild contains the fields needed to do a build on the local docker daemon
 // and optionally push to a repository.
 type LocalBuild struct {
-	SkipPush     *bool `yaml:"skipPush,omitempty"`
+	Push         *bool `yaml:"push,omitempty"`
 	UseDockerCLI bool  `yaml:"useDockerCLI,omitempty"`
 	UseBuildkit  bool  `yaml:"useBuildkit,omitempty"`
 }

@@ -77,7 +77,7 @@ build:
   # `useBuildkit` can also be set to activate the experimental BuildKit feature.
   #
   # local:
-  #   skipPush: true
+  #   push: false
   #   useDockerCLI: false
   #   useBuildkit: false
 
