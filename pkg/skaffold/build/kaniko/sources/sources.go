@@ -21,7 +21,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -36,13 +35,10 @@ type BuildContextSource interface {
 
 // Retrieve returns the correct build context based on the config
 func Retrieve(cfg *latest.KanikoBuild) (BuildContextSource, error) {
-	if cfg.BuildContext.GCSBucket != "" {
-		return &GCSBucket{}, nil
-	}
 	if cfg.BuildContext.LocalDir != nil {
 		return &LocalDir{}, nil
 	}
-	return nil, errors.New("no valid build context was provided for kaniko builder")
+	return &GCSBucket{}, nil
 }
 
 func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {

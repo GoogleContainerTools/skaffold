@@ -349,7 +349,7 @@ func TestInit(t *testing.T) {
 					t.Errorf("error removing generated skaffold yaml: %v", err)
 				}
 			}()
-			initArgs := []string{"init", "-f", generatedYaml}
+			initArgs := []string{"init", "--force", "-f", generatedYaml}
 			initArgs = append(initArgs, test.args...)
 			initCmd := exec.Command("skaffold", initArgs...)
 			initCmd.Dir = test.dir

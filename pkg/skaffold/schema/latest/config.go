@@ -24,21 +24,22 @@ import (
 
 const Version string = "skaffold/v1alpha4"
 
-// NewSkaffoldConfig creates a SkaffoldConfig
-func NewSkaffoldConfig() util.VersionedConfig {
-	return new(SkaffoldConfig)
+// NewSkaffoldPipeline creates a SkaffoldPipeline
+func NewSkaffoldPipeline() util.VersionedConfig {
+	return new(SkaffoldPipeline)
 }
 
-type SkaffoldConfig struct {
+type SkaffoldPipeline struct {
 	APIVersion string `yaml:"apiVersion"`
 	Kind       string `yaml:"kind"`
 
 	Build    BuildConfig  `yaml:"build,omitempty"`
+	Test     []TestCase   `yaml:"test,omitempty"`
 	Deploy   DeployConfig `yaml:"deploy,omitempty"`
 	Profiles []Profile    `yaml:"profiles,omitempty"`
 }
 
-func (c *SkaffoldConfig) GetVersion() string {
+func (c *SkaffoldPipeline) GetVersion() string {
 	return c.APIVersion
 }
 
@@ -119,6 +120,14 @@ type KanikoBuild struct {
 	PullSecretName string             `yaml:"pullSecretName,omitempty"`
 	Namespace      string             `yaml:"namespace,omitempty"`
 	Timeout        string             `yaml:"timeout,omitempty"`
+	Image          string             `yaml:"image,omitempty"`
+}
+
+// TestCase is a struct containing all the specified test
+// configuration for an image.
+type TestCase struct {
+	ImageName      string   `yaml:"image"`
+	StructureTests []string `yaml:"structureTests,omitempty"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps
@@ -207,8 +216,9 @@ type HelmConventionConfig struct {
 // Artifact represents items that need to be built, along with the context in which
 // they should be built.
 type Artifact struct {
-	ImageName    string `yaml:"image"`
-	Workspace    string `yaml:"context,omitempty"`
+	ImageName    string            `yaml:"image"`
+	Workspace    string            `yaml:"context,omitempty"`
+	Sync         map[string]string `yaml:"sync,omitempty"`
 	ArtifactType `yaml:",inline"`
 }
 
@@ -217,6 +227,7 @@ type Artifact struct {
 type Profile struct {
 	Name   string       `yaml:"name"`
 	Build  BuildConfig  `yaml:"build,omitempty"`
+	Test   []TestCase   `yaml:"test,omitempty"`
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
 }
 
@@ -239,8 +250,8 @@ type BazelArtifact struct {
 	BuildTarget string `yaml:"target"`
 }
 
-// Parse reads a SkaffoldConfig from yaml.
-func (c *SkaffoldConfig) Parse(contents []byte, useDefaults bool) error {
+// Parse reads a SkaffoldPipeline from yaml.
+func (c *SkaffoldPipeline) Parse(contents []byte, useDefaults bool) error {
 	if err := yaml.UnmarshalStrict(contents, c); err != nil {
 		return err
 	}

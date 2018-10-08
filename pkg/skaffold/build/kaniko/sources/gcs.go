@@ -22,8 +22,10 @@ import (
 
 	cstorage "cloud.google.com/go/storage"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -33,9 +35,20 @@ type GCSBucket struct {
 
 // Setup uploads the context to the provided GCS bucket
 func (g *GCSBucket) Setup(ctx context.Context, artifact *latest.Artifact, cfg *latest.KanikoBuild, initialTag string) (string, error) {
+	bucket := cfg.BuildContext.GCSBucket
+	if bucket == "" {
+		guessedProjectID, err := gcp.ExtractProjectID(artifact.ImageName)
+		if err != nil {
+			return "", errors.Wrap(err, "extracting projectID from image name")
+		}
+
+		bucket = guessedProjectID
+	}
+	logrus.Debugln("Upload sources to", bucket, "GCS bucket")
+
 	g.tarName = fmt.Sprintf("context-%s.tar.gz", initialTag)
-	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact, cfg.BuildContext.GCSBucket, g.tarName); err != nil {
-		return "", errors.Wrap(err, "uploading tar to gcs")
+	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact, bucket, g.tarName); err != nil {
+		return "", errors.Wrap(err, "uploading sources to GCS")
 	}
 	context := fmt.Sprintf("gs://%s/%s", cfg.BuildContext.GCSBucket, g.tarName)
 	return context, nil

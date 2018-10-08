@@ -28,6 +28,8 @@ import (
 )
 
 func (b *Builder) setupSecret() (func(), error) {
+	logrus.Debug("Creating kaniko secret")
+
 	client, err := kubernetes.GetClientset()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting kubernetes client")

@@ -23,7 +23,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -38,6 +37,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 
 	"github.com/pkg/errors"
@@ -51,15 +52,18 @@ var ErrorConfigurationChanged = errors.New("configuration changed")
 type SkaffoldRunner struct {
 	build.Builder
 	deploy.Deployer
+	test.Tester
 	tag.Tagger
+	watch.Trigger
+	sync.Syncer
 
 	opts         *config.SkaffoldOptions
 	watchFactory watch.Factory
 	builds       []build.Artifact
 }
 
-// NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
-func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*SkaffoldRunner, error) {
+// NewForConfig returns a new SkaffoldRunner for a SkaffoldPipeline
+func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*SkaffoldRunner, error) {
 	kubeContext, err := kubectx.CurrentContext()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting current cluster context")
@@ -76,21 +80,34 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		return nil, errors.Wrap(err, "parsing skaffold build config")
 	}
 
+	tester, err := getTester(&cfg.Test)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing skaffold test config")
+	}
+
 	deployer, err := getDeployer(&cfg.Deploy, kubeContext, opts.Namespace)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold deploy config")
 	}
 
 	deployer = deploy.WithLabels(deployer, opts, builder, deployer, tagger)
-	builder, deployer = WithTimings(builder, deployer)
+	builder, tester, deployer = WithTimings(builder, tester, deployer)
 	if opts.Notification {
 		deployer = WithNotification(deployer)
 	}
 
+	trigger, err := watch.NewTrigger(opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating watch trigger")
+	}
+
 	return &SkaffoldRunner{
 		Builder:      builder,
+		Tester:       tester,
 		Deployer:     deployer,
 		Tagger:       tagger,
+		Trigger:      trigger,
+		Syncer:       &kubernetes.KubectlSyncer{},
 		opts:         opts,
 		watchFactory: watch.NewWatcher,
 	}, nil
@@ -113,6 +130,10 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string) (build.Builder, err
 	default:
 		return nil, fmt.Errorf("Unknown builder for config %+v", cfg)
 	}
+}
+
+func getTester(cfg *[]latest.TestCase) (test.Tester, error) {
+	return test.NewTester(cfg)
 }
 
 func getDeployer(cfg *latest.DeployConfig, kubeContext string, namespace string) (deploy.Deployer, error) {
@@ -171,11 +192,15 @@ func getTagger(t latest.TagPolicy, customTag string) (tag.Tagger, error) {
 	}
 }
 
-// Run builds artifacts and then deploys them.
+// Run builds artifacts, runs tests on built artifacts, and then deploys them.
 func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
 	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
 	if err != nil {
 		return errors.Wrap(err, "build step")
+	}
+
+	if err = r.Test(ctx, out, bRes); err != nil {
+		return errors.Wrap(err, "test step")
 	}
 
 	_, err = r.Deploy(ctx, out, bRes)
@@ -223,30 +248,58 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		logger.Mute()
 		defer func() {
 			changed.reset()
-			color.Default.Fprintln(out, "Watching for changes...")
+			r.Trigger.WatchForChanges(out)
 			if !hasError {
 				logger.Unmute()
 			}
 		}()
+		for _, a := range changed.dirtyArtifacts {
+			s, err := sync.NewItem(a.artifact, a.events, r.builds)
+			if err != nil {
+				return errors.Wrap(err, "sync")
+			}
+			if s != nil {
+				changed.AddResync(s)
+			} else {
+				changed.AddRebuild(a.artifact)
+			}
+		}
 
 		switch {
 		case changed.needsReload:
 			logger.Stop()
 			return ErrorConfigurationChanged
-		case len(changed.dirtyArtifacts) > 0:
-			bRes, err := r.Build(ctx, out, r.Tagger, changed.dirtyArtifacts)
+		case len(changed.needsResync) > 0:
+			for _, s := range changed.needsResync {
+				color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
+
+				if err := r.Syncer.Sync(ctx, s); err != nil {
+					logrus.Warnln("Skipping build and deploy due to sync error:", err)
+					return nil
+				}
+			}
+		case len(changed.needsRebuild) > 0:
+			bRes, err := r.Build(ctx, out, r.Tagger, changed.needsRebuild)
 			if err != nil {
 				logrus.Warnln("Skipping Deploy due to build error:", err)
 				return nil
 			}
 
 			r.updateBuiltImages(imageList, bRes)
+			if err := r.Test(ctx, out, bRes); err != nil {
+				logrus.Warnln("Skipping Deploy due to failed tests:", err)
+				return nil
+			}
 
 			if _, err = r.Deploy(ctx, out, r.builds); err != nil {
 				logrus.Warnln("Skipping Deploy due to error:", err)
 				return nil
 			}
 		case changed.needsRedeploy:
+			if err := r.Test(ctx, out, r.builds); err != nil {
+				logrus.Warnln("Skipping Deploy due to failed tests:", err)
+				return nil
+			}
 			if _, err := r.Deploy(ctx, out, r.builds); err != nil {
 				logrus.Warnln("Skipping Deploy due to error:", err)
 				return nil
@@ -269,10 +322,18 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 		if err := watcher.Register(
 			func() ([]string, error) { return dependenciesForArtifact(artifact) },
-			func(watch.Events) { changed.Add(artifact) },
+			func(e watch.Events) { changed.AddDirtyArtifact(artifact, e) },
 		); err != nil {
 			return nil, errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
 		}
+	}
+
+	// Watch test configuration
+	if err := watcher.Register(
+		func() ([]string, error) { return r.TestDependencies() },
+		func(watch.Events) { changed.needsRedeploy = true },
+	); err != nil {
+		return nil, errors.Wrap(err, "watching test files")
 	}
 
 	// Watch deployment configuration
@@ -298,6 +359,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	r.updateBuiltImages(imageList, bRes)
+	if err := r.Test(ctx, out, bRes); err != nil {
+		return nil, errors.Wrap(err, "exiting dev mode because the first test run failed")
+	}
 
 	_, err = r.Deploy(ctx, out, r.builds)
 	if err != nil {
@@ -317,8 +381,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 	}
 
-	pollInterval := time.Duration(r.opts.WatchPollInterval) * time.Millisecond
-	return nil, watcher.Run(ctx, pollInterval, onChange)
+	r.Trigger.WatchForChanges(out)
+	return nil, watcher.Run(ctx, r.Trigger, onChange)
 }
 
 func (r *SkaffoldRunner) shouldWatch(artifact *latest.Artifact) bool {
