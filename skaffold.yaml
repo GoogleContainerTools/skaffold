@@ -4,7 +4,7 @@ build:
   artifacts:
   - imageName: gcr.io/k8s-skaffold/skaffold
     docker:
-      dockerfile: deploy/skaffold/Dockerfile
+      dockerfilePath: deploy/skaffold/Dockerfile
 deploy:
   kubectl:
     manifests:
