@@ -29,7 +29,7 @@ import (
 
 // ApplyProfiles returns configuration modified by the application
 // of a list of profiles.
-func ApplyProfiles(c *latest.SkaffoldConfig, profiles []string) error {
+func ApplyProfiles(c *latest.SkaffoldPipeline, profiles []string) error {
 	byName := profilesByName(c.Profiles)
 	for _, name := range profiles {
 		profile, present := byName[name]
@@ -46,11 +46,11 @@ func ApplyProfiles(c *latest.SkaffoldConfig, profiles []string) error {
 	return nil
 }
 
-func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) {
+func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) {
 	logrus.Infof("applying profile: %s", profile.Name)
 
 	// this intentionally removes the Profiles field from the returned config
-	*config = latest.SkaffoldConfig{
+	*config = latest.SkaffoldPipeline{
 		APIVersion: config.APIVersion,
 		Kind:       config.Kind,
 		Build:      overlayProfileField(config.Build, profile.Build).(latest.BuildConfig),

@@ -86,7 +86,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return nil, errors.Wrap(err, "apply")
 	}
 
-	return parseManifestsForDeploys(updated)
+	return parseManifestsForDeploys(k.kubectl.Namespace, updated)
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
@@ -128,12 +128,14 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 	return filteredManifests, nil
 }
 
-func parseManifestsForDeploys(manifests kubectl.ManifestList) ([]Artifact, error) {
-	results := []Artifact{}
+func parseManifestsForDeploys(namespace string, manifests kubectl.ManifestList) ([]Artifact, error) {
+	var results []Artifact
+
 	for _, manifest := range manifests {
 		b := bufio.NewReader(bytes.NewReader(manifest))
-		results = append(results, parseReleaseInfo("", b)...)
+		results = append(results, parseReleaseInfo(namespace, b)...)
 	}
+
 	return results, nil
 }
 

@@ -17,9 +17,11 @@ limitations under the License.
 package test
 
 import (
+	"context"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // Tester is the top level test executor in Skaffold.
@@ -27,9 +29,9 @@ import (
 // each of which contains one or more TestRunners which implements
 // a single test run.
 type Tester interface {
-	Test(io.Writer, []build.Artifact) error
+	Test(context.Context, io.Writer, []build.Artifact) error
 
-	TestDependencies() []string
+	TestDependencies() ([]string, error)
 }
 
 // FullTester serves as a holder for the individual artifact-specific
@@ -38,22 +40,15 @@ type Tester interface {
 // the FullTester actually handles the work.
 
 // FullTester should always be the ONLY implementation of the Tester interface;
-// newly added testing implementations should implement the TestRunner interface.
+// newly added testing implementations should implement the Runner interface.
 type FullTester struct {
-	ArtifactTesters []*ArtifactTester
-	Dependencies    []string
+	testCases  *[]latest.TestCase
+	workingDir string
 }
 
-// ArtifactTester is an artifact-specific test holder, which contains
-// tests runners to run all specified tests on an individual artifact.
-type ArtifactTester struct {
-	ImageName   string
-	TestRunners []Runner
-}
-
-// TestRunner is the lowest-level test executor in Skaffold, responsible for
+// Runner is the lowest-level test executor in Skaffold, responsible for
 // running a single test on a single artifact image and returning its result.
 // Any new test type should implement this interface.
 type Runner interface {
-	Test(image string) error
+	Test(ctx context.Context, out io.Writer, image string) error
 }

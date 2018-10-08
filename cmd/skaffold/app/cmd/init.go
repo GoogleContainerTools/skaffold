@@ -44,10 +44,13 @@ import (
 // an image we parse out from a kubernetes manifest
 const NoDockerfile = "None (image not built from these sources)"
 
-var outfile string
-var skipBuild bool
-var cliArtifacts []string
+var (
+	cliArtifacts []string
+	skipBuild    bool
+	force        bool
+)
 
+// NewCmdInit describes the CLI command to generate a skaffold configuration.
 func NewCmdInit(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
@@ -57,18 +60,16 @@ func NewCmdInit(out io.Writer) *cobra.Command {
 			return doInit(out)
 		},
 	}
-	AddInitFlags(cmd)
-	return cmd
-}
-
-func AddInitFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&outfile, "file", "f", "", "File to write generated skaffold config")
+	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&skipBuild, "skip-build", false, "Skip generating build artifacts in skaffold config")
+	cmd.Flags().BoolVar(&force, "force", false, "Force the generation of the skaffold config")
 	cmd.Flags().StringArrayVarP(&cliArtifacts, "artifact", "a", nil, "'='-delimited dockerfile/image pair to generate build artifact\n(example: --artifact=/web/Dockerfile.web=gcr.io/web-project/image)")
+	return cmd
 }
 
 func doInit(out io.Writer) error {
 	rootDir := "."
+
 	var potentialConfigs, k8sConfigs, dockerfiles, images []string
 	err := filepath.Walk(rootDir, func(path string, f os.FileInfo, e error) error {
 		if f.IsDir() {
@@ -90,11 +91,13 @@ func doInit(out io.Writer) error {
 	if err != nil {
 		return err
 	}
+
 	for _, file := range potentialConfigs {
-		config, err := schema.ParseConfig(file, true)
-		if err == nil && config != nil {
-			out.Write([]byte(fmt.Sprintf("pre-existing skaffold yaml %s found: exiting\n", file)))
-			return nil
+		if !force {
+			config, err := schema.ParseConfig(file, true)
+			if err == nil && config != nil {
+				return fmt.Errorf("pre-existing %s found", file)
+			}
 		}
 
 		logrus.Debugf("%s is not a valid skaffold configuration: continuing", file)
@@ -129,17 +132,44 @@ func doInit(out io.Writer) error {
 		}
 	}
 
-	cfg, err := generateSkaffoldConfig(k8sConfigs, pairs)
+	pipeline, err := generateSkaffoldPipeline(k8sConfigs, pairs)
 	if err != nil {
 		return err
 	}
-	if outfile != "" {
-		if err := ioutil.WriteFile(outfile, cfg, 0644); err != nil {
-			return errors.Wrap(err, "writing config to file")
-		}
-	} else {
-		out.Write(cfg)
+
+	if opts.ConfigurationFile == "-" {
+		out.Write(pipeline)
+		return nil
 	}
+
+	if !force {
+		fmt.Fprintln(out, string(pipeline))
+
+		reader := bufio.NewReader(os.Stdin)
+	confirmLoop:
+		for {
+			fmt.Fprintf(out, "Do you want to write this configuration to %s? [y/n]: ", opts.ConfigurationFile)
+
+			response, err := reader.ReadString('\n')
+			if err != nil {
+				return errors.Wrap(err, "reading user confirmation")
+			}
+
+			response = strings.ToLower(strings.TrimSpace(response))
+			switch response {
+			case "y", "yes":
+				break confirmLoop
+			case "n", "no":
+				return nil
+			}
+		}
+	}
+
+	if err := ioutil.WriteFile(opts.ConfigurationFile, pipeline, 0644); err != nil {
+		return errors.Wrap(err, "writing config to file")
+	}
+
+	fmt.Fprintf(out, "Configuration %s was written\n", opts.ConfigurationFile)
 
 	return nil
 }
@@ -231,21 +261,20 @@ func processBuildArtifacts(pairs []dockerfilePair) latest.BuildConfig {
 	return config
 }
 
-func generateSkaffoldConfig(k8sConfigs []string, dockerfilePairs []dockerfilePair) ([]byte, error) {
+func generateSkaffoldPipeline(k8sConfigs []string, dockerfilePairs []dockerfilePair) ([]byte, error) {
 	// if we're here, the user has no skaffold yaml so we need to generate one
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	logrus.Info("generating skaffold config")
 
-	config := &latest.SkaffoldConfig{
+	pipeline := &latest.SkaffoldPipeline{
 		APIVersion: latest.Version,
-		Kind:       "Config",
 	}
-	if err := config.SetDefaultValues(); err != nil {
-		return nil, errors.Wrap(err, "generating default config")
+	if err := pipeline.SetDefaultValues(); err != nil {
+		return nil, errors.Wrap(err, "generating default pipeline")
 	}
 
-	config.Build = processBuildArtifacts(dockerfilePairs)
-	config.Deploy = latest.DeployConfig{
+	pipeline.Build = processBuildArtifacts(dockerfilePairs)
+	pipeline.Deploy = latest.DeployConfig{
 		DeployType: latest.DeployType{
 			KubectlDeploy: &latest.KubectlDeploy{
 				Manifests: k8sConfigs,
@@ -253,12 +282,12 @@ func generateSkaffoldConfig(k8sConfigs []string, dockerfilePairs []dockerfilePai
 		},
 	}
 
-	cfgStr, err := yaml.Marshal(config)
+	pipelineStr, err := yaml.Marshal(pipeline)
 	if err != nil {
-		return nil, errors.Wrap(err, "marshaling generated config")
+		return nil, errors.Wrap(err, "marshaling generated pipeline")
 	}
 
-	return cfgStr, nil
+	return pipelineStr, nil
 }
 
 // parseKubernetesYaml attempts to parse k8s objects from a yaml file

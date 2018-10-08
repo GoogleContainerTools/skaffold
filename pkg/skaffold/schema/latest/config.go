@@ -24,12 +24,12 @@ import (
 
 const Version string = "skaffold/v1alpha4"
 
-// NewSkaffoldConfig creates a SkaffoldConfig
-func NewSkaffoldConfig() util.VersionedConfig {
-	return new(SkaffoldConfig)
+// NewSkaffoldPipeline creates a SkaffoldPipeline
+func NewSkaffoldPipeline() util.VersionedConfig {
+	return new(SkaffoldPipeline)
 }
 
-type SkaffoldConfig struct {
+type SkaffoldPipeline struct {
 	APIVersion string `yaml:"apiVersion"`
 	Kind       string `yaml:"kind"`
 
@@ -39,7 +39,7 @@ type SkaffoldConfig struct {
 	Profiles []Profile    `yaml:"profiles,omitempty"`
 }
 
-func (c *SkaffoldConfig) GetVersion() string {
+func (c *SkaffoldPipeline) GetVersion() string {
 	return c.APIVersion
 }
 
@@ -115,6 +115,7 @@ type KanikoBuild struct {
 	PullSecretName string             `yaml:"pullSecretName,omitempty"`
 	Namespace      string             `yaml:"namespace,omitempty"`
 	Timeout        string             `yaml:"timeout,omitempty"`
+	Image          string             `yaml:"image,omitempty"`
 }
 
 // TestCase is a struct containing all the specified test
@@ -210,8 +211,9 @@ type HelmConventionConfig struct {
 // Artifact represents items that need to be built, along with the context in which
 // they should be built.
 type Artifact struct {
-	ImageName    string `yaml:"image"`
-	Workspace    string `yaml:"context,omitempty"`
+	ImageName    string            `yaml:"image"`
+	Workspace    string            `yaml:"context,omitempty"`
+	Sync         map[string]string `yaml:"sync,omitempty"`
 	ArtifactType `yaml:",inline"`
 }
 
@@ -256,8 +258,8 @@ type JibGradleArtifact struct {
 	Project string `yaml:"project"`
 }
 
-// Parse reads a SkaffoldConfig from yaml.
-func (c *SkaffoldConfig) Parse(contents []byte, useDefaults bool) error {
+// Parse reads a SkaffoldPipeline from yaml.
+func (c *SkaffoldPipeline) Parse(contents []byte, useDefaults bool) error {
 	if err := yaml.UnmarshalStrict(contents, c); err != nil {
 		return err
 	}
