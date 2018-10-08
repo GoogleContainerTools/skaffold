@@ -1,4 +1,4 @@
-FROM gcr.io/google-appengine/golang
+FROM golang:alpine
 
 WORKDIR /go/src/github.com/GoogleCloudPlatform/skaffold
 CMD ["./app"]
