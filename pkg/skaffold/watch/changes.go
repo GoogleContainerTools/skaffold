@@ -27,11 +27,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type fileMap map[string]time.Time
+// FileMap is a map of filename to modification times.
+type FileMap map[string]time.Time
 
-// TODO(mrick): cached tree extension ala git
-func stat(deps func() ([]string, error)) (fileMap, error) {
-	state := fileMap{}
+// Stat returns the modification times for a list of files.
+func Stat(deps func() ([]string, error)) (FileMap, error) {
+	state := FileMap{}
 	paths, err := deps()
 	if err != nil {
 		return state, errors.Wrap(err, "listing files")
@@ -77,7 +78,7 @@ func (e *Events) String() string {
 	return sb.String()
 }
 
-func events(prev, curr fileMap) Events {
+func events(prev, curr FileMap) Events {
 	e := Events{}
 	for f, t := range prev {
 		modtime, ok := curr[f]

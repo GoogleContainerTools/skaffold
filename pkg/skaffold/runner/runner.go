@@ -322,7 +322,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 
 		if err := watcher.Register(
-			func() ([]string, error) { return dependenciesForArtifact(ctx, artifact) },
+			func() ([]string, error) { return DependenciesForArtifact(ctx, artifact) },
 			func(e watch.Events) { changed.AddDirtyArtifact(artifact, e) },
 		); err != nil {
 			return nil, errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
@@ -428,7 +428,8 @@ func mergeWithPreviousBuilds(builds, previous []build.Artifact) []build.Artifact
 	return merged
 }
 
-func dependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
+// DependenciesForArtifact lists the dependencies for a given artifact.
+func DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
 	var (
 		paths []string
 		err   error

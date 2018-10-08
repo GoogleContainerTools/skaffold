@@ -35,7 +35,7 @@ var (
 func TestEvents(t *testing.T) {
 	var tests = []struct {
 		description   string
-		prev, current fileMap
+		prev, current FileMap
 		expected      Events
 	}{
 		{
@@ -99,7 +99,7 @@ func TestStat(t *testing.T) {
 	var tests = []struct {
 		description string
 		setup       func(folder *testutil.TempDir)
-		expected    fileMap
+		expected    FileMap
 		shouldErr   bool
 	}{
 		{
@@ -118,7 +118,7 @@ func TestStat(t *testing.T) {
 			test.setup(folder)
 			list, _ := folder.List()
 
-			actual, err := stat(folder.List)
+			actual, err := Stat(folder.List)
 			testutil.CheckError(t, test.shouldErr, err)
 			checkListInMap(t, list, actual)
 		})
@@ -131,7 +131,7 @@ func TestStatNotExist(t *testing.T) {
 		setup       func(folder *testutil.TempDir)
 		deps        []string
 		depsErr     error
-		expected    fileMap
+		expected    FileMap
 		shouldErr   bool
 	}{
 		{
@@ -159,13 +159,13 @@ func TestStatNotExist(t *testing.T) {
 
 			test.setup(folder)
 
-			_, err := stat(func() ([]string, error) { return test.deps, test.depsErr })
+			_, err := Stat(func() ([]string, error) { return test.deps, test.depsErr })
 			testutil.CheckError(t, test.shouldErr, err)
 		})
 	}
 }
 
-func checkListInMap(t *testing.T, list []string, m fileMap) {
+func checkListInMap(t *testing.T, list []string, m FileMap) {
 	for _, f := range list {
 		if _, ok := m[f]; !ok {
 			t.Errorf("File %s not in map", f)
