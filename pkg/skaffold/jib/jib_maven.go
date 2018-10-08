@@ -17,28 +17,32 @@ limitations under the License.
 package jib
 
 import (
+	"context"
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
+
+var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 
 // GetDependenciesMaven finds the source dependencies for the given jib-maven artifact.
 // All paths are absolute.
 // TODO(coollog): Add support for multi-module projects.
-func GetDependenciesMaven(workspace string, a *latest.JibMavenArtifact) ([]string, error) {
-	deps, err := getDependencies(getCommandMaven(workspace, a))
+func GetDependenciesMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) ([]string, error) {
+	deps, err := getDependencies(getCommandMaven(ctx, workspace, a))
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jib-maven dependencies")
 	}
 	return deps, nil
 }
 
-func getCommandMaven(workspace string, a *latest.JibMavenArtifact) *exec.Cmd {
+func getCommandMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) *exec.Cmd {
 	args := []string{"jib:_skaffold-files", "-q"}
 	if a.Profile != "" {
 		args = append(args, "-P", a.Profile)
 	}
 
-	return getCommand(workspace, "mvn", getWrapperMaven(), args)
+	return MavenCommand.CreateCommand(ctx, workspace, args)
 }

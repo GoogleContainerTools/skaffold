@@ -17,6 +17,7 @@ limitations under the License.
 package jib
 
 import (
+	"context"
 	"os/exec"
 	"strings"
 	"testing"
@@ -27,7 +28,17 @@ import (
 	"github.com/pkg/errors"
 )
 
+func TestMavenWrapperDefinition(t *testing.T) {
+	if MavenCommand.Executable != "mvn" {
+		t.Error("GradleCommand executable should be 'mvn'")
+	}
+	if MavenCommand.Wrapper != "mvnw" {
+		t.Error("MavenCommand wrapper should be 'mvnw'")
+	}
+}
+
 func TestGetDependenciesMaven(t *testing.T) {
+	ctx := context.TODO()
 	var tests = []struct {
 		description string
 		stdout      string
@@ -52,12 +63,12 @@ func TestGetDependenciesMaven(t *testing.T) {
 
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = testutil.NewFakeCmdOut(
-				strings.Join(getCommandMaven(tmpDir.Root(), &latest.JibMavenArtifact{}).Args, " "),
+				strings.Join(getCommandMaven(ctx, tmpDir.Root(), &latest.JibMavenArtifact{}).Args, " "),
 				test.stdout,
 				test.err,
 			)
 
-			deps, err := GetDependenciesMaven(tmpDir.Root(), &latest.JibMavenArtifact{})
+			deps, err := GetDependenciesMaven(ctx, tmpDir.Root(), &latest.JibMavenArtifact{})
 			if test.err != nil {
 				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jib-maven dependencies: "+test.err.Error(), err.Error())
 			} else {
@@ -68,6 +79,7 @@ func TestGetDependenciesMaven(t *testing.T) {
 }
 
 func TestGetCommandMaven(t *testing.T) {
+	ctx := context.TODO()
 	var tests = []struct {
 		description      string
 		jibMavenArtifact latest.JibMavenArtifact
@@ -79,7 +91,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return getCommand(workspace, "mvn", "ignored", []string{"jib:_skaffold-files", "-q"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"jib:_skaffold-files", "-q"})
 			},
 		},
 		{
@@ -87,23 +99,31 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{Profile: "profile"},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return getCommand(workspace, "mvn", "ignored", []string{"jib:_skaffold-files", "-q", "-P", "profile"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"jib:_skaffold-files", "-q", "-P", "profile"})
 			},
 		},
 		{
 			description:      "maven with wrapper no profile",
 			jibMavenArtifact: latest.JibMavenArtifact{},
-			filesInWorkspace: []string{getWrapperMaven()},
+			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return getCommand(workspace, "ignored", getWrapperMaven(), []string{"jib:_skaffold-files", "-q"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"jib:_skaffold-files", "-q"})
+			},
+		},
+		{
+			description:      "maven with wrapper no profile",
+			jibMavenArtifact: latest.JibMavenArtifact{},
+			filesInWorkspace: []string{"mvnw", "mvnw.cmd"},
+			expectedCmd: func(workspace string) *exec.Cmd {
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"jib:_skaffold-files", "-q"})
 			},
 		},
 		{
 			description:      "maven with wrapper and profile",
 			jibMavenArtifact: latest.JibMavenArtifact{Profile: "profile"},
-			filesInWorkspace: []string{getWrapperMaven()},
+			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return getCommand(workspace, "ignored", getWrapperMaven(), []string{"jib:_skaffold-files", "-q", "-P", "profile"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"jib:_skaffold-files", "-q", "-P", "profile"})
 			},
 		},
 	}
@@ -117,7 +137,7 @@ func TestGetCommandMaven(t *testing.T) {
 				tmpDir.Write(file, "")
 			}
 
-			cmd := getCommandMaven(tmpDir.Root(), &test.jibMavenArtifact)
+			cmd := getCommandMaven(ctx, tmpDir.Root(), &test.jibMavenArtifact)
 			expectedCmd := test.expectedCmd(tmpDir.Root())
 			testutil.CheckDeepEqual(t, expectedCmd.Path, cmd.Path)
 			testutil.CheckDeepEqual(t, expectedCmd.Args, cmd.Args)
