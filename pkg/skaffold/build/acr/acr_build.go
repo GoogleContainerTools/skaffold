@@ -79,7 +79,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 
 	buildRequest := cr.DockerBuildRequest{
 		ImageNames:     &[]string{imageTag},
-		IsPushEnabled:  &[]bool{true}[0], //who invented bool pointers
+		IsPushEnabled:  util.BoolPtr(true),
 		SourceLocation: result.RelativePath,
 		Platform: &cr.PlatformProperties{
 			Variant:      cr.V8,
