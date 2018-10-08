@@ -25,7 +25,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 	"gopkg.in/yaml.v2"
@@ -39,7 +38,6 @@ var schemaVersions = map[string]func() util.VersionedConfig{
 	v1alpha1.Version: v1alpha1.NewSkaffoldPipeline,
 	v1alpha2.Version: v1alpha2.NewSkaffoldPipeline,
 	v1alpha3.Version: v1alpha3.NewSkaffoldPipeline,
-	v1alpha4.Version: v1alpha4.NewSkaffoldPipeline,
 	latest.Version:   latest.NewSkaffoldPipeline,
 }
 

@@ -22,7 +22,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-const Version string = "skaffold/v1alpha5"
+const Version string = "skaffold/v1alpha4"
 
 // NewSkaffoldPipeline creates a SkaffoldPipeline
 func NewSkaffoldPipeline() util.VersionedConfig {
