@@ -53,7 +53,8 @@ func NewCmdFix(out io.Writer) *cobra.Command {
 		},
 		Args: cobra.NoArgs,
 	}
-	AddFixFlags(cmd)
+	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
+	cmd.Flags().BoolVar(&overwrite, "overwrite", false, "Overwrite original config with fixed config")
 	return cmd
 }
 
