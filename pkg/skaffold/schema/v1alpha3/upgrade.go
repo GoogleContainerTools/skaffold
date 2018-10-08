@@ -48,6 +48,7 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 
 	return &next.SkaffoldPipeline{
 		APIVersion: next.Version,
+		Kind:       config.Kind,
 		Deploy:     newDeploy,
 		Build:      newBuild,
 		Profiles:   newProfiles,
