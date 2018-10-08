@@ -148,7 +148,7 @@ func AddRunDevFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
 	cmd.Flags().StringArrayVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
-	cmd.Flags().StringVarP(&opts.Namespace, "namespace", "n", "", "Run Helm deployments in the specified namespace")
+	cmd.Flags().StringVarP(&opts.Namespace, "namespace", "n", "", "Run deployments in the specified namespace")
 }
 
 func AddFixFlags(cmd *cobra.Command) {
