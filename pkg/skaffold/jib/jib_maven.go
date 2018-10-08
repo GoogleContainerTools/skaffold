@@ -29,11 +29,14 @@ var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 
 // GetDependenciesMaven finds the source dependencies for the given jib-maven artifact.
 // All paths are absolute.
-// TODO(coollog): Add support for multi-module projects.
 func GetDependenciesMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) ([]string, error) {
+	if a.Module != "" {
+		// TODO(coollog): Add support for multi-module projects.
+		return nil, errors.New("Maven multi-modules not supported yet")
+	}
 	deps, err := getDependencies(getCommandMaven(ctx, workspace, a))
 	if err != nil {
-		return nil, errors.Wrapf(err, "getting jib-maven dependencies")
+		return nil, errors.Wrapf(err, "getting jibMaven dependencies")
 	}
 	return deps, nil
 }

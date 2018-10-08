@@ -22,6 +22,9 @@ import (
 	"strings"
 	"testing"
 
+	"fmt"
+	"path/filepath"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -38,7 +41,17 @@ func TestMavenWrapperDefinition(t *testing.T) {
 }
 
 func TestGetDependenciesMaven(t *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+
+	tmpDir.Write("dep1", "")
+	tmpDir.Write("dep2", "")
+
+	dep1 := filepath.Join(tmpDir.Root(), "dep1")
+	dep2 := filepath.Join(tmpDir.Root(), "dep2")
+
 	ctx := context.TODO()
+
 	var tests = []struct {
 		description string
 		stdout      string
@@ -46,7 +59,7 @@ func TestGetDependenciesMaven(t *testing.T) {
 	}{
 		{
 			description: "success",
-			stdout:      "dep1\ndep2\n\n\n",
+			stdout:      fmt.Sprintf("%s\n%s\n\n\n", dep1, dep2),
 			err:         nil,
 		},
 		{
@@ -70,9 +83,9 @@ func TestGetDependenciesMaven(t *testing.T) {
 
 			deps, err := GetDependenciesMaven(ctx, tmpDir.Root(), &latest.JibMavenArtifact{})
 			if test.err != nil {
-				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jib-maven dependencies: "+test.err.Error(), err.Error())
+				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jibMaven dependencies: "+test.err.Error(), err.Error())
 			} else {
-				testutil.CheckDeepEqual(t, []string{"dep1", "dep2"}, deps)
+				testutil.CheckDeepEqual(t, []string{dep1, dep2}, deps)
 			}
 		})
 	}

@@ -20,11 +20,30 @@ import (
 	"os/exec"
 	"testing"
 
+	"fmt"
+	"path/filepath"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestGetDependencies(t *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+
+	tmpDir.Write("dep1", "")
+	tmpDir.Write("dep2", "")
+	tmpDir.Write("dep3/fileA", "")
+	tmpDir.Write("dep3/sub/path/fileB", "")
+
+	dep1 := filepath.Join(tmpDir.Root(), "dep1")
+	dep2 := filepath.Join(tmpDir.Root(), "dep2")
+	dep3 := filepath.Join(tmpDir.Root(), "dep3")
+	dep3FileA := filepath.Join(tmpDir.Root(), "dep3/fileA")
+	dep3Sub := filepath.Join(tmpDir.Root(), "dep3/sub")
+	dep3SubPath := filepath.Join(tmpDir.Root(), "dep3/sub/path")
+	dep3SubPathFileB := filepath.Join(tmpDir.Root(), "dep3/sub/path/fileB")
+
 	var tests = []struct {
 		stdout       string
 		expectedDeps []string
@@ -34,20 +53,32 @@ func TestGetDependencies(t *testing.T) {
 			expectedDeps: nil,
 		},
 		{
-			stdout:       "deps1\ndeps2",
-			expectedDeps: []string{"deps1", "deps2"},
+			stdout:       fmt.Sprintf("%s\n%s", dep1, dep2),
+			expectedDeps: []string{dep1, dep2},
 		},
 		{
-			stdout:       "deps1\ndeps2\n",
-			expectedDeps: []string{"deps1", "deps2"},
+			stdout:       fmt.Sprintf("%s\n%s\n", dep1, dep2),
+			expectedDeps: []string{dep1, dep2},
 		},
 		{
 			stdout:       "\n\n\n",
 			expectedDeps: nil,
 		},
 		{
-			stdout:       "\n\ndeps1\n\ndeps2\n\n\n",
-			expectedDeps: []string{"deps1", "deps2"},
+			stdout:       fmt.Sprintf("\n\n%s\n\n%s\n\n\n", dep1, dep2),
+			expectedDeps: []string{dep1, dep2},
+		},
+		{
+			stdout:       dep3,
+			expectedDeps: []string{dep3, dep3FileA, dep3Sub, dep3SubPath, dep3SubPathFileB},
+		},
+		{
+			stdout:       fmt.Sprintf("%s\n%s\n%s\n", dep1, dep2, dep3),
+			expectedDeps: []string{dep1, dep2, dep3, dep3FileA, dep3Sub, dep3SubPath, dep3SubPathFileB},
+		},
+		{
+			stdout:       fmt.Sprintf("%s\nnonexistent\n%s\n%s\n", dep1, dep2, dep3),
+			expectedDeps: []string{dep1, dep2, dep3, dep3FileA, dep3Sub, dep3SubPath, dep3SubPathFileB},
 		},
 	}
 

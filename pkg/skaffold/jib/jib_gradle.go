@@ -18,6 +18,7 @@ package jib
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -33,11 +34,16 @@ func GetDependenciesGradle(ctx context.Context, workspace string, a *latest.JibG
 	cmd := getCommandGradle(ctx, workspace, a)
 	deps, err := getDependencies(cmd)
 	if err != nil {
-		return nil, errors.Wrapf(err, "getting jib-gradle dependencies")
+		return nil, errors.Wrapf(err, "getting jibGradle dependencies")
 	}
 	return deps, nil
 }
 
-func getCommandGradle(ctx context.Context, workspace string, _ /* a */ *latest.JibGradleArtifact) *exec.Cmd {
-	return GradleCommand.CreateCommand(ctx, workspace, []string{"_jibSkaffoldFiles", "-q"})
+func getCommandGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) *exec.Cmd {
+	args := []string{"_jibSkaffoldFiles", "-q"}
+	if a.Project != "" {
+		// multi-module
+		args[0] = fmt.Sprintf(":%s:%s", a.Project, args[0])
+	}
+	return GradleCommand.CreateCommand(ctx, workspace, args)
 }

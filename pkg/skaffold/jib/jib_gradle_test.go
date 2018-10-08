@@ -22,6 +22,9 @@ import (
 	"strings"
 	"testing"
 
+	"fmt"
+	"path/filepath"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -38,6 +41,15 @@ func TestGradleWrapperDefinition(t *testing.T) {
 }
 
 func TestGetDependenciesGradle(t *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+
+	tmpDir.Write("dep1", "")
+	tmpDir.Write("dep2", "")
+
+	dep1 := filepath.Join(tmpDir.Root(), "dep1")
+	dep2 := filepath.Join(tmpDir.Root(), "dep2")
+
 	ctx := context.TODO()
 
 	var tests = []struct {
@@ -47,7 +59,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 	}{
 		{
 			description: "success",
-			stdout:      "dep1\ndep2\n\n\n",
+			stdout:      fmt.Sprintf("%s\n%s\n\n\n", dep1, dep2),
 			err:         nil,
 		},
 		{
@@ -71,9 +83,9 @@ func TestGetDependenciesGradle(t *testing.T) {
 
 			deps, err := GetDependenciesGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{})
 			if test.err != nil {
-				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jib-gradle dependencies: "+test.err.Error(), err.Error())
+				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jibGradle dependencies: "+test.err.Error(), err.Error())
 			} else {
-				testutil.CheckDeepEqual(t, []string{"dep1", "dep2"}, deps)
+				testutil.CheckDeepEqual(t, []string{dep1, dep2}, deps)
 			}
 		})
 	}
@@ -97,11 +109,27 @@ func TestGetCommandGradle(t *testing.T) {
 			},
 		},
 		{
+			description:       "gradle default with project",
+			jibGradleArtifact: latest.JibGradleArtifact{Project: "project"},
+			filesInWorkspace:  []string{},
+			expectedCmd: func(workspace string) *exec.Cmd {
+				return GradleCommand.CreateCommand(ctx, workspace, []string{":project:_jibSkaffoldFiles", "-q"})
+			},
+		},
+		{
 			description:       "gradle with wrapper",
 			jibGradleArtifact: latest.JibGradleArtifact{},
-			filesInWorkspace:  []string{"gradle", "gradle.cmd"},
+			filesInWorkspace:  []string{"gradlew", "gradlew.cmd"},
 			expectedCmd: func(workspace string) *exec.Cmd {
 				return GradleCommand.CreateCommand(ctx, workspace, []string{"_jibSkaffoldFiles", "-q"})
+			},
+		},
+		{
+			description:       "gradle with wrapper and project",
+			jibGradleArtifact: latest.JibGradleArtifact{Project: "project"},
+			filesInWorkspace:  []string{"gradlew", "gradlew.cmd"},
+			expectedCmd: func(workspace string) *exec.Cmd {
+				return GradleCommand.CreateCommand(ctx, workspace, []string{":project:_jibSkaffoldFiles", "-q"})
 			},
 		},
 	}
