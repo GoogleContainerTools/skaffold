@@ -98,7 +98,7 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 		return nil, errors.Wrap(err, "apply")
 	}
 
-	return parseManifestsForDeploys(updated)
+	return parseManifestsForDeploys(k.kubectl.Namespace, updated)
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
