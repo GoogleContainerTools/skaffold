@@ -53,10 +53,10 @@ func (s AzureBlobStorage) UploadFileToBlob() error {
 
 	client := http.Client{}
 	response, err := client.Do(req)
-	defer response.Body.Close()
 	if err != nil {
 		return err
 	}
+	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusCreated {
 		return errors.New("couldn't push tar to blob")
