@@ -35,5 +35,3 @@ div.tab-pane {
 div.tab-pane.active {
     display: block;
 }
-
-.article code{background:transparent}
