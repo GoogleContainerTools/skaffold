@@ -17,17 +17,21 @@ limitations under the License.
 package jib
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
+var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"}
+
 // GetDependenciesGradle finds the source dependencies for the given jib-gradle artifact.
 // All paths are absolute.
-func GetDependenciesGradle(workspace string, a *latest.JibGradleArtifact) ([]string, error) {
-	cmd := getCommandGradle(workspace, a)
+func GetDependenciesGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) ([]string, error) {
+	cmd := getCommandGradle(ctx, workspace, a)
 	deps, err := getDependencies(cmd)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jibGradle dependencies")
@@ -35,11 +39,11 @@ func GetDependenciesGradle(workspace string, a *latest.JibGradleArtifact) ([]str
 	return deps, nil
 }
 
-func getCommandGradle(workspace string, a *latest.JibGradleArtifact) *exec.Cmd {
+func getCommandGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) *exec.Cmd {
 	args := []string{"_jibSkaffoldFiles", "-q"}
 	if a.Project != "" {
 		// multi-module
 		args[0] = fmt.Sprintf(":%s:%s", a.Project, args[0])
 	}
-	return getCommand(workspace, "gradle", getWrapperGradle(), args)
+	return GradleCommand.CreateCommand(ctx, workspace, args)
 }

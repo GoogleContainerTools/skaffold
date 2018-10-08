@@ -17,6 +17,7 @@ limitations under the License.
 package jib
 
 import (
+	"context"
 	"os/exec"
 	"strings"
 	"testing"
@@ -30,6 +31,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+func TestGradleWrapperDefinition(t *testing.T) {
+	if GradleCommand.Executable != "gradle" {
+		t.Error("GradleCommand executable should be 'gradle'")
+	}
+	if GradleCommand.Wrapper != "gradlew" {
+		t.Error("GradleCommand wrapper should be 'gradlew'")
+	}
+}
+
 func TestGetDependenciesGradle(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
@@ -39,6 +49,8 @@ func TestGetDependenciesGradle(t *testing.T) {
 
 	dep1 := filepath.Join(tmpDir.Root(), "dep1")
 	dep2 := filepath.Join(tmpDir.Root(), "dep2")
+
+	ctx := context.TODO()
 
 	var tests = []struct {
 		description string
@@ -64,12 +76,12 @@ func TestGetDependenciesGradle(t *testing.T) {
 
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = testutil.NewFakeCmdOut(
-				strings.Join(getCommandGradle(tmpDir.Root(), &latest.JibGradleArtifact{}).Args, " "),
+				strings.Join(getCommandGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{}).Args, " "),
 				test.stdout,
 				test.err,
 			)
 
-			deps, err := GetDependenciesGradle(tmpDir.Root(), &latest.JibGradleArtifact{})
+			deps, err := GetDependenciesGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{})
 			if test.err != nil {
 				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jibGradle dependencies: "+test.err.Error(), err.Error())
 			} else {
@@ -80,6 +92,8 @@ func TestGetDependenciesGradle(t *testing.T) {
 }
 
 func TestGetCommandGradle(t *testing.T) {
+	ctx := context.TODO()
+
 	var tests = []struct {
 		description       string
 		jibGradleArtifact latest.JibGradleArtifact
@@ -91,7 +105,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{},
 			filesInWorkspace:  []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return getCommand(workspace, "gradle", "ignored", []string{"_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{"_jibSkaffoldFiles", "-q"})
 			},
 		},
 		{
@@ -99,23 +113,23 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{Project: "project"},
 			filesInWorkspace:  []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return getCommand(workspace, "gradle", "ignored", []string{":project:_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{":project:_jibSkaffoldFiles", "-q"})
 			},
 		},
 		{
 			description:       "gradle with wrapper",
 			jibGradleArtifact: latest.JibGradleArtifact{},
-			filesInWorkspace:  []string{getWrapperGradle()},
+			filesInWorkspace:  []string{"gradlew", "gradlew.cmd"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return getCommand(workspace, "ignored", getWrapperGradle(), []string{"_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{"_jibSkaffoldFiles", "-q"})
 			},
 		},
 		{
 			description:       "gradle with wrapper and project",
 			jibGradleArtifact: latest.JibGradleArtifact{Project: "project"},
-			filesInWorkspace:  []string{getWrapperGradle()},
+			filesInWorkspace:  []string{"gradlew", "gradlew.cmd"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return getCommand(workspace, "ignored", getWrapperGradle(), []string{":project:_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{":project:_jibSkaffoldFiles", "-q"})
 			},
 		},
 	}
@@ -129,7 +143,7 @@ func TestGetCommandGradle(t *testing.T) {
 				tmpDir.Write(file, "")
 			}
 
-			cmd := getCommandGradle(tmpDir.Root(), &test.jibGradleArtifact)
+			cmd := getCommandGradle(ctx, tmpDir.Root(), &test.jibGradleArtifact)
 			expectedCmd := test.expectedCmd(tmpDir.Root())
 			testutil.CheckDeepEqual(t, expectedCmd.Path, cmd.Path)
 			testutil.CheckDeepEqual(t, expectedCmd.Args, cmd.Args)

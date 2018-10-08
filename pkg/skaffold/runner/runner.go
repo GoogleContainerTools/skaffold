@@ -413,10 +413,12 @@ func dependenciesForArtifact(a *latest.Artifact) ([]string, error) {
 		paths, err = bazel.GetDependencies(a.Workspace, a.BazelArtifact)
 
 	case a.JibMavenArtifact != nil:
-		paths, err = jib.GetDependenciesMaven(a.Workspace, a.JibMavenArtifact)
+		// TODO: need to propagate context
+		paths, err = jib.GetDependenciesMaven(context.TODO(), a.Workspace, a.JibMavenArtifact)
 
 	case a.JibGradleArtifact != nil:
-		paths, err = jib.GetDependenciesGradle(a.Workspace, a.JibGradleArtifact)
+		// TODO: need to propagate context
+		paths, err = jib.GetDependenciesGradle(context.TODO(), a.Workspace, a.JibGradleArtifact)
 
 	default:
 		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)

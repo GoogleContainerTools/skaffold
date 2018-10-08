@@ -21,20 +21,22 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace string, a *latest.JibGradleArtifact) (string, error) {
 	skaffoldImage := generateJibImageRef(workspace, a.Project)
-	gradle, err := findBuilder("gradle", "gradlew", workspace)
-	if err != nil {
-		return "", errors.Wrap(err, "Unable to find gradle executable")
-	}
-	gradleCommand := generateGradleCommand(workspace, skaffoldImage, a)
-	commandLine := append(gradle, gradleCommand...)
+	commandLine := generateGradleCommand(workspace, skaffoldImage, a)
 
-	err = executeBuildCommand(ctx, out, workspace, commandLine)
+	cmd := jib.GradleCommand.CreateCommand(ctx, workspace, commandLine)
+	cmd.Stdout = out
+	cmd.Stderr = out
+	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
+	err := util.RunCmd(cmd)
 	if err != nil {
 		return "", errors.Wrap(err, "gradle build failed")
 	}

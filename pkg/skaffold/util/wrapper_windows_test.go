@@ -1,4 +1,4 @@
-// +build linux darwin
+// +build windows
 
 /*
 Copyright 2018 The Skaffold Authors
@@ -16,13 +16,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package jib
+package util
 
 import (
+	"context"
 	"os/exec"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -42,7 +42,7 @@ func TestGetCommand(t *testing.T) {
 			args:              []string{"arg1", "arg2"},
 			filesInWorkspace:  []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				cmd := exec.Command("executable", "arg1", "arg2")
+				cmd := exec.CommandContext(context.TODO(), "executable", "arg1", "arg2")
 				cmd.Dir = workspace
 				return cmd
 			},
@@ -52,11 +52,11 @@ func TestGetCommand(t *testing.T) {
 			defaultExecutable: "executable",
 			wrapperExecutable: "wrapper",
 			args:              []string{"arg1", "arg2"},
-			filesInWorkspace:  []string{"wrapper"},
+			filesInWorkspace:  []string{"wrapper.bat"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				wrapper, err := util.AbsFile(workspace, "wrapper")
+				wrapper, err := AbsFile(workspace, "wrapper.bat")
 				testutil.CheckError(t, false, err)
-				cmd := exec.Command(wrapper, "arg1", "arg2")
+				cmd := exec.CommandContext(context.TODO(), "cmd", "/c", wrapper, "arg1", "arg2")
 				cmd.Dir = workspace
 				return cmd
 			},
@@ -72,7 +72,9 @@ func TestGetCommand(t *testing.T) {
 				tmpDir.Write(file, "")
 			}
 
-			cmd := getCommand(tmpDir.Root(), test.defaultExecutable, test.wrapperExecutable, test.args)
+			definition := &CommandWrapper{Executable: test.defaultExecutable, Wrapper: test.wrapperExecutable}
+			cmd := definition.CreateCommand(context.TODO(), tmpDir.Root(), test.args)
+
 			expectedCmd := test.expectedCmd(tmpDir.Root())
 			testutil.CheckDeepEqual(t, expectedCmd.Path, cmd.Path)
 			testutil.CheckDeepEqual(t, expectedCmd.Args, cmd.Args)
