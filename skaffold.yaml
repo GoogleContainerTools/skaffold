@@ -2,7 +2,7 @@ apiVersion: skaffold/v1alpha3
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold
+  - imageName: gcr.io/k8s-skaffold/skaffold
     docker:
       dockerfile: deploy/skaffold/Dockerfile
 deploy:
