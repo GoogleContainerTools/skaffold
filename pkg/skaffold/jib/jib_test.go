@@ -63,6 +63,10 @@ func TestGetDependencies(t *testing.T) {
 			expectedDeps: []string{dep1, dep2},
 		},
 		{
+			stdout:       fmt.Sprintf("%s\n%s\n%s\n", dep1, dep2, tmpDir.Root()),
+			expectedDeps: []string{dep1, dep2},
+		},
+		{
 			stdout:       "\n\n\n",
 			expectedDeps: nil,
 		},
