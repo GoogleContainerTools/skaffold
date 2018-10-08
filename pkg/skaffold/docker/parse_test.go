@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -460,7 +461,7 @@ func TestGetDependencies(t *testing.T) {
 			}
 
 			workspace := tmpDir.Path(test.workspace)
-			deps, err := GetDependencies(workspace, &latest.DockerArtifact{
+			deps, err := GetDependencies(context.Background(), workspace, &latest.DockerArtifact{
 				BuildArgs:      test.buildArgs,
 				DockerfilePath: "Dockerfile",
 			})

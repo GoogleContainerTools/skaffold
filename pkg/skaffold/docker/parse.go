@@ -256,7 +256,7 @@ func expandPaths(workspace string, copied [][]string) ([]string, error) {
 
 // GetDependencies finds the sources dependencies for the given docker artifact.
 // All paths are relative to the workspace.
-func GetDependencies(workspace string, a *latest.DockerArtifact) ([]string, error) {
+func GetDependencies(ctx context.Context, workspace string, a *latest.DockerArtifact) ([]string, error) {
 	absDockerfilePath, err := NormalizeDockerfilePath(workspace, a.DockerfilePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "normalizing dockerfile path")

@@ -40,8 +40,8 @@ func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 	return filepath.Abs(dockerfile)
 }
 
-func CreateDockerTarContext(w io.Writer, workspace string, a *latest.DockerArtifact) error {
-	paths, err := GetDependencies(workspace, a)
+func CreateDockerTarContext(ctx context.Context, w io.Writer, workspace string, a *latest.DockerArtifact) error {
+	paths, err := GetDependencies(ctx, workspace, a)
 	if err != nil {
 		return errors.Wrap(err, "getting relative tar paths")
 	}
@@ -53,8 +53,8 @@ func CreateDockerTarContext(w io.Writer, workspace string, a *latest.DockerArtif
 	return nil
 }
 
-func CreateDockerTarGzContext(w io.Writer, workspace string, a *latest.DockerArtifact) error {
-	paths, err := GetDependencies(workspace, a)
+func CreateDockerTarGzContext(ctx context.Context, w io.Writer, workspace string, a *latest.DockerArtifact) error {
+	paths, err := GetDependencies(ctx, workspace, a)
 	if err != nil {
 		return errors.Wrap(err, "getting relative tar paths")
 	}
@@ -74,7 +74,7 @@ func UploadContextToGCS(ctx context.Context, workspace string, a *latest.DockerA
 	defer c.Close()
 
 	w := c.Bucket(bucket).Object(objectName).NewWriter(ctx)
-	if err := CreateDockerTarGzContext(w, workspace, a); err != nil {
+	if err := CreateDockerTarGzContext(ctx, w, workspace, a); err != nil {
 		return errors.Wrap(err, "uploading targz to google storage")
 	}
 	return w.Close()
