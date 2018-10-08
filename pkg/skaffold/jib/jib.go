@@ -21,9 +21,9 @@ import (
 	"strings"
 
 	"os"
-	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/karrick/godirwalk"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -42,6 +42,12 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 			continue
 		}
 
+		// TODO(coollog): Remove this once Jib deps are prepended with special sequence.
+		// Skips the project directory itself. This is necessary as some wrappers print the project directory for some reason.
+		if dep == cmd.Dir {
+			continue
+		}
+
 		// Resolves directories recursively.
 		info, err := os.Stat(dep)
 		if err != nil {
@@ -52,10 +58,14 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 			return nil, errors.Wrapf(err, "unable to stat file %s", dep)
 		}
 		if info.IsDir() {
-			err := filepath.Walk(dep, func(path string, info os.FileInfo, err error) error {
-				deps = append(deps, path)
-				return nil
+			err := godirwalk.Walk(dep, &godirwalk.Options{
+				Unsorted: true,
+				Callback: func(path string, _ *godirwalk.Dirent) error {
+					deps = append(deps, path)
+					return nil
+				},
 			})
+
 			if err != nil {
 				return nil, errors.Wrap(err, "filepath walk")
 			}

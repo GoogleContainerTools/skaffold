@@ -23,6 +23,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"sort"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -91,7 +93,8 @@ func TestGetDependencies(t *testing.T) {
 				nil,
 			)
 
-			deps, err := getDependencies(&exec.Cmd{Args: []string{"ignored"}})
+			deps, err := getDependencies(&exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()})
+			sort.Strings(deps)
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedDeps, deps)
 		})
 	}
