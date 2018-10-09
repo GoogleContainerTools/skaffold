@@ -49,7 +49,7 @@ func BuildArtifact(ctx context.Context, out io.Writer, cli APIClient, workspace 
 
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := CreateDockerTarContext(buildCtxWriter, workspace, a)
+		err := CreateDockerTarContext(ctx, buildCtxWriter, workspace, a)
 		if err != nil {
 			buildCtxWriter.CloseWithError(errors.Wrap(err, "creating docker context"))
 			return

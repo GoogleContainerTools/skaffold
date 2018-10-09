@@ -322,7 +322,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 
 		if err := watcher.Register(
-			func() ([]string, error) { return dependenciesForArtifact(artifact) },
+			func() ([]string, error) { return dependenciesForArtifact(ctx, artifact) },
 			func(e watch.Events) { changed.AddDirtyArtifact(artifact, e) },
 		); err != nil {
 			return nil, errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
@@ -428,7 +428,7 @@ func mergeWithPreviousBuilds(builds, previous []build.Artifact) []build.Artifact
 	return merged
 }
 
-func dependenciesForArtifact(a *latest.Artifact) ([]string, error) {
+func dependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
 	var (
 		paths []string
 		err   error
@@ -436,18 +436,16 @@ func dependenciesForArtifact(a *latest.Artifact) ([]string, error) {
 
 	switch {
 	case a.DockerArtifact != nil:
-		paths, err = docker.GetDependencies(a.Workspace, a.DockerArtifact)
+		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact)
 
 	case a.BazelArtifact != nil:
-		paths, err = bazel.GetDependencies(a.Workspace, a.BazelArtifact)
+		paths, err = bazel.GetDependencies(ctx, a.Workspace, a.BazelArtifact)
 
 	case a.JibMavenArtifact != nil:
-		// TODO: need to propagate context
-		paths, err = jib.GetDependenciesMaven(context.TODO(), a.Workspace, a.JibMavenArtifact)
+		paths, err = jib.GetDependenciesMaven(ctx, a.Workspace, a.JibMavenArtifact)
 
 	case a.JibGradleArtifact != nil:
-		// TODO: need to propagate context
-		paths, err = jib.GetDependenciesGradle(context.TODO(), a.Workspace, a.JibGradleArtifact)
+		paths, err = jib.GetDependenciesGradle(ctx, a.Workspace, a.JibGradleArtifact)
 
 	default:
 		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)

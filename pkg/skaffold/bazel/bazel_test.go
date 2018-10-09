@@ -17,6 +17,7 @@ limitations under the License.
 package bazel
 
 import (
+	"context"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -36,7 +37,7 @@ func TestGetDependenciesWithWorkspace(t *testing.T) {
 	defer cleanup()
 	tmpDir.Write("WORKSPACE", "")
 
-	deps, err := GetDependencies(tmpDir.Root(), &latest.BazelArtifact{
+	deps, err := GetDependencies(context.Background(), tmpDir.Root(), &latest.BazelArtifact{
 		BuildTarget: "target",
 	})
 
@@ -51,7 +52,7 @@ func TestGetDependenciesWithoutWorkspace(t *testing.T) {
 		nil,
 	)
 
-	deps, err := GetDependencies(".", &latest.BazelArtifact{
+	deps, err := GetDependencies(context.Background(), ".", &latest.BazelArtifact{
 		BuildTarget: "target2",
 	})
 
