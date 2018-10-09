@@ -28,8 +28,8 @@ func TestGenerateMavenCommand(t *testing.T) {
 		in  latest.JibMavenArtifact
 		out []string
 	}{
-		{latest.JibMavenArtifact{}, []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Profile: "profile"}, []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage=image", "-Pprofile"}},
+		{latest.JibMavenArtifact{}, []string{"prepare-package", "jib:dockerBuild", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Profile: "profile"}, []string{"prepare-package", "jib:dockerBuild", "-Dimage=image", "-Pprofile"}},
 	}
 
 	for _, tt := range testCases {

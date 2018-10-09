@@ -53,8 +53,7 @@ func generateMavenCommand(_ /*workspace*/ string, skaffoldImage string, a *lates
 		// TODO: multi-module
 		return nil, errors.New("Maven multi-modules not supported yet")
 	}
-	// use mostly-qualified plugin ID in case jib is not a configured plugin
-	commandLine := []string{"prepare-package", "com.google.cloud.tools:jib-maven-plugin::dockerBuild", "-Dimage=" + skaffoldImage}
+	commandLine := []string{"prepare-package", "jib:dockerBuild", "-Dimage=" + skaffoldImage}
 	if a.Profile != "" {
 		commandLine = append(commandLine, "-P"+a.Profile)
 	}
