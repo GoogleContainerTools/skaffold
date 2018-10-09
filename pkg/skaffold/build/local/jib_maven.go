@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 
+	"fmt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -27,34 +28,56 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace string, a *latest.JibMavenArtifact) (string, error) {
+func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, a *latest.JibMavenArtifact) (string, error) {
 	if a.Module != "" {
 		return "", errors.New("maven multi-modules not supported yet")
 	}
 
 	skaffoldImage := generateJibImageRef(workspace, a.Module)
-	commandLine := generateMavenCommand(workspace, skaffoldImage, a)
+	args := generateMavenArgs("dockerBuild", skaffoldImage, a)
 
-	cmd := jib.MavenCommand.CreateCommand(ctx, workspace, commandLine)
-	cmd.Stdout = out
-	cmd.Stderr = out
-
-	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
-	if err := util.RunCmd(cmd); err != nil {
-		return "", errors.Wrap(err, "maven build failed")
+	if err := runMavenCommand(ctx, out, workspace, args); err != nil {
+		return "", err
 	}
 
 	return skaffoldImage, nil
 }
 
-// generateMavenCommand generates the command-line to pass to maven for building a
-// project found in `workspace`.  The resulting image is added to the local docker daemon
-// and called `skaffoldImage`.
-func generateMavenCommand(_ /*workspace*/ string, skaffoldImage string, a *latest.JibMavenArtifact) []string {
-	command := []string{"prepare-package", "jib:dockerBuild", "-Dimage=" + skaffoldImage}
+func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.Artifact) (string, error) {
+	if artifact.JibMavenArtifact.Module != "" {
+		return "", errors.New("maven multi-modules not supported yet")
+	}
+
+	initialTag := util.RandomID()
+	skaffoldImage := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
+	args := generateMavenArgs("build", skaffoldImage, artifact.JibMavenArtifact)
+
+	if err := runMavenCommand(ctx, out, workspace, args); err != nil {
+		return "", err
+	}
+
+	return skaffoldImage, nil
+}
+
+// generateMavenArgs generates the arguments to Maven for building the project as an image called `skaffoldImage`.
+func generateMavenArgs(goal string, skaffoldImage string, a *latest.JibMavenArtifact) []string {
+	command := []string{"prepare-package", "jib:" + goal, "-Dimage=" + skaffoldImage}
 	if a.Profile != "" {
 		command = append(command, "-P"+a.Profile)
 	}
 
 	return command
+}
+
+func runMavenCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {
+	cmd := jib.MavenCommand.CreateCommand(ctx, workspace, args)
+	cmd.Stdout = out
+	cmd.Stderr = out
+
+	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
+	if err := util.RunCmd(cmd); err != nil {
+		return errors.Wrap(err, "maven build failed")
+	}
+
+	return nil
 }

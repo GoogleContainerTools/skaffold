@@ -25,43 +25,43 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGenerateMavenCommand(t *testing.T) {
+func TestGenerateMavenArgs(t *testing.T) {
 	var testCases = []struct {
 		in  latest.JibMavenArtifact
 		out []string
 	}{
-		{latest.JibMavenArtifact{}, []string{"prepare-package", "jib:dockerBuild", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Profile: "profile"}, []string{"prepare-package", "jib:dockerBuild", "-Dimage=image", "-Pprofile"}},
+		{latest.JibMavenArtifact{}, []string{"prepare-package", "jib:goal", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Profile: "profile"}, []string{"prepare-package", "jib:goal", "-Dimage=image", "-Pprofile"}},
 	}
 
 	for _, tt := range testCases {
-		command := generateMavenCommand(".", "image", &tt.in)
+		args := generateMavenArgs("goal", "image", &tt.in)
 
-		testutil.CheckDeepEqual(t, tt.out, command)
+		testutil.CheckDeepEqual(t, tt.out, args)
 	}
 }
 
 func TestMultiModulesNotSupported(t *testing.T) {
 	builder := &Builder{}
 
-	_, err := builder.buildJibMaven(context.Background(), ioutil.Discard, ".", &latest.JibMavenArtifact{
+	_, err := builder.buildJibMavenToDocker(context.Background(), ioutil.Discard, ".", &latest.JibMavenArtifact{
 		Module: "module",
 	})
 
 	testutil.CheckError(t, true, err)
 }
 
-func TestGenerateGradleCommand(t *testing.T) {
+func TestGenerateGradleArgs(t *testing.T) {
 	var testCases = []struct {
 		in  latest.JibGradleArtifact
 		out []string
 	}{
-		{latest.JibGradleArtifact{}, []string{":jibDockerBuild", "--image=image"}},
-		{latest.JibGradleArtifact{Project: "project"}, []string{":project:jibDockerBuild", "--image=image"}},
+		{latest.JibGradleArtifact{}, []string{":task", "--image=image"}},
+		{latest.JibGradleArtifact{Project: "project"}, []string{":project:task", "--image=image"}},
 	}
 
 	for _, tt := range testCases {
-		command := generateGradleCommand(".", "image", &tt.in)
+		command := generateGradleArgs("task", "image", &tt.in)
 
 		testutil.CheckDeepEqual(t, tt.out, command)
 	}
