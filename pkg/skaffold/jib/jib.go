@@ -18,6 +18,7 @@ package jib
 
 import (
 	"os/exec"
+	"sort"
 	"strings"
 
 	"os"
@@ -36,6 +37,7 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 
 	// Parses stdout for the dependencies, one per line
 	lines := strings.Split(string(stdout), "\n")
+
 	var deps []string
 	for _, dep := range lines {
 		if dep == "" {
@@ -57,22 +59,23 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 			}
 			return nil, errors.Wrapf(err, "unable to stat file %s", dep)
 		}
-		if info.IsDir() {
-			err := godirwalk.Walk(dep, &godirwalk.Options{
-				Unsorted: true,
-				Callback: func(path string, _ *godirwalk.Dirent) error {
-					deps = append(deps, path)
-					return nil
-				},
-			})
 
-			if err != nil {
-				return nil, errors.Wrap(err, "filepath walk")
-			}
+		if !info.IsDir() {
+			deps = append(deps, dep)
 			continue
 		}
 
-		deps = append(deps, dep)
+		if err = godirwalk.Walk(dep, &godirwalk.Options{
+			Unsorted: true,
+			Callback: func(path string, _ *godirwalk.Dirent) error {
+				deps = append(deps, path)
+				return nil
+			},
+		}); err != nil {
+			return nil, errors.Wrap(err, "filepath walk")
+		}
 	}
+
+	sort.Strings(deps)
 	return deps, nil
 }

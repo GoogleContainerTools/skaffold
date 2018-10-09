@@ -17,6 +17,8 @@ limitations under the License.
 package local
 
 import (
+	"context"
+	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -33,16 +35,18 @@ func TestGenerateMavenCommand(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		commandLine, err := generateMavenCommand(".", "image", &tt.in)
+		command := generateMavenCommand(".", "image", &tt.in)
 
-		testutil.CheckError(t, false, err)
-		testutil.CheckDeepEqual(t, tt.out, commandLine)
+		testutil.CheckDeepEqual(t, tt.out, command)
 	}
 }
 
-func TestGenerateMavenCommand_errorWithModule(t *testing.T) {
-	a := latest.JibMavenArtifact{Module: "module"}
-	_, err := generateMavenCommand(".", "image", &a)
+func TestMultiModulesNotSupported(t *testing.T) {
+	builder := &Builder{}
+
+	_, err := builder.buildJibMaven(context.Background(), ioutil.Discard, ".", &latest.JibMavenArtifact{
+		Module: "module",
+	})
 
 	testutil.CheckError(t, true, err)
 }
@@ -57,9 +61,9 @@ func TestGenerateGradleCommand(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		commandLine := generateGradleCommand(".", "image", &tt.in)
+		command := generateGradleCommand(".", "image", &tt.in)
 
-		testutil.CheckDeepEqual(t, tt.out, commandLine)
+		testutil.CheckDeepEqual(t, tt.out, command)
 	}
 }
 
@@ -77,8 +81,7 @@ func TestGenerateJibImageRef(t *testing.T) {
 
 	for _, tt := range testCases {
 		computed := generateJibImageRef(tt.workspace, tt.project)
-		if tt.out != computed {
-			t.Errorf("Expected '%s' for '%s'/'%s': '%s'", tt.out, tt.workspace, tt.project, computed)
-		}
+
+		testutil.CheckDeepEqual(t, tt.out, computed)
 	}
 }
