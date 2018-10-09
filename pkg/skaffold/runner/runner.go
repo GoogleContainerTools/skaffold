@@ -34,6 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -440,6 +441,14 @@ func dependenciesForArtifact(a *latest.Artifact) ([]string, error) {
 	case a.BazelArtifact != nil:
 		paths, err = bazel.GetDependencies(a.Workspace, a.BazelArtifact)
 
+	case a.JibMavenArtifact != nil:
+		// TODO: need to propagate context
+		paths, err = jib.GetDependenciesMaven(context.TODO(), a.Workspace, a.JibMavenArtifact)
+
+	case a.JibGradleArtifact != nil:
+		// TODO: need to propagate context
+		paths, err = jib.GetDependenciesGradle(context.TODO(), a.Workspace, a.JibGradleArtifact)
+
 	default:
 		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
 	}
@@ -450,7 +459,10 @@ func dependenciesForArtifact(a *latest.Artifact) ([]string, error) {
 
 	var p []string
 	for _, path := range paths {
-		p = append(p, filepath.Join(a.Workspace, path))
+		if !filepath.IsAbs(path) {
+			path = filepath.Join(a.Workspace, path)
+		}
+		p = append(p, path)
 	}
 	return p, nil
 }
