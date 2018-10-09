@@ -71,15 +71,10 @@ func setConfigValue(name string, value interface{}) error {
 	fieldType := fieldValue.Type()
 	val := reflect.ValueOf(value)
 
-	if IsZero(val) {
-		v := reflect.ValueOf(cfg).Elem().FieldByName(fieldName)
-		v.Set(reflect.Zero(v.Type()))
-	} else {
-		if fieldType != val.Type() {
-			return fmt.Errorf("%s is not a valid value for field %s", value, fieldName)
-		}
-		reflect.ValueOf(cfg).Elem().FieldByName(fieldName).Set(val)
+	if fieldType != val.Type() {
+		return fmt.Errorf("%s is not a valid value for field %s", value, fieldName)
 	}
+	reflect.ValueOf(cfg).Elem().FieldByName(fieldName).Set(val)
 
 	return writeConfig(cfg)
 }

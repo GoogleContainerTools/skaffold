@@ -30,7 +30,7 @@ func NewCmdUnset(out io.Writer) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			resolveKubectlContext()
-			if err := setConfigValue(args[0], nil); err != nil {
+			if err := unsetConfigValue(args[0]); err != nil {
 				return err
 			}
 			logUnsetConfigForUser(out, args[0])
@@ -48,4 +48,8 @@ func logUnsetConfigForUser(out io.Writer, key string) {
 	} else {
 		out.Write([]byte(fmt.Sprintf("unset value %s for context %s\n", key, kubecontext)))
 	}
+}
+
+func unsetConfigValue(name string) error {
+	return setConfigValue(name, "")
 }

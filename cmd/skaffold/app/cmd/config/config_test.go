@@ -149,7 +149,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			}
 
 			// unset the value
-			err = setConfigValue(test.key, nil)
+			err = unsetConfigValue(test.key)
 			newConfig, cfgErr := readConfig()
 			if cfgErr != nil {
 				t.Error(cfgErr)
