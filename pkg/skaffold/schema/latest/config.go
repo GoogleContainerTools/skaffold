@@ -66,7 +66,7 @@ type GitTagger struct{}
 
 // EnvTemplateTagger contains the configuration for the envTemplate tagger.
 type EnvTemplateTagger struct {
-	Template string `yaml:"template"`
+	Template string `yaml:"template,omitempty"`
 }
 
 // DateTimeTagger contains the configuration for the DateTime tagger.
@@ -94,7 +94,7 @@ type LocalBuild struct {
 // GoogleCloudBuild contains the fields needed to do a remote build on
 // Google Cloud Build.
 type GoogleCloudBuild struct {
-	ProjectID   string `yaml:"projectId"`
+	ProjectID   string `yaml:"projectId,omitempty"`
 	DiskSizeGb  int64  `yaml:"diskSizeGb,omitempty"`
 	MachineType string `yaml:"machineType,omitempty"`
 	Timeout     string `yaml:"timeout,omitempty"`
@@ -166,28 +166,28 @@ type KustomizeDeploy struct {
 }
 
 type HelmRelease struct {
-	Name              string                 `yaml:"name"`
-	ChartPath         string                 `yaml:"chartPath"`
-	ValuesFiles       []string               `yaml:"valuesFiles"`
-	Values            map[string]string      `yaml:"values,omitempty"`
-	Namespace         string                 `yaml:"namespace"`
-	Version           string                 `yaml:"version"`
-	SetValues         map[string]string      `yaml:"setValues"`
-	SetValueTemplates map[string]string      `yaml:"setValueTemplates"`
-	Wait              bool                   `yaml:"wait"`
-	RecreatePods      bool                   `yaml:"recreatePods"`
-	Overrides         map[string]interface{} `yaml:"overrides"`
-	Packaged          *HelmPackaged          `yaml:"packaged"`
-	ImageStrategy     HelmImageStrategy      `yaml:"imageStrategy"`
+	Name              string                 `yaml:"name,omitempty"`
+	ChartPath         string                 `yaml:"chartPath,omitempty"`
+	ValuesFiles       []string               `yaml:"valuesFiles,omitempty"`
+	Values            map[string]string      `yaml:"values,omitempty,omitempty"`
+	Namespace         string                 `yaml:"namespace,omitempty"`
+	Version           string                 `yaml:"version,omitempty"`
+	SetValues         map[string]string      `yaml:"setValues,omitempty"`
+	SetValueTemplates map[string]string      `yaml:"setValueTemplates,omitempty"`
+	Wait              bool                   `yaml:"wait,omitempty"`
+	RecreatePods      bool                   `yaml:"recreatePods,omitempty"`
+	Overrides         map[string]interface{} `yaml:"overrides,omitempty"`
+	Packaged          *HelmPackaged          `yaml:"packaged,omitempty"`
+	ImageStrategy     HelmImageStrategy      `yaml:"imageStrategy,omitempty"`
 }
 
 // HelmPackaged represents parameters for packaging helm chart.
 type HelmPackaged struct {
 	// Version sets the version on the chart to this semver version.
-	Version string `yaml:"version"`
+	Version string `yaml:"version,omitempty"`
 
 	// AppVersion set the appVersion on the chart to this version
-	AppVersion string `yaml:"appVersion"`
+	AppVersion string `yaml:"appVersion,omitempty"`
 }
 
 type HelmImageStrategy struct {
@@ -195,13 +195,13 @@ type HelmImageStrategy struct {
 }
 
 type HelmImageConfig struct {
-	HelmFQNConfig        *HelmFQNConfig        `yaml:"fqn"`
-	HelmConventionConfig *HelmConventionConfig `yaml:"helm"`
+	HelmFQNConfig        *HelmFQNConfig        `yaml:"fqn,omitempty"`
+	HelmConventionConfig *HelmConventionConfig `yaml:"helm,omitempty"`
 }
 
 // HelmFQNConfig represents image config to use the FullyQualifiedImageName as param to set
 type HelmFQNConfig struct {
-	Property string `yaml:"property"`
+	Property string `yaml:"property,omitempty"`
 }
 
 // HelmConventionConfig represents image config in the syntax of image.repository and image.tag
@@ -211,7 +211,7 @@ type HelmConventionConfig struct {
 // Artifact represents items that need to be built, along with the context in which
 // they should be built.
 type Artifact struct {
-	ImageName    string            `yaml:"image"`
+	ImageName    string            `yaml:"image,omitempty"`
 	Workspace    string            `yaml:"context,omitempty"`
 	Sync         map[string]string `yaml:"sync,omitempty"`
 	ArtifactType `yaml:",inline"`
@@ -220,7 +220,7 @@ type Artifact struct {
 // Profile is additional configuration that overrides default
 // configuration when it is activated.
 type Profile struct {
-	Name   string       `yaml:"name"`
+	Name   string       `yaml:"name,omitempty"`
 	Build  BuildConfig  `yaml:"build,omitempty"`
 	Test   []TestCase   `yaml:"test,omitempty"`
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
@@ -242,7 +242,7 @@ type DockerArtifact struct {
 
 // BazelArtifact describes an artifact built with Bazel.
 type BazelArtifact struct {
-	BuildTarget string `yaml:"target"`
+	BuildTarget string `yaml:"target,omitempty"`
 }
 
 // Parse reads a SkaffoldPipeline from yaml.
