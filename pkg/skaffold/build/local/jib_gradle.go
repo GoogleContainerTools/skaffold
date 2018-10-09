@@ -35,11 +35,12 @@ func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace s
 	cmd := jib.GradleCommand.CreateCommand(ctx, workspace, commandLine)
 	cmd.Stdout = out
 	cmd.Stderr = out
+
 	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
-	err := util.RunCmd(cmd)
-	if err != nil {
+	if err := util.RunCmd(cmd); err != nil {
 		return "", errors.Wrap(err, "gradle build failed")
 	}
+
 	return skaffoldImage, nil
 }
 
@@ -47,13 +48,13 @@ func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace s
 // project in `workspace`.  The resulting image is added to the local docker daemon
 // and called `skaffoldImage`.
 func generateGradleCommand(_ /*workspace*/ string, skaffoldImage string, a *latest.JibGradleArtifact) []string {
-	var command []string
+	var command string
 	if a.Project == "" {
-		command = []string{":jibDockerBuild"}
+		command = ":jibDockerBuild"
 	} else {
 		// multi-module
-		command = []string{fmt.Sprintf(":%s:jibDockerBuild", a.Project)}
+		command = fmt.Sprintf(":%s:jibDockerBuild", a.Project)
 	}
-	command = append(command, "--image="+skaffoldImage)
-	return command
+
+	return []string{command, "--image=" + skaffoldImage}
 }

@@ -28,34 +28,33 @@ import (
 )
 
 func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace string, a *latest.JibMavenArtifact) (string, error) {
-	skaffoldImage := generateJibImageRef(workspace, a.Module)
-	commandLine, err := generateMavenCommand(workspace, skaffoldImage, a)
-	if err != nil {
-		return "", err
+	if a.Module != "" {
+		return "", errors.New("maven multi-modules not supported yet")
 	}
+
+	skaffoldImage := generateJibImageRef(workspace, a.Module)
+	commandLine := generateMavenCommand(workspace, skaffoldImage, a)
 
 	cmd := jib.MavenCommand.CreateCommand(ctx, workspace, commandLine)
 	cmd.Stdout = out
 	cmd.Stderr = out
+
 	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
-	err = util.RunCmd(cmd)
-	if err != nil {
+	if err := util.RunCmd(cmd); err != nil {
 		return "", errors.Wrap(err, "maven build failed")
 	}
+
 	return skaffoldImage, nil
 }
 
 // generateMavenCommand generates the command-line to pass to maven for building a
 // project found in `workspace`.  The resulting image is added to the local docker daemon
 // and called `skaffoldImage`.
-func generateMavenCommand(_ /*workspace*/ string, skaffoldImage string, a *latest.JibMavenArtifact) ([]string, error) {
-	if a.Module != "" {
-		// TODO: multi-module
-		return nil, errors.New("Maven multi-modules not supported yet")
-	}
-	commandLine := []string{"prepare-package", "jib:dockerBuild", "-Dimage=" + skaffoldImage}
+func generateMavenCommand(_ /*workspace*/ string, skaffoldImage string, a *latest.JibMavenArtifact) []string {
+	command := []string{"prepare-package", "jib:dockerBuild", "-Dimage=" + skaffoldImage}
 	if a.Profile != "" {
-		commandLine = append(commandLine, "-P"+a.Profile)
+		command = append(command, "-P"+a.Profile)
 	}
-	return commandLine, nil
+
+	return command
 }

@@ -18,12 +18,10 @@ package jib
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 	"strings"
 	"testing"
-
-	"fmt"
-	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -32,12 +30,8 @@ import (
 )
 
 func TestGradleWrapperDefinition(t *testing.T) {
-	if GradleCommand.Executable != "gradle" {
-		t.Error("GradleCommand executable should be 'gradle'")
-	}
-	if GradleCommand.Wrapper != "gradlew" {
-		t.Error("GradleCommand wrapper should be 'gradlew'")
-	}
+	testutil.CheckDeepEqual(t, "gradle", GradleCommand.Executable)
+	testutil.CheckDeepEqual(t, "gradlew", GradleCommand.Wrapper)
 }
 
 func TestGetDependenciesGradle(t *testing.T) {
@@ -47,20 +41,21 @@ func TestGetDependenciesGradle(t *testing.T) {
 	tmpDir.Write("dep1", "")
 	tmpDir.Write("dep2", "")
 
-	dep1 := filepath.Join(tmpDir.Root(), "dep1")
-	dep2 := filepath.Join(tmpDir.Root(), "dep2")
+	dep1 := tmpDir.Path("dep1")
+	dep2 := tmpDir.Path("dep2")
 
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	var tests = []struct {
 		description string
 		stdout      string
+		expected    []string
 		err         error
 	}{
 		{
 			description: "success",
 			stdout:      fmt.Sprintf("%s\n%s\n\n\n", dep1, dep2),
-			err:         nil,
+			expected:    []string{dep1, dep2},
 		},
 		{
 			description: "failure",
@@ -71,9 +66,6 @@ func TestGetDependenciesGradle(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			tmpDir, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
-
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = testutil.NewFakeCmdOut(
 				strings.Join(getCommandGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{}).Args, " "),
@@ -92,7 +84,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 }
 
 func TestGetCommandGradle(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	var tests = []struct {
 		description       string
