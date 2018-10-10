@@ -17,13 +17,9 @@ limitations under the License.
 package jib
 
 import (
+	"fmt"
 	"os/exec"
 	"testing"
-
-	"fmt"
-	"path/filepath"
-
-	"sort"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -38,13 +34,13 @@ func TestGetDependencies(t *testing.T) {
 	tmpDir.Write("dep3/fileA", "")
 	tmpDir.Write("dep3/sub/path/fileB", "")
 
-	dep1 := filepath.Join(tmpDir.Root(), "dep1")
-	dep2 := filepath.Join(tmpDir.Root(), "dep2")
-	dep3 := filepath.Join(tmpDir.Root(), "dep3")
-	dep3FileA := filepath.Join(tmpDir.Root(), "dep3/fileA")
-	dep3Sub := filepath.Join(tmpDir.Root(), "dep3/sub")
-	dep3SubPath := filepath.Join(tmpDir.Root(), "dep3/sub/path")
-	dep3SubPathFileB := filepath.Join(tmpDir.Root(), "dep3/sub/path/fileB")
+	dep1 := tmpDir.Path("dep1")
+	dep2 := tmpDir.Path("dep2")
+	dep3 := tmpDir.Path("dep3")
+	dep3FileA := tmpDir.Path("dep3/fileA")
+	dep3Sub := tmpDir.Path("dep3/sub")
+	dep3SubPath := tmpDir.Path("dep3/sub/path")
+	dep3SubPathFileB := tmpDir.Path("dep3/sub/path/fileB")
 
 	var tests = []struct {
 		stdout       string
@@ -98,7 +94,7 @@ func TestGetDependencies(t *testing.T) {
 			)
 
 			deps, err := getDependencies(&exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()})
-			sort.Strings(deps)
+
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedDeps, deps)
 		})
 	}

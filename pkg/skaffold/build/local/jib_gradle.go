@@ -28,32 +28,51 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace string, a *latest.JibGradleArtifact) (string, error) {
+func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, a *latest.JibGradleArtifact) (string, error) {
 	skaffoldImage := generateJibImageRef(workspace, a.Project)
-	commandLine := generateGradleCommand(workspace, skaffoldImage, a)
+	args := generateGradleArgs("jibDockerBuild", skaffoldImage, a)
 
-	cmd := jib.GradleCommand.CreateCommand(ctx, workspace, commandLine)
-	cmd.Stdout = out
-	cmd.Stderr = out
-	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
-	err := util.RunCmd(cmd)
-	if err != nil {
-		return "", errors.Wrap(err, "gradle build failed")
+	if err := runGradleCommand(ctx, out, workspace, args); err != nil {
+		return "", err
 	}
+
 	return skaffoldImage, nil
 }
 
-// generateGradleCommand generates the command-line to pass to gradle for building an
-// project in `workspace`.  The resulting image is added to the local docker daemon
-// and called `skaffoldImage`.
-func generateGradleCommand(_ /*workspace*/ string, skaffoldImage string, a *latest.JibGradleArtifact) []string {
-	var command []string
+func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.Artifact) (string, error) {
+	initialTag := util.RandomID()
+	skaffoldImage := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
+	args := generateGradleArgs("jib", skaffoldImage, artifact.JibGradleArtifact)
+
+	if err := runGradleCommand(ctx, out, workspace, args); err != nil {
+		return "", err
+	}
+
+	return skaffoldImage, nil
+}
+
+// generateGradleArgs generates the arguments to Gradle for building the project as an image called `skaffoldImage`.
+func generateGradleArgs(task string, skaffoldImage string, a *latest.JibGradleArtifact) []string {
+	var command string
 	if a.Project == "" {
-		command = []string{":jibDockerBuild"}
+		command = ":" + task
 	} else {
 		// multi-module
-		command = []string{fmt.Sprintf(":%s:jibDockerBuild", a.Project)}
+		command = fmt.Sprintf(":%s:%s", a.Project, task)
 	}
-	command = append(command, "--image="+skaffoldImage)
-	return command
+
+	return []string{command, "--image=" + skaffoldImage}
+}
+
+func runGradleCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {
+	cmd := jib.GradleCommand.CreateCommand(ctx, workspace, args)
+	cmd.Stdout = out
+	cmd.Stderr = out
+
+	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
+	if err := util.RunCmd(cmd); err != nil {
+		return errors.Wrap(err, "gradle build failed")
+	}
+
+	return nil
 }
