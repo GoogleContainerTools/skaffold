@@ -39,6 +39,7 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 
@@ -108,7 +109,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		Deployer:     deployer,
 		Tagger:       tagger,
 		Trigger:      trigger,
-		Syncer:       &kubernetes.KubectlSyncer{},
+		Syncer:       &kubectl.Syncer{},
 		opts:         opts,
 		watchFactory: watch.NewWatcher,
 	}, nil
