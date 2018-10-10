@@ -330,3 +330,26 @@ func TestCheckVersionIsLatest(t *testing.T) {
 		})
 	}
 }
+
+func TestUpgradeToNextVersion(t *testing.T) {
+	for i, schemaVersion := range schemaVersions[0 : len(schemaVersions)-2] {
+		from := schemaVersion
+		to := schemaVersions[i+1]
+		description := fmt.Sprintf("Upgrade from %s to %s", from.apiVersion, to.apiVersion)
+
+		t.Run(description, func(t *testing.T) {
+			factory, _ := schemaVersions.Find(from.apiVersion)
+			newer, err := factory().Upgrade()
+
+			testutil.CheckErrorAndDeepEqual(t, false, err, to.apiVersion, newer.GetVersion())
+		})
+	}
+}
+
+func TestCantUpgradeFromLastestVersion(t *testing.T) {
+	factory, present := schemaVersions.Find(latest.Version)
+	testutil.CheckDeepEqual(t, true, present)
+
+	_, err := factory().Upgrade()
+	testutil.CheckError(t, true, err)
+}
