@@ -48,7 +48,16 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	}
 	client.Authorizer = authorizer
 
-	result, err := client.GetBuildSourceUploadURL(ctx, b.ResourceGroup, b.ContainerRegistry)
+	imageTag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.Options{
+		Digest:    util.RandomID(),
+		ImageName: artifact.ImageName,
+	})
+	if err != nil {
+		return "", errors.Wrap(err, "create fully qualified image name")
+	}
+	registryName := getRegistryName(imageTag)
+
+	result, err := client.GetBuildSourceUploadURL(ctx, b.ResourceGroup, registryName)
 	if err != nil {
 		return "", errors.Wrap(err, "build source upload url")
 	}
@@ -64,16 +73,8 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "upload file to blob")
 	}
 
-	imageTag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.Options{
-		Digest:    util.RandomID(),
-		ImageName: artifact.ImageName,
-	})
-	if err != nil {
-		return "", errors.Wrap(err, "create fully qualified image name")
-	}
-
-	//remove fqdn from image tag since we only need <repository>:<tag>
-	imageTag = imageTag[strings.Index(imageTag, "/")+1:]
+	//acr needs the image tag formatted as <repository>:<tag>
+	imageTag = getImageTagWithoutFQDN(imageTag)
 
 	buildRequest := cr.DockerBuildRequest{
 		ImageNames:     &[]string{imageTag},
@@ -87,7 +88,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		DockerFilePath: &artifact.DockerArtifact.DockerfilePath,
 		Type:           cr.TypeDockerBuildRequest,
 	}
-	future, err := client.ScheduleRun(ctx, b.ResourceGroup, b.ContainerRegistry, buildRequest)
+	future, err := client.ScheduleRun(ctx, b.ResourceGroup, registryName, buildRequest)
 	if err != nil {
 		return "", errors.Wrap(err, "schedule build request")
 	}
@@ -100,7 +101,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 
 	runsClient := cr.NewRunsClient(b.Credentials.SubscriptionID)
 	runsClient.Authorizer = client.Authorizer
-	logURL, err := runsClient.GetLogSasURL(ctx, b.ResourceGroup, b.ContainerRegistry, runID)
+	logURL, err := runsClient.GetLogSasURL(ctx, b.ResourceGroup, registryName, runID)
 	if err != nil {
 		return "", errors.Wrap(err, "get log url")
 	}
@@ -157,4 +158,13 @@ func streamBuildLogs(logURL string, out io.Writer) error {
 
 		time.Sleep(2 * time.Second)
 	}
+}
+
+func getImageTagWithoutFQDN(imageTag string) string {
+	return imageTag[strings.Index(imageTag, "/")+1:]
+}
+
+//acr URL is <registryname>.azurecr.io
+func getRegistryName(imageTag string) string {
+	return imageTag[:strings.Index(imageTag, ".")]
 }

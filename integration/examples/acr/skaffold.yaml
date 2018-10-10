@@ -1,10 +1,9 @@
-apiVersion: skaffold/v1alpha3
+apiVersion: skaffold/v1alpha4
 kind: Config
 build:
   artifacts:
   - imageName: myregistry.azurecr.io/skaffold-example
   acr:
-    containerRegistry: myregistry
     resourceGroup: myresourcegroup
     credentials:
       subscriptionId: subscription-id
