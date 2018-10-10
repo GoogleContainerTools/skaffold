@@ -30,6 +30,7 @@ func NewCmdConfig(out io.Writer) *cobra.Command {
 	}
 
 	cmd.AddCommand(config.NewCmdSet(out))
+	cmd.AddCommand(config.NewCmdUnset(out))
 	cmd.AddCommand(config.NewCmdList(out))
 	return cmd
 }

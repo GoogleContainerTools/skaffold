@@ -27,5 +27,5 @@ type Config struct {
 // the global Skaffold config.
 type ContextConfig struct {
 	Kubecontext string `yaml:"kube-context,omitempty"`
-	DefaultRepo string `yaml:"default-repo"`
+	DefaultRepo string `yaml:"default-repo,omitempty"`
 }
