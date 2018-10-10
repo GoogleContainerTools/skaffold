@@ -60,7 +60,7 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 	return runner, config, nil
 }
 
-func applyDefaultRepoSubstitution(config *latest.SkaffoldConfig, defaultRepo string) error {
+func applyDefaultRepoSubstitution(config *latest.SkaffoldPipeline, defaultRepo string) error {
 	if defaultRepo == "" {
 		// noop
 		return nil
