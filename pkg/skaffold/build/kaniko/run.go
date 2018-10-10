@@ -24,10 +24,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	cstorage "cloud.google.com/go/storage"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -38,28 +38,18 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
-const kanikoContainerName = "kaniko"
-
 func runKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, cfg *latest.KanikoBuild) (string, error) {
 	initialTag := util.RandomID()
+	s, err := sources.Retrieve(cfg)
+	if err != nil {
+		return "", errors.Wrap(err, "retrieving build context")
+	}
+	context, err := s.Setup(ctx, artifact, cfg, initialTag)
+	if err != nil {
+		return "", errors.Wrap(err, "setting up build context")
+	}
+	defer s.Cleanup(ctx, cfg)
 	dockerfilePath := artifact.DockerArtifact.DockerfilePath
-
-	bucket := cfg.BuildContext.GCSBucket
-	if bucket == "" {
-		guessedProjectID, err := gcp.ExtractProjectID(artifact.ImageName)
-		if err != nil {
-			return "", errors.Wrap(err, "extracting projectID from image name")
-		}
-
-		bucket = guessedProjectID
-	}
-	logrus.Debugln("Upload sources to", bucket, "GCS bucket")
-
-	tarName := fmt.Sprintf("context-%s.tar.gz", initialTag)
-	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact, bucket, tarName); err != nil {
-		return "", errors.Wrap(err, "uploading sources to GCS")
-	}
-	defer gcsDelete(ctx, bucket, tarName)
 
 	client, err := kubernetes.GetClientset()
 	if err != nil {
@@ -70,49 +60,19 @@ func runKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, cf
 	imageDst := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
 	args := []string{
 		fmt.Sprintf("--dockerfile=%s", dockerfilePath),
-		fmt.Sprintf("--context=gs://%s/%s", bucket, tarName),
+		fmt.Sprintf("--context=%s", context),
 		fmt.Sprintf("--destination=%s", imageDst),
 		fmt.Sprintf("-v=%s", logrus.GetLevel().String()),
 	}
 	args = append(args, docker.GetBuildArgs(artifact.DockerArtifact)...)
 
-	logrus.Debug("Creating pod")
-	p, err := pods.Create(&v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "kaniko",
-			Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
-			Namespace:    cfg.Namespace,
-		},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{{
-				Name:            kanikoContainerName,
-				Image:           cfg.Image,
-				ImagePullPolicy: v1.PullIfNotPresent,
-				Args:            args,
-				VolumeMounts: []v1.VolumeMount{{
-					Name:      constants.DefaultKanikoSecretName,
-					MountPath: "/secret",
-				}},
-				Env: []v1.EnvVar{{
-					Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-					Value: "/secret/kaniko-secret",
-				}},
-			}},
-			Volumes: []v1.Volume{{
-				Name: constants.DefaultKanikoSecretName,
-				VolumeSource: v1.VolumeSource{
-					Secret: &v1.SecretVolumeSource{
-						SecretName: cfg.PullSecretName,
-					},
-				},
-			}},
-			RestartPolicy: v1.RestartPolicyNever,
-		},
-	})
+	p, err := pods.Create(s.Pod(cfg, args))
 	if err != nil {
 		return "", errors.Wrap(err, "creating kaniko pod")
 	}
-
+	if err := s.ModifyPod(p); err != nil {
+		return "", errors.Wrap(err, "modifying kaniko pod")
+	}
 	waitForLogs := streamLogs(out, p.Name, pods)
 
 	defer func() {
@@ -148,7 +108,7 @@ func streamLogs(out io.Writer, name string, pods corev1.PodInterface) func() {
 		for atomic.LoadInt32(&retry) == 1 {
 			r, err := pods.GetLogs(name, &v1.PodLogOptions{
 				Follow:    true,
-				Container: kanikoContainerName,
+				Container: constants.DefaultKanikoContainerName,
 			}).Stream()
 			if err == nil {
 				io.Copy(out, r)
@@ -164,14 +124,4 @@ func streamLogs(out io.Writer, name string, pods corev1.PodInterface) func() {
 		atomic.StoreInt32(&retry, 0)
 		wg.Wait()
 	}
-}
-
-func gcsDelete(ctx context.Context, bucket, path string) error {
-	c, err := cstorage.NewClient(ctx)
-	if err != nil {
-		return err
-	}
-	defer c.Close()
-
-	return c.Bucket(bucket).Object(path).Delete(ctx)
 }

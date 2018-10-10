@@ -34,7 +34,7 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
-func WaitForPodReady(pods corev1.PodInterface, podName string) error {
+func WaitForPodScheduled(pods corev1.PodInterface, podName string) error {
 	logrus.Infof("Waiting for %s to be scheduled", podName)
 	err := wait.PollImmediate(time.Millisecond*500, time.Second*30, func() (bool, error) {
 		_, err := pods.Get(podName, meta_v1.GetOptions{
@@ -46,7 +46,11 @@ func WaitForPodReady(pods corev1.PodInterface, podName string) error {
 		}
 		return true, nil
 	})
-	if err != nil {
+	return err
+}
+
+func WaitForPodReady(pods corev1.PodInterface, podName string) error {
+	if err := WaitForPodScheduled(pods, podName); err != nil {
 		return err
 	}
 
@@ -91,6 +95,29 @@ func WaitForPodComplete(pods corev1.PodInterface, podName string, timeout time.D
 			return false, nil
 		}
 		return false, fmt.Errorf("unknown phase: %s", pod.Status.Phase)
+	})
+}
+
+// WaitForPodInitialized waits until init containers have started running
+func WaitForPodInitialized(pods corev1.PodInterface, podName string) error {
+	if err := WaitForPodScheduled(pods, podName); err != nil {
+		return err
+	}
+
+	logrus.Infof("Waiting for %s to be initialized", podName)
+	return wait.PollImmediate(time.Millisecond*500, time.Minute*10, func() (bool, error) {
+		pod, err := pods.Get(podName, meta_v1.GetOptions{
+			IncludeUninitialized: true,
+		})
+		if err != nil {
+			return false, fmt.Errorf("not found: %s", podName)
+		}
+		for _, ic := range pod.Status.InitContainerStatuses {
+			if ic.State.Running != nil {
+				return true, nil
+			}
+		}
+		return false, nil
 	})
 }
 

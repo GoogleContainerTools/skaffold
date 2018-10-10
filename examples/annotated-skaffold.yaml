@@ -96,13 +96,16 @@ build:
   #   dockerImage: gcr.io/cloud-builders/docker
 
   # Docker artifacts can be built on a Kubernetes cluster with Kaniko.
-  # Sources will be sent to a GCS bucket whose name is provided.
+  # Exactly one buildContext must be specified to use kaniko
+  # If localDir is specified, skaffold will mount sources directly via a emptyDir volume
+  # If gcsBucket is specified, skaffold will send sources to the GCS bucket provided
   # Kaniko also needs access to a service account to push the final image.
   # See https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster
   #
   # kaniko:
   #   buildContext:
   #     gcsBucket: k8s-skaffold
+  #     localDir: {}
   #   pullSecret: /a/secret/path/serviceaccount.json
   #   namespace: default
   #   timeout: 20m
