@@ -103,7 +103,8 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			key:          "not_a_real_value",
 			shouldErrSet: true,
 			expectedSetCfg: &Config{
-				ContextConfigs: []*ContextConfig{{}},
+				Global:         &ContextConfig{},
+				ContextConfigs: []*ContextConfig{},
 			},
 		},
 		{
