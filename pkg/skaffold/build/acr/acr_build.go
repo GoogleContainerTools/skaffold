@@ -21,7 +21,7 @@ import (
 	"context"
 	"io"
 	"net/http"
-	"regexp"
+	"strings"
 	"time"
 
 	cr "github.com/Azure/azure-sdk-for-go/services/containerregistry/mgmt/2018-09-01/containerregistry"
@@ -72,10 +72,8 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "create fully qualified image name")
 	}
 
-	imageTag, err = getImageTagWithoutFQDN(imageTag)
-	if err != nil {
-		return "", errors.Wrap(err, "get azure image tag")
-	}
+	//remove fqdn from image tag since we only need <repository>:<tag>
+	imageTag = imageTag[strings.Index(imageTag, "/")+1:]
 
 	buildRequest := cr.DockerBuildRequest{
 		ImageNames:     &[]string{imageTag},
@@ -159,20 +157,4 @@ func streamBuildLogs(logURL string, out io.Writer) error {
 
 		time.Sleep(2 * time.Second)
 	}
-}
-
-// ACR needs the image tag in the following format
-// <repository>:<tag>
-func getImageTagWithoutFQDN(imageTag string) (string, error) {
-	r, err := regexp.Compile(`.*\..*\..*/(.*)`)
-	if err != nil {
-		return "", errors.Wrap(err, "create regexp")
-	}
-
-	matches := r.FindStringSubmatch(imageTag)
-	if len(matches) < 2 {
-		return "", errors.New("invalid image tag")
-	}
-
-	return matches[1], nil
 }
