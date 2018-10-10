@@ -20,8 +20,10 @@ import (
 	"context"
 	"encoding/json"
 	"os/exec"
+	"strconv"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -44,6 +46,18 @@ func (v ClientVersion) String() string {
 	}
 
 	return v.Major + "." + v.Minor
+}
+
+// CheckVersion warns the user if their kubectl version is < 1.12.0
+func (c *CLI) CheckVersion() error {
+	m, err := strconv.Atoi(c.Version().Minor)
+	if err != nil {
+		return errors.Wrap(err, "couldn't get kubectl minor version")
+	}
+	if m < 12 {
+		return errors.New("kubectl version 1.12.0 or greater is recommended for use with skaffold")
+	}
+	return nil
 }
 
 // Version returns the client version of kubectl.

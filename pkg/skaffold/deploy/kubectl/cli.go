@@ -59,7 +59,8 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 		return nil, nil
 	}
 
-	if err := c.Run(ctx, updated.Reader(), out, "apply", c.Flags.Apply, "-f", "-"); err != nil {
+	// Add --force flag to delete and redeploy image if changes can't be applied
+	if err := c.Run(ctx, updated.Reader(), out, "apply", c.Flags.Apply, "--force", "-f", "-"); err != nil {
 		return nil, errors.Wrap(err, "kubectl apply")
 	}
 

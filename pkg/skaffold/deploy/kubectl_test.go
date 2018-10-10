@@ -88,7 +88,7 @@ func TestKubectlDeploy(t *testing.T) {
 			cfg: &latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
-			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace apply -f -", nil),
+			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace apply --force -f -", nil),
 			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",
@@ -102,7 +102,7 @@ func TestKubectlDeploy(t *testing.T) {
 			cfg: &latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
-			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace apply -f -", fmt.Errorf("")),
+			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace apply --force -f -", fmt.Errorf("")),
 			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",
@@ -121,7 +121,7 @@ func TestKubectlDeploy(t *testing.T) {
 					Delete: []string{"ignored"},
 				},
 			},
-			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace -v=0 apply -f -", fmt.Errorf("")),
+			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace -v=0 apply --force -f -", fmt.Errorf("")),
 			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",
@@ -209,7 +209,7 @@ func TestKubectlCleanup(t *testing.T) {
 
 func TestKubectlRedeploy(t *testing.T) {
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-	util.DefaultExecCommand = testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace apply -f -", nil)
+	util.DefaultExecCommand = testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace apply --force -f -", nil)
 
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()

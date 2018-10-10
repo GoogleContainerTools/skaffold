@@ -66,6 +66,9 @@ func (k *KubectlDeployer) Labels() map[string]string {
 // runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
 	color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version())
+	if err := k.kubectl.CheckVersion(); err != nil {
+		color.Default.Fprintln(out, err)
+	}
 
 	manifests, err := k.readManifests(ctx)
 	if err != nil {

@@ -28,6 +28,8 @@ tools for deployment, for example `kubectl` or `helm`.
 Each deployment type has parameters that allow you to
 define how you want your app to be installed and updated.
 
+_Note: kubectl version 1.12.0 or greater is recommended for use with skaffold._
+
 === Artifact
 Artifacts are the outputs of the build phase.
 Artifacts are created by running a set of steps on some
