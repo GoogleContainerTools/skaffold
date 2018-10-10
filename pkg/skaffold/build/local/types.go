@@ -48,11 +48,11 @@ func NewBuilder(cfg *latest.LocalBuild, kubeContext string) (*Builder, error) {
 
 	localCluster := kubeContext == constants.DefaultMinikubeContext || kubeContext == constants.DefaultDockerForDesktopContext
 	var pushImages bool
-	if cfg.SkipPush == nil {
-		logrus.Debugf("skipPush value not present. defaulting to cluster default %t (minikube=true, d4d=true, gke=false)", localCluster)
+	if cfg.Push == nil {
 		pushImages = !localCluster
+		logrus.Debugf("push value not present, defaulting to %t because localCluster is %t", pushImages, localCluster)
 	} else {
-		pushImages = !*cfg.SkipPush
+		pushImages = *cfg.Push
 	}
 
 	return &Builder{

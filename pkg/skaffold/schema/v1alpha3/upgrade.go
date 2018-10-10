@@ -38,20 +38,33 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 		if err := convert(config.Profiles, &newProfiles); err != nil {
 			return nil, errors.Wrap(err, "converting new profile")
 		}
+		for i, oldProfile := range config.Profiles {
+			convertBuild(oldProfile.Build, newProfiles[i].Build)
+		}
 	}
 
 	// convert Build (should be the same)
 	var newBuild next.BuildConfig
-	if err := convert(config.Build, &newBuild); err != nil {
+	oldBuild := config.Build
+	if err := convert(oldBuild, &newBuild); err != nil {
 		return nil, errors.Wrap(err, "converting new build")
 	}
+	convertBuild(oldBuild, newBuild)
 
 	return &next.SkaffoldPipeline{
 		APIVersion: next.Version,
+		Kind:       config.Kind,
 		Deploy:     newDeploy,
 		Build:      newBuild,
 		Profiles:   newProfiles,
 	}, nil
+}
+
+func convertBuild(oldBuild BuildConfig, newBuild next.BuildConfig) {
+	if oldBuild.LocalBuild != nil && oldBuild.LocalBuild.SkipPush != nil {
+		push := !*oldBuild.LocalBuild.SkipPush
+		newBuild.LocalBuild.Push = &push
+	}
 }
 
 func convert(old interface{}, new interface{}) error {

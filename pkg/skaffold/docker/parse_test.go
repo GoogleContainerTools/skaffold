@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -168,6 +169,11 @@ FROM base as dist
 FROM DIST as prod
 `
 
+const copyAll = `
+FROM nginx
+COPY . /
+`
+
 type fakeImageFetcher struct {
 	fetched []string
 }
@@ -284,7 +290,7 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  copyDirectory,
 			ignore:      "bar\ndocker/*",
 			workspace:   ".",
-			expected:    []string{"Dockerfile", "file", "server.go", "test.conf", "worker.go"},
+			expected:    []string{".dot", "Dockerfile", "file", "server.go", "test.conf", "worker.go"},
 			fetched:     []string{"nginx"},
 		},
 		{
@@ -304,18 +310,41 @@ func TestGetDependencies(t *testing.T) {
 			fetched:     []string{"nginx"},
 		},
 		{
+			description: "ignore none",
+			dockerfile:  copyAll,
+			workspace:   ".",
+			expected:    []string{".dot", "Dockerfile", "bar", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf"), "file", "server.go", "test.conf", "worker.go"},
+			fetched:     []string{"nginx"},
+		},
+		{
+			description: "ignore dotfiles",
+			dockerfile:  copyAll,
+			workspace:   ".",
+			ignore:      ".*",
+			expected:    []string{"Dockerfile", "bar", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf"), "file", "server.go", "test.conf", "worker.go"},
+			fetched:     []string{"nginx"},
+		},
+		{
+			description: "ignore dotfiles (root syntax)",
+			dockerfile:  copyAll,
+			workspace:   ".",
+			ignore:      "/.*",
+			expected:    []string{"Dockerfile", "bar", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf"), "file", "server.go", "test.conf", "worker.go"},
+			fetched:     []string{"nginx"},
+		},
+		{
 			description: "dockerignore with context in parent directory",
 			dockerfile:  copyDirectory,
 			workspace:   "docker/..",
 			ignore:      "bar\ndocker/*\n*.go",
-			expected:    []string{"Dockerfile", "file", "test.conf"},
+			expected:    []string{".dot", "Dockerfile", "file", "test.conf"},
 			fetched:     []string{"nginx"},
 		},
 		{
 			description: "onbuild test",
 			dockerfile:  onbuild,
 			workspace:   ".",
-			expected:    []string{"Dockerfile", "bar", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf"), "file", "server.go", "test.conf", "worker.go"},
+			expected:    []string{".dot", "Dockerfile", "bar", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf"), "file", "server.go", "test.conf", "worker.go"},
 			fetched:     []string{"golang:onbuild"},
 		},
 		{
@@ -419,7 +448,7 @@ func TestGetDependencies(t *testing.T) {
 			RetrieveImage = imageFetcher.fetch
 			defer func() { RetrieveImage = retrieveImage }()
 
-			for _, file := range []string{"docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file"} {
+			for _, file := range []string{"docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file", ".dot"} {
 				tmpDir.Write(file, "")
 			}
 
@@ -432,7 +461,7 @@ func TestGetDependencies(t *testing.T) {
 			}
 
 			workspace := tmpDir.Path(test.workspace)
-			deps, err := GetDependencies(workspace, &latest.DockerArtifact{
+			deps, err := GetDependencies(context.Background(), workspace, &latest.DockerArtifact{
 				BuildArgs:      test.buildArgs,
 				DockerfilePath: "Dockerfile",
 			})

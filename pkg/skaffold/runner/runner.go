@@ -36,6 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -327,7 +328,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 
 		if err := watcher.Register(
-			func() ([]string, error) { return dependenciesForArtifact(artifact) },
+			func() ([]string, error) { return dependenciesForArtifact(ctx, artifact) },
 			func(e watch.Events) { changed.AddDirtyArtifact(artifact, e) },
 		); err != nil {
 			return nil, errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
@@ -433,7 +434,7 @@ func mergeWithPreviousBuilds(builds, previous []build.Artifact) []build.Artifact
 	return merged
 }
 
-func dependenciesForArtifact(a *latest.Artifact) ([]string, error) {
+func dependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
 	var (
 		paths []string
 		err   error
@@ -441,10 +442,16 @@ func dependenciesForArtifact(a *latest.Artifact) ([]string, error) {
 
 	switch {
 	case a.DockerArtifact != nil:
-		paths, err = docker.GetDependencies(a.Workspace, a.DockerArtifact)
+		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact)
 
 	case a.BazelArtifact != nil:
-		paths, err = bazel.GetDependencies(a.Workspace, a.BazelArtifact)
+		paths, err = bazel.GetDependencies(ctx, a.Workspace, a.BazelArtifact)
+
+	case a.JibMavenArtifact != nil:
+		paths, err = jib.GetDependenciesMaven(ctx, a.Workspace, a.JibMavenArtifact)
+
+	case a.JibGradleArtifact != nil:
+		paths, err = jib.GetDependenciesGradle(ctx, a.Workspace, a.JibGradleArtifact)
 
 	default:
 		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
@@ -456,7 +463,10 @@ func dependenciesForArtifact(a *latest.Artifact) ([]string, error) {
 
 	var p []string
 	for _, path := range paths {
-		p = append(p, filepath.Join(a.Workspace, path))
+		if !filepath.IsAbs(path) {
+			path = filepath.Join(a.Workspace, path)
+		}
+		p = append(p, path)
 	}
 	return p, nil
 }

@@ -18,6 +18,7 @@ package docker
 
 import (
 	"archive/tar"
+	"context"
 	"io"
 	"testing"
 
@@ -47,7 +48,7 @@ func TestDockerContext(t *testing.T) {
 
 	reader, writer := io.Pipe()
 	go func() {
-		err := CreateDockerTarContext(writer, tmpDir.Root(), artifact)
+		err := CreateDockerTarContext(context.Background(), writer, tmpDir.Root(), artifact)
 		if err != nil {
 			writer.CloseWithError(err)
 		} else {

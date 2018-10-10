@@ -16,7 +16,8 @@ FROM gcr.io/gcp-runtimes/ubuntu_16_0_4 as runtime_deps
 
 RUN apt-get update && \
     apt-get install --no-install-recommends --no-install-suggests -y \
-        python-dev
+        python && \
+    rm -rf /var/lib/apt/lists/*
 
 ENV KUBECTL_VERSION v1.10.0
 RUN curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl  && \
@@ -32,7 +33,8 @@ RUN curl -LO https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-c
  tar -zxvf google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz && \
     CLOUDSDK_PYTHON="python2.7" /google-cloud-sdk/install.sh --usage-reporting=false \
         --bash-completion=false \
-        --disable-installation-options
+        --disable-installation-options && \
+  rm -rf google-cloud-sdk-*.tar.gz
 ENV PATH=$PATH:/google-cloud-sdk/bin
 RUN /google-cloud-sdk/bin/gcloud auth configure-docker
 
@@ -45,7 +47,8 @@ RUN echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8
   && curl https://bazel.build/bazel-release.pub.gpg | apt-key add -
 
 RUN apt-get update \
-  && apt-get install -y bazel
+  && apt-get install -y bazel && \
+  rm -rf /var/lib/apt/lists/*
 
 ENV CONTAINER_STRUCTURE_TEST_VERSION=1.5.0
 RUN curl -LO https://storage.googleapis.com/container-structure-test/v${CONTAINER_STRUCTURE_TEST_VERSION}/container-structure-test-linux-amd64 \
@@ -58,7 +61,7 @@ FROM runtime_deps as builder
 
 ENV ASCIIDOCTOR_VERSION=1.5.7.1
 ENV ASCIIDOCTOR_PDF_VERSION=1.5.0.alpha.16
-RUN apt-get install --no-install-recommends --no-install-suggests -y \
+RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
         ca-certificates \
         curl \
         build-essential \
@@ -69,6 +72,7 @@ RUN apt-get install --no-install-recommends --no-install-suggests -y \
         software-properties-common \
         ruby-dev \
         apt-transport-https && \
+    rm -rf /var/lib/apt/lists/* && \
     gem install  --no-document "asciidoctor-pdf:${ASCIIDOCTOR_PDF_VERSION}" \
         asciidoctor:${ASCIIDOCTOR_VERSION} \
         pygments.rb rouge && \
@@ -79,7 +83,8 @@ RUN apt-get install --no-install-recommends --no-install-suggests -y \
            xenial \
            edge" && \
     apt-get -y update && \
-    apt-get -y install docker-ce=17.12.0~ce-0~ubuntu
+    apt-get -y install docker-ce=17.12.0~ce-0~ubuntu && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY --from=golang:1.10 /usr/local/go /usr/local/go
 ENV PATH /usr/local/go/bin:/go/bin:$PATH

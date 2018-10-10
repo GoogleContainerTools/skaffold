@@ -80,7 +80,7 @@ func TestLocalRun(t *testing.T) {
 			description: "single build",
 			out:         ioutil.Discard,
 			config: &latest.LocalBuild{
-				SkipPush: util.BoolPtr(false),
+				Push: util.BoolPtr(false),
 			},
 			artifacts: []*latest.Artifact{
 				{
@@ -104,7 +104,7 @@ func TestLocalRun(t *testing.T) {
 			description: "subset build",
 			out:         ioutil.Discard,
 			config: &latest.LocalBuild{
-				SkipPush: util.BoolPtr(true),
+				Push: util.BoolPtr(true),
 			},
 			tagger: &tag.ChecksumTagger{},
 			artifacts: []*latest.Artifact{
