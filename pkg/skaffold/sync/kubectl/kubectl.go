@@ -14,13 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubernetes
+package kubectl
 
 import (
 	"context"
 	"fmt"
 	"os/exec"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 
@@ -61,7 +62,7 @@ func perform(ctx context.Context, image string, files map[string]string, cmdFn f
 		return nil
 	}
 
-	client, err := Client()
+	client, err := kubernetes.Client()
 	if err != nil {
 		return errors.Wrap(err, "getting k8s client")
 	}

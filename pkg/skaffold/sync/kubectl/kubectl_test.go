@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubernetes
+package kubectl
 
 import (
 	"context"
@@ -23,6 +23,7 @@ import (
 	"strings"
 	"testing"
 
+	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -121,8 +122,8 @@ func TestPerform(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = cmdRecord
 
-			defer func(c func() (kubernetes.Interface, error)) { Client = c }(GetClientset)
-			Client = func() (kubernetes.Interface, error) {
+			defer func(c func() (kubernetes.Interface, error)) { pkgkubernetes.Client = c }(pkgkubernetes.GetClientset)
+			pkgkubernetes.Client = func() (kubernetes.Interface, error) {
 				return fake.NewSimpleClientset(pod), test.clientErr
 			}
 
