@@ -217,7 +217,7 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 func withKanikoBuild(bucket, secretName, namespace, secret string, timeout string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldPipeline) {
 	return func(cfg *latest.SkaffoldPipeline) {
 		b := latest.BuildConfig{BuildType: latest.BuildType{KanikoBuild: &latest.KanikoBuild{
-			BuildContext: latest.KanikoBuildContext{
+			BuildContext: &latest.KanikoBuildContext{
 				GCSBucket: bucket,
 			},
 			PullSecretName: secretName,
