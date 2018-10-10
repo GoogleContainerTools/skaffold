@@ -53,7 +53,7 @@ func (g *LocalDir) Setup(ctx context.Context, artifact *latest.Artifact, cfg *la
 		return "", errors.Wrap(err, "creating temporary buildcontext tarball")
 	}
 	defer f.Close()
-	err = docker.CreateDockerTarGzContext(f, artifact.Workspace, artifact.DockerArtifact)
+	err = docker.CreateDockerTarGzContext(ctx, f, artifact.Workspace, artifact.DockerArtifact)
 	context := fmt.Sprintf("dir://%s", constants.DefaultKanikoEmptyDirMountPath)
 	return context, err
 }
