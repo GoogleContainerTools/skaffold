@@ -41,13 +41,13 @@ func NewWatcher() Watcher {
 type component struct {
 	deps     func() ([]string, error)
 	onChange func(Events)
-	state    fileMap
+	state    FileMap
 	events   Events
 }
 
 // Register adds a new component to the watch list.
 func (w *watchList) Register(deps func() ([]string, error), onChange func(Events)) error {
-	state, err := stat(deps)
+	state, err := Stat(deps)
 	if err != nil {
 		return errors.Wrap(err, "listing files")
 	}
@@ -74,7 +74,7 @@ func (w *watchList) Run(ctx context.Context, trigger Trigger, onChange func() er
 		case <-t:
 			changed := 0
 			for i, component := range *w {
-				state, err := stat(component.deps)
+				state, err := Stat(component.deps)
 				if err != nil {
 					return errors.Wrap(err, "listing files")
 				}

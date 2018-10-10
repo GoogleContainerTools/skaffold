@@ -80,6 +80,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdFix(out))
 	rootCmd.AddCommand(NewCmdConfig(out))
 	rootCmd.AddCommand(NewCmdInit(out))
+	rootCmd.AddCommand(NewCmdDiagnose(out))
 
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
 
@@ -131,14 +132,6 @@ func setFlagsFromEnvVariables(commands []*cobra.Command) {
 	}
 }
 
-func AddDevFlags(cmd *cobra.Command) {
-	cmd.Flags().BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
-	cmd.Flags().StringArrayVarP(&opts.Watch, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts.")
-	cmd.Flags().IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes.")
-	cmd.Flags().BoolVar(&opts.PortForward, "port-forward", true, "Port-forward exposed container ports within pods")
-	cmd.Flags().StringArrayVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels.")
-}
-
 func AddRunDeployFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.Tail, "tail", false, "Stream logs from deployed objects")
 	cmd.Flags().StringArrayVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels.")
@@ -149,11 +142,6 @@ func AddRunDevFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
 	cmd.Flags().StringArrayVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
 	cmd.Flags().StringVarP(&opts.Namespace, "namespace", "n", "", "Run deployments in the specified namespace")
-}
-
-func AddFixFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
-	cmd.Flags().BoolVar(&overwrite, "overwrite", false, "Overwrite original config with fixed config")
 }
 
 func SetUpLogs(out io.Writer, level string) error {
