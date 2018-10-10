@@ -109,7 +109,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		Deployer:     deployer,
 		Tagger:       tagger,
 		Trigger:      trigger,
-		Syncer:       &kubectl.KubectlSyncer{},
+		Syncer:       &kubectl.Syncer{},
 		opts:         opts,
 		watchFactory: watch.NewWatcher,
 	}, nil

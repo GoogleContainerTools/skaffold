@@ -16,13 +16,24 @@ limitations under the License.
 package sync
 
 import (
+	"context"
+	"fmt"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"k8s.io/api/core/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestNewSyncItem(t *testing.T) {
@@ -227,6 +238,108 @@ func TestIntersect(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			actual, err := intersect(test.context, test.syncPatterns, test.files)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
+		})
+	}
+}
+
+type TestCmdRecorder struct {
+	cmds []string
+	err  error
+}
+
+func (t *TestCmdRecorder) RunCmd(cmd *exec.Cmd) error {
+	if t.err != nil {
+		return t.err
+	}
+	t.cmds = append(t.cmds, strings.Join(cmd.Args, " "))
+	return nil
+}
+
+func (t *TestCmdRecorder) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
+	return nil, t.RunCmd(cmd)
+}
+
+func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, src, dst string) *exec.Cmd {
+	return exec.CommandContext(ctx, "copy", src, dst)
+}
+
+var pod = &v1.Pod{
+	ObjectMeta: meta_v1.ObjectMeta{
+		Name:   "podname",
+		Labels: constants.Labels.DefaultLabels,
+	},
+	Status: v1.PodStatus{
+		Phase: v1.PodRunning,
+	},
+	Spec: v1.PodSpec{
+		Containers: []v1.Container{
+			{
+				Name:  "container_name",
+				Image: "gcr.io/k8s-skaffold:123",
+			},
+		},
+	},
+}
+
+func TestPerform(t *testing.T) {
+	var tests = []struct {
+		description string
+		image       string
+		files       map[string]string
+		cmdFn       func(context.Context, v1.Pod, v1.Container, string, string) *exec.Cmd
+		cmdErr      error
+		clientErr   error
+		expected    []string
+		shouldErr   bool
+	}{
+		{
+			description: "no error",
+			image:       "gcr.io/k8s-skaffold:123",
+			files:       map[string]string{"test.go": "/test.go"},
+			cmdFn:       fakeCmd,
+			expected:    []string{"copy test.go /test.go"},
+		},
+		{
+			description: "cmd error",
+			image:       "gcr.io/k8s-skaffold:123",
+			files:       map[string]string{"test.go": "/test.go"},
+			cmdFn:       fakeCmd,
+			cmdErr:      fmt.Errorf(""),
+			shouldErr:   true,
+		},
+		{
+			description: "client error",
+			image:       "gcr.io/k8s-skaffold:123",
+			files:       map[string]string{"test.go": "/test.go"},
+			cmdFn:       fakeCmd,
+			clientErr:   fmt.Errorf(""),
+			shouldErr:   true,
+		},
+		{
+			description: "no copy",
+			image:       "gcr.io/different-pod:123",
+			files:       map[string]string{"test.go": "/test.go"},
+			cmdFn:       fakeCmd,
+			shouldErr:   true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			cmdRecord := &TestCmdRecorder{err: test.cmdErr}
+			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+			util.DefaultExecCommand = cmdRecord
+
+			defer func(c func() (kubernetes.Interface, error)) { pkgkubernetes.Client = c }(pkgkubernetes.GetClientset)
+			pkgkubernetes.Client = func() (kubernetes.Interface, error) {
+				return fake.NewSimpleClientset(pod), test.clientErr
+			}
+
+			util.DefaultExecCommand = cmdRecord
+
+			err := Perform(context.Background(), test.image, test.files, test.cmdFn)
+
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cmdRecord.cmds)
 		})
 	}
 }
