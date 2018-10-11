@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"}
@@ -36,6 +37,7 @@ func GetDependenciesGradle(ctx context.Context, workspace string, a *latest.JibG
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jibGradle dependencies")
 	}
+	logrus.Debugf("Found dependencies for jibGradle artifact: %v", deps)
 	return deps, nil
 }
 

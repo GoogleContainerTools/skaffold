@@ -105,13 +105,25 @@ func events(prev, curr FileMap) Events {
 		}
 	}
 
-	sortEvt(e)
-	logrus.Debug(e.String())
+	sortEvents(e)
+	logEvents(e)
 	return e
 }
 
-func sortEvt(e Events) {
+func sortEvents(e Events) {
 	sort.Strings(e.Added)
 	sort.Strings(e.Modified)
 	sort.Strings(e.Deleted)
+}
+
+func logEvents(e Events) {
+	if e.Added != nil && len(e.Added) > 0 {
+		logrus.Infof("files added: %v", e.Added)
+	}
+	if e.Modified != nil && len(e.Modified) > 0 {
+		logrus.Infof("files modified: %v", e.Modified)
+	}
+	if e.Deleted != nil && len(e.Deleted) > 0 {
+		logrus.Infof("files deleted: %v", e.Deleted)
+	}
 }

@@ -23,6 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
@@ -38,6 +39,7 @@ func GetDependenciesMaven(ctx context.Context, workspace string, a *latest.JibMa
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jibMaven dependencies")
 	}
+	logrus.Debugf("Found dependencies for jibMaven artifact: %v", deps)
 	return deps, nil
 }
 
