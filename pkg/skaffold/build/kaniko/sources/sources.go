@@ -35,7 +35,7 @@ type BuildContextSource interface {
 
 // Retrieve returns the correct build context based on the config
 func Retrieve(cfg *latest.KanikoBuild) (BuildContextSource, error) {
-	if cfg.BuildContext == nil || cfg.BuildContext.LocalDir != nil {
+	if cfg.BuildContext.LocalDir != nil {
 		return &LocalDir{}, nil
 	}
 	return &GCSBucket{}, nil

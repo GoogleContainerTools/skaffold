@@ -41,6 +41,7 @@ func (c *SkaffoldPipeline) SetDefaultValues() error {
 		setDefaultKanikoImage,
 		setDefaultKanikoNamespace,
 		setDefaultKanikoSecret,
+		setDefaultKanikoBuildContext,
 	); err != nil {
 		return err
 	}
@@ -170,6 +171,15 @@ func setDefaultKanikoSecret(kaniko *KanikoBuild) error {
 		return nil
 	}
 
+	return nil
+}
+
+func setDefaultKanikoBuildContext(kaniko *KanikoBuild) error {
+	if kaniko.BuildContext == nil {
+		kaniko.BuildContext = &KanikoBuildContext{
+			LocalDir: &LocalDir{},
+		}
+	}
 	return nil
 }
 
