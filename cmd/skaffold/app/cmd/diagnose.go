@@ -148,6 +148,10 @@ func typeOfArtifact(a *latest.Artifact) string {
 		return "Docker artifact"
 	case a.BazelArtifact != nil:
 		return "Bazel artifact"
+	case a.JibGradleArtifact != nil:
+		return "Jib Gradle artifact"
+	case a.JibMavenArtifact != nil:
+		return "Jib Maven artifact"
 	default:
 		return "Unknown artifact"
 	}
