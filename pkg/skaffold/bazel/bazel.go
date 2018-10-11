@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 const sourceQuery = "kind('source file', deps('%[1]s')) union buildfiles('%[1]s')"
@@ -64,6 +65,8 @@ func GetDependencies(ctx context.Context, workspace string, a *latest.BazelArtif
 	if _, err := os.Stat(filepath.Join(workspace, "WORKSPACE")); err == nil {
 		deps = append(deps, "WORKSPACE")
 	}
+
+	logrus.Debugf("Found dependencies for bazel artifact: %s", deps)
 
 	return deps, nil
 }
