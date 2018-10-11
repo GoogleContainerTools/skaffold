@@ -39,7 +39,7 @@ func GetDependenciesMaven(ctx context.Context, workspace string, a *latest.JibMa
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jibMaven dependencies")
 	}
-	logrus.Debugf("Found dependencies for jibMaven artifact: %s", deps)
+	logrus.Debugf("Found dependencies for jibMaven artifact: %v", deps)
 	return deps, nil
 }
 

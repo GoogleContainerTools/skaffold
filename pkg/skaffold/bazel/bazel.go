@@ -66,7 +66,7 @@ func GetDependencies(ctx context.Context, workspace string, a *latest.BazelArtif
 		deps = append(deps, "WORKSPACE")
 	}
 
-	logrus.Debugf("Found dependencies for bazel artifact: %s", deps)
+	logrus.Debugf("Found dependencies for bazel artifact: %v", deps)
 
 	return deps, nil
 }

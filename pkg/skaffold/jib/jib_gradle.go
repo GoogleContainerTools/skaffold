@@ -37,7 +37,7 @@ func GetDependenciesGradle(ctx context.Context, workspace string, a *latest.JibG
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jibGradle dependencies")
 	}
-	logrus.Debugf("Found dependencies for jibGradle artifact: %s", deps)
+	logrus.Debugf("Found dependencies for jibGradle artifact: %v", deps)
 	return deps, nil
 }
 
