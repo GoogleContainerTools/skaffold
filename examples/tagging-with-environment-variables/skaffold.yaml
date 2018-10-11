@@ -1,8 +1,8 @@
-apiVersion: skaffold/v1alpha3
+apiVersion: skaffold/v1alpha4
 kind: Config
 build:
   artifacts:
-  - imageName: gcr.io/k8s-skaffold/skaffold-example
+  - image: gcr.io/k8s-skaffold/skaffold-example
   tagPolicy:
     envTemplate:
       template: "{{.IMAGE_NAME}}:{{.FOO}}"
