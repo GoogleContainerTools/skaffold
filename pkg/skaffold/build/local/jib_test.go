@@ -30,12 +30,12 @@ func TestGenerateMavenArgs(t *testing.T) {
 		in  latest.JibMavenArtifact
 		out []string
 	}{
-		{latest.JibMavenArtifact{}, []string{"prepare-package", "jib:goal", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Profile: "profile"}, []string{"prepare-package", "jib:goal", "-Dimage=image", "-Pprofile"}},
+		{latest.JibMavenArtifact{}, []string{"--non-recursive","prepare-package", "jib:goal", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Profile: "profile"}, []string{"--non-recursive","prepare-package", "jib:goal", "-Dimage=image", "-Pprofile"}},
 	}
 
 	for _, tt := range testCases {
-		args := generateMavenArgs("goal", "image", &tt.in)
+		args := generateSingleModuleMavenArgs("goal", "image", &tt.in)
 
 		testutil.CheckDeepEqual(t, tt.out, args)
 	}
