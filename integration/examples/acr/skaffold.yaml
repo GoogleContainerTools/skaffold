@@ -2,14 +2,8 @@ apiVersion: skaffold/v1alpha4
 kind: Config
 build:
   artifacts:
-  - imageName: myregistry.azurecr.io/skaffold-example
-  acr:
-    resourceGroup: myresourcegroup
-    credentials:
-      subscriptionId: subscription-id
-      clientId: client-id
-      clientSecret: client-secret
-      tenantId: tenant-id
+  - image: myregistry.azurecr.io/skaffold-example
+  acr: {}
 deploy:
   kubectl:
     manifests:

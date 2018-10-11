@@ -25,7 +25,6 @@ import (
 	"time"
 
 	cr "github.com/Azure/azure-sdk-for-go/services/containerregistry/mgmt/2018-09-01/containerregistry"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -41,12 +40,10 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error) {
-	client := cr.NewRegistriesClient(b.Credentials.SubscriptionID)
-	authorizer, err := auth.NewClientCredentialsConfig(b.Credentials.ClientID, b.Credentials.ClientSecret, b.Credentials.TenantID).Authorizer()
+	client, err := b.NewRegistriesClient()
 	if err != nil {
-		return "", errors.Wrap(err, "authorizing client")
+		return "", errors.Wrap(err, "")
 	}
-	client.Authorizer = authorizer
 
 	imageTag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.Options{
 		Digest:    util.RandomID(),
@@ -57,7 +54,12 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	}
 	registryName := getRegistryName(imageTag)
 
-	result, err := client.GetBuildSourceUploadURL(ctx, b.ResourceGroup, registryName)
+	resourceGroup, err := getResourceGroup(ctx, client, registryName)
+	if err != nil {
+		return "", errors.Wrap(err, "get resource group")
+	}
+
+	result, err := client.GetBuildSourceUploadURL(ctx, resourceGroup, registryName)
 	if err != nil {
 		return "", errors.Wrap(err, "build source upload url")
 	}
@@ -88,20 +90,20 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		DockerFilePath: &artifact.DockerArtifact.DockerfilePath,
 		Type:           cr.TypeDockerBuildRequest,
 	}
-	future, err := client.ScheduleRun(ctx, b.ResourceGroup, registryName, buildRequest)
+	future, err := client.ScheduleRun(ctx, resourceGroup, registryName, buildRequest)
 	if err != nil {
 		return "", errors.Wrap(err, "schedule build request")
 	}
 
-	run, err := future.Result(client)
+	run, err := future.Result(*client)
 	if err != nil {
 		return "", errors.Wrap(err, "get run id")
 	}
 	runID := *run.RunID
 
-	runsClient := cr.NewRunsClient(b.Credentials.SubscriptionID)
+	runsClient := cr.NewRunsClient(b.SubscriptionID)
 	runsClient.Authorizer = client.Authorizer
-	logURL, err := runsClient.GetLogSasURL(ctx, b.ResourceGroup, registryName, runID)
+	logURL, err := runsClient.GetLogSasURL(ctx, resourceGroup, registryName, runID)
 	if err != nil {
 		return "", errors.Wrap(err, "get log url")
 	}
@@ -160,11 +162,29 @@ func streamBuildLogs(logURL string, out io.Writer) error {
 	}
 }
 
+func getResourceGroup(ctx context.Context, client *cr.RegistriesClient, registryName string) (string, error) {
+	registryList, err := client.List(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	for _, registry := range registryList.Values() {
+		if strings.ToLower(*registry.Name) == registryName {
+			//registry.ID returns the exact path to the container registry
+			//e.g. /subscriptions/<subscriptionId>/resourceGroups/<resourceGroup>/...
+			//so the resourceGroup is the fourth element of the split
+			return strings.Split(*registry.ID, "/")[4], nil
+		}
+	}
+
+	return "", errors.New("Couldn't find resource group of registry")
+}
+
 func getImageTagWithoutFQDN(imageTag string) string {
 	return imageTag[strings.Index(imageTag, "/")+1:]
 }
 
 //acr URL is <registryname>.azurecr.io
 func getRegistryName(imageTag string) string {
-	return imageTag[:strings.Index(imageTag, ".")]
+	return strings.ToLower(imageTag[:strings.Index(imageTag, ".")])
 }

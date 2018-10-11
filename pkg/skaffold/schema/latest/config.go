@@ -122,13 +122,6 @@ type KanikoBuild struct {
 // AzureContainerBuild contains the fields needed to do a build
 // on Azure Container Registry
 type AzureContainerBuild struct {
-	Credentials   AzureContainerBuildCredentials `yaml:"credentials,omitempty"`
-	ResourceGroup string                         `yaml:"resourceGroup,omitempty"`
-}
-
-// AzureContainerBuildCredentials contains the fields needed to
-// to authorize the azure sdk
-type AzureContainerBuildCredentials struct {
 	SubscriptionID string `yaml:"subscriptionId,omitempty"`
 	ClientID       string `yaml:"clientId,omitempty"`
 	ClientSecret   string `yaml:"clientSecret,omitempty"`
