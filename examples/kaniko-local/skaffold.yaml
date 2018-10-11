@@ -5,7 +5,7 @@ build:
   - image: gcr.io/k8s-skaffold/skaffold-example
   kaniko:
     buildContext: 
-      gcsBucket: skaffold-kaniko
+      localDir: {}
     pullSecretName: e2esecret
     namespace: default
 deploy:

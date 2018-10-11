@@ -1,0 +1,16 @@
+apiVersion: skaffold/v1alpha4
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/node-example
+    context: node
+    sync:
+      '*.js': .
+  - image: gcr.io/k8s-skaffold/python-reload
+    context: python
+    sync:
+      '*.py': .
+deploy:
+  kubectl:
+    manifests:
+    - "**/k8s"

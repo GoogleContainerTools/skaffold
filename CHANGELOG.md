@@ -1,3 +1,53 @@
+# v0.16.0 Release - 10/11/2018
+
+New Features:
+* Add a `skaffold diagnose` command [#1109](https://github.com/GoogleContainerTools/skaffold/pull/1109)
+* Add localdir buildcontext to kaniko builder [#983](https://github.com/GoogleContainerTools/skaffold/pull/983)
+* Add --label flag to specify custom labels for deployments [#1098](https://github.com/GoogleContainerTools/skaffold/pull/1098)
+* Add support for building projects using jib [#1073](https://github.com/GoogleContainerTools/skaffold/pull/1073)
+
+Bug Fixes:
+* Fix jib artifacts in skaffold diagnose [#1141](https://github.com/GoogleContainerTools/skaffold/pull/1141)
+* Fix master [#1133](https://github.com/GoogleContainerTools/skaffold/pull/1133)
+* Delete and redeploy object upon error 'field is immutable' [#940](https://github.com/GoogleContainerTools/skaffold/pull/940)
+* Fix `skaffold fix` [#1123](https://github.com/GoogleContainerTools/skaffold/pull/1123)
+* Lists files recursively in jib.getDependencies and other fixes. [#1097](https://github.com/GoogleContainerTools/skaffold/pull/1097)
+* Merge error? [#1095](https://github.com/GoogleContainerTools/skaffold/pull/1095)
+* Fix missing parenthesis [#1089](https://github.com/GoogleContainerTools/skaffold/pull/1089)
+
+Updates:
+* Move sync code to pkg/skaffold/sync/kubectl [#1138](https://github.com/GoogleContainerTools/skaffold/pull/1138)
+* Add a test to check version upgrades [#1103](https://github.com/GoogleContainerTools/skaffold/pull/1103)
+* Add a way to unset global config values [#1086](https://github.com/GoogleContainerTools/skaffold/pull/1086)
+* Handles Jib build directly to registry when push=true. [#1132](https://github.com/GoogleContainerTools/skaffold/pull/1132)
+* Simplify Jib code [#1130](https://github.com/GoogleContainerTools/skaffold/pull/1130)
+* Trim the dockerfile a bit: [#1128](https://github.com/GoogleContainerTools/skaffold/pull/1128)
+* Pass context when listing dependencies [#1108](https://github.com/GoogleContainerTools/skaffold/pull/1108)
+* Remove fully qualified jib path for maven goals [#1129](https://github.com/GoogleContainerTools/skaffold/pull/1129)
+* Merge master into jib_skaffold feature branch. [#1117](https://github.com/GoogleContainerTools/skaffold/pull/1117)
+* Merge Jib feature-branch [#1063](https://github.com/GoogleContainerTools/skaffold/pull/1063)
+* Improves jib.getDependencies. [#1125](https://github.com/GoogleContainerTools/skaffold/pull/1125)
+* skipPush -> push [#1114](https://github.com/GoogleContainerTools/skaffold/pull/1114)
+* Support for dot files in dockerignore [#1122](https://github.com/GoogleContainerTools/skaffold/pull/1122)
+* remove project level skaffold.yaml [#1119](https://github.com/GoogleContainerTools/skaffold/pull/1119)
+* Merge master into jib_skaffold feature branch [#1116](https://github.com/GoogleContainerTools/skaffold/pull/1116)
+* Unify Jib command wrapper usage [#1105](https://github.com/GoogleContainerTools/skaffold/pull/1105)
+* Update labels when deploying to namespace other than default [#1115](https://github.com/GoogleContainerTools/skaffold/pull/1115)
+* Improve sync [#1102](https://github.com/GoogleContainerTools/skaffold/pull/1102)
+* Rename SkaffoldConfig to SkaffoldPipeline [#1087](https://github.com/GoogleContainerTools/skaffold/pull/1087)
+* Kaniko improvements [#1101](https://github.com/GoogleContainerTools/skaffold/pull/1101)
+* File Sync for skaffold dev [#1039](https://github.com/GoogleContainerTools/skaffold/pull/1039)
+* Implement a manual trigger for watch mode [#1085](https://github.com/GoogleContainerTools/skaffold/pull/1085)
+* Skaffold init asks user to write skaffold.yaml [#1091](https://github.com/GoogleContainerTools/skaffold/pull/1091)
+* Couple of improvements to the test phase [#1080](https://github.com/GoogleContainerTools/skaffold/pull/1080)
+* Merges branch 'master' into jib_skaffold. [#1088](https://github.com/GoogleContainerTools/skaffold/pull/1088)
+* Implements jib.GetDependenciesMaven/GetDependenciesGradle. [#1058](https://github.com/GoogleContainerTools/skaffold/pull/1058)
+* Add test runner [#1013](https://github.com/GoogleContainerTools/skaffold/pull/1013)
+* Simplify schema versioning [#1067](https://github.com/GoogleContainerTools/skaffold/pull/1067)
+* Changelog changes for v0.15.1 [#1075](https://github.com/GoogleContainerTools/skaffold/pull/1075)
+* Minor logging improvements [#1142](https://github.com/GoogleContainerTools/skaffold/pull/1142)
+
+
 # v0.15.1 Release - 10/02/2018
 
 This is a minor release to address an inconsistency in the `skaffold fix` upgrade:

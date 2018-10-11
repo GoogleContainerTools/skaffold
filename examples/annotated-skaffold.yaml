@@ -1,4 +1,4 @@
-apiVersion: skaffold/v1alpha3
+apiVersion: skaffold/v1alpha4
 kind: Config
 build:
   # tagPolicy determines how skaffold is going to tag your images.
@@ -36,15 +36,15 @@ build:
   # you can include as many as you want here.
   artifacts:
     # The name of the image to be built.
-  - imageName: gcr.io/k8s-skaffold/skaffold-example
+  - image: gcr.io/k8s-skaffold/skaffold-example
     # The path to your dockerfile context. Defaults to ".".
-    workspace: ../examples/getting-started
+    context: ../examples/getting-started
 
     # Each artifact is of a given type among: `docker` and `bazel`.
     # If not specified, it defaults to `docker: {}`.
     docker:
       # Dockerfile's location relative to workspace. Defaults to "Dockerfile"
-      dockerfilePath: Dockerfile
+      dockerfile: Dockerfile
       # Key/value arguements passed to the docker build.
       buildArgs:
         key1: "value1"
@@ -77,7 +77,8 @@ build:
   # `useBuildkit` can also be set to activate the experimental BuildKit feature.
   #
   # local:
-  #   skipPush: true
+  #   false by default for local clusters, true for remote clusters
+  #   push: false
   #   useDockerCLI: false
   #   useBuildkit: false
 
@@ -97,7 +98,7 @@ build:
 
   # Docker artifacts can be built on a Kubernetes cluster with Kaniko.
   # Exactly one buildContext must be specified to use kaniko
-  # If localDir is specified, skaffold will mount sources directly via a emptyDir volume
+  # If localDir is specified, skaffold will mount sources directly via a emptyDir volume	
   # If gcsBucket is specified, skaffold will send sources to the GCS bucket provided
   # Kaniko also needs access to a service account to push the final image.
   # See https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster
@@ -136,7 +137,7 @@ deploy:
     # - namespace:deployment/web-app2
 
  # kustomize:
-    # kustomizePath: .
+    # path: .
     # kustomize deploys manifests with kubectl.
     # kubectl can be passed additional option flags either on every command (Global),
     # on creations (Apply) or deletions (Delete).

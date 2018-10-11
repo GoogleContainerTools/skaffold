@@ -1,10 +1,10 @@
-apiVersion: skaffold/v1alpha3
+apiVersion: skaffold/v1alpha4
 kind: Config
 build:
   tagPolicy:
     sha256: {}
   artifacts:
-  - imageName: gcr.io/k8s-skaffold/skaffold-helm
+  - image: gcr.io/k8s-skaffold/skaffold-helm
 deploy:
   helm:
     releases:
