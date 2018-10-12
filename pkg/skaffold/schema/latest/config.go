@@ -115,12 +115,12 @@ type KanikoBuildContext struct {
 // KanikoBuild contains the fields needed to do a on-cluster build using
 // the kaniko image
 type KanikoBuild struct {
-	BuildContext   KanikoBuildContext `yaml:"buildContext,omitempty"`
-	PullSecret     string             `yaml:"pullSecret,omitempty"`
-	PullSecretName string             `yaml:"pullSecretName,omitempty"`
-	Namespace      string             `yaml:"namespace,omitempty"`
-	Timeout        string             `yaml:"timeout,omitempty"`
-	Image          string             `yaml:"image,omitempty"`
+	BuildContext   *KanikoBuildContext `yaml:"buildContext,omitempty"`
+	PullSecret     string              `yaml:"pullSecret,omitempty"`
+	PullSecretName string              `yaml:"pullSecretName,omitempty"`
+	Namespace      string              `yaml:"namespace,omitempty"`
+	Timeout        string              `yaml:"timeout,omitempty"`
+	Image          string              `yaml:"image,omitempty"`
 }
 
 // TestCase is a struct containing all the specified test
