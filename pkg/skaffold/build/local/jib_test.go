@@ -58,14 +58,13 @@ func TestMavenVerifyJibPackageGoal(t *testing.T) {
 	}
 
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-	// create an empty workspace so that a maven wrapper is never found
-	workspace, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
+	defer func(previous bool) { util.SkipWrapperCheck = previous }(util.SkipWrapperCheck)
+	util.SkipWrapperCheck = true
 
 	for _, tt := range testCases {
 		util.DefaultExecCommand = testutil.NewFakeCmdOut("mvn --projects module jib:_skaffold-package-goals --quiet", tt.mavenOutput, nil)
 
-		err := verifyJibPackageGoal(context.TODO(), tt.requiredGoal, workspace.Root(), &latest.JibMavenArtifact{Module: "module"})
+		err := verifyJibPackageGoal(context.TODO(), tt.requiredGoal, ".", &latest.JibMavenArtifact{Module: "module"})
 		if hasError := err != nil; tt.shouldError != hasError {
 			t.Error("Unexpected return result")
 		}
