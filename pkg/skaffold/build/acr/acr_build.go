@@ -19,10 +19,13 @@ package acr
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/google/go-containerregistry/pkg/name"
 
 	cr "github.com/Azure/azure-sdk-for-go/services/containerregistry/mgmt/2018-09-01/containerregistry"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -76,7 +79,11 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	}
 
 	//acr needs the image tag formatted as <repository>:<tag>
-	imageTag = getImageTagWithoutFQDN(imageTag)
+	tag, err := name.NewTag(imageTag, name.StrictValidation)
+	if err != nil {
+		return "", errors.Wrap(err, "getting tag info")
+	}
+	imageTag = fmt.Sprintf("%s:%s", tag.RepositoryStr(), tag.TagStr())
 
 	buildRequest := cr.DockerBuildRequest{
 		ImageNames:     &[]string{imageTag},
@@ -178,10 +185,6 @@ func getResourceGroup(ctx context.Context, client *cr.RegistriesClient, registry
 	}
 
 	return "", errors.New("Couldn't find resource group of registry")
-}
-
-func getImageTagWithoutFQDN(imageTag string) string {
-	return imageTag[strings.Index(imageTag, "/")+1:]
 }
 
 //acr URL is <registryname>.azurecr.io
