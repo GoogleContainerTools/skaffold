@@ -31,10 +31,6 @@ var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 // GetDependenciesMaven finds the source dependencies for the given jib-maven artifact.
 // All paths are absolute.
 func GetDependenciesMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) ([]string, error) {
-	if a.Module != "" {
-		// TODO(coollog): Add support for multi-module projects.
-		return nil, errors.New("Maven multi-modules not supported yet")
-	}
 	deps, err := getDependencies(getCommandMaven(ctx, workspace, a))
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jibMaven dependencies")
@@ -44,9 +40,15 @@ func GetDependenciesMaven(ctx context.Context, workspace string, a *latest.JibMa
 }
 
 func getCommandMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) *exec.Cmd {
-	args := []string{"jib:_skaffold-files", "-q"}
+	var args []string
+	if a.Module == "" {
+		// single-module project
+		args = []string{"--non-recursive", "jib:_skaffold-files", "--quiet"}
+	} else {
+		args = []string{"--projects", a.Module, "--also-make", "jib:_skaffold-files", "--quiet"}
+	}
 	if a.Profile != "" {
-		args = append(args, "-P", a.Profile)
+		args = append(args, "--activate-profiles", a.Profile)
 	}
 
 	return MavenCommand.CreateCommand(ctx, workspace, args)

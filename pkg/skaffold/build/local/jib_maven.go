@@ -78,7 +78,7 @@ func generateMavenArgs(goal string, skaffoldImage string, a *latest.JibMavenArti
 		command = []string{"--projects", a.Module, "--also-make", "package", "-Dimage=" + skaffoldImage}
 	}
 	if a.Profile != "" {
-		command = append(command, "-P"+a.Profile)
+		command = append(command, "--activate-profiles", a.Profile)
 	}
 
 	return command
@@ -90,7 +90,7 @@ func verifyJibPackageGoal(ctx context.Context, requiredGoal string, workspace st
 	// cannot use --non-recursive
 	command := []string{"--projects", a.Module, "jib:_skaffold-package-goals", "--quiet"}
 	if a.Profile != "" {
-		command = append(command, "-P"+a.Profile)
+		command = append(command, "--activate-profiles", a.Profile)
 	}
 
 	cmd := jib.MavenCommand.CreateCommand(ctx, workspace, command)

@@ -31,9 +31,9 @@ func TestGenerateMavenArgs(t *testing.T) {
 		out []string
 	}{
 		{latest.JibMavenArtifact{}, []string{"--non-recursive", "prepare-package", "jib:goal", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Profile: "profile"}, []string{"--non-recursive", "prepare-package", "jib:goal", "-Dimage=image", "-Pprofile"}},
+		{latest.JibMavenArtifact{Profile: "profile"}, []string{"--non-recursive", "prepare-package", "jib:goal", "-Dimage=image", "--activate-profiles", "profile"}},
 		{latest.JibMavenArtifact{Module: "module"}, []string{"--projects", "module", "--also-make", "package", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, []string{"--projects", "module", "--also-make", "package", "-Dimage=image", "-Pprofile"}},
+		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, []string{"--projects", "module", "--also-make", "package", "-Dimage=image", "--activate-profiles", "profile"}},
 	}
 
 	for _, tt := range testCases {
