@@ -38,6 +38,9 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 	// Parses stdout for the dependencies, one per line
 	lines := strings.Split(string(stdout), "\n")
 
+	// TODO(coollog): Remove this once Jib deps are prepended with special sequence.
+	cmdDir := util.Canonical(cmd.Dir)
+
 	var deps []string
 	for _, dep := range lines {
 		if dep == "" {
@@ -46,7 +49,7 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 
 		// TODO(coollog): Remove this once Jib deps are prepended with special sequence.
 		// Skips the project directory itself. This is necessary as some wrappers print the project directory for some reason.
-		if dep == cmd.Dir {
+		if dep == cmdDir {
 			continue
 		}
 

@@ -227,3 +227,20 @@ func AbsFile(workspace string, filename string) (string, error) {
 	}
 	return filepath.Abs(file)
 }
+
+// Canonical returns the canonical location of the given path,
+// making it absolute and resolving any symlinks.
+// Return the best path possible if there are failures.
+// This implementation does not attempt to be thorough for paths
+// that do not actually exist (e.g., /tmp/does/not/exist).
+func Canonical(path string) string {
+	abspath, err := filepath.Abs(path)
+	if err != nil {
+		return path
+	}
+	fullpath, err := filepath.EvalSymlinks(abspath)
+	if err != nil {
+		return abspath
+	}
+	return fullpath
+}
