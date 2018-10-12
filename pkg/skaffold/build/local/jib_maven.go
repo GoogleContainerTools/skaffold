@@ -31,20 +31,15 @@ import (
 )
 
 func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, a *latest.JibMavenArtifact) (string, error) {
+	// If this is a multi-module project, we require `package` be bound to jib:dockerBuild
 	if a.Module != "" {
-		// We require multimodule builds to explicitly bind a single jib goal to the `package` phase
-		if err := hasSingleJibPackageGoal(ctx, workspace, a); err != nil {
+		if err := checkSingleJibPackageGoal(ctx, "dockerBuild", workspace, a); err != nil {
 			return "", err
 		}
 	}
 
 	skaffoldImage := generateJibImageRef(workspace, a.Module)
-	var args []string
-	if a.Module != "" {
-		args = generateMultiModuleMavenArgs(skaffoldImage, a)
-	} else {
-		args = generateSingleModuleMavenArgs("dockerBuild", skaffoldImage, a)
-	}
+	args := generateMavenArgs("dockerBuild", skaffoldImage, a)
 
 	if err := runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
@@ -54,13 +49,16 @@ func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, work
 }
 
 func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.Artifact) (string, error) {
+	// If this is a multi-module project, we require `package` be bound to jib:build
 	if artifact.JibMavenArtifact.Module != "" {
-		return "", errors.New("maven multi-modules not supported yet")
+		if err := checkSingleJibPackageGoal(ctx, "build", workspace, artifact.JibMavenArtifact); err != nil {
+			return "", err
+		}
 	}
 
 	initialTag := util.RandomID()
 	skaffoldImage := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
-	args := generateSingleModuleMavenArgs("build", skaffoldImage, artifact.JibMavenArtifact)
+	args := generateMavenArgs("build", skaffoldImage, artifact.JibMavenArtifact)
 
 	if err := runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
@@ -69,9 +67,16 @@ func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, wo
 	return skaffoldImage, nil
 }
 
-// generateSingleModuleMavenArgs generates the arguments to Maven for building the project as an image called `skaffoldImage`.
-func generateSingleModuleMavenArgs(goal string, skaffoldImage string, a *latest.JibMavenArtifact) []string {
-	command := []string{"--non-recursive", "prepare-package", "jib:" + goal, "-Dimage=" + skaffoldImage}
+// generateMavenArgs generates the arguments to Maven for building the project as an image called `skaffoldImage`.
+func generateMavenArgs(goal string, skaffoldImage string, a *latest.JibMavenArtifact) []string {
+	var command []string
+	if a.Module == "" {
+		// single-module project
+		command = []string{"--non-recursive", "prepare-package", "jib:" + goal, "-Dimage=" + skaffoldImage}
+	} else {
+		// multi-module project: we assume `package` is boujd to `jib:<goal>` 
+		command = []string{"--projects", a.Module, "--also-make", "package", "-Dimage=" + skaffoldImage}
+	}
 	if a.Profile != "" {
 		command = append(command, "-P"+a.Profile)
 	}
@@ -79,22 +84,12 @@ func generateSingleModuleMavenArgs(goal string, skaffoldImage string, a *latest.
 	return command
 }
 
-// generateMultiModuleMavenArgs generates the arguments to Maven for building the project as an image called `skaffoldImage`.
-func generateMultiModuleMavenArgs(skaffoldImage string, a *latest.JibMavenArtifact) []string {
-	command := []string{"--projects", a.Module, "--also-make", "package", "-Dimage=" + skaffoldImage}
-	if a.Profile != "" {
-		command = append(command, "-P"+a.Profile)
-	}
-
-	return command
-}
-
-// hasSingleJibPackageGoal checks if the module has a single jib goal bound to
-// `package`.  It returns `nil` if there is a single package goal. Otherwise
-// it returns an error object.
-func hasSingleJibPackageGoal(ctx context.Context, workspace string, a *latest.JibMavenArtifact) error {
+// checkSingleJibPackageGoal ensures that the module has a single jib goal bound to
+// `package`.  It returns the single package goal, and otherwise
+// returns an error object including if there are no or many package goals.
+func checkSingleJibPackageGoal(ctx context.Context, requiredGoal string, workspace string, a *latest.JibMavenArtifact) error {
 	// cannot use --non-recursive
-	command := []string{"--projects",a.Module,"jib:_skaffold-package-goals","--quiet"}
+	command := []string{"--projects", a.Module, "jib:_skaffold-package-goals", "--quiet"}
 	if a.Profile != "" {
 		command = append(command, "-P"+a.Profile)
 	}
@@ -108,10 +103,12 @@ func hasSingleJibPackageGoal(ctx context.Context, workspace string, a *latest.Ji
 	// need to trim last newline
 	goals := strings.Split(strings.TrimSpace(string(stdout)), "\n")
 	logrus.Debugf("jib bound package goals for %s %s: %v (%d)", workspace, a.Module, goals, len(goals))
-	if len(goals) == 1 {
-		return nil
+	if len(goals) != 1 {
+		return errors.New("skaffold requires a single jib goal bound to 'package'")
+	} else if goals[0] != requiredGoal {
+		return errors.New(fmt.Sprintf("skaffold `push` setting requires 'package' be bound to 'jib:%s'", requiredGoal))
 	}
-	return errors.New("skaffold requires a single jib goal bound to 'package'")
+	return nil
 }
 
 func runMavenCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {
