@@ -61,14 +61,14 @@ build:
     # bazel:
     #  target: //:skaffold_example.tar
 
-    # jibMaven is an artifacts built with Maven, typically (but not only) a Java project.
+    # jibMaven builds containers using the Jib plugin for Maven.
     # jibMaven:
-    #  module: modulename
-    #  profile: profilename
+    #  module: modulename     # selects which maven module to build
+    #  profile: profilename   # selects which maven profile to activate
 
-    # jibGradle is an artifacts built with Gradle, typically (but not only) a Java project.
+    # jibGradle builds containers using the Jib plugin for Gradle.
     # jibGradle:
-    #  project: projectname
+    #  project: projectname   # selects which gradle project to build
 
 # This next section is where you'll put your specific builder configuration.
   # Valid builders are `local`, `googleCloudBuild` and `kaniko`.
