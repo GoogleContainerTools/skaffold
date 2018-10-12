@@ -33,7 +33,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const BuildStatusHeader = "x-ms-meta-Complete"
+const buildStatusHeader = "x-ms-meta-Complete"
 
 func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	return build.InParallel(ctx, out, tagger, artifacts, b.buildArtifact)
@@ -143,7 +143,7 @@ func streamBuildLogs(logURL string, out io.Writer) error {
 		resp.Body.Close()
 
 		if offset > 0 {
-			switch resp.Header.Get(BuildStatusHeader) {
+			switch resp.Header.Get(buildStatusHeader) {
 			case "":
 				continue
 			case "internalerror":
