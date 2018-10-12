@@ -74,7 +74,7 @@ func generateMavenArgs(goal string, skaffoldImage string, a *latest.JibMavenArti
 		// single-module project
 		command = []string{"--non-recursive", "prepare-package", "jib:" + goal, "-Dimage=" + skaffoldImage}
 	} else {
-		// multi-module project: we assume `package` is boujd to `jib:<goal>` 
+		// multi-module project: we assume `package` is boujd to `jib:<goal>`
 		command = []string{"--projects", a.Module, "--also-make", "package", "-Dimage=" + skaffoldImage}
 	}
 	if a.Profile != "" {

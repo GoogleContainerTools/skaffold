@@ -46,11 +46,11 @@ func TestGenerateMavenArgs(t *testing.T) {
 func TestMavenVerifyJibPackageGoal(t *testing.T) {
 	var testCases = []struct {
 		requiredGoal string
-		mavenOutput string
-		shouldError bool
+		mavenOutput  string
+		shouldError  bool
 	}{
-		{"xxx", "", true},	// no goals should fail
-		{"xxx", "\n", true},	// no goals should faill; newline stripped
+		{"xxx", "", true},   // no goals should fail
+		{"xxx", "\n", true}, // no goals should faill; newline stripped
 		{"dockerBuild", "dockerBuild", false},
 		{"dockerBuild", "dockerBuild\n", false}, // newline stripped
 		{"dockerBuild", "build\n", true},
@@ -60,11 +60,11 @@ func TestMavenVerifyJibPackageGoal(t *testing.T) {
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 	// create an empty workspace so that a maven wrapper is never found
 	workspace, cleanup := testutil.NewTempDir(t)
-    defer cleanup()
+	defer cleanup()
 
 	for _, tt := range testCases {
 		util.DefaultExecCommand = testutil.NewFakeCmdOut("mvn --projects module jib:_skaffold-package-goals --quiet", tt.mavenOutput, nil)
-		
+
 		err := verifyJibPackageGoal(context.TODO(), tt.requiredGoal, workspace.Root(), &latest.JibMavenArtifact{Module: "module"})
 		if hasError := err != nil; tt.shouldError != hasError {
 			t.Error("Unexpected return result")
