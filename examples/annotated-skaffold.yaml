@@ -107,19 +107,6 @@ build:
   #   namespace: default
   #   timeout: 20m
 
-  # Docker artifacts can be built on an Azure Container Registry.
-  # If Azure CLI is configured properly, you're logged in and have access to the registry,
-  # you can use:
-  #
-  # acr: {}
-  #
-  # otherwise you need to provide the credentials manually
-  # acr:
-  #   subscriptionId: SUBSCRIPTION_ID
-  #   tenantId: TENANT_ID
-  #   clientId: CLIENT_ID
-  #   clientSecret: CLIENT_SECRET
-
 # The deploy section has all the information needed to deploy. Along with build:
 # it is a required section.
 deploy:
