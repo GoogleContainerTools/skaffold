@@ -33,7 +33,7 @@ import (
 func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, a *latest.JibMavenArtifact) (string, error) {
 	// If this is a multi-module project, we require `package` be bound to jib:dockerBuild
 	if a.Module != "" {
-		if err := checkSingleJibPackageGoal(ctx, "dockerBuild", workspace, a); err != nil {
+		if err := verifyJibPackageGoal(ctx, "dockerBuild", workspace, a); err != nil {
 			return "", err
 		}
 	}
@@ -51,7 +51,7 @@ func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, work
 func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.Artifact) (string, error) {
 	// If this is a multi-module project, we require `package` be bound to jib:build
 	if artifact.JibMavenArtifact.Module != "" {
-		if err := checkSingleJibPackageGoal(ctx, "build", workspace, artifact.JibMavenArtifact); err != nil {
+		if err := verifyJibPackageGoal(ctx, "build", workspace, artifact.JibMavenArtifact); err != nil {
 			return "", err
 		}
 	}
@@ -84,10 +84,9 @@ func generateMavenArgs(goal string, skaffoldImage string, a *latest.JibMavenArti
 	return command
 }
 
-// checkSingleJibPackageGoal ensures that the module has a single jib goal bound to
-// `package`.  It returns the single package goal, and otherwise
-// returns an error object including if there are no or many package goals.
-func checkSingleJibPackageGoal(ctx context.Context, requiredGoal string, workspace string, a *latest.JibMavenArtifact) error {
+// verifyJibPackageGoal verifies that the referenced module has `package` bound to a single jib goal.
+// It returns `nil` if the goal is matched, and an error if there is a mismatch.
+func verifyJibPackageGoal(ctx context.Context, requiredGoal string, workspace string, a *latest.JibMavenArtifact) error {
 	// cannot use --non-recursive
 	command := []string{"--projects", a.Module, "jib:_skaffold-package-goals", "--quiet"}
 	if a.Profile != "" {
