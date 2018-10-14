@@ -26,15 +26,15 @@ import (
 )
 
 func TestCanonical(t *testing.T) {
-		tmpDir, cleanup := testutil.NewTempDir(t)
+	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
 	tmpDir.Write("skaffold.yml", "foo")
 	err := os.Symlink(tmpDir.Path("skaffold.yml"), tmpDir.Path("newfile"))
 	testutil.CheckError(t, false, err)
-	
+
 	// must canonicalize both as the tmpDir may be a symlinked directory
 	var filepath = Canonical(tmpDir.Path("skaffold.yml"))
 	var canonical = Canonical(tmpDir.Path("newfile"))
-	testutil.CheckDeepEqual(t, filepath, canonical) 
+	testutil.CheckDeepEqual(t, filepath, canonical)
 }

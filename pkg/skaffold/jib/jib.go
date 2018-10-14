@@ -39,7 +39,7 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 	lines := strings.Split(string(stdout), "\n")
 
 	// TODO(coollog): Remove this once Jib deps are prepended with special sequence.
-	// The dependencies from `jib:_skaffold-files` have been canonicalized 
+	// The dependencies from `jib:_skaffold-files` have been canonicalized
 	cmdDir := util.Canonical(cmd.Dir)
 
 	var deps []string
