@@ -208,7 +208,7 @@ func TestNonEmptyLines(t *testing.T) {
 	}
 	for _, tt := range testCases {
 		t.Run(tt.in, func(t *testing.T) {
-			result := nonEmptyLines([]byte(tt.in))
+			result := NonEmptyLines([]byte(tt.in))
 			testutil.CheckDeepEqual(t, tt.out, result)
 		})
 	}
