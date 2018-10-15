@@ -29,7 +29,7 @@ import (
 
 // Build builds a list of artifacts with Kaniko.
 func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	teardown, err := b.setupSecret()
+	teardown, err := b.setupSecret(out)
 	if err != nil {
 		return nil, errors.Wrap(err, "setting up secret")
 	}
