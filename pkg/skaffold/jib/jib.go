@@ -35,18 +35,17 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 		return nil, err
 	}
 
+	cmdDirInfo, err := os.Stat(cmd.Dir)
+	if err != nil {
+		return nil, err
+	}
+
 	// Parses stdout for the dependencies, one per line
 	lines := strings.Split(string(stdout), "\n")
 
 	var deps []string
 	for _, dep := range lines {
 		if dep == "" {
-			continue
-		}
-
-		// TODO(coollog): Remove this once Jib deps are prepended with special sequence.
-		// Skips the project directory itself. This is necessary as some wrappers print the project directory for some reason.
-		if dep == cmd.Dir {
 			continue
 		}
 
@@ -58,6 +57,12 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 				continue // Ignore files that don't exist
 			}
 			return nil, errors.Wrapf(err, "unable to stat file %s", dep)
+		}
+
+		// TODO(coollog): Remove this once Jib deps are prepended with special sequence.
+		// Skips the project directory itself. This is necessary as some wrappers print the project directory for some reason.
+		if os.SameFile(cmdDirInfo, info) {
+			continue
 		}
 
 		if !info.IsDir() {
