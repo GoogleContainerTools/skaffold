@@ -146,8 +146,10 @@ func onbuildInstructions(nodes []*parser.Node) ([]*parser.Node, error) {
 			continue
 		}
 
-		logrus.Debugf("Found ONBUILD triggers %v in image %s", img.Config.OnBuild, from.image)
-		instructions = append(instructions, img.Config.OnBuild...)
+		if len(img.Config.OnBuild) > 0 {
+			logrus.Debugf("Found ONBUILD triggers %v in image %s", img.Config.OnBuild, from.image)
+			instructions = append(instructions, img.Config.OnBuild...)
+		}
 	}
 
 	obRes, err := parser.Parse(strings.NewReader(strings.Join(instructions, "\n")))
