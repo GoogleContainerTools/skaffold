@@ -17,20 +17,31 @@ limitations under the License.
 package kaniko
 
 import (
+	"time"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/pkg/errors"
 )
 
 // Builder builds docker artifacts on Kubernetes, using Kaniko.
 type Builder struct {
 	*latest.KanikoBuild
+
+	timeout time.Duration
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Kaniko.
-func NewBuilder(cfg *latest.KanikoBuild) *Builder {
+func NewBuilder(cfg *latest.KanikoBuild) (*Builder, error) {
+	timeout, err := time.ParseDuration(cfg.Timeout)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing timeout")
+	}
+
 	return &Builder{
 		KanikoBuild: cfg,
-	}
+		timeout:     timeout,
+	}, nil
 }
 
 // Labels are labels specific to Kaniko builder.

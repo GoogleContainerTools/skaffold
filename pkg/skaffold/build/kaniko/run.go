@@ -37,12 +37,8 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
-func runKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, cfg *latest.KanikoBuild) (string, error) {
+func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artifact, cfg *latest.KanikoBuild) (string, error) {
 	initialTag := util.RandomID()
-	timeout, err := time.ParseDuration(cfg.Timeout)
-	if err != nil {
-		return "", errors.Wrap(err, "parsing timeout")
-	}
 
 	s, err := sources.Retrieve(cfg)
 	if err != nil {
@@ -88,7 +84,7 @@ func runKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, cf
 
 	waitForLogs := streamLogs(out, p.Name, pods)
 
-	if err := kubernetes.WaitForPodComplete(pods, p.Name, timeout); err != nil {
+	if err := kubernetes.WaitForPodComplete(pods, p.Name, b.timeout); err != nil {
 		return "", errors.Wrap(err, "waiting for pod to complete")
 	}
 
