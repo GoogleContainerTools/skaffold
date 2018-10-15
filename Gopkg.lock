@@ -17,6 +17,17 @@
   version = "v0.17.0"
 
 [[projects]]
+  digest = "1:fd5f5c00789da5a6ae78b6c6050eccea46bcd4a519a4913ac82d22bafd7fd368"
+  name = "github.com/Azure/azure-sdk-for-go"
+  packages = [
+    "services/containerregistry/mgmt/2018-09-01/containerregistry",
+    "version",
+  ]
+  pruneopts = "NUT"
+  revision = "6d20bdbae88c06c36d72eb512295417693bfdf4e"
+  version = "v21.1.0"
+
+[[projects]]
   branch = "master"
   digest = "1:81f8c061c3d18ed1710957910542bc17d2b789c6cd19e0f654c30b35fd255ca5"
   name = "github.com/Azure/go-ansiterm"
@@ -28,13 +39,16 @@
   revision = "d6e3b3328b783f23731bc4d058875b0371ff8109"
 
 [[projects]]
-  digest = "1:64e69f266935807255a5a4036edd6cc2c8dd46191f801b993be7d91624803a67"
+  digest = "1:e969368aea48b34550a34e6999cc86719ab361e0484f95bac0d672488fa326db"
   name = "github.com/Azure/go-autorest"
   packages = [
     "autorest",
     "autorest/adal",
     "autorest/azure",
+    "autorest/azure/auth",
     "autorest/date",
+    "autorest/to",
+    "autorest/validation",
     "logger",
     "version",
   ]
@@ -97,6 +111,14 @@
   pruneopts = "NUT"
   revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
   version = "v3.2.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:ec6271918b59b872a2d25e374569a4f75f1839d91e4191470c297b7eaaaf7641"
+  name = "github.com/dimchansky/utfbom"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "5448fe645cb1964ba70ac8f9f2ffe975e61a536c"
 
 [[projects]]
   digest = "1:1ae6152840bd4fe1009e4ce51d8cd989b452ad2e8aaf3bfa3b3ae55974fed729"
@@ -665,7 +687,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:c8fb12145d5a0a2d64ca70170c847a9c97cf6de78661a9f1906623c63574e3cd"
+  digest = "1:2e163cdded1677ad17f097749c0867359a4be95a22030dba41c8871635c6ef94"
   name = "golang.org/x/crypto"
   packages = [
     "cast5",
@@ -680,6 +702,8 @@
     "openpgp/errors",
     "openpgp/packet",
     "openpgp/s2k",
+    "pkcs12",
+    "pkcs12/internal/rc2",
     "poly1305",
     "ssh",
     "ssh/agent",
@@ -1152,6 +1176,8 @@
   analyzer-version = 1
   input-imports = [
     "cloud.google.com/go/storage",
+    "github.com/Azure/azure-sdk-for-go/services/containerregistry/mgmt/2018-09-01/containerregistry",
+    "github.com/Azure/go-autorest/autorest/azure/auth",
     "github.com/blang/semver",
     "github.com/docker/cli/cli/config",
     "github.com/docker/cli/cli/config/configfile",
@@ -1221,6 +1247,7 @@
     "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/clientcmd/api",
+    "k8s.io/client-go/tools/clientcmd/api/latest",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
