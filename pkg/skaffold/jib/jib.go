@@ -44,10 +44,6 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 
 	var deps []string
 	for _, dep := range lines {
-		if dep == "" {
-			continue
-		}
-
 		// Resolves directories recursively.
 		info, err := os.Stat(dep)
 		if err != nil {
