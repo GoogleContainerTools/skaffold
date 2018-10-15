@@ -193,3 +193,23 @@ func TestAbsFile(t *testing.T) {
 	_, err = AbsFile(tmpDir.Root(), "does-not-exist")
 	testutil.CheckError(t, true, err)
 }
+
+func TestNonEmptyLines(t *testing.T) {
+	var testCases = []struct {
+		in  string
+		out []string
+	}{
+		{"", []string{}},
+		{"a\n", []string{"a"}},
+		{"a\r\n", []string{"a"}},
+		{"a\r\nb", []string{"a","b"}},
+		{"a\r\nb\n\n", []string{"a","b"}},
+		{"\na\r\n\n\n", []string{"a"}},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.in, func(t *testing.T) {
+			result := nonEmptyLines([]byte(tt.in))
+			testutil.CheckDeepEqual(t, tt.out, result)
+		})
+	}
+}

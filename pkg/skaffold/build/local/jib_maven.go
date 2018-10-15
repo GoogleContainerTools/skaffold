@@ -19,7 +19,6 @@ package local
 import (
 	"context"
 	"io"
-	"strings"
 
 	"fmt"
 
@@ -99,8 +98,7 @@ func verifyJibPackageGoal(ctx context.Context, requiredGoal string, workspace st
 	if err != nil {
 		return errors.Wrap(err, "could not obtain jib package goals")
 	}
-	// need to trim last newline
-	goals := strings.Split(strings.TrimSpace(string(stdout)), "\n")
+	goals := util.NonEmptyLines(stdout)
 	logrus.Debugf("jib bound package goals for %s %s: %v (%d)", workspace, a.Module, goals, len(goals))
 	if len(goals) != 1 {
 		return errors.New("skaffold requires a single jib goal bound to 'package'")
