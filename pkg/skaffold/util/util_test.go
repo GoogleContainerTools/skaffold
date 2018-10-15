@@ -202,8 +202,8 @@ func TestNonEmptyLines(t *testing.T) {
 		{"", []string{}},
 		{"a\n", []string{"a"}},
 		{"a\r\n", []string{"a"}},
-		{"a\r\nb", []string{"a","b"}},
-		{"a\r\nb\n\n", []string{"a","b"}},
+		{"a\r\nb", []string{"a", "b"}},
+		{"a\r\nb\n\n", []string{"a", "b"}},
 		{"\na\r\n\n\n", []string{"a"}},
 	}
 	for _, tt := range testCases {
