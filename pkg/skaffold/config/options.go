@@ -53,7 +53,7 @@ func (opts *SkaffoldOptions) Labels() map[string]string {
 		labels["namespace"] = opts.Namespace
 	}
 	if len(opts.Profiles) > 0 {
-		labels["profiles"] = strings.Join(opts.Profiles, ",")
+		labels["profiles"] = strings.Join(opts.Profiles, "__")
 	}
 	for _, cl := range opts.CustomLabels {
 		l := strings.SplitN(cl, "=", 2)
