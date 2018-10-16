@@ -63,7 +63,7 @@ build:
 
     # jibMaven builds containers using the Jib plugin for Maven.
     # jibMaven:
-    #  module: modulename     # selects which maven module to build
+    #  module: modulename     # selects which maven module to build, for a multimodule project
     #  profile: profilename   # selects which maven profile to activate
 
     # jibGradle builds containers using the Jib plugin for Gradle.
