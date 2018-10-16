@@ -44,7 +44,7 @@ func Retrieve(cfg *latest.KanikoBuild) (BuildContextSource, error) {
 func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "kaniko",
+			GenerateName: "kaniko-",
 			Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
 			Namespace:    cfg.Namespace,
 		},
