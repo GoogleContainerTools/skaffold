@@ -61,7 +61,7 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 		fmt.Sprintf("--dockerfile=%s", artifact.DockerArtifact.DockerfilePath),
 		fmt.Sprintf("--context=%s", context),
 		fmt.Sprintf("--destination=%s", imageDst),
-		fmt.Sprintf("-v=%s", logrus.GetLevel().String()),
+		fmt.Sprintf("-v=%s", logLevel().String()),
 	}
 	args = append(args, docker.GetBuildArgs(artifact.DockerArtifact)...)
 
@@ -91,6 +91,14 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 	waitForLogs()
 
 	return imageDst, nil
+}
+
+func logLevel() logrus.Level {
+	level := logrus.GetLevel()
+	if level < logrus.InfoLevel {
+		return logrus.InfoLevel
+	}
+	return level
 }
 
 func streamLogs(out io.Writer, name string, pods corev1.PodInterface) func() {
