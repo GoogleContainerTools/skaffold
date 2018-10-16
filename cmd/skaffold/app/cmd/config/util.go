@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 
@@ -62,6 +63,7 @@ func resolveConfigFile() error {
 // ReadConfigForFile reads the specified file and returns the contents
 // parsed into a Config struct.
 func ReadConfigForFile(filename string) (*Config, error) {
+	fmt.Printf("reading config for file %s\n", filename)
 	contents, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading global config")
