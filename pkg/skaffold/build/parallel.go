@@ -34,6 +34,10 @@ type artifactBuilder func(ctx context.Context, out io.Writer, tagger tag.Tagger,
 
 // InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
 func InParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
+	if len(artifacts) == 1 {
+		return InSequence(ctx, out, tagger, artifacts, buildArtifact)
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
