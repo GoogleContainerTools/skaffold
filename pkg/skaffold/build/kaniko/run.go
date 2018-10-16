@@ -40,16 +40,12 @@ import (
 func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artifact, cfg *latest.KanikoBuild) (string, error) {
 	initialTag := util.RandomID()
 
-	s, err := sources.Retrieve(cfg)
-	if err != nil {
-		return "", errors.Wrap(err, "retrieving build context")
-	}
-
-	context, err := s.Setup(ctx, out, artifact, cfg, initialTag)
+	s := sources.Retrieve(cfg)
+	context, err := s.Setup(ctx, out, artifact, initialTag)
 	if err != nil {
 		return "", errors.Wrap(err, "setting up build context")
 	}
-	defer s.Cleanup(ctx, cfg)
+	defer s.Cleanup(ctx)
 
 	client, err := kubernetes.GetClientset()
 	if err != nil {
@@ -66,7 +62,7 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 	args = append(args, docker.GetBuildArgs(artifact.DockerArtifact)...)
 
 	pods := client.CoreV1().Pods(cfg.Namespace)
-	p, err := pods.Create(s.Pod(cfg, args))
+	p, err := pods.Create(s.Pod(args))
 	if err != nil {
 		return "", errors.Wrap(err, "creating kaniko pod")
 	}

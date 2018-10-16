@@ -42,11 +42,12 @@ const (
 // LocalDir refers to kaniko using a local directory as a buildcontext
 // skaffold copies the buildcontext into the local directory via kubectl cp
 type LocalDir struct {
+	cfg     *latest.KanikoBuild
 	tarPath string
 }
 
 // Setup for LocalDir creates a tarball of the buildcontext and stores it in /tmp
-func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, cfg *latest.KanikoBuild, initialTag string) (string, error) {
+func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string) (string, error) {
 	g.tarPath = filepath.Join("/tmp", fmt.Sprintf("context-%s.tar.gz", initialTag))
 	color.Default.Fprintln(out, "Storing build context at", g.tarPath)
 
@@ -63,8 +64,8 @@ func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Ar
 }
 
 // Pod returns the pod template to ModifyPod
-func (g *LocalDir) Pod(cfg *latest.KanikoBuild, args []string) *v1.Pod {
-	p := podTemplate(cfg, args)
+func (g *LocalDir) Pod(args []string) *v1.Pod {
+	p := podTemplate(g.cfg, args)
 	// Include the emptyDir volume and volume source in both containers
 	v := v1.Volume{
 		Name: constants.DefaultKanikoEmptyDirName,
@@ -119,6 +120,6 @@ func (g *LocalDir) ModifyPod(ctx context.Context, p *v1.Pod) error {
 }
 
 // Cleanup deletes the buidcontext tarball stored on the local filesystem
-func (g *LocalDir) Cleanup(ctx context.Context, cfg *latest.KanikoBuild) error {
+func (g *LocalDir) Cleanup(ctx context.Context) error {
 	return os.Remove(g.tarPath)
 }
