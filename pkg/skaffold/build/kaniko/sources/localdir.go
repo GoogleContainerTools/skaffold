@@ -19,14 +19,15 @@ package sources
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -45,15 +46,18 @@ type LocalDir struct {
 }
 
 // Setup for LocalDir creates a tarball of the buildcontext and stores it in /tmp
-func (g *LocalDir) Setup(ctx context.Context, artifact *latest.Artifact, cfg *latest.KanikoBuild, initialTag string) (string, error) {
+func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, cfg *latest.KanikoBuild, initialTag string) (string, error) {
 	g.tarPath = filepath.Join("/tmp", fmt.Sprintf("context-%s.tar.gz", initialTag))
-	logrus.Infof("storing buildcontext tarball at %s", g.tarPath)
+	color.Default.Fprintln(out, "Storing build context at", g.tarPath)
+
 	f, err := os.Create(g.tarPath)
 	if err != nil {
 		return "", errors.Wrap(err, "creating temporary buildcontext tarball")
 	}
 	defer f.Close()
+
 	err = docker.CreateDockerTarGzContext(ctx, f, artifact.Workspace, artifact.DockerArtifact)
+
 	context := fmt.Sprintf("dir://%s", constants.DefaultKanikoEmptyDirMountPath)
 	return context, err
 }

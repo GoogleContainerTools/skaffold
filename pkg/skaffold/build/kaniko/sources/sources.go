@@ -18,6 +18,7 @@ package sources
 
 import (
 	"context"
+	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -27,7 +28,7 @@ import (
 
 // BuildContextSource is the generic type for the different build context sources the kaniko builder can use
 type BuildContextSource interface {
-	Setup(ctx context.Context, artifact *latest.Artifact, cfg *latest.KanikoBuild, initialTag string) (string, error)
+	Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, cfg *latest.KanikoBuild, initialTag string) (string, error)
 	Pod(cfg *latest.KanikoBuild, args []string) *v1.Pod
 	ModifyPod(ctx context.Context, p *v1.Pod) error
 	Cleanup(ctx context.Context, cfg *latest.KanikoBuild) error

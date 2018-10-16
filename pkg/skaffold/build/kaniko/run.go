@@ -45,7 +45,7 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 		return "", errors.Wrap(err, "retrieving build context")
 	}
 
-	context, err := s.Setup(ctx, artifact, cfg, initialTag)
+	context, err := s.Setup(ctx, out, artifact, cfg, initialTag)
 	if err != nil {
 		return "", errors.Wrap(err, "setting up build context")
 	}
