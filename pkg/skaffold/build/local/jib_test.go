@@ -62,7 +62,7 @@ func TestMavenVerifyJibPackageGoal(t *testing.T) {
 	util.SkipWrapperCheck = true
 
 	for _, tt := range testCases {
-		util.DefaultExecCommand = testutil.NewFakeCmdOut("mvn --projects module jib:_skaffold-package-goals --quiet", tt.mavenOutput, nil)
+		util.DefaultExecCommand = testutil.NewFakeCmdOut("mvn --quiet --projects module jib:_skaffold-package-goals", tt.mavenOutput, nil)
 
 		err := verifyJibPackageGoal(context.TODO(), tt.requiredGoal, ".", &latest.JibMavenArtifact{Module: "module"})
 		if hasError := err != nil; tt.shouldError != hasError {

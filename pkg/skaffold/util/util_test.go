@@ -199,7 +199,7 @@ func TestNonEmptyLines(t *testing.T) {
 		in  string
 		out []string
 	}{
-		{"", []string{}},
+		{"", nil},
 		{"a\n", []string{"a"}},
 		{"a\r\n", []string{"a"}},
 		{"a\r\nb", []string{"a", "b"}},

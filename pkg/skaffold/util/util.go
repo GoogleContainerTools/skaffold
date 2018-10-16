@@ -232,7 +232,7 @@ func AbsFile(workspace string, filename string) (string, error) {
 
 // NonEmptyLines scans the provided input and returns the non-empty strings found as an array
 func NonEmptyLines(input []byte) []string {
-	var result = []string{}
+	var result []string
 	scanner := bufio.NewScanner(bytes.NewReader(input))
 	for scanner.Scan() {
 		if line := scanner.Text(); len(line) > 0 {

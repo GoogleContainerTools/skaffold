@@ -40,13 +40,15 @@ func GetDependenciesMaven(ctx context.Context, workspace string, a *latest.JibMa
 }
 
 func getCommandMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) *exec.Cmd {
-	var args []string
+	args := []string{"--quiet"}
 	if a.Module == "" {
 		// single-module project
-		args = []string{"--non-recursive", "jib:_skaffold-files", "--quiet"}
+		args = append(args, "--non-recursive")
 	} else {
-		args = []string{"--projects", a.Module, "--also-make", "jib:_skaffold-files", "--quiet"}
+		// multi-module project
+		args = append(args, "--projects", a.Module, "--also-make")
 	}
+	args = append(args, "jib:_skaffold-files")
 	if a.Profile != "" {
 		args = append(args, "--activate-profiles", a.Profile)
 	}

@@ -71,11 +71,12 @@ func generateMavenArgs(goal string, skaffoldImage string, a *latest.JibMavenArti
 	var command []string
 	if a.Module == "" {
 		// single-module project
-		command = []string{"--non-recursive", "prepare-package", "jib:" + goal, "-Dimage=" + skaffoldImage}
+		command = []string{"--non-recursive", "prepare-package", "jib:" + goal}
 	} else {
 		// multi-module project: we assume `package` is boujd to `jib:<goal>`
-		command = []string{"--projects", a.Module, "--also-make", "package", "-Dimage=" + skaffoldImage}
+		command = []string{"--projects", a.Module, "--also-make", "package"}
 	}
+	command = append(command, "-Dimage="+skaffoldImage)
 	if a.Profile != "" {
 		command = append(command, "--activate-profiles", a.Profile)
 	}
@@ -87,7 +88,7 @@ func generateMavenArgs(goal string, skaffoldImage string, a *latest.JibMavenArti
 // It returns `nil` if the goal is matched, and an error if there is a mismatch.
 func verifyJibPackageGoal(ctx context.Context, requiredGoal string, workspace string, a *latest.JibMavenArtifact) error {
 	// cannot use --non-recursive
-	command := []string{"--projects", a.Module, "jib:_skaffold-package-goals", "--quiet"}
+	command := []string{"--quiet", "--projects", a.Module, "jib:_skaffold-package-goals"}
 	if a.Profile != "" {
 		command = append(command, "--activate-profiles", a.Profile)
 	}
@@ -102,8 +103,9 @@ func verifyJibPackageGoal(ctx context.Context, requiredGoal string, workspace st
 	logrus.Debugf("jib bound package goals for %s %s: %v (%d)", workspace, a.Module, goals, len(goals))
 	if len(goals) != 1 {
 		return errors.New("skaffold requires a single jib goal bound to 'package'")
-	} else if goals[0] != requiredGoal {
-		return errors.New(fmt.Sprintf("skaffold `push` setting requires 'package' be bound to 'jib:%s'", requiredGoal))
+	}
+	if goals[0] != requiredGoal {
+		return errors.Errorf("skaffold `push` setting requires 'package' be bound to 'jib:%s'", requiredGoal)
 	}
 	return nil
 }
