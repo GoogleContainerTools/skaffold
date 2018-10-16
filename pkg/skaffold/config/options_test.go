@@ -50,7 +50,7 @@ func TestLabels(t *testing.T) {
 		{
 			description:    "profiles",
 			options:        SkaffoldOptions{Profiles: []string{"profile1", "profile2"}},
-			expectedLabels: map[string]string{"profiles": "profile1,profile2"},
+			expectedLabels: map[string]string{"profiles": "profile1__profile2"},
 		},
 		{
 			description: "all labels",
@@ -62,7 +62,7 @@ func TestLabels(t *testing.T) {
 			expectedLabels: map[string]string{
 				"cleanup":   "true",
 				"namespace": "namespace",
-				"profiles":  "p1,p2",
+				"profiles":  "p1__p2",
 			},
 		},
 		{
