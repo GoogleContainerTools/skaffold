@@ -23,15 +23,15 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -91,26 +91,26 @@ done`},
 // ModifyPod first copies over the buildcontext tarball into the init container tmp dir via kubectl cp
 // Via kubectl exec, we extract the tarball to the empty dir
 // Then, via kubectl exec, create the /tmp/complete file via kubectl exec to complete the init container
-func (g *LocalDir) ModifyPod(p *v1.Pod) error {
+func (g *LocalDir) ModifyPod(ctx context.Context, p *v1.Pod) error {
 	client, err := kubernetes.GetClientset()
 	if err != nil {
 		return errors.Wrap(err, "getting clientset")
 	}
-	if err := kubernetes.WaitForPodInitialized(client.CoreV1().Pods(p.Namespace), p.Name); err != nil {
+	if err := kubernetes.WaitForPodInitialized(ctx, client.CoreV1().Pods(p.Namespace), p.Name); err != nil {
 		return errors.Wrap(err, "waiting for pod to initialize")
 	}
 	// Copy over the buildcontext tarball into the init container
-	copy := exec.Command("kubectl", "cp", g.tarPath, fmt.Sprintf("%s:/%s", p.Name, g.tarPath), "-c", initContainer, "-n", p.Namespace)
+	copy := exec.CommandContext(ctx, "kubectl", "cp", g.tarPath, fmt.Sprintf("%s:/%s", p.Name, g.tarPath), "-c", initContainer, "-n", p.Namespace)
 	if err := util.RunCmd(copy); err != nil {
 		return errors.Wrap(err, "copying buildcontext into init container")
 	}
 	// Next, extract the buildcontext to the empty dir
-	extract := exec.Command("kubectl", "exec", p.Name, "-c", initContainer, "-n", p.Namespace, "--", "tar", "-xzf", g.tarPath, "-C", constants.DefaultKanikoEmptyDirMountPath)
+	extract := exec.CommandContext(ctx, "kubectl", "exec", p.Name, "-c", initContainer, "-n", p.Namespace, "--", "tar", "-xzf", g.tarPath, "-C", constants.DefaultKanikoEmptyDirMountPath)
 	if err := util.RunCmd(extract); err != nil {
 		return errors.Wrap(err, "extracting buildcontext to empty dir")
 	}
 	// Generate a file to successfully terminate the init container
-	file := exec.Command("kubectl", "exec", p.Name, "-c", initContainer, "-n", p.Namespace, "--", "touch", "/tmp/complete")
+	file := exec.CommandContext(ctx, "kubectl", "exec", p.Name, "-c", initContainer, "-n", p.Namespace, "--", "touch", "/tmp/complete")
 	return util.RunCmd(file)
 }
 

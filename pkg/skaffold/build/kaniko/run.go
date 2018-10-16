@@ -78,13 +78,13 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 		}
 	}()
 
-	if err := s.ModifyPod(p); err != nil {
+	if err := s.ModifyPod(ctx, p); err != nil {
 		return "", errors.Wrap(err, "modifying kaniko pod")
 	}
 
 	waitForLogs := streamLogs(out, p.Name, pods)
 
-	if err := kubernetes.WaitForPodComplete(pods, p.Name, b.timeout); err != nil {
+	if err := kubernetes.WaitForPodComplete(ctx, pods, p.Name, b.timeout); err != nil {
 		return "", errors.Wrap(err, "waiting for pod to complete")
 	}
 

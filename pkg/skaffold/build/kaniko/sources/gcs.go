@@ -60,7 +60,7 @@ func (g *GCSBucket) Pod(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 }
 
 // ModifyPod does nothing here, since we just need to let kaniko run to completion
-func (g *GCSBucket) ModifyPod(p *v1.Pod) error {
+func (g *GCSBucket) ModifyPod(ctx context.Context, p *v1.Pod) error {
 	return nil
 }
 

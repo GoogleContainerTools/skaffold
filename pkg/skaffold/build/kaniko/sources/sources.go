@@ -29,7 +29,7 @@ import (
 type BuildContextSource interface {
 	Setup(ctx context.Context, artifact *latest.Artifact, cfg *latest.KanikoBuild, initialTag string) (string, error)
 	Pod(cfg *latest.KanikoBuild, args []string) *v1.Pod
-	ModifyPod(p *v1.Pod) error
+	ModifyPod(ctx context.Context, p *v1.Pod) error
 	Cleanup(ctx context.Context, cfg *latest.KanikoBuild) error
 }
 
