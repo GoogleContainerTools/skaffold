@@ -17,8 +17,10 @@ limitations under the License.
 package kaniko
 
 import (
+	"io"
 	"io/ioutil"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/pkg/errors"
@@ -27,8 +29,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (b *Builder) setupSecret() (func(), error) {
-	logrus.Debug("Creating kaniko secret")
+func (b *Builder) setupSecret(out io.Writer) (func(), error) {
+	color.Default.Fprintf(out, "Creating kaniko secret [%s]...\n", b.PullSecretName)
 
 	client, err := kubernetes.GetClientset()
 	if err != nil {

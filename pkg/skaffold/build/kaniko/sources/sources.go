@@ -18,6 +18,7 @@ package sources
 
 import (
 	"context"
+	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -27,24 +28,29 @@ import (
 
 // BuildContextSource is the generic type for the different build context sources the kaniko builder can use
 type BuildContextSource interface {
-	Setup(ctx context.Context, artifact *latest.Artifact, cfg *latest.KanikoBuild, initialTag string) (string, error)
-	Pod(cfg *latest.KanikoBuild, args []string) *v1.Pod
-	ModifyPod(p *v1.Pod) error
-	Cleanup(ctx context.Context, cfg *latest.KanikoBuild) error
+	Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string) (string, error)
+	Pod(args []string) *v1.Pod
+	ModifyPod(ctx context.Context, p *v1.Pod) error
+	Cleanup(ctx context.Context) error
 }
 
 // Retrieve returns the correct build context based on the config
-func Retrieve(cfg *latest.KanikoBuild) (BuildContextSource, error) {
+func Retrieve(cfg *latest.KanikoBuild) BuildContextSource {
 	if cfg.BuildContext.LocalDir != nil {
-		return &LocalDir{}, nil
+		return &LocalDir{
+			cfg: cfg,
+		}
 	}
-	return &GCSBucket{}, nil
+
+	return &GCSBucket{
+		cfg: cfg,
+	}
 }
 
 func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "kaniko",
+			GenerateName: "kaniko-",
 			Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
 			Namespace:    cfg.Namespace,
 		},

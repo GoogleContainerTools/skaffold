@@ -20,6 +20,7 @@ package integration
 
 import (
 	"bytes"
+	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -183,13 +184,13 @@ func TestRun(t *testing.T) {
 			}
 
 			for _, p := range testCase.pods {
-				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(ns.Name), p); err != nil {
+				if err := kubernetesutil.WaitForPodReady(context.Background(), client.CoreV1().Pods(ns.Name), p); err != nil {
 					t.Fatalf("Timed out waiting for pod ready")
 				}
 			}
 
 			for _, d := range testCase.deployments {
-				if err := kubernetesutil.WaitForDeploymentToStabilize(client, ns.Name, d, 10*time.Minute); err != nil {
+				if err := kubernetesutil.WaitForDeploymentToStabilize(context.Background(), client, ns.Name, d, 10*time.Minute); err != nil {
 					t.Fatalf("Timed out waiting for deployment to stabilize")
 				}
 				if testCase.deploymentValidation != nil {
@@ -290,7 +291,7 @@ func TestDev(t *testing.T) {
 			}()
 
 			for _, j := range testCase.jobs {
-				if err := kubernetesutil.WaitForJobToStabilize(client, ns.Name, j, 10*time.Minute); err != nil {
+				if err := kubernetesutil.WaitForJobToStabilize(context.Background(), client, ns.Name, j, 10*time.Minute); err != nil {
 					t.Fatalf("Timed out waiting for job to stabilize")
 				}
 				if testCase.jobValidation != nil {

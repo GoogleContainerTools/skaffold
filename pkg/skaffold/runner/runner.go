@@ -129,7 +129,7 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string) (build.Builder, err
 
 	case cfg.KanikoBuild != nil:
 		logrus.Debugf("Using builder: kaniko")
-		return kaniko.NewBuilder(cfg.KanikoBuild), nil
+		return kaniko.NewBuilder(cfg.KanikoBuild)
 
 	case cfg.AzureContainerBuild != nil:
 		logrus.Debugf("Using builder: acr")
