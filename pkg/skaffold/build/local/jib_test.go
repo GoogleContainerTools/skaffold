@@ -50,7 +50,7 @@ func TestMavenVerifyJibPackageGoal(t *testing.T) {
 		shouldError  bool
 	}{
 		{"xxx", "", true},   // no goals should fail
-		{"xxx", "\n", true}, // no goals should faill; newline stripped
+		{"xxx", "\n", true}, // no goals should fail; newline stripped
 		{"dockerBuild", "dockerBuild", false},
 		{"dockerBuild", "dockerBuild\n", false}, // newline stripped
 		{"dockerBuild", "build\n", true},
@@ -64,7 +64,7 @@ func TestMavenVerifyJibPackageGoal(t *testing.T) {
 	for _, tt := range testCases {
 		util.DefaultExecCommand = testutil.NewFakeCmdOut("mvn --quiet --projects module jib:_skaffold-package-goals", tt.mavenOutput, nil)
 
-		err := verifyJibPackageGoal(context.TODO(), tt.requiredGoal, ".", &latest.JibMavenArtifact{Module: "module"})
+		err := verifyJibPackageGoal(context.Background(), tt.requiredGoal, ".", &latest.JibMavenArtifact{Module: "module"})
 		if hasError := err != nil; tt.shouldError != hasError {
 			t.Error("Unexpected return result")
 		}
