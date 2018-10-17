@@ -1,0 +1,138 @@
+---
+title: "Skaffold Documentation: Concepts"
+date: 2018-09-08T00:00:00-07:00
+draft: false
+---
+
+This document discusses some concepts that can help you develop a deep
+understanding of Skaffold.
+
+## Configuration
+
+You can configure Skaffold with the Skaffold configuration file,
+`skaffold.yaml`. The configuration file should be placed in the root of your
+project directory; when you run the `Skaffold` command, Skaffold will try to
+read the configuration file from the current directory.
+
+`skaffold.yaml` consists of five different components:
+
+<table>
+    <thead>
+        <tr>
+            <th>Component</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>API Version (<code>apiVersion</code>)</td>
+            <td>
+                The Skaffold API version you would like to use.
+                <p>The current API version is `skaffold/v1alpha3`.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>Kind (<code>kind</code>)</td>
+            <td>
+                The Skaffold configuration file has the kind `Config`.
+            </td>
+        </tr>
+        <tr>
+            <td>Build Configuration (<code>build</code>)</td>
+            <td>
+                Specifies how Skaffold should build artifacts. You have control over what tool Skaffold can use, how Skaffold tags artifacts and how Skaffold pushes artifacts.
+                <p>At this moment Skaffold supports using local Docker daemon, Google Cloud Build, Kaniko, or Bazel to build artifacts.</p>
+                <p>See <a href="/how-tos/builders">Using Builders</a> and <a href="/how-tos/taggers">Using Taggers</a> for more information.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>Deploy Configuration (<code>deploy</code>)</td>
+            <td>
+                Specifies how Skaffold should deploy artifacts.
+                <p>At this moment Skaffold supports using `kubectl`, Helm, or Kustomize to deploy artifacts.</p>
+                <p>See <a href="/how-tos/builders">Using Deployers</a> for more information.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>Profiles (<code>profiles</code>)</td>
+            <td>
+                Profile is a set of settings that, when activated, overrides the current configuration.
+                <p>You can use Profile to override the <code>build</code> and the <code>deploy</code> section.</p>
+            </td>
+        </tr>
+    </tbody>
+<table>
+
+You can learn more about the syntax of `skaffold.yaml` at
+[`skaffold.yaml References`](/references/config).
+
+## Workflow
+
+Skaffold features a five-stage workflow:
+
+![workflow](/images/workflow.png)
+
+When you start Skaffold, it collects source code in your project and builds
+artifacts with the tool of your choice; the artifacts, once successfully built,
+are tagged as you see fit and pushed to the repository you specify. In the
+end of the workflow, Skaffold also helps you deploy the artifacts to your
+Kubernetes cluster, once again using the tools you prefer.
+
+Skaffold allows you to skip stages. If, for example, you run Kubernetes
+locally with [Minikube](https://kubernetes.io/docs/setup/minikube/), Skaffold
+will not push artifacts to a remote repository.
+
+## Architecture
+
+Skaffold features a pluggable architecture:
+
+![architecture](/images/architecture.png)
+
+The architecture allows you to use Skaffold with the tool you prefer. Skaffold
+provides built-in support for the following tools:
+
+{{% tabs %}}
+{{% tab "BUILD" %}}
+* Local Docker Daemon
+* Google Cloud Build
+* Kaniko
+* Bazel
+{{% /tab %}}
+
+{{% tab "DEPLOY" %}}
+* Kubernetes Command-Line Interface (`kubectl`)
+* Helm
+* Kustomize
+{{% /tab %}}
+{{% /tabs %}}
+
+And you can combine the tools as you see fit in Skaffold. For experimental
+projects, you may want to use local Docker daemon for building artifacts, and
+deploy them to a Minikube local Kubernetes cluster with `kubectl`:
+
+![workflow_local](/images/workflow_local.png)
+
+However, for production sites, you might find it better to build with Google
+Cloud Build and deploy using Helm:
+
+![workflow_gcb](/images/workflow_gcb.png)
+
+Skaffold also supports development profiles. You can specify multiple different
+profiles in the configuration and use whichever best serves your need in the
+moment without having to modify the configuration file. You can learn more about
+profiles from [Using Profiles](/how-tos/profiles).
+
+## Operating modes
+
+Skaffold provides two separate operating modes:
+
+* `skaffold dev`, the continuous development mode, enables monitoring of the
+    source repository, so that every time you make changes to the source code,
+    Skaffold will build and deploy your application.
+* `skaffold run`, the standard mode, instructs Skaffold to build and deploy
+    your application exactly once. When you make changes to the source code,
+    you will have to call `skaffold run` again to build and deploy your
+    application.
+
+Skaffold command-line interfact also provides other functionalities that may
+be helpful to your project. For more information, see [CLI References](/references/cli).

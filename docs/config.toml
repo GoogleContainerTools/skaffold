@@ -1,0 +1,122 @@
+baseurl = "https://skaffold.dev/"
+languageCode = "en-us"
+title = "Skaffold"
+theme = "hugo-material-docs"
+metadataformat = "yaml"
+canonifyurls = true
+# Enable Google Analytics by entering your tracking id
+googleAnalytics = "UA-120945544-1"
+disableKinds = ["taxonomy", "taxonomyTerm"]
+enableEmoji = "true"
+
+[params]
+	# General information
+	author = "Google"
+	description = "Skaffold: Easy and repeatable K8S development"
+	copyright = "Released under the MIT license - "
+
+	subtitle = "Easy and Repeatable K8s Development"
+	version = ""
+	logo = "images/logo.png"
+	favicon = ""
+
+	permalink = "#"
+
+	# Custom assets
+	custom_css = []
+	custom_js  = []
+
+	# Syntax highlighting theme
+	highlight_css  = ""
+
+	[params.palette]
+    	primary = "blue"
+    	accent  = "red"
+
+    [params.font]
+    	text = "Roboto"
+    	code = "Roboto Mono"
+
+
+[social]
+	twitter = ""
+	github  = "GoogleContainerTools/skaffold"
+	email   = "skaffold-users@googlegroups.com"
+
+[[menu.main]]
+	name   = "Overview"
+	url    = "/"
+	weight = 10
+
+[[menu.main]]
+	name   = "Getting started"
+	url    = "getting-started/"
+	weight = 15
+
+[[menu.main]]
+	identifier = "how-tos"
+	name       = "How-to Guides"
+	url        = "how-tos/"
+	weight     = 20
+
+[[menu.main]]
+	parent = "how-tos"
+	identifier = "builders"
+	name   = "Using Builders"
+	url    = "how-tos/builders/"
+	weight = 10
+
+[[menu.main]]
+	parent = "how-tos"
+	name   = "Using Taggers"
+	url    = "how-tos/taggers/"
+	weight = 20
+
+[[menu.main]]
+	parent = "how-tos"
+	name   = "Using Deployers"
+	url    = "how-tos/deployers/"
+	weight = 30
+
+[[menu.main]]
+	parent = "how-tos"
+	name   = "Using Profiles"
+	url    = "how-tos/profiles/"
+	weight = 40
+
+
+[[menu.main]]
+	identifier = "concepts"
+	name       = "Concepts"
+	url        = "concepts/"
+	weight     = 30
+
+[[menu.main]]
+	identifier = "tutorials"
+	name   = "Tutorials"
+	url    = "tutorials/"
+	weight = 40
+
+[[menu.main]]
+	identifier = "references"
+	name       = "References"
+	url        = "references/"
+	weight     = 50
+
+[[menu.main]]
+	parent = "references"
+	name   = "CLI reference"
+	url    = "references/cli/"
+	weight = 10
+
+[[menu.main]]
+	parent = "references"
+	name   = "skaffold.yaml reference"
+	url    = "references/config/"
+	weight = 20
+
+[[menu.main]]
+	name   = "Resources"
+	url    = "resources/"
+	weight = 60
+

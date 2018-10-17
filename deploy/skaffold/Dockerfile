@@ -59,9 +59,7 @@ ENV PATH /usr/local/go/bin:/go/bin:/google-cloud-sdk/bin:$PATH
 
 FROM runtime_deps as builder
 
-ENV ASCIIDOCTOR_VERSION=1.5.7.1
-ENV ASCIIDOCTOR_PDF_VERSION=1.5.0.alpha.16
-RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
+RUN apt-get install --no-install-recommends --no-install-suggests -y \
         ca-certificates \
         curl \
         build-essential \
@@ -70,21 +68,18 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
         python-setuptools \
         lsb-release \
         software-properties-common \
-        ruby-dev \
+        hugo \
         apt-transport-https && \
-    rm -rf /var/lib/apt/lists/* && \
-    gem install  --no-document "asciidoctor-pdf:${ASCIIDOCTOR_PDF_VERSION}" \
-        asciidoctor:${ASCIIDOCTOR_VERSION} \
-        pygments.rb rouge && \
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
+    curl -sL https://deb.nodesource.com/setup_8.x | sudo bash - && \
     apt-key fingerprint 0EBFCD88 && \
     add-apt-repository \
            "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
            xenial \
            edge" && \
     apt-get -y update && \
-    apt-get -y install docker-ce=17.12.0~ce-0~ubuntu && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get -y install docker-ce=17.12.0~ce-0~ubuntu nodejs && \
+    npm install -g firebase-tools
 
 COPY --from=golang:1.10 /usr/local/go /usr/local/go
 ENV PATH /usr/local/go/bin:/go/bin:$PATH
