@@ -18,15 +18,21 @@ package v1alpha1
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 
 	yaml "gopkg.in/yaml.v2"
 )
 
 const Version string = "skaffold/v1alpha1"
 
-// SkaffoldConfig is the top level config object
+// NewSkaffoldPipeline creates a SkaffoldPipeline
+func NewSkaffoldPipeline() util.VersionedConfig {
+	return new(SkaffoldPipeline)
+}
+
+// SkaffoldPipeline is the top level config object
 // that is parsed from a skaffold.yaml
-type SkaffoldConfig struct {
+type SkaffoldPipeline struct {
 	APIVersion string `yaml:"apiVersion"`
 	Kind       string `yaml:"kind"`
 
@@ -34,7 +40,7 @@ type SkaffoldConfig struct {
 	Deploy DeployConfig `yaml:"deploy"`
 }
 
-func (config *SkaffoldConfig) GetVersion() string {
+func (config *SkaffoldPipeline) GetVersion() string {
 	return config.APIVersion
 }
 
@@ -107,40 +113,40 @@ type Artifact struct {
 	BuildArgs      map[string]*string `yaml:"buildArgs,omitempty"`
 }
 
-// DefaultDevSkaffoldConfig is a partial set of defaults for the SkaffoldConfig
+// DefaultDevSkaffoldPipeline is a partial set of defaults for the SkaffoldPipeline
 // when dev mode is specified.
 // Each API is responsible for setting its own defaults that are not top level.
-var defaultDevSkaffoldConfig = &SkaffoldConfig{
+var defaultDevSkaffoldPipeline = &SkaffoldPipeline{
 	Build: BuildConfig{
 		TagPolicy: constants.DefaultDevTagStrategy,
 	},
 }
 
-// DefaultRunSkaffoldConfig is a partial set of defaults for the SkaffoldConfig
+// DefaultRunSkaffoldPipeline is a partial set of defaults for the SkaffoldPipeline
 // when run mode is specified.
 // Each API is responsible for setting its own defaults that are not top level.
-var defaultRunSkaffoldConfig = &SkaffoldConfig{
+var defaultRunSkaffoldPipeline = &SkaffoldPipeline{
 	Build: BuildConfig{
 		TagPolicy: constants.DefaultRunTagStrategy,
 	},
 }
 
-// Parse reads from an io.Reader and unmarshals the result into a SkaffoldConfig.
+// Parse reads from an io.Reader and unmarshals the result into a SkaffoldPipeline.
 // The default config argument provides default values for the config,
 // which can be overridden if present in the config file.
-func (config *SkaffoldConfig) Parse(contents []byte, useDefault bool) error {
+func (config *SkaffoldPipeline) Parse(contents []byte, useDefault bool) error {
 	if useDefault {
 		*config = *config.getDefaultForMode(false)
 	} else {
-		*config = SkaffoldConfig{}
+		*config = SkaffoldPipeline{}
 	}
 
 	return yaml.UnmarshalStrict(contents, config)
 }
 
-func (config *SkaffoldConfig) getDefaultForMode(dev bool) *SkaffoldConfig {
+func (config *SkaffoldPipeline) getDefaultForMode(dev bool) *SkaffoldPipeline {
 	if dev {
-		return defaultDevSkaffoldConfig
+		return defaultDevSkaffoldPipeline
 	}
-	return defaultRunSkaffoldConfig
+	return defaultRunSkaffoldPipeline
 }

@@ -1,122 +1,109 @@
-baseurl = "https://skaffold.dev/"
-languageCode = "en-us"
+baseURL = "https://skaffold.dev"
 title = "Skaffold"
-theme = "hugo-material-docs"
-metadataformat = "yaml"
-canonifyurls = true
-# Enable Google Analytics by entering your tracking id
-googleAnalytics = "UA-120945544-1"
+
+enableRobotsTXT = true
+
+# Hugo allows theme composition (and inheritance). The precedence is from left to right.
+theme = ["docsy"]
+
+# Will give values to .Lastmod etc.
+enableGitInfo = true
+
+# Language settings
+contentDir = "content/en"
+defaultContentLanguage = "en"
+defaultContentLanguageInSubdir = false
+# Useful when translating.
+enableMissingTranslationPlaceholders = true
+
 disableKinds = ["taxonomy", "taxonomyTerm"]
-enableEmoji = "true"
+
+# Highlighting config
+pygmentsCodeFences = true
+pygmentsUseClasses = false
+# Use the new Chroma Go highlighter in Hugo.
+pygmentsUseClassic = false
+#pygmentsOptions = "linenos=table"
+# See https://help.farbox.com/pygments.html
+pygmentsStyle = "tango"
+
+ # First one is picked as the Twitter card image if not set on page.
+ #images = ["images/project-illustration.png"]
+
+# Configure how URLs look like per section.
+[permalinks]
+blog = "/:section/:year/:month/:day/:slug/"
+
+## Configuration for BlackFriday markdown parser: https://github.com/russross/blackfriday
+[blackfriday]
+plainIDAnchors = true
+hrefTargetBlank = true
+angledQuotes = false
+latexDashes = true
+
+# Image processing configuration.
+[imaging]
+resampleFilter = "CatmullRom"
+quality = 75
+anchor = "smart"
+
+[services]
+[services.googleAnalytics]
+# Uncomment and insert your GA tracking ID to enable.
+# id = "INSERT ID"
+
+# Language configuration
+
+[languages]
+[languages.en]
+title = "Skaffold"
+description = "TechOS is containers revisited"
+languageName ="English"
+# Weight used for sorting.
+weight = 1
+
+
+# Everything below this are Site Params
 
 [params]
-	# General information
-	author = "Google"
-	description = "Skaffold: Easy and repeatable K8S development"
-	copyright = "Released under the MIT license - "
+#copyright = "Skaffold"
+#privacy_policy = "https://policies.google.com/privacy"
+github_repo = "https://github.com/GoogleContainerTools/skaffold"
 
-	subtitle = "Easy and Repeatable K8s Development"
-	version = ""
-	logo = "images/logo.png"
-	favicon = ""
+# Google Custom Search Engine ID. Remove or comment out to disable search.
+gcs_engine_id = "011737558837375720776:fsdu1nryfng"
 
-	permalink = "#"
+# User interface configuration
+[params.ui]
+# Enable to show the side bar menu in its compact state.
+sidebar_menu_compact = false
+#  Set to true to disable breadcrumb navigation.
+breadcrumb_disable = false
 
-	# Custom assets
-	custom_css = []
-	custom_js  = []
-
-	# Syntax highlighting theme
-	highlight_css  = ""
-
-	[params.palette]
-    	primary = "blue"
-    	accent  = "red"
-
-    [params.font]
-    	text = "Roboto"
-    	code = "Roboto Mono"
-
-
-[social]
-	twitter = ""
-	github  = "GoogleContainerTools/skaffold"
-	email   = "skaffold-users@googlegroups.com"
-
-[[menu.main]]
-	name   = "Overview"
-	url    = "/"
-	weight = 10
-
-[[menu.main]]
-	name   = "Getting started"
-	url    = "getting-started/"
-	weight = 15
-
-[[menu.main]]
-	identifier = "how-tos"
-	name       = "How-to Guides"
-	url        = "how-tos/"
-	weight     = 20
-
-[[menu.main]]
-	parent = "how-tos"
-	identifier = "builders"
-	name   = "Using Builders"
-	url    = "how-tos/builders/"
-	weight = 10
-
-[[menu.main]]
-	parent = "how-tos"
-	name   = "Using Taggers"
-	url    = "how-tos/taggers/"
-	weight = 20
-
-[[menu.main]]
-	parent = "how-tos"
-	name   = "Using Deployers"
-	url    = "how-tos/deployers/"
-	weight = 30
-
-[[menu.main]]
-	parent = "how-tos"
-	name   = "Using Profiles"
-	url    = "how-tos/profiles/"
-	weight = 40
-
-
-[[menu.main]]
-	identifier = "concepts"
-	name       = "Concepts"
-	url        = "concepts/"
-	weight     = 30
-
-[[menu.main]]
-	identifier = "tutorials"
-	name   = "Tutorials"
-	url    = "tutorials/"
-	weight = 40
-
-[[menu.main]]
-	identifier = "references"
-	name       = "References"
-	url        = "references/"
-	weight     = 50
-
-[[menu.main]]
-	parent = "references"
-	name   = "CLI reference"
-	url    = "references/cli/"
-	weight = 10
-
-[[menu.main]]
-	parent = "references"
-	name   = "skaffold.yaml reference"
-	url    = "references/config/"
-	weight = 20
-
-[[menu.main]]
-	name   = "Resources"
-	url    = "resources/"
-	weight = 60
-
+[params.links]
+# End user relevant links. These will show up on left side of footer.
+[[params.links.user]]
+	name = "Mailing List"
+	url = "https://example.org/mail"
+	icon = "fa fa-envelope"
+[[params.links.user]]
+	name ="Twitter"
+	url = "https://example.org/twitter"
+	icon = "fab fa-twitter"
+[[params.links.user]]
+	name = "Stack Overflow"
+	url = "https://example.org/stack"
+	icon = "fab fa-stack-overflow"
+# Developer relevant links. These will show up on right side of footer.
+[[params.links.developer]]
+	name = "GitHub"
+	url = "https://example.org/github"
+	icon = "fab fa-github"
+[[params.links.developer]]
+	name = "Slack"
+	url = "https://example.org/slack"
+	icon = "fab fa-slack"
+[[params.links.developer]]
+	name = "Mailing List"
+	url = "https://example.org/mail"
+	icon = "fa fa-envelope"

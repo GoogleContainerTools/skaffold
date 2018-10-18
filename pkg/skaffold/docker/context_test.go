@@ -18,10 +18,11 @@ package docker
 
 import (
 	"archive/tar"
+	"context"
 	"io"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -33,7 +34,7 @@ func TestDockerContext(t *testing.T) {
 	RetrieveImage = imageFetcher.fetch
 	defer func() { RetrieveImage = retrieveImage }()
 
-	artifact := &v1alpha3.DockerArtifact{
+	artifact := &latest.DockerArtifact{
 		DockerfilePath: "Dockerfile",
 		BuildArgs:      map[string]*string{},
 	}
@@ -47,7 +48,7 @@ func TestDockerContext(t *testing.T) {
 
 	reader, writer := io.Pipe()
 	go func() {
-		err := CreateDockerTarContext(writer, tmpDir.Root(), artifact)
+		err := CreateDockerTarContext(context.Background(), writer, tmpDir.Root(), artifact)
 		if err != nil {
 			writer.CloseWithError(err)
 		} else {

@@ -79,7 +79,11 @@ func TestWatch(t *testing.T) {
 			var stopped sync.WaitGroup
 			stopped.Add(1)
 			go func() {
-				err = watcher.Run(ctx, 10*time.Millisecond, somethingChanged.callNoErr)
+				trigger := &pollTrigger{
+					Interval: 10 * time.Millisecond,
+				}
+
+				err = watcher.Run(ctx, trigger, somethingChanged.callNoErr)
 				stopped.Done()
 				testutil.CheckError(t, false, err)
 			}()
@@ -108,7 +112,7 @@ func newCallback() *callback {
 	}
 }
 
-func (c *callback) call() {
+func (c *callback) call(e Events) {
 	c.wg.Done()
 }
 

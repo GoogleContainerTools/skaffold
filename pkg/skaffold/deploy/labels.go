@@ -147,10 +147,13 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 	if err != nil {
 		return errors.Wrap(err, "getting group version resource from obj")
 	}
+
 	ns, err := resolveNamespace(namespace)
 	if err != nil {
 		return errors.Wrap(err, "resolving namespace")
 	}
+	logrus.Debugln("Patching", name, "in namespace", ns)
+
 	if _, err := client.Resource(gvr).Namespace(ns).Patch(name, types.StrategicMergePatchType, p); err != nil {
 		return errors.Wrapf(err, "patching resource %s/%s", namespace, name)
 	}

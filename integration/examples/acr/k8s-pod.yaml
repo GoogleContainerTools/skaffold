@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started-acr
+spec:
+  containers:
+  - name: getting-started
+    image: registry.azurecr.io/skaffold-example

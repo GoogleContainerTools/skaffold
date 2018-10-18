@@ -23,13 +23,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
 
 // Build builds a list of artifacts with Kaniko.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha3.Artifact) ([]build.Artifact, error) {
-	teardown, err := b.setupSecret()
+func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	teardown, err := b.setupSecret(out)
 	if err != nil {
 		return nil, errors.Wrap(err, "setting up secret")
 	}
@@ -38,8 +38,8 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 	return build.InParallel(ctx, out, tagger, artifacts, b.buildArtifact)
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *v1alpha3.Artifact) (string, error) {
-	initialTag, err := runKaniko(ctx, out, artifact, b.KanikoBuild)
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error) {
+	initialTag, err := b.run(ctx, out, artifact, b.KanikoBuild)
 	if err != nil {
 		return "", errors.Wrapf(err, "kaniko build for [%s]", artifact.ImageName)
 	}

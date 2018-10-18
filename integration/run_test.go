@@ -20,6 +20,7 @@ package integration
 
 import (
 	"bytes"
+	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -38,8 +39,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -142,6 +145,13 @@ func TestRun(t *testing.T) {
 			remoteOnly:  true,
 		},
 		{
+			description: "kaniko local example",
+			args:        []string{"run"},
+			pods:        []string{"getting-started-kaniko"},
+			dir:         "examples/kaniko-local",
+			remoteOnly:  true,
+		},
+		{
 			description: "helm example",
 			args:        []string{"run"},
 			deployments: []string{"skaffold-helm"},
@@ -174,13 +184,13 @@ func TestRun(t *testing.T) {
 			}
 
 			for _, p := range testCase.pods {
-				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(ns.Name), p); err != nil {
+				if err := kubernetesutil.WaitForPodReady(context.Background(), client.CoreV1().Pods(ns.Name), p); err != nil {
 					t.Fatalf("Timed out waiting for pod ready")
 				}
 			}
 
 			for _, d := range testCase.deployments {
-				if err := kubernetesutil.WaitForDeploymentToStabilize(client, ns.Name, d, 10*time.Minute); err != nil {
+				if err := kubernetesutil.WaitForDeploymentToStabilize(context.Background(), client, ns.Name, d, 10*time.Minute); err != nil {
 					t.Fatalf("Timed out waiting for deployment to stabilize")
 				}
 				if testCase.deploymentValidation != nil {
@@ -206,6 +216,98 @@ func TestRun(t *testing.T) {
 	}
 }
 
+func TestDev(t *testing.T) {
+	type testDevCase struct {
+		description   string
+		dir           string
+		args          []string
+		setup         func(t *testing.T) func(t *testing.T)
+		jobs          []string
+		jobValidation func(t *testing.T, ns *v1.Namespace, j *batchv1.Job)
+	}
+
+	testCases := []testDevCase{
+		{
+			description: "delete and redeploy job",
+			dir:         "examples/test-dev-job",
+			args:        []string{"dev"},
+			setup: func(t *testing.T) func(t *testing.T) {
+				// create foo
+				cmd := exec.Command("touch", "examples/test-dev-job/foo")
+				if output, err := util.RunCmdOut(cmd); err != nil {
+					t.Fatalf("creating foo: %s %v", output, err)
+				}
+				return func(t *testing.T) {
+					// delete foo
+					cmd := exec.Command("rm", "examples/test-dev-job/foo")
+					if output, err := util.RunCmdOut(cmd); err != nil {
+						t.Fatalf("creating foo: %s %v", output, err)
+					}
+				}
+			},
+			jobs: []string{
+				"test-dev-job",
+			},
+			jobValidation: func(t *testing.T, ns *v1.Namespace, j *batchv1.Job) {
+				originalUID := j.GetUID()
+				// Make a change to foo so that dev is forced to delete the job and redeploy
+				cmd := exec.Command("sh", "-c", "echo bar > examples/test-dev-job/foo")
+				if output, err := util.RunCmdOut(cmd); err != nil {
+					t.Fatalf("creating bar: %s %v", output, err)
+				}
+				// Make sure the UID of the old Job and the UID of the new Job is different
+				err := wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
+					newJob, err := client.BatchV1().Jobs(ns.Name).Get(j.Name, meta_v1.GetOptions{})
+					if err != nil {
+						return false, nil
+					}
+					return originalUID != newJob.GetUID(), nil
+				})
+				if err != nil {
+					t.Fatalf("redeploy failed: %v", err)
+				}
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.description, func(t *testing.T) {
+			ns, deleteNs := setupNamespace(t)
+			defer deleteNs()
+
+			cleanupTC := testCase.setup(t)
+			defer cleanupTC(t)
+
+			args := []string{}
+			args = append(args, testCase.args...)
+			args = append(args, "--namespace", ns.Name)
+
+			cmd := exec.Command("skaffold", args...)
+			cmd.Dir = testCase.dir
+			go func() {
+				if output, err := util.RunCmdOut(cmd); err != nil {
+					logrus.Warnf("skaffold: %s %v", output, err)
+				}
+			}()
+
+			for _, j := range testCase.jobs {
+				if err := kubernetesutil.WaitForJobToStabilize(context.Background(), client, ns.Name, j, 10*time.Minute); err != nil {
+					t.Fatalf("Timed out waiting for job to stabilize")
+				}
+				if testCase.jobValidation != nil {
+					job, err := client.BatchV1().Jobs(ns.Name).Get(j, meta_v1.GetOptions{})
+					if err != nil {
+						t.Fatalf("Could not find job: %s %s", ns.Name, j)
+					}
+					testCase.jobValidation(t, ns, job)
+				}
+			}
+
+			// No cleanup, since exiting skaffold dev should clean up automatically
+		})
+	}
+}
+
 func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
 	ns, err := client.CoreV1().Namespaces().Create(&v1.Namespace{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -220,45 +322,24 @@ func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
 		client.CoreV1().Namespaces().Delete(ns.Name, &meta_v1.DeleteOptions{})
 	}
 }
+
 func TestFix(t *testing.T) {
-	tests := []struct {
-		name       string
-		directory  string
-		remoteOnly bool
-	}{
-		{
-			name:      "test v1alpha1 to v1alpha2 fix",
-			directory: "testdata/v1alpha1",
-		},
-		{
-			name:       "test v1alpha2 to v1alpha3 fix",
-			directory:  "testdata/v1alpha2",
-			remoteOnly: true,
-		},
+	ns, deleteNs := setupNamespace(t)
+	defer deleteNs()
+
+	fixCmd := exec.Command("skaffold", "fix", "-f", "skaffold.yaml")
+	fixCmd.Dir = "testdata"
+	out, err := util.RunCmdOut(fixCmd)
+	if err != nil {
+		t.Fatalf("testing error: %v", err)
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			if !*remote && test.remoteOnly {
-				t.Skip("skipping remote only test")
-			}
-			ns, deleteNs := setupNamespace(t)
-			defer deleteNs()
 
-			fixCmd := exec.Command("skaffold", "fix", "-f", "skaffold.yaml")
-			fixCmd.Dir = test.directory
-			out, err := util.RunCmdOut(fixCmd)
-			if err != nil {
-				t.Fatalf("testing error: %v", err)
-			}
-
-			runCmd := exec.Command("skaffold", "run", "--namespace", ns.Name, "-f", "-")
-			runCmd.Dir = test.directory
-			runCmd.Stdin = bytes.NewReader(out)
-			err = util.RunCmd(runCmd)
-			if err != nil {
-				t.Fatalf("testing error: %v", err)
-			}
-		})
+	runCmd := exec.Command("skaffold", "run", "--namespace", ns.Name, "-f", "-")
+	runCmd.Dir = "testdata"
+	runCmd.Stdin = bytes.NewReader(out)
+	err = util.RunCmd(runCmd)
+	if err != nil {
+		t.Fatalf("testing error: %v", err)
 	}
 }
 
@@ -363,7 +444,7 @@ func TestInit(t *testing.T) {
 					t.Errorf("error removing generated skaffold yaml: %v", err)
 				}
 			}()
-			initArgs := []string{"init", "-f", generatedYaml}
+			initArgs := []string{"init", "--force", "-f", generatedYaml}
 			initArgs = append(initArgs, test.args...)
 			initCmd := exec.Command("skaffold", initArgs...)
 			initCmd.Dir = test.dir

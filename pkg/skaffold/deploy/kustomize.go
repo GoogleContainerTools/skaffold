@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
@@ -53,13 +53,13 @@ type configMapGenerator struct {
 
 // KustomizeDeployer deploys workflows using kustomize CLI.
 type KustomizeDeployer struct {
-	*v1alpha3.KustomizeDeploy
+	*latest.KustomizeDeploy
 
 	kubectl kubectl.CLI
 }
 
 // NewKustomizeDeployer returns a new KustomizeDeployer.
-func NewKustomizeDeployer(cfg *v1alpha3.KustomizeDeploy, kubeContext string, namespace string) *KustomizeDeployer {
+func NewKustomizeDeployer(cfg *latest.KustomizeDeploy, kubeContext string, namespace string) *KustomizeDeployer {
 	return &KustomizeDeployer{
 		KustomizeDeploy: cfg,
 		kubectl: kubectl.CLI{
@@ -98,7 +98,7 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 		return nil, errors.Wrap(err, "apply")
 	}
 
-	return parseManifestsForDeploys(updated)
+	return parseManifestsForDeploys(k.kubectl.Namespace, updated)
 }
 
 // Cleanup deletes what was deployed by calling Deploy.

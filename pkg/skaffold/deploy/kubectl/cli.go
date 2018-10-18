@@ -22,7 +22,7 @@ import (
 	"os/exec"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -32,7 +32,7 @@ import (
 type CLI struct {
 	Namespace   string
 	KubeContext string
-	Flags       v1alpha3.KubectlFlags
+	Flags       latest.KubectlFlags
 
 	version       ClientVersion
 	versionOnce   sync.Once
@@ -59,7 +59,8 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 		return nil, nil
 	}
 
-	if err := c.Run(ctx, updated.Reader(), out, "apply", c.Flags.Apply, "-f", "-"); err != nil {
+	// Add --force flag to delete and redeploy image if changes can't be applied
+	if err := c.Run(ctx, updated.Reader(), out, "apply", c.Flags.Apply, "--force", "-f", "-"); err != nil {
 		return nil, errors.Wrap(err, "kubectl apply")
 	}
 

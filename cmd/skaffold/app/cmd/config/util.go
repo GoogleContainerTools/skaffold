@@ -17,7 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 
@@ -95,7 +94,8 @@ func getConfigForKubectx() (*ContextConfig, error) {
 			return contextCfg, nil
 		}
 	}
-	return nil, fmt.Errorf("no config entry found for kube-context %s", kubecontext)
+	logrus.Infof("no config entry found for kube-context %s", kubecontext)
+	return nil, nil
 }
 
 func getOrCreateConfigForKubectx() (*ContextConfig, error) {

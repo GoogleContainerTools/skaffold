@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: node
+spec:
+  containers:
+  - name: node
+    image: gcr.io/k8s-skaffold/node-example
+    ports:
+    - containerPort: 3000

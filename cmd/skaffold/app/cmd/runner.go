@@ -19,14 +19,26 @@ package cmd
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
 
-// newRunner creates a SkaffoldRunner and returns the SkaffoldConfig associated with it.
-func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *config.SkaffoldConfig, error) {
-	config, err := readConfiguration(opts)
+// newRunner creates a SkaffoldRunner and returns the SkaffoldPipeline associated with it.
+func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.SkaffoldPipeline, error) {
+	parsed, err := schema.ParseConfig(opts.ConfigurationFile, true)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "reading configuration")
+		return nil, nil, errors.Wrap(err, "parsing skaffold config")
+	}
+
+	if err := schema.CheckVersionIsLatest(parsed.GetVersion()); err != nil {
+		return nil, nil, errors.Wrap(err, "invalid config")
+	}
+
+	config := parsed.(*latest.SkaffoldPipeline)
+	err = schema.ApplyProfiles(config, opts.Profiles)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "applying profiles")
 	}
 
 	runner, err := runner.NewForConfig(opts, config)

@@ -27,10 +27,14 @@ type SkaffoldOptions struct {
 	Cleanup           bool
 	Notification      bool
 	Tail              bool
+	TailDev           bool
+	PortForward       bool
 	Profiles          []string
 	CustomTag         string
 	Namespace         string
 	Watch             []string
+	Trigger           string
+	CustomLabels      []string
 	WatchPollInterval int
 }
 
@@ -42,14 +46,22 @@ func (opts *SkaffoldOptions) Labels() map[string]string {
 	if opts.Cleanup {
 		labels["cleanup"] = "true"
 	}
-	if opts.Tail {
+	if opts.Tail || opts.TailDev {
 		labels["tail"] = "true"
 	}
 	if opts.Namespace != "" {
 		labels["namespace"] = opts.Namespace
 	}
 	if len(opts.Profiles) > 0 {
-		labels["profiles"] = strings.Join(opts.Profiles, ",")
+		labels["profiles"] = strings.Join(opts.Profiles, "__")
+	}
+	for _, cl := range opts.CustomLabels {
+		l := strings.SplitN(cl, "=", 2)
+		if len(l) == 1 {
+			labels[l[0]] = ""
+			continue
+		}
+		labels[l[0]] = l[1]
 	}
 	return labels
 }

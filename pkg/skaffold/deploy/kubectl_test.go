@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/pkg/errors"
@@ -52,7 +52,7 @@ spec:
 func TestKubectlDeploy(t *testing.T) {
 	var tests = []struct {
 		description string
-		cfg         *v1alpha3.KubectlDeploy
+		cfg         *latest.KubectlDeploy
 		builds      []build.Artifact
 		command     util.Command
 		shouldErr   bool
@@ -60,8 +60,8 @@ func TestKubectlDeploy(t *testing.T) {
 		{
 			description: "parameter mismatch",
 			shouldErr:   true,
-			cfg: &v1alpha3.KubectlDeploy{
-				Manifests: []string{"k8s-deployment.yaml"},
+			cfg: &latest.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
 			},
 			builds: []build.Artifact{
 				{
@@ -73,8 +73,8 @@ func TestKubectlDeploy(t *testing.T) {
 		{
 			description: "missing manifest file",
 			shouldErr:   true,
-			cfg: &v1alpha3.KubectlDeploy{
-				Manifests: []string{"k8s-deployment.yaml"},
+			cfg: &latest.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
 			},
 			builds: []build.Artifact{
 				{
@@ -85,10 +85,10 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success",
-			cfg: &v1alpha3.KubectlDeploy{
-				Manifests: []string{"k8s-deployment.yaml"},
+			cfg: &latest.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
 			},
-			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace apply -f -", nil),
+			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace apply --force -f -", nil),
 			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",
@@ -99,10 +99,10 @@ func TestKubectlDeploy(t *testing.T) {
 		{
 			description: "deploy command error",
 			shouldErr:   true,
-			cfg: &v1alpha3.KubectlDeploy{
-				Manifests: []string{"k8s-deployment.yaml"},
+			cfg: &latest.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
 			},
-			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace apply -f -", fmt.Errorf("")),
+			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace apply --force -f -", fmt.Errorf("")),
 			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",
@@ -113,15 +113,15 @@ func TestKubectlDeploy(t *testing.T) {
 		{
 			description: "additional flags",
 			shouldErr:   true,
-			cfg: &v1alpha3.KubectlDeploy{
-				Manifests: []string{"k8s-deployment.yaml"},
-				Flags: v1alpha3.KubectlFlags{
+			cfg: &latest.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
+				Flags: latest.KubectlFlags{
 					Global: []string{"-v=0"},
 					Apply:  []string{"--overwrite=true"},
 					Delete: []string{"ignored"},
 				},
 			},
-			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace -v=0 apply -f -", fmt.Errorf("")),
+			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace -v=0 apply --force -f -", fmt.Errorf("")),
 			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",
@@ -134,7 +134,7 @@ func TestKubectlDeploy(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	tmpDir.Write("k8s-deployment.yaml", deploymentWebYAML)
+	tmpDir.Write("deployment.yaml", deploymentWebYAML)
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
@@ -154,30 +154,30 @@ func TestKubectlDeploy(t *testing.T) {
 func TestKubectlCleanup(t *testing.T) {
 	var tests = []struct {
 		description string
-		cfg         *v1alpha3.KubectlDeploy
+		cfg         *latest.KubectlDeploy
 		command     util.Command
 		shouldErr   bool
 	}{
 		{
 			description: "cleanup success",
-			cfg: &v1alpha3.KubectlDeploy{
-				Manifests: []string{"k8s-deployment.yaml"},
+			cfg: &latest.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
 			},
 			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -", nil),
 		},
 		{
 			description: "cleanup error",
-			cfg: &v1alpha3.KubectlDeploy{
-				Manifests: []string{"k8s-deployment.yaml"},
+			cfg: &latest.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
 			},
 			command:   testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -", errors.New("BUG")),
 			shouldErr: true,
 		},
 		{
 			description: "additional flags",
-			cfg: &v1alpha3.KubectlDeploy{
-				Manifests: []string{"k8s-deployment.yaml"},
-				Flags: v1alpha3.KubectlFlags{
+			cfg: &latest.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
+				Flags: latest.KubectlFlags{
 					Global: []string{"-v=0"},
 					Apply:  []string{"ignored"},
 					Delete: []string{"--grace-period=1"},
@@ -190,7 +190,7 @@ func TestKubectlCleanup(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	tmpDir.Write("k8s-deployment.yaml", deploymentWebYAML)
+	tmpDir.Write("deployment.yaml", deploymentWebYAML)
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
@@ -209,14 +209,14 @@ func TestKubectlCleanup(t *testing.T) {
 
 func TestKubectlRedeploy(t *testing.T) {
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-	util.DefaultExecCommand = testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace apply -f -", nil)
+	util.DefaultExecCommand = testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace apply --force -f -", nil)
 
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 	tmpDir.Write("deployment-web.yaml", deploymentWebYAML)
 	tmpDir.Write("deployment-app.yaml", deploymentAppYaml)
 
-	cfg := &v1alpha3.KubectlDeploy{
+	cfg := &latest.KubectlDeploy{
 		Manifests: []string{"deployment-web.yaml", "deployment-app.yaml"},
 	}
 	deployer := NewKubectlDeployer(tmpDir.Root(), cfg, testKubeContext, testNamespace)
