@@ -8,7 +8,7 @@ The way you configure it in `skaffold.yaml` is the following build stanza:
 ----
 build:
      artifacts:
-     - imageName: gcr.io/k8s-skaffold/skaffold-example
+     - image: gcr.io/k8s-skaffold/skaffold-example
      tagPolicy: # <1>
        envTemplate: # <1>
          template: "{{.IMAGE_NAME}}:{{.FOO}}" # <2>
@@ -16,7 +16,7 @@ build:
 <1> define tagPolicy to be envTemplate
 <2> use https://golang.org/pkg/text/template[go templates] syntax
 
-The `IMAGE_NAME` variable is built-in and reuses the value defined in the artifacts' `imageName`.
+The `IMAGE_NAME` variable is built-in and reuses the value defined in the artifacts' `image`.
 
 
 ifndef::env-github[]

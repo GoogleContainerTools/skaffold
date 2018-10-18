@@ -18,7 +18,6 @@ package watch
 
 import (
 	"context"
-	"time"
 
 	"github.com/pkg/errors"
 )
@@ -28,8 +27,8 @@ type Factory func() Watcher
 
 // Watcher monitors files changes for multiples components.
 type Watcher interface {
-	Register(deps func() ([]string, error), onChange func()) error
-	Run(ctx context.Context, pollInterval time.Duration, onChange func() error) error
+	Register(deps func() ([]string, error), onChange func(Events)) error
+	Run(ctx context.Context, trigger Trigger, onChange func() error) error
 }
 
 type watchList []*component
@@ -41,13 +40,14 @@ func NewWatcher() Watcher {
 
 type component struct {
 	deps     func() ([]string, error)
-	onChange func()
-	state    fileMap
+	onChange func(Events)
+	state    FileMap
+	events   Events
 }
 
 // Register adds a new component to the watch list.
-func (w *watchList) Register(deps func() ([]string, error), onChange func()) error {
-	state, err := stat(deps)
+func (w *watchList) Register(deps func() ([]string, error), onChange func(Events)) error {
+	state, err := Stat(deps)
 	if err != nil {
 		return errors.Wrap(err, "listing files")
 	}
@@ -61,9 +61,9 @@ func (w *watchList) Register(deps func() ([]string, error), onChange func()) err
 }
 
 // Run watches files until the context is cancelled or an error occurs.
-func (w *watchList) Run(ctx context.Context, pollInterval time.Duration, onChange func() error) error {
-	ticker := time.NewTicker(pollInterval)
-	defer ticker.Stop()
+func (w *watchList) Run(ctx context.Context, trigger Trigger, onChange func() error) error {
+	t, cleanup := trigger.Start()
+	defer cleanup()
 
 	changedComponents := map[int]bool{}
 
@@ -71,18 +71,19 @@ func (w *watchList) Run(ctx context.Context, pollInterval time.Duration, onChang
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-ticker.C:
+		case <-t:
 			changed := 0
-
 			for i, component := range *w {
-				state, err := stat(component.deps)
+				state, err := Stat(component.deps)
 				if err != nil {
 					return errors.Wrap(err, "listing files")
 				}
+				e := events(component.state, state)
 
-				if hasChanged(component.state, state) {
+				if e.HasChanged() {
 					changedComponents[i] = true
 					component.state = state
+					component.events = e
 					changed++
 				}
 			}
@@ -92,10 +93,11 @@ func (w *watchList) Run(ctx context.Context, pollInterval time.Duration, onChang
 			// To prevent that, we debounce changes that happen too quickly
 			// by waiting for a full turn where nothing happens and trigger a rebuild for
 			// the accumulated changes.
-			if changed == 0 && len(changedComponents) > 0 {
+			debounce := trigger.Debounce()
+			if (!debounce && changed > 0) || (debounce && changed == 0 && len(changedComponents) > 0) {
 				for i, component := range *w {
 					if changedComponents[i] {
-						component.onChange()
+						component.onChange(component.events)
 					}
 				}
 

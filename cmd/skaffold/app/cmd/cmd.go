@@ -23,7 +23,6 @@ import (
 	"os"
 	"strings"
 
-	cmdutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
@@ -81,8 +80,9 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdFix(out))
 	rootCmd.AddCommand(NewCmdConfig(out))
 	rootCmd.AddCommand(NewCmdInit(out))
+	rootCmd.AddCommand(NewCmdDiagnose(out))
 
-	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic")
+	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
 
 	setFlagsFromEnvVariables(rootCmd.Commands())
 
@@ -132,26 +132,16 @@ func setFlagsFromEnvVariables(commands []*cobra.Command) {
 	}
 }
 
-func AddDevFlags(cmd *cobra.Command) {
-	cmd.Flags().BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
-	cmd.Flags().StringArrayVarP(&opts.Watch, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts.")
-	cmd.Flags().IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes.")
-}
-
 func AddRunDeployFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.Tail, "tail", false, "Stream logs from deployed objects")
+	cmd.Flags().StringArrayVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels.")
 }
 
 func AddRunDevFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
 	cmd.Flags().StringArrayVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
-	cmd.Flags().StringVarP(&opts.Namespace, "namespace", "n", "", "Run Helm deployments in the specified namespace")
-}
-
-func AddFixFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
-	cmd.Flags().BoolVar(&overwrite, "overwrite", false, "Overwrite original config with fixed config")
+	cmd.Flags().StringVarP(&opts.Namespace, "namespace", "n", "", "Run deployments in the specified namespace")
 }
 
 func SetUpLogs(out io.Writer, level string) error {
@@ -162,16 +152,4 @@ func SetUpLogs(out io.Writer, level string) error {
 	}
 	logrus.SetLevel(lvl)
 	return nil
-}
-
-func readConfiguration(opts *config.SkaffoldOptions) (*config.SkaffoldConfig, error) {
-	config, err := cmdutil.ParseConfig(opts.ConfigurationFile)
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing skaffold config")
-	}
-	err = config.ApplyProfiles(opts.Profiles)
-	if err != nil {
-		return nil, errors.Wrap(err, "applying profiles")
-	}
-	return config, nil
 }

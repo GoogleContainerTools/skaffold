@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: python
+spec:
+  containers:
+  - name: python
+    image: gcr.io/k8s-skaffold/python-reload
+    ports:
+    - containerPort: 5000

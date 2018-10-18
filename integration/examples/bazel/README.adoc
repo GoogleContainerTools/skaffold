@@ -8,8 +8,8 @@ The way you configure it in `skaffold.yaml` is the following build stanza:
 ----
 build:
      artifacts:
-     - imageName: gcr.io/k8s-skaffold/skaffold-example
-       workspace: . <1>
+     - image: gcr.io/k8s-skaffold/skaffold-example
+       context: . <1>
        bazel: # <2>
          target: //:skaffold_example.tar # <3>
 ----

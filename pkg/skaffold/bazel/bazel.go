@@ -17,15 +17,17 @@ limitations under the License.
 package bazel
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 const sourceQuery = "kind('source file', deps('%[1]s')) union buildfiles('%[1]s')"
@@ -36,8 +38,8 @@ func query(target string) string {
 
 // GetDependencies finds the sources dependencies for the given bazel artifact.
 // All paths are relative to the workspace.
-func GetDependencies(workspace string, a *v1alpha3.BazelArtifact) ([]string, error) {
-	cmd := exec.Command("bazel", "query", query(a.BuildTarget), "--noimplicit_deps", "--order_output=no")
+func GetDependencies(ctx context.Context, workspace string, a *latest.BazelArtifact) ([]string, error) {
+	cmd := exec.CommandContext(ctx, "bazel", "query", query(a.BuildTarget), "--noimplicit_deps", "--order_output=no")
 	cmd.Dir = workspace
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
@@ -63,6 +65,8 @@ func GetDependencies(workspace string, a *v1alpha3.BazelArtifact) ([]string, err
 	if _, err := os.Stat(filepath.Join(workspace, "WORKSPACE")); err == nil {
 		deps = append(deps, "WORKSPACE")
 	}
+
+	logrus.Debugf("Found dependencies for bazel artifact: %v", deps)
 
 	return deps, nil
 }

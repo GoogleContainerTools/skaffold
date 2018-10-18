@@ -21,37 +21,61 @@ import (
 	"io"
 	"time"
 
+	"k8s.io/apimachinery/pkg/labels"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 )
 
 // WithTimings creates a deployer that logs the duration of each phase.
-func WithTimings(b build.Builder, d deploy.Deployer) (build.Builder, deploy.Deployer) {
+func WithTimings(b build.Builder, t test.Tester, d deploy.Deployer) (build.Builder, test.Tester, deploy.Deployer) {
 	w := withTimings{
 		Builder:  b,
+		Tester:   t,
 		Deployer: d,
 	}
 
-	return w, w
+	return w, w, w
 }
 
 type withTimings struct {
 	build.Builder
+	test.Tester
 	deploy.Deployer
 }
 
-func (w withTimings) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha3.Artifact) ([]build.Artifact, error) {
+func (w withTimings) Labels() map[string]string {
+	return labels.Merge(w.Builder.Labels(), w.Deployer.Labels())
+}
+
+func (w withTimings) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	start := time.Now()
 	color.Default.Fprintln(out, "Starting build...")
 
 	bRes, err := w.Builder.Build(ctx, out, tagger, artifacts)
-	if err == nil {
-		color.Default.Fprintln(out, "Build complete in", time.Since(start))
+	if err != nil {
+		return nil, err
 	}
-	return bRes, err
+
+	color.Default.Fprintln(out, "Build complete in", time.Since(start))
+	return bRes, nil
+}
+
+func (w withTimings) Test(ctx context.Context, out io.Writer, builds []build.Artifact) error {
+	start := time.Now()
+	color.Default.Fprintln(out, "Starting test...")
+
+	err := w.Tester.Test(ctx, out, builds)
+	if err != nil {
+		return err
+	}
+
+	color.Default.Fprintln(out, "Test complete in", time.Since(start))
+	return nil
 }
 
 func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]deploy.Artifact, error) {
@@ -59,21 +83,12 @@ func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.A
 	color.Default.Fprintln(out, "Starting deploy...")
 
 	dRes, err := w.Deployer.Deploy(ctx, out, builds)
-	if err == nil {
-		color.Default.Fprintln(out, "Deploy complete in", time.Since(start))
+	if err != nil {
+		return nil, err
 	}
-	return dRes, err
-}
 
-func (w withTimings) Labels() map[string]string {
-	labels := map[string]string{}
-	for k, v := range w.Builder.Labels() {
-		labels[k] = v
-	}
-	for k, v := range w.Deployer.Labels() {
-		labels[k] = v
-	}
-	return labels
+	color.Default.Fprintln(out, "Deploy complete in", time.Since(start))
+	return dRes, nil
 }
 
 func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {
@@ -81,8 +96,10 @@ func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {
 	color.Default.Fprintln(out, "Cleaning up...")
 
 	err := w.Deployer.Cleanup(ctx, out)
-	if err == nil {
-		color.Default.Fprintln(out, "Cleanup complete in", time.Since(start))
+	if err != nil {
+		return err
 	}
-	return err
+
+	color.Default.Fprintln(out, "Cleanup complete in", time.Since(start))
+	return nil
 }

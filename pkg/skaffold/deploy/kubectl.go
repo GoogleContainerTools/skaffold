@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -36,7 +36,7 @@ import (
 
 // KubectlDeployer deploys workflows using kubectl CLI.
 type KubectlDeployer struct {
-	*v1alpha3.KubectlDeploy
+	*latest.KubectlDeploy
 
 	workingDir string
 	kubectl    kubectl.CLI
@@ -44,7 +44,7 @@ type KubectlDeployer struct {
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(workingDir string, cfg *v1alpha3.KubectlDeploy, kubeContext string, namespace string) *KubectlDeployer {
+func NewKubectlDeployer(workingDir string, cfg *latest.KubectlDeploy, kubeContext string, namespace string) *KubectlDeployer {
 	return &KubectlDeployer{
 		KubectlDeploy: cfg,
 		workingDir:    workingDir,
@@ -66,6 +66,9 @@ func (k *KubectlDeployer) Labels() map[string]string {
 // runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
 	color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version())
+	if err := k.kubectl.CheckVersion(); err != nil {
+		color.Default.Fprintln(out, err)
+	}
 
 	manifests, err := k.readManifests(ctx)
 	if err != nil {
@@ -86,7 +89,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return nil, errors.Wrap(err, "apply")
 	}
 
-	return parseManifestsForDeploys(updated)
+	return parseManifestsForDeploys(k.kubectl.Namespace, updated)
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
@@ -128,12 +131,14 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 	return filteredManifests, nil
 }
 
-func parseManifestsForDeploys(manifests kubectl.ManifestList) ([]Artifact, error) {
-	results := []Artifact{}
+func parseManifestsForDeploys(namespace string, manifests kubectl.ManifestList) ([]Artifact, error) {
+	var results []Artifact
+
 	for _, manifest := range manifests {
 		b := bufio.NewReader(bytes.NewReader(manifest))
-		results = append(results, parseReleaseInfo("", b)...)
+		results = append(results, parseReleaseInfo(namespace, b)...)
 	}
+
 	return results, nil
 }
 

@@ -17,13 +17,19 @@ limitations under the License.
 package v1alpha3
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
 )
 
 const Version string = "skaffold/v1alpha3"
 
-type SkaffoldConfig struct {
+// NewSkaffoldPipeline creates a SkaffoldPipeline
+func NewSkaffoldPipeline() util.VersionedConfig {
+	return new(SkaffoldPipeline)
+}
+
+type SkaffoldPipeline struct {
 	APIVersion string `yaml:"apiVersion"`
 	Kind       string `yaml:"kind"`
 
@@ -32,7 +38,7 @@ type SkaffoldConfig struct {
 	Profiles []Profile    `yaml:"profiles,omitempty"`
 }
 
-func (c *SkaffoldConfig) GetVersion() string {
+func (c *SkaffoldPipeline) GetVersion() string {
 	return c.APIVersion
 }
 
@@ -224,28 +230,17 @@ type BazelArtifact struct {
 	BuildTarget string `yaml:"target"`
 }
 
-// Parse reads a SkaffoldConfig from yaml.
-func (c *SkaffoldConfig) Parse(contents []byte, useDefaults bool) error {
+// Parse reads a SkaffoldPipeline from yaml.
+func (c *SkaffoldPipeline) Parse(contents []byte, useDefaults bool) error {
 	if err := yaml.UnmarshalStrict(contents, c); err != nil {
 		return err
 	}
 
 	if useDefaults {
-		if err := c.setDefaultValues(); err != nil {
+		if err := c.SetDefaultValues(); err != nil {
 			return errors.Wrap(err, "applying default values")
 		}
 	}
 
 	return nil
-}
-
-func NewConfig() (*SkaffoldConfig, error) {
-	cfg := &SkaffoldConfig{}
-	if err := cfg.setBaseDefaultValues(); err != nil {
-		return nil, err
-	}
-	if err := cfg.setDefaultValues(); err != nil {
-		return nil, err
-	}
-	return cfg, nil
 }

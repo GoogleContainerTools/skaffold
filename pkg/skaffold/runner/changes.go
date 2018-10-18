@@ -17,21 +17,41 @@ limitations under the License.
 package runner
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 )
 
 type changes struct {
-	dirtyArtifacts []*v1alpha3.Artifact
+	dirtyArtifacts []*artifactChange
+	needsRebuild   []*latest.Artifact
+	needsResync    []*sync.Item
 	needsRedeploy  bool
 	needsReload    bool
 }
 
-func (c *changes) Add(a *v1alpha3.Artifact) {
-	c.dirtyArtifacts = append(c.dirtyArtifacts, a)
+type artifactChange struct {
+	artifact *latest.Artifact
+	events   watch.Events
+}
+
+func (c *changes) AddDirtyArtifact(a *latest.Artifact, e watch.Events) {
+	c.dirtyArtifacts = append(c.dirtyArtifacts, &artifactChange{artifact: a, events: e})
+}
+
+func (c *changes) AddRebuild(a *latest.Artifact) {
+	c.needsRebuild = append(c.needsRebuild, a)
+}
+
+func (c *changes) AddResync(s *sync.Item) {
+	c.needsResync = append(c.needsResync, s)
 }
 
 func (c *changes) reset() {
 	c.dirtyArtifacts = nil
+	c.needsRebuild = nil
+	c.needsResync = nil
+
 	c.needsRedeploy = false
 	c.needsReload = false
 }
