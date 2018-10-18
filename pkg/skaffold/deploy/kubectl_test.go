@@ -61,7 +61,7 @@ func TestKubectlDeploy(t *testing.T) {
 			description: "parameter mismatch",
 			shouldErr:   true,
 			cfg: &v1alpha3.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+				Manifests: []string{"k8s-deployment.yaml"},
 			},
 			builds: []build.Artifact{
 				{
@@ -74,7 +74,7 @@ func TestKubectlDeploy(t *testing.T) {
 			description: "missing manifest file",
 			shouldErr:   true,
 			cfg: &v1alpha3.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+				Manifests: []string{"k8s-deployment.yaml"},
 			},
 			builds: []build.Artifact{
 				{
@@ -86,7 +86,7 @@ func TestKubectlDeploy(t *testing.T) {
 		{
 			description: "deploy success",
 			cfg: &v1alpha3.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+				Manifests: []string{"k8s-deployment.yaml"},
 			},
 			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace apply -f -", nil),
 			builds: []build.Artifact{
@@ -100,7 +100,7 @@ func TestKubectlDeploy(t *testing.T) {
 			description: "deploy command error",
 			shouldErr:   true,
 			cfg: &v1alpha3.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+				Manifests: []string{"k8s-deployment.yaml"},
 			},
 			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace apply -f -", fmt.Errorf("")),
 			builds: []build.Artifact{
@@ -114,7 +114,7 @@ func TestKubectlDeploy(t *testing.T) {
 			description: "additional flags",
 			shouldErr:   true,
 			cfg: &v1alpha3.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+				Manifests: []string{"k8s-deployment.yaml"},
 				Flags: v1alpha3.KubectlFlags{
 					Global: []string{"-v=0"},
 					Apply:  []string{"--overwrite=true"},
@@ -134,7 +134,7 @@ func TestKubectlDeploy(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	tmpDir.Write("deployment.yaml", deploymentWebYAML)
+	tmpDir.Write("k8s-deployment.yaml", deploymentWebYAML)
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
@@ -161,14 +161,14 @@ func TestKubectlCleanup(t *testing.T) {
 		{
 			description: "cleanup success",
 			cfg: &v1alpha3.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+				Manifests: []string{"k8s-deployment.yaml"},
 			},
 			command: testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -", nil),
 		},
 		{
 			description: "cleanup error",
 			cfg: &v1alpha3.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+				Manifests: []string{"k8s-deployment.yaml"},
 			},
 			command:   testutil.NewFakeCmd("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -", errors.New("BUG")),
 			shouldErr: true,
@@ -176,7 +176,7 @@ func TestKubectlCleanup(t *testing.T) {
 		{
 			description: "additional flags",
 			cfg: &v1alpha3.KubectlDeploy{
-				Manifests: []string{"deployment.yaml"},
+				Manifests: []string{"k8s-deployment.yaml"},
 				Flags: v1alpha3.KubectlFlags{
 					Global: []string{"-v=0"},
 					Apply:  []string{"ignored"},
@@ -190,7 +190,7 @@ func TestKubectlCleanup(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	tmpDir.Write("deployment.yaml", deploymentWebYAML)
+	tmpDir.Write("k8s-deployment.yaml", deploymentWebYAML)
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {

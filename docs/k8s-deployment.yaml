@@ -1,0 +1,26 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    run: skaffold-docs-1234
+  name: skaffold-docs-1234
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: skaffold-docs-1234
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        run: skaffold-docs-1234
+    spec:
+      containers:
+      - image: gcr.io/k8s-skaffold/skaffold-docs
+        name: skaffold-docs-1234
+        ports:
+        - containerPort: 1313
+        resources: {}
+status: {}

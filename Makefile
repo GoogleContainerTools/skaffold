@@ -34,6 +34,7 @@ BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
 VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
 COMMIT = $(shell git rev-parse HEAD)
+BASE_URL ?= https://skaffold.dev
 VERSION ?= $(shell git describe --always --tags --dirty)
 
 GO_LDFLAGS :="
@@ -154,7 +155,7 @@ integration-in-docker:
 
 .PHONY: docs
 docs:
-	hack/build_docs.sh $(VERSION) $(COMMIT)
+	hack/build_docs.sh $(VERSION) $(COMMIT) $(BASE_URL)
 
 .PHONY: docs-in-docker
 docs-in-docker:
