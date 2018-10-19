@@ -81,11 +81,12 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
     apt-get -y update && \
     apt-get -y install docker-ce=17.12.0~ce-0~ubuntu nodejs && \
     npm install -g  firebase-tools \
+                    postcss-cli \
                     postcss-loader \
                     postcss-import \
+                    postcss-preset-env \
                     cssnano \
-                    sugarss \
-                    autoprefixer && \
+                    sugarss && \
     curl -LO https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_Linux-64bit.deb && \
     dpkg -i hugo_extended_${HUGO_VERSION}_Linux-64bit.deb && \
     rm hugo_extended_${HUGO_VERSION}_Linux-64bit.deb && \

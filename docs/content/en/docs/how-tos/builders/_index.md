@@ -14,6 +14,7 @@ At this moment, Skaffold supports the following tools to build your image:
 * Dockerfile remotely with Google Cloud Build
 * Dockerfile in-cluster with Kaniko  
 * Bazel locally with bazel and Docker daemon 
+* JIB Maven and Gradle projects locally  
 
   
 The `build` section in the Skaffold configuration file, `skaffold.yaml`,
