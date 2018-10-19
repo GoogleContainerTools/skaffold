@@ -18,10 +18,10 @@ package local
 
 import (
 	"context"
-	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -30,8 +30,10 @@ func TestGenerateMavenArgs(t *testing.T) {
 		in  latest.JibMavenArtifact
 		out []string
 	}{
-		{latest.JibMavenArtifact{}, []string{"prepare-package", "jib:goal", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Profile: "profile"}, []string{"prepare-package", "jib:goal", "-Dimage=image", "-Pprofile"}},
+		{latest.JibMavenArtifact{}, []string{"--non-recursive", "prepare-package", "jib:goal", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Profile: "profile"}, []string{"--non-recursive", "prepare-package", "jib:goal", "-Dimage=image", "--activate-profiles", "profile"}},
+		{latest.JibMavenArtifact{Module: "module"}, []string{"--projects", "module", "--also-make", "package", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, []string{"--projects", "module", "--also-make", "package", "-Dimage=image", "--activate-profiles", "profile"}},
 	}
 
 	for _, tt := range testCases {
@@ -41,14 +43,33 @@ func TestGenerateMavenArgs(t *testing.T) {
 	}
 }
 
-func TestMultiModulesNotSupported(t *testing.T) {
-	builder := &Builder{}
+func TestMavenVerifyJibPackageGoal(t *testing.T) {
+	var testCases = []struct {
+		requiredGoal string
+		mavenOutput  string
+		shouldError  bool
+	}{
+		{"xxx", "", true},   // no goals should fail
+		{"xxx", "\n", true}, // no goals should fail; newline stripped
+		{"dockerBuild", "dockerBuild", false},
+		{"dockerBuild", "dockerBuild\n", false}, // newline stripped
+		{"dockerBuild", "build\n", true},
+		{"dockerBuild", "build\ndockerBuild\n", true},
+	}
 
-	_, err := builder.buildJibMavenToDocker(context.Background(), ioutil.Discard, ".", &latest.JibMavenArtifact{
-		Module: "module",
-	})
+	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+	defer func(previous bool) { util.SkipWrapperCheck = previous }(util.SkipWrapperCheck)
+	util.SkipWrapperCheck = true
 
-	testutil.CheckError(t, true, err)
+	for _, tt := range testCases {
+		util.DefaultExecCommand = testutil.NewFakeCmdOut("mvn --quiet --projects module jib:_skaffold-package-goals", tt.mavenOutput, nil)
+
+		err := verifyJibPackageGoal(context.Background(), tt.requiredGoal, ".", &latest.JibMavenArtifact{Module: "module"})
+		if hasError := err != nil; tt.shouldError != hasError {
+			t.Error("Unexpected return result")
+		}
+	}
+
 }
 
 func TestGenerateGradleArgs(t *testing.T) {

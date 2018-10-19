@@ -19,7 +19,6 @@ package jib
 import (
 	"os/exec"
 	"sort"
-	"strings"
 
 	"os"
 
@@ -41,14 +40,10 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 	}
 
 	// Parses stdout for the dependencies, one per line
-	lines := strings.Split(string(stdout), "\n")
+	lines := util.NonEmptyLines(stdout)
 
 	var deps []string
 	for _, dep := range lines {
-		if dep == "" {
-			continue
-		}
-
 		// Resolves directories recursively.
 		info, err := os.Stat(dep)
 		if err != nil {
