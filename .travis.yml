@@ -2,9 +2,14 @@ language: go
 os:
   - linux
   - osx
-go:
-  - "1.10.x"
-  - "1.11.x"
+
+matrix:
+  include:
+  - go: "1.10.x"
+    env: GOLINT_VERSION=v1.9.3
+  - go: "1.11.x"
+    env: GOLINT_VERSION=v1.10.2
+
 go_import_path: github.com/GoogleContainerTools/skaffold
 
 before_script:

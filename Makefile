@@ -72,7 +72,7 @@ cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(pla
 
 .PHONY: test
 test:
-	@ ./test.sh
+	@ ./test.sh ${GOLINT_VERSION}
 
 .PHONY: install
 install: $(GO_FILES) $(BUILD_DIR)
