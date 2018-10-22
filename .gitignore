@@ -3,3 +3,4 @@ examples/bazel/bazel-*
 *.new
 .idea/
 docs/generated
+pkg/skaffold/schema/openapi/gen
