@@ -61,7 +61,7 @@ func (c *SkaffoldPipeline) defaultToLocalBuild() {
 	}
 
 	logrus.Debugf("Defaulting build type to local build")
-	c.Build.BuildType.LocalBuild = &LocalBuild{}
+	c.Build.BuildType.Local = &LocalBuild{}
 }
 
 func (c *SkaffoldPipeline) defaultToKubectlDeploy() {
@@ -70,7 +70,7 @@ func (c *SkaffoldPipeline) defaultToKubectlDeploy() {
 	}
 
 	logrus.Debugf("Defaulting deploy type to kubectl")
-	c.Deploy.DeployType.KubectlDeploy = &KubectlDeploy{}
+	c.Deploy.DeployType.Kubectl = &KubectlDeploy{}
 }
 
 func (c *SkaffoldPipeline) setDefaultCloudBuildDockerImage() {
@@ -87,44 +87,44 @@ func (c *SkaffoldPipeline) setDefaultTagger() {
 		return
 	}
 
-	c.Build.TagPolicy = TagPolicy{GitTagger: &GitTagger{}}
+	c.Build.TagPolicy = TagPolicy{GitCommit: &GitTagger{}}
 }
 
 func (c *SkaffoldPipeline) setDefaultKustomizePath() {
-	kustomize := c.Deploy.KustomizeDeploy
+	kustomize := c.Deploy.Kustomize
 	if kustomize == nil {
 		return
 	}
 
-	kustomize.KustomizePath = valueOrDefault(kustomize.KustomizePath, constants.DefaultKustomizationPath)
+	kustomize.Path = valueOrDefault(kustomize.Path, constants.DefaultKustomizationPath)
 }
 
 func (c *SkaffoldPipeline) setDefaultKubectlManifests() {
-	if c.Deploy.KubectlDeploy != nil && len(c.Deploy.KubectlDeploy.Manifests) == 0 {
-		c.Deploy.KubectlDeploy.Manifests = constants.DefaultKubectlManifests
+	if c.Deploy.Kubectl != nil && len(c.Deploy.Kubectl.Manifests) == 0 {
+		c.Deploy.Kubectl.Manifests = constants.DefaultKubectlManifests
 	}
 }
 
 func (c *SkaffoldPipeline) defaultToDockerArtifact(a *Artifact) {
 	if a.ArtifactType == (ArtifactType{}) {
 		a.ArtifactType = ArtifactType{
-			DockerArtifact: &DockerArtifact{},
+			Docker: &DockerArtifact{},
 		}
 	}
 }
 
 func (c *SkaffoldPipeline) setDefaultDockerfile(a *Artifact) {
-	if a.DockerArtifact != nil {
-		a.DockerArtifact.DockerfilePath = valueOrDefault(a.DockerArtifact.DockerfilePath, constants.DefaultDockerfilePath)
+	if a.Docker != nil {
+		a.Docker.Dockerfile = valueOrDefault(a.Docker.Dockerfile, constants.DefaultDockerfilePath)
 	}
 }
 
 func (c *SkaffoldPipeline) setDefaultWorkspace(a *Artifact) {
-	a.Workspace = valueOrDefault(a.Workspace, ".")
+	a.Context = valueOrDefault(a.Context, ".")
 }
 
 func (c *SkaffoldPipeline) withKanikoConfig(operations ...func(kaniko *KanikoBuild) error) error {
-	if kaniko := c.Build.KanikoBuild; kaniko != nil {
+	if kaniko := c.Build.Kaniko; kaniko != nil {
 		for _, operation := range operations {
 			if err := operation(kaniko); err != nil {
 				return err

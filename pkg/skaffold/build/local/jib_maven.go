@@ -49,15 +49,15 @@ func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, work
 
 func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.Artifact) (string, error) {
 	// If this is a multi-module project, we require `package` be bound to jib:build
-	if artifact.JibMavenArtifact.Module != "" {
-		if err := verifyJibPackageGoal(ctx, "build", workspace, artifact.JibMavenArtifact); err != nil {
+	if artifact.JibMaven.Module != "" {
+		if err := verifyJibPackageGoal(ctx, "build", workspace, artifact.JibMaven); err != nil {
 			return "", err
 		}
 	}
 
 	initialTag := util.RandomID()
-	skaffoldImage := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
-	args := generateMavenArgs("build", skaffoldImage, artifact.JibMavenArtifact)
+	skaffoldImage := fmt.Sprintf("%s:%s", artifact.Image, initialTag)
+	args := generateMavenArgs("build", skaffoldImage, artifact.JibMaven)
 
 	if err := runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err

@@ -27,10 +27,10 @@ import (
 
 func TestBuildDescription(t *testing.T) {
 	artifact := &latest.Artifact{
-		ImageName: "nginx",
+		Image: "nginx",
 		ArtifactType: latest.ArtifactType{
-			DockerArtifact: &latest.DockerArtifact{
-				DockerfilePath: "Dockerfile",
+			Docker: &latest.DockerArtifact{
+				Dockerfile: "Dockerfile",
 				BuildArgs: map[string]*string{
 					"arg1": util.StringPtr("value1"),
 					"arg2": nil,
@@ -61,7 +61,7 @@ func TestBuildDescription(t *testing.T) {
 			Name: "docker/docker",
 			Args: []string{"build", "--tag", "nginx", "-f", "Dockerfile", "--build-arg", "arg1=value1", "--build-arg", "arg2", "."},
 		}},
-		Images: []string{artifact.ImageName},
+		Images: []string{artifact.Image},
 		Options: &cloudbuild.BuildOptions{
 			DiskSizeGb:  100,
 			MachineType: "n1-standard-1",
@@ -74,11 +74,11 @@ func TestBuildDescription(t *testing.T) {
 
 func TestPullCacheFrom(t *testing.T) {
 	artifact := &latest.Artifact{
-		ImageName: "nginx",
+		Image: "nginx",
 		ArtifactType: latest.ArtifactType{
-			DockerArtifact: &latest.DockerArtifact{
-				DockerfilePath: "Dockerfile",
-				CacheFrom:      []string{"from/image1", "from/image2"},
+			Docker: &latest.DockerArtifact{
+				Dockerfile: "Dockerfile",
+				CacheFrom:  []string{"from/image1", "from/image2"},
 			},
 		},
 	}

@@ -39,7 +39,7 @@ type GCSBucket struct {
 func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string) (string, error) {
 	bucket := g.cfg.BuildContext.GCSBucket
 	if bucket == "" {
-		guessedProjectID, err := gcp.ExtractProjectID(artifact.ImageName)
+		guessedProjectID, err := gcp.ExtractProjectID(artifact.Image)
 		if err != nil {
 			return "", errors.Wrap(err, "extracting projectID from image name")
 		}
@@ -50,7 +50,7 @@ func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.A
 	color.Default.Fprintln(out, "Uploading sources to", bucket, "GCS bucket")
 
 	g.tarName = fmt.Sprintf("context-%s.tar.gz", initialTag)
-	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact, bucket, g.tarName); err != nil {
+	if err := docker.UploadContextToGCS(ctx, artifact.Context, artifact.Docker, bucket, g.tarName); err != nil {
 		return "", errors.Wrap(err, "uploading sources to GCS")
 	}
 

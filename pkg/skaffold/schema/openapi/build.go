@@ -19,31 +19,29 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/openapi/gen"
-	"io/ioutil"
-	"log"
-	"os"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/openapi/gen"
 	"github.com/go-openapi/spec"
+	"io/ioutil"
 	"k8s.io/kube-openapi/pkg/builder"
 	"k8s.io/kube-openapi/pkg/common"
+	"log"
 )
 
-const defaultSwaggerFile = "generated.json"
+//TODO(balintp): This is a fork from kube-openapi's integration test scripts
+
+const defaultSwaggerFile = "out/skaffold-schema.json"
 
 func main() {
 	// Get the name of the generated swagger file from the args
 	// if it exists; otherwise use the default file name.
 	swaggerFilename := defaultSwaggerFile
-	if len(os.Args) > 1 {
-		swaggerFilename = os.Args[1]
-	}
 
 	// Generate the definition names from the map keys returned
 	// from GetOpenAPIDefinitions. Anonymous function returning empty
 	// Ref is not used.
 	var defNames []string
-	for name, _ := range gen.GetOpenAPIDefinitions(func(name string) spec.Ref {
+	for name := range gen.GetOpenAPIDefinitions(func(name string) spec.Ref {
 		return spec.Ref{}
 	}) {
 		defNames = append(defNames, name)
@@ -86,7 +84,7 @@ func createOpenAPIBuilderConfig() *common.Config {
 		Info: &spec.Info{
 			InfoProps: spec.InfoProps{
 				Title:   "Skaffold Schema",
-				Version: "v1alpha4",
+				Version: latest.Version,
 			},
 		},
 	}

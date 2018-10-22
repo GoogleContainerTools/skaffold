@@ -67,7 +67,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 
 	projectID := b.ProjectID
 	if projectID == "" {
-		guessedProjectID, err := gcp.ExtractProjectID(artifact.ImageName)
+		guessedProjectID, err := gcp.ExtractProjectID(artifact.Image)
 		if err != nil {
 			return "", errors.Wrap(err, "extracting projectID from image name")
 		}
@@ -86,7 +86,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	}
 
 	color.Default.Fprintf(out, "Pushing code to gs://%s/%s\n", cbBucket, buildObject)
-	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact, cbBucket, buildObject); err != nil {
+	if err := docker.UploadContextToGCS(ctx, artifact.Context, artifact.Docker, cbBucket, buildObject); err != nil {
 		return "", errors.Wrap(err, "uploading source tarball")
 	}
 
@@ -146,11 +146,11 @@ watch:
 		return "", errors.Wrap(err, "cleaning up source tar after build")
 	}
 	logrus.Infof("Deleted object %s", buildObject)
-	builtTag := fmt.Sprintf("%s@%s", artifact.ImageName, imageID)
+	builtTag := fmt.Sprintf("%s@%s", artifact.Image, imageID)
 	logrus.Infof("Image built at %s", builtTag)
 
-	newTag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.Options{
-		ImageName: artifact.ImageName,
+	newTag, err := tagger.GenerateFullyQualifiedImageName(artifact.Context, &tag.Options{
+		ImageName: artifact.Image,
 		Digest:    imageID,
 	})
 

@@ -31,15 +31,15 @@ func InSequence(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts
 	var builds []Artifact
 
 	for _, artifact := range artifacts {
-		color.Default.Fprintf(out, "Building [%s]...\n", artifact.ImageName)
+		color.Default.Fprintf(out, "Building [%s]...\n", artifact.Image)
 
 		tag, err := buildArtifact(ctx, out, tagger, artifact)
 		if err != nil {
-			return nil, errors.Wrapf(err, "building [%s]", artifact.ImageName)
+			return nil, errors.Wrapf(err, "building [%s]", artifact.Image)
 		}
 
 		builds = append(builds, Artifact{
-			ImageName: artifact.ImageName,
+			ImageName: artifact.Image,
 			Tag:       tag,
 		})
 	}

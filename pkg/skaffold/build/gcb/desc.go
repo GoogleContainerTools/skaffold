@@ -25,15 +25,15 @@ import (
 func (b *Builder) buildDescription(artifact *latest.Artifact, bucket, object string) *cloudbuild.Build {
 	var steps []*cloudbuild.BuildStep
 
-	for _, cacheFrom := range artifact.DockerArtifact.CacheFrom {
+	for _, cacheFrom := range artifact.Docker.CacheFrom {
 		steps = append(steps, &cloudbuild.BuildStep{
 			Name: b.DockerImage,
 			Args: []string{"pull", cacheFrom},
 		})
 	}
 
-	args := append([]string{"build", "--tag", artifact.ImageName, "-f", artifact.DockerArtifact.DockerfilePath})
-	args = append(args, docker.GetBuildArgs(artifact.DockerArtifact)...)
+	args := append([]string{"build", "--tag", artifact.Image, "-f", artifact.Docker.Dockerfile})
+	args = append(args, docker.GetBuildArgs(artifact.Docker)...)
 	args = append(args, ".")
 
 	steps = append(steps, &cloudbuild.BuildStep{
@@ -50,7 +50,7 @@ func (b *Builder) buildDescription(artifact *latest.Artifact, bucket, object str
 			},
 		},
 		Steps:  steps,
-		Images: []string{artifact.ImageName},
+		Images: []string{artifact.Image},
 		Options: &cloudbuild.BuildOptions{
 			DiskSizeGb:  b.DiskSizeGb,
 			MachineType: b.MachineType,

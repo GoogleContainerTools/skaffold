@@ -41,8 +41,8 @@ func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, wor
 
 func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.Artifact) (string, error) {
 	initialTag := util.RandomID()
-	skaffoldImage := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
-	args := generateGradleArgs("jib", skaffoldImage, artifact.JibGradleArtifact)
+	skaffoldImage := fmt.Sprintf("%s:%s", artifact.Image, initialTag)
+	args := generateGradleArgs("jib", skaffoldImage, artifact.JibGradle)
 
 	if err := runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", err

@@ -69,9 +69,9 @@ func diagnoseArtifacts(out io.Writer, artifacts []*latest.Artifact) error {
 	ctx := context.Background()
 
 	for _, artifact := range artifacts {
-		color.Default.Fprintf(out, "\n%s: %s\n", typeOfArtifact(artifact), artifact.ImageName)
+		color.Default.Fprintf(out, "\n%s: %s\n", typeOfArtifact(artifact), artifact.Image)
 
-		if artifact.DockerArtifact != nil {
+		if artifact.Docker != nil {
 			size, err := sizeOfDockerContext(ctx, artifact)
 			if err != nil {
 				return errors.Wrap(err, "computing the size of the Docker context")
@@ -131,7 +131,7 @@ func timeToComputeMTimes(deps []string) (time.Duration, error) {
 func sizeOfDockerContext(ctx context.Context, a *latest.Artifact) (int64, error) {
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, a.Workspace, a.DockerArtifact)
+		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, a.Context, a.Docker)
 		if err != nil {
 			buildCtxWriter.CloseWithError(errors.Wrap(err, "creating docker context"))
 			return
@@ -144,13 +144,13 @@ func sizeOfDockerContext(ctx context.Context, a *latest.Artifact) (int64, error)
 
 func typeOfArtifact(a *latest.Artifact) string {
 	switch {
-	case a.DockerArtifact != nil:
+	case a.Docker != nil:
 		return "Docker artifact"
-	case a.BazelArtifact != nil:
+	case a.Bazel != nil:
 		return "Bazel artifact"
-	case a.JibGradleArtifact != nil:
+	case a.JibGradle != nil:
 		return "Jib Gradle artifact"
-	case a.JibMavenArtifact != nil:
+	case a.JibMaven != nil:
 		return "Jib Maven artifact"
 	default:
 		return "Unknown artifact"

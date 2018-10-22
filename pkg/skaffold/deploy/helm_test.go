@@ -102,7 +102,7 @@ var testDeployHelmStyleConfig = &latest.HelmDeploy{
 			},
 			ImageStrategy: latest.HelmImageStrategy{
 				HelmImageConfig: latest.HelmImageConfig{
-					HelmConventionConfig: &latest.HelmConventionConfig{},
+					Helm: &latest.HelmConventionConfig{},
 				},
 			},
 		},

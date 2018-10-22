@@ -84,10 +84,10 @@ func TestLocalRun(t *testing.T) {
 			},
 			artifacts: []*latest.Artifact{
 				{
-					ImageName: "gcr.io/test/image",
-					Workspace: tmpDir.Root(),
+					Image:   "gcr.io/test/image",
+					Context: tmpDir.Root(),
 					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{},
+						Docker: &latest.DockerArtifact{},
 					},
 				},
 			},
@@ -109,10 +109,10 @@ func TestLocalRun(t *testing.T) {
 			tagger: &tag.ChecksumTagger{},
 			artifacts: []*latest.Artifact{
 				{
-					ImageName: "gcr.io/test/image",
-					Workspace: tmpDir.Root(),
+					Image:   "gcr.io/test/image",
+					Context: tmpDir.Root(),
 					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{},
+						Docker: &latest.DockerArtifact{},
 					},
 				},
 			},

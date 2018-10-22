@@ -133,7 +133,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	var setOpts []string
 	for k, v := range params {
 		setOpts = append(setOpts, "--set")
-		if r.ImageStrategy.HelmImageConfig.HelmConventionConfig != nil {
+		if r.ImageStrategy.HelmImageConfig.Helm != nil {
 			dockerRef, err := docker.ParseReference(v.Tag)
 			if err != nil {
 				return nil, errors.Wrapf(err, "cannot parse the docker image reference %s", v.Tag)

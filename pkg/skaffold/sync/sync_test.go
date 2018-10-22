@@ -48,11 +48,11 @@ func TestNewSyncItem(t *testing.T) {
 		{
 			description: "match copy",
 			artifact: &latest.Artifact{
-				ImageName: "test",
+				Image: "test",
 				Sync: map[string]string{
 					"*.html": ".",
 				},
-				Workspace: ".",
+				Context: ".",
 			},
 			builds: []build.Artifact{
 				{
@@ -74,11 +74,11 @@ func TestNewSyncItem(t *testing.T) {
 		{
 			description: "no tag for image",
 			artifact: &latest.Artifact{
-				ImageName: "notbuildyet",
+				Image: "notbuildyet",
 				Sync: map[string]string{
 					"*.html": ".",
 				},
-				Workspace: ".",
+				Context: ".",
 			},
 			builds: []build.Artifact{
 				{
@@ -94,11 +94,11 @@ func TestNewSyncItem(t *testing.T) {
 		{
 			description: "sync all",
 			artifact: &latest.Artifact{
-				ImageName: "test",
+				Image: "test",
 				Sync: map[string]string{
 					"*": ".",
 				},
-				Workspace: "node",
+				Context: "node",
 			},
 			builds: []build.Artifact{
 				{
@@ -128,7 +128,7 @@ func TestNewSyncItem(t *testing.T) {
 				Sync: map[string]string{
 					"*.html": ".",
 				},
-				Workspace: ".",
+				Context: ".",
 			},
 			evt: watch.Events{
 				Added:   []string{"main.go"},
@@ -141,7 +141,7 @@ func TestNewSyncItem(t *testing.T) {
 				Sync: map[string]string{
 					"*.html": "/static",
 				},
-				Workspace: ".",
+				Context: ".",
 			},
 			evt: watch.Events{
 				Added:   []string{"index.html"},
@@ -154,7 +154,7 @@ func TestNewSyncItem(t *testing.T) {
 				Sync: map[string]string{
 					"[*.html": "*",
 				},
-				Workspace: ".",
+				Context: ".",
 			},
 			evt: watch.Events{
 				Added:   []string{"index.html"},
@@ -168,7 +168,7 @@ func TestNewSyncItem(t *testing.T) {
 				Sync: map[string]string{
 					"*.html": "*",
 				},
-				Workspace: ".",
+				Context: ".",
 			},
 			builds: []build.Artifact{
 				{

@@ -66,3 +66,7 @@
 [[override]]
   name = "github.com/docker/docker"
   revision = "71cd53e4a197b303c6ba086bd584ffd67a884281"
+
+[[constraint]]
+  branch = "master"
+  name = "k8s.io/kube-openapi"

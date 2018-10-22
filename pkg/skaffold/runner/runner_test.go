@@ -58,7 +58,7 @@ func (t *TestBuilder) Build(ctx context.Context, w io.Writer, tagger tag.Tagger,
 
 	for _, artifact := range artifacts {
 		builds = append(builds, build.Artifact{
-			ImageName: artifact.ImageName,
+			ImageName: artifact.Image,
 		})
 	}
 
@@ -190,14 +190,14 @@ func TestNewForConfig(t *testing.T) {
 			description: "local builder config",
 			pipeline: &latest.SkaffoldPipeline{
 				Build: latest.BuildConfig{
-					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					TagPolicy: latest.TagPolicy{Sha256: &latest.ShaTagger{}},
 					BuildType: latest.BuildType{
-						LocalBuild: &latest.LocalBuild{},
+						Local: &latest.LocalBuild{},
 					},
 				},
 				Deploy: latest.DeployConfig{
 					DeployType: latest.DeployType{
-						KubectlDeploy: &latest.KubectlDeploy{},
+						Kubectl: &latest.KubectlDeploy{},
 					},
 				},
 			},
@@ -211,12 +211,12 @@ func TestNewForConfig(t *testing.T) {
 				Build: latest.BuildConfig{
 					TagPolicy: latest.TagPolicy{},
 					BuildType: latest.BuildType{
-						LocalBuild: &latest.LocalBuild{},
+						Local: &latest.LocalBuild{},
 					},
 				},
 				Deploy: latest.DeployConfig{
 					DeployType: latest.DeployType{
-						KubectlDeploy: &latest.KubectlDeploy{},
+						Kubectl: &latest.KubectlDeploy{},
 					},
 				},
 			},
@@ -238,7 +238,7 @@ func TestNewForConfig(t *testing.T) {
 				Build: latest.BuildConfig{
 					TagPolicy: latest.TagPolicy{},
 					BuildType: latest.BuildType{
-						LocalBuild: &latest.LocalBuild{},
+						Local: &latest.LocalBuild{},
 					},
 				}},
 			shouldErr:        true,
@@ -250,9 +250,9 @@ func TestNewForConfig(t *testing.T) {
 			description: "unknown deployer",
 			pipeline: &latest.SkaffoldPipeline{
 				Build: latest.BuildConfig{
-					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					TagPolicy: latest.TagPolicy{Sha256: &latest.ShaTagger{}},
 					BuildType: latest.BuildType{
-						LocalBuild: &latest.LocalBuild{},
+						Local: &latest.LocalBuild{},
 					},
 				},
 			},
@@ -308,7 +308,7 @@ func TestRun(t *testing.T) {
 				Build: latest.BuildConfig{
 					Artifacts: []*latest.Artifact{
 						{
-							ImageName: "test",
+							Image: "test",
 						},
 					},
 				},
@@ -326,13 +326,13 @@ func TestRun(t *testing.T) {
 				Build: latest.BuildConfig{
 					Artifacts: []*latest.Artifact{
 						{
-							ImageName: "test",
+							Image: "test",
 						},
 					},
 				},
 				Test: []latest.TestCase{
 					{
-						ImageName:      "test",
+						Image:          "test",
 						StructureTests: []string{"fake_file.yaml"},
 					},
 				},
@@ -467,8 +467,8 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	deployer := &TestDeployer{}
 	trigger, _ := watch.NewTrigger(opts)
 	artifacts := []*latest.Artifact{
-		{ImageName: "image1"},
-		{ImageName: "image2"},
+		{Image: "image1"},
+		{Image: "image2"},
 	}
 
 	runner := &SkaffoldRunner{
@@ -553,7 +553,7 @@ func TestShouldWatch(t *testing.T) {
 			}
 
 			match := runner.shouldWatch(&latest.Artifact{
-				ImageName: "domain/image",
+				Image: "domain/image",
 			})
 
 			testutil.CheckDeepEqual(t, test.expectedMatch, match)

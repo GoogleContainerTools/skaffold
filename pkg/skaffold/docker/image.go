@@ -41,7 +41,7 @@ import (
 
 // BuildArtifact performs a docker build and returns nothing
 func BuildArtifact(ctx context.Context, out io.Writer, cli APIClient, workspace string, a *latest.DockerArtifact, initialTag string) error {
-	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
+	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.Dockerfile)
 
 	// Like `docker build`, we ignore the errors
 	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
@@ -62,7 +62,7 @@ func BuildArtifact(ctx context.Context, out io.Writer, cli APIClient, workspace 
 
 	resp, err := cli.ImageBuild(ctx, body, types.ImageBuildOptions{
 		Tags:        []string{initialTag},
-		Dockerfile:  a.DockerfilePath,
+		Dockerfile:  a.Dockerfile,
 		BuildArgs:   a.BuildArgs,
 		CacheFrom:   a.CacheFrom,
 		AuthConfigs: authConfigs,

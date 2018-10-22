@@ -56,7 +56,7 @@ type colorPicker struct {
 func NewColorPicker(artifacts []*latest.Artifact) ColorPicker {
 	c := colorPicker{imageColors: map[string]color.Color{}}
 	for i, artifact := range artifacts {
-		c.imageColors[artifact.ImageName] = colorCodes[i%len(colorCodes)]
+		c.imageColors[artifact.Image] = colorCodes[i%len(colorCodes)]
 	}
 	return &c
 }

@@ -119,17 +119,17 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 
 func getBuilder(cfg *latest.BuildConfig, kubeContext string) (build.Builder, error) {
 	switch {
-	case cfg.LocalBuild != nil:
+	case cfg.Local != nil:
 		logrus.Debugf("Using builder: local")
-		return local.NewBuilder(cfg.LocalBuild, kubeContext)
+		return local.NewBuilder(cfg.Local, kubeContext)
 
 	case cfg.GoogleCloudBuild != nil:
 		logrus.Debugf("Using builder: google cloud")
 		return gcb.NewBuilder(cfg.GoogleCloudBuild), nil
 
-	case cfg.KanikoBuild != nil:
+	case cfg.Kaniko != nil:
 		logrus.Debugf("Using builder: kaniko")
-		return kaniko.NewBuilder(cfg.KanikoBuild)
+		return kaniko.NewBuilder(cfg.Kaniko)
 
 	case cfg.AzureContainerBuild != nil:
 		logrus.Debugf("Using builder: acr")
@@ -147,22 +147,22 @@ func getTester(cfg *[]latest.TestCase) (test.Tester, error) {
 func getDeployer(cfg *latest.DeployConfig, kubeContext string, namespace string) (deploy.Deployer, error) {
 	deployers := []deploy.Deployer{}
 
-	// HelmDeploy first, in case there are resources in Kubectl that depend on these...
-	if cfg.HelmDeploy != nil {
-		deployers = append(deployers, deploy.NewHelmDeployer(cfg.HelmDeploy, kubeContext, namespace))
+	// Helm first, in case there are resources in Kubectl that depend on these...
+	if cfg.Helm != nil {
+		deployers = append(deployers, deploy.NewHelmDeployer(cfg.Helm, kubeContext, namespace))
 	}
 
-	if cfg.KubectlDeploy != nil {
+	if cfg.Kubectl != nil {
 		// TODO(dgageot): this should be the folder containing skaffold.yaml. Should also be moved elsewhere.
 		cwd, err := os.Getwd()
 		if err != nil {
 			return nil, errors.Wrap(err, "finding current directory")
 		}
-		deployers = append(deployers, deploy.NewKubectlDeployer(cwd, cfg.KubectlDeploy, kubeContext, namespace))
+		deployers = append(deployers, deploy.NewKubectlDeployer(cwd, cfg.Kubectl, kubeContext, namespace))
 	}
 
-	if cfg.KustomizeDeploy != nil {
-		deployers = append(deployers, deploy.NewKustomizeDeployer(cfg.KustomizeDeploy, kubeContext, namespace))
+	if cfg.Kustomize != nil {
+		deployers = append(deployers, deploy.NewKustomizeDeployer(cfg.Kustomize, kubeContext, namespace))
 	}
 
 	if len(deployers) == 0 {
@@ -183,17 +183,17 @@ func getTagger(t latest.TagPolicy, customTag string) (tag.Tagger, error) {
 			Tag: customTag,
 		}, nil
 
-	case t.EnvTemplateTagger != nil:
-		return tag.NewEnvTemplateTagger(t.EnvTemplateTagger.Template)
+	case t.EnvTemplate != nil:
+		return tag.NewEnvTemplateTagger(t.EnvTemplate.Template)
 
-	case t.ShaTagger != nil:
+	case t.Sha256 != nil:
 		return &tag.ChecksumTagger{}, nil
 
-	case t.GitTagger != nil:
+	case t.GitCommit != nil:
 		return &tag.GitCommit{}, nil
 
-	case t.DateTimeTagger != nil:
-		return tag.NewDateTimeTagger(t.DateTimeTagger.Format, t.DateTimeTagger.TimeZone), nil
+	case t.DateTime != nil:
+		return tag.NewDateTimeTagger(t.DateTime.Format, t.DateTime.Timezone), nil
 
 	default:
 		return nil, fmt.Errorf("Unknown tagger for strategy %+v", t)
@@ -332,7 +332,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			func() ([]string, error) { return DependenciesForArtifact(ctx, artifact) },
 			func(e watch.Events) { changed.AddDirtyArtifact(artifact, e) },
 		); err != nil {
-			return nil, errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
+			return nil, errors.Wrapf(err, "watching files for artifact %s", artifact.Image)
 		}
 	}
 
@@ -399,7 +399,7 @@ func (r *SkaffoldRunner) shouldWatch(artifact *latest.Artifact) bool {
 	}
 
 	for _, watchExpression := range r.opts.Watch {
-		if strings.Contains(artifact.ImageName, watchExpression) {
+		if strings.Contains(artifact.Image, watchExpression) {
 			return true
 		}
 	}
@@ -443,17 +443,17 @@ func DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string,
 	)
 
 	switch {
-	case a.DockerArtifact != nil:
-		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact)
+	case a.Docker != nil:
+		paths, err = docker.GetDependencies(ctx, a.Context, a.Docker)
 
-	case a.BazelArtifact != nil:
-		paths, err = bazel.GetDependencies(ctx, a.Workspace, a.BazelArtifact)
+	case a.Bazel != nil:
+		paths, err = bazel.GetDependencies(ctx, a.Context, a.Bazel)
 
-	case a.JibMavenArtifact != nil:
-		paths, err = jib.GetDependenciesMaven(ctx, a.Workspace, a.JibMavenArtifact)
+	case a.JibMaven != nil:
+		paths, err = jib.GetDependenciesMaven(ctx, a.Context, a.JibMaven)
 
-	case a.JibGradleArtifact != nil:
-		paths, err = jib.GetDependenciesGradle(ctx, a.Workspace, a.JibGradleArtifact)
+	case a.JibGradle != nil:
+		paths, err = jib.GetDependenciesGradle(ctx, a.Context, a.JibGradle)
 
 	default:
 		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
@@ -466,7 +466,7 @@ func DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string,
 	var p []string
 	for _, path := range paths {
 		if !filepath.IsAbs(path) {
-			path = filepath.Join(a.Workspace, path)
+			path = filepath.Join(a.Context, path)
 		}
 		p = append(p, path)
 	}

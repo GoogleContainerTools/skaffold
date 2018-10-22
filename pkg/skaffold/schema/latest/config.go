@@ -29,14 +29,15 @@ func NewSkaffoldPipeline() util.VersionedConfig {
 	return new(SkaffoldPipeline)
 }
 
+// +k8s:openapi-gen=true
 type SkaffoldPipeline struct {
-	APIVersion string `yaml:"apiVersion"`
-	Kind       string `yaml:"kind"`
+	APIVersion string `yaml:"apiVersion" json:"apiVersion"`
+	Kind       string `yaml:"kind" json:"kind"`
 
-	Build    BuildConfig  `yaml:"build,omitempty"`
-	Test     []TestCase   `yaml:"test,omitempty"`
-	Deploy   DeployConfig `yaml:"deploy,omitempty"`
-	Profiles []Profile    `yaml:"profiles,omitempty"`
+	Build    BuildConfig  `yaml:"build,omitempty" json:"build,omitempty"`
+	Test     []TestCase   `yaml:"test,omitempty" json:"test,omitempty"`
+	Deploy   DeployConfig `yaml:"deploy,omitempty" json:"deploy,omitempty"`
+	Profiles []Profile    `yaml:"profiles,omitempty" json:"profiles,omitempty"`
 }
 
 func (c *SkaffoldPipeline) GetVersion() string {
@@ -44,233 +45,266 @@ func (c *SkaffoldPipeline) GetVersion() string {
 }
 
 // BuildConfig contains all the configuration for the build steps
+// +k8s:openapi-gen=true
 type BuildConfig struct {
-	Artifacts []*Artifact `yaml:"artifacts,omitempty"`
-	TagPolicy TagPolicy   `yaml:"tagPolicy,omitempty"`
-	BuildType `yaml:",inline"`
+	Artifacts []*Artifact `yaml:"artifacts,omitempty" json:"artifacts,omitempty"`
+	TagPolicy TagPolicy   `yaml:"tagPolicy,omitempty" json:"tagPolicy,omitempty"`
+	BuildType `yaml:",inline" json:",inline"`
 }
 
 // TagPolicy contains all the configuration for the tagging step
+// +k8s:openapi-gen=true
 type TagPolicy struct {
-	GitTagger         *GitTagger         `yaml:"gitCommit,omitempty" yamltags:"oneOf=tag"`
-	ShaTagger         *ShaTagger         `yaml:"sha256,omitempty" yamltags:"oneOf=tag"`
-	EnvTemplateTagger *EnvTemplateTagger `yaml:"envTemplate,omitempty" yamltags:"oneOf=tag"`
-	DateTimeTagger    *DateTimeTagger    `yaml:"dateTime,omitempty" yamltags:"oneOf=tag"`
+	GitCommit   *GitTagger         `yaml:"gitCommit,omitempty" yamltags:"oneOf=tag" json:"gitCommit,omitempty"`
+	Sha256      *ShaTagger         `yaml:"sha256,omitempty" yamltags:"oneOf=tag" json:"sha256,omitempty"`
+	EnvTemplate *EnvTemplateTagger `yaml:"envTemplate,omitempty" yamltags:"oneOf=tag" json:"envTemplate,omitempty"`
+	DateTime    *DateTimeTagger    `yaml:"dateTime,omitempty" yamltags:"oneOf=tag" json:"dateTime,omitempty"`
 }
 
 // ShaTagger contains the configuration for the SHA tagger.
+// +k8s:openapi-gen=true
 type ShaTagger struct{}
 
 // GitTagger contains the configuration for the git tagger.
+// +k8s:openapi-gen=true
 type GitTagger struct{}
 
 // EnvTemplateTagger contains the configuration for the envTemplate tagger.
+// +k8s:openapi-gen=true
 type EnvTemplateTagger struct {
-	Template string `yaml:"template,omitempty"`
+	Template string `yaml:"template,omitempty" json:"template,omitempty"`
 }
 
 // DateTimeTagger contains the configuration for the DateTime tagger.
+// +k8s:openapi-gen=true
 type DateTimeTagger struct {
-	Format   string `yaml:"format,omitempty"`
-	TimeZone string `yaml:"timezone,omitempty"`
+	Format   string `yaml:"format,omitempty" json:"format,omitempty"`
+	Timezone string `yaml:"timezone,omitempty" json:"timezone,omitempty"`
 }
 
 // BuildType contains the specific implementation and parameters needed
 // for the build step. Only one field should be populated.
+// +k8s:openapi-gen=true
 type BuildType struct {
-	LocalBuild          *LocalBuild          `yaml:"local,omitempty" yamltags:"oneOf=build"`
-	GoogleCloudBuild    *GoogleCloudBuild    `yaml:"googleCloudBuild,omitempty" yamltags:"oneOf=build"`
-	KanikoBuild         *KanikoBuild         `yaml:"kaniko,omitempty" yamltags:"oneOf=build"`
-	AzureContainerBuild *AzureContainerBuild `yaml:"acr,omitempty" yamltags:"oneOf=build"`
+	Local               *LocalBuild          `yaml:"local,omitempty" yamltags:"oneOf=build" json:"local,omitempty"`
+	GoogleCloudBuild    *GoogleCloudBuild    `yaml:"googleCloudBuild,omitempty" yamltags:"oneOf=build" json:"googleCloudBuild,omitempty"`
+	Kaniko              *KanikoBuild         `yaml:"kaniko,omitempty" yamltags:"oneOf=build" json:"kaniko,omitempty"`
+	AzureContainerBuild *AzureContainerBuild `yaml:"azureContainerBuild,omitempty" yamltags:"oneOf=build" json:"azureContainerBuild,omitempty"`
 }
 
 // LocalBuild contains the fields needed to do a build on the local docker daemon
 // and optionally push to a repository.
+// +k8s:openapi-gen=true
 type LocalBuild struct {
-	Push         *bool `yaml:"push,omitempty"`
-	UseDockerCLI bool  `yaml:"useDockerCLI,omitempty"`
-	UseBuildkit  bool  `yaml:"useBuildkit,omitempty"`
+	Push         *bool `yaml:"push,omitempty" json:"push,omitempty"`
+	UseDockerCLI bool  `yaml:"useDockerCLI,omitempty" json:"useDockerCLI,omitempty"`
+	UseBuildkit  bool  `yaml:"useBuildkit,omitempty" json:"useBuildkit,omitempty"`
 }
 
 // GoogleCloudBuild contains the fields needed to do a remote build on
 // Google Cloud Build.
+// +k8s:openapi-gen=true
 type GoogleCloudBuild struct {
-	ProjectID   string `yaml:"projectId,omitempty"`
-	DiskSizeGb  int64  `yaml:"diskSizeGb,omitempty"`
-	MachineType string `yaml:"machineType,omitempty"`
-	Timeout     string `yaml:"timeout,omitempty"`
-	DockerImage string `yaml:"dockerImage,omitempty"`
+	ProjectID   string `yaml:"projectID, omitempty" json:"projectID,omitempty"`
+	DiskSizeGb  int64  `yaml:"diskSizeGb,omitempty" json:"diskSizeGb,omitempty"`
+	MachineType string `yaml:"machineType,omitempty" json:"machineType,omitempty"`
+	Timeout     string `yaml:"timeout,omitempty" json:"timeout,omitempty"`
+	DockerImage string `yaml:"dockerImage,omitempty" json:"dockerImage,omitempty"`
 }
 
 // LocalDir represents the local directory kaniko build context
+// +k8s:openapi-gen=true
 type LocalDir struct {
 }
 
 // KanikoBuildContext contains the different fields available to specify
 // a kaniko build context
+// +k8s:openapi-gen=true
 type KanikoBuildContext struct {
-	GCSBucket string    `yaml:"gcsBucket,omitempty" yamltags:"oneOf=buildContext"`
-	LocalDir  *LocalDir `yaml:"localDir,omitempty" yamltags:"oneOf=buildContext"`
+	GCSBucket string    `yaml:"gcsBucket,omitempty" yamltags:"oneOf=buildContext" json:"gcsBucket,omitempty"`
+	LocalDir  *LocalDir `yaml:"localDir,omitempty" yamltags:"oneOf=buildContext" json:"localDir,omitempty"`
 }
 
 // KanikoBuild contains the fields needed to do a on-cluster build using
 // the kaniko image
+// +k8s:openapi-gen=true
 type KanikoBuild struct {
-	BuildContext   *KanikoBuildContext `yaml:"buildContext,omitempty"`
-	PullSecret     string              `yaml:"pullSecret,omitempty"`
-	PullSecretName string              `yaml:"pullSecretName,omitempty"`
-	Namespace      string              `yaml:"namespace,omitempty"`
-	Timeout        string              `yaml:"timeout,omitempty"`
-	Image          string              `yaml:"image,omitempty"`
+	BuildContext   *KanikoBuildContext `yaml:"buildContext,omitempty" json:"buildContext,omitempty"`
+	PullSecret     string              `yaml:"pullSecret,omitempty" json:"pullSecret,omitempty"`
+	PullSecretName string              `yaml:"pullSecretName,omitempty" json:"pullSecretName,omitempty"`
+	Namespace      string              `yaml:"namespace,omitempty" json:"namespace,omitempty"`
+	Timeout        string              `yaml:"timeout,omitempty" json:"timeout,omitempty"`
+	Image          string              `yaml:"image,omitempty" json:"image,omitempty"`
 }
 
 // AzureContainerBuild contains the fields needed to do a build
 // on Azure Container Registry
+// +k8s:openapi-gen=true
 type AzureContainerBuild struct {
-	SubscriptionID string `yaml:"subscriptionId,omitempty"`
-	ClientID       string `yaml:"clientId,omitempty"`
-	ClientSecret   string `yaml:"clientSecret,omitempty"`
-	TenantID       string `yaml:"tenantId,omitempty"`
+	SubscriptionID string `yaml:"subscriptionID,omitempty" json:"subscriptionID,omitempty"`
+	ClientID       string `yaml:"clientID,omitempty" json:"clientID,omitempty"`
+	ClientSecret   string `yaml:"clientSecret,omitempty" json:"clientSecret,omitempty"`
+	TenantID       string `yaml:"tenantID,omitempty" json:"tenantID,omitempty"`
 }
 
 // TestCase is a struct containing all the specified test
 // configuration for an image.
+// +k8s:openapi-gen=true
 type TestCase struct {
-	ImageName      string   `yaml:"image"`
-	StructureTests []string `yaml:"structureTests,omitempty"`
+	Image          string   `yaml:"image" json:"image"`
+	StructureTests []string `yaml:"structureTests,omitempty" json:"structureTests,omitempty"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps
+// +k8s:openapi-gen=true
 type DeployConfig struct {
-	DeployType `yaml:",inline"`
+	DeployType `yaml:",inline" json:",inline"`
 }
 
 // DeployType contains the specific implementation and parameters needed
 // for the deploy step. Only one field should be populated.
+// +k8s:openapi-gen=true
 type DeployType struct {
-	HelmDeploy      *HelmDeploy      `yaml:"helm,omitempty" yamltags:"oneOf=deploy"`
-	KubectlDeploy   *KubectlDeploy   `yaml:"kubectl,omitempty" yamltags:"oneOf=deploy"`
-	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty" yamltags:"oneOf=deploy"`
+	Helm      *HelmDeploy      `yaml:"helm,omitempty" yamltags:"oneOf=deploy" json:"helm,omitempty"`
+	Kubectl   *KubectlDeploy   `yaml:"kubectl,omitempty" yamltags:"oneOf=deploy" json:"kubectl,omitempty"`
+	Kustomize *KustomizeDeploy `yaml:"kustomize,omitempty" yamltags:"oneOf=deploy" json:"kustomize,omitempty"`
 }
 
 // KubectlDeploy contains the configuration needed for deploying with `kubectl apply`
+// +k8s:openapi-gen=true
 type KubectlDeploy struct {
-	Manifests       []string     `yaml:"manifests,omitempty"`
-	RemoteManifests []string     `yaml:"remoteManifests,omitempty"`
-	Flags           KubectlFlags `yaml:"flags,omitempty"`
+	Manifests       []string     `yaml:"manifests,omitempty" json:"manifests,omitempty"`
+	RemoteManifests []string     `yaml:"remoteManifests,omitempty" json:"remoteManifests,omitempty"`
+	Flags           KubectlFlags `yaml:"flags,omitempty" json:"flags,omitempty"`
 }
 
 // KubectlFlags describes additional options flags that are passed on the command
 // line to kubectl either on every command (Global), on creations (Apply)
 // or deletions (Delete).
+// +k8s:openapi-gen=true
 type KubectlFlags struct {
-	Global []string `yaml:"global,omitempty"`
-	Apply  []string `yaml:"apply,omitempty"`
-	Delete []string `yaml:"delete,omitempty"`
+	Global []string `yaml:"global,omitempty" json:"global,omitempty"`
+	Apply  []string `yaml:"apply,omitempty" json:"apply,omitempty"`
+	Delete []string `yaml:"delete,omitempty" json:"delete,omitempty"`
 }
 
 // HelmDeploy contains the configuration needed for deploying with helm
+// +k8s:openapi-gen=true
 type HelmDeploy struct {
-	Releases []HelmRelease `yaml:"releases,omitempty"`
+	Releases []HelmRelease `yaml:"releases,omitempty" json:"releases,omitempty"`
 }
 
 // KustomizeDeploy contains the configuration needed for deploying with kustomize.
+// +k8s:openapi-gen=true
 type KustomizeDeploy struct {
-	KustomizePath string       `yaml:"path,omitempty"`
-	Flags         KubectlFlags `yaml:"flags,omitempty"`
+	Path  string       `yaml:"path,omitempty" json:"path,omitempty"`
+	Flags KubectlFlags `yaml:"flags,omitempty" json:"flags,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type HelmRelease struct {
-	Name              string                 `yaml:"name,omitempty"`
-	ChartPath         string                 `yaml:"chartPath,omitempty"`
-	ValuesFiles       []string               `yaml:"valuesFiles,omitempty"`
-	Values            map[string]string      `yaml:"values,omitempty,omitempty"`
-	Namespace         string                 `yaml:"namespace,omitempty"`
-	Version           string                 `yaml:"version,omitempty"`
-	SetValues         map[string]string      `yaml:"setValues,omitempty"`
-	SetValueTemplates map[string]string      `yaml:"setValueTemplates,omitempty"`
-	Wait              bool                   `yaml:"wait,omitempty"`
-	RecreatePods      bool                   `yaml:"recreatePods,omitempty"`
-	Overrides         map[string]interface{} `yaml:"overrides,omitempty"`
-	Packaged          *HelmPackaged          `yaml:"packaged,omitempty"`
-	ImageStrategy     HelmImageStrategy      `yaml:"imageStrategy,omitempty"`
+	Name              string                 `yaml:"name,omitempty" json:"name,omitempty"`
+	ChartPath         string                 `yaml:"chartPath,omitempty" json:"chartPath,omitempty"`
+	ValuesFiles       []string               `yaml:"valuesFiles,omitempty" json:"valuesFiles,omitempty"`
+	Values            map[string]string      `yaml:"values,omitempty,omitempty" json:"values,omitempty,omitempty"`
+	Namespace         string                 `yaml:"namespace,omitempty" json:"namespace,omitempty"`
+	Version           string                 `yaml:"version,omitempty" json:"version,omitempty"`
+	SetValues         map[string]string      `yaml:"setValues,omitempty" json:"setValues,omitempty"`
+	SetValueTemplates map[string]string      `yaml:"setValueTemplates,omitempty" json:"setValueTemplates,omitempty"`
+	Wait              bool                   `yaml:"wait,omitempty" json:"wait,omitempty"`
+	RecreatePods      bool                   `yaml:"recreatePods,omitempty" json:"recreatePods,omitempty"`
+	Overrides         map[string]interface{} `yaml:"overrides,omitempty" json:"overrides,omitempty"`
+	Packaged          *HelmPackaged          `yaml:"packaged,omitempty" json:"packaged,omitempty"`
+	ImageStrategy     HelmImageStrategy      `yaml:"imageStrategy,omitempty" json:"imageStrategy,omitempty"`
 }
 
 // HelmPackaged represents parameters for packaging helm chart.
+// +k8s:openapi-gen=true
 type HelmPackaged struct {
 	// Version sets the version on the chart to this semver version.
-	Version string `yaml:"version,omitempty"`
+	Version string `yaml:"version,omitempty" json:"version,omitempty"`
 
 	// AppVersion set the appVersion on the chart to this version
-	AppVersion string `yaml:"appVersion,omitempty"`
+	AppVersion string `yaml:"appVersion,omitempty" json:"appVersion,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type HelmImageStrategy struct {
-	HelmImageConfig `yaml:",inline"`
+	HelmImageConfig `yaml:",inline" json:",inline"`
 }
 
+// +k8s:openapi-gen=true
 type HelmImageConfig struct {
-	HelmFQNConfig        *HelmFQNConfig        `yaml:"fqn,omitempty"`
-	HelmConventionConfig *HelmConventionConfig `yaml:"helm,omitempty"`
+	FQN  *HelmFQNConfig        `yaml:"fqn,omitempty" json:"fqn,omitempty"`
+	Helm *HelmConventionConfig `yaml:"helm,omitempty" json:"helm,omitempty"`
 }
 
 // HelmFQNConfig represents image config to use the FullyQualifiedImageName as param to set
+// +k8s:openapi-gen=true
 type HelmFQNConfig struct {
-	Property string `yaml:"property,omitempty"`
+	Property string `yaml:"property,omitempty" json:"property,omitempty"`
 }
 
 // HelmConventionConfig represents image config in the syntax of image.repository and image.tag
+// +k8s:openapi-gen=true
 type HelmConventionConfig struct {
 }
 
 // Artifact represents items that need to be built, along with the context in which
 // they should be built.
+// +k8s:openapi-gen=true
 type Artifact struct {
-	ImageName    string            `yaml:"image,omitempty"`
-	Workspace    string            `yaml:"context,omitempty"`
-	Sync         map[string]string `yaml:"sync,omitempty"`
-	ArtifactType `yaml:",inline"`
+	Image        string            `yaml:"image,omitempty" json:"image,omitempty"`
+	Context      string            `yaml:"context,omitempty" json:"context,omitempty"`
+	Sync         map[string]string `yaml:"sync,omitempty" json:"sync,omitempty"`
+	ArtifactType `yaml:",inline" json:",inline"`
 }
 
 // Profile is additional configuration that overrides default
 // configuration when it is activated.
+// +k8s:openapi-gen=true
 type Profile struct {
-	Name   string       `yaml:"name,omitempty"`
-	Build  BuildConfig  `yaml:"build,omitempty"`
-	Test   []TestCase   `yaml:"test,omitempty"`
-	Deploy DeployConfig `yaml:"deploy,omitempty"`
+	Name   string       `yaml:"name,omitempty" json:"name,omitempty"`
+	Build  BuildConfig  `yaml:"build,omitempty" json:"build,omitempty"`
+	Test   []TestCase   `yaml:"test,omitempty" json:"test,omitempty"`
+	Deploy DeployConfig `yaml:"deploy,omitempty" json:"deploy,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type ArtifactType struct {
-	DockerArtifact    *DockerArtifact    `yaml:"docker,omitempty" yamltags:"oneOf=artifact"`
-	BazelArtifact     *BazelArtifact     `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
-	JibMavenArtifact  *JibMavenArtifact  `yaml:"jibMaven,omitempty" yamltags:"oneOf=artifact"`
-	JibGradleArtifact *JibGradleArtifact `yaml:"jibGradle,omitempty" yamltags:"oneOf=artifact"`
+	Docker    *DockerArtifact    `yaml:"docker,omitempty" yamltags:"oneOf=artifact" json:"docker,omitempty"`
+	Bazel     *BazelArtifact     `yaml:"bazel,omitempty" yamltags:"oneOf=artifact" json:"bazel,omitempty"`
+	JibMaven  *JibMavenArtifact  `yaml:"jibMaven,omitempty" yamltags:"oneOf=artifact" json:"jibMaven,omitempty"`
+	JibGradle *JibGradleArtifact `yaml:"jibGradle,omitempty" yamltags:"oneOf=artifact" json:"jibGradle,omitempty"`
 }
 
-// DockerArtifact describes an artifact built from a Dockerfile,
+// Docker describes an artifact built from a Dockerfile,
 // usually using `docker build`.
+// +k8s:openapi-gen=true
 type DockerArtifact struct {
-	DockerfilePath string             `yaml:"dockerfile,omitempty"`
-	BuildArgs      map[string]*string `yaml:"buildArgs,omitempty"`
-	CacheFrom      []string           `yaml:"cacheFrom,omitempty"`
-	Target         string             `yaml:"target,omitempty"`
+	Dockerfile string             `yaml:"dockerfile,omitempty" json:"dockerfile,omitempty"`
+	BuildArgs  map[string]*string `yaml:"buildArgs,omitempty" json:"buildArgs,omitempty"`
+	CacheFrom  []string           `yaml:"cacheFrom,omitempty" json:"cacheFrom,omitempty"`
+	Target     string             `yaml:"target,omitempty" json:"target,omitempty"`
 }
 
-// BazelArtifact describes an artifact built with Bazel.
+// Bazel describes an artifact built with Bazel.
+// +k8s:openapi-gen=true
 type BazelArtifact struct {
-	BuildTarget string `yaml:"target,omitempty"`
+	Target string `yaml:"target,omitempty" json:"target,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type JibMavenArtifact struct {
 	// Only multi-module
-	Module  string `yaml:"module"`
-	Profile string `yaml:"profile"`
+	Module  string `yaml:"module" json:"module"`
+	Profile string `yaml:"profile" json:"profile"`
 }
 
+// +k8s:openapi-gen=true
 type JibGradleArtifact struct {
 	// Only multi-module
-	Project string `yaml:"project"`
+	Project string `yaml:"project" json:"project"`
 }
 
 // Parse reads a SkaffoldPipeline from yaml.

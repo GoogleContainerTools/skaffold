@@ -259,7 +259,7 @@ func expandPaths(workspace string, copied [][]string) ([]string, error) {
 // GetDependencies finds the sources dependencies for the given docker artifact.
 // All paths are relative to the workspace.
 func GetDependencies(ctx context.Context, workspace string, a *latest.DockerArtifact) ([]string, error) {
-	absDockerfilePath, err := NormalizeDockerfilePath(workspace, a.DockerfilePath)
+	absDockerfilePath, err := NormalizeDockerfilePath(workspace, a.Dockerfile)
 	if err != nil {
 		return nil, errors.Wrap(err, "normalizing dockerfile path")
 	}
@@ -346,8 +346,8 @@ func GetDependencies(ctx context.Context, workspace string, a *latest.DockerArti
 	}
 
 	// Always add dockerfile even if it's .dockerignored. The daemon will need it anyways.
-	if !filepath.IsAbs(a.DockerfilePath) {
-		files[a.DockerfilePath] = true
+	if !filepath.IsAbs(a.Dockerfile) {
+		files[a.Dockerfile] = true
 	} else {
 		files[absDockerfilePath] = true
 	}

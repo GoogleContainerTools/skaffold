@@ -49,12 +49,12 @@ func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact) (*Item
 		return nil, nil
 	}
 
-	toCopy, err := intersect(a.Workspace, a.Sync, append(e.Added, e.Modified...))
+	toCopy, err := intersect(a.Context, a.Sync, append(e.Added, e.Modified...))
 	if err != nil {
 		return nil, errors.Wrap(err, "intersecting sync map and added, modified files")
 	}
 
-	toDelete, err := intersect(a.Workspace, a.Sync, e.Deleted)
+	toDelete, err := intersect(a.Context, a.Sync, e.Deleted)
 	if err != nil {
 		return nil, errors.Wrap(err, "intersecting sync map and deleted files")
 	}
@@ -64,9 +64,9 @@ func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact) (*Item
 		return nil, nil
 	}
 
-	tag := latestTag(a.ImageName, builds)
+	tag := latestTag(a.Image, builds)
 	if tag == "" {
-		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
+		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.Image, builds)
 	}
 
 	return &Item{

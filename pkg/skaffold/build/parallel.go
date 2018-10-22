@@ -56,7 +56,7 @@ func InParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts
 
 		go func() {
 			// Log to the pipe, output will be collected and printed later
-			fmt.Fprintf(w, "Building [%s]...\n", artifacts[i].ImageName)
+			fmt.Fprintf(w, "Building [%s]...\n", artifacts[i].Image)
 
 			tags[i], errs[i] = buildArtifact(ctx, w, tagger, artifacts[i])
 			w.Close()
@@ -80,11 +80,11 @@ func InParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts
 		}
 
 		if errs[i] != nil {
-			return nil, errors.Wrapf(errs[i], "building [%s]", artifact.ImageName)
+			return nil, errors.Wrapf(errs[i], "building [%s]", artifact.Image)
 		}
 
 		built = append(built, Artifact{
-			ImageName: artifact.ImageName,
+			ImageName: artifact.Image,
 			Tag:       tags[i],
 		})
 	}

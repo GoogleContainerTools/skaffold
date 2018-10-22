@@ -242,15 +242,15 @@ func processBuildArtifacts(pairs []dockerfilePair) latest.BuildConfig {
 			workspace := filepath.Dir(pair.Dockerfile)
 			dockerfilePath := filepath.Base(pair.Dockerfile)
 			a := &latest.Artifact{
-				ImageName: pair.ImageName,
+				Image: pair.ImageName,
 			}
 			if workspace != "." {
-				a.Workspace = workspace
+				a.Context = workspace
 			}
 			if dockerfilePath != constants.DefaultDockerfilePath {
 				a.ArtifactType = latest.ArtifactType{
-					DockerArtifact: &latest.DockerArtifact{
-						DockerfilePath: dockerfilePath,
+					Docker: &latest.DockerArtifact{
+						Dockerfile: dockerfilePath,
 					},
 				}
 			}
@@ -276,7 +276,7 @@ func generateSkaffoldPipeline(k8sConfigs []string, dockerfilePairs []dockerfileP
 	pipeline.Build = processBuildArtifacts(dockerfilePairs)
 	pipeline.Deploy = latest.DeployConfig{
 		DeployType: latest.DeployType{
-			KubectlDeploy: &latest.KubectlDeploy{
+			Kubectl: &latest.KubectlDeploy{
 				Manifests: k8sConfigs,
 			},
 		},

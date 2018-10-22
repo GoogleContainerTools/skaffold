@@ -35,8 +35,8 @@ func TestDockerContext(t *testing.T) {
 	defer func() { RetrieveImage = retrieveImage }()
 
 	artifact := &latest.DockerArtifact{
-		DockerfilePath: "Dockerfile",
-		BuildArgs:      map[string]*string{},
+		Dockerfile: "Dockerfile",
+		BuildArgs:  map[string]*string{},
 	}
 
 	tmpDir.Write("files/ignored.txt", "")

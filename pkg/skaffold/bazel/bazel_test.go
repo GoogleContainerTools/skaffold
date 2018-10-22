@@ -38,7 +38,7 @@ func TestGetDependenciesWithWorkspace(t *testing.T) {
 	tmpDir.Write("WORKSPACE", "")
 
 	deps, err := GetDependencies(context.Background(), tmpDir.Root(), &latest.BazelArtifact{
-		BuildTarget: "target",
+		target: "target",
 	})
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, []string{"dep1", "dep2", "WORKSPACE"}, deps)
@@ -53,7 +53,7 @@ func TestGetDependenciesWithoutWorkspace(t *testing.T) {
 	)
 
 	deps, err := GetDependencies(context.Background(), ".", &latest.BazelArtifact{
-		BuildTarget: "target2",
+		target: "target2",
 	})
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, []string{"dep3"}, deps)

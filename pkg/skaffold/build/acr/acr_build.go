@@ -48,9 +48,9 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "get new registries client")
 	}
 
-	imageTag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.Options{
+	imageTag, err := tagger.GenerateFullyQualifiedImageName(artifact.Context, &tag.Options{
 		Digest:    util.RandomID(),
-		ImageName: artifact.ImageName,
+		ImageName: artifact.Image,
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "create fully qualified image name")
@@ -68,7 +68,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	}
 	blob := NewBlobStorage(*result.UploadURL)
 
-	err = docker.CreateDockerTarGzContext(ctx, blob.Buffer, artifact.Workspace, artifact.DockerArtifact)
+	err = docker.CreateDockerTarGzContext(ctx, blob.Buffer, artifact.Context, artifact.Docker)
 	if err != nil {
 		return "", errors.Wrap(err, "create context tar.gz")
 	}
@@ -94,7 +94,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 			Os:           cr.Linux,
 			Architecture: cr.Amd64,
 		},
-		DockerFilePath: &artifact.DockerArtifact.DockerfilePath,
+		DockerFilePath: &artifact.Docker.Dockerfile,
 		Type:           cr.TypeDockerBuildRequest,
 	}
 	future, err := client.ScheduleRun(ctx, resourceGroup, registryName, buildRequest)

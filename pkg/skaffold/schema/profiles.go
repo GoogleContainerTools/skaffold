@@ -73,7 +73,7 @@ func overlayOneOfField(config interface{}, profile interface{}) interface{} {
 	v := reflect.ValueOf(profile) // the profile itself
 	t := reflect.TypeOf(profile)  // the type of the profile, used for getting struct field types
 	for i := 0; i < v.NumField(); i++ {
-		fieldType := t.Field(i)              // the field type (e.g. 'LocalBuild' for BuildConfig)
+		fieldType := t.Field(i)              // the field type (e.g. 'Local' for BuildConfig)
 		fieldValue := v.Field(i).Interface() // the value of the field itself
 
 		if fieldValue != nil && !reflect.ValueOf(fieldValue).IsNil() {

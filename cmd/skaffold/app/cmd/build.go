@@ -29,7 +29,7 @@ import (
 
 var (
 	quietFlag       bool
-	buildFormatFlag = flags.NewTemplateFlag("{{range .Builds}}{{.ImageName}} -> {{.Tag}}\n{{end}}", BuildOutput{})
+	buildFormatFlag = flags.NewTemplateFlag("{{range .Builds}}{{.Image}} -> {{.Tag}}\n{{end}}", BuildOutput{})
 )
 
 // NewCmdBuild describes the CLI command to build artifacts.

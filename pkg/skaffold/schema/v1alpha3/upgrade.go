@@ -63,7 +63,7 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 func convertBuild(oldBuild BuildConfig, newBuild next.BuildConfig) {
 	if oldBuild.LocalBuild != nil && oldBuild.LocalBuild.SkipPush != nil {
 		push := !*oldBuild.LocalBuild.SkipPush
-		newBuild.LocalBuild.Push = &push
+		newBuild.Local.Push = &push
 	}
 }
 

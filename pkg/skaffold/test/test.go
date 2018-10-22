@@ -88,7 +88,7 @@ func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes [
 	}
 
 	runner := structure.NewRunner(files)
-	fqn := resolveArtifactImageTag(testCase.ImageName, bRes)
+	fqn := resolveArtifactImageTag(testCase.Image, bRes)
 
 	return runner.Test(ctx, out, fqn)
 }

@@ -71,8 +71,8 @@ func TestColorPicker(t *testing.T) {
 	}
 
 	picker := NewColorPicker([]*latest.Artifact{
-		{ImageName: "image"},
-		{ImageName: "second"},
+		{Image: "image"},
+		{Image: "second"},
 	})
 
 	for _, test := range tests {

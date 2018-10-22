@@ -179,3 +179,10 @@ submit-release-trigger:
 		--config=deploy/cloudbuild-release.yaml \
 		--substitutions="_RELEASE_BUCKET=$(RELEASE_BUCKET),TAG_NAME=$(VERSION)"
 
+.PHONE: out/skaffold-schema.json
+out/skaffold-schema.json:
+	 mkdir -p ./out
+	 go run ./vendor/k8s.io/kube-openapi/cmd/openapi-gen/openapi-gen.go -i ./pkg/skaffold/schema/latest/ -o ./pkg/skaffold/schema/openapi -p gen --alsologtostderr --logtostderr
+	 go run pkg/skaffold/schema/openapi/build.go
+	 git reset pkg/skaffold/schema/openapi/gen/openapi_generated.go
+	 git checkout pkg/skaffold/schema/openapi/gen/openapi_generated.go

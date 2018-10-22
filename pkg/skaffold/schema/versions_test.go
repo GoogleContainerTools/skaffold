@@ -193,7 +193,7 @@ func config(ops ...func(*latest.SkaffoldPipeline)) *latest.SkaffoldPipeline {
 
 func withLocalBuild(ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldPipeline) {
 	return func(cfg *latest.SkaffoldPipeline) {
-		b := latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{}}}
+		b := latest.BuildConfig{BuildType: latest.BuildType{Local: &latest.LocalBuild{}}}
 		for _, op := range ops {
 			op(&b)
 		}
@@ -216,7 +216,7 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 
 func withKanikoBuild(bucket, secretName, namespace, secret string, timeout string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldPipeline) {
 	return func(cfg *latest.SkaffoldPipeline) {
-		b := latest.BuildConfig{BuildType: latest.BuildType{KanikoBuild: &latest.KanikoBuild{
+		b := latest.BuildConfig{BuildType: latest.BuildType{Kaniko: &latest.KanikoBuild{
 			BuildContext: &latest.KanikoBuildContext{
 				GCSBucket: bucket,
 			},
@@ -237,7 +237,7 @@ func withKubectlDeploy(manifests ...string) func(*latest.SkaffoldPipeline) {
 	return func(cfg *latest.SkaffoldPipeline) {
 		cfg.Deploy = latest.DeployConfig{
 			DeployType: latest.DeployType{
-				KubectlDeploy: &latest.KubectlDeploy{
+				Kubectl: &latest.KubectlDeploy{
 					Manifests: manifests,
 				},
 			},
@@ -249,7 +249,7 @@ func withHelmDeploy() func(*latest.SkaffoldPipeline) {
 	return func(cfg *latest.SkaffoldPipeline) {
 		cfg.Deploy = latest.DeployConfig{
 			DeployType: latest.DeployType{
-				HelmDeploy: &latest.HelmDeploy{},
+				Helm: &latest.HelmDeploy{},
 			},
 		}
 	}
@@ -258,11 +258,11 @@ func withHelmDeploy() func(*latest.SkaffoldPipeline) {
 func withDockerArtifact(image, workspace, dockerfile string) func(*latest.BuildConfig) {
 	return func(cfg *latest.BuildConfig) {
 		cfg.Artifacts = append(cfg.Artifacts, &latest.Artifact{
-			ImageName: image,
-			Workspace: workspace,
+			Image:   image,
+			Context: workspace,
 			ArtifactType: latest.ArtifactType{
-				DockerArtifact: &latest.DockerArtifact{
-					DockerfilePath: dockerfile,
+				Docker: &latest.DockerArtifact{
+					Dockerfile: dockerfile,
 				},
 			},
 		})
@@ -272,11 +272,11 @@ func withDockerArtifact(image, workspace, dockerfile string) func(*latest.BuildC
 func withBazelArtifact(image, workspace, target string) func(*latest.BuildConfig) {
 	return func(cfg *latest.BuildConfig) {
 		cfg.Artifacts = append(cfg.Artifacts, &latest.Artifact{
-			ImageName: image,
-			Workspace: workspace,
+			Image:   image,
+			Context: workspace,
 			ArtifactType: latest.ArtifactType{
-				BazelArtifact: &latest.BazelArtifact{
-					BuildTarget: target,
+				Bazel: &latest.BazelArtifact{
+					target: target,
 				},
 			},
 		})
@@ -288,11 +288,11 @@ func withTagPolicy(tagPolicy latest.TagPolicy) func(*latest.BuildConfig) {
 }
 
 func withGitTagger() func(*latest.BuildConfig) {
-	return withTagPolicy(latest.TagPolicy{GitTagger: &latest.GitTagger{}})
+	return withTagPolicy(latest.TagPolicy{GitCommit: &latest.GitTagger{}})
 }
 
 func withShaTagger() func(*latest.BuildConfig) {
-	return withTagPolicy(latest.TagPolicy{ShaTagger: &latest.ShaTagger{}})
+	return withTagPolicy(latest.TagPolicy{Sha256: &latest.ShaTagger{}})
 }
 
 func withProfiles(profiles ...latest.Profile) func(*latest.SkaffoldPipeline) {

@@ -33,7 +33,7 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace stri
 	initialTag := util.RandomID()
 
 	if b.cfg.UseDockerCLI || b.cfg.UseBuildkit {
-		dockerfilePath, err := docker.NormalizeDockerfilePath(workspace, a.DockerfilePath)
+		dockerfilePath, err := docker.NormalizeDockerfilePath(workspace, a.Dockerfile)
 		if err != nil {
 			return "", errors.Wrap(err, "normalizing dockerfile path")
 		}

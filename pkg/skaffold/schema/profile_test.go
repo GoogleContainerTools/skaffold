@@ -78,7 +78,7 @@ func TestApplyProfiles(t *testing.T) {
 				withProfiles(latest.Profile{
 					Name: "dev",
 					Build: latest.BuildConfig{
-						TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+						TagPolicy: latest.TagPolicy{Sha256: &latest.ShaTagger{}},
 					},
 				}),
 			),
@@ -103,8 +103,8 @@ func TestApplyProfiles(t *testing.T) {
 					Name: "profile",
 					Build: latest.BuildConfig{
 						Artifacts: []*latest.Artifact{
-							{ImageName: "image"},
-							{ImageName: "imageProd"},
+							{Image: "image"},
+							{Image: "imageProd"},
 						},
 					},
 				}),
@@ -130,7 +130,7 @@ func TestApplyProfiles(t *testing.T) {
 					Name: "profile",
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
-							HelmDeploy: &latest.HelmDeploy{},
+							Helm: &latest.HelmDeploy{},
 						},
 					},
 				}),

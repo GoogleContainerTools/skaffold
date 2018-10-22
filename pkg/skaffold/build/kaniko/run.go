@@ -46,14 +46,14 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 		return "", errors.Wrap(err, "")
 	}
 
-	imageDst := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
+	imageDst := fmt.Sprintf("%s:%s", artifact.Image, initialTag)
 	args := []string{
-		fmt.Sprintf("--dockerfile=%s", artifact.DockerArtifact.DockerfilePath),
+		fmt.Sprintf("--dockerfile=%s", artifact.Docker.Dockerfile),
 		fmt.Sprintf("--context=%s", context),
 		fmt.Sprintf("--destination=%s", imageDst),
 		fmt.Sprintf("-v=%s", logLevel().String()),
 	}
-	args = append(args, docker.GetBuildArgs(artifact.DockerArtifact)...)
+	args = append(args, docker.GetBuildArgs(artifact.Docker)...)
 
 	pods := client.CoreV1().Pods(cfg.Namespace)
 	p, err := pods.Create(s.Pod(args))
