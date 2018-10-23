@@ -18,6 +18,7 @@ package v1alpha3
 
 import (
 	"encoding/json"
+
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/pkg/errors"

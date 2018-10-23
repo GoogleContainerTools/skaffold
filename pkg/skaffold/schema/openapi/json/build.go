@@ -35,13 +35,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/openapi/gen"
 	"github.com/go-openapi/spec"
-	"io/ioutil"
 	"k8s.io/kube-openapi/pkg/builder"
 	"k8s.io/kube-openapi/pkg/common"
-	"log"
 )
 
 //TODO(balintp): This is a fork from kube-openapi's integration test scripts
@@ -57,7 +58,7 @@ func main() {
 	// from GetOpenAPIDefinitions. Anonymous function returning empty
 	// Ref is not used.
 	var defNames []string
-	for name := range gen.GetOpenAPIDefinitions(func(name string) spec.Ref {
+	for name := range gen.GetOpenAPIDefinitions(func(_ string) spec.Ref {
 		return spec.Ref{}
 	}) {
 		defNames = append(defNames, name)
