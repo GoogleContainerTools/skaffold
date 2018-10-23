@@ -47,7 +47,6 @@ func SubstituteDefaultRepoIntoImage(defaultRepo string, originalImage string) st
 		// prefixes don't match, concatenate and truncate
 		return truncate(defaultRepo + "/" + originalImage)
 	}
-	// TODO: check defaultRepo is < 256 chars when setting
 	return truncate(defaultRepo + "/" + escapeRegex.ReplaceAllString(originalImage, "_"))
 }
 

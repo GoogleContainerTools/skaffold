@@ -108,11 +108,11 @@ git clone https://github.com/GoogleContainerTools/skaffold
 [source,shell]
 cd examples/getting-started
 
-. Replace `k8s-project` with your GCP project ID.
+. Skaffold needs a repo to push to (unless you are running against a local k8s cluster)
 
-. Run `skaffold dev`.
+. Run `skaffold dev --default-repo <your-image-repo>`.
 [source,console]
-$ skaffold dev
+$ skaffold dev --default-repo <your-image-repo>
 Starting build...
 Found [minikube] context, using local docker daemon.
 Sending build context to Docker daemon  6.144kB
