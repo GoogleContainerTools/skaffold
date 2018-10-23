@@ -349,7 +349,7 @@ func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map
 		newImageName := util.SubstituteDefaultRepoIntoImage(h.defaultRepo, imageName)
 		build, ok := imageToBuildResult[newImageName]
 		if !ok {
-			return nil, fmt.Errorf("No build present for %s", imageName)
+			return nil, fmt.Errorf("no build present for %s", imageName)
 		}
 		paramToBuildResult[param] = build
 	}
