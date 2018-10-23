@@ -31,7 +31,7 @@ import (
 )
 
 func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace string, a *latest.BazelArtifact) (string, error) {
-	cmd := exec.CommandContext(ctx, "bazel", "build", a.target)
+	cmd := exec.CommandContext(ctx, "bazel", "build", a.Target)
 	cmd.Dir = workspace
 	cmd.Stdout = out
 	cmd.Stderr = out
@@ -39,8 +39,8 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace strin
 		return "", errors.Wrap(err, "running command")
 	}
 
-	tarPath := buildTarPath(a.target)
-	imageTag := buildImageTag(a.target)
+	tarPath := buildTarPath(a.Target)
+	imageTag := buildImageTag(a.Target)
 
 	imageTar, err := os.Open(filepath.Join(workspace, "bazel-bin", tarPath))
 	if err != nil {

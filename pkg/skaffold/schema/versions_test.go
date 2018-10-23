@@ -276,7 +276,7 @@ func withBazelArtifact(image, workspace, target string) func(*latest.BuildConfig
 			Context: workspace,
 			ArtifactType: latest.ArtifactType{
 				Bazel: &latest.BazelArtifact{
-					target: target,
+					Target: target,
 				},
 			},
 		})

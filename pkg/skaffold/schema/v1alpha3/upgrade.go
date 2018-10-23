@@ -46,9 +46,9 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	// convert Build (should be the same)
 	var newBuild next.BuildConfig
 	oldBuild := config.Build
-	if err := convert(oldBuild, &newBuild); err != nil {
-		return nil, errors.Wrap(err, "converting new build")
-	}
+	//if err := convert(oldBuild, &newBuild); err != nil {
+	//	return nil, errors.Wrap(err, "converting new build")
+	//}
 	convertBuild(oldBuild, newBuild)
 
 	return &next.SkaffoldPipeline{
@@ -61,9 +61,17 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 }
 
 func convertBuild(oldBuild BuildConfig, newBuild next.BuildConfig) {
-	if oldBuild.LocalBuild != nil && oldBuild.LocalBuild.SkipPush != nil {
-		push := !*oldBuild.LocalBuild.SkipPush
-		newBuild.Local.Push = &push
+	if oldBuild.LocalBuild != nil {
+
+		newBuild.Local = &next.LocalBuild{
+
+			UseBuildkit:  oldBuild.LocalBuild.UseBuildkit,
+			UseDockerCLI: oldBuild.LocalBuild.UseDockerCLI,
+		}
+		if oldBuild.LocalBuild.SkipPush != nil {
+			push := !*oldBuild.LocalBuild.SkipPush
+			newBuild.Local.Push = &push
+		}
 	}
 }
 

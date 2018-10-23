@@ -41,34 +41,34 @@ profiles:
 	pipeline := NewSkaffoldPipeline()
 	err := pipeline.Parse([]byte(old), true)
 	if err != nil {
-		t.Errorf("unexpected error during parsing old config: %v", err)
+		t.Fatalf("unexpected error during parsing old config: %v", err)
 	}
 
 	upgraded, err := pipeline.Upgrade()
 	if err != nil {
-		t.Errorf("unexpected error during upgrade: %v", err)
+		t.Fatalf("unexpected error during upgrade: %v", err)
 	}
 
 	upgradedPipeline := upgraded.(*v1alpha4.SkaffoldPipeline)
 
 	if upgradedPipeline.Build.Local == nil {
-		t.Errorf("expected build.local to be not nil")
+		t.Fatalf("expected build.local to be not nil")
 	}
 	if upgradedPipeline.Build.Local.Push != nil && !*upgradedPipeline.Build.Local.Push {
-		t.Errorf("expected build.local.push to be true but it was: %v", *upgradedPipeline.Build.Local.Push)
+		t.Fatalf("expected build.local.push to be true but it was: %v", *upgradedPipeline.Build.Local.Push)
 	}
 
 	if upgradedPipeline.Profiles[0].Build.Local == nil {
-		t.Errorf("expected profiles[0].build.local to be not nil")
+		t.Fatalf("expected profiles[0].build.local to be not nil")
 	}
 	if upgradedPipeline.Profiles[0].Build.Local.Push != nil && *upgradedPipeline.Profiles[0].Build.Local.Push {
-		t.Errorf("expected profiles[0].build.local.push to be false but it was: %v", *upgradedPipeline.Build.Local.Push)
+		t.Fatalf("expected profiles[0].build.local.push to be false but it was: %v", *upgradedPipeline.Build.Local.Push)
 	}
 
 	if upgradedPipeline.Profiles[1].Build.Local == nil {
-		t.Errorf("expected profiles[1].build.local to be not nil")
+		t.Fatalf("expected profiles[1].build.local to be not nil")
 	}
 	if upgradedPipeline.Profiles[1].Build.Local.Push != nil && !*upgradedPipeline.Profiles[1].Build.Local.Push {
-		t.Errorf("expected profiles[1].build.local.push to be true but it was: %v", *upgradedPipeline.Build.Local.Push)
+		t.Fatalf("expected profiles[1].build.local.push to be true but it was: %v", *upgradedPipeline.Build.Local.Push)
 	}
 }
