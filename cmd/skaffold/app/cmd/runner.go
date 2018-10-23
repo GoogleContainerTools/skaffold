@@ -66,10 +66,10 @@ func applyDefaultRepoSubstitution(config *latest.SkaffoldPipeline, defaultRepo s
 		return nil
 	}
 	for _, artifact := range config.Build.Artifacts {
-		artifact.ImageName = util.SubstituteDefaultRepoIntoImage(defaultRepo, artifact.ImageName)
+		artifact.Image = util.SubstituteDefaultRepoIntoImage(defaultRepo, artifact.Image)
 	}
 	for _, testCase := range config.Test {
-		testCase.ImageName = util.SubstituteDefaultRepoIntoImage(defaultRepo, testCase.ImageName)
+		testCase.Image = util.SubstituteDefaultRepoIntoImage(defaultRepo, testCase.Image)
 	}
 	return nil
 }
