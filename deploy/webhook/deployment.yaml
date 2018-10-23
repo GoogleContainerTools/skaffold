@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-serviceaccount
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-crb
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  namespace: default
+  name: admin-serviceaccount
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docs-controller
+  labels:
+    run: docs
+spec:
+  selector:
+    matchLabels:
+      run: docs
+  template:
+    metadata:
+      labels:
+        run: docs
+    spec:
+      serviceAccountName: admin-serviceaccount
+      containers:
+      - name: docs-controller
+        image: gcr.io/k8s-skaffold/docs-controller:latest
+        env:
+        - name: GITHUB_ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: github-token 
+              key: token
+        ports:
+        - containerPort: 8080

@@ -179,3 +179,7 @@ submit-release-trigger:
 		--config=deploy/cloudbuild-release.yaml \
 		--substitutions="_RELEASE_BUCKET=$(RELEASE_BUCKET),TAG_NAME=$(VERSION)"
 
+
+.PHONY: docs-controller-image
+docs-controller-image: 
+	docker build -t gcr.io/$(GCP_PROJECT)/docs-controller -f deploy/webhook/Dockerfile .
