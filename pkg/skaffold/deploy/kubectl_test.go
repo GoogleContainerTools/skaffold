@@ -143,7 +143,7 @@ func TestKubectlDeploy(t *testing.T) {
 				util.DefaultExecCommand = test.command
 			}
 
-			k := NewKubectlDeployer(tmpDir.Root(), test.cfg, testKubeContext, testNamespace)
+			k := NewKubectlDeployer(tmpDir.Root(), test.cfg, testKubeContext, testNamespace, "")
 			_, err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
 
 			testutil.CheckError(t, test.shouldErr, err)
@@ -199,7 +199,7 @@ func TestKubectlCleanup(t *testing.T) {
 				util.DefaultExecCommand = test.command
 			}
 
-			k := NewKubectlDeployer(tmpDir.Root(), test.cfg, testKubeContext, testNamespace)
+			k := NewKubectlDeployer(tmpDir.Root(), test.cfg, testKubeContext, testNamespace, "")
 			err := k.Cleanup(context.Background(), ioutil.Discard)
 
 			testutil.CheckError(t, test.shouldErr, err)
@@ -219,7 +219,7 @@ func TestKubectlRedeploy(t *testing.T) {
 	cfg := &latest.KubectlDeploy{
 		Manifests: []string{"deployment-web.yaml", "deployment-app.yaml"},
 	}
-	deployer := NewKubectlDeployer(tmpDir.Root(), cfg, testKubeContext, testNamespace)
+	deployer := NewKubectlDeployer(tmpDir.Root(), cfg, testKubeContext, testNamespace, "")
 
 	// Deploy one manifest
 	deployed, err := deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{

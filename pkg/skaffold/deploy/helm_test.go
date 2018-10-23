@@ -252,19 +252,19 @@ func TestHelmDeploy(t *testing.T) {
 		{
 			description: "deploy success",
 			cmd:         &MockHelm{t: t},
-			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace),
+			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace, ""),
 			builds:      testBuilds,
 		},
 		{
 			description: "deploy success with recreatePods",
 			cmd:         &MockHelm{t: t},
-			deployer:    NewHelmDeployer(testDeployRecreatePodsConfig, testKubeContext, testNamespace),
+			deployer:    NewHelmDeployer(testDeployRecreatePodsConfig, testKubeContext, testNamespace, ""),
 			builds:      testBuilds,
 		},
 		{
 			description: "deploy error unmatched parameter",
 			cmd:         &MockHelm{t: t},
-			deployer:    NewHelmDeployer(testDeployConfigParameterUnmatched, testKubeContext, testNamespace),
+			deployer:    NewHelmDeployer(testDeployConfigParameterUnmatched, testKubeContext, testNamespace, ""),
 			builds:      testBuilds,
 			shouldErr:   true,
 		},
@@ -284,7 +284,7 @@ func TestHelmDeploy(t *testing.T) {
 				},
 				upgradeResult: fmt.Errorf("should not have called upgrade"),
 			},
-			deployer: NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace),
+			deployer: NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace, ""),
 			builds:   testBuilds,
 		},
 		{
@@ -308,7 +308,7 @@ func TestHelmDeploy(t *testing.T) {
 				},
 				upgradeResult: fmt.Errorf("should not have called upgrade"),
 			},
-			deployer: NewHelmDeployer(testDeployHelmStyleConfig, testKubeContext, testNamespace),
+			deployer: NewHelmDeployer(testDeployHelmStyleConfig, testKubeContext, testNamespace, ""),
 			builds:   testBuilds,
 		},
 		{
@@ -317,7 +317,7 @@ func TestHelmDeploy(t *testing.T) {
 				t:             t,
 				installResult: fmt.Errorf("should not have called install"),
 			},
-			deployer: NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace),
+			deployer: NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace, ""),
 			builds:   testBuilds,
 		},
 		{
@@ -327,7 +327,7 @@ func TestHelmDeploy(t *testing.T) {
 				upgradeResult: fmt.Errorf("unexpected error"),
 			},
 			shouldErr: true,
-			deployer:  NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace),
+			deployer:  NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace, ""),
 			builds:    testBuilds,
 		},
 		{
@@ -337,7 +337,7 @@ func TestHelmDeploy(t *testing.T) {
 				depResult: fmt.Errorf("unexpected error"),
 			},
 			shouldErr: true,
-			deployer:  NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace),
+			deployer:  NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace, ""),
 			builds:    testBuilds,
 		},
 		{
@@ -351,6 +351,7 @@ func TestHelmDeploy(t *testing.T) {
 				testDeployFooWithPackaged,
 				testKubeContext,
 				testNamespace,
+				"",
 			),
 			builds: testBuildsFoo,
 		},
@@ -365,13 +366,14 @@ func TestHelmDeploy(t *testing.T) {
 				testDeployFooWithPackaged,
 				testKubeContext,
 				testNamespace,
+				"",
 			),
 			builds: testBuildsFoo,
 		},
 		{
 			description: "deploy and get templated release name",
 			cmd:         &MockHelm{t: t},
-			deployer:    NewHelmDeployer(testDeployWithTemplatedName, testKubeContext, testNamespace),
+			deployer:    NewHelmDeployer(testDeployWithTemplatedName, testKubeContext, testNamespace, ""),
 			builds:      testBuilds,
 		},
 	}
@@ -537,7 +539,7 @@ func TestHelmDependencies(t *testing.T) {
 						SetValues:   map[string]string{"some.key": "somevalue"},
 					},
 				},
-			}, testKubeContext, testNamespace)
+			}, testKubeContext, testNamespace, "")
 
 			deps, err := deployer.Dependencies()
 
