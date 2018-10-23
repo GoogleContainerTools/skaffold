@@ -22,14 +22,15 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // for testing
 var warner Warner = &logrusWarner{}
 
 // ReplaceImages replaces image names in a list of manifests.
-func (l *ManifestList) ReplaceImages(builds []build.Artifact) (ManifestList, error) {
-	replacer := newImageReplacer(builds)
+func (l *ManifestList) ReplaceImages(builds []build.Artifact, defaultRepo string) (ManifestList, error) {
+	replacer := newImageReplacer(builds, defaultRepo)
 
 	updated, err := l.Visit(replacer)
 	if err != nil {
@@ -43,17 +44,19 @@ func (l *ManifestList) ReplaceImages(builds []build.Artifact) (ManifestList, err
 }
 
 type imageReplacer struct {
+	defaultRepo     string
 	tagsByImageName map[string]string
 	found           map[string]bool
 }
 
-func newImageReplacer(builds []build.Artifact) *imageReplacer {
+func newImageReplacer(builds []build.Artifact, defaultRepo string) *imageReplacer {
 	tagsByImageName := make(map[string]string)
 	for _, build := range builds {
 		tagsByImageName[build.ImageName] = build.Tag
 	}
 
 	return &imageReplacer{
+		defaultRepo:     defaultRepo,
 		tagsByImageName: tagsByImageName,
 		found:           make(map[string]bool),
 	}
@@ -63,9 +66,21 @@ func (r *imageReplacer) Matches(key string) bool {
 	return key == "image"
 }
 
-func (r *imageReplacer) NewValue(key string, old interface{}) (bool, interface{}) {
+func (r *imageReplacer) NewValue(old interface{}) (bool, interface{}) {
 	image := old.(string)
+	found, tag := r.parseAndReplace(image)
+	if !found {
+		subbedImage := r.substituteRepoIntoImage(image)
+		if image == subbedImage {
+			return found, tag
+		}
+		// no match, so try substituting in defaultRepo value
+		found, tag = r.parseAndReplace(subbedImage)
+	}
+	return found, tag
+}
 
+func (r *imageReplacer) parseAndReplace(image string) (bool, interface{}) {
 	parsed, err := docker.ParseReference(image)
 	if err != nil {
 		warner.Warnf("Couldn't parse image: %s", image)
@@ -82,7 +97,6 @@ func (r *imageReplacer) NewValue(key string, old interface{}) (bool, interface{}
 			return true, tag
 		}
 	}
-
 	return false, nil
 }
 
@@ -92,4 +106,8 @@ func (r *imageReplacer) Check() {
 			warner.Warnf("image [%s] is not used by the deployment", imageName)
 		}
 	}
+}
+
+func (r *imageReplacer) substituteRepoIntoImage(originalImage string) string {
+	return util.SubstituteDefaultRepoIntoImage(r.defaultRepo, originalImage)
 }

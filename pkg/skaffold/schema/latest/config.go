@@ -38,7 +38,7 @@ type SkaffoldPipeline struct {
 	Kind string `yaml:"kind" json:"kind"`
 
 	Build    BuildConfig  `yaml:"build,omitempty" json:"build,omitempty"`
-	Test     []TestCase   `yaml:"test,omitempty" json:"test,omitempty"`
+	Test     []*TestCase  `yaml:"test,omitempty" json:"test,omitempty"`
 	Deploy   DeployConfig `yaml:"deploy,omitempty" json:"deploy,omitempty"`
 	Profiles []Profile    `yaml:"profiles,omitempty" json:"profiles,omitempty"`
 }
@@ -269,7 +269,7 @@ type Artifact struct {
 type Profile struct {
 	Name   string       `yaml:"name,omitempty" json:"name,omitempty"`
 	Build  BuildConfig  `yaml:"build,omitempty" json:"build,omitempty"`
-	Test   []TestCase   `yaml:"test,omitempty" json:"test,omitempty"`
+	Test   []*TestCase  `yaml:"test,omitempty" json:"test,omitempty"`
 	Deploy DeployConfig `yaml:"deploy,omitempty" json:"deploy,omitempty"`
 }
 

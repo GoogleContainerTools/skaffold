@@ -38,13 +38,14 @@ import (
 type KubectlDeployer struct {
 	*latest.KubectlDeploy
 
-	workingDir string
-	kubectl    kubectl.CLI
+	workingDir  string
+	kubectl     kubectl.CLI
+	defaultRepo string
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(workingDir string, cfg *latest.KubectlDeploy, kubeContext string, namespace string) *KubectlDeployer {
+func NewKubectlDeployer(workingDir string, cfg *latest.KubectlDeploy, kubeContext string, namespace string, defaultRepo string) *KubectlDeployer {
 	return &KubectlDeployer{
 		KubectlDeploy: cfg,
 		workingDir:    workingDir,
@@ -53,6 +54,7 @@ func NewKubectlDeployer(workingDir string, cfg *latest.KubectlDeploy, kubeContex
 			KubeContext: kubeContext,
 			Flags:       cfg.Flags,
 		},
+		defaultRepo: defaultRepo,
 	}
 }
 
@@ -79,7 +81,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return nil, nil
 	}
 
-	manifests, err = manifests.ReplaceImages(builds)
+	manifests, err = manifests.ReplaceImages(builds, k.defaultRepo)
 	if err != nil {
 		return nil, errors.Wrap(err, "replacing images in manifests")
 	}

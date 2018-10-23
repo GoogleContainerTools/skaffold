@@ -67,6 +67,7 @@ func TestReadConfig(t *testing.T) {
 }
 
 func TestSetAndUnsetConfig(t *testing.T) {
+	dummyContext := "dummy_context"
 	var tests = []struct {
 		expectedSetCfg   *Config
 		expectedUnsetCfg *Config
@@ -103,7 +104,11 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			key:          "not_a_real_value",
 			shouldErrSet: true,
 			expectedSetCfg: &Config{
-				ContextConfigs: []*ContextConfig{{}},
+				ContextConfigs: []*ContextConfig{
+					{
+						Kubecontext: dummyContext,
+					},
+				},
 			},
 		},
 		{
@@ -130,8 +135,18 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			c, _ := yaml.Marshal(*emptyConfig)
 			cfg, teardown := testutil.TempFile(t, "config", c)
 
+			defer func() {
+				// reset all config context for next test
+				teardown()
+				kubecontext = dummyContext
+				configFile = ""
+				global = false
+			}()
+
 			// setup config context
-			kubecontext = test.kubecontext
+			if test.kubecontext != "" {
+				kubecontext = test.kubecontext
+			}
 			configFile = cfg
 			global = test.global
 
@@ -155,12 +170,6 @@ func TestSetAndUnsetConfig(t *testing.T) {
 				t.Error(cfgErr)
 			}
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedUnsetCfg, newConfig)
-
-			// reset all config context for next test
-			teardown()
-			kubecontext = ""
-			configFile = ""
-			global = false
 		})
 	}
 }

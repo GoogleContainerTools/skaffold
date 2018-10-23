@@ -186,3 +186,7 @@ out/skaffold-schema.json:
 	 go run pkg/skaffold/schema/openapi/json/build.go
 	 git reset pkg/skaffold/schema/openapi/gen/openapi_generated.go
 	 git checkout pkg/skaffold/schema/openapi/gen/openapi_generated.go
+
+.PHONY: docs-controller-image
+docs-controller-image:
+	docker build -t gcr.io/$(GCP_PROJECT)/docs-controller -f deploy/webhook/Dockerfile .

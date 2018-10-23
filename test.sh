@@ -36,8 +36,7 @@ scripts=(
     "hack/dep.sh"
 )
 fail=0
-for s in "${scripts[@]}"
-do
+for s in "${scripts[@]}"; do
     echo "RUN ${s}"
     set +e
     ./$s

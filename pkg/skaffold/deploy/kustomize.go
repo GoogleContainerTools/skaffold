@@ -18,6 +18,7 @@ package deploy
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os/exec"
@@ -55,11 +56,11 @@ type configMapGenerator struct {
 type KustomizeDeployer struct {
 	*latest.KustomizeDeploy
 
-	kubectl kubectl.CLI
+	kubectl     kubectl.CLI
+	defaultRepo string
 }
 
-// NewKustomizeDeployer returns a new KustomizeDeployer.
-func NewKustomizeDeployer(cfg *latest.KustomizeDeploy, kubeContext string, namespace string) *KustomizeDeployer {
+func NewKustomizeDeployer(cfg *latest.KustomizeDeploy, kubeContext string, namespace string, defaultRepo string) *KustomizeDeployer {
 	return &KustomizeDeployer{
 		KustomizeDeploy: cfg,
 		kubectl: kubectl.CLI{
@@ -67,6 +68,7 @@ func NewKustomizeDeployer(cfg *latest.KustomizeDeploy, kubeContext string, names
 			KubeContext: kubeContext,
 			Flags:       cfg.Flags,
 		},
+		defaultRepo: defaultRepo,
 	}
 }
 
@@ -88,9 +90,12 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 		return nil, nil
 	}
 
-	manifests, err = manifests.ReplaceImages(builds)
+	manifests, err = manifests.ReplaceImages(builds, k.defaultRepo)
 	if err != nil {
 		return nil, errors.Wrap(err, "replacing images in manifests")
+	}
+	for _, manifest := range manifests {
+		fmt.Printf("manifest: %s\n", string(manifest))
 	}
 
 	updated, err := k.kubectl.Apply(ctx, out, manifests)

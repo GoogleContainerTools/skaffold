@@ -111,20 +111,3 @@ func (m *multiDeployer) Cleanup(ctx context.Context, w io.Writer) error {
 
 	return nil
 }
-
-func joinTagsToBuildResult(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {
-	imageToBuildResult := map[string]build.Artifact{}
-	for _, build := range builds {
-		imageToBuildResult[build.ImageName] = build
-	}
-
-	paramToBuildResult := map[string]build.Artifact{}
-	for param, imageName := range params {
-		build, ok := imageToBuildResult[imageName]
-		if !ok {
-			return nil, fmt.Errorf("No build present for %s", imageName)
-		}
-		paramToBuildResult[param] = build
-	}
-	return paramToBuildResult, nil
-}

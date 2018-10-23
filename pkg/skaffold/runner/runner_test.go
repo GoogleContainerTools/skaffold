@@ -330,7 +330,7 @@ func TestRun(t *testing.T) {
 						},
 					},
 				},
-				Test: []latest.TestCase{
+				Test: []*latest.TestCase{
 					{
 						Image:          "test",
 						StructureTests: []string{"fake_file.yaml"},
