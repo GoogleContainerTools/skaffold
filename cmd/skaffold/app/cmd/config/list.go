@@ -17,12 +17,13 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 func NewCmdList(out io.Writer) *cobra.Command {
@@ -66,7 +67,7 @@ func runList(out io.Writer) error {
 			return errors.Wrap(err, "marshaling config")
 		}
 	}
-
+	out.Write([]byte(fmt.Sprintf("skaffold config: %s\n", configFile)))
 	out.Write(configYaml)
 	return nil
 }
