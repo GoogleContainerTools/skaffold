@@ -41,12 +41,12 @@ profiles:
 	pipeline := NewSkaffoldPipeline()
 	err := pipeline.Parse([]byte(old), true)
 	if err != nil {
-		t.Fatalf("unexpected error during parsing old config: %v", err)
+		t.Fatalf("error during parsing old config: %v", err)
 	}
 
 	upgraded, err := pipeline.Upgrade()
 	if err != nil {
-		t.Fatalf("unexpected error during upgrade: %v", err)
+		t.Fatalf(" error during upgrade: %v", err)
 	}
 
 	upgradedPipeline := upgraded.(*v1alpha4.SkaffoldPipeline)
@@ -70,5 +70,8 @@ profiles:
 	}
 	if upgradedPipeline.Profiles[1].Build.Local.Push != nil && !*upgradedPipeline.Profiles[1].Build.Local.Push {
 		t.Fatalf("expected profiles[1].build.local.push to be true but it was: %v", *upgradedPipeline.Build.Local.Push)
+	}
+	if upgradedPipeline.Kind != "SkaffoldPipeline" {
+		t.Fatalf("expected kind to be SkaffoldPipeline but it was: %v", upgradedPipeline.Kind)
 	}
 }

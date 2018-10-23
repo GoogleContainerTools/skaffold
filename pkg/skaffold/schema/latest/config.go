@@ -29,10 +29,13 @@ func NewSkaffoldPipeline() util.VersionedConfig {
 	return new(SkaffoldPipeline)
 }
 
+// SkaffoldPipeline defines the pipeline configuration for skaffold
 // +k8s:openapi-gen=true
 type SkaffoldPipeline struct {
+	//apiVersion defines the version of the Pipeline API for skaffold
 	APIVersion string `yaml:"apiVersion" json:"apiVersion"`
-	Kind       string `yaml:"kind" json:"kind"`
+	//kind should be SkaffoldPipeline
+	Kind string `yaml:"kind" json:"kind"`
 
 	Build    BuildConfig  `yaml:"build,omitempty" json:"build,omitempty"`
 	Test     []TestCase   `yaml:"test,omitempty" json:"test,omitempty"`
@@ -105,7 +108,7 @@ type LocalBuild struct {
 // Google Cloud Build.
 // +k8s:openapi-gen=true
 type GoogleCloudBuild struct {
-	ProjectID   string `yaml:"projectID, omitempty" json:"projectID,omitempty"`
+	ProjectID   string `yaml:"projectID,omitempty" json:"projectID,omitempty"`
 	DiskSizeGb  int64  `yaml:"diskSizeGb,omitempty" json:"diskSizeGb,omitempty"`
 	MachineType string `yaml:"machineType,omitempty" json:"machineType,omitempty"`
 	Timeout     string `yaml:"timeout,omitempty" json:"timeout,omitempty"`

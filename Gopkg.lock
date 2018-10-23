@@ -871,7 +871,7 @@
     "internal/gopathwalk",
   ]
   pruneopts = "NUT"
-  revision = "9650c66da3ff428b355c9b29c8a5ca02bd026f3d"
+  revision = "40a48ad93fbe707101afb2099b738471f70594ec"
 
 [[projects]]
   digest = "1:5bb3eb9c39672b11fe8ac6faa27be8d70d5666714a4c67b98d8d8a40b212b568"
@@ -1257,10 +1257,9 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:971c54df38131368408577e3ea1473e87f08e07497c66f1c27ad34e7a3c24e3c"
+  digest = "1:9ff077d6ae48a91e2d616c3266073c9ae5ff6ac77947e9003a9ee699734fe5f6"
   name = "k8s.io/kube-openapi"
   packages = [
-    "cmd/openapi-gen",
     "cmd/openapi-gen/args",
     "pkg/builder",
     "pkg/common",
@@ -1351,9 +1350,10 @@
     "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/clientcmd/api",
-    "k8s.io/kube-openapi/cmd/openapi-gen",
+    "k8s.io/kube-openapi/cmd/openapi-gen/args",
     "k8s.io/kube-openapi/pkg/builder",
     "k8s.io/kube-openapi/pkg/common",
+    "k8s.io/kube-openapi/pkg/generators",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

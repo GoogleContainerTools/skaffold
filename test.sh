@@ -24,6 +24,7 @@ echo "Running go tests..."
 go test -cover -v -timeout 60s `go list ./... | grep -v vendor` | sed ''/PASS/s//$(printf "${GREEN}PASS${RESET}")/'' | sed ''/FAIL/s//$(printf "${RED}FAIL${RESET}")/''
 GO_TEST_EXIT_CODE=${PIPESTATUS[0]}
 if [[ $GO_TEST_EXIT_CODE -ne 0 ]]; then
+    echo "Error running tests, status $GO_TEST_EXIT_CODE"
     exit $GO_TEST_EXIT_CODE
 fi
 

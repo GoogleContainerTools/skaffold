@@ -18,7 +18,6 @@ package v1alpha3
 
 import (
 	"encoding/json"
-
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/pkg/errors"
@@ -39,28 +38,28 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 			return nil, errors.Wrap(err, "converting new profile")
 		}
 		for i, oldProfile := range config.Profiles {
-			convertBuild(oldProfile.Build, newProfiles[i].Build)
+			convertBuild(oldProfile.Build, &newProfiles[i].Build)
 		}
 	}
 
 	// convert Build (should be the same)
 	var newBuild next.BuildConfig
 	oldBuild := config.Build
-	//if err := convert(oldBuild, &newBuild); err != nil {
-	//	return nil, errors.Wrap(err, "converting new build")
-	//}
-	convertBuild(oldBuild, newBuild)
+	if err := convert(oldBuild, &newBuild); err != nil {
+		return nil, errors.Wrap(err, "converting new build")
+	}
+	convertBuild(oldBuild, &newBuild)
 
 	return &next.SkaffoldPipeline{
 		APIVersion: next.Version,
-		Kind:       config.Kind,
+		Kind:       "SkaffoldPipeline",
 		Deploy:     newDeploy,
 		Build:      newBuild,
 		Profiles:   newProfiles,
 	}, nil
 }
 
-func convertBuild(oldBuild BuildConfig, newBuild next.BuildConfig) {
+func convertBuild(oldBuild BuildConfig, newBuild *next.BuildConfig) {
 	if oldBuild.LocalBuild != nil {
 
 		newBuild.Local = &next.LocalBuild{

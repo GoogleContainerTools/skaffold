@@ -66,7 +66,7 @@ build:
     bazel:
       target: //:example.tar
   googleCloudBuild:
-    projectId: ID
+    projectID: ID
 deploy:
   kubectl:
    manifests:
@@ -173,7 +173,7 @@ func TestParseConfig(t *testing.T) {
 			tmp, cleanup := testutil.NewTempDir(t)
 			defer cleanup()
 
-			yaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, test.config)
+			yaml := fmt.Sprintf("apiVersion: %s\nkind: SkaffoldPipeline\n%s", latest.Version, test.config)
 			tmp.Write("skaffold.yaml", yaml)
 
 			cfg, err := ParseConfig(tmp.Path("skaffold.yaml"), true)
@@ -184,7 +184,7 @@ func TestParseConfig(t *testing.T) {
 }
 
 func config(ops ...func(*latest.SkaffoldPipeline)) *latest.SkaffoldPipeline {
-	cfg := &latest.SkaffoldPipeline{APIVersion: latest.Version, Kind: "Config"}
+	cfg := &latest.SkaffoldPipeline{APIVersion: latest.Version, Kind: "SkaffoldPipeline"}
 	for _, op := range ops {
 		op(cfg)
 	}
