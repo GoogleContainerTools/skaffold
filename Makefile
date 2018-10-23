@@ -182,7 +182,7 @@ submit-release-trigger:
 .PHONE: out/skaffold-schema.json
 out/skaffold-schema.json:
 	 mkdir -p ./out
-	 go run ./pkg/skaffold/schema/openapi/openapi-gen/openapi-gen.go -i github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/ -o ./pkg/skaffold/schema/openapi -p gen --alsologtostderr --logtostderr
+	 go run ./pkg/skaffold/schema/openapi/openapi-gen/openapi-gen.go -i github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest -o ./pkg/skaffold/schema/openapi -p gen --alsologtostderr --logtostderr
 	 go run pkg/skaffold/schema/openapi/json/build.go
 	 git reset pkg/skaffold/schema/openapi/gen/openapi_generated.go
 	 git checkout pkg/skaffold/schema/openapi/gen/openapi_generated.go
