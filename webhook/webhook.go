@@ -17,8 +17,15 @@ limitations under the License.
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/webhook/labels"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
+	"github.com/google/go-github/github"
 )
 
 const (
@@ -35,5 +42,43 @@ func main() {
 }
 
 func handleGithubEvent(w http.ResponseWriter, r *http.Request) {
-	// TODO (priyawadhwa@): Add logic to handle a Github event here
+	eventType := r.Header.Get("X-GitHub-Event")
+	if eventType != constants.PullRequestEvent {
+		return
+	}
+	event := new(github.PullRequestEvent)
+	if err := json.NewDecoder(r.Body).Decode(event); err != nil {
+		log.Printf("error decoding pr event: %v", err)
+	}
+	if err := handlePullRequestEvent(event); err != nil {
+		log.Printf("error handling pr event: %v", err)
+	}
+}
+
+func handlePullRequestEvent(event *github.PullRequestEvent) error {
+	// Cleanup any deployments if PR was merged or closed
+	if event.GetAction() == constants.ClosedAction {
+		return kubernetes.CleanupDeployment(event)
+	}
+
+	// Only continue if the docs-modifications label was added
+	if event.GetAction() != constants.LabeledAction {
+		return nil
+	}
+
+	if event.GetPullRequest() == nil {
+		return nil
+	}
+
+	// Make sure pull request is open
+	if event.GetPullRequest().GetMerged() {
+		return nil
+	}
+
+	if !labels.DocsLabelExists(event.GetPullRequest().Labels) {
+		log.Printf("Label %s not found on PR %d", constants.DocsLabel, event.GetNumber())
+		return nil
+	}
+	// TODO: priyawadhwa@ to add logic for creating a service and deployment here
+	return nil
 }
