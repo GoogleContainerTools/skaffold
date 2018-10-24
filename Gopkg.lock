@@ -1296,6 +1296,7 @@
     "github.com/docker/docker/pkg/term",
     "github.com/docker/docker/registry",
     "github.com/docker/go-connections/tlsconfig",
+    "github.com/emicklei/go-restful",
     "github.com/go-openapi/spec",
     "github.com/golang/glog",
     "github.com/google/go-cmp/cmp",

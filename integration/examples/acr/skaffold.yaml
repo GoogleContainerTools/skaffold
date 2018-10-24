@@ -1,9 +1,10 @@
 apiVersion: skaffold/v1alpha4
-kind: Config
+kind: SkaffoldPipeline
 build:
   artifacts:
   - image: myregistry.azurecr.io/skaffold-example
-  acr: {}
+
+  azureContainerBuild: {}
 deploy:
   kubectl:
     manifests:

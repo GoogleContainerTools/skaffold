@@ -1,5 +1,5 @@
 apiVersion: skaffold/v1alpha4
-kind: Config
+kind: SkaffoldPipeline
 build:
   # tagPolicy determines how skaffold is going to tag your images.
   # We provide a few strategies here, although you most likely won't need to care!

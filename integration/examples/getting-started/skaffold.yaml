@@ -1,5 +1,5 @@
 apiVersion: skaffold/v1alpha4
-kind: Config
+kind: SkaffoldPipeline
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
@@ -15,7 +15,7 @@ profiles:
   - name: gcb
     build:
       googleCloudBuild:
-        projectId: k8s-skaffold
+        projectID: k8s-skaffold
   - name: test
     test:
       - image: gcr.io/k8s-skaffold/skaffold-example

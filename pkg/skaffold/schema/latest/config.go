@@ -50,18 +50,51 @@ func (c *SkaffoldPipeline) GetVersion() string {
 // BuildConfig contains all the configuration for the build steps
 // +k8s:openapi-gen=true
 type BuildConfig struct {
+	//artifacts is a list of the actual images you're going to be building
+	//you can include as many as you want here.
 	Artifacts []*Artifact `yaml:"artifacts,omitempty" json:"artifacts,omitempty"`
-	TagPolicy TagPolicy   `yaml:"tagPolicy,omitempty" json:"tagPolicy,omitempty"`
+
+	// TagPolicy determines how skaffold is going to tag your images.
+	// We provide a few strategies here, although you most likely won't need to care!
+	// The policy can `gitCommit`, `sha256` or `envTemplate`.
+	// If not specified, it defaults to `gitCommit: {}`.
+	TagPolicy TagPolicy `yaml:"tagPolicy,omitempty" json:"tagPolicy,omitempty"`
+
 	BuildType `yaml:",inline" json:",inline"`
 }
 
-// TagPolicy contains all the configuration for the tagging step
 // +k8s:openapi-gen=true
 type TagPolicy struct {
-	GitCommit   *GitTagger         `yaml:"gitCommit,omitempty" yamltags:"oneOf=tag" json:"gitCommit,omitempty"`
-	Sha256      *ShaTagger         `yaml:"sha256,omitempty" yamltags:"oneOf=tag" json:"sha256,omitempty"`
+	// Tag the image with the git commit of your current repository.
+	GitCommit *GitTagger `yaml:"gitCommit,omitempty" yamltags:"oneOf=tag" json:"gitCommit,omitempty"`
+	// Tag the image with the checksum of the built image (image id).
+	Sha256 *ShaTagger `yaml:"sha256,omitempty" yamltags:"oneOf=tag" json:"sha256,omitempty"`
+
+	// Tag the image with a configurable template string.
+	// The template must be in the golang text/template syntax: https://golang.org/pkg/text/template/
+	// The template is compiled and executed against the current environment,
+	// with those variables injected:
+	// <pre>
+	//   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.
+	//   DIGEST       |  Digest of the newly built image. For eg. `sha256:27ffc7f352665cc50ae3cbcc4b2725e36062f1b38c611b6f95d6df9a7510de23`.
+	//   DIGEST_ALGO  |  Algorithm used by the digest: For eg. `sha256`.
+	//   DIGEST_HEX   |  Digest of the newly built image. For eg. `27ffc7f352665cc50ae3cbcc4b2725e36062f1b38c611b6f95d6df9a7510de23`.
+	// </pre>
+	// Example:
+	// <pre>
+	// envTemplate:
+	//  template: "{{.RELEASE}}-{{.IMAGE_NAME}}"
+	// </pre>
 	EnvTemplate *EnvTemplateTagger `yaml:"envTemplate,omitempty" yamltags:"oneOf=tag" json:"envTemplate,omitempty"`
-	DateTime    *DateTimeTagger    `yaml:"dateTime,omitempty" yamltags:"oneOf=tag" json:"dateTime,omitempty"`
+
+	// Tag the image with the build timestamp.
+	//  The format can be overridden with golang formats, see: https://golang.org/pkg/time/#Time.Format
+	//    Default format is "2006-01-02_15-04-05.999_MST
+	//  The timezone is by default the local timezone, this can be overridden, see https://golang.org/pkg/time/#Time.LoadLocation
+	// dateTime:
+	//   format: "2006-01-02"
+	//   timezone: "UTC"
+	DateTime *DateTimeTagger `yaml:"dateTime,omitempty" yamltags:"oneOf=tag" json:"dateTime,omitempty"`
 }
 
 // ShaTagger contains the configuration for the SHA tagger.
@@ -89,9 +122,63 @@ type DateTimeTagger struct {
 // for the build step. Only one field should be populated.
 // +k8s:openapi-gen=true
 type BuildType struct {
-	Local               *LocalBuild          `yaml:"local,omitempty" yamltags:"oneOf=build" json:"local,omitempty"`
-	GoogleCloudBuild    *GoogleCloudBuild    `yaml:"googleCloudBuild,omitempty" yamltags:"oneOf=build" json:"googleCloudBuild,omitempty"`
-	Kaniko              *KanikoBuild         `yaml:"kaniko,omitempty" yamltags:"oneOf=build" json:"kaniko,omitempty"`
+
+	// This is where you'll put your specific builder configuration.
+	// Valid builders are `local`, `googleCloudBuild` and `kaniko`.
+	// Defaults to `local: {}`
+	// Pushing the images can be skipped. If no value is specified, it'll default to
+	// `true` on minikube or Docker for Desktop, for even faster build and deploy cycles.
+	// `false` on other types of kubernetes clusters that require pushing the images.
+	// skaffold defers to your ~/.docker/config for authentication information.
+	// If you're using Google Container Registry, make sure that you have gcloud and
+	// docker-credentials-helper-gcr configured correctly.
+	//
+	// By default, the local builder connects to the Docker daemon with Go code to build
+	// images. If `useDockerCLI` is set, skaffold will simply shell out to the docker CLI.
+	// `useBuildkit` can also be set to activate the experimental BuildKit feature.
+	// <pre>
+	// local:
+	//   false by default for local clusters, true for remote clusters
+	//   push: false
+	//   useDockerCLI: false
+	//   useBuildkit: false
+	// </pre>
+	Local *LocalBuild `yaml:"local,omitempty" yamltags:"oneOf=build" json:"local,omitempty"`
+
+	// Docker artifacts can be built on Google Cloud Build. The projectId then needs
+	// to be provided and the currently logged user should be given permissions to trigger
+	// new builds on Cloud Build.
+	// If the projectId is not provided, Skaffold will try to guess it from the image name.
+	// For eg. If the artifact image name is gcr.io/myproject/image, then Skaffold will use
+	// the `myproject` GCP project.
+	// All the other parameters are also optional. The default values are listed here:
+	// <pre>
+	//  googleCloudBuild:
+	//   projectId: YOUR_PROJECT
+	//   diskSizeGb: 200
+	//   machineType: "N1_HIGHCPU_8"|"N1_HIGHCPU_32"
+	//   timeout: 10000s
+	//   dockerImage: gcr.io/cloud-builders/docker
+	// </pre>
+	GoogleCloudBuild *GoogleCloudBuild `yaml:"googleCloudBuild,omitempty" yamltags:"oneOf=build" json:"googleCloudBuild,omitempty"`
+
+	//Docker artifacts can be built on a Kubernetes cluster with Kaniko.
+	//Exactly one buildContext must be specified to use kaniko
+	//If localDir is specified, skaffold will mount sources directly via a emptyDir volume
+	//If gcsBucket is specified, skaffold will send sources to the GCS bucket provided
+	//Kaniko also needs access to a service account to push the final image.
+	//See https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster
+	//
+	//kaniko:
+	//  buildContext:
+	//    gcsBucket: k8s-skaffold
+	//    localDir: {}
+	//  pullSecret: /a/secret/path/serviceaccount.json
+	//  namespace: default
+	//  timeout: 20m
+	Kaniko *KanikoBuild `yaml:"kaniko,omitempty" yamltags:"oneOf=build" json:"kaniko,omitempty"`
+
+	// Docker artifacts can be built on Azure Container Build.
 	AzureContainerBuild *AzureContainerBuild `yaml:"azureContainerBuild,omitempty" yamltags:"oneOf=build" json:"azureContainerBuild,omitempty"`
 }
 
@@ -254,12 +341,18 @@ type HelmConventionConfig struct {
 }
 
 // Artifact represents items that need to be built, along with the context in which
-// they should be built.
+// they should be built. Each artifact is of a given type among: `docker`, `bazel`, `jibMaven`, `jibGradle`.
+// If not specified, it defaults to `docker: {}`.
+// `image`, `context` and `sync` are defined alongside the type
 // +k8s:openapi-gen=true
 type Artifact struct {
-	Image        string            `yaml:"image,omitempty" json:"image,omitempty"`
-	Context      string            `yaml:"context,omitempty" json:"context,omitempty"`
-	Sync         map[string]string `yaml:"sync,omitempty" json:"sync,omitempty"`
+	// The name of the image to be built.
+	Image string `yaml:"image,omitempty" json:"image,omitempty"`
+	// The path to your dockerfile context. Defaults to ".".
+	Context string `yaml:"context,omitempty" json:"context,omitempty"`
+
+	Sync map[string]string `yaml:"sync,omitempty" json:"sync,omitempty"`
+
 	ArtifactType `yaml:",inline" json:",inline"`
 }
 
@@ -275,9 +368,17 @@ type Profile struct {
 
 // +k8s:openapi-gen=true
 type ArtifactType struct {
-	Docker    *DockerArtifact    `yaml:"docker,omitempty" yamltags:"oneOf=artifact" json:"docker,omitempty"`
-	Bazel     *BazelArtifact     `yaml:"bazel,omitempty" yamltags:"oneOf=artifact" json:"bazel,omitempty"`
-	JibMaven  *JibMavenArtifact  `yaml:"jibMaven,omitempty" yamltags:"oneOf=artifact" json:"jibMaven,omitempty"`
+	// docker defines a Dockerfile based artifact
+	Docker *DockerArtifact `yaml:"docker,omitempty" yamltags:"oneOf=artifact" json:"docker,omitempty"`
+
+	// bazel defines a Bazel based artifact
+	Bazel *BazelArtifact `yaml:"bazel,omitempty" yamltags:"oneOf=artifact" json:"bazel,omitempty"`
+
+	// jibMaven defines an artifact that is built with the JIB Maven plugin
+	JibMaven *JibMavenArtifact `yaml:"jibMaven,omitempty" yamltags:"oneOf=artifact" json:"jibMaven,omitempty"`
+
+	// jibGradle defines an artifact that is built with the JIB Gradle plugin
+
 	JibGradle *JibGradleArtifact `yaml:"jibGradle,omitempty" yamltags:"oneOf=artifact" json:"jibGradle,omitempty"`
 }
 
@@ -285,15 +386,24 @@ type ArtifactType struct {
 // usually using `docker build`.
 // +k8s:openapi-gen=true
 type DockerArtifact struct {
-	Dockerfile string             `yaml:"dockerfile,omitempty" json:"dockerfile,omitempty"`
-	BuildArgs  map[string]*string `yaml:"buildArgs,omitempty" json:"buildArgs,omitempty"`
-	CacheFrom  []string           `yaml:"cacheFrom,omitempty" json:"cacheFrom,omitempty"`
-	Target     string             `yaml:"target,omitempty" json:"target,omitempty"`
+	// Dockerfile's location relative to workspace. Defaults to "Dockerfile"
+	Dockerfile string `yaml:"dockerfile,omitempty" json:"dockerfile,omitempty"`
+	// Key/value arguments passed to the docker build.
+	BuildArgs map[string]*string `yaml:"buildArgs,omitempty" json:"buildArgs,omitempty"`
+	// Images to consider as cache sources
+	CacheFrom []string `yaml:"cacheFrom,omitempty" json:"cacheFrom,omitempty"`
+	// Dockerfile target name to build.
+	Target string `yaml:"target,omitempty" json:"target,omitempty"`
 }
 
-// Bazel describes an artifact built with Bazel.
 // +k8s:openapi-gen=true
 type BazelArtifact struct {
+	// bazel requires bazel CLI to be installed and the artifacts sources to
+	// contain Bazel configuration files. Example:
+	// <pre>
+	// bazel:
+	//  target: //:skaffold_example.tar
+	// </pre>
 	Target string `yaml:"target,omitempty" json:"target,omitempty"`
 }
 

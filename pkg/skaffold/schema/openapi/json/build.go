@@ -68,7 +68,13 @@ func main() {
 	config := createOpenAPIBuilderConfig()
 	config.GetDefinitions = gen.GetOpenAPIDefinitions
 	// Build the Paths using a simple WebService for the final spec
-	swagger, serr := builder.BuildOpenAPISpec(nil, config)
+
+	w := new(restful.WebService)
+	// Define a dummy GET /test endpoint
+
+	w = w.Route(w.GET("/apis/skaffold/v1alpha4/").Reads(latest.SkaffoldPipeline{}).To(dummyFunc))
+
+	swagger, serr := builder.BuildOpenAPISpec([]*restful.WebService{w}, config)
 	if serr != nil {
 		log.Fatalf("ERROR: %s", serr.Error())
 	}
@@ -94,15 +100,24 @@ func main() {
 	}
 }
 
+func dummyFunc(request *restful.Request, response *restful.Response) {
+
+}
+
 // CreateOpenAPIBuilderConfig hard-codes some values in the API builder
 // config for testing.
 func createOpenAPIBuilderConfig() *common.Config {
+	response := *spec.NewResponse()
+	response.Description = "dummy response"
 	return &common.Config{
 		Info: &spec.Info{
 			InfoProps: spec.InfoProps{
 				Title:   "Skaffold Schema",
 				Version: latest.Version,
 			},
+		},
+		CommonResponses: map[int]spec.Response{
+			200: response,
 		},
 	}
 }
