@@ -1,7 +1,8 @@
 steps:
   # Get cluster credentials
-- name: gcr.io/cloud-builders/gcloud
+- name: gcr.io/k8s-skaffold/skaffold:v0.16.0
   args: 
+  - 'gcloud'
   - 'container'
   - 'clusters'
   - 'get-credentials'
@@ -10,32 +11,21 @@ steps:
   - 'us-west2-a'
   - '--project'
   - 'k8s-skaffold'
-  # Build and push the new docs-controller image
-- name: gcr.io/cloud-builders/docker
+  # Build and push the image with the :commit_sha tag
+- name: gcr.io/k8s-skaffold/skaffold:v0.16.0
   args:
-    - 'build'
-    - '-t'
-    - 'gcr.io/k8s-skaffold/docs-controller:${COMMIT_SHA}'
-    - '-f'
-    - deploy/webhook/Dockerfile
-    - .
-- name: gcr.io/cloud-builders/docker
+  - 'skaffold'
+  - '-f'
+  - 'deploy/webhook/skaffold.yaml'
+  - 'run'
+  - '--tag'
+  - '${COMMIT_SHA}'
+  # Build and deploy the image with the :latest tag
+- name: gcr.io/k8s-skaffold/skaffold:v0.16.0
   args:
-    - 'tag'
-    - 'gcr.io/k8s-skaffold/docs-controller:${COMMIT_SHA}'
-    - 'gcr.io/k8s-skaffold/docs-controller:latest'
-- name: gcr.io/cloud-builders/docker
-  args:
-    - 'push'
-    - 'gcr.io/k8s-skaffold/docs-controller:${COMMIT_SHA}'
-- name: gcr.io/cloud-builders/docker
-  args:
-    - 'push'
-    - 'gcr.io/k8s-skaffold/docs-controller:latest'
-  # Delete the current controller pod in cluster so that the changes are picked up
-- name: gcr.io/cloud-builders/kubectl
-  args:
-    - 'delete'
-    - 'pod'
-    - '--selector'
-    - 'run=docs'
+  - 'skaffold'
+  - '-f'
+  - 'deploy/webhook/skaffold.yaml'
+  - 'run'
+  - '--tag'
+  - 'latest'
