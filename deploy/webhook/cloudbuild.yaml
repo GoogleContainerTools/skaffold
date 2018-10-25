@@ -1,0 +1,8 @@
+steps:
+  # Build and push the image with the :commit_sha tag
+- name: gcr.io/k8s-skaffold/skaffold:v0.16.0
+  args:
+  - 'skaffold'
+  - '-f'
+  - 'deploy/webhook/skaffold.yaml'
+  - 'run'
