@@ -66,6 +66,11 @@ func handlePullRequestEvent(event *github.PullRequestEvent) error {
 		return nil
 	}
 
+	if event.PullRequest.GetMerged() || event.PullRequest.ClosedAt == nil {
+		log.Printf("Pull request %d is either merged or closed, skipping docs deployment", event.GetNumber())
+		return nil
+	}
+
 	if !labels.DocsLabelExists(event.GetPullRequest().Labels) {
 		log.Printf("Label %s not found on PR %d", constants.DocsLabel, event.GetNumber())
 		return nil

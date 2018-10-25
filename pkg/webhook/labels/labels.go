@@ -47,10 +47,8 @@ func retrieveLabel(prNumber int) (string, string) {
 // DocsLabelExists returns true if the label exists
 func DocsLabelExists(labels []*github.Label) bool {
 	for _, l := range labels {
-		if l != nil {
-			if *l.Name == constants.DocsLabel {
-				return true
-			}
+		if l != nil && *l.Name == constants.DocsLabel {
+			return true
 		}
 	}
 	return false
