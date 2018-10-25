@@ -81,22 +81,22 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 
 	tagger, err := getTagger(cfg.Build.TagPolicy, opts.CustomTag)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing skaffold tag config")
+		return nil, errors.Wrap(err, "parsing tag config")
 	}
 
 	builder, err := getBuilder(&cfg.Build, kubeContext)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing skaffold build config")
+		return nil, errors.Wrap(err, "parsing build config")
 	}
 
 	tester, err := getTester(&cfg.Test)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing skaffold test config")
+		return nil, errors.Wrap(err, "parsing test config")
 	}
 
 	deployer, err := getDeployer(&cfg.Deploy, kubeContext, opts.Namespace, defaultRepo)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing skaffold deploy config")
+		return nil, errors.Wrap(err, "parsing deploy config")
 	}
 
 	deployer = deploy.WithLabels(deployer, opts, builder, deployer, tagger)
