@@ -42,7 +42,7 @@ func main() {
 }
 
 func handleGithubEvent(w http.ResponseWriter, r *http.Request) {
-	eventType := r.Header.Get("X-GitHub-Event")
+	eventType := r.Header.Get(constants.GithubEventHeader)
 	if eventType != constants.PullRequestEvent {
 		return
 	}
@@ -66,19 +66,13 @@ func handlePullRequestEvent(event *github.PullRequestEvent) error {
 		return nil
 	}
 
-	if event.GetPullRequest() == nil {
-		return nil
-	}
-
-	// Make sure pull request is open
-	if event.GetPullRequest().GetMerged() {
-		return nil
-	}
-
 	if !labels.DocsLabelExists(event.GetPullRequest().Labels) {
 		log.Printf("Label %s not found on PR %d", constants.DocsLabel, event.GetNumber())
 		return nil
 	}
+
+	log.Printf("Label %s found on PR %d", constants.DocsLabel, event.GetNumber())
+
 	// TODO: priyawadhwa@ to add logic for creating a service and deployment here
 	return nil
 }

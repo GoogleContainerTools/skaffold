@@ -17,7 +17,8 @@ limitations under the License.
 package constants
 
 const (
-
+	// GithubEventHeader is the header key used to describe a github event
+	GithubEventHeader = "X-GitHub-Event"
 	// PullRequestEvent is the header value for pull requests
 	PullRequestEvent = "pull_request"
 
