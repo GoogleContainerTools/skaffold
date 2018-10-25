@@ -40,7 +40,7 @@ build:
     # The path to your dockerfile context. Defaults to ".".
     context: ../examples/getting-started
 
-    # Each artifact is of a given type among: `docker` and `bazel`.
+    # Each artifact is of a given type among: `docker`, `bazel`, `jibMaven` and `jibGradle`.
     # If not specified, it defaults to `docker: {}`.
     docker:
       # Dockerfile's location relative to workspace. Defaults to "Dockerfile"
@@ -60,6 +60,15 @@ build:
     # contain Bazel configuration files.
     # bazel:
     #  target: //:skaffold_example.tar
+
+    # jibMaven builds containers using the Jib plugin for Maven.
+    # jibMaven:
+    #  module: modulename     # selects which maven module to build, for a multimodule project
+    #  profile: profilename   # selects which maven profile to activate
+
+    # jibGradle builds containers using the Jib plugin for Gradle.
+    # jibGradle:
+    #  project: projectname   # selects which gradle project to build
 
 # This next section is where you'll put your specific builder configuration.
   # Valid builders are `local`, `googleCloudBuild`, `kaniko`, and `acr`.
