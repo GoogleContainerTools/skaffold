@@ -39,14 +39,14 @@ func NewTester(testCases *[]*latest.TestCase) (Tester, error) {
 		return nil, errors.Wrap(err, "finding current directory")
 	}
 
-	return FullTester{
+	return &FullTester{
 		testCases:  testCases,
 		workingDir: cwd,
 	}, nil
 }
 
 // TestDependencies returns the watch dependencies to the runner.
-func (t FullTester) TestDependencies() ([]string, error) {
+func (t *FullTester) TestDependencies() ([]string, error) {
 	var deps []string
 
 	for _, test := range *t.testCases {
@@ -67,7 +67,7 @@ func (t FullTester) TestDependencies() ([]string, error) {
 
 // Test is the top level testing execution call. It serves as the
 // entrypoint to all individual tests.
-func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
+func (t *FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
 	for _, test := range *t.testCases {
 		if err := t.runStructureTests(ctx, out, bRes, test); err != nil {
 			return errors.Wrap(err, "running structure tests")
@@ -77,7 +77,7 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifa
 	return nil
 }
 
-func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes []build.Artifact, testCase *latest.TestCase) error {
+func (t *FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes []build.Artifact, testCase *latest.TestCase) error {
 	if len(testCase.StructureTests) == 0 {
 		return nil
 	}

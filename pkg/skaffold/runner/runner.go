@@ -84,12 +84,12 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		return nil, errors.Wrap(err, "parsing skaffold tag config")
 	}
 
-	builder, err := getBuilder(&cfg.Build, kubeContext)
+	builder, err := getBuilder(&cfg.Build, kubeContext, opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold build config")
 	}
 
-	tester, err := getTester(&cfg.Test)
+	tester, err := getTester(&cfg.Test, opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing skaffold test config")
 	}
@@ -122,22 +122,26 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 	}, nil
 }
 
-func getBuilder(cfg *latest.BuildConfig, kubeContext string) (build.Builder, error) {
+func getBuilder(cfg *latest.BuildConfig, kubeContext string, opts *config.SkaffoldOptions) (build.Builder, error) {
 	switch {
+	case len(opts.PreBuiltImages) > 0:
+		logrus.Debugln("Using pre-built images")
+		return build.NewPreBuiltImagesBuilder(opts.PreBuiltImages), nil
+
 	case cfg.LocalBuild != nil:
-		logrus.Debugf("Using builder: local")
+		logrus.Debugln("Using builder: local")
 		return local.NewBuilder(cfg.LocalBuild, kubeContext)
 
 	case cfg.GoogleCloudBuild != nil:
-		logrus.Debugf("Using builder: google cloud")
+		logrus.Debugln("Using builder: google cloud")
 		return gcb.NewBuilder(cfg.GoogleCloudBuild), nil
 
 	case cfg.KanikoBuild != nil:
-		logrus.Debugf("Using builder: kaniko")
+		logrus.Debugln("Using builder: kaniko")
 		return kaniko.NewBuilder(cfg.KanikoBuild)
 
 	case cfg.AzureContainerBuild != nil:
-		logrus.Debugf("Using builder: acr")
+		logrus.Debugln("Using builder: acr")
 		return acr.NewBuilder(cfg.AzureContainerBuild), nil
 
 	default:
@@ -145,8 +149,15 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string) (build.Builder, err
 	}
 }
 
-func getTester(cfg *[]*latest.TestCase) (test.Tester, error) {
-	return test.NewTester(cfg)
+func getTester(cfg *[]*latest.TestCase, opts *config.SkaffoldOptions) (test.Tester, error) {
+	switch {
+	case len(opts.PreBuiltImages) > 0:
+		logrus.Debugln("Skipping tests")
+		return test.NewNoopTester(cfg)
+
+	default:
+		return test.NewTester(cfg)
+	}
 }
 
 func getDeployer(cfg *latest.DeployConfig, kubeContext string, namespace string, defaultRepo string) (deploy.Deployer, error) {

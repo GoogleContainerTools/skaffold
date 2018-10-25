@@ -14,27 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package test
 
 import (
+	"context"
 	"io"
 
-	"github.com/spf13/cobra"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-// NewCmdDeploy describes the CLI command to deploy artifacts.
-func NewCmdDeploy(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "deploy",
-		Short: "Deploys the artifacts",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Same actions as `skaffold run`, but with pre-built images.
-			return run(out)
-		},
-	}
-	AddRunDevFlags(cmd)
-	AddRunDeployFlags(cmd)
-	cmd.Flags().StringSliceVar(&opts.PreBuiltImages, "images", nil, "A list of pre-built images to deploy")
-	return cmd
+// NewNoopTester returns a Tester that does nothing.
+func NewNoopTester(testCases *[]*latest.TestCase) (Tester, error) {
+	return &noopTester{}, nil
+}
+
+type noopTester struct{}
+
+func (t *noopTester) Test(context.Context, io.Writer, []build.Artifact) error {
+	return nil
+}
+
+func (t *noopTester) TestDependencies() ([]string, error) {
+	return nil, nil
 }
