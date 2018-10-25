@@ -278,6 +278,9 @@ func TestNewForConfig(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
+	kubernetes.Client = fakeGetClient
+	defer resetClient()
+
 	var tests = []struct {
 		description string
 		pipeline    *latest.SkaffoldPipeline
@@ -348,11 +351,12 @@ func TestRun(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			runner := &SkaffoldRunner{
-				Builder:  test.builder,
-				Tester:   test.tester,
-				Deployer: test.deployer,
-				Tagger:   &tag.ChecksumTagger{},
-				opts:     &config.SkaffoldOptions{},
+				Builder:   test.builder,
+				Tester:    test.tester,
+				Deployer:  test.deployer,
+				Tagger:    &tag.ChecksumTagger{},
+				opts:      &config.SkaffoldOptions{},
+				imageList: kubernetes.NewImageList(),
 			}
 			err := runner.Run(context.Background(), ioutil.Discard, test.pipeline.Build.Artifacts)
 
@@ -463,22 +467,18 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 		Trigger: "polling",
 	}
 	builder := &TestBuilder{}
-	tester := &TestTester{}
 	deployer := &TestDeployer{}
-	trigger, _ := watch.NewTrigger(opts)
 	artifacts := []*latest.Artifact{
 		{ImageName: "image1"},
 		{ImageName: "image2"},
 	}
 
-	runner := &SkaffoldRunner{
-		Builder:  builder,
-		Tester:   tester,
-		Deployer: deployer,
-		Trigger:  trigger,
-		opts:     opts,
-		Syncer:   NewTestSyncer(),
-	}
+	cfg := &latest.SkaffoldPipeline{}
+	cfg.Parse(nil, true)
+
+	runner, _ := NewForConfig(opts, cfg)
+	runner.Builder = builder
+	runner.Deployer = deployer
 
 	ctx := context.Background()
 
