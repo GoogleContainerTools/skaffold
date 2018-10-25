@@ -46,11 +46,11 @@ func NewFakeCmdOut(expectedCommand, stdout string, err error) *FakeCmd {
 func (f *FakeCmd) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	actualCommand := strings.Join(cmd.Args, " ")
 	if f.expectedCommand != actualCommand {
-		return nil, fmt.Errorf("Expected: %s. Got: %s", f.expectedCommand, actualCommand)
+		return nil, fmt.Errorf("expected: %s. Got: %s", f.expectedCommand, actualCommand)
 	}
 
 	if f.stdout == nil {
-		return nil, fmt.Errorf("Expected RunCmd(%s) to be called. Got RunCmdOut(%s)", f.expectedCommand, actualCommand)
+		return nil, fmt.Errorf("expected RunCmd(%s) to be called. Got RunCmdOut(%s)", f.expectedCommand, actualCommand)
 	}
 
 	return f.stdout, f.err
@@ -59,11 +59,11 @@ func (f *FakeCmd) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 func (f *FakeCmd) RunCmd(cmd *exec.Cmd) error {
 	actualCommand := strings.Join(cmd.Args, " ")
 	if f.expectedCommand != actualCommand {
-		return fmt.Errorf("Expected: %s. Got: %s", f.expectedCommand, actualCommand)
+		return fmt.Errorf("expected: %s. Got: %s", f.expectedCommand, actualCommand)
 	}
 
 	if f.stdout != nil {
-		return fmt.Errorf("Expected RunCmdOut(%s) to be called. Got RunCmd(%s)", f.expectedCommand, actualCommand)
+		return fmt.Errorf("expected RunCmdOut(%s) to be called. Got RunCmd(%s)", f.expectedCommand, actualCommand)
 	}
 
 	return f.err

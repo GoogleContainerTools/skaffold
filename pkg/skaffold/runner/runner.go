@@ -141,7 +141,7 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string) (build.Builder, err
 		return acr.NewBuilder(cfg.AzureContainerBuild), nil
 
 	default:
-		return nil, fmt.Errorf("Unknown builder for config %+v", cfg)
+		return nil, fmt.Errorf("unknown builder for config %+v", cfg)
 	}
 }
 
@@ -201,7 +201,7 @@ func getTagger(t latest.TagPolicy, customTag string) (tag.Tagger, error) {
 		return tag.NewDateTimeTagger(t.DateTimeTagger.Format, t.DateTimeTagger.TimeZone), nil
 
 	default:
-		return nil, fmt.Errorf("Unknown tagger for strategy %+v", t)
+		return nil, fmt.Errorf("unknown tagger for strategy %+v", t)
 	}
 }
 
