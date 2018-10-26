@@ -749,6 +749,7 @@
     "internal/timeseries",
     "proxy",
     "trace",
+    "websocket",
   ]
   pruneopts = "NUT"
   revision = "161cd47e91fd58ac17490ef4d742dc98bb4cf60e"
