@@ -28,4 +28,10 @@ const (
 	LabeledAction = "labeled"
 	// DocsLabel kicks off the controller when added to a PR
 	DocsLabel = "docs-modifications"
+
+	// Namespace is the namespace deployments and services will be created in
+	Namespace = "default"
+
+	// HugoPort is the port that hugo defaults to
+	HugoPort = 1313
 )

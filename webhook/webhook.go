@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/labels"
+	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
 	"github.com/google/go-github/github"
@@ -66,18 +67,32 @@ func handlePullRequestEvent(event *github.PullRequestEvent) error {
 		return nil
 	}
 
+	prNumber := event.GetNumber()
+
 	if event.PullRequest.GetMerged() || event.PullRequest.ClosedAt == nil {
-		log.Printf("Pull request %d is either merged or closed, skipping docs deployment", event.GetNumber())
+		log.Printf("Pull request %d is either merged or closed, skipping docs deployment", prNumber)
 		return nil
 	}
 
 	if !labels.DocsLabelExists(event.GetPullRequest().Labels) {
-		log.Printf("Label %s not found on PR %d", constants.DocsLabel, event.GetNumber())
+		log.Printf("Label %s not found on PR %d", constants.DocsLabel, prNumber)
 		return nil
 	}
 
-	log.Printf("Label %s found on PR %d", constants.DocsLabel, event.GetNumber())
+	log.Printf("Label %s found on PR %d, creating service", constants.DocsLabel, prNumber)
 
-	// TODO: priyawadhwa@ to add logic for creating a service and deployment here
+	svc, err := kubernetes.CreateService(event)
+	if err != nil {
+		return errors.Wrap(err, "creating service")
+	}
+
+	ip, err := kubernetes.GetExternalIP(svc)
+	if err != nil {
+		return errors.Wrap(err, "getting external IP")
+	}
+
+	log.Printf("External IP %s ready for PR %d", ip, prNumber)
+
+	// TODO: priyawadhwa@ to add logic for creating a deployment mapping to a service here
 	return nil
 }
