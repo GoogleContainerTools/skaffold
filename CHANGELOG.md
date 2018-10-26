@@ -1,3 +1,43 @@
+# v0.17.0 Release - 10/26/2018
+
+Note: This release comes with a config change, use `skaffold fix` to upgrade your config to `v1alpha4`.
+
+New Features: 
+
+* Add cloudbuild.yaml for releasing docs-controller image [#1202](https://github.com/GoogleContainerTools/skaffold/pull/1202)
+* Add support for setting default-repo in global config [#1057](https://github.com/GoogleContainerTools/skaffold/pull/1057)
+* Add support for building Maven multimodule projects [#1152](https://github.com/GoogleContainerTools/skaffold/pull/1152)
+* Azure Container Registry runner [#1107](https://github.com/GoogleContainerTools/skaffold/pull/1107)
+
+Bug fixes: 
+
+* Improve Kaniko builder [#1168](https://github.com/GoogleContainerTools/skaffold/pull/1168)
+* Use os.SameFile() to check for mvnw working-dir echo bug [#1167](https://github.com/GoogleContainerTools/skaffold/pull/1167)
+* Fix kaniko default behaviour [#1139](https://github.com/GoogleContainerTools/skaffold/pull/1139)
+
+Updates: 
+
+* Change SkaffoldOption Labeller to not include a comma in the label value [#1169](https://github.com/GoogleContainerTools/skaffold/pull/1169)
+* Remove annoying log [#1163](https://github.com/GoogleContainerTools/skaffold/pull/1163)
+* Prepare next version of the config file [#1146](https://github.com/GoogleContainerTools/skaffold/pull/1146)
+* Improve error handling for `completion` command [#1206](https://github.com/GoogleContainerTools/skaffold/pull/1206)
+* Jib sample [#1147](https://github.com/GoogleContainerTools/skaffold/pull/1147)
+* Node.js example with dependency handling and hot-reload [#1148](https://github.com/GoogleContainerTools/skaffold/pull/1148)
+
+Huge thank you for this release towards our contributors: 
+- Balint Pato
+- Brian de Alwis
+- Cedric Kring
+- David Gageot
+- Geert-Johan Riemer
+- Martino Fornasa
+- Matt Rickard
+- Nick Kubala
+- Priya Wadhwa
+- foo0x29a
+- varunkashyap
+
+
 # v0.16.0 Release - 10/11/2018
 
 New Features:
