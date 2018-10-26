@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha3
+package v1alpha4
 
 import (
 	"encoding/json"
 
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	"github.com/pkg/errors"
 )
 
@@ -38,18 +38,13 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 		if err := convert(config.Profiles, &newProfiles); err != nil {
 			return nil, errors.Wrap(err, "converting new profile")
 		}
-		for i, oldProfile := range config.Profiles {
-			convertBuild(oldProfile.Build, newProfiles[i].Build)
-		}
 	}
 
 	// convert Build (should be the same)
 	var newBuild next.BuildConfig
-	oldBuild := config.Build
-	if err := convert(oldBuild, &newBuild); err != nil {
+	if err := convert(config.Build, &newBuild); err != nil {
 		return nil, errors.Wrap(err, "converting new build")
 	}
-	convertBuild(oldBuild, newBuild)
 
 	return &next.SkaffoldPipeline{
 		APIVersion: next.Version,
@@ -58,13 +53,6 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 		Build:      newBuild,
 		Profiles:   newProfiles,
 	}, nil
-}
-
-func convertBuild(oldBuild BuildConfig, newBuild next.BuildConfig) {
-	if oldBuild.LocalBuild != nil && oldBuild.LocalBuild.SkipPush != nil {
-		push := !*oldBuild.LocalBuild.SkipPush
-		newBuild.LocalBuild.Push = &push
-	}
 }
 
 func convert(old interface{}, new interface{}) error {

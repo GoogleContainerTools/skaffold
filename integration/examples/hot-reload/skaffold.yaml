@@ -1,4 +1,4 @@
-apiVersion: skaffold/v1alpha4
+apiVersion: skaffold/v1alpha5
 kind: Config
 build:
   artifacts:
