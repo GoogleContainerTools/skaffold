@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v1alpha4
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -22,7 +22,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-const Version string = "skaffold/v1alpha5"
+const Version string = "skaffold/v1alpha4"
 
 // NewSkaffoldPipeline creates a SkaffoldPipeline
 func NewSkaffoldPipeline() util.VersionedConfig {
@@ -34,7 +34,7 @@ type SkaffoldPipeline struct {
 	Kind       string `yaml:"kind"`
 
 	Build    BuildConfig  `yaml:"build,omitempty"`
-	Test     []*TestCase  `yaml:"test,omitempty"`
+	Test     []TestCase   `yaml:"test,omitempty"`
 	Deploy   DeployConfig `yaml:"deploy,omitempty"`
 	Profiles []Profile    `yaml:"profiles,omitempty"`
 }
@@ -78,10 +78,9 @@ type DateTimeTagger struct {
 // BuildType contains the specific implementation and parameters needed
 // for the build step. Only one field should be populated.
 type BuildType struct {
-	LocalBuild          *LocalBuild          `yaml:"local,omitempty" yamltags:"oneOf=build"`
-	GoogleCloudBuild    *GoogleCloudBuild    `yaml:"googleCloudBuild,omitempty" yamltags:"oneOf=build"`
-	KanikoBuild         *KanikoBuild         `yaml:"kaniko,omitempty" yamltags:"oneOf=build"`
-	AzureContainerBuild *AzureContainerBuild `yaml:"acr,omitempty" yamltags:"oneOf=build"`
+	LocalBuild       *LocalBuild       `yaml:"local,omitempty" yamltags:"oneOf=build"`
+	GoogleCloudBuild *GoogleCloudBuild `yaml:"googleCloudBuild,omitempty" yamltags:"oneOf=build"`
+	KanikoBuild      *KanikoBuild      `yaml:"kaniko,omitempty" yamltags:"oneOf=build"`
 }
 
 // LocalBuild contains the fields needed to do a build on the local docker daemon
@@ -122,15 +121,6 @@ type KanikoBuild struct {
 	Namespace      string              `yaml:"namespace,omitempty"`
 	Timeout        string              `yaml:"timeout,omitempty"`
 	Image          string              `yaml:"image,omitempty"`
-}
-
-// AzureContainerBuild contains the fields needed to do a build
-// on Azure Container Registry
-type AzureContainerBuild struct {
-	SubscriptionID string `yaml:"subscriptionId,omitempty"`
-	ClientID       string `yaml:"clientId,omitempty"`
-	ClientSecret   string `yaml:"clientSecret,omitempty"`
-	TenantID       string `yaml:"tenantId,omitempty"`
 }
 
 // TestCase is a struct containing all the specified test
@@ -237,7 +227,7 @@ type Artifact struct {
 type Profile struct {
 	Name   string       `yaml:"name,omitempty"`
 	Build  BuildConfig  `yaml:"build,omitempty"`
-	Test   []*TestCase  `yaml:"test,omitempty"`
+	Test   []TestCase   `yaml:"test,omitempty"`
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
 }
 
