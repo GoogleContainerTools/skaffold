@@ -1,4 +1,16 @@
 steps:
+# Get cluster credentials
+- name: gcr.io/k8s-skaffold/skaffold:v0.16.0
+  args:
+  - 'gcloud'
+  - 'container'
+  - 'clusters'
+  - 'get-credentials'
+  - 'docs'
+  - '--zone'
+  - 'us-west2-a'
+  - '--project'
+  - 'k8s-skaffold'
   # Build and push the image with the :commit_sha tag
 - name: gcr.io/k8s-skaffold/skaffold:v0.16.0
   args:
