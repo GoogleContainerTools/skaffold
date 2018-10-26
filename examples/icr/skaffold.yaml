@@ -1,0 +1,24 @@
+apiVersion: skaffold/v1alpha4
+kind: Config
+build:
+  artifacts:
+  - image: registry.ng.bluemix.net/bkuschel/skaffold-example
+test:
+  - image: registry.ng.bluemix.net/bkuschel/skaffold-example
+    structureTests:
+      - ./test/*
+deploy:
+  kubectl:
+    manifests:
+      - k8s-*
+profiles:
+  - name: icr
+    build:
+      icr:
+        apiKey: "SOMEAPIKEY"
+        defaultRegion: "us-south"
+  - name: test
+    test:
+      - image: registry.ng.bluemix.net/bkuschel/skaffold-example
+        structureTests:
+          - ./test/profile_structure_test.yaml

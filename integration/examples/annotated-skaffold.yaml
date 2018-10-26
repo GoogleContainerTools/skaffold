@@ -131,7 +131,18 @@ build:
   #   subscriptionId: SUBSCRIPTION_ID
   #   tenantId: TENANT_ID
   #   clientId: CLIENT_ID
-  #   clientSecret: CLIENT_SECRET
+  #   clientSecret: CLIENT_SECRET  
+  #
+  # Docker artifacts can be built on an IBM Cloud Container Registry.
+  # To use a login session established by ibmcloud cli login use:
+  #
+  # icr: {}
+  #
+  # otherwise you need to provide an apiKey and a region for images that
+  # don't specify a registry in the image name. (The registry endpoint will be prepended)
+  # icr:
+  #   apiKey: API_KEY
+= #   defaultRegion: us-south
 
 # The deploy section has all the information needed to deploy. Along with build:
 # it is a required section.

@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/acr"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/icr"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -139,6 +140,10 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string) (build.Builder, err
 	case cfg.AzureContainerBuild != nil:
 		logrus.Debugf("Using builder: acr")
 		return acr.NewBuilder(cfg.AzureContainerBuild), nil
+
+	case cfg.IBMContainerBuild != nil:
+		logrus.Debugf("Using builder: icr")
+		return icr.NewBuilder(cfg.IBMContainerBuild), nil
 
 	default:
 		return nil, fmt.Errorf("unknown builder for config %+v", cfg)
