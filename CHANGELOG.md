@@ -1,4 +1,4 @@
-# v0.17.0 Release - 10/25/2018
+# v0.17.0 Release - 10/26/2018
 
 Note: This release comes with a config change, use `skaffold fix` to upgrade your config to `v1alpha4`.
 
