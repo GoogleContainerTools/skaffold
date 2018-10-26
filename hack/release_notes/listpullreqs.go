@@ -61,7 +61,7 @@ func printPullRequests() {
 	fmt.Println(fmt.Sprintf("Collecting pull request that were merged since the last release: %s (%s)", *releases[0].TagName, lastReleaseTime))
 
 	listSize := 1
-	for page := 0; listSize > 0; page++ {
+	for page := 1; listSize > 0; page++ {
 		pullRequests, _, _ := client.PullRequests.List(context.Background(), org, repo, &github.PullRequestListOptions{
 			State:     "closed",
 			Sort:      "updated",
