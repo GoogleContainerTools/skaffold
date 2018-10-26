@@ -34,6 +34,8 @@ import (
 	"strings"
 )
 
+const na = "n/a"
+
 // IBMRegistrySession structure
 type IBMRegistrySession struct {
 	Registry          string
@@ -71,6 +73,9 @@ func (b Builder) NewRegistryClient(imageName string) (*IBMRegistrySession, strin
 
 	if c.BluemixAPIKey == "" {
 		account, err = configFromJSON(c)
+		if err != nil {
+			return nil, imageName, errors.Wrap(err, "IBM Cloud configuration error.")
+		}
 	}
 	authSession, err = session.New(c)
 	if err != nil {
@@ -149,7 +154,7 @@ func addRegistry(endpoint string, imageName string) (string, error) {
 		}
 		tempName := imageName
 		if strings.HasPrefix(imageName, "/") {
-			tempName = imageName[1:len(imageName)]
+			tempName = imageName[1:]
 		}
 		return fmt.Sprintf("%s/%s", registryURL.Hostname(), tempName), nil
 	}
@@ -169,7 +174,12 @@ func configFromJSON(icconfig *ibmcloud.Config) (accountID string, err error) {
 	usr, err = user.Current()
 	if err == nil {
 		jsonFile, err = os.Open(usr.HomeDir + "/.bluemix/config.json")
-		defer jsonFile.Close()
+		defer func() {
+			cerr := jsonFile.Close()
+			if err == nil {
+				err = cerr
+			}
+		}()
 		if err == nil {
 			byteValue, err = ioutil.ReadAll(jsonFile)
 			if err == nil {
@@ -179,9 +189,9 @@ func configFromJSON(icconfig *ibmcloud.Config) (accountID string, err error) {
 					icconfig.IAMAccessToken = config.IAMToken
 					icconfig.IAMRefreshToken = config.IAMRefreshToken
 					icconfig.SSLDisable = config.SSLDisabled
-					icconfig.BluemixAPIKey = "n/a"
-					icconfig.IBMID = "n/a"
-					icconfig.IBMIDPassword = "n/a"
+					icconfig.BluemixAPIKey = na
+					icconfig.IBMID = na
+					icconfig.IBMIDPassword = na
 					accountID = config.Account.GUID
 				}
 			}
