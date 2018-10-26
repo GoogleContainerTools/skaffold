@@ -69,7 +69,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	if !reference.ReferenceRegexp.MatchString(imageName) {
 		return "", errors.Errorf("Image Name is not correct format!")
 	}
-	logrus.Debugf("Running IBM Container Registry build: context: %s, dockerfile: %s", workspace, dockerArtifact)
+	logrus.Debugf("Running IBM Container Registry build: context: %s, dockerfile: %s", workspace, dockerArtifact.DockerfilePath)
 
 	imageTag, err = tagger.GenerateFullyQualifiedImageName(workspace, &tag.Options{
 		Digest:    util.RandomID(),
