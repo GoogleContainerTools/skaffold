@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"io"
 	"os"
 
@@ -25,8 +26,17 @@ import (
 
 // completionCmd represents the completion command
 var completionCmd = &cobra.Command{
-	Use:   "completion",
-	Short: "Generate shell completion scripts",
+	// Only bash is supported for now. However, having args after
+	// "completion" will help when supporting multiple shells
+	Use: "completion bash",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("requires 1 arg, found %d", len(args))
+		}
+		return cobra.OnlyValidArgs(cmd, args)
+	},
+	ValidArgs: []string{"bash"},
+	Short:     "Output command completion script for the bash shell",
 	Long: `To enable command completion run
 
 eval "$(skaffold completion bash)"
@@ -40,6 +50,7 @@ eval "$(skaffold completion bash)"`,
 	},
 }
 
+// NewCmdCompletion returns the cobra command that outputs shell completion code
 func NewCmdCompletion(out io.Writer) *cobra.Command {
 	return completionCmd
 }
