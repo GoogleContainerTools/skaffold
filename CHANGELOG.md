@@ -4,7 +4,6 @@ Note: This release comes with a config change, use `skaffold fix` to upgrade you
 
 New Features: 
 
-* Add cloudbuild.yaml for releasing docs-controller image [#1202](https://github.com/GoogleContainerTools/skaffold/pull/1202)
 * Add support for setting default-repo in global config [#1057](https://github.com/GoogleContainerTools/skaffold/pull/1057)
 * Add support for building Maven multimodule projects [#1152](https://github.com/GoogleContainerTools/skaffold/pull/1152)
 * Azure Container Registry runner [#1107](https://github.com/GoogleContainerTools/skaffold/pull/1107)
