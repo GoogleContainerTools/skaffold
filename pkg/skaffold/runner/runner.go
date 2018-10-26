@@ -259,16 +259,13 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Create watcher and register artifacts to build current state of files.
 	changed := changes{}
 	onChange := func() error {
-		hasError := true
-
-		logger.Mute()
 		defer func() {
 			changed.reset()
 			r.Trigger.WatchForChanges(out)
-			if !hasError {
-				logger.Unmute()
-			}
 		}()
+
+		logger.Mute()
+
 		for _, a := range changed.dirtyArtifacts {
 			s, err := sync.NewItem(a.artifact, a.events, r.builds)
 			if err != nil {
@@ -290,23 +287,23 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 				color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
 
 				if err := r.Syncer.Sync(ctx, s); err != nil {
-					logrus.Warnln("Skipping build and deploy due to sync error:", err)
+					logrus.Warnln("Skipping deploy due to sync error:", err)
 					return nil
 				}
 			}
 		case len(changed.needsRebuild) > 0:
 			if err := r.buildTestDeploy(ctx, out, changed.needsRebuild); err != nil {
-				logrus.Warnln("Skipping deploy due to errors:", err)
+				logrus.Warnln("Skipping deploy due to error:", err)
 				return nil
 			}
 		case changed.needsRedeploy:
 			if _, err := r.Deploy(ctx, out, r.builds); err != nil {
-				logrus.Warnln("Skipping Deploy due to error:", err)
+				logrus.Warnln("Skipping deploy due to error:", err)
 				return nil
 			}
 		}
 
-		hasError = false
+		logger.Unmute()
 		return nil
 	}
 
@@ -315,7 +312,6 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Watch artifacts
 	for i := range artifacts {
 		artifact := artifacts[i]
-
 		if !r.shouldWatch(artifact) {
 			continue
 		}
@@ -330,7 +326,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	// Watch test configuration
 	if err := watcher.Register(
-		func() ([]string, error) { return r.TestDependencies() },
+		r.TestDependencies,
 		func(watch.Events) { changed.needsRedeploy = true },
 	); err != nil {
 		return nil, errors.Wrap(err, "watching test files")
@@ -338,7 +334,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	// Watch deployment configuration
 	if err := watcher.Register(
-		func() ([]string, error) { return r.Dependencies() },
+		r.Dependencies,
 		func(watch.Events) { changed.needsRedeploy = true },
 	); err != nil {
 		return nil, errors.Wrap(err, "watching files for deployer")

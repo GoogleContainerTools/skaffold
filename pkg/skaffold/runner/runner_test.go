@@ -334,6 +334,7 @@ func TestDev(t *testing.T) {
 			builder: &TestBuilder{
 				errors: []error{errors.New("")},
 			},
+			tester:         &TestTester{},
 			deployer:       &TestDeployer{},
 			watcherFactory: NewWatcherFactory(nil, nil),
 			shouldErr:      true,
@@ -354,6 +355,7 @@ func TestDev(t *testing.T) {
 			tester: &TestTester{
 				errors: []error{errors.New("")},
 			},
+			deployer:       &TestDeployer{},
 			watcherFactory: NewWatcherFactory(nil, nil),
 			shouldErr:      true,
 		},
