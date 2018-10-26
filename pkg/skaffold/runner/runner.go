@@ -210,18 +210,8 @@ func (r *SkaffoldRunner) newLogger(out io.Writer, artifacts []*latest.Artifact) 
 
 // Run builds artifacts, runs tests on built artifacts, and then deploys them.
 func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
-	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
-	if err != nil {
-		return errors.Wrap(err, "build step")
-	}
-	r.trackBuiltImages(bRes)
-
-	if err = r.Test(ctx, out, bRes); err != nil {
-		return errors.Wrap(err, "test step")
-	}
-
-	if _, err = r.Deploy(ctx, out, bRes); err != nil {
-		return errors.Wrap(err, "deploy step")
+	if err := r.buildTestDeploy(ctx, out, artifacts); err != nil {
+		return err
 	}
 
 	if r.opts.Tail {
@@ -231,6 +221,31 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*la
 		}
 
 		<-ctx.Done()
+	}
+
+	return nil
+}
+
+func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
+	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
+	if err != nil {
+		return errors.Wrap(err, "build failed")
+	}
+
+	if err = r.Test(ctx, out, bRes); err != nil {
+		return errors.Wrap(err, "test failed")
+	}
+
+	// Update which images are tracked.
+	for _, build := range bRes {
+		r.imageList.Add(build.Tag)
+	}
+
+	// Make sure all artifacts are redeployed. Not only those that were just built.
+	r.builds = mergeWithPreviousBuilds(bRes, r.builds)
+
+	if _, err = r.Deploy(ctx, out, r.builds); err != nil {
+		return errors.Wrap(err, "deploy failed")
 	}
 
 	return nil
@@ -280,20 +295,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 				}
 			}
 		case len(changed.needsRebuild) > 0:
-			bRes, err := r.Build(ctx, out, r.Tagger, changed.needsRebuild)
-			if err != nil {
-				logrus.Warnln("Skipping Deploy due to build error:", err)
-				return nil
-			}
-			r.trackBuiltImages(bRes)
-
-			if err := r.Test(ctx, out, bRes); err != nil {
-				logrus.Warnln("Skipping Deploy due to failed tests:", err)
-				return nil
-			}
-
-			if _, err = r.Deploy(ctx, out, r.builds); err != nil {
-				logrus.Warnln("Skipping Deploy due to error:", err)
+			if err := r.buildTestDeploy(ctx, out, changed.needsRebuild); err != nil {
+				logrus.Warnln("Skipping deploy due to errors:", err)
 				return nil
 			}
 		case changed.needsRedeploy:
@@ -350,19 +353,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	// First run
-	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
-	if err != nil {
-		return nil, errors.Wrap(err, "exiting dev mode because the first build failed")
-	}
-	r.trackBuiltImages(bRes)
-
-	if err := r.Test(ctx, out, bRes); err != nil {
-		return nil, errors.Wrap(err, "exiting dev mode because the first test run failed")
-	}
-
-	_, err = r.Deploy(ctx, out, r.builds)
-	if err != nil {
-		return nil, errors.Wrap(err, "exiting dev mode because the first deploy failed")
+	if err := r.buildTestDeploy(ctx, out, artifacts); err != nil {
+		return nil, errors.Wrap(err, "exiting dev mode because first run failed")
 	}
 
 	// Start logs
@@ -396,16 +388,6 @@ func (r *SkaffoldRunner) shouldWatch(artifact *latest.Artifact) bool {
 	}
 
 	return false
-}
-
-func (r *SkaffoldRunner) trackBuiltImages(bRes []build.Artifact) {
-	// Update which images are logged.
-	for _, build := range bRes {
-		r.imageList.Add(build.Tag)
-	}
-
-	// Make sure all artifacts are redeployed. Not only those that were just rebuilt.
-	r.builds = mergeWithPreviousBuilds(bRes, r.builds)
 }
 
 func imageNames(artifacts []*latest.Artifact) []string {
