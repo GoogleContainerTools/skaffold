@@ -66,3 +66,7 @@
 [[override]]
   name = "github.com/docker/docker"
   revision = "71cd53e4a197b303c6ba086bd584ffd67a884281"
+
+[[constraint]]
+  name = "github.com/IBM-Cloud/bluemix-go"
+  revision = "31b02e49b9a2961aa9f66489089a4e077f240029"

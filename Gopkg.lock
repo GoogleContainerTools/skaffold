@@ -15,6 +15,27 @@
   pruneopts = "NUT"
   revision = "050b16d2314d5fc3d4c9a51e4cd5c7468e77f162"
   version = "v0.17.0"
+  
+[[projects]]
+  branch = "master"
+  name = "github.com/IBM-Cloud/bluemix-go"
+  packages = [
+    ".",
+    "api/container/registryv1",
+    "api/iam/iamv1",
+    "authentication",
+    "bmxerror",
+    "client",
+    "crn",
+    "endpoints",
+    "helpers",
+    "http",
+    "models",
+    "rest",
+    "session",
+    "trace"
+  ]
+  revision = "31b02e49b9a2961aa9f66489089a4e077f240029"
 
 [[projects]]
   digest = "1:fd5f5c00789da5a6ae78b6c6050eccea46bcd4a519a4913ac82d22bafd7fd368"
