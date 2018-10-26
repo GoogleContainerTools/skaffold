@@ -5,4 +5,4 @@ metadata:
 spec:
   containers:
   - name: getting-started
-    image: registry.ng.bluemix.net/bkuschel/skaffold-example
+    image: registry.bluemix.net/k8s-skaffold/skaffold-example
