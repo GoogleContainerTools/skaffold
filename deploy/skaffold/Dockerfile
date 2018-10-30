@@ -43,18 +43,11 @@ RUN curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/v${K
     chmod +x kustomize_${KUSTOMIZE_VERSION}_linux_amd64 && \
     mv kustomize_${KUSTOMIZE_VERSION}_linux_amd64 /usr/local/bin/kustomize
 
-ENV HUGO_VERSION=0.49.2
-RUN curl -LO https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_Linux-64bit.tar.gz && \
-    tar -xzf hugo_${HUGO_VERSION}_Linux-64bit.tar.gz && \
-    mv hugo /usr/local/bin/hugo
-
 RUN echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list \
   && curl https://bazel.build/bazel-release.pub.gpg | apt-key add -
 
 RUN apt-get update \
-  && apt-get install -y \
-        bazel \
-        git && \
+  && apt-get install -y bazel && \
   rm -rf /var/lib/apt/lists/*
 
 ENV CONTAINER_STRUCTURE_TEST_VERSION=1.5.0

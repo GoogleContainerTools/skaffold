@@ -36,6 +36,7 @@ spec:
       containers:
       - name: docs-controller
         image: gcr.io/k8s-skaffold/docs-controller:latest
+        args: ["/webhook"]
         env:
         - name: GITHUB_ACCESS_TOKEN
           valueFrom:
