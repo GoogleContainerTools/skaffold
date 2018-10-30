@@ -18,3 +18,5 @@ steps:
   - '-f'
   - 'deploy/webhook/skaffold.yaml'
   - 'run'
+  - '--tag'
+  - '${COMMIT_SHA}'
