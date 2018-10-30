@@ -51,6 +51,7 @@ type PortForwarder struct {
 type portForwardEntry struct {
 	resourceVersion int
 	podName         string
+	namespace       string
 	containerName   string
 	port            int32
 
@@ -70,7 +71,7 @@ type kubectlForwarder struct{}
 func (*kubectlForwarder) Forward(pfe *portForwardEntry) error {
 	logrus.Debugf("Port forwarding %s", pfe)
 	portNumber := fmt.Sprintf("%d", pfe.port)
-	cmd := exec.Command("kubectl", "port-forward", pfe.podName, portNumber, portNumber)
+	cmd := exec.Command("kubectl", "port-forward", pfe.podName, portNumber, portNumber, "--namespace", pfe.namespace)
 	pfe.cmd = cmd
 
 	buf := &bytes.Buffer{}
@@ -78,7 +79,7 @@ func (*kubectlForwarder) Forward(pfe *portForwardEntry) error {
 	cmd.Stderr = buf
 
 	if err := cmd.Run(); err != nil && !IsTerminatedError(err) {
-		return errors.Wrapf(err, "port forwarding pod: %s, port: %s, err: %s", pfe.podName, portNumber, buf.String())
+		return errors.Wrapf(err, "port forwarding pod: %s/%s, port: %s, err: %s", pfe.namespace, pfe.podName, portNumber, buf.String())
 	}
 	return nil
 }
@@ -179,6 +180,7 @@ func (p *PortForwarder) portForwardPod(pod *v1.Pod) error {
 			entry := &portForwardEntry{
 				resourceVersion: resourceVersion,
 				podName:         pod.Name,
+				namespace:       pod.Namespace,
 				containerName:   c.Name,
 				port:            port.ContainerPort,
 			}
