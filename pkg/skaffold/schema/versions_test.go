@@ -97,6 +97,7 @@ func TestParseConfig(t *testing.T) {
 	defer cleanup()
 
 	var tests = []struct {
+		apiVersion  string
 		description string
 		config      string
 		expected    util.VersionedConfig
@@ -104,6 +105,7 @@ func TestParseConfig(t *testing.T) {
 		shouldErr   bool
 	}{
 		{
+			apiVersion:  latest.Version,
 			description: "Minimal config",
 			config:      minimalConfig,
 			expected: config(
@@ -114,6 +116,7 @@ func TestParseConfig(t *testing.T) {
 			),
 		},
 		{
+			apiVersion:  latest.Version,
 			description: "Simple config",
 			config:      simpleConfig,
 			expected: config(
@@ -125,6 +128,7 @@ func TestParseConfig(t *testing.T) {
 			),
 		},
 		{
+			apiVersion:  latest.Version,
 			description: "Complete config",
 			config:      completeConfig,
 			expected: config(
@@ -137,6 +141,7 @@ func TestParseConfig(t *testing.T) {
 			),
 		},
 		{
+			apiVersion:  latest.Version,
 			description: "Minimal Kaniko config",
 			config:      minimalKanikoConfig,
 			expected: config(
@@ -147,6 +152,7 @@ func TestParseConfig(t *testing.T) {
 			),
 		},
 		{
+			apiVersion:  latest.Version,
 			description: "Complete Kaniko config",
 			config:      completeKanikoConfig,
 			expected: config(
@@ -157,13 +163,21 @@ func TestParseConfig(t *testing.T) {
 			),
 		},
 		{
+			apiVersion:  latest.Version,
 			description: "Bad config",
 			config:      badConfig,
 			shouldErr:   true,
 		},
 		{
+			apiVersion:  latest.Version,
 			description: "two taggers defined",
 			config:      invalidConfig,
+			shouldErr:   true,
+		},
+		{
+			apiVersion:  "",
+			description: "ApiVersion not specified",
+			config:      minimalConfig,
 			shouldErr:   true,
 		},
 	}
@@ -173,7 +187,7 @@ func TestParseConfig(t *testing.T) {
 			tmp, cleanup := testutil.NewTempDir(t)
 			defer cleanup()
 
-			yaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, test.config)
+			yaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", test.apiVersion, test.config)
 			tmp.Write("skaffold.yaml", yaml)
 
 			cfg, err := ParseConfig(tmp.Path("skaffold.yaml"), true)

@@ -75,7 +75,7 @@ func ParseConfig(filename string, applyDefaults bool) (util.VersionedConfig, err
 
 	factory, present := schemaVersions.Find(apiVersion.Version)
 	if !present {
-		return nil, errors.Wrapf(err, "unknown version: %s", apiVersion.Version)
+		return nil, errors.Errorf("unknown api version: '%s'", apiVersion.Version)
 	}
 
 	cfg := factory()
