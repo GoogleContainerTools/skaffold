@@ -27,6 +27,7 @@ import (
 	"syscall"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -78,7 +79,7 @@ func (*kubectlForwarder) Forward(pfe *portForwardEntry) error {
 	cmd.Stdout = buf
 	cmd.Stderr = buf
 
-	if err := cmd.Run(); err != nil && !IsTerminatedError(err) {
+	if err := cmd.Run(); err != nil && !util.IsTerminatedError(err) {
 		return errors.Wrapf(err, "port forwarding pod: %s/%s, port: %s, err: %s", pfe.namespace, pfe.podName, portNumber, buf.String())
 	}
 	return nil
@@ -206,17 +207,6 @@ func (p *PortForwarder) portForwardPod(pod *v1.Pod) error {
 	}
 
 	return nil
-}
-
-// IsTerminatedError returns true if the error is type exec.ExitError and the corresponding process was terminated by SIGTERM
-// This error is given when a exec.Command is ran and terminated with a SIGTERM.
-func IsTerminatedError(err error) bool {
-	exitError, ok := err.(*exec.ExitError)
-	if !ok {
-		return false
-	}
-	ws := exitError.Sys().(syscall.WaitStatus)
-	return ws.Signal() == syscall.SIGTERM
 }
 
 // Key is an identifier for the lock on a port during the skaffold dev cycle.
