@@ -80,7 +80,6 @@ func handlePullRequestEvent(event *github.PullRequestEvent) error {
 	}
 
 	log.Printf("Label %s found on PR %d, creating service", constants.DocsLabel, prNumber)
-
 	svc, err := kubernetes.CreateService(event)
 	if err != nil {
 		return errors.Wrap(err, "creating service")
@@ -91,8 +90,14 @@ func handlePullRequestEvent(event *github.PullRequestEvent) error {
 		return errors.Wrap(err, "getting external IP")
 	}
 
-	log.Printf("External IP %s ready for PR %d", ip, prNumber)
-
-	// TODO: priyawadhwa@ to add logic for creating a deployment mapping to a service here
+	log.Printf("Creating deployment for pull request %d", prNumber)
+	deployment, err := kubernetes.CreateDeployment(event, svc, ip)
+	if err != nil {
+		return errors.Wrap(err, "creating deployment")
+	}
+	if err := kubernetes.WaitForDeploymentToStabilize(deployment); err != nil {
+		return errors.Wrapf(err, "waiting for deployment %s to stabilize", deployment.Name)
+	}
+	// TODO: priyawadhwa@ to add logic for commenting on Github once the deployment is ready
 	return nil
 }

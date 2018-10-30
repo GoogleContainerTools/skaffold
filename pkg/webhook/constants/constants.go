@@ -34,4 +34,7 @@ const (
 
 	// HugoPort is the port that hugo defaults to
 	HugoPort = 1313
+
+	// DeploymentImage is the image the controller deploys, must contain hugo and git
+	DeploymentImage = "gcr.io/k8s-skaffold/docs-controller@sha256:e4b58adfdc59fd916092d6c30026e5e1a75095013fec5381d8e58a85161b9977"
 )
