@@ -114,7 +114,7 @@ func TestRun(t *testing.T) {
 			description: "gcb builder example",
 			args:        []string{"run", "-p", "gcb"},
 			pods:        []string{"getting-started"},
-			dir:         "examples/getting-started",
+			dir:         "examples/structure-tests",
 			remoteOnly:  true,
 		},
 		{
