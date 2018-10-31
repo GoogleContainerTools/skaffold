@@ -31,6 +31,10 @@ import (
 func getDependencies(cmd *exec.Cmd) ([]string, error) {
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
+		// if terminated because of ^C then act as if all is well
+		if util.IsTerminatedError(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
