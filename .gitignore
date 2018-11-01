@@ -1,5 +1,6 @@
 out/
 examples/bazel/bazel-*
+integration/examples/bazel/bazel-*
 *.new
 .idea/
 docs/generated
