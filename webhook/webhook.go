@@ -18,15 +18,17 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/labels"
+	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
-	"github.com/google/go-github/github"
+	pkggithub "github.com/GoogleContainerTools/skaffold/pkg/webhook/github"
 )
 
 const (
@@ -69,7 +71,7 @@ func handlePullRequestEvent(event *github.PullRequestEvent) error {
 
 	prNumber := event.GetNumber()
 
-	if event.PullRequest.GetMerged() || event.PullRequest.ClosedAt == nil {
+	if event.PullRequest.GetState() != constants.OpenState {
 		log.Printf("Pull request %d is either merged or closed, skipping docs deployment", prNumber)
 		return nil
 	}
@@ -79,6 +81,12 @@ func handlePullRequestEvent(event *github.PullRequestEvent) error {
 		return nil
 	}
 
+	// If a PR was relabeled, we need to first cleanup preexisting deployments
+	if err := kubernetes.CleanupDeployment(event); err != nil {
+		return errors.Wrap(err, "cleaning up deployment")
+	}
+
+	// Create service for the PR and get the associated external IP
 	log.Printf("Label %s found on PR %d, creating service", constants.DocsLabel, prNumber)
 	svc, err := kubernetes.CreateService(event)
 	if err != nil {
@@ -90,14 +98,26 @@ func handlePullRequestEvent(event *github.PullRequestEvent) error {
 		return errors.Wrap(err, "getting external IP")
 	}
 
+	// Create a deployment which maps to the service
 	log.Printf("Creating deployment for pull request %d", prNumber)
 	deployment, err := kubernetes.CreateDeployment(event, svc, ip)
 	if err != nil {
-		return errors.Wrap(err, "creating deployment")
+		return errors.Wrapf(err, "creating deployment for PR %d", prNumber)
 	}
 	if err := kubernetes.WaitForDeploymentToStabilize(deployment); err != nil {
 		return errors.Wrapf(err, "waiting for deployment %s to stabilize", deployment.Name)
 	}
-	// TODO: priyawadhwa@ to add logic for commenting on Github once the deployment is ready
+
+	// Comment on the PR and remove the docs-modifications label
+	githubClient := pkggithub.NewClient()
+	baseURL := kubernetes.BaseURL(ip)
+	msg := fmt.Sprintf("Please visit [%s](%s) to view changes to the docs.", baseURL, baseURL)
+	if err := githubClient.CommentOnPR(event, msg); err != nil {
+		return errors.Wrapf(err, "comenting on PR %d", prNumber)
+	}
+	if err := githubClient.RemoveLabelFromPR(event, constants.DocsLabel); err != nil {
+		return errors.Wrapf(err, "removing %s label from PR %d", constants.DocsLabel, prNumber)
+	}
+
 	return nil
 }

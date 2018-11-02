@@ -87,7 +87,7 @@ func CreateDeployment(pr *github.PullRequestEvent, svc *v1.Service, externalIP s
 						{
 							Name:       "server",
 							Image:      constants.DeploymentImage,
-							Args:       []string{"hugo", "server", "--bind=0.0.0.0", "-D", "--baseURL", baseURL(externalIP)},
+							Args:       []string{"hugo", "server", "--bind=0.0.0.0", "-D", "--baseURL", BaseURL(externalIP)},
 							WorkingDir: docsPath,
 							VolumeMounts: []v1.VolumeMount{
 								{
@@ -126,6 +126,6 @@ func WaitForDeploymentToStabilize(d *appsv1.Deployment) error {
 	return pkgkubernetes.WaitForDeploymentToStabilize(context.Background(), client, d.Namespace, d.Name, 5*time.Minute)
 }
 
-func baseURL(ip string) string {
+func BaseURL(ip string) string {
 	return fmt.Sprintf("http://%s:%d", ip, constants.HugoPort)
 }

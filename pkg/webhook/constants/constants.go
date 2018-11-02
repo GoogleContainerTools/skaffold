@@ -17,15 +17,24 @@ limitations under the License.
 package constants
 
 const (
+	// GithubAccessToken is the env variable auth for container-tools-bot is stored in
+	GithubAccessToken = "GITHUB_ACCESS_TOKEN"
+	// GithubOwner is the owner of the repository
+	GithubOwner = "GoogleContainerTools"
+	// GithubRepo is the name of the repo
+	GithubRepo = "skaffold"
 	// GithubEventHeader is the header key used to describe a github event
 	GithubEventHeader = "X-GitHub-Event"
-	// PullRequestEvent is the header value for pull requests
+	// PullRequestEvent is the Github header value for pull requests
 	PullRequestEvent = "pull_request"
+	// OpenState is the state of an open PR
+	OpenState = "open"
 
 	// when a PR is closed
 	ClosedAction = "closed"
 	// when a PR is labeled
 	LabeledAction = "labeled"
+
 	// DocsLabel kicks off the controller when added to a PR
 	DocsLabel = "docs-modifications"
 
