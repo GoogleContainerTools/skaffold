@@ -54,7 +54,7 @@ func NewClient() *Client {
 // CommentOnPR comments message on the PR
 func (g *Client) CommentOnPR(pr *github.PullRequestEvent, message string) error {
 	comment := &github.IssueComment{
-		Body: &[]string{message}[0],
+		Body: &message,
 	}
 
 	log.Printf("Creating comment on PR %d", pr.PullRequest.GetNumber())
@@ -62,7 +62,7 @@ func (g *Client) CommentOnPR(pr *github.PullRequestEvent, message string) error 
 	if err != nil {
 		return errors.Wrap(err, "creating github comment")
 	}
-	log.Printf("Succesfully commented on PR %d.", pr.GetNumber())
+	log.Printf("Successfully commented on PR %d.", pr.GetNumber())
 	return nil
 }
 

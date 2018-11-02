@@ -108,7 +108,7 @@ func handlePullRequestEvent(event *github.PullRequestEvent) error {
 		return errors.Wrapf(err, "waiting for deployment %s to stabilize", deployment.Name)
 	}
 
-	// Now, comment on the PR and remove the docs-modifications label
+	// Comment on the PR and remove the docs-modifications label
 	githubClient := pkggithub.NewClient()
 	baseURL := kubernetes.BaseURL(ip)
 	msg := fmt.Sprintf("Please visit [%s](%s) to view changes to the docs.", baseURL, baseURL)
