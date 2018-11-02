@@ -41,7 +41,7 @@ func NewClient() *Client {
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: githubToken},
 	)
-	tc := oauth2.NewClient(oauth2.NoContext, ts)
+	tc := oauth2.NewClient(context.Background(), ts)
 
 	// Return a client instance from github
 	client := github.NewClient(tc)
