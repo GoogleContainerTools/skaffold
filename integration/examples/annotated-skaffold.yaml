@@ -161,9 +161,14 @@ deploy:
  # kustomize:
     # path: .
     # kustomize deploys manifests with kubectl.
+    # kustomize can be passed additional option flags either on every command (Global)
+    # or on builds (Build).
+    # flags:
+    #   global: [""]
+    #   build: [""]
     # kubectl can be passed additional option flags either on every command (Global),
     # on creations (Apply) or deletions (Delete).
-    # flags:
+    # kubectlFlags:
     #   global: [""]
     #   apply: [""]
     #   delete: [""]

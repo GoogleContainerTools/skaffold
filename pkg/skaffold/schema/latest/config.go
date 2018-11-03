@@ -176,8 +176,16 @@ type HelmDeploy struct {
 
 // KustomizeDeploy contains the configuration needed for deploying with kustomize.
 type KustomizeDeploy struct {
-	KustomizePath string       `yaml:"path,omitempty"`
-	Flags         KubectlFlags `yaml:"flags,omitempty"`
+	KustomizePath string         `yaml:"path,omitempty"`
+	KubectlFlags  KubectlFlags   `yaml:"kubectlFlags,omitempty"`
+	Flags         KustomizeFlags `yaml:"flags,omitempty"`
+}
+
+// KustomizeFlags describes additional options flags that are passed on the command
+// line to kustomize either on every command (Global) or on builds (Build).
+type KustomizeFlags struct {
+	Global []string `yaml:"global,omitempty"`
+	Build  []string `yaml:"build,omitempty"`
 }
 
 type HelmRelease struct {

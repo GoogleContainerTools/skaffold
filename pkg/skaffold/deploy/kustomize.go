@@ -66,7 +66,7 @@ func NewKustomizeDeployer(cfg *latest.KustomizeDeploy, kubeContext string, names
 		kubectl: kubectl.CLI{
 			Namespace:   namespace,
 			KubeContext: kubeContext,
-			Flags:       cfg.Flags,
+			Flags:       cfg.KubectlFlags,
 		},
 		defaultRepo: defaultRepo,
 	}
@@ -173,7 +173,10 @@ func (k *KustomizeDeployer) Dependencies() ([]string, error) {
 }
 
 func (k *KustomizeDeployer) readManifests(ctx context.Context) (kubectl.ManifestList, error) {
-	cmd := exec.CommandContext(ctx, "kustomize", "build", k.KustomizePath)
+	args := []string{"build", k.KustomizePath}
+	args = append(args, k.Flags.Global...)
+	args = append(args, k.Flags.Build...)
+	cmd := exec.CommandContext(ctx, "kustomize", args...)
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "kustomize build")
