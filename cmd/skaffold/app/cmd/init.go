@@ -268,6 +268,7 @@ func generateSkaffoldPipeline(k8sConfigs []string, dockerfilePairs []dockerfileP
 
 	pipeline := &latest.SkaffoldPipeline{
 		APIVersion: latest.Version,
+		Kind:       "Config",
 	}
 	if err := pipeline.SetDefaultValues(); err != nil {
 		return nil, errors.Wrap(err, "generating default pipeline")
