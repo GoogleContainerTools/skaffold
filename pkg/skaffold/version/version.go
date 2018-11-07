@@ -23,33 +23,38 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 var version, gitCommit, gitTreeState, buildDate string
 var platform = fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
+var configVersion = latest.Version
 
 type Info struct {
-	Version      string
-	GitVersion   string
-	GitCommit    string
-	GitTreeState string
-	BuildDate    string
-	GoVersion    string
-	Compiler     string
-	Platform     string
+	Version       string
+	ConfigVersion string
+	GitVersion    string
+	GitCommit     string
+	GitTreeState  string
+	BuildDate     string
+	GoVersion     string
+	Compiler      string
+	Platform      string
 }
 
 // Get returns the version and buildtime information about the binary
 func Get() *Info {
 	// These variables typically come from -ldflags settings to `go build`
 	return &Info{
-		Version:      version,
-		GitCommit:    gitCommit,
-		GitTreeState: gitTreeState,
-		BuildDate:    buildDate,
-		GoVersion:    runtime.Version(),
-		Compiler:     runtime.Compiler,
-		Platform:     platform,
+		Version:       version,
+		ConfigVersion: configVersion,
+		GitCommit:     gitCommit,
+		GitTreeState:  gitTreeState,
+		BuildDate:     buildDate,
+		GoVersion:     runtime.Version(),
+		Compiler:      runtime.Compiler,
+		Platform:      platform,
 	}
 }
 
