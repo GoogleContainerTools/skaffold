@@ -17,6 +17,9 @@ limitations under the License.
 package main
 
 import (
+	"context"
+
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app"
@@ -24,6 +27,8 @@ import (
 
 func main() {
 	if err := app.Run(); err != nil {
-		logrus.Fatal(err)
+		if errors.Cause(err) != context.Canceled {
+			logrus.Fatal(err)
+		}
 	}
 }

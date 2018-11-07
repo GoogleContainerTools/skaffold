@@ -465,6 +465,12 @@ func DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string,
 	}
 
 	if err != nil {
+		// if the context was cancelled act as if all is well
+		// TODO(dgageot): this should be even higher in the call chain.
+		if ctx.Err() == context.Canceled {
+			return nil, nil
+		}
+
 		return nil, err
 	}
 
