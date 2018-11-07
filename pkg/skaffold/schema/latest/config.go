@@ -34,7 +34,7 @@ type SkaffoldPipeline struct {
 	Kind       string `yaml:"kind"`
 
 	Build    BuildConfig  `yaml:"build,omitempty"`
-	Test     []*TestCase  `yaml:"test,omitempty"`
+	Test     TestConfig   `yaml:"test,omitempty"`
 	Deploy   DeployConfig `yaml:"deploy,omitempty"`
 	Profiles []Profile    `yaml:"profiles,omitempty"`
 }
@@ -132,6 +132,8 @@ type AzureContainerBuild struct {
 	ClientSecret   string `yaml:"clientSecret,omitempty"`
 	TenantID       string `yaml:"tenantId,omitempty"`
 }
+
+type TestConfig []*TestCase
 
 // TestCase is a struct containing all the specified test
 // configuration for an image.
@@ -237,7 +239,7 @@ type Artifact struct {
 type Profile struct {
 	Name   string       `yaml:"name,omitempty"`
 	Build  BuildConfig  `yaml:"build,omitempty"`
-	Test   []*TestCase  `yaml:"test,omitempty"`
+	Test   TestConfig   `yaml:"test,omitempty"`
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
 }
 

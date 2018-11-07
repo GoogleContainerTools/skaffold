@@ -46,11 +46,18 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 		return nil, errors.Wrap(err, "converting new build")
 	}
 
+	// convert Test (should be the same)
+	var newTest next.TestConfig
+	if err := convert(config.Test, &newTest); err != nil {
+		return nil, errors.Wrap(err, "converting new test")
+	}
+
 	return &next.SkaffoldPipeline{
 		APIVersion: next.Version,
 		Kind:       config.Kind,
-		Deploy:     newDeploy,
 		Build:      newBuild,
+		Test:       newTest,
+		Deploy:     newDeploy,
 		Profiles:   newProfiles,
 	}, nil
 }
