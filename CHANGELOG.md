@@ -1,6 +1,7 @@
 # v0.17.0 Release - 10/26/2018
 
-Note: This release comes with a config change, use `skaffold fix` to upgrade your config to `v1alpha4`.
+Note: This release comes with a config change, use `skaffold fix` to upgrade your config to `v1alpha5`.
+We 'skipped' `v1alpha4` due to an accidental merge: see [#1235](https://github.com/GoogleContainerTools/skaffold/issues/1235#issuecomment-436429009))
 
 New Features: 
 
