@@ -29,7 +29,6 @@ import (
 
 var version, gitCommit, gitTreeState, buildDate string
 var platform = fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
-var configVersion = latest.Version
 
 type Info struct {
 	Version       string
@@ -48,7 +47,7 @@ func Get() *Info {
 	// These variables typically come from -ldflags settings to `go build`
 	return &Info{
 		Version:       version,
-		ConfigVersion: configVersion,
+		ConfigVersion: latest.Version,
 		GitCommit:     gitCommit,
 		GitTreeState:  gitTreeState,
 		BuildDate:     buildDate,
