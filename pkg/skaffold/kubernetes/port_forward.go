@@ -30,6 +30,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
+
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 )
@@ -168,6 +170,9 @@ func (p *PortForwarder) portForwardPod(pod *v1.Pod) error {
 	if err != nil {
 		return errors.Wrap(err, "converting resource version to integer")
 	}
+
+	var g errgroup.Group
+
 	for _, c := range pod.Spec.Containers {
 		for _, port := range c.Ports {
 			// If the port is already port-forwarded by another container,
@@ -200,10 +205,15 @@ func (p *PortForwarder) portForwardPod(pod *v1.Pod) error {
 			color.Default.Fprintln(p.output, fmt.Sprintf("Port Forwarding %s %d -> %d", entry.podName, entry.port, entry.port))
 			p.forwardedPods.Store(entry.key(), entry)
 			p.forwardedPorts.Store(entry.port, entry.containerName)
-			if err := p.Forward(entry); err != nil {
-				return errors.Wrap(err, "port forwarding")
-			}
+
+			g.Go(func() error {
+				return p.Forward(entry)
+			})
 		}
+	}
+
+	if err := g.Wait(); err != nil {
+		return errors.Wrap(err, "port forwarding")
 	}
 
 	return nil
