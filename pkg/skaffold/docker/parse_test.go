@@ -194,7 +194,7 @@ func (f *fakeImageFetcher) fetch(image string) (*v1.ConfigFile, error) {
 		}, nil
 	}
 
-	return nil, fmt.Errorf("No image found for %s", image)
+	return nil, fmt.Errorf("no image found for %s", image)
 }
 
 func TestGetDependencies(t *testing.T) {

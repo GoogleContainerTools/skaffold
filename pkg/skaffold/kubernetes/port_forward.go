@@ -89,7 +89,7 @@ func (*kubectlForwarder) Forward(pfe *portForwardEntry) error {
 func (*kubectlForwarder) Stop(p *portForwardEntry) error {
 	logrus.Debugf("Terminating port-forward %s", p)
 	if p.cmd == nil {
-		return fmt.Errorf("No port-forward command found for %s", p)
+		return fmt.Errorf("no port-forward command found for %s", p)
 	}
 	if err := p.cmd.Process.Signal(syscall.SIGTERM); err != nil {
 		return errors.Wrap(err, "terminating port-forward process")

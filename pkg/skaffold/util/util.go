@@ -85,7 +85,7 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 			return nil, errors.Wrap(err, "glob")
 		}
 		if files == nil {
-			return nil, fmt.Errorf("File pattern must match at least one file %s", path)
+			return nil, fmt.Errorf("file pattern must match at least one file %s", path)
 		}
 
 		for _, f := range files {
