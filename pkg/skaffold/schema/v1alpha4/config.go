@@ -34,10 +34,12 @@ type SkaffoldPipeline struct {
 	Kind       string `yaml:"kind"`
 
 	Build    BuildConfig  `yaml:"build,omitempty"`
-	Test     []TestCase   `yaml:"test,omitempty"`
+	Test     TestConfig   `yaml:"test,omitempty"`
 	Deploy   DeployConfig `yaml:"deploy,omitempty"`
 	Profiles []Profile    `yaml:"profiles,omitempty"`
 }
+
+type TestConfig []TestCase
 
 func (c *SkaffoldPipeline) GetVersion() string {
 	return c.APIVersion

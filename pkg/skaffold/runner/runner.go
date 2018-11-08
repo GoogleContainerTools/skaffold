@@ -145,7 +145,7 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string) (build.Builder, err
 	}
 }
 
-func getTester(cfg *[]*latest.TestCase) (test.Tester, error) {
+func getTester(cfg *latest.TestConfig) (test.Tester, error) {
 	return test.NewTester(cfg)
 }
 

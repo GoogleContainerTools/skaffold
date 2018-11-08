@@ -55,7 +55,7 @@ func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) {
 		Kind:       config.Kind,
 		Build:      overlayProfileField(config.Build, profile.Build).(latest.BuildConfig),
 		Deploy:     overlayProfileField(config.Deploy, profile.Deploy).(latest.DeployConfig),
-		Test:       overlayProfileField(config.Test, profile.Test).([]*latest.TestCase),
+		Test:       overlayProfileField(config.Test, profile.Test).(latest.TestConfig),
 	}
 }
 
