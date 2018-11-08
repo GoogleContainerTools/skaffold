@@ -23,7 +23,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"k8s.io/client-go/tools/clientcmd/api"
 )
@@ -315,36 +314,6 @@ func withProfiles(profiles ...latest.Profile) func(*latest.SkaffoldPipeline) {
 	}
 }
 
-func TestCheckVersionIsLatest(t *testing.T) {
-	tests := []struct {
-		name      string
-		version   string
-		shouldErr bool
-	}{
-		{
-			name:    "latest api version",
-			version: latest.Version,
-		},
-		{
-			name:      "old api version",
-			version:   v1alpha1.Version,
-			shouldErr: true,
-		},
-		{
-			name:      "new api version",
-			version:   "skaffold/v9",
-			shouldErr: true,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			err := CheckVersionIsLatest(test.version)
-
-			testutil.CheckError(t, test.shouldErr, err)
-		})
-	}
-}
-
 func TestUpgradeToNextVersion(t *testing.T) {
 	for i, schemaVersion := range schemaVersions[0 : len(schemaVersions)-2] {
 		from := schemaVersion
@@ -360,7 +329,7 @@ func TestUpgradeToNextVersion(t *testing.T) {
 	}
 }
 
-func TestCantUpgradeFromLastestVersion(t *testing.T) {
+func TestCantUpgradeFromLatestVersion(t *testing.T) {
 	factory, present := schemaVersions.Find(latest.Version)
 	testutil.CheckDeepEqual(t, true, present)
 

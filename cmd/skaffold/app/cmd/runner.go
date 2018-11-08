@@ -33,7 +33,9 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 		return nil, nil, errors.Wrap(err, "parsing skaffold config")
 	}
 
-	if err := schema.CheckVersionIsLatest(parsed.GetVersion()); err != nil {
+	// automatically upgrade older config
+	parsed, err = schema.UpgradeToLatest(parsed)
+	if err != nil {
 		return nil, nil, errors.Wrap(err, "invalid config")
 	}
 
