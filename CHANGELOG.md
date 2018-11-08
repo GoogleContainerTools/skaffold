@@ -1,3 +1,39 @@
+# v0.18.0 Release - 11/08/2018
+
+Bug Fixes: 
+
+* Don't lose test configuration when running skaffold fix [#1251](https://github.com/GoogleContainerTools/skaffold/pull/1251)
+* Fix jib errors on ctrl-c [#1248](https://github.com/GoogleContainerTools/skaffold/pull/1248)
+* Fix sync [#1253](https://github.com/GoogleContainerTools/skaffold/pull/1253)
+* Update examples and release notes to use v1alpha5 [#1244](https://github.com/GoogleContainerTools/skaffold/pull/1244)
+* Set Kind on `skaffold init` [#1237](https://github.com/GoogleContainerTools/skaffold/pull/1237)
+* Do not print the manifest on to stdout when doing a deploy by kustomize [#1234](https://github.com/GoogleContainerTools/skaffold/pull/1234)
+* Fixed panic if skaffold.yaml is empty (#1216) [#1221](https://github.com/GoogleContainerTools/skaffold/pull/1221)
+* Suppress fatal error reporting when ^C skaffold with jib [#1228](https://github.com/GoogleContainerTools/skaffold/pull/1228)
+* portforward for resources with hardcoded namespace [#1223](https://github.com/GoogleContainerTools/skaffold/pull/1223)
+ 
+Updates: 
+
+* Output config version in skaffold version [#1252](https://github.com/GoogleContainerTools/skaffold/pull/1252)
+* Port forward multiple ports [#1250](https://github.com/GoogleContainerTools/skaffold/pull/1250)
+* Improve errors [#1255](https://github.com/GoogleContainerTools/skaffold/pull/1255)
+* Move structure tests out of getting-started example [#1220](https://github.com/GoogleContainerTools/skaffold/pull/1220)
+* changes related to our docs review flow: 
+  * Add github pkg to webhook [#1230](https://github.com/GoogleContainerTools/skaffold/pull/1230)
+  * Allow webhook to create a deployment [#1227](https://github.com/GoogleContainerTools/skaffold/pull/1227)
+  * Add hugo and git to webhook image [#1226](https://github.com/GoogleContainerTools/skaffold/pull/1226)
+  * Add support for creating a service from webhook [#1213](https://github.com/GoogleContainerTools/skaffold/pull/1213)
+
+Huge thank you for this release towards our contributors: 
+- Balint Pato
+- Brian de Alwis
+- David Gageot
+- Matt Rickard
+- Nick Kubala
+- Priya Wadhwa
+- RaviTezu
+- varunkashyap
+
 # v0.17.0 Release - 10/26/2018
 
 Note: This release comes with a config change, use `skaffold fix` to upgrade your config to `v1alpha5`.
