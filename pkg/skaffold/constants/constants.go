@@ -57,6 +57,8 @@ const (
 
 	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
 
+	DockerUserAgentEnvironmentVariable = "SKAFFOLD_DOCKER_USER_AGENT"
+
 	DefaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
 
 	// A regex matching valid repository names (https://github.com/docker/distribution/blob/master/reference/reference.go)
