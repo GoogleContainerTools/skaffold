@@ -125,6 +125,32 @@ func TestNewSyncItem(t *testing.T) {
 			},
 		},
 		{
+			description: "recursive glob patterns",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: map[string]string{
+					"src/**/*.js": "src/",
+				},
+				Workspace: "node",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: watch.Events{
+				Modified: []string{filepath.Join("node", "src/app/server/server.js")},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string]string{
+					filepath.Join("node", "src/app/server/server.js"): "src/app/server/server.js",
+				},
+				Delete: map[string]string{},
+			},
+		},
+		{
 			description: "sync all",
 			artifact: &latest.Artifact{
 				ImageName: "test",
@@ -231,7 +257,7 @@ func TestNewSyncItem(t *testing.T) {
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string]string{
-					filepath.Join("dir1", "dir2/node.js"): "node.js",
+					filepath.Join("dir1", "dir2/node.js"): "dir1/dir2/node.js",
 				},
 				Delete: map[string]string{},
 			},

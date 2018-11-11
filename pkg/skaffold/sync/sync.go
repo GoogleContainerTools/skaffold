@@ -22,7 +22,9 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strings"
 
+	"github.com/bmatcuk/doublestar"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -89,18 +91,23 @@ func latestTag(image string, builds []build.Artifact) string {
 
 func intersect(context string, syncMap map[string]string, files []string) (map[string]string, error) {
 	ret := map[string]string{}
+
 	for _, f := range files {
 		relPath, err := filepath.Rel(context, f)
+
 		if err != nil {
 			return nil, errors.Wrapf(err, "changed file %s can't be found relative to context %s", f, context)
 		}
 		var matches bool
 		for p, dst := range syncMap {
-			match, err := filepath.Match(filepath.FromSlash(p), relPath)
+			match, err := doublestar.PathMatch(filepath.FromSlash(p), relPath)
 			if err != nil {
 				return nil, errors.Wrapf(err, "pattern error for %s", relPath)
 			}
+
 			if match {
+				staticPath := strings.Split(p, "*")[0]
+
 				// Every file must match at least one sync pattern, if not we'll have to
 				// skip the entire sync
 				matches = true
@@ -109,7 +116,8 @@ func intersect(context string, syncMap map[string]string, files []string) (map[s
 				// The path package must be used here, since the destination is always
 				// a linux filesystem.
 				if util.HasMeta(p) {
-					dst = path.Join(dst, filepath.Base(relPath))
+					relPathDynamic := strings.TrimPrefix(relPath, staticPath)
+					dst = path.Join(dst, relPathDynamic)
 				}
 				ret[f] = dst
 			}
