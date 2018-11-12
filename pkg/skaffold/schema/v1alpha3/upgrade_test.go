@@ -19,7 +19,7 @@ package v1alpha3
 import (
 	"testing"
 
-	v1alpha4 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 )
 
 func TestBuildUpgrade(t *testing.T) {
@@ -49,7 +49,7 @@ profiles:
 		t.Errorf("unexpected error during upgrade: %v", err)
 	}
 
-	upgradedPipeline := upgraded.(*v1alpha4.SkaffoldPipeline)
+	upgradedPipeline := upgraded.(*next.SkaffoldPipeline)
 
 	if upgradedPipeline.Build.LocalBuild == nil {
 		t.Errorf("expected build.local to be not nil")

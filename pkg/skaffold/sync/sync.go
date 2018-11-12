@@ -23,6 +23,8 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -92,23 +94,31 @@ func intersect(context string, syncMap map[string]string, files []string) (map[s
 		if err != nil {
 			return nil, errors.Wrapf(err, "changed file %s can't be found relative to context %s", f, context)
 		}
+		var matches bool
 		for p, dst := range syncMap {
 			match, err := filepath.Match(p, relPath)
 			if err != nil {
 				return nil, errors.Wrapf(err, "pattern error for %s", relPath)
 			}
-			if !match {
-				return nil, nil
+			if match {
+				// Every file must match at least one sync pattern, if not we'll have to
+				// skip the entire sync
+				matches = true
+				// If the source has special match characters,
+				// the destination must be a directory
+				// The path package must be used here, since the destination is always
+				// a linux filesystem.
+				if util.HasMeta(p) {
+					dst = path.Join(dst, filepath.Base(relPath))
+				}
+				ret[f] = dst
 			}
-			// If the source has special match characters,
-			// the destination must be a directory
-			// The path package must be used here, since the destination is always
-			// a linux filesystem.
-			if util.HasMeta(p) {
-				dst = path.Join(dst, filepath.Base(relPath))
-			}
-			ret[f] = dst
 		}
+		if !matches {
+			logrus.Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
+			return nil, nil
+		}
+
 	}
 	return ret, nil
 }

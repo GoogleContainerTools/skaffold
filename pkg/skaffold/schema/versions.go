@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 	"gopkg.in/yaml.v2"
@@ -38,6 +39,7 @@ var schemaVersions = versions{
 	{v1alpha1.Version, v1alpha1.NewSkaffoldPipeline},
 	{v1alpha2.Version, v1alpha2.NewSkaffoldPipeline},
 	{v1alpha3.Version, v1alpha3.NewSkaffoldPipeline},
+	{v1alpha4.Version, v1alpha4.NewSkaffoldPipeline},
 	{latest.Version, latest.NewSkaffoldPipeline},
 }
 
@@ -73,7 +75,7 @@ func ParseConfig(filename string, applyDefaults bool) (util.VersionedConfig, err
 
 	factory, present := schemaVersions.Find(apiVersion.Version)
 	if !present {
-		return nil, errors.Wrapf(err, "unknown version: %s", apiVersion.Version)
+		return nil, errors.Errorf("unknown api version: '%s'", apiVersion.Version)
 	}
 
 	cfg := factory()

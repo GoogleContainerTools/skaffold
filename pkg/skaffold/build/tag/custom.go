@@ -17,6 +17,7 @@ limitations under the License.
 package tag
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -35,11 +36,13 @@ func (c *CustomTag) Labels() map[string]string {
 // GenerateFullyQualifiedImageName tags an image with the custom tag
 func (c *CustomTag) GenerateFullyQualifiedImageName(workingDir string, opts *Options) (string, error) {
 	if opts == nil {
-		return "", fmt.Errorf("Tag options not provided")
+		return "", errors.New("tag options not provided")
 	}
+
 	tag := c.Tag
 	if tag == "" {
-		return "", fmt.Errorf("Custom tag not provided")
+		return "", errors.New("custom tag not provided")
 	}
+
 	return fmt.Sprintf("%s:%s", opts.ImageName, tag), nil
 }

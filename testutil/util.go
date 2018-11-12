@@ -17,6 +17,7 @@ limitations under the License.
 package testutil
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -29,11 +30,11 @@ import (
 
 type BadReader struct{}
 
-func (BadReader) Read([]byte) (int, error) { return 0, fmt.Errorf("Bad read") }
+func (BadReader) Read([]byte) (int, error) { return 0, errors.New("bad read") }
 
 type BadWriter struct{}
 
-func (BadWriter) Write([]byte) (int, error) { return 0, fmt.Errorf("Bad write") }
+func (BadWriter) Write([]byte) (int, error) { return 0, errors.New("bad write") }
 
 type FakeReaderCloser struct {
 	Err error
@@ -86,10 +87,10 @@ func CheckError(t *testing.T, shouldErr bool, err error) {
 
 func checkErr(shouldErr bool, err error) error {
 	if err == nil && shouldErr {
-		return fmt.Errorf("Expected error, but returned none")
+		return errors.New("expected error, but returned none")
 	}
 	if err != nil && !shouldErr {
-		return fmt.Errorf("Unexpected error: %s", err)
+		return fmt.Errorf("unexpected error: %s", err)
 	}
 	return nil
 }

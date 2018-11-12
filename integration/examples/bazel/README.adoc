@@ -13,7 +13,7 @@ build:
        bazel: # <2>
          target: //:skaffold_example.tar # <3>
 ----
-<1> make sure the workspace contains the bazel files (`WORKSPACE`, `BUILD`)
+<1> make sure the context contains the bazel files (`WORKSPACE`, `BUILD`)
 <2> add bazel to each artifact
 <3> specify target - our builder will use this to load to the image to the Docker daemon
 
