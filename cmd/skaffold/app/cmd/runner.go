@@ -17,6 +17,8 @@ limitations under the License.
 package cmd
 
 import (
+	"io"
+
 	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
@@ -27,14 +29,14 @@ import (
 )
 
 // newRunner creates a SkaffoldRunner and returns the SkaffoldPipeline associated with it.
-func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.SkaffoldPipeline, error) {
+func newRunner(out io.Writer, opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.SkaffoldPipeline, error) {
 	parsed, err := schema.ParseConfig(opts.ConfigurationFile, true)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "parsing skaffold config")
 	}
 
 	// automatically upgrade older config
-	parsed, err = schema.UpgradeToLatest(parsed)
+	parsed, err = schema.UpgradeToLatest(out, parsed)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "invalid config")
 	}

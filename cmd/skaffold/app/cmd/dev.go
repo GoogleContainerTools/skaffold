@@ -65,7 +65,7 @@ func dev(out io.Writer) error {
 		case <-ctx.Done():
 			return nil
 		default:
-			r, config, err := newRunner(opts)
+			r, config, err := newRunner(out, opts)
 			if err != nil {
 				return errors.Wrap(err, "creating runner")
 			}

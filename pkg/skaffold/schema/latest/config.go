@@ -17,12 +17,18 @@ limitations under the License.
 package latest
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
 )
 
 const Version string = "skaffold/v1alpha5"
+
+func Semver() semver.Version {
+	return apiversion.MustParse(Version)
+}
 
 // NewSkaffoldPipeline creates a SkaffoldPipeline
 func NewSkaffoldPipeline() util.VersionedConfig {

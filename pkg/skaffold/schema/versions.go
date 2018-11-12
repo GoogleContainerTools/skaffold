@@ -17,8 +17,10 @@ limitations under the License.
 package schema
 
 import (
+	"fmt"
+	"io"
+
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	apiversion "github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -92,7 +94,7 @@ func ParseConfig(filename string, applyDefaults bool) (util.VersionedConfig, err
 }
 
 // UpgradeToLatest upgrades a configuration to the latest version.
-func UpgradeToLatest(vc util.VersionedConfig) (util.VersionedConfig, error) {
+func UpgradeToLatest(out io.Writer, vc util.VersionedConfig) (util.VersionedConfig, error) {
 	var err error
 
 	// first, check to make sure config version isn't too new
@@ -100,14 +102,14 @@ func UpgradeToLatest(vc util.VersionedConfig) (util.VersionedConfig, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing api version")
 	}
-	latestVersion := apiversion.MustParse(latest.Version)
-	if version.GT(latestVersion) {
-		return nil, errors.New("config version is too new for this version of skaffold: upgrade skaffold")
+	if version.EQ(latest.Semver()) {
+		return vc, nil
+	}
+	if version.GT(latest.Semver()) {
+		return nil, fmt.Errorf("config version %s is too new for this version of skaffold: upgrade skaffold", vc.GetVersion())
 	}
 
-	if version.LT(latestVersion) {
-		logrus.Infof("config version %s out of date: upgrading to latest (%s)", vc.GetVersion(), latest.Version)
-	}
+	out.Write([]byte(fmt.Sprintf("config version %s out of date: upgrading to latest (%s)\n", vc.GetVersion(), latest.Version)))
 
 	for vc.GetVersion() != latest.Version {
 		vc, err = vc.Upgrade()
