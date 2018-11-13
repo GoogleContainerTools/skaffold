@@ -46,7 +46,7 @@ deploy:
 					DeployType: next.DeployType{
 						HelmDeploy: &next.HelmDeploy{
 							Releases: []next.HelmRelease{
-								next.HelmRelease{
+								{
 									Name:        "test release",
 									ValuesFiles: []string{"values.yaml"},
 								},
@@ -86,7 +86,7 @@ profiles:
 				Build: next.BuildConfig{
 					TagPolicy: next.TagPolicy{},
 					Artifacts: []*next.Artifact{
-						&next.Artifact{
+						{
 							ImageName:    "gcr.io/k8s-skaffold/skaffold-example",
 							ArtifactType: next.ArtifactType{},
 						},
@@ -110,12 +110,12 @@ profiles:
 					},
 				},
 				Profiles: []next.Profile{
-					next.Profile{
+					{
 						Name: "test profile",
 						Build: next.BuildConfig{
 							TagPolicy: next.TagPolicy{},
 							Artifacts: []*next.Artifact{
-								&next.Artifact{
+								{
 									ImageName:    "gcr.io/k8s-skaffold/skaffold-example",
 									ArtifactType: next.ArtifactType{},
 								},

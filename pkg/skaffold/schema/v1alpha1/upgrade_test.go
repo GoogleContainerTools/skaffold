@@ -86,7 +86,7 @@ deploy:
 						GitTagger: &next.GitTagger{},
 					},
 					Artifacts: []*next.Artifact{
-						&next.Artifact{
+						{
 							ImageName: "gcr.io/k8s-skaffold/skaffold-example",
 							ArtifactType: next.ArtifactType{
 								DockerArtifact: &next.DockerArtifact{},
