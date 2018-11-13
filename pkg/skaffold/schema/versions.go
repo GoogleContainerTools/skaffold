@@ -21,6 +21,7 @@ import (
 	"io"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	apiversion "github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -109,7 +110,7 @@ func UpgradeToLatest(out io.Writer, vc util.VersionedConfig) (util.VersionedConf
 		return nil, fmt.Errorf("config version %s is too new for this version of skaffold: upgrade skaffold", vc.GetVersion())
 	}
 
-	out.Write([]byte(fmt.Sprintf("config version %s out of date: upgrading to latest (%s)\n", vc.GetVersion(), latest.Version)))
+	logrus.Warnf("config version %s out of date: upgrading to latest (%s)\n", vc.GetVersion(), latest.Version)
 
 	for vc.GetVersion() != latest.Version {
 		vc, err = vc.Upgrade()
