@@ -51,7 +51,8 @@ deploy:
     manifests:
     - k8s/deployment.yaml
 `,
-			outputYaml: fmt.Sprintf(`apiVersion: %s
+			outputYaml: fmt.Sprintf(`config version skaffold/v1alpha4 out of date: upgrading to latest (%s)
+apiVersion: %s
 kind: Config
 build:
   artifacts:
@@ -66,7 +67,7 @@ deploy:
   kubectl:
     manifests:
     - k8s/deployment.yaml
-`, latest.Version),
+`, latest.Version, latest.Version),
 		},
 		{
 			name: "v1alpha1 to latest",
@@ -82,7 +83,8 @@ deploy:
     - paths:
       - k8s/deployment.yaml
 `,
-			outputYaml: fmt.Sprintf(`apiVersion: %s
+			outputYaml: fmt.Sprintf(`config version skaffold/v1alpha1 out of date: upgrading to latest (%s)
+apiVersion: %s
 kind: Config
 build:
   artifacts:
@@ -93,7 +95,7 @@ deploy:
   kubectl:
     manifests:
     - k8s/deployment.yaml
-`, latest.Version),
+`, latest.Version, latest.Version),
 		},
 	}
 
