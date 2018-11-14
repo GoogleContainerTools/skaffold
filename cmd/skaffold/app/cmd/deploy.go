@@ -53,7 +53,7 @@ func runDeploy(out io.Writer) error {
 	defer cancel()
 	catchCtrlC(cancel)
 
-	r, config, err := newRunner(opts)
+	r, config, err := newRunner(out, opts)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}
