@@ -33,6 +33,5 @@ golangci-lint run \
 	-E misspell \
 	-E unconvert \
 	-E unparam \
-	-D typecheck \
 	-D errcheck \
   --skip-dirs vendor
