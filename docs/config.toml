@@ -5,7 +5,7 @@ Title = "Skaffold"
 enableRobotsTXT = true
 
 # Hugo allows theme composition (and inheritance). The precedence is from left to right.
-theme = ["docsy-rc"]
+theme = ["docsy-skaffold"]
 
 # Will give values to .Lastmod etc.
 enableGitInfo = true
