@@ -1,0 +1,3 @@
+[submodule "docs/themes/docsy-rc"]
+	path = docs/themes/docsy-rc
+	url = https://github.com/LisaFC/tech-doc-hugo-theme.git

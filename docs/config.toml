@@ -1,10 +1,11 @@
 baseURL = "https://skaffold.dev"
 title = "Skaffold"
+Title = "Skaffold"
 
 enableRobotsTXT = true
 
 # Hugo allows theme composition (and inheritance). The precedence is from left to right.
-theme = ["docsy"]
+theme = ["docsy-rc"]
 
 # Will give values to .Lastmod etc.
 enableGitInfo = true
@@ -57,7 +58,7 @@ anchor = "smart"
 [languages]
 [languages.en]
 title = "Skaffold"
-description = "TechOS is containers revisited"
+description = "Easy and Repeatable Kubernetes Development"
 languageName ="English"
 # Weight used for sorting.
 weight = 1
@@ -81,29 +82,16 @@ sidebar_menu_compact = false
 breadcrumb_disable = false
 
 [params.links]
-# End user relevant links. These will show up on left side of footer.
-[[params.links.user]]
-	name = "Mailing List"
-	url = "https://example.org/mail"
-	icon = "fa fa-envelope"
-[[params.links.user]]
-	name ="Twitter"
-	url = "https://example.org/twitter"
-	icon = "fab fa-twitter"
-[[params.links.user]]
-	name = "Stack Overflow"
-	url = "https://example.org/stack"
-	icon = "fab fa-stack-overflow"
 # Developer relevant links. These will show up on right side of footer.
 [[params.links.developer]]
 	name = "GitHub"
-	url = "https://example.org/github"
+	url = "https://github.com/GoogleContainerTools/skaffold"
 	icon = "fab fa-github"
 [[params.links.developer]]
 	name = "Slack"
-	url = "https://example.org/slack"
+	url = "https://kubernetes.slack.com/messages/CABQMSZA6/"
 	icon = "fab fa-slack"
 [[params.links.developer]]
 	name = "Mailing List"
-	url = "https://example.org/mail"
+	url = "https://groups.google.com/forum/#!forum/skaffold-users"
 	icon = "fa fa-envelope"
