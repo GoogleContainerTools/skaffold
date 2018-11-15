@@ -25,7 +25,6 @@ fi
 
 golangci-lint run \
 	--no-config \
-	--disable-all \
 	-E goconst \
 	-E goimports \
 	-E golint \
@@ -34,4 +33,6 @@ golangci-lint run \
 	-E misspell \
 	-E unconvert \
 	-E unparam \
+	-D typecheck \
+	-D errcheck \
   --skip-dirs vendor
