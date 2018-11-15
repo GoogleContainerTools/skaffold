@@ -20,11 +20,12 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 if ! [ -x "$(command -v golangci-lint)" ]; then
 	echo "Installing GolangCI-Lint"
-	${DIR}/install_golint.sh -b $GOPATH/bin v1.9.3
+	${DIR}/install_golint.sh -b $GOPATH/bin v1.12.2
 fi
 
 golangci-lint run \
 	--no-config \
+	--disable-all \
 	-E goconst \
 	-E goimports \
 	-E golint \
@@ -33,4 +34,4 @@ golangci-lint run \
 	-E misspell \
 	-E unconvert \
 	-E unparam \
-	-D errcheck
+  --skip-dirs vendor
