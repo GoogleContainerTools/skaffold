@@ -45,8 +45,8 @@ RUN curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/v${K
 
 ENV KOMPOSE_VERSION=1.17.0
 RUN curl -L https://github.com/kubernetes/kompose/releases/download/v${KOMPOSE_VERSION}/kompose-linux-amd64 -o kompose && \
-    chmod +x kompose-linux-amd64 && \
-    mv kompose-linux-amd64 /usr/local/bin/kompose
+    chmod +x kompose && \
+    mv kompose /usr/local/bin
 
 RUN echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list \
   && curl https://bazel.build/bazel-release.pub.gpg | apt-key add -
