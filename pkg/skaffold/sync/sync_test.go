@@ -210,6 +210,32 @@ func TestNewSyncItem(t *testing.T) {
 				},
 			},
 		},
+		{
+			description: "test filepaths",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: map[string]string{
+					"**/**/*.js": ".",
+				},
+				Workspace: ".",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: watch.Events{
+				Added: []string{filepath.Join("node", "node/node.js")},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string]string{
+					filepath.Join("node", "node/node.js"): "node.js",
+				},
+				Delete: map[string]string{},
+			},
+		},
 	}
 
 	for _, test := range tests {
