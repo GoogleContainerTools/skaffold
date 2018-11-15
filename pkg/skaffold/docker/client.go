@@ -133,21 +133,11 @@ func newMinikubeAPIClient() (APIClient, error) {
 }
 
 func getUserAgentHeader() map[string]string {
-	if isSkaffoldUserAgentEnabled() {
-		userAgent := fmt.Sprintf("skaffold-%s", version.Get().Version)
-		logrus.Debugf("setting Docker user agent to %s\n", userAgent)
-		return map[string]string{
-			"User-Agent": userAgent,
-		}
+	userAgent := fmt.Sprintf("skaffold-%s", version.Get().Version)
+	logrus.Debugf("setting Docker user agent to %s\n", userAgent)
+	return map[string]string{
+		"User-Agent": userAgent,
 	}
-	return nil
-}
-
-//isSkaffoldUserAgentEnabled is by default true. If set to true docker push to registries
-//contains skaffold-<version> as User-Agent
-func isSkaffoldUserAgentEnabled() bool {
-	v := os.Getenv(constants.DockerUserAgentEnvironmentVariable)
-	return v == "" || strings.ToLower(v) == "true"
 }
 
 func detectWsl() (bool, error) {
