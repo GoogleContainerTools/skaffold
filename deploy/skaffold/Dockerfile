@@ -59,10 +59,9 @@ ENV PATH /usr/local/go/bin:/go/bin:/google-cloud-sdk/bin:$PATH
 
 FROM runtime_deps as builder
 
-ENV ASCIIDOCTOR_VERSION=1.5.7.1
-ENV ASCIIDOCTOR_PDF_VERSION=1.5.0.alpha.16
+ENV HUGO_VERSION=0.49.2
+
 RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
-RUN apt-get install --no-install-recommends --no-install-suggests -y \
         ca-certificates \
         curl \
         build-essential \
@@ -71,10 +70,9 @@ RUN apt-get install --no-install-recommends --no-install-suggests -y \
         python-setuptools \
         lsb-release \
         software-properties-common \
-        hugo \
         apt-transport-https && \
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
-    curl -sL https://deb.nodesource.com/setup_8.x | sudo bash - && \
+    curl -sL https://deb.nodesource.com/setup_8.x | bash - && \
     apt-key fingerprint 0EBFCD88 && \
     add-apt-repository \
            "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
@@ -82,7 +80,16 @@ RUN apt-get install --no-install-recommends --no-install-suggests -y \
            edge" && \
     apt-get -y update && \
     apt-get -y install docker-ce=17.12.0~ce-0~ubuntu nodejs && \
-    npm install -g firebase-tools
+    npm install -g  firebase-tools \
+                    postcss-cli \
+                    postcss-loader \
+                    postcss-import \
+                    postcss-preset-env \
+                    cssnano \
+                    sugarss && \
+    curl -LO https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_Linux-64bit.deb && \
+    dpkg -i hugo_extended_${HUGO_VERSION}_Linux-64bit.deb && \
+    rm hugo_extended_${HUGO_VERSION}_Linux-64bit.deb && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=golang:1.10 /usr/local/go /usr/local/go
