@@ -22,6 +22,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -45,6 +46,7 @@ import (
 const NoDockerfile = "None (image not built from these sources)"
 
 var (
+	composeFile  string
 	cliArtifacts []string
 	skipBuild    bool
 	force        bool
@@ -63,12 +65,22 @@ func NewCmdInit(out io.Writer) *cobra.Command {
 	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&skipBuild, "skip-build", false, "Skip generating build artifacts in skaffold config")
 	cmd.Flags().BoolVar(&force, "force", false, "Force the generation of the skaffold config")
+	cmd.Flags().StringVar(&composeFile, "compose-file", "", "Initialize from a docker-compose file")
 	cmd.Flags().StringArrayVarP(&cliArtifacts, "artifact", "a", nil, "'='-delimited dockerfile/image pair to generate build artifact\n(example: --artifact=/web/Dockerfile.web=gcr.io/web-project/image)")
 	return cmd
 }
 
 func doInit(out io.Writer) error {
 	rootDir := "."
+
+	if composeFile != "" {
+		// run kompose first to generate k8s manifests, then run skaffold init
+		logrus.Infof("running 'kompose convert' for file %s", composeFile)
+		komposeCmd := exec.Command("kompose", "convert", "-f", composeFile)
+		if err := util.RunCmd(komposeCmd); err != nil {
+			return errors.Wrap(err, "running kompose")
+		}
+	}
 
 	var potentialConfigs, k8sConfigs, dockerfiles, images []string
 	err := filepath.Walk(rootDir, func(path string, f os.FileInfo, e error) error {
