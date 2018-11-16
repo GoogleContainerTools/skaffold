@@ -119,10 +119,16 @@ type KanikoBuildContext struct {
 	LocalDir  *LocalDir `yaml:"localDir,omitempty" yamltags:"oneOf=buildContext"`
 }
 
+// KanikoCache contains fields related to kaniko caching
+type KanikoCache struct {
+	Repo string `yaml:"repo,omitempty"`
+}
+
 // KanikoBuild contains the fields needed to do a on-cluster build using
 // the kaniko image
 type KanikoBuild struct {
 	BuildContext   *KanikoBuildContext `yaml:"buildContext,omitempty"`
+	Cache          *KanikoCache        `yaml:"cache,omitempty"`
 	PullSecret     string              `yaml:"pullSecret,omitempty"`
 	PullSecretName string              `yaml:"pullSecretName,omitempty"`
 	Namespace      string              `yaml:"namespace,omitempty"`
