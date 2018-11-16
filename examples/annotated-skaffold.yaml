@@ -169,6 +169,9 @@ deploy:
     #   delete: [""]
 
  # helm:
+    # helm can be passed additional option flags on every command (Global)
+    # flags:
+    #   global: [""]
     # helm releases to deploy.
     # releases:
     # - name: skaffold-helm
