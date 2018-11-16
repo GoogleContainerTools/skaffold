@@ -211,7 +211,7 @@ func TestNewSyncItem(t *testing.T) {
 			},
 		},
 		{
-			description: "test filepaths",
+			description: "slashes in glob pattern",
 			artifact: &latest.Artifact{
 				ImageName: "test",
 				Sync: map[string]string{
@@ -226,12 +226,12 @@ func TestNewSyncItem(t *testing.T) {
 				},
 			},
 			evt: watch.Events{
-				Added: []string{filepath.Join("node", "node/node.js")},
+				Added: []string{filepath.Join("dir1", "dir2/node.js")},
 			},
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string]string{
-					filepath.Join("node", "node/node.js"): "node.js",
+					filepath.Join("dir1", "dir2/node.js"): "node.js",
 				},
 				Delete: map[string]string{},
 			},
