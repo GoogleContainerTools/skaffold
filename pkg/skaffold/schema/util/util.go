@@ -18,6 +18,9 @@ package util
 
 type VersionedConfig interface {
 	GetVersion() string
+	GetBuilderName() string
+	GetDeployerName() string
+	GetTaggerName() string
 	Parse([]byte, bool) error
 	Upgrade() (VersionedConfig, error)
 }

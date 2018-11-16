@@ -44,6 +44,29 @@ func (config *SkaffoldPipeline) GetVersion() string {
 	return config.APIVersion
 }
 
+// GetBuilderName returns the name of the chosen builder
+func (config *SkaffoldPipeline) GetBuilderName() string {
+	if config.Build.GoogleCloudBuild != nil {
+		return constants.GoogleCloudBuilderName
+	}
+	// default
+	return constants.LocalBuilderName
+}
+
+// GetDeployerName returns the name of the chosen deployer
+func (config *SkaffoldPipeline) GetDeployerName() string {
+	if config.Deploy.HelmDeploy != nil {
+		return constants.HelmDeployerName
+	}
+	// default
+	return constants.KubectlDeployerName
+}
+
+// GetTaggerName returns the name of the chosen tagger
+func (config *SkaffoldPipeline) GetTaggerName() string {
+	return constants.ShaTaggerName
+}
+
 // BuildConfig contains all the configuration for the build steps
 type BuildConfig struct {
 	Artifacts []*Artifact `yaml:"artifacts"`

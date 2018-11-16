@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
@@ -40,6 +41,45 @@ type SkaffoldPipeline struct {
 
 func (c *SkaffoldPipeline) GetVersion() string {
 	return c.APIVersion
+}
+
+// GetBuilderName returns the name of the chosen builder
+func (c *SkaffoldPipeline) GetBuilderName() string {
+	if c.Build.GoogleCloudBuild != nil {
+		return constants.GoogleCloudBuilderName
+	}
+	if c.Build.KanikoBuild != nil {
+		return constants.KanikoBuilderName
+	}
+	// default
+	return constants.LocalBuilderName
+}
+
+// GetDeployerName returns the name of the chosen deployer
+func (c *SkaffoldPipeline) GetDeployerName() string {
+	if c.Deploy.HelmDeploy != nil {
+		return constants.HelmDeployerName
+	}
+	if c.Deploy.KustomizeDeploy != nil {
+		return constants.KustomizeDeployerName
+	}
+	// default
+	return constants.KubectlDeployerName
+}
+
+// GetTaggerName returns the name of the chosen tagger
+func (c *SkaffoldPipeline) GetTaggerName() string {
+	if c.Build.TagPolicy.EnvTemplateTagger != nil {
+		return constants.EnvTemplateTaggerName
+	}
+	if c.Build.TagPolicy.ShaTagger != nil {
+		return constants.ShaTaggerName
+	}
+	if c.Build.TagPolicy.DateTimeTagger != nil {
+		return constants.DateTimeTaggerName
+	}
+	// default
+	return constants.GitTaggerName
 }
 
 // BuildConfig contains all the configuration for the build steps

@@ -61,6 +61,20 @@ const (
 
 	// A regex matching valid repository names (https://github.com/docker/distribution/blob/master/reference/reference.go)
 	RepositoryComponentRegex string = `^[a-z\d]+(?:(?:[_.]|__|-+)[a-z\d]+)*$`
+
+	LocalBuilderName           = "Local"
+	KanikoBuilderName          = "Kaniko"
+	GoogleCloudBuilderName     = "GoogleCloudBuild"
+	AzureContainerRegistryName = "AzureContainerRegistry"
+
+	KubectlDeployerName   = "Kubectl"
+	HelmDeployerName      = "Helm"
+	KustomizeDeployerName = "Kustomize"
+
+	ShaTaggerName         = "ShaTagger"
+	GitTaggerName         = "GitTagger"
+	EnvTemplateTaggerName = "EnvTemplateTagger"
+	DateTimeTaggerName    = "DateTimeTagger"
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}
