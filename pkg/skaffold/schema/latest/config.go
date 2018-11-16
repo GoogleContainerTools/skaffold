@@ -180,6 +180,13 @@ type KubectlFlags struct {
 // HelmDeploy contains the configuration needed for deploying with helm
 type HelmDeploy struct {
 	Releases []HelmRelease `yaml:"releases,omitempty"`
+	Flags    HelmFlags     `yaml:"flags,omitempty"`
+}
+
+// HelmFlags describes additional options flags that are passed on the command
+// line to helm on every command (Global)
+type HelmFlags struct {
+	Global []string `yaml:"global,omitempty"`
 }
 
 // KustomizeDeploy contains the configuration needed for deploying with kustomize.

@@ -108,6 +108,7 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 
 func (h *HelmDeployer) helm(ctx context.Context, out io.Writer, arg ...string) error {
 	args := append([]string{"--kube-context", h.kubeContext}, arg...)
+	args = append(args, h.Flags.Global...)
 
 	cmd := exec.CommandContext(ctx, "helm", args...)
 	cmd.Stdout = out
