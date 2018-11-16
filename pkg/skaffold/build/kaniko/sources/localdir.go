@@ -48,7 +48,7 @@ type LocalDir struct {
 
 // Setup for LocalDir creates a tarball of the buildcontext and stores it in /tmp
 func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string) (string, error) {
-	g.tarPath = filepath.Join("/tmp", fmt.Sprintf("context-%s.tar.gz", initialTag))
+	g.tarPath = filepath.Join("os.TempDir()", fmt.Sprintf("context-%s.tar.gz", initialTag))
 	color.Default.Fprintln(out, "Storing build context at", g.tarPath)
 
 	f, err := os.Create(g.tarPath)
@@ -105,12 +105,13 @@ func (g *LocalDir) ModifyPod(ctx context.Context, p *v1.Pod) error {
 		return errors.Wrap(err, "waiting for pod to initialize")
 	}
 	// Copy over the buildcontext tarball into the init container
-	copy := exec.CommandContext(ctx, "kubectl", "cp", g.tarPath, fmt.Sprintf("%s:/%s", p.Name, g.tarPath), "-c", initContainer, "-n", p.Namespace)
+	tarCopyPath := fmt.Sprintf("/tmp/%s", filepath.Base(g.tarPath))
+	copy := exec.CommandContext(ctx, "kubectl", "cp", g.tarPath, fmt.Sprintf("%s:%s", p.Name, tarCopyPath), "-c", initContainer, "-n", p.Namespace)
 	if err := util.RunCmd(copy); err != nil {
 		return errors.Wrap(err, "copying buildcontext into init container")
 	}
 	// Next, extract the buildcontext to the empty dir
-	extract := exec.CommandContext(ctx, "kubectl", "exec", p.Name, "-c", initContainer, "-n", p.Namespace, "--", "tar", "-xzf", g.tarPath, "-C", constants.DefaultKanikoEmptyDirMountPath)
+	extract := exec.CommandContext(ctx, "kubectl", "exec", p.Name, "-c", initContainer, "-n", p.Namespace, "--", "tar", "-xzf", tarCopyPath, "-C", constants.DefaultKanikoEmptyDirMountPath)
 	if err := util.RunCmd(extract); err != nil {
 		return errors.Wrap(err, "extracting buildcontext to empty dir")
 	}
