@@ -59,7 +59,7 @@ func (c *SkaffoldPipeline) GetBuilderName() string {
 		return constants.KanikoBuilderName
 	}
 	if c.Build.AzureContainerBuild != nil {
-		return constants.AzureContainerBuildName
+		return constants.AzureContainerRegistryName
 	}
 	// default
 	return constants.LocalBuilderName
