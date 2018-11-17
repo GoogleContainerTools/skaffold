@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -106,7 +105,7 @@ func intersect(context string, syncMap map[string]string, files []string) (map[s
 			}
 
 			if match {
-				staticPath := strings.Split(p, "*")[0]
+				staticPath := strings.Split(filepath.FromSlash(p), "*")[0]
 
 				// Every file must match at least one sync pattern, if not we'll have to
 				// skip the entire sync
@@ -117,7 +116,7 @@ func intersect(context string, syncMap map[string]string, files []string) (map[s
 				// a linux filesystem.
 				if util.HasMeta(p) {
 					relPathDynamic := strings.TrimPrefix(relPath, staticPath)
-					dst = path.Join(dst, relPathDynamic)
+					dst = filepath.Join(dst, relPathDynamic)
 				}
 				ret[f] = dst
 			}

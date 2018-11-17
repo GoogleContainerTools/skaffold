@@ -145,7 +145,7 @@ func TestNewSyncItem(t *testing.T) {
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string]string{
-					filepath.Join("node", "src/app/server/server.js"): "src/app/server/server.js",
+					filepath.Join("node", "src/app/server/server.js"): filepath.Join("src", "app/server/server.js"),
 				},
 				Delete: map[string]string{},
 			},
@@ -257,7 +257,7 @@ func TestNewSyncItem(t *testing.T) {
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string]string{
-					filepath.Join("dir1", "dir2/node.js"): "dir1/dir2/node.js",
+					filepath.Join("dir1", "dir2/node.js"): filepath.Join("dir1", "dir2/node.js"),
 				},
 				Delete: map[string]string{},
 			},
@@ -293,8 +293,8 @@ func TestIntersect(t *testing.T) {
 				filepath.Join("static", "*.html"): "/html",
 			},
 			expected: map[string]string{
-				filepath.Join("static", "index.html"): "/html/index.html",
-				filepath.Join("static", "test.html"):  "/html/test.html",
+				filepath.Join("static", "index.html"): filepath.Join("/html", "index.html"),
+				filepath.Join("static", "test.html"):  filepath.Join("/html", "test.html"),
 			},
 		},
 		{
@@ -305,7 +305,7 @@ func TestIntersect(t *testing.T) {
 				"*.js": "/",
 			},
 			expected: map[string]string{
-				filepath.Join("node", "server.js"): "/server.js",
+				filepath.Join("node", "server.js"): filepath.Join("/", "server.js"),
 			},
 		},
 		{
