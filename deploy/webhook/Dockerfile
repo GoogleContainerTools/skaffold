@@ -25,7 +25,7 @@ RUN curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-re
     chmod +x /usr/local/bin/kubectl
 
 
-ENV HUGO_VERSION=0.49.2
+ENV HUGO_VERSION=0.51
 RUN curl -LO https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_Linux-64bit.tar.gz && \
     tar -xzf hugo_${HUGO_VERSION}_Linux-64bit.tar.gz && \
     mv hugo /usr/local/bin/hugo
