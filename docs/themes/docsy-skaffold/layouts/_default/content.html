@@ -1,0 +1,6 @@
+<div class="td-content">
+	<h1>{{ .Title }}</h1>
+	{{ with .Params.description }}<div class="lead">{{ . | markdownify }}</div>{{ end }}
+	{{ .Content }}
+	<div class="text-muted mt-5 pt-3 border-top">{{ partial "page-meta-lastmod.html" . }}</div>
+</div>
