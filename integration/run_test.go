@@ -114,7 +114,7 @@ func TestRun(t *testing.T) {
 			description: "gcb builder example",
 			args:        []string{"run", "-p", "gcb"},
 			pods:        []string{"getting-started"},
-			dir:         "examples/getting-started",
+			dir:         "examples/structure-tests",
 			remoteOnly:  true,
 		},
 		{
@@ -408,9 +408,10 @@ func TestListConfig(t *testing.T) {
 
 func TestInit(t *testing.T) {
 	type testCase struct {
-		name string
-		dir  string
-		args []string
+		name             string
+		dir              string
+		args             []string
+		skipSkaffoldYaml bool
 	}
 
 	tests := []testCase{
@@ -426,16 +427,24 @@ func TestInit(t *testing.T) {
 				"-a", "leeroy-web/Dockerfile=gcr.io/k8s-skaffold/leeroy-web",
 			},
 		},
+		{
+			name:             "compose",
+			dir:              "../examples/compose",
+			args:             []string{"--compose-file", "docker-compose.yaml"},
+			skipSkaffoldYaml: true,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			oldYamlPath := filepath.Join(test.dir, "skaffold.yaml")
-			oldYaml, err := removeOldSkaffoldYaml(oldYamlPath)
-			if err != nil {
-				t.Fatalf("removing original skaffold.yaml: %s", err)
+			if !test.skipSkaffoldYaml {
+				oldYamlPath := filepath.Join(test.dir, "skaffold.yaml")
+				oldYaml, err := removeOldSkaffoldYaml(oldYamlPath)
+				if err != nil {
+					t.Fatalf("removing original skaffold.yaml: %s", err)
+				}
+				defer restoreOldSkaffoldYaml(oldYaml, oldYamlPath)
 			}
-			defer restoreOldSkaffoldYaml(oldYaml, oldYamlPath)
 
 			generatedYaml := "skaffold.yaml.out"
 			defer func() {

@@ -193,7 +193,7 @@ func groupVersionResource(disco discovery.DiscoveryInterface, gvk schema.GroupVe
 		}
 	}
 
-	return schema.GroupVersionResource{}, fmt.Errorf("Could not find resource for %s", gvk.String())
+	return schema.GroupVersionResource{}, fmt.Errorf("could not find resource for %s", gvk.String())
 }
 
 func copyMap(dest, from map[string]string) {

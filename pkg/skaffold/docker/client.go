@@ -28,6 +28,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -75,9 +77,9 @@ func newAPIClient(kubeContext string) (APIClient, error) {
 // It will "negotiate" the highest possible API version supported by both the client
 // and the server if there is a mismatch.
 func newEnvAPIClient() (APIClient, error) {
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithHTTPHeaders(getUserAgentHeader()))
 	if err != nil {
-		return nil, fmt.Errorf("Error getting docker client: %s", err)
+		return nil, fmt.Errorf("error getting docker client: %s", err)
 	}
 	cli.NegotiateAPIVersion(context.Background())
 
@@ -123,7 +125,19 @@ func newMinikubeAPIClient() (APIClient, error) {
 		version = api.DefaultVersion
 	}
 
-	return client.NewClient(host, version, httpclient, nil)
+	return client.NewClientWithOpts(
+		client.WithHost(host),
+		client.WithVersion(version),
+		client.WithHTTPClient(httpclient),
+		client.WithHTTPHeaders(getUserAgentHeader()))
+}
+
+func getUserAgentHeader() map[string]string {
+	userAgent := fmt.Sprintf("skaffold-%s", version.Get().Version)
+	logrus.Debugf("setting Docker user agent to %s\n", userAgent)
+	return map[string]string{
+		"User-Agent": userAgent,
+	}
 }
 
 func detectWsl() (bool, error) {
@@ -144,10 +158,10 @@ func getMiniKubeFilename() (string, error) {
 	if found, _ := detectWsl(); found {
 		filename, err := exec.LookPath("minikube.exe")
 		if err != nil {
-			return "", fmt.Errorf("Unable to find minikube.exe. Please add it to PATH environment variable")
+			return "", errors.New("unable to find minikube.exe. Please add it to PATH environment variable")
 		}
 		if _, err := os.Stat(filename); os.IsNotExist(err) {
-			return "", fmt.Errorf("Unable to find minikube.exe. File not found %s", filename)
+			return "", fmt.Errorf("unable to find minikube.exe. File not found %s", filename)
 		}
 		return filename, nil
 	}
@@ -172,7 +186,7 @@ func getMinikubeDockerEnv() (map[string]string, error) {
 		}
 		kv := strings.Split(line, "=")
 		if len(kv) != 2 {
-			return nil, fmt.Errorf("Unable to parse minikube docker-env keyvalue: %s, line: %s, output: %s", kv, line, string(out))
+			return nil, fmt.Errorf("unable to parse minikube docker-env keyvalue: %s, line: %s, output: %s", kv, line, string(out))
 		}
 		env[kv[0]] = kv[1]
 	}
@@ -183,7 +197,7 @@ func getMinikubeDockerEnv() (map[string]string, error) {
 		if err == nil {
 			env["DOCKER_CERT_PATH"] = strings.TrimRight(string(out), "\n")
 		} else {
-			return nil, fmt.Errorf("Can't run wslpath: %s", err)
+			return nil, fmt.Errorf("can't run wslpath: %s", err)
 		}
 	}
 

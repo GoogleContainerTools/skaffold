@@ -46,15 +46,17 @@ type HelmDeployer struct {
 
 	kubeContext string
 	namespace   string
+	defaultRepo string
 }
 
 // NewHelmDeployer returns a new HelmDeployer for a DeployConfig filled
 // with the needed configuration for `helm`
-func NewHelmDeployer(cfg *latest.HelmDeploy, kubeContext string, namespace string) *HelmDeployer {
+func NewHelmDeployer(cfg *latest.HelmDeploy, kubeContext string, namespace string, defaultRepo string) *HelmDeployer {
 	return &HelmDeployer{
 		HelmDeploy:  cfg,
 		kubeContext: kubeContext,
 		namespace:   namespace,
+		defaultRepo: defaultRepo,
 	}
 }
 
@@ -125,7 +127,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		color.Red.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
 		isInstalled = false
 	}
-	params, err := joinTagsToBuildResult(builds, r.Values)
+	params, err := h.joinTagsToBuildResult(builds, r.Values)
 	if err != nil {
 		return nil, errors.Wrap(err, "matching build results to chart values")
 	}
@@ -334,6 +336,24 @@ func (h *HelmDeployer) deleteRelease(ctx context.Context, out io.Writer, r lates
 	}
 
 	return nil
+}
+
+func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {
+	imageToBuildResult := map[string]build.Artifact{}
+	for _, build := range builds {
+		imageToBuildResult[build.ImageName] = build
+	}
+
+	paramToBuildResult := map[string]build.Artifact{}
+	for param, imageName := range params {
+		newImageName := util.SubstituteDefaultRepoIntoImage(h.defaultRepo, imageName)
+		build, ok := imageToBuildResult[newImageName]
+		if !ok {
+			return nil, fmt.Errorf("no build present for %s", imageName)
+		}
+		paramToBuildResult[param] = build
+	}
+	return paramToBuildResult, nil
 }
 
 func evaluateReleaseName(nameTemplate string) (string, error) {

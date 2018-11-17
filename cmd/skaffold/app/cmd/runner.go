@@ -17,21 +17,27 @@ limitations under the License.
 package cmd
 
 import (
+	"io"
+
+	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
 // newRunner creates a SkaffoldRunner and returns the SkaffoldPipeline associated with it.
-func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.SkaffoldPipeline, error) {
+func newRunner(out io.Writer, opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.SkaffoldPipeline, error) {
 	parsed, err := schema.ParseConfig(opts.ConfigurationFile, true)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "parsing skaffold config")
 	}
 
-	if err := schema.CheckVersionIsLatest(parsed.GetVersion()); err != nil {
+	// automatically upgrade older config
+	parsed, err = schema.UpgradeToLatest(out, parsed)
+	if err != nil {
 		return nil, nil, errors.Wrap(err, "invalid config")
 	}
 
@@ -41,10 +47,33 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 		return nil, nil, errors.Wrap(err, "applying profiles")
 	}
 
+	defaultRepo, err := configutil.GetDefaultRepo(opts.DefaultRepo)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "getting default repo")
+	}
+
+	if err = applyDefaultRepoSubstitution(config, defaultRepo); err != nil {
+		return nil, nil, errors.Wrap(err, "substituting default repos")
+	}
+
 	runner, err := runner.NewForConfig(opts, config)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "creating runner")
 	}
 
 	return runner, config, nil
+}
+
+func applyDefaultRepoSubstitution(config *latest.SkaffoldPipeline, defaultRepo string) error {
+	if defaultRepo == "" {
+		// noop
+		return nil
+	}
+	for _, artifact := range config.Build.Artifacts {
+		artifact.ImageName = util.SubstituteDefaultRepoIntoImage(defaultRepo, artifact.ImageName)
+	}
+	for _, testCase := range config.Test {
+		testCase.ImageName = util.SubstituteDefaultRepoIntoImage(defaultRepo, testCase.ImageName)
+	}
+	return nil
 }

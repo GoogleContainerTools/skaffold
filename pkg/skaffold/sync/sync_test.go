@@ -92,6 +92,39 @@ func TestNewSyncItem(t *testing.T) {
 			shouldErr: true,
 		},
 		{
+			description: "multiple sync patterns",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: map[string]string{
+					"*.js":   ".",
+					"*.html": ".",
+					"*.json": ".",
+				},
+				Workspace: "node",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: watch.Events{
+				Added:    []string{filepath.Join("node", "index.html")},
+				Modified: []string{filepath.Join("node", "server.js")},
+				Deleted:  []string{filepath.Join("node", "package.json")},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string]string{
+					filepath.Join("node", "server.js"):  "server.js",
+					filepath.Join("node", "index.html"): "index.html",
+				},
+				Delete: map[string]string{
+					filepath.Join("node", "package.json"): "package.json",
+				},
+			},
+		},
+		{
 			description: "sync all",
 			artifact: &latest.Artifact{
 				ImageName: "test",
@@ -175,6 +208,32 @@ func TestNewSyncItem(t *testing.T) {
 					ImageName: "test",
 					Tag:       "test:123",
 				},
+			},
+		},
+		{
+			description: "slashes in glob pattern",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: map[string]string{
+					"**/**/*.js": ".",
+				},
+				Workspace: ".",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: watch.Events{
+				Added: []string{filepath.Join("dir1", "dir2/node.js")},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string]string{
+					filepath.Join("dir1", "dir2/node.js"): "node.js",
+				},
+				Delete: map[string]string{},
 			},
 		},
 	}

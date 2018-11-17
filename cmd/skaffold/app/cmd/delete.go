@@ -43,7 +43,7 @@ func delete(out io.Writer) error {
 	defer cancel()
 	catchCtrlC(cancel)
 
-	runner, _, err := newRunner(opts)
+	runner, _, err := newRunner(out, opts)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}

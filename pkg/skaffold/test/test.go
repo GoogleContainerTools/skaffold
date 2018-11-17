@@ -32,7 +32,7 @@ import (
 // NewTester parses the provided test cases from the Skaffold config,
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
-func NewTester(testCases *[]latest.TestCase) (Tester, error) {
+func NewTester(testCases *latest.TestConfig) (Tester, error) {
 	// TODO(nkubala): copied this from runner.getDeployer(), this should be moved somewhere else
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -77,7 +77,7 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifa
 	return nil
 }
 
-func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes []build.Artifact, testCase latest.TestCase) error {
+func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes []build.Artifact, testCase *latest.TestCase) error {
 	if len(testCase.StructureTests) == 0 {
 		return nil
 	}

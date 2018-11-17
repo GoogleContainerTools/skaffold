@@ -20,6 +20,7 @@ type AppsService service
 // App represents a GitHub App.
 type App struct {
 	ID          *int64     `json:"id,omitempty"`
+	NodeID      *string    `json:"node_id,omitempty"`
 	Owner       *User      `json:"owner,omitempty"`
 	Name        *string    `json:"name,omitempty"`
 	Description *string    `json:"description,omitempty"`
@@ -33,6 +34,36 @@ type App struct {
 type InstallationToken struct {
 	Token     *string    `json:"token,omitempty"`
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+}
+
+// InstallationPermissions lists the permissions for metadata, contents, issues and single file for an installation.
+type InstallationPermissions struct {
+	Metadata   *string `json:"metadata,omitempty"`
+	Contents   *string `json:"contents,omitempty"`
+	Issues     *string `json:"issues,omitempty"`
+	SingleFile *string `json:"single_file,omitempty"`
+}
+
+// Installation represents a GitHub Apps installation.
+type Installation struct {
+	ID                  *int64                   `json:"id,omitempty"`
+	AppID               *int64                   `json:"app_id,omitempty"`
+	TargetID            *int64                   `json:"target_id,omitempty"`
+	Account             *User                    `json:"account,omitempty"`
+	AccessTokensURL     *string                  `json:"access_tokens_url,omitempty"`
+	RepositoriesURL     *string                  `json:"repositories_url,omitempty"`
+	HTMLURL             *string                  `json:"html_url,omitempty"`
+	TargetType          *string                  `json:"target_type,omitempty"`
+	SingleFileName      *string                  `json:"single_file_name,omitempty"`
+	RepositorySelection *string                  `json:"repository_selection,omitempty"`
+	Events              []string                 `json:"events,omitempty"`
+	Permissions         *InstallationPermissions `json:"permissions,omitempty"`
+	CreatedAt           *Timestamp               `json:"created_at,omitempty"`
+	UpdatedAt           *Timestamp               `json:"updated_at,omitempty"`
+}
+
+func (i Installation) String() string {
+	return Stringify(i)
 }
 
 // Get a single GitHub App. Passing the empty string will get
@@ -98,23 +129,7 @@ func (s *AppsService) ListInstallations(ctx context.Context, opt *ListOptions) (
 //
 // GitHub API docs: https://developer.github.com/v3/apps/#get-a-single-installation
 func (s *AppsService) GetInstallation(ctx context.Context, id int64) (*Installation, *Response, error) {
-	u := fmt.Sprintf("app/installations/%v", id)
-
-	req, err := s.client.NewRequest("GET", u, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// TODO: remove custom Accept header when this API fully launches.
-	req.Header.Set("Accept", mediaTypeIntegrationPreview)
-
-	i := new(Installation)
-	resp, err := s.client.Do(ctx, req, i)
-	if err != nil {
-		return nil, resp, err
-	}
-
-	return i, resp, nil
+	return s.getInstallation(ctx, fmt.Sprintf("app/installations/%v", id))
 }
 
 // ListUserInstallations lists installations that are accessible to the authenticated user.
@@ -166,4 +181,50 @@ func (s *AppsService) CreateInstallationToken(ctx context.Context, id int64) (*I
 	}
 
 	return t, resp, nil
+}
+
+// FindOrganizationInstallation finds the organization's installation information.
+//
+// GitHub API docs: https://developer.github.com/v3/apps/#find-organization-installation
+func (s *AppsService) FindOrganizationInstallation(ctx context.Context, org string) (*Installation, *Response, error) {
+	return s.getInstallation(ctx, fmt.Sprintf("orgs/%v/installation", org))
+}
+
+// FindRepositoryInstallation finds the repository's installation information.
+//
+// GitHub API docs: https://developer.github.com/v3/apps/#find-repository-installation
+func (s *AppsService) FindRepositoryInstallation(ctx context.Context, owner, repo string) (*Installation, *Response, error) {
+	return s.getInstallation(ctx, fmt.Sprintf("repos/%v/%v/installation", owner, repo))
+}
+
+// FindRepositoryInstallationByID finds the repository's installation information.
+//
+// Note: FindRepositoryInstallationByID uses the undocumented GitHub API endpoint /repositories/:id/installation.
+func (s *AppsService) FindRepositoryInstallationByID(ctx context.Context, id int64) (*Installation, *Response, error) {
+	return s.getInstallation(ctx, fmt.Sprintf("repositories/%d/installation", id))
+}
+
+// FindUserInstallation finds the user's installation information.
+//
+// GitHub API docs: https://developer.github.com/v3/apps/#find-repository-installation
+func (s *AppsService) FindUserInstallation(ctx context.Context, user string) (*Installation, *Response, error) {
+	return s.getInstallation(ctx, fmt.Sprintf("users/%v/installation", user))
+}
+
+func (s *AppsService) getInstallation(ctx context.Context, url string) (*Installation, *Response, error) {
+	req, err := s.client.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// TODO: remove custom Accept header when this API fully launches.
+	req.Header.Set("Accept", mediaTypeIntegrationPreview)
+
+	i := new(Installation)
+	resp, err := s.client.Do(ctx, req, i)
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return i, resp, nil
 }

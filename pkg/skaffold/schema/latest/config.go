@@ -17,12 +17,18 @@ limitations under the License.
 package latest
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
 )
 
-const Version string = "skaffold/v1alpha4"
+const Version string = "skaffold/v1alpha5"
+
+func Semver() semver.Version {
+	return apiversion.MustParse(Version)
+}
 
 // NewSkaffoldPipeline creates a SkaffoldPipeline
 func NewSkaffoldPipeline() util.VersionedConfig {
@@ -34,7 +40,7 @@ type SkaffoldPipeline struct {
 	Kind       string `yaml:"kind"`
 
 	Build    BuildConfig  `yaml:"build,omitempty"`
-	Test     []TestCase   `yaml:"test,omitempty"`
+	Test     TestConfig   `yaml:"test,omitempty"`
 	Deploy   DeployConfig `yaml:"deploy,omitempty"`
 	Profiles []Profile    `yaml:"profiles,omitempty"`
 }
@@ -132,6 +138,8 @@ type AzureContainerBuild struct {
 	ClientSecret   string `yaml:"clientSecret,omitempty"`
 	TenantID       string `yaml:"tenantId,omitempty"`
 }
+
+type TestConfig []*TestCase
 
 // TestCase is a struct containing all the specified test
 // configuration for an image.
@@ -237,7 +245,7 @@ type Artifact struct {
 type Profile struct {
 	Name   string       `yaml:"name,omitempty"`
 	Build  BuildConfig  `yaml:"build,omitempty"`
-	Test   []TestCase   `yaml:"test,omitempty"`
+	Test   TestConfig   `yaml:"test,omitempty"`
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
 }
 

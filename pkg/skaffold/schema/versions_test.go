@@ -23,7 +23,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"k8s.io/client-go/tools/clientcmd/api"
 )
@@ -97,6 +96,7 @@ func TestParseConfig(t *testing.T) {
 	defer cleanup()
 
 	var tests = []struct {
+		apiVersion  string
 		description string
 		config      string
 		expected    util.VersionedConfig
@@ -104,6 +104,7 @@ func TestParseConfig(t *testing.T) {
 		shouldErr   bool
 	}{
 		{
+			apiVersion:  latest.Version,
 			description: "Minimal config",
 			config:      minimalConfig,
 			expected: config(
@@ -114,6 +115,7 @@ func TestParseConfig(t *testing.T) {
 			),
 		},
 		{
+			apiVersion:  latest.Version,
 			description: "Simple config",
 			config:      simpleConfig,
 			expected: config(
@@ -125,6 +127,7 @@ func TestParseConfig(t *testing.T) {
 			),
 		},
 		{
+			apiVersion:  latest.Version,
 			description: "Complete config",
 			config:      completeConfig,
 			expected: config(
@@ -137,6 +140,7 @@ func TestParseConfig(t *testing.T) {
 			),
 		},
 		{
+			apiVersion:  latest.Version,
 			description: "Minimal Kaniko config",
 			config:      minimalKanikoConfig,
 			expected: config(
@@ -147,6 +151,7 @@ func TestParseConfig(t *testing.T) {
 			),
 		},
 		{
+			apiVersion:  latest.Version,
 			description: "Complete Kaniko config",
 			config:      completeKanikoConfig,
 			expected: config(
@@ -157,13 +162,21 @@ func TestParseConfig(t *testing.T) {
 			),
 		},
 		{
+			apiVersion:  latest.Version,
 			description: "Bad config",
 			config:      badConfig,
 			shouldErr:   true,
 		},
 		{
+			apiVersion:  latest.Version,
 			description: "two taggers defined",
 			config:      invalidConfig,
+			shouldErr:   true,
+		},
+		{
+			apiVersion:  "",
+			description: "ApiVersion not specified",
+			config:      minimalConfig,
 			shouldErr:   true,
 		},
 	}
@@ -173,7 +186,7 @@ func TestParseConfig(t *testing.T) {
 			tmp, cleanup := testutil.NewTempDir(t)
 			defer cleanup()
 
-			yaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, test.config)
+			yaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", test.apiVersion, test.config)
 			tmp.Write("skaffold.yaml", yaml)
 
 			cfg, err := ParseConfig(tmp.Path("skaffold.yaml"), true)
@@ -301,36 +314,6 @@ func withProfiles(profiles ...latest.Profile) func(*latest.SkaffoldPipeline) {
 	}
 }
 
-func TestCheckVersionIsLatest(t *testing.T) {
-	tests := []struct {
-		name      string
-		version   string
-		shouldErr bool
-	}{
-		{
-			name:    "latest api version",
-			version: latest.Version,
-		},
-		{
-			name:      "old api version",
-			version:   v1alpha1.Version,
-			shouldErr: true,
-		},
-		{
-			name:      "new api version",
-			version:   "skaffold/v9",
-			shouldErr: true,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			err := CheckVersionIsLatest(test.version)
-
-			testutil.CheckError(t, test.shouldErr, err)
-		})
-	}
-}
-
 func TestUpgradeToNextVersion(t *testing.T) {
 	for i, schemaVersion := range schemaVersions[0 : len(schemaVersions)-2] {
 		from := schemaVersion
@@ -346,7 +329,7 @@ func TestUpgradeToNextVersion(t *testing.T) {
 	}
 }
 
-func TestCantUpgradeFromLastestVersion(t *testing.T) {
+func TestCantUpgradeFromLatestVersion(t *testing.T) {
 	factory, present := schemaVersions.Find(latest.Version)
 	testutil.CheckDeepEqual(t, true, present)
 

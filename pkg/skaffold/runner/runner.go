@@ -24,10 +24,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/acr"
-
+	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/acr"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
@@ -74,24 +74,29 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 	}
 	logrus.Infof("Using kubectl context: %s", kubeContext)
 
+	defaultRepo, err := configutil.GetDefaultRepo(opts.DefaultRepo)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting default repo")
+	}
+
 	tagger, err := getTagger(cfg.Build.TagPolicy, opts.CustomTag)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing skaffold tag config")
+		return nil, errors.Wrap(err, "parsing tag config")
 	}
 
 	builder, err := getBuilder(&cfg.Build, kubeContext)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing skaffold build config")
+		return nil, errors.Wrap(err, "parsing build config")
 	}
 
 	tester, err := getTester(&cfg.Test)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing skaffold test config")
+		return nil, errors.Wrap(err, "parsing test config")
 	}
 
-	deployer, err := getDeployer(&cfg.Deploy, kubeContext, opts.Namespace)
+	deployer, err := getDeployer(&cfg.Deploy, kubeContext, opts.Namespace, defaultRepo)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing skaffold deploy config")
+		return nil, errors.Wrap(err, "parsing deploy config")
 	}
 
 	deployer = deploy.WithLabels(deployer, opts, builder, deployer, tagger)
@@ -136,20 +141,20 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string) (build.Builder, err
 		return acr.NewBuilder(cfg.AzureContainerBuild), nil
 
 	default:
-		return nil, fmt.Errorf("Unknown builder for config %+v", cfg)
+		return nil, fmt.Errorf("unknown builder for config %+v", cfg)
 	}
 }
 
-func getTester(cfg *[]latest.TestCase) (test.Tester, error) {
+func getTester(cfg *latest.TestConfig) (test.Tester, error) {
 	return test.NewTester(cfg)
 }
 
-func getDeployer(cfg *latest.DeployConfig, kubeContext string, namespace string) (deploy.Deployer, error) {
+func getDeployer(cfg *latest.DeployConfig, kubeContext string, namespace string, defaultRepo string) (deploy.Deployer, error) {
 	deployers := []deploy.Deployer{}
 
 	// HelmDeploy first, in case there are resources in Kubectl that depend on these...
 	if cfg.HelmDeploy != nil {
-		deployers = append(deployers, deploy.NewHelmDeployer(cfg.HelmDeploy, kubeContext, namespace))
+		deployers = append(deployers, deploy.NewHelmDeployer(cfg.HelmDeploy, kubeContext, namespace, defaultRepo))
 	}
 
 	if cfg.KubectlDeploy != nil {
@@ -158,11 +163,11 @@ func getDeployer(cfg *latest.DeployConfig, kubeContext string, namespace string)
 		if err != nil {
 			return nil, errors.Wrap(err, "finding current directory")
 		}
-		deployers = append(deployers, deploy.NewKubectlDeployer(cwd, cfg.KubectlDeploy, kubeContext, namespace))
+		deployers = append(deployers, deploy.NewKubectlDeployer(cwd, cfg.KubectlDeploy, kubeContext, namespace, defaultRepo))
 	}
 
 	if cfg.KustomizeDeploy != nil {
-		deployers = append(deployers, deploy.NewKustomizeDeployer(cfg.KustomizeDeploy, kubeContext, namespace))
+		deployers = append(deployers, deploy.NewKustomizeDeployer(cfg.KustomizeDeploy, kubeContext, namespace, defaultRepo))
 	}
 
 	if len(deployers) == 0 {
@@ -196,7 +201,7 @@ func getTagger(t latest.TagPolicy, customTag string) (tag.Tagger, error) {
 		return tag.NewDateTimeTagger(t.DateTimeTagger.Format, t.DateTimeTagger.TimeZone), nil
 
 	default:
-		return nil, fmt.Errorf("Unknown tagger for strategy %+v", t)
+		return nil, fmt.Errorf("unknown tagger for strategy %+v", t)
 	}
 }
 
@@ -460,6 +465,13 @@ func DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string,
 	}
 
 	if err != nil {
+		// if the context was cancelled act as if all is well
+		// TODO(dgageot): this should be even higher in the call chain.
+		if ctx.Err() == context.Canceled {
+			logrus.Debugln(errors.Wrap(err, "ignore error since context is cancelled"))
+			return nil, nil
+		}
+
 		return nil, err
 	}
 

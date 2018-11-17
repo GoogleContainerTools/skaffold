@@ -59,7 +59,7 @@ func NewCmdFix(out io.Writer) *cobra.Command {
 }
 
 func runFix(out io.Writer, cfg schemautil.VersionedConfig) error {
-	cfg, err := schema.UpgradeToLatest(cfg)
+	cfg, err := schema.UpgradeToLatest(out, cfg)
 	if err != nil {
 		return err
 	}

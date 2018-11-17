@@ -34,7 +34,6 @@ func NewCmdSet(out io.Writer) *cobra.Command {
 		Short: "Set a value in the global skaffold config",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			resolveKubectlContext()
 			if err := setConfigValue(args[0], args[1]); err != nil {
 				return err
 			}

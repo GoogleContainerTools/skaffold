@@ -17,6 +17,8 @@ limitations under the License.
 package util
 
 import (
+	"bufio"
+	"bytes"
 	"crypto/rand"
 	"fmt"
 	"io/ioutil"
@@ -83,7 +85,7 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 			return nil, errors.Wrap(err, "glob")
 		}
 		if files == nil {
-			return nil, fmt.Errorf("File pattern must match at least one file %s", path)
+			return nil, fmt.Errorf("file pattern must match at least one file %s", path)
 		}
 
 		for _, f := range files {
@@ -226,4 +228,16 @@ func AbsFile(workspace string, filename string) (string, error) {
 		return "", errors.Errorf("%s is a directory", file)
 	}
 	return filepath.Abs(file)
+}
+
+// NonEmptyLines scans the provided input and returns the non-empty strings found as an array
+func NonEmptyLines(input []byte) []string {
+	var result []string
+	scanner := bufio.NewScanner(bytes.NewReader(input))
+	for scanner.Scan() {
+		if line := scanner.Text(); len(line) > 0 {
+			result = append(result, line)
+		}
+	}
+	return result
 }

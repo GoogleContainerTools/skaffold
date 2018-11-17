@@ -42,7 +42,7 @@ func getClientConfig() (*restclient.Config, error) {
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
 	clientConfig, err := kubeConfig.ClientConfig()
 	if err != nil {
-		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
+		return nil, fmt.Errorf("error creating kubeConfig: %s", err)
 	}
 	return clientConfig, nil
 }

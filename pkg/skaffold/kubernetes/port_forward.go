@@ -27,8 +27,11 @@ import (
 	"syscall"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
+
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 )
@@ -51,6 +54,7 @@ type PortForwarder struct {
 type portForwardEntry struct {
 	resourceVersion int
 	podName         string
+	namespace       string
 	containerName   string
 	port            int32
 
@@ -70,15 +74,15 @@ type kubectlForwarder struct{}
 func (*kubectlForwarder) Forward(pfe *portForwardEntry) error {
 	logrus.Debugf("Port forwarding %s", pfe)
 	portNumber := fmt.Sprintf("%d", pfe.port)
-	cmd := exec.Command("kubectl", "port-forward", pfe.podName, portNumber, portNumber)
+	cmd := exec.Command("kubectl", "port-forward", pfe.podName, portNumber, portNumber, "--namespace", pfe.namespace)
 	pfe.cmd = cmd
 
 	buf := &bytes.Buffer{}
 	cmd.Stdout = buf
 	cmd.Stderr = buf
 
-	if err := cmd.Run(); err != nil && !IsTerminatedError(err) {
-		return errors.Wrapf(err, "port forwarding pod: %s, port: %s, err: %s", pfe.podName, portNumber, buf.String())
+	if err := cmd.Run(); err != nil && !util.IsTerminatedError(err) {
+		return errors.Wrapf(err, "port forwarding pod: %s/%s, port: %s, err: %s", pfe.namespace, pfe.podName, portNumber, buf.String())
 	}
 	return nil
 }
@@ -87,7 +91,7 @@ func (*kubectlForwarder) Forward(pfe *portForwardEntry) error {
 func (*kubectlForwarder) Stop(p *portForwardEntry) error {
 	logrus.Debugf("Terminating port-forward %s", p)
 	if p.cmd == nil {
-		return fmt.Errorf("No port-forward command found for %s", p)
+		return fmt.Errorf("no port-forward command found for %s", p)
 	}
 	if err := p.cmd.Process.Signal(syscall.SIGTERM); err != nil {
 		return errors.Wrap(err, "terminating port-forward process")
@@ -166,6 +170,9 @@ func (p *PortForwarder) portForwardPod(pod *v1.Pod) error {
 	if err != nil {
 		return errors.Wrap(err, "converting resource version to integer")
 	}
+
+	var g errgroup.Group
+
 	for _, c := range pod.Spec.Containers {
 		for _, port := range c.Ports {
 			// If the port is already port-forwarded by another container,
@@ -179,6 +186,7 @@ func (p *PortForwarder) portForwardPod(pod *v1.Pod) error {
 			entry := &portForwardEntry{
 				resourceVersion: resourceVersion,
 				podName:         pod.Name,
+				namespace:       pod.Namespace,
 				containerName:   c.Name,
 				port:            port.ContainerPort,
 			}
@@ -197,24 +205,18 @@ func (p *PortForwarder) portForwardPod(pod *v1.Pod) error {
 			color.Default.Fprintln(p.output, fmt.Sprintf("Port Forwarding %s %d -> %d", entry.podName, entry.port, entry.port))
 			p.forwardedPods.Store(entry.key(), entry)
 			p.forwardedPorts.Store(entry.port, entry.containerName)
-			if err := p.Forward(entry); err != nil {
-				return errors.Wrap(err, "port forwarding")
-			}
+
+			g.Go(func() error {
+				return p.Forward(entry)
+			})
 		}
 	}
 
-	return nil
-}
-
-// IsTerminatedError returns true if the error is type exec.ExitError and the corresponding process was terminated by SIGTERM
-// This error is given when a exec.Command is ran and terminated with a SIGTERM.
-func IsTerminatedError(err error) bool {
-	exitError, ok := err.(*exec.ExitError)
-	if !ok {
-		return false
+	if err := g.Wait(); err != nil {
+		return errors.Wrap(err, "port forwarding")
 	}
-	ws := exitError.Sys().(syscall.WaitStatus)
-	return ws.Signal() == syscall.SIGTERM
+
+	return nil
 }
 
 // Key is an identifier for the lock on a port during the skaffold dev cycle.
