@@ -1,6 +1,0 @@
-[submodule "assets/vendor/bootstrap"]
-	path = assets/vendor/bootstrap
-	url = https://github.com/twbs/bootstrap.git
-[submodule "assets/vendor/Font-Awesome"]
-	path = assets/vendor/Font-Awesome
-	url = https://github.com/FortAwesome/Font-Awesome.git

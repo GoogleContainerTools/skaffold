@@ -1,6 +1,0 @@
-[submodule "docs/themes/docsy-rc"]
-	path = docs/themes/docsy-rc
-	url = https://github.com/LisaFC/tech-doc-hugo-theme.git
-[submodule "docs/themes/docsy-skaffold"]
-	path = docs/themes/docsy-skaffold
-	url = https://github.com/michaelawyu/tech-doc-hugo-theme.git
