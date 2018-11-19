@@ -55,6 +55,13 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 	}
 	args = append(args, docker.GetBuildArgs(artifact.DockerArtifact)...)
 
+	if cfg.Cache != nil {
+		args = append(args, "--cache=true")
+		if cfg.Cache.Repo != "" {
+			args = append(args, fmt.Sprintf("--cache-repo=%s", cfg.Cache.Repo))
+		}
+	}
+
 	pods := client.CoreV1().Pods(cfg.Namespace)
 	p, err := pods.Create(s.Pod(args))
 	if err != nil {

@@ -111,11 +111,16 @@ build:
   # If gcsBucket is specified, skaffold will send sources to the GCS bucket provided
   # Kaniko also needs access to a service account to push the final image.
   # See https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster
+  # If cache is specified, kaniko will use a remote cache which will speed up builds.
+  # A cache repo can be specified to store cached layers, otherwise one will be inferred
+  # from the image name. See https://github.com/GoogleContainerTools/kaniko#caching 
   #
   # kaniko:
   #   buildContext:
   #     gcsBucket: k8s-skaffold
   #     localDir: {}
+  #   cache:
+  #     repo: gcr.io/my-project/skaffold/cache
   #   pullSecret: /a/secret/path/serviceaccount.json
   #   namespace: default
   #   timeout: 20m
