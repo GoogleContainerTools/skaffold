@@ -48,7 +48,7 @@ type LocalDir struct {
 
 // Setup for LocalDir creates a tarball of the buildcontext and stores it in /tmp
 func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string) (string, error) {
-	g.tarPath = filepath.Join("os.TempDir()", fmt.Sprintf("context-%s.tar.gz", initialTag))
+	g.tarPath = filepath.Join(os.TempDir(), fmt.Sprintf("context-%s.tar.gz", initialTag))
 	color.Default.Fprintln(out, "Storing build context at", g.tarPath)
 
 	f, err := os.Create(g.tarPath)
