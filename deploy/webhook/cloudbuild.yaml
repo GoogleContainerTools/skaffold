@@ -20,3 +20,15 @@ steps:
   - 'run'
   - '--tag'
   - '${COMMIT_SHA}'
+# Build and push latest version of the docs-controller image
+- name: gcr.io/cloud-builders/docker
+  args:
+  - 'build'
+  - '-t'
+  - 'gcr.io/k8s-skaffold/docs-controller:latest'
+  - '-f'
+  - 'deploy/webhook/Dockerfile'
+  - '.'
+images: [
+  'gcr.io/k8s-skaffold/docs-controller:latest'
+]
