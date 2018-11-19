@@ -27,7 +27,7 @@ In addition, as pages likely have more than one such navigation section, it's ad
 
 ## Working with icons
 
-Looking to use an icon or symbol in place of text for some pagination links? Be sure to provide proper screen reader support with `aria` attributes.
+Looking to use an icon or symbol in place of text for some pagination links? Be sure to provide proper screen reader support with `aria` attributes and the `.sr-only` utility.
 
 {% capture example %}
 <nav aria-label="Page navigation example">
@@ -35,6 +35,7 @@ Looking to use an icon or symbol in place of text for some pagination links? Be 
     <li class="page-item">
       <a class="page-link" href="#" aria-label="Previous">
         <span aria-hidden="true">&laquo;</span>
+        <span class="sr-only">Previous</span>
       </a>
     </li>
     <li class="page-item"><a class="page-link" href="#">1</a></li>
@@ -43,6 +44,7 @@ Looking to use an icon or symbol in place of text for some pagination links? Be 
     <li class="page-item">
       <a class="page-link" href="#" aria-label="Next">
         <span aria-hidden="true">&raquo;</span>
+        <span class="sr-only">Next</span>
       </a>
     </li>
   </ul>
@@ -60,10 +62,10 @@ While the `.disabled` class uses `pointer-events: none` to _try_ to disable the 
 <nav aria-label="...">
   <ul class="pagination">
     <li class="page-item disabled">
-      <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+      <a class="page-link" href="#" tabindex="-1">Previous</a>
     </li>
     <li class="page-item"><a class="page-link" href="#">1</a></li>
-    <li class="page-item active" aria-current="page">
+    <li class="page-item active">
       <a class="page-link" href="#">2 <span class="sr-only">(current)</span></a>
     </li>
     <li class="page-item"><a class="page-link" href="#">3</a></li>
@@ -84,7 +86,7 @@ You can optionally swap out active or disabled anchors for `<span>`, or omit the
       <span class="page-link">Previous</span>
     </li>
     <li class="page-item"><a class="page-link" href="#">1</a></li>
-    <li class="page-item active" aria-current="page">
+    <li class="page-item active">
       <span class="page-link">
         2
         <span class="sr-only">(current)</span>
@@ -106,11 +108,8 @@ Fancy larger or smaller pagination? Add `.pagination-lg` or `.pagination-sm` for
 {% capture example %}
 <nav aria-label="...">
   <ul class="pagination pagination-lg">
-    <li class="page-item active" aria-current="page">
-      <span class="page-link">
-        1
-        <span class="sr-only">(current)</span>
-      </span>
+    <li class="page-item disabled">
+      <a class="page-link" href="#" tabindex="-1">1</a>
     </li>
     <li class="page-item"><a class="page-link" href="#">2</a></li>
     <li class="page-item"><a class="page-link" href="#">3</a></li>
@@ -122,11 +121,8 @@ Fancy larger or smaller pagination? Add `.pagination-lg` or `.pagination-sm` for
 {% capture example %}
 <nav aria-label="...">
   <ul class="pagination pagination-sm">
-    <li class="page-item active" aria-current="page">
-      <span class="page-link">
-        1
-        <span class="sr-only">(current)</span>
-      </span>
+    <li class="page-item disabled">
+      <a class="page-link" href="#" tabindex="-1">1</a>
     </li>
     <li class="page-item"><a class="page-link" href="#">2</a></li>
     <li class="page-item"><a class="page-link" href="#">3</a></li>
@@ -143,7 +139,7 @@ Change the alignment of pagination components with [flexbox utilities]({{ site.b
 <nav aria-label="Page navigation example">
   <ul class="pagination justify-content-center">
     <li class="page-item disabled">
-      <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+      <a class="page-link" href="#" tabindex="-1">Previous</a>
     </li>
     <li class="page-item"><a class="page-link" href="#">1</a></li>
     <li class="page-item"><a class="page-link" href="#">2</a></li>
@@ -160,7 +156,7 @@ Change the alignment of pagination components with [flexbox utilities]({{ site.b
 <nav aria-label="Page navigation example">
   <ul class="pagination justify-content-end">
     <li class="page-item disabled">
-      <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+      <a class="page-link" href="#" tabindex="-1">Previous</a>
     </li>
     <li class="page-item"><a class="page-link" href="#">1</a></li>
     <li class="page-item"><a class="page-link" href="#">2</a></li>

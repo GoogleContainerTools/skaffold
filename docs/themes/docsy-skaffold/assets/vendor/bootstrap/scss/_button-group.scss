@@ -22,6 +22,14 @@
       z-index: 1;
     }
   }
+
+  // Prevent double borders when buttons are next to each other
+  .btn + .btn,
+  .btn + .btn-group,
+  .btn-group + .btn,
+  .btn-group + .btn-group {
+    margin-left: -$btn-border-width;
+  }
 }
 
 // Optional: Group multiple button groups together for a toolbar
@@ -36,10 +44,8 @@
 }
 
 .btn-group {
-  // Prevent double borders when buttons are next to each other
-  > .btn:not(:first-child),
-  > .btn-group:not(:first-child) {
-    margin-left: -$btn-border-width;
+  > .btn:first-child {
+    margin-left: 0;
   }
 
   // Reset rounded corners
@@ -113,14 +119,17 @@
   align-items: flex-start;
   justify-content: center;
 
-  > .btn,
-  > .btn-group {
+  .btn,
+  .btn-group {
     width: 100%;
   }
 
-  > .btn:not(:first-child),
-  > .btn-group:not(:first-child) {
+  > .btn + .btn,
+  > .btn + .btn-group,
+  > .btn-group + .btn,
+  > .btn-group + .btn-group {
     margin-top: -$btn-border-width;
+    margin-left: 0;
   }
 
   // Reset rounded corners

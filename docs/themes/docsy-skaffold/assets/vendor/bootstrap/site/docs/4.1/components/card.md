@@ -382,7 +382,7 @@ Turn an image into a card background and overlay your card's text. Depending on 
 
 {% capture example %}
 <div class="card bg-dark text-white">
-  <img class="card-img" data-src="holder.js/100px270?text=Card image" alt="Card image">
+  <img class="card-img" data-src="holder.js/100px270/#55595c:#373a3c/text:Card image" alt="Card image">
   <div class="card-img-overlay">
     <h5 class="card-title">Card title</h5>
     <p class="card-text">This is a wider card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
@@ -391,11 +391,6 @@ Turn an image into a card background and overlay your card's text. Depending on 
 </div>
 {% endcapture %}
 {% include example.html content=example %}
-
-{% capture callout %}
-Note that content should not be larger than the height of the image. If content is larger than the image the content will be displayed outside the image.
-{% endcapture %}
-{% include callout.html content=callout type="info" %}
 
 ## Card styles
 
@@ -635,7 +630,7 @@ Cards can be organized into [Masonry](https://masonry.desandro.com/)-like column
   <div class="card bg-primary text-white text-center p-3">
     <blockquote class="blockquote mb-0">
       <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat.</p>
-      <footer class="blockquote-footer text-white">
+      <footer class="blockquote-footer">
         <small>
           Someone famous in <cite title="Source Title">Source Title</cite>
         </small>

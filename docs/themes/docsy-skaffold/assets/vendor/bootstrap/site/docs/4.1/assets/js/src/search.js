@@ -12,19 +12,6 @@
   var inputElement = document.getElementById('search-input')
   var siteDocsVersion = inputElement.getAttribute('data-docs-version')
 
-  function getOrigin() {
-    var location = window.location
-    var origin = location.origin
-
-    if (!origin) {
-      var port = location.port ? ':' + location.port : ''
-
-      origin = location.protocol + '//' + location.hostname + port
-    }
-
-    return origin
-  }
-
   window.docsearch({
     apiKey: '5990ad008512000bba2cf951ccf0332f',
     indexName: 'bootstrap',
@@ -40,11 +27,11 @@
     },
     transformData: function (hits) {
       return hits.map(function (hit) {
-        var siteurl = getOrigin()
-        var urlRE = /^https?:\/\/getbootstrap\.com/
-
         // When in production, return the result as is,
         // otherwise remove our url from it.
+        var siteurl = inputElement.getAttribute('data-siteurl')
+        var urlRE = /^https?:\/\/getbootstrap\.com/
+
         hit.url = siteurl.match(urlRE) ? hit.url : hit.url.replace(urlRE, '')
 
         return hit

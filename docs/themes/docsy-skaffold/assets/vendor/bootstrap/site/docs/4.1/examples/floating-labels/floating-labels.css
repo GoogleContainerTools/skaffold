@@ -1,3 +1,8 @@
+:root {
+  --input-padding-x: .75rem;
+  --input-padding-y: .75rem;
+}
+
 html,
 body {
   height: 100%;
@@ -28,7 +33,7 @@ body {
 .form-label-group > input,
 .form-label-group > label {
   height: 3.125rem;
-  padding: .75rem;
+  padding: var(--input-padding-y) var(--input-padding-x);
 }
 
 .form-label-group > label {
@@ -67,13 +72,13 @@ body {
 }
 
 .form-label-group input:not(:placeholder-shown) {
-  padding-top: 1.25rem;
-  padding-bottom: .25rem;
+  padding-top: calc(var(--input-padding-y) + var(--input-padding-y) * (2 / 3));
+  padding-bottom: calc(var(--input-padding-y) / 3);
 }
 
 .form-label-group input:not(:placeholder-shown) ~ label {
-  padding-top: .25rem;
-  padding-bottom: .25rem;
+  padding-top: calc(var(--input-padding-y) / 3);
+  padding-bottom: calc(var(--input-padding-y) / 3);
   font-size: 12px;
   color: #777;
 }

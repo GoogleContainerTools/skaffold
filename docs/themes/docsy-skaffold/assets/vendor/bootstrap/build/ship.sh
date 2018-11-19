@@ -34,11 +34,29 @@ printf "\n%sUpdating version number...%s" $magenta $end
 printf "\n%s=======================================================\n%s" $magenta $end
 npm run release-version "$current_version" "$1"
 
-# Build release
+# Compile latest CSS and JS
 printf "\n%s=======================================================%s" $magenta $end
-printf "\n%sBuilding release..%s" $magenta $end
+printf "\n%sCompile latest CSS and JS...%s" $magenta $end
 printf "\n%s=======================================================\n%s" $magenta $end
-npm run release
+npm run dist
+
+# Generate the SRI hashes
+printf "\n%s=======================================================%s" $magenta $end
+printf "\n%sGenerate the SRI hashes...%s" $magenta $end
+printf "\n%s=======================================================\n%s" $magenta $end
+npm run release-sri
+
+# Compress the dist files
+printf "\n%s=======================================================%s" $magenta $end
+printf "\n%sCompressing the dist files...%s" $magenta $end
+printf "\n%s=======================================================\n%s" $magenta $end
+npm run release-zip
+
+# Compile the docs
+printf "\n%s=======================================================%s" $magenta $end
+printf "\n%sCompile hosted documentation...%s" $magenta $end
+printf "\n%s=======================================================\n%s" $magenta $end
+npm run docs-github
 
 # Copy the contents of the built docs site over to `bs-docs` repo
 printf "\n%s=======================================================%s" $magenta $end

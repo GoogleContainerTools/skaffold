@@ -12,8 +12,6 @@ The carousel is a slideshow for cycling through a series of content, built with 
 
 In browsers where the [Page Visibility API](https://www.w3.org/TR/page-visibility/) is supported, the carousel will avoid sliding when the webpage is not visible to the user (such as when the browser tab is inactive, the browser window is minimized, etc.).
 
-{% include callout-info-prefersreducedmotion.md %}
-
 Please be aware that nested carousels are not supported, and carousels are generally not compliant with accessibility standards.
 
 Lastly, if you're building our JavaScript from source, it [requires `util.js`]({{ site.baseurl }}/docs/{{ site.docs_version }}/getting-started/javascript/#util).
@@ -192,35 +190,6 @@ Add `.carousel-fade` to your carousel to animate slides with a fade transition i
 {% endcapture %}
 {% include example.html content=example %}
 
-### Individual `.carousel-item` interval
-
-Add `data-interval=""` to a `.carousel-item` to change the amount of time to delay between automatically cycling to the next item.
-
-{% capture example %}
-<div id="carouselExampleInterval" class="carousel slide" data-ride="carousel">
-  <div class="carousel-inner">
-    <div class="carousel-item active" data-interval="10000">
-      <img class="d-block w-100" data-src="holder.js/800x400?auto=yes&bg=777&fg=555&text=First slide" alt="First slide">
-    </div>
-    <div class="carousel-item" data-interval="20000">
-      <img class="d-block w-100" data-src="holder.js/800x400?auto=yes&bg=666&fg=444&text=Second slide" alt="Second slide">
-    </div>
-    <div class="carousel-item">
-      <img class="d-block w-100" data-src="holder.js/800x400?auto=yes&bg=555&fg=333&text=Third slide" alt="Third slide">
-    </div>
-  </div>
-  <a class="carousel-control-prev" href="#carouselExampleInterval" role="button" data-slide="prev">
-    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-    <span class="sr-only">Previous</span>
-  </a>
-  <a class="carousel-control-next" href="#carouselExampleInterval" role="button" data-slide="next">
-    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-    <span class="sr-only">Next</span>
-  </a>
-</div>
-{% endcapture %}
-{% include example.html content=example %}
-
 
 ## Usage
 
@@ -282,12 +251,6 @@ Options can be passed via data attributes or JavaScript. For data attributes, ap
       <td>boolean</td>
       <td>true</td>
       <td>Whether the carousel should cycle continuously or have hard stops.</td>
-    </tr>
-    <tr>
-      <td>touch</td>
-      <td>boolean</td>
-      <td>true</td>
-      <td>Whether the carousel should support left/right swipe interactions on touchscreen devices.</td>
     </tr>
   </tbody>
 </table>

@@ -49,7 +49,7 @@
 }
 
 // Color contrast
-@function color-yiq($color, $dark: $yiq-text-dark, $light: $yiq-text-light) {
+@function color-yiq($color) {
   $r: red($color);
   $g: green($color);
   $b: blue($color);
@@ -57,9 +57,9 @@
   $yiq: (($r * 299) + ($g * 587) + ($b * 114)) / 1000;
 
   @if ($yiq >= $yiq-contrasted-threshold) {
-    @return $dark;
+    @return $yiq-text-dark;
   } @else {
-    @return $light;
+    @return $yiq-text-light;
   }
 }
 

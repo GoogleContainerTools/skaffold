@@ -10,7 +10,7 @@
  * details, see https://creativecommons.org/licenses/by/3.0/.
  */
 
-/* global ClipboardJS: false, anchors: false, Holder: false, bsCustomFileInput: false */
+/* global ClipboardJS: false, anchors: false, Holder: false */
 
 (function ($) {
   'use strict'
@@ -23,12 +23,6 @@
     })
 
     $('[data-toggle="popover"]').popover()
-
-    $('.toast')
-      .toast({
-        autohide: false
-      })
-      .toast('show')
 
     // Demos within modals
     $('.tooltip-test').tooltip()
@@ -114,7 +108,5 @@
       font: 'Helvetica',
       fontweight: 'normal'
     })
-
-    bsCustomFileInput.init()
   })
 }(jQuery))

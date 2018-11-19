@@ -18,21 +18,13 @@ accessibility:
   label: Accessibility
 animals:
   icons:
-    - cat
     - crow
-    - dog
     - dove
-    - dragon
     - feather
     - feather-alt
     - fish
     - frog
-    - hippo
-    - horse
     - kiwi-bird
-    - otter
-    - paw
-    - spider
   label: Animals
 arrows:
   icons:
@@ -171,64 +163,20 @@ audio-video:
     - undo-alt
     - video
     - volume-down
-    - volume-mute
     - volume-off
     - volume-up
     - youtube
   label: Audio & Video
-automotive:
-  icons:
-    - air-freshener
-    - ambulance
-    - bus
-    - bus-alt
-    - car
-    - car-alt
-    - car-battery
-    - car-crash
-    - car-side
-    - charging-station
-    - gas-pump
-    - motorcycle
-    - oil-can
-    - shuttle-van
-    - tachometer-alt
-    - taxi
-    - truck
-    - truck-monster
-    - truck-pickup
-  label: Automotive
-autumn:
-  icons:
-    - apple-alt
-    - campground
-    - cloud-sun
-    - drumstick-bite
-    - football-ball
-    - hiking
-    - mountain
-    - tractor
-    - tree
-    - wind
-    - wine-bottle
-  label: Autumn
 buildings:
   icons:
     - building
     - church
-    - gopuram
     - home
     - hospital
     - hospital-alt
-    - house-damage
     - industry
-    - mosque
-    - place-of-worship
     - school
-    - synagogue
-    - torii-gate
     - university
-    - vihara
   label: Buildings
 business:
   icons:
@@ -242,7 +190,6 @@ business:
     - building
     - bullhorn
     - bullseye
-    - business-time
     - calculator
     - calendar
     - calendar-alt
@@ -251,7 +198,6 @@ business:
     - chart-bar
     - chart-line
     - chart-pie
-    - city
     - clipboard
     - coffee
     - columns
@@ -268,14 +214,11 @@ business:
     - file
     - file-alt
     - folder
-    - folder-minus
     - folder-open
-    - folder-plus
     - glasses
     - globe
     - highlighter
     - industry
-    - landmark
     - marker
     - paperclip
     - paste
@@ -290,14 +233,13 @@ business:
     - phone-slash
     - phone-square
     - phone-volume
-    - print
     - project-diagram
     - registered
     - save
     - sitemap
-    - socks
     - sticky-note
     - stream
+    - suitcase
     - table
     - tag
     - tags
@@ -452,11 +394,9 @@ currency:
     - bitcoin
     - btc
     - dollar-sign
-    - ethereum
     - euro-sign
     - gg
     - gg-circle
-    - hryvnia
     - lira-sign
     - money-bill
     - money-bill-alt
@@ -500,7 +440,6 @@ design:
     - crosshairs
     - cut
     - drafting-compass
-    - draw-polygon
     - edit
     - eraser
     - eye
@@ -509,7 +448,6 @@ design:
     - fill
     - fill-drip
     - highlighter
-    - layer-group
     - magic
     - marker
     - object-group
@@ -604,26 +542,6 @@ editors:
     - unlink
     - wrench
   label: Editors
-education:
-  icons:
-    - apple-alt
-    - atom
-    - award
-    - bell
-    - bell-slash
-    - book-open
-    - book-reader
-    - chalkboard
-    - chalkboard-teacher
-    - graduation-cap
-    - laptop-code
-    - microscope
-    - music
-    - school
-    - shapes
-    - theater-masks
-    - user-graduate
-  label: Education
 emoji:
   icons:
     - angry
@@ -686,26 +604,6 @@ files:
     - save
     - sticky-note
   label: Files
-gaming-tabletop:
-  icons:
-    - acquisitions-incorporated
-    - book-dead
-    - critical-role
-    - d-and-d
-    - d-and-d-beyond
-    - dice-d20
-    - dice-d6
-    - dragon
-    - dungeon
-    - fantasy-flight-games
-    - fist-raised
-    - hat-wizard
-    - penny-arcade
-    - ring
-    - scroll
-    - skull-crossbones
-    - wizards-of-the-coast
-  label: Tabletop Gaming
 gender:
   icons:
     - genderless
@@ -722,24 +620,9 @@ gender:
     - venus-double
     - venus-mars
   label: Genders
-halloween:
-  icons:
-    - book-dead
-    - broom
-    - cat
-    - cloud-moon
-    - crow
-    - ghost
-    - hat-wizard
-    - mask
-    - skull-crossbones
-    - spider
-    - toilet-paper
-  label: Halloween
 hands:
   icons:
     - allergies
-    - fist-raised
     - hand-holding
     - hand-lizard
     - hand-paper
@@ -944,10 +827,6 @@ interfaces:
     - user
     - user-alt
     - user-circle
-    - volume-down
-    - volume-mute
-    - volume-off
-    - volume-up
     - wifi
     - wrench
   label: Interfaces
@@ -986,9 +865,7 @@ maps:
     - car
     - coffee
     - crosshairs
-    - directions
     - dollar-sign
-    - draw-polygon
     - eye
     - eye-slash
     - fighter-jet
@@ -1015,8 +892,6 @@ maps:
     - info
     - info-circle
     - key
-    - landmark
-    - layer-group
     - leaf
     - lemon
     - life-ring
@@ -1036,7 +911,6 @@ maps:
     - motorcycle
     - music
     - newspaper
-    - parking
     - paw
     - phone
     - phone-square
@@ -1049,7 +923,6 @@ maps:
     - recycle
     - road
     - rocket
-    - route
     - search
     - search-minus
     - search-plus
@@ -1068,7 +941,6 @@ maps:
     - thumbtack
     - ticket-alt
     - tint
-    - traffic-light
     - train
     - tree
     - trophy
@@ -1083,37 +955,18 @@ maps:
     - wine-glass
     - wrench
   label: Maps
-marketing:
-  icons:
-    - ad
-    - bullhorn
-    - bullseye
-    - comment-dollar
-    - comments-dollar
-    - envelope-open-text
-    - funnel-dollar
-    - lightbulb
-    - mail-bulk
-    - poll
-    - poll-h
-    - search-dollar
-    - search-location
-  label: Marketing
 mathematics:
   icons:
-    - calculator
     - divide
     - equals
     - greater-than
     - greater-than-equal
-    - infinity
     - less-than
     - less-than-equal
     - minus
     - not-equal
     - percentage
     - plus
-    - square-root-alt
     - subscript
     - superscript
     - times
@@ -1123,9 +976,6 @@ medical:
     - allergies
     - ambulance
     - band-aid
-    - bone
-    - bong
-    - brain
     - briefcase-medical
     - burn
     - cannabis
@@ -1142,27 +992,18 @@ medical:
     - hospital-alt
     - hospital-symbol
     - id-card-alt
-    - joint
-    - microscope
-    - mortar-pestle
     - notes-medical
     - pills
     - plus
-    - poop
     - prescription
     - prescription-bottle
     - prescription-bottle-alt
     - procedures
     - smoking
-    - smoking-ban
-    - star-of-life
     - stethoscope
     - syringe
     - tablets
-    - teeth
-    - teeth-open
     - thermometer
-    - tooth
     - user-md
     - vial
     - vials
@@ -1176,7 +1017,6 @@ moving:
     - couch
     - dolly
     - people-carry
-    - route
     - sign
     - suitcase
     - tape
@@ -1201,7 +1041,6 @@ objects:
     - blender
     - bomb
     - book
-    - book-dead
     - bookmark
     - briefcase
     - broadcast-tower
@@ -1230,8 +1069,6 @@ objects:
     - cubes
     - cut
     - dice
-    - dice-d20
-    - dice-d6
     - dice-five
     - dice-four
     - dice-one
@@ -1270,8 +1107,8 @@ objects:
     - glasses
     - globe
     - graduation-cap
-    - hat-wizard
     - hdd
+    - headphones
     - headphones
     - headphones-alt
     - headset
@@ -1310,6 +1147,7 @@ objects:
     - mobile
     - mobile-alt
     - money-bill
+    - money-bill
     - money-bill-alt
     - money-check
     - money-check-alt
@@ -1331,7 +1169,6 @@ objects:
     - plug
     - print
     - puzzle-piece
-    - ring
     - road
     - rocket
     - ruler-combined
@@ -1340,14 +1177,12 @@ objects:
     - save
     - school
     - screwdriver
-    - scroll
     - search
     - shield-alt
     - shopping-bag
     - shopping-basket
     - shopping-cart
     - shower
-    - skull-crossbones
     - snowflake
     - space-shuttle
     - star
@@ -1387,13 +1222,10 @@ objects:
   label: Objects
 payments-shopping:
   icons:
-    - alipay
     - amazon-pay
     - apple-pay
     - bell
-    - bitcoin
     - bookmark
-    - btc
     - bullhorn
     - camera
     - camera-retro
@@ -1433,57 +1265,6 @@ payments-shopping:
     - thumbs-up
     - trophy
   label: Payments & Shopping
-political:
-  icons:
-    - award
-    - balance-scale
-    - bullhorn
-    - check-double
-    - democrat
-    - donate
-    - dove
-    - fist-raised
-    - flag-usa
-    - handshake
-    - person-booth
-    - piggy-bank
-    - republican
-    - vote-yea
-  label: Political
-religion:
-  icons:
-    - ankh
-    - atom
-    - bible
-    - church
-    - cross
-    - dharmachakra
-    - dove
-    - gopuram
-    - hamsa
-    - hanukiah
-    - haykal
-    - jedi
-    - journal-whills
-    - kaaba
-    - khanda
-    - menorah
-    - mosque
-    - om
-    - pastafarianism
-    - peace
-    - place-of-worship
-    - pray
-    - praying-hands
-    - quran
-    - star-and-crescent
-    - star-of-david
-    - synagogue
-    - torah
-    - torii-gate
-    - vihara
-    - yin-yang
-  label: Religion
 shapes:
   icons:
     - bookmark
@@ -1497,7 +1278,6 @@ shapes:
     - heart
     - map-marker
     - play
-    - shapes
     - square
     - star
   label: Shapes
@@ -1547,10 +1327,6 @@ status:
     - calendar-times
     - cart-arrow-down
     - cart-plus
-    - comment
-    - comment-alt
-    - comment-slash
-    - compass
     - door-closed
     - door-open
     - exclamation
@@ -1562,39 +1338,22 @@ status:
     - file-alt
     - folder
     - folder-open
-    - gas-pump
     - info
     - info-circle
-    - lightbulb
     - lock
     - lock-open
-    - map-marker
-    - map-marker-alt
-    - microphone
-    - microphone-alt
-    - microphone-alt-slash
-    - microphone-slash
     - minus
     - minus-circle
     - minus-square
-    - parking
-    - phone
-    - phone-slash
     - plus
     - plus-circle
     - plus-square
-    - print
     - question
     - question-circle
     - shield-alt
     - shopping-cart
     - sign-in-alt
     - sign-out-alt
-    - signal
-    - smoking-ban
-    - star
-    - star-half
-    - star-half-alt
     - stream
     - thermometer-empty
     - thermometer-full
@@ -1603,23 +1362,10 @@ status:
     - thermometer-three-quarters
     - thumbs-down
     - thumbs-up
-    - tint
-    - tint-slash
     - toggle-off
     - toggle-on
     - unlock
     - unlock-alt
-    - user
-    - user-alt
-    - user-alt-slash
-    - user-slash
-    - video
-    - video-slash
-    - volume-down
-    - volume-mute
-    - volume-off
-    - volume-up
-    - wifi
   label: Status
 travel:
   icons:
@@ -1690,7 +1436,6 @@ users-people:
     - user-edit
     - user-friends
     - user-graduate
-    - user-injured
     - user-lock
     - user-md
     - user-minus
@@ -1711,11 +1456,7 @@ vehicles:
     - ambulance
     - bicycle
     - bus
-    - bus-alt
     - car
-    - car-alt
-    - car-crash
-    - car-side
     - fighter-jet
     - helicopter
     - motorcycle
@@ -1724,40 +1465,13 @@ vehicles:
     - rocket
     - ship
     - shopping-cart
-    - shuttle-van
     - space-shuttle
     - subway
     - taxi
     - train
     - truck
-    - truck-monster
-    - truck-pickup
     - wheelchair
   label: Vehicles
-weather:
-  icons:
-    - bolt
-    - cloud
-    - cloud-meatball
-    - cloud-moon
-    - cloud-moon-rain
-    - cloud-rain
-    - cloud-showers-heavy
-    - cloud-sun
-    - cloud-sun-rain
-    - meteor
-    - moon
-    - poo-storm
-    - rainbow
-    - smog
-    - snowflake
-    - sun
-    - temperature-high
-    - temperature-low
-    - umbrella
-    - water
-    - wind
-  label: Weather
 writing:
   icons:
     - archive

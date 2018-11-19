@@ -10,9 +10,9 @@
  * Licensed under MIT (https://github.com/twbs/bootstrap/blob/master/LICENSE)
  */
 
-const crypto = require('crypto')
 const fs = require('fs')
 const path = require('path')
+const sriToolbox = require('sri-toolbox')
 const sh = require('shelljs')
 
 sh.config.fatal = true
@@ -36,11 +36,7 @@ const files = [
     configPropertyName: 'jquery_hash'
   },
   {
-    file: 'dist/js/bootstrap.bundle.min.js',
-    configPropertyName: 'js_bundle_hash'
-  },
-  {
-    file: 'node_modules/popper.js/dist/umd/popper.min.js',
+    file: 'site/docs/4.1/assets/js/vendor/popper.min.js',
     configPropertyName: 'popper_hash'
   }
 ]
@@ -51,9 +47,9 @@ files.forEach((file) => {
       throw err
     }
 
-    const algo = 'sha384'
-    const hash = crypto.createHash(algo).update(data, 'utf8').digest('base64')
-    const integrity = `${algo}-${hash}`
+    const integrity = sriToolbox.generate({
+      algorithms: ['sha384']
+    }, data)
 
     console.log(`${file.configPropertyName}: ${integrity}`)
 
