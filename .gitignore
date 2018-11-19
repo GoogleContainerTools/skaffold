@@ -5,4 +5,4 @@ integration/examples/bazel/bazel-*
 .idea/
 docs/public
 docs/.firebase*
-docs/resources/_gen
+docs/resources
