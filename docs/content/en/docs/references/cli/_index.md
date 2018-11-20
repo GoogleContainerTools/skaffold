@@ -134,8 +134,7 @@ No flags available.
 `skaffold config` helps you view and modify Kubernetes-related Skaffold
 configuration. It has two sub-commands: `list` and `set`. 
 
-{{< alert >}}
-**Note** 
+{{< alert title="Note" >}} 
 
 **The Skaffold configuration specified here is different from the settings
 in the Skaffold configuration file, `skaffold.yaml`**.
@@ -151,7 +150,7 @@ configuration.
 configuration.
 
 {{< alert >}}
-**Note** 
+<b>Note</b><br> 
 
 By default, `skaffold config` views and modifies Kubernetes-related Skaffold
 configuration **in the global scale**.

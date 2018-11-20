@@ -46,9 +46,7 @@ stages into one simple command. Every time you run `skaffold dev`, the system
 6. Monitors the deployed artifacts
 7. Cleans up deployed artifacts on exit (Ctrl+C) 
 
-{{< alert >}}
-**Note**
-
+{{< alert title="Note" >}}
 Skaffold also supports skipping stages if you want to. 
 {{< /alert >}}
    

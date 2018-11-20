@@ -46,8 +46,7 @@ build:
 `sha256` is a content-based tagging strategy: it uses the Sha256 hash of
 your built image as the tag of the Docker image.
 
-{{< alert >}}
-**Note** 
+{{< alert title="Note" >}} 
 
 It is recommended that you use `sha256` tag policy during development, as
 it allows Kubernetes to re-deploy images every time your source code changes.
@@ -82,7 +81,7 @@ variables in the system for the variable `FOO`, and use its value to tag the
 image.
 
 {{< alert >}}
-**Note** 
+<b>Note</b><br> 
 
 `IMAGE_NAME` is a built-in variable whose value is the `imageName` field in
 the `artifacts` part of the `build` section.

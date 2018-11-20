@@ -42,12 +42,11 @@ In this quickstart, you will:
     </li>
 </ol>
 
-{{< alert >}}
-**Note**
+{{< alert title="Note" >}}
 
 If you use a non-local solution, your Docker client needs to be configured
 to push Docker images to an external Docker image registry. For setting up
-Docker with Google Container Registry, see [Google Container Registry Quickstart](https://cloud.google.com/container-registry/docs/quickstart).
+Docker with Google Container Registry, see <a href=https://cloud.google.com/container-registry/docs/quickstart>Google Container Registry Quickstart</a>.
 {{< /alert >}}
 
 ## Installing Skaffold
