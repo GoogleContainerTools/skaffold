@@ -4,5 +4,4 @@ integration/examples/bazel/bazel-*
 *.new
 .idea/
 docs/public
-docs/.firebase*
 docs/resources

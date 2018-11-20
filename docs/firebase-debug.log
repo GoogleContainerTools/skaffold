@@ -1,0 +1,23 @@
+[debug] [2018-11-20T21:22:10.636Z] ----------------------------------------------------------------------
+[debug] [2018-11-20T21:22:10.640Z] Command:       /usr/bin/node /usr/bin/firebase deploy --only hosting:head
+[debug] [2018-11-20T21:22:10.640Z] CLI Version:   6.1.0
+[debug] [2018-11-20T21:22:10.640Z] Platform:      linux
+[debug] [2018-11-20T21:22:10.640Z] Node Version:  v10.13.0
+[debug] [2018-11-20T21:22:10.641Z] Time:          Tue Nov 20 2018 13:22:10 GMT-0800 (Pacific Standard Time)
+[debug] [2018-11-20T21:22:10.641Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2018-11-20T21:22:10.647Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2018-11-20T21:22:10.647Z] > authorizing via signed-in user
+[debug] [2018-11-20T21:22:10.647Z] [iam] checking project k8s-skaffold for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2018-11-20T21:22:10.648Z] >>> HTTP REQUEST POST https://cloudresourcemanager.googleapis.com/v1/projects/k8s-skaffold:testIamPermissions  
+
+[debug] [2018-11-20T21:22:10.914Z] <<< HTTP RESPONSE 200
+[debug] [2018-11-20T21:22:10.916Z] >>> HTTP REQUEST GET https://firebase.googleapis.com/v1beta1/projects/k8s-skaffold  
+ 
+[debug] [2018-11-20T21:22:11.112Z] <<< HTTP RESPONSE 200
+[info] 
+[info] === Deploying to 'k8s-skaffold'...
+[info] 
+[info] i  deploying hosting
+[debug] [2018-11-20T21:22:11.119Z] >>> HTTP REQUEST POST https://firebasehosting.googleapis.com/v1beta1/sites/skaffold-latest/versions  
+
