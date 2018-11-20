@@ -64,7 +64,7 @@ ENV PATH /usr/local/go/bin:/go/bin:/google-cloud-sdk/bin:$PATH
 
 FROM runtime_deps as builder
 
-ENV HUGO_VERSION=0.49.2
+ENV HUGO_VERSION=0.51.0
 
 RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
         ca-certificates \
