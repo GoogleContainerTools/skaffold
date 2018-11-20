@@ -173,5 +173,6 @@ docs-controller-image:
 	docker build -t gcr.io/$(GCP_PROJECT)/docs-controller -f deploy/webhook/Dockerfile .
 
 .PHONY: preview-docs
-preview-docs: docs-controller-image
-	docker run -ti -v $(PWD):/app --workdir /app/docs -p 1313:1313 gcr.io/$(GCP_PROJECT)/docs-controller hugo serve --bind=0.0.0.0 -D
+preview-docs:
+	docker build -t skaffold-docs-previewer -f deploy/webhook/Dockerfile --target runtime_deps .
+	docker run -ti -v $(PWD):/app --workdir /app/docs -p 1313:1313 skaffold-docs-previewer bash -c "hugo serve --bind=0.0.0.0 -D && rm -rf public resources"
