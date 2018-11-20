@@ -188,3 +188,7 @@ submit-release-trigger:
 .PHONY: docs-controller-image
 docs-controller-image: 
 	docker build -t gcr.io/$(GCP_PROJECT)/docs-controller -f deploy/webhook/Dockerfile .
+
+.PHONY: preview-docs
+preview-docs:
+	docker run -ti -v $(PWD):/app --workdir /app/docs -p 1313:1313 gcr.io/k8s-skaffold/docs-controller hugo serve --bind=0.0.0.0 -D
