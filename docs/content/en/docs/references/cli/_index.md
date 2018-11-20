@@ -8,20 +8,20 @@ weight: 110
 Skaffold command-line interface provides the following commands:
 
 
-* [`skaffold run`](#skaffold-run) - to build & deploy once
-* [`skaffold dev`](#skaffold-dev) - to trigger the watch loop build & deploy workflow with cleanup on exit
+* [skaffold run](#skaffold-run) - to build & deploy once
+* [skaffold dev](#skaffold-dev) - to trigger the watch loop build & deploy workflow with cleanup on exit
 
-* [`skaffold build`](#skaffold-build) - to just build and tag your image(s)
-* [`skaffold deploy`](#skaffold-deploy) - to deploy the given image(s) 
-* [`skaffold delete`](#skaffold-delete) - to cleanup the deployed artifacts
+* [skaffold build](#skaffold-build) - to just build and tag your image(s)
+* [skaffold deploy](#skaffold-deploy) - to deploy the given image(s) 
+* [skaffold delete](#skaffold-delete) - to cleanup the deployed artifacts
 
-* [`skaffold init`](#skaffold-init) - to bootstrap skaffold.yaml
-* [`skaffold fix`](#skaffold-fix) - to upgrade from 
+* [skaffold init](#skaffold-init) - to bootstrap skaffold.yaml
+* [skaffold fix](#skaffold-fix) - to upgrade from 
 
-* [`skaffold help`](#skaffold-help) - print help
-* [`skaffold version`](#skaffold-version) - get Skaffold version
-* [`skaffold completion`](#skaffold-completion) - setup tab completion for the CLI 
-* [`skaffold config`](#skaffold-config) - manage context specific parameters
+* [skaffold help](#skaffold-help) - print help
+* [skaffold version](#skaffold-version) - get Skaffold version
+* [skaffold completion](#skaffold-completion) - setup tab completion for the CLI 
+* [skaffold config](#skaffold-config) - manage context specific parameters
 
 ## Global flags
 

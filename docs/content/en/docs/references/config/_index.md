@@ -43,11 +43,11 @@ profiles:
 
 API Version specifies the version of Skaffold API you would like to use.
 
-Currently, Skaffold offers three API versions:
-
 * `v1alpha1`
 * `v1alpha2`
-* `v1alpha3` (current version)
+* `v1alpha3` 
+* `v1alpha4`
+
 
 Different versions require different schemas of the `skaffold.yaml` file.
 This documentation features API version `v1alpha3`.
