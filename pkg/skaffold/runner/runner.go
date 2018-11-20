@@ -34,6 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/environments/gcb"
@@ -41,6 +42,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 )
 
@@ -111,6 +113,11 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 	if err != nil {
 		return nil, errors.Wrap(err, "creating watch trigger")
 	}
+
+	if err = event.InitializeState(&cfg.Build, &cfg.Deploy, opts.Address); err != nil {
+		return nil, errors.Wrap(err, "initializing global state")
+	}
+	event.LogSkaffoldMetadata(version.Get())
 
 	return &SkaffoldRunner{
 		Builder:    builder,

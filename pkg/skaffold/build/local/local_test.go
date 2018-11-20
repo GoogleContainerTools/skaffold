@@ -21,6 +21,8 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -188,7 +190,12 @@ func TestLocalRun(t *testing.T) {
 			defer func(w warnings.Warner) { warnings.Printf = w }(warnings.Printf)
 			fakeWarner := &warnings.Collect{}
 			warnings.Printf = fakeWarner.Warnf
-
+			config := &latest.BuildConfig{
+				BuildType: latest.BuildType{
+					LocalBuild: &latest.LocalBuild{},
+				},
+			}
+			event.InitializeState(config, nil, "")
 			l := Builder{
 				cfg:         &latest.LocalBuild{},
 				localDocker: docker.NewLocalDaemon(&test.api, nil),

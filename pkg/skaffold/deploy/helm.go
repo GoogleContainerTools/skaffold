@@ -33,6 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -69,17 +70,19 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 	var dRes []Artifact
 
 	labels := merge(labellers...)
+	event.HandleDeployEvent(event.InProgress)
 
 	for _, r := range h.Releases {
 		results, err := h.deployRelease(ctx, out, r, builds)
 		if err != nil {
 			releaseName, _ := evaluateReleaseName(r.Name)
+			event.HandleDeployEventWithError(event.Failed, err)
 			return errors.Wrapf(err, "deploying %s", releaseName)
 		}
 
 		dRes = append(dRes, results...)
 	}
-
+	event.HandleDeployEvent(event.Complete)
 	labelDeployResults(labels, dRes)
 	return nil
 }

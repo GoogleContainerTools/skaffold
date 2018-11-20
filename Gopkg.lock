@@ -282,7 +282,8 @@
   revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
 
 [[projects]]
-  digest = "1:5ae5b54d7cd695bafa92bf426b7c3d046f907260ec0fcb4fe5c368d937597c00"
+  branch = "master"
+  digest = "1:a5ba19196481d82d7f016c9280a7f3f7e3b6897a18a16be1425aba48cd395d97"
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
@@ -290,11 +291,11 @@
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
+    "ptypes/empty",
     "ptypes/timestamp",
   ]
   pruneopts = "NUT"
-  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
-  version = "v1.2.0"
+  revision = "347cf4a86c1cb8d262994d8ef5924d4576c5b331"
 
 [[projects]]
   branch = "master"
@@ -1314,6 +1315,9 @@
     "github.com/docker/docker/registry",
     "github.com/docker/go-connections/tlsconfig",
     "github.com/golang/glog",
+    "github.com/golang/protobuf/proto",
+    "github.com/golang/protobuf/ptypes/empty",
+    "github.com/golang/protobuf/ptypes/timestamp",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-containerregistry/pkg/authn",
     "github.com/google/go-containerregistry/pkg/name",
@@ -1340,6 +1344,7 @@
     "google.golang.org/api/cloudbuild/v1",
     "google.golang.org/api/googleapi",
     "google.golang.org/api/iterator",
+    "google.golang.org/grpc",
     "gopkg.in/AlecAivazis/survey.v1",
     "gopkg.in/russross/blackfriday.v2",
     "gopkg.in/src-d/go-git.v4",

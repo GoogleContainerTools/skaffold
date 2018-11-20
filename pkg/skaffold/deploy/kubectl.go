@@ -18,6 +18,7 @@ package deploy
 
 import (
 	"context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -67,9 +68,11 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	if err := k.kubectl.CheckVersion(ctx); err != nil {
 		color.Default.Fprintln(out, err)
 	}
+	event.HandleDeployEvent(event.InProgress)
 
 	manifests, err := k.readManifests(ctx)
 	if err != nil {
+		event.HandleDeployEventWithError(event.Failed, err)
 		return errors.Wrap(err, "reading manifests")
 	}
 
@@ -79,15 +82,23 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 
 	manifests, err = manifests.ReplaceImages(builds, k.defaultRepo)
 	if err != nil {
+		event.HandleDeployEventWithError(event.Failed, err)
 		return errors.Wrap(err, "replacing images in manifests")
 	}
 
 	manifests, err = manifests.SetLabels(merge(labellers...))
 	if err != nil {
+		event.HandleDeployEventWithError(event.Failed, err)
 		return errors.Wrap(err, "setting labels in manifests")
 	}
 
-	return k.kubectl.Apply(ctx, out, manifests)
+	err = k.kubectl.Apply(ctx, out, manifests)
+	if err != nil {
+		event.HandleDeployEventWithError(event.Failed, err)
+	}
+
+	event.HandleDeployEvent(event.Complete)
+	return err
 }
 
 // Cleanup deletes what was deployed by calling Deploy.

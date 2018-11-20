@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
@@ -33,6 +34,7 @@ func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 
 	for _, artifact := range artifacts {
 		color.Default.Fprintf(out, "Building [%s]...\n", artifact.ImageName)
+		event.HandleBuildEvent(artifact.ImageName, event.InProgress)
 
 		tag, present := tags[artifact.ImageName]
 		if !present {
@@ -41,8 +43,10 @@ func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 
 		finalTag, err := buildArtifact(ctx, out, artifact, tag)
 		if err != nil {
+			event.HandleBuildEventWithError(artifact.ImageName, event.Failed, err)
 			return nil, errors.Wrapf(err, "building [%s]", artifact.ImageName)
 		}
+		event.HandleBuildEvent(artifact.ImageName, event.Complete)
 
 		builds = append(builds, Artifact{
 			ImageName: artifact.ImageName,

@@ -29,6 +29,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -416,6 +417,12 @@ func TestHelmDeploy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
+			config := &latest.DeployConfig{
+				DeployType: latest.DeployType{
+					HelmDeploy: tt.deployer.HelmDeploy,
+				},
+			}
+			event.InitializeState(nil, config, "")
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = tt.cmd
 
