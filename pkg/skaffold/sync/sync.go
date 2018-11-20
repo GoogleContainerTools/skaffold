@@ -96,7 +96,7 @@ func intersect(context string, syncMap map[string]string, files []string) (map[s
 		}
 		var matches bool
 		for p, dst := range syncMap {
-			match, err := filepath.Match(p, relPath)
+			match, err := filepath.Match(filepath.FromSlash(p), relPath)
 			if err != nil {
 				return nil, errors.Wrapf(err, "pattern error for %s", relPath)
 			}

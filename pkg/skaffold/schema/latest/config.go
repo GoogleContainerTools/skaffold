@@ -17,12 +17,18 @@ limitations under the License.
 package latest
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
 )
 
 const Version string = "skaffold/v1alpha5"
+
+func Semver() semver.Version {
+	return apiversion.MustParse(Version)
+}
 
 // NewSkaffoldPipeline creates a SkaffoldPipeline
 func NewSkaffoldPipeline() util.VersionedConfig {
@@ -113,10 +119,16 @@ type KanikoBuildContext struct {
 	LocalDir  *LocalDir `yaml:"localDir,omitempty" yamltags:"oneOf=buildContext"`
 }
 
+// KanikoCache contains fields related to kaniko caching
+type KanikoCache struct {
+	Repo string `yaml:"repo,omitempty"`
+}
+
 // KanikoBuild contains the fields needed to do a on-cluster build using
 // the kaniko image
 type KanikoBuild struct {
 	BuildContext   *KanikoBuildContext `yaml:"buildContext,omitempty"`
+	Cache          *KanikoCache        `yaml:"cache,omitempty"`
 	PullSecret     string              `yaml:"pullSecret,omitempty"`
 	PullSecretName string              `yaml:"pullSecretName,omitempty"`
 	Namespace      string              `yaml:"namespace,omitempty"`

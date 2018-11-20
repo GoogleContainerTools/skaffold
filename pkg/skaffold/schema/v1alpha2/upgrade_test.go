@@ -14,49 +14,58 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha3
+package v1alpha2
 
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestPipelineUpgrade(t *testing.T) {
-	f := false
 	tests := []struct {
 		name     string
 		yaml     string
 		expected *next.SkaffoldPipeline
 	}{
 		{
-			name: "local build skip push",
-			yaml: `apiVersion: skaffold/v1alpha3
+			name: "helm release values file",
+			yaml: `apiVersion: skaffold/v1alpha2
 kind: Config
-build:
-  local:
-    skipPush: true
+deploy:
+  helm:
+    releases:
+    - name: test release
+      valuesFilePath: values.yaml
 `,
 			expected: &next.SkaffoldPipeline{
 				APIVersion: next.Version,
 				Kind:       "Config",
-				Build: next.BuildConfig{
-					BuildType: next.BuildType{
-						LocalBuild: &next.LocalBuild{
-							Push: &f,
+				Deploy: next.DeployConfig{
+					DeployType: next.DeployType{
+						HelmDeploy: &next.HelmDeploy{
+							Releases: []next.HelmRelease{
+								{
+									Name:        "test release",
+									ValuesFiles: []string{"values.yaml"},
+								},
+							},
 						},
 					},
 				},
 			},
 		},
 		{
-			name: "normal skaffold yaml",
-			yaml: `apiVersion: skaffold/v1alpha3
+			name: "normal skaffold yaml with kaniko",
+			yaml: `apiVersion: skaffold/v1alpha2
 kind: Config
 build:
   artifacts:
   - imageName: gcr.io/k8s-skaffold/skaffold-example
+  kaniko:
+    gcsBucket: k8s-skaffold
+    pullSecret: /a/secret/path/kaniko.json
 deploy:
   kubectl:
     manifests:
@@ -80,6 +89,14 @@ profiles:
 						{
 							ImageName:    "gcr.io/k8s-skaffold/skaffold-example",
 							ArtifactType: next.ArtifactType{},
+						},
+					},
+					BuildType: next.BuildType{
+						KanikoBuild: &next.KanikoBuild{
+							PullSecret: "/a/secret/path/kaniko.json",
+							BuildContext: next.KanikoBuildContext{
+								GCSBucket: "k8s-skaffold",
+							},
 						},
 					},
 				},
@@ -136,56 +153,5 @@ profiles:
 			tt.expected.SetDefaultValues()
 			testutil.CheckDeepEqual(t, tt.expected, upgradedPipeline)
 		})
-	}
-}
-
-func TestBuildUpgrade(t *testing.T) {
-	old := `apiVersion: skaffold/v1alpha3
-kind: Config
-build:
-  local:	
-    skipPush: false
-profiles:
-  - name: testEnv1
-    build:
-      local:
-        skipPush: true
-  - name: testEnv2
-    build:
-      local:
-        skipPush: false
-`
-	pipeline := NewSkaffoldPipeline()
-	err := pipeline.Parse([]byte(old), true)
-	if err != nil {
-		t.Errorf("unexpected error during parsing old config: %v", err)
-	}
-
-	upgraded, err := pipeline.Upgrade()
-	if err != nil {
-		t.Errorf("unexpected error during upgrade: %v", err)
-	}
-
-	upgradedPipeline := upgraded.(*next.SkaffoldPipeline)
-
-	if upgradedPipeline.Build.LocalBuild == nil {
-		t.Errorf("expected build.local to be not nil")
-	}
-	if upgradedPipeline.Build.LocalBuild.Push != nil && !*upgradedPipeline.Build.LocalBuild.Push {
-		t.Errorf("expected build.local.push to be true but it was: %v", *upgradedPipeline.Build.LocalBuild.Push)
-	}
-
-	if upgradedPipeline.Profiles[0].Build.LocalBuild == nil {
-		t.Errorf("expected profiles[0].build.local to be not nil")
-	}
-	if upgradedPipeline.Profiles[0].Build.LocalBuild.Push != nil && *upgradedPipeline.Profiles[0].Build.LocalBuild.Push {
-		t.Errorf("expected profiles[0].build.local.push to be false but it was: %v", *upgradedPipeline.Build.LocalBuild.Push)
-	}
-
-	if upgradedPipeline.Profiles[1].Build.LocalBuild == nil {
-		t.Errorf("expected profiles[1].build.local to be not nil")
-	}
-	if upgradedPipeline.Profiles[1].Build.LocalBuild.Push != nil && !*upgradedPipeline.Profiles[1].Build.LocalBuild.Push {
-		t.Errorf("expected profiles[1].build.local.push to be true but it was: %v", *upgradedPipeline.Build.LocalBuild.Push)
 	}
 }

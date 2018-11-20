@@ -28,6 +28,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -75,7 +77,7 @@ func newAPIClient(kubeContext string) (APIClient, error) {
 // It will "negotiate" the highest possible API version supported by both the client
 // and the server if there is a mismatch.
 func newEnvAPIClient() (APIClient, error) {
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithHTTPHeaders(getUserAgentHeader()))
 	if err != nil {
 		return nil, fmt.Errorf("error getting docker client: %s", err)
 	}
@@ -123,7 +125,19 @@ func newMinikubeAPIClient() (APIClient, error) {
 		version = api.DefaultVersion
 	}
 
-	return client.NewClient(host, version, httpclient, nil)
+	return client.NewClientWithOpts(
+		client.WithHost(host),
+		client.WithVersion(version),
+		client.WithHTTPClient(httpclient),
+		client.WithHTTPHeaders(getUserAgentHeader()))
+}
+
+func getUserAgentHeader() map[string]string {
+	userAgent := fmt.Sprintf("skaffold-%s", version.Get().Version)
+	logrus.Debugf("setting Docker user agent to %s\n", userAgent)
+	return map[string]string{
+		"User-Agent": userAgent,
+	}
 }
 
 func detectWsl() (bool, error) {

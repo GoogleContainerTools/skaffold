@@ -19,7 +19,6 @@ package cmd
 import (
 	"context"
 	"io"
-	"io/ioutil"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -27,9 +26,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	images []string
-)
+var images []string
 
 // NewCmdDeploy describes the CLI command to deploy artifacts.
 func NewCmdDeploy(out io.Writer) *cobra.Command {
@@ -44,7 +41,6 @@ func NewCmdDeploy(out io.Writer) *cobra.Command {
 	AddRunDevFlags(cmd)
 	AddRunDeployFlags(cmd)
 	cmd.Flags().StringSliceVar(&images, "images", nil, "A list of images to deploy")
-	cmd.Flags().BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the deploy output")
 	return cmd
 }
 
@@ -53,14 +49,9 @@ func runDeploy(out io.Writer) error {
 	defer cancel()
 	catchCtrlC(cancel)
 
-	r, config, err := newRunner(opts)
+	r, config, err := newRunner(out, opts)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
-	}
-
-	deployOut := out
-	if quietFlag {
-		deployOut = ioutil.Discard
 	}
 
 	var builds []build.Artifact
@@ -75,7 +66,7 @@ func runDeploy(out io.Writer) error {
 		})
 	}
 
-	if _, err := r.Deploy(ctx, deployOut, builds); err != nil {
+	if _, err := r.Deploy(ctx, out, builds); err != nil {
 		return err
 	}
 
