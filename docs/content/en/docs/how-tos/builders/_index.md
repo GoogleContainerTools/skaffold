@@ -21,8 +21,8 @@ The `build` section in the Skaffold configuration file, `skaffold.yaml`,
 controls how Skaffold builds artifacts. To use a specific tool for building
 artifacts, add the value representing the tool and options for using the tool
 to the `build` section. For a detailed discussion on Skaffold configuration,
-see [Skaffold Concepts: Configuration](/concepts/config) and
-[skaffold.yaml References](/references/config).
+see [Skaffold Concepts: Configuration](/docs/concepts/#configuration) and
+[skaffold.yaml References](/docs/references/config).
 
 ## Dockerfile locally with Docker
 

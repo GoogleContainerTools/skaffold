@@ -12,8 +12,8 @@ configurations for different contexts. Different contexts are typically differen
 
 You can create profiles in the `profiles` section of `skaffold.yaml`. For a
 detailed discussion on Skaffold configuration,
-see [Skaffold Concepts: Configuration](/concepts/config) and
-[skaffold.yaml References](/references/config).
+see [Skaffold Concepts: Configuration](/docs/concepts/#configuration) and
+[skaffold.yaml References](/docs/references/config).
 
 ## Profiles (`profiles`)
 
@@ -27,8 +27,8 @@ Once activated, the specified build and deploy configuration
 in the profile will override the `build` and `deploy` section declared
 in `skaffold.yaml`. The build and deploy configuration in the `profiles`
 section use the same syntax as the `build` and `deploy` section of
-`skaffold.yaml`; for more information, see [Using Builders](/how-tos/builders),
-[Using Taggers](/how-tos/taggers), and [Using Deployers](/how-tos/deployers).
+`skaffold.yaml`; for more information, see [Using Builders](/docs/how-tos/builders),
+[Using Taggers](/docs/how-tos/taggers), and [Using Deployers](/docs/how-tos/deployers).
 
 You can activate a profile with the `-p` (`--profile`) parameter in the
 `skaffold dev` and `skaffold run` commands.

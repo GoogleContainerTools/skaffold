@@ -1,6 +1,6 @@
 
 ---
-title: "Theme User Guide"
+title: "Concepts"
 linkTitle: "Concepts"
 weight: 80
 ---
@@ -43,7 +43,7 @@ read the configuration file from the current directory.
             <td>
                 Specifies how Skaffold should build artifacts. You have control over what tool Skaffold can use, how Skaffold tags artifacts and how Skaffold pushes artifacts.
                 <p>At this moment Skaffold supports using local Docker daemon, Google Cloud Build, Kaniko, or Bazel to build artifacts.</p>
-                <p>See <a href="/how-tos/builders">Using Builders</a> and <a href="/how-tos/taggers">Using Taggers</a> for more information.</p>
+                <p>See <a href="/docs/how-tos/builders">Using Builders</a> and <a href="/docs/how-tos/taggers">Using Taggers</a> for more information.</p>
             </td>
         </tr>
         <tr>
@@ -51,7 +51,7 @@ read the configuration file from the current directory.
             <td>
                 Specifies how Skaffold should deploy artifacts.
                 <p>At this moment Skaffold supports using `kubectl`, Helm, or Kustomize to deploy artifacts.</p>
-                <p>See <a href="/how-tos/builders">Using Deployers</a> for more information.</p>
+                <p>See <a href="/docs/how-tos/builders">Using Deployers</a> for more information.</p>
             </td>
         </tr>
         <tr>
@@ -65,7 +65,7 @@ read the configuration file from the current directory.
 <table>
 
 You can learn more about the syntax of `skaffold.yaml` at
-[`skaffold.yaml References`](/references/config).
+[`skaffold.yaml References`](/docs/references/config).
 
 ## Workflow
 
@@ -92,21 +92,21 @@ Skaffold features a pluggable architecture:
 The architecture allows you to use Skaffold with the tool you prefer. Skaffold
 provides built-in support for the following tools:
 
-{{% tabs %}}
-{{% tab "BUILD" %}}
-* Local Docker Daemon
-* Google Cloud Build
-* Kaniko
-* Bazel
-{{% /tab %}}
-
-{{% tab "DEPLOY" %}}
-* Kubernetes Command-Line Interface (`kubectl`)
-* Helm
-* Kustomize
-{{% /tab %}}
-{{% /tabs %}}
-
+* Build
+  * Local Docker Daemon
+  * Google Cloud Build
+  * Kaniko
+  * Bazel
+* Deploy 
+  * Kubernetes Command-Line Interface (`kubectl`)
+  * Helm
+  * Kustomize
+* Taggers
+  * Git tagger 
+  * Sha256 tagger
+  * Env Template tagger 
+  * DateTime tagger
+ 
 And you can combine the tools as you see fit in Skaffold. For experimental
 projects, you may want to use local Docker daemon for building artifacts, and
 deploy them to a Minikube local Kubernetes cluster with `kubectl`:
@@ -121,7 +121,7 @@ Cloud Build and deploy using Helm:
 Skaffold also supports development profiles. You can specify multiple different
 profiles in the configuration and use whichever best serves your need in the
 moment without having to modify the configuration file. You can learn more about
-profiles from [Using Profiles](/how-tos/profiles).
+profiles from [Using Profiles](/docs/how-tos/profiles).
 
 ## Operating modes
 
@@ -136,4 +136,4 @@ Skaffold provides two separate operating modes:
     application.
 
 Skaffold command-line interfact also provides other functionalities that may
-be helpful to your project. For more information, see [CLI References](/references/cli).
+be helpful to your project. For more information, see [CLI References](/docs/references/cli).

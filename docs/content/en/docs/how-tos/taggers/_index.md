@@ -17,8 +17,8 @@ At this moment, Skaffold supports the following tagging policies:
 Tag policy is specified in the `tagPolicy` field of the `build` section of the
 Skaffold configuration file, `skaffold.yaml`. For a detailed discussion on
 Skaffold configuration,
-see [Skaffold Concepts: Configuration](/concepts/config) and
-[skaffold.yaml References](/references/config).
+see [Skaffold Concepts: Configuration](/docs/concepts/#configuration) and
+[skaffold.yaml References](/docs/references/config).
 
 ## `gitCommit`: using Git commit IDs as tags
 

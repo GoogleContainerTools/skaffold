@@ -79,7 +79,7 @@ The `build` section has three parts:
             <td>Tag Policy (<code>tagPolicy</code>)</td>
             <td>
                 The tag policy Skaffold uses to tag artifacts.
-                <p>See [Using Taggers](/how-tos/tagger) for more information.</p>
+                <p>See [Using Taggers](/docs/how-tos/tagger) for more information.</p>
             </td>
         </tr>
         <tr>
@@ -87,7 +87,7 @@ The `build` section has three parts:
             <td>
                 Specifies which tool Skaffold should use for building artifacts.
                 <p>At this moment Skaffold supports using local Docker daemon, Google Cloud Build, Kaniko, or Bazel to build artifacts.</p>
-                <p>See <a href="/how-tos/builders">Using Builders</a> for more information.</p>
+                <p>See <a href="/docs/how-tos/builders">Using Builders</a> for more information.</p>
             </td>
         </tr>
     </tbody>
@@ -117,7 +117,7 @@ Each artifact item has the following three fields:
             <td>
                 Optional
                 <p>The Docker workspace.</p>
-                <p>See [Using Taggers](/how-tos/tagger) for more information.</p>
+                <p>See [Using Taggers](/docs/how-tos/taggers/) for more information.</p>
             </td>
         </tr>
         <tr>
@@ -224,8 +224,8 @@ And the Bazel Artifact type features the following parameters:
 
 ## Deploy Configuration (`deploy`)
 
-See [Using Deployers](/how-tos/deployers) for more information.
+See [Using Deployers](/docs/how-tos/deployers) for more information.
 
 ## Profiles (`profiles`)
 
-See [Using Profiles](/how-tos/profiles) for more information.
+See [Using Profiles](/docs/how-tos/profiles) for more information.

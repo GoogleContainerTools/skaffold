@@ -23,8 +23,8 @@ The `deploy` section in the Skaffold configuration file, `skaffold.yaml`,
 controls how Skaffold builds artifacts. To use a specific tool for deploying
 artifacts, add the value representing the tool and options for using the tool
 to the `build` section. For a detailed discussion on Skaffold configuration,
-see [Skaffold Concepts: Configuration](/concepts/config) and
-[Skaffold.yaml References](/references/config).
+see [Skaffold Concepts: Configuration](/docs/concepts/#configuration) and
+[Skaffold.yaml References](/docs/references/config).
 
 ## Deploying with kubectl
 

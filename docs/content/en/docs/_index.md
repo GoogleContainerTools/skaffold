@@ -39,12 +39,13 @@ Skaffold simplies your development workflow by organizing common development
 stages into one simple command. Every time you run `skaffold dev`, the system
 
 1. Collects and watches your source code for changes
-2. Builds artifacts from the source code
-3. Tags the artifacts
-4. Pushes the artifacts
-5. Deploys the artifacts
-6. Monitors the deployed artifacts
-7. Cleans up deployed artifacts on exit (Ctrl+C) 
+1. Syncs files directly to pods if user marks them as syncable   
+1. Builds artifacts from the source code
+1. Tags the artifacts
+1. Pushes the artifacts
+1. Deploys the artifacts
+1. Monitors the deployed artifacts
+1. Cleans up deployed artifacts on exit (Ctrl+C) 
 
 {{< alert title="Note" >}}
 Skaffold also supports skipping stages if you want to. 
