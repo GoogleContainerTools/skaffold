@@ -27,7 +27,7 @@ steps:
   - 'sh'
   - '-c'
   - |
-    hugo && firebase deploy --only hosting:release
+    hugo && firebase deploy --only hosting:release --project $PROJECT_ID
 
 images: [
   'gcr.io/$PROJECT_ID/docs-controller:latest'

@@ -27,7 +27,7 @@ steps:
   - 'sh'
   - '-c'
   - |
-    hugo --baseUrl https://skaffold-latest.firebaseapp.com && firebase deploy --only hosting:head
+    hugo --baseUrl https://skaffold-latest.firebaseapp.com && firebase deploy --only hosting:head --project $PROJECT_ID
 
 images:
 - 'gcr.io/$PROJECT_ID/docs-controller:latest'
