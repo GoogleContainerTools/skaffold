@@ -46,6 +46,8 @@ Latest version is {{< skaffold-version >}}.
 
 Different versions require different schemas of the `skaffold.yaml` file.
 
+{{% todo 1060 "to be updated to latest version" %}}
+
 ### Kind (`kind`)
 
 The Skaffold configuration file has the kind `Config`.

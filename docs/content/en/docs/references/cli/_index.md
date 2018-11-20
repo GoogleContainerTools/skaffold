@@ -23,6 +23,7 @@ Skaffold command-line interface provides the following commands:
 * [skaffold completion](#skaffold-completion) - setup tab completion for the CLI 
 * [skaffold config](#skaffold-config) - manage context specific parameters
 
+
 ## Global flags
 
 <table>
@@ -49,6 +50,28 @@ Skaffold command-line interface provides the following commands:
         </tr>
     </tbody>
 <table>
+
+## Global environment variables
+
+<table>
+    <thead>
+        <tr>
+            <th>Flag</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>SKAFFOLD_UPDATE_CHECK</code></td>
+            <td>
+                Enables checking for latest version of the skaffold binary. By default it's `true`. 
+            </td>
+        </tr>        
+    </tbody>
+<table>
+
+
+## Skaffold commands
 
 ## `skaffold build`
 
@@ -131,29 +154,30 @@ No flags available.
 
 ## `skaffold config`
 
-`skaffold config` helps you view and modify Kubernetes-related Skaffold
-configuration. It has two sub-commands: `list` and `set`. 
+{{% todo 1060 "this needs more work" %}}
+
+`skaffold config` helps you view and modify _contextual_ Skaffold configuration.
+It has two sub-commands: `list` and `set`.
+There is one global configuration that is always applicable. 
+This global config can be overriden for each kubecontext.  
 
 {{< alert title="Note" >}} 
 
-**The Skaffold configuration specified here is different from the settings
-in the Skaffold configuration file, `skaffold.yaml`**.
+<b>The Skaffold configuration specified here is different from the settings
+in the Skaffold configuration file, `skaffold.yaml`</b>.
 
-With `skaffold config`, you can control which Kubernetes context and default
-source repository Skaffold should use.
+With `skaffold config`, you can control context specific things, for example the default image repo to push to.
 {{< /alert >}}
 
-`skaffold config list` list all values set in Kubernetes-related Skaffold
-configuration.
+`skaffold config list` list values in the contextual configurations
 
-`skaffold config set` set a value in Kubernetes-related Skaffold
-configuration.
+`skaffold config set <key> <value>` set a `key` to `value` in the contextual config 
 
-{{< alert >}}
-<b>Note</b><br> 
 
-By default, `skaffold config` views and modifies Kubernetes-related Skaffold
-configuration **in the global scale**.
+{{< alert title="Note" >}} 
+
+By default, <code>skaffold config</code> views and modifies Kubernetes-related Skaffold
+configuration <b>in the global scale</b>.
 {{< /alert >}}
 
 ### Usage
