@@ -36,7 +36,7 @@ You can activate a profile with the `-p` (`--profile`) parameter in the
 The following example, showcases a `skaffold.yaml` with one profile, `gcb`,
 for building with Google Cloud Build:
 
-```
+```yaml
 apiVersion: skaffold/v1alpha2
 kind: Config
 build:

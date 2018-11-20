@@ -16,13 +16,13 @@ As an alternative, you can also refer to [annotated-skaffold.yaml](https://githu
 * [Profiles](#profiles-`profiles`)(`profiles`)
 
 The following example showcases a `skaffold.yaml` that uses API version
-`v1alpha3`, builds the artifact `gcr.io/k8s-skaffold/skaffold-example`
+{{< skaffold-version >}}, builds the artifact `gcr.io/k8s-skaffold/skaffold-example`
 with local Docker daemon, and deploys it to Kubernetes with `kubectl`
 using the Kubernetes manifest `k8s-pod.yaml`. It also includes a profile
 for using Google Cloud Build, `gcb`.
 
-```
-apiVersion: skaffold/v1alpha3
+```yaml
+apiVersion: skaffold/v1beta1
 kind: Config
 build:
     artifacts:
@@ -41,16 +41,10 @@ profiles:
 ## Metadata 
 ### API Version (`apiVersion`)
 
-API Version specifies the version of Skaffold API you would like to use.
-
-* `v1alpha1`
-* `v1alpha2`
-* `v1alpha3` 
-* `v1alpha4`
-
+API Version specifies the version of Skaffold API you would like to use. 
+Latest version is {{< skaffold-version >}}.
 
 Different versions require different schemas of the `skaffold.yaml` file.
-This documentation features API version `v1alpha3`.
 
 ### Kind (`kind`)
 
@@ -176,7 +170,7 @@ The Docker Artifact type features the following parameters:
 The following example showcases a `build` section that builds two artifacts,
 `gcr.io/k8s-skaffold/skaffold-example-1` and `gcr.io/k8s-skaffold/skaffold-example-2`:
 
-```
+```yaml
 build:
     artifacts:
     - imageName: gcr.io/k8s-skaffold/skaffold-example-1

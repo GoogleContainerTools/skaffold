@@ -80,7 +80,7 @@ To use `kubectl`, add deploy type `kubectl` to the `deploy` section of
 The following `deploy` section, for example, instructs Skaffold to deploy
 artifacts using `kubectl`:
 
-```
+```yaml
 deploy:
     kubectl:
     manifests:
@@ -233,7 +233,7 @@ Each release includes the following fields:
 The following `deploy` section, for example, instructs Skaffold to deploy
 artifacts using `helm`:
 
-```
+```yaml
 deploy:
   helm:
     releases:
@@ -308,7 +308,7 @@ section of `skaffold.yaml`. The `kustomize` type offers the following options:
 The following `deploy` section, for example, instructs Skaffold to deploy
 artifacts using Kustomize:
 
-```
+```yaml
 apiVersion: skaffold/v1alpha2
    kind: Config
    deploy:

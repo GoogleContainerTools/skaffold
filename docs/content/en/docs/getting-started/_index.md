@@ -60,7 +60,7 @@ https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
 
 Run these commands to download and place the binary in your /usr/local/bin folder: 
  
-```
+```bash
 curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
 chmod +x skaffold
 sudo mv skaffold /usr/local/bin
@@ -74,7 +74,7 @@ https://storage.googleapis.com/skaffold/builds/latest/skaffold-linux-amd64
 
 Run these commands to download and place the binary in your /usr/local/bin folder:
 
-```
+```bash
 curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-linux-amd64
 chmod +x skaffold
 sudo mv skaffold /usr/local/bin
@@ -87,7 +87,7 @@ sudo mv skaffold /usr/local/bin
 
 ### Install Skaffold with Homebrew
 
-```
+```bash
 brew install skaffold
 ```
 
@@ -98,7 +98,7 @@ https://storage.googleapis.com/skaffold/releases/latest/skaffold-darwin-amd64
 
 Run these commands to download and place the binary in your /usr/local/bin folder: 
  
-```
+```bash
 curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-darwin-amd64
 chmod +x skaffold
 sudo mv skaffold /usr/local/bin
@@ -112,7 +112,7 @@ https://storage.googleapis.com/skaffold/builds/latest/skaffold-darwin-amd64
 
 Run these commands to download and place the binary in your /usr/local/bin folder:
 
-```
+```bash
 curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-darwin-amd64
 chmod +x skaffold
 sudo mv skaffold /usr/local/bin
@@ -124,7 +124,7 @@ sudo mv skaffold /usr/local/bin
 
 ### Install Skaffold with Chocolatey 
 
-```
+```bash
 choco install skaffold
 ```
 
@@ -160,7 +160,7 @@ https://storage.googleapis.com/skaffold/builds/latest/skaffold-windows-amd64.exe
 Run command `skaffold dev` to build and deploy your app continuously. You should
 see some outputs similar to the following entries:
 
-```
+```bash
 Starting build...
 Found [minikube] context, using local docker daemon.
 Sending build context to Docker daemon  6.144kB
@@ -203,7 +203,7 @@ workflow, which, in this example, is
 Let's re-trigger the workflow just by a single code change! 
 Update `main.go` as follows:
 
-```
+```go
 package main
 
 import (
@@ -223,7 +223,7 @@ The moment you save the file, Skaffold will repeat the workflow described in
 `skaffold.yaml` and eventually re-deploy your application. Once the pipeline
 is completed, you should see updated outputs in the terminal:
 
-```
+```bash
 [getting-started] Hello Skaffold!
 ```
 

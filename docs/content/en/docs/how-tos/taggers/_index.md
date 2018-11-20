@@ -30,7 +30,7 @@ The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with the `gitCommit` tag policy
 specified explicitly:
 
-```
+```yaml
 build:
     artifacts:
     - imageName: gcr.io/k8s-skaffold/example
@@ -55,7 +55,7 @@ it allows Kubernetes to re-deploy images every time your source code changes.
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with the `sha256` tag policy:
 
-```
+```yaml
 build:
     artifacts:
     - imageName: gcr.io/k8s-skaffold/example
@@ -87,7 +87,7 @@ image.
 the `artifacts` part of the `build` section.
 {{< /alert >}}
 
-```
+```yaml
 build:
     artifacts:
     - imageName: gcr.io/k8s-skaffold/example
@@ -115,7 +115,7 @@ The following `build` section, for example, instructs Skaffold to build a Docker
 image `gcr.io/k8s-skaffold/example` with the `dateTime`
 tag policy:
 
-```
+```yaml
 build:
     artifacts:
     - imageName: gcr.io/k8s-skaffold/example

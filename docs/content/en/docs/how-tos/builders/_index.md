@@ -79,7 +79,7 @@ of `skaffold.yaml`. The `local` type offers the following options:
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with the local Docker daemon: 
 
-```
+```yaml
 build:
     artifacts:
     - imageName: gcr.io/k8s-skaffold/example
@@ -161,7 +161,7 @@ options:
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with Google Cloud Build: 
 
-```
+```yaml
 build:
     artifacts:
     - imageName: gcr.io/k8s-skaffold/example
@@ -234,7 +234,7 @@ To use Kaniko, add build type `kaniko` to the `build` section of
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with Kaniko: 
 
-```
+```yaml
 build:
     artifacts:
     - imageName: gcr.io/k8s-skaffold/example
@@ -242,6 +242,11 @@ build:
     kaniko:
         buildContext: gs://YOUR-BUCKET/SOURCE-CODE.tar.gz
 ```
+
+## Jib Maven and Gradle locally 
+
+{{% todo 1299 %}} 
+
 
 ## Bazel locally with bazel and Docker daemon 
 
@@ -259,7 +264,7 @@ specification, which Skaffold will use to load the image to the Docker daemon.
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with Bazel:
 
-```
+```yaml
 build:
     artifacts:
         - imageName: gcr.io/k8s-skaffold/example
@@ -268,3 +273,4 @@ build:
             target: //:example.tar
     local: {}
 ```
+

@@ -29,7 +29,7 @@ read the configuration file from the current directory.
             <td>API Version (<code>apiVersion</code>)</td>
             <td>
                 The Skaffold API version you would like to use.
-                <p>The current API version is `skaffold/v1alpha3`.</p>
+                <p>The current API version is {{< skaffold-version >}}.</p>
             </td>
         </tr>
         <tr>
