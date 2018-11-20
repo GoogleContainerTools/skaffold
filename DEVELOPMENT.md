@@ -111,6 +111,10 @@ for submitted PRs._
 
 ## Building skaffold docs
 
+The new version of the skaffold site is based on the Hugo theme of the github.com/google/docsy template.  
+
+### Testing docs locally 
+
 Before [creating a PR](#creating-a-pr) with doc changes, we recommend that you locally verify the
 generated docs with:
 
@@ -118,13 +122,17 @@ generated docs with:
 make docs
 ```
 
+Prerequisites: 
+* hugo extended version 0.51+
+* nodejs with postcss-cli  
+
 And then open the generated docs/generated folder for `index.html` and `index.pdf`.
 
 Once PRs with doc changes are merged, they will get automatically published to the docs
 for [the latest build](https://storage.googleapis.com/skaffold/builds/latest/docs/index.html)
 which at release time will be published with [the latest release](https://storage.googleapis.com/skaffold/releases/latest/docs/index.html).
 
-## Testing and contributing to the Skaffold release process 
+## Testing the Skaffold binary release process  
 
 Skaffold release process works with Google Cloud Build within our own project `k8s-skaffold` and the skaffold release bucket, `gs://skaffold`. 
 
@@ -135,7 +143,7 @@ We continuously release **builds** under `gs://skaffold/builds`. This is done by
 To run a build on your own project: 
 
 ```
-gcloud builds submit --config deploy/cloudbuild.yaml --substitutions=_RELEASE_BUCKET=<personal-bucket>,COMMIT_SHA=$(git rev-parse HEAD)
+gcloud builds submit --config deploy/cloudbuild.yaml --substitutions=_RELEASE_BUCKET=<personal-bucket>,COMMIT_SHA=$(git rev-parse HEAD) --project <personalproject>
 ```  
 
 We **release** stable versions under `gs://skaffold/releases`. This is done by triggering `cloudbuild-release.yaml` on every new tag in our Github repo.
@@ -143,7 +151,7 @@ We **release** stable versions under `gs://skaffold/releases`. This is done by t
 To test a release on your own project:
                                                           
 ```
-gcloud builds submit --config deploy/cloudbuild-release.yaml --substitutions=_RELEASE_BUCKET=<personal-bucket>,TAG_NAME=testrelease_v1234
+gcloud builds submit --config deploy/cloudbuild-release.yaml --substitutions=_RELEASE_BUCKET=<personal-bucket>,TAG_NAME=testrelease_v1234 --project <personalproject>
 ```                                                      
 
 Note: if gcloud submit fails with something similar to the error message below, run `dep ensure && dep prune` to remove the broken symlinks   
@@ -152,12 +160,55 @@ ERROR: gcloud crashed (OSError): [Errno 2] No such file or directory: './vendor/
 
 ```
 
+To just run a release without Google Cloud Build only using your local Docker daemon, you can run: 
+
+```
+make -j release GCP_PROJECT=<personalproject> RELEASE_BUCKET=<personal-bucket>
+``` 
+
+## Testing the Skaffold site release process
+
+Our site is developed with hugo, deployed to Firebase and we manage a service that is a webhook that deploys previews of the site for Pull Requests if you label the PR with `docs-modifications`.
+  
+On every push to master in `k8s-skaffold` project, Google Cloud Build trigger kicks off the following    
+* build the latest docs-controller image
+* deploy the webhook controller to our `docs` GKE cluster  
+* build the site using hugo within the docs-controller image
+* deploy the site to `skaffold-latest` site   
+
+In order to be able to iterate/fix the release process you can pass in your own project as parameters to the build but you'll have to setup the infrastructure to test it: 
+
+* create a docs cluster:  `gcloud container clusters create docs`
+*    
+
+We continuously release **builds** under `gs://skaffold/builds`. This is done by triggering `cloudbuild.yaml` on every push to master. 
+
+To run a build on your own project: 
+
+```
+gcloud builds submit --config deploy/cloudbuild.yaml --substitutions=_RELEASE_BUCKET=<personal-bucket>,COMMIT_SHA=$(git rev-parse HEAD) --project <personalproject>
+```  
+
+We **release** stable versions under `gs://skaffold/releases`. This is done by triggering `cloudbuild-release.yaml` on every new tag in our Github repo.
+
+To test a release on your own project:
+                                                          
+```
+gcloud builds submit --config deploy/cloudbuild-release.yaml --substitutions=_RELEASE_BUCKET=<personal-bucket>,TAG_NAME=testrelease_v1234 --project <personalproject>
+```                                                      
+
+Note: if gcloud submit fails with something similar to the error message below, run `dep ensure && dep prune` to remove the broken symlinks   
+```
+ERROR: gcloud crashed (OSError): [Errno 2] No such file or directory: './vendor/github.com/karrick/godirwalk/testdata/symlinks/file-symlink'
+
+```
 
 To just run a release without Google Cloud Build only using your local Docker daemon, you can run: 
 
 ```
 make -j release GCP_PROJECT=<personalproject> RELEASE_BUCKET=<personal-bucket>
 ``` 
+
 
 ## Creating a PR
 
