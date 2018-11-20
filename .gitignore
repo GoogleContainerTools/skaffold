@@ -3,5 +3,6 @@ examples/bazel/bazel-*
 integration/examples/bazel/bazel-*
 *.new
 .idea/
+docs/firebase-debug*
 docs/public
 docs/resources
