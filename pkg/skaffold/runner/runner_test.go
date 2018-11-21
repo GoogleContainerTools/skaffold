@@ -18,7 +18,6 @@ package runner
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"testing"
@@ -28,14 +27,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	clientgo "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
+	"github.com/pkg/errors"
 )
 
 type TestBuilder struct {
@@ -111,34 +107,6 @@ func (t *TestDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-type TestSyncer struct {
-	err     error
-	copies  map[string]string
-	deletes []string
-}
-
-func NewTestSyncer() *TestSyncer {
-	return &TestSyncer{
-		copies: map[string]string{},
-	}
-}
-
-func (t *TestSyncer) Sync(ctx context.Context, s *sync.Item) error {
-	if t.err != nil {
-		return t.err
-	}
-	for src, dst := range s.Copy {
-		t.copies[src] = dst
-	}
-	for _, dst := range s.Delete {
-		t.deletes = append(t.deletes, dst)
-	}
-	return nil
-}
-
-func resetClient()                               { kubernetes.Client = kubernetes.GetClientset }
-func fakeGetClient() (clientgo.Interface, error) { return fake.NewSimpleClientset(), nil }
-
 type TestWatcher struct {
 	changedArtifacts [][]int
 	changeCallbacks  []func(watch.Events)
@@ -175,6 +143,23 @@ func (t *TestWatcher) Run(ctx context.Context, trigger watch.Trigger, onChange f
 		onChange()
 	}
 	return t.err
+}
+
+func createDefaultRunner(t *testing.T) *SkaffoldRunner {
+	t.Helper()
+
+	opts := &config.SkaffoldOptions{
+		Trigger: "polling",
+	}
+
+	pipeline := &latest.SkaffoldPipeline{}
+	pipeline.Parse(nil, true)
+
+	runner, err := NewForConfig(opts, pipeline)
+
+	testutil.CheckError(t, false, err)
+
+	return runner
 }
 
 func TestNewForConfig(t *testing.T) {
@@ -280,7 +265,6 @@ func TestNewForConfig(t *testing.T) {
 func TestRun(t *testing.T) {
 	var tests = []struct {
 		description string
-		pipeline    *latest.SkaffoldPipeline
 		builder     build.Builder
 		tester      test.Tester
 		deployer    deploy.Deployer
@@ -288,58 +272,32 @@ func TestRun(t *testing.T) {
 	}{
 		{
 			description: "run no error",
-			pipeline:    &latest.SkaffoldPipeline{},
 			builder:     &TestBuilder{},
 			tester:      &TestTester{},
 			deployer:    &TestDeployer{},
 		},
 		{
 			description: "run build error",
-			pipeline:    &latest.SkaffoldPipeline{},
 			builder: &TestBuilder{
-				errors: []error{fmt.Errorf("")},
+				errors: []error{errors.New("")},
 			},
 			tester:    &TestTester{},
 			shouldErr: true,
 		},
 		{
 			description: "run deploy error",
-			pipeline: &latest.SkaffoldPipeline{
-				Build: latest.BuildConfig{
-					Artifacts: []*latest.Artifact{
-						{
-							ImageName: "test",
-						},
-					},
-				},
-			},
-			builder: &TestBuilder{},
-			tester:  &TestTester{},
+			builder:     &TestBuilder{},
+			tester:      &TestTester{},
 			deployer: &TestDeployer{
-				errors: []error{fmt.Errorf("")},
+				errors: []error{errors.New("")},
 			},
 			shouldErr: true,
 		},
 		{
 			description: "run test error",
-			pipeline: &latest.SkaffoldPipeline{
-				Build: latest.BuildConfig{
-					Artifacts: []*latest.Artifact{
-						{
-							ImageName: "test",
-						},
-					},
-				},
-				Test: []*latest.TestCase{
-					{
-						ImageName:      "test",
-						StructureTests: []string{"fake_file.yaml"},
-					},
-				},
-			},
-			builder: &TestBuilder{},
+			builder:     &TestBuilder{},
 			tester: &TestTester{
-				errors: []error{fmt.Errorf("")},
+				errors: []error{errors.New("")},
 			},
 			shouldErr: true,
 		},
@@ -347,14 +305,14 @@ func TestRun(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			runner := &SkaffoldRunner{
-				Builder:  test.builder,
-				Tester:   test.tester,
-				Deployer: test.deployer,
-				Tagger:   &tag.ChecksumTagger{},
-				opts:     &config.SkaffoldOptions{},
-			}
-			err := runner.Run(context.Background(), ioutil.Discard, test.pipeline.Build.Artifacts)
+			runner := createDefaultRunner(t)
+			runner.Builder = test.builder
+			runner.Tester = test.tester
+			runner.Deployer = test.deployer
+
+			err := runner.Run(context.Background(), ioutil.Discard, []*latest.Artifact{{
+				ImageName: "test",
+			}})
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})
@@ -362,9 +320,6 @@ func TestRun(t *testing.T) {
 }
 
 func TestDev(t *testing.T) {
-	kubernetes.Client = fakeGetClient
-	defer resetClient()
-
 	var tests = []struct {
 		description    string
 		builder        build.Builder
@@ -376,8 +331,9 @@ func TestDev(t *testing.T) {
 		{
 			description: "fails to build the first time",
 			builder: &TestBuilder{
-				errors: []error{fmt.Errorf("")},
+				errors: []error{errors.New("")},
 			},
+			tester:         &TestTester{},
 			deployer:       &TestDeployer{},
 			watcherFactory: NewWatcherFactory(nil, nil),
 			shouldErr:      true,
@@ -387,7 +343,7 @@ func TestDev(t *testing.T) {
 			builder:     &TestBuilder{},
 			tester:      &TestTester{},
 			deployer: &TestDeployer{
-				errors: []error{fmt.Errorf("")},
+				errors: []error{errors.New("")},
 			},
 			watcherFactory: NewWatcherFactory(nil, nil),
 			shouldErr:      true,
@@ -396,15 +352,16 @@ func TestDev(t *testing.T) {
 			description: "fails to deploy due to failed tests",
 			builder:     &TestBuilder{},
 			tester: &TestTester{
-				errors: []error{fmt.Errorf("")},
+				errors: []error{errors.New("")},
 			},
+			deployer:       &TestDeployer{},
 			watcherFactory: NewWatcherFactory(nil, nil),
 			shouldErr:      true,
 		},
 		{
 			description: "ignore subsequent build errors",
 			builder: &TestBuilder{
-				errors: []error{nil, fmt.Errorf("")},
+				errors: []error{nil, errors.New("")},
 			},
 			tester:         &TestTester{},
 			deployer:       &TestDeployer{},
@@ -415,7 +372,7 @@ func TestDev(t *testing.T) {
 			builder:     &TestBuilder{},
 			tester:      &TestTester{},
 			deployer: &TestDeployer{
-				errors: []error{nil, fmt.Errorf("")},
+				errors: []error{nil, errors.New("")},
 			},
 			watcherFactory: NewWatcherFactory(nil, nil, nil),
 		},
@@ -424,30 +381,19 @@ func TestDev(t *testing.T) {
 			builder:        &TestBuilder{},
 			tester:         &TestTester{},
 			deployer:       &TestDeployer{},
-			watcherFactory: NewWatcherFactory(fmt.Errorf(""), nil),
+			watcherFactory: NewWatcherFactory(errors.New(""), nil),
 			shouldErr:      true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			opts := &config.SkaffoldOptions{
-				WatchPollInterval: 100,
-				Trigger:           "polling",
-			}
+			runner := createDefaultRunner(t)
+			runner.Builder = test.builder
+			runner.Tester = test.tester
+			runner.Deployer = test.deployer
+			runner.watchFactory = test.watcherFactory
 
-			trigger, _ := watch.NewTrigger(opts)
-
-			runner := &SkaffoldRunner{
-				Builder:      test.builder,
-				Tester:       test.tester,
-				Deployer:     test.deployer,
-				Tagger:       &tag.ChecksumTagger{},
-				Trigger:      trigger,
-				watchFactory: test.watcherFactory,
-				opts:         opts,
-				Syncer:       NewTestSyncer(),
-			}
 			_, err := runner.Dev(context.Background(), ioutil.Discard, nil)
 
 			testutil.CheckError(t, test.shouldErr, err)
@@ -456,29 +402,16 @@ func TestDev(t *testing.T) {
 }
 
 func TestBuildAndDeployAllArtifacts(t *testing.T) {
-	kubernetes.Client = fakeGetClient
-	defer resetClient()
-
-	opts := &config.SkaffoldOptions{
-		Trigger: "polling",
-	}
 	builder := &TestBuilder{}
-	tester := &TestTester{}
 	deployer := &TestDeployer{}
-	trigger, _ := watch.NewTrigger(opts)
 	artifacts := []*latest.Artifact{
 		{ImageName: "image1"},
 		{ImageName: "image2"},
 	}
 
-	runner := &SkaffoldRunner{
-		Builder:  builder,
-		Tester:   tester,
-		Deployer: deployer,
-		Trigger:  trigger,
-		opts:     opts,
-		Syncer:   NewTestSyncer(),
-	}
+	runner := createDefaultRunner(t)
+	runner.Builder = builder
+	runner.Deployer = deployer
 
 	ctx := context.Background()
 
