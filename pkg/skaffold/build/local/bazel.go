@@ -31,7 +31,11 @@ import (
 )
 
 func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace string, a *latest.BazelArtifact) (string, error) {
-	cmd := exec.CommandContext(ctx, "bazel", "build", a.BuildTarget)
+	args := []string{"build"}
+	args = append(args, a.BuildArgs...)
+	args = append(args, a.BuildTarget)
+
+	cmd := exec.CommandContext(ctx, "bazel", args...)
 	cmd.Dir = workspace
 	cmd.Stdout = out
 	cmd.Stderr = out
