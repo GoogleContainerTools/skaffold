@@ -299,10 +299,6 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 				return nil
 			}
 		case changed.needsRedeploy:
-			if err := r.Test(ctx, out, r.builds); err != nil {
-				logrus.Warnln("Skipping Deploy due to failed tests:", err)
-				return nil
-			}
 			if _, err := r.Deploy(ctx, out, r.builds); err != nil {
 				logrus.Warnln("Skipping Deploy due to error:", err)
 				return nil
