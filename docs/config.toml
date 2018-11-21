@@ -73,7 +73,7 @@ github_repo = "https://github.com/GoogleContainerTools/skaffold"
 skaffold_version = "skaffold/v1beta1"
 
 # Google Custom Search Engine ID. Remove or comment out to disable search.
-gcs_engine_id = "011737558837375720776:fsdu1nryfng"
+gcs_engine_id = "013756393218025596041:3nojel67sum"
 
 # User interface configuration
 [params.ui]
