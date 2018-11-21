@@ -273,7 +273,8 @@ type DockerArtifact struct {
 
 // BazelArtifact describes an artifact built with Bazel.
 type BazelArtifact struct {
-	BuildTarget string `yaml:"target,omitempty"`
+	BuildTarget string   `yaml:"target,omitempty"`
+	BuildArgs   []string `yaml:"args,omitempty"`
 }
 
 type JibMavenArtifact struct {
