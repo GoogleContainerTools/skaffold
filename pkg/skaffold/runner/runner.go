@@ -246,16 +246,13 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Create watcher and register artifacts to build current state of files.
 	changed := changes{}
 	onChange := func() error {
-		hasError := true
-
-		logger.Mute()
 		defer func() {
 			changed.reset()
 			r.Trigger.WatchForChanges(out)
-			if !hasError {
-				logger.Unmute()
-			}
 		}()
+
+		logger.Mute()
+
 		for _, a := range changed.dirtyArtifacts {
 			s, err := sync.NewItem(a.artifact, a.events, r.builds)
 			if err != nil {
@@ -277,7 +274,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 				color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
 
 				if err := r.Syncer.Sync(ctx, s); err != nil {
-					logrus.Warnln("Skipping build and deploy due to sync error:", err)
+					logrus.Warnln("Skipping deploy due to sync error:", err)
 					return nil
 				}
 			}
@@ -309,7 +306,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			}
 		}
 
-		hasError = false
+		logger.Unmute()
 		return nil
 	}
 
