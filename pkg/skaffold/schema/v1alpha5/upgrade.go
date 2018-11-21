@@ -25,6 +25,12 @@ import (
 )
 
 // Upgrade upgrades a configuration to the next version.
+// Config changes from v1alpha5 to v1beta1:
+// 1. Additions:
+//   - KanikoCache struct, KanikoBuild.Cache
+//   - BazelArtifact.BuildArgs
+// 2. No removal
+// 3. No updates
 func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig

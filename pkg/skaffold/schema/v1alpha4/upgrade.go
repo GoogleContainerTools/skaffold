@@ -25,6 +25,12 @@ import (
 )
 
 // Upgrade upgrades a configuration to the next version.
+// Config changes from v1alpha4 to v1alpha5:
+// 1. Additions:
+//   - BuildType.AzureContainerBuild and AzureContainerBuild type
+// 2. No removal
+// 3. Updates
+//    - minor - []TestCase type aliased to TestConfig
 func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig

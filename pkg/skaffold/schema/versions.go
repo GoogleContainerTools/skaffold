@@ -22,6 +22,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v2"
 
 	apiversion "github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -32,7 +33,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
-	"gopkg.in/yaml.v2"
 )
 
 type APIVersion struct {

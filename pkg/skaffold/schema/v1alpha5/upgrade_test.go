@@ -31,11 +31,15 @@ func TestPipelineUpgrade(t *testing.T) {
 	}{
 		{
 			name: "normal skaffold yaml",
-			yaml: `apiVersion: skaffold/v1alpha5
+			yaml: `apiVersion: skaffold/v1alpha4
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
+test:
+  - image: gcr.io/k8s-skaffold/skaffold-example
+    structureTests:
+     - ./test/*
 deploy:
   kubectl:
     manifests:
@@ -45,6 +49,10 @@ profiles:
     build:
       artifacts:
       - image: gcr.io/k8s-skaffold/skaffold-example
+    test:
+     - image: gcr.io/k8s-skaffold/skaffold-example
+       structureTests:
+         - ./test/*
     deploy:
       kubectl:
         manifests:
@@ -60,6 +68,12 @@ profiles:
 							ImageName:    "gcr.io/k8s-skaffold/skaffold-example",
 							ArtifactType: next.ArtifactType{},
 						},
+					},
+				},
+				Test: []*next.TestCase{
+					{
+						ImageName:      "gcr.io/k8s-skaffold/skaffold-example",
+						StructureTests: []string{"./test/*"},
 					},
 				},
 				Deploy: next.DeployConfig{
@@ -81,6 +95,12 @@ profiles:
 									ImageName:    "gcr.io/k8s-skaffold/skaffold-example",
 									ArtifactType: next.ArtifactType{},
 								},
+							},
+						},
+						Test: []*next.TestCase{
+							{
+								ImageName:      "gcr.io/k8s-skaffold/skaffold-example",
+								StructureTests: []string{"./test/*"},
 							},
 						},
 						Deploy: next.DeployConfig{

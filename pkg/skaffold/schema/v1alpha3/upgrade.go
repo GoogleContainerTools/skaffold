@@ -25,6 +25,22 @@ import (
 )
 
 // Upgrade upgrades a configuration to the next version.
+// Config changes from v1alpha3 to v1alpha4:
+// 1. Additions:
+//   - SkaffoldPipeline.Test, Profile.Test, TestCase, TestConfig
+//   - KanikoBuildContext.LocalDir, LocalDir
+//   - KanikoBuild.Image
+//   - Artifact.Sync
+// 	 - JibMavenArtifact, JibGradleArtifact
+// 2. No removal
+// 3. Updates
+//    - EnvTemplate.Template is now optional in yaml
+//    - LocalBuild.SkipPush=false (v1alpha3) -> LocalBuild.Push=true (v1alpha4)_
+//    - kustomizePath -> path in yaml
+// 		- HelmRelease, HelmPackaged, HelmFQNConfig fields are optional in yaml,
+//    - Artifact.imageName -> image, workspace -> context in yaml
+//		- DockerArtifact.dockerfilePath -> dockerfile in yaml
+//    - BazelArtifact.BuildTarget is optional in yaml
 func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
