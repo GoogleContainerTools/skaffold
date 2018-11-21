@@ -7,3 +7,5 @@ docs/.firebase
 docs/firebase-debug*
 docs/public
 docs/resources
+docs/node_modules
+docs/package-lock.json

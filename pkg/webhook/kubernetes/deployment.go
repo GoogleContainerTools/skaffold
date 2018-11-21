@@ -82,6 +82,18 @@ func CreateDeployment(pr *github.PullRequestEvent, svc *v1.Service, externalIP s
 								},
 							},
 						},
+						{
+							Name:       "npm-autoprefix-installer",
+							Image:      constants.DeploymentImage,
+							Args:       []string{"npm", "i", "autoprefixer"},
+							WorkingDir: docsPath,
+							VolumeMounts: []v1.VolumeMount{
+								{
+									Name:      emptyVol,
+									MountPath: emptyVolPath,
+								},
+							},
+						},
 					},
 					Containers: []v1.Container{
 						{
