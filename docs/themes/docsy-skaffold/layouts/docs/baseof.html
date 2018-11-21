@@ -4,7 +4,7 @@
     {{ partial "head.html" . }}
     <title>{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ with .Title }}{{ . }} | {{ end }}{{ .Site.Title }}{{ end }}</title>
   </head>
-  <body class="td-{{ .Kind }}">
+  <body class="td-{{ .Kind }}" onload="initTabs()">
     <header>
       {{ partial "navbar.html" . }}
     </header>
