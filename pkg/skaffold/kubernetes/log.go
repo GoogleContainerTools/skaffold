@@ -50,11 +50,11 @@ type LogAggregator struct {
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
-func NewLogAggregator(out io.Writer, podSelector PodSelector, colorPicker ColorPicker) *LogAggregator {
+func NewLogAggregator(out io.Writer, baseImageNames []string, podSelector PodSelector) *LogAggregator {
 	return &LogAggregator{
 		output:      out,
 		podSelector: podSelector,
-		colorPicker: colorPicker,
+		colorPicker: NewColorPicker(baseImageNames),
 		trackedContainers: trackedContainers{
 			ids: map[string]bool{},
 		},

@@ -63,6 +63,7 @@ type SkaffoldRunner struct {
 	opts         *config.SkaffoldOptions
 	watchFactory watch.Factory
 	builds       []build.Artifact
+	imageList    *kubernetes.ImageList
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldPipeline
@@ -118,6 +119,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		Syncer:       &kubectl.Syncer{},
 		opts:         opts,
 		watchFactory: watch.NewWatcher,
+		imageList:    kubernetes.NewImageList(),
 	}, nil
 }
 
@@ -190,6 +192,15 @@ func getTagger(t latest.TagPolicy, customTag string) (tag.Tagger, error) {
 	}
 }
 
+func (r *SkaffoldRunner) newLogger(out io.Writer, artifacts []*latest.Artifact) *kubernetes.LogAggregator {
+	var imageNames []string
+	for _, artifact := range artifacts {
+		imageNames = append(imageNames, artifact.ImageName)
+	}
+
+	return kubernetes.NewLogAggregator(out, imageNames, r.imageList)
+}
+
 // Run builds artifacts, runs tests on built artifacts, and then deploys them.
 func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
 	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
@@ -215,13 +226,11 @@ func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, artifacts 
 		return nil
 	}
 
-	imageList := kubernetes.NewImageList()
 	for _, b := range bRes {
-		imageList.Add(b.Tag)
+		r.imageList.Add(b.Tag)
 	}
 
-	colorPicker := kubernetes.NewColorPicker(artifacts)
-	logger := kubernetes.NewLogAggregator(out, imageList, colorPicker)
+	logger := r.newLogger(out, artifacts)
 	if err := logger.Start(ctx); err != nil {
 		return errors.Wrap(err, "starting logger")
 	}
@@ -233,10 +242,7 @@ func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, artifacts 
 // Dev watches for changes and runs the skaffold build and deploy
 // pipeline until interrrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	imageList := kubernetes.NewImageList()
-	colorPicker := kubernetes.NewColorPicker(artifacts)
-	logger := kubernetes.NewLogAggregator(out, imageList, colorPicker)
-	portForwarder := kubernetes.NewPortForwarder(out, imageList)
+	logger := r.newLogger(out, artifacts)
 
 	// Create watcher and register artifacts to build current state of files.
 	changed := changes{}
@@ -280,7 +286,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 				return nil
 			}
 
-			r.updateBuiltImages(imageList, bRes)
+			r.trackBuiltImages(bRes)
 			if err := r.Test(ctx, out, bRes); err != nil {
 				logrus.Warnln("Skipping Deploy due to failed tests:", err)
 				return nil
@@ -349,7 +355,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return nil, errors.Wrap(err, "exiting dev mode because the first build failed")
 	}
 
-	r.updateBuiltImages(imageList, bRes)
+	r.trackBuiltImages(bRes)
 	if err := r.Test(ctx, out, bRes); err != nil {
 		return nil, errors.Wrap(err, "exiting dev mode because the first test run failed")
 	}
@@ -367,6 +373,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	if r.opts.PortForward {
+		portForwarder := kubernetes.NewPortForwarder(out, r.imageList)
+
 		if err := portForwarder.Start(ctx); err != nil {
 			return nil, errors.Wrap(err, "starting port-forwarder")
 		}
@@ -390,10 +398,10 @@ func (r *SkaffoldRunner) shouldWatch(artifact *latest.Artifact) bool {
 	return false
 }
 
-func (r *SkaffoldRunner) updateBuiltImages(images *kubernetes.ImageList, bRes []build.Artifact) {
+func (r *SkaffoldRunner) trackBuiltImages(bRes []build.Artifact) {
 	// Update which images are logged.
 	for _, build := range bRes {
-		images.Add(build.Tag)
+		r.imageList.Add(build.Tag)
 	}
 
 	// Make sure all artifacts are redeployed. Not only those that were just rebuilt.
