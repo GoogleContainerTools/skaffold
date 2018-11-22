@@ -1,6 +1,8 @@
 === Example: Azure Container Registry
 :icons: font
 
+*Deprecation notice*: the next version (v1beta1) of Skaffold will not support ACR builder. See https://github.com/GoogleContainerTools/skaffold/issues/1283[#1283] for details.
+
 This is an example demonstrating
 
 * *building* a single go file app and with a single stage `Dockerfile` using https://docs.microsoft.com/en-us/azure/container-registry/container-registry-tutorial-quick-task[ACR build]
