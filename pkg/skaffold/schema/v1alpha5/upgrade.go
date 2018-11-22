@@ -14,33 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha3
+package v1alpha5
 
 import (
 	"encoding/json"
 
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	"github.com/pkg/errors"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v1alpha3 to v1alpha4:
+// Config changes from v1alpha5 to v1beta1:
 // 1. Additions:
-//   - SkaffoldPipeline.Test, Profile.Test, TestCase, TestConfig
-//   - KanikoBuildContext.LocalDir, LocalDir
-//   - KanikoBuild.Image
-//   - Artifact.Sync
-// 	 - JibMavenArtifact, JibGradleArtifact
+//   - KanikoCache struct, KanikoBuild.Cache
+//   - BazelArtifact.BuildArgs
 // 2. No removal
-// 3. Updates
-//    - EnvTemplate.Template is now optional in yaml
-//    - LocalBuild.SkipPush=false (v1alpha3) -> LocalBuild.Push=true (v1alpha4)_
-//    - kustomizePath -> path in yaml
-// 		- HelmRelease, HelmPackaged, HelmFQNConfig fields are optional in yaml,
-//    - Artifact.imageName -> image, workspace -> context in yaml
-//		- DockerArtifact.dockerfilePath -> dockerfile in yaml
-//    - BazelArtifact.BuildTarget is optional in yaml
+// 3. No updates
 func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
@@ -54,33 +44,28 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 		if err := convert(config.Profiles, &newProfiles); err != nil {
 			return nil, errors.Wrap(err, "converting new profile")
 		}
-		for i, oldProfile := range config.Profiles {
-			convertBuild(oldProfile.Build, newProfiles[i].Build)
-		}
 	}
 
 	// convert Build (should be the same)
 	var newBuild next.BuildConfig
-	oldBuild := config.Build
-	if err := convert(oldBuild, &newBuild); err != nil {
+	if err := convert(config.Build, &newBuild); err != nil {
 		return nil, errors.Wrap(err, "converting new build")
 	}
-	convertBuild(oldBuild, newBuild)
+
+	// convert Test (should be the same)
+	var newTest next.TestConfig
+	if err := convert(config.Test, &newTest); err != nil {
+		return nil, errors.Wrap(err, "converting new test")
+	}
 
 	return &next.SkaffoldPipeline{
 		APIVersion: next.Version,
 		Kind:       config.Kind,
-		Deploy:     newDeploy,
 		Build:      newBuild,
+		Test:       newTest,
+		Deploy:     newDeploy,
 		Profiles:   newProfiles,
 	}, nil
-}
-
-func convertBuild(oldBuild BuildConfig, newBuild next.BuildConfig) {
-	if oldBuild.LocalBuild != nil && oldBuild.LocalBuild.SkipPush != nil {
-		push := !*oldBuild.LocalBuild.SkipPush
-		newBuild.LocalBuild.Push = &push
-	}
 }
 
 func convert(old interface{}, new interface{}) error {

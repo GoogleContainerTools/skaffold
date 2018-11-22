@@ -25,6 +25,12 @@ import (
 )
 
 // Upgrade upgrades a configuration to the next version.
+// Config changes from v1alpha2 to v1alpha3:
+// 1. No additions
+// 2. No removal
+// 3. Updates
+//  - KanikoBuildContext instead of GCSBucket
+//  - HelmRelease.valuesFilePath -> valuesFiles in yaml
 func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig

@@ -125,19 +125,19 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 func getBuilder(cfg *latest.BuildConfig, kubeContext string) (build.Builder, error) {
 	switch {
 	case cfg.LocalBuild != nil:
-		logrus.Debugf("Using builder: local")
+		logrus.Debugln("Using builder: local")
 		return local.NewBuilder(cfg.LocalBuild, kubeContext)
 
 	case cfg.GoogleCloudBuild != nil:
-		logrus.Debugf("Using builder: google cloud")
+		logrus.Debugln("Using builder: google cloud")
 		return gcb.NewBuilder(cfg.GoogleCloudBuild), nil
 
 	case cfg.KanikoBuild != nil:
-		logrus.Debugf("Using builder: kaniko")
+		logrus.Debugln("Using builder: kaniko")
 		return kaniko.NewBuilder(cfg.KanikoBuild)
 
 	case cfg.AzureContainerBuild != nil:
-		logrus.Debugf("Using builder: acr")
+		logrus.Debugln("Using builder: acr")
 		return acr.NewBuilder(cfg.AzureContainerBuild), nil
 
 	default:
@@ -246,16 +246,13 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Create watcher and register artifacts to build current state of files.
 	changed := changes{}
 	onChange := func() error {
-		hasError := true
-
-		logger.Mute()
 		defer func() {
 			changed.reset()
 			r.Trigger.WatchForChanges(out)
-			if !hasError {
-				logger.Unmute()
-			}
 		}()
+
+		logger.Mute()
+
 		for _, a := range changed.dirtyArtifacts {
 			s, err := sync.NewItem(a.artifact, a.events, r.builds)
 			if err != nil {
@@ -277,7 +274,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 				color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
 
 				if err := r.Syncer.Sync(ctx, s); err != nil {
-					logrus.Warnln("Skipping build and deploy due to sync error:", err)
+					logrus.Warnln("Skipping deploy due to sync error:", err)
 					return nil
 				}
 			}
@@ -299,17 +296,13 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 				return nil
 			}
 		case changed.needsRedeploy:
-			if err := r.Test(ctx, out, r.builds); err != nil {
-				logrus.Warnln("Skipping Deploy due to failed tests:", err)
-				return nil
-			}
 			if _, err := r.Deploy(ctx, out, r.builds); err != nil {
 				logrus.Warnln("Skipping Deploy due to error:", err)
 				return nil
 			}
 		}
 
-		hasError = false
+		logger.Unmute()
 		return nil
 	}
 

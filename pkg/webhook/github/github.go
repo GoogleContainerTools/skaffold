@@ -68,7 +68,7 @@ func (g *Client) CommentOnPR(pr *github.PullRequestEvent, message string) error 
 
 // RemoveLabelFromPR removes label from pr
 func (g *Client) RemoveLabelFromPR(pr *github.PullRequestEvent, label string) error {
-	_, err := g.Client.Issues.DeleteLabel(g.ctx, constants.GithubOwner, constants.GithubRepo, label)
+	_, err := g.Client.Issues.RemoveLabelForIssue(g.ctx, constants.GithubOwner, constants.GithubRepo, pr.GetNumber(), label)
 	if err != nil {
 		return errors.Wrap(err, "deleting label")
 	}

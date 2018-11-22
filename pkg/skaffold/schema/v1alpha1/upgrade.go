@@ -24,6 +24,21 @@ import (
 )
 
 // Upgrade upgrades a configuration to the next version.
+// Config changes from v1alpha1 to v1alpha2:
+// 1. Additions
+//  - Profiles
+//	- BuildType.KanikoBuild
+// 	- LocalBuild.useDockerCLI, useBuildkit
+//  - GoogleCloudBuild.	DiskSizeGb, MachineType, Timeout, DockerImage
+//  - DeployType.KustomizeDeploy
+//  - KubectlDeploy.RemoteManifests, Flags - KubectlFlags type
+//  - HelmRelease fields: setValues, setValueTemplates,wait,recreatePods,overrides,packaged,imageStrategy
+//  - BazelArtifact introduced
+//  - DockerArtifact fields: CacheFrom, Target
+// 2. No removal
+// 3. Updates
+//  - TagPolicy is a struct
+//
 func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	var tagPolicy next.TagPolicy
 	if config.Build.TagPolicy == constants.TagStrategySha256 {
