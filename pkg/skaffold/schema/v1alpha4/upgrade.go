@@ -19,12 +19,18 @@ package v1alpha4
 import (
 	"encoding/json"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha5"
 	"github.com/pkg/errors"
 )
 
 // Upgrade upgrades a configuration to the next version.
+// Config changes from v1alpha4 to v1alpha5:
+// 1. Additions:
+//   - BuildType.AzureContainerBuild and AzureContainerBuild type
+// 2. No removal
+// 3. Updates
+//    - minor - []TestCase type aliased to TestConfig
 func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig

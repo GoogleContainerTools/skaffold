@@ -8,7 +8,6 @@ build:
       localDir: {}
     pullSecretName: e2esecret
     namespace: default
-    cache: {}
 deploy:
   kubectl:
     manifests:
