@@ -38,7 +38,6 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 		return nil, errors.Errorf("can't upgrade to %s, build.acr is not supported anymore, please remove it manually", next.Version)
 	}
 
-
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
 	if err := convert(config.Deploy, &newDeploy); err != nil {
