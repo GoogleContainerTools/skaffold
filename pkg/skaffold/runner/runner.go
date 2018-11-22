@@ -80,12 +80,12 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		return nil, errors.Wrap(err, "parsing tag config")
 	}
 
-	builder, err := getBuilder(&cfg.Build, kubeContext)
+	builder, err := getBuilder(&cfg.Build, kubeContext, opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing build config")
 	}
 
-	tester, err := getTester(&cfg.Test)
+	tester, err := getTester(&cfg.Test, opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing test config")
 	}
@@ -119,8 +119,12 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 	}, nil
 }
 
-func getBuilder(cfg *latest.BuildConfig, kubeContext string) (build.Builder, error) {
+func getBuilder(cfg *latest.BuildConfig, kubeContext string, opts *config.SkaffoldOptions) (build.Builder, error) {
 	switch {
+	case len(opts.PreBuiltImages) > 0:
+		logrus.Debugln("Using pre-built images")
+		return build.NewPreBuiltImagesBuilder(opts.PreBuiltImages), nil
+
 	case cfg.LocalBuild != nil:
 		logrus.Debugln("Using builder: local")
 		return local.NewBuilder(cfg.LocalBuild, kubeContext)
@@ -138,8 +142,14 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string) (build.Builder, err
 	}
 }
 
-func getTester(cfg *latest.TestConfig) (test.Tester, error) {
-	return test.NewTester(cfg)
+func getTester(cfg *latest.TestConfig, opts *config.SkaffoldOptions) (test.Tester, error) {
+	switch {
+	case len(opts.PreBuiltImages) > 0:
+		logrus.Debugln("Skipping tests")
+		return test.NewTester(&latest.TestConfig{})
+	default:
+		return test.NewTester(cfg)
+	}
 }
 
 func getDeployer(cfg *latest.DeployConfig, kubeContext string, namespace string, defaultRepo string) (deploy.Deployer, error) {
@@ -197,23 +207,46 @@ func (r *SkaffoldRunner) newLogger(out io.Writer, artifacts []*latest.Artifact) 
 	return kubernetes.NewLogAggregator(out, imageNames, r.imageList)
 }
 
-// Run builds artifacts, runs tests on built artifacts, and then deploys them.
-func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
+func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
 	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
 	if err != nil {
-		return errors.Wrap(err, "build step")
+		return errors.Wrap(err, "build failed")
 	}
 
-	if err = r.Test(ctx, out, bRes); err != nil {
-		return errors.Wrap(err, "test step")
+	if err := r.Test(ctx, out, bRes); err != nil {
+		return errors.Wrap(err, "test failed")
 	}
 
-	_, err = r.Deploy(ctx, out, bRes)
-	if err != nil {
-		return errors.Wrap(err, "deploy step")
+	// Update which images are logged.
+	for _, build := range bRes {
+		r.imageList.Add(build.Tag)
 	}
 
-	return r.TailLogs(ctx, out, artifacts, bRes)
+	// Make sure all artifacts are redeployed. Not only those that were just built.
+	r.builds = mergeWithPreviousBuilds(bRes, r.builds)
+
+	if _, err := r.Deploy(ctx, out, r.builds); err != nil {
+		return errors.Wrap(err, "deploy failed")
+	}
+
+	return nil
+}
+
+// Run builds artifacts, runs tests on built artifacts, and then deploys them.
+func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
+	if err := r.buildTestDeploy(ctx, out, artifacts); err != nil {
+		return err
+	}
+
+	if r.opts.Tail {
+		logger := r.newLogger(out, artifacts)
+		if err := logger.Start(ctx); err != nil {
+			return errors.Wrap(err, "starting logger")
+		}
+		<-ctx.Done()
+	}
+
+	return nil
 }
 
 // TailLogs prints the logs for deployed artifacts.
@@ -276,20 +309,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 				}
 			}
 		case len(changed.needsRebuild) > 0:
-			bRes, err := r.Build(ctx, out, r.Tagger, changed.needsRebuild)
-			if err != nil {
-				logrus.Warnln("Skipping Deploy due to build error:", err)
-				return nil
-			}
-
-			r.trackBuiltImages(bRes)
-			if err := r.Test(ctx, out, bRes); err != nil {
-				logrus.Warnln("Skipping Deploy due to failed tests:", err)
-				return nil
-			}
-
-			if _, err = r.Deploy(ctx, out, r.builds); err != nil {
-				logrus.Warnln("Skipping Deploy due to error:", err)
+			if err := r.buildTestDeploy(ctx, out, changed.needsRebuild); err != nil {
+				logrus.Warnln("Skipping deploy due to errors:", err)
 				return nil
 			}
 		case changed.needsRedeploy:
@@ -346,19 +367,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	// First run
-	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
-	if err != nil {
-		return nil, errors.Wrap(err, "exiting dev mode because the first build failed")
-	}
-
-	r.trackBuiltImages(bRes)
-	if err := r.Test(ctx, out, bRes); err != nil {
-		return nil, errors.Wrap(err, "exiting dev mode because the first test run failed")
-	}
-
-	_, err = r.Deploy(ctx, out, r.builds)
-	if err != nil {
-		return nil, errors.Wrap(err, "exiting dev mode because the first deploy failed")
+	if err := r.buildTestDeploy(ctx, out, artifacts); err != nil {
+		return nil, errors.Wrap(err, "exiting dev mode because first run failed")
 	}
 
 	// Start logs
@@ -392,16 +402,6 @@ func (r *SkaffoldRunner) shouldWatch(artifact *latest.Artifact) bool {
 	}
 
 	return false
-}
-
-func (r *SkaffoldRunner) trackBuiltImages(bRes []build.Artifact) {
-	// Update which images are logged.
-	for _, build := range bRes {
-		r.imageList.Add(build.Tag)
-	}
-
-	// Make sure all artifacts are redeployed. Not only those that were just rebuilt.
-	r.builds = mergeWithPreviousBuilds(bRes, r.builds)
 }
 
 func mergeWithPreviousBuilds(builds, previous []build.Artifact) []build.Artifact {
