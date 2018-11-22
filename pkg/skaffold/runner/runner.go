@@ -27,7 +27,6 @@ import (
 	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/acr"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
@@ -135,10 +134,6 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string) (build.Builder, err
 	case cfg.KanikoBuild != nil:
 		logrus.Debugln("Using builder: kaniko")
 		return kaniko.NewBuilder(cfg.KanikoBuild)
-
-	case cfg.AzureContainerBuild != nil:
-		logrus.Debugln("Using builder: acr")
-		return acr.NewBuilder(cfg.AzureContainerBuild), nil
 
 	default:
 		return nil, fmt.Errorf("unknown builder for config %+v", cfg)

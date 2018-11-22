@@ -84,10 +84,9 @@ type DateTimeTagger struct {
 // BuildType contains the specific implementation and parameters needed
 // for the build step. Only one field should be populated.
 type BuildType struct {
-	LocalBuild          *LocalBuild          `yaml:"local,omitempty" yamltags:"oneOf=build"`
-	GoogleCloudBuild    *GoogleCloudBuild    `yaml:"googleCloudBuild,omitempty" yamltags:"oneOf=build"`
-	KanikoBuild         *KanikoBuild         `yaml:"kaniko,omitempty" yamltags:"oneOf=build"`
-	AzureContainerBuild *AzureContainerBuild `yaml:"acr,omitempty" yamltags:"oneOf=build"`
+	LocalBuild       *LocalBuild       `yaml:"local,omitempty" yamltags:"oneOf=build"`
+	GoogleCloudBuild *GoogleCloudBuild `yaml:"googleCloudBuild,omitempty" yamltags:"oneOf=build"`
+	KanikoBuild      *KanikoBuild      `yaml:"kaniko,omitempty" yamltags:"oneOf=build"`
 }
 
 // LocalBuild contains the fields needed to do a build on the local docker daemon
@@ -134,15 +133,6 @@ type KanikoBuild struct {
 	Namespace      string              `yaml:"namespace,omitempty"`
 	Timeout        string              `yaml:"timeout,omitempty"`
 	Image          string              `yaml:"image,omitempty"`
-}
-
-// AzureContainerBuild contains the fields needed to do a build
-// on Azure Container Registry
-type AzureContainerBuild struct {
-	SubscriptionID string `yaml:"subscriptionId,omitempty"`
-	ClientID       string `yaml:"clientId,omitempty"`
-	ClientSecret   string `yaml:"clientSecret,omitempty"`
-	TenantID       string `yaml:"tenantId,omitempty"`
 }
 
 type TestConfig []*TestCase
