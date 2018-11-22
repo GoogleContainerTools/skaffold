@@ -25,13 +25,47 @@ import (
 
 func TestPipelineUpgrade(t *testing.T) {
 	tests := []struct {
-		name     string
-		yaml     string
-		expected *next.SkaffoldPipeline
+		name          string
+		yaml          string
+		expected      *next.SkaffoldPipeline
+		expectedError bool
 	}{
 		{
+			name: "skaffold yaml with build.acr is not upgradable",
+			yaml: `apiVersion: skaffold/v1alpha5
+kind: Config
+build:
+  artifacts:
+  - image: myregistry.azurecr.io/skaffold-example
+  acr: {}
+deploy:
+  kubectl:
+    manifests:
+      - k8s-*
+`,
+			expectedError: true,
+		},
+		{
+			name: "skaffold yaml with profile.build.acr is not upgradable",
+			yaml: `apiVersion: skaffold/v1alpha5
+kind: Config
+build:
+  artifacts:
+  - image: myregistry.azurecr.io/skaffold-example
+deploy:
+  kubectl:
+    manifests:
+      - k8s-*
+profiles:
+ - name: test profile
+   build: 
+    acr: {}
+`,
+			expectedError: true,
+		},
+		{
 			name: "normal skaffold yaml",
-			yaml: `apiVersion: skaffold/v1alpha4
+			yaml: `apiVersion: skaffold/v1alpha5
 kind: Config
 build:
   artifacts:
@@ -127,10 +161,17 @@ profiles:
 			}
 
 			upgraded, err := pipeline.Upgrade()
-			if err != nil {
-				t.Errorf("unexpected error during upgrade: %v", err)
+
+			if tt.expectedError {
+				if err == nil {
+					t.Fatalf("expected error during upgrade but got nil")
+				}
+				return
 			}
 
+			if err != nil {
+				t.Fatalf("unexpected error during upgrade: %v", err)
+			}
 			upgradedPipeline := upgraded.(*next.SkaffoldPipeline)
 			tt.expected.SetDefaultValues()
 			testutil.CheckDeepEqual(t, tt.expected, upgradedPipeline)
