@@ -1,18 +1,18 @@
 apiVersion: skaffold/v1beta1
 kind: Config
 build:
-  # tagPolicy determines how Skaffold is going to tag your images.
+  # tagPolicy (beta) determines how Skaffold is going to tag your images.
   # We provide a few strategies here, although you most likely won't need to care!
-  # The policy can `gitCommit`, `sha256`, `envTemplate` or `dateTime`.
+  # The policy can `gitCommit` (beta), `sha256` (beta), `envTemplate` (beta) or `dateTime` (beta).
   # If not specified, it defaults to `gitCommit: {}`.
   tagPolicy:
-    # Tag the image with the git commit of your current repository.
+    # gitCommit tags the image with the git commit of your current repository.
     gitCommit: {}
 
-    # Tag the image with the checksum of the built image (image id).
+    # sha256 tags the image with the checksum of the built image (image id).
     # sha256: {}
 
-    # Tag the image with a configurable template string.
+    # envTemplate tags the image with a configurable template string.
     # The template must be in the golang text/template syntax: https://golang.org/pkg/text/template/
     # The template is compiled and executed against the current environment,
     # with those variables injected:
@@ -24,7 +24,7 @@ build:
     # envTemplate:
     #  template: "{{.RELEASE}}-{{.IMAGE_NAME}}"
 
-    # Tag the image with the build timestamp.
+    # dateTime tags the image with the build timestamp.
     #  The format can be overridden with golang formats, see: https://golang.org/pkg/time/#Time.Format
     #    Default format is "2006-01-02_15-04-05.999_MST
     #  The timezone is by default the local timezone, this can be overridden, see https://golang.org/pkg/time/#Time.LoadLocation
@@ -39,13 +39,13 @@ build:
   - image: gcr.io/k8s-skaffold/skaffold-example
     # The path to your dockerfile context. Defaults to ".".
     context: ../examples/getting-started
-    # Skaffold can sync local files with remote pods instead
+    # Skaffold can sync local files with remote pods (alpha) instead
     # of rebuilding the whole artifact's image. This is a mapping
     # of local files to sync to remote folders.
     # sync:
     #   '*.py': .
 
-    # Each artifact is of a given type among: `docker`, `bazel`, `jibMaven` and `jibGradle`.
+    # Each artifact is of a given type among: `docker` (beta), `bazel` (beta), `jibMaven` (alpha) and `jibGradle` (alpha).
     # If not specified, it defaults to `docker: {}`.
     docker:
       # Dockerfile's location relative to workspace. Defaults to "Dockerfile"
@@ -80,7 +80,7 @@ build:
     #  project: projectname   # selects which gradle project to build
 
 # This next section is where you'll put your specific builder configuration.
-  # Valid builders are `local`, `googleCloudBuild` and `kaniko`.
+  # Valid builders are `local` (beta), `googleCloudBuild` (beta) and `kaniko` (beta).
   # Defaults to `local: {}`
 
   # Pushing the images can be skipped. If no value is specified, it'll default to
@@ -139,7 +139,7 @@ build:
 # The deploy section has all the information needed to deploy. Along with build:
 # it is a required section.
 deploy:
-  # The type of the deployment method can be `kubectl`, `helm` or `kustomize`.
+  # The type of the deployment method can be `kubectl` (beta), `helm` (beta) or `kustomize` (beta).
 
   # The kubectl deployer uses  a client side `kubectl apply` to apply the manifests to the cluster.
   # You'll need a kubectl CLI version installed that's compatible with your cluster.
@@ -199,7 +199,7 @@ deploy:
     #     # Note that you can specify both static string or dynamic template.
     #     appVersion: {{ .CHART_VERSION }}-dirty
 
-# profiles section has all the profile information which can be used to override any build or deploy configuration
+# profiles (beta) section has all the profile information which can be used to override any build or deploy configuration
 profiles:
   - name: gcb
     build:
