@@ -155,6 +155,26 @@ var testDeployWithTemplatedName = &latest.HelmDeploy{
 	},
 }
 
+var testDeploySkipBuildDependencies = &latest.HelmDeploy{
+	Releases: []latest.HelmRelease{
+		{
+			Name:                  "skaffold-helm",
+			ChartPath:             "stable/chartmuseum",
+			SkipBuildDependencies: true,
+		},
+	},
+}
+
+var testDeployRemoteChart = &latest.HelmDeploy{
+	Releases: []latest.HelmRelease{
+		{
+			Name:                  "skaffold-helm",
+			ChartPath:             "stable/chartmuseum",
+			SkipBuildDependencies: false,
+		},
+	},
+}
+
 var testNamespace = "testNamespace"
 
 var validDeployYaml = `
@@ -265,6 +285,19 @@ func TestHelmDeploy(t *testing.T) {
 			description: "deploy error unmatched parameter",
 			cmd:         &MockHelm{t: t},
 			deployer:    NewHelmDeployer(testDeployConfigParameterUnmatched, testKubeContext, testNamespace, ""),
+			builds:      testBuilds,
+			shouldErr:   true,
+		},
+		{
+			description: "deploy success remote chart with skipBuildDependencies",
+			cmd:         &MockHelm{t: t},
+			deployer:    NewHelmDeployer(testDeploySkipBuildDependencies, testKubeContext, testNamespace, ""),
+			builds:      testBuilds,
+		},
+		{
+			description: "deploy error remote chart without skipBuildDependencies",
+			cmd:         &MockHelm{t: t},
+			deployer:    NewHelmDeployer(testDeployRemoteChart, testKubeContext, testNamespace, ""),
 			builds:      testBuilds,
 			shouldErr:   true,
 		},
