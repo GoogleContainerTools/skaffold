@@ -21,11 +21,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
@@ -34,8 +35,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -43,9 +42,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
-
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // ErrorConfigurationChanged is a special error that's returned when the skaffold configuration was changed.
@@ -63,6 +59,7 @@ type SkaffoldRunner struct {
 	opts         *config.SkaffoldOptions
 	watchFactory watch.Factory
 	builds       []build.Artifact
+	imageList    *kubernetes.ImageList
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldPipeline
@@ -118,6 +115,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		Syncer:       &kubectl.Syncer{},
 		opts:         opts,
 		watchFactory: watch.NewWatcher,
+		imageList:    kubernetes.NewImageList(),
 	}, nil
 }
 
@@ -190,6 +188,15 @@ func getTagger(t latest.TagPolicy, customTag string) (tag.Tagger, error) {
 	}
 }
 
+func (r *SkaffoldRunner) newLogger(out io.Writer, artifacts []*latest.Artifact) *kubernetes.LogAggregator {
+	var imageNames []string
+	for _, artifact := range artifacts {
+		imageNames = append(imageNames, artifact.ImageName)
+	}
+
+	return kubernetes.NewLogAggregator(out, imageNames, r.imageList)
+}
+
 // Run builds artifacts, runs tests on built artifacts, and then deploys them.
 func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
 	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
@@ -215,13 +222,11 @@ func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, artifacts 
 		return nil
 	}
 
-	imageList := kubernetes.NewImageList()
 	for _, b := range bRes {
-		imageList.Add(b.Tag)
+		r.imageList.Add(b.Tag)
 	}
 
-	colorPicker := kubernetes.NewColorPicker(artifacts)
-	logger := kubernetes.NewLogAggregator(out, imageList, colorPicker)
+	logger := r.newLogger(out, artifacts)
 	if err := logger.Start(ctx); err != nil {
 		return errors.Wrap(err, "starting logger")
 	}
@@ -233,10 +238,7 @@ func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, artifacts 
 // Dev watches for changes and runs the skaffold build and deploy
 // pipeline until interrrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	imageList := kubernetes.NewImageList()
-	colorPicker := kubernetes.NewColorPicker(artifacts)
-	logger := kubernetes.NewLogAggregator(out, imageList, colorPicker)
-	portForwarder := kubernetes.NewPortForwarder(out, imageList)
+	logger := r.newLogger(out, artifacts)
 
 	// Create watcher and register artifacts to build current state of files.
 	changed := changes{}
@@ -280,7 +282,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 				return nil
 			}
 
-			r.updateBuiltImages(imageList, bRes)
+			r.trackBuiltImages(bRes)
 			if err := r.Test(ctx, out, bRes); err != nil {
 				logrus.Warnln("Skipping Deploy due to failed tests:", err)
 				return nil
@@ -349,7 +351,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return nil, errors.Wrap(err, "exiting dev mode because the first build failed")
 	}
 
-	r.updateBuiltImages(imageList, bRes)
+	r.trackBuiltImages(bRes)
 	if err := r.Test(ctx, out, bRes); err != nil {
 		return nil, errors.Wrap(err, "exiting dev mode because the first test run failed")
 	}
@@ -367,6 +369,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	if r.opts.PortForward {
+		portForwarder := kubernetes.NewPortForwarder(out, r.imageList)
+
 		if err := portForwarder.Start(ctx); err != nil {
 			return nil, errors.Wrap(err, "starting port-forwarder")
 		}
@@ -390,10 +394,10 @@ func (r *SkaffoldRunner) shouldWatch(artifact *latest.Artifact) bool {
 	return false
 }
 
-func (r *SkaffoldRunner) updateBuiltImages(images *kubernetes.ImageList, bRes []build.Artifact) {
+func (r *SkaffoldRunner) trackBuiltImages(bRes []build.Artifact) {
 	// Update which images are logged.
 	for _, build := range bRes {
-		images.Add(build.Tag)
+		r.imageList.Add(build.Tag)
 	}
 
 	// Make sure all artifacts are redeployed. Not only those that were just rebuilt.
@@ -416,49 +420,4 @@ func mergeWithPreviousBuilds(builds, previous []build.Artifact) []build.Artifact
 	}
 
 	return merged
-}
-
-// DependenciesForArtifact lists the dependencies for a given artifact.
-func DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
-	var (
-		paths []string
-		err   error
-	)
-
-	switch {
-	case a.DockerArtifact != nil:
-		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact)
-
-	case a.BazelArtifact != nil:
-		paths, err = bazel.GetDependencies(ctx, a.Workspace, a.BazelArtifact)
-
-	case a.JibMavenArtifact != nil:
-		paths, err = jib.GetDependenciesMaven(ctx, a.Workspace, a.JibMavenArtifact)
-
-	case a.JibGradleArtifact != nil:
-		paths, err = jib.GetDependenciesGradle(ctx, a.Workspace, a.JibGradleArtifact)
-
-	default:
-		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
-	}
-
-	if err != nil {
-		// if the context was cancelled act as if all is well
-		// TODO(dgageot): this should be even higher in the call chain.
-		if ctx.Err() == context.Canceled {
-			logrus.Debugln(errors.Wrap(err, "ignore error since context is cancelled"))
-			return nil, nil
-		}
-
-		return nil, err
-	}
-
-	var p []string
-	for _, path := range paths {
-		if !filepath.IsAbs(path) {
-			path = filepath.Join(a.Workspace, path)
-		}
-		p = append(p, path)
-	}
-	return p, nil
 }
