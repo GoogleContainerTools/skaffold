@@ -52,7 +52,8 @@ However the **behavior** of individual component might suffer breaking changes d
   - Bazel: beta
   - jibMaven: alpha
   - jibGradle: alpha 
-- Filesync: alpha 
+- Filesync: alpha
+- Port-forwarding: alpha 
 - Taggers: beta 
   - gitCommit : beta
   - Sha256: beta
