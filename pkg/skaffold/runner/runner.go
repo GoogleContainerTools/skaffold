@@ -213,8 +213,10 @@ func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, art
 		return errors.Wrap(err, "build failed")
 	}
 
-	if err := r.Test(ctx, out, bRes); err != nil {
-		return errors.Wrap(err, "test failed")
+	if !r.opts.SkipTests {
+		if err = r.Test(ctx, out, bRes); err != nil {
+			return errors.Wrap(err, "test failed")
+		}
 	}
 
 	// Update which images are logged.

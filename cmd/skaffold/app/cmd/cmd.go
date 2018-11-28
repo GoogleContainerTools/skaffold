@@ -143,6 +143,7 @@ func AddRunDevFlags(cmd *cobra.Command) {
 	cmd.Flags().StringArrayVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
 	cmd.Flags().StringVarP(&opts.Namespace, "namespace", "n", "", "Run deployments in the specified namespace")
 	cmd.Flags().StringVarP(&opts.DefaultRepo, "default-repo", "d", "", "Default repository value (overrides global config)")
+	cmd.Flags().BoolVar(&opts.SkipTests, "skip-tests", false, "whether to skip the tests after building")
 }
 
 func SetUpLogs(out io.Writer, level string) error {
