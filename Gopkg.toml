@@ -16,8 +16,8 @@
   version = "0.0.2"
 
 [[override]]
- name = "github.com/docker/go-metrics"
- revision = "d466d4f6fd960e01820085bd7e1a24426ee7ef18"
+  name = "github.com/docker/go-metrics"
+  revision = "d466d4f6fd960e01820085bd7e1a24426ee7ef18"
 
 [[override]]
   name = "github.com/xeipuuv/gojsonschema"
