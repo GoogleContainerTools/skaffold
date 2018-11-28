@@ -1,0 +1,13 @@
+language: go
+
+go_import_path: gopkg.in/AlecAivazis/survey.v1
+
+before_install:
+  - go get github.com/AlecAivazis/run
+
+install:
+  - run install-deps
+
+script:
+  - run tests
+  # - run autoplay-tests

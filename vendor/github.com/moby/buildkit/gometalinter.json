@@ -1,0 +1,13 @@
+{
+  "Vendor": true,
+  "Deadline": "8m",
+  "Exclude": [".*.pb.go"],
+  "DisableAll": true,
+  "Enable": [
+    "gofmt",
+    "goimports",
+    "ineffassign",
+    "vet",
+    "deadcode"
+  ]
+}

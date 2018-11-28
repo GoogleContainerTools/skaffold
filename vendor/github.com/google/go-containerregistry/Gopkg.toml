@@ -1,0 +1,47 @@
+# Used for deep copy code generation and ko publish tests.
+required = [
+  "k8s.io/code-generator/cmd/deepcopy-gen",
+]
+
+[prune]
+  go-tests = true
+  unused-packages = true
+  non-go = true
+
+[[constraint]]
+  name = "k8s.io/code-generator"
+  version = "kubernetes-1.11.0"
+
+[[constraint]]
+  name = "k8s.io/client-go"
+  version = "kubernetes-1.11.0"
+
+[[override]]
+  name = "k8s.io/apimachinery"
+  version = "kubernetes-1.11.0"
+
+[[override]]
+  name = "k8s.io/api"
+  version = "kubernetes-1.11.0"
+
+[[override]]
+  name = "k8s.io/kubernetes"
+  version = "1.11.0"
+
+[[constraint]]
+  name = "github.com/docker/docker"
+  revision = "71cd53e4a197b303c6ba086bd584ffd67a884281"
+
+[[override]]
+  name = "github.com/docker/distribution"
+  revision = "83389a148052d74ac602f5f1d62f86ff2f3c4aa5"
+
+[[constraint]]
+  name = "github.com/google/go-cmp"
+  version = "0.2.0"
+
+# Use HEAD (2018-04-21) to pick up:
+# https://github.com/spf13/cobra/pull/662
+[[constraint]]
+  name = "github.com/spf13/cobra"
+  revision = "615425954c3b0d9485a7027d4d451fdcdfdee84e"

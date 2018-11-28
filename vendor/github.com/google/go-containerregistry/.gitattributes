@@ -1,0 +1,6 @@
+# This file is documented at https://git-scm.com/docs/gitattributes.
+# Linguist-specific attributes are documented at
+# https://github.com/github/linguist.
+
+**/zz_deepcopy_generated.go linguist-generated=true
+cmd/crane/doc/crane*.md linguist-generated=true

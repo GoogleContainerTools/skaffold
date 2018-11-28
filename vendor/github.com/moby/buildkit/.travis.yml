@@ -1,0 +1,66 @@
+dist: trusty
+sudo: required
+
+install:
+  - docker run --name buildkit --rm -d --privileged -p 1234:1234 $REPO_SLUG_ORIGIN --addr tcp://0.0.0.0:1234
+  - sudo docker cp buildkit:/usr/bin/buildctl /usr/bin/
+  - export BUILDKIT_HOST=tcp://0.0.0.0:1234
+
+env:
+  global:
+    - PLATFORMS="linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64,linux/s390x,linux/ppc64le"
+    - PREFER_BUILDCTL="1"
+
+script:
+  - make binaries validate-all && ./hack/cross
+
+before_deploy:
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+deploy:
+  - provider: script
+    script: ./hack/release master $REPO_SLUG_TARGET push
+    on:
+      repo: moby/buildkit
+      branch: master
+      condition: $TRAVIS_EVENT_TYPE != "cron"
+  - provider: script
+    script: ./hack/release $TRAVIS_TAG $REPO_SLUG_TARGET push && PLATFORMS="${PLATFORMS},darwin/amd64,windows/amd64" ./hack/release-tar $TRAVIS_TAG release-out
+    on:
+      repo: moby/buildkit
+      tags: true
+      condition: $TRAVIS_TAG =~ ^v[0-9]
+  - provider: releases
+    api_key:
+      secure: "hA0L2F6O1MLEJEbUDzxokpO6F6QrAIkltmVG3g0tTAoVj1xtCOXSmH3cAnVbFYyOz9q8pa/85tbpyEEIHVlqvWk2a5/QS16QaBW6XxH+FiZ3oQ44JbtpsjpmBFxdhfeFs8Ca6Nj29AOtDx21HHWsZKlBZFvC4Ubc05AM1rgZpJyZVDvYsjZIunc8/CPCbvAAp6RLnLHxAYXF+TQ7mAZP2SewsW/61nPjPIp2P4d93CduA9kUSxtC/1ewmU2T9Ak2X1Nw2ecPTonGjO51xNa6Ebo1hsbsRt5Krd1IR5rSkgXqLrhQO+19J3sUrQr2p8su6hCTKXR5TQz9L5C9VG8T3yOLbA7/FKBndWgBCm7EB7SezhFkm91e3Phkd/Hi5PF4ZKUSKyOYORHpoeg7ggBXaQF5r0OolqvNjxe7EhE+zlUIqnk5eprVrXT8H1QDF0Jg7pfdqVV9AIZO6i+e+1wOVDaP6K6tiWGdkRFH0wahcucZ/8xVoa8JVNZKke2mMCuLGsNWcN4DeLhkxa6giw3tkqbnY+eTYcW/PyVFMAVsZ8rOjQu4u4mm82FYBI7UywWQJTReD1LO2ibxHk74nwtyauX7KsCPFh2CA27DKlsQ1/xkjaCpE6vduzKzPj2DSHp6tKjxn2edPWRI+/4JxLD6KUFX1f1KqD0pKy/qVsZhEPI="
+    file: release-out/**/*
+    skip_cleanup: true
+    file_glob: true
+    on:
+     repo: moby/buildkit
+     tags: true
+     condition: $TRAVIS_TAG =~ ^v[0-9]
+  - provider: script
+    script: ./frontend/dockerfile/cmd/dockerfile-frontend/hack/release master mainline $DF_REPO_SLUG_TARGET push
+    on:
+      repo: moby/buildkit
+      branch: master
+      condition: $TRAVIS_EVENT_TYPE != "cron"
+  - provider: script
+    script: ./frontend/dockerfile/cmd/dockerfile-frontend/hack/release master experimental $DF_REPO_SLUG_TARGET push
+    on:
+      repo: moby/buildkit
+      branch: master
+      condition: $TRAVIS_EVENT_TYPE != "cron"
+  - provider: script
+    script: ./frontend/dockerfile/cmd/dockerfile-frontend/hack/release tag $TRAVIS_TAG $DF_REPO_SLUG_TARGET push
+    on:
+      repo: moby/buildkit
+      tags: true
+      condition: $TRAVIS_TAG =~ ^dockerfile/[0-9]
+  - provider: script
+    script: ./frontend/dockerfile/cmd/dockerfile-frontend/hack/release daily _ $DF_REPO_SLUG_TARGET push
+    on:
+      repo: moby/buildkit
+      branch: master
+      condition: $TRAVIS_EVENT_TYPE == "cron"

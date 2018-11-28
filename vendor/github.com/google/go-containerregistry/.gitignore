@@ -1,0 +1,5 @@
+**/*~
+.project
+bazel*
+.idea
+*.iml
