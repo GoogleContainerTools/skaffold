@@ -27,7 +27,7 @@ steps:
   - 'sh'
   - '-c'
   - |
-    npm i -D autoprefixer && hugo && firebase deploy --only hosting:release --project $PROJECT_ID
+    git submodule update --init --recursive && npm i -D autoprefixer && hugo && firebase deploy --only hosting:release --project $PROJECT_ID
 
 images: [
   'gcr.io/$PROJECT_ID/docs-controller:latest'
