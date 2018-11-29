@@ -21,6 +21,7 @@ import (
 
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	yaml "gopkg.in/yaml.v2"
 )
 
 func TestPipelineUpgrade(t *testing.T) {
@@ -139,7 +140,7 @@ profiles:
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pipeline := NewSkaffoldPipeline()
-			err := pipeline.Parse([]byte(tt.yaml), false)
+			err := yaml.UnmarshalStrict([]byte(tt.yaml), pipeline)
 			if err != nil {
 				t.Fatalf("unexpected error during parsing old config: %v", err)
 			}

@@ -84,8 +84,14 @@ func ParseConfig(filename string, applyDefaults bool, upgrade bool) (util.Versio
 	}
 
 	cfg := factory()
-	if err := cfg.Parse(buf, applyDefaults); err != nil {
+	if err := yaml.UnmarshalStrict(buf, cfg); err != nil {
 		return nil, errors.Wrap(err, "unable to parse config")
+	}
+
+	if applyDefaults {
+		if err := cfg.SetDefaultValues(); err != nil {
+			return nil, errors.Wrap(err, "setting default values")
+		}
 	}
 
 	if err := yamltags.ProcessStruct(cfg); err != nil {
