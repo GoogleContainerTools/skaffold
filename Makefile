@@ -183,4 +183,4 @@ preview-docs:
 	rm -rf public resources node_modules package-lock.json &&  \
 	git submodule deinit -f . && \
 	rm -rf /app/docs/themes/docsy && \
-	rm -rf .git/modules/docsy"
+	rm -rf /app/.git/modules/docsy"
