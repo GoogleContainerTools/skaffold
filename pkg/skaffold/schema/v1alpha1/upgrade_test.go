@@ -82,9 +82,6 @@ deploy:
 				APIVersion: next.Version,
 				Kind:       "Config",
 				Build: next.BuildConfig{
-					TagPolicy: next.TagPolicy{
-						GitTagger: &next.GitTagger{},
-					},
 					Artifacts: []*next.Artifact{
 						{
 							ImageName: "gcr.io/k8s-skaffold/skaffold-example",
@@ -110,18 +107,14 @@ deploy:
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pipeline := NewSkaffoldPipeline()
-			err := pipeline.Parse([]byte(tt.yaml), true)
+			err := pipeline.Parse([]byte(tt.yaml), false)
 			if err != nil {
 				t.Fatalf("unexpected error during parsing old config: %v", err)
 			}
 
 			upgraded, err := pipeline.Upgrade()
-			if err != nil {
-				t.Errorf("unexpected error during upgrade: %v", err)
-			}
 
-			upgradedPipeline := upgraded.(*next.SkaffoldPipeline)
-			testutil.CheckDeepEqual(t, tt.expected, upgradedPipeline)
+			testutil.CheckErrorAndDeepEqual(t, false, err, tt.expected, upgraded)
 		})
 	}
 }

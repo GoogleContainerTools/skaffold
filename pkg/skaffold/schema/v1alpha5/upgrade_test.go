@@ -25,10 +25,10 @@ import (
 
 func TestPipelineUpgrade(t *testing.T) {
 	tests := []struct {
-		name          string
-		yaml          string
-		expected      *next.SkaffoldPipeline
-		expectedError bool
+		name      string
+		yaml      string
+		expected  *next.SkaffoldPipeline
+		shouldErr bool
 	}{
 		{
 			name: "skaffold yaml with build.acr is not upgradable",
@@ -43,7 +43,7 @@ deploy:
     manifests:
       - k8s-*
 `,
-			expectedError: true,
+			shouldErr: true,
 		},
 		{
 			name: "skaffold yaml with profile.build.acr is not upgradable",
@@ -61,7 +61,7 @@ profiles:
    build: 
     acr: {}
 `,
-			expectedError: true,
+			shouldErr: true,
 		},
 		{
 			name: "normal skaffold yaml",
@@ -155,26 +155,18 @@ profiles:
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pipeline := NewSkaffoldPipeline()
-			err := pipeline.Parse([]byte(tt.yaml), true)
+			err := pipeline.Parse([]byte(tt.yaml), false)
 			if err != nil {
 				t.Fatalf("unexpected error during parsing old config: %v", err)
 			}
 
 			upgraded, err := pipeline.Upgrade()
 
-			if tt.expectedError {
-				if err == nil {
-					t.Fatalf("expected error during upgrade but got nil")
-				}
-				return
+			if tt.shouldErr {
+				testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, nil, upgraded)
+			} else {
+				testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.expected, upgraded)
 			}
-
-			if err != nil {
-				t.Fatalf("unexpected error during upgrade: %v", err)
-			}
-			upgradedPipeline := upgraded.(*next.SkaffoldPipeline)
-			tt.expected.SetDefaultValues()
-			testutil.CheckDeepEqual(t, tt.expected, upgradedPipeline)
 		})
 	}
 }
