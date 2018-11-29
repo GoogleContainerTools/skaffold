@@ -77,7 +77,11 @@ func (*Commander) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 		return stdout, errors.Wrapf(err, "Running %s: stdout %s, stderr: %s, err: %v", cmd.Args, stdout, stderr, err)
 	}
 
-	logrus.Debugf("Command output: stdout %s, stderr: %s", stdout, stderr)
+	if len(stderr) > 0 {
+		logrus.Debugf("Command output: [%s], stderr: %s", stdout, stderr)
+	} else {
+		logrus.Debugf("Command output: [%s]", stdout)
+	}
 
 	return stdout, nil
 }

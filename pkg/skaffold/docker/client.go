@@ -134,7 +134,7 @@ func newMinikubeAPIClient() (APIClient, error) {
 
 func getUserAgentHeader() map[string]string {
 	userAgent := fmt.Sprintf("skaffold-%s", version.Get().Version)
-	logrus.Debugf("setting Docker user agent to %s\n", userAgent)
+	logrus.Debugf("setting Docker user agent to %s", userAgent)
 	return map[string]string{
 		"User-Agent": userAgent,
 	}
