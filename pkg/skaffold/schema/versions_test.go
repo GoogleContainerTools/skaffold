@@ -200,7 +200,12 @@ func TestParseConfig(t *testing.T) {
 			yaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", test.apiVersion, test.config)
 			tmp.Write("skaffold.yaml", yaml)
 
-			cfg, err := ParseConfig(tmp.Path("skaffold.yaml"), true, true)
+			cfg, err := ParseConfig(tmp.Path("skaffold.yaml"), true)
+			if cfg != nil {
+				if err := cfg.SetDefaultValues(); err != nil {
+					t.Fatal("unable to set default values")
+				}
+			}
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cfg)
 		})

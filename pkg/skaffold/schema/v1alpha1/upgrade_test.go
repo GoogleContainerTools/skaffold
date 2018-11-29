@@ -44,7 +44,6 @@ build:
 					TagPolicy: next.TagPolicy{
 						GitTagger: &next.GitTagger{},
 					},
-					Artifacts: []*next.Artifact{},
 				},
 			},
 		},
@@ -62,7 +61,6 @@ build:
 					TagPolicy: next.TagPolicy{
 						ShaTagger: &next.ShaTagger{},
 					},
-					Artifacts: []*next.Artifact{},
 				},
 			},
 		},

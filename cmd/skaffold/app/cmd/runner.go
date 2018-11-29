@@ -28,9 +28,13 @@ import (
 
 // newRunner creates a SkaffoldRunner and returns the SkaffoldPipeline associated with it.
 func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.SkaffoldPipeline, error) {
-	parsed, err := schema.ParseConfig(opts.ConfigurationFile, true, true)
+	parsed, err := schema.ParseConfig(opts.ConfigurationFile, true)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "parsing skaffold config")
+	}
+
+	if err := parsed.SetDefaultValues(); err != nil {
+		return nil, nil, errors.Wrap(err, "setting default values")
 	}
 
 	config := parsed.(*latest.SkaffoldPipeline)

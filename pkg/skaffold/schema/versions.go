@@ -67,7 +67,7 @@ func (v *versions) Find(apiVersion string) (func() util.VersionedConfig, bool) {
 }
 
 // ParseConfig reads a configuration file.
-func ParseConfig(filename string, applyDefaults bool, upgrade bool) (util.VersionedConfig, error) {
+func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
 	buf, err := misc.ReadConfiguration(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "read skaffold config")
@@ -86,12 +86,6 @@ func ParseConfig(filename string, applyDefaults bool, upgrade bool) (util.Versio
 	cfg := factory()
 	if err := yaml.UnmarshalStrict(buf, cfg); err != nil {
 		return nil, errors.Wrap(err, "unable to parse config")
-	}
-
-	if applyDefaults {
-		if err := cfg.SetDefaultValues(); err != nil {
-			return nil, errors.Wrap(err, "setting default values")
-		}
 	}
 
 	if err := yamltags.ProcessStruct(cfg); err != nil {
