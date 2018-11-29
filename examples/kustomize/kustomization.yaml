@@ -1,4 +1,4 @@
 resources:
-  - k8s-deployment.yaml
+  - deployment.yaml
 patches:
   - patch.yaml

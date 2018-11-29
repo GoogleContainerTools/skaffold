@@ -158,7 +158,7 @@ var testDeployWithTemplatedName = &latest.HelmDeploy{
 var testNamespace = "testNamespace"
 
 var validDeployYaml = `
-# Source: skaffold-helm/templates/k8s-deployment.yaml
+# Source: skaffold-helm/templates/deployment.yaml
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -187,7 +187,7 @@ spec:
 `
 
 var validServiceYaml = `
-# Source: skaffold-helm/templates/k8s-service.yaml
+# Source: skaffold-helm/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
