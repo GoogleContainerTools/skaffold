@@ -113,7 +113,7 @@ func handlePullRequestEvent(event *github.PullRequestEvent) error {
 	baseURL := kubernetes.BaseURL(ip)
 	msg := fmt.Sprintf("Please visit [%s](%s) to view changes to the docs.", baseURL, baseURL)
 	if err := githubClient.CommentOnPR(event, msg); err != nil {
-		return errors.Wrapf(err, "comenting on PR %d", prNumber)
+		return errors.Wrapf(err, "commenting on PR %d", prNumber)
 	}
 	if err := githubClient.RemoveLabelFromPR(event, constants.DocsLabel); err != nil {
 		return errors.Wrapf(err, "removing %s label from PR %d", constants.DocsLabel, prNumber)

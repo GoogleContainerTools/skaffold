@@ -81,7 +81,7 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
            xenial \
            edge" && \
     apt-get -y update && \
-    apt-get -y install docker-ce=17.12.0~ce-0~ubuntu nodejs && \
+    apt-get -y install docker-ce=17.12.0~ce-0~ubuntu && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=golang:1.10 /usr/local/go /usr/local/go

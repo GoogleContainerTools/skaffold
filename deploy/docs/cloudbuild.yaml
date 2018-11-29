@@ -24,8 +24,8 @@ steps:
 - name: gcr.io/$PROJECT_ID/docs-controller:latest
   dir: docs
   args:
-  - 'sh'
-  - '-c'
+  - 'bash'
+  - '-xc'
   - |
     git submodule update --init --recursive && npm i -D autoprefixer && hugo --baseUrl https://skaffold-latest.firebaseapp.com && firebase deploy --only hosting:head --project $PROJECT_ID
 
