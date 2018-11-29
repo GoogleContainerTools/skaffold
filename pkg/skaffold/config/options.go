@@ -37,6 +37,7 @@ type SkaffoldOptions struct {
 	CustomLabels      []string
 	WatchPollInterval int
 	DefaultRepo       string
+	PreBuiltImages    []string
 }
 
 // Labels returns a map of labels to be applied to all deployed
