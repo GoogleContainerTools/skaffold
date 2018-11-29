@@ -53,7 +53,7 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 
 	var newHelmDeploy *next.HelmDeploy
 	if config.Deploy.DeployType.HelmDeploy != nil {
-		newReleases := make([]next.HelmRelease, 0)
+		var newReleases []next.HelmRelease
 		for _, release := range config.Deploy.DeployType.HelmDeploy.Releases {
 			newReleases = append(newReleases, next.HelmRelease{
 				Name:           release.Name,
@@ -70,7 +70,7 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	}
 	var newKubectlDeploy *next.KubectlDeploy
 	if config.Deploy.DeployType.KubectlDeploy != nil {
-		newManifests := make([]string, 0)
+		var newManifests []string
 		logrus.Warn("Ignoring manifest parameters when transforming v1alpha1 config; check kubernetes yaml before running skaffold")
 		for _, manifest := range config.Deploy.DeployType.KubectlDeploy.Manifests {
 			newManifests = append(newManifests, manifest.Paths...)
@@ -80,7 +80,7 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 		}
 	}
 
-	var newArtifacts = make([]*next.Artifact, 0)
+	var newArtifacts []*next.Artifact
 	for _, artifact := range config.Build.Artifacts {
 		newArtifacts = append(newArtifacts, &next.Artifact{
 			ImageName: artifact.ImageName,

@@ -14,10 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package v1alpha5
 
-type VersionedConfig interface {
-	GetVersion() string
-	SetDefaultValues() error
-	Upgrade() (VersionedConfig, error)
+import (
+	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
+)
+
+func TestDetDefaults(t *testing.T) {
+	pipeline := SkaffoldPipeline{
+		Build: BuildConfig{
+			Artifacts: []*Artifact{
+				{ImageName: "image"},
+			},
+		},
+	}
+
+	err := pipeline.SetDefaultValues()
+
+	testutil.CheckError(t, false, err)
 }

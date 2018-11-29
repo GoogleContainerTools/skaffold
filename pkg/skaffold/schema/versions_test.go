@@ -115,6 +115,17 @@ func TestParseConfig(t *testing.T) {
 			),
 		},
 		{
+			apiVersion:  "skaffold/v1alpha1",
+			description: "Old minimal config",
+			config:      minimalConfig,
+			expected: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+			),
+		},
+		{
 			apiVersion:  latest.Version,
 			description: "Simple config",
 			config:      simpleConfig,
@@ -190,6 +201,11 @@ func TestParseConfig(t *testing.T) {
 			tmp.Write("skaffold.yaml", yaml)
 
 			cfg, err := ParseConfig(tmp.Path("skaffold.yaml"), true)
+			if cfg != nil {
+				if err := cfg.SetDefaultValues(); err != nil {
+					t.Fatal("unable to set default values")
+				}
+			}
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cfg)
 		})

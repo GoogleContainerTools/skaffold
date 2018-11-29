@@ -14,10 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package v1alpha1
 
-type VersionedConfig interface {
-	GetVersion() string
-	SetDefaultValues() error
-	Upgrade() (VersionedConfig, error)
+// SetDefaultValues makes sure default values are set.
+func (c *SkaffoldPipeline) SetDefaultValues() error {
+	return nil
 }

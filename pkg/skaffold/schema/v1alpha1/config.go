@@ -17,10 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-
-	yaml "gopkg.in/yaml.v2"
 )
 
 const Version string = "skaffold/v1alpha1"
@@ -111,42 +108,4 @@ type Artifact struct {
 	DockerfilePath string             `yaml:"dockerfilePath,omitempty"`
 	Workspace      string             `yaml:"workspace"`
 	BuildArgs      map[string]*string `yaml:"buildArgs,omitempty"`
-}
-
-// DefaultDevSkaffoldPipeline is a partial set of defaults for the SkaffoldPipeline
-// when dev mode is specified.
-// Each API is responsible for setting its own defaults that are not top level.
-var defaultDevSkaffoldPipeline = &SkaffoldPipeline{
-	Build: BuildConfig{
-		TagPolicy: constants.DefaultDevTagStrategy,
-	},
-}
-
-// DefaultRunSkaffoldPipeline is a partial set of defaults for the SkaffoldPipeline
-// when run mode is specified.
-// Each API is responsible for setting its own defaults that are not top level.
-var defaultRunSkaffoldPipeline = &SkaffoldPipeline{
-	Build: BuildConfig{
-		TagPolicy: constants.DefaultRunTagStrategy,
-	},
-}
-
-// Parse reads from an io.Reader and unmarshals the result into a SkaffoldPipeline.
-// The default config argument provides default values for the config,
-// which can be overridden if present in the config file.
-func (config *SkaffoldPipeline) Parse(contents []byte, useDefault bool) error {
-	if useDefault {
-		*config = *config.getDefaultForMode(false)
-	} else {
-		*config = SkaffoldPipeline{}
-	}
-
-	return yaml.UnmarshalStrict(contents, config)
-}
-
-func (config *SkaffoldPipeline) getDefaultForMode(dev bool) *SkaffoldPipeline {
-	if dev {
-		return defaultDevSkaffoldPipeline
-	}
-	return defaultRunSkaffoldPipeline
 }

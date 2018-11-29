@@ -20,36 +20,21 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-	yaml "gopkg.in/yaml.v2"
 )
 
 func NewCmdFix(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fix",
 		Short: "Converts old skaffold.yaml to newest schema version",
-		Run: func(cmd *cobra.Command, args []string) {
-			cfg, err := schema.ParseConfig(opts.ConfigurationFile, false)
-			if err != nil {
-				logrus.Error(err)
-				return
-			}
-
-			if cfg.GetVersion() == latest.Version {
-				color.Default.Fprintln(out, "config is already latest version")
-				return
-			}
-
-			if err := runFix(out, cfg); err != nil {
-				logrus.Errorf("fix: %s", err)
-			}
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runFix(out, opts.ConfigurationFile, overwrite)
 		},
 		Args: cobra.NoArgs,
 	}
@@ -58,8 +43,18 @@ func NewCmdFix(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func runFix(out io.Writer, cfg schemautil.VersionedConfig) error {
-	cfg, err := schema.UpgradeToLatest(out, cfg)
+func runFix(out io.Writer, configFile string, overwrite bool) error {
+	cfg, err := schema.ParseConfig(configFile, false)
+	if err != nil {
+		return err
+	}
+
+	if cfg.GetVersion() == latest.Version {
+		color.Default.Fprintln(out, "config is already latest version")
+		return nil
+	}
+
+	cfg, err = schema.ParseConfig(configFile, true)
 	if err != nil {
 		return err
 	}
@@ -70,7 +65,7 @@ func runFix(out io.Writer, cfg schemautil.VersionedConfig) error {
 	}
 
 	if overwrite {
-		if err := ioutil.WriteFile(opts.ConfigurationFile, newCfg, 0644); err != nil {
+		if err := ioutil.WriteFile(configFile, newCfg, 0644); err != nil {
 			return errors.Wrap(err, "writing config file")
 		}
 		color.Default.Fprintf(out, "New config at version %s generated and written to %s\n", cfg.GetVersion(), opts.ConfigurationFile)

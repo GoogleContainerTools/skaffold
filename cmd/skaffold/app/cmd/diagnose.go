@@ -49,7 +49,7 @@ func NewCmdDiagnose(out io.Writer) *cobra.Command {
 }
 
 func doDiagnose(out io.Writer) error {
-	_, config, err := newRunner(out, opts)
+	_, config, err := newRunner(opts)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}

@@ -18,7 +18,6 @@ package schema
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -68,7 +67,7 @@ func (v *versions) Find(apiVersion string) (func() util.VersionedConfig, bool) {
 }
 
 // ParseConfig reads a configuration file.
-func ParseConfig(filename string, applyDefaults bool) (util.VersionedConfig, error) {
+func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
 	buf, err := misc.ReadConfiguration(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "read skaffold config")
@@ -85,7 +84,7 @@ func ParseConfig(filename string, applyDefaults bool) (util.VersionedConfig, err
 	}
 
 	cfg := factory()
-	if err := cfg.Parse(buf, applyDefaults); err != nil {
+	if err := yaml.UnmarshalStrict(buf, cfg); err != nil {
 		return nil, errors.Wrap(err, "unable to parse config")
 	}
 
@@ -93,11 +92,18 @@ func ParseConfig(filename string, applyDefaults bool) (util.VersionedConfig, err
 		return nil, errors.Wrap(err, "invalid config")
 	}
 
+	if upgrade && cfg.GetVersion() != latest.Version {
+		cfg, err = upgradeToLatest(cfg)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return cfg, nil
 }
 
-// UpgradeToLatest upgrades a configuration to the latest version.
-func UpgradeToLatest(out io.Writer, vc util.VersionedConfig) (util.VersionedConfig, error) {
+// upgradeToLatest upgrades a configuration to the latest version.
+func upgradeToLatest(vc util.VersionedConfig) (util.VersionedConfig, error) {
 	var err error
 
 	// first, check to make sure config version isn't too new
