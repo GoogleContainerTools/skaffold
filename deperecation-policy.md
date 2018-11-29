@@ -32,14 +32,14 @@ d.) annotated-skaffold.yaml (if applicable)
  
 The pipeline config, i.e. `skaffold.yaml` is **beta**. 
 
-This means that you can safely depend on the skaffold config with the assumption that skaffold will autoupgrade to the latest version:
+This means that you can safely depend on the skaffold config with the assumption that skaffold will auto-upgrade to the latest version:
 
 - Removal and non-upgradable changes are subject to the deprecation policy for all (even new) features under the config. 
 - Auto-upgradable changes are not considered breaking changes. 
 
 ## Skaffold components
 
-We are committed to design for autoupgradeable changes in the config. 
+We are committed to design for auto-upgradeable changes in the config. 
 However the **behavior** of individual component might suffer breaking changes depending on maturity.
 
 - Filewatcher: beta
