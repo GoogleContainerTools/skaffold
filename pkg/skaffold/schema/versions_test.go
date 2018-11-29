@@ -115,6 +115,17 @@ func TestParseConfig(t *testing.T) {
 			),
 		},
 		{
+			apiVersion:  "skaffold/v1alpha1",
+			description: "Old minimal config",
+			config:      minimalConfig,
+			expected: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+			),
+		},
+		{
 			apiVersion:  latest.Version,
 			description: "Simple config",
 			config:      simpleConfig,
@@ -189,7 +200,7 @@ func TestParseConfig(t *testing.T) {
 			yaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", test.apiVersion, test.config)
 			tmp.Write("skaffold.yaml", yaml)
 
-			cfg, err := ParseConfig(tmp.Path("skaffold.yaml"), true, false)
+			cfg, err := ParseConfig(tmp.Path("skaffold.yaml"), true, true)
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cfg)
 		})
