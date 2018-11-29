@@ -174,7 +174,7 @@ docs-controller-image:
 
 .PHONY: preview-docs
 preview-docs:
-#	docker build -t skaffold-docs-previewer -f deploy/webhook/Dockerfile --target runtime_deps .
+	docker build -t skaffold-docs-previewer -f deploy/webhook/Dockerfile --target runtime_deps .
 	docker run -ti -v $(PWD):/app --workdir /app/docs -p 1313:1313 skaffold-docs-previewer bash -xc "git submodule init && \
 	git submodule update --init --recursive && \
 	npm i -D autoprefixer && \
