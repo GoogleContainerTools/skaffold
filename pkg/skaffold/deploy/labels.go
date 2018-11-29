@@ -124,8 +124,8 @@ func addLabels(labels map[string]string, accessor metav1.Object) {
 }
 
 func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInterface, labels map[string]string, res Artifact) error {
-	originalJSON, _ := json.Marshal(*res.Obj)
-	modifiedObj := (*res.Obj).DeepCopyObject()
+	originalJSON, _ := json.Marshal(res.Obj)
+	modifiedObj := res.Obj.DeepCopyObject()
 	accessor, err := meta.Accessor(modifiedObj)
 	if err != nil {
 		return errors.Wrap(err, "getting metadata accessor")
