@@ -8,7 +8,8 @@ weight: 80
 This document discusses some concepts that can help you develop a deep
 understanding of Skaffold.
 
-## Configuration
+
+## Configuration of the Skaffold pipeline (skaffold.yaml)
 
 You can configure Skaffold with the Skaffold configuration file,
 `skaffold.yaml`. The configuration file should be placed in the root of your
@@ -82,6 +83,61 @@ Kubernetes cluster, once again using the tools you prefer.
 Skaffold allows you to skip stages. If, for example, you run Kubernetes
 locally with [Minikube](https://kubernetes.io/docs/setup/minikube/), Skaffold
 will not push artifacts to a remote repository.
+
+## Image repository handling 
+
+{{% todo 1327 %}}
+
+Skaffold allows for automatically rewriting image names to your repository.
+This way you can grab a skaffold project and just `skaffold run` it to deploy to your cluster.  
+The way to achieve this is the `default-repo` functionality: 
+
+1. Via `default-repo` flag
+  
+        skaffold dev --default-repo <myrepo> 
+  
+1. Via `SKAFFOLD_DEFAULT_REPO` environment variable
+
+        SKAFFOLD_DEFAULT_REPO=<myrepo> skaffold dev  
+
+1. Via skaffold's global config           
+
+If there is no default image repository set, there is no automated image name rewriting. 
+
+The following image name rewriting strategies are designed to be *conflict-free*:  
+
+* if there are multiple users using the same repo, they won't overwrite each others images.
+* the full namespace of the image is rewritten on top of the base so similar image names don't collide in the base namespace (e.g.: repo1/example and repo2/example would collide in the target_namespace/example without this)
+
+Automated image name rewriting strategies are determined based on the target repository: 
+
+* Target: gcr.io
+  * **strategy**: 		concat unless prefix matches
+  * **example1**: prefix doesn't match:
+    
+    ````
+      example base: 	gcr.io/k8s-skaffold/skaffold-example1
+      example target: 	gcr.io/myproject/myuser
+      example result:
+      gcr.io/myproject/myuser/gcr.io/k8s-skaffold/skaffold-example1
+    ````	
+  * **example2**: prefix matches:
+    
+    ```
+      example base: 	gcr.io/k8s-skaffold/skaffold-example1
+      example target: 	gcr.io/k8s-skaffold/myuser
+      example result:
+      gcr.io/k8s-skaffold/myuser/skaffold-example1	
+    ```
+* Target: not gcr.io
+  * **strategy**: 		escape & concat & truncate to 256
+  
+    ```
+     example base: 	gcr.io/k8s-skaffold/skaffold-example1
+     example target: 	aws_account_id.dkr.ecr.region.amazonaws.com
+     example result:  aws_account_id.dkr.ecr.region.amazonaws.com/gcr_io_k8s-skaffold_skaffold-example1
+    ```
+
 
 ## Architecture
 
