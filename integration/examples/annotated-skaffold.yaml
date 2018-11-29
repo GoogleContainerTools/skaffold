@@ -44,6 +44,19 @@ build:
     # of local files to sync to remote folders.
     # sync:
     #   '*.py': .
+    # Skaffold automatically watches all the dependencies for an artifact to
+    # rebuild it in case somethings changes. watch=false disables this behaviour.
+    # watch: true
+    # Skaffold automatically guesses the dependencies for an artifact based on which
+    # tool is used to build that artifact. In some cases, it's more efficient to exclude some
+    # of those dependencies:
+    # watchExcludes:
+    # - file
+    # - pattern
+    # It's even possible to override the list of dependencies altogether:
+    # watchIncludes:
+    # - file
+    # - pattern
 
     # Each artifact is of a given type among: `docker` (beta), `bazel` (beta), `jibMaven` (alpha) and `jibGradle` (alpha).
     # If not specified, it defaults to `docker: {}`.
