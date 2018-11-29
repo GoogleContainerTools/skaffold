@@ -29,6 +29,7 @@ type SkaffoldOptions struct {
 	Tail              bool
 	TailDev           bool
 	PortForward       bool
+	SkipTests         bool
 	Profiles          []string
 	CustomTag         string
 	Namespace         string

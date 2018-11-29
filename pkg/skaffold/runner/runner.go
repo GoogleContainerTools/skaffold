@@ -208,13 +208,9 @@ func (r *SkaffoldRunner) newLogger(out io.Writer, artifacts []*latest.Artifact) 
 }
 
 func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
-	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
+	bRes, err := r.BuildAndTest(ctx, out, artifacts)
 	if err != nil {
-		return errors.Wrap(err, "build failed")
-	}
-
-	if err := r.Test(ctx, out, bRes); err != nil {
-		return errors.Wrap(err, "test failed")
+		return err
 	}
 
 	// Update which images are logged.
@@ -247,6 +243,21 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	return nil
+}
+
+// BuildAndTest builds artifacts and runs tests on built artifacts
+func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
+	if err != nil {
+		return nil, errors.Wrap(err, "build failed")
+	}
+
+	if !r.opts.SkipTests {
+		if err = r.Test(ctx, out, bRes); err != nil {
+			return nil, errors.Wrap(err, "test failed")
+		}
+	}
+	return bRes, err
 }
 
 // TailLogs prints the logs for deployed artifacts.
