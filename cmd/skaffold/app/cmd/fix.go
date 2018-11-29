@@ -44,7 +44,7 @@ func NewCmdFix(out io.Writer) *cobra.Command {
 }
 
 func runFix(out io.Writer, configFile string, overwrite bool) error {
-	cfg, err := schema.ParseConfig(configFile, false)
+	cfg, err := schema.ParseConfig(configFile, false, false)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func runFix(out io.Writer, configFile string, overwrite bool) error {
 		return nil
 	}
 
-	cfg, err = schema.UpgradeToLatest(out, cfg)
+	cfg, err = schema.ParseConfig(configFile, false, true)
 	if err != nil {
 		return err
 	}
