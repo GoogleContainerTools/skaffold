@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha5"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
@@ -44,6 +45,7 @@ var schemaVersions = versions{
 	{v1alpha2.Version, v1alpha2.NewSkaffoldPipeline},
 	{v1alpha3.Version, v1alpha3.NewSkaffoldPipeline},
 	{v1alpha4.Version, v1alpha4.NewSkaffoldPipeline},
+	{v1alpha5.Version, v1alpha5.NewSkaffoldPipeline},
 	{latest.Version, latest.NewSkaffoldPipeline},
 }
 
@@ -110,7 +112,7 @@ func UpgradeToLatest(out io.Writer, vc util.VersionedConfig) (util.VersionedConf
 		return nil, fmt.Errorf("config version %s is too new for this version of skaffold: upgrade skaffold", vc.GetVersion())
 	}
 
-	logrus.Warnf("config version %s out of date: upgrading to latest (%s)\n", vc.GetVersion(), latest.Version)
+	logrus.Warnf("config version (%s) out of date: upgrading to latest (%s)", vc.GetVersion(), latest.Version)
 
 	for vc.GetVersion() != latest.Version {
 		vc, err = vc.Upgrade()

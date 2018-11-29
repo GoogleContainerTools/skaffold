@@ -15,15 +15,6 @@
   version = "v0.17.0"
 
 [[projects]]
-  name = "github.com/Azure/azure-sdk-for-go"
-  packages = [
-    "services/containerregistry/mgmt/2018-09-01/containerregistry",
-    "version"
-  ]
-  revision = "6d20bdbae88c06c36d72eb512295417693bfdf4e"
-  version = "v21.1.0"
-
-[[projects]]
   branch = "master"
   name = "github.com/Azure/go-ansiterm"
   packages = [
@@ -38,15 +29,12 @@
     "autorest",
     "autorest/adal",
     "autorest/azure",
-    "autorest/azure/auth",
     "autorest/date",
-    "autorest/to",
-    "autorest/validation",
     "logger",
     "version"
   ]
-  revision = "a35eae345f69bbfbe3b8fa0b1d3fe98f8430b21a"
-  version = "v10.15.3"
+  revision = "9bc4033dd347c7f416fca46b2f42a043dc1fbdf6"
+  version = "v10.15.5"
 
 [[projects]]
   name = "github.com/Microsoft/go-winio"
@@ -94,12 +82,6 @@
   packages = ["."]
   revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
   version = "v3.2.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/dimchansky/utfbom"
-  packages = ["."]
-  revision = "5448fe645cb1964ba70ac8f9f2ffe975e61a536c"
 
 [[projects]]
   name = "github.com/docker/cli"
@@ -572,8 +554,6 @@
     "openpgp/errors",
     "openpgp/packet",
     "openpgp/s2k",
-    "pkcs12",
-    "pkcs12/internal/rc2",
     "poly1305",
     "ssh",
     "ssh/agent",
@@ -1003,6 +983,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "48708f3265d8229c928809350b2f97cdba95fbe4b434e11f2a2db44b1b9d88c7"
+  inputs-digest = "7625f3d68ecf9494111b7347a5f0ef0fa2cc7762804f169fec48d3e510d8ec44"
   solver-name = "gps-cdcl"
   solver-version = 1

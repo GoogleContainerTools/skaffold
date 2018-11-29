@@ -29,9 +29,15 @@ import (
 // 1. Additions:
 //   - KanikoCache struct, KanikoBuild.Cache
 //   - BazelArtifact.BuildArgs
-// 2. No removal
+// 2. Removals:
+//   - AzureContainerBuilder
 // 3. No updates
 func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
+
+	if config.Build.AzureContainerBuild != nil {
+		return nil, errors.Errorf("can't upgrade to %s, build.acr is not supported anymore, please remove it manually", next.Version)
+	}
+
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
 	if err := convert(config.Deploy, &newDeploy); err != nil {
@@ -41,11 +47,15 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	// convert Profiles (should be the same)
 	var newProfiles []next.Profile
 	if config.Profiles != nil {
+		for _, profile := range config.Profiles {
+			if profile.Build.AzureContainerBuild != nil {
+				return nil, errors.Errorf("can't upgrade to %s, profiles.build.acr is not supported anymore, please remove it from the %s profile manually", next.Version, profile.Name)
+			}
+		}
 		if err := convert(config.Profiles, &newProfiles); err != nil {
 			return nil, errors.Wrap(err, "converting new profile")
 		}
 	}
-
 	// convert Build (should be the same)
 	var newBuild next.BuildConfig
 	if err := convert(config.Build, &newBuild); err != nil {

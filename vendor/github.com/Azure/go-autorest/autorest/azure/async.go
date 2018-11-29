@@ -428,6 +428,7 @@ func (pt *pollingTrackerBase) pollForStatus(sender autorest.Sender) error {
 	} else {
 		// check response body for error content
 		pt.updateErrorFromResponse()
+		err = pt.pollingError()
 	}
 	return err
 }

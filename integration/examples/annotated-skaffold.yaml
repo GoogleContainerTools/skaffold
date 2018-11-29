@@ -1,9 +1,9 @@
 apiVersion: skaffold/v1beta1
 kind: Config
 build:
-  # tagPolicy determines how skaffold is going to tag your images.
+  # tagPolicy determines how Skaffold is going to tag your images.
   # We provide a few strategies here, although you most likely won't need to care!
-  # The policy can `gitCommit`, `sha256` or `envTemplate`.
+  # The policy can `gitCommit`, `sha256`, `envTemplate` or `dateTime`.
   # If not specified, it defaults to `gitCommit: {}`.
   tagPolicy:
     # Tag the image with the git commit of your current repository.
@@ -39,6 +39,11 @@ build:
   - image: gcr.io/k8s-skaffold/skaffold-example
     # The path to your dockerfile context. Defaults to ".".
     context: ../examples/getting-started
+    # Skaffold can sync local files with remote pods instead
+    # of rebuilding the whole artifact's image. This is a mapping
+    # of local files to sync to remote folders.
+    # sync:
+    #   '*.py': .
 
     # Each artifact is of a given type among: `docker`, `bazel`, `jibMaven` and `jibGradle`.
     # If not specified, it defaults to `docker: {}`.
@@ -59,7 +64,11 @@ build:
     # bazel requires bazel CLI to be installed and the artifacts sources to
     # contain Bazel configuration files.
     # bazel:
-    #  target: //:skaffold_example.tar
+    #   target: //:skaffold_example.tar
+    #   additional args to pass to `bazel build`
+    #   args:
+    #   - "arg1"
+    #   - "arg2"
 
     # jibMaven builds containers using the Jib plugin for Maven.
     # jibMaven:
@@ -71,7 +80,7 @@ build:
     #  project: projectname   # selects which gradle project to build
 
 # This next section is where you'll put your specific builder configuration.
-  # Valid builders are `local`, `googleCloudBuild`, `kaniko`, and `acr`.
+  # Valid builders are `local`, `googleCloudBuild` and `kaniko`.
   # Defaults to `local: {}`
 
   # Pushing the images can be skipped. If no value is specified, it'll default to
@@ -122,21 +131,10 @@ build:
   #   cache:
   #     repo: gcr.io/my-project/skaffold/cache
   #   pullSecret: /a/secret/path/serviceaccount.json
+  #   pullSecretName: kaniko-secret
   #   namespace: default
   #   timeout: 20m
-
-  # Docker artifacts can be built on an Azure Container Registry.
-  # If Azure CLI is configured properly, you're logged in and have access to the registry,
-  # you can use:
-  #
-  # acr: {}
-  #
-  # otherwise you need to provide the credentials manually
-  # acr:
-  #   subscriptionId: SUBSCRIPTION_ID
-  #   tenantId: TENANT_ID
-  #   clientId: CLIENT_ID
-  #   clientSecret: CLIENT_SECRET
+  #   image: defaults to the latest released version of `gcr.io/kaniko-project/executor`
 
 # The deploy section has all the information needed to deploy. Along with build:
 # it is a required section.
