@@ -1,3 +1,80 @@
+# v0.19.0 Release - 11/29/2018
+
+Note: This release comes with a config change, use `skaffold fix` to permanently upgrade your config to `v1beta1`, however old versions are now auto-upgraded. 
+See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.   
+
+New features: 
+
+* Run tests in skaffold build, add `skip-tests` flag to skip tests [#1326](https://github.com/GoogleContainerTools/skaffold/pull/1326)
+* Allow ** glob pattern in sync parameters [#1266](https://github.com/GoogleContainerTools/skaffold/pull/1266)
+* Add caching to kaniko builder [#1287](https://github.com/GoogleContainerTools/skaffold/pull/1287)
+* Support slashes in file sync glob patterns on windows [#1280](https://github.com/GoogleContainerTools/skaffold/pull/1280)
+* Add --compose-file option to skaffold init [#1282](https://github.com/GoogleContainerTools/skaffold/pull/1282)
+* Automatically fix old configs by default [#1259](https://github.com/GoogleContainerTools/skaffold/pull/1259)
+* adding skaffold version to the docker push user agent [#1260](https://github.com/GoogleContainerTools/skaffold/pull/1260)
+
+Fixes: 
+
+* Fix node security issue [#1323](https://github.com/GoogleContainerTools/skaffold/pull/1323)
+* Allow passing arguments to bazel build [#1289](https://github.com/GoogleContainerTools/skaffold/pull/1289)
+* Get tmp Directory from os env in kaniko local context storing [#1285](https://github.com/GoogleContainerTools/skaffold/pull/1285)
+
+
+Updates & refactorings: 
+
+* Apply default values upgraded configurations [#1332](https://github.com/GoogleContainerTools/skaffold/pull/1332)
+* Remove duplication between run and deploy [#1331](https://github.com/GoogleContainerTools/skaffold/pull/1331)
+* Remove pointer to runtime.Object interface [#1329](https://github.com/GoogleContainerTools/skaffold/pull/1329)
+* Shorter logs [#1335](https://github.com/GoogleContainerTools/skaffold/pull/1335)
+* Update deps [#1333](https://github.com/GoogleContainerTools/skaffold/pull/1333)
+* dep ensure && dep prune [#1297](https://github.com/GoogleContainerTools/skaffold/pull/1297)
+* Should support v1alpha5 [#1314](https://github.com/GoogleContainerTools/skaffold/pull/1314)
+* Improve kubernetes.Logger [#1309](https://github.com/GoogleContainerTools/skaffold/pull/1309)
+* introduce v1beta1 config [#1305](https://github.com/GoogleContainerTools/skaffold/pull/1305)
+* Simpler Runner [#1304](https://github.com/GoogleContainerTools/skaffold/pull/1304)
+* Don’t run tests if nothing was built [#1302](https://github.com/GoogleContainerTools/skaffold/pull/1302)
+* Simplify the Runner's tests [#1303](https://github.com/GoogleContainerTools/skaffold/pull/1303)
+* removing the artifacts from appveyor [#1300](https://github.com/GoogleContainerTools/skaffold/pull/1300)
+* The multi-deployer feature is not working. Remove it [#1291](https://github.com/GoogleContainerTools/skaffold/pull/1291)
+
+Breaking changes: 
+
+* Remove ACR builder [#1308](https://github.com/GoogleContainerTools/skaffold/pull/1308)
+* Remove `quiet` command line flag [#1292](https://github.com/GoogleContainerTools/skaffold/pull/1292)
+
+Docs updates: 
+
+* Clarify what manifest paths are relative to when specifying in skaffold yaml [#1336](https://github.com/GoogleContainerTools/skaffold/pull/1336)
+* adding deprecation policy and document component stability [#1324](https://github.com/GoogleContainerTools/skaffold/pull/1324)
+* Add missing fields to annotated-skaffold.yaml [#1310](https://github.com/GoogleContainerTools/skaffold/pull/1310)
+* brew install skaffold [#1290](https://github.com/GoogleContainerTools/skaffold/pull/1290)
+* Lists indented in the installation section (minor fix) [#1298](https://github.com/GoogleContainerTools/skaffold/pull/1298)
+* Make usage messages look like the others. [#1267](https://github.com/GoogleContainerTools/skaffold/pull/1267)
+
+Utilities: 
+
+* [docs-webhook] remove docs-modifications label from issue instead of deleting the label [#1306](https://github.com/GoogleContainerTools/skaffold/pull/1306)
+* [docs-webhook] hugo extended version + nodejs  [#1295](https://github.com/GoogleContainerTools/skaffold/pull/1295)
+* [docs-webhook] Release latest version of docs controller image [#1293](https://github.com/GoogleContainerTools/skaffold/pull/1293)
+* [docs-webhook] upgrading hugo + unpinning webhook image [#1288](https://github.com/GoogleContainerTools/skaffold/pull/1288)
+* [lint] Golangci lint upgrade [#1281](https://github.com/GoogleContainerTools/skaffold/pull/1281)
+* [compilation] Support system's LDFLAGS, make compilation reproducible [#1270](https://github.com/GoogleContainerTools/skaffold/pull/1270)
+
+Huge thank you for this release towards our contributors: 
+- Balint Pato
+- Cedric Vidal
+- David Gageot
+- Igor Zibarev
+- Ihor Dvoretskyi
+- Jamie Lennox
+- Maxim Baz
+- Nick Kubala
+- Pascal Ehlert
+- Priya Wadhwa
+- Venkatesh
+
+
+
 # v0.18.0 Release - 11/08/2018
 
 Bug Fixes: 
