@@ -12,11 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.10
-WORKDIR $GOPATH/src/github.com/GoogleContainerTools/skaffold
-COPY . .
-RUN go build -o /webhook webhook/webhook.go 
-
 
 FROM gcr.io/gcp-runtimes/ubuntu_16_0_4 as runtime_deps
 
@@ -24,15 +19,27 @@ ENV KUBECTL_VERSION v1.12.0
 RUN curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl  && \
     chmod +x /usr/local/bin/kubectl
 
-
 ENV HUGO_VERSION=0.51
 RUN curl -LO https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_Linux-64bit.tar.gz && \
     tar -xzf hugo_extended_${HUGO_VERSION}_Linux-64bit.tar.gz && \
     mv hugo /usr/local/bin/hugo
 
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - && \
+    # required for nodejs
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - &&  \
     apt-get update && \
+                       # required for hugo
     apt-get install -y git \
-                       nodejs
+                       # required for hugo, firebase
+                       nodejs && \
+                       # required for hugo
+    npm install -g     postcss-cli \
+                       # required for releasing the docs
+                       firebase-tools
 
-COPY --from=0 /webhook /webhook
+FROM golang:1.10 as webhook
+WORKDIR $GOPATH/src/github.com/GoogleContainerTools/skaffold
+COPY . .
+RUN go build -o /webhook webhook/webhook.go
+
+FROM runtime_deps
+COPY --from=webhook /webhook /webhook

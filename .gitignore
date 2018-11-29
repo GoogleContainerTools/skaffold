@@ -3,4 +3,9 @@ examples/bazel/bazel-*
 integration/examples/bazel/bazel-*
 *.new
 .idea/
-docs/generated
+docs/.firebase
+docs/firebase-debug*
+docs/public
+docs/resources
+docs/node_modules
+docs/package-lock.json

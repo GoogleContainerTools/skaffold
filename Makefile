@@ -14,7 +14,6 @@
 GOOS ?= $(shell go env GOOS)
 GOARCH = amd64
 BUILD_DIR ?= ./out
-DOCS_DIR ?= ./docs/generated
 ORG := github.com/GoogleContainerTools
 PROJECT := skaffold
 REPOPATH ?= $(ORG)/$(PROJECT)
@@ -34,6 +33,7 @@ BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
 VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
 COMMIT = $(shell git rev-parse HEAD)
+BASE_URL ?= https://skaffold.dev
 VERSION ?= $(shell git describe --always --tags --dirty)
 
 GO_GCFLAGS := "all=-trimpath=${PWD}"
@@ -91,7 +91,7 @@ coverage: $(BUILD_DIR)
 	go test -coverprofile=$(BUILD_DIR)/coverage.txt -covermode=atomic ./...
 
 .PHONY: release
-release: cross docs $(BUILD_DIR)/VERSION
+release: cross $(BUILD_DIR)/VERSION
 	docker build \
         		-f deploy/skaffold/Dockerfile \
         		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
@@ -99,7 +99,6 @@ release: cross docs $(BUILD_DIR)/VERSION
         		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) .
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_RELEASE_PATH)/
 	gsutil -m cp $(BUILD_DIR)/VERSION $(GSC_RELEASE_PATH)/VERSION
-	gsutil -m cp -r $(DOCS_DIR)/* $(GSC_RELEASE_PATH)/docs/
 	gsutil -m cp -r $(GSC_RELEASE_PATH)/* $(GSC_RELEASE_LATEST)
 
 .PHONY: release-in-docker
@@ -115,14 +114,13 @@ release-in-docker:
 		gcr.io/$(GCP_PROJECT)/skaffold-builder make -j release VERSION=$(VERSION) RELEASE_BUCKET=$(RELEASE_BUCKET) GCP_PROJECT=$(GCP_PROJECT)
 
 .PHONY: release-build
-release-build: cross docs
+release-build: cross
 	docker build \
     		-f deploy/skaffold/Dockerfile \
     		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
     		-t gcr.io/$(GCP_PROJECT)/skaffold:latest \
     		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) .
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_BUILD_PATH)/
-	gsutil -m cp -r $(DOCS_DIR)/* $(GSC_BUILD_PATH)/docs/
 	gsutil -m cp -r $(GSC_BUILD_PATH)/* $(GSC_BUILD_LATEST)
 
 .PHONY: release-build-in-docker
@@ -139,7 +137,7 @@ release-build-in-docker:
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR) $(DOCS_DIR)
+	rm -rf $(BUILD_DIR) ./docs/public ./docs/resources
 
 .PHONY: integration-in-docker
 integration-in-docker:
@@ -156,21 +154,6 @@ integration-in-docker:
 		-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
 		gcr.io/$(GCP_PROJECT)/skaffold-integration
 
-.PHONY: docs
-docs:
-	hack/build_docs.sh $(VERSION) $(COMMIT)
-
-.PHONY: docs-in-docker
-docs-in-docker:
-	docker build \
-		-f deploy/skaffold/Dockerfile \
-		-t skaffold-builder \
-		--target builder \
-		.
-	docker run \
-		-v $(PWD):/go/src/$(REPOPATH) \
-		skaffold-builder make docs
-
 .PHONY: submit-build-trigger
 submit-build-trigger:
 	gcloud container builds submit . \
@@ -183,7 +166,21 @@ submit-release-trigger:
 		--config=deploy/cloudbuild-release.yaml \
 		--substitutions="_RELEASE_BUCKET=$(RELEASE_BUCKET),TAG_NAME=$(VERSION)"
 
+#utilities for skaffold site - not used anywhere else
 
 .PHONY: docs-controller-image
 docs-controller-image: 
 	docker build -t gcr.io/$(GCP_PROJECT)/docs-controller -f deploy/webhook/Dockerfile .
+
+.PHONY: preview-docs
+preview-docs:
+	docker build -t skaffold-docs-previewer -f deploy/webhook/Dockerfile --target runtime_deps .
+	docker run -ti -v $(PWD):/app --workdir /app/docs -p 1313:1313 skaffold-docs-previewer bash -xc "git submodule init && \
+	git submodule update --init --recursive && \
+	npm i -D autoprefixer && \
+	hugo && \
+	hugo serve --bind=0.0.0.0 -D && \
+	rm -rf public resources node_modules package-lock.json &&  \
+	git submodule deinit -f . && \
+	rm -rf /app/docs/themes/docsy/* && \
+	rm -rf /app/.git/modules/docsy"
