@@ -1,6 +1,6 @@
 steps:
 
-# Download the latest version of the builder image
+# Download the latest version of the docs-controller image
 - name: gcr.io/cloud-builders/docker
   entrypoint: 'bash'
   args:
