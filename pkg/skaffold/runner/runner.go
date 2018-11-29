@@ -416,7 +416,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 func (r *SkaffoldRunner) shouldWatch(artifact *latest.Artifact) bool {
 	if len(r.opts.Watch) == 0 {
-		return true
+		return *artifact.Watch
 	}
 
 	for _, watchExpression := range r.opts.Watch {

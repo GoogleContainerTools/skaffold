@@ -29,9 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/builder/dockerignore"
-	"github.com/docker/docker/pkg/fileutils"
 	"github.com/google/go-containerregistry/pkg/v1"
-	"github.com/karrick/godirwalk"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
@@ -290,64 +288,9 @@ func GetDependencies(ctx context.Context, workspace string, a *latest.DockerArti
 		}
 	}
 
-	pExclude, err := fileutils.NewPatternMatcher(excludes)
+	files, err := util.ListFiles(workspace, deps, excludes)
 	if err != nil {
-		return nil, errors.Wrap(err, "invalid exclude patterns")
-	}
-
-	// Walk the workspace
-	files := make(map[string]bool)
-	for _, dep := range deps {
-		dep = filepath.Clean(dep)
-		absDep := filepath.Join(workspace, dep)
-
-		fi, err := os.Stat(absDep)
-		if err != nil {
-			return nil, errors.Wrapf(err, "stating file %s", absDep)
-		}
-
-		switch mode := fi.Mode(); {
-		case mode.IsDir():
-			if err := godirwalk.Walk(absDep, &godirwalk.Options{
-				Unsorted: true,
-				Callback: func(fpath string, info *godirwalk.Dirent) error {
-					if fpath == absDep {
-						return nil
-					}
-
-					relPath, err := filepath.Rel(workspace, fpath)
-					if err != nil {
-						return err
-					}
-
-					ignored, err := pExclude.Matches(relPath)
-					if err != nil {
-						return err
-					}
-
-					if info.IsDir() {
-						if ignored {
-							return filepath.SkipDir
-						}
-					} else if !ignored {
-						files[relPath] = true
-					}
-
-					return nil
-				},
-			}); err != nil {
-				return nil, errors.Wrapf(err, "walking folder %s", absDep)
-			}
-		case mode.IsRegular():
-			ignored, err := pExclude.Matches(dep)
-			if err != nil {
-				return nil, err
-			}
-
-			if !ignored {
-				files[dep] = true
-			}
-		}
+		return nil, err
 	}
 
 	// Always add dockerfile even if it's .dockerignored. The daemon will need it anyways.

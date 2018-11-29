@@ -21,6 +21,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	homedir "github.com/mitchellh/go-homedir"
 
 	"github.com/pkg/errors"
@@ -50,6 +51,7 @@ func (c *SkaffoldPipeline) SetDefaultValues() error {
 		c.defaultToDockerArtifact(a)
 		c.setDefaultDockerfile(a)
 		c.setDefaultWorkspace(a)
+		c.watchByDefault(a)
 	}
 
 	return nil
@@ -121,6 +123,12 @@ func (c *SkaffoldPipeline) setDefaultDockerfile(a *Artifact) {
 
 func (c *SkaffoldPipeline) setDefaultWorkspace(a *Artifact) {
 	a.Workspace = valueOrDefault(a.Workspace, ".")
+}
+
+func (c *SkaffoldPipeline) watchByDefault(a *Artifact) {
+	if a.Watch == nil {
+		a.Watch = util.BoolPtr(true)
+	}
 }
 
 func (c *SkaffoldPipeline) withKanikoConfig(operations ...func(kaniko *KanikoBuild) error) error {

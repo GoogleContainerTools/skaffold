@@ -230,10 +230,13 @@ type HelmConventionConfig struct {
 // Artifact represents items that need to be built, along with the context in which
 // they should be built.
 type Artifact struct {
-	ImageName    string            `yaml:"image,omitempty"`
-	Workspace    string            `yaml:"context,omitempty"`
-	Sync         map[string]string `yaml:"sync,omitempty"`
-	ArtifactType `yaml:",inline"`
+	ImageName     string            `yaml:"image,omitempty"`
+	Workspace     string            `yaml:"context,omitempty"`
+	Watch         *bool             `yaml:"watch,omitempty"`
+	WatchIncludes []string          `yaml:"watchIncludes,omitempty"`
+	WatchExcludes []string          `yaml:"watchExcludes,omitempty"`
+	Sync          map[string]string `yaml:"sync,omitempty"`
+	ArtifactType  `yaml:",inline"`
 }
 
 // Profile is additional configuration that overrides default

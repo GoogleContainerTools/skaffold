@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sort"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -28,10 +29,28 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // DependenciesForArtifact lists the dependencies for a given artifact.
 func DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
+	// The files to watch are overridden for this artifact.
+	if len(a.WatchIncludes) > 0 || len(a.WatchExcludes) > 0 {
+		files, err := util.ListFiles(a.Workspace, a.WatchIncludes, a.WatchExcludes)
+		if err != nil {
+			return nil, err
+		}
+
+		var paths []string
+		for file := range files {
+			paths = append(paths, filepath.Join(a.Workspace, file))
+		}
+		sort.Strings(paths)
+		logrus.Debugf("Found dependencies: %v", paths)
+
+		return paths, nil
+	}
+
 	var (
 		paths []string
 		err   error

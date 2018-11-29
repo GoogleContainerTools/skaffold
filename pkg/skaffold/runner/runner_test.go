@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/pkg/errors"
@@ -405,8 +406,8 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	builder := &TestBuilder{}
 	deployer := &TestDeployer{}
 	artifacts := []*latest.Artifact{
-		{ImageName: "image1"},
-		{ImageName: "image2"},
+		{ImageName: "image1", Watch: util.BoolPtr(true)},
+		{ImageName: "image2", Watch: util.BoolPtr(true)},
 	}
 
 	runner := createDefaultRunner(t)
@@ -487,6 +488,7 @@ func TestShouldWatch(t *testing.T) {
 
 			match := runner.shouldWatch(&latest.Artifact{
 				ImageName: "domain/image",
+				Watch:     util.BoolPtr(true),
 			})
 
 			testutil.CheckDeepEqual(t, test.expectedMatch, match)

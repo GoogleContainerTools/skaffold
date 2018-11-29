@@ -20,11 +20,13 @@ import (
 	"fmt"
 	"testing"
 
+	"k8s.io/client-go/tools/clientcmd/api"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 const (
@@ -289,6 +291,7 @@ func withDockerArtifact(image, workspace, dockerfile string) func(*latest.BuildC
 		cfg.Artifacts = append(cfg.Artifacts, &latest.Artifact{
 			ImageName: image,
 			Workspace: workspace,
+			Watch:     misc.BoolPtr(true),
 			ArtifactType: latest.ArtifactType{
 				DockerArtifact: &latest.DockerArtifact{
 					DockerfilePath: dockerfile,
@@ -303,6 +306,7 @@ func withBazelArtifact(image, workspace, target string) func(*latest.BuildConfig
 		cfg.Artifacts = append(cfg.Artifacts, &latest.Artifact{
 			ImageName: image,
 			Workspace: workspace,
+			Watch:     misc.BoolPtr(true),
 			ArtifactType: latest.ArtifactType{
 				BazelArtifact: &latest.BazelArtifact{
 					BuildTarget: target,
