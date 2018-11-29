@@ -73,7 +73,7 @@ func CreateDeployment(pr *github.PullRequestEvent, svc *v1.Service, externalIP s
 						{
 							Name:       "git-clone",
 							Image:      constants.DeploymentImage,
-							Args:       []string{"git", "clone", userRepo, "--branch", pr.PullRequest.Head.GetRef()},
+							Args:       []string{"git", "clone", userRepo, "--recursive", "--branch", pr.PullRequest.Head.GetRef()},
 							WorkingDir: emptyVolPath,
 							VolumeMounts: []v1.VolumeMount{
 								{

@@ -27,7 +27,7 @@ steps:
   - 'bash'
   - '-xc'
   - |
-    git submodule update --init --recursive && npm i -D autoprefixer && hugo --baseUrl https://skaffold-latest.firebaseapp.com && firebase deploy --only hosting:head --project $PROJECT_ID
+    git submodule init && git submodule update --init --recursive && npm i -D autoprefixer && hugo --baseUrl https://skaffold-latest.firebaseapp.com && firebase deploy --only hosting:head --project $PROJECT_ID
 
 images:
 - 'gcr.io/$PROJECT_ID/docs-controller:latest'

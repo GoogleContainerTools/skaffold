@@ -175,10 +175,12 @@ docs-controller-image:
 .PHONY: preview-docs
 preview-docs:
 	docker build -t skaffold-docs-previewer -f deploy/webhook/Dockerfile --target runtime_deps .
-	docker run -ti -v $(PWD):/app --workdir /app/docs -p 1313:1313 skaffold-docs-previewer bash -xc "git submodule init --recursive && \
+	docker run -ti -v $(PWD):/app --workdir /app/docs -p 1313:1313 skaffold-docs-previewer bash -xc "git submodule init && \
+	git submodule update --init --recursive && \
 	npm i -D autoprefixer && \
 	hugo && \
 	hugo serve --bind=0.0.0.0 -D && \
 	rm -rf public resources node_modules package-lock.json &&  \
-	git submodule --quiet deinit -f -all && \
-	rm -rf /app/docs/themes/docsy"
+	git submodule deinit -f . && \
+	rm -rf /app/docs/themes/docsy && \
+	rm -rf .git/modules/docsy"
