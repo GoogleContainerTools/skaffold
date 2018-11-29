@@ -30,9 +30,8 @@
 package gax
 
 import (
+	"context"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 // A user defined call stub.
