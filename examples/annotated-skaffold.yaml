@@ -142,6 +142,8 @@ deploy:
   # You'll need a kubectl CLI version installed that's compatible with your cluster.
   kubectl:
     # manifests to deploy from files.
+    # NOTE: These paths should be relative to the directory in which you'll be running
+    # skaffold from, NOT relative to the directory that this skaffold.yaml lives in!
     manifests:
     - ../examples/getting-started/k8s-*
     # kubectl can be passed additional option flags either on every command (Global),
