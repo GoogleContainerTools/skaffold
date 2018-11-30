@@ -39,7 +39,7 @@ func query(target string) string {
 // GetDependencies finds the sources dependencies for the given bazel artifact.
 // All paths are relative to the workspace.
 func GetDependencies(ctx context.Context, workspace string, a *latest.BazelArtifact) ([]string, error) {
-	cmd := exec.CommandContext(ctx, "bazel", "query", query(a.BuildTarget), "--noimplicit_deps", "--order_output=no")
+	cmd := exec.CommandContext(ctx, "bazel", "query", query(a.BuildTarget), "--noimplicit_deps", "--order_output=no", "--output=label")
 	cmd.Dir = workspace
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
