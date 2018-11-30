@@ -174,6 +174,16 @@ FROM nginx
 COPY . /
 `
 
+const fromScratch = `
+FROM scratch
+ADD ./file /etc/file
+`
+
+const fromScratchUppercase = `
+FROM SCRATCH
+ADD ./file /etc/file
+`
+
 type fakeImageFetcher struct {
 	fetched []string
 }
@@ -436,6 +446,20 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   ".",
 			expected:    []string{"Dockerfile"},
 			fetched:     []string{"ubuntu:14.04"},
+		},
+		{
+			description: "from scratch",
+			dockerfile:  fromScratch,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "file"},
+			fetched:     nil,
+		},
+		{
+			description: "from scratch, ignoring case",
+			dockerfile:  fromScratchUppercase,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "file"},
+			fetched:     nil,
 		},
 	}
 
