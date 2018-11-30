@@ -70,7 +70,7 @@ func dev(out io.Writer) error {
 				return errors.Wrap(err, "creating runner")
 			}
 
-			if _, err := r.Dev(ctx, out, config.Build.Artifacts); err != nil {
+			if err := r.Dev(ctx, out, config.Build.Artifacts); err != nil {
 				if errors.Cause(err) != runner.ErrorConfigurationChanged {
 					return err
 				}
