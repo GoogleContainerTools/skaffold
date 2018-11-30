@@ -52,11 +52,10 @@ func dev(out io.Writer) error {
 	defer cancel()
 	catchCtrlC(cancel)
 
+	cleanup := func() {}
 	if opts.Cleanup {
 		defer func() {
-			if err := delete(out); err != nil {
-				logrus.Warnln("cleanup:", err)
-			}
+			cleanup()
 		}()
 	}
 
@@ -70,7 +69,15 @@ func dev(out io.Writer) error {
 				return errors.Wrap(err, "creating runner")
 			}
 
-			if err := r.Dev(ctx, out, config.Build.Artifacts); err != nil {
+			err = r.Dev(ctx, out, config.Build.Artifacts)
+			if r.HasDeployed() {
+				cleanup = func() {
+					if err := r.Cleanup(context.Background(), out); err != nil {
+						logrus.Warnln("cleanup:", err)
+					}
+				}
+			}
+			if err != nil {
 				if errors.Cause(err) != runner.ErrorConfigurationChanged {
 					return err
 				}

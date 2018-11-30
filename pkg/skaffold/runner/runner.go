@@ -59,6 +59,7 @@ type SkaffoldRunner struct {
 	opts         *config.SkaffoldOptions
 	watchFactory watch.Factory
 	builds       []build.Artifact
+	hasDeployed  bool
 	imageList    *kubernetes.ImageList
 }
 
@@ -207,6 +208,11 @@ func (r *SkaffoldRunner) newLogger(out io.Writer, artifacts []*latest.Artifact) 
 	return kubernetes.NewLogAggregator(out, imageNames, r.imageList)
 }
 
+// HasDeployed returns true if this runner has deployed something.
+func (r *SkaffoldRunner) HasDeployed() bool {
+	return r.hasDeployed
+}
+
 func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
 	bRes, err := r.BuildAndTest(ctx, out, artifacts)
 	if err != nil {
@@ -258,6 +264,13 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 		}
 	}
 	return bRes, err
+}
+
+// Deploy deployes the given artifacts
+func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) ([]deploy.Artifact, error) {
+	dRes, err := r.Deployer.Deploy(ctx, out, artifacts)
+	r.hasDeployed = true
+	return dRes, err
 }
 
 // TailLogs prints the logs for deployed artifacts.
