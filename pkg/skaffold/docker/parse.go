@@ -119,7 +119,7 @@ func fromInstruction(node *parser.Node) from {
 	}
 
 	return from{
-		image: strings.ToLower(node.Next.Value),
+		image: node.Next.Value,
 		as:    strings.ToLower(as),
 	}
 }
@@ -129,17 +129,22 @@ func onbuildInstructions(nodes []*parser.Node) ([]*parser.Node, error) {
 
 	stages := map[string]bool{}
 	for _, from := range fromInstructions(nodes) {
-		stages[from.as] = true
+		// Stage names are case insensitive
+		stages[strings.ToLower(from.as)] = true
 
-		if from.image == "scratch" {
+		// `scratch` is case insensitive
+		if strings.ToLower(from.image) == "scratch" {
 			continue
 		}
 
-		if _, found := stages[from.image]; found {
+		// Stage names are case insensitive
+		if _, found := stages[strings.ToLower(from.image)]; found {
 			continue
 		}
 
 		logrus.Debugf("Checking base image %s for ONBUILD triggers.", from.image)
+
+		// Image names are case SENSITIVE
 		img, err := RetrieveImage(from.image)
 		if err != nil {
 			logrus.Warnf("Error processing base image for ONBUILD triggers: %s. Dependencies may be incomplete.", err)

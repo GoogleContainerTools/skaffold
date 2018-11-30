@@ -184,6 +184,11 @@ FROM SCRATCH
 ADD ./file /etc/file
 `
 
+const fromImageCaseSensitive = `
+FROM jboss/wildfly:14.0.1.Final
+ADD ./file /etc/file
+`
+
 type fakeImageFetcher struct {
 	fetched []string
 }
@@ -192,7 +197,7 @@ func (f *fakeImageFetcher) fetch(image string) (*v1.ConfigFile, error) {
 	f.fetched = append(f.fetched, image)
 
 	switch image {
-	case "ubuntu:14.04", "busybox", "nginx", "golang:1.9.2":
+	case "ubuntu:14.04", "busybox", "nginx", "golang:1.9.2", "jboss/wildfly:14.0.1.Final":
 		return &v1.ConfigFile{}, nil
 	case "golang:onbuild":
 		return &v1.ConfigFile{
@@ -460,6 +465,13 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "file"},
 			fetched:     nil,
+		},
+		{
+			description: "case sensitive",
+			dockerfile:  fromImageCaseSensitive,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "file"},
+			fetched:     []string{"jboss/wildfly:14.0.1.Final"},
 		},
 	}
 
