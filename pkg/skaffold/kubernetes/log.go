@@ -94,8 +94,18 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 					continue
 				}
 
-				if a.podSelector.Select(pod) {
-					go a.streamLogs(cancelCtx, pod)
+				if !a.podSelector.Select(pod) {
+					continue
+				}
+
+				for _, container := range pod.Status.ContainerStatuses {
+					if container.ContainerID == "" {
+						continue
+					}
+
+					if !a.trackedContainers.add(container.ContainerID) {
+						go a.streamContainerLogs(cancelCtx, pod, container)
+					}
 				}
 			}
 		}
@@ -119,39 +129,27 @@ func sinceSeconds(d time.Duration) int64 {
 	return 1
 }
 
-func (a *LogAggregator) streamLogs(ctx context.Context, pod *v1.Pod) {
-	for _, container := range pod.Status.ContainerStatuses {
-		containerID := container.ContainerID
-		if containerID == "" || !container.Ready {
-			continue
+func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, container v1.ContainerStatus) {
+	logrus.Infof("Stream logs from pod: %s container: %s", pod.Name, container.Name)
+
+	// In theory, it's more precise to use --since-time='' but there can be a time
+	// difference between the user's machine and the server.
+	// So we use --since=Xs and round up to the nearest second to not lose any log.
+	sinceSeconds := fmt.Sprintf("--since=%ds", sinceSeconds(time.Since(a.startTime)))
+
+	tr, tw := io.Pipe()
+	cmd := exec.CommandContext(ctx, "kubectl", "logs", sinceSeconds, "-f", pod.Name, "-c", container.Name, "--namespace", pod.Namespace)
+	cmd.Stdout = tw
+	go cmd.Run()
+
+	color := a.colorPicker.Pick(pod)
+	prefix := prefix(pod, container)
+	go func() {
+		if err := a.streamRequest(ctx, color, prefix, tr); err != nil {
+			logrus.Errorf("streaming request %s", err)
 		}
-
-		alreadyTracked := a.trackedContainers.add(containerID)
-		if alreadyTracked {
-			continue
-		}
-
-		logrus.Infof("Stream logs from pod: %s container: %s", pod.Name, container.Name)
-
-		// In theory, it's more precise to use --since-time='' but there can be a time
-		// difference between the user's machine and the server.
-		// So we use --since=Xs and round up to the nearest second to not lose any log.
-		sinceSeconds := fmt.Sprintf("--since=%ds", sinceSeconds(time.Since(a.startTime)))
-
-		tr, tw := io.Pipe()
-		cmd := exec.CommandContext(ctx, "kubectl", "logs", sinceSeconds, "-f", pod.Name, "-c", container.Name, "--namespace", pod.Namespace)
-		cmd.Stdout = tw
-		go cmd.Run()
-
-		color := a.colorPicker.Pick(pod)
-		prefix := prefix(pod, container)
-		go func() {
-			if err := a.streamRequest(ctx, color, prefix, tr); err != nil {
-				logrus.Errorf("streaming request %s", err)
-			}
-			a.trackedContainers.remove(containerID)
-		}()
-	}
+		a.trackedContainers.remove(container.ContainerID)
+	}()
 }
 
 func prefix(pod *v1.Pod, container v1.ContainerStatus) string {
