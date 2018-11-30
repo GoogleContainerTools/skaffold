@@ -36,3 +36,19 @@ func TestBazelBin(t *testing.T) {
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, "/absolute/path/bin", bazelBin)
 }
+
+func TestBuildTarPath(t *testing.T) {
+	buildTarget := "//:skaffold_example.tar"
+
+	tarPath := buildTarPath(buildTarget)
+
+	testutil.CheckDeepEqual(t, "skaffold_example.tar", tarPath)
+}
+
+func TestBuildImageTag(t *testing.T) {
+	buildTarget := "//:skaffold_example.tar"
+
+	imageTag := buildImageTag(buildTarget)
+
+	testutil.CheckDeepEqual(t, ":skaffold_example", imageTag)
+}
