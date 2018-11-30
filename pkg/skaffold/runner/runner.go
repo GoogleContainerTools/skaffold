@@ -266,7 +266,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	return bRes, err
 }
 
-// Deploy deployes the given artifacts
+// Deploy deploys the given artifacts
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) ([]deploy.Artifact, error) {
 	dRes, err := r.Deployer.Deploy(ctx, out, artifacts)
 	r.hasDeployed = true
