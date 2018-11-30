@@ -27,7 +27,7 @@ import (
 
 // Artifact contains all information about a completed deployment
 type Artifact struct {
-	Obj       *runtime.Object
+	Obj       runtime.Object
 	Namespace string
 }
 

@@ -29,6 +29,7 @@ type SkaffoldOptions struct {
 	Tail              bool
 	TailDev           bool
 	PortForward       bool
+	SkipTests         bool
 	Profiles          []string
 	CustomTag         string
 	Namespace         string
@@ -37,6 +38,7 @@ type SkaffoldOptions struct {
 	CustomLabels      []string
 	WatchPollInterval int
 	DefaultRepo       string
+	PreBuiltImages    []string
 }
 
 // Labels returns a map of labels to be applied to all deployed

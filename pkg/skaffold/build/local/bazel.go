@@ -27,6 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
@@ -46,7 +47,12 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace strin
 	tarPath := buildTarPath(a.BuildTarget)
 	imageTag := buildImageTag(a.BuildTarget)
 
-	imageTar, err := os.Open(filepath.Join(workspace, "bazel-bin", tarPath))
+	bazelBin, err := bazelBin(ctx, workspace)
+	if err != nil {
+		return "", errors.Wrap(err, "getting path of bazel-bin")
+	}
+
+	imageTar, err := os.Open(filepath.Join(bazelBin, tarPath))
 	if err != nil {
 		return "", errors.Wrap(err, "opening image tarball")
 	}
@@ -64,6 +70,18 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace strin
 	}
 
 	return fmt.Sprintf("bazel%s", imageTag), nil
+}
+
+func bazelBin(ctx context.Context, workspace string) (string, error) {
+	cmd := exec.CommandContext(ctx, "bazel", "info", "bazel-bin")
+	cmd.Dir = workspace
+
+	buf, err := util.RunCmdOut(cmd)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(buf)), nil
 }
 
 func trimTarget(buildTarget string) string {

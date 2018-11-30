@@ -19,22 +19,22 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestFix(t *testing.T) {
 	tests := []struct {
-		name       string
-		inputYaml  string
-		outputYaml string
-		shouldErr  bool
+		description string
+		inputYaml   string
+		output      string
+		shouldErr   bool
 	}{
 		{
-			name: "v1alpha4 to latest",
+			description: "v1alpha4 to latest",
 			inputYaml: `apiVersion: skaffold/v1alpha4
 kind: Config
 build:
@@ -51,7 +51,7 @@ deploy:
     manifests:
     - k8s/deployment.yaml
 `,
-			outputYaml: fmt.Sprintf(`apiVersion: %s
+			output: fmt.Sprintf(`apiVersion: %s
 kind: Config
 build:
   artifacts:
@@ -69,7 +69,7 @@ deploy:
 `, latest.Version),
 		},
 		{
-			name: "v1alpha1 to latest",
+			description: "v1alpha1 to latest",
 			inputYaml: `apiVersion: skaffold/v1alpha1
 kind: Config
 build:
@@ -82,7 +82,7 @@ deploy:
     - paths:
       - k8s/deployment.yaml
 `,
-			outputYaml: fmt.Sprintf(`apiVersion: %s
+			output: fmt.Sprintf(`apiVersion: %s
 kind: Config
 build:
   artifacts:
@@ -95,19 +95,74 @@ deploy:
     - k8s/deployment.yaml
 `, latest.Version),
 		},
+		{
+			description: "already latest version",
+			inputYaml: fmt.Sprintf(`apiVersion: %s
+kind: Config
+`, latest.Version),
+			output: "config is already latest version\n",
+		},
+		{
+			description: "invalid input",
+			inputYaml:   "invalid",
+			shouldErr:   true,
+		},
 	}
 
-	for _, tt := range tests {
-		cfgFile, teardown := testutil.TempFile(t, "config", []byte(tt.inputYaml))
-		defer teardown()
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			cfgFile, teardown := testutil.TempFile(t, "config", []byte(test.inputYaml))
+			defer teardown()
 
-		cfg, err := schema.ParseConfig(cfgFile, false)
-		if err != nil {
-			t.Fatalf(err.Error())
-		}
-		var b bytes.Buffer
-		err = runFix(&b, cfg)
+			var b bytes.Buffer
+			err := runFix(&b, cfgFile, false)
 
-		testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.outputYaml, b.String())
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.output, b.String())
+		})
 	}
+}
+
+func TestFixOverwrite(t *testing.T) {
+	inputYaml := `apiVersion: skaffold/v1alpha4
+kind: Config
+build:
+  artifacts:
+  - image: docker/image
+    docker:
+      dockerfile: dockerfile.test
+test:
+- image: docker/image
+  structureTests:
+  - ./test/*
+deploy:
+  kubectl:
+    manifests:
+    - k8s/deployment.yaml
+`
+	expectedOutput := fmt.Sprintf(`apiVersion: %s
+kind: Config
+build:
+  artifacts:
+  - image: docker/image
+    docker:
+      dockerfile: dockerfile.test
+test:
+- image: docker/image
+  structureTests:
+  - ./test/*
+deploy:
+  kubectl:
+    manifests:
+    - k8s/deployment.yaml
+`, latest.Version)
+
+	cfgFile, teardown := testutil.TempFile(t, "config", []byte(inputYaml))
+	defer teardown()
+
+	var b bytes.Buffer
+	err := runFix(&b, cfgFile, true)
+
+	output, _ := ioutil.ReadFile(cfgFile)
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, expectedOutput, string(output))
 }
