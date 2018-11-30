@@ -52,13 +52,7 @@ func dev(out io.Writer) error {
 	defer cancel()
 	catchCtrlC(cancel)
 
-	if opts.Cleanup {
-		defer func() {
-			if err := delete(out); err != nil {
-				logrus.Warnln("cleanup:", err)
-			}
-		}()
-	}
+	cleanupInstalled := false
 
 	for {
 		select {
@@ -68,6 +62,15 @@ func dev(out io.Writer) error {
 			r, config, err := newRunner(opts)
 			if err != nil {
 				return errors.Wrap(err, "creating runner")
+			}
+
+			if opts.Cleanup && !cleanupInstalled {
+				cleanupInstalled = true
+				defer func() {
+					if err := delete(out); err != nil {
+						logrus.Warnln("cleanup:", err)
+					}
+				}()
 			}
 
 			if _, err := r.Dev(ctx, out, config.Build.Artifacts); err != nil {
