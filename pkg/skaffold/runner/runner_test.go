@@ -394,7 +394,7 @@ func TestDev(t *testing.T) {
 			runner.Deployer = test.deployer
 			runner.watchFactory = test.watcherFactory
 
-			_, err := runner.Dev(context.Background(), ioutil.Discard, nil)
+			err := runner.Dev(context.Background(), ioutil.Discard, nil)
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})
@@ -417,7 +417,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 
 	// Both artifacts are changed
 	runner.watchFactory = NewWatcherFactory(nil, nil, []int{0, 1})
-	_, err := runner.Dev(ctx, ioutil.Discard, artifacts)
+	err := runner.Dev(ctx, ioutil.Discard, artifacts)
 
 	if err != nil {
 		t.Errorf("Didn't expect an error. Got %s", err)
@@ -431,7 +431,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 
 	// Only one is changed
 	runner.watchFactory = NewWatcherFactory(nil, nil, []int{1})
-	_, err = runner.Dev(ctx, ioutil.Discard, artifacts)
+	err = runner.Dev(ctx, ioutil.Discard, artifacts)
 
 	if err != nil {
 		t.Errorf("Didn't expect an error. Got %s", err)
