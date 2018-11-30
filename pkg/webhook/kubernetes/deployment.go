@@ -19,6 +19,9 @@ package kubernetes
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
+	"os/exec"
 	"path"
 	"time"
 
@@ -30,11 +33,13 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
-	emptyVol     = "empty-vol"
-	emptyVolPath = "/empty"
+	initContainerName = "git-clone"
+	emptyVol          = "empty-vol"
+	emptyVolPath      = "/empty"
 )
 
 // CreateDeployment creates a deployment for this pull request
@@ -71,7 +76,7 @@ func CreateDeployment(pr *github.PullRequestEvent, svc *v1.Service, externalIP s
 				Spec: v1.PodSpec{
 					InitContainers: []v1.Container{
 						{
-							Name:       "git-clone",
+							Name:       initContainerName,
 							Image:      constants.DeploymentImage,
 							Args:       []string{"git", "clone", userRepo, "--branch", pr.PullRequest.Head.GetRef()},
 							WorkingDir: emptyVolPath,
@@ -118,14 +123,45 @@ func CreateDeployment(pr *github.PullRequestEvent, svc *v1.Service, externalIP s
 }
 
 // WaitForDeploymentToStabilize waits till the Deployment has stabilized
-func WaitForDeploymentToStabilize(d *appsv1.Deployment) error {
+func WaitForDeploymentToStabilize(d *appsv1.Deployment, ip string) error {
 	client, err := pkgkubernetes.GetClientset()
 	if err != nil {
 		return errors.Wrap(err, "getting clientset")
 	}
-	return pkgkubernetes.WaitForDeploymentToStabilize(context.Background(), client, d.Namespace, d.Name, 5*time.Minute)
+	if err := pkgkubernetes.WaitForDeploymentToStabilize(context.Background(), client, d.Namespace, d.Name, 5*time.Minute); err != nil {
+		return errors.Wrap(err, "waiting for deployment to stabilize")
+	}
+	// wait up to five minutes for the URL to return a valid endpoint
+	url := BaseURL(ip)
+	log.Printf("Waiting up to 5 minutes for %s to return an OK response...", url)
+	return wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
+		resp, err := http.Get(url)
+		if err != nil {
+			return false, nil
+		}
+		return resp.StatusCode == http.StatusOK, nil
+	})
 }
 
+// BaseURL returns the base url of the deployment
 func BaseURL(ip string) string {
 	return fmt.Sprintf("http://%s:%d", ip, constants.HugoPort)
+}
+
+// Logs returns the logs for both containers for the given deployment
+func Logs(d *appsv1.Deployment) string {
+	deploy := fmt.Sprintf("deployment/%s", d.Name)
+	// get init container logs
+	cmd := exec.Command("kubectl", "logs", deploy, "-c", initContainerName)
+	initLogs, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Error retrieving init container logs for %s: %v", d.Name, err)
+	}
+	// get deployment logs
+	cmd = exec.Command("kubectl", "logs", deploy)
+	logs, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Error retrieving deployment logs for %s: %v", d.Name, err)
+	}
+	return fmt.Sprintf("Init container logs: \n %s \nContainer Logs: \n %s", initLogs, logs)
 }
