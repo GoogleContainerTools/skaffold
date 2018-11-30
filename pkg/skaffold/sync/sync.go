@@ -112,11 +112,11 @@ func intersect(context string, syncMap map[string]string, files []string) (map[s
 				matches = true
 				// If the source has special match characters,
 				// the destination must be a directory
-				// The path package must be used here, since the destination is always
-				// a linux filesystem.
+				// The path package must be used here to enforce slashes,
+				// since the destination is always a linux filesystem.
 				if util.HasMeta(p) {
 					relPathDynamic := strings.TrimPrefix(relPath, staticPath)
-					dst = filepath.Join(dst, relPathDynamic)
+					dst = filepath.ToSlash(filepath.Join(dst, relPathDynamic))
 				}
 				ret[f] = dst
 			}
