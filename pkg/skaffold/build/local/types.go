@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -46,7 +47,10 @@ func NewBuilder(cfg *latest.LocalBuild, kubeContext string) (*Builder, error) {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
 
-	localCluster := isLocal(kubeContext)
+	localCluster, err := configutil.GetLocalCluster()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting localCluster")
+	}
 
 	var pushImages bool
 	if cfg.Push == nil {
@@ -63,12 +67,6 @@ func NewBuilder(cfg *latest.LocalBuild, kubeContext string) (*Builder, error) {
 		localCluster: localCluster,
 		pushImages:   pushImages,
 	}, nil
-}
-
-func isLocal(kubeContext string) bool {
-	return kubeContext == constants.DefaultMinikubeContext ||
-		kubeContext == constants.DefaultDockerForDesktopContext ||
-		kubeContext == constants.DefaultDockerDesktopContext
 }
 
 // Labels are labels specific to local builder.
