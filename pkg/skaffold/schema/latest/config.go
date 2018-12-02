@@ -161,6 +161,7 @@ type DeployType struct {
 type KubectlDeploy struct {
 	Manifests       []string     `yaml:"manifests,omitempty"`
 	RemoteManifests []string     `yaml:"remoteManifests,omitempty"`
+	URLManifests    []string     `yaml:"urlManifests,omitempty"`
 	Flags           KubectlFlags `yaml:"flags,omitempty"`
 }
 

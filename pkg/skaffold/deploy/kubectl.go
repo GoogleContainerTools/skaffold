@@ -22,6 +22,7 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -170,6 +171,15 @@ func (k *KubectlDeployer) readManifests(ctx context.Context) (kubectl.ManifestLi
 		manifests = append(manifests, manifest)
 	}
 
+	for _, m := range k.URLManifests {
+		manifest, err := k.readURLManifest(m)
+		if err != nil {
+			return nil, errors.Wrap(err, "get url manifests")
+		}
+
+		manifests.Append(manifest)
+	}
+
 	logrus.Debugln("manifests", manifests.String())
 
 	return manifests, nil
@@ -190,4 +200,21 @@ func (k *KubectlDeployer) readRemoteManifest(ctx context.Context, name string) (
 	}
 
 	return manifest.Bytes(), nil
+}
+
+func (k *KubectlDeployer) readURLManifest(url string) ([]byte, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "requesting manifest")
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting manifest")
+	}
+	manifest, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "reading manifest")
+	}
+
+	return manifest, nil
 }
