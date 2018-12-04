@@ -26,6 +26,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
@@ -182,6 +183,7 @@ func doInit(out io.Writer) error {
 	}
 
 	fmt.Fprintf(out, "Configuration %s was written\n", opts.ConfigurationFile)
+	tips.PrintForInit(out, opts)
 
 	return nil
 }
