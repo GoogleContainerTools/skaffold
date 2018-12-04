@@ -18,6 +18,7 @@ package runner
 
 import (
 	"context"
+	"fmt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -31,6 +32,7 @@ import (
 	"io"
 	"io/ioutil"
 	"testing"
+	"time"
 )
 
 type TestBuilder struct {
@@ -43,6 +45,7 @@ func (t *TestBuilder) Labels() map[string]string {
 }
 
 func (t *TestBuilder) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	fmt.Printf("Build %v\n", artifacts)
 	if len(t.errors) > 0 {
 		err := t.errors[0]
 		t.errors = t.errors[1:]
@@ -421,9 +424,11 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	if err != nil {
 		t.Errorf("Didn't expect an error. Got %s", err)
 	}
-	if len(builder.built) != 2 {
-		t.Errorf("Expected 2 artifacts to be built. Got %d", len(builder.built))
+
+	if !WaitFor(2, func() bool { return len(builder.built) == 2 },  100 * time.Millisecond) {
+		t.Errorf("Expected 2 artifact to be built. Got %d", len(builder.built))
 	}
+
 	if len(deployer.deployed) != 2 {
 		t.Errorf("Expected 2 artifacts to be deployed. Got %d", len(deployer.deployed))
 	}
@@ -435,12 +440,25 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 	if err != nil {
 		t.Errorf("Didn't expect an error. Got %s", err)
 	}
-	if len(builder.built) != 1 {
+
+	if  !WaitFor(2, func() bool { return len(builder.built) == 1},  100 * time.Millisecond)  {
 		t.Errorf("Expected 1 artifact to be built. Got %d", len(builder.built))
 	}
+
 	if len(deployer.deployed) != 2 {
 		t.Errorf("Expected 2 artifacts to be deployed. Got %d", len(deployer.deployed))
 	}
+
+}
+
+func WaitFor(retryCount int, success func() bool, sleepTime time.Duration) bool {
+	for i := 0; i < retryCount; i++ {
+		if success() {
+			break
+		}
+		time.Sleep(sleepTime)
+	}
+	return success()
 }
 
 func TestShouldWatch(t *testing.T) {

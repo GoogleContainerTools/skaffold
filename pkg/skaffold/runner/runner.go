@@ -347,11 +347,13 @@ func (r *SkaffoldRunner) Dev(devCtx context.Context, out io.Writer, artifacts []
 			childContexts = []cancellableContext{}
 			ctx, cancel := ContextWithCancel()
 			childContexts = append(childContexts, cancellableContext{ctx, cancel})
+			arts := changed.needsRebuild
 			go func(needsRebuild []*latest.Artifact) {
+				fmt.Printf("go func %v\n", needsRebuild)
 				if err := r.buildTestDeploy(ctx, out, needsRebuild); err != nil {
 					logrus.Warnln("Skipping deploy due to errors:", err)
 				}
-			}(changed.needsRebuild)
+			}(arts)
 
 		case changed.needsRedeploy:
 			if _, err := r.Deploy(devCtx, out, r.builds); err != nil {
