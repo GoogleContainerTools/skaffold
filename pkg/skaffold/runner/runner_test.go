@@ -425,7 +425,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 		t.Errorf("Didn't expect an error. Got %s", err)
 	}
 
-	if !WaitFor(2, func() bool { return len(builder.built) == 2 }, 100*time.Millisecond) {
+	if !WaitFor(2, func() bool { return len(builder.built) == 2 }, 1*time.Second) {
 		t.Errorf("Expected 2 artifact to be built. Got %d", len(builder.built))
 	}
 
@@ -441,7 +441,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 		t.Errorf("Didn't expect an error. Got %s", err)
 	}
 
-	if !WaitFor(2, func() bool { return len(builder.built) == 1 }, 100*time.Millisecond) {
+	if !WaitFor(2, func() bool { return len(builder.built) == 1 }, 1*time.Second) {
 		t.Errorf("Expected 1 artifact to be built. Got %d", len(builder.built))
 	}
 
