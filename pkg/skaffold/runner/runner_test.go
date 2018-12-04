@@ -18,10 +18,6 @@ package runner
 
 import (
 	"context"
-	"io"
-	"io/ioutil"
-	"testing"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -32,6 +28,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/pkg/errors"
+	"io"
+	"io/ioutil"
+	"testing"
 )
 
 type TestBuilder struct {

@@ -256,7 +256,7 @@ func TestDev(t *testing.T) {
 			jobValidation: func(t *testing.T, ns *v1.Namespace, j *batchv1.Job) {
 				originalUID := j.GetUID()
 				// Make Docker build very slow
-				cmd := exec.Command("sh", "-c", "echo RUN sleep 5000 >> examples/test-dev-job/Dockerfile")
+				cmd := exec.Command("sh", "-c", "echo RUN sleep 5000 >> integration/examples/test-dev-job/Dockerfile")
 				if output, err := util.RunCmdOut(cmd); err != nil {
 					t.Fatalf("modifying Dockerfile: %s %v", output, err)
 				}
@@ -265,7 +265,7 @@ func TestDev(t *testing.T) {
 				time.Sleep(5 * time.Second)
 
 				// Make Docker build faster (1 second sleep) - this should cancel the previous slow running build
-				cmd = exec.Command("sh", "-c", "sed -i '' 's/5000/1/g' examples/test-dev-job/Dockerfile")
+				cmd = exec.Command("sh", "-c", "sed -i '' 's/5000/1/g' integration/examples/test-dev-job/Dockerfile")
 				if output, err := util.RunCmdOut(cmd); err != nil {
 					t.Fatalf("changing Dockerfile back: %s %v", output, err)
 				}

@@ -340,15 +340,15 @@ func (r *SkaffoldRunner) Dev(devCtx context.Context, out io.Writer, artifacts []
 				}
 			}
 		case len(changed.needsRebuild) > 0:
-			logrus.Warnln("Cancelling previous builds...")
+			logrus.Warnf("Cancelling previous builds...changed artifacts: %+v", changed.needsRebuild)
 			for _, ctx := range childContexts {
 				ctx.cancel()
 			}
 			childContexts = []cancellableContext{}
 			ctx, cancel := ContextWithCancel()
 			childContexts = append(childContexts, cancellableContext{ctx, cancel})
-			go func(artifacts []*latest.Artifact) {
-				if err := r.buildTestDeploy(ctx, out, artifacts); err != nil {
+			go func(needsRebuild []*latest.Artifact) {
+				if err := r.buildTestDeploy(ctx, out, needsRebuild); err != nil {
 					logrus.Warnln("Skipping deploy due to errors:", err)
 				}
 			}(changed.needsRebuild)
