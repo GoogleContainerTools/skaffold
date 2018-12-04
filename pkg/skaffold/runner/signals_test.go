@@ -16,10 +16,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package runner
 
 import (
-	"context"
 	"sync"
 	"syscall"
 	"testing"
@@ -29,8 +28,7 @@ func TestCatchCtrlC(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	catchCtrlC(cancel)
+	ctx, _ := ContextWithCancel()
 
 	go func() {
 		<-ctx.Done()

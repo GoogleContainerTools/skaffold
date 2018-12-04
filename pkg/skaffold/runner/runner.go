@@ -292,13 +292,20 @@ func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, artifacts 
 	return nil
 }
 
+type cancellableContext struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+}
+
 // Dev watches for changes and runs the skaffold build and deploy
-// pipeline until interrrupted by the user.
-func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
+// pipeline until interrupted by the user.
+func (r *SkaffoldRunner) Dev(devCtx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
 	logger := r.newLogger(out, artifacts)
 
 	// Create watcher and register artifacts to build current state of files.
 	changed := changes{}
+	var childContexts []cancellableContext
+
 	onChange := func() error {
 		defer func() {
 			changed.reset()
@@ -327,18 +334,27 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			for _, s := range changed.needsResync {
 				color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
 
-				if err := r.Syncer.Sync(ctx, s); err != nil {
+				if err := r.Syncer.Sync(devCtx, s); err != nil {
 					logrus.Warnln("Skipping deploy due to sync error:", err)
 					return nil
 				}
 			}
 		case len(changed.needsRebuild) > 0:
-			if err := r.buildTestDeploy(ctx, out, changed.needsRebuild); err != nil {
-				logrus.Warnln("Skipping deploy due to errors:", err)
-				return nil
+			logrus.Warnln("Cancelling previous builds...")
+			for _, ctx := range childContexts {
+				ctx.cancel()
 			}
+			childContexts = []cancellableContext{}
+			ctx, cancel := ContextWithCancel()
+			childContexts = append(childContexts, cancellableContext{ctx, cancel})
+			go func(artifacts []*latest.Artifact) {
+				if err := r.buildTestDeploy(ctx, out, artifacts); err != nil {
+					logrus.Warnln("Skipping deploy due to errors:", err)
+				}
+			}(changed.needsRebuild)
+
 		case changed.needsRedeploy:
-			if _, err := r.Deploy(ctx, out, r.builds); err != nil {
+			if _, err := r.Deploy(devCtx, out, r.builds); err != nil {
 				logrus.Warnln("Skipping Deploy due to error:", err)
 				return nil
 			}
@@ -359,7 +375,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 
 		if err := watcher.Register(
-			func() ([]string, error) { return DependenciesForArtifact(ctx, artifact) },
+			func() ([]string, error) { return DependenciesForArtifact(devCtx, artifact) },
 			func(e watch.Events) { changed.AddDirtyArtifact(artifact, e) },
 		); err != nil {
 			return errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
@@ -391,13 +407,13 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	// First run
-	if err := r.buildTestDeploy(ctx, out, artifacts); err != nil {
+	if err := r.buildTestDeploy(devCtx, out, artifacts); err != nil {
 		return errors.Wrap(err, "exiting dev mode because first run failed")
 	}
 
 	// Start logs
 	if r.opts.TailDev {
-		if err := logger.Start(ctx); err != nil {
+		if err := logger.Start(devCtx); err != nil {
 			return errors.Wrap(err, "starting logger")
 		}
 	}
@@ -405,13 +421,13 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	if r.opts.PortForward {
 		portForwarder := kubernetes.NewPortForwarder(out, r.imageList)
 
-		if err := portForwarder.Start(ctx); err != nil {
+		if err := portForwarder.Start(devCtx); err != nil {
 			return errors.Wrap(err, "starting port-forwarder")
 		}
 	}
 
 	r.Trigger.WatchForChanges(out)
-	return watcher.Run(ctx, r.Trigger, onChange)
+	return watcher.Run(devCtx, r.Trigger, onChange)
 }
 
 func (r *SkaffoldRunner) shouldWatch(artifact *latest.Artifact) bool {

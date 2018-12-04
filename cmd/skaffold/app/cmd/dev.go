@@ -48,9 +48,7 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 }
 
 func dev(out io.Writer) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	catchCtrlC(cancel)
+	ctx, cancel := runner.ContextWithCancel()
 
 	cleanup := func() {}
 	if opts.Cleanup {
@@ -58,6 +56,8 @@ func dev(out io.Writer) error {
 			cleanup()
 		}()
 	}
+
+	defer cancel()
 
 	for {
 		select {

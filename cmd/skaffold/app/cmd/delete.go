@@ -17,7 +17,7 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"io"
 
 	"github.com/pkg/errors"
@@ -39,9 +39,8 @@ func NewCmdDelete(out io.Writer) *cobra.Command {
 }
 
 func delete(out io.Writer) error {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := runner.ContextWithCancel()
 	defer cancel()
-	catchCtrlC(cancel)
 
 	runner, _, err := newRunner(opts)
 	if err != nil {

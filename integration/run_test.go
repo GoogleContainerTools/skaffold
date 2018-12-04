@@ -241,6 +241,11 @@ func TestDev(t *testing.T) {
 					// delete foo
 					cmd := exec.Command("rm", "examples/test-dev-job/foo")
 					if output, err := util.RunCmdOut(cmd); err != nil {
+						t.Fatalf("deleting foo: %s %v", output, err)
+					}
+
+					cmd = exec.Command("sh", "-c", "sed -i '' '$ d' examples/test-dev-job/Dockerfile")
+					if output, err := util.RunCmdOut(cmd); err != nil {
 						t.Fatalf("creating foo: %s %v", output, err)
 					}
 				}
@@ -250,13 +255,23 @@ func TestDev(t *testing.T) {
 			},
 			jobValidation: func(t *testing.T, ns *v1.Namespace, j *batchv1.Job) {
 				originalUID := j.GetUID()
-				// Make a change to foo so that dev is forced to delete the job and redeploy
-				cmd := exec.Command("sh", "-c", "echo bar > examples/test-dev-job/foo")
+				// Make Docker build very slow
+				cmd := exec.Command("sh", "-c", "echo RUN sleep 5000 >> examples/test-dev-job/Dockerfile")
 				if output, err := util.RunCmdOut(cmd); err != nil {
-					t.Fatalf("creating bar: %s %v", output, err)
+					t.Fatalf("modifying Dockerfile: %s %v", output, err)
 				}
+
+				// give time for dev to start the build
+				time.Sleep(5 * time.Second)
+
+				// Make Docker build faster (1 second sleep) - this should cancel the previous slow running build
+				cmd = exec.Command("sh", "-c", "sed -i '' 's/5000/1/g' examples/test-dev-job/Dockerfile")
+				if output, err := util.RunCmdOut(cmd); err != nil {
+					t.Fatalf("changing Dockerfile back: %s %v", output, err)
+				}
+
 				// Make sure the UID of the old Job and the UID of the new Job is different
-				err := wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
+				err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 					newJob, err := client.BatchV1().Jobs(ns.Name).Get(j.Name, meta_v1.GetOptions{})
 					if err != nil {
 						return false, nil
@@ -283,12 +298,13 @@ func TestDev(t *testing.T) {
 			args = append(args, "--namespace", ns.Name)
 
 			cmd := exec.Command("skaffold", args...)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
 			cmd.Dir = testCase.dir
-			go func() {
-				if output, err := util.RunCmdOut(cmd); err != nil {
-					logrus.Warnf("skaffold: %s %v", output, err)
-				}
-			}()
+			err := cmd.Start()
+			if err != nil {
+				logrus.Warnf("skaffold: %v", err)
+			}
 
 			for _, j := range testCase.jobs {
 				if err := kubernetesutil.WaitForJobToStabilize(context.Background(), client, ns.Name, j, 10*time.Minute); err != nil {
