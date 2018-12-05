@@ -417,8 +417,8 @@ func (r *SkaffoldRunner) Dev(devCtx context.Context, out io.Writer, artifacts []
 				}
 			}
 		case len(changed.needsRebuild) > 0:
-			logrus.Warnf("cancelling previous builds...changed artifacts: %+v", changed.needsRebuild)
 			for _, artifact := range changed.needsRebuild {
+				logrus.Infof("cancelling previous build for %s", artifact.ImageName)
 				resp := make(chan removeContextResponse)
 				contextManager.removeContext <- removeContextRequest{id: artifact.ImageName, cancel: true, response: resp}
 				response := <-resp
@@ -435,6 +435,10 @@ func (r *SkaffoldRunner) Dev(devCtx context.Context, out io.Writer, artifacts []
 				go func() {
 					if err := r.buildTestDeploy(newCtxResponse.ctx.ctx, out, []*latest.Artifact{artifact}); err != nil {
 						logrus.Warnln("Skipping deploy due to errors:", err)
+					}
+					contextManager.removeContext <- removeContextRequest{id: artifact.ImageName, cancel: false, response: resp}
+					if response.err != nil {
+						logrus.Warnf("failed to remove context after build was done for artifact %s: %v", artifact.ImageName, response.err)
 					}
 				}()
 			}
