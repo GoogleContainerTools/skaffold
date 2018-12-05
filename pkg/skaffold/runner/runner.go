@@ -419,26 +419,17 @@ func (r *SkaffoldRunner) Dev(devCtx context.Context, out io.Writer, artifacts []
 		case len(changed.needsRebuild) > 0:
 			for _, artifact := range changed.needsRebuild {
 				logrus.Infof("cancelling previous build for %s", artifact.ImageName)
-				resp := make(chan removeContextResponse)
-				contextManager.removeContext <- removeContextRequest{id: artifact.ImageName, cancel: true, response: resp}
-				response := <-resp
-				if response.err != nil {
-					logrus.Warnf("failed to cancel build for artifact %s: %v", artifact.ImageName, response.err)
-				}
-				newCtxChan := make(chan newContextResponse)
-				contextManager.newContext <- newContextRequest{id: artifact.ImageName, newContext: newCtxChan}
-				newCtxResponse := <-newCtxChan
-				if newCtxResponse.err != nil {
-					logrus.Errorf("failed to create new context for %s: %s", artifact.ImageName, newCtxResponse.err)
-					continue
-				}
+				removeArtifactContext(contextManager, artifact, true)
 				go func() {
-					if err := r.buildTestDeploy(newCtxResponse.ctx.ctx, out, []*latest.Artifact{artifact}); err != nil {
-						logrus.Warnln("Skipping deploy due to errors:", err)
+					ctx, err := newContextForArtifact(contextManager, artifact)
+					if err != nil {
+						logrus.Errorf("failed to create new context for %s: %s", artifact.ImageName, err)
+						return
 					}
-					contextManager.removeContext <- removeContextRequest{id: artifact.ImageName, cancel: false, response: resp}
-					if response.err != nil {
-						logrus.Warnf("failed to remove context after build was done for artifact %s: %v", artifact.ImageName, response.err)
+					defer removeArtifactContext(contextManager, artifact, false)
+
+					if err := r.buildTestDeploy(ctx, out, []*latest.Artifact{artifact}); err != nil {
+						logrus.Warnln("Skipping deploy due to errors:", err)
 					}
 				}()
 			}
@@ -518,6 +509,22 @@ func (r *SkaffoldRunner) Dev(devCtx context.Context, out io.Writer, artifacts []
 
 	r.Trigger.WatchForChanges(out)
 	return watcher.Run(devCtx, r.Trigger, onChange)
+}
+
+func newContextForArtifact(manager contextManager, artifact *latest.Artifact) (context.Context, error) {
+	newCtxChan := make(chan newContextResponse)
+	manager.newContext <- newContextRequest{id: artifact.ImageName, newContext: newCtxChan}
+	newCtxResponse := <-newCtxChan
+	return newCtxResponse.ctx.ctx, newCtxResponse.err
+}
+
+func removeArtifactContext(manager contextManager, artifact *latest.Artifact, cancel bool) {
+	resp := make(chan removeContextResponse)
+	manager.removeContext <- removeContextRequest{id: artifact.ImageName, cancel: cancel, response: resp}
+	response := <-resp
+	if response.err != nil {
+		logrus.Warnf("failed to cancel build for artifact %s: %v", artifact.ImageName, response.err)
+	}
 }
 
 func (r *SkaffoldRunner) shouldWatch(artifact *latest.Artifact) bool {
