@@ -33,17 +33,15 @@ import (
 
 // UploadDeploymentLogsToBucket gets logs from d and uploads them to the bucket
 func UploadDeploymentLogsToBucket(d *appsv1.Deployment, prNumber int) (string, error) {
-	logs := kubernetes.Logs(d)
-	ctx := context.Background()
-	c, err := cstorage.NewClient(ctx)
+	c, err := cstorage.NewClient(context.Background())
 	if err != nil {
 		return "", errors.Wrap(err, "creating GCS client")
 	}
 	defer c.Close()
 	name := fmt.Sprintf("logs-%d-%d", prNumber, time.Now().UnixNano())
-	w := c.Bucket(constants.LogsGCSBucket).Object(name).NewWriter(ctx)
+	w := c.Bucket(constants.LogsGCSBucket).Object(name).NewWriter(context.Background())
 	defer w.Close()
-	if _, err := io.Copy(w, bytes.NewBuffer([]byte(logs))); err != nil {
+	if _, err := io.Copy(w, bytes.NewBuffer([]byte(kubernetes.Logs(d)))); err != nil {
 		return "", err
 	}
 	return name, nil
