@@ -19,6 +19,11 @@ package runner
 import (
 	"context"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"testing"
+	"time"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -29,10 +34,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/pkg/errors"
-	"io"
-	"io/ioutil"
-	"testing"
-	"time"
 )
 
 type TestBuilder struct {
@@ -453,7 +454,7 @@ func TestBuildAndDeployAllArtifacts(t *testing.T) {
 			}
 
 			if !WaitFor(2, func() bool { return len(builder.built) == tc.expectedNumBuilds }, 1*time.Second) {
-				t.Errorf("Expected %d artifact buils. Got %d", tc.expectedNumBuilds, len(builder.built))
+				t.Errorf("Expected %d artifact builds. Got %d", tc.expectedNumBuilds, len(builder.built))
 			}
 
 			if len(deployer.deployed) != tc.expectedNumDeployments {
