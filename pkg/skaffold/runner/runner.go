@@ -325,9 +325,9 @@ type contextManager struct {
 
 //startContextManager kicks off the go func that will manage
 //the child contexts (currently) for building artifacts
-//When `globalCtx` is cancelled, all children contexts should be cancelled as well.
-//A childContext is requested via the request channel
-//A childContext is removed when sent via the done or cancel channels
+//When `globalCtx` is cancelled, all children contexts should be cancelled as well, and contextManager stops
+//A childContext is requested via the newContextRequest channel of the `contextManager`
+//A childContext is removed when removeContextRequest sent to the removeContext Channel of the `contextManager`
 func startContextManager(globalCtx context.Context) contextManager {
 	newContext := make(chan newContextRequest)
 	removeContext := make(chan removeContextRequest)
@@ -341,6 +341,7 @@ func startContextManager(globalCtx context.Context) contextManager {
 						childContexts[k].cancel()
 						delete(childContexts, k)
 					}
+					return
 				}
 			case req := <-newContext:
 				{
