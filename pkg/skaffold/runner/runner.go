@@ -293,8 +293,85 @@ func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, artifacts 
 }
 
 type cancellableContext struct {
+	id     string
 	ctx    context.Context
 	cancel context.CancelFunc
+}
+
+type newContextResponse struct {
+	ctx *cancellableContext
+	err error
+}
+
+type newContextRequest struct {
+	id         string
+	newContext chan newContextResponse
+}
+
+type removeContextResponse struct {
+	err error
+}
+
+type removeContextRequest struct {
+	id       string
+	cancel   bool
+	response chan removeContextResponse
+}
+
+type contextManager struct {
+	newContext    chan newContextRequest
+	removeContext chan removeContextRequest
+}
+
+//startContextManager kicks off the go func that will manage
+//the child contexts (currently) for building artifacts
+//When `globalCtx` is cancelled, all children contexts should be cancelled as well.
+//A childContext is requested via the request channel
+//A childContext is removed when sent via the done or cancel channels
+func startContextManager(globalCtx context.Context) contextManager {
+	newContext := make(chan newContextRequest)
+	removeContext := make(chan removeContextRequest)
+	go func() {
+		childContexts := make(map[string]cancellableContext)
+		for {
+			select {
+			case <-globalCtx.Done():
+				{
+					for k := range childContexts {
+						childContexts[k].cancel()
+						delete(childContexts, k)
+					}
+				}
+			case req := <-newContext:
+				{
+					_, ok := childContexts[req.id]
+					if ok {
+						req.newContext <- newContextResponse{nil, fmt.Errorf("context for %s already exists", req.id)}
+					} else {
+						ctx, cancelFunc := ContextWithCancel()
+						c := cancellableContext{id: req.id, ctx: ctx, cancel: cancelFunc}
+						childContexts[req.id] = c
+						req.newContext <- newContextResponse{&c, nil}
+					}
+				}
+			case req := <-removeContext:
+				{
+					ctx, ok := childContexts[req.id]
+					if !ok {
+						req.response <- removeContextResponse{fmt.Errorf("context for %s not found", req.id)}
+					} else {
+						if req.cancel {
+							ctx.cancel()
+						}
+						delete(childContexts, req.id)
+						req.response <- removeContextResponse{}
+					}
+				}
+			}
+		}
+	}()
+
+	return contextManager{newContext: newContext, removeContext: removeContext}
 }
 
 // Dev watches for changes and runs the skaffold build and deploy
@@ -304,7 +381,7 @@ func (r *SkaffoldRunner) Dev(devCtx context.Context, out io.Writer, artifacts []
 
 	// Create watcher and register artifacts to build current state of files.
 	changed := changes{}
-	var childContexts []cancellableContext
+	contextManager := startContextManager(devCtx)
 
 	onChange := func() error {
 		defer func() {
@@ -340,20 +417,27 @@ func (r *SkaffoldRunner) Dev(devCtx context.Context, out io.Writer, artifacts []
 				}
 			}
 		case len(changed.needsRebuild) > 0:
-			logrus.Warnf("Cancelling previous builds...changed artifacts: %+v", changed.needsRebuild)
-			for _, ctx := range childContexts {
-				ctx.cancel()
-			}
-			childContexts = []cancellableContext{}
-			ctx, cancel := ContextWithCancel()
-			childContexts = append(childContexts, cancellableContext{ctx, cancel})
-			arts := changed.needsRebuild
-			go func(needsRebuild []*latest.Artifact) {
-				fmt.Printf("go func %v\n", needsRebuild)
-				if err := r.buildTestDeploy(ctx, out, needsRebuild); err != nil {
-					logrus.Warnln("Skipping deploy due to errors:", err)
+			logrus.Warnf("cancelling previous builds...changed artifacts: %+v", changed.needsRebuild)
+			for _, artifact := range changed.needsRebuild {
+				resp := make(chan removeContextResponse)
+				contextManager.removeContext <- removeContextRequest{id: artifact.ImageName, cancel: true, response: resp}
+				response := <-resp
+				if response.err != nil {
+					logrus.Warnf("failed to cancel build for artifact %s: %v", artifact.ImageName, response.err)
 				}
-			}(arts)
+				newCtxChan := make(chan newContextResponse)
+				contextManager.newContext <- newContextRequest{id: artifact.ImageName, newContext: newCtxChan}
+				newCtxResponse := <-newCtxChan
+				if newCtxResponse.err != nil {
+					logrus.Errorf("failed to create new context for %s: %s", artifact.ImageName, newCtxResponse.err)
+					continue
+				}
+				go func() {
+					if err := r.buildTestDeploy(newCtxResponse.ctx.ctx, out, []*latest.Artifact{artifact}); err != nil {
+						logrus.Warnln("Skipping deploy due to errors:", err)
+					}
+				}()
+			}
 
 		case changed.needsRedeploy:
 			if _, err := r.Deploy(devCtx, out, r.builds); err != nil {

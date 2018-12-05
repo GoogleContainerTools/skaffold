@@ -55,12 +55,13 @@ func (t *TestBuilder) Build(ctx context.Context, w io.Writer, tagger tag.Tagger,
 	var builds []build.Artifact
 
 	for _, artifact := range artifacts {
-		builds = append(builds, build.Artifact{
+		artifact := build.Artifact{
 			ImageName: artifact.ImageName,
-		})
+		}
+		builds = append(builds, artifact)
+		t.built = append(t.built, artifact)
 	}
 
-	t.built = builds
 	return builds, nil
 }
 
@@ -101,7 +102,7 @@ func (t *TestDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 		return nil, err
 	}
 
-	t.deployed = builds
+	t.deployed = append(t.deployed, builds...)
 	return nil, nil
 }
 
@@ -404,49 +405,61 @@ func TestDev(t *testing.T) {
 }
 
 func TestBuildAndDeployAllArtifacts(t *testing.T) {
-	builder := &TestBuilder{}
-	deployer := &TestDeployer{}
-	artifacts := []*latest.Artifact{
-		{ImageName: "image1"},
-		{ImageName: "image2"},
+	tcs := []struct {
+		name                   string
+		changed                []int
+		expectedNumBuilds      int
+		expectedNumDeployments int
+	}{
+		{
+			name:    "both",
+			changed: []int{0, 1},
+			// 4 = 2 builds from scratch + 2 from the change
+			expectedNumBuilds: 4,
+			// 2 deployments initially + 2 for each of the parallel rebuilds
+			expectedNumDeployments: 6,
+		},
+		{
+			name:    "only one",
+			changed: []int{1},
+			// 3 = 2 builds from scratch + 1 from the change
+			expectedNumBuilds: 3,
+			// 2 deployments initially + 2 for the single build
+			expectedNumDeployments: 4,
+		},
 	}
 
-	runner := createDefaultRunner(t)
-	runner.Builder = builder
-	runner.Deployer = deployer
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			builder := &TestBuilder{}
+			deployer := &TestDeployer{}
+			artifacts := []*latest.Artifact{
+				{ImageName: "image1"},
+				{ImageName: "image2"},
+			}
 
-	ctx := context.Background()
+			runner := createDefaultRunner(t)
+			runner.Builder = builder
+			runner.Deployer = deployer
 
-	// Both artifacts are changed
-	runner.watchFactory = NewWatcherFactory(nil, nil, []int{0, 1})
-	err := runner.Dev(ctx, ioutil.Discard, artifacts)
+			ctx := context.Background()
 
-	if err != nil {
-		t.Errorf("Didn't expect an error. Got %s", err)
-	}
+			// Both artifacts are changed
+			runner.watchFactory = NewWatcherFactory(nil, nil, tc.changed)
+			err := runner.Dev(ctx, ioutil.Discard, artifacts)
 
-	if !WaitFor(2, func() bool { return len(builder.built) == 2 }, 1*time.Second) {
-		t.Errorf("Expected 2 artifact to be built. Got %d", len(builder.built))
-	}
+			if err != nil {
+				t.Errorf("Didn't expect an error. Got %s", err)
+			}
 
-	if len(deployer.deployed) != 2 {
-		t.Errorf("Expected 2 artifacts to be deployed. Got %d", len(deployer.deployed))
-	}
+			if !WaitFor(2, func() bool { return len(builder.built) == tc.expectedNumBuilds }, 1*time.Second) {
+				t.Errorf("Expected %d artifact buils. Got %d", tc.expectedNumBuilds, len(builder.built))
+			}
 
-	// Only one is changed
-	runner.watchFactory = NewWatcherFactory(nil, nil, []int{1})
-	err = runner.Dev(ctx, ioutil.Discard, artifacts)
-
-	if err != nil {
-		t.Errorf("Didn't expect an error. Got %s", err)
-	}
-
-	if !WaitFor(2, func() bool { return len(builder.built) == 1 }, 1*time.Second) {
-		t.Errorf("Expected 1 artifact to be built. Got %d", len(builder.built))
-	}
-
-	if len(deployer.deployed) != 2 {
-		t.Errorf("Expected 2 artifacts to be deployed. Got %d", len(deployer.deployed))
+			if len(deployer.deployed) != tc.expectedNumDeployments {
+				t.Errorf("Expected %d artifact deployments. Got %d", tc.expectedNumDeployments, len(deployer.deployed))
+			}
+		})
 	}
 
 }
