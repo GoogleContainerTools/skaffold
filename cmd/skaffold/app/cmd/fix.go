@@ -22,7 +22,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"

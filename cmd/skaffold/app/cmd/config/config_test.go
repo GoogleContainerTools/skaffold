@@ -19,7 +19,7 @@ package config
 import (
 	"testing"
 
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )

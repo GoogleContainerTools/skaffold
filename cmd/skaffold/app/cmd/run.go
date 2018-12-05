@@ -17,8 +17,9 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"io"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/pkg/errors"

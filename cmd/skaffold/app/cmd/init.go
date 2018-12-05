@@ -35,7 +35,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"gopkg.in/AlecAivazis/survey.v1"
+	survey "gopkg.in/AlecAivazis/survey.v1"
 	yaml "gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
