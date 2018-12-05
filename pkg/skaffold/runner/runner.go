@@ -339,7 +339,6 @@ func startContextManager(globalCtx context.Context) contextManager {
 				{
 					for k := range childContexts {
 						childContexts[k].cancel()
-						delete(childContexts, k)
 					}
 					return
 				}
