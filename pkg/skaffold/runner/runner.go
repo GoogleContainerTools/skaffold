@@ -425,7 +425,7 @@ func (r *SkaffoldRunner) Dev(devCtx context.Context, out io.Writer, artifacts []
 				go func() {
 					ctx, err := newContextForArtifact(contextManager, art)
 					if err != nil {
-						logrus.Errorf("failed to create new context for %s: %s", artifact.ImageName, err)
+						logrus.Errorf("failed to create new context for %s: %s", art.ImageName, err)
 						return
 					}
 					defer removeArtifactContext(contextManager, art, false)
