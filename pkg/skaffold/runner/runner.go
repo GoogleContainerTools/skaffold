@@ -421,14 +421,14 @@ func (r *SkaffoldRunner) Dev(devCtx context.Context, out io.Writer, artifacts []
 				//for local scoping
 				art := artifact
 				logrus.Infof("cancelling previous build for %s", art.ImageName)
-				removeArtifactContext(contextManager, art, true)
+				removeArtifactContext(contextManager, art, true, false)
 				go func() {
 					ctx, err := newContextForArtifact(contextManager, art)
 					if err != nil {
 						logrus.Errorf("failed to create new context for %s: %s", art.ImageName, err)
 						return
 					}
-					defer removeArtifactContext(contextManager, art, false)
+					defer removeArtifactContext(contextManager, art, false, true)
 
 					if err := r.buildTestDeploy(ctx, out, []*latest.Artifact{art}); err != nil {
 						logrus.Warnln("Skipping deploy due to errors:", err)
@@ -523,11 +523,11 @@ func newContextForArtifact(manager contextManager, artifact *latest.Artifact) (c
 	return newCtxResponse.ctx.ctx, nil
 }
 
-func removeArtifactContext(manager contextManager, artifact *latest.Artifact, cancel bool) {
+func removeArtifactContext(manager contextManager, artifact *latest.Artifact, cancel bool, mustExist bool) {
 	resp := make(chan removeContextResponse)
 	manager.removeContext <- removeContextRequest{id: artifact.ImageName, cancel: cancel, response: resp}
 	response := <-resp
-	if response.err != nil {
+	if response.err != nil && mustExist {
 		logrus.Warnf("failed to cancel build for artifact %s: %v", artifact.ImageName, response.err)
 	}
 }
