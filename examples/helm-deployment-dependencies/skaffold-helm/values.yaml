@@ -38,5 +38,5 @@ resources: {}
   #  cpu: 100m
   #  memory: 128Mi
 
-skaffold-helm-subchart:
+subchart:
     enabled: true    

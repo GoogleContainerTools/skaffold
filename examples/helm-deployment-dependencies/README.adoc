@@ -5,11 +5,11 @@ ifndef::env-github[]
 link:{github-repo-tree}/examples/helm-deployment-dependencies[see on Github icon:github[]]
 endif::[]
 
-==== Helm charts with local dependencies
+==== Deploy helm charts with local dependencies
 
-This example follows the `helm-deployment` example, but with a local chart as a depenency.
+This example follows the link:{github-repo-tree}/examples/helm-deployment-dependencies[helm] example, but with a local chart as a depenency.
 
-The option `skipDependencyBuild` is used to skip the `helm dep build` command, which is not required for local dependencies.
+The `skipDependencyBuild` option is used to skip the `helm dep build` command. This must be disabled for charts with local dependencies.
 
 The image can be passed to the subchart using the standard Helm format of `subchart-name.value`.
 
@@ -23,7 +23,7 @@ deploy:
       skipDependencyBuild: true # Skip helm dep build
       values:
         image: skaffold-helm
-        "skaffold-helm-subchart.image": gcr.io/k8s-skaffold/skaffold-helm
+        "subchart.image": gcr.io/k8s-skaffold/skaffold-helm # Set image for subchart
       valuesFiles:
         - helm-values-file.yaml
 ```
