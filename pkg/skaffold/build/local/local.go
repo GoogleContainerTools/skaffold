@@ -72,7 +72,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "generating tag")
 	}
 
-	if err := b.retagAndPush(ctx, out, initialTag, tag, artifact); err != nil {
+	if err := b.retagAndPush(ctx, out, digest, tag, artifact); err != nil {
 		return "", errors.Wrap(err, "tagging")
 	}
 
