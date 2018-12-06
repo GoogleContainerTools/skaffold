@@ -528,7 +528,7 @@ func removeArtifactContext(manager contextManager, artifact *latest.Artifact, ca
 	manager.removeContext <- removeContextRequest{id: artifact.ImageName, cancel: cancel, response: resp}
 	response := <-resp
 	if response.err != nil && mustExist {
-		logrus.Warnf("failed to cancel build for artifact %s: %v", artifact.ImageName, response.err)
+		logrus.Warnf("failed to remove build context for artifact %s: %v", artifact.ImageName, response.err)
 	}
 }
 
