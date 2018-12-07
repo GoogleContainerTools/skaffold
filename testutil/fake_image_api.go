@@ -18,6 +18,7 @@ package testutil
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"io"
 	"strings"
@@ -40,8 +41,6 @@ type FakeImageAPIOptions struct {
 	ErrImageTag     bool
 	ErrImagePush    bool
 
-	BuildImageID string
-
 	ReturnBody io.ReadCloser
 }
 
@@ -62,19 +61,26 @@ func (f *FakeImageAPIClient) ImageBuild(ctx context.Context, context io.Reader, 
 	if f.opts.ErrImageBuild {
 		return types.ImageBuildResponse{}, fmt.Errorf("")
 	}
+
 	for _, tag := range options.Tags {
+		imageID := "sha256:" + randomID()
+
+		f.tagToImageID[tag] = imageID
+		f.tagToImageID[imageID] = imageID
 		if !strings.Contains(tag, ":") {
-			tag = fmt.Sprintf("%s:latest", tag)
-		}
-		if f.opts.BuildImageID == "" {
-			f.tagToImageID[tag] = "sha256:imageid"
-		} else {
-			f.tagToImageID[tag] = f.opts.BuildImageID
+			f.tagToImageID[tag+":latest"] = imageID
 		}
 	}
+
 	return types.ImageBuildResponse{
 		Body: f.opts.ReturnBody,
 	}, nil
+}
+
+func randomID() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return fmt.Sprintf("%x", b)
 }
 
 func (f *FakeImageAPIClient) ImageInspectWithRaw(ctx context.Context, ref string) (types.ImageInspect, []byte, error) {
