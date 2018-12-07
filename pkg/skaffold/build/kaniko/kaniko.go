@@ -49,7 +49,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "getting digest")
 	}
 
-	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.Options{
+	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, tag.Options{
 		ImageName: artifact.ImageName,
 		Digest:    digest,
 	})

@@ -48,7 +48,7 @@ func (t *envTemplateTagger) Labels() map[string]string {
 }
 
 // GenerateFullyQualifiedImageName tags an image with the custom tag
-func (t *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir string, opts *Options) (string, error) {
+func (t *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir string, opts Options) (string, error) {
 	customMap := CreateEnvVarMap(opts.ImageName, opts.Digest)
 	return util.ExecuteEnvTemplate(t.Template, customMap)
 }

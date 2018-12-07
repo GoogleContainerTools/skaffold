@@ -39,7 +39,7 @@ func (c *GitCommit) Labels() map[string]string {
 }
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the git commit.
-func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts *Options) (string, error) {
+func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts Options) (string, error) {
 	hash, err := runGit(workingDir, "rev-parse", "--short", "HEAD")
 	if err != nil {
 		return fallbackOnDigest(opts, err), nil
@@ -72,7 +72,7 @@ func runGit(workingDir string, arg ...string) (string, error) {
 	return string(bytes.TrimSpace(out)), nil
 }
 
-func commitOrTag(currentTag string, tag string, opts *Options) string {
+func commitOrTag(currentTag string, tag string, opts Options) string {
 	if len(tag) > 0 {
 		currentTag = tag
 	}
@@ -80,15 +80,15 @@ func commitOrTag(currentTag string, tag string, opts *Options) string {
 	return fmt.Sprintf("%s:%s", opts.ImageName, currentTag)
 }
 
-func shortDigest(opts *Options) string {
+func shortDigest(opts Options) string {
 	return strings.TrimPrefix(opts.Digest, "sha256:")[0:7]
 }
 
-func dirtyTag(currentTag string, opts *Options) string {
+func dirtyTag(currentTag string, opts Options) string {
 	return fmt.Sprintf("%s:%s-dirty-%s", opts.ImageName, currentTag, shortDigest(opts))
 }
 
-func fallbackOnDigest(opts *Options, err error) string {
+func fallbackOnDigest(opts Options, err error) string {
 	logrus.Warnln("Using digest instead of git commit:", err)
 
 	return fmt.Sprintf("%s:dirty-%s", opts.ImageName, shortDigest(opts))

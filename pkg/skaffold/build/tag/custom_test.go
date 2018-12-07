@@ -23,16 +23,13 @@ import (
 )
 
 func TestCustomTag_GenerateFullyQualifiedImageName(t *testing.T) {
-	opts := &Options{
-		ImageName: "test",
-		Digest:    "sha256:12345abcde",
-	}
-
-	expectedTag := "1.2.3-beta"
-
 	c := &CustomTag{
-		Tag: expectedTag,
+		Tag: "1.2.3-beta",
 	}
-	tag, err := c.GenerateFullyQualifiedImageName(".", opts)
-	testutil.CheckErrorAndDeepEqual(t, false, err, "test:"+expectedTag, tag)
+
+	tag, err := c.GenerateFullyQualifiedImageName(".", Options{
+		ImageName: "test",
+	})
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, "test:1.2.3-beta", tag)
 }

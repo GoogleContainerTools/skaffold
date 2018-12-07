@@ -64,7 +64,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return tag, nil
 	}
 
-	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.Options{
+	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, tag.Options{
 		ImageName: artifact.ImageName,
 		Digest:    digest,
 	})

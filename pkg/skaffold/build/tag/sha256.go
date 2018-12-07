@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/pkg/errors"
 )
 
 // ChecksumTagger tags an image by the sha256 of the image tarball
@@ -35,11 +34,7 @@ func (c *ChecksumTagger) Labels() map[string]string {
 }
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the sha256 checksum of the image
-func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir string, opts *Options) (string, error) {
-	if opts == nil {
-		return "", errors.New("tag options not provided")
-	}
-
+func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir string, opts Options) (string, error) {
 	digest := opts.Digest
 	sha256 := strings.TrimPrefix(opts.Digest, "sha256:")
 	if sha256 == digest {
