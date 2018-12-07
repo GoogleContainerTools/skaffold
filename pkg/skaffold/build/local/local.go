@@ -90,16 +90,10 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 		return b.buildBazel(ctx, out, artifact.Workspace, artifact.BazelArtifact)
 
 	case artifact.JibMavenArtifact != nil:
-		if b.pushImages {
-			return b.buildJibMavenToRegistry(ctx, out, artifact.Workspace, artifact)
-		}
-		return b.buildJibMavenToDocker(ctx, out, artifact.Workspace, artifact.JibMavenArtifact)
+		return b.buildJibMaven(ctx, out, artifact.Workspace, artifact)
 
 	case artifact.JibGradleArtifact != nil:
-		if b.pushImages {
-			return b.buildJibGradleToRegistry(ctx, out, artifact.Workspace, artifact)
-		}
-		return b.buildJibGradleToDocker(ctx, out, artifact.Workspace, artifact.JibGradleArtifact)
+		return b.buildJibGradle(ctx, out, artifact.Workspace, artifact)
 
 	default:
 		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
