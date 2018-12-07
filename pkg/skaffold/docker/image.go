@@ -54,16 +54,18 @@ type LocalDaemon interface {
 }
 
 type localDaemon struct {
-	apiClient  client.CommonAPIClient
-	extraEnv   []string
-	imageCache sync.Map
+	forceRemove bool
+	apiClient   client.CommonAPIClient
+	extraEnv    []string
+	imageCache  sync.Map
 }
 
 // NewLocalDaemon creates a new LocalDaemon.
-func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string) LocalDaemon {
+func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string, forceRemove bool) LocalDaemon {
 	return &localDaemon{
-		apiClient: apiClient,
-		extraEnv:  extraEnv,
+		apiClient:   apiClient,
+		extraEnv:    extraEnv,
+		forceRemove: forceRemove,
 	}
 }
 
@@ -147,6 +149,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 		CacheFrom:   a.CacheFrom,
 		AuthConfigs: authConfigs,
 		Target:      a.Target,
+		ForceRemove: l.forceRemove,
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "docker build")

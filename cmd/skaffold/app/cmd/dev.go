@@ -59,6 +59,13 @@ func dev(out io.Writer, ui bool) error {
 		catchCtrlC(cancel)
 	}
 
+	prune := func() {}
+	if !opts.NoPrune {
+		defer func() {
+			prune()
+		}()
+	}
+
 	cleanup := func() {}
 	if opts.Cleanup {
 		defer func() {
@@ -99,7 +106,14 @@ func dev(out io.Writer, ui bool) error {
 			if r.HasDeployed() {
 				cleanup = func() {
 					if err := r.Cleanup(context.Background(), out); err != nil {
-						logrus.Warnln("cleanup:", err)
+						logrus.Warnln("deployer cleanup:", err)
+					}
+				}
+			}
+			if r.HasBuilt() {
+				prune = func() {
+					if err := r.Prune(context.Background(), out); err != nil {
+						logrus.Warnln("builder cleanup:", err)
 					}
 				}
 			}

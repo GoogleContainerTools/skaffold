@@ -142,6 +142,9 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", tag}
 	args = append(args, docker.GetBuildArgs(a)...)
+	if b.prune {
+		args = append(args, "--force-rm")
+	}
 
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	if b.LocalBuild.UseBuildkit {

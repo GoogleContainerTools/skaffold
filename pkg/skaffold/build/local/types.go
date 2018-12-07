@@ -19,11 +19,13 @@ package local
 import (
 	"context"
 	"fmt"
+	"io"
 
 	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/docker/docker/api/types"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -35,13 +37,15 @@ type Builder struct {
 	localDocker  docker.LocalDaemon
 	localCluster bool
 	pushImages   bool
+	prune        bool
 	skipTests    bool
 	kubeContext  string
+	builtImages  []string
 }
 
 // NewBuilder returns an new instance of a local Builder.
-func NewBuilder(cfg *latest.LocalBuild, kubeContext string, skipTests bool) (*Builder, error) {
-	localDocker, err := docker.NewAPIClient()
+func NewBuilder(cfg *latest.LocalBuild, kubeContext string, noPrune bool, skipTests bool) (*Builder, error) {
+	api, err := docker.NewAPIClient(!noPrune)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
@@ -66,6 +70,7 @@ func NewBuilder(cfg *latest.LocalBuild, kubeContext string, skipTests bool) (*Bu
 		localCluster: localCluster,
 		pushImages:   pushImages,
 		skipTests:    skipTests,
+		prune:        !noPrune,
 	}, nil
 }
 
@@ -81,4 +86,26 @@ func (b *Builder) Labels() map[string]string {
 	}
 
 	return labels
+}
+
+// Prune uses the docker API client to remove all images built with Skaffold
+func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
+	for _, id := range b.builtImages {
+		resp, err := b.api.ImageRemove(ctx, id, types.ImageRemoveOptions{
+			Force:         true,
+			PruneChildren: true,
+		})
+		if err != nil {
+			return errors.Wrap(err, "pruning images")
+		}
+		for _, r := range resp {
+			if r.Deleted != "" {
+				out.Write([]byte(fmt.Sprintf("deleted image %s\n", r.Deleted)))
+			}
+			if r.Untagged != "" {
+				out.Write([]byte(fmt.Sprintf("untagged image %s\n", r.Untagged)))
+			}
+		}
+	}
+	return nil
 }

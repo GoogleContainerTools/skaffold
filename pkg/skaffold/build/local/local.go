@@ -54,6 +54,11 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 
 	if b.pushImages {
 		digest := digestOrImageID
+		imageID, err := b.getImageIDForDigest(ctx, digest)
+		if err != nil {
+			logrus.Warnf("unable to inspect image: built images may not be cleaned up correctly by skaffold")
+		}
+		b.builtImages = append(b.builtImages, imageID)
 		return tag + "@" + digest, nil
 	}
 
@@ -62,6 +67,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 	// So, the solution we chose is to create a tag, just for Skaffold, from
 	// the imageID, and use that in the manifests.
 	imageID := digestOrImageID
+	b.builtImages = append(b.builtImages, imageID)
 	uniqueTag := artifact.ImageName + ":" + strings.TrimPrefix(imageID, "sha256:")
 	if err := b.localDocker.Tag(ctx, imageID, uniqueTag); err != nil {
 		return "", err
@@ -124,4 +130,12 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 	}
 
 	return util.AbsolutePaths(a.Workspace, paths), nil
+}
+
+func (b *Builder) getImageIDForDigest(ctx context.Context, digest string) (string, error) {
+	insp, _, err := b.api.ImageInspectWithRaw(ctx, digest)
+	if err != nil {
+		return "", errors.Wrap(err, "inspecting image")
+	}
+	return insp.ID, nil
 }
