@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -43,7 +44,7 @@ func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, wor
 		return "", err
 	}
 
-	return skaffoldImage, nil
+	return docker.Digest(ctx, b.api, skaffoldImage)
 }
 
 func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.Artifact) (string, error) {
@@ -55,7 +56,7 @@ func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, w
 		return "", err
 	}
 
-	return skaffoldImage, nil
+	return docker.RemoteDigest(skaffoldImage)
 }
 
 // generateGradleArgs generates the arguments to Gradle for building the project as an image called `skaffoldImage`.

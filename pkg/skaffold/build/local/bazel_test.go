@@ -50,5 +50,5 @@ func TestBuildImageTag(t *testing.T) {
 
 	imageTag := buildImageTag(buildTarget)
 
-	testutil.CheckDeepEqual(t, ":skaffold_example", imageTag)
+	testutil.CheckDeepEqual(t, "bazel:skaffold_example", imageTag)
 }

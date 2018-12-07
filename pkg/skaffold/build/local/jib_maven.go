@@ -22,6 +22,7 @@ import (
 
 	"fmt"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -31,12 +32,12 @@ import (
 
 func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace string, artifact *latest.Artifact) (string, error) {
 	if b.pushImages {
-		return buildJibMavenToRegistry(ctx, out, workspace, artifact)
+		return b.buildJibMavenToRegistry(ctx, out, workspace, artifact)
 	}
-	return buildJibMavenToDocker(ctx, out, workspace, artifact.JibMavenArtifact)
+	return b.buildJibMavenToDocker(ctx, out, workspace, artifact.JibMavenArtifact)
 }
 
-func buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibMavenArtifact) (string, error) {
+func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibMavenArtifact) (string, error) {
 	// If this is a multi-module project, we require `package` be bound to jib:dockerBuild
 	if artifact.Module != "" {
 		if err := verifyJibPackageGoal(ctx, "dockerBuild", workspace, artifact); err != nil {
@@ -51,10 +52,10 @@ func buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string,
 		return "", err
 	}
 
-	return skaffoldImage, nil
+	return docker.Digest(ctx, b.api, skaffoldImage)
 }
 
-func buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.Artifact) (string, error) {
+func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.Artifact) (string, error) {
 	// If this is a multi-module project, we require `package` be bound to jib:build
 	if artifact.JibMavenArtifact.Module != "" {
 		if err := verifyJibPackageGoal(ctx, "build", workspace, artifact.JibMavenArtifact); err != nil {
@@ -70,7 +71,7 @@ func buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace strin
 		return "", err
 	}
 
-	return skaffoldImage, nil
+	return docker.RemoteDigest(skaffoldImage)
 }
 
 // generateMavenArgs generates the arguments to Maven for building the project as an image called `skaffoldImage`.
