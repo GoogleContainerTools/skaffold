@@ -28,7 +28,7 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 	tests := []struct {
 		name      string
 		template  string
-		opts      *Options
+		opts      Options
 		env       []string
 		want      string
 		shouldErr bool
@@ -36,7 +36,7 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 		{
 			name:     "empty env",
 			template: "{{.IMAGE_NAME}}:{{.DIGEST}}",
-			opts: &Options{
+			opts: Options{
 				ImageName: "foo",
 				Digest:    "bar",
 			},
@@ -46,7 +46,7 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			name:     "env",
 			template: "{{.FOO}}-{{.BAZ}}:latest",
 			env:      []string{"FOO=BAR", "BAZ=BAT"},
-			opts: &Options{
+			opts: Options{
 				ImageName: "foo",
 				Digest:    "bar",
 			},
@@ -56,7 +56,7 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			name:     "opts precedence",
 			template: "{{.IMAGE_NAME}}-{{.FROM_ENV}}:latest",
 			env:      []string{"FROM_ENV=FOO", "IMAGE_NAME=BAT"},
-			opts: &Options{
+			opts: Options{
 				ImageName: "image_name",
 				Digest:    "bar",
 			},
@@ -65,7 +65,7 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 		{
 			name:     "digest algo hex",
 			template: "{{.IMAGE_NAME}}:{{.DIGEST_ALGO}}-{{.DIGEST_HEX}}",
-			opts: &Options{
+			opts: Options{
 				ImageName: "foo",
 				Digest:    "sha256:abcd",
 			},
