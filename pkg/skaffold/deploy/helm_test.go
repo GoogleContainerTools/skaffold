@@ -504,10 +504,10 @@ func TestHelmDependencies(t *testing.T) {
 		expected    func(folder *testutil.TempDir) []string
 	}{
 		{
-			description: "charts dir is excluded",
+			description: "charts dir is included",
 			files:       []string{"Chart.yaml", "charts/xyz.tar", "templates/deploy.yaml"},
 			expected: func(folder *testutil.TempDir) []string {
-				return []string{folder.Path("Chart.yaml"), folder.Path("templates/deploy.yaml")}
+				return []string{folder.Path("Chart.yaml"), folder.Path("charts/xyz.tar"), folder.Path("templates/deploy.yaml")}
 			},
 		},
 		{
