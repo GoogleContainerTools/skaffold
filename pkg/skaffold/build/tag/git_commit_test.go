@@ -221,13 +221,13 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			tt.createGitRepo(tmpDir.Root())
 			workspace := tmpDir.Path(tt.subDir)
 
-			opts := Options{
+			c := &GitCommit{}
+
+			name, err := c.GenerateFullyQualifiedImageName(workspace, Options{
 				ImageName: "test",
 				Digest:    "sha256:ababababababababababa",
-			}
+			})
 
-			c := &GitCommit{}
-			name, err := c.GenerateFullyQualifiedImageName(workspace, opts)
 			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.expectedName, name)
 		})
 	}
