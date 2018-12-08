@@ -44,14 +44,12 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace strin
 		return "", errors.Wrap(err, "running command")
 	}
 
-	tarPath := buildTarPath(a.BuildTarget)
-	imageTag := buildImageTag(a.BuildTarget)
-
 	bazelBin, err := bazelBin(ctx, workspace)
 	if err != nil {
 		return "", errors.Wrap(err, "getting path of bazel-bin")
 	}
 
+	tarPath := buildTarPath(a.BuildTarget)
 	imageTar, err := os.Open(filepath.Join(bazelBin, tarPath))
 	if err != nil {
 		return "", errors.Wrap(err, "opening image tarball")
@@ -69,7 +67,7 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace strin
 		return "", errors.Wrap(err, "reading from image load response")
 	}
 
-	return fmt.Sprintf("bazel%s", imageTag), nil
+	return docker.Digest(ctx, b.api, buildImageTag(a.BuildTarget))
 }
 
 func bazelBin(ctx context.Context, workspace string) (string, error) {
@@ -108,8 +106,8 @@ func buildImageTag(buildTarget string) string {
 	imageTag = strings.TrimSuffix(imageTag, ".tar")
 
 	if strings.Contains(imageTag, ":") {
-		return fmt.Sprintf("/%s", imageTag)
+		return fmt.Sprintf("bazel/%s", imageTag)
 	}
 
-	return fmt.Sprintf(":%s", imageTag)
+	return fmt.Sprintf("bazel:%s", imageTag)
 }

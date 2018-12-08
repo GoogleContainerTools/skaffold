@@ -18,7 +18,6 @@ package local
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -57,5 +56,5 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace stri
 		}
 	}
 
-	return fmt.Sprintf("%s:latest", initialTag), nil
+	return docker.Digest(ctx, b.api, initialTag)
 }
