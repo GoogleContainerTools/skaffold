@@ -82,16 +82,21 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 
 	var newArtifacts []*next.Artifact
 	for _, artifact := range config.Build.Artifacts {
-		newArtifacts = append(newArtifacts, &next.Artifact{
+		newArtifact := &next.Artifact{
 			ImageName: artifact.ImageName,
 			Workspace: artifact.Workspace,
-			ArtifactType: next.ArtifactType{
+		}
+
+		if artifact.DockerfilePath != "" || len(artifact.BuildArgs) > 0 {
+			newArtifact.ArtifactType = next.ArtifactType{
 				DockerArtifact: &next.DockerArtifact{
 					DockerfilePath: artifact.DockerfilePath,
 					BuildArgs:      artifact.BuildArgs,
 				},
-			},
-		})
+			}
+		}
+
+		newArtifacts = append(newArtifacts, newArtifact)
 	}
 
 	var newBuildType = next.BuildType{}
