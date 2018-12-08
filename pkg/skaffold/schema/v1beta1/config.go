@@ -14,21 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v1beta1
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/blang/semver"
-	"github.com/pkg/errors"
-	yaml "gopkg.in/yaml.v2"
 )
 
-const Version string = "skaffold/v1beta2"
-
-func Semver() semver.Version {
-	return apiversion.MustParse(Version)
-}
+const Version string = "skaffold/v1beta1"
 
 // NewSkaffoldPipeline creates a SkaffoldPipeline
 func NewSkaffoldPipeline() util.VersionedConfig {
@@ -276,19 +268,4 @@ type JibMavenArtifact struct {
 type JibGradleArtifact struct {
 	// Only multi-module
 	Project string `yaml:"project"`
-}
-
-// Parse reads a SkaffoldPipeline from yaml.
-func (c *SkaffoldPipeline) Parse(contents []byte, useDefaults bool) error {
-	if err := yaml.UnmarshalStrict(contents, c); err != nil {
-		return err
-	}
-
-	if useDefaults {
-		if err := c.SetDefaultValues(); err != nil {
-			return errors.Wrap(err, "applying default values")
-		}
-	}
-
-	return nil
 }

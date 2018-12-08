@@ -14,30 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha5
+package v1beta1
 
 import (
 	"encoding/json"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta1"
 	"github.com/pkg/errors"
+
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v1alpha5 to v1beta1:
-// 1. Additions:
-//   - KanikoCache struct, KanikoBuild.Cache
-//   - BazelArtifact.BuildArgs
-// 2. Removals:
-//   - AzureContainerBuilder
+// Config changes from v1beta1 to v1beta2
+// 1. No additions
+// 2. No removals
 // 3. No updates
 func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
-
-	if config.Build.AzureContainerBuild != nil {
-		return nil, errors.Errorf("can't upgrade to %s, build.acr is not supported anymore, please remove it manually", next.Version)
-	}
-
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
 	if err := convert(config.Deploy, &newDeploy); err != nil {
@@ -47,11 +40,6 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	// convert Profiles (should be the same)
 	var newProfiles []next.Profile
 	if config.Profiles != nil {
-		for _, profile := range config.Profiles {
-			if profile.Build.AzureContainerBuild != nil {
-				return nil, errors.Errorf("can't upgrade to %s, profiles.build.acr is not supported anymore, please remove it from the %s profile manually", next.Version, profile.Name)
-			}
-		}
 		if err := convert(config.Profiles, &newProfiles); err != nil {
 			return nil, errors.Wrap(err, "converting new profile")
 		}

@@ -14,59 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha5
+package v1beta1
 
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta1"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	yaml "gopkg.in/yaml.v2"
 )
 
 func TestPipelineUpgrade(t *testing.T) {
 	tests := []struct {
-		name      string
-		yaml      string
-		expected  *next.SkaffoldPipeline
-		shouldErr bool
+		name     string
+		yaml     string
+		expected *next.SkaffoldPipeline
 	}{
 		{
-			name: "skaffold yaml with build.acr is not upgradable",
-			yaml: `apiVersion: skaffold/v1alpha5
-kind: Config
-build:
-  artifacts:
-  - image: myregistry.azurecr.io/skaffold-example
-  acr: {}
-deploy:
-  kubectl:
-    manifests:
-      - k8s-*
-`,
-			shouldErr: true,
-		},
-		{
-			name: "skaffold yaml with profile.build.acr is not upgradable",
-			yaml: `apiVersion: skaffold/v1alpha5
-kind: Config
-build:
-  artifacts:
-  - image: myregistry.azurecr.io/skaffold-example
-deploy:
-  kubectl:
-    manifests:
-      - k8s-*
-profiles:
- - name: test profile
-   build: 
-    acr: {}
-`,
-			shouldErr: true,
-		},
-		{
 			name: "normal skaffold yaml",
-			yaml: `apiVersion: skaffold/v1alpha5
+			yaml: `apiVersion: skaffold/v1beta1
 kind: Config
 build:
   artifacts:
@@ -163,11 +129,7 @@ profiles:
 
 			upgraded, err := pipeline.Upgrade()
 
-			if tt.shouldErr {
-				testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, nil, upgraded)
-			} else {
-				testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.expected, upgraded)
-			}
+			testutil.CheckErrorAndDeepEqual(t, false, err, tt.expected, upgraded)
 		})
 	}
 }
