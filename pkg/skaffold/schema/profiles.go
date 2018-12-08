@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -39,7 +40,7 @@ func ApplyProfiles(c *latest.SkaffoldPipeline, profiles []string) error {
 
 		applyProfile(c, profile)
 	}
-	if err := c.SetDefaultValues(); err != nil {
+	if err := defaults.Set(c); err != nil {
 		return errors.Wrap(err, "applying default values")
 	}
 

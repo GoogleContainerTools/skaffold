@@ -14,24 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha2
+package defaults
 
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestDetDefaults(t *testing.T) {
-	pipeline := SkaffoldPipeline{
-		Build: BuildConfig{
-			Artifacts: []*Artifact{
+	pipeline := &latest.SkaffoldPipeline{
+		Build: latest.BuildConfig{
+			Artifacts: []*latest.Artifact{
 				{ImageName: "image"},
 			},
 		},
 	}
 
-	err := pipeline.SetDefaultValues()
+	err := Set(pipeline)
 
 	testutil.CheckError(t, false, err)
 }
