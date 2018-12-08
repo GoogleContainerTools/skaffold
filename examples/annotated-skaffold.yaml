@@ -185,9 +185,6 @@ deploy:
     #   version: ""
     #   recreatePods: false
     #
-    #   # Skip the helm dep build, required for charts with local dependencies
-    #   skipDependencyBuild: false
-    #
     #   # setValues get appended to the helm deploy with --set.
     #   setValues:
     #    key: "value"
