@@ -113,10 +113,12 @@ func upgradeToLatest(vc util.VersionedConfig) (util.VersionedConfig, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing api version")
 	}
-	if version.EQ(latest.Semver()) {
+
+	semver := apiversion.MustParse(latest.Version)
+	if version.EQ(semver) {
 		return vc, nil
 	}
-	if version.GT(latest.Semver()) {
+	if version.GT(semver) {
 		return nil, fmt.Errorf("config version %s is too new for this version of skaffold: upgrade skaffold", vc.GetVersion())
 	}
 
