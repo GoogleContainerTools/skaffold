@@ -153,7 +153,7 @@ func createDefaultRunner(t *testing.T) *SkaffoldRunner {
 	}
 
 	pipeline := &latest.SkaffoldPipeline{}
-	pipeline.Parse(nil, true)
+	pipeline.SetDefaultValues()
 
 	runner, err := NewForConfig(opts, pipeline)
 
