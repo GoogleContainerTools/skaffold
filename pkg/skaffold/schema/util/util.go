@@ -18,6 +18,5 @@ package util
 
 type VersionedConfig interface {
 	GetVersion() string
-	SetDefaultValues() error
 	Upgrade() (VersionedConfig, error)
 }

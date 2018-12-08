@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
@@ -153,7 +154,7 @@ func createDefaultRunner(t *testing.T) *SkaffoldRunner {
 	}
 
 	pipeline := &latest.SkaffoldPipeline{}
-	pipeline.SetDefaultValues()
+	defaults.Set(pipeline)
 
 	runner, err := NewForConfig(opts, pipeline)
 
