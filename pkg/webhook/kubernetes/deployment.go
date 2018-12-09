@@ -58,7 +58,7 @@ func CreateDeployment(pr *github.PullRequestEvent, svc *v1.Service, externalIP s
 
 	userRepo := fmt.Sprintf("https://github.com/%s.git", *pr.PullRequest.Head.Repo.FullName)
 	// path to the docs directory, which we will run "hugo server -D" in
-	docsPath := path.Join(emptyVolPath, *pr.PullRequest.Head.Repo.Name, "docs")
+	repoPath := path.Join(emptyVolPath, *pr.PullRequest.Head.Repo.Name)
 
 	d := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -78,20 +78,8 @@ func CreateDeployment(pr *github.PullRequestEvent, svc *v1.Service, externalIP s
 						{
 							Name:       initContainerName,
 							Image:      constants.DeploymentImage,
-							Args:       []string{"git", "clone", userRepo, "--recursive", "--branch", pr.PullRequest.Head.GetRef()},
+							Args:       []string{"git", "clone", userRepo, "--branch", pr.PullRequest.Head.GetRef()},
 							WorkingDir: emptyVolPath,
-							VolumeMounts: []v1.VolumeMount{
-								{
-									Name:      emptyVol,
-									MountPath: emptyVolPath,
-								},
-							},
-						},
-						{
-							Name:       "npm-autoprefix-installer",
-							Image:      constants.DeploymentImage,
-							Args:       []string{"npm", "i", "autoprefixer"},
-							WorkingDir: docsPath,
 							VolumeMounts: []v1.VolumeMount{
 								{
 									Name:      emptyVol,
@@ -104,8 +92,8 @@ func CreateDeployment(pr *github.PullRequestEvent, svc *v1.Service, externalIP s
 						{
 							Name:       "server",
 							Image:      constants.DeploymentImage,
-							Args:       []string{"hugo", "server", "--bind=0.0.0.0", "-D", "--baseURL", BaseURL(externalIP)},
-							WorkingDir: docsPath,
+							Args:       []string{"deploy/docs/preview.sh", BaseURL(externalIP)},
+							WorkingDir: repoPath,
 							VolumeMounts: []v1.VolumeMount{
 								{
 									Name:      emptyVol,

@@ -184,17 +184,8 @@ docs-preview-image:
 
 .PHONE: build-docs-preview
 build-docs-preview:	docs-preview-image
-	docker run -ti -v $(PWD):/app --workdir /app/docs -p 1313:1313 skaffold-docs-previewer bash -xc "git submodule init && \
-	git submodule update && \
-	cd /app/docs/themes/docsy && git checkout $(DOCSY_COMMIT) && git submodule update --init --recursive && cd /app/docs && \
-	npm i -D autoprefixer && \
-	hugo && \
-	hugo serve --bind=0.0.0.0 -D"
-
+	docker run -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/preview.sh
 
 .PHONY: clean-docs-preview
 clean-docs-preview: docs-preview-image
-	docker run -ti -v $(PWD):/app --workdir /app/docs -p 1313:1313 skaffold-docs-previewer bash -xc "rm -rf public resources node_modules package-lock.json &&  \
-                                                                                                     	git submodule deinit -f . && \
-                                                                                                     	rm -rf /app/docs/themes/docsy/* && \
-                                                                                                     	rm -rf /app/.git/modules/docsy"
+	docker run -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/clean.sh
