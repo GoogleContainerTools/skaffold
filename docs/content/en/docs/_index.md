@@ -11,8 +11,8 @@ menu:
 Skaffold is a command line tool that facilitates continuous development for
 Kubernetes applications. You can iterate on your application source code
 locally then deploy to local or remote Kubernetes clusters. Skaffold handles
-the workflow for building, pushing and deploying your application. It can also
-provide building blocks and describe customizations for a CI/CD pipeline.
+the workflow for building, pushing and deploying your application. It also
+provides building blocks and describe customizations for a CI/CD pipeline.
 
 ## Features
 
@@ -74,7 +74,7 @@ At this moment, Skaffold supports the following tools:
 {{% tab "DEPLOYERS" %}}
 * Kubernetes Command-Line Interface (`kubectl`)
 * Helm
-* Kustomize
+* kustomize
 {{% /tab %}}
 
 {{% tab "TAG POLICIES" %}}

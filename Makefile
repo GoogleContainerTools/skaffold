@@ -50,6 +50,8 @@ GO_LDFLAGS +="
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 GO_BUILD_TAGS := "kqueue"
 
+DOCSY_COMMIT:=a7141a2eac26cb598b707cab87d224f9105c315d
+
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
 
@@ -172,15 +174,27 @@ submit-release-trigger:
 docs-controller-image: 
 	docker build -t gcr.io/$(GCP_PROJECT)/docs-controller -f deploy/webhook/Dockerfile .
 
+
 .PHONY: preview-docs
-preview-docs:
+preview-docs: build-docs-preview clean-docs-preview
+
+.PHONE: docs-preview-image
+docs-preview-image:
 	docker build -t skaffold-docs-previewer -f deploy/webhook/Dockerfile --target runtime_deps .
+
+.PHONE: build-docs-preview
+build-docs-preview:	docs-preview-image
 	docker run -ti -v $(PWD):/app --workdir /app/docs -p 1313:1313 skaffold-docs-previewer bash -xc "git submodule init && \
-	git submodule update --init --recursive && \
+	git submodule update && \
+	cd /app/docs/themes/docsy && git checkout $(DOCSY_COMMIT) && git submodule update --init --recursive && cd /app/docs && \
 	npm i -D autoprefixer && \
 	hugo && \
-	hugo serve --bind=0.0.0.0 -D && \
-	rm -rf public resources node_modules package-lock.json &&  \
-	git submodule deinit -f . && \
-	rm -rf /app/docs/themes/docsy/* && \
-	rm -rf /app/.git/modules/docsy"
+	hugo serve --bind=0.0.0.0 -D"
+
+
+.PHONY: clean-docs-preview
+clean-docs-preview: docs-preview-image
+	docker run -ti -v $(PWD):/app --workdir /app/docs -p 1313:1313 skaffold-docs-previewer bash -xc "rm -rf public resources node_modules package-lock.json &&  \
+                                                                                                     	git submodule deinit -f . && \
+                                                                                                     	rm -rf /app/docs/themes/docsy/* && \
+                                                                                                     	rm -rf /app/.git/modules/docsy"

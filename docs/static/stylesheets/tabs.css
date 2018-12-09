@@ -8,9 +8,11 @@ ul.nav.nav-tabs {
     border-bottom-style: solid;
 }
 
-li.nav-tab{
+li.nav-tab {
     padding-right: 20px;
     padding-bottom: 10px;
+    padding-left: 20px;
+    padding-top: 10px;
     float: left;
     text-align: center;
     text-decoration: none;
@@ -20,11 +22,12 @@ li.nav-tab{
     font-size: 14px;
 }
 
-li.active{
+li.active {
     color: rgb(87, 119, 249);
+    background: #f5f5f5;
 }
 
-a.nav-tab{
+a.nav-tab {
     all: unset;
 }
 
@@ -34,4 +37,8 @@ div.tab-pane {
 
 div.tab-pane.active {
     display: block;
+    padding-left: 20px;
+    padding-bottom: 20px;
+    padding-top: 10px;
+    background: #f5f5f5;
 }

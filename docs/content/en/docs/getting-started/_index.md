@@ -53,7 +53,7 @@ Docker with Google Container Registry, see <a href=https://cloud.google.com/cont
 
 {{% tabs %}}
 {{% tab "LINUX" %}}
-### Install latest release Skaffold by downloading the binary
+### Stable binary 
 For the latest **stable** release download and place it in your `PATH`: 
 
 https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 
@@ -66,7 +66,7 @@ chmod +x skaffold
 sudo mv skaffold /usr/local/bin
 ```
 
-### Install bleeding edge version of Skaffold by downloading the binary
+### Latest bleeding edge binary
 
 For the latest **bleeding edge** build, download and place it in your `PATH`: 
 
@@ -85,13 +85,13 @@ sudo mv skaffold /usr/local/bin
 
 {{% tab "MACOS" %}}
 
-### Install Skaffold with Homebrew
+### Homebrew
 
 ```bash
 brew install skaffold
 ```
 
-### Install latest release of Skaffold by downloading the binary
+### Stable binary
 For the latest **stable** release download and place it in your `PATH`: 
 
 https://storage.googleapis.com/skaffold/releases/latest/skaffold-darwin-amd64 
@@ -104,7 +104,7 @@ chmod +x skaffold
 sudo mv skaffold /usr/local/bin
 ```
 
-### Install bleeding edge version of Skaffold by downloading the binary
+### Bleeding edge binary
 
 For the latest **bleeding edge** build, download and place it in your `PATH`: 
 
@@ -122,13 +122,13 @@ sudo mv skaffold /usr/local/bin
 
 {{% tab "WINDOWS" %}}
 
-### Install Skaffold with Chocolatey 
+### Chocolatey 
 
 ```bash
 choco install skaffold
 ```
 
-### Install Skaffold by downloading the binary
+### Stable binary
 
 For the latest **stable** release download and place it in your `PATH`: 
 

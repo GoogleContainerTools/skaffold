@@ -27,7 +27,10 @@ RUN curl -LO https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}
     # required for nodejs
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - &&  \
     apt-get update && \
-                       # required for hugo
+    # latest git is required for hugo and submodule management
+    apt-get install -y software-properties-common && \
+    add-apt-repository -y ppa:git-core/ppa && \
+    apt-get update && \
     apt-get install -y git \
                        # required for hugo, firebase
                        nodejs && \
