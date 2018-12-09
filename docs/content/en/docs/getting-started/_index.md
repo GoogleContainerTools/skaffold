@@ -20,30 +20,20 @@ In this quickstart, you will:
 
 ## Before you begin
 
-<ol>
-    <li>
-        <a href="https://www.docker.com/get-started">Install Docker</a>
-    </li>
-    <li>
-        <a href="https://kubernetes.io/docs/tasks/tools/install-kubectl/">Install kubectl</a>
-    </li>
-    <li>
-        <p>Configure kubectl to connect to a Kubernetes cluster. You can use
-        any Kubernetes platform with Skaffold; see <a href="https://kubernetes.io/docs/setup/pick-right-solution/">Picking the Right Solution</a>
-        from Kubernetes documentation for instructions on choosing the
-        right platfrom.</p>
-        <p><a href="https://cloud.google.com/kubernetes-engine/">Google Kubernetes Engine</a>
-        is a hosted Kubernetes solution. To set up kubectl with Google Kubernetes Engine,
-        see <a href="https://cloud.google.com/kubernetes-engine/docs/quickstart">Kubernetes Engine Quickstart</a>.</p>
-
-        <p><a href="https://kubernetes.io/docs/setup/minikube/">Minikube</a> is
-        a local Kubernetes solution best for development and testing. To set up
-        kubectl with Minikube, see <a href="https://kubernetes.io/docs/tasks/tools/install-minikube/">Installing Minikube</a>.</p>
-    </li>
-</ol>
+* [Install Docker](https://www.docker.com/get-started)
+* [Install kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+* Configure kubectl to connect to a Kubernetes cluster. You can use
+    * any Kubernetes platform with Skaffold; see [Picking the Right Solution](https://kubernetes.io/docs/setup/pick-right-solution/)
+    from Kubernetes documentation for instructions on choosing the
+    right platfrom.
+    * [Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine/)
+    is a hosted Kubernetes solution. To set up kubectl with Google Kubernetes Engine,
+    see [Kubernetes Engine Quickstart](https://cloud.google.com/kubernetes-engine/docs/quickstart).
+    * [Minikube](https://kubernetes.io/docs/setup/minikube/) is
+    a local Kubernetes solution best for development and testing. To set up
+    kubectl with Minikube, see [Installing Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/).</p>
 
 {{< alert title="Note" >}}
-
 If you use a non-local solution, your Docker client needs to be configured
 to push Docker images to an external Docker image registry. For setting up
 Docker with Google Container Registry, see <a href=https://cloud.google.com/container-registry/docs/quickstart>Google Container Registry Quickstart</a>.

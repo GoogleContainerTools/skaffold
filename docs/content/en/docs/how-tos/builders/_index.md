@@ -41,40 +41,11 @@ images to the remote registry. You can choose to skip this step.
 To use the local Docker daemon, add build type `local` to the `build` section
 of `skaffold.yaml`. The `local` type offers the following options:
 
-<table>
-    <thead>
-        <tr>
-            <th>Option</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>`skipPush`</td>
-            <td>
-                OPTIONAL
-                Skips pushing images.
-                Default value is `false`.
-            </td>
-        </tr>
-        <tr>
-            <td>`useDockerCLI`</td>
-            <td>
-                OPTIONAL
-                Uses Docker command-line interface instead of Docker Engine APIs.
-                Default value is `false`.
-            </td>
-        </tr>
-        <tr>
-            <td>`useBuildkit`</td>
-            <td>
-                OPTIONAL
-                Uses BuildKit to build Docker images.
-                Default value is `false`.
-            </td>
-        </tr>
-    </tbody>
-<table>
+|Option|Description|
+|-----|-----|
+|`skipPush`| OPTIONAL. Skips pushing images. Default value is `false`. |                    
+|`useDockerCLI`| OPTIONAL. Uses Docker command-line interface instead of Docker Engine APIs. Default value is `false`. |                    
+|`useBuildkit`| OPTIONAL Uses BuildKit to build Docker images. Default value is `false`. |    
 
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with the local Docker daemon: 
@@ -111,52 +82,13 @@ To use Google Cloud Build, add build type `googleCloudBuild` to the `build`
 section of `skaffold.yaml`. The `googleCloudBuild` type offers the following
 options:
 
-<table>
-    <thead>
-        <tr>
-            <th>Option</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>`projectId`</td>
-            <td>
-                <b>REQUIRED</b>
-                The ID of your Google Cloud Platform Project.
-            </td>
-        </tr>
-        <tr>
-            <td>`DiskSizeGb`</td>
-            <td>
-                OPTIONAL
-                The disk size of the VM that runs the build. See <a href="https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions">Cloud Build API Reference: Build Options</a> for more information.
-            </td>
-        </tr>
-        <tr>
-            <td>`machineType`</td>
-            <td>
-                OPTIONAL
-                The type of the VM that runs the build. See <a href="https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions">Cloud Build API Reference: Build Options</a> for more information.
-            </td>
-        </tr>
-        <tr>
-            <td>`timeOut`</td>
-            <td>
-                OPTIONAL
-                The amount of time (in seconds) that this build should be allowed to run. See <a href="https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build">Cloud Build API Reference: Resource/Build</a> for more information.
-            </td>
-        </tr>
-        <tr>
-            <td>`dockerImage`</td>
-            <td>
-                OPTIONAL
-                The name of the image that will run the build. See <a href="https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildstep">Cloud Build API Reference: BuildStep</a> for more information.
-                Default value is `gcr.io/cloud-builders/docker`.
-            </td>
-        </tr>
-    </tbody>
-<table>
+|Option|Description|
+|-----|-----|
+|`projectId`| <b>REQUIRED</b> The ID of your Google Cloud Platform Project. | 
+|`DiskSizeGb`| OPTIONAL The disk size of the VM that runs the build. See [Cloud Build API Reference: Build Options](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions) for more information. |                    
+|`machineType`| OPTIONAL The type of the VM that runs the build. See [Cloud Build API Reference: Build Options](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions) for more information. |                    
+|`timeOut`| OPTIONAL The amount of time (in seconds) that this build should be allowed to run. See [Cloud Build API Reference: Resource/Build](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build) for more information. |                    
+|`dockerImage`| OPTIONAL The name of the image that will run the build. See [Cloud Build API Reference: BuildStep](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildstep) for more information. Default value is `gcr.io/cloud-builders/docker`. |    
 
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with Google Cloud Build: 
@@ -182,54 +114,13 @@ image; after the artifacts are built, kaniko can push them to remote registries.
 To use Kaniko, add build type `kaniko` to the `build` section of
 `skaffold.yaml`. The `kaniko` type offers the following options:
 
-<table>
-    <thead>
-        <tr>
-            <th>Option</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>`buildContext`</td>
-            <td>
-                OPTIONAL
-                The Kaninko build context. See <a href="https://github.com/GoogleContainerTools/kaniko#using-kaniko">Kaniko Documentation: Using Kaniko</a> for more information.
-            </td>
-        </tr>
-        <tr>
-            <td>`pullSecret`</td>
-            <td>
-                OPTIONAL
-                The path to the secret key file. See <a href="https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster">Kaniko Documentation: Running Kaniko in a Kubernetes cluster</a> for more information.
-            </td>
-        </tr>
-        <tr>
-            <td>`pullSecretName`</td>
-            <td>
-                OPTIONAL
-                The name of the Kubernetes secret for pulling the files from the build context and pushing the final image. See <a href="https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster">Kaniko Documentation: Running Kaniko in a Kubernetes cluster</a> for more information.
-                Default value is `kaniko-secret`.
-            </td>
-        </tr>
-        <tr>
-            <td>`namespace`</td>
-            <td>
-                OPTIONAL
-                The Kubernetes namespace.
-                Default value is the current namespace in Kubernetes configuration.
-            </td>
-        </tr>
-        <tr>
-            <td>`timeout`</td>
-            <td>
-                OPTIONAL
-                The amount of time (in seconds) that this build should be allowed to run.
-                Default value is 20 minutes (`20m`).
-            </td>
-        </tr>
-    </tbody>
-<table>
+|Option|Description|
+|-----|-----|
+|`buildContext`| OPTIONAL The Kaninko build context. See [Kaniko Documentation: Using Kaniko](https://github.com/GoogleContainerTools/kaniko#using-kaniko) for more information. |
+|`pullSecret`| OPTIONAL The path to the secret key file. See [Kaniko Documentation: Running Kaniko in a Kubernetes cluster](https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster) for more information. |                    
+|`pullSecretName`| OPTIONAL The name of the Kubernetes secret for pulling the files from the build context and pushing the final image. See [Kaniko Documentation: Running Kaniko in a Kubernetes cluster](https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster) for more information. Default value is `kaniko-secret`. |                    
+|`namespace`| OPTIONAL The Kubernetes namespace. Default value is the current namespace in Kubernetes configuration. |                    
+|`timeout`| OPTIONAL The amount of time (in seconds) that this build should be allowed to run. Default value is 20 minutes (`20m`). |    
 
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with Kaniko: 

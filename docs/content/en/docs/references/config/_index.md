@@ -56,118 +56,30 @@ The Skaffold configuration file has the kind `Config`.
 
 The `build` section has three parts:
 
-<table>
-    <thead>
-        <tr>
-            <th>Stanza</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>Artifacts (`artifacts`)</td>
-            <td>
-                A list of artifacts to build.
-                See the Artifact section below for more information.
-            </td>
-        </tr>
-        <tr>
-            <td>Tag Policy (`tagPolicy`)</td>
-            <td>
-                The tag policy Skaffold uses to tag artifacts.
-                See [Using Taggers](/docs/how-tos/tagger) for more information.
-            </td>
-        </tr>
-        <tr>
-            <td>Build Type</td>
-            <td>
-                Specifies which tool Skaffold should use for building artifacts.
-                At this moment Skaffold supports using local Docker daemon, Google Cloud Build, Kaniko, or Bazel to build artifacts.
-                See <a href="/docs/how-tos/builders">Using Builders</a> for more information.
-            </td>
-        </tr>
-    </tbody>
-<table>
+|Stanza|Description|
+|-----|-----|
+|Artifacts (`artifacts`)| A list of artifacts to build. See the Artifact section below for more information.|
+|Tag Policy (`tagPolicy`)|The tag policy Skaffold uses to tag artifacts. See [Using Taggers](/docs/how-tos/tagger) for more information.|            
+|Build Type| Specifies which tool Skaffold should use for building artifacts. Skaffold supports using local Docker daemon, Google Cloud Build, Kaniko, or Bazel to build artifacts. See [Using Builders](/docs/how-tos/builders) for more information. |
 
 ### Artifacts (`artifacts`)
 
 Each artifact item has the following three fields:
 
-<table>
-    <thead>
-        <tr>
-            <th>Field</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>Image Name (`imageName`)</td>
-            <td>
-                <b>Required</b>
-                The name of the artifact, e.g. `grc.io/k8s-skaffold/skaffold-example`.
-            </td>
-        </tr>
-        <tr>
-            <td>Workspace (`workspace`)</td>
-            <td>
-                Optional
-                The Docker workspace.
-                See [Using Taggers](/docs/how-tos/taggers/) for more information.
-            </td>
-        </tr>
-        <tr>
-            <td>Artifact Type</td>
-            <td>
-                Optional
-                There are two available artifact types: Docker Artifact (`docker</code>) and Bazel Artifact (<code>bazel`).
-                Both types offers additional parameters that you can configure.
-                Default value is `docker: {}`
-            </td>
-        </tr>
-    </tbody>
-<table>
+|Field|Description|
+|---|---|
+|Image Name (`imageName`)| <b>Required</b> The name of the artifact, e.g. `grc.io/k8s-skaffold/skaffold-example`. |            
+|Workspace (`workspace`)| Optional.The Docker workspace. See [Using Taggers](/docs/how-tos/taggers/) for more information.|
+|Artifact Type| Optional. There are two available artifact types: Docker Artifact (`docker`) and Bazel Artifact (`bazel`). Both types offers additional parameters that you can configure. Default value is `docker: {}`|
 
 The Docker Artifact type features the following parameters:
 
-<table>
-    <thead>
-        <tr>
-            <th>Field</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>Dockerfile Path (`dockerfilePath`)</td>
-            <td>
-                Optional
-                Path to the Dockerfile.
-            </td>
-        </tr>
-        <tr>
-            <td>Build Args (`buildArgs`)</td>
-            <td>
-                Optional
-                Arguments to be passed to the Docker daemon.
-            </td>
-        </tr>
-        <tr>
-            <td>Cache From (`cacheFrom`)</td>
-            <td>
-                A list of images used as a cache source on build.
-                See <a href="https://docs.docker.com/edge/engine/reference/commandline/build/">Docker Documentation: docker build Command</a> for more information.
-            </td>
-        </tr>
-        <tr>
-            <td>Target (`target`)</td>
-            <td>
-                Set the target build stage to build.
-                See <a href="https://docs.docker.com/edge/engine/reference/commandline/build/">Docker Documentation: docker build Command</a> for more information.
-            </td>
-        </tr>
-    </tbody>
-<table>
+|Field|Description|
+|---|---|
+| Dockerfile Path (`dockerfilePath`)| Optional.  Path to the Dockerfile.|
+|Build Args (`buildArgs`)|Optional. Arguments to be passed to the Docker daemon.|
+|Cache From (`cacheFrom`)|A list of images used as a cache source on build. See [Docker Documentation: docker build Command](https://docs.docker.com/edge/engine/reference/commandline/build/) for more information.|
+|Target (`target`)|Set the target build stage to build .See [Docker Documentation: docker build Command](https://docs.docker.com/edge/engine/reference/commandline/build/) for more information.|
 
 The following example showcases a `build` section that builds two artifacts,
 `gcr.io/k8s-skaffold/skaffold-example-1` and `gcr.io/k8s-skaffold/skaffold-example-2`:
@@ -200,23 +112,9 @@ build:
 
 And the Bazel Artifact type features the following parameters:
 
-<table>
-    <thead>
-        <tr>
-            <th>Field</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>Build Target (`target`)</td>
-            <td>
-                <b>Required</b>
-                The Bazel build target.
-            </td>
-        </tr>
-    </tbody>
-<table>
+|Field|Description|
+|---|---|
+|Build Target (`target`)| <b>Required</b> The Bazel build target.|
 
 ## Deploy Configuration (`deploy`)
 
