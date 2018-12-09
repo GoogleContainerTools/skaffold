@@ -59,6 +59,7 @@ type SkaffoldRunner struct {
 	opts         *config.SkaffoldOptions
 	watchFactory watch.Factory
 	builds       []build.Artifact
+	hasDeployed  bool
 	imageList    *kubernetes.ImageList
 }
 
@@ -207,6 +208,11 @@ func (r *SkaffoldRunner) newLogger(out io.Writer, artifacts []*latest.Artifact) 
 	return kubernetes.NewLogAggregator(out, imageNames, r.imageList)
 }
 
+// HasDeployed returns true if this runner has deployed something.
+func (r *SkaffoldRunner) HasDeployed() bool {
+	return r.hasDeployed
+}
+
 func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
 	bRes, err := r.BuildAndTest(ctx, out, artifacts)
 	if err != nil {
@@ -260,6 +266,13 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	return bRes, err
 }
 
+// Deploy deploys the given artifacts
+func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) ([]deploy.Artifact, error) {
+	dRes, err := r.Deployer.Deploy(ctx, out, artifacts)
+	r.hasDeployed = true
+	return dRes, err
+}
+
 // TailLogs prints the logs for deployed artifacts.
 func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, artifacts []*latest.Artifact, bRes []build.Artifact) error {
 	if !r.opts.Tail {
@@ -281,7 +294,7 @@ func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, artifacts 
 
 // Dev watches for changes and runs the skaffold build and deploy
 // pipeline until interrrupted by the user.
-func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
 	logger := r.newLogger(out, artifacts)
 
 	// Create watcher and register artifacts to build current state of files.
@@ -349,7 +362,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			func() ([]string, error) { return DependenciesForArtifact(ctx, artifact) },
 			func(e watch.Events) { changed.AddDirtyArtifact(artifact, e) },
 		); err != nil {
-			return nil, errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
+			return errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
 		}
 	}
 
@@ -358,7 +371,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		func() ([]string, error) { return r.TestDependencies() },
 		func(watch.Events) { changed.needsRedeploy = true },
 	); err != nil {
-		return nil, errors.Wrap(err, "watching test files")
+		return errors.Wrap(err, "watching test files")
 	}
 
 	// Watch deployment configuration
@@ -366,7 +379,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		func() ([]string, error) { return r.Dependencies() },
 		func(watch.Events) { changed.needsRedeploy = true },
 	); err != nil {
-		return nil, errors.Wrap(err, "watching files for deployer")
+		return errors.Wrap(err, "watching files for deployer")
 	}
 
 	// Watch Skaffold configuration
@@ -374,18 +387,18 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		func() ([]string, error) { return []string{r.opts.ConfigurationFile}, nil },
 		func(watch.Events) { changed.needsReload = true },
 	); err != nil {
-		return nil, errors.Wrapf(err, "watching skaffold configuration %s", r.opts.ConfigurationFile)
+		return errors.Wrapf(err, "watching skaffold configuration %s", r.opts.ConfigurationFile)
 	}
 
 	// First run
 	if err := r.buildTestDeploy(ctx, out, artifacts); err != nil {
-		return nil, errors.Wrap(err, "exiting dev mode because first run failed")
+		return errors.Wrap(err, "exiting dev mode because first run failed")
 	}
 
 	// Start logs
 	if r.opts.TailDev {
 		if err := logger.Start(ctx); err != nil {
-			return nil, errors.Wrap(err, "starting logger")
+			return errors.Wrap(err, "starting logger")
 		}
 	}
 
@@ -393,12 +406,12 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		portForwarder := kubernetes.NewPortForwarder(out, r.imageList)
 
 		if err := portForwarder.Start(ctx); err != nil {
-			return nil, errors.Wrap(err, "starting port-forwarder")
+			return errors.Wrap(err, "starting port-forwarder")
 		}
 	}
 
 	r.Trigger.WatchForChanges(out)
-	return nil, watcher.Run(ctx, r.Trigger, onChange)
+	return watcher.Run(ctx, r.Trigger, onChange)
 }
 
 func (r *SkaffoldRunner) shouldWatch(artifact *latest.Artifact) bool {

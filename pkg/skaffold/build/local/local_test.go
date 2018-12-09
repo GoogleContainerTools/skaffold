@@ -27,10 +27,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 type FakeTagger struct {
@@ -38,7 +36,7 @@ type FakeTagger struct {
 	Err error
 }
 
-func (f *FakeTagger) GenerateFullyQualifiedImageName(workingDir string, tagOpts *tag.Options) (string, error) {
+func (f *FakeTagger) GenerateFullyQualifiedImageName(workingDir string, tagOpts tag.Options) (string, error) {
 	return f.Out, f.Err
 }
 
@@ -57,17 +55,8 @@ func TestLocalRun(t *testing.T) {
 	defer func(h docker.AuthConfigHelper) { docker.DefaultAuthHelper = h }(docker.DefaultAuthHelper)
 	docker.DefaultAuthHelper = testAuthHelper{}
 
-	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
-	defer restore()
-
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
-
-	tmpDir.Write("Dockerfile", "")
-
 	var tests = []struct {
 		description  string
-		config       *latest.LocalBuild
 		out          io.Writer
 		api          docker.APIClient
 		tagger       tag.Tagger
@@ -79,38 +68,30 @@ func TestLocalRun(t *testing.T) {
 		{
 			description: "single build",
 			out:         ioutil.Discard,
-			config: &latest.LocalBuild{
-				Push: util.BoolPtr(false),
-			},
 			artifacts: []*latest.Artifact{
 				{
 					ImageName: "gcr.io/test/image",
-					Workspace: tmpDir.Root(),
 					ArtifactType: latest.ArtifactType{
 						DockerArtifact: &latest.DockerArtifact{},
 					},
 				},
 			},
-			tagger: &tag.ChecksumTagger{},
+			tagger: &FakeTagger{Out: "gcr.io/test/image:tag"},
 			api:    testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
 			expected: []build.Artifact{
 				{
 					ImageName: "gcr.io/test/image",
-					Tag:       "gcr.io/test/image:imageid",
+					Tag:       "gcr.io/test/image:tag",
 				},
 			},
 		},
 		{
 			description: "subset build",
 			out:         ioutil.Discard,
-			config: &latest.LocalBuild{
-				Push: util.BoolPtr(true),
-			},
-			tagger: &tag.ChecksumTagger{},
+			tagger:      &FakeTagger{Out: "gcr.io/test/image:tag"},
 			artifacts: []*latest.Artifact{
 				{
 					ImageName: "gcr.io/test/image",
-					Workspace: tmpDir.Root(),
 					ArtifactType: latest.ArtifactType{
 						DockerArtifact: &latest.DockerArtifact{},
 					},
@@ -120,14 +101,13 @@ func TestLocalRun(t *testing.T) {
 			expected: []build.Artifact{
 				{
 					ImageName: "gcr.io/test/image",
-					Tag:       "gcr.io/test/image:imageid",
+					Tag:       "gcr.io/test/image:tag",
 				},
 			},
 		},
 		{
 			description:  "local cluster bad writer",
 			out:          &testutil.BadWriter{},
-			config:       &latest.LocalBuild{},
 			shouldErr:    true,
 			localCluster: true,
 		},
@@ -135,7 +115,6 @@ func TestLocalRun(t *testing.T) {
 			description: "error image build",
 			out:         ioutil.Discard,
 			artifacts:   []*latest.Artifact{{}},
-			tagger:      &tag.ChecksumTagger{},
 			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{
 				ErrImageBuild: true,
 			}),
@@ -145,7 +124,6 @@ func TestLocalRun(t *testing.T) {
 			description: "error image tag",
 			out:         ioutil.Discard,
 			artifacts:   []*latest.Artifact{{}},
-			tagger:      &tag.ChecksumTagger{},
 			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{
 				ErrImageTag: true,
 			}),
@@ -155,7 +133,6 @@ func TestLocalRun(t *testing.T) {
 			description: "bad writer",
 			out:         &testutil.BadWriter{},
 			artifacts:   []*latest.Artifact{{}},
-			tagger:      &tag.ChecksumTagger{},
 			api:         testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
 			shouldErr:   true,
 		},
@@ -163,7 +140,6 @@ func TestLocalRun(t *testing.T) {
 			description: "error image inspect",
 			out:         &testutil.BadWriter{},
 			artifacts:   []*latest.Artifact{{}},
-			tagger:      &tag.ChecksumTagger{},
 			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{
 				ErrImageInspect: true,
 			}),
@@ -182,7 +158,7 @@ func TestLocalRun(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			l := Builder{
-				cfg:          test.config,
+				cfg:          &latest.LocalBuild{},
 				api:          test.api,
 				localCluster: test.localCluster,
 			}

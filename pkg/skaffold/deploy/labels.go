@@ -138,7 +138,6 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 		return nil
 	}
 
-	namespace := res.Namespace
 	addLabels(labels, accessor)
 
 	modifiedJSON, _ := json.Marshal(modifiedObj)
@@ -146,6 +145,13 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 	gvr, err := groupVersionResource(disco, modifiedObj.GetObjectKind().GroupVersionKind())
 	if err != nil {
 		return errors.Wrap(err, "getting group version resource from obj")
+	}
+
+	var namespace string
+	if accessor.GetNamespace() != "" {
+		namespace = accessor.GetNamespace()
+	} else {
+		namespace = res.Namespace
 	}
 
 	ns, err := resolveNamespace(namespace)

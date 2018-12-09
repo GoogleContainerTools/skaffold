@@ -37,11 +37,20 @@ spec:
       - name: docs-controller
         image: gcr.io/k8s-skaffold/docs-controller:latest
         args: ["/webhook"]
+        volumeMounts:
+        - name: webhook
+          mountPath: /secret
         env:
         - name: GITHUB_ACCESS_TOKEN
           valueFrom:
             secretKeyRef:
               name: github-token 
               key: token
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /secret/webhook.json
         ports:
         - containerPort: 8080
+      volumes:
+        - name: webhook
+          secret:
+            secretName: webhook

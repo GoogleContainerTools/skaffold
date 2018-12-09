@@ -22,6 +22,7 @@ import (
 
 	"fmt"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -29,22 +30,29 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, a *latest.JibMavenArtifact) (string, error) {
+func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace string, artifact *latest.Artifact) (string, error) {
+	if b.pushImages {
+		return b.buildJibMavenToRegistry(ctx, out, workspace, artifact)
+	}
+	return b.buildJibMavenToDocker(ctx, out, workspace, artifact.JibMavenArtifact)
+}
+
+func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibMavenArtifact) (string, error) {
 	// If this is a multi-module project, we require `package` be bound to jib:dockerBuild
-	if a.Module != "" {
-		if err := verifyJibPackageGoal(ctx, "dockerBuild", workspace, a); err != nil {
+	if artifact.Module != "" {
+		if err := verifyJibPackageGoal(ctx, "dockerBuild", workspace, artifact); err != nil {
 			return "", err
 		}
 	}
 
-	skaffoldImage := generateJibImageRef(workspace, a.Module)
-	args := generateMavenArgs("dockerBuild", skaffoldImage, a)
+	skaffoldImage := generateJibImageRef(workspace, artifact.Module)
+	args := generateMavenArgs("dockerBuild", skaffoldImage, artifact)
 
 	if err := runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
 
-	return skaffoldImage, nil
+	return docker.Digest(ctx, b.api, skaffoldImage)
 }
 
 func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.Artifact) (string, error) {
@@ -63,22 +71,22 @@ func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, wo
 		return "", err
 	}
 
-	return skaffoldImage, nil
+	return docker.RemoteDigest(skaffoldImage)
 }
 
 // generateMavenArgs generates the arguments to Maven for building the project as an image called `skaffoldImage`.
-func generateMavenArgs(goal string, skaffoldImage string, a *latest.JibMavenArtifact) []string {
+func generateMavenArgs(goal string, imageName string, artifact *latest.JibMavenArtifact) []string {
 	var command []string
-	if a.Module == "" {
+	if artifact.Module == "" {
 		// single-module project
 		command = []string{"--non-recursive", "prepare-package", "jib:" + goal}
 	} else {
 		// multi-module project: we assume `package` is bound to `jib:<goal>`
-		command = []string{"--projects", a.Module, "--also-make", "package"}
+		command = []string{"--projects", artifact.Module, "--also-make", "package"}
 	}
-	command = append(command, "-Dimage="+skaffoldImage)
-	if a.Profile != "" {
-		command = append(command, "--activate-profiles", a.Profile)
+	command = append(command, "-Dimage="+imageName)
+	if artifact.Profile != "" {
+		command = append(command, "--activate-profiles", artifact.Profile)
 	}
 
 	return command
@@ -86,11 +94,11 @@ func generateMavenArgs(goal string, skaffoldImage string, a *latest.JibMavenArti
 
 // verifyJibPackageGoal verifies that the referenced module has `package` bound to a single jib goal.
 // It returns `nil` if the goal is matched, and an error if there is a mismatch.
-func verifyJibPackageGoal(ctx context.Context, requiredGoal string, workspace string, a *latest.JibMavenArtifact) error {
+func verifyJibPackageGoal(ctx context.Context, requiredGoal string, workspace string, artifact *latest.JibMavenArtifact) error {
 	// cannot use --non-recursive
-	command := []string{"--quiet", "--projects", a.Module, "jib:_skaffold-package-goals"}
-	if a.Profile != "" {
-		command = append(command, "--activate-profiles", a.Profile)
+	command := []string{"--quiet", "--projects", artifact.Module, "jib:_skaffold-package-goals"}
+	if artifact.Profile != "" {
+		command = append(command, "--activate-profiles", artifact.Profile)
 	}
 
 	cmd := jib.MavenCommand.CreateCommand(ctx, workspace, command)
@@ -100,7 +108,7 @@ func verifyJibPackageGoal(ctx context.Context, requiredGoal string, workspace st
 		return errors.Wrap(err, "could not obtain jib package goals")
 	}
 	goals := util.NonEmptyLines(stdout)
-	logrus.Debugf("jib bound package goals for %s %s: %v (%d)", workspace, a.Module, goals, len(goals))
+	logrus.Debugf("jib bound package goals for %s %s: %v (%d)", workspace, artifact.Module, goals, len(goals))
 	if len(goals) != 1 {
 		return errors.New("skaffold requires a single jib goal bound to 'package'")
 	}

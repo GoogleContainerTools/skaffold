@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v1beta1
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v1beta2"
+const Version string = "skaffold/v1beta1"
 
 // NewSkaffoldPipeline creates a SkaffoldPipeline
 func NewSkaffoldPipeline() util.VersionedConfig {

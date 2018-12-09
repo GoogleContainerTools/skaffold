@@ -14,29 +14,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package defaults
 
 import (
 	"fmt"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	homedir "github.com/mitchellh/go-homedir"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-// SetDefaultValues makes sure default values are set.
-func (c *SkaffoldPipeline) SetDefaultValues() error {
-	c.defaultToLocalBuild()
-	c.defaultToKubectlDeploy()
-	c.setDefaultCloudBuildDockerImage()
-	c.setDefaultTagger()
-	c.setDefaultKustomizePath()
-	c.setDefaultKubectlManifests()
+// Set makes sure default values are set on a SkaffoldPipeline.
+func Set(c *latest.SkaffoldPipeline) error {
+	defaultToLocalBuild(c)
+	defaultToKubectlDeploy(c)
+	setDefaultCloudBuildDockerImage(c)
+	setDefaultTagger(c)
+	setDefaultKustomizePath(c)
+	setDefaultKubectlManifests(c)
 
-	if err := c.withKanikoConfig(
+	if err := withKanikoConfig(c,
 		setDefaultKanikoTimeout,
 		setDefaultKanikoImage,
 		setDefaultKanikoNamespace,
@@ -47,33 +48,33 @@ func (c *SkaffoldPipeline) SetDefaultValues() error {
 	}
 
 	for _, a := range c.Build.Artifacts {
-		c.defaultToDockerArtifact(a)
-		c.setDefaultDockerfile(a)
-		c.setDefaultWorkspace(a)
+		defaultToDockerArtifact(a)
+		setDefaultDockerfile(a)
+		setDefaultWorkspace(a)
 	}
 
 	return nil
 }
 
-func (c *SkaffoldPipeline) defaultToLocalBuild() {
-	if c.Build.BuildType != (BuildType{}) {
+func defaultToLocalBuild(c *latest.SkaffoldPipeline) {
+	if c.Build.BuildType != (latest.BuildType{}) {
 		return
 	}
 
 	logrus.Debugf("Defaulting build type to local build")
-	c.Build.BuildType.LocalBuild = &LocalBuild{}
+	c.Build.BuildType.LocalBuild = &latest.LocalBuild{}
 }
 
-func (c *SkaffoldPipeline) defaultToKubectlDeploy() {
-	if c.Deploy.DeployType != (DeployType{}) {
+func defaultToKubectlDeploy(c *latest.SkaffoldPipeline) {
+	if c.Deploy.DeployType != (latest.DeployType{}) {
 		return
 	}
 
 	logrus.Debugf("Defaulting deploy type to kubectl")
-	c.Deploy.DeployType.KubectlDeploy = &KubectlDeploy{}
+	c.Deploy.DeployType.KubectlDeploy = &latest.KubectlDeploy{}
 }
 
-func (c *SkaffoldPipeline) setDefaultCloudBuildDockerImage() {
+func setDefaultCloudBuildDockerImage(c *latest.SkaffoldPipeline) {
 	cloudBuild := c.Build.BuildType.GoogleCloudBuild
 	if cloudBuild == nil {
 		return
@@ -82,15 +83,15 @@ func (c *SkaffoldPipeline) setDefaultCloudBuildDockerImage() {
 	cloudBuild.DockerImage = valueOrDefault(cloudBuild.DockerImage, constants.DefaultCloudBuildDockerImage)
 }
 
-func (c *SkaffoldPipeline) setDefaultTagger() {
-	if c.Build.TagPolicy != (TagPolicy{}) {
+func setDefaultTagger(c *latest.SkaffoldPipeline) {
+	if c.Build.TagPolicy != (latest.TagPolicy{}) {
 		return
 	}
 
-	c.Build.TagPolicy = TagPolicy{GitTagger: &GitTagger{}}
+	c.Build.TagPolicy = latest.TagPolicy{GitTagger: &latest.GitTagger{}}
 }
 
-func (c *SkaffoldPipeline) setDefaultKustomizePath() {
+func setDefaultKustomizePath(c *latest.SkaffoldPipeline) {
 	kustomize := c.Deploy.KustomizeDeploy
 	if kustomize == nil {
 		return
@@ -99,31 +100,31 @@ func (c *SkaffoldPipeline) setDefaultKustomizePath() {
 	kustomize.KustomizePath = valueOrDefault(kustomize.KustomizePath, constants.DefaultKustomizationPath)
 }
 
-func (c *SkaffoldPipeline) setDefaultKubectlManifests() {
+func setDefaultKubectlManifests(c *latest.SkaffoldPipeline) {
 	if c.Deploy.KubectlDeploy != nil && len(c.Deploy.KubectlDeploy.Manifests) == 0 {
 		c.Deploy.KubectlDeploy.Manifests = constants.DefaultKubectlManifests
 	}
 }
 
-func (c *SkaffoldPipeline) defaultToDockerArtifact(a *Artifact) {
-	if a.ArtifactType == (ArtifactType{}) {
-		a.ArtifactType = ArtifactType{
-			DockerArtifact: &DockerArtifact{},
+func defaultToDockerArtifact(a *latest.Artifact) {
+	if a.ArtifactType == (latest.ArtifactType{}) {
+		a.ArtifactType = latest.ArtifactType{
+			DockerArtifact: &latest.DockerArtifact{},
 		}
 	}
 }
 
-func (c *SkaffoldPipeline) setDefaultDockerfile(a *Artifact) {
+func setDefaultDockerfile(a *latest.Artifact) {
 	if a.DockerArtifact != nil {
 		a.DockerArtifact.DockerfilePath = valueOrDefault(a.DockerArtifact.DockerfilePath, constants.DefaultDockerfilePath)
 	}
 }
 
-func (c *SkaffoldPipeline) setDefaultWorkspace(a *Artifact) {
+func setDefaultWorkspace(a *latest.Artifact) {
 	a.Workspace = valueOrDefault(a.Workspace, ".")
 }
 
-func (c *SkaffoldPipeline) withKanikoConfig(operations ...func(kaniko *KanikoBuild) error) error {
+func withKanikoConfig(c *latest.SkaffoldPipeline, operations ...func(kaniko *latest.KanikoBuild) error) error {
 	if kaniko := c.Build.KanikoBuild; kaniko != nil {
 		for _, operation := range operations {
 			if err := operation(kaniko); err != nil {
@@ -135,7 +136,7 @@ func (c *SkaffoldPipeline) withKanikoConfig(operations ...func(kaniko *KanikoBui
 	return nil
 }
 
-func setDefaultKanikoNamespace(kaniko *KanikoBuild) error {
+func setDefaultKanikoNamespace(kaniko *latest.KanikoBuild) error {
 	if kaniko.Namespace == "" {
 		ns, err := currentNamespace()
 		if err != nil {
@@ -148,17 +149,17 @@ func setDefaultKanikoNamespace(kaniko *KanikoBuild) error {
 	return nil
 }
 
-func setDefaultKanikoTimeout(kaniko *KanikoBuild) error {
+func setDefaultKanikoTimeout(kaniko *latest.KanikoBuild) error {
 	kaniko.Timeout = valueOrDefault(kaniko.Timeout, constants.DefaultKanikoTimeout)
 	return nil
 }
 
-func setDefaultKanikoImage(kaniko *KanikoBuild) error {
+func setDefaultKanikoImage(kaniko *latest.KanikoBuild) error {
 	kaniko.Image = valueOrDefault(kaniko.Image, constants.DefaultKanikoImage)
 	return nil
 }
 
-func setDefaultKanikoSecret(kaniko *KanikoBuild) error {
+func setDefaultKanikoSecret(kaniko *latest.KanikoBuild) error {
 	kaniko.PullSecretName = valueOrDefault(kaniko.PullSecretName, constants.DefaultKanikoSecretName)
 
 	if kaniko.PullSecret != "" {
@@ -174,10 +175,10 @@ func setDefaultKanikoSecret(kaniko *KanikoBuild) error {
 	return nil
 }
 
-func setDefaultKanikoBuildContext(kaniko *KanikoBuild) error {
+func setDefaultKanikoBuildContext(kaniko *latest.KanikoBuild) error {
 	if kaniko.BuildContext == nil {
-		kaniko.BuildContext = &KanikoBuildContext{
-			LocalDir: &LocalDir{},
+		kaniko.BuildContext = &latest.KanikoBuildContext{
+			LocalDir: &latest.LocalDir{},
 		}
 	}
 	return nil

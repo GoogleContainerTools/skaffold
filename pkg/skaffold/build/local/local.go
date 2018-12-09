@@ -44,17 +44,9 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error) {
-	initialTag, err := b.runBuildForArtifact(ctx, out, artifact)
+	digest, err := b.runBuildForArtifact(ctx, out, artifact)
 	if err != nil {
 		return "", errors.Wrap(err, "build artifact")
-	}
-
-	digest, err := b.getDigestForArtifact(ctx, initialTag, artifact)
-	if err != nil {
-		return "", errors.Wrapf(err, "getting digest: %s", initialTag)
-	}
-	if digest == "" {
-		return "", fmt.Errorf("digest not found")
 	}
 
 	if b.alreadyTagged == nil {
@@ -64,7 +56,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return tag, nil
 	}
 
-	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.Options{
+	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, tag.Options{
 		ImageName: artifact.ImageName,
 		Digest:    digest,
 	})
@@ -72,7 +64,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "generating tag")
 	}
 
-	if err := b.retagAndPush(ctx, out, initialTag, tag, artifact); err != nil {
+	if err := b.retagAndPush(ctx, out, digest, tag, artifact); err != nil {
 		return "", errors.Wrap(err, "tagging")
 	}
 
@@ -90,27 +82,14 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 		return b.buildBazel(ctx, out, artifact.Workspace, artifact.BazelArtifact)
 
 	case artifact.JibMavenArtifact != nil:
-		if b.pushImages {
-			return b.buildJibMavenToRegistry(ctx, out, artifact.Workspace, artifact)
-		}
-		return b.buildJibMavenToDocker(ctx, out, artifact.Workspace, artifact.JibMavenArtifact)
+		return b.buildJibMaven(ctx, out, artifact.Workspace, artifact)
 
 	case artifact.JibGradleArtifact != nil:
-		if b.pushImages {
-			return b.buildJibGradleToRegistry(ctx, out, artifact.Workspace, artifact)
-		}
-		return b.buildJibGradleToDocker(ctx, out, artifact.Workspace, artifact.JibGradleArtifact)
+		return b.buildJibGradle(ctx, out, artifact.Workspace, artifact)
 
 	default:
 		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 	}
-}
-
-func (b *Builder) getDigestForArtifact(ctx context.Context, initialTag string, artifact *latest.Artifact) (string, error) {
-	if b.pushImages && (artifact.JibMavenArtifact != nil || artifact.JibGradleArtifact != nil) {
-		return docker.RemoteDigest(initialTag)
-	}
-	return docker.Digest(ctx, b.api, initialTag)
 }
 
 func (b *Builder) retagAndPush(ctx context.Context, out io.Writer, initialTag string, newTag string, artifact *latest.Artifact) error {

@@ -46,4 +46,7 @@ const (
 
 	// DeploymentImage is the image the controller deploys, must contain hugo and git
 	DeploymentImage = "gcr.io/k8s-skaffold/docs-controller:latest"
+
+	// LogsGCSBucket is the GCS bucket logs are uploaded to
+	LogsGCSBucket = "webhook-logs"
 )
