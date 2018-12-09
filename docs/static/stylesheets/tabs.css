@@ -29,6 +29,7 @@ li.active {
 
 a.nav-tab {
     all: unset;
+    cursor: pointer;
 }
 
 div.tab-pane {
