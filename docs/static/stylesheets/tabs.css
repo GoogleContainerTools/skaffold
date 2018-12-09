@@ -43,3 +43,7 @@ div.tab-pane.active {
     padding-top: 10px;
     background: #f5f5f5;
 }
+
+code {
+    word-break: keep-all;
+}

@@ -22,10 +22,10 @@ In this quickstart, you will:
 
 <ol>
     <li>
-        <p><a href="https://www.docker.com/get-started">Install Docker</a></p>
+        <a href="https://www.docker.com/get-started">Install Docker</a>
     </li>
     <li>
-        <p><a href="https://kubernetes.io/docs/tasks/tools/install-kubectl/">Install kubectl</a></p>
+        <a href="https://kubernetes.io/docs/tasks/tools/install-kubectl/">Install kubectl</a>
     </li>
     <li>
         <p>Configure kubectl to connect to a Kubernetes cluster. You can use
@@ -144,17 +144,17 @@ https://storage.googleapis.com/skaffold/builds/latest/skaffold-windows-amd64.exe
 
 ## Downloading the sample app
 
-<ol>
-    <li>
-        <p>Clone the Skaffold repository:</p>
-        <pre><code>git clone https://github.com/GoogleContainerTools/skaffold</code></pre>
-    </li>
-    <li>
-        <p>Change to the <code>examples/getting-started</code> directory.</p>
-        <pre><code>cd examples/getting-started</code></pre>
-    </li>
-</ol>
+1. Clone the Skaffold repository:
 
+    ```
+    git clone https://github.com/GoogleContainerTools/skaffold
+    ```
+1. Change to the `examples/getting-started` directory.
+
+    ```
+    cd examples/getting-started
+    ```
+  
 ## `skaffold dev`: Build and deploy your app every time your code changes
 
 Run command `skaffold dev` to build and deploy your app continuously. You should

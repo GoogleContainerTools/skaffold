@@ -50,27 +50,27 @@ of `skaffold.yaml`. The `local` type offers the following options:
     </thead>
     <tbody>
         <tr>
-            <td><code>skipPush</code></td>
+            <td>`skipPush`</td>
             <td>
                 OPTIONAL
-                <p>Skips pushing images.</p>
-                <p>Default value is <code>false</code>.</p>
+                Skips pushing images.
+                Default value is `false`.
             </td>
         </tr>
         <tr>
-            <td><code>useDockerCLI</code></td>
+            <td>`useDockerCLI`</td>
             <td>
                 OPTIONAL
-                <p>Uses Docker command-line interface instead of Docker Engine APIs.</p>
-                <p>Default value is <code>false</code>.</p>
+                Uses Docker command-line interface instead of Docker Engine APIs.
+                Default value is `false`.
             </td>
         </tr>
         <tr>
-            <td><code>useBuildkit</code></td>
+            <td>`useBuildkit`</td>
             <td>
                 OPTIONAL
-                <p>Uses BuildKit to build Docker images.</p>
-                <p>Default value is <code>false</code>.</p>
+                Uses BuildKit to build Docker images.
+                Default value is `false`.
             </td>
         </tr>
     </tbody>
@@ -120,39 +120,39 @@ options:
     </thead>
     <tbody>
         <tr>
-            <td><code>projectId</code></td>
+            <td>`projectId`</td>
             <td>
                 <b>REQUIRED</b>
-                <p>The ID of your Google Cloud Platform Project.</p>
+                The ID of your Google Cloud Platform Project.
             </td>
         </tr>
         <tr>
-            <td><code>DiskSizeGb</code></td>
+            <td>`DiskSizeGb`</td>
             <td>
                 OPTIONAL
-                <p>The disk size of the VM that runs the build. See <a href="https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions">Cloud Build API Reference: Build Options</a> for more information.</p>
+                The disk size of the VM that runs the build. See <a href="https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions">Cloud Build API Reference: Build Options</a> for more information.
             </td>
         </tr>
         <tr>
-            <td><code>machineType</code></td>
+            <td>`machineType`</td>
             <td>
                 OPTIONAL
-                <p>The type of the VM that runs the build. See <a href="https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions">Cloud Build API Reference: Build Options</a> for more information.</p>
+                The type of the VM that runs the build. See <a href="https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions">Cloud Build API Reference: Build Options</a> for more information.
             </td>
         </tr>
         <tr>
-            <td><code>timeOut</code></td>
+            <td>`timeOut`</td>
             <td>
                 OPTIONAL
-                <p>The amount of time (in seconds) that this build should be allowed to run. See <a href="https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build">Cloud Build API Reference: Resource/Build</a> for more information.</p>
+                The amount of time (in seconds) that this build should be allowed to run. See <a href="https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build">Cloud Build API Reference: Resource/Build</a> for more information.
             </td>
         </tr>
         <tr>
-            <td><code>dockerImage</code></td>
+            <td>`dockerImage`</td>
             <td>
                 OPTIONAL
-                <p>The name of the image that will run the build. See <a href="https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildstep">Cloud Build API Reference: BuildStep</a> for more information.</p>
-                <p>Default value is `gcr.io/cloud-builders/docker`.</p>
+                The name of the image that will run the build. See <a href="https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildstep">Cloud Build API Reference: BuildStep</a> for more information.
+                Default value is `gcr.io/cloud-builders/docker`.
             </td>
         </tr>
     </tbody>
@@ -191,41 +191,41 @@ To use Kaniko, add build type `kaniko` to the `build` section of
     </thead>
     <tbody>
         <tr>
-            <td><code>buildContext</code></td>
+            <td>`buildContext`</td>
             <td>
                 OPTIONAL
-                <p>The Kaninko build context. See <a href="https://github.com/GoogleContainerTools/kaniko#using-kaniko">Kaniko Documentation: Using Kaniko</a> for more information.</p>
+                The Kaninko build context. See <a href="https://github.com/GoogleContainerTools/kaniko#using-kaniko">Kaniko Documentation: Using Kaniko</a> for more information.
             </td>
         </tr>
         <tr>
-            <td><code>pullSecret</code></td>
+            <td>`pullSecret`</td>
             <td>
                 OPTIONAL
-                <p>The path to the secret key file. See <a href="https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster">Kaniko Documentation: Running Kaniko in a Kubernetes cluster</a> for more information.</p>
+                The path to the secret key file. See <a href="https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster">Kaniko Documentation: Running Kaniko in a Kubernetes cluster</a> for more information.
             </td>
         </tr>
         <tr>
-            <td><code>pullSecretName</code></td>
+            <td>`pullSecretName`</td>
             <td>
                 OPTIONAL
-                <p>The name of the Kubernetes secret for pulling the files from the build context and pushing the final image. See <a href="https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster">Kaniko Documentation: Running Kaniko in a Kubernetes cluster</a> for more information.</p>
-                <p>Default value is `kaniko-secret`.</p>
+                The name of the Kubernetes secret for pulling the files from the build context and pushing the final image. See <a href="https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster">Kaniko Documentation: Running Kaniko in a Kubernetes cluster</a> for more information.
+                Default value is `kaniko-secret`.
             </td>
         </tr>
         <tr>
-            <td><code>namespace</code></td>
+            <td>`namespace`</td>
             <td>
                 OPTIONAL
-                <p>The Kubernetes namespace.</p>
-                <p>Default value is the current namespace in Kubernetes configuration.</p>
+                The Kubernetes namespace.
+                Default value is the current namespace in Kubernetes configuration.
             </td>
         </tr>
         <tr>
-            <td><code>timeout</code></td>
+            <td>`timeout`</td>
             <td>
                 OPTIONAL
-                <p>The amount of time (in seconds) that this build should be allowed to run.</p>
-                <p>Default value is 20 minutes (`20m`).</p>
+                The amount of time (in seconds) that this build should be allowed to run.
+                Default value is 20 minutes (`20m`).
             </td>
         </tr>
     </tbody>

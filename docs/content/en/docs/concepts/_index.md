@@ -18,52 +18,13 @@ read the configuration file from the current directory.
 
 `skaffold.yaml` consists of five different components:
 
-<table>
-    <thead>
-        <tr>
-            <th>Component</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>API Version (<code>apiVersion</code>)</td>
-            <td>
-                The Skaffold API version you would like to use.
-                <p>The current API version is {{< skaffold-version >}}.</p>
-            </td>
-        </tr>
-        <tr>
-            <td>Kind (<code>kind</code>)</td>
-            <td>
-                The Skaffold configuration file has the kind `Config`.
-            </td>
-        </tr>
-        <tr>
-            <td>Build Configuration (<code>build</code>)</td>
-            <td>
-                Specifies how Skaffold should build artifacts. You have control over what tool Skaffold can use, how Skaffold tags artifacts and how Skaffold pushes artifacts.
-                <p>At this moment Skaffold supports using local Docker daemon, Google Cloud Build, Kaniko, or Bazel to build artifacts.</p>
-                <p>See <a href="/docs/how-tos/builders">Using Builders</a> and <a href="/docs/how-tos/taggers">Using Taggers</a> for more information.</p>
-            </td>
-        </tr>
-        <tr>
-            <td>Deploy Configuration (<code>deploy</code>)</td>
-            <td>
-                Specifies how Skaffold should deploy artifacts.
-                <p>At this moment Skaffold supports using `kubectl`, Helm, or Kustomize to deploy artifacts.</p>
-                <p>See <a href="/docs/how-tos/builders">Using Deployers</a> for more information.</p>
-            </td>
-        </tr>
-        <tr>
-            <td>Profiles (<code>profiles</code>)</td>
-            <td>
-                Profile is a set of settings that, when activated, overrides the current configuration.
-                <p>You can use Profile to override the <code>build</code> and the <code>deploy</code> section.</p>
-            </td>
-        </tr>
-    </tbody>
-<table>
+| Component  | Description |
+| ---------- | ------------|
+| API Version (`apiVersion`)  | The Skaffold API version you would like to use. The current API version is {{< skaffold-version >}}. |
+| Kind (`kind`)  |  The Skaffold configuration file has the kind `Config`.  |
+| Build Configuration (`build`)  |  Specifies how Skaffold should build artifacts. You have control over what tool Skaffold can use, how Skaffold tags artifacts and how Skaffold pushes artifacts. Skaffold supports using local Docker daemon, Google Cloud Build, Kaniko, or Bazel to build artifacts. See [Using Builders](/docs/how-tos/builders) and [Using Taggers](/docs/how-tos/taggers) for more information. |
+| Deploy Configuration (`deploy`) |  Specifies how Skaffold should deploy artifacts. Skaffold supports using `kubectl`, Helm, or kustomize to deploy artifacts.See [Using Deployers](/docs/how-tos/deployers) for more information. |
+|Profiles (`profiles`)|  Profile is a set of settings that, when activated, overrides the current configuration. You can use Profile to override the `build` and the`deploy`> section. |
 
 You can learn more about the syntax of `skaffold.yaml` at
 [`skaffold.yaml References`](/docs/references/config).
@@ -156,7 +117,7 @@ provides built-in support for the following tools:
 * Deploy 
   * Kubernetes Command-Line Interface (`kubectl`)
   * Helm
-  * Kustomize
+  * kustomize
 * Taggers
   * Git tagger 
   * Sha256 tagger

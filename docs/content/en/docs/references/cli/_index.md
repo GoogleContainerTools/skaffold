@@ -26,50 +26,17 @@ Skaffold command-line interface provides the following commands:
 
 ## Global flags
 
-<table>
-    <thead>
-        <tr>
-            <th>Flag</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td><code>-h, --help</code></td>
-            <td>
-                Prints the HELP file for the current command.
-            </td>
-        </tr>
-        <tr>
-            <td><code>-v, --verbosity LOG-LEVEL</code></td>
-            <td>
-                Uses a specific log level.
-                <p>Available log levels are <code>debug</code>, <code>info</code>, <code>warn</code>, <code>error</code>, <code>fatal</code>, and <code>panic</code>.</p>
-                <p>Default value is <code>warn</code>.</p>
-            </td>
-        </tr>
-    </tbody>
-<table>
+| Flag | Description |
+|------- |---------------|
+|`-h, --help`| Prints the HELP file for the current command.|
+|`-v, --verbosity LOG-LEVEL` | Uses a specific log level. Available log levels are `info`, `warn`, `error`, `fatal`. Default value is `warn`.|
 
 ## Global environment variables
 
-<table>
-    <thead>
-        <tr>
-            <th>Flag</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td><code>SKAFFOLD_UPDATE_CHECK</code></td>
-            <td>
-                Enables checking for latest version of the skaffold binary. By default it's `true`. 
-            </td>
-        </tr>        
-    </tbody>
-<table>
-
+| Flag | Description |
+|------- |---------------|
+|`SKAFFOLD_UPDATE_CHECK`|Enables checking for latest version of the skaffold binary. By default it's `true`. |       
+    
 
 ## Skaffold commands
 
@@ -83,54 +50,13 @@ Skaffold command-line interface provides the following commands:
 
 ### Flags
 
-<table>
-    <thead>
-        <tr>
-            <th>Flag</th>
-            <th>Environment variable</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td><code>-f, --filename PATH</code></td>
-            <td><code>SKAFFOLD_FILENAME</code></td>
-            <td>
-                PATH (Filename or URL) to the Skaffold configuration file, <code>skaffold.yaml</code>.
-                <p>Default value is `skaffold.yaml`.</p>
-            </td>
-        </tr>
-        <tr>
-            <td><code>-o, --output TEMPLATE</code></td>
-            <td><code>SKAFFOLD_OUTPUT</code></td>
-            <td>
-                Formats output with a Go template.
-                <p>Default value is <code>{{range .Builds}}{{.ImageName}} -> {{.Tag}}{{end}}</code>.</p>
-            </td>
-        </tr>
-        <tr>
-            <td><code>-p, --profile PROFILE</code></td>
-            <td><code>SKAFFOLD_PROFILE</code></td>
-            <td>
-                Activates a Skaffold profile.
-            </td>
-        </tr>
-        <tr>
-            <td><code>-q, --quiet</code></td>
-            <td><code>SKAFFOLD_PROFILE</code></td>
-            <td>
-                Enables quite mode. Skaffold will suppress outputs from the builing tool.
-            </td>
-        </tr>
-        <tr>
-            <td><code>--toot</code></td>
-            <td><code>SKAFFOLD_TOOT</code></td>
-            <td>
-                Beeps when the building is completed.
-            </td>
-        </tr>
-    </tbody>
-<table>
+| Flag | Environment variable | Description |
+|------- |---------------| ---- |
+|`-f, --filename PATH`| `SKAFFOLD_FILENAME` |  PATH (Filename or URL) to the Skaffold configuration file, `skaffold.yaml`. Default value is `skaffold.yaml`. |
+|`-o, --output TEMPLATE`|`SKAFFOLD_OUTPUT`| Formats output with a Go template. Default value is `{{range .Builds}}{{.ImageName}} -> {{.Tag}}{{end}}`. |
+|`-p, --profile PROFILE`|`SKAFFOLD_PROFILE`|Activates a Skaffold profile.|
+|`-q, --quiet`|`SKAFFOLD_PROFILE`|Enables quite mode. Skaffold will suppress outputs from the builing tool.|
+|`--toot`|`SKAFFOLD_TOOT`|Beeps when the building is completed.|
 
 ## `skaffold completion`
 
@@ -176,7 +102,7 @@ With `skaffold config`, you can control context specific things, for example the
 
 {{< alert title="Note" >}} 
 
-By default, <code>skaffold config</code> views and modifies Kubernetes-related Skaffold
+By default, `skaffold config` views and modifies Kubernetes-related Skaffold
 configuration <b>in the global scale</b>.
 {{< /alert >}}
 
@@ -195,73 +121,19 @@ There are two fields to list and set:
 
 Below are flags for `skaffold config list`:
 
-<table>
-    <thead>
-        <tr>
-            <th>Flag</th>
-            <th>Environment variable</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td><code>-a, --all</code></td>
-            <td><code>SKAFFOLD_ALL</code></td>
-            <td>
-                Show all available Kubernetes contexts.
-            </td>
-        </tr>
-        <tr>
-            <td><code>-c, --config PATH</code></td>
-            <td><code>SKAFFOLD_CONFIG</code></td>
-            <td>
-                Path to Kuberentes-related Skaffold configuration.
-            </td>
-        </tr>
-        <tr>
-            <td><code>-k, --kube-context CONTEXT</code></td>
-            <td><code>SKAFFOLD_KUBE_CONTEXT</code></td>
-            <td>
-                Lists Kubernetes-related Skaffold configuration in a specific Kuberentes context.
-            </td>
-        </tr>
-    </tbody>
-<table>
+| Flag | Environment variable | Description |
+|------- |---------------| ---- |
+|`-a, --all`|`SKAFFOLD_ALL`|Show all available Kubernetes contexts.|
+|`-c, --config PATH`|`SKAFFOLD_CONFIG`|Path to Kuberentes-related Skaffold configuration.|
+|`-k, --kube-context CONTEXT`|`SKAFFOLD_KUBE_CONTEXT`|Lists Kubernetes-related Skaffold configuration in a specific Kuberentes context.|
 
 Below are flags for `skaffold config set`:
 
-<table>
-    <thead>
-        <tr>
-            <th>Flag</th>
-            <th>Environment variable</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td><code>-g, -global</code></td>
-            <td><code>SKAFFOLD_KUBE_GLOBAL</code></td>
-            <td>
-                Show all available Kubernetes contexts.
-            </td>
-        </tr>
-        <tr>
-            <td><code>-c, --config PATH</code></td>
-             <td><code>SKAFFOLD_CONFIG</code></td>
-            <td>
-                Path to Kuberentes-related Skaffold configuration.
-            </td>
-        </tr>
-        <tr>
-            <td><code>-k, --kube-context CONTEXT</code></td>
-             <td><code>SKAFFOLD_KUBE_CONTEXT</code></td>
-            <td>
-                Sets Kubernetes-related Skaffold configuration in a specific Kuberentes context.
-            </td>
-        </tr>
-    </tbody>
-<table>
+| Flag | Environment variable | Description |
+|------- |---------------| ---- |
+|`-g, -global`|`SKAFFOLD_KUBE_GLOBAL`|Show all available Kubernetes contexts.|
+|`-c, --config PATH`|`SKAFFOLD_CONFIG`|Path to Kuberentes-related Skaffold configuration.|
+|`-k, --kube-context CONTEXT`|`SKAFFOLD_KUBE_CONTEXT`|Sets Kubernetes-related Skaffold configuration in a specific Kuberentes context.|
 
 ## `skaffold delete`
 
@@ -273,39 +145,11 @@ Below are flags for `skaffold config set`:
 
 ### Flags
 
-<table>
-    <thead>
-        <tr>
-            <th>Flag</th>
-            <th>Environment variable</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td><code>-f, --filename PATH</code></td>
-            <td><code>SKAFFOLD_FILENAME</code></td>
-            <td>
-                PATH (Filename or URL) to the Skaffold configuration file, <code>skaffold.yaml</code>.
-                <p>Default value is `skaffold.yaml`.</p>
-            </td>
-        </tr>
-        <tr>
-            <td><code>-p, --profile PROFILE</code></td>
-            <td><code>SKAFFOLD_PROFILE</code></td>
-            <td>
-                Activates a Skaffold profile.
-            </td>
-        </tr>
-        <tr>
-            <td><code>--toot</code></td>
-            <td><code>SKAFFOLD_TOOT</code></td>
-            <td>
-                Beeps when the building is completed.
-            </td>
-        </tr>
-    </tbody>
-<table>
+| Flag | Environment variable | Description |
+|------- |---------------| ---- |
+|`-f, --filename PATH`|`SKAFFOLD_FILENAME`| PATH (Filename or URL) to the Skaffold configuration file, `skaffold.yaml`. Default value is `skaffold.yaml`.  |
+|`-p, --profile PROFILE`|`SKAFFOLD_PROFILE`|Activates a Skaffold profile.|
+|`--toot`|`SKAFFOLD_TOOT`| Beeps when the building is completed.|
 
 ## `skaffold dev`
 
@@ -317,63 +161,14 @@ Below are flags for `skaffold config set`:
 
 ### Flags
 
-<table>
-    <thead>
-        <tr>
-            <th>Flag</th>
-            <th>Environment variable</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td><code>--cleanup</code></td>
-            <td><code>SKAFFOLD_CLEANUP</code></td>
-            <td>
-                Deletes deployments if the workflow is interrupted.
-                <p>Default value is `true`.</p>
-            </td>
-        </tr>
-        <tr>
-            <td><code>-f, --filename PATH</code></td>
-            <td><code>SKAFFOLD_FILENAME</code></td>
-            <td>
-                PATH (Filename or URL) to the Skaffold configuration file, <code>skaffold.yaml</code>.
-                <p>Default value is `skaffold.yaml`.</p>
-            </td>
-        </tr>
-        <tr>
-            <td><code>-n, --namespace NAMESPACE</code></td>
-            <td><code>SKAFFOLD_NAMESPACE, SKAFFOLD_DEPLOY_NAMESPACE (deprecated) </code></td>
-            <td>
-                Run Helm deployments in the specified namespace.
-            </td>
-        </tr>
-        <tr>
-            <td><code>-p, --profile PROFILE</code></td>
-            <td><code>SKAFFOLD_PROFILE</code></td>
-            <td>
-                Activates a Skaffold profile.
-            </td>
-        </tr>
-        <tr>
-            <td><code>--toot</code></td>
-            <td><code>SKAFFOLD_TOOT</code></td>
-            <td>
-                Beeps when the deployment is completed.
-            </td>
-        </tr>
-        <tr>
-            <td><code>-w, --watch-image IMAGES</code></td>
-            <td><code>SKAFFOLD_WATCH_IMAGE</code></td>
-            <td>
-                Watches (monitors) the source code of specific artifacts.
-                <p>Use <code>=</code> as the delimiter. For example, <code>--watch-images=/web/Dockerfile.web=gcr.io/web-project/image</code>.</p>
-                <p>Default value is to watch (monitor) the source code of all artifacts.</p>
-            </td>
-        </tr>
-    </tbody>
-<table>
+| Flag | Environment variable | Description |
+|------- |---------------| ---- |
+|`--cleanup`|`SKAFFOLD_CLEANUP`| Deletes deployments if the workflow is interrupted. Default value is `true`. |
+|`-f, --filename PATH`|`SKAFFOLD_FILENAME`| PATH (Filename or URL) to the Skaffold configuration file, `skaffold.yaml`. Default value is `skaffold.yaml`. |
+|`-n, --namespace NAMESPACE`|`SKAFFOLD_NAMESPACE, SKAFFOLD_DEPLOY_NAMESPACE (deprecated) `|Run Helm deployments in the specified namespace.|
+|`-p, --profile PROFILE`|`SKAFFOLD_PROFILE`|Activates a Skaffold profile.|
+|`--toot`|`SKAFFOLD_TOOT`|Beeps when the deployment is completed.|
+|`-w, --watch-image IMAGES`|`SKAFFOLD_WATCH_IMAGE`| Watches (monitors) the source code of specific artifacts. Use `=` as the delimiter. For example, <p>`--watch-images /web/Dockerfile.web=gcr.io/web-project/image`.<p> Default value is to watch (monitor) the source code of all artifacts.|
 
 
 ## `skaffold fix`
@@ -386,32 +181,10 @@ Below are flags for `skaffold config set`:
 
 ### Flags
 
-<table>
-    <thead>
-        <tr>
-            <th>Flag</th>
-            <th>Environment variable</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td><code>-f, --filename PATH</code></td>
-            <td><code>SKAFFOLD_FILENAME</code></td>
-            <td>
-                PATH (Filename or URL) to the Skaffold configuration file, <code>skaffold.yaml</code>.
-                <p>Default value is `skaffold.yaml`.</p>
-            </td>
-        </tr>
-        <tr>
-            <td><code>--overwrite</code></td>
-            <td><code>SKAFFOLD_OVERWRITE</code></td>
-            <td>
-                Overwrites the original file.
-            </td>
-        </tr>
-    </tbody>
-<table>
+| Flag | Environment variable | Description |
+|------- |---------------| ---- |
+|`-f, --filename PATH`|`SKAFFOLD_FILENAME`|  PATH (Filename or URL) to the Skaffold configuration file, `skaffold.yaml`. Default value is `skaffold.yaml`. |
+|`--overwrite`|`SKAFFOLD_OVERWRITE`|Overwrites the original file.|
 
 ## `skaffold help`
 
@@ -435,40 +208,11 @@ No flags available.
 
 ### Flags
 
-<table>
-    <thead>
-        <tr>
-            <th>Flag</th>
-            <th>Environment variable</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td><code>-f, --file PATH/code></td>
-            <td><code>SKAFFOLD_PATH</code></td>
-            <td>
-                PATH to write the initialized Skaffold configuration.
-                <p>Default value is `skaffold.yaml`.</p>
-            </td>
-        </tr>
-        <tr>
-            <td><code>-a, --artifacts ARTIFACT-LIST</code></td>
-            <td><code>SKAFFOLD_ARTIFACTS</code></td>
-            <td>
-                Lists of artifacts to build.
-                <p>Use <code>=</code> as the delimiter. For example, <code>--artifact=/web/Dockerfile.web=gcr.io/web-project/image</code>.</p>
-            </td>
-        </tr>
-        <tr>
-            <td><code>--skip-build</code></td>
-            <td><code>SKAFFOLD_SKIP_BUILD</code></td>
-            <td>
-                Skips generating the list of artifacts.
-            </td>
-        </tr>
-    </tbody>
-<table>
+| Flag | Environment variable | Description |
+|------- |---------------| ---- |
+|`-f, --file PATH/code>|`SKAFFOLD_PATH`| PATH to write the initialized Skaffold configuration. Default value is `skaffold.yaml`. |
+|`-a, --artifacts ARTIFACT-LIST`|`SKAFFOLD_ARTIFACTS`| Lists of artifacts to build. Use `=` as the delimiter. For example, `--artifact=/web/Dockerfile.web=gcr.io/web-project/image`. |
+|`--skip-build`|`SKAFFOLD_SKIP_BUILD`|Skips generating the list of artifacts.|
 
 ## `skaffold run`
 
@@ -481,58 +225,14 @@ your application for exactly once.
 
 ### Flags
 
-<table>
-    <thead>
-        <tr>
-            <th>Flag</th>
-            <th>Environment variable</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td><code>-f, --filename PATH</code></td>
-            <td><code>SKAFFOLD_FILENAME</code></td>
-            <td>
-                PATH (Filename or URL) to the Skaffold configuration file, <code>skaffold.yaml</code>.
-                <p>Default value is `skaffold.yaml`.</p>
-            </td>
-        </tr>
-        <tr>
-            <td><code>-n, --namespace NAMESPACE</code></td>            
-            <td><code>SKAFFOLD_NAMESPACE, SKAFFOLD_DEPLOY_NAMESPACE (deprecated) </code></td>                                                           
-            <td>
-                Run Helm deployments in the specified namespace.
-            </td>
-        </tr>
-        <tr>
-            <td><code>-p, --profile PROFILE</code></td>
-              <td><code>SKAFFOLD_PROFILE</code></td>
-            <td>
-                Activates a Skaffold profile.
-            </td>
-        </tr>
-        <tr>
-            <td><code>--toot</code></td>
-            <td><code>SKAFFOLD_TOOT</code></td>
-            <td>
-                Beeps when the deployment is completed.
-            </td>
-        </tr>
-        <tr>
-            <td><code>--tail</code></td>
-            <td>
-                Streams logs from deployed targets.
-            </td>
-        </tr>
-        <tr>
-            <td><code>-t, --tag TAG</code></td>
-            <td>
-                Uses a custom tag that overrides the tag policy settings in the configuration file.
-            </td>
-        </tr>
-    </tbody>
-<table>
+| Flag | Environment variable | Description |
+|------- |---------------| ---- |
+|`-f, --filename PATH`|`SKAFFOLD_FILENAME`| PATH (Filename or URL) to the Skaffold configuration file, `skaffold.yaml`. Default value is `skaffold.yaml`. | 
+|`-n, --namespace NAMESPACE`|`SKAFFOLD_NAMESPACE, SKAFFOLD_DEPLOY_NAMESPACE (deprecated) `| Run Helm deployments in the specified namespace.|
+|`-p, --profile PROFILE`|`SKAFFOLD_PROFILE`|Activates a Skaffold profile.|
+|`--toot`|`SKAFFOLD_TOOT`|Beeps when the deployment is completed.|
+|`--tail`| Streams logs from deployed targets. |
+|`-t, --tag TAG`| Uses a custom tag that overrides the tag policy settings in the configuration file.|
 
 ## `skaffold version`
 
@@ -544,22 +244,7 @@ your application for exactly once.
 
 ### Flags
 
-<table>
-    <thead>
-        <tr>
-            <th>Flag</th>
-            <th>Environment variable</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td><code>-o, --output TEMPLATE</code></td>
-            <td><code>SKAFFOLD_OUTPUT</code></td>
-            <td>
-                Formats output with a Go template.
-                <p>Default value is <code>{{.Version}}</code>.</p>
-            </td>
-        </tr>
-    </tbody>
-<table>
+| Flag | Environment variable | Description |
+|------- |---------------| ---- |
+|`-o, --output TEMPLATE`|`SKAFFOLD_OUTPUT`| Formats output with a Go template. Default value is `{{.Version}}`. |
+        

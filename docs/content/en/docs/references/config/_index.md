@@ -59,31 +59,31 @@ The `build` section has three parts:
 <table>
     <thead>
         <tr>
-            <th>Part</th>
+            <th>Stanza</th>
             <th>Description</th>
         </tr>
     </thead>
     <tbody>
         <tr>
-            <td>Artifacts (<code>artifacts</code>)</td>
+            <td>Artifacts (`artifacts`)</td>
             <td>
                 A list of artifacts to build.
-                <p>See the Artifact section below for more information.</p>
+                See the Artifact section below for more information.
             </td>
         </tr>
         <tr>
-            <td>Tag Policy (<code>tagPolicy</code>)</td>
+            <td>Tag Policy (`tagPolicy`)</td>
             <td>
                 The tag policy Skaffold uses to tag artifacts.
-                <p>See [Using Taggers](/docs/how-tos/tagger) for more information.</p>
+                See [Using Taggers](/docs/how-tos/tagger) for more information.
             </td>
         </tr>
         <tr>
             <td>Build Type</td>
             <td>
                 Specifies which tool Skaffold should use for building artifacts.
-                <p>At this moment Skaffold supports using local Docker daemon, Google Cloud Build, Kaniko, or Bazel to build artifacts.</p>
-                <p>See <a href="/docs/how-tos/builders">Using Builders</a> for more information.</p>
+                At this moment Skaffold supports using local Docker daemon, Google Cloud Build, Kaniko, or Bazel to build artifacts.
+                See <a href="/docs/how-tos/builders">Using Builders</a> for more information.
             </td>
         </tr>
     </tbody>
@@ -102,27 +102,27 @@ Each artifact item has the following three fields:
     </thead>
     <tbody>
         <tr>
-            <td>Image Name (<code>imageName</code>)</td>
+            <td>Image Name (`imageName`)</td>
             <td>
                 <b>Required</b>
-                <p>The name of the artifact, e.g. <code>grc.io/k8s-skaffold/skaffold-example</code>.</p>
+                The name of the artifact, e.g. `grc.io/k8s-skaffold/skaffold-example`.
             </td>
         </tr>
         <tr>
-            <td>Workspace (<code>workspace</code>)</td>
+            <td>Workspace (`workspace`)</td>
             <td>
                 Optional
-                <p>The Docker workspace.</p>
-                <p>See [Using Taggers](/docs/how-tos/taggers/) for more information.</p>
+                The Docker workspace.
+                See [Using Taggers](/docs/how-tos/taggers/) for more information.
             </td>
         </tr>
         <tr>
             <td>Artifact Type</td>
             <td>
                 Optional
-                <p>There are two available artifact types: Docker Artifact (<code>docker</code>) and Bazel Artifact (<code>bazel</code>).</p>
-                <p>Both types offers additional parameters that you can configure.</p>
-                <p>Default value is <code>docker: {}</code></p>
+                There are two available artifact types: Docker Artifact (`docker</code>) and Bazel Artifact (<code>bazel`).
+                Both types offers additional parameters that you can configure.
+                Default value is `docker: {}`
             </td>
         </tr>
     </tbody>
@@ -139,31 +139,31 @@ The Docker Artifact type features the following parameters:
     </thead>
     <tbody>
         <tr>
-            <td>Dockerfile Path (<code>dockerfilePath</code>)</td>
+            <td>Dockerfile Path (`dockerfilePath`)</td>
             <td>
                 Optional
-                <p>Path to the Dockerfile.</p>
+                Path to the Dockerfile.
             </td>
         </tr>
         <tr>
-            <td>Build Args (<code>buildArgs</code>)</td>
+            <td>Build Args (`buildArgs`)</td>
             <td>
                 Optional
-                <p>Arguments to be passed to the Docker daemon.</p>
+                Arguments to be passed to the Docker daemon.
             </td>
         </tr>
         <tr>
-            <td>Cache From (<code>cacheFrom</code>)</td>
+            <td>Cache From (`cacheFrom`)</td>
             <td>
                 A list of images used as a cache source on build.
-                <p>See <a href="https://docs.docker.com/edge/engine/reference/commandline/build/">Docker Documentation: docker build Command</a> for more information.</p>
+                See <a href="https://docs.docker.com/edge/engine/reference/commandline/build/">Docker Documentation: docker build Command</a> for more information.
             </td>
         </tr>
         <tr>
-            <td>Target (<code>target</code>)</td>
+            <td>Target (`target`)</td>
             <td>
                 Set the target build stage to build.
-                <p>See <a href="https://docs.docker.com/edge/engine/reference/commandline/build/">Docker Documentation: docker build Command</a> for more information.</p>
+                See <a href="https://docs.docker.com/edge/engine/reference/commandline/build/">Docker Documentation: docker build Command</a> for more information.
             </td>
         </tr>
     </tbody>
@@ -209,10 +209,10 @@ And the Bazel Artifact type features the following parameters:
     </thead>
     <tbody>
         <tr>
-            <td>Build Target (<code>target</code>)</td>
+            <td>Build Target (`target`)</td>
             <td>
                 <b>Required</b>
-                <p>The Bazel build target.</p>
+                The Bazel build target.
             </td>
         </tr>
     </tbody>
