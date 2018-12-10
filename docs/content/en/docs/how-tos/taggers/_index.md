@@ -7,7 +7,7 @@ weight: 60
 
 This page discusses how to set up Skaffold to tag artifacts as you see fit.
 
-At this moment, Skaffold supports the following tagging policies:
+Skaffold supports the following tagging policies:
 
 * Using Git commit IDs as tags (`gitCommit`)
 * Using Sha256 hashes of contents as tags (`sha256`)

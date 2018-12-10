@@ -35,7 +35,7 @@ provides building blocks and describe customizations for a CI/CD pipeline.
 
 ## A Glance at Skaffold Workflow and Architecture
 
-Skaffold simplies your development workflow by organizing common development
+Skaffold simplifies your development workflow by organizing common development
 stages into one simple command. Every time you run `skaffold dev`, the system
 
 1. Collects and watches your source code for changes
@@ -61,7 +61,7 @@ using `kubectl`, the Kubernetes command-line interface and when you finalize you
 design, you can switch to the production profile and start building with
 Google Cloud Build and deploy with Helm.
 
-At this moment, Skaffold supports the following tools:
+Skaffold supports the following tools:
 
 {{% tabs %}}
 {{% tab "IMAGE BUILDERS" %}}

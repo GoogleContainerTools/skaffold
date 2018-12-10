@@ -14,7 +14,7 @@ When skaffold deploys an application the following steps happen:
 Also, in case of the more complicated deployers the rendering step involves expanding templates (in case of helm) or calculating overlays (in case of kustomize). 
 * the skaffold deployer _deploys_ the final kubernetes manifests to the cluster
 
-At this moment, Skaffold supports the following tools for deploying applications:
+Skaffold supports the following tools for deploying applications:
 
 * [`kubectl`](#deploying-with-kubectl) 
 * [Helm](#deploying-with-helm) 

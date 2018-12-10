@@ -8,7 +8,7 @@ weight: 40
 This page discusses how to set up Skaffold to use the tool of your choice
 to build Docker images.
 
-At this moment, Skaffold supports the following tools to build your image:
+Skaffold supports the following tools to build your image:
 
 * Dockerfile locally with Docker
 * Dockerfile remotely with Google Cloud Build
