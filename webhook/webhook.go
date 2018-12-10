@@ -38,7 +38,7 @@ const (
 )
 
 func main() {
-	//Setup the serve route to receive guthub events
+	//Setup the serve route to receive github events
 	http.HandleFunc("/receive", handleGithubEvent)
 
 	// Start the server
@@ -142,7 +142,7 @@ func failed(d *appsv1.Deployment, event *github.PullRequestEvent, ip string) (st
 func commentOnGithub(event *github.PullRequestEvent, msg string) error {
 	githubClient := pkggithub.NewClient()
 	if err := githubClient.CommentOnPR(event, msg); err != nil {
-		return errors.Wrapf(err, "comenting on PR %d", event.GetNumber())
+		return errors.Wrapf(err, "commenting on PR %d", event.GetNumber())
 	}
 	if err := githubClient.RemoveLabelFromPR(event, constants.DocsLabel); err != nil {
 		return errors.Wrapf(err, "removing %s label from PR %d", constants.DocsLabel, event.GetNumber())
