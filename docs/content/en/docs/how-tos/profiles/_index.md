@@ -1,7 +1,7 @@
 
 ---
-title: "Using Profiles"
-linkTitle: "Using Profiles"
+title: "Using profiles"
+linkTitle: "Using profiles"
 weight: 70
 ---
 

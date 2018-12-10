@@ -40,211 +40,305 @@ Skaffold command-line interface provides the following commands:
 
 ## Skaffold commands
 
-## `skaffold build`
+### skaffold build
 
-`skaffold build` builds the artifacts without deploying them.
+Builds the artifacts
 
-### Usage
+```
+Usage:
+  skaffold build [flags]
 
-`skaffold build [flags]`
+Flags:
+  -d, --default-repo string          Default repository value (overrides global config)
+  -f, --filename string              Filename or URL to the pipeline file (default "skaffold.yaml")
+  -n, --namespace string             Run deployments in the specified namespace
+  -o, --output *flags.TemplateFlag   Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd#BuildOutput (default {{range .Builds}}{{.ImageName}} -> {{.Tag}}
+                                     {{end}})
+  -p, --profile stringArray          Activate profiles by name
+  -q, --quiet                        Suppress the build output and print image built on success
+      --skip-tests                   Whether to skip the tests after building
+      --toot                         Emit a terminal beep after the deploy is complete
 
-### Flags
+Global Flags:
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
-| Flag | Environment variable | Description |
-|------- |---------------| ---- |
-|`-f, --filename PATH`| `SKAFFOLD_FILENAME` |  PATH (Filename or URL) to the Skaffold configuration file, `skaffold.yaml`. Default value is `skaffold.yaml`. |
-|`-o, --output TEMPLATE`|`SKAFFOLD_OUTPUT`| Formats output with a Go template. Default value is `{{range .Builds}}{{.ImageName}} -> {{.Tag}}{{end}}`. |
-|`-p, --profile PROFILE`|`SKAFFOLD_PROFILE`|Activates a Skaffold profile.|
-|`-q, --quiet`|`SKAFFOLD_PROFILE`|Enables quite mode. Skaffold will suppress outputs from the builing tool.|
-|`--toot`|`SKAFFOLD_TOOT`|Beeps when the building is completed.|
 
-## `skaffold completion`
+```
+Env vars:
 
-`skaffold completion` prints a `bash` script that, after running, enables
-shell completion for the `skaffold` command.
+* `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
+* `SKAFFOLD_FILENAME` (same as --filename)
+* `SKAFFOLD_NAMESPACE` (same as --namespace)
+* `SKAFFOLD_OUTPUT` (same as --output)
+* `SKAFFOLD_PROFILE` (same as --profile)
+* `SKAFFOLD_QUIET` (same as --quiet)
+* `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
+* `SKAFFOLD_TOOT` (same as --toot)
+### skaffold completion
 
-You can run this script with `eval "$(skaffold completion bash)"`.
+Output command completion script for the bash shell
 
-Too run this script automatically at the time of startup for all of your
-sessions, add the following line to the end of `~/.bashrc` or `~/.bash_profile`:
+```
+Usage:
+  skaffold completion bash [flags]
 
-`eval "$(skaffold completion bash)"`
+Global Flags:
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
-### Usage
 
-`skaffold completion`
+```
+Env vars:
 
-### Flags
+### skaffold config
 
-No flags available.
+A set of commands for interacting with the skaffold config.
 
-## `skaffold config`
+```
+Usage:
+  skaffold config [command]
+
+Available Commands:
+  list        List all values set in the global skaffold config
+  set         Set a value in the global skaffold config
+  unset       Unset a value in the global skaffold config
+
+Global Flags:
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
-{{% todo 1060 "this needs more work" %}}
+Use "skaffold config [command] --help" for more information about a command.
 
-`skaffold config` helps you view and modify _contextual_ Skaffold configuration.
-It has two sub-commands: `list` and `set`.
-There is one global configuration that is always applicable. 
-This global config can be overriden for each kubecontext.  
 
-{{< alert title="Note" >}} 
+```
+Env vars:
+
+### skaffold delete
+
+Delete the deployed resources
+
+```
+Usage:
+  skaffold delete [flags]
+
+Flags:
+  -d, --default-repo string   Default repository value (overrides global config)
+  -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
+  -n, --namespace string      Run deployments in the specified namespace
+  -p, --profile stringArray   Activate profiles by name
+      --skip-tests            Whether to skip the tests after building
+      --toot                  Emit a terminal beep after the deploy is complete
+
+Global Flags:
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+
+
+```
+Env vars:
+
+* `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
+* `SKAFFOLD_FILENAME` (same as --filename)
+* `SKAFFOLD_NAMESPACE` (same as --namespace)
+* `SKAFFOLD_PROFILE` (same as --profile)
+* `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
+* `SKAFFOLD_TOOT` (same as --toot)
+### skaffold deploy
+
+Deploys the artifacts
+
+```
+Usage:
+  skaffold deploy [flags]
+
+Flags:
+  -d, --default-repo string   Default repository value (overrides global config)
+  -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
+      --images strings        A list of pre-built images to deploy
+  -l, --label stringArray     Add custom labels to deployed objects. Set multiple times for multiple labels.
+  -n, --namespace string      Run deployments in the specified namespace
+  -p, --profile stringArray   Activate profiles by name
+      --skip-tests            Whether to skip the tests after building
+      --tail                  Stream logs from deployed objects
+      --toot                  Emit a terminal beep after the deploy is complete
+
+Global Flags:
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+
+
+```
+Env vars:
+
+* `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
+* `SKAFFOLD_FILENAME` (same as --filename)
+* `SKAFFOLD_IMAGES` (same as --images)
+* `SKAFFOLD_LABEL` (same as --label)
+* `SKAFFOLD_NAMESPACE` (same as --namespace)
+* `SKAFFOLD_PROFILE` (same as --profile)
+* `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
+* `SKAFFOLD_TAIL` (same as --tail)
+* `SKAFFOLD_TOOT` (same as --toot)
+### skaffold dev
+
+Runs a pipeline file in development mode
+
+```
+Usage:
+  skaffold dev [flags]
+
+Flags:
+      --cleanup                   Delete deployments after dev mode is interrupted (default true)
+  -d, --default-repo string       Default repository value (overrides global config)
+  -f, --filename string           Filename or URL to the pipeline file (default "skaffold.yaml")
+  -l, --label stringArray         Add custom labels to deployed objects. Set multiple times for multiple labels
+  -n, --namespace string          Run deployments in the specified namespace
+      --port-forward              Port-forward exposed container ports within pods (default true)
+  -p, --profile stringArray       Activate profiles by name
+      --skip-tests                Whether to skip the tests after building
+      --tail                      Stream logs from deployed objects (default true)
+      --toot                      Emit a terminal beep after the deploy is complete
+      --trigger string            How are changes detected? (polling or manual) (default "polling")
+  -w, --watch-image stringArray   Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
+  -i, --watch-poll-interval int   Interval (in ms) between two checks for file changes (default 1000)
+
+Global Flags:
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+
+
+```
+Env vars:
+
+* `SKAFFOLD_CLEANUP` (same as --cleanup)
+* `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
+* `SKAFFOLD_FILENAME` (same as --filename)
+* `SKAFFOLD_LABEL` (same as --label)
+* `SKAFFOLD_NAMESPACE` (same as --namespace)
+* `SKAFFOLD_PORT_FORWARD` (same as --port-forward)
+* `SKAFFOLD_PROFILE` (same as --profile)
+* `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
+* `SKAFFOLD_TAIL` (same as --tail)
+* `SKAFFOLD_TOOT` (same as --toot)
+* `SKAFFOLD_TRIGGER` (same as --trigger)
+* `SKAFFOLD_WATCH_IMAGE` (same as --watch-image)
+* `SKAFFOLD_WATCH_POLL_INTERVAL` (same as --watch-poll-interval)
+### skaffold diagnose
+
+Run a diagnostic on Skaffold
+
+```
+Usage:
+  skaffold diagnose [flags]
+
+Flags:
+  -f, --filename string   Filename or URL to the pipeline file (default "skaffold.yaml")
+
+Global Flags:
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+
+
+```
+Env vars:
+
+* `SKAFFOLD_FILENAME` (same as --filename)
+### skaffold fix
+
+Converts old skaffold.yaml to newest schema version
+
+```
+Usage:
+  skaffold fix [flags]
+
+Flags:
+  -f, --filename string   Filename or URL to the pipeline file (default "skaffold.yaml")
+      --overwrite         Overwrite original config with fixed config
+
+Global Flags:
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+
+
+```
+Env vars:
+
+* `SKAFFOLD_FILENAME` (same as --filename)
+* `SKAFFOLD_OVERWRITE` (same as --overwrite)
+### skaffold init
+
+Automatically generate skaffold configuration for deploying an application
+
+```
+Usage:
+  skaffold init [flags]
+
+Flags:
+  -a, --artifact stringArray   '='-delimited dockerfile/image pair to generate build artifact
+                               (example: --artifact=/web/Dockerfile.web=gcr.io/web-project/image)
+      --compose-file string    Initialize from a docker-compose file
+  -f, --filename string        Filename or URL to the pipeline file (default "skaffold.yaml")
+      --force                  Force the generation of the skaffold config
+      --skip-build             Skip generating build artifacts in skaffold config
+
+Global Flags:
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+
+
+```
+Env vars:
+
+* `SKAFFOLD_ARTIFACT` (same as --artifact)
+* `SKAFFOLD_COMPOSE_FILE` (same as --compose-file)
+* `SKAFFOLD_FILENAME` (same as --filename)
+* `SKAFFOLD_FORCE` (same as --force)
+* `SKAFFOLD_SKIP_BUILD` (same as --skip-build)
+### skaffold run
+
+Runs a pipeline file
+
+```
+Usage:
+  skaffold run [flags]
+
+Flags:
+  -d, --default-repo string   Default repository value (overrides global config)
+  -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
+  -l, --label stringArray     Add custom labels to deployed objects. Set multiple times for multiple labels.
+  -n, --namespace string      Run deployments in the specified namespace
+  -p, --profile stringArray   Activate profiles by name
+      --skip-tests            Whether to skip the tests after building
+  -t, --tag string            The optional custom tag to use for images which overrides the current Tagger configuration
+      --tail                  Stream logs from deployed objects
+      --toot                  Emit a terminal beep after the deploy is complete
+
+Global Flags:
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+
+
+```
+Env vars:
+
+* `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
+* `SKAFFOLD_FILENAME` (same as --filename)
+* `SKAFFOLD_LABEL` (same as --label)
+* `SKAFFOLD_NAMESPACE` (same as --namespace)
+* `SKAFFOLD_PROFILE` (same as --profile)
+* `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
+* `SKAFFOLD_TAG` (same as --tag)
+* `SKAFFOLD_TAIL` (same as --tail)
+* `SKAFFOLD_TOOT` (same as --toot)
+### skaffold version
+
+Print the version information
+
+```
+Usage:
+  skaffold version [flags]
+
+Flags:
+  -o, --output *flags.TemplateFlag   Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/pkg/skaffold/version#Info (default {{.Version}}
+                                     )
+
+Global Flags:
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+
+
+```
+Env vars:
+
+* `SKAFFOLD_OUTPUT` (same as --output)
 
-<b>The Skaffold configuration specified here is different from the settings
-in the Skaffold configuration file, `skaffold.yaml`</b>.
-
-With `skaffold config`, you can control context specific things, for example the default image repo to push to.
-{{< /alert >}}
-
-`skaffold config list` list values in the contextual configurations
-
-`skaffold config set <key> <value>` set a `key` to `value` in the contextual config 
-
-
-{{< alert title="Note" >}} 
-
-By default, `skaffold config` views and modifies Kubernetes-related Skaffold
-configuration <b>in the global scale</b>.
-{{< /alert >}}
-
-### Usage
-
-`skaffold config list [flags]`
-
-`skaffold config set [flags] FIELD VALUE`
-
-There are two fields to list and set:
-
-* `kube-context`: The Kubernetes context Skaffold uses.
-* `default-repo`: The default source repository.
-
-### Flags
-
-Below are flags for `skaffold config list`:
-
-| Flag | Environment variable | Description |
-|------- |---------------| ---- |
-|`-a, --all`|`SKAFFOLD_ALL`|Show all available Kubernetes contexts.|
-|`-c, --config PATH`|`SKAFFOLD_CONFIG`|Path to Kuberentes-related Skaffold configuration.|
-|`-k, --kube-context CONTEXT`|`SKAFFOLD_KUBE_CONTEXT`|Lists Kubernetes-related Skaffold configuration in a specific Kuberentes context.|
-
-Below are flags for `skaffold config set`:
-
-| Flag | Environment variable | Description |
-|------- |---------------| ---- |
-|`-g, -global`|`SKAFFOLD_KUBE_GLOBAL`|Show all available Kubernetes contexts.|
-|`-c, --config PATH`|`SKAFFOLD_CONFIG`|Path to Kuberentes-related Skaffold configuration.|
-|`-k, --kube-context CONTEXT`|`SKAFFOLD_KUBE_CONTEXT`|Sets Kubernetes-related Skaffold configuration in a specific Kuberentes context.|
-
-## `skaffold delete`
-
-`skaffold delete` helps delete deployed resources.
-
-### Usage
-
-`skaffold delete [flags]`
-
-### Flags
-
-| Flag | Environment variable | Description |
-|------- |---------------| ---- |
-|`-f, --filename PATH`|`SKAFFOLD_FILENAME`| PATH (Filename or URL) to the Skaffold configuration file, `skaffold.yaml`. Default value is `skaffold.yaml`.  |
-|`-p, --profile PROFILE`|`SKAFFOLD_PROFILE`|Activates a Skaffold profile.|
-|`--toot`|`SKAFFOLD_TOOT`| Beeps when the building is completed.|
-
-## `skaffold dev`
-
-`skaffold dev` starts Skaffold in continuous development mode.
-
-### Usage
-
-`skaffold dev [flags]`
-
-### Flags
-
-| Flag | Environment variable | Description |
-|------- |---------------| ---- |
-|`--cleanup`|`SKAFFOLD_CLEANUP`| Deletes deployments if the workflow is interrupted. Default value is `true`. |
-|`-f, --filename PATH`|`SKAFFOLD_FILENAME`| PATH (Filename or URL) to the Skaffold configuration file, `skaffold.yaml`. Default value is `skaffold.yaml`. |
-|`-n, --namespace NAMESPACE`|`SKAFFOLD_NAMESPACE, SKAFFOLD_DEPLOY_NAMESPACE (deprecated) `|Run Helm deployments in the specified namespace.|
-|`-p, --profile PROFILE`|`SKAFFOLD_PROFILE`|Activates a Skaffold profile.|
-|`--toot`|`SKAFFOLD_TOOT`|Beeps when the deployment is completed.|
-|`-w, --watch-image IMAGES`|`SKAFFOLD_WATCH_IMAGE`| Watches (monitors) the source code of specific artifacts. Use `=` as the delimiter. For example, <p>`--watch-images /web/Dockerfile.web=gcr.io/web-project/image`.<p> Default value is to watch (monitor) the source code of all artifacts.|
-
-
-## `skaffold fix`
-
-`skaffold fix` converts old version of `skaffold` to the latest version.
-
-### Usage
-
-`skaffold fix [flags]`
-
-### Flags
-
-| Flag | Environment variable | Description |
-|------- |---------------| ---- |
-|`-f, --filename PATH`|`SKAFFOLD_FILENAME`|  PATH (Filename or URL) to the Skaffold configuration file, `skaffold.yaml`. Default value is `skaffold.yaml`. |
-|`--overwrite`|`SKAFFOLD_OVERWRITE`|Overwrites the original file.|
-
-## `skaffold help`
-
-`skaffold help` prints the HELP file for `skaffold` commands.
-
-### Usage
-
-`skaffold help COMMAND`
-
-### Flags
-
-No flags available.
-
-## `skaffold init`
-
-`skaffold init` initializes Skaffold configuration.
-
-### Usage
-
-`skaffold init [flags]`
-
-### Flags
-
-| Flag | Environment variable | Description |
-|------- |---------------| ---- |
-|`-f, --file PATH/code>|`SKAFFOLD_PATH`| PATH to write the initialized Skaffold configuration. Default value is `skaffold.yaml`. |
-|`-a, --artifacts ARTIFACT-LIST`|`SKAFFOLD_ARTIFACTS`| Lists of artifacts to build. Use `=` as the delimiter. For example, `--artifact=/web/Dockerfile.web=gcr.io/web-project/image`. |
-|`--skip-build`|`SKAFFOLD_SKIP_BUILD`|Skips generating the list of artifacts.|
-
-## `skaffold run`
-
-`skaffold run` starts Skaffold in standard mode. Skaffold will build and deploy
-your application for exactly once.
-
-### Usage
-
-`skaffold run`
-
-### Flags
-
-| Flag | Environment variable | Description |
-|------- |---------------| ---- |
-|`-f, --filename PATH`|`SKAFFOLD_FILENAME`| PATH (Filename or URL) to the Skaffold configuration file, `skaffold.yaml`. Default value is `skaffold.yaml`. | 
-|`-n, --namespace NAMESPACE`|`SKAFFOLD_NAMESPACE, SKAFFOLD_DEPLOY_NAMESPACE (deprecated) `| Run Helm deployments in the specified namespace.|
-|`-p, --profile PROFILE`|`SKAFFOLD_PROFILE`|Activates a Skaffold profile.|
-|`--toot`|`SKAFFOLD_TOOT`|Beeps when the deployment is completed.|
-|`--tail`| Streams logs from deployed targets. |
-|`-t, --tag TAG`| Uses a custom tag that overrides the tag policy settings in the configuration file.|
-
-## `skaffold version`
-
-`skaffold version` prints the version number of Skaffold.
-
-### Usage
-
-`skaffold version [flags]`
-
-### Flags
-
-| Flag | Environment variable | Description |
-|------- |---------------| ---- |
-|`-o, --output TEMPLATE`|`SKAFFOLD_OUTPUT`| Formats output with a Go template. Default value is `{{.Version}}`. |
-        

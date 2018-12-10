@@ -1,7 +1,7 @@
 
 ---
-title: "Using Deployers"
-linkTitle: "Using Deployers"
+title: "Using deployers"
+linkTitle: "Using deployers"
 weight: 50
 ---
 

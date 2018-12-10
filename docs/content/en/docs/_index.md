@@ -69,6 +69,7 @@ At this moment, Skaffold supports the following tools:
 * Dockerfile to Registry using Kaniko
 * Dockerfile to Registry using Google Cloud Build
 * Bazel to Local Docker Daemon or Registry 
+* Jib via Maven/Gradle to Local Docker Daemon or Registry 
 {{% /tab %}}
 
 {{% tab "DEPLOYERS" %}}
@@ -94,7 +95,7 @@ At this moment, Skaffold supports the following tools:
 ![architecture](/images/architecture.png)
 
 
-Besides these skaffold also automatically manages the following utilities for you: 
+Besides the above steps, skaffold also automatically manages the following utilities for you: 
 
 * forward container ports to your local machine using `kubectl port-forward`
 * aggregate all the logs from the deployed pods

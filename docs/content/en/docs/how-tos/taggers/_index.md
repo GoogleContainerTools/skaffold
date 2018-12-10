@@ -1,7 +1,7 @@
 
 ---
-title: "Using Taggers"
-linkTitle: "Using Taggers"
+title: "Using taggers"
+linkTitle: "Using taggers"
 weight: 60
 ---
 
