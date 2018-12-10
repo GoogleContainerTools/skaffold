@@ -1,8 +1,6 @@
-image::logo/skaffold.png[Skaffold, 222,93]
-[caption="Build status", link="https://travis-ci.org/GoogleContainerTools/skaffold"]
-image::https://travis-ci.org/GoogleContainerTools/skaffold.svg?branch=master[Build Status]
-[caption="Code Coverage", link="https://codecov.io/gh/GoogleContainerTools/skaffold"]
-image::https://codecov.io/gh/GoogleContainerTools/skaffold/branch/master/graph/badge.svg[Code Coverage]
+[![Skaffold](logo/skaffold.png)]
+[![Build Status](https://travis-ci.org/GoogleContainerTools/skaffold.svg?branch=master)](https://travis-ci.org/GoogleContainerTools/skaffold)
+[![Code Coverage](https://codecov.io/gh/GoogleContainerTools/skaffold/branch/master/graph/badge.svg)](https://codecov.io/gh/GoogleContainerTools/skaffold)
 
 Skaffold is a command line tool that facilitates continuous development for
 Kubernetes applications. You can iterate on your application source code
@@ -83,23 +81,23 @@ Besides the above steps, skaffold also automatically manages the following utili
 * aggregates all the logs from the deployed pods
 
 
-== Documentation
+## Documentation
 
 Documentation for latest release: http://skaffold.dev
 
 Documentation for latest build: http://skaffold-latest.firebaseapp.com  
 
-= More examples
+## More examples
 
 Check out our [examples page](./examples)
 
 
-= Community
-- link:https://groups.google.com/forum/#!forum/skaffold-users[skaffold-users mailing list]
-- link:https://kubernetes.slack.com/messages/CABQMSZA6/[#skaffold on Kubernetes Slack]
+##  Community
+- [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users)
+- [#skaffold on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/)
 
 There is a bi-weekly Skaffold users meeting at 9:30am-10am PST hosted on hangouts under "skaffold". 
-Everyone is welcome to add suggestions to the link:https://docs.google.com/document/d/1mnCC_fAI3pmg3Vb2nMJyPk8Qtjjuapw_BTyqI_dX7sk/edit[agenda] and attend. 
-Join the link:https://groups.google.com/forum/#!forum/skaffold-users[skaffold-users mailing list] to get the calendar invite directly on your calendar.
+Everyone is welcome to add suggestions to the [agenda](https://docs.google.com/document/d/1mnCC_fAI3pmg3Vb2nMJyPk8Qtjjuapw_BTyqI_dX7sk/edit) and attend. 
+Join the [skaffold-users mailing list] (https://groups.google.com/forum/#!forum/skaffold-users)to get the calendar invite directly on your calendar.
 
 
