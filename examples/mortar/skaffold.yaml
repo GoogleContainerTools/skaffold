@@ -1,0 +1,10 @@
+apiVersion: skaffold/v1beta1
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/skaffold-example
+deploy:
+  mortar:
+    name: skaffold-shot
+    src: manifests
+

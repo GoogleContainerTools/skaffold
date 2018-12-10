@@ -310,6 +310,7 @@ type DeployType struct {
 
 	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
 	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty" yamltags:"oneOf=deploy"`
+	MortarDeploy    *MortarDeploy    `yaml:"mortar,omitempty" yamltags:"oneOf=deploy"`
 }
 
 // KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
@@ -457,6 +458,13 @@ type HelmFQNConfig struct {
 
 // HelmConventionConfig is the image config in the syntax of image.repository and image.tag.
 type HelmConventionConfig struct {
+}
+
+// MortarDeploy contains the configuration needed for deploying with mortar
+type MortarDeploy struct {
+	Name   string `yaml:"name,omitempty"`
+	Source string `yaml:"src,omitempty"`
+	Config string `yaml:"config,omitempty"`
 }
 
 // Artifact are the items that need to be built, along with the context in which

@@ -210,6 +210,9 @@ func getDeployer(cfg *latest.DeployConfig, kubeContext string, namespace string,
 	case cfg.KustomizeDeploy != nil:
 		return deploy.NewKustomizeDeployer(cfg.KustomizeDeploy, kubeContext, namespace, defaultRepo), nil
 
+	case cfg.MortarDeploy != nil:
+		return deploy.NewMortarDeployer(cfg.MortarDeploy), nil
+
 	default:
 		return nil, fmt.Errorf("unknown deployer for config %+v", cfg)
 	}
