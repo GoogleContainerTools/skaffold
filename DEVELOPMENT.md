@@ -68,7 +68,7 @@ To build with your local changes you have two options:
    ```
 
    This will install skaffold via `go install` (note that if you have [manually downloaded
-   and installed skaffold to `/usr/bin/local`](README.adoc#installation), this is will probably
+   and installed skaffold to `/usr/bin/local`](README.md#installation), this is will probably
    take precedence in your path over your `$GOPATH/bin`).
 
    _If you are unsure if you are running a released or locally built version of skaffold, you
@@ -80,7 +80,7 @@ To build with your local changes you have two options:
 If you are iterating on skaffold and want to see your changes in action, you can:
 
 1. [Build skaffold](#building-and-running-skaffold)
-2. [Use the quickstart example](README.adoc#iterative-development)
+2. [Use the quickstart example](README.md#iterative-development)
 
 ## Testing skaffold
 
