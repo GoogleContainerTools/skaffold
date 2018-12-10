@@ -83,8 +83,8 @@ image.
 {{< alert >}}
 <b>Note</b><br> 
 
-`IMAGE_NAME` is a built-in variable whose value is the `imageName` field in
-the `artifacts` part of the `build` section.
+<code>IMAGE_NAME</code> is a built-in variable whose value is the <code>imageName</code> field in
+the <code>artifacts</code> part of the <code>build</code> section.
 {{< /alert >}}
 
 ```yaml
@@ -102,7 +102,7 @@ will be `gcr.io/k8s-skaffold/example:v1`.
 
 The tag template uses the [Go Programming Language Syntax](https://golang.org/pkg/text/template/).
 As showcased in the example, `envTemplate` tag policy features one
-**required** parameter, `template`, which is the tag template to use.
+**required** parameter, `template`, which is the tag template to use. To learn more about templating support in skaffold.yaml see [Using templated fields](/docs/how-tos/templating)
 
 ## `dateTime`: using data and time values as tags
 
