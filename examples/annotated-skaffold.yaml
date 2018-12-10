@@ -189,6 +189,11 @@ deploy:
     #   setValues:
     #    key: "value"
     #
+    #   # overrides builds an override values.yaml file to run with the helm deploy
+    #   overrides:
+    #     some:
+    #       key: someValue
+    #
     #   # packaged section allows to package chart setting specific version
     #   # and/or appVersion using "helm package" command.
     #   packaged:
