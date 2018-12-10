@@ -1,4 +1,7 @@
-[![Skaffold](logo/skaffold.png)]
+![Skaffold](logo/skaffold.png | width=220)
+
+---------------------
+
 [![Build Status](https://travis-ci.org/GoogleContainerTools/skaffold.svg?branch=master)](https://travis-ci.org/GoogleContainerTools/skaffold)
 [![Code Coverage](https://codecov.io/gh/GoogleContainerTools/skaffold/branch/master/graph/badge.svg)](https://codecov.io/gh/GoogleContainerTools/skaffold)
 
