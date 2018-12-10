@@ -25,7 +25,8 @@ import (
 	"github.com/spf13/pflag"
 )
 
-const manTemplate = `### skaffold {{.Name}}
+const manTemplate = `
+### skaffold {{.Name}}
 
 {{.Short}}
 

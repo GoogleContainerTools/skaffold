@@ -74,6 +74,7 @@ Env vars:
 * `SKAFFOLD_QUIET` (same as --quiet)
 * `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
 * `SKAFFOLD_TOOT` (same as --toot)
+
 ### skaffold completion
 
 Output command completion script for the bash shell
@@ -88,6 +89,7 @@ Global Flags:
 
 ```
 Env vars:
+
 
 ### skaffold config
 
@@ -110,6 +112,7 @@ Use "skaffold config [command] --help" for more information about a command.
 
 ```
 Env vars:
+
 
 ### skaffold delete
 
@@ -140,6 +143,7 @@ Env vars:
 * `SKAFFOLD_PROFILE` (same as --profile)
 * `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
 * `SKAFFOLD_TOOT` (same as --toot)
+
 ### skaffold deploy
 
 Deploys the artifacts
@@ -175,6 +179,7 @@ Env vars:
 * `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
 * `SKAFFOLD_TAIL` (same as --tail)
 * `SKAFFOLD_TOOT` (same as --toot)
+
 ### skaffold dev
 
 Runs a pipeline file in development mode
@@ -218,6 +223,7 @@ Env vars:
 * `SKAFFOLD_TRIGGER` (same as --trigger)
 * `SKAFFOLD_WATCH_IMAGE` (same as --watch-image)
 * `SKAFFOLD_WATCH_POLL_INTERVAL` (same as --watch-poll-interval)
+
 ### skaffold diagnose
 
 Run a diagnostic on Skaffold
@@ -237,6 +243,7 @@ Global Flags:
 Env vars:
 
 * `SKAFFOLD_FILENAME` (same as --filename)
+
 ### skaffold fix
 
 Converts old skaffold.yaml to newest schema version
@@ -258,6 +265,7 @@ Env vars:
 
 * `SKAFFOLD_FILENAME` (same as --filename)
 * `SKAFFOLD_OVERWRITE` (same as --overwrite)
+
 ### skaffold init
 
 Automatically generate skaffold configuration for deploying an application
@@ -286,6 +294,7 @@ Env vars:
 * `SKAFFOLD_FILENAME` (same as --filename)
 * `SKAFFOLD_FORCE` (same as --force)
 * `SKAFFOLD_SKIP_BUILD` (same as --skip-build)
+
 ### skaffold run
 
 Runs a pipeline file
@@ -321,6 +330,7 @@ Env vars:
 * `SKAFFOLD_TAG` (same as --tag)
 * `SKAFFOLD_TAIL` (same as --tail)
 * `SKAFFOLD_TOOT` (same as --toot)
+
 ### skaffold version
 
 Print the version information
@@ -341,4 +351,3 @@ Global Flags:
 Env vars:
 
 * `SKAFFOLD_OUTPUT` (same as --output)
-
