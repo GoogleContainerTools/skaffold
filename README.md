@@ -1,4 +1,4 @@
-![Skaffold](logo/skaffold.png | width=220)
+<img src="logo/skaffold.png" width="220">
 
 ---------------------
 
