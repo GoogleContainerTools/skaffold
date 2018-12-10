@@ -32,7 +32,7 @@ provides building blocks and describe customizations for a CI/CD pipeline.
 
 ## Demo 
 
-[![](docs/static/images/intro.gif)]
+![](docs/static/images/intro.gif)
 
 ## A Glance at Skaffold Workflow and Architecture
 
