@@ -65,11 +65,11 @@ Skaffold supports the following tools:
 
 {{% tabs %}}
 {{% tab "IMAGE BUILDERS" %}}
-* Dockerfile to Local Docker Daemon
-* Dockerfile to Registry using Kaniko
-* Dockerfile to Registry using Google Cloud Build
-* Bazel to Local Docker Daemon or Registry 
-* Jib via Maven/Gradle to Local Docker Daemon or Registry 
+* Dockerfile locally
+* Dockerfile in-cluster (kaniko)
+* Dockerfile on cloud (Google Cloud Build)
+* Bazel locally
+* Jib Maven/Gradle locally
 {{% /tab %}}
 
 {{% tab "DEPLOYERS" %}}

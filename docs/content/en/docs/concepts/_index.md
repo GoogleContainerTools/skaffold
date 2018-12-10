@@ -20,11 +20,12 @@ read the configuration file from the current directory.
 
 | Component  | Description |
 | ---------- | ------------|
-| API Version (`apiVersion`)  | The Skaffold API version you would like to use. The current API version is {{< skaffold-version >}}. |
-| Kind (`kind`)  |  The Skaffold configuration file has the kind `Config`.  |
-| Build Configuration (`build`)  |  Specifies how Skaffold should build artifacts. You have control over what tool Skaffold can use, how Skaffold tags artifacts and how Skaffold pushes artifacts. Skaffold supports using local Docker daemon, Google Cloud Build, Kaniko, or Bazel to build artifacts. See [Using Builders](/docs/how-tos/builders) and [Using Taggers](/docs/how-tos/taggers) for more information. |
-| Deploy Configuration (`deploy`) |  Specifies how Skaffold should deploy artifacts. Skaffold supports using `kubectl`, Helm, or kustomize to deploy artifacts.See [Using Deployers](/docs/how-tos/deployers) for more information. |
-|Profiles (`profiles`)|  Profile is a set of settings that, when activated, overrides the current configuration. You can use Profile to override the `build` and the`deploy`> section. |
+| `apiVersion`)  | The Skaffold API version you would like to use. The current API version is {{< skaffold-version >}}. |
+| `kind`  |  The Skaffold configuration file has the kind `Config`.  |
+| `build`  |  Specifies how Skaffold should build artifacts. You have control over what tool Skaffold can use, how Skaffold tags artifacts and how Skaffold pushes artifacts. Skaffold supports using local Docker daemon, Google Cloud Build, Kaniko, or Bazel to build artifacts. See [Using Builders](/docs/how-tos/builders) and [Using Taggers](/docs/how-tos/taggers) for more information. |
+| `test` |  Specifies how Skaffold should test artifacts. Skaffold supports [container-structure-tests](https://github.com/GoogleContainerTools/container-structure-test) to test built artifacts.See [Using testers](/docs/how-tos/testers) for more information. |
+| `deploy` |  Specifies how Skaffold should deploy artifacts. Skaffold supports using `kubectl`, Helm, or kustomize to deploy artifacts.See [Using Deployers](/docs/how-tos/deployers) for more information. |
+| `profiles`|  Profile is a set of settings that, when activated, overrides the current configuration. You can use Profile to override the `build` and the`deploy`> section. |
 
 You can learn more about the syntax of `skaffold.yaml` at
 [`skaffold.yaml References`](/docs/references/config).
@@ -47,8 +48,6 @@ will not push artifacts to a remote repository.
 
 ## Image repository handling 
 
-{{% todo 1327 %}}
-
 Skaffold allows for automatically rewriting image names to your repository.
 This way you can grab a skaffold project and just `skaffold run` it to deploy to your cluster.  
 The way to achieve this is the `default-repo` functionality: 
@@ -62,47 +61,44 @@ The way to achieve this is the `default-repo` functionality:
         SKAFFOLD_DEFAULT_REPO=<myrepo> skaffold dev  
 
 1. Via skaffold's global config           
+        
+        skaffold config set default-repo <myrepo>
 
-If there is no default image repository set, there is no automated image name rewriting. 
+If skaffold doesn't find `default-repo`, there is no automated image name rewriting. 
 
-The following image name rewriting strategies are designed to be *conflict-free*:  
+The image name rewriting strategies are designed to be *conflict-free*: 
+the full image name is rewritten on top of the default-repo so similar image names don't collide in the base namespace (e.g.: repo1/example and repo2/example would collide in the target_namespace/example without this)
 
-* if there are multiple users using the same repo, they won't overwrite each others images.
-* the full namespace of the image is rewritten on top of the base so similar image names don't collide in the base namespace (e.g.: repo1/example and repo2/example would collide in the target_namespace/example without this)
+Automated image name rewriting strategies are determined based on the default-repo and the original image repository: 
 
-Automated image name rewriting strategies are determined based on the target repository: 
-
-* Target: gcr.io
-  * **strategy**: 		concat unless prefix matches
+* default-repo does not contain gcr.io
+  * **strategy**: 		escape & concat & truncate to 256
+  
+    ```
+     original image: 	gcr.io/k8s-skaffold/skaffold-example1
+     default-repo:      aws_account_id.dkr.ecr.region.amazonaws.com
+     rewritten image:   aws_account_id.dkr.ecr.region.amazonaws.com/gcr_io_k8s-skaffold_skaffold-example1
+    ```
+* default-repo contains "gcr.io" (special case - as GCR allows for infinite deep image repo names)
+  * **strategy**: concat unless prefix matches
   * **example1**: prefix doesn't match:
     
     ````
-      example base: 	gcr.io/k8s-skaffold/skaffold-example1
-      example target: 	gcr.io/myproject/myuser
-      example result:
-      gcr.io/myproject/myuser/gcr.io/k8s-skaffold/skaffold-example1
+      original image: 	gcr.io/k8s-skaffold/skaffold-example1
+      default-repo: 	gcr.io/myproject/myimage
+      rewritten image:  gcr.io/myproject/gcr.io/k8s-skaffold/skaffold-example1
     ````	
   * **example2**: prefix matches:
     
     ```
-      example base: 	gcr.io/k8s-skaffold/skaffold-example1
-      example target: 	gcr.io/k8s-skaffold/myuser
-      example result:
-      gcr.io/k8s-skaffold/myuser/skaffold-example1	
+      original image: 	gcr.io/k8s-skaffold/skaffold-example1
+      default-repo: 	gcr.io/k8s-skaffold
+      rewritten image:  gcr.io/k8s-skaffold/skaffold-example1	
     ```
-* Target: not gcr.io
-  * **strategy**: 		escape & concat & truncate to 256
-  
-    ```
-     example base: 	gcr.io/k8s-skaffold/skaffold-example1
-     example target: 	aws_account_id.dkr.ecr.region.amazonaws.com
-     example result:  aws_account_id.dkr.ecr.region.amazonaws.com/gcr_io_k8s-skaffold_skaffold-example1
-    ```
-
 
 ## Architecture
 
-Skaffold features a pluggable architecture:
+Skaffold has is designed with pluggability in mind:
 
 ![architecture](/images/architecture.png)
 
@@ -114,6 +110,7 @@ provides built-in support for the following tools:
   * Google Cloud Build
   * Kaniko
   * Bazel
+  * Jib Maven and Jib Gradle
 * Deploy 
   * Kubernetes Command-Line Interface (`kubectl`)
   * Helm

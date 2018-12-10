@@ -2,7 +2,7 @@
 ---
 title: "Using deployers"
 linkTitle: "Using deployers"
-weight: 50
+weight: 20
 ---
 
 This page discusses how to set up Skaffold to use the tool of your choice
@@ -147,13 +147,13 @@ The following `deploy` section, for example, instructs Skaffold to deploy
 artifacts using kustomize:
 
 ```yaml
-apiVersion: skaffold/v1alpha2
+apiVersion: {{< skaffold-version >}}
    kind: Config
    deploy:
      kustomize:
         kustomizePath: "."
 # The deploy section above is equal to
-# apiVersion: skaffold/v1alpha2
+# apiVersion: {{< skaffold-version >}}
 #    kind: Config
 #    deploy:
 #      kustomize: {}

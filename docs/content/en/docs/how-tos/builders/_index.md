@@ -2,7 +2,7 @@
 ---
 title: "Using builders"
 linkTitle: "Using builders"
-weight: 40
+weight: 10
 ---
 
 This page discusses how to set up Skaffold to use the tool of your choice

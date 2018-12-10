@@ -2,7 +2,7 @@
 ---
 title: "Using taggers"
 linkTitle: "Using taggers"
-weight: 60
+weight: 30
 ---
 
 This page discusses how to set up Skaffold to tag artifacts as you see fit.
