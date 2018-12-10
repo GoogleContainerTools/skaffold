@@ -33,11 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-// const (
-// 	KNOWN_SUFFIXES = []string{"yaml", "yml", "yaml.erb", "yml.erb"}
-// )
-
-// KubectlDeployer deploys workflows using kubectl CLI.
+// MortarDeployer deploys workflows using mortar.
 type MortarDeployer struct {
 	*latest.MortarDeploy
 }
@@ -70,7 +66,7 @@ func (m *MortarDeployer) Deploy(ctx context.Context, out io.Writer, builds []bui
 
 	logrus.Debugf("Firing with args: %v", args)
 	cmd := exec.CommandContext(ctx, "mortar", args...)
-	_, err := util.RunCmdOut(cmd)
+	err := util.RunCmd(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "mortar fire")
 	}
@@ -80,7 +76,7 @@ func (m *MortarDeployer) Deploy(ctx context.Context, out io.Writer, builds []bui
 // Cleanup deletes what was deployed by calling Deploy.
 func (m *MortarDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	cmd := exec.CommandContext(ctx, "mortar", "yank", "--force", m.MortarDeploy.Name)
-	_, err := util.RunCmdOut(cmd)
+	err := util.RunCmd(cmd)
 	if err != nil {
 		return errors.Wrap(err, "mortar yank")
 	}
@@ -120,7 +116,7 @@ func fileExists(path string) bool {
 	return true
 }
 
-var knownSuffixes = []string{"yaml", "yml", "yaml.erb", "yml.erb"}
+var knownSuffixes = [...]string{"yaml", "yml", "yaml.erb", "yml.erb"}
 
 func hasKnownSuffix(file string) bool {
 	for _, suffix := range knownSuffixes {
