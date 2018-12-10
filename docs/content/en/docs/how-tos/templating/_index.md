@@ -23,13 +23,14 @@ will be `gcr.io/k8s-skaffold/example:v1`.
 
 List of fields that support templating: 
 
-* build.tagPolicy.envTemplate.template
-* deploy.helm.relesase.setValueTemplates
+* `build.tagPolicy.envTemplate.template` (see [envTemplate tagger](/docs/how-tos/taggers/##envtemplate-using-values-of-environment-variables-as-tags))
+* `deploy.helm.relesase.setValueTemplates` (see [Deploying with helm](/docs/how-tos/deployers/#deploying-with-helm))
 
 List of variables that are available for templating: 
 
 * all environment variables passed to the skaffold process as startup 
 * `IMAGE_NAME` - the artifacts' image name - the [image name rewriting](/docs/concepts/#image-repository-handling) acts after the template was calculated  
 * `DIGEST` - the image digest calculated by the docker registry after pushing the image 
-* if DIGEST is of format `algo:hex`, `DIGEST_ALGO`
+* if `DIGEST` is of format `algo:hex`, `DIGEST_ALGO` and `DIGEST_HEX` parts correspond to the parts of the string otherwise `DIGEST_HEX`=`DIGEST` is set
+ 
 

@@ -45,7 +45,7 @@ stages into one simple command. Every time you run `skaffold dev`, the system
 1. Collects and watches your source code for changes
 1. Syncs files directly to pods if user marks them as syncable   
 1. Builds artifacts from the source code
-1. Tests the built artifacts using container-structure-tests
+1. Tests the built artifacts using [container-structure-tests](https://github.com/GoogleContainerTools/container-structure-test)
 1. Tags the artifacts
 1. Pushes the artifacts
 1. Deploys the artifacts
@@ -78,7 +78,7 @@ Skaffold supports the following tools:
 {{% /tab %}}
 
 {{% tab "TESTERS" %}}
-* container-structure-test
+* [container-structure-test](https://github.com/GoogleContainerTools/container-structure-test)
 {{% /tab %}}
 
 {{% tab "DEPLOYERS" %}}

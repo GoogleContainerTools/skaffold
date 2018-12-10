@@ -110,7 +110,7 @@ provides built-in support for the following tools:
   * Bazel locally 
   * Jib Maven and Jib Gradle locally 
 * Test 
-  * container-structure-test
+  * [container-structure-test](https://github.com/GoogleContainerTools/container-structure-test)
 * Deploy 
   * Kubernetes Command-Line Interface (`kubectl`)
   * Helm
