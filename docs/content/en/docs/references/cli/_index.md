@@ -8,20 +8,29 @@ weight: 110
 Skaffold command-line interface provides the following commands:
 
 
+End-to-end pipelines: 
+
 * [skaffold run](#skaffold-run) - to build & deploy once
 * [skaffold dev](#skaffold-dev) - to trigger the watch loop build & deploy workflow with cleanup on exit
+
+Pipeline building blocks for CI/CD: 
 
 * [skaffold build](#skaffold-build) - to just build and tag your image(s)
 * [skaffold deploy](#skaffold-deploy) - to deploy the given image(s) 
 * [skaffold delete](#skaffold-delete) - to cleanup the deployed artifacts
 
+Getting started with a new project: 
+
 * [skaffold init](#skaffold-init) - to bootstrap skaffold.yaml
 * [skaffold fix](#skaffold-fix) - to upgrade from 
+
+Utilities: 
 
 * [skaffold help](#skaffold-help) - print help
 * [skaffold version](#skaffold-version) - get Skaffold version
 * [skaffold completion](#skaffold-completion) - setup tab completion for the CLI 
 * [skaffold config](#skaffold-config) - manage context specific parameters
+* [skaffold diagnose](#skaffold-diagnose) - diagnostics of skaffold works in your project 
 
 
 ## Global flags
