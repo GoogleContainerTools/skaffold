@@ -33,6 +33,10 @@ provides building blocks and describe customizations for a CI/CD pipeline.
   your cluster.
   * **minimal pipeline** - Skaffold provides an opinionated, minimal pipeline to keep things simple  
 
+## Demo 
+
+![architecture](/images/intro.gif)
+
 ## A Glance at Skaffold Workflow and Architecture
 
 Skaffold simplifies your development workflow by organizing common development
@@ -41,6 +45,7 @@ stages into one simple command. Every time you run `skaffold dev`, the system
 1. Collects and watches your source code for changes
 1. Syncs files directly to pods if user marks them as syncable   
 1. Builds artifacts from the source code
+1. Tests the built artifacts using container-structure-tests
 1. Tags the artifacts
 1. Pushes the artifacts
 1. Deploys the artifacts
@@ -70,6 +75,10 @@ Skaffold supports the following tools:
 * Dockerfile on cloud (Google Cloud Build)
 * Bazel locally
 * Jib Maven/Gradle locally
+{{% /tab %}}
+
+{{% tab "TESTERS" %}}
+* container-structure-test
 {{% /tab %}}
 
 {{% tab "DEPLOYERS" %}}

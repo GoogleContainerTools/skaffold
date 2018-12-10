@@ -106,11 +106,11 @@ The architecture allows you to use Skaffold with the tool you prefer. Skaffold
 provides built-in support for the following tools:
 
 * Build
-  * Local Docker Daemon
-  * Google Cloud Build
-  * Kaniko
-  * Bazel
-  * Jib Maven and Jib Gradle
+  * Dockerfile locally, in-cluster with kaniko or using Google Cloud Build
+  * Bazel locally 
+  * Jib Maven and Jib Gradle locally 
+* Test 
+  * container-structure-test
 * Deploy 
   * Kubernetes Command-Line Interface (`kubectl`)
   * Helm
