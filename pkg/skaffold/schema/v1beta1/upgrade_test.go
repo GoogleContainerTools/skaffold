@@ -92,7 +92,6 @@ func verityUpgrade(t *testing.T, input, output string) {
 
 	expected := latest.NewSkaffoldPipeline()
 	err = yaml.UnmarshalStrict([]byte(output), expected)
-	testutil.CheckError(t, false, err)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, upgraded)
 }
