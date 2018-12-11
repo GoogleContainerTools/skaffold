@@ -51,8 +51,8 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 		fmt.Sprintf("--dockerfile=%s", artifact.DockerArtifact.DockerfilePath),
 		fmt.Sprintf("--context=%s", context),
 		fmt.Sprintf("--destination=%s", imageDst),
-		fmt.Sprintf("-v=%s", logLevel().String()),
-	}
+		fmt.Sprintf("-v=%s", logLevel().String())}
+	args = append(args, cfg.AdditionalFlags...)
 	args = append(args, docker.GetBuildArgs(artifact.DockerArtifact)...)
 
 	if cfg.Cache != nil {

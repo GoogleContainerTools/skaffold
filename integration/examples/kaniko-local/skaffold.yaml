@@ -9,6 +9,8 @@ build:
     pullSecretName: e2esecret
     namespace: default
     cache: {}
+    flags: 
+      - --single-snapshot
 deploy:
   kubectl:
     manifests:
