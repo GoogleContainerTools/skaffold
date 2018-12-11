@@ -124,12 +124,17 @@ build:
   # A cache repo can be specified to store cached layers, otherwise one will be inferred
   # from the image name. See https://github.com/GoogleContainerTools/kaniko#caching 
   #
+  # Additional flags can be specified as a list. To see all additional flags, visit:
+  # https://github.com/GoogleContainerTools/kaniko#additional-flags
+  # 
   # kaniko:
   #   buildContext:
   #     gcsBucket: k8s-skaffold
   #     localDir: {}
   #   cache:
   #     repo: gcr.io/my-project/skaffold/cache
+  #   flags:
+  #     - --aditional-flag
   #   pullSecret: /a/secret/path/serviceaccount.json
   #   pullSecretName: kaniko-secret
   #   namespace: default
