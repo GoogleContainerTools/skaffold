@@ -118,7 +118,7 @@ profiles:
 func upgradeShouldFailt(t *testing.T, input string) {
 	pipeline := NewSkaffoldPipeline()
 	err := yaml.UnmarshalStrict([]byte(input), pipeline)
-	testutil.CheckError(t, false, err)
+	testutil.CheckErrorAndDeepEqual(t, false, err, Version, pipeline.GetVersion())
 
 	_, err = pipeline.Upgrade()
 	testutil.CheckError(t, true, err)
@@ -127,7 +127,7 @@ func upgradeShouldFailt(t *testing.T, input string) {
 func verityUpgrade(t *testing.T, input, output string) {
 	pipeline := NewSkaffoldPipeline()
 	err := yaml.UnmarshalStrict([]byte(input), pipeline)
-	testutil.CheckError(t, false, err)
+	testutil.CheckErrorAndDeepEqual(t, false, err, Version, pipeline.GetVersion())
 
 	upgraded, err := pipeline.Upgrade()
 	testutil.CheckError(t, false, err)
