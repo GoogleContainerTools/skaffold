@@ -85,14 +85,13 @@ profiles:
 func verityUpgrade(t *testing.T, input, output string) {
 	pipeline := NewSkaffoldPipeline()
 	err := yaml.UnmarshalStrict([]byte(input), pipeline)
-	testutil.CheckError(t, false, err)
+	testutil.CheckErrorAndDeepEqual(t, false, err, Version, pipeline.GetVersion())
 
 	upgraded, err := pipeline.Upgrade()
 	testutil.CheckError(t, false, err)
 
 	expected := latest.NewSkaffoldPipeline()
 	err = yaml.UnmarshalStrict([]byte(output), expected)
-	testutil.CheckError(t, false, err)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, upgraded)
 }
