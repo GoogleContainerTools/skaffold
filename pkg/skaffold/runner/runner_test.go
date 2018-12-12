@@ -33,6 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/pkg/errors"
+	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 type TestBuilder struct {
@@ -164,6 +165,9 @@ func createDefaultRunner(t *testing.T) *SkaffoldRunner {
 }
 
 func TestNewForConfig(t *testing.T) {
+	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
+	defer restore()
+
 	var tests = []struct {
 		description      string
 		pipeline         *latest.SkaffoldPipeline
