@@ -24,7 +24,7 @@ will be `gcr.io/k8s-skaffold/example:v1`.
 List of fields that support templating: 
 
 * `build.tagPolicy.envTemplate.template` (see [envTemplate tagger](/docs/how-tos/taggers/##envtemplate-using-values-of-environment-variables-as-tags))
-* `deploy.helm.relesase.setValueTemplates` (see [Deploying with helm](/docs/how-tos/deployers/#deploying-with-helm))
+* `deploy.helm.releases.setValueTemplates` (see [Deploying with helm](/docs/how-tos/deployers/#deploying-with-helm))
 
 List of variables that are available for templating: 
 
