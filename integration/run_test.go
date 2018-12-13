@@ -296,9 +296,14 @@ func TestDev(t *testing.T) {
 				}
 			},
 			validation: func(t *testing.T, ns *v1.Namespace) {
-				cmd := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "ls", "/test")
-				if output, err := util.RunCmdOut(cmd); err != nil {
-					t.Fatalf("checking if /test dir exists in container: %s %v", output, err)
+				// try to run this command successfully for one minute
+				err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+					cmd := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "ls", "/test")
+					_, err := util.RunCmdOut(cmd)
+					return err == nil, nil
+				})
+				if err != nil {
+					t.Fatalf("checking if /test dir exists in container: %v", err)
 				}
 			},
 		},
