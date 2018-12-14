@@ -31,6 +31,8 @@ import (
 
 type Syncer struct{}
 
+var syncedDirs = map[string]struct{}{}
+
 func (k *Syncer) Sync(ctx context.Context, s *sync.Item) error {
 	logrus.Infoln("Copying files:", s.Copy, "to", s.Image)
 
@@ -54,7 +56,11 @@ func deleteFileFn(ctx context.Context, pod v1.Pod, container v1.Container, src, 
 
 func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, src, dst string) []*exec.Cmd {
 	dir := filepath.Dir(dst)
-	makeDir := exec.CommandContext(ctx, "kubectl", "exec", pod.Name, "-c", container.Name, "-n", pod.Namespace, "--", "mkdir", "-p", dir)
+	var cmds []*exec.Cmd
+	if _, ok := syncedDirs[dir]; !ok {
+		cmds = []*exec.Cmd{exec.CommandContext(ctx, "kubectl", "exec", pod.Name, "-c", container.Name, "-n", pod.Namespace, "--", "mkdir", "-p", dir)}
+		syncedDirs[dir] = struct{}{}
+	}
 	copy := exec.CommandContext(ctx, "kubectl", "cp", src, fmt.Sprintf("%s/%s:%s", pod.Namespace, pod.Name, dst), "-c", container.Name)
-	return []*exec.Cmd{makeDir, copy}
+	return append(cmds, copy)
 }
