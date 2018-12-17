@@ -344,8 +344,8 @@ func (t *TestCmdRecorder) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	return nil, t.RunCmd(cmd)
 }
 
-func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, src, dst string) *exec.Cmd {
-	return exec.CommandContext(ctx, "copy", src, dst)
+func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, src, dst string) []*exec.Cmd {
+	return []*exec.Cmd{exec.CommandContext(ctx, "copy", src, dst)}
 }
 
 var pod = &v1.Pod{
@@ -371,7 +371,7 @@ func TestPerform(t *testing.T) {
 		description string
 		image       string
 		files       map[string]string
-		cmdFn       func(context.Context, v1.Pod, v1.Container, string, string) *exec.Cmd
+		cmdFn       func(context.Context, v1.Pod, v1.Container, string, string) []*exec.Cmd
 		cmdErr      error
 		clientErr   error
 		expected    []string

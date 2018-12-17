@@ -130,7 +130,7 @@ func intersect(context string, syncMap map[string]string, files []string) (map[s
 	return ret, nil
 }
 
-func Perform(ctx context.Context, image string, files map[string]string, cmdFn func(context.Context, v1.Pod, v1.Container, string, string) *exec.Cmd) error {
+func Perform(ctx context.Context, image string, files map[string]string, cmdFn func(context.Context, v1.Pod, v1.Container, string, string) []*exec.Cmd) error {
 	if len(files) == 0 {
 		return nil
 	}
@@ -154,11 +154,12 @@ func Perform(ctx context.Context, image string, files map[string]string, cmdFn f
 			}
 
 			for src, dst := range files {
-				cmd := cmdFn(ctx, p, c, src, dst)
-				if err := util.RunCmd(cmd); err != nil {
-					return err
+				cmds := cmdFn(ctx, p, c, src, dst)
+				for _, cmd := range cmds {
+					if err := util.RunCmd(cmd); err != nil {
+						return err
+					}
 				}
-
 				synced[src] = true
 			}
 		}

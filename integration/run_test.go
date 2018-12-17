@@ -222,8 +222,11 @@ func TestDev(t *testing.T) {
 		dir           string
 		args          []string
 		setup         func(t *testing.T) func(t *testing.T)
+		postSetup     func(t *testing.T) func(t *testing.T)
+		pods          []string
 		jobs          []string
 		jobValidation func(t *testing.T, ns *v1.Namespace, j *batchv1.Job)
+		validation    func(t *testing.T, ns *v1.Namespace)
 	}
 
 	testCases := []testDevCase{
@@ -268,6 +271,42 @@ func TestDev(t *testing.T) {
 				}
 			},
 		},
+		{
+			description: "create a directory with file sync",
+			dir:         "examples/test-file-sync",
+			args:        []string{"dev"},
+			pods:        []string{"test-file-sync"},
+			postSetup: func(t *testing.T) func(t *testing.T) {
+				cmd := exec.Command("mkdir", "-p", "test")
+				cmd.Dir = "examples/test-file-sync"
+				if output, err := util.RunCmdOut(cmd); err != nil {
+					t.Fatalf("creating test dir: %s %v", output, err)
+				}
+				cmd = exec.Command("touch", "test/foobar")
+				cmd.Dir = "examples/test-file-sync"
+				if output, err := util.RunCmdOut(cmd); err != nil {
+					t.Fatalf("creating test/foo: %s %v", output, err)
+				}
+				return func(t *testing.T) {
+					cmd := exec.Command("rm", "-rf", "test")
+					cmd.Dir = "examples/test-file-sync"
+					if output, err := util.RunCmdOut(cmd); err != nil {
+						t.Fatalf("removing test dir: %s %v", output, err)
+					}
+				}
+			},
+			validation: func(t *testing.T, ns *v1.Namespace) {
+				// try to run this command successfully for one minute
+				err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+					cmd := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "ls", "/test")
+					_, err := util.RunCmdOut(cmd)
+					return err == nil, nil
+				})
+				if err != nil {
+					t.Fatalf("checking if /test dir exists in container: %v", err)
+				}
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -275,8 +314,10 @@ func TestDev(t *testing.T) {
 			ns, deleteNs := setupNamespace(t)
 			defer deleteNs()
 
-			cleanupTC := testCase.setup(t)
-			defer cleanupTC(t)
+			if testCase.setup != nil {
+				cleanupTC := testCase.setup(t)
+				defer cleanupTC(t)
+			}
 
 			args := []string{}
 			args = append(args, testCase.args...)
@@ -303,6 +344,20 @@ func TestDev(t *testing.T) {
 				}
 			}
 
+			for _, p := range testCase.pods {
+				if err := kubernetesutil.WaitForPodReady(context.Background(), client.CoreV1().Pods(ns.Name), p); err != nil {
+					t.Fatalf("Timed out waiting for pod ready")
+				}
+			}
+
+			if testCase.postSetup != nil {
+				cleanup := testCase.postSetup(t)
+				defer cleanup(t)
+			}
+
+			if testCase.validation != nil {
+				testCase.validation(t, ns)
+			}
 			// No cleanup, since exiting skaffold dev should clean up automatically
 		})
 	}
