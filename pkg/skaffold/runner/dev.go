@@ -19,7 +19,6 @@ package runner
 import (
 	"context"
 	"io"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -154,18 +153,4 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	r.Trigger.WatchForChanges(out)
 	return watcher.Run(ctx, r.Trigger, onChange)
-}
-
-func (r *SkaffoldRunner) shouldWatch(artifact *latest.Artifact) bool {
-	if len(r.opts.Watch) == 0 {
-		return true
-	}
-
-	for _, watchExpression := range r.opts.Watch {
-		if strings.Contains(artifact.ImageName, watchExpression) {
-			return true
-		}
-	}
-
-	return false
 }
