@@ -50,12 +50,12 @@ type SkaffoldRunner struct {
 	tag.Tagger
 	watch.Trigger
 	sync.Syncer
+	watch.Watcher
 
-	opts         *config.SkaffoldOptions
-	watchFactory watch.Factory
-	builds       []build.Artifact
-	hasDeployed  bool
-	imageList    *kubernetes.ImageList
+	opts        *config.SkaffoldOptions
+	builds      []build.Artifact
+	hasDeployed bool
+	imageList   *kubernetes.ImageList
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldPipeline
@@ -103,15 +103,15 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 	}
 
 	return &SkaffoldRunner{
-		Builder:      builder,
-		Tester:       tester,
-		Deployer:     deployer,
-		Tagger:       tagger,
-		Trigger:      trigger,
-		Syncer:       &kubectl.Syncer{},
-		opts:         opts,
-		watchFactory: watch.NewWatcher,
-		imageList:    kubernetes.NewImageList(),
+		Builder:   builder,
+		Tester:    tester,
+		Deployer:  deployer,
+		Tagger:    tagger,
+		Trigger:   trigger,
+		Syncer:    &kubectl.Syncer{},
+		Watcher:   watch.NewWatcher(),
+		opts:      opts,
+		imageList: kubernetes.NewImageList(),
 	}, nil
 }
 

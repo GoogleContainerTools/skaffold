@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 )
 
@@ -116,7 +116,9 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 
 // Stop stops the logger.
 func (a *LogAggregator) Stop() {
-	a.cancel()
+	if a.cancel != nil {
+		a.cancel()
+	}
 }
 
 func sinceSeconds(d time.Duration) int64 {

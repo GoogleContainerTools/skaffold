@@ -18,11 +18,12 @@ package runner
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"testing"
 
-	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -37,8 +38,9 @@ import (
 )
 
 type TestBuilder struct {
-	built  []build.Artifact
+	built  [][]string
 	errors []error
+	tag    int
 }
 
 func (t *TestBuilder) Labels() map[string]string {
@@ -49,31 +51,40 @@ func (t *TestBuilder) Build(ctx context.Context, w io.Writer, tagger tag.Tagger,
 	if len(t.errors) > 0 {
 		err := t.errors[0]
 		t.errors = t.errors[1:]
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	var builds []build.Artifact
+	t.tag++
 
+	var builds []build.Artifact
 	for _, artifact := range artifacts {
 		builds = append(builds, build.Artifact{
 			ImageName: artifact.ImageName,
+			Tag:       fmt.Sprintf("%s:%d", artifact.ImageName, t.tag),
 		})
 	}
 
-	t.built = builds
+	t.built = append(t.built, tags(builds))
 	return builds, nil
 }
 
 type TestTester struct {
+	tested [][]string
 	errors []error
 }
 
-func (t *TestTester) Test(ctx context.Context, out io.Writer, builds []build.Artifact) error {
+func (t *TestTester) Test(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
 	if len(t.errors) > 0 {
 		err := t.errors[0]
 		t.errors = t.errors[1:]
-		return err
+		if err != nil {
+			return err
+		}
 	}
+
+	t.tested = append(t.tested, tags(artifacts))
 	return nil
 }
 
@@ -82,7 +93,7 @@ func (t *TestTester) TestDependencies() ([]string, error) {
 }
 
 type TestDeployer struct {
-	deployed []build.Artifact
+	deployed [][]string
 	errors   []error
 }
 
@@ -94,19 +105,29 @@ func (t *TestDeployer) Dependencies() ([]string, error) {
 	return nil, nil
 }
 
-func (t *TestDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]deploy.Artifact, error) {
+func (t *TestDeployer) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) ([]deploy.Artifact, error) {
 	if len(t.errors) > 0 {
 		err := t.errors[0]
 		t.errors = t.errors[1:]
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	t.deployed = builds
+	t.deployed = append(t.deployed, tags(artifacts))
 	return nil, nil
 }
 
 func (t *TestDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	return nil
+}
+
+func tags(artifacts []build.Artifact) []string {
+	var tags []string
+	for _, artifact := range artifacts {
+		tags = append(tags, artifact.Tag)
+	}
+	return tags
 }
 
 func createDefaultRunner(t *testing.T) *SkaffoldRunner {
@@ -245,28 +266,22 @@ func TestRun(t *testing.T) {
 		},
 		{
 			description: "run build error",
-			builder: &TestBuilder{
-				errors: []error{errors.New("")},
-			},
-			tester:    &TestTester{},
-			shouldErr: true,
+			builder:     &TestBuilder{errors: []error{errors.New("")}},
+			tester:      &TestTester{},
+			shouldErr:   true,
 		},
 		{
 			description: "run deploy error",
 			builder:     &TestBuilder{},
 			tester:      &TestTester{},
-			deployer: &TestDeployer{
-				errors: []error{errors.New("")},
-			},
-			shouldErr: true,
+			deployer:    &TestDeployer{errors: []error{errors.New("")}},
+			shouldErr:   true,
 		},
 		{
 			description: "run test error",
 			builder:     &TestBuilder{},
-			tester: &TestTester{
-				errors: []error{errors.New("")},
-			},
-			shouldErr: true,
+			tester:      &TestTester{errors: []error{errors.New("")}},
+			shouldErr:   true,
 		},
 	}
 

@@ -89,8 +89,6 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return nil
 	}
 
-	watcher := r.watchFactory()
-
 	// Watch artifacts
 	for i := range artifacts {
 		artifact := artifacts[i]
@@ -99,7 +97,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			continue
 		}
 
-		if err := watcher.Register(
+		if err := r.Watcher.Register(
 			func() ([]string, error) { return DependenciesForArtifact(ctx, artifact) },
 			func(e watch.Events) { changed.AddDirtyArtifact(artifact, e) },
 		); err != nil {
@@ -108,7 +106,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	// Watch test configuration
-	if err := watcher.Register(
+	if err := r.Watcher.Register(
 		func() ([]string, error) { return r.TestDependencies() },
 		func(watch.Events) { changed.needsRedeploy = true },
 	); err != nil {
@@ -116,7 +114,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	// Watch deployment configuration
-	if err := watcher.Register(
+	if err := r.Watcher.Register(
 		func() ([]string, error) { return r.Dependencies() },
 		func(watch.Events) { changed.needsRedeploy = true },
 	); err != nil {
@@ -124,7 +122,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	// Watch Skaffold configuration
-	if err := watcher.Register(
+	if err := r.Watcher.Register(
 		func() ([]string, error) { return []string{r.opts.ConfigurationFile}, nil },
 		func(watch.Events) { changed.needsReload = true },
 	); err != nil {
@@ -152,5 +150,5 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	r.Trigger.WatchForChanges(out)
-	return watcher.Run(ctx, r.Trigger, onChange)
+	return r.Watcher.Run(ctx, r.Trigger, onChange)
 }
