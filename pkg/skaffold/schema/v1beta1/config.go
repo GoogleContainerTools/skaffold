@@ -261,11 +261,11 @@ type BazelArtifact struct {
 
 type JibMavenArtifact struct {
 	// Only multi-module
-	Module  string `yaml:"module"`
-	Profile string `yaml:"profile"`
+	Module  string `yaml:"module,omitempty"`
+	Profile string `yaml:"profile,omitempty"`
 }
 
 type JibGradleArtifact struct {
 	// Only multi-module
-	Project string `yaml:"project"`
+	Project string `yaml:"project,omitempty"`
 }
