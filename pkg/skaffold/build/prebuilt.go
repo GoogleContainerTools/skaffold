@@ -39,7 +39,7 @@ type prebuiltImagesBuilder struct {
 	images []string
 }
 
-func (b *prebuiltImagesBuilder) Prune(ctx context.Context, out io.Writer) error {
+func (b *prebuiltImagesBuilder) Prune(_ context.Context, _ io.Writer) error {
 	// noop
 	return nil
 }

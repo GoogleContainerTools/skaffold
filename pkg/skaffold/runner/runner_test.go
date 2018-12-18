@@ -96,8 +96,6 @@ func (t *TestBench) Sync(ctx context.Context, item *sync.Item) error {
 	if len(t.syncErrors) > 0 {
 		err := t.syncErrors[0]
 		t.syncErrors = t.syncErrors[1:]
-		if err != nil {
-			return err
 		}
 	}
 
