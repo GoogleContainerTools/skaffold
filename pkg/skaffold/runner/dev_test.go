@@ -50,6 +50,7 @@ func (t *FailWatcher) Run(ctx context.Context, trigger watch.Trigger, onChange f
 type TestWatcher struct {
 	events    []watch.Events
 	callbacks []func(watch.Events)
+	testBench *TestBench
 }
 
 func (t *TestWatcher) Register(deps func() ([]string, error), onChange func(watch.Events)) error {
@@ -59,6 +60,8 @@ func (t *TestWatcher) Register(deps func() ([]string, error), onChange func(watc
 
 func (t *TestWatcher) Run(ctx context.Context, trigger watch.Trigger, onChange func() error) error {
 	for _, evt := range t.events {
+		t.testBench.enterNewCycle()
+
 		for _, file := range evt.Modified {
 			switch file {
 			case "file1":
@@ -80,164 +83,180 @@ func (t *TestWatcher) Run(ctx context.Context, trigger watch.Trigger, onChange f
 
 func TestDevFailFirstCycle(t *testing.T) {
 	var tests = []struct {
-		description      string
-		builder          *TestBuilder
-		tester           *TestTester
-		deployer         *TestDeployer
-		watcher          watch.Watcher
-		expectedBuilt    [][]string
-		expectedTested   [][]string
-		expectedDeployed [][]string
+		description     string
+		testBench       *TestBench
+		watcher         watch.Watcher
+		expectedActions []Actions
 	}{
 		{
-			description: "fails to build the first time",
-			builder:     &TestBuilder{errors: []error{errors.New("")}},
-			tester:      &TestTester{},
-			deployer:    &TestDeployer{},
+			description:     "fails to build the first time",
+			testBench:       &TestBench{buildErrors: []error{errors.New("")}},
+			watcher:         &NoopWatcher{},
+			expectedActions: []Actions{{}},
+		},
+		{
+			description: "fails to test the first time",
+			testBench:   &TestBench{testErrors: []error{errors.New("")}},
 			watcher:     &NoopWatcher{},
+			expectedActions: []Actions{{
+				Built: []string{"img:1"},
+			}},
 		},
 		{
-			description:   "fails to test the first time",
-			builder:       &TestBuilder{},
-			tester:        &TestTester{errors: []error{errors.New("")}},
-			deployer:      &TestDeployer{},
-			watcher:       &NoopWatcher{},
-			expectedBuilt: [][]string{{"img:1"}},
+			description: "fails to deploy the first time",
+			testBench:   &TestBench{deployErrors: []error{errors.New("")}},
+			watcher:     &NoopWatcher{},
+			expectedActions: []Actions{{
+				Built:  []string{"img:1"},
+				Tested: []string{"img:1"},
+			}},
 		},
 		{
-			description:    "fails to deploy the first time",
-			builder:        &TestBuilder{},
-			tester:         &TestTester{},
-			deployer:       &TestDeployer{errors: []error{errors.New("")}},
-			watcher:        &NoopWatcher{},
-			expectedBuilt:  [][]string{{"img:1"}},
-			expectedTested: [][]string{{"img:1"}},
-		},
-		{
-			description:      "fails to watch after first cycle",
-			builder:          &TestBuilder{},
-			tester:           &TestTester{},
-			deployer:         &TestDeployer{},
-			watcher:          &FailWatcher{},
-			expectedBuilt:    [][]string{{"img:1"}},
-			expectedTested:   [][]string{{"img:1"}},
-			expectedDeployed: [][]string{{"img:1"}},
+			description: "fails to watch after first cycle",
+			testBench:   &TestBench{},
+			watcher:     &FailWatcher{},
+			expectedActions: []Actions{{
+				Built:    []string{"img:1"},
+				Tested:   []string{"img:1"},
+				Deployed: []string{"img:1"},
+			}},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			runner := createDefaultRunner(t)
-			runner.Builder = test.builder
-			runner.Tester = test.tester
-			runner.Deployer = test.deployer
+			runner := createRunner(t, test.testBench)
 			runner.Watcher = test.watcher
 
 			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{{
 				ImageName: "img",
 			}})
 
-			testutil.CheckError(t, true, err)
-			testutil.CheckDeepEqual(t, test.expectedBuilt, test.builder.built)
-			testutil.CheckDeepEqual(t, test.expectedTested, test.tester.tested)
-			testutil.CheckDeepEqual(t, test.expectedDeployed, test.deployer.deployed)
+			testutil.CheckErrorAndDeepEqual(t, true, err, test.expectedActions, test.testBench.Actions())
 		})
 	}
 }
 
 func TestDev(t *testing.T) {
 	var tests = []struct {
-		description      string
-		builder          *TestBuilder
-		tester           *TestTester
-		deployer         *TestDeployer
-		watchEvents      []watch.Events
-		expectedBuilt    [][]string
-		expectedTested   [][]string
-		expectedDeployed [][]string
+		description     string
+		testBench       *TestBench
+		watchEvents     []watch.Events
+		expectedActions []Actions
 	}{
 		{
 			description: "ignore subsequent build errors",
-			builder:     &TestBuilder{errors: []error{nil, errors.New("")}},
-			tester:      &TestTester{},
-			deployer:    &TestDeployer{},
+			testBench:   &TestBench{buildErrors: []error{nil, errors.New("")}},
 			watchEvents: []watch.Events{
 				{Modified: []string{"file1", "file2"}},
 			},
-			expectedBuilt:    [][]string{{"img1:1", "img2:1"}},
-			expectedTested:   [][]string{{"img1:1", "img2:1"}},
-			expectedDeployed: [][]string{{"img1:1", "img2:1"}},
+			expectedActions: []Actions{
+				{
+					Built:    []string{"img1:1", "img2:1"},
+					Tested:   []string{"img1:1", "img2:1"},
+					Deployed: []string{"img1:1", "img2:1"},
+				},
+				{},
+			},
 		},
 		{
 			description: "ignore subsequent test errors",
-			builder:     &TestBuilder{},
-			tester:      &TestTester{errors: []error{nil, errors.New("")}},
-			deployer:    &TestDeployer{},
+			testBench:   &TestBench{testErrors: []error{nil, errors.New("")}},
 			watchEvents: []watch.Events{
 				{Modified: []string{"file1", "file2"}},
 			},
-			expectedBuilt:    [][]string{{"img1:1", "img2:1"}, {"img1:2", "img2:2"}},
-			expectedTested:   [][]string{{"img1:1", "img2:1"}},
-			expectedDeployed: [][]string{{"img1:1", "img2:1"}},
+			expectedActions: []Actions{
+				{
+					Built:    []string{"img1:1", "img2:1"},
+					Tested:   []string{"img1:1", "img2:1"},
+					Deployed: []string{"img1:1", "img2:1"},
+				},
+				{
+					Built: []string{"img1:2", "img2:2"},
+				},
+			},
 		},
 		{
 			description: "ignore subsequent deploy errors",
-			builder:     &TestBuilder{},
-			tester:      &TestTester{},
-			deployer:    &TestDeployer{errors: []error{nil, errors.New("")}},
+			testBench:   &TestBench{deployErrors: []error{nil, errors.New("")}},
 			watchEvents: []watch.Events{
 				{Modified: []string{"file1", "file2"}},
 			},
-			expectedBuilt:    [][]string{{"img1:1", "img2:1"}, {"img1:2", "img2:2"}},
-			expectedTested:   [][]string{{"img1:1", "img2:1"}, {"img1:2", "img2:2"}},
-			expectedDeployed: [][]string{{"img1:1", "img2:1"}},
+			expectedActions: []Actions{
+				{
+					Built:    []string{"img1:1", "img2:1"},
+					Tested:   []string{"img1:1", "img2:1"},
+					Deployed: []string{"img1:1", "img2:1"},
+				},
+				{
+					Built:  []string{"img1:2", "img2:2"},
+					Tested: []string{"img1:2", "img2:2"},
+				},
+			},
 		},
 		{
 			description: "full cycle twice",
-			builder:     &TestBuilder{},
-			tester:      &TestTester{},
-			deployer:    &TestDeployer{},
+			testBench:   &TestBench{},
 			watchEvents: []watch.Events{
 				{Modified: []string{"file1", "file2"}},
 			},
-			expectedBuilt:    [][]string{{"img1:1", "img2:1"}, {"img1:2", "img2:2"}},
-			expectedTested:   [][]string{{"img1:1", "img2:1"}, {"img1:2", "img2:2"}},
-			expectedDeployed: [][]string{{"img1:1", "img2:1"}, {"img1:2", "img2:2"}},
+			expectedActions: []Actions{
+				{
+					Built:    []string{"img1:1", "img2:1"},
+					Tested:   []string{"img1:1", "img2:1"},
+					Deployed: []string{"img1:1", "img2:1"},
+				},
+				{
+					Built:    []string{"img1:2", "img2:2"},
+					Tested:   []string{"img1:2", "img2:2"},
+					Deployed: []string{"img1:2", "img2:2"},
+				},
+			},
 		},
 		{
 			description: "only change second artifact",
-			builder:     &TestBuilder{},
-			tester:      &TestTester{},
-			deployer:    &TestDeployer{},
+			testBench:   &TestBench{},
 			watchEvents: []watch.Events{
 				{Modified: []string{"file2"}},
 			},
-			expectedBuilt:    [][]string{{"img1:1", "img2:1"}, {"img2:2"}},
-			expectedTested:   [][]string{{"img1:1", "img2:1"}, {"img2:2"}},
-			expectedDeployed: [][]string{{"img1:1", "img2:1"}, {"img2:2", "img1:1"}},
+			expectedActions: []Actions{
+				{
+					Built:    []string{"img1:1", "img2:1"},
+					Tested:   []string{"img1:1", "img2:1"},
+					Deployed: []string{"img1:1", "img2:1"},
+				},
+				{
+					Built:    []string{"img2:2"},
+					Tested:   []string{"img2:2"},
+					Deployed: []string{"img2:2", "img1:1"},
+				},
+			},
 		},
 		{
 			description: "redeploy",
-			builder:     &TestBuilder{},
-			tester:      &TestTester{},
-			deployer:    &TestDeployer{},
+			testBench:   &TestBench{},
 			watchEvents: []watch.Events{
 				{Modified: []string{"manifest.yaml"}},
 			},
-			expectedBuilt:    [][]string{{"img1:1", "img2:1"}},
-			expectedTested:   [][]string{{"img1:1", "img2:1"}},
-			expectedDeployed: [][]string{{"img1:1", "img2:1"}, {"img1:1", "img2:1"}},
+			expectedActions: []Actions{
+				{
+					Built:    []string{"img1:1", "img2:1"},
+					Tested:   []string{"img1:1", "img2:1"},
+					Deployed: []string{"img1:1", "img2:1"},
+				},
+				{
+					Deployed: []string{"img1:1", "img2:1"},
+				},
+			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			runner := createDefaultRunner(t)
-			runner.Builder = test.builder
-			runner.Tester = test.tester
-			runner.Deployer = test.deployer
+			runner := createRunner(t, test.testBench)
 			runner.Watcher = &TestWatcher{
-				events: test.watchEvents,
+				events:    test.watchEvents,
+				testBench: test.testBench,
 			}
 
 			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{
@@ -245,10 +264,7 @@ func TestDev(t *testing.T) {
 				{ImageName: "img2"},
 			})
 
-			testutil.CheckError(t, false, err)
-			testutil.CheckDeepEqual(t, test.expectedBuilt, test.builder.built)
-			testutil.CheckDeepEqual(t, test.expectedTested, test.tester.tested)
-			testutil.CheckDeepEqual(t, test.expectedDeployed, test.deployer.deployed)
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedActions, test.testBench.Actions())
 		})
 	}
 }
