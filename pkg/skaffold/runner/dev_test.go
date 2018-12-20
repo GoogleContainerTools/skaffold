@@ -268,3 +268,75 @@ func TestDev(t *testing.T) {
 		})
 	}
 }
+
+func TestDevSync(t *testing.T) {
+	var tests = []struct {
+		description     string
+		testBench       *TestBench
+		watchEvents     []watch.Events
+		expectedActions []Actions
+	}{
+		{
+			description: "sync",
+			testBench:   &TestBench{},
+			watchEvents: []watch.Events{
+				{Modified: []string{"file1"}},
+			},
+			expectedActions: []Actions{
+				{
+					Built:    []string{"img1:1", "img2:1"},
+					Tested:   []string{"img1:1", "img2:1"},
+					Deployed: []string{"img1:1", "img2:1"},
+				},
+				{
+					Synced: []string{"img1:1"},
+				},
+			},
+		},
+		{
+			description: "sync twice",
+			testBench:   &TestBench{},
+			watchEvents: []watch.Events{
+				{Modified: []string{"file1"}},
+				{Modified: []string{"file1"}},
+			},
+			expectedActions: []Actions{
+				{
+					Built:    []string{"img1:1", "img2:1"},
+					Tested:   []string{"img1:1", "img2:1"},
+					Deployed: []string{"img1:1", "img2:1"},
+				},
+				{
+					Synced: []string{"img1:1"},
+				},
+				{
+					Synced: []string{"img1:1"},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			runner := createRunner(t, test.testBench)
+			runner.Watcher = &TestWatcher{
+				events:    test.watchEvents,
+				testBench: test.testBench,
+			}
+
+			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{
+				{
+					ImageName: "img1",
+					Sync: map[string]string{
+						"file1": "file1",
+					},
+				},
+				{
+					ImageName: "img2",
+				},
+			})
+
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedActions, test.testBench.Actions())
+		})
+	}
+}

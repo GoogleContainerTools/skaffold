@@ -33,18 +33,21 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 type Actions struct {
 	Built    []string
+	Synced   []string
 	Tested   []string
 	Deployed []string
 }
 
 type TestBench struct {
 	buildErrors  []error
+	syncErrors   []error
 	testErrors   []error
 	deployErrors []error
 
@@ -84,6 +87,19 @@ func (t *TestBench) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, a
 
 	t.currentActions.Built = tags(builds)
 	return builds, nil
+}
+
+func (t *TestBench) Sync(ctx context.Context, item *sync.Item) error {
+	if len(t.syncErrors) > 0 {
+		err := t.syncErrors[0]
+		t.syncErrors = t.syncErrors[1:]
+		if err != nil {
+			return err
+		}
+	}
+
+	t.currentActions.Synced = []string{item.Image}
+	return nil
 }
 
 func (t *TestBench) Test(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
@@ -139,6 +155,7 @@ func createRunner(t *testing.T, testBench *TestBench) *SkaffoldRunner {
 	testutil.CheckError(t, false, err)
 
 	runner.Builder = testBench
+	runner.Syncer = testBench
 	runner.Tester = testBench
 	runner.Deployer = testBench
 
