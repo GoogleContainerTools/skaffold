@@ -84,9 +84,6 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "glob")
 		}
-		if files == nil {
-			return nil, fmt.Errorf("file pattern must match at least one file %s", path)
-		}
 
 		for _, f := range files {
 			err := filepath.Walk(f, func(path string, info os.FileInfo, err error) error {
@@ -139,8 +136,8 @@ func ReadConfiguration(filename string) ([]byte, error) {
 		return nil, errors.New("filename not specified")
 	case filename == "-":
 		return ioutil.ReadAll(os.Stdin)
-	case strings.HasPrefix(filename, "http://") || strings.HasPrefix(filename, "https://"):
-		return download(filename)
+	case IsURL(filename):
+		return Download(filename)
 	default:
 		directory := filepath.Dir(filename)
 		baseName := filepath.Base(filename)
@@ -157,7 +154,11 @@ func ReadConfiguration(filename string) ([]byte, error) {
 	}
 }
 
-func download(url string) ([]byte, error) {
+func IsURL(s string) bool {
+	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
+}
+
+func Download(url string) ([]byte, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
