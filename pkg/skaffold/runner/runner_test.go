@@ -33,24 +33,43 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-type TestBuilder struct {
-	built  [][]string
-	errors []error
-	tag    int
+type Actions struct {
+	Built    []string
+	Synced   []string
+	Tested   []string
+	Deployed []string
 }
 
-func (t *TestBuilder) Labels() map[string]string {
-	return map[string]string{}
+type TestBench struct {
+	buildErrors  []error
+	syncErrors   []error
+	testErrors   []error
+	deployErrors []error
+
+	currentActions Actions
+	actions        []Actions
+	tag            int
 }
 
-func (t *TestBuilder) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	if len(t.errors) > 0 {
-		err := t.errors[0]
-		t.errors = t.errors[1:]
+func (t *TestBench) Labels() map[string]string                        { return map[string]string{} }
+func (t *TestBench) TestDependencies() ([]string, error)              { return nil, nil }
+func (t *TestBench) Dependencies() ([]string, error)                  { return nil, nil }
+func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error { return nil }
+
+func (t *TestBench) enterNewCycle() {
+	t.actions = append(t.actions, t.currentActions)
+	t.currentActions = Actions{}
+}
+
+func (t *TestBench) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	if len(t.buildErrors) > 0 {
+		err := t.buildErrors[0]
+		t.buildErrors = t.buildErrors[1:]
 		if err != nil {
 			return nil, err
 		}
@@ -66,60 +85,51 @@ func (t *TestBuilder) Build(ctx context.Context, w io.Writer, tagger tag.Tagger,
 		})
 	}
 
-	t.built = append(t.built, tags(builds))
+	t.currentActions.Built = tags(builds)
 	return builds, nil
 }
 
-type TestTester struct {
-	tested [][]string
-	errors []error
-}
-
-func (t *TestTester) Test(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
-	if len(t.errors) > 0 {
-		err := t.errors[0]
-		t.errors = t.errors[1:]
+func (t *TestBench) Sync(ctx context.Context, item *sync.Item) error {
+	if len(t.syncErrors) > 0 {
+		err := t.syncErrors[0]
+		t.syncErrors = t.syncErrors[1:]
 		if err != nil {
 			return err
 		}
 	}
 
-	t.tested = append(t.tested, tags(artifacts))
+	t.currentActions.Synced = []string{item.Image}
 	return nil
 }
 
-func (t *TestTester) TestDependencies() ([]string, error) {
-	return nil, nil
+func (t *TestBench) Test(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+	if len(t.testErrors) > 0 {
+		err := t.testErrors[0]
+		t.testErrors = t.testErrors[1:]
+		if err != nil {
+			return err
+		}
+	}
+
+	t.currentActions.Tested = tags(artifacts)
+	return nil
 }
 
-type TestDeployer struct {
-	deployed [][]string
-	errors   []error
-}
-
-func (t *TestDeployer) Labels() map[string]string {
-	return map[string]string{}
-}
-
-func (t *TestDeployer) Dependencies() ([]string, error) {
-	return nil, nil
-}
-
-func (t *TestDeployer) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) ([]deploy.Artifact, error) {
-	if len(t.errors) > 0 {
-		err := t.errors[0]
-		t.errors = t.errors[1:]
+func (t *TestBench) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) ([]deploy.Artifact, error) {
+	if len(t.deployErrors) > 0 {
+		err := t.deployErrors[0]
+		t.deployErrors = t.deployErrors[1:]
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	t.deployed = append(t.deployed, tags(artifacts))
+	t.currentActions.Deployed = tags(artifacts)
 	return nil, nil
 }
 
-func (t *TestDeployer) Cleanup(ctx context.Context, out io.Writer) error {
-	return nil
+func (t *TestBench) Actions() []Actions {
+	return append(t.actions, t.currentActions)
 }
 
 func tags(artifacts []build.Artifact) []string {
@@ -130,7 +140,7 @@ func tags(artifacts []build.Artifact) []string {
 	return tags
 }
 
-func createDefaultRunner(t *testing.T) *SkaffoldRunner {
+func createRunner(t *testing.T, testBench *TestBench) *SkaffoldRunner {
 	t.Helper()
 
 	opts := &config.SkaffoldOptions{
@@ -143,6 +153,11 @@ func createDefaultRunner(t *testing.T) *SkaffoldRunner {
 	runner, err := NewForConfig(opts, pipeline)
 
 	testutil.CheckError(t, false, err)
+
+	runner.Builder = testBench
+	runner.Syncer = testBench
+	runner.Tester = testBench
+	runner.Deployer = testBench
 
 	return runner
 }
@@ -252,51 +267,54 @@ func TestNewForConfig(t *testing.T) {
 
 func TestRun(t *testing.T) {
 	var tests = []struct {
-		description string
-		builder     build.Builder
-		tester      test.Tester
-		deployer    deploy.Deployer
-		shouldErr   bool
+		description     string
+		testBench       *TestBench
+		shouldErr       bool
+		expectedActions []Actions
 	}{
 		{
 			description: "run no error",
-			builder:     &TestBuilder{},
-			tester:      &TestTester{},
-			deployer:    &TestDeployer{},
+			testBench:   &TestBench{},
+			expectedActions: []Actions{{
+				Built:    []string{"img:1"},
+				Tested:   []string{"img:1"},
+				Deployed: []string{"img:1"},
+			}},
 		},
 		{
-			description: "run build error",
-			builder:     &TestBuilder{errors: []error{errors.New("")}},
-			tester:      &TestTester{},
-			shouldErr:   true,
-		},
-		{
-			description: "run deploy error",
-			builder:     &TestBuilder{},
-			tester:      &TestTester{},
-			deployer:    &TestDeployer{errors: []error{errors.New("")}},
-			shouldErr:   true,
+			description:     "run build error",
+			testBench:       &TestBench{buildErrors: []error{errors.New("")}},
+			shouldErr:       true,
+			expectedActions: []Actions{{}},
 		},
 		{
 			description: "run test error",
-			builder:     &TestBuilder{},
-			tester:      &TestTester{errors: []error{errors.New("")}},
+			testBench:   &TestBench{testErrors: []error{errors.New("")}},
 			shouldErr:   true,
+			expectedActions: []Actions{{
+				Built: []string{"img:1"},
+			}},
+		},
+		{
+			description: "run deploy error",
+			testBench:   &TestBench{deployErrors: []error{errors.New("")}},
+			shouldErr:   true,
+			expectedActions: []Actions{{
+				Built:  []string{"img:1"},
+				Tested: []string{"img:1"},
+			}},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			runner := createDefaultRunner(t)
-			runner.Builder = test.builder
-			runner.Tester = test.tester
-			runner.Deployer = test.deployer
+			runner := createRunner(t, test.testBench)
 
 			err := runner.Run(context.Background(), ioutil.Discard, []*latest.Artifact{{
-				ImageName: "test",
+				ImageName: "img",
 			}})
 
-			testutil.CheckError(t, test.shouldErr, err)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedActions, test.testBench.Actions())
 		})
 	}
 }
