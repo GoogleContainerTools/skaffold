@@ -89,11 +89,6 @@ func TestExpandPathsGlob(t *testing.T) {
 			in:          []string{"dir*"},
 			out:         []string{tmpDir.Path("dir/sub_dir/file"), tmpDir.Path("dir_b/sub_dir_b/file")},
 		},
-		{
-			description: "error unmatched glob",
-			in:          []string{"dir/sub_dir_c/*"},
-			shouldErr:   true,
-		},
 	}
 
 	for _, tt := range tests {
