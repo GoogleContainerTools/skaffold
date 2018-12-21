@@ -26,7 +26,7 @@ steps:
   - 'bash'
   - '-xc'
   - |
-    deploy/docs/build.sh https://skaffold-latest.firebaseapp.com && cd docs && firebase deploy --only hosting:release --project $PROJECT_ID
+    deploy/docs/build.sh https://skaffold.dev && cd docs && firebase deploy --only hosting:release --project $PROJECT_ID
 
 images: [
   'gcr.io/$PROJECT_ID/docs-controller:latest'
