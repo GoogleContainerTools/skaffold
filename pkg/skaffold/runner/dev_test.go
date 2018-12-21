@@ -19,6 +19,7 @@ package runner
 import (
 	"context"
 	"errors"
+	"io"
 	"io/ioutil"
 	"testing"
 
@@ -29,21 +30,21 @@ import (
 
 type NoopWatcher struct{}
 
-func (t *NoopWatcher) Register(deps func() ([]string, error), onChange func(watch.Events)) error {
+func (t *NoopWatcher) Register(func() ([]string, error), func(watch.Events)) error {
 	return nil
 }
 
-func (t *NoopWatcher) Run(ctx context.Context, trigger watch.Trigger, onChange func() error) error {
+func (t *NoopWatcher) Run(context.Context, io.Writer, func() error) error {
 	return nil
 }
 
 type FailWatcher struct{}
 
-func (t *FailWatcher) Register(deps func() ([]string, error), onChange func(watch.Events)) error {
+func (t *FailWatcher) Register(func() ([]string, error), func(watch.Events)) error {
 	return nil
 }
 
-func (t *FailWatcher) Run(ctx context.Context, trigger watch.Trigger, onChange func() error) error {
+func (t *FailWatcher) Run(context.Context, io.Writer, func() error) error {
 	return errors.New("BUG")
 }
 
@@ -58,7 +59,7 @@ func (t *TestWatcher) Register(deps func() ([]string, error), onChange func(watc
 	return nil
 }
 
-func (t *TestWatcher) Run(ctx context.Context, trigger watch.Trigger, onChange func() error) error {
+func (t *TestWatcher) Run(ctx context.Context, out io.Writer, onChange func() error) error {
 	for _, evt := range t.events {
 		t.testBench.enterNewCycle()
 
