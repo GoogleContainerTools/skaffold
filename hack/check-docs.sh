@@ -27,6 +27,6 @@ fi
 readonly DOCS_CHANGES=`git diff --name-status master | grep "docs/" | wc -l`
 
 if [ $DOCS_CHANGES -gt 0 ]; then
-  echo "There are $changes changes in docs, testing site generation..."
-  make test-docs
+  echo "There are $DOCS_CHANGES changes in docs, testing site generation..."
+  make build-docs-preview
 fi
