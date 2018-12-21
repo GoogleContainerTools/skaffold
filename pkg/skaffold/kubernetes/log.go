@@ -26,11 +26,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 )
 
 // Client is for tests
@@ -100,6 +101,9 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 
 				for _, container := range pod.Status.ContainerStatuses {
 					if container.ContainerID == "" {
+						if container.State.Waiting != nil && container.State.Waiting.Message != "" {
+							color.Red.Fprintln(a.output, container.State.Waiting.Message)
+						}
 						continue
 					}
 
