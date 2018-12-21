@@ -85,7 +85,7 @@ install: $(GO_FILES) $(BUILD_DIR)
 
 .PHONY: integration
 integration: install $(BUILD_DIR)/$(PROJECT)
-	go test -v -tags integration $(REPOPATH)/integration -timeout 10m --remote=$(REMOTE_INTEGRATION)
+	go test -v -tags integration $(REPOPATH)/integration -timeout 10m --remote=$(REMOTE_INTEGRATION) -run TestRun/bazel_example
 
 .PHONY: coverage
 coverage: $(BUILD_DIR)
