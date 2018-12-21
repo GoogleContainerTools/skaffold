@@ -41,6 +41,12 @@ deploy:
 profiles:
   - name: test profile
     build:
+      kaniko:
+        buildContext: 
+          gcsBucket: skaffold-kaniko
+        pullSecretName: e2esecret
+        namespace: default
+        cache: {}
       artifacts:
       - image: gcr.io/k8s-skaffold/skaffold-example
     test:
@@ -68,6 +74,14 @@ deploy:
 profiles:
   - name: test profile
     build:
+      kaniko:
+        buildContext: 
+          gcsBucket: skaffold-kaniko
+        pullSecretName: e2esecret
+        namespace: default
+        cache: {}
+        # default should be no flags at upgrade
+        flags: 
       artifacts:
       - image: gcr.io/k8s-skaffold/skaffold-example
     test:
