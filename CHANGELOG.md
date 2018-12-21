@@ -1,3 +1,62 @@
+# v0.20.0 Release - 12/21/2018
+
+Note: This release comes with a config change, use `skaffold fix` to permanently upgrade your config to `v1beta2`, however old versions are now auto-upgraded. 
+See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+
+New Features: 
+
+* Add additional flags to kaniko builder [#1387](https://github.com/GoogleContainerTools/skaffold/pull/1387)
+
+Fixes: 
+
+* Omit empty strings in jib sections of the config [#1399](https://github.com/GoogleContainerTools/skaffold/pull/1399)
+* Don’t panic if image field is not of type string [#1386](https://github.com/GoogleContainerTools/skaffold/pull/1386)
+* Fix Windows to Linux file sync by always converting path separators to *nix style [#1351](https://github.com/GoogleContainerTools/skaffold/pull/1351)
+* Support labeling with hardcoded namespace [#1359](https://github.com/GoogleContainerTools/skaffold/pull/1359)
+* Image name are case sensitive [#1342](https://github.com/GoogleContainerTools/skaffold/pull/1342)
+* Print logs for containers that are not ready [#1344](https://github.com/GoogleContainerTools/skaffold/pull/1344)
+* Cleanup only if something was actually deployed [#1343](https://github.com/GoogleContainerTools/skaffold/pull/1343)
+* Don’t assume bazel-bin is symlinked in workspace [#1340](https://github.com/GoogleContainerTools/skaffold/pull/1340)
+
+
+Updates & refactorings: 
+
+* Cleanup tagger tests [#1375](https://github.com/GoogleContainerTools/skaffold/pull/1375)
+* Local builders return a digest [#1374](https://github.com/GoogleContainerTools/skaffold/pull/1374)
+* Remove kqueue tag [#1402](https://github.com/GoogleContainerTools/skaffold/pull/1402)
+* Improve runner unit tests [#1398](https://github.com/GoogleContainerTools/skaffold/pull/1398)
+* Create directory before kubectl cp [#1390](https://github.com/GoogleContainerTools/skaffold/pull/1390)
+* Add missing fake k8s context [#1384](https://github.com/GoogleContainerTools/skaffold/pull/1384)
+* Improve schema upgrade tests [#1383](https://github.com/GoogleContainerTools/skaffold/pull/1383)
+* Update kaniko image to latest version [#1381](https://github.com/GoogleContainerTools/skaffold/pull/1381)
+* Introduce config version v1beta2 [#1376](https://github.com/GoogleContainerTools/skaffold/pull/1376)
+* Tag image by digest [#1367](https://github.com/GoogleContainerTools/skaffold/pull/1367)
+* Pass tag options by value [#1372](https://github.com/GoogleContainerTools/skaffold/pull/1372)
+* Extract push/no-push logic into builder [#1366](https://github.com/GoogleContainerTools/skaffold/pull/1366)
+* keeping integration test only examples under integration tests [#1362](https://github.com/GoogleContainerTools/skaffold/pull/1362)
+* Display usage tips to the user [#1361](https://github.com/GoogleContainerTools/skaffold/pull/1361)
+* Handle errors in release walking [#1356](https://github.com/GoogleContainerTools/skaffold/pull/1356)
+
+Docs updates: 
+
+* new skaffold site [#1338](https://github.com/GoogleContainerTools/skaffold/pull/1338)
+
+Utilities: 
+
+* If webhook deployment fails, upload logs [#1348](https://github.com/GoogleContainerTools/skaffold/pull/1348)
+
+Huge thank you for this release towards our contributors: 
+
+- Balint Pato
+- David Gageot
+- Gareth Evans
+- Matt Rickard
+- Nick Kubala
+- Priya Wadhwa
+- Travis Cline
+- Valery Vitko
+
+
 # v0.19.0 Release - 11/29/2018
 
 Note: This release comes with a config change, use `skaffold fix` to permanently upgrade your config to `v1beta1`, however old versions are now auto-upgraded. 
@@ -72,7 +131,6 @@ Huge thank you for this release towards our contributors:
 - Pascal Ehlert
 - Priya Wadhwa
 - Venkatesh
-
 
 
 # v0.18.0 Release - 11/08/2018

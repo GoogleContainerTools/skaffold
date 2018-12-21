@@ -27,7 +27,8 @@ import (
 
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v1beta1 to v1beta2
-// 1. No additions
+// 1. Additions:
+// Kaniko AdditionalFlags
 // 2. No removals
 // 3. No updates
 func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
