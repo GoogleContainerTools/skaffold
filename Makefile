@@ -175,15 +175,19 @@ docs-controller-image:
 
 
 .PHONY: preview-docs
-preview-docs: build-docs-preview clean-docs-preview
+preview-docs: start-docs-preview clean-docs-preview
 
-.PHONE: docs-preview-image
+.PHONY: docs-preview-image
 docs-preview-image:
 	docker build -t skaffold-docs-previewer -f deploy/webhook/Dockerfile --target runtime_deps .
 
-.PHONE: build-docs-preview
-build-docs-preview:	docs-preview-image
+.PHONY: start-docs-preview
+start-docs-preview:	docs-preview-image
 	docker run -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/preview.sh
+
+.PHONY: build-docs-preview
+build-docs-preview:	docs-preview-image
+	docker run -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/build.sh
 
 .PHONY: clean-docs-preview
 clean-docs-preview: docs-preview-image
