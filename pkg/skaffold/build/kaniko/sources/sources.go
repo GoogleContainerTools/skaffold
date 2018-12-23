@@ -70,6 +70,10 @@ func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 							Name:      constants.DefaultKanikoSecretName,
 							MountPath: "/secret",
 						},
+						{
+							Name:      "regcred",
+							MountPath: "/root/",
+						},
 					},
 				},
 			},
@@ -79,6 +83,19 @@ func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 				VolumeSource: v1.VolumeSource{
 					Secret: &v1.SecretVolumeSource{
 						SecretName: cfg.PullSecretName,
+					},
+				},
+			}, {
+				Name: "regcred",
+				VolumeSource: v1.VolumeSource{
+					Secret: &v1.SecretVolumeSource{
+						SecretName: cfg.PullSecretName,
+						Items: []v1.KeyToPath{
+							{
+								Key:  constants.DefaultKanikoSecretName,
+								Path: ".docker/config.json",
+							},
+						},
 					},
 				},
 			}},
