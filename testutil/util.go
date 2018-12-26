@@ -28,10 +28,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-type BadWriter struct{}
-
-func (BadWriter) Write([]byte) (int, error) { return 0, errors.New("bad write") }
-
 func CheckDeepEqual(t *testing.T, expected, actual interface{}) {
 	t.Helper()
 	if diff := cmp.Diff(actual, expected); diff != "" {
