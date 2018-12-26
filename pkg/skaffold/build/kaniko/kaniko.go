@@ -39,14 +39,9 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 }
 
 func (b *Builder) buildArtifactWithKaniko(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error) {
-	initialTag, err := b.run(ctx, out, artifact)
+	digest, err := b.runKaniko(ctx, out, artifact)
 	if err != nil {
 		return "", errors.Wrapf(err, "kaniko build for [%s]", artifact.ImageName)
-	}
-
-	digest, err := docker.RemoteDigest(initialTag)
-	if err != nil {
-		return "", errors.Wrap(err, "getting digest")
 	}
 
 	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, tag.Options{
@@ -57,7 +52,7 @@ func (b *Builder) buildArtifactWithKaniko(ctx context.Context, out io.Writer, ta
 		return "", errors.Wrap(err, "generating tag")
 	}
 
-	if err := docker.AddTag(initialTag, tag); err != nil {
+	if err := docker.AddTag(digest, tag); err != nil {
 		return "", errors.Wrap(err, "tagging image")
 	}
 

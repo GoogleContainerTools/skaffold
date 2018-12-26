@@ -31,7 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artifact) (string, error) {
+func (b *Builder) runKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact) (string, error) {
 	initialTag := util.RandomID()
 
 	s := sources.Retrieve(b.KanikoBuild)
@@ -87,5 +87,5 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 
 	waitForLogs()
 
-	return imageDst, nil
+	return docker.RemoteDigest(imageDst)
 }
