@@ -36,16 +36,13 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-type testImageAPI struct {
-	description string
-	imageName   string
-	shouldErr   bool
-	expected    string
-	api         APIClient
-}
-
 func TestRunPush(t *testing.T) {
-	var tests = []testImageAPI{
+	var tests = []struct {
+		description string
+		imageName   string
+		api         APIClient
+		shouldErr   bool
+	}{
 		{
 			description: "push",
 			imageName:   "gcr.io/scratchman",
@@ -78,7 +75,6 @@ func TestRunPush(t *testing.T) {
 			shouldErr: true,
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			err := RunPush(context.Background(), ioutil.Discard, test.api, test.imageName)
@@ -89,7 +85,12 @@ func TestRunPush(t *testing.T) {
 }
 
 func TestRunBuildArtifact(t *testing.T) {
-	var tests = []testImageAPI{
+	var tests = []struct {
+		description string
+		expected    string
+		api         APIClient
+		shouldErr   bool
+	}{
 		{
 			description: "build",
 			expected:    "test",
@@ -120,7 +121,13 @@ func TestRunBuildArtifact(t *testing.T) {
 }
 
 func TestDigest(t *testing.T) {
-	var tests = []testImageAPI{
+	var tests = []struct {
+		description string
+		imageName   string
+		api         APIClient
+		expected    string
+		shouldErr   bool
+	}{
 		{
 			description: "get digest",
 			imageName:   "identifier:latest",
