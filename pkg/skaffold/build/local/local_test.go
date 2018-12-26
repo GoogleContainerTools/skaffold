@@ -77,7 +77,7 @@ func TestLocalRun(t *testing.T) {
 				},
 			},
 			tagger: &FakeTagger{Out: "gcr.io/test/image:tag"},
-			api:    testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
+			api:    &testutil.FakeAPIClient{},
 			expected: []build.Artifact{
 				{
 					ImageName: "gcr.io/test/image",
@@ -97,7 +97,7 @@ func TestLocalRun(t *testing.T) {
 					},
 				},
 			},
-			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
+			api: &testutil.FakeAPIClient{},
 			expected: []build.Artifact{
 				{
 					ImageName: "gcr.io/test/image",
@@ -115,34 +115,34 @@ func TestLocalRun(t *testing.T) {
 			description: "error image build",
 			out:         ioutil.Discard,
 			artifacts:   []*latest.Artifact{{}},
-			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{
+			api: &testutil.FakeAPIClient{
 				ErrImageBuild: true,
-			}),
+			},
 			shouldErr: true,
 		},
 		{
 			description: "error image tag",
 			out:         ioutil.Discard,
 			artifacts:   []*latest.Artifact{{}},
-			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{
+			api: &testutil.FakeAPIClient{
 				ErrImageTag: true,
-			}),
+			},
 			shouldErr: true,
 		},
 		{
 			description: "bad writer",
 			out:         &testutil.BadWriter{},
 			artifacts:   []*latest.Artifact{{}},
-			api:         testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
+			api:         &testutil.FakeAPIClient{},
 			shouldErr:   true,
 		},
 		{
 			description: "error image inspect",
 			out:         &testutil.BadWriter{},
 			artifacts:   []*latest.Artifact{{}},
-			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{
+			api: &testutil.FakeAPIClient{
 				ErrImageInspect: true,
-			}),
+			},
 			shouldErr: true,
 		},
 		{
@@ -150,7 +150,7 @@ func TestLocalRun(t *testing.T) {
 			out:         ioutil.Discard,
 			artifacts:   []*latest.Artifact{{}},
 			tagger:      &FakeTagger{Err: fmt.Errorf("")},
-			api:         testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
+			api:         &testutil.FakeAPIClient{},
 			shouldErr:   true,
 		},
 	}
