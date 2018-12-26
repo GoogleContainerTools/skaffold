@@ -56,7 +56,7 @@ func TestLocalRun(t *testing.T) {
 
 	var tests = []struct {
 		description  string
-		api          docker.APIClient
+		api          testutil.FakeAPIClient
 		tagger       tag.Tagger
 		artifacts    []*latest.Artifact
 		expected     []build.Artifact
@@ -72,7 +72,6 @@ func TestLocalRun(t *testing.T) {
 				}},
 			},
 			tagger: &FakeTagger{Out: "gcr.io/test/image:tag"},
-			api:    &testutil.FakeAPIClient{},
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
 				Tag:       "gcr.io/test/image:tag",
@@ -87,7 +86,6 @@ func TestLocalRun(t *testing.T) {
 				}},
 			},
 			tagger:       &FakeTagger{Out: "gcr.io/test/image:tag"},
-			api:          &testutil.FakeAPIClient{},
 			localCluster: true,
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
@@ -103,7 +101,6 @@ func TestLocalRun(t *testing.T) {
 					DockerArtifact: &latest.DockerArtifact{},
 				}},
 			},
-			api: &testutil.FakeAPIClient{},
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
 				Tag:       "gcr.io/test/image:tag",
@@ -112,7 +109,7 @@ func TestLocalRun(t *testing.T) {
 		{
 			description: "error image build",
 			artifacts:   []*latest.Artifact{{}},
-			api: &testutil.FakeAPIClient{
+			api: testutil.FakeAPIClient{
 				ErrImageBuild: true,
 			},
 			shouldErr: true,
@@ -120,7 +117,7 @@ func TestLocalRun(t *testing.T) {
 		{
 			description: "error image tag",
 			artifacts:   []*latest.Artifact{{}},
-			api: &testutil.FakeAPIClient{
+			api: testutil.FakeAPIClient{
 				ErrImageTag: true,
 			},
 			shouldErr: true,
@@ -128,13 +125,12 @@ func TestLocalRun(t *testing.T) {
 		{
 			description: "unkown artifact type",
 			artifacts:   []*latest.Artifact{{}},
-			api:         &testutil.FakeAPIClient{},
 			shouldErr:   true,
 		},
 		{
 			description: "error image inspect",
 			artifacts:   []*latest.Artifact{{}},
-			api: &testutil.FakeAPIClient{
+			api: testutil.FakeAPIClient{
 				ErrImageInspect: true,
 			},
 			shouldErr: true,
@@ -143,7 +139,6 @@ func TestLocalRun(t *testing.T) {
 			description: "error tagger",
 			artifacts:   []*latest.Artifact{{}},
 			tagger:      &FakeTagger{Err: fmt.Errorf("")},
-			api:         &testutil.FakeAPIClient{},
 			shouldErr:   true,
 		},
 	}
@@ -152,7 +147,7 @@ func TestLocalRun(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			l := Builder{
 				cfg:          &latest.LocalBuild{},
-				api:          test.api,
+				api:          &test.api,
 				localCluster: test.localCluster,
 			}
 
