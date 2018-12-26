@@ -35,10 +35,10 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 	}
 	defer teardown()
 
-	return build.InParallel(ctx, out, tagger, artifacts, b.buildArtifact)
+	return build.InParallel(ctx, out, tagger, artifacts, b.buildArtifactWithKaniko)
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error) {
+func (b *Builder) buildArtifactWithKaniko(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error) {
 	initialTag, err := b.run(ctx, out, artifact, b.KanikoBuild)
 	if err != nil {
 		return "", errors.Wrapf(err, "kaniko build for [%s]", artifact.ImageName)
