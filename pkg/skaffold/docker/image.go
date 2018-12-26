@@ -18,6 +18,7 @@ package docker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -38,6 +39,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
+
+// PushResult gives the information on an image that has been pushed.
+type PushResult struct {
+	Digest string
+}
 
 // BuildArtifact performs a docker build and returns nothing
 func BuildArtifact(ctx context.Context, out io.Writer, cli APIClient, workspace string, a *latest.DockerArtifact, initialTag string) error {
@@ -73,29 +79,59 @@ func BuildArtifact(ctx context.Context, out io.Writer, cli APIClient, workspace 
 	}
 	defer resp.Body.Close()
 
-	return StreamDockerMessages(out, resp.Body)
+	return StreamDockerMessages(out, resp.Body, nil)
 }
 
 // StreamDockerMessages streams formatted json output from the docker daemon
 // TODO(@r2d4): Make this output much better, this is the bare minimum
-func StreamDockerMessages(dst io.Writer, src io.Reader) error {
+func StreamDockerMessages(dst io.Writer, src io.Reader, auxCallback func(jsonmessage.JSONMessage)) error {
 	fd, _ := term.GetFdInfo(dst)
-	return jsonmessage.DisplayJSONMessagesStream(src, dst, fd, false, nil)
+	return jsonmessage.DisplayJSONMessagesStream(src, dst, fd, false, auxCallback)
 }
 
-func RunPush(ctx context.Context, out io.Writer, cli APIClient, ref string) error {
+// RunPush pushes an image reference to a registry. Returns the image digest.
+func RunPush(ctx context.Context, out io.Writer, cli APIClient, ref string) (string, error) {
 	registryAuth, err := encodedRegistryAuth(ctx, cli, DefaultAuthHelper, ref)
 	if err != nil {
-		return errors.Wrapf(err, "getting auth config for %s", ref)
+		return "", errors.Wrapf(err, "getting auth config for %s", ref)
 	}
+
 	rc, err := cli.ImagePush(ctx, ref, types.ImagePushOptions{
 		RegistryAuth: registryAuth,
 	})
 	if err != nil {
-		return errors.Wrap(err, "pushing image to repository")
+		return "", errors.Wrap(err, "pushing image to repository")
 	}
 	defer rc.Close()
-	return StreamDockerMessages(out, rc)
+
+	var digest string
+	auxCallback := func(msg jsonmessage.JSONMessage) {
+		if msg.Aux == nil {
+			return
+		}
+
+		var result PushResult
+		if err := json.Unmarshal(*msg.Aux, &result); err != nil {
+			logrus.Debugln("Unable to parse push output:", err)
+			return
+		}
+		digest = result.Digest
+	}
+
+	if err := StreamDockerMessages(out, rc, auxCallback); err != nil {
+		return "", err
+	}
+
+	if digest == "" {
+		// Maybe this version of Docker doesn't return the digest of the image
+		// that has been pushed.
+		digest, err = RemoteDigest(ref)
+		if err != nil {
+			return "", errors.Wrap(err, "getting digest")
+		}
+	}
+
+	return digest, nil
 }
 
 func AddTag(src, target string) error {

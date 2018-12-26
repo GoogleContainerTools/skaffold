@@ -62,7 +62,7 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace strin
 	}
 	defer resp.Body.Close()
 
-	err = docker.StreamDockerMessages(out, resp.Body)
+	err = docker.StreamDockerMessages(out, resp.Body, nil)
 	if err != nil {
 		return "", errors.Wrap(err, "reading from image load response")
 	}

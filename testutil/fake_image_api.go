@@ -44,11 +44,12 @@ type errReader struct{}
 
 func (f errReader) Read([]byte) (int, error) { return 0, fmt.Errorf("") }
 
-func (f *FakeAPIClient) body() io.ReadCloser {
+func (f *FakeAPIClient) body(digest string) io.ReadCloser {
 	if f.ErrStream {
 		return ioutil.NopCloser(&errReader{})
 	}
-	return ioutil.NopCloser(strings.NewReader(""))
+
+	return ioutil.NopCloser(strings.NewReader(fmt.Sprintf(`{"aux":{"digest":"%s"}}`, digest)))
 }
 
 func (f *FakeAPIClient) ImageBuild(_ context.Context, _ io.Reader, options types.ImageBuildOptions) (types.ImageBuildResponse, error) {
@@ -71,7 +72,7 @@ func (f *FakeAPIClient) ImageBuild(_ context.Context, _ io.Reader, options types
 	}
 
 	return types.ImageBuildResponse{
-		Body: f.body(),
+		Body: f.body(imageID),
 	}, nil
 }
 
@@ -109,12 +110,14 @@ func (f *FakeAPIClient) ImageTag(_ context.Context, image, ref string) error {
 	return nil
 }
 
-func (f *FakeAPIClient) ImagePush(context.Context, string, types.ImagePushOptions) (io.ReadCloser, error) {
+func (f *FakeAPIClient) ImagePush(_ context.Context, ref string, _ types.ImagePushOptions) (io.ReadCloser, error) {
 	if f.ErrImagePush {
 		return nil, fmt.Errorf("")
 	}
 
-	return f.body(), nil
+	digest := f.TagToImageID[ref]
+
+	return f.body(digest), nil
 }
 
 func (f *FakeAPIClient) Info(context.Context) (types.Info, error) {
