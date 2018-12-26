@@ -103,7 +103,7 @@ func (b *Builder) retagAndPush(ctx context.Context, out io.Writer, initialTag st
 	}
 
 	if b.pushImages {
-		if err := docker.RunPush(ctx, b.api, newTag, out); err != nil {
+		if err := docker.RunPush(ctx, out, b.api, newTag); err != nil {
 			return errors.Wrap(err, "pushing")
 		}
 	}

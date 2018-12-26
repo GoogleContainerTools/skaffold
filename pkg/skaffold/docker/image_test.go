@@ -81,7 +81,7 @@ func TestRunPush(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			err := RunPush(context.Background(), test.api, test.imageName, ioutil.Discard)
+			err := RunPush(context.Background(), ioutil.Discard, test.api, test.imageName)
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})
