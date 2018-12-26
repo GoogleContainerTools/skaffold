@@ -45,8 +45,13 @@ type PushResult struct {
 	Digest string
 }
 
-// BuildArtifact performs a docker build and returns nothing
-func BuildArtifact(ctx context.Context, out io.Writer, cli APIClient, workspace string, a *latest.DockerArtifact, initialTag string) error {
+// BuildResult gives the information on an image that has been built.
+type BuildResult struct {
+	ID string
+}
+
+// Build performs a docker build and returns the imageID.
+func Build(ctx context.Context, out io.Writer, cli APIClient, workspace string, a *latest.DockerArtifact, initialTag string) (string, error) {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
 
 	// Like `docker build`, we ignore the errors
@@ -75,11 +80,38 @@ func BuildArtifact(ctx context.Context, out io.Writer, cli APIClient, workspace 
 		Target:      a.Target,
 	})
 	if err != nil {
-		return errors.Wrap(err, "docker build")
+		return "", errors.Wrap(err, "docker build")
 	}
 	defer resp.Body.Close()
 
-	return StreamDockerMessages(out, resp.Body, nil)
+	var imageID string
+	auxCallback := func(msg jsonmessage.JSONMessage) {
+		if msg.Aux == nil {
+			return
+		}
+
+		var result BuildResult
+		if err := json.Unmarshal(*msg.Aux, &result); err != nil {
+			logrus.Debugln("Unable to parse build output:", err)
+			return
+		}
+		imageID = result.ID
+	}
+
+	if err := StreamDockerMessages(out, resp.Body, auxCallback); err != nil {
+		return "", err
+	}
+
+	if imageID == "" {
+		// Maybe this version of Docker doesn't return the digest of the image
+		// that has been built.
+		imageID, err = ImageID(ctx, cli, initialTag)
+		if err != nil {
+			return "", errors.Wrap(err, "getting digest")
+		}
+	}
+
+	return imageID, nil
 }
 
 // StreamDockerMessages streams formatted json output from the docker daemon
@@ -167,10 +199,8 @@ func addTag(ref name.Reference, targetRef name.Reference, auth authn.Authenticat
 	return remote.Write(targetRef, img, auth, t)
 }
 
-// Digest returns the image digest for a corresponding reference.
-// The digest is of the form
-// sha256:<image_id>
-func Digest(ctx context.Context, cli APIClient, ref string) (string, error) {
+// ImageID returns the image ID for a corresponding reference.
+func ImageID(ctx context.Context, cli APIClient, ref string) (string, error) {
 	image, _, err := cli.ImageInspectWithRaw(ctx, ref)
 	if err != nil {
 		if client.IsErrNotFound(err) {

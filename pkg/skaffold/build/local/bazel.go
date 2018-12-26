@@ -67,7 +67,7 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace strin
 		return "", errors.Wrap(err, "reading from image load response")
 	}
 
-	return docker.Digest(ctx, b.api, buildImageTag(a.BuildTarget))
+	return docker.ImageID(ctx, b.api, buildImageTag(a.BuildTarget))
 }
 
 func bazelBin(ctx context.Context, workspace string) (string, error) {
