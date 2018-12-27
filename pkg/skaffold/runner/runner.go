@@ -48,7 +48,6 @@ type SkaffoldRunner struct {
 	deploy.Deployer
 	test.Tester
 	tag.Tagger
-	watch.Trigger
 	sync.Syncer
 	watch.Watcher
 
@@ -107,9 +106,8 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		Tester:    tester,
 		Deployer:  deployer,
 		Tagger:    tagger,
-		Trigger:   trigger,
 		Syncer:    &kubectl.Syncer{},
-		Watcher:   watch.NewWatcher(),
+		Watcher:   watch.NewWatcher(trigger),
 		opts:      opts,
 		imageList: kubernetes.NewImageList(),
 	}, nil

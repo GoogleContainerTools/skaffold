@@ -41,10 +41,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Create watcher and register artifacts to build current state of files.
 	changed := changes{}
 	onChange := func() error {
-		defer func() {
-			changed.reset()
-			r.Trigger.WatchForChanges(out)
-		}()
+		defer changed.reset()
 
 		logger.Mute()
 
@@ -149,6 +146,5 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 	}
 
-	r.Trigger.WatchForChanges(out)
-	return r.Watcher.Run(ctx, r.Trigger, onChange)
+	return r.Watcher.Run(ctx, out, onChange)
 }
