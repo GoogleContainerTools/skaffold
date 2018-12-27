@@ -17,10 +17,11 @@ limitations under the License.
 package kubernetes
 
 import (
-	"github.com/pkg/errors"
-	"k8s.io/client-go/kubernetes"
 	"os"
 	"path/filepath"
+
+	"github.com/pkg/errors"
+	"k8s.io/client-go/kubernetes"
 )
 
 type Copy struct {
