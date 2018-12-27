@@ -104,7 +104,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	// Watch test configuration
 	if err := r.Watcher.Register(
-		func() ([]string, error) { return r.TestDependencies() },
+		r.TestDependencies,
 		func(watch.Events) { changed.needsRedeploy = true },
 	); err != nil {
 		return errors.Wrap(err, "watching test files")
@@ -112,7 +112,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	// Watch deployment configuration
 	if err := r.Watcher.Register(
-		func() ([]string, error) { return r.Dependencies() },
+		r.Dependencies,
 		func(watch.Events) { changed.needsRedeploy = true },
 	); err != nil {
 		return errors.Wrap(err, "watching files for deployer")
