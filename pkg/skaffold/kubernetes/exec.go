@@ -17,13 +17,14 @@ limitations under the License.
 package kubernetes
 
 import (
-	"github.com/pkg/errors"
 	"io"
+	"os"
+
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/remotecommand"
-	"os"
 )
 
 //Exec contains all required information to execute a command in a container
