@@ -19,7 +19,6 @@ package local
 import (
 	"context"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"testing"
 
@@ -57,8 +56,7 @@ func TestLocalRun(t *testing.T) {
 
 	var tests = []struct {
 		description  string
-		out          io.Writer
-		api          docker.APIClient
+		api          testutil.FakeAPIClient
 		tagger       tag.Tagger
 		artifacts    []*latest.Artifact
 		expected     []build.Artifact
@@ -67,90 +65,80 @@ func TestLocalRun(t *testing.T) {
 	}{
 		{
 			description: "single build",
-			out:         ioutil.Discard,
-			artifacts: []*latest.Artifact{
-				{
-					ImageName: "gcr.io/test/image",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{},
-					},
-				},
+			artifacts: []*latest.Artifact{{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{},
+				}},
 			},
 			tagger: &FakeTagger{Out: "gcr.io/test/image:tag"},
-			api:    testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
-			expected: []build.Artifact{
-				{
-					ImageName: "gcr.io/test/image",
-					Tag:       "gcr.io/test/image:tag",
-				},
+			expected: []build.Artifact{{
+				ImageName: "gcr.io/test/image",
+				Tag:       "gcr.io/test/image:tag",
+			}},
+		},
+		{
+			description: "single build local cluster",
+			artifacts: []*latest.Artifact{{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{},
+				}},
 			},
+			tagger:       &FakeTagger{Out: "gcr.io/test/image:tag"},
+			localCluster: true,
+			expected: []build.Artifact{{
+				ImageName: "gcr.io/test/image",
+				Tag:       "gcr.io/test/image:tag",
+			}},
 		},
 		{
 			description: "subset build",
-			out:         ioutil.Discard,
 			tagger:      &FakeTagger{Out: "gcr.io/test/image:tag"},
-			artifacts: []*latest.Artifact{
-				{
-					ImageName: "gcr.io/test/image",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{},
-					},
-				},
+			artifacts: []*latest.Artifact{{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{},
+				}},
 			},
-			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
-			expected: []build.Artifact{
-				{
-					ImageName: "gcr.io/test/image",
-					Tag:       "gcr.io/test/image:tag",
-				},
-			},
-		},
-		{
-			description:  "local cluster bad writer",
-			out:          &testutil.BadWriter{},
-			shouldErr:    true,
-			localCluster: true,
+			expected: []build.Artifact{{
+				ImageName: "gcr.io/test/image",
+				Tag:       "gcr.io/test/image:tag",
+			}},
 		},
 		{
 			description: "error image build",
-			out:         ioutil.Discard,
 			artifacts:   []*latest.Artifact{{}},
-			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{
+			api: testutil.FakeAPIClient{
 				ErrImageBuild: true,
-			}),
+			},
 			shouldErr: true,
 		},
 		{
 			description: "error image tag",
-			out:         ioutil.Discard,
 			artifacts:   []*latest.Artifact{{}},
-			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{
+			api: testutil.FakeAPIClient{
 				ErrImageTag: true,
-			}),
+			},
 			shouldErr: true,
 		},
 		{
-			description: "bad writer",
-			out:         &testutil.BadWriter{},
+			description: "unkown artifact type",
 			artifacts:   []*latest.Artifact{{}},
-			api:         testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
 			shouldErr:   true,
 		},
 		{
 			description: "error image inspect",
-			out:         &testutil.BadWriter{},
 			artifacts:   []*latest.Artifact{{}},
-			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{
+			api: testutil.FakeAPIClient{
 				ErrImageInspect: true,
-			}),
+			},
 			shouldErr: true,
 		},
 		{
 			description: "error tagger",
-			out:         ioutil.Discard,
 			artifacts:   []*latest.Artifact{{}},
 			tagger:      &FakeTagger{Err: fmt.Errorf("")},
-			api:         testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
 			shouldErr:   true,
 		},
 	}
@@ -159,11 +147,11 @@ func TestLocalRun(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			l := Builder{
 				cfg:          &latest.LocalBuild{},
-				api:          test.api,
+				api:          &test.api,
 				localCluster: test.localCluster,
 			}
 
-			res, err := l.Build(context.Background(), test.out, test.tagger, test.artifacts)
+			res, err := l.Build(context.Background(), ioutil.Discard, test.tagger, test.artifacts)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
 		})
 	}

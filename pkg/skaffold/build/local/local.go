@@ -33,9 +33,7 @@ import (
 // its checksum. It streams build progress to the writer argument.
 func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	if b.localCluster {
-		if _, err := color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext); err != nil {
-			return nil, errors.Wrap(err, "writing status")
-		}
+		color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext)
 	}
 	defer b.api.Close()
 
@@ -105,7 +103,7 @@ func (b *Builder) retagAndPush(ctx context.Context, out io.Writer, initialTag st
 	}
 
 	if b.pushImages {
-		if err := docker.RunPush(ctx, b.api, newTag, out); err != nil {
+		if err := docker.RunPush(ctx, out, b.api, newTag); err != nil {
 			return errors.Wrap(err, "pushing")
 		}
 	}

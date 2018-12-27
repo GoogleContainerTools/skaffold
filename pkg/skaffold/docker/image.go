@@ -32,7 +32,7 @@ import (
 	"github.com/docker/docker/pkg/term"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/pkg/errors"
@@ -83,7 +83,7 @@ func StreamDockerMessages(dst io.Writer, src io.Reader) error {
 	return jsonmessage.DisplayJSONMessagesStream(src, dst, fd, false, nil)
 }
 
-func RunPush(ctx context.Context, cli APIClient, ref string, out io.Writer) error {
+func RunPush(ctx context.Context, out io.Writer, cli APIClient, ref string) error {
 	registryAuth, err := encodedRegistryAuth(ctx, cli, DefaultAuthHelper, ref)
 	if err != nil {
 		return errors.Wrapf(err, "getting auth config for %s", ref)
