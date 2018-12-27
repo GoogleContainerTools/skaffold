@@ -150,12 +150,11 @@ func WaitForDeploymentToStabilize(ctx context.Context, c kubernetes.Interface, n
 	}
 
 	_, err = watch.Until(timeout, w, func(event watch.Event) (bool, error) {
-		switch event.Type {
-		case watch.Deleted:
+		if event.Type == watch.Deleted {
 			return false, apierrs.NewNotFound(schema.GroupResource{Resource: "deployments"}, "")
 		}
-		switch dp := event.Object.(type) {
-		case *appsv1.Deployment:
+
+		if dp, ok := event.Object.(*appsv1.Deployment); ok {
 			if dp.Name == name && dp.Namespace == ns &&
 				dp.Generation <= dp.Status.ObservedGeneration &&
 				*(dp.Spec.Replicas) == dp.Status.Replicas {

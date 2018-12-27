@@ -27,6 +27,7 @@ golangci-lint run \
 	--no-config \
 	-E goconst \
 	-E goimports \
+	-E gocritic \
 	-E golint \
 	-E interfacer \
 	-E maligned \

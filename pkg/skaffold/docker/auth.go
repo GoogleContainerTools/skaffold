@@ -116,11 +116,13 @@ func officialRegistry(ctx context.Context, cli APIClient) string {
 	serverAddress := registry.IndexServer
 
 	// The daemon `/info` endpoint informs us of the default registry being used.
-	if info, err := cli.Info(ctx); err != nil {
+	info, err := cli.Info(ctx)
+	switch {
+	case err != nil:
 		logrus.Warnf("failed to get default registry endpoint from daemon (%v). Using system default: %s\n", err, serverAddress)
-	} else if info.IndexServerAddress == "" {
+	case info.IndexServerAddress == "":
 		logrus.Warnf("empty registry endpoint from daemon. Using system default: %s\n", serverAddress)
-	} else {
+	default:
 		serverAddress = info.IndexServerAddress
 	}
 
