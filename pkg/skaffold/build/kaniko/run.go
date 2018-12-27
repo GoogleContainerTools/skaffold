@@ -31,10 +31,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artifact, cfg *latest.KanikoBuild) (string, error) {
+func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artifact) (string, error) {
 	initialTag := util.RandomID()
 
-	s := sources.Retrieve(cfg)
+	s := sources.Retrieve(b.KanikoBuild)
 	context, err := s.Setup(ctx, out, artifact, initialTag)
 	if err != nil {
 		return "", errors.Wrap(err, "setting up build context")
@@ -52,17 +52,17 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 		fmt.Sprintf("--context=%s", context),
 		fmt.Sprintf("--destination=%s", imageDst),
 		fmt.Sprintf("-v=%s", logLevel().String())}
-	args = append(args, cfg.AdditionalFlags...)
+	args = append(args, b.AdditionalFlags...)
 	args = append(args, docker.GetBuildArgs(artifact.DockerArtifact)...)
 
-	if cfg.Cache != nil {
+	if b.Cache != nil {
 		args = append(args, "--cache=true")
-		if cfg.Cache.Repo != "" {
-			args = append(args, fmt.Sprintf("--cache-repo=%s", cfg.Cache.Repo))
+		if b.Cache.Repo != "" {
+			args = append(args, fmt.Sprintf("--cache-repo=%s", b.Cache.Repo))
 		}
 	}
 
-	pods := client.CoreV1().Pods(cfg.Namespace)
+	pods := client.CoreV1().Pods(b.Namespace)
 	p, err := pods.Create(s.Pod(args))
 	if err != nil {
 		return "", errors.Wrap(err, "creating kaniko pod")
