@@ -21,18 +21,16 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 const (
@@ -104,20 +102,26 @@ func (g *LocalDir) ModifyPod(ctx context.Context, p *v1.Pod) error {
 	if err := kubernetes.WaitForPodInitialized(ctx, client.CoreV1().Pods(p.Namespace), p.Name); err != nil {
 		return errors.Wrap(err, "waiting for pod to initialize")
 	}
-	// Copy over the buildcontext tarball into the init container
-	tarCopyPath := fmt.Sprintf("/tmp/%s", filepath.Base(g.tarPath))
-	copy := exec.CommandContext(ctx, "kubectl", "cp", g.tarPath, fmt.Sprintf("%s:%s", p.Name, tarCopyPath), "-c", initContainer, "-n", p.Namespace)
-	if err := util.RunCmd(copy); err != nil {
-		return errors.Wrap(err, "copying buildcontext into init container")
+
+	copy := kubernetes.Copy{
+		Namespace: p.Namespace,
+		PodName:   p.Name,
+		Container: initContainer,
+		SrcPath:   g.tarPath,
+		DestPath:  constants.DefaultKanikoEmptyDirMountPath,
 	}
-	// Next, extract the buildcontext to the empty dir
-	extract := exec.CommandContext(ctx, "kubectl", "exec", p.Name, "-c", initContainer, "-n", p.Namespace, "--", "tar", "-xzf", tarCopyPath, "-C", constants.DefaultKanikoEmptyDirMountPath)
-	if err := util.RunCmd(extract); err != nil {
-		return errors.Wrap(err, "extracting buildcontext to empty dir")
+	if err := copy.CopyAndExtractTarGzInPod(client); err != nil {
+		return errors.Wrap(err, "copying and extracting buildcontext in init container")
 	}
+
 	// Generate a file to successfully terminate the init container
-	file := exec.CommandContext(ctx, "kubectl", "exec", p.Name, "-c", initContainer, "-n", p.Namespace, "--", "touch", "/tmp/complete")
-	return util.RunCmd(file)
+	exec := kubernetes.Exec{
+		Namespace: p.Namespace,
+		PodName:   p.Name,
+		Container: initContainer,
+		Command:   []string{"touch", "/tmp/complete"},
+	}
+	return exec.Exec(client)
 }
 
 // Cleanup deletes the buidcontext tarball stored on the local filesystem
