@@ -44,10 +44,10 @@ import (
 
 // Build builds a list of artifacts with Google Cloud Build.
 func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	return build.InParallel(ctx, out, tagger, artifacts, b.buildArtifact)
+	return build.InParallel(ctx, out, tagger, artifacts, b.buildArtifactWithCloudBuild)
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error) {
+func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error) {
 	client, err := google.DefaultClient(ctx, cloudbuild.CloudPlatformScope)
 	if err != nil {
 		return "", errors.Wrap(err, "getting google client")
@@ -103,7 +103,8 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	}
 	logsObject := fmt.Sprintf("log-%s.txt", remoteID)
 	color.Default.Fprintf(out, "Logs are available at \nhttps://console.cloud.google.com/m/cloudstorage/b/%s/o/%s\n", cbBucket, logsObject)
-	var imageID string
+
+	var digest string
 	offset := int64(0)
 watch:
 	for {
@@ -128,7 +129,7 @@ watch:
 		switch cb.Status {
 		case StatusQueued, StatusWorking, StatusUnknown:
 		case StatusSuccess:
-			imageID, err = getImageID(cb)
+			digest, err = getDigest(cb)
 			if err != nil {
 				return "", errors.Wrap(err, "getting image id from finished build")
 			}
@@ -146,12 +147,12 @@ watch:
 		return "", errors.Wrap(err, "cleaning up source tar after build")
 	}
 	logrus.Infof("Deleted object %s", buildObject)
-	builtTag := fmt.Sprintf("%s@%s", artifact.ImageName, imageID)
+	builtTag := fmt.Sprintf("%s@%s", artifact.ImageName, digest)
 	logrus.Infof("Image built at %s", builtTag)
 
 	newTag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, tag.Options{
 		ImageName: artifact.ImageName,
-		Digest:    imageID,
+		Digest:    digest,
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "generating tag")
@@ -178,7 +179,7 @@ func getBuildID(op *cloudbuild.Operation) (string, error) {
 	return buildMeta.Build.Id, nil
 }
 
-func getImageID(b *cloudbuild.Build) (string, error) {
+func getDigest(b *cloudbuild.Build) (string, error) {
 	if b.Results == nil || len(b.Results.Images) == 0 {
 		return "", errors.New("build failed")
 	}
