@@ -23,10 +23,9 @@ import (
 	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 type Syncer struct{}

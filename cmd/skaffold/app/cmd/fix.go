@@ -20,13 +20,12 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	yaml "gopkg.in/yaml.v2"
 )
 
 func NewCmdFix(out io.Writer) *cobra.Command {

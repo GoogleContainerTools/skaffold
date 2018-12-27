@@ -19,9 +19,8 @@ package config
 import (
 	"testing"
 
-	"gopkg.in/yaml.v2"
-
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	yaml "gopkg.in/yaml.v2"
 )
 
 var baseConfig = &Config{

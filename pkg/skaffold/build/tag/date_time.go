@@ -38,7 +38,7 @@ func NewDateTimeTagger(format, timezone string) Tagger {
 	return &dateTimeTagger{
 		Format:   format,
 		TimeZone: timezone,
-		timeFn:   func() time.Time { return time.Now() },
+		timeFn:   time.Now,
 	}
 }
 
