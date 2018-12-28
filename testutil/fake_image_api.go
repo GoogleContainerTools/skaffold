@@ -30,7 +30,7 @@ import (
 )
 
 type FakeAPIClient struct {
-	*client.Client
+	client.CommonAPIClient
 
 	TagToImageID    map[string]string
 	ErrImageBuild   bool

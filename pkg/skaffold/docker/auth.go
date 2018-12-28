@@ -82,7 +82,7 @@ func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
 	return cf.GetCredentialsStore("").GetAll()
 }
 
-func encodedRegistryAuth(ctx context.Context, cli APIClient, a AuthConfigHelper, image string) (string, error) {
+func (l *localDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelper, image string) (string, error) {
 	ref, err := reference.ParseNormalizedNamed(image)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing image name for registry")
@@ -96,7 +96,7 @@ func encodedRegistryAuth(ctx context.Context, cli APIClient, a AuthConfigHelper,
 	index := repoInfo.Index
 	configKey := index.Name
 	if index.Official {
-		configKey = officialRegistry(ctx, cli)
+		configKey = l.officialRegistry(ctx)
 	}
 
 	ac, err := a.GetAuthConfig(configKey)
@@ -112,11 +112,11 @@ func encodedRegistryAuth(ctx context.Context, cli APIClient, a AuthConfigHelper,
 	return base64.URLEncoding.EncodeToString(buf), nil
 }
 
-func officialRegistry(ctx context.Context, cli APIClient) string {
+func (l *localDaemon) officialRegistry(ctx context.Context) string {
 	serverAddress := registry.IndexServer
 
 	// The daemon `/info` endpoint informs us of the default registry being used.
-	info, err := cli.Info(ctx)
+	info, err := l.apiClient.Info(ctx)
 	switch {
 	case err != nil:
 		logrus.Warnf("failed to get default registry endpoint from daemon (%v). Using system default: %s\n", err, serverAddress)

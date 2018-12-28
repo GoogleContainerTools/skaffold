@@ -25,7 +25,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -56,18 +55,14 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace strin
 	}
 	defer imageTar.Close()
 
-	resp, err := b.api.ImageLoad(ctx, imageTar, false)
+	ref := buildImageTag(a.BuildTarget)
+
+	imageID, err := b.localDocker.Load(ctx, out, imageTar, ref)
 	if err != nil {
 		return "", errors.Wrap(err, "loading image into docker daemon")
 	}
-	defer resp.Body.Close()
 
-	err = docker.StreamDockerMessages(out, resp.Body, nil)
-	if err != nil {
-		return "", errors.Wrap(err, "reading from image load response")
-	}
-
-	return docker.ImageID(ctx, b.api, buildImageTag(a.BuildTarget))
+	return imageID, nil
 }
 
 func bazelBin(ctx context.Context, workspace string) (string, error) {

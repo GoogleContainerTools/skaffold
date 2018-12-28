@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestRunPush(t *testing.T) {
+func TestPush(t *testing.T) {
 	var tests = []struct {
 		description    string
 		imageName      string
@@ -73,7 +73,11 @@ func TestRunPush(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			digest, err := RunPush(context.Background(), ioutil.Discard, &test.api, test.imageName)
+			localDocker := &localDaemon{
+				apiClient: &test.api,
+			}
+
+			digest, err := localDocker.Push(context.Background(), ioutil.Discard, test.imageName)
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedDigest, digest)
 		})
@@ -108,7 +112,11 @@ func TestRunBuild(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			_, err := Build(context.Background(), ioutil.Discard, &test.api, ".", &latest.DockerArtifact{}, "finalimage")
+			localDocker := &localDaemon{
+				apiClient: &test.api,
+			}
+
+			_, err := localDocker.Build(context.Background(), ioutil.Discard, ".", &latest.DockerArtifact{}, "finalimage")
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})
@@ -149,7 +157,11 @@ func TestImageID(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			imageID, err := ImageID(context.Background(), &test.api, test.ref)
+			localDocker := &localDaemon{
+				apiClient: &test.api,
+			}
+
+			imageID, err := localDocker.ImageID(context.Background(), test.ref)
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, imageID)
 		})

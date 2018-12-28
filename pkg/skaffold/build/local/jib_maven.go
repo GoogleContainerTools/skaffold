@@ -52,7 +52,7 @@ func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, work
 		return "", err
 	}
 
-	return docker.ImageID(ctx, b.api, skaffoldImage)
+	return b.localDocker.ImageID(ctx, skaffoldImage)
 }
 
 func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.Artifact) (string, error) {

@@ -35,7 +35,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 	if b.localCluster {
 		color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext)
 	}
-	defer b.api.Close()
+	defer b.localDocker.Close()
 
 	// TODO(dgageot): parallel builds
 	return build.InSequence(ctx, out, tagger, artifacts, b.buildArtifact)
@@ -98,12 +98,12 @@ func (b *Builder) retagAndPush(ctx context.Context, out io.Writer, initialTag st
 		return nil
 	}
 
-	if err := b.api.ImageTag(ctx, initialTag, newTag); err != nil {
+	if err := b.localDocker.Tag(ctx, initialTag, newTag); err != nil {
 		return err
 	}
 
 	if b.pushImages {
-		if _, err := docker.RunPush(ctx, out, b.api, newTag); err != nil {
+		if _, err := b.localDocker.Push(ctx, out, newTag); err != nil {
 			return errors.Wrap(err, "pushing")
 		}
 	}

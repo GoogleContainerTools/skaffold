@@ -44,7 +44,7 @@ func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, wor
 		return "", err
 	}
 
-	return docker.ImageID(ctx, b.api, skaffoldImage)
+	return b.localDocker.ImageID(ctx, skaffoldImage)
 }
 
 func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.Artifact) (string, error) {
