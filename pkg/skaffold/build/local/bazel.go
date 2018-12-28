@@ -62,12 +62,12 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace strin
 	}
 	defer resp.Body.Close()
 
-	err = docker.StreamDockerMessages(out, resp.Body)
+	err = docker.StreamDockerMessages(out, resp.Body, nil)
 	if err != nil {
 		return "", errors.Wrap(err, "reading from image load response")
 	}
 
-	return docker.Digest(ctx, b.api, buildImageTag(a.BuildTarget))
+	return docker.ImageID(ctx, b.api, buildImageTag(a.BuildTarget))
 }
 
 func bazelBin(ctx context.Context, workspace string) (string, error) {

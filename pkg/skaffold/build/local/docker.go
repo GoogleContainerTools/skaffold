@@ -50,11 +50,9 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace stri
 		if err := util.RunCmd(cmd); err != nil {
 			return "", errors.Wrap(err, "running build")
 		}
-	} else {
-		if err := docker.BuildArtifact(ctx, out, b.api, workspace, a, initialTag); err != nil {
-			return "", errors.Wrap(err, "running build")
-		}
+
+		return docker.ImageID(ctx, b.api, initialTag)
 	}
 
-	return docker.Digest(ctx, b.api, initialTag)
+	return docker.Build(ctx, out, b.api, workspace, a, initialTag)
 }

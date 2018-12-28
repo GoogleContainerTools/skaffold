@@ -38,22 +38,21 @@ func TestMain(m *testing.M) {
 
 func TestRunPush(t *testing.T) {
 	var tests = []struct {
-		description string
-		imageName   string
-		api         testutil.FakeAPIClient
-		shouldErr   bool
+		description    string
+		imageName      string
+		api            testutil.FakeAPIClient
+		expectedDigest string
+		shouldErr      bool
 	}{
 		{
 			description: "push",
 			imageName:   "gcr.io/scratchman",
-		},
-		{
-			description: "no error pushing non canonical tag",
-			imageName:   "noncanonicalscratchman",
-		},
-		{
-			description: "no error pushing canonical tag",
-			imageName:   "canonical/name",
+			api: testutil.FakeAPIClient{
+				TagToImageID: map[string]string{
+					"gcr.io/scratchman": "sha256:abcab",
+				},
+			},
+			expectedDigest: "sha256:abcab",
 		},
 		{
 			description: "stream error",
@@ -74,14 +73,14 @@ func TestRunPush(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			err := RunPush(context.Background(), ioutil.Discard, &test.api, test.imageName)
+			digest, err := RunPush(context.Background(), ioutil.Discard, &test.api, test.imageName)
 
-			testutil.CheckError(t, test.shouldErr, err)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedDigest, digest)
 		})
 	}
 }
 
-func TestRunBuildArtifact(t *testing.T) {
+func TestRunBuild(t *testing.T) {
 	var tests = []struct {
 		description string
 		expected    string
@@ -109,24 +108,24 @@ func TestRunBuildArtifact(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			err := BuildArtifact(context.Background(), ioutil.Discard, &test.api, ".", &latest.DockerArtifact{}, "finalimage")
+			_, err := Build(context.Background(), ioutil.Discard, &test.api, ".", &latest.DockerArtifact{}, "finalimage")
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})
 	}
 }
 
-func TestDigest(t *testing.T) {
+func TestImageID(t *testing.T) {
 	var tests = []struct {
 		description string
-		imageName   string
+		ref         string
 		api         testutil.FakeAPIClient
 		expected    string
 		shouldErr   bool
 	}{
 		{
 			description: "get digest",
-			imageName:   "identifier:latest",
+			ref:         "identifier:latest",
 			api: testutil.FakeAPIClient{
 				TagToImageID: map[string]string{
 					"identifier:latest": "sha256:123abc",
@@ -136,7 +135,7 @@ func TestDigest(t *testing.T) {
 		},
 		{
 			description: "image inspect error",
-			imageName:   "test",
+			ref:         "test",
 			api: testutil.FakeAPIClient{
 				ErrImageInspect: true,
 			},
@@ -144,15 +143,15 @@ func TestDigest(t *testing.T) {
 		},
 		{
 			description: "not found",
-			imageName:   "somethingelse",
+			ref:         "somethingelse",
 			expected:    "",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			digest, err := Digest(context.Background(), &test.api, test.imageName)
+			imageID, err := ImageID(context.Background(), &test.api, test.ref)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, digest)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, imageID)
 		})
 	}
 }
