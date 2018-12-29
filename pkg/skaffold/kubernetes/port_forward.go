@@ -141,16 +141,22 @@ func (p *PortForwarder) Start(ctx context.Context) error {
 					return
 				}
 
-				// Pods will never be "added" in a state that they are ready for port-forwarding
-				// so only watch "modified" events
-				if evt.Type != watch.Modified {
+				// If the event's type is "ERROR", warn and continue.
+				if evt.Type == watch.Error {
+					logrus.Warnf("got unexpected event of type %s", evt.Type)
 					continue
 				}
-
+				// Grab the pod from the event.
 				pod, ok := evt.Object.(*v1.Pod)
 				if !ok {
 					continue
 				}
+				// If the event's type is "DELETED", warn and continue.
+				if evt.Type == watch.Deleted {
+					logrus.Warnf("got unexpected event of type %s for pod %s/%s", evt.Type, pod.Namespace, pod.Name)
+				}
+				// At this point, we know the event's type if "ADDED" or "MODIFIED".
+				// We must take both types into account as it is possible for the pod to have become ready for port-forwarding before we established the watch.
 				if p.podSelector.Select(pod) && pod.Status.Phase == v1.PodRunning && pod.DeletionTimestamp == nil {
 					go func() {
 						if err := p.portForwardPod(pod); err != nil {
