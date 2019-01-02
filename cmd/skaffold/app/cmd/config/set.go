@@ -46,12 +46,27 @@ func NewCmdSet(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func setConfigValue(name string, value interface{}) error {
+func setConfigValue(name string, value string) error {
 	cfg, err := getOrCreateConfigForKubectx()
 	if err != nil {
 		return err
 	}
 
+	fieldName := getFieldName(cfg, name)
+	if fieldName == "" {
+		return fmt.Errorf("%s is not a valid config field", name)
+	}
+
+	fieldValue, err := getNewFieldValue(fieldName, name, value)
+	if err != nil {
+		return fmt.Errorf("%s is not a valid value for field %s", value, fieldName)
+	}
+
+	reflect.ValueOf(cfg).Elem().FieldByName(fieldName).Set(fieldValue)
+	return writeConfig(cfg)
+}
+
+func getFieldName(cfg *ContextConfig, name string) string {
 	cfgValue := reflect.Indirect(reflect.ValueOf(cfg))
 	var fieldName string
 	for i := 0; i < cfgValue.NumField(); i++ {
@@ -62,20 +77,16 @@ func setConfigValue(name string, value interface{}) error {
 			}
 		}
 	}
-	if fieldName == "" {
-		return fmt.Errorf("%s is not a valid config field", name)
+	return fieldName
+}
+
+func getNewFieldValue(fieldName string, name string, value string) (reflect.Value, error) {
+	config := ContextConfig{}
+	auxiliaryContents := name + ": " + value
+	if err := yaml.Unmarshal([]byte(auxiliaryContents), &config); err != nil {
+		return reflect.Value{}, errors.Wrap(err, "unmarshalling auxiliary global skaffold config")
 	}
-	fieldValue := cfgValue.FieldByName(fieldName)
-
-	fieldType := fieldValue.Type()
-	val := reflect.ValueOf(value)
-
-	if fieldType != val.Type() {
-		return fmt.Errorf("%s is not a valid value for field %s", value, fieldName)
-	}
-	reflect.ValueOf(cfg).Elem().FieldByName(fieldName).Set(val)
-
-	return writeConfig(cfg)
+	return reflect.ValueOf(config).FieldByName(fieldName), nil
 }
 
 func writeConfig(cfg *ContextConfig) error {

@@ -19,6 +19,7 @@ package config
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -99,6 +100,40 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			},
 		},
 		{
+			name:        "set local cluster",
+			key:         "local-cluster",
+			value:       "false",
+			kubecontext: "this_is_a_context",
+			expectedSetCfg: &Config{
+				ContextConfigs: []*ContextConfig{
+					{
+						Kubecontext:  "this_is_a_context",
+						LocalCluster: util.BoolPtr(false),
+					},
+				},
+			},
+			expectedUnsetCfg: &Config{
+				ContextConfigs: []*ContextConfig{
+					{
+						Kubecontext: "this_is_a_context",
+					},
+				},
+			},
+		},
+		{
+			name:         "set invalid local cluster",
+			key:          "local-cluster",
+			shouldErrSet: true,
+			value:        "not-a-bool",
+			expectedSetCfg: &Config{
+				ContextConfigs: []*ContextConfig{
+					{
+						Kubecontext: dummyContext,
+					},
+				},
+			},
+		},
+		{
 			name:         "set fake value",
 			key:          "not_a_real_value",
 			shouldErrSet: true,
@@ -118,6 +153,22 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			expectedSetCfg: &Config{
 				Global: &ContextConfig{
 					DefaultRepo: "global",
+				},
+				ContextConfigs: []*ContextConfig{},
+			},
+			expectedUnsetCfg: &Config{
+				Global:         &ContextConfig{},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+		{
+			name:   "set global local cluster",
+			key:    "local-cluster",
+			value:  "true",
+			global: true,
+			expectedSetCfg: &Config{
+				Global: &ContextConfig{
+					LocalCluster: util.BoolPtr(true),
 				},
 				ContextConfigs: []*ContextConfig{},
 			},
