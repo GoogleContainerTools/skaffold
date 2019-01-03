@@ -157,7 +157,10 @@ func (oot *OneOfTag) Load(s []string) error {
 	oot.setName = s[1]
 
 	// Fetch the right oneOfSet for the struct.
-	structName := oot.Parent.Type().Name()
+	// Use stringified type name as it contains the version info.
+	// Version info is critical as each config version can have different set of yaml tags defined
+	// and we want to load the exact one-of-set of the correct version.
+	structName := oot.Parent.Type().String()
 	oot.oneOfSets = getOneOfSetsForStruct(structName)
 
 	// Add this field to the oneOfSet
