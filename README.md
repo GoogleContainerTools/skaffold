@@ -30,6 +30,10 @@ provides building blocks and describe customizations for a CI/CD pipeline.
   your cluster.
   * **minimal pipeline** - Skaffold provides an opinionated, minimal pipeline to keep things simple  
 
+## Install
+
+See [Github Releases](https://github.com/GoogleContainerTools/skaffold/releases)
+
 ## Demo 
 
 ![](docs/static/images/intro.gif)
