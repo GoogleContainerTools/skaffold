@@ -35,6 +35,18 @@
   name = "k8s.io/api"
   version = "kubernetes-1.11.0"
 
+[[constraint]]
+  name = "k8s.io/kubernetes"
+  version = "v1.11.0"
+
+[[override]]
+  name = "k8s.io/apiserver"
+  version = "kubernetes-1.11.0"
+
+[[override]]
+  name = "k8s.io/apiextensions-apiserver"
+  version = "kubernetes-1.11.0"
+
 [[override]]
   name = "github.com/Azure/go-autorest"
   version = "v10.6.2"
@@ -66,3 +78,7 @@
 [[constraint]]
   name = "github.com/bmatcuk/doublestar"
   revision = "v1.1.1"
+
+[[override]]
+  name = "github.com/russross/blackfriday"
+  revision = "300106c228d52c8941d4b3de6054a6062a86dda3"

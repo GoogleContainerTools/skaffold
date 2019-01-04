@@ -23,6 +23,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"k8s.io/kubernetes/pkg/kubectl/cmd"
+	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 
@@ -91,9 +94,8 @@ done`},
 	return p
 }
 
-// ModifyPod first copies over the buildcontext tarball into the init container tmp dir via kubectl cp
-// Via kubectl exec, we extract the tarball to the empty dir
-// Then, via kubectl exec, create the /tmp/complete file via kubectl exec to complete the init container
+// ModifyPod first copies over the buildcontext tarball into the init container tmp dir
+// Then create the /tmp/complete file via kubectl exec to complete the init container
 func (g *LocalDir) ModifyPod(ctx context.Context, p *v1.Pod) error {
 	client, err := kubernetes.GetClientset()
 	if err != nil {
@@ -103,28 +105,43 @@ func (g *LocalDir) ModifyPod(ctx context.Context, p *v1.Pod) error {
 		return errors.Wrap(err, "waiting for pod to initialize")
 	}
 
-	copy := kubernetes.Copy{
-		Namespace: p.Namespace,
-		PodName:   p.Name,
-		Container: initContainer,
-		SrcPath:   g.tarPath,
-		DestPath:  constants.DefaultKanikoEmptyDirMountPath,
+	f, err := os.Open(g.tarPath)
+	if err != nil {
+		return errors.Wrap(err, "opening context tar")
 	}
-	if err := copy.CopyAndExtractTarGzInPod(client); err != nil {
+	defer f.Close()
+
+	//copy build context into the init container
+	copyOpts := cmd.StreamOptions{
+		IOStreams: genericclioptions.IOStreams{
+			In:     f,
+			Out:    os.Stdout,
+			ErrOut: os.Stderr,
+		},
+		Stdin:         true,
+		Namespace:     p.Namespace,
+		PodName:       p.Name,
+		ContainerName: initContainer,
+	}
+	copyCmd := []string{"tar", "-zxf", "-", "-C", constants.DefaultKanikoEmptyDirMountPath}
+	if err := kubernetes.Exec(copyOpts, copyCmd); err != nil {
 		return errors.Wrap(err, "copying and extracting buildcontext in init container")
 	}
 
 	// Generate a file to successfully terminate the init container
-	exec := kubernetes.Exec{
-		Namespace: p.Namespace,
-		PodName:   p.Name,
-		Container: initContainer,
-		Command:   []string{"touch", "/tmp/complete"},
+	execOpts := cmd.StreamOptions{
+		IOStreams: genericclioptions.IOStreams{
+			Out:    os.Stdout,
+			ErrOut: os.Stderr,
+		},
+		Namespace:     p.Namespace,
+		PodName:       p.Name,
+		ContainerName: initContainer,
 	}
-	return exec.Exec(client)
+	return kubernetes.Exec(execOpts, []string{"touch", "/tmp/complete"})
 }
 
-// Cleanup deletes the buidcontext tarball stored on the local filesystem
+// Cleanup deletes the buildcontext tarball stored on the local filesystem
 func (g *LocalDir) Cleanup(ctx context.Context) error {
 	return os.Remove(g.tarPath)
 }
