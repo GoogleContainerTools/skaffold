@@ -34,6 +34,10 @@ func Exec(opts cmd.StreamOptions, command []string) error {
 	setConfigDefaults(config)
 
 	client, err := internalclientset.NewForConfig(config)
+	if err != nil {
+		return errors.Wrap(err, "creating new clientset")
+	}
+
 	execOpts := cmd.ExecOptions{
 		Config:        config,
 		PodClient:     client.Core(),
