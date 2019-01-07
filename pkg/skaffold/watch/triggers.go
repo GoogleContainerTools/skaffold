@@ -21,11 +21,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/rjeczalik/notify"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -43,6 +46,8 @@ func NewTrigger(opts *config.SkaffoldOptions) (Trigger, error) {
 		return &pollTrigger{
 			Interval: time.Duration(opts.WatchPollInterval) * time.Millisecond,
 		}, nil
+	case "notify":
+		return &fsNotifyTrigger{}, nil
 	case "manual":
 		return &manualTrigger{}, nil
 	default:
@@ -108,4 +113,59 @@ func (t *manualTrigger) Start() (<-chan bool, func()) {
 	}()
 
 	return trigger, func() {}
+}
+
+// notifyTrigger watches for changes when fsnotify
+type fsNotifyTrigger struct {
+}
+
+// Debounce tells the watcher to not debounce rapid sequence of changes.
+func (t *fsNotifyTrigger) Debounce() bool {
+	return false
+}
+
+func (t *fsNotifyTrigger) WatchForChanges(out io.Writer) {
+	color.Yellow.Fprintln(out, "FS Notify starting")
+}
+
+// Start starts listening to pressed keys.
+func (t *fsNotifyTrigger) Start() (<-chan bool, func()) {
+	trigger := make(chan bool)
+	c := make(chan notify.EventInfo, 1)
+
+	if err := notify.Watch("./...", c, notify.All); err != nil {
+		logrus.Fatalf("Unable to start notification: %v", err)
+	}
+
+	go func() {
+		for {
+			triggerRebuild := false
+			select {
+			case ei := <-c:
+				if isMatchingFile(filepath.Base(ei.Path())) {
+					triggerRebuild = true
+					break
+				}
+			}
+			if triggerRebuild {
+				logrus.Infof("Triggering rebuild")
+				trigger <- true
+			}
+		}
+	}()
+	return trigger, func() {
+		notify.Stop(c)
+	}
+}
+
+func isMatchingFile(event string) bool {
+	if strings.Contains(event, ".git") {
+		return false
+	}
+	logEvent(event)
+	return true
+}
+
+func logEvent(event string) {
+	logrus.Debugf("Path: %s", event)
 }
