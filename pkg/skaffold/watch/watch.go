@@ -68,7 +68,7 @@ func (w *watchList) Register(deps func() ([]string, error), onChange func(Events
 
 // Run watches files until the context is cancelled or an error occurs.
 func (w *watchList) Run(ctx context.Context, out io.Writer, onChange func() error) error {
-	t, cleanup, err := w.trigger.Start()
+	t, cleanup, err := w.trigger.Start(out, w.components)
 	if err != nil {
 		return err
 	}

@@ -33,7 +33,7 @@ import (
 
 // Trigger describes a mechanism that triggers the watch.
 type Trigger interface {
-	Start() (<-chan bool, func(), error)
+	Start(io.Writer, []*component) (<-chan bool, func(), error)
 	WatchForChanges(io.Writer)
 	Debounce() bool
 }
@@ -69,7 +69,7 @@ func (t *pollTrigger) WatchForChanges(out io.Writer) {
 }
 
 // Start starts a timer.
-func (t *pollTrigger) Start() (<-chan bool, func(), error) {
+func (t *pollTrigger) Start(out io.Writer, components []*component) (<-chan bool, func(), error) {
 	trigger := make(chan bool)
 
 	ticker := time.NewTicker(t.Interval)
@@ -97,7 +97,7 @@ func (t *manualTrigger) WatchForChanges(out io.Writer) {
 }
 
 // Start starts listening to pressed keys.
-func (t *manualTrigger) Start() (<-chan bool, func(), error) {
+func (t *manualTrigger) Start(out io.Writer, components []*component) (<-chan bool, func(), error) {
 	trigger := make(chan bool)
 
 	reader := bufio.NewReader(os.Stdin)
@@ -124,13 +124,21 @@ func (t *fsNotifyTrigger) Debounce() bool {
 }
 
 func (t *fsNotifyTrigger) WatchForChanges(out io.Writer) {
-	color.Yellow.Fprintln(out, "Watching for changes on directory")
+	color.Yellow.Fprintln(out, "Watching for changes on directory using notifications")
 }
 
 // Start Listening for file system changes
-func (t *fsNotifyTrigger) Start() (<-chan bool, func(), error) {
+func (t *fsNotifyTrigger) Start(out io.Writer, components []*component) (<-chan bool, func(), error) {
 	trigger := make(chan bool)
 	c := make(chan notify.EventInfo, 1)
+
+	basePath, err := os.Getwd()
+	if err != nil {
+		return nil, nil, err
+	}
+	if !strings.HasSuffix(basePath, "/") {
+		basePath += "/"
+	}
 
 	if err := notify.Watch("./...", c, notify.All); err != nil {
 		return nil, nil, err
@@ -139,11 +147,35 @@ func (t *fsNotifyTrigger) Start() (<-chan bool, func(), error) {
 	go func() {
 		for {
 			ei := <-c
-			logrus.Infof("Triggering rebuild because of %s", filepath.Base(ei.Path()))
-			trigger <- true
+			if isFileModifiedBelongsToComponent(basePath, ei.Path(), components) {
+				color.Yellow.Fprintln(out, "Triggering rebuild because of ", cleanupFile(basePath, ei.Path()))
+				trigger <- true
+			}
 		}
 	}()
 	return trigger, func() {
 		notify.Stop(c)
 	}, nil
+}
+
+func cleanupFile(basePath string, path string) string {
+	file := filepath.Clean(path)
+	file, _ = filepath.Abs(file)
+	file = strings.Replace(file, basePath, "", 1)
+	file = strings.Replace(file, "___jb_tmp___", "", 1)
+	return file
+}
+
+func isFileModifiedBelongsToComponent(basePath string, path string, components []*component) bool {
+	file := cleanupFile(basePath, path)
+	logrus.Debugf("Testing if file :%s is part of a component", file)
+	for _, component := range components {
+		_, ok := component.state[file]
+		if ok {
+			return true
+		}
+	}
+	logrus.Debugf("File %s is not part of the components", file)
+	return false
+
 }
