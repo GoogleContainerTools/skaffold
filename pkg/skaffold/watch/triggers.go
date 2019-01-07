@@ -139,15 +139,8 @@ func (t *fsNotifyTrigger) Start() (<-chan bool, func()) {
 
 	go func() {
 		for {
-			triggerRebuild := false
-			select {
-			case ei := <-c:
-				if isMatchingFile(filepath.Base(ei.Path())) {
-					triggerRebuild = true
-					break
-				}
-			}
-			if triggerRebuild {
+			ei := <-c
+			if isMatchingFile(filepath.Base(ei.Path())) {
 				logrus.Infof("Triggering rebuild")
 				trigger <- true
 			}
