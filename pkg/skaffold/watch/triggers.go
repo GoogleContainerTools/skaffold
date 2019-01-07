@@ -34,7 +34,7 @@ import (
 
 // Trigger describes a mechanism that triggers the watch.
 type Trigger interface {
-	Start() (<-chan bool, func())
+	Start() (<-chan bool, func(), error)
 	WatchForChanges(io.Writer)
 	Debounce() bool
 }
@@ -70,7 +70,7 @@ func (t *pollTrigger) WatchForChanges(out io.Writer) {
 }
 
 // Start starts a timer.
-func (t *pollTrigger) Start() (<-chan bool, func()) {
+func (t *pollTrigger) Start() (<-chan bool, func(), error) {
 	trigger := make(chan bool)
 
 	ticker := time.NewTicker(t.Interval)
@@ -81,7 +81,7 @@ func (t *pollTrigger) Start() (<-chan bool, func()) {
 		}
 	}()
 
-	return trigger, ticker.Stop
+	return trigger, ticker.Stop, nil
 }
 
 // manualTrigger watches for changes when the user presses a key.
@@ -98,7 +98,7 @@ func (t *manualTrigger) WatchForChanges(out io.Writer) {
 }
 
 // Start starts listening to pressed keys.
-func (t *manualTrigger) Start() (<-chan bool, func()) {
+func (t *manualTrigger) Start() (<-chan bool, func(), error) {
 	trigger := make(chan bool)
 
 	reader := bufio.NewReader(os.Stdin)
@@ -112,7 +112,7 @@ func (t *manualTrigger) Start() (<-chan bool, func()) {
 		}
 	}()
 
-	return trigger, func() {}
+	return trigger, func() {}, nil
 }
 
 // notifyTrigger watches for changes when fsnotify
@@ -125,40 +125,26 @@ func (t *fsNotifyTrigger) Debounce() bool {
 }
 
 func (t *fsNotifyTrigger) WatchForChanges(out io.Writer) {
-	color.Yellow.Fprintln(out, "FS Notify starting")
+	color.Yellow.Fprintln(out, "Watching for changes on directory")
 }
 
-// Start starts listening to pressed keys.
-func (t *fsNotifyTrigger) Start() (<-chan bool, func()) {
+// Start Listening for file system changes
+func (t *fsNotifyTrigger) Start() (<-chan bool, func(), error) {
 	trigger := make(chan bool)
 	c := make(chan notify.EventInfo, 1)
 
 	if err := notify.Watch("./...", c, notify.All); err != nil {
-		logrus.Fatalf("Unable to start notification: %v", err)
+		return nil, nil, err
 	}
 
 	go func() {
 		for {
 			ei := <-c
-			if isMatchingFile(filepath.Base(ei.Path())) {
-				logrus.Infof("Triggering rebuild")
-				trigger <- true
-			}
+			logrus.Infof("Triggering rebuild because of %s", filepath.Base(ei.Path()))
+			trigger <- true
 		}
 	}()
 	return trigger, func() {
 		notify.Stop(c)
-	}
-}
-
-func isMatchingFile(event string) bool {
-	if strings.Contains(event, ".git") {
-		return false
-	}
-	logEvent(event)
-	return true
-}
-
-func logEvent(event string) {
-	logrus.Debugf("Path: %s", event)
+	}, nil
 }

@@ -20,7 +20,6 @@ go run cmd/skaffold/man/man.go >> docs/content/en/docs/references/cli/_index.md
 readonly CLI_CHANGES=`git status -s | grep "docs/" | grep -x vendor | wc -l`
 
 if [ $CLI_CHANGES -gt 0 ]; then
-echo $CLI_CHANGES
   echo "You have skaffold command changes but haven't generated the CLI reference docs. Please run hack/check-docs.sh and commit the results!"
   exit 1
 fi
