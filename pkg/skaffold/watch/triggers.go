@@ -18,11 +18,12 @@ package watch
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -33,7 +34,7 @@ import (
 
 // Trigger describes a mechanism that triggers the watch.
 type Trigger interface {
-	Start(io.Writer, []*component) (<-chan bool, func(), error)
+	Start(context.Context) (<-chan bool, error)
 	WatchForChanges(io.Writer)
 	Debounce() bool
 }
@@ -43,10 +44,12 @@ func NewTrigger(opts *config.SkaffoldOptions) (Trigger, error) {
 	switch strings.ToLower(opts.Trigger) {
 	case "polling":
 		return &pollTrigger{
-			Interval: time.Duration(opts.WatchPollInterval) * time.Millisecond,
+			interval: time.Duration(opts.WatchPollInterval) * time.Millisecond,
 		}, nil
 	case "notify":
-		return &fsNotifyTrigger{}, nil
+		return &fsNotifyTrigger{
+			interval: time.Duration(opts.WatchPollInterval) * time.Millisecond,
+		}, nil
 	case "manual":
 		return &manualTrigger{}, nil
 	default:
@@ -56,7 +59,7 @@ func NewTrigger(opts *config.SkaffoldOptions) (Trigger, error) {
 
 // pollTrigger watches for changes on a given interval of time.
 type pollTrigger struct {
-	Interval time.Duration
+	interval time.Duration
 }
 
 // Debounce tells the watcher to debounce rapid sequence of changes.
@@ -65,27 +68,30 @@ func (t *pollTrigger) Debounce() bool {
 }
 
 func (t *pollTrigger) WatchForChanges(out io.Writer) {
-	color.Yellow.Fprintf(out, "Watching for changes every %v...\n", t.Interval)
+	color.Yellow.Fprintf(out, "Watching for changes every %v...\n", t.interval)
 }
 
 // Start starts a timer.
-func (t *pollTrigger) Start(out io.Writer, components []*component) (<-chan bool, func(), error) {
+func (t *pollTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	trigger := make(chan bool)
 
-	ticker := time.NewTicker(t.Interval)
+	ticker := time.NewTicker(t.interval)
 	go func() {
 		for {
-			<-ticker.C
-			trigger <- true
+			select {
+			case <-ticker.C:
+				trigger <- true
+			case <-ctx.Done():
+				ticker.Stop()
+			}
 		}
 	}()
 
-	return trigger, ticker.Stop, nil
+	return trigger, nil
 }
 
 // manualTrigger watches for changes when the user presses a key.
-type manualTrigger struct {
-}
+type manualTrigger struct{}
 
 // Debounce tells the watcher to not debounce rapid sequence of changes.
 func (t *manualTrigger) Debounce() bool {
@@ -97,8 +103,14 @@ func (t *manualTrigger) WatchForChanges(out io.Writer) {
 }
 
 // Start starts listening to pressed keys.
-func (t *manualTrigger) Start(out io.Writer, components []*component) (<-chan bool, func(), error) {
+func (t *manualTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	trigger := make(chan bool)
+
+	var stopped int32
+	go func() {
+		<-ctx.Done()
+		atomic.StoreInt32(&stopped, 1)
+	}()
 
 	reader := bufio.NewReader(os.Stdin)
 	go func() {
@@ -107,75 +119,62 @@ func (t *manualTrigger) Start(out io.Writer, components []*component) (<-chan bo
 			if err != nil {
 				logrus.Debugf("manual trigger error: %s", err)
 			}
+
+			// Wait until the context is cancelled.
+			if atomic.LoadInt32(&stopped) == 1 {
+				return
+			}
 			trigger <- true
 		}
 	}()
 
-	return trigger, func() {}, nil
+	return trigger, nil
 }
 
-// notifyTrigger watches for changes when fsnotify
+// notifyTrigger watches for changes with fsnotify
 type fsNotifyTrigger struct {
+	interval time.Duration
 }
 
 // Debounce tells the watcher to not debounce rapid sequence of changes.
 func (t *fsNotifyTrigger) Debounce() bool {
+	// This trigger has built-in debouncing.
 	return false
 }
 
 func (t *fsNotifyTrigger) WatchForChanges(out io.Writer) {
-	color.Yellow.Fprintln(out, "Watching for changes on directory using notifications")
+	color.Yellow.Fprintln(out, "Watching for changes...")
 }
 
 // Start Listening for file system changes
-func (t *fsNotifyTrigger) Start(out io.Writer, components []*component) (<-chan bool, func(), error) {
-	trigger := make(chan bool)
-	c := make(chan notify.EventInfo, 1)
+func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
+	// TODO(@dgageot): If file changes happen too quickly, events might be lost
+	c := make(chan notify.EventInfo, 100)
 
-	basePath, err := os.Getwd()
-	if err != nil {
-		return nil, nil, err
-	}
-	if !strings.HasSuffix(basePath, "/") {
-		basePath += "/"
-	}
-
+	// Watch current directory recursively
 	if err := notify.Watch("./...", c, notify.All); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
+	trigger := make(chan bool)
 	go func() {
+		timer := time.NewTimer(1<<63 - 1) // Forever
+
 		for {
-			ei := <-c
-			if isFileModifiedBelongsToComponent(basePath, ei.Path(), components) {
-				color.Yellow.Fprintln(out, "Triggering rebuild because of ", cleanupFile(basePath, ei.Path()))
+			select {
+			case e := <-c:
+				logrus.Debugln("Change detected", e)
+
+				// Wait t.interval before triggering.
+				// This way, rapid stream of events will be grouped.
+				timer.Reset(t.interval)
+			case <-timer.C:
 				trigger <- true
+			case <-ctx.Done():
+				timer.Stop()
 			}
 		}
 	}()
-	return trigger, func() {
-		notify.Stop(c)
-	}, nil
-}
 
-func cleanupFile(basePath string, path string) string {
-	file := filepath.Clean(path)
-	file, _ = filepath.Abs(file)
-	file = strings.Replace(file, basePath, "", 1)
-	file = strings.Replace(file, "___jb_tmp___", "", 1)
-	return file
-}
-
-func isFileModifiedBelongsToComponent(basePath string, path string, components []*component) bool {
-	file := cleanupFile(basePath, path)
-	logrus.Debugf("Testing if file :%s is part of a component", file)
-	for _, component := range components {
-		_, ok := component.state[file]
-		if ok {
-			return true
-		}
-	}
-	logrus.Debugf("File %s is not part of the components", file)
-	return false
-
+	return trigger, nil
 }
