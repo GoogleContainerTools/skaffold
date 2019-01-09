@@ -255,6 +255,10 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	}
 	if r.Wait {
 		args = append(args, "--wait")
+		if r.Timeout > 0 {
+			timeoutInSeconds := r.Timeout
+			args = append(args, fmt.Sprintf("--timeout=%v", timeoutInSeconds))
+		}
 	}
 	args = append(args, setOpts...)
 
