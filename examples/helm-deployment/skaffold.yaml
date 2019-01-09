@@ -11,6 +11,7 @@ deploy:
     - name: skaffold-helm
       chartPath: skaffold-helm
       #wait: true
+      #timeout: 300
       #valuesFiles:
       #- helm-skaffold-values.yaml
       values:
@@ -21,6 +22,6 @@ deploy:
       #overrides:
       # some:
       #   key: someValue
-      #setValues get appended to the helm deploy with --set.  
+      #setValues get appended to the helm deploy with --set.
       #setValues:
         #some.key: someValue
