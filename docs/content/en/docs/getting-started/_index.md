@@ -190,6 +190,9 @@ workflow, which, in this example, is
 * Deploying the Kubernetes manifest using `kubectl apply -f`
 * Streaming the logs back from the deployed app
 
+**NOTE:** For dev, if `imagePullPolicy` set to `Always` in deployment manifest it  will expect the image to exist in remote registry
+
+
 Let's re-trigger the workflow just by a single code change! 
 Update `main.go` as follows:
 
