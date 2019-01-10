@@ -66,3 +66,7 @@
 [[constraint]]
   name = "github.com/bmatcuk/doublestar"
   revision = "v1.1.1"
+
+[[constraint]]
+  name = "github.com/rjeczalik/notify"
+  version = "0.9.2"
