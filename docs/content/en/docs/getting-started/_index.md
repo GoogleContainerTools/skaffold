@@ -190,7 +190,9 @@ workflow, which, in this example, is
 * Deploying the Kubernetes manifest using `kubectl apply -f`
 * Streaming the logs back from the deployed app
 
-**NOTE:** For dev, if `imagePullPolicy` set to `Always` in deployment manifest it  will expect the image to exist in remote registry
+{{< alert title="Note" >}}
+For skaffold dev, if `imagePullPolicy` is set to `Always` in your Kubernetes manifest, it will expect the image to exist in a remote registry.
+{{< /alert >}}
 
 
 Let's re-trigger the workflow just by a single code change! 
