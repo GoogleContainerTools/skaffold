@@ -17,6 +17,7 @@ limitations under the License.
 package kubernetes
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"reflect"
@@ -32,27 +33,24 @@ type testForwarder struct {
 	forwardedPorts   map[int32]bool
 
 	forwardErr error
-	stopErr    error
 }
 
-func (f *testForwarder) Forward(pfe *portForwardEntry) error {
+func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) error {
 	f.forwardedEntries[pfe.key()] = pfe
 	f.forwardedPorts[pfe.port] = true
 	return f.forwardErr
 }
 
-func (f *testForwarder) Terminate(pfe *portForwardEntry) error {
+func (f *testForwarder) Terminate(pfe *portForwardEntry) {
 	delete(f.forwardedEntries, pfe.key())
 	delete(f.forwardedPorts, pfe.port)
-	return f.stopErr
 }
 
-func newTestForwarder(forwardErr, stopErr error) *testForwarder {
+func newTestForwarder(forwardErr error) *testForwarder {
 	return &testForwarder{
 		forwardedEntries: map[string]*portForwardEntry{},
 		forwardedPorts:   map[int32]bool{},
 		forwardErr:       forwardErr,
-		stopErr:          stopErr,
 	}
 }
 
@@ -130,7 +128,7 @@ func TestPortForwardPod(t *testing.T) {
 			expectedPorts: map[int32]bool{
 				8080: true,
 			},
-			forwarder: newTestForwarder(fmt.Errorf(""), nil),
+			forwarder: newTestForwarder(fmt.Errorf("")),
 			shouldErr: true,
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-8080": {
@@ -330,12 +328,12 @@ func TestPortForwardPod(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			p := NewPortForwarder(ioutil.Discard, NewImageList())
 			if test.forwarder == nil {
-				test.forwarder = newTestForwarder(nil, nil)
+				test.forwarder = newTestForwarder(nil)
 			}
 			p.Forwarder = test.forwarder
 
 			for _, pod := range test.pods {
-				err := p.portForwardPod(pod)
+				err := p.portForwardPod(context.Background(), pod)
 				testutil.CheckError(t, test.shouldErr, err)
 			}
 
