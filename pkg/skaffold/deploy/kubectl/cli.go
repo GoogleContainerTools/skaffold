@@ -67,8 +67,41 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 	return updated, nil
 }
 
+// ReadManifests reads a list of manifests in yaml format.
+func (c *CLI) ReadManifests(ctx context.Context, manifests []string) (ManifestList, error) {
+	var list []string
+	for _, manifest := range manifests {
+		list = append(list, "-f", manifest)
+	}
+
+	args := c.args("create", []string{"--dry-run", "-oyaml"}, list...)
+
+	cmd := exec.CommandContext(ctx, "kubectl", args...)
+	buf, err := util.RunCmdOut(cmd)
+	if err != nil {
+		return nil, errors.Wrap(err, "kubectl create")
+	}
+
+	var manifestList ManifestList
+	manifestList.Append(buf)
+	logrus.Debugln("manifests", manifestList.String())
+
+	return manifestList, nil
+}
+
 // Run shells out kubectl CLI.
 func (c *CLI) Run(ctx context.Context, in io.Reader, out io.Writer, command string, commandFlags []string, arg ...string) error {
+	args := c.args(command, commandFlags, arg...)
+
+	cmd := exec.CommandContext(ctx, "kubectl", args...)
+	cmd.Stdin = in
+	cmd.Stdout = out
+	cmd.Stderr = out
+
+	return util.RunCmd(cmd)
+}
+
+func (c *CLI) args(command string, commandFlags []string, arg ...string) []string {
 	args := []string{"--context", c.KubeContext}
 	if c.Namespace != "" {
 		args = append(args, "--namespace", c.Namespace)
@@ -78,10 +111,5 @@ func (c *CLI) Run(ctx context.Context, in io.Reader, out io.Writer, command stri
 	args = append(args, commandFlags...)
 	args = append(args, arg...)
 
-	cmd := exec.CommandContext(ctx, "kubectl", args...)
-	cmd.Stdin = in
-	cmd.Stdout = out
-	cmd.Stderr = out
-
-	return util.RunCmd(cmd)
+	return args
 }
