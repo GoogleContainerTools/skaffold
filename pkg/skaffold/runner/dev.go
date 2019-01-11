@@ -37,6 +37,10 @@ var ErrorConfigurationChanged = errors.New("configuration changed")
 // pipeline until interrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
 	logger := r.newLogger(out, artifacts)
+	defer logger.Stop()
+
+	portForwarder := kubernetes.NewPortForwarder(out, r.imageList)
+	defer portForwarder.Stop()
 
 	// Create watcher and register artifacts to build current state of files.
 	changed := changes{}
@@ -59,7 +63,6 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 		switch {
 		case changed.needsReload:
-			logger.Stop()
 			return ErrorConfigurationChanged
 		case len(changed.needsResync) > 0:
 			for _, s := range changed.needsResync {
@@ -139,8 +142,6 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	if r.opts.PortForward {
-		portForwarder := kubernetes.NewPortForwarder(out, r.imageList)
-
 		if err := portForwarder.Start(ctx); err != nil {
 			return errors.Wrap(err, "starting port-forwarder")
 		}

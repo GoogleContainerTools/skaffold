@@ -41,7 +41,7 @@ func (f *testForwarder) Forward(pfe *portForwardEntry) error {
 	return f.forwardErr
 }
 
-func (f *testForwarder) Stop(pfe *portForwardEntry) error {
+func (f *testForwarder) Terminate(pfe *portForwardEntry) error {
 	delete(f.forwardedEntries, pfe.key())
 	delete(f.forwardedPorts, pfe.port)
 	return f.stopErr

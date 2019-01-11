@@ -64,7 +64,7 @@ type portForwardEntry struct {
 // Forwarder is an interface that can modify and manage port-forward processes
 type Forwarder interface {
 	Forward(*portForwardEntry) error
-	Stop(*portForwardEntry) error
+	Terminate(*portForwardEntry) error
 }
 
 type kubectlForwarder struct{}
@@ -87,8 +87,8 @@ func (*kubectlForwarder) Forward(pfe *portForwardEntry) error {
 	return nil
 }
 
-// Stop terminates an existing kubectl port-forward command using SIGTERM
-func (*kubectlForwarder) Stop(p *portForwardEntry) error {
+// Terminate terminates an existing kubectl port-forward command using SIGTERM
+func (*kubectlForwarder) Terminate(p *portForwardEntry) error {
 	logrus.Debugf("Terminating port-forward %s", p)
 	if p.cmd == nil {
 		return fmt.Errorf("no port-forward command found for %s", p)
@@ -110,13 +110,14 @@ func NewPortForwarder(out io.Writer, podSelector PodSelector) *PortForwarder {
 	}
 }
 
-func (p *PortForwarder) cleanupPorts() {
+// Stop terminates all kubectl port-forward commands.
+func (p *PortForwarder) Stop() {
 	p.forwardedPods.Range(func(k, v interface{}) bool {
 		entry := v.(*portForwardEntry)
-		if err := p.Stop(entry); err != nil {
+		if err := p.Terminate(entry); err != nil {
 			logrus.Warnf("cleaning up port forwards: %s", err)
 		}
-		return false
+		return true
 	})
 }
 
@@ -134,7 +135,6 @@ func (p *PortForwarder) Start(ctx context.Context) error {
 		for {
 			select {
 			case <-ctx.Done():
-				p.cleanupPorts()
 				return
 			case evt, ok := <-watcher.ResultChan():
 				if !ok {
@@ -203,7 +203,7 @@ func (p *PortForwarder) portForwardPod(pod *v1.Pod) error {
 				prevEntry := v.(*portForwardEntry)
 				// Check if this is a new generation of pod
 				if entry.resourceVersion > prevEntry.resourceVersion {
-					if err := p.Stop(prevEntry); err != nil {
+					if err := p.Terminate(prevEntry); err != nil {
 						return errors.Wrap(err, "terminating port-forward process")
 					}
 				}
