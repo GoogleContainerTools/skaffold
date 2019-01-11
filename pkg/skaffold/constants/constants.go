@@ -40,6 +40,7 @@ const (
 
 	DefaultMinikubeContext         = "minikube"
 	DefaultDockerForDesktopContext = "docker-for-desktop"
+	DefaultDockerDesktopContext    = "docker-desktop"
 	GCSBucketSuffix                = "_cloudbuild"
 
 	HelmOverridesFilename = "skaffold-overrides.yaml"
