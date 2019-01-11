@@ -43,7 +43,7 @@ of `skaffold.yaml`. The `local` type offers the following options:
 
 |Option|Description|
 |-----|-----|
-|`skipPush`| OPTIONAL. Skips pushing images. Default value is `false`. |                    
+|`push`| OPTIONAL. Pushes image to a registry. Default value is `true`. |                    
 |`useDockerCLI`| OPTIONAL. Uses Docker command-line interface instead of Docker Engine APIs. Default value is `false`. |                    
 |`useBuildkit`| OPTIONAL Uses BuildKit to build Docker images. Default value is `false`. |    
 
@@ -56,7 +56,7 @@ build:
     - imageName: gcr.io/k8s-skaffold/example
     # Use local Docker daemon to build artifacts
     local:
-        skipPush: false
+        push: true
         useDockerCLI: false
         useBuildkit: false
 # The build section above is equal to
