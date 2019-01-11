@@ -49,3 +49,16 @@ func getCommandGradle(ctx context.Context, workspace string, a *latest.JibGradle
 	}
 	return GradleCommand.CreateCommand(ctx, workspace, args)
 }
+
+// GenerateGradleArgs generates the arguments to Gradle for building the project as an image.
+func GenerateGradleArgs(task string, imageName string, artifact *latest.JibGradleArtifact) []string {
+	var command string
+	if artifact.Project == "" {
+		command = ":" + task
+	} else {
+		// multi-module
+		command = fmt.Sprintf(":%s:%s", artifact.Project, task)
+	}
+
+	return []string{command, "--image=" + imageName}
+}

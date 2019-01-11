@@ -55,3 +55,21 @@ func getCommandMaven(ctx context.Context, workspace string, a *latest.JibMavenAr
 
 	return MavenCommand.CreateCommand(ctx, workspace, args)
 }
+
+// GenerateMavenArgs generates the arguments to Maven for building the project as an image.
+func GenerateMavenArgs(goal string, imageName string, artifact *latest.JibMavenArtifact) []string {
+	var command []string
+	if artifact.Module == "" {
+		// single-module project
+		command = []string{"--non-recursive", "prepare-package", "jib:" + goal}
+	} else {
+		// multi-module project: we assume `package` is bound to `jib:<goal>`
+		command = []string{"--projects", artifact.Module, "--also-make", "package"}
+	}
+	command = append(command, "-Dimage="+imageName)
+	if artifact.Profile != "" {
+		command = append(command, "--activate-profiles", artifact.Profile)
+	}
+
+	return command
+}

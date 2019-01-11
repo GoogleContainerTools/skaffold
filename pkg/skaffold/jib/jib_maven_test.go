@@ -158,3 +158,21 @@ func TestGetCommandMaven(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateMavenArgs(t *testing.T) {
+	var testCases = []struct {
+		in  latest.JibMavenArtifact
+		out []string
+	}{
+		{latest.JibMavenArtifact{}, []string{"--non-recursive", "prepare-package", "jib:goal", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Profile: "profile"}, []string{"--non-recursive", "prepare-package", "jib:goal", "-Dimage=image", "--activate-profiles", "profile"}},
+		{latest.JibMavenArtifact{Module: "module"}, []string{"--projects", "module", "--also-make", "package", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, []string{"--projects", "module", "--also-make", "package", "-Dimage=image", "--activate-profiles", "profile"}},
+	}
+
+	for _, tt := range testCases {
+		args := GenerateMavenArgs("goal", "image", &tt.in)
+
+		testutil.CheckDeepEqual(t, tt.out, args)
+	}
+}
