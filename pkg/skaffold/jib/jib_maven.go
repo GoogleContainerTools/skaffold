@@ -40,7 +40,11 @@ func GetDependenciesMaven(ctx context.Context, workspace string, a *latest.JibMa
 }
 
 func getCommandMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) *exec.Cmd {
-	args := []string{"--quiet"}
+	var args []string
+	args = append(args, "--quiet")
+	if a.Profile != "" {
+		args = append(args, "--activate-profiles", a.Profile)
+	}
 	if a.Module == "" {
 		// single-module project
 		args = append(args, "--non-recursive")
@@ -49,27 +53,26 @@ func getCommandMaven(ctx context.Context, workspace string, a *latest.JibMavenAr
 		args = append(args, "--projects", a.Module, "--also-make")
 	}
 	args = append(args, "jib:_skaffold-files")
-	if a.Profile != "" {
-		args = append(args, "--activate-profiles", a.Profile)
-	}
 
 	return MavenCommand.CreateCommand(ctx, workspace, args)
 }
 
 // GenerateMavenArgs generates the arguments to Maven for building the project as an image.
-func GenerateMavenArgs(goal string, imageName string, artifact *latest.JibMavenArtifact) []string {
-	var command []string
-	if artifact.Module == "" {
+func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact) []string {
+	var args []string
+	if a.Profile != "" {
+		args = append(args, "--activate-profiles", a.Profile)
+	}
+	if a.Module == "" {
 		// single-module project
-		command = []string{"--non-recursive", "prepare-package", "jib:" + goal}
+		args = append(args, "--non-recursive")
+		args = append(args, "prepare-package", "jib:"+goal)
 	} else {
 		// multi-module project: we assume `package` is bound to `jib:<goal>`
-		command = []string{"--projects", artifact.Module, "--also-make", "package"}
+		args = append(args, "--projects", a.Module, "--also-make")
+		args = append(args, "package")
 	}
-	command = append(command, "-Dimage="+imageName)
-	if artifact.Profile != "" {
-		command = append(command, "--activate-profiles", artifact.Profile)
-	}
+	args = append(args, "-Dimage="+imageName)
 
-	return command
+	return args
 }
