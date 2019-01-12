@@ -151,10 +151,11 @@ func (p *PortForwarder) Start(ctx context.Context) error {
 				if !ok {
 					continue
 				}
-				// If the event's type is "DELETED", warn and continue.
+				// If the event's type is "DELETED", continue.
 				if evt.Type == watch.Deleted {
-					logrus.Warnf("got unexpected event of type %s for pod %s/%s", evt.Type, pod.Namespace, pod.Name)
+					continue
 				}
+
 				// At this point, we know the event's type if "ADDED" or "MODIFIED".
 				// We must take both types into account as it is possible for the pod to have become ready for port-forwarding before we established the watch.
 				if p.podSelector.Select(pod) && pod.Status.Phase == v1.PodRunning && pod.DeletionTimestamp == nil {

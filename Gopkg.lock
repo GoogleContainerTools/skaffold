@@ -632,6 +632,14 @@
   revision = "619930b0b4713cc1280189bf0a4c54b3fb506f60"
 
 [[projects]]
+  digest = "1:b0e0e2abf5c70fd0f7f6c053c6c99c6960149146e40d5c7547cacc176e5d9973"
+  name = "github.com/rjeczalik/notify"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "69d839f37b13a8cb7a78366f7633a4071cb43be7"
+  version = "v0.9.2"
+
+[[projects]]
   digest = "1:d917313f309bda80d27274d53985bc65651f81a5b66b820749ac7f8ef061fd04"
   name = "github.com/sergi/go-diff"
   packages = ["diffmatchpatch"]
@@ -1205,6 +1213,7 @@
     "github.com/moby/buildkit/frontend/dockerfile/parser",
     "github.com/moby/buildkit/frontend/dockerfile/shell",
     "github.com/pkg/errors",
+    "github.com/rjeczalik/notify",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
     "github.com/spf13/pflag",

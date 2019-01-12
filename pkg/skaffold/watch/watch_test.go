@@ -72,7 +72,7 @@ func TestWatch(t *testing.T) {
 
 			// Watch folder
 			watcher := NewWatcher(&pollTrigger{
-				Interval: 10 * time.Millisecond,
+				interval: 10 * time.Millisecond,
 			})
 			err := watcher.Register(folder.List, folderChanged.call)
 			testutil.CheckError(t, false, err)

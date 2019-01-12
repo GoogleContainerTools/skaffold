@@ -46,7 +46,8 @@ func NewBuilder(cfg *latest.LocalBuild, kubeContext string) (*Builder, error) {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
 
-	localCluster := kubeContext == constants.DefaultMinikubeContext || kubeContext == constants.DefaultDockerForDesktopContext
+	localCluster := isLocal(kubeContext)
+
 	var pushImages bool
 	if cfg.Push == nil {
 		pushImages = !localCluster
@@ -62,6 +63,12 @@ func NewBuilder(cfg *latest.LocalBuild, kubeContext string) (*Builder, error) {
 		localCluster: localCluster,
 		pushImages:   pushImages,
 	}, nil
+}
+
+func isLocal(kubeContext string) bool {
+	return kubeContext == constants.DefaultMinikubeContext ||
+		kubeContext == constants.DefaultDockerForDesktopContext ||
+		kubeContext == constants.DefaultDockerDesktopContext
 }
 
 // Labels are labels specific to local builder.

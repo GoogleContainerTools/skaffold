@@ -89,7 +89,7 @@ Each release includes the following fields:
 |`namespace`| The Kubernetes namespace.|
 |`version`| The version of the chart.|
 |`setValues`| A list of key-value pairs; if present, Skaffold will sent `--set` flag to Helm CLI and append all pairs after the flag.|
-|`setValuesTemplates`| A list of key-value pairs; if present, Skaffold will try to parse the value part of each key-value pair using environment variables in the system, then send `--set` flag to Helm CLI and append all parsed pairs after the flag.|
+|`setValueTemplates`| A list of key-value pairs; if present, Skaffold will try to parse the value part of each key-value pair using environment variables in the system, then send `--set` flag to Helm CLI and append all parsed pairs after the flag.|
 |`wait`| A boolean value; if `true`, Skaffold will send `--wait` flag to Helm CLI.|
 |`recreatePods`| A boolean value; if `true`, Skaffold will send `--recreate-pods` flag to Helm CLI.|
 |`overrides`| A list of key-value pairs; if present, Skaffold will build a Helm `values` file that overrides the original and use it to call Helm CLI (`--f` flag).|
@@ -114,6 +114,8 @@ deploy:
       #     SOME-KEY: SOME-VALUE
       # setValues:
       #     SOME-KEY: SOME-VALUE-TEMPLATE
+      # setValueTemplates:
+      #     SOME-KEY: "{{.SOME-ENV-VARIABLE}}"
       # wait: true
       # recreatePods: true
       # overrides:
