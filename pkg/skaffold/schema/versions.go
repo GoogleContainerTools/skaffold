@@ -69,12 +69,17 @@ func (v *versions) Find(apiVersion string) (func() util.VersionedConfig, bool) {
 }
 
 // ParseConfig reads a configuration file.
-func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
+func ParseConfig(filename string, upgrade bool, profiles []string) (util.VersionedConfig, error) {
+	logrus.Warnf("%s", profiles)
 	buf, err := misc.ReadConfiguration(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "read skaffold config")
 	}
 
+	buf, err = misc.InjectEnvironnmentVariables(filename, buf, profiles)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to inject environment variables")
+	}
 	apiVersion := &APIVersion{}
 	if err := yaml.Unmarshal(buf, apiVersion); err != nil {
 		return nil, errors.Wrap(err, "parsing api version")
@@ -100,7 +105,6 @@ func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
 			return nil, err
 		}
 	}
-
 	return cfg, nil
 }
 

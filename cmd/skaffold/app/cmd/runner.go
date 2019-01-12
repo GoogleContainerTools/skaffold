@@ -29,7 +29,7 @@ import (
 
 // newRunner creates a SkaffoldRunner and returns the SkaffoldPipeline associated with it.
 func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.SkaffoldPipeline, error) {
-	parsed, err := schema.ParseConfig(opts.ConfigurationFile, true)
+	parsed, err := schema.ParseConfig(opts.ConfigurationFile, true, opts.Profiles)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "parsing skaffold config")
 	}

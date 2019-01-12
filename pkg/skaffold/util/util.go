@@ -32,6 +32,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 func RandomID() string {
@@ -129,7 +130,6 @@ func StringPtr(s string) *string {
 	o := s
 	return &o
 }
-
 func ReadConfiguration(filename string) ([]byte, error) {
 	switch {
 	case filename == "":
@@ -152,6 +152,68 @@ func ReadConfiguration(filename string) ([]byte, error) {
 		}
 		return contents, err
 	}
+}
+
+// A type holding configuration properties
+type ConfigProperties map[string]string
+
+// Tests if a file exists
+func FileExists(filapath string) bool {
+	if _, err := os.Stat(filapath); !os.IsNotExist(err) {
+		if err == nil {
+			return true
+		}
+	}
+	return false
+}
+
+// Reads an environment file  that contains a set of environment variables
+func ReadEnvironmentConfigProperties(pathToSkaffoldFile string) (*viper.Viper, error) {
+	directory := filepath.Dir(pathToSkaffoldFile)
+	baseName := filepath.Base(pathToSkaffoldFile)
+	targetDirectory := ""
+	if baseName != "skaffold.yaml" && baseName != "skaffold.yml" {
+		targetDirectory = pathToSkaffoldFile
+	} else {
+		targetDirectory = directory
+	}
+	logrus.Debugf("Will load environment file from :%s", targetDirectory)
+	ret := viper.New()
+	ret.SetConfigType("yaml")
+	ret.SetConfigName("env")
+	ret.AddConfigPath("/etc/skaffold/")
+	ret.AddConfigPath("$HOME/.skaffold")
+	ret.AddConfigPath(targetDirectory)
+	err := ret.ReadInConfig()
+	if err != nil {
+		return ret, nil
+	}
+	return ret, nil
+}
+
+// Replace all the environment variables present in a skaffold configuration
+func ReplaceEnvironmentVariables(configurationSource *viper.Viper, skaffoldConfiguration []byte) []byte {
+	var patternMatcher = regexp.MustCompile(`\$[{]?[a-zA-Z.-]+[}]?`)
+	replacedBuffer := patternMatcher.ReplaceAllFunc(skaffoldConfiguration, func(bs []byte) []byte {
+		replacer := strings.NewReplacer("$", "", "{", "", "}", "")
+		currentMatch := replacer.Replace(string(bs))
+		configurationValue := configurationSource.GetString(currentMatch)
+		logrus.Debugf("Configuration file replace of %s by %s", currentMatch, configurationValue)
+		return []byte(configurationValue)
+	})
+	logrus.Debugf("Replaced configuration file:%s", string(replacedBuffer))
+	return replacedBuffer
+}
+
+// Inject  environment variables into skaffold configuration
+func InjectEnvironnmentVariables(pathToSkaffoldFile string, skaffoldConfiguration []byte, profiles []string) ([]byte, error) {
+	configurationSource, err := ReadEnvironmentConfigProperties(pathToSkaffoldFile)
+	if err != nil {
+		return nil, errors.Wrap(err, "read environment config")
+	}
+	configurationSource.SetDefault("profile", strings.Join(profiles, ","))
+	return ReplaceEnvironmentVariables(configurationSource, skaffoldConfiguration), nil
+
 }
 
 func IsURL(s string) bool {
