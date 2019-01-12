@@ -67,7 +67,7 @@ func TestGetDependenciesMaven(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = testutil.NewFakeCmdOut(
+			util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOutErr(
 				strings.Join(getCommandMaven(ctx, tmpDir.Root(), &latest.JibMavenArtifact{}).Args, " "),
 				test.stdout,
 				test.err,

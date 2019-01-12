@@ -87,10 +87,9 @@ func TestGetDependencies(t *testing.T) {
 	for _, test := range tests {
 		t.Run("getDependencies", func(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = testutil.NewFakeCmdOut(
+			util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
 				"ignored",
 				test.stdout,
-				nil,
 			)
 
 			deps, err := getDependencies(&exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()})
