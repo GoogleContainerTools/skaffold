@@ -81,7 +81,7 @@ func (*kubectlForwarder) Forward(pfe *portForwardEntry) error {
 	cmd.Stdout = buf
 	cmd.Stderr = buf
 
-	if err := cmd.Run(); err != nil && !util.IsTerminatedError(err) {
+	if err := util.RunCmd(cmd); err != nil && !util.IsTerminatedError(err) {
 		return errors.Wrapf(err, "port forwarding pod: %s/%s, port: %s, err: %s", pfe.namespace, pfe.podName, portNumber, buf.String())
 	}
 	return nil

@@ -39,7 +39,7 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace strin
 	cmd.Dir = workspace
 	cmd.Stdout = out
 	cmd.Stderr = out
-	if err := cmd.Run(); err != nil {
+	if err := util.RunCmd(cmd); err != nil {
 		return "", errors.Wrap(err, "running command")
 	}
 

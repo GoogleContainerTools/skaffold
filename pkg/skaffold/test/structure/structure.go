@@ -21,6 +21,7 @@ import (
 	"io"
 	"os/exec"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -38,7 +39,7 @@ func (tr *Runner) Test(ctx context.Context, out io.Writer, image string) error {
 	cmd.Stdout = out
 	cmd.Stderr = out
 
-	if err := cmd.Run(); err != nil {
+	if err := util.RunCmd(cmd); err != nil {
 		return errors.Wrap(err, "running container-structure-test")
 	}
 

@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Client is for tests
@@ -146,7 +147,7 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 	tr, tw := io.Pipe()
 	cmd := exec.CommandContext(ctx, "kubectl", "logs", sinceSeconds, "-f", pod.Name, "-c", container.Name, "--namespace", pod.Namespace)
 	cmd.Stdout = tw
-	go cmd.Run()
+	go util.RunCmd(cmd)
 
 	color := a.colorPicker.Pick(pod)
 	prefix := prefix(pod, container)
