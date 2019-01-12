@@ -127,13 +127,15 @@ func ParseConfig(filename string, upgrade bool, activeProfiles []string) (util.V
 	if err != nil {
 		return nil, err
 	}
-	materializedConfig := cfg.(*latest.SkaffoldPipeline)
-	for _, profile := range activeProfiles {
-		directory := filepath.Dir(filename)
-		for _, extension := range []string{"yaml", "yml"} {
-			profileSkaffoldFile := filepath.Join(directory, fmt.Sprintf("skaffold_%s.%s", profile, extension))
-			logrus.Debugf("Testing if profile %s has configuration file:%s", profile, profileSkaffoldFile)
-			ReadAdditionalConfigurationFile(materializedConfig, profileSkaffoldFile, upgrade)
+	if upgrade {
+		materializedConfig := cfg.(*latest.SkaffoldPipeline)
+		for _, profile := range activeProfiles {
+			directory := filepath.Dir(filename)
+			for _, extension := range []string{"yaml", "yml"} {
+				profileSkaffoldFile := filepath.Join(directory, fmt.Sprintf("skaffold_%s.%s", profile, extension))
+				logrus.Debugf("Testing if profile %s has configuration file:%s", profile, profileSkaffoldFile)
+				ReadAdditionalConfigurationFile(materializedConfig, profileSkaffoldFile, upgrade)
+			}
 		}
 	}
 	return cfg, nil

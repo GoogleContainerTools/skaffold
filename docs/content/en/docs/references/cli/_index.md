@@ -267,8 +267,9 @@ Usage:
   skaffold fix [flags]
 
 Flags:
-  -f, --filename string   Filename or URL to the pipeline file (default "skaffold.yaml")
-      --overwrite         Overwrite original config with fixed config
+  -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
+      --overwrite             Overwrite original config with fixed config
+  -p, --profile stringArray   Activate profiles by name
 
 Global Flags:
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
@@ -279,6 +280,7 @@ Env vars:
 
 * `SKAFFOLD_FILENAME` (same as --filename)
 * `SKAFFOLD_OVERWRITE` (same as --overwrite)
+* `SKAFFOLD_PROFILE` (same as --profile)
 
 ### skaffold init
 
