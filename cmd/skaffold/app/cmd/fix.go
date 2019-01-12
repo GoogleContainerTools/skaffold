@@ -33,17 +33,18 @@ func NewCmdFix(out io.Writer) *cobra.Command {
 		Use:   "fix",
 		Short: "Converts old skaffold.yaml to newest schema version",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runFix(out, opts.ConfigurationFile, overwrite)
+			return runFix(out, opts.ConfigurationFile, overwrite, opts.Profiles)
 		},
 		Args: cobra.NoArgs,
 	}
 	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&overwrite, "overwrite", false, "Overwrite original config with fixed config")
+	cmd.Flags().StringArrayVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
 	return cmd
 }
 
-func runFix(out io.Writer, configFile string, overwrite bool) error {
-	cfg, err := schema.ParseConfig(configFile, false)
+func runFix(out io.Writer, configFile string, overwrite bool, profiles []string) error {
+	cfg, err := schema.ParseConfig(configFile, false, []string{"yaml", "yml"})
 	if err != nil {
 		return err
 	}
@@ -53,7 +54,7 @@ func runFix(out io.Writer, configFile string, overwrite bool) error {
 		return nil
 	}
 
-	cfg, err = schema.ParseConfig(configFile, true)
+	cfg, err = schema.ParseConfig(configFile, true, profiles)
 	if err != nil {
 		return err
 	}

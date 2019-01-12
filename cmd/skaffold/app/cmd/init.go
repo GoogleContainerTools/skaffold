@@ -108,7 +108,7 @@ func doInit(out io.Writer) error {
 
 	for _, file := range potentialConfigs {
 		if !force {
-			config, err := schema.ParseConfig(file, false)
+			config, err := schema.ParseConfig(file, false, []string{})
 			if err == nil && config != nil {
 				return fmt.Errorf("pre-existing %s found", file)
 			}

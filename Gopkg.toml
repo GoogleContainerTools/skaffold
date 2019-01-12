@@ -66,3 +66,7 @@
 [[constraint]]
   name = "github.com/bmatcuk/doublestar"
   revision = "v1.1.1"
+
+[[constraint]]
+  name = "github.com/imdario/mergo"
+  version = "0.3.6"

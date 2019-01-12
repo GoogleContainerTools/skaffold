@@ -18,7 +18,9 @@ package schema
 
 import (
 	"fmt"
+	"path/filepath"
 
+	"github.com/imdario/mergo"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
@@ -68,8 +70,7 @@ func (v *versions) Find(apiVersion string) (func() util.VersionedConfig, bool) {
 	return nil, false
 }
 
-// ParseConfig reads a configuration file.
-func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
+func ParseSingleConfigFile(filename string, upgrade bool) (util.VersionedConfig, error) {
 	buf, err := misc.ReadConfiguration(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "read skaffold config")
@@ -100,7 +101,41 @@ func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
 			return nil, err
 		}
 	}
+	return cfg, nil
 
+}
+func ReadAdditionalConfigurationFile(originalConfigFile *latest.SkaffoldPipeline, filename string, upgrade bool) {
+	println(filename)
+	if misc.FileExists(filename) {
+		profileConfiguration, err := ParseSingleConfigFile(filename, upgrade)
+		if err != nil {
+			logrus.Warnf("unable to %s %s", filename, err)
+			return
+		}
+		logrus.Debugf("%-v", profileConfiguration)
+		if err := mergo.Merge(originalConfigFile, profileConfiguration, mergo.WithOverride); err != nil {
+			logrus.Warnf("unable to merge configurations from %s %s", filename, err)
+			return
+		}
+	}
+
+}
+
+// ParseConfig reads a configuration file.
+func ParseConfig(filename string, upgrade bool, activeProfiles []string) (util.VersionedConfig, error) {
+	cfg, err := ParseSingleConfigFile(filename, upgrade)
+	if err != nil {
+		return nil, err
+	}
+	materializedConfig := cfg.(*latest.SkaffoldPipeline)
+	for _, profile := range activeProfiles {
+		directory := filepath.Dir(filename)
+		for _, extension := range []string{"yaml", "yml"} {
+			profileSkaffoldFile := filepath.Join(directory, fmt.Sprintf("skaffold_%s.%s", profile, extension))
+			logrus.Debugf("Testing if profile %s has configuration file:%s", profile, profileSkaffoldFile)
+			ReadAdditionalConfigurationFile(materializedConfig, profileSkaffoldFile, upgrade)
+		}
+	}
 	return cfg, nil
 }
 

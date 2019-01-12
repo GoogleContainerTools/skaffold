@@ -89,7 +89,16 @@ build:
     namespace: nskaniko
     timeout: 120m
 `
-	badConfig = "bad config"
+	badConfig           = "bad config"
+	simpleConfigOveride = `
+build:
+  tagPolicy:
+    gitCommit: {}
+  artifacts:
+  - image: example-overiden
+deploy:
+  kubectl: {}
+`
 )
 
 func TestParseConfig(t *testing.T) {
@@ -201,7 +210,7 @@ func TestParseConfig(t *testing.T) {
 			yaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", test.apiVersion, test.config)
 			tmp.Write("skaffold.yaml", yaml)
 
-			cfg, err := ParseConfig(tmp.Path("skaffold.yaml"), true)
+			cfg, err := ParseConfig(tmp.Path("skaffold.yaml"), true, []string{"test"})
 			if cfg != nil {
 				config := cfg.(*latest.SkaffoldPipeline)
 				if err := defaults.Set(config); err != nil {
@@ -353,4 +362,22 @@ func TestCantUpgradeFromLatestVersion(t *testing.T) {
 
 	_, err := factory().Upgrade()
 	testutil.CheckError(t, true, err)
+}
+
+func TestApplyProfilesInConfiguration(t *testing.T) {
+	tmp, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+	yaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, simpleConfig)
+	tmp.Write("skaffold.yaml", yaml)
+
+	overridenYaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, simpleConfigOveride)
+	tmp.Write("skaffold_test.yaml", overridenYaml)
+	cfg, _ := ParseConfig(tmp.Path("skaffold.yaml"), true, []string{"test"})
+	if cfg != nil {
+		config := cfg.(*latest.SkaffoldPipeline)
+		if err := defaults.Set(config); err != nil {
+			t.Fatal("unable to set default values")
+		}
+		testutil.CheckDeepEqual(t, "example-overiden", config.Build.Artifacts[0].ImageName)
+	}
 }
