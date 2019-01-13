@@ -104,18 +104,49 @@ func ParseSingleConfigFile(filename string, upgrade bool) (util.VersionedConfig,
 	return cfg, nil
 
 }
+func in_array(artifact *latest.Artifact, artifacts []*latest.Artifact) (bool, int) {
+	for i, v := range artifacts {
+		if artifact.ImageName == v.ImageName {
+			return true, i
+		}
+	}
+	return false, -1
+}
+
 func ReadAdditionalConfigurationFile(originalConfigFile *latest.SkaffoldPipeline, filename string, upgrade bool) {
-	println(filename)
 	if misc.FileExists(filename) {
 		profileConfiguration, err := ParseSingleConfigFile(filename, upgrade)
 		if err != nil {
 			logrus.Warnf("unable to %s %s", filename, err)
 			return
 		}
-		logrus.Debugf("%-v", profileConfiguration)
-		if err := mergo.Merge(originalConfigFile, profileConfiguration, mergo.WithOverride); err != nil {
-			logrus.Warnf("unable to merge configurations from %s %s", filename, err)
-			return
+		materializedConfig := profileConfiguration.(*latest.SkaffoldPipeline)
+		originalArtifacts := originalConfigFile.Build.Artifacts
+		newArtifacts := materializedConfig.Build.Artifacts
+		for originalIndex, artifact := range originalArtifacts {
+			inArray, position := in_array(artifact, newArtifacts)
+			if inArray {
+				logrus.Debugf("Found artifact:%d", position)
+				if err := mergo.Merge(originalArtifacts[originalIndex], newArtifacts[position], mergo.WithOverride); err != nil {
+					logrus.Warnf("unable to merge configurations from %s %s", filename, err)
+					return
+				} else {
+					if newArtifacts[position].Sync != nil {
+						originalArtifacts[originalIndex].Sync = misc.CopyStringMap(newArtifacts[position].Sync)
+					}
+				}
+			}
+		}
+		for newIndex, artifact := range newArtifacts {
+			inArray, _ := in_array(artifact, originalArtifacts)
+			if !inArray {
+				originalArtifacts = append(originalArtifacts, newArtifacts[newIndex])
+			}
+		}
+		originalConfigFile.Build.Artifacts = originalArtifacts
+		if logrus.IsLevelEnabled(logrus.DebugLevel) {
+			marshalled, err := yaml.Marshal(originalConfigFile)
+			logrus.Debugf("Marshalled file:%s\n%s", marshalled, err)
 		}
 	}
 
@@ -137,6 +168,11 @@ func ParseConfig(filename string, upgrade bool, activeProfiles []string) (util.V
 				ReadAdditionalConfigurationFile(materializedConfig, profileSkaffoldFile, upgrade)
 			}
 		}
+		if logrus.IsLevelEnabled(logrus.DebugLevel) {
+			generatedFile, _ := yaml.Marshal(materializedConfig)
+			logrus.Debugf("Merged Configuration :%s", string(generatedFile))
+		}
+
 	}
 	return cfg, nil
 }
