@@ -172,11 +172,13 @@ func ReadEnvironmentConfigProperties(pathToSkaffoldFile string) (*viper.Viper, e
 	directory := filepath.Dir(pathToSkaffoldFile)
 	baseName := filepath.Base(pathToSkaffoldFile)
 	targetDirectory := ""
-	if baseName != "skaffold.yaml" && baseName != "skaffold.yml" {
+	re := regexp.MustCompile("skaffold.*ya?ml")
+	if re.FindString(baseName) == "" {
 		targetDirectory = pathToSkaffoldFile
 	} else {
 		targetDirectory = directory
 	}
+	//
 	logrus.Debugf("Will load environment file from :%s", targetDirectory)
 	ret := viper.New()
 	ret.SetConfigType("yaml")
@@ -213,7 +215,13 @@ func InjectEnvironnmentVariables(pathToSkaffoldFile string, skaffoldConfiguratio
 	}
 	configurationSource.SetDefault("profile", strings.Join(profiles, ","))
 	return ReplaceEnvironmentVariables(configurationSource, skaffoldConfiguration), nil
-
+}
+func CopyStringMap(m map[string]string) map[string]string {
+	cp := make(map[string]string)
+	for k, v := range m {
+		cp[k] = v
+	}
+	return cp
 }
 
 func IsURL(s string) bool {
