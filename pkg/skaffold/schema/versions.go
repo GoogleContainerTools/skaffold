@@ -104,7 +104,7 @@ func ParseSingleConfigFile(filename string, upgrade bool) (util.VersionedConfig,
 	return cfg, nil
 
 }
-func in_array(artifact *latest.Artifact, artifacts []*latest.Artifact) (bool, int) {
+func inArray(artifact *latest.Artifact, artifacts []*latest.Artifact) (bool, int) {
 	for i, v := range artifacts {
 		if artifact.ImageName == v.ImageName {
 			return true, i
@@ -124,7 +124,7 @@ func ReadAdditionalConfigurationFile(originalConfigFile *latest.SkaffoldPipeline
 		originalArtifacts := originalConfigFile.Build.Artifacts
 		newArtifacts := materializedConfig.Build.Artifacts
 		for originalIndex, artifact := range originalArtifacts {
-			inArray, position := in_array(artifact, newArtifacts)
+			inArray, position := inArray(artifact, newArtifacts)
 			if inArray {
 				logrus.Debugf("Found artifact:%d", position)
 				if err := mergo.Merge(originalArtifacts[originalIndex], newArtifacts[position], mergo.WithOverride); err != nil {
@@ -138,7 +138,7 @@ func ReadAdditionalConfigurationFile(originalConfigFile *latest.SkaffoldPipeline
 			}
 		}
 		for newIndex, artifact := range newArtifacts {
-			inArray, _ := in_array(artifact, originalArtifacts)
+			inArray, _ := inArray(artifact, originalArtifacts)
 			if !inArray {
 				originalArtifacts = append(originalArtifacts, newArtifacts[newIndex])
 			}
