@@ -17,6 +17,7 @@ limitations under the License.
 package testutil
 
 import (
+	"io/ioutil"
 	"os/exec"
 	"strings"
 	"testing"
@@ -31,6 +32,7 @@ type FakeCmd struct {
 
 type run struct {
 	command string
+	input   []byte
 	output  []byte
 	err     error
 }
@@ -59,6 +61,13 @@ func (c *FakeCmd) popRun() (*run, error) {
 func (c *FakeCmd) WithRun(command string) *FakeCmd {
 	return c.addRun(run{
 		command: command,
+	})
+}
+
+func (c *FakeCmd) WithRunInput(command, input string) *FakeCmd {
+	return c.addRun(run{
+		command: command,
+		input:   []byte(input),
 	})
 }
 
@@ -117,6 +126,23 @@ func (c *FakeCmd) RunCmd(cmd *exec.Cmd) error {
 
 	if r.output != nil {
 		c.t.Errorf("expected RunCmdOut(%s) to be called. Got RunCmd(%s)", r.command, command)
+	}
+
+	if r.input != nil {
+		if cmd.Stdin == nil {
+			c.t.Error("expected to run the command with a custom stdin", command)
+		}
+
+		buf, err := ioutil.ReadAll(cmd.Stdin)
+		if err != nil {
+			return err
+		}
+
+		actualInput := string(buf)
+		expectedInput := string(r.input)
+		if actualInput != expectedInput {
+			c.t.Errorf("wrong input. Expected: %s. Got %s", expectedInput, actualInput)
+		}
 	}
 
 	return r.err
