@@ -150,7 +150,7 @@ func TestKubectlDeploy(t *testing.T) {
 			}
 
 			k := NewKubectlDeployer(tmpDir.Root(), test.cfg, testKubeContext, testNamespace, "")
-			_, err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
+			err := k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})
@@ -254,23 +254,23 @@ spec:
 	deployer := NewKubectlDeployer(tmpDir.Root(), cfg, testKubeContext, testNamespace, "")
 
 	// Deploy one manifest
-	_, err := deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
+	err := deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 		{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 		{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
-	})
+	}, nil)
 	testutil.CheckError(t, false, err)
 
 	// Deploy one manifest since only one image is updated
-	_, err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
+	err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 		{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 		{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-	})
+	}, nil)
 	testutil.CheckError(t, false, err)
 
 	// Deploy zero manifest since no image is updated
-	_, err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
+	err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 		{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 		{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-	})
+	}, nil)
 	testutil.CheckError(t, false, err)
 }

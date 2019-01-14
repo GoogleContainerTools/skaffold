@@ -21,7 +21,6 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -38,7 +37,7 @@ type Deployer interface {
 
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster.
-	Deploy(context.Context, io.Writer, []build.Artifact) ([]Artifact, error)
+	Deploy(context.Context, io.Writer, []build.Artifact, []Labeller) error
 
 	// Dependencies returns a list of files that the deployer depends on.
 	// In dev mode, a redeploy will be triggered

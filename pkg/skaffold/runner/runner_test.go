@@ -115,17 +115,17 @@ func (t *TestBench) Test(ctx context.Context, out io.Writer, artifacts []build.A
 	return nil
 }
 
-func (t *TestBench) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) ([]deploy.Artifact, error) {
+func (t *TestBench) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact, labellers []deploy.Labeller) error {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	t.currentActions.Deployed = tags(artifacts)
-	return nil, nil
+	return nil
 }
 
 func (t *TestBench) Actions() []Actions {
