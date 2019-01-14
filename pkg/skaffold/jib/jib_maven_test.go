@@ -96,7 +96,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--quiet", "--non-recursive", "jib:_skaffold-files"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--non-recursive", "jib:_skaffold-files", "--quiet"})
 			},
 		},
 		{
@@ -104,7 +104,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{Profile: "profile"},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--quiet", "--activate-profiles", "profile", "--non-recursive", "jib:_skaffold-files"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--activate-profiles", "profile", "--non-recursive", "jib:_skaffold-files", "--quiet"})
 			},
 		},
 		{
@@ -112,7 +112,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{},
 			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--quiet", "--non-recursive", "jib:_skaffold-files"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--non-recursive", "jib:_skaffold-files", "--quiet"})
 			},
 		},
 		{
@@ -120,7 +120,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{},
 			filesInWorkspace: []string{"mvnw", "mvnw.cmd"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--quiet", "--non-recursive", "jib:_skaffold-files"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--non-recursive", "jib:_skaffold-files", "--quiet"})
 			},
 		},
 		{
@@ -128,7 +128,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{Profile: "profile"},
 			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--quiet", "--activate-profiles", "profile", "--non-recursive", "jib:_skaffold-files"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--activate-profiles", "profile", "--non-recursive", "jib:_skaffold-files", "--quiet"})
 			},
 		},
 		{
@@ -136,7 +136,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{Module: "module"},
 			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--quiet", "--projects", "module", "--also-make", "jib:_skaffold-files"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--projects", "module", "--also-make", "jib:_skaffold-files", "--quiet"})
 			},
 		},
 	}

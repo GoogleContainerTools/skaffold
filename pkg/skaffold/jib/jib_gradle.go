@@ -42,29 +42,20 @@ func GetDependenciesGradle(ctx context.Context, workspace string, a *latest.JibG
 }
 
 func getCommandGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) *exec.Cmd {
-	task := "_jibSkaffoldFiles"
-
-	var command string
-	if a.Project == "" {
-		command = task
-	} else {
-		// multi-module
-		command = fmt.Sprintf(":%s:%s", a.Project, task)
-	}
-	args := []string{command, "-q"}
-
+	args := []string{gradleCommand(a, "_jibSkaffoldFiles"), "-q"}
 	return GradleCommand.CreateCommand(ctx, workspace, args)
 }
 
 // GenerateGradleArgs generates the arguments to Gradle for building the project as an image.
 func GenerateGradleArgs(task string, imageName string, a *latest.JibGradleArtifact) []string {
-	var command string
+	return []string{gradleCommand(a, task), "--image=" + imageName}
+}
+
+func gradleCommand(a *latest.JibGradleArtifact, task string) string {
 	if a.Project == "" {
-		command = ":" + task
-	} else {
-		// multi-module
-		command = fmt.Sprintf(":%s:%s", a.Project, task)
+		return ":" + task
 	}
 
-	return []string{command, "--image=" + imageName}
+	// multi-module
+	return fmt.Sprintf(":%s:%s", a.Project, task)
 }
