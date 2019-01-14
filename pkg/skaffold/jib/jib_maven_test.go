@@ -104,7 +104,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{Profile: "profile"},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--quiet", "--non-recursive", "jib:_skaffold-files", "--activate-profiles", "profile"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--quiet", "--activate-profiles", "profile", "--non-recursive", "jib:_skaffold-files"})
 			},
 		},
 		{
@@ -128,7 +128,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{Profile: "profile"},
 			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--quiet", "--non-recursive", "jib:_skaffold-files", "--activate-profiles", "profile"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--quiet", "--activate-profiles", "profile", "--non-recursive", "jib:_skaffold-files"})
 			},
 		},
 		{
@@ -156,5 +156,23 @@ func TestGetCommandMaven(t *testing.T) {
 			testutil.CheckDeepEqual(t, expectedCmd.Args, cmd.Args)
 			testutil.CheckDeepEqual(t, expectedCmd.Dir, cmd.Dir)
 		})
+	}
+}
+
+func TestGenerateMavenArgs(t *testing.T) {
+	var testCases = []struct {
+		in  latest.JibMavenArtifact
+		out []string
+	}{
+		{latest.JibMavenArtifact{}, []string{"--non-recursive", "prepare-package", "jib:goal", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Profile: "profile"}, []string{"--activate-profiles", "profile", "--non-recursive", "prepare-package", "jib:goal", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Module: "module"}, []string{"--projects", "module", "--also-make", "package", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, []string{"--activate-profiles", "profile", "--projects", "module", "--also-make", "package", "-Dimage=image"}},
+	}
+
+	for _, tt := range testCases {
+		args := GenerateMavenArgs("goal", "image", &tt.in)
+
+		testutil.CheckDeepEqual(t, tt.out, args)
 	}
 }
