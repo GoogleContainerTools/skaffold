@@ -23,21 +23,15 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 func AddTag(src, target string) error {
 	logrus.Debugf("attempting to add tag %s to src %s", target, src)
-	srcRef, err := name.ParseReference(src, name.StrictValidation)
+	img, err := remoteImage(src)
 	if err != nil {
-		return errors.Wrap(err, "getting source reference")
-	}
-
-	auth, err := authn.DefaultKeychain.Resolve(srcRef.Context().Registry)
-	if err != nil {
-		return err
+		return errors.Wrap(err, "getting image")
 	}
 
 	targetRef, err := name.ParseReference(target, name.StrictValidation)
@@ -45,21 +39,12 @@ func AddTag(src, target string) error {
 		return errors.Wrap(err, "getting target reference")
 	}
 
-	return addTag(srcRef, targetRef, auth, http.DefaultTransport)
-}
-
-func addTag(ref name.Reference, targetRef name.Reference, auth authn.Authenticator, t http.RoundTripper) error {
-	tr, err := transport.New(ref.Context().Registry, auth, t, []string{targetRef.Scope(transport.PushScope)})
+	auth, err := authn.DefaultKeychain.Resolve(targetRef.Context().Registry)
 	if err != nil {
 		return err
 	}
 
-	img, err := remote.Image(ref, remote.WithAuth(auth), remote.WithTransport(tr))
-	if err != nil {
-		return err
-	}
-
-	return remote.Write(targetRef, img, auth, t)
+	return remote.Write(targetRef, img, auth, http.DefaultTransport)
 }
 
 func RemoteDigest(identifier string) (string, error) {
@@ -96,5 +81,5 @@ func remoteImage(identifier string) (v1.Image, error) {
 		return nil, errors.Wrap(err, "getting default keychain auth")
 	}
 
-	return remote.Image(ref, remote.WithAuth(auth), remote.WithTransport(http.DefaultTransport))
+	return remote.Image(ref, remote.WithAuth(auth))
 }
