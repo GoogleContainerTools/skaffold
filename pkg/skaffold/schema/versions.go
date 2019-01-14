@@ -130,10 +130,9 @@ func ReadAdditionalConfigurationFile(originalConfigFile *latest.SkaffoldPipeline
 				if err := mergo.Merge(originalArtifacts[originalIndex], newArtifacts[position], mergo.WithOverride); err != nil {
 					logrus.Warnf("unable to merge configurations from %s %s", filename, err)
 					return
-				} else {
-					if newArtifacts[position].Sync != nil {
-						originalArtifacts[originalIndex].Sync = misc.CopyStringMap(newArtifacts[position].Sync)
-					}
+				}
+				if newArtifacts[position].Sync != nil {
+					originalArtifacts[originalIndex].Sync = misc.CopyStringMap(newArtifacts[position].Sync)
 				}
 			}
 		}
