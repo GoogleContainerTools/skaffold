@@ -54,7 +54,7 @@ const (
 	DefaultKanikoEmptyDirName      = "kaniko-emptydir"
 	DefaultKanikoEmptyDirMountPath = "/kaniko/buildcontext"
 
-	DefaultAlpineImage = "alpine"
+	DefaultBusyboxImage = "busybox"
 
 	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
 
