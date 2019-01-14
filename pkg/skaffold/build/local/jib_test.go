@@ -62,14 +62,13 @@ func TestMavenVerifyJibPackageGoal(t *testing.T) {
 	util.SkipWrapperCheck = true
 
 	for _, tt := range testCases {
-		util.DefaultExecCommand = testutil.NewFakeCmdOut("mvn --quiet --projects module jib:_skaffold-package-goals", tt.mavenOutput, nil)
+		util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut("mvn --quiet --projects module jib:_skaffold-package-goals", tt.mavenOutput)
 
 		err := verifyJibPackageGoal(context.Background(), tt.requiredGoal, ".", &latest.JibMavenArtifact{Module: "module"})
 		if hasError := err != nil; tt.shouldError != hasError {
 			t.Error("Unexpected return result")
 		}
 	}
-
 }
 
 func TestGenerateGradleArgs(t *testing.T) {

@@ -67,7 +67,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = testutil.NewFakeCmdOut(
+			util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOutErr(
 				strings.Join(getCommandGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{}).Args, " "),
 				test.stdout,
 				test.err,
