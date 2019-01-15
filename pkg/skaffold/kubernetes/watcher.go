@@ -17,6 +17,7 @@ limitations under the License.
 package kubernetes
 
 import (
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/pkg/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -29,8 +30,15 @@ func PodWatcher() (watch.Interface, error) {
 		return nil, errors.Wrap(err, "getting k8s client")
 	}
 	client := kubeclient.CoreV1()
+	// Only watch the current namespace, or we get errors.
+	// FIXME: Should we override this with the --namespace option?
+	config, err := kubectx.CurrentConfig()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting k8s namespace")
+	}
+	ns := config.Contexts[config.CurrentContext].Namespace
 	var forever int64 = 3600 * 24 * 365 * 100
-	return client.Pods("").Watch(meta_v1.ListOptions{
+	return client.Pods(ns).Watch(meta_v1.ListOptions{
 		IncludeUninitialized: true,
 		TimeoutSeconds:       &forever,
 	})
