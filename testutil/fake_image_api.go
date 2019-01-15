@@ -18,8 +18,10 @@ package testutil
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -27,93 +29,101 @@ import (
 	"github.com/docker/docker/registry"
 )
 
-type FakeImageAPIClient struct {
-	*client.Client
-	tagToImageID map[string]string
+type FakeAPIClient struct {
+	client.CommonAPIClient
 
-	opts *FakeImageAPIOptions
-}
-
-type FakeImageAPIOptions struct {
+	TagToImageID    map[string]string
 	ErrImageBuild   bool
 	ErrImageInspect bool
 	ErrImageTag     bool
 	ErrImagePush    bool
-
-	BuildImageID string
-
-	ReturnBody io.ReadCloser
+	ErrStream       bool
 }
 
-func NewFakeImageAPIClient(initContents map[string]string, opts *FakeImageAPIOptions) *FakeImageAPIClient {
-	if opts == nil {
-		opts = &FakeImageAPIOptions{}
+type errReader struct{}
+
+func (f errReader) Read([]byte) (int, error) { return 0, fmt.Errorf("") }
+
+func (f *FakeAPIClient) body(digest string) io.ReadCloser {
+	if f.ErrStream {
+		return ioutil.NopCloser(&errReader{})
 	}
-	if opts.ReturnBody == nil {
-		opts.ReturnBody = FakeReaderCloser{Err: io.EOF}
-	}
-	return &FakeImageAPIClient{
-		tagToImageID: initContents,
-		opts:         opts,
-	}
+
+	return ioutil.NopCloser(strings.NewReader(fmt.Sprintf(`{"aux":{"digest":"%s"}}`, digest)))
 }
 
-func (f *FakeImageAPIClient) ImageBuild(ctx context.Context, context io.Reader, options types.ImageBuildOptions) (types.ImageBuildResponse, error) {
-	if f.opts.ErrImageBuild {
+func (f *FakeAPIClient) ImageBuild(_ context.Context, _ io.Reader, options types.ImageBuildOptions) (types.ImageBuildResponse, error) {
+	if f.ErrImageBuild {
 		return types.ImageBuildResponse{}, fmt.Errorf("")
 	}
+
+	if f.TagToImageID == nil {
+		f.TagToImageID = make(map[string]string)
+	}
+
+	imageID := "sha256:" + randomID()
+	f.TagToImageID[imageID] = imageID
+
 	for _, tag := range options.Tags {
+		f.TagToImageID[tag] = imageID
 		if !strings.Contains(tag, ":") {
-			tag = fmt.Sprintf("%s:latest", tag)
-		}
-		if f.opts.BuildImageID == "" {
-			f.tagToImageID[tag] = "sha256:imageid"
-		} else {
-			f.tagToImageID[tag] = f.opts.BuildImageID
+			f.TagToImageID[tag+":latest"] = imageID
 		}
 	}
+
 	return types.ImageBuildResponse{
-		Body: f.opts.ReturnBody,
+		Body: f.body(imageID),
 	}, nil
 }
 
-func (f *FakeImageAPIClient) ImageInspectWithRaw(ctx context.Context, ref string) (types.ImageInspect, []byte, error) {
-	if f.opts.ErrImageInspect {
+func randomID() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return fmt.Sprintf("%x", b)
+}
+
+func (f *FakeAPIClient) ImageInspectWithRaw(_ context.Context, ref string) (types.ImageInspect, []byte, error) {
+	if f.ErrImageInspect {
 		return types.ImageInspect{}, nil, fmt.Errorf("")
 	}
 
-	imageID, ok := f.tagToImageID[ref]
-	if !ok {
-		return types.ImageInspect{}, nil, nil
-	}
-
-	return types.ImageInspect{ID: imageID}, nil, nil
+	return types.ImageInspect{
+		ID: f.TagToImageID[ref],
+	}, nil, nil
 }
 
-func (f *FakeImageAPIClient) ImageTag(ctx context.Context, image, ref string) error {
-	if f.opts.ErrImageTag {
+func (f *FakeAPIClient) ImageTag(_ context.Context, image, ref string) error {
+	if f.ErrImageTag {
 		return fmt.Errorf("")
 	}
-	imageID, ok := f.tagToImageID[image]
+
+	imageID, ok := f.TagToImageID[image]
 	if !ok {
-		return fmt.Errorf("image %s not found. fake registry contents: %s", image, f.tagToImageID)
+		return fmt.Errorf("image %s not found. fake registry contents: %s", image, f.TagToImageID)
 	}
-	f.tagToImageID[ref] = imageID
+
+	if f.TagToImageID == nil {
+		f.TagToImageID = make(map[string]string)
+	}
+	f.TagToImageID[ref] = imageID
+
 	return nil
 }
 
-func (f *FakeImageAPIClient) ImagePush(_ context.Context, _ string, _ types.ImagePushOptions) (io.ReadCloser, error) {
-	var err error
-	if f.opts.ErrImagePush {
-		err = fmt.Errorf("")
+func (f *FakeAPIClient) ImagePush(_ context.Context, ref string, _ types.ImagePushOptions) (io.ReadCloser, error) {
+	if f.ErrImagePush {
+		return nil, fmt.Errorf("")
 	}
-	return f.opts.ReturnBody, err
+
+	digest := f.TagToImageID[ref]
+
+	return f.body(digest), nil
 }
 
-func (f *FakeImageAPIClient) Info(ctx context.Context) (types.Info, error) {
+func (f *FakeAPIClient) Info(context.Context) (types.Info, error) {
 	return types.Info{
 		IndexServerAddress: registry.IndexServer,
 	}, nil
 }
 
-func (f *FakeImageAPIClient) Close() error { return nil }
+func (f *FakeAPIClient) Close() error { return nil }

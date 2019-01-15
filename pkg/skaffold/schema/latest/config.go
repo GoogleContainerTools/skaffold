@@ -17,18 +17,10 @@ limitations under the License.
 package latest
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/blang/semver"
-	"github.com/pkg/errors"
-	yaml "gopkg.in/yaml.v2"
 )
 
-const Version string = "skaffold/v1beta1"
-
-func Semver() semver.Version {
-	return apiversion.MustParse(Version)
-}
+const Version string = "skaffold/v1beta2"
 
 // NewSkaffoldPipeline creates a SkaffoldPipeline
 func NewSkaffoldPipeline() util.VersionedConfig {
@@ -126,13 +118,14 @@ type KanikoCache struct {
 // KanikoBuild contains the fields needed to do a on-cluster build using
 // the kaniko image
 type KanikoBuild struct {
-	BuildContext   *KanikoBuildContext `yaml:"buildContext,omitempty"`
-	Cache          *KanikoCache        `yaml:"cache,omitempty"`
-	PullSecret     string              `yaml:"pullSecret,omitempty"`
-	PullSecretName string              `yaml:"pullSecretName,omitempty"`
-	Namespace      string              `yaml:"namespace,omitempty"`
-	Timeout        string              `yaml:"timeout,omitempty"`
-	Image          string              `yaml:"image,omitempty"`
+	BuildContext    *KanikoBuildContext `yaml:"buildContext,omitempty"`
+	Cache           *KanikoCache        `yaml:"cache,omitempty"`
+	AdditionalFlags []string            `yaml:"flags,omitempty"`
+	PullSecret      string              `yaml:"pullSecret,omitempty"`
+	PullSecretName  string              `yaml:"pullSecretName,omitempty"`
+	Namespace       string              `yaml:"namespace,omitempty"`
+	Timeout         string              `yaml:"timeout,omitempty"`
+	Image           string              `yaml:"image,omitempty"`
 }
 
 type TestConfig []*TestCase
@@ -185,19 +178,20 @@ type KustomizeDeploy struct {
 }
 
 type HelmRelease struct {
-	Name              string                 `yaml:"name,omitempty"`
-	ChartPath         string                 `yaml:"chartPath,omitempty"`
-	ValuesFiles       []string               `yaml:"valuesFiles,omitempty"`
-	Values            map[string]string      `yaml:"values,omitempty,omitempty"`
-	Namespace         string                 `yaml:"namespace,omitempty"`
-	Version           string                 `yaml:"version,omitempty"`
-	SetValues         map[string]string      `yaml:"setValues,omitempty"`
-	SetValueTemplates map[string]string      `yaml:"setValueTemplates,omitempty"`
-	Wait              bool                   `yaml:"wait,omitempty"`
-	RecreatePods      bool                   `yaml:"recreatePods,omitempty"`
-	Overrides         map[string]interface{} `yaml:"overrides,omitempty"`
-	Packaged          *HelmPackaged          `yaml:"packaged,omitempty"`
-	ImageStrategy     HelmImageStrategy      `yaml:"imageStrategy,omitempty"`
+	Name                string                 `yaml:"name,omitempty"`
+	ChartPath           string                 `yaml:"chartPath,omitempty"`
+	ValuesFiles         []string               `yaml:"valuesFiles,omitempty"`
+	Values              map[string]string      `yaml:"values,omitempty,omitempty"`
+	Namespace           string                 `yaml:"namespace,omitempty"`
+	Version             string                 `yaml:"version,omitempty"`
+	SetValues           map[string]string      `yaml:"setValues,omitempty"`
+	SetValueTemplates   map[string]string      `yaml:"setValueTemplates,omitempty"`
+	Wait                bool                   `yaml:"wait,omitempty"`
+	SkipDependencyBuild bool                   `yaml:"skipDependencyBuild,omitempty"`
+	RecreatePods        bool                   `yaml:"recreatePods,omitempty"`
+	Overrides           map[string]interface{} `yaml:"overrides,omitempty"`
+	Packaged            *HelmPackaged          `yaml:"packaged,omitempty"`
+	ImageStrategy       HelmImageStrategy      `yaml:"imageStrategy,omitempty"`
 }
 
 // HelmPackaged represents parameters for packaging helm chart.
@@ -276,19 +270,4 @@ type JibMavenArtifact struct {
 type JibGradleArtifact struct {
 	// Only multi-module
 	Project string `yaml:"project"`
-}
-
-// Parse reads a SkaffoldPipeline from yaml.
-func (c *SkaffoldPipeline) Parse(contents []byte, useDefaults bool) error {
-	if err := yaml.UnmarshalStrict(contents, c); err != nil {
-		return err
-	}
-
-	if useDefaults {
-		if err := c.SetDefaultValues(); err != nil {
-			return errors.Wrap(err, "applying default values")
-		}
-	}
-
-	return nil
 }

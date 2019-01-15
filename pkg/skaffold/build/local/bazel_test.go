@@ -26,10 +26,9 @@ import (
 
 func TestBazelBin(t *testing.T) {
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-	util.DefaultExecCommand = testutil.NewFakeCmdOut(
+	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
 		"bazel info bazel-bin",
 		"/absolute/path/bin\n",
-		nil,
 	)
 
 	bazelBin, err := bazelBin(context.Background(), ".")
@@ -50,5 +49,5 @@ func TestBuildImageTag(t *testing.T) {
 
 	imageTag := buildImageTag(buildTarget)
 
-	testutil.CheckDeepEqual(t, ":skaffold_example", imageTag)
+	testutil.CheckDeepEqual(t, "bazel:skaffold_example", imageTag)
 }

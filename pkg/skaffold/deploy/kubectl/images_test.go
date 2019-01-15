@@ -126,3 +126,16 @@ func TestReplaceInvalidManifest(t *testing.T) {
 
 	testutil.CheckError(t, true, err)
 }
+
+func TestReplaceNonStringImageField(t *testing.T) {
+	manifests := ManifestList{[]byte(`
+apiVersion: v1
+image:
+- value1
+- value2
+`)}
+
+	output, err := manifests.ReplaceImages(nil, "")
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, manifests.String(), output.String())
+}

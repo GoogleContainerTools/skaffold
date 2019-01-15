@@ -18,19 +18,17 @@ package docker
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
-	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/fileutils"
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/karrick/godirwalk"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
@@ -369,53 +367,13 @@ func GetDependencies(ctx context.Context, workspace string, a *latest.DockerArti
 	return dependencies, nil
 }
 
-var imageCache sync.Map
-
 func retrieveImage(image string) (*v1.ConfigFile, error) {
-	cachedCfg, present := imageCache.Load(image)
-	if present {
-		return cachedCfg.(*v1.ConfigFile), nil
-	}
-
-	client, err := NewAPIClient()
+	localDaemon, err := NewAPIClient() // Cached after first call
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getting docker client")
 	}
 
-	cfg := &v1.ConfigFile{}
-	raw, err := retrieveLocalImage(client, image)
-	if err == nil {
-		if err := json.Unmarshal(raw, cfg); err != nil {
-			return nil, err
-		}
-	} else {
-		cfg, err = retrieveRemoteConfig(image)
-		if err != nil {
-			return nil, errors.Wrap(err, "getting remote config")
-		}
-	}
-
-	imageCache.Store(image, cfg)
-
-	return cfg, nil
-}
-
-func retrieveLocalImage(client APIClient, image string) ([]byte, error) {
-	_, raw, err := client.ImageInspectWithRaw(context.Background(), image)
-	if err != nil {
-		return nil, err
-	}
-
-	return raw, nil
-}
-
-func retrieveRemoteConfig(identifier string) (*v1.ConfigFile, error) {
-	img, err := remoteImage(identifier)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting image")
-	}
-
-	return img.ConfigFile()
+	return localDaemon.ConfigFile(context.Background(), image)
 }
 
 func processCopy(value *parser.Node, envs map[string]string) ([]string, error) {

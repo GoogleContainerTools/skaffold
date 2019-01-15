@@ -32,56 +32,45 @@ func TestDateTime_GenerateFullyQualifiedImageName(t *testing.T) {
 		format      string
 		buildTime   time.Time
 		timezone    string
-		opts        *Options
+		imageName   string
 		digest      string
 		image       string
 		want        string
-		shouldErr   bool
 	}{
 		{
 			description: "default formatter",
 			buildTime:   aLocalTimeStamp,
-			opts: &Options{
-				ImageName: "test_image",
-			},
-			want: "test_image:2015-03-07_11-06-39.123_" + localZone,
+			imageName:   "test_image",
+			want:        "test_image:2015-03-07_11-06-39.123_" + localZone,
 		},
 		{
 			description: "user provided timezone",
 			buildTime:   time.Unix(1234, 123456789),
 			timezone:    "UTC",
-			opts: &Options{
-				ImageName: "test_image",
-			},
-			want: "test_image:1970-01-01_00-20-34.123_UTC",
+			imageName:   "test_image",
+			want:        "test_image:1970-01-01_00-20-34.123_UTC",
 		},
 		{
 			description: "user provided format",
 			buildTime:   aLocalTimeStamp,
 			format:      "2006-01-02",
-			opts: &Options{
-				ImageName: "test_image",
-			},
-			want: "test_image:2015-03-07",
-		},
-		{
-			description: "error no tag opts",
-			shouldErr:   true,
+			imageName:   "test_image",
+			want:        "test_image:2015-03-07",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-
 			c := &dateTimeTagger{
 				Format:   test.format,
 				TimeZone: test.timezone,
 				timeFn:   func() time.Time { return test.buildTime },
 			}
-			tag, err := c.GenerateFullyQualifiedImageName(".", test.opts)
+			tag, err := c.GenerateFullyQualifiedImageName(".", Options{
+				ImageName: test.imageName,
+			})
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.want, tag)
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.want, tag)
 		})
 	}
-
 }

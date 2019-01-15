@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -202,7 +203,8 @@ func TestParseConfig(t *testing.T) {
 
 			cfg, err := ParseConfig(tmp.Path("skaffold.yaml"), true)
 			if cfg != nil {
-				if err := cfg.SetDefaultValues(); err != nil {
+				config := cfg.(*latest.SkaffoldPipeline)
+				if err := defaults.Set(config); err != nil {
 					t.Fatal("unable to set default values")
 				}
 			}

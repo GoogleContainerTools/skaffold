@@ -18,7 +18,6 @@ package local
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -51,11 +50,9 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace stri
 		if err := util.RunCmd(cmd); err != nil {
 			return "", errors.Wrap(err, "running build")
 		}
-	} else {
-		if err := docker.BuildArtifact(ctx, out, b.api, workspace, a, initialTag); err != nil {
-			return "", errors.Wrap(err, "running build")
-		}
+
+		return b.localDocker.ImageID(ctx, initialTag)
 	}
 
-	return fmt.Sprintf("%s:latest", initialTag), nil
+	return b.localDocker.Build(ctx, out, workspace, a, initialTag)
 }

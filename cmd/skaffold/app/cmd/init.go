@@ -30,12 +30,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"gopkg.in/AlecAivazis/survey.v1"
+	survey "gopkg.in/AlecAivazis/survey.v1"
 	yaml "gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -284,7 +285,7 @@ func generateSkaffoldPipeline(k8sConfigs []string, dockerfilePairs []dockerfileP
 		APIVersion: latest.Version,
 		Kind:       "Config",
 	}
-	if err := pipeline.SetDefaultValues(); err != nil {
+	if err := defaults.Set(pipeline); err != nil {
 		return nil, errors.Wrap(err, "generating default pipeline")
 	}
 

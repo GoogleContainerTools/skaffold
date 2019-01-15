@@ -26,11 +26,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Client is for tests
@@ -100,6 +102,9 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 
 				for _, container := range pod.Status.ContainerStatuses {
 					if container.ContainerID == "" {
+						if container.State.Waiting != nil && container.State.Waiting.Message != "" {
+							color.Red.Fprintln(a.output, container.State.Waiting.Message)
+						}
 						continue
 					}
 
@@ -116,7 +121,9 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 
 // Stop stops the logger.
 func (a *LogAggregator) Stop() {
-	a.cancel()
+	if a.cancel != nil {
+		a.cancel()
+	}
 }
 
 func sinceSeconds(d time.Duration) int64 {
@@ -140,7 +147,7 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 	tr, tw := io.Pipe()
 	cmd := exec.CommandContext(ctx, "kubectl", "logs", sinceSeconds, "-f", pod.Name, "-c", container.Name, "--namespace", pod.Namespace)
 	cmd.Stdout = tw
-	go cmd.Run()
+	go util.RunCmd(cmd)
 
 	color := a.colorPicker.Pick(pod)
 	prefix := prefix(pod, container)

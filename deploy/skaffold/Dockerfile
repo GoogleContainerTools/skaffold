@@ -64,8 +64,6 @@ ENV PATH /usr/local/go/bin:/go/bin:/google-cloud-sdk/bin:$PATH
 
 FROM runtime_deps as builder
 
-ENV ASCIIDOCTOR_VERSION=1.5.7.1
-ENV ASCIIDOCTOR_PDF_VERSION=1.5.0.alpha.16
 RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
         ca-certificates \
         curl \
@@ -75,12 +73,7 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
         python-setuptools \
         lsb-release \
         software-properties-common \
-        ruby-dev \
         apt-transport-https && \
-    rm -rf /var/lib/apt/lists/* && \
-    gem install  --no-document "asciidoctor-pdf:${ASCIIDOCTOR_PDF_VERSION}" \
-        asciidoctor:${ASCIIDOCTOR_VERSION} \
-        pygments.rb rouge && \
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
     apt-key fingerprint 0EBFCD88 && \
     add-apt-repository \

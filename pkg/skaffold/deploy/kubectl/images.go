@@ -67,7 +67,11 @@ func (r *imageReplacer) Matches(key string) bool {
 }
 
 func (r *imageReplacer) NewValue(old interface{}) (bool, interface{}) {
-	image := old.(string)
+	image, ok := old.(string)
+	if !ok {
+		return false, nil
+	}
+
 	found, tag := r.parseAndReplace(image)
 	if !found {
 		subbedImage := r.substituteRepoIntoImage(image)

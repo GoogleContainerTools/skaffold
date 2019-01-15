@@ -1,4 +1,4 @@
-apiVersion: skaffold/v1beta1
+apiVersion: skaffold/v1beta2
 kind: Config
 build:
   artifacts:
@@ -9,6 +9,8 @@ build:
     pullSecretName: e2esecret
     namespace: default
     cache: {}
+    flags: 
+      - --single-snapshot
 deploy:
   kubectl:
     manifests:

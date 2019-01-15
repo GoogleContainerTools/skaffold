@@ -161,6 +161,16 @@ func (k *KubectlDeployer) readManifests(ctx context.Context) (kubectl.ManifestLi
 		manifests.Append(buf)
 	}
 
+	for _, manifest := range k.Manifests {
+		if util.IsURL(manifest) {
+			buf, err := util.Download(manifest)
+			if err != nil {
+				return nil, errors.Wrap(err, "downloading manifest")
+			}
+			manifests.Append(buf)
+		}
+	}
+
 	for _, m := range k.RemoteManifests {
 		manifest, err := k.readRemoteManifest(ctx, m)
 		if err != nil {

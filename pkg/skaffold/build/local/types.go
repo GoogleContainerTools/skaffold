@@ -31,7 +31,7 @@ import (
 type Builder struct {
 	cfg *latest.LocalBuild
 
-	api          docker.APIClient
+	localDocker  docker.LocalDaemon
 	localCluster bool
 	pushImages   bool
 	kubeContext  string
@@ -41,12 +41,13 @@ type Builder struct {
 
 // NewBuilder returns an new instance of a local Builder.
 func NewBuilder(cfg *latest.LocalBuild, kubeContext string) (*Builder, error) {
-	api, err := docker.NewAPIClient()
+	localDocker, err := docker.NewAPIClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
 
-	localCluster := kubeContext == constants.DefaultMinikubeContext || kubeContext == constants.DefaultDockerForDesktopContext
+	localCluster := isLocal(kubeContext)
+
 	var pushImages bool
 	if cfg.Push == nil {
 		pushImages = !localCluster
@@ -58,10 +59,16 @@ func NewBuilder(cfg *latest.LocalBuild, kubeContext string) (*Builder, error) {
 	return &Builder{
 		cfg:          cfg,
 		kubeContext:  kubeContext,
-		api:          api,
+		localDocker:  localDocker,
 		localCluster: localCluster,
 		pushImages:   pushImages,
 	}, nil
+}
+
+func isLocal(kubeContext string) bool {
+	return kubeContext == constants.DefaultMinikubeContext ||
+		kubeContext == constants.DefaultDockerForDesktopContext ||
+		kubeContext == constants.DefaultDockerDesktopContext
 }
 
 // Labels are labels specific to local builder.
@@ -70,7 +77,7 @@ func (b *Builder) Labels() map[string]string {
 		constants.Labels.Builder: "local",
 	}
 
-	v, err := b.api.ServerVersion(context.Background())
+	v, err := b.localDocker.ServerVersion(context.Background())
 	if err == nil {
 		labels[constants.Labels.DockerAPIVersion] = fmt.Sprintf("%v", v.APIVersion)
 	}

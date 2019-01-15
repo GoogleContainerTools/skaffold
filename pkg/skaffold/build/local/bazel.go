@@ -25,7 +25,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -40,36 +39,30 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace strin
 	cmd.Dir = workspace
 	cmd.Stdout = out
 	cmd.Stderr = out
-	if err := cmd.Run(); err != nil {
+	if err := util.RunCmd(cmd); err != nil {
 		return "", errors.Wrap(err, "running command")
 	}
-
-	tarPath := buildTarPath(a.BuildTarget)
-	imageTag := buildImageTag(a.BuildTarget)
 
 	bazelBin, err := bazelBin(ctx, workspace)
 	if err != nil {
 		return "", errors.Wrap(err, "getting path of bazel-bin")
 	}
 
+	tarPath := buildTarPath(a.BuildTarget)
 	imageTar, err := os.Open(filepath.Join(bazelBin, tarPath))
 	if err != nil {
 		return "", errors.Wrap(err, "opening image tarball")
 	}
 	defer imageTar.Close()
 
-	resp, err := b.api.ImageLoad(ctx, imageTar, false)
+	ref := buildImageTag(a.BuildTarget)
+
+	imageID, err := b.localDocker.Load(ctx, out, imageTar, ref)
 	if err != nil {
 		return "", errors.Wrap(err, "loading image into docker daemon")
 	}
-	defer resp.Body.Close()
 
-	err = docker.StreamDockerMessages(out, resp.Body)
-	if err != nil {
-		return "", errors.Wrap(err, "reading from image load response")
-	}
-
-	return fmt.Sprintf("bazel%s", imageTag), nil
+	return imageID, nil
 }
 
 func bazelBin(ctx context.Context, workspace string) (string, error) {
@@ -108,8 +101,8 @@ func buildImageTag(buildTarget string) string {
 	imageTag = strings.TrimSuffix(imageTag, ".tar")
 
 	if strings.Contains(imageTag, ":") {
-		return fmt.Sprintf("/%s", imageTag)
+		return fmt.Sprintf("bazel/%s", imageTag)
 	}
 
-	return fmt.Sprintf(":%s", imageTag)
+	return fmt.Sprintf("bazel:%s", imageTag)
 }

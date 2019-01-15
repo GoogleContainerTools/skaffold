@@ -19,54 +19,44 @@ package v1alpha1
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	yaml "gopkg.in/yaml.v2"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestPipelineUpgrade(t *testing.T) {
-	tests := []struct {
-		name     string
-		yaml     string
-		expected *next.SkaffoldPipeline
-	}{
-		{
-			name: "git tagger",
-			yaml: `apiVersion: skaffold/v1alpha1
+func TestUpgrade_gitTagger(t *testing.T) {
+	yaml := `apiVersion: skaffold/v1alpha1
 kind: Config
 build:
   tagPolicy: gitCommit
-`,
-			expected: &next.SkaffoldPipeline{
-				APIVersion: next.Version,
-				Kind:       "Config",
-				Build: next.BuildConfig{
-					TagPolicy: next.TagPolicy{
-						GitTagger: &next.GitTagger{},
-					},
-				},
-			},
-		},
-		{
-			name: "sha tagger",
-			yaml: `apiVersion: skaffold/v1alpha1
+`
+	expected := `apiVersion: skaffold/v1alpha2
+kind: Config
+build:
+  tagPolicy:
+    gitCommit: {}
+`
+	verityUpgrade(t, yaml, expected)
+}
+
+func TestUpgrade_sha256Tagger(t *testing.T) {
+	yaml := `apiVersion: skaffold/v1alpha1
 kind: Config
 build:
   tagPolicy: sha256
-`,
-			expected: &next.SkaffoldPipeline{
-				APIVersion: next.Version,
-				Kind:       "Config",
-				Build: next.BuildConfig{
-					TagPolicy: next.TagPolicy{
-						ShaTagger: &next.ShaTagger{},
-					},
-				},
-			},
-		},
-		{
-			name: "normal skaffold yaml",
-			yaml: `apiVersion: skaffold/v1alpha1
+`
+	expected := `apiVersion: skaffold/v1alpha2
+kind: Config
+build:
+  tagPolicy:
+    sha256: {}
+`
+	verityUpgrade(t, yaml, expected)
+}
+
+func TestUpgrade_deploy(t *testing.T) {
+	yaml := `apiVersion: skaffold/v1alpha1
 kind: Config
 build:
   artifacts:
@@ -76,44 +66,30 @@ deploy:
     manifests:
     - paths:
       - k8s-*
-`,
-			expected: &next.SkaffoldPipeline{
-				APIVersion: next.Version,
-				Kind:       "Config",
-				Build: next.BuildConfig{
-					Artifacts: []*next.Artifact{
-						{
-							ImageName: "gcr.io/k8s-skaffold/skaffold-example",
-							ArtifactType: next.ArtifactType{
-								DockerArtifact: &next.DockerArtifact{},
-							},
-						},
-					},
-				},
-				Deploy: next.DeployConfig{
-					DeployType: next.DeployType{
-						KubectlDeploy: &next.KubectlDeploy{
-							Manifests: []string{
-								"k8s-*",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+`
+	expected := `apiVersion: skaffold/v1alpha2
+kind: Config
+build:
+  artifacts:
+  - imageName: gcr.io/k8s-skaffold/skaffold-example
+deploy:
+  kubectl:
+    manifests:
+    - k8s-*
+`
+	verityUpgrade(t, yaml, expected)
+}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			pipeline := NewSkaffoldPipeline()
-			err := yaml.UnmarshalStrict([]byte(tt.yaml), pipeline)
-			if err != nil {
-				t.Fatalf("unexpected error during parsing old config: %v", err)
-			}
+func verityUpgrade(t *testing.T, input, output string) {
+	pipeline := NewSkaffoldPipeline()
+	err := yaml.UnmarshalStrict([]byte(input), pipeline)
+	testutil.CheckErrorAndDeepEqual(t, false, err, Version, pipeline.GetVersion())
 
-			upgraded, err := pipeline.Upgrade()
+	upgraded, err := pipeline.Upgrade()
+	testutil.CheckError(t, false, err)
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, tt.expected, upgraded)
-		})
-	}
+	expected := v1alpha2.NewSkaffoldPipeline()
+	err = yaml.UnmarshalStrict([]byte(output), expected)
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected, upgraded)
 }

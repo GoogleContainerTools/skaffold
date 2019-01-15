@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -145,7 +145,7 @@ func TestNewSyncItem(t *testing.T) {
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string]string{
-					filepath.Join("node", "src/app/server/server.js"): filepath.Join("src", "app/server/server.js"),
+					filepath.Join("node", "src/app/server/server.js"): "src/app/server/server.js",
 				},
 				Delete: map[string]string{},
 			},
@@ -257,7 +257,7 @@ func TestNewSyncItem(t *testing.T) {
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string]string{
-					filepath.Join("dir1", "dir2/node.js"): filepath.Join("dir1", "dir2/node.js"),
+					filepath.Join("dir1", "dir2/node.js"): "dir1/dir2/node.js",
 				},
 				Delete: map[string]string{},
 			},
@@ -293,8 +293,8 @@ func TestIntersect(t *testing.T) {
 				filepath.Join("static", "*.html"): "/html",
 			},
 			expected: map[string]string{
-				filepath.Join("static", "index.html"): filepath.Join("/html", "index.html"),
-				filepath.Join("static", "test.html"):  filepath.Join("/html", "test.html"),
+				filepath.Join("static", "index.html"): "/html/index.html",
+				filepath.Join("static", "test.html"):  "/html/test.html",
 			},
 		},
 		{
@@ -305,7 +305,7 @@ func TestIntersect(t *testing.T) {
 				"*.js": "/",
 			},
 			expected: map[string]string{
-				filepath.Join("node", "server.js"): filepath.Join("/", "server.js"),
+				filepath.Join("node", "server.js"): "/server.js",
 			},
 		},
 		{
@@ -344,8 +344,8 @@ func (t *TestCmdRecorder) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	return nil, t.RunCmd(cmd)
 }
 
-func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, src, dst string) *exec.Cmd {
-	return exec.CommandContext(ctx, "copy", src, dst)
+func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, src, dst string) []*exec.Cmd {
+	return []*exec.Cmd{exec.CommandContext(ctx, "copy", src, dst)}
 }
 
 var pod = &v1.Pod{
@@ -371,7 +371,7 @@ func TestPerform(t *testing.T) {
 		description string
 		image       string
 		files       map[string]string
-		cmdFn       func(context.Context, v1.Pod, v1.Container, string, string) *exec.Cmd
+		cmdFn       func(context.Context, v1.Pod, v1.Container, string, string) []*exec.Cmd
 		cmdErr      error
 		clientErr   error
 		expected    []string

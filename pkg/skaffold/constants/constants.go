@@ -40,20 +40,21 @@ const (
 
 	DefaultMinikubeContext         = "minikube"
 	DefaultDockerForDesktopContext = "docker-for-desktop"
+	DefaultDockerDesktopContext    = "docker-desktop"
 	GCSBucketSuffix                = "_cloudbuild"
 
 	HelmOverridesFilename = "skaffold-overrides.yaml"
 
 	DefaultKustomizationPath = "."
 
-	DefaultKanikoImage             = "gcr.io/kaniko-project/executor@sha256:434bbb1d998ba1bd8ebc04c90d93afa859fd5c7ff93326bca9f6e7da0d6277ff"
+	DefaultKanikoImage             = "gcr.io/kaniko-project/executor:v0.7.0@sha256:0b4e0812aa17c54a9b8d8c8d7cb35559a892a341650acf7cb428c3e8cb4a3919"
 	DefaultKanikoSecretName        = "kaniko-secret"
 	DefaultKanikoTimeout           = "20m"
 	DefaultKanikoContainerName     = "kaniko"
 	DefaultKanikoEmptyDirName      = "kaniko-emptydir"
 	DefaultKanikoEmptyDirMountPath = "/kaniko/buildcontext"
 
-	DefaultAlpineImage = "alpine"
+	DefaultBusyboxImage = "busybox"
 
 	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
 
