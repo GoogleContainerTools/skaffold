@@ -25,24 +25,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGenerateMavenArgs(t *testing.T) {
-	var testCases = []struct {
-		in  latest.JibMavenArtifact
-		out []string
-	}{
-		{latest.JibMavenArtifact{}, []string{"--non-recursive", "prepare-package", "jib:goal", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Profile: "profile"}, []string{"--non-recursive", "prepare-package", "jib:goal", "-Dimage=image", "--activate-profiles", "profile"}},
-		{latest.JibMavenArtifact{Module: "module"}, []string{"--projects", "module", "--also-make", "package", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, []string{"--projects", "module", "--also-make", "package", "-Dimage=image", "--activate-profiles", "profile"}},
-	}
-
-	for _, tt := range testCases {
-		args := generateMavenArgs("goal", "image", &tt.in)
-
-		testutil.CheckDeepEqual(t, tt.out, args)
-	}
-}
-
 func TestMavenVerifyJibPackageGoal(t *testing.T) {
 	var testCases = []struct {
 		requiredGoal string
@@ -62,29 +44,12 @@ func TestMavenVerifyJibPackageGoal(t *testing.T) {
 	util.SkipWrapperCheck = true
 
 	for _, tt := range testCases {
-		util.DefaultExecCommand = testutil.NewFakeCmdOut("mvn --quiet --projects module jib:_skaffold-package-goals", tt.mavenOutput, nil)
+		util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut("mvn --quiet --projects module jib:_skaffold-package-goals", tt.mavenOutput)
 
 		err := verifyJibPackageGoal(context.Background(), tt.requiredGoal, ".", &latest.JibMavenArtifact{Module: "module"})
 		if hasError := err != nil; tt.shouldError != hasError {
 			t.Error("Unexpected return result")
 		}
-	}
-
-}
-
-func TestGenerateGradleArgs(t *testing.T) {
-	var testCases = []struct {
-		in  latest.JibGradleArtifact
-		out []string
-	}{
-		{latest.JibGradleArtifact{}, []string{":task", "--image=image"}},
-		{latest.JibGradleArtifact{Project: "project"}, []string{":project:task", "--image=image"}},
-	}
-
-	for _, tt := range testCases {
-		command := generateGradleArgs("task", "image", &tt.in)
-
-		testutil.CheckDeepEqual(t, tt.out, command)
 	}
 }
 

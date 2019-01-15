@@ -11,7 +11,7 @@ For example:
 ```yaml
 build:
     artifacts:
-    - imageName: gcr.io/k8s-skaffold/example
+    - image: gcr.io/k8s-skaffold/example
     tagPolicy:
         envTemplate:
             template: "{{.IMAGE_NAME}}:{{.FOO}}"

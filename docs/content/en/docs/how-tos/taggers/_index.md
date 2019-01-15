@@ -33,7 +33,7 @@ specified explicitly:
 ```yaml
 build:
     artifacts:
-    - imageName: gcr.io/k8s-skaffold/example
+    - image: gcr.io/k8s-skaffold/example
     tagPolicy:
         gitCommit: {}
     local: {}
@@ -58,7 +58,7 @@ Docker image `gcr.io/k8s-skaffold/example` with the `sha256` tag policy:
 ```yaml
 build:
     artifacts:
-    - imageName: gcr.io/k8s-skaffold/example
+    - image: gcr.io/k8s-skaffold/example
     tagPolicy:
         sha256: {}
     local: {}
@@ -90,7 +90,7 @@ the <code>artifacts</code> part of the <code>build</code> section.
 ```yaml
 build:
     artifacts:
-    - imageName: gcr.io/k8s-skaffold/example
+    - image: gcr.io/k8s-skaffold/example
     tagPolicy:
         envTemplate:
             template: "{{.IMAGE_NAME}}:{{.FOO}}"
@@ -118,7 +118,7 @@ tag policy:
 ```yaml
 build:
     artifacts:
-    - imageName: gcr.io/k8s-skaffold/example
+    - image: gcr.io/k8s-skaffold/example
     tagPolicy:
         dateTime:
             format: "2006-01-02_15-04-05.999_MST"
@@ -127,7 +127,7 @@ build:
 # The build section above is equal to
 # build:
 #   artifacts:
-#   - imageName: gcr.io/k8s-skaffold/example
+#   - image: gcr.io/k8s-skaffold/example
 #   tagPolicy:
 #       dateTime: {}
 #   local: {}

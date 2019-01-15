@@ -85,12 +85,16 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		return "", errors.Wrap(err, "checking bucket is in correct project")
 	}
 
+	desc, err := b.buildDescription(artifact, cbBucket, buildObject)
+	if err != nil {
+		return "", errors.Wrap(err, "could not create build description")
+	}
+
 	color.Default.Fprintf(out, "Pushing code to gs://%s/%s\n", cbBucket, buildObject)
 	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact, cbBucket, buildObject); err != nil {
 		return "", errors.Wrap(err, "uploading source tarball")
 	}
 
-	desc := b.buildDescription(artifact, cbBucket, buildObject)
 	call := cbclient.Projects.Builds.Create(projectID, desc)
 	op, err := call.Context(ctx).Do()
 	if err != nil {

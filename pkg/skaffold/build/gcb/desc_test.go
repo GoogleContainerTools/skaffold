@@ -20,86 +20,50 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	cloudbuild "google.golang.org/api/cloudbuild/v1"
 )
 
-func TestBuildDescription(t *testing.T) {
+func TestBuildJibMavenDescriptionFail(t *testing.T) {
 	artifact := &latest.Artifact{
-		ImageName: "nginx",
 		ArtifactType: latest.ArtifactType{
-			DockerArtifact: &latest.DockerArtifact{
-				DockerfilePath: "Dockerfile",
-				BuildArgs: map[string]*string{
-					"arg1": util.StringPtr("value1"),
-					"arg2": nil,
-				},
-			},
+			JibMavenArtifact: &latest.JibMavenArtifact{},
 		},
 	}
 
 	builder := Builder{
-		GoogleCloudBuild: &latest.GoogleCloudBuild{
-			DockerImage: "docker/docker",
-			DiskSizeGb:  100,
-			MachineType: "n1-standard-1",
-			Timeout:     "10m",
-		},
+		GoogleCloudBuild: &latest.GoogleCloudBuild{},
 	}
-	desc := builder.buildDescription(artifact, "bucket", "object")
+	_, err := builder.buildDescription(artifact, "bucket", "object")
 
-	expected := cloudbuild.Build{
-		LogsBucket: "bucket",
-		Source: &cloudbuild.Source{
-			StorageSource: &cloudbuild.StorageSource{
-				Bucket: "bucket",
-				Object: "object",
-			},
-		},
-		Steps: []*cloudbuild.BuildStep{{
-			Name: "docker/docker",
-			Args: []string{"build", "--tag", "nginx", "-f", "Dockerfile", "--build-arg", "arg1=value1", "--build-arg", "arg2", "."},
-		}},
-		Images: []string{artifact.ImageName},
-		Options: &cloudbuild.BuildOptions{
-			DiskSizeGb:  100,
-			MachineType: "n1-standard-1",
-		},
-		Timeout: "10m",
-	}
-
-	testutil.CheckDeepEqual(t, expected, *desc)
+	testutil.CheckError(t, true, err)
 }
 
-func TestPullCacheFrom(t *testing.T) {
+func TestBuildJibGradleDescriptionFail(t *testing.T) {
 	artifact := &latest.Artifact{
-		ImageName: "nginx",
 		ArtifactType: latest.ArtifactType{
-			DockerArtifact: &latest.DockerArtifact{
-				DockerfilePath: "Dockerfile",
-				CacheFrom:      []string{"from/image1", "from/image2"},
-			},
+			JibGradleArtifact: &latest.JibGradleArtifact{},
 		},
 	}
 
 	builder := Builder{
-		GoogleCloudBuild: &latest.GoogleCloudBuild{
-			DockerImage: "docker/docker",
+		GoogleCloudBuild: &latest.GoogleCloudBuild{},
+	}
+	_, err := builder.buildDescription(artifact, "bucket", "object")
+
+	testutil.CheckError(t, true, err)
+}
+
+func TestBuildBazelDescriptionFail(t *testing.T) {
+	artifact := &latest.Artifact{
+		ArtifactType: latest.ArtifactType{
+			BazelArtifact: &latest.BazelArtifact{},
 		},
 	}
-	desc := builder.buildDescription(artifact, "bucket", "object")
 
-	expected := []*cloudbuild.BuildStep{{
-		Name: "docker/docker",
-		Args: []string{"pull", "from/image1"},
-	}, {
-		Name: "docker/docker",
-		Args: []string{"pull", "from/image2"},
-	}, {
-		Name: "docker/docker",
-		Args: []string{"build", "--tag", "nginx", "-f", "Dockerfile", "--cache-from", "from/image1", "--cache-from", "from/image2", "."},
-	}}
+	builder := Builder{
+		GoogleCloudBuild: &latest.GoogleCloudBuild{},
+	}
+	_, err := builder.buildDescription(artifact, "bucket", "object")
 
-	testutil.CheckDeepEqual(t, expected, desc.Steps)
+	testutil.CheckError(t, true, err)
 }

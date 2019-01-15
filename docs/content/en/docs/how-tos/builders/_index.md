@@ -43,7 +43,7 @@ of `skaffold.yaml`. The `local` type offers the following options:
 
 |Option|Description|
 |-----|-----|
-|`skipPush`| OPTIONAL. Skips pushing images. Default value is `false`. |                    
+|`push`| OPTIONAL. Should images be pushed to a registry. Default value is `false` for local clusters, `true` for remote clusters. |                    
 |`useDockerCLI`| OPTIONAL. Uses Docker command-line interface instead of Docker Engine APIs. Default value is `false`. |                    
 |`useBuildkit`| OPTIONAL Uses BuildKit to build Docker images. Default value is `false`. |    
 
@@ -53,16 +53,16 @@ Docker image `gcr.io/k8s-skaffold/example` with the local Docker daemon:
 ```yaml
 build:
     artifacts:
-    - imageName: gcr.io/k8s-skaffold/example
+    - image: gcr.io/k8s-skaffold/example
     # Use local Docker daemon to build artifacts
     local:
-        skipPush: false
+        push: true
         useDockerCLI: false
         useBuildkit: false
 # The build section above is equal to
 # build:
 #   artifacts:
-#   - imageName: gcr.io/k8s-skaffold/example
+#   - image: gcr.io/k8s-skaffold/example
 #   local: {}
 ```
 
@@ -96,7 +96,7 @@ Docker image `gcr.io/k8s-skaffold/example` with Google Cloud Build:
 ```yaml
 build:
     artifacts:
-    - imageName: gcr.io/k8s-skaffold/example
+    - image: gcr.io/k8s-skaffold/example
     # Use Google Cloud Build to build artifacts
     googleCloudBuild:
         projectId: YOUR-GCP-PROJECT
@@ -109,14 +109,14 @@ open-source tool for building images from a Dockerfile inside a container or
 Kubernetes cluster. Kaniko enables building container images in environments
 that cannot easily or securely run a Docker daemon.
 
-Skaffold can help build artifacts in a Kubernetes cluster using the Kaninko
+Skaffold can help build artifacts in a Kubernetes cluster using the Kaniko
 image; after the artifacts are built, kaniko can push them to remote registries.
 To use Kaniko, add build type `kaniko` to the `build` section of
 `skaffold.yaml`. The `kaniko` type offers the following options:
 
 |Option|Description|
 |-----|-----|
-|`buildContext`| OPTIONAL The Kaninko build context. See [Kaniko Documentation: Using Kaniko](https://github.com/GoogleContainerTools/kaniko#using-kaniko) for more information. |
+|`buildContext`| OPTIONAL The Kaniko build context. See [Kaniko Documentation: Using Kaniko](https://github.com/GoogleContainerTools/kaniko#using-kaniko) for more information. |
 |`pullSecret`| OPTIONAL The path to the secret key file. See [Kaniko Documentation: Running Kaniko in a Kubernetes cluster](https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster) for more information. |                    
 |`pullSecretName`| OPTIONAL The name of the Kubernetes secret for pulling the files from the build context and pushing the final image. See [Kaniko Documentation: Running Kaniko in a Kubernetes cluster](https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster) for more information. Default value is `kaniko-secret`. |                    
 |`namespace`| OPTIONAL The Kubernetes namespace. Default value is the current namespace in Kubernetes configuration. |                    
@@ -128,10 +128,11 @@ Docker image `gcr.io/k8s-skaffold/example` with Kaniko:
 ```yaml
 build:
     artifacts:
-    - imageName: gcr.io/k8s-skaffold/example
+    - image: gcr.io/k8s-skaffold/example
     # Use Kaniko to build artifacts
     kaniko:
-        buildContext: gs://YOUR-BUCKET/SOURCE-CODE.tar.gz
+        buildContext:
+          gcsBucket: YOUR-BUCKET
 ```
 
 ## Jib Maven and Gradle locally 
@@ -148,7 +149,7 @@ Skaffold can help build artifacts using Bazel; after Bazel finishes building
 container images, they will be loaded into the local Docker daemon. To use
 Bazel, add `workspace` and `bazel` fields to each artifact you specify in the
 `artifacts` part of the `build` section, and use the build type `local`.
-`workspace` should be a path containing the bazel files
+`context` should be a path containing the bazel files
 (`WORKSPACE` and `BUILD`); The `bazel` field should have a `target`
 specification, which Skaffold will use to load the image to the Docker daemon.
 
@@ -158,8 +159,8 @@ Docker image `gcr.io/k8s-skaffold/example` with Bazel:
 ```yaml
 build:
     artifacts:
-        - imageName: gcr.io/k8s-skaffold/example
-          workspace: .
+        - image: gcr.io/k8s-skaffold/example
+          context: .
           bazel:
             target: //:example.tar
     local: {}
