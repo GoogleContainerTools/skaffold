@@ -69,6 +69,7 @@ type kubectlForwarder struct{}
 var (
 	// For testing
 	retrieveAvailablePort = getAvailablePort
+	isPortAvailable       = portAvailable
 )
 
 // Forward port-forwards a pod using kubectl port-forward
@@ -267,7 +268,7 @@ func getAvailablePort() (int32, error) {
 	return int32(l.Addr().(*net.TCPAddr).Port), l.Close()
 }
 
-func isPortAvailable(p int32) (bool, error) {
+func portAvailable(p int32) (bool, error) {
 	l, err := net.Listen("tcp", fmt.Sprintf(":%d", p))
 	if l != nil {
 		defer l.Close()
