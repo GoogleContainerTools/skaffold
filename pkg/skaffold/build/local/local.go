@@ -90,15 +90,20 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 	}
 }
 
-func (b *Builder) retagAndPush(ctx context.Context, out io.Writer, initialTag string, newTag string, artifact *latest.Artifact) error {
+func (b *Builder) retagAndPush(ctx context.Context, out io.Writer, digest string, newTag string, artifact *latest.Artifact) error {
 	if b.pushImages && (artifact.JibMavenArtifact != nil || artifact.JibGradleArtifact != nil) {
-		if err := docker.AddTag(initialTag, newTag); err != nil {
+		// when pushing images, jib builds them directly to the registry. all we need to do here is add a tag to the remote.
+
+		// NOTE: the digest returned by the jib builder when in push mode is the digest of the remote image that was built to the registry.
+		// when adding the tag to the remote, we need to specify the registry it was built to so go-containerregistry knows
+		// where to look when grabbing the remote image reference.
+		if err := docker.AddTag(fmt.Sprintf("%s@%s", artifact.ImageName, digest), newTag); err != nil {
 			return errors.Wrap(err, "tagging image")
 		}
 		return nil
 	}
 
-	if err := b.localDocker.Tag(ctx, initialTag, newTag); err != nil {
+	if err := b.localDocker.Tag(ctx, digest, newTag); err != nil {
 		return err
 	}
 
