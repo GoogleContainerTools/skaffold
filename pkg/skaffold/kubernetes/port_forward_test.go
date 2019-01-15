@@ -46,6 +46,10 @@ func (f *testForwarder) Terminate(pfe *portForwardEntry) {
 	delete(f.forwardedPorts, pfe.port)
 }
 
+func mockRetrieveAvailablePort() (int32, error) {
+	return int32(8080), nil
+}
+
 func newTestForwarder(forwardErr error) *testForwarder {
 	return &testForwarder{
 		forwardedEntries: map[string]*portForwardEntry{},
@@ -74,6 +78,7 @@ func TestPortForwardPod(t *testing.T) {
 					podName:         "podname",
 					containerName:   "containername",
 					port:            8080,
+					localPort:       8080,
 				},
 			},
 			pods: []*v1.Pod{
@@ -136,6 +141,7 @@ func TestPortForwardPod(t *testing.T) {
 					podName:         "podname",
 					containerName:   "containername",
 					port:            8080,
+					localPort:       8080,
 				},
 			},
 			pods: []*v1.Pod{
@@ -171,12 +177,14 @@ func TestPortForwardPod(t *testing.T) {
 					podName:         "podname",
 					containerName:   "containername",
 					port:            8080,
+					localPort:       8080,
 				},
 				"containername2-50051": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
 					port:            50051,
+					localPort:       50051,
 				},
 			},
 			pods: []*v1.Pod{
@@ -229,6 +237,14 @@ func TestPortForwardPod(t *testing.T) {
 					podName:         "podname",
 					containerName:   "containername",
 					port:            8080,
+					localPort:       8080,
+				},
+				"containername2-8080": {
+					resourceVersion: 1,
+					podName:         "podname2",
+					containerName:   "containername2",
+					port:            8080,
+					localPort:       8080,
 				},
 			},
 			pods: []*v1.Pod{
@@ -281,6 +297,7 @@ func TestPortForwardPod(t *testing.T) {
 					podName:         "podname",
 					containerName:   "containername",
 					port:            8080,
+					localPort:       8080,
 				},
 			},
 			pods: []*v1.Pod{
@@ -325,6 +342,13 @@ func TestPortForwardPod(t *testing.T) {
 	}
 
 	for _, test := range tests {
+
+		originalGetAvailablePort := getAvailablePort
+		retrieveAvailablePort = mockRetrieveAvailablePort
+		defer func() {
+			retrieveAvailablePort = originalGetAvailablePort
+		}()
+
 		t.Run(test.description, func(t *testing.T) {
 			p := NewPortForwarder(ioutil.Discard, NewImageList())
 			if test.forwarder == nil {
