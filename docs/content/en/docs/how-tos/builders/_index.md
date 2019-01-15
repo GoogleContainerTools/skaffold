@@ -53,7 +53,7 @@ Docker image `gcr.io/k8s-skaffold/example` with the local Docker daemon:
 ```yaml
 build:
     artifacts:
-    - imageName: gcr.io/k8s-skaffold/example
+    - image: gcr.io/k8s-skaffold/example
     # Use local Docker daemon to build artifacts
     local:
         skipPush: false
@@ -62,7 +62,7 @@ build:
 # The build section above is equal to
 # build:
 #   artifacts:
-#   - imageName: gcr.io/k8s-skaffold/example
+#   - image: gcr.io/k8s-skaffold/example
 #   local: {}
 ```
 
@@ -96,7 +96,7 @@ Docker image `gcr.io/k8s-skaffold/example` with Google Cloud Build:
 ```yaml
 build:
     artifacts:
-    - imageName: gcr.io/k8s-skaffold/example
+    - image: gcr.io/k8s-skaffold/example
     # Use Google Cloud Build to build artifacts
     googleCloudBuild:
         projectId: YOUR-GCP-PROJECT
@@ -128,7 +128,7 @@ Docker image `gcr.io/k8s-skaffold/example` with Kaniko:
 ```yaml
 build:
     artifacts:
-    - imageName: gcr.io/k8s-skaffold/example
+    - image: gcr.io/k8s-skaffold/example
     # Use Kaniko to build artifacts
     kaniko:
         buildContext: gs://YOUR-BUCKET/SOURCE-CODE.tar.gz
@@ -148,7 +148,7 @@ Skaffold can help build artifacts using Bazel; after Bazel finishes building
 container images, they will be loaded into the local Docker daemon. To use
 Bazel, add `workspace` and `bazel` fields to each artifact you specify in the
 `artifacts` part of the `build` section, and use the build type `local`.
-`workspace` should be a path containing the bazel files
+`context` should be a path containing the bazel files
 (`WORKSPACE` and `BUILD`); The `bazel` field should have a `target`
 specification, which Skaffold will use to load the image to the Docker daemon.
 
@@ -158,8 +158,8 @@ Docker image `gcr.io/k8s-skaffold/example` with Bazel:
 ```yaml
 build:
     artifacts:
-        - imageName: gcr.io/k8s-skaffold/example
-          workspace: .
+        - image: gcr.io/k8s-skaffold/example
+          context: .
           bazel:
             target: //:example.tar
     local: {}

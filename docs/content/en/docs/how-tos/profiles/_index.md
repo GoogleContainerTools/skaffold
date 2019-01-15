@@ -37,11 +37,11 @@ The following example, showcases a `skaffold.yaml` with one profile, `gcb`,
 for building with Google Cloud Build:
 
 ```yaml
-apiVersion: skaffold/v1alpha2
+apiVersion: skaffold/v1beta2
 kind: Config
 build:
     artifacts:
-    - imageName: gcr.io/k8s-skaffold/skaffold-example
+    - image: gcr.io/k8s-skaffold/skaffold-example
     deploy:
         kubectl:
         manifests:
