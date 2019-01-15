@@ -109,14 +109,14 @@ open-source tool for building images from a Dockerfile inside a container or
 Kubernetes cluster. Kaniko enables building container images in environments
 that cannot easily or securely run a Docker daemon.
 
-Skaffold can help build artifacts in a Kubernetes cluster using the Kaninko
+Skaffold can help build artifacts in a Kubernetes cluster using the Kaniko
 image; after the artifacts are built, kaniko can push them to remote registries.
 To use Kaniko, add build type `kaniko` to the `build` section of
 `skaffold.yaml`. The `kaniko` type offers the following options:
 
 |Option|Description|
 |-----|-----|
-|`buildContext`| OPTIONAL The Kaninko build context. See [Kaniko Documentation: Using Kaniko](https://github.com/GoogleContainerTools/kaniko#using-kaniko) for more information. |
+|`buildContext`| OPTIONAL The Kaniko build context. See [Kaniko Documentation: Using Kaniko](https://github.com/GoogleContainerTools/kaniko#using-kaniko) for more information. |
 |`pullSecret`| OPTIONAL The path to the secret key file. See [Kaniko Documentation: Running Kaniko in a Kubernetes cluster](https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster) for more information. |                    
 |`pullSecretName`| OPTIONAL The name of the Kubernetes secret for pulling the files from the build context and pushing the final image. See [Kaniko Documentation: Running Kaniko in a Kubernetes cluster](https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster) for more information. Default value is `kaniko-secret`. |                    
 |`namespace`| OPTIONAL The Kubernetes namespace. Default value is the current namespace in Kubernetes configuration. |                    
