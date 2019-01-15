@@ -28,6 +28,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
@@ -140,7 +141,15 @@ func Perform(ctx context.Context, image string, files map[string]string, cmdFn f
 		return errors.Wrap(err, "getting k8s client")
 	}
 
-	pods, err := client.CoreV1().Pods("").List(meta_v1.ListOptions{})
+	// Only list the current namespace, or we get errors.
+	// FIXME: Should we override this with the --namespace option?
+	config, err := kubectx.CurrentConfig()
+	if err != nil {
+		return errors.Wrap(err, "getting k8s namespace")
+	}
+	ns := config.Contexts[config.CurrentContext].Namespace
+
+	pods, err := client.CoreV1().Pods(ns).List(meta_v1.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "getting pods")
 	}
