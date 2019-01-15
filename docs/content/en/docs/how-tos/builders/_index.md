@@ -43,7 +43,7 @@ of `skaffold.yaml`. The `local` type offers the following options:
 
 |Option|Description|
 |-----|-----|
-|`skipPush`| OPTIONAL. Skips pushing images. Default value is `false`. |                    
+|`push`| OPTIONAL. Should images be pushed to a registry. Default value is `false` for local clusters, `true` for remote clusters. |                    
 |`useDockerCLI`| OPTIONAL. Uses Docker command-line interface instead of Docker Engine APIs. Default value is `false`. |                    
 |`useBuildkit`| OPTIONAL Uses BuildKit to build Docker images. Default value is `false`. |    
 
@@ -56,7 +56,7 @@ build:
     - image: gcr.io/k8s-skaffold/example
     # Use local Docker daemon to build artifacts
     local:
-        skipPush: false
+        push: true
         useDockerCLI: false
         useBuildkit: false
 # The build section above is equal to
@@ -131,7 +131,8 @@ build:
     - image: gcr.io/k8s-skaffold/example
     # Use Kaniko to build artifacts
     kaniko:
-        buildContext: gs://YOUR-BUCKET/SOURCE-CODE.tar.gz
+        buildContext:
+          gcsBucket: YOUR-BUCKET
 ```
 
 ## Jib Maven and Gradle locally 
