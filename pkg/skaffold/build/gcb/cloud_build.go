@@ -32,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
@@ -91,7 +92,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 	}
 
 	color.Default.Fprintf(out, "Pushing code to gs://%s/%s\n", cbBucket, buildObject)
-	if err := docker.UploadContextToGCS(ctx, artifact, cbBucket, buildObject); err != nil {
+	if err := sources.UploadToGCS(ctx, artifact, cbBucket, buildObject); err != nil {
 		return "", errors.Wrap(err, "uploading source tarball")
 	}
 

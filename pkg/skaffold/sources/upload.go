@@ -14,26 +14,45 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package docker
+package sources
 
 import (
 	"context"
 	"io"
 
+	cstorage "cloud.google.com/go/storage"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
-func CreateDockerTarContext(ctx context.Context, w io.Writer, workspace string, a *latest.DockerArtifact) error {
-	paths, err := GetDependencies(ctx, workspace, a)
+// TarGz creates a .tgz archive of the artifact's sources.
+func TarGz(ctx context.Context, w io.Writer, a *latest.Artifact) error {
+	paths, err := build.DependenciesForArtifact(ctx, a)
 	if err != nil {
 		return errors.Wrap(err, "getting relative tar paths")
 	}
 
-	if err := util.CreateTar(w, workspace, paths); err != nil {
+	if err := util.CreateTarGz(w, a.Workspace, paths); err != nil {
 		return errors.Wrap(err, "creating tar gz")
 	}
 
 	return nil
+}
+
+// UploadToGCS uploads the artifact's sources to a GCS bucket.
+func UploadToGCS(ctx context.Context, a *latest.Artifact, bucket, objectName string) error {
+	c, err := cstorage.NewClient(ctx)
+	if err != nil {
+		return errors.Wrap(err, "creating GCS client")
+	}
+	defer c.Close()
+
+	w := c.Bucket(bucket).Object(objectName).NewWriter(ctx)
+	if err := TarGz(ctx, w, a); err != nil {
+		return errors.Wrap(err, "uploading targz to google storage")
+	}
+
+	return w.Close()
 }
