@@ -63,3 +63,41 @@ func TestCreateTar(t *testing.T) {
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, files, tarFiles)
 }
+
+func TestCreateTarWithAbsolutePaths(t *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+
+	files := map[string]string{
+		"foo":     "baz1",
+		"bar/bat": "baz2",
+		"bar/baz": "baz3",
+	}
+	var paths []string
+	for path, content := range files {
+		tmpDir.Write(path, content)
+		paths = append(paths, tmpDir.Path(path))
+	}
+
+	var b bytes.Buffer
+	err := CreateTar(&b, tmpDir.Root(), paths)
+	testutil.CheckError(t, false, err)
+
+	// Make sure the contents match.
+	tarFiles := make(map[string]string)
+	tr := tar.NewReader(&b)
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		testutil.CheckError(t, false, err)
+
+		content, err := ioutil.ReadAll(tr)
+		testutil.CheckError(t, false, err)
+
+		tarFiles[hdr.Name] = string(content)
+	}
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, files, tarFiles)
+}
