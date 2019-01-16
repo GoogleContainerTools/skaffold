@@ -237,6 +237,8 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 		b := latest.BuildConfig{BuildType: latest.BuildType{GoogleCloudBuild: &latest.GoogleCloudBuild{
 			ProjectID:   id,
 			DockerImage: "gcr.io/cloud-builders/docker",
+			MavenImage:  "gcr.io/cloud-builders/mvn",
+			GradleImage: "gcr.io/cloud-builders/gradle",
 		}}}
 		for _, op := range ops {
 			op(&b)

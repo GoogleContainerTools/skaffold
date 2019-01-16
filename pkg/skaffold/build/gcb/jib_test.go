@@ -28,12 +28,14 @@ func TestJibMavenBuildSteps(t *testing.T) {
 	artifact := &latest.JibMavenArtifact{}
 
 	builder := Builder{
-		GoogleCloudBuild: &latest.GoogleCloudBuild{},
+		GoogleCloudBuild: &latest.GoogleCloudBuild{
+			MavenImage: "maven:3.6.0",
+		},
 	}
 	steps := builder.jibMavenBuildSteps("img", artifact)
 
 	expected := []*cloudbuild.BuildStep{{
-		Name: "gcr.io/cloud-builders/mvn",
+		Name: "maven:3.6.0",
 		Args: []string{"--non-recursive", "prepare-package", "jib:dockerBuild", "-Dimage=img"},
 	}}
 
@@ -44,12 +46,14 @@ func TestJibGradleBuildSteps(t *testing.T) {
 	artifact := &latest.JibGradleArtifact{}
 
 	builder := Builder{
-		GoogleCloudBuild: &latest.GoogleCloudBuild{},
+		GoogleCloudBuild: &latest.GoogleCloudBuild{
+			GradleImage: "gradle:5.1.1",
+		},
 	}
 	steps := builder.jibGradleBuildSteps("img", artifact)
 
 	expected := []*cloudbuild.BuildStep{{
-		Name: "gcr.io/cloud-builders/gradle",
+		Name: "gradle:5.1.1",
 		Args: []string{":jibDockerBuild", "--image=img"},
 	}}
 

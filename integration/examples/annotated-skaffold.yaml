@@ -113,6 +113,8 @@ build:
   #   machineType: "N1_HIGHCPU_8"|"N1_HIGHCPU_32"
   #   timeout: 10000s
   #   dockerImage: gcr.io/cloud-builders/docker
+  #   mavenImage: gcr.io/cloud-builders/mvn
+  #   gradleImage: gcr.io/cloud-builders/gradle
 
   # Docker artifacts can be built on a Kubernetes cluster with Kaniko.
   # Exactly one buildContext must be specified to use kaniko

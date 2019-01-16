@@ -23,18 +23,16 @@ import (
 )
 
 // TODO(dgageot): check that `package` is bound to `jib:build`
-// TODO(dgageot): let users configure the mvn image
 func (b *Builder) jibMavenBuildSteps(imageName string, artifact *latest.JibMavenArtifact) []*cloudbuild.BuildStep {
 	return []*cloudbuild.BuildStep{{
-		Name: "gcr.io/cloud-builders/mvn",
+		Name: b.MavenImage,
 		Args: jib.GenerateMavenArgs("dockerBuild", imageName, artifact),
 	}}
 }
 
-// TODO(dgageot): let users configure the gradle image
 func (b *Builder) jibGradleBuildSteps(imageName string, artifact *latest.JibGradleArtifact) []*cloudbuild.BuildStep {
 	return []*cloudbuild.BuildStep{{
-		Name: "gcr.io/cloud-builders/gradle",
+		Name: b.GradleImage,
 		Args: jib.GenerateGradleArgs("jibDockerBuild", imageName, artifact),
 	}}
 }

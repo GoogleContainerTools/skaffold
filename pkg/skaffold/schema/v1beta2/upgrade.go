@@ -26,7 +26,9 @@ import (
 
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v1beta2 to v1beta3
-// 1. No additions
+// 1. Additions:
+// gcb builder mvn image
+// gcb builder gradle image
 // 2. No removals
 // 3. No updates
 func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {

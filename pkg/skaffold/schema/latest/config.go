@@ -97,6 +97,8 @@ type GoogleCloudBuild struct {
 	MachineType string `yaml:"machineType,omitempty"`
 	Timeout     string `yaml:"timeout,omitempty"`
 	DockerImage string `yaml:"dockerImage,omitempty"`
+	MavenImage  string `yaml:"mavenImage,omitempty"`
+	GradleImage string `yaml:"gradleImage,omitempty"`
 }
 
 // LocalDir represents the local directory kaniko build context
