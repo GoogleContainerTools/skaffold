@@ -215,7 +215,7 @@ func (p *PortForwarder) getCurrentEntry(pod *v1.Pod, c v1.Container, port v1.Con
 	}
 	// If another container isn't using this port...
 	if _, exists := p.forwardedPorts[port.ContainerPort]; !exists {
-		// ...Then make sure the port is availble
+		// ...Then make sure the port is available
 		if available, err := isPortAvailable(port.ContainerPort); available && err == nil {
 			entry.localPort = port.ContainerPort
 			return entry, nil
