@@ -25,10 +25,12 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 func AddTag(src, target string) error {
-	srcRef, err := name.ParseReference(src, name.WeakValidation)
+	logrus.Debugf("attempting to add tag %s to src %s", target, src)
+	srcRef, err := name.ParseReference(src, name.StrictValidation)
 	if err != nil {
 		return errors.Wrap(err, "getting source reference")
 	}
@@ -38,7 +40,7 @@ func AddTag(src, target string) error {
 		return err
 	}
 
-	targetRef, err := name.ParseReference(target, name.WeakValidation)
+	targetRef, err := name.ParseReference(target, name.StrictValidation)
 	if err != nil {
 		return errors.Wrap(err, "getting target reference")
 	}
@@ -84,7 +86,7 @@ func retrieveRemoteConfig(identifier string) (*v1.ConfigFile, error) {
 }
 
 func remoteImage(identifier string) (v1.Image, error) {
-	ref, err := name.ParseReference(identifier, name.WeakValidation)
+	ref, err := name.ParseReference(identifier, name.StrictValidation)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing initial ref")
 	}
