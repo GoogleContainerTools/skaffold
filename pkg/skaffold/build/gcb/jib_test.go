@@ -21,19 +21,37 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	cloudbuild "google.golang.org/api/cloudbuild/v1"
 )
 
-func TestBuildBazelDescriptionFail(t *testing.T) {
-	artifact := &latest.Artifact{
-		ArtifactType: latest.ArtifactType{
-			BazelArtifact: &latest.BazelArtifact{},
-		},
-	}
+func TestJibMavenBuildSteps(t *testing.T) {
+	artifact := &latest.JibMavenArtifact{}
 
 	builder := Builder{
 		GoogleCloudBuild: &latest.GoogleCloudBuild{},
 	}
-	_, err := builder.buildDescription(artifact, "bucket", "object")
+	steps := builder.jibMavenBuildSteps("img", artifact)
 
-	testutil.CheckError(t, true, err)
+	expected := []*cloudbuild.BuildStep{{
+		Name: "gcr.io/cloud-builders/mvn",
+		Args: []string{"--non-recursive", "prepare-package", "jib:dockerBuild", "-Dimage=img"},
+	}}
+
+	testutil.CheckDeepEqual(t, expected, steps)
+}
+
+func TestJibGradleBuildSteps(t *testing.T) {
+	artifact := &latest.JibGradleArtifact{}
+
+	builder := Builder{
+		GoogleCloudBuild: &latest.GoogleCloudBuild{},
+	}
+	steps := builder.jibGradleBuildSteps("img", artifact)
+
+	expected := []*cloudbuild.BuildStep{{
+		Name: "gcr.io/cloud-builders/gradle",
+		Args: []string{":jibDockerBuild", "--image=img"},
+	}}
+
+	testutil.CheckDeepEqual(t, expected, steps)
 }

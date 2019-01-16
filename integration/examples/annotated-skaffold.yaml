@@ -100,7 +100,7 @@ build:
   #   useDockerCLI: false
   #   useBuildkit: false
 
-  # Docker artifacts can be built on Google Cloud Build. The projectId then needs
+  # Docker and Jib artifacts can be built on Google Cloud Build. The projectId then needs
   # to be provided and the currently logged user should be given permissions to trigger
   # new builds on Cloud Build.
   # If the projectId is not provided, Skaffold will try to guess it from the image name.

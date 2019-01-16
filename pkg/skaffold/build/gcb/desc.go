@@ -57,10 +57,10 @@ func (b *Builder) buildSteps(artifact *latest.Artifact) ([]*cloudbuild.BuildStep
 		return nil, errors.New("skaffold can't build a bazel artifact with Google Cloud Build")
 
 	case artifact.JibMavenArtifact != nil:
-		return nil, errors.New("skaffold can't build a jib maven artifact with Google Cloud Build")
+		return b.jibMavenBuildSteps(artifact.ImageName, artifact.JibMavenArtifact), nil
 
 	case artifact.JibGradleArtifact != nil:
-		return nil, errors.New("skaffold can't build a jib gradle artifact with Google Cloud Build")
+		return b.jibGradleBuildSteps(artifact.ImageName, artifact.JibGradleArtifact), nil
 
 	default:
 		return nil, fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
