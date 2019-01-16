@@ -53,20 +53,20 @@ func CreateDockerTarContext(ctx context.Context, w io.Writer, workspace string, 
 	return nil
 }
 
-func CreateDockerTarGzContext(ctx context.Context, w io.Writer, workspace string, a *latest.DockerArtifact) error {
-	paths, err := GetDependencies(ctx, workspace, a)
+func CreateTarGzContext(ctx context.Context, w io.Writer, a *latest.Artifact) error {
+	paths, err := GetDependencies(ctx, a.Workspace, a.DockerArtifact)
 	if err != nil {
 		return errors.Wrap(err, "getting relative tar paths")
 	}
 
-	if err := util.CreateTarGz(w, workspace, paths); err != nil {
+	if err := util.CreateTarGz(w, a.Workspace, paths); err != nil {
 		return errors.Wrap(err, "creating tar gz")
 	}
 
 	return nil
 }
 
-func UploadContextToGCS(ctx context.Context, workspace string, a *latest.DockerArtifact, bucket, objectName string) error {
+func UploadContextToGCS(ctx context.Context, a *latest.Artifact, bucket, objectName string) error {
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
 		return errors.Wrap(err, "creating GCS client")
@@ -74,7 +74,7 @@ func UploadContextToGCS(ctx context.Context, workspace string, a *latest.DockerA
 	defer c.Close()
 
 	w := c.Bucket(bucket).Object(objectName).NewWriter(ctx)
-	if err := CreateDockerTarGzContext(ctx, w, workspace, a); err != nil {
+	if err := CreateTarGzContext(ctx, w, a); err != nil {
 		return errors.Wrap(err, "uploading targz to google storage")
 	}
 	return w.Close()

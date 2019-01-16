@@ -50,7 +50,7 @@ func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.A
 	color.Default.Fprintln(out, "Uploading sources to", bucket, "GCS bucket")
 
 	g.tarName = fmt.Sprintf("context-%s.tar.gz", initialTag)
-	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact, bucket, g.tarName); err != nil {
+	if err := docker.UploadContextToGCS(ctx, artifact, bucket, g.tarName); err != nil {
 		return "", errors.Wrap(err, "uploading sources to GCS")
 	}
 

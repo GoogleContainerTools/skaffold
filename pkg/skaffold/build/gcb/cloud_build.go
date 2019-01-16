@@ -91,7 +91,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 	}
 
 	color.Default.Fprintf(out, "Pushing code to gs://%s/%s\n", cbBucket, buildObject)
-	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact, cbBucket, buildObject); err != nil {
+	if err := docker.UploadContextToGCS(ctx, artifact, cbBucket, buildObject); err != nil {
 		return "", errors.Wrap(err, "uploading source tarball")
 	}
 

@@ -57,7 +57,7 @@ func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Ar
 	}
 	defer f.Close()
 
-	err = docker.CreateDockerTarGzContext(ctx, f, artifact.Workspace, artifact.DockerArtifact)
+	err = docker.CreateTarGzContext(ctx, f, artifact)
 
 	context := fmt.Sprintf("dir://%s", constants.DefaultKanikoEmptyDirMountPath)
 	return context, err
