@@ -118,14 +118,17 @@ type KanikoCache struct {
 // KanikoBuild contains the fields needed to do a on-cluster build using
 // the kaniko image
 type KanikoBuild struct {
-	BuildContext    *KanikoBuildContext `yaml:"buildContext,omitempty"`
-	Cache           *KanikoCache        `yaml:"cache,omitempty"`
-	AdditionalFlags []string            `yaml:"flags,omitempty"`
-	PullSecret      string              `yaml:"pullSecret,omitempty"`
-	PullSecretName  string              `yaml:"pullSecretName,omitempty"`
-	Namespace       string              `yaml:"namespace,omitempty"`
-	Timeout         string              `yaml:"timeout,omitempty"`
-	Image           string              `yaml:"image,omitempty"`
+	BuildContext           *KanikoBuildContext `yaml:"buildContext,omitempty"`
+	Cache                  *KanikoCache        `yaml:"cache,omitempty"`
+	AdditionalFlags        []string            `yaml:"flags,omitempty"`
+	PullSecret             string              `yaml:"pullSecret,omitempty"`
+	PullSecretName         string              `yaml:"pullSecretName,omitempty"`
+	Namespace              string              `yaml:"namespace,omitempty"`
+	Timeout                string              `yaml:"timeout,omitempty"`
+	Image                  string              `yaml:"image,omitempty"`
+	MountDockerConfig      bool                `yaml:"mountDockerConfig,omitempty"`
+	DockerConfigPath       string              `yaml:"dockerConfigPath,omitempty"`
+	DockerConfigSecretName string              `yaml:"dockerConfigSecretName,omitempty"`
 }
 
 type TestConfig []*TestCase

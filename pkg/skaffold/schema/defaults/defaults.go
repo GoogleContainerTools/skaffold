@@ -43,6 +43,7 @@ func Set(c *latest.SkaffoldPipeline) error {
 		setDefaultKanikoNamespace,
 		setDefaultKanikoSecret,
 		setDefaultKanikoBuildContext,
+		setDefaultDockerConfigSecret,
 	); err != nil {
 		return err
 	}
@@ -169,6 +170,22 @@ func setDefaultKanikoSecret(kaniko *latest.KanikoBuild) error {
 		}
 
 		kaniko.PullSecret = absPath
+		return nil
+	}
+
+	return nil
+}
+
+func setDefaultDockerConfigSecret(kaniko *latest.KanikoBuild) error {
+	kaniko.DockerConfigSecretName = valueOrDefault(kaniko.DockerConfigSecretName, constants.DefaultKanikoDockerConfigSecretName)
+
+	if kaniko.DockerConfigPath != "" {
+		absPath, err := homedir.Expand(kaniko.DockerConfigPath)
+		if err != nil {
+			return fmt.Errorf("unable to expand dockerConfigPath %s", kaniko.DockerConfigPath)
+		}
+
+		kaniko.DockerConfigPath = absPath
 		return nil
 	}
 
