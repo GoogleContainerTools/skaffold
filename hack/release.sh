@@ -22,5 +22,8 @@ go run ${DIR}/release_notes/listpullreqs.go
 # sync files from integration examples to examples/
 rm -rf ${EXAMPLES_DIR} && rm -rf ${INTEGRATION_EXAMPLES_DIR}/bazel/bazel-* && cp -r ${INTEGRATION_EXAMPLES_DIR} ${EXAMPLES_DIR} && rm -rf ${EXAMPLES_DIR}/test-*
 
-echo "Huge thank you for this release towards our contributors: "
+echo
+echo "Huge thanks goes out to all of our contributors for this release: "
+echo
 git log "$(git describe  --abbrev=0)".. --format="%aN" --reverse | sort | uniq | awk '{printf "- %s\n", $0 }'
+echo
