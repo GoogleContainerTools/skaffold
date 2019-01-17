@@ -23,36 +23,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestBuildJibMavenDescriptionFail(t *testing.T) {
-	artifact := &latest.Artifact{
-		ArtifactType: latest.ArtifactType{
-			JibMavenArtifact: &latest.JibMavenArtifact{},
-		},
-	}
-
-	builder := Builder{
-		GoogleCloudBuild: &latest.GoogleCloudBuild{},
-	}
-	_, err := builder.buildDescription(artifact, "bucket", "object")
-
-	testutil.CheckError(t, true, err)
-}
-
-func TestBuildJibGradleDescriptionFail(t *testing.T) {
-	artifact := &latest.Artifact{
-		ArtifactType: latest.ArtifactType{
-			JibGradleArtifact: &latest.JibGradleArtifact{},
-		},
-	}
-
-	builder := Builder{
-		GoogleCloudBuild: &latest.GoogleCloudBuild{},
-	}
-	_, err := builder.buildDescription(artifact, "bucket", "object")
-
-	testutil.CheckError(t, true, err)
-}
-
 func TestBuildBazelDescriptionFail(t *testing.T) {
 	artifact := &latest.Artifact{
 		ArtifactType: latest.ArtifactType{

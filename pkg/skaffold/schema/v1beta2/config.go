@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v1beta2
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v1beta3"
+const Version string = "skaffold/v1beta2"
 
 // NewSkaffoldPipeline creates a SkaffoldPipeline
 func NewSkaffoldPipeline() util.VersionedConfig {
@@ -97,8 +97,6 @@ type GoogleCloudBuild struct {
 	MachineType string `yaml:"machineType,omitempty"`
 	Timeout     string `yaml:"timeout,omitempty"`
 	DockerImage string `yaml:"dockerImage,omitempty"`
-	MavenImage  string `yaml:"mavenImage,omitempty"`
-	GradleImage string `yaml:"gradleImage,omitempty"`
 }
 
 // LocalDir represents the local directory kaniko build context
@@ -128,13 +126,6 @@ type KanikoBuild struct {
 	Namespace       string              `yaml:"namespace,omitempty"`
 	Timeout         string              `yaml:"timeout,omitempty"`
 	Image           string              `yaml:"image,omitempty"`
-	DockerConfig    *DockerConfig       `yaml:"dockerConfig,omitempty"`
-}
-
-// DockerConfig contains information about the docker config.json to mount
-type DockerConfig struct {
-	Path       string `yaml:"path,omitempty"`
-	SecretName string `yaml:"secretName,omitempty"`
 }
 
 type TestConfig []*TestCase
