@@ -259,6 +259,18 @@ func expandPaths(workspace string, copied [][]string) ([]string, error) {
 	return deps, nil
 }
 
+// NormalizeDockerfilePath returns the absolute path to the dockerfile.
+func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
+	if filepath.IsAbs(dockerfile) {
+		return dockerfile, nil
+	}
+
+	if !strings.HasPrefix(dockerfile, context) {
+		dockerfile = filepath.Join(context, dockerfile)
+	}
+	return filepath.Abs(dockerfile)
+}
+
 // GetDependencies finds the sources dependencies for the given docker artifact.
 // All paths are relative to the workspace.
 func GetDependencies(ctx context.Context, workspace string, a *latest.DockerArtifact) ([]string, error) {

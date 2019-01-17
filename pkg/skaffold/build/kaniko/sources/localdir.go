@@ -29,9 +29,9 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -57,7 +57,7 @@ func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Ar
 	}
 	defer f.Close()
 
-	err = docker.CreateDockerTarGzContext(ctx, f, artifact.Workspace, artifact.DockerArtifact)
+	err = sources.TarGz(ctx, f, artifact)
 
 	context := fmt.Sprintf("dir://%s", constants.DefaultKanikoEmptyDirMountPath)
 	return context, err
