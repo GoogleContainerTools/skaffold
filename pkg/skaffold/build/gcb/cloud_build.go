@@ -167,7 +167,7 @@ watch:
 		return "", errors.Wrap(err, "tagging image")
 	}
 
-	return newTag, nil
+	return newTag + "@" + digest, nil
 }
 
 func getBuildID(op *cloudbuild.Operation) (string, error) {

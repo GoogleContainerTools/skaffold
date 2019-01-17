@@ -59,7 +59,12 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "tagging")
 	}
 
-	return tag, nil
+	if b.pushImages {
+		return tag + "@" + digest, nil
+	} else {
+		// Here, digest is the imageID
+		return digest, nil
+	}
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact) (string, error) {

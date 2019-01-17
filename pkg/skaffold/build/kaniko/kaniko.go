@@ -69,5 +69,5 @@ func (b *Builder) buildArtifactWithKaniko(ctx context.Context, out io.Writer, ta
 		return "", errors.Wrap(err, "tagging image")
 	}
 
-	return tag, nil
+	return tag + "@" + digest, nil
 }
