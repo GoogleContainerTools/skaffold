@@ -47,12 +47,14 @@ const (
 
 	DefaultKustomizationPath = "."
 
-	DefaultKanikoImage             = "gcr.io/kaniko-project/executor:v0.7.0@sha256:0b4e0812aa17c54a9b8d8c8d7cb35559a892a341650acf7cb428c3e8cb4a3919"
-	DefaultKanikoSecretName        = "kaniko-secret"
-	DefaultKanikoTimeout           = "20m"
-	DefaultKanikoContainerName     = "kaniko"
-	DefaultKanikoEmptyDirName      = "kaniko-emptydir"
-	DefaultKanikoEmptyDirMountPath = "/kaniko/buildcontext"
+	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.7.0@sha256:0b4e0812aa17c54a9b8d8c8d7cb35559a892a341650acf7cb428c3e8cb4a3919"
+	DefaultKanikoSecretName             = "kaniko-secret"
+	DefaultKanikoTimeout                = "20m"
+	DefaultKanikoContainerName          = "kaniko"
+	DefaultKanikoEmptyDirName           = "kaniko-emptydir"
+	DefaultKanikoEmptyDirMountPath      = "/kaniko/buildcontext"
+	DefaultKanikoDockerConfigSecretName = "docker-cfg"
+	DefaultKanikoDockerConfigPath       = "/kaniko/.docker"
 
 	DefaultBusyboxImage = "busybox"
 

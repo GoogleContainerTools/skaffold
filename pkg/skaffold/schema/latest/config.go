@@ -126,6 +126,13 @@ type KanikoBuild struct {
 	Namespace       string              `yaml:"namespace,omitempty"`
 	Timeout         string              `yaml:"timeout,omitempty"`
 	Image           string              `yaml:"image,omitempty"`
+	DockerConfig    *DockerConfig       `yaml:"dockerConfig,omitempty"`
+}
+
+// DockerConfig contains information about the docker config.json to mount
+type DockerConfig struct {
+	Path       string `yaml:"path,omitempty"`
+	SecretName string `yaml:"secretName,omitempty"`
 }
 
 type TestConfig []*TestCase

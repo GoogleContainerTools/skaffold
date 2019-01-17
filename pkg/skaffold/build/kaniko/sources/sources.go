@@ -48,7 +48,7 @@ func Retrieve(cfg *latest.KanikoBuild) BuildContextSource {
 }
 
 func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
-	return &v1.Pod{
+	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kaniko-",
 			Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
@@ -81,7 +81,32 @@ func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 						SecretName: cfg.PullSecretName,
 					},
 				},
-			}},
+			},
+			},
 		},
 	}
+
+	if cfg.DockerConfig == nil {
+		return pod
+	}
+
+	volumeMount := v1.VolumeMount{
+		Name:      constants.DefaultKanikoDockerConfigSecretName,
+		MountPath: constants.DefaultKanikoDockerConfigPath,
+	}
+
+	pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, volumeMount)
+
+	volume := v1.Volume{
+		Name: constants.DefaultKanikoDockerConfigSecretName,
+		VolumeSource: v1.VolumeSource{
+			Secret: &v1.SecretVolumeSource{
+				SecretName: cfg.DockerConfig.SecretName,
+			},
+		},
+	}
+
+	pod.Spec.Volumes = append(pod.Spec.Volumes, volume)
+
+	return pod
 }

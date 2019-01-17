@@ -29,11 +29,19 @@ import (
 
 // Build builds a list of artifacts with Kaniko.
 func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	teardown, err := b.setupSecret(out)
+	teardownPullSecret, err := b.setupPullSecret(out)
 	if err != nil {
-		return nil, errors.Wrap(err, "setting up secret")
+		return nil, errors.Wrap(err, "setting up pull secret")
 	}
-	defer teardown()
+	defer teardownPullSecret()
+
+	if b.DockerConfig != nil {
+		teardownDockerConfigSecret, err := b.setupDockerConfigSecret(out)
+		if err != nil {
+			return nil, errors.Wrap(err, "setting up docker config secret")
+		}
+		defer teardownDockerConfigSecret()
+	}
 
 	return build.InParallel(ctx, out, tagger, artifacts, b.buildArtifactWithKaniko)
 }
