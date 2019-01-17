@@ -42,16 +42,16 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error) {
-	digest, err := b.runBuildForArtifact(ctx, out, artifact)
-	if err != nil {
-		return "", errors.Wrap(err, "build artifact")
-	}
-
 	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, tag.Options{
 		ImageName: artifact.ImageName,
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "generating tag")
+	}
+
+	digest, err := b.runBuildForArtifact(ctx, out, artifact)
+	if err != nil {
+		return "", errors.Wrap(err, "build artifact")
 	}
 
 	if err := b.retagAndPush(ctx, out, digest, tag, artifact); err != nil {

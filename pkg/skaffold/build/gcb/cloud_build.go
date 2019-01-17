@@ -49,6 +49,13 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 }
 
 func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error) {
+	newTag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, tag.Options{
+		ImageName: artifact.ImageName,
+	})
+	if err != nil {
+		return "", errors.Wrap(err, "generating tag")
+	}
+
 	client, err := google.DefaultClient(ctx, cloudbuild.CloudPlatformScope)
 	if err != nil {
 		return "", errors.Wrap(err, "getting google client")
@@ -154,13 +161,6 @@ watch:
 	logrus.Infof("Deleted object %s", buildObject)
 	builtTag := fmt.Sprintf("%s@%s", artifact.ImageName, digest)
 	logrus.Infof("Image built at %s", builtTag)
-
-	newTag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, tag.Options{
-		ImageName: artifact.ImageName,
-	})
-	if err != nil {
-		return "", errors.Wrap(err, "generating tag")
-	}
 
 	if err := docker.AddTag(builtTag, newTag); err != nil {
 		return "", errors.Wrap(err, "tagging image")
