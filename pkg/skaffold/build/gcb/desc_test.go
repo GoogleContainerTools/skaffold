@@ -33,7 +33,7 @@ func TestBuildBazelDescriptionFail(t *testing.T) {
 	builder := Builder{
 		GoogleCloudBuild: &latest.GoogleCloudBuild{},
 	}
-	_, err := builder.buildDescription(artifact, "bucket", "object")
+	_, err := builder.buildDescription(artifact, "tag", "bucket", "object")
 
 	testutil.CheckError(t, true, err)
 }

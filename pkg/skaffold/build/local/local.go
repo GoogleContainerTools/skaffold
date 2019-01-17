@@ -20,11 +20,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
@@ -49,64 +49,44 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "generating tag")
 	}
 
-	digest, err := b.runBuildForArtifact(ctx, out, artifact)
+	digestOrImageID, err := b.runBuildForArtifact(ctx, out, artifact, tag)
 	if err != nil {
 		return "", errors.Wrap(err, "build artifact")
 	}
 
-	if err := b.retagAndPush(ctx, out, digest, tag, artifact); err != nil {
-		return "", errors.Wrap(err, "tagging")
+	if !b.pushImages {
+		imageID := digestOrImageID
+		return strings.TrimPrefix(imageID, "sha256:"), nil
 	}
 
-	if b.pushImages {
+	// Jib pushes images directly
+	if artifact.JibMavenArtifact != nil || artifact.JibGradleArtifact != nil {
+		digest := digestOrImageID
 		return tag + "@" + digest, nil
-	} else {
-		// Here, digest is the imageID
-		return digest, nil
 	}
+
+	digest, err := b.localDocker.Push(ctx, out, tag)
+	if err != nil {
+		return "", errors.Wrap(err, "pushing")
+	}
+	return tag + "@" + digest, nil
 }
 
-func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact) (string, error) {
+func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	switch {
 	case artifact.DockerArtifact != nil:
-		return b.buildDocker(ctx, out, artifact.Workspace, artifact.DockerArtifact)
+		return b.buildDocker(ctx, out, artifact.Workspace, artifact.DockerArtifact, tag)
 
 	case artifact.BazelArtifact != nil:
-		return b.buildBazel(ctx, out, artifact.Workspace, artifact)
+		return b.buildBazel(ctx, out, artifact.Workspace, artifact.BazelArtifact, tag)
 
 	case artifact.JibMavenArtifact != nil:
-		return b.buildJibMaven(ctx, out, artifact.Workspace, artifact)
+		return b.buildJibMaven(ctx, out, artifact.Workspace, artifact.JibMavenArtifact, tag)
 
 	case artifact.JibGradleArtifact != nil:
-		return b.buildJibGradle(ctx, out, artifact.Workspace, artifact)
+		return b.buildJibGradle(ctx, out, artifact.Workspace, artifact.JibGradleArtifact, tag)
 
 	default:
 		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 	}
-}
-
-func (b *Builder) retagAndPush(ctx context.Context, out io.Writer, digest string, newTag string, artifact *latest.Artifact) error {
-	if b.pushImages && (artifact.JibMavenArtifact != nil || artifact.JibGradleArtifact != nil || artifact.BazelArtifact != nil) {
-		// when pushing images, jib/bazel build them directly to the registry. all we need to do here is add a tag to the remote.
-
-		// NOTE: the digest returned by the builders when in push mode is the digest of the remote image that was built to the registry.
-		// when adding the tag to the remote, we need to specify the registry it was built to so go-containerregistry knows
-		// where to look when grabbing the remote image reference.
-		if err := docker.AddTag(fmt.Sprintf("%s@%s", artifact.ImageName, digest), newTag); err != nil {
-			return errors.Wrap(err, "tagging image")
-		}
-		return nil
-	}
-
-	if err := b.localDocker.Tag(ctx, digest, newTag); err != nil {
-		return err
-	}
-
-	if b.pushImages {
-		if _, err := b.localDocker.Push(ctx, out, newTag); err != nil {
-			return errors.Wrap(err, "pushing")
-		}
-	}
-
-	return nil
 }

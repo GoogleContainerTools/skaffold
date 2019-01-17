@@ -28,12 +28,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact) (string, error) {
+func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, tag string) (string, error) {
 	if err := b.pullCacheFromImages(ctx, out, a); err != nil {
 		return "", errors.Wrap(err, "pulling cache-from images")
 	}
-
-	initialTag := util.RandomID()
 
 	if b.cfg.UseDockerCLI || b.cfg.UseBuildkit {
 		dockerfilePath, err := docker.NormalizeDockerfilePath(workspace, a.DockerfilePath)
@@ -41,7 +39,7 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace stri
 			return "", errors.Wrap(err, "normalizing dockerfile path")
 		}
 
-		args := []string{"build", workspace, "--file", dockerfilePath, "-t", initialTag}
+		args := []string{"build", workspace, "--file", dockerfilePath, "-t", tag}
 		args = append(args, docker.GetBuildArgs(a)...)
 
 		cmd := exec.CommandContext(ctx, "docker", args...)
@@ -55,10 +53,10 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace stri
 			return "", errors.Wrap(err, "running build")
 		}
 
-		return b.localDocker.ImageID(ctx, initialTag)
+		return b.localDocker.ImageID(ctx, tag)
 	}
 
-	return b.localDocker.Build(ctx, out, workspace, a, initialTag)
+	return b.localDocker.Build(ctx, out, workspace, a, tag)
 }
 
 func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *latest.DockerArtifact) error {

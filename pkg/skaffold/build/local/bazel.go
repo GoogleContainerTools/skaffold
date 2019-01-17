@@ -36,10 +36,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace string, a *latest.Artifact) (string, error) {
+func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace string, a *latest.BazelArtifact, tag string) (string, error) {
 	args := []string{"build"}
-	args = append(args, a.BazelArtifact.BuildArgs...)
-	args = append(args, a.BazelArtifact.BuildTarget)
+	args = append(args, a.BuildArgs...)
+	args = append(args, a.BuildTarget)
 
 	// FIXME: is it possible to apply b.skipTests?
 	cmd := exec.CommandContext(ctx, "bazel", args...)
@@ -50,20 +50,19 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace strin
 		return "", errors.Wrap(err, "running command")
 	}
 
-	bazelBin, err := bazelBin(ctx, workspace, a.BazelArtifact)
+	bazelBin, err := bazelBin(ctx, workspace, a)
 	if err != nil {
 		return "", errors.Wrap(err, "getting path of bazel-bin")
 	}
 
-	tarPath := filepath.Join(bazelBin, buildTarPath(a.BazelArtifact.BuildTarget))
+	tarPath := filepath.Join(bazelBin, buildTarPath(a.BuildTarget))
 
 	if b.pushImages {
-		uniqueTag := a.ImageName + ":" + util.RandomID()
-		return pushImage(tarPath, uniqueTag)
+		return pushImage(tarPath, tag)
 	}
 
-	ref := buildImageTag(a.BazelArtifact.BuildTarget)
-	return b.loadImage(ctx, out, tarPath, ref)
+	bazelTag := buildImageTag(a.BuildTarget)
+	return b.loadImage(ctx, out, tarPath, bazelTag, tag)
 }
 
 func pushImage(tarPath, tag string) (string, error) {
@@ -89,16 +88,20 @@ func pushImage(tarPath, tag string) (string, error) {
 	return docker.RemoteDigest(tag)
 }
 
-func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, ref string) (string, error) {
+func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, bazelTag string, tag string) (string, error) {
 	imageTar, err := os.Open(tarPath)
 	if err != nil {
 		return "", errors.Wrap(err, "opening image tarball")
 	}
 	defer imageTar.Close()
 
-	imageID, err := b.localDocker.Load(ctx, out, imageTar, ref)
+	imageID, err := b.localDocker.Load(ctx, out, imageTar, bazelTag)
 	if err != nil {
 		return "", errors.Wrap(err, "loading image into docker daemon")
+	}
+
+	if err := b.localDocker.Tag(ctx, imageID, tag); err != nil {
+		return "", errors.Wrap(err, "tagging the image")
 	}
 
 	return imageID, nil

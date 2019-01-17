@@ -31,17 +31,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artifact) (string, error) {
+func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	if artifact.DockerArtifact == nil {
 		return "", errors.New("kaniko builder supports only Docker artifacts")
 	}
 
-	initialTag := util.RandomID()
-	imageDst := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
-
 	// Prepare context
 	s := sources.Retrieve(b.KanikoBuild)
-	context, err := s.Setup(ctx, out, artifact, initialTag)
+	context, err := s.Setup(ctx, out, artifact, util.RandomID())
 	if err != nil {
 		return "", errors.Wrap(err, "setting up build context")
 	}
@@ -51,7 +48,7 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 	args := []string{
 		"--dockerfile", artifact.DockerArtifact.DockerfilePath,
 		"--context", context,
-		"--destination", imageDst,
+		"--destination", tag,
 		"-v", logLevel().String()}
 	args = append(args, b.AdditionalFlags...)
 	args = append(args, docker.GetBuildArgs(artifact.DockerArtifact)...)
@@ -96,5 +93,5 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 
 	waitForLogs()
 
-	return imageDst, nil
+	return docker.RemoteDigest(tag)
 }

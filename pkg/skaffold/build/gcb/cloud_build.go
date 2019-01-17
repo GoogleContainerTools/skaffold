@@ -29,7 +29,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
@@ -49,7 +48,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 }
 
 func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error) {
-	newTag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, tag.Options{
+	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, tag.Options{
 		ImageName: artifact.ImageName,
 	})
 	if err != nil {
@@ -93,7 +92,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		return "", errors.Wrap(err, "checking bucket is in correct project")
 	}
 
-	desc, err := b.buildDescription(artifact, cbBucket, buildObject)
+	desc, err := b.buildDescription(artifact, tag, cbBucket, buildObject)
 	if err != nil {
 		return "", errors.Wrap(err, "could not create build description")
 	}
@@ -159,14 +158,8 @@ watch:
 		return "", errors.Wrap(err, "cleaning up source tar after build")
 	}
 	logrus.Infof("Deleted object %s", buildObject)
-	builtTag := fmt.Sprintf("%s@%s", artifact.ImageName, digest)
-	logrus.Infof("Image built at %s", builtTag)
 
-	if err := docker.AddTag(builtTag, newTag); err != nil {
-		return "", errors.Wrap(err, "tagging image")
-	}
-
-	return newTag + "@" + digest, nil
+	return tag + "@" + digest, nil
 }
 
 func getBuildID(op *cloudbuild.Operation) (string, error) {

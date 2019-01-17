@@ -18,7 +18,6 @@ package local
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 
@@ -30,14 +29,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace string, artifact *latest.Artifact) (string, error) {
+func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibMavenArtifact, tag string) (string, error) {
 	if b.pushImages {
-		return b.buildJibMavenToRegistry(ctx, out, workspace, artifact)
+		return b.buildJibMavenToRegistry(ctx, out, workspace, artifact, tag)
 	}
-	return b.buildJibMavenToDocker(ctx, out, workspace, artifact.JibMavenArtifact)
+	return b.buildJibMavenToDocker(ctx, out, workspace, artifact, tag)
 }
 
-func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibMavenArtifact) (string, error) {
+func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibMavenArtifact, tag string) (string, error) {
 	// If this is a multi-module project, we require `package` be bound to jib:dockerBuild
 	if artifact.Module != "" {
 		if err := verifyJibPackageGoal(ctx, "dockerBuild", workspace, artifact); err != nil {
@@ -45,33 +44,28 @@ func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, work
 		}
 	}
 
-	skaffoldImage := generateJibImageRef(workspace, artifact.Module)
-	args := jib.GenerateMavenArgs("dockerBuild", skaffoldImage, artifact, b.skipTests)
-
+	args := jib.GenerateMavenArgs("dockerBuild", tag, artifact, b.skipTests)
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
 
-	return b.localDocker.ImageID(ctx, skaffoldImage)
+	return b.localDocker.ImageID(ctx, tag)
 }
 
-func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.Artifact) (string, error) {
+func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibMavenArtifact, tag string) (string, error) {
 	// If this is a multi-module project, we require `package` be bound to jib:build
-	if artifact.JibMavenArtifact.Module != "" {
-		if err := verifyJibPackageGoal(ctx, "build", workspace, artifact.JibMavenArtifact); err != nil {
+	if artifact.Module != "" {
+		if err := verifyJibPackageGoal(ctx, "build", workspace, artifact); err != nil {
 			return "", err
 		}
 	}
 
-	initialTag := util.RandomID()
-	skaffoldImage := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
-	args := jib.GenerateMavenArgs("build", skaffoldImage, artifact.JibMavenArtifact, b.skipTests)
-
+	args := jib.GenerateMavenArgs("build", tag, artifact, b.skipTests)
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
 
-	return docker.RemoteDigest(skaffoldImage)
+	return docker.RemoteDigest(tag)
 }
 
 // verifyJibPackageGoal verifies that the referenced module has `package` bound to a single jib goal.
