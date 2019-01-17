@@ -47,13 +47,6 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "build artifact")
 	}
 
-	if b.alreadyTagged == nil {
-		b.alreadyTagged = make(map[string]string)
-	}
-	if tag, present := b.alreadyTagged[digest]; present {
-		return tag, nil
-	}
-
 	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, tag.Options{
 		ImageName: artifact.ImageName,
 		Digest:    digest,
@@ -65,8 +58,6 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	if err := b.retagAndPush(ctx, out, digest, tag, artifact); err != nil {
 		return "", errors.Wrap(err, "tagging")
 	}
-
-	b.alreadyTagged[digest] = tag
 
 	return tag, nil
 }

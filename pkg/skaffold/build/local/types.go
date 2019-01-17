@@ -37,8 +37,6 @@ type Builder struct {
 	pushImages   bool
 	skipTests    bool
 	kubeContext  string
-
-	alreadyTagged map[string]string
 }
 
 // NewBuilder returns an new instance of a local Builder.
