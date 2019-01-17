@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"os/exec"
 	"strconv"
 
@@ -42,7 +43,7 @@ type PortForwarder struct {
 	// forwardedPods is a map of portForwardEntry.key() (string) -> portForwardEntry
 	forwardedPods map[string]*portForwardEntry
 
-	// forwardedPorts is a map of port (int32) -> container name (string)
+	// forwardedPorts is a map of local port (int32) -> container name (string)
 	forwardedPorts map[int32]string
 }
 
@@ -52,6 +53,7 @@ type portForwardEntry struct {
 	namespace       string
 	containerName   string
 	port            int32
+	localPort       int32
 
 	cancel context.CancelFunc
 }
@@ -64,6 +66,12 @@ type Forwarder interface {
 
 type kubectlForwarder struct{}
 
+var (
+	// For testing
+	retrieveAvailablePort = getAvailablePort
+	isPortAvailable       = portAvailable
+)
+
 // Forward port-forwards a pod using kubectl port-forward
 // It returns an error only if the process fails or was terminated by a signal other than SIGTERM
 func (*kubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntry) error {
@@ -72,9 +80,7 @@ func (*kubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntr
 	ctx, cancel := context.WithCancel(parentCtx)
 	pfe.cancel = cancel
 
-	portNumber := fmt.Sprintf("%d", pfe.port)
-
-	cmd := exec.CommandContext(ctx, "kubectl", "port-forward", pfe.podName, portNumber, portNumber, "--namespace", pfe.namespace)
+	cmd := exec.CommandContext(ctx, "kubectl", "port-forward", pfe.podName, fmt.Sprintf("%d:%d", pfe.localPort, pfe.port), "--namespace", pfe.namespace)
 	buf := &bytes.Buffer{}
 	cmd.Stdout = buf
 	cmd.Stderr = buf
@@ -83,7 +89,7 @@ func (*kubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntr
 		if errors.Cause(err) == context.Canceled {
 			return nil
 		}
-		return errors.Wrapf(err, "port forwarding pod: %s/%s, port: %s, err: %s", pfe.namespace, pfe.podName, portNumber, buf.String())
+		return errors.Wrapf(err, "port forwarding pod: %s/%s, port: %d to local port: %d, err: %s", pfe.namespace, pfe.podName, pfe.port, pfe.localPort, buf.String())
 	}
 
 	go cmd.Wait()
@@ -175,40 +181,99 @@ func (p *PortForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
 
 	for _, c := range pod.Spec.Containers {
 		for _, port := range c.Ports {
-			// If the port is already port-forwarded by another container,
-			// continue without port-forwarding
-			currentApp, ok := p.forwardedPorts[port.ContainerPort]
-			if ok && currentApp != c.Name {
-				color.LightYellow.Fprintf(p.output, "Port %d for %s is already in use by container %s\n", port.ContainerPort, c.Name, currentApp)
+			// get current entry for this container
+			entry, err := p.getCurrentEntry(pod, c, port, resourceVersion)
+			if err != nil {
+				color.Red.Fprintf(p.output, "Unable to get port for %s, skipping port-forward: %v", c.Name, err)
 				continue
 			}
-
-			entry := &portForwardEntry{
-				resourceVersion: resourceVersion,
-				podName:         pod.Name,
-				namespace:       pod.Namespace,
-				containerName:   c.Name,
-				port:            port.ContainerPort,
+			if entry.port != entry.localPort {
+				color.Yellow.Fprintf(p.output, "Forwarding container %s to local port %d.\n", c.Name, entry.localPort)
 			}
-
-			if prevEntry, ok := p.forwardedPods[entry.key()]; ok {
-				// Check if this is a new generation of pod
-				if entry.resourceVersion > prevEntry.resourceVersion {
-					p.Terminate(prevEntry)
-				}
-			}
-
-			color.Default.Fprintln(p.output, fmt.Sprintf("Port Forwarding %s %d -> %d", entry.podName, entry.port, entry.port))
-			p.forwardedPods[entry.key()] = entry
-			p.forwardedPorts[entry.port] = entry.containerName
-
-			if err := p.Forward(ctx, entry); err != nil {
-				return errors.Wrap(err, "port forwarding failed")
+			if err := p.forward(ctx, entry); err != nil {
+				return errors.Wrap(err, "failed to forward port")
 			}
 		}
 	}
-
 	return nil
+}
+
+func (p *PortForwarder) getCurrentEntry(pod *v1.Pod, c v1.Container, port v1.ContainerPort, resourceVersion int) (*portForwardEntry, error) {
+	// determine if we have seen this before
+	entry := &portForwardEntry{
+		resourceVersion: resourceVersion,
+		podName:         pod.Name,
+		namespace:       pod.Namespace,
+		containerName:   c.Name,
+		port:            port.ContainerPort,
+	}
+	// If we have, return the current entry
+	oldEntry, ok := p.forwardedPods[entry.key()]
+	if ok {
+		entry.localPort = oldEntry.localPort
+		return entry, nil
+	}
+	// If another container isn't using this port...
+	if _, exists := p.forwardedPorts[port.ContainerPort]; !exists {
+		// ...Then make sure the port is available
+		if available, err := isPortAvailable(port.ContainerPort); available && err == nil {
+			entry.localPort = port.ContainerPort
+			return entry, nil
+		}
+	}
+	// Else, determine a new local port
+	localPort, err := retrieveAvailablePort()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting random available port")
+	}
+	entry.localPort = localPort
+	p.forwardedPorts[localPort] = ""
+	return entry, nil
+}
+
+func (p *PortForwarder) forward(ctx context.Context, entry *portForwardEntry) error {
+	if prevEntry, ok := p.forwardedPods[entry.key()]; ok {
+		// Check if this is a new generation of pod
+		if entry.resourceVersion > prevEntry.resourceVersion {
+			p.Terminate(prevEntry)
+		}
+	}
+
+	color.Default.Fprintln(p.output, fmt.Sprintf("Port Forwarding %s %d -> %d", entry.podName, entry.port, entry.localPort))
+	p.forwardedPods[entry.key()] = entry
+	p.forwardedPorts[entry.localPort] = entry.containerName
+
+	if err := p.Forward(ctx, entry); err != nil {
+		return errors.Wrap(err, "port forwarding failed")
+	}
+	return nil
+}
+
+// From https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt,
+// ports 4503-4533 are unassigned user ports; first check if any of these are available
+// If not, return a random port, which hopefully won't collide with any future containers
+func getAvailablePort() (int32, error) {
+	for i := 4503; i <= 4533; i++ {
+		ok, err := isPortAvailable(int32(i))
+		if ok {
+			return int32(i), err
+		}
+	}
+
+	// get random port
+	l, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return -1, err
+	}
+	return int32(l.Addr().(*net.TCPAddr).Port), l.Close()
+}
+
+func portAvailable(p int32) (bool, error) {
+	l, err := net.Listen("tcp", fmt.Sprintf(":%d", p))
+	if l != nil {
+		defer l.Close()
+	}
+	return err == nil, nil
 }
 
 // Key is an identifier for the lock on a port during the skaffold dev cycle.
