@@ -59,7 +59,6 @@ func (b *Builder) buildArtifactWithKaniko(ctx context.Context, out io.Writer, ta
 
 	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, tag.Options{
 		ImageName: artifact.ImageName,
-		Digest:    digest,
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "generating tag")

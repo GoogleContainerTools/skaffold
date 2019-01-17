@@ -157,7 +157,6 @@ watch:
 
 	newTag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, tag.Options{
 		ImageName: artifact.ImageName,
-		Digest:    digest,
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "generating tag")

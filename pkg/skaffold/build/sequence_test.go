@@ -33,7 +33,7 @@ type MockTagger struct {
 	Err error
 }
 
-func (f *MockTagger) GenerateFullyQualifiedImageName(workingDir string, tagOpts tag.Options) (string, error) {
+func (f *MockTagger) GenerateFullyQualifiedImageName(workingDir string, imageName string) (string, error) {
 	return f.Out, f.Err
 }
 
