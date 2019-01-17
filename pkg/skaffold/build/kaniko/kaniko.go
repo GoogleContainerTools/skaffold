@@ -35,7 +35,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 	}
 	defer teardownPullSecret()
 
-	if b.MountDockerConfig {
+	if b.DockerConfig != nil {
 		teardownDockerConfigSecret, err := b.setupDockerConfigSecret(out)
 		if err != nil {
 			return nil, errors.Wrap(err, "setting up docker config secret")

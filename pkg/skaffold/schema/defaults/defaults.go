@@ -177,15 +177,19 @@ func setDefaultKanikoSecret(kaniko *latest.KanikoBuild) error {
 }
 
 func setDefaultDockerConfigSecret(kaniko *latest.KanikoBuild) error {
-	kaniko.DockerConfigSecretName = valueOrDefault(kaniko.DockerConfigSecretName, constants.DefaultKanikoDockerConfigSecretName)
+	if kaniko.DockerConfig == nil {
+		return nil
+	}
 
-	if kaniko.DockerConfigPath != "" {
-		absPath, err := homedir.Expand(kaniko.DockerConfigPath)
+	kaniko.DockerConfig.SecretName = valueOrDefault(kaniko.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName)
+
+	if kaniko.DockerConfig.Path != "" {
+		absPath, err := homedir.Expand(kaniko.DockerConfig.Path)
 		if err != nil {
-			return fmt.Errorf("unable to expand dockerConfigPath %s", kaniko.DockerConfigPath)
+			return fmt.Errorf("unable to expand dockerConfig.path %s", kaniko.DockerConfig.Path)
 		}
 
-		kaniko.DockerConfigPath = absPath
+		kaniko.DockerConfig.Path = absPath
 		return nil
 	}
 

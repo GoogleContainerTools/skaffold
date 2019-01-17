@@ -140,6 +140,9 @@ build:
   #   namespace: default
   #   timeout: 20m
   #   image: defaults to the latest released version of `gcr.io/kaniko-project/executor`
+  #   dockerConfig:
+  #     path: path to the docker config.json
+  #     secretName: docker-cfg
 
 # The deploy section has all the information needed to deploy. Along with build:
 # it is a required section.

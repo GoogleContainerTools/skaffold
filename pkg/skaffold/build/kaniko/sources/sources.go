@@ -86,7 +86,7 @@ func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 		},
 	}
 
-	if !cfg.MountDockerConfig {
+	if cfg.DockerConfig == nil {
 		return pod
 	}
 
@@ -97,15 +97,11 @@ func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 
 	pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, volumeMount)
 
-	dockerConfigSecretName := constants.DefaultKanikoDockerConfigSecretName
-	if cfg.DockerConfigSecretName != "" {
-		dockerConfigSecretName = cfg.DockerConfigSecretName
-	}
 	volume := v1.Volume{
 		Name: constants.DefaultKanikoDockerConfigSecretName,
 		VolumeSource: v1.VolumeSource{
 			Secret: &v1.SecretVolumeSource{
-				SecretName: dockerConfigSecretName,
+				SecretName: cfg.DockerConfig.SecretName,
 			},
 		},
 	}
