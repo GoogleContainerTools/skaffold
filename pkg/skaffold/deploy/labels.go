@@ -17,18 +17,14 @@ limitations under the License.
 package deploy
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"strings"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -36,7 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	patch "k8s.io/apimachinery/pkg/util/strategicpatch"
-
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 )
@@ -44,28 +39,6 @@ import (
 // Labeller can give key/value labels to set on deployed resources.
 type Labeller interface {
 	Labels() map[string]string
-}
-
-type withLabels struct {
-	Deployer
-
-	labellers []Labeller
-}
-
-// WithLabels creates a deployer that sets labels on deployed resources.
-func WithLabels(d Deployer, labellers ...Labeller) Deployer {
-	return &withLabels{
-		Deployer:  d,
-		labellers: labellers,
-	}
-}
-
-func (w *withLabels) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) ([]Artifact, error) {
-	dRes, err := w.Deployer.Deploy(ctx, out, artifacts)
-
-	labelDeployResults(merge(w.labellers...), dRes)
-
-	return dRes, err
 }
 
 // merge merges the labels from multiple sources.

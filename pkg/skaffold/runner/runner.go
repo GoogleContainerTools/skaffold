@@ -52,6 +52,7 @@ type SkaffoldRunner struct {
 	watch.Watcher
 
 	opts        *config.SkaffoldOptions
+	labellers   []deploy.Labeller
 	builds      []build.Artifact
 	hasDeployed bool
 	imageList   *kubernetes.ImageList
@@ -90,7 +91,8 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		return nil, errors.Wrap(err, "parsing deploy config")
 	}
 
-	deployer = deploy.WithLabels(deployer, opts, builder, deployer, tagger)
+	labellers := []deploy.Labeller{opts, builder, deployer, tagger}
+
 	builder, tester, deployer = WithTimings(builder, tester, deployer)
 	if opts.Notification {
 		deployer = WithNotification(deployer)
@@ -109,6 +111,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		Syncer:    &kubectl.Syncer{},
 		Watcher:   watch.NewWatcher(trigger),
 		opts:      opts,
+		labellers: labellers,
 		imageList: kubernetes.NewImageList(),
 	}, nil
 }
@@ -220,7 +223,7 @@ func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, art
 	// Make sure all artifacts are redeployed. Not only those that were just built.
 	r.builds = mergeWithPreviousBuilds(bRes, r.builds)
 
-	if _, err := r.Deploy(ctx, out, r.builds); err != nil {
+	if err := r.Deploy(ctx, out, r.builds); err != nil {
 		return errors.Wrap(err, "deploy failed")
 	}
 
@@ -260,10 +263,10 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 }
 
 // Deploy deploys the given artifacts
-func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) ([]deploy.Artifact, error) {
-	dRes, err := r.Deployer.Deploy(ctx, out, artifacts)
+func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+	err := r.Deployer.Deploy(ctx, out, artifacts, r.labellers)
 	r.hasDeployed = true
-	return dRes, err
+	return err
 }
 
 // TailLogs prints the logs for deployed artifacts.

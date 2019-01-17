@@ -66,17 +66,23 @@ func (h *HelmDeployer) Labels() map[string]string {
 	}
 }
 
-func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
-	deployResults := []Artifact{}
+func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) error {
+	var dRes []Artifact
+
+	labels := merge(labellers...)
+
 	for _, r := range h.Releases {
 		results, err := h.deployRelease(ctx, out, r, builds)
 		if err != nil {
 			releaseName, _ := evaluateReleaseName(r.Name)
-			return deployResults, errors.Wrapf(err, "deploying %s", releaseName)
+			return errors.Wrapf(err, "deploying %s", releaseName)
 		}
-		deployResults = append(deployResults, results...)
+
+		dRes = append(dRes, results...)
 	}
-	return deployResults, nil
+
+	labelDeployResults(labels, dRes)
+	return nil
 }
 
 func (h *HelmDeployer) Dependencies() ([]string, error) {
