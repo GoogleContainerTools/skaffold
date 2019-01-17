@@ -21,6 +21,7 @@ import (
 	"io"
 	"io/ioutil"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -57,12 +58,14 @@ func setConfigValue(name string, value string) error {
 		return fmt.Errorf("%s is not a valid config field", name)
 	}
 
-	fieldValue, err := getNewFieldValue(fieldName, name, value)
+	field := reflect.Indirect(reflect.ValueOf(cfg)).FieldByName(fieldName)
+	val, err := parseAsType(value, field.Type())
 	if err != nil {
-		return fmt.Errorf("%s is not a valid value for field %s", value, fieldName)
+		return fmt.Errorf("%s is not a valid value for field %s", value, name)
 	}
 
-	reflect.ValueOf(cfg).Elem().FieldByName(fieldName).Set(fieldValue)
+	reflect.ValueOf(cfg).Elem().FieldByName(fieldName).Set(val)
+
 	return writeConfig(cfg)
 }
 
@@ -80,13 +83,22 @@ func getFieldName(cfg *ContextConfig, name string) string {
 	return fieldName
 }
 
-func getNewFieldValue(fieldName string, name string, value string) (reflect.Value, error) {
-	config := ContextConfig{}
-	auxiliaryContents := name + ": " + value
-	if err := yaml.Unmarshal([]byte(auxiliaryContents), &config); err != nil {
-		return reflect.Value{}, errors.Wrap(err, "unmarshalling auxiliary global skaffold config")
+func parseAsType(value string, fieldType reflect.Type) (reflect.Value, error) {
+	switch fieldType.String() {
+	case "string":
+		return reflect.ValueOf(value), nil
+	case "*bool":
+		if value == "" {
+			return reflect.Zero(fieldType), nil
+		}
+		valBase, err := strconv.ParseBool(value)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(&valBase), nil
+	default:
+		return reflect.Value{}, fmt.Errorf("unsupported type: %s", fieldType)
 	}
-	return reflect.ValueOf(config).FieldByName(fieldName), nil
 }
 
 func writeConfig(cfg *ContextConfig) error {
