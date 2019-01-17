@@ -76,7 +76,7 @@ func TestLocalRun(t *testing.T) {
 			pushImages: false,
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
-				Tag:       "1", // ImageID without sha256: prefix
+				Tag:       "gcr.io/test/image:1",
 			}},
 		},
 		{

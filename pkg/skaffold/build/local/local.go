@@ -54,7 +54,17 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 
 	if !b.pushImages {
 		imageID := digestOrImageID
-		return strings.TrimPrefix(imageID, "sha256:"), nil
+
+		// k8s doesn't recognize the imageID or any combination of the image name
+		// suffixed with the imageID, as a valid image name.
+		// So, the solution we chose is to create a tag, just for Skaffold, from
+		// the imageID, and use that in the manifests.
+		uniqueTag := artifact.ImageName + ":" + strings.TrimPrefix(imageID, "sha256:")
+		if err := b.localDocker.Tag(ctx, imageID, uniqueTag); err != nil {
+			return "", err
+		}
+
+		return uniqueTag, nil
 	}
 
 	// Jib pushes images directly
