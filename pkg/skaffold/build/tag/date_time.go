@@ -49,7 +49,7 @@ func (tagger *dateTimeTagger) Labels() map[string]string {
 }
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the current timestamp
-func (tagger *dateTimeTagger) GenerateFullyQualifiedImageName(workingDir string, opts Options) (string, error) {
+func (tagger *dateTimeTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
 	format := tagTime
 	if len(tagger.Format) > 0 {
 		format = tagger.Format
@@ -65,5 +65,5 @@ func (tagger *dateTimeTagger) GenerateFullyQualifiedImageName(workingDir string,
 		return "", fmt.Errorf("bad timezone provided: \"%s\", error: %s", timezone, err)
 	}
 
-	return fmt.Sprintf("%s:%s", opts.ImageName, tagger.timeFn().In(loc).Format(format)), nil
+	return fmt.Sprintf("%s:%s", imageName, tagger.timeFn().In(loc).Format(format)), nil
 }

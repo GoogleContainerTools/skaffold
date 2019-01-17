@@ -23,43 +23,9 @@ import (
 )
 
 func TestGenerateFullyQualifiedImageName(t *testing.T) {
-	var tests = []struct {
-		description string
-		imageName   string
-		digest      string
-		expected    string
-		shouldErr   bool
-	}{
-		{
-			description: "no error",
-			imageName:   "test",
-			digest:      "sha256:12345abcde",
-			expected:    "test:12345abcde",
-		},
-		{
-			description: "wrong digest format",
-			imageName:   "test",
-			digest:      "wrong:digest:format",
-			shouldErr:   true,
-		},
-		{
-			description: "wrong digest format no colon",
-			imageName:   "test",
-			digest:      "sha256",
-			shouldErr:   true,
-		},
-	}
+	c := &ChecksumTagger{}
 
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			c := &ChecksumTagger{}
+	tag, err := c.GenerateFullyQualifiedImageName(".", "img:tag")
 
-			tag, err := c.GenerateFullyQualifiedImageName(".", Options{
-				ImageName: test.imageName,
-				Digest:    test.digest,
-			})
-
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, tag)
-		})
-	}
+	testutil.CheckErrorAndDeepEqual(t, false, err, "img:tag", tag)
 }

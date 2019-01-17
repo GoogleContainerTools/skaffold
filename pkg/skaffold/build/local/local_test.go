@@ -35,7 +35,7 @@ type FakeTagger struct {
 	Err error
 }
 
-func (f *FakeTagger) GenerateFullyQualifiedImageName(workingDir string, tagOpts tag.Options) (string, error) {
+func (f *FakeTagger) GenerateFullyQualifiedImageName(string, string) (string, error) {
 	return f.Out, f.Err
 }
 

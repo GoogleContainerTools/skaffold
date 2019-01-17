@@ -48,9 +48,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 }
 
 func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error) {
-	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, tag.Options{
-		ImageName: artifact.ImageName,
-	})
+	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, artifact.ImageName)
 	if err != nil {
 		return "", errors.Wrap(err, "generating tag")
 	}

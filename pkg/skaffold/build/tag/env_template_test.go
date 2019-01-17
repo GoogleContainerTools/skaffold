@@ -28,23 +28,21 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 		name      string
 		template  string
 		imageName string
-		digest    string
 		env       []string
 		expected  string
+		shoudErr  bool
 	}{
 		{
 			name:      "empty env",
-			template:  "{{.IMAGE_NAME}}:{{.DIGEST}}",
+			template:  "{{.IMAGE_NAME}}",
 			imageName: "foo",
-			digest:    "bar",
-			expected:  "foo:bar",
+			expected:  "foo",
 		},
 		{
 			name:      "env",
 			template:  "{{.FOO}}-{{.BAZ}}:latest",
 			env:       []string{"FOO=BAR", "BAZ=BAT"},
 			imageName: "foo",
-			digest:    "bar",
 			expected:  "BAR-BAT:latest",
 		},
 		{
@@ -52,15 +50,25 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			template:  "{{.IMAGE_NAME}}-{{.FROM_ENV}}:latest",
 			env:       []string{"FROM_ENV=FOO", "IMAGE_NAME=BAT"},
 			imageName: "image_name",
-			digest:    "bar",
 			expected:  "image_name-FOO:latest",
 		},
 		{
-			name:      "digest algo hex",
-			template:  "{{.IMAGE_NAME}}:{{.DIGEST_ALGO}}-{{.DIGEST_HEX}}",
+			name:      "digest is not supported anymore",
+			template:  "{{.IMAGE_NAME}}@{{.DIGEST}}",
 			imageName: "foo",
-			digest:    "sha256:abcd",
-			expected:  "foo:sha256-abcd",
+			shoudErr:  true,
+		},
+		{
+			name:      "digest algo is not supported anymore",
+			template:  "{{.IMAGE_NAME}}@{{.DIGEST_ALGO}}",
+			imageName: "foo",
+			shoudErr:  true,
+		},
+		{
+			name:      "digest hex is not supported anymore",
+			template:  "{{.IMAGE_NAME}}@{{.DIGEST_HEX}}",
+			imageName: "foo",
+			shoudErr:  true,
 		},
 	}
 	for _, test := range tests {
@@ -70,14 +78,13 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			}
 
 			c, err := NewEnvTemplateTagger(test.template)
-			testutil.CheckError(t, false, err)
+			testutil.CheckError(t, test.shoudErr, err)
 
-			got, err := c.GenerateFullyQualifiedImageName("", Options{
-				ImageName: test.imageName,
-				Digest:    test.digest,
-			})
+			if !test.shoudErr {
+				got, err := c.GenerateFullyQualifiedImageName("", test.imageName)
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, got)
+				testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, got)
+			}
 		})
 	}
 }

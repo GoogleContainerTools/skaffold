@@ -30,7 +30,6 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -239,7 +238,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 			if idx > 0 {
 				suffix = strconv.Itoa(idx + 1)
 			}
-			m := tag.CreateEnvVarMap(b.ImageName, extractTag(b.Tag))
+			m := createEnvVarMap(b.ImageName, extractTag(b.Tag))
 			for k, v := range m {
 				envMap[k+suffix] = v
 			}
@@ -268,6 +267,22 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 
 	helmErr := h.helm(ctx, out, args...)
 	return h.getDeployResults(ctx, ns, releaseName), helmErr
+}
+
+func createEnvVarMap(imageName string, digest string) map[string]string {
+	customMap := map[string]string{}
+	customMap["IMAGE_NAME"] = imageName
+	customMap["DIGEST"] = digest
+	if digest != "" {
+		names := strings.SplitN(digest, ":", 2)
+		if len(names) >= 2 {
+			customMap["DIGEST_ALGO"] = names[0]
+			customMap["DIGEST_HEX"] = names[1]
+		} else {
+			customMap["DIGEST_HEX"] = digest
+		}
+	}
+	return customMap
 }
 
 // imageName if the given string includes a fully qualified docker image name then lets trim just the tag part out
