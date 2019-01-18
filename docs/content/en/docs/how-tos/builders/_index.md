@@ -22,7 +22,7 @@ controls how Skaffold builds artifacts. To use a specific tool for building
 artifacts, add the value representing the tool and options for using the tool
 to the `build` section. For a detailed discussion on Skaffold configuration,
 see [Skaffold Concepts: Configuration](/docs/concepts/#configuration) and
-[skaffold.yaml References](/docs/references/config).
+[skaffold.yaml References](https://github.com/GoogleContainerTools/skaffold/blob/master/examples/annotated-skaffold.yaml).
 
 ## Dockerfile locally with Docker
 

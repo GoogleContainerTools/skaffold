@@ -13,7 +13,7 @@ configurations for different contexts. Different contexts are typically differen
 You can create profiles in the `profiles` section of `skaffold.yaml`. For a
 detailed discussion on Skaffold configuration,
 see [Skaffold Concepts: Configuration](/docs/concepts/#configuration) and
-[skaffold.yaml References](/docs/references/config).
+[skaffold.yaml References](https://github.com/GoogleContainerTools/skaffold/blob/master/examples/annotated-skaffold.yaml).
 
 ## Profiles (`profiles`)
 

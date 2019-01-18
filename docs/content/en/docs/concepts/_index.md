@@ -28,7 +28,7 @@ read the configuration file from the current directory.
 | `profiles`|  Profile is a set of settings that, when activated, overrides the current configuration. You can use Profile to override the `build` and the`deploy`> section. |
 
 You can learn more about the syntax of `skaffold.yaml` at
-[`skaffold.yaml References`](/docs/references/config).
+[`skaffold.yaml References`](https://github.com/GoogleContainerTools/skaffold/blob/master/examples/annotated-skaffold.yaml).
 
 ## Workflow
 
