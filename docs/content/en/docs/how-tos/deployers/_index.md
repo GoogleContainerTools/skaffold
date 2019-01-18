@@ -41,7 +41,7 @@ To use `kubectl`, add deploy type `kubectl` to the `deploy` section of
 
 |Option|Description|
 |----|----|
-|`manifests`| OPTIONAL. A list of paths to Kubernetes Manifests. Default value is `kubectl`.|
+|`manifests`| OPTIONAL. A list of paths to Kubernetes Manifests. Default value is `k8s/*.yaml`.|
 |`remoteManifests`|OPTIONAL. A list of paths to Kubernetes Manifests in remote clusters.|
 |`flags`| OPTIONAL. Additional flags to pass to `kubectl`. You can specify three types of flags: <ul> <li>`global`: flags that apply to every command.</li> <li>`apply`: flags that apply to creation commands.</li> <li>`delete`: flags that apply to deletion commands.</li><ul>|
 
