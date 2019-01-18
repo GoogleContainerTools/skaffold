@@ -43,7 +43,7 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace strin
 		return "", errors.Wrap(err, "running command")
 	}
 
-	bazelBin, err := bazelBin(ctx, workspace)
+	bazelBin, err := bazelBin(ctx, workspace, a)
 	if err != nil {
 		return "", errors.Wrap(err, "getting path of bazel-bin")
 	}
@@ -65,8 +65,11 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace strin
 	return imageID, nil
 }
 
-func bazelBin(ctx context.Context, workspace string) (string, error) {
-	cmd := exec.CommandContext(ctx, "bazel", "info", "bazel-bin")
+func bazelBin(ctx context.Context, workspace string, a *latest.BazelArtifact) (string, error) {
+	args := []string{"info", "bazel-bin"}
+	args = append(args, a.BuildArgs...)
+
+	cmd := exec.CommandContext(ctx, "bazel", args...)
 	cmd.Dir = workspace
 
 	buf, err := util.RunCmdOut(cmd)
