@@ -105,16 +105,12 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 		return errors.Wrap(err, "replacing images in manifests")
 	}
 
-	updated, err := k.kubectl.Apply(ctx, out, manifests)
+	manifests, err = manifests.SetLabels(merge(labellers...))
 	if err != nil {
-		return errors.Wrap(err, "apply")
+		return errors.Wrap(err, "setting labels in manifests")
 	}
 
-	dRes := parseManifestsForDeploys(k.kubectl.Namespace, updated)
-	labels := merge(labellers...)
-	labelDeployResults(labels, dRes)
-
-	return nil
+	return k.kubectl.Apply(ctx, out, manifests)
 }
 
 // Cleanup deletes what was deployed by calling Deploy.

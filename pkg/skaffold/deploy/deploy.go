@@ -21,14 +21,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"k8s.io/apimachinery/pkg/runtime"
 )
-
-// Artifact contains all information about a completed deployment
-type Artifact struct {
-	Obj       runtime.Object
-	Namespace string
-}
 
 // Deployer is the Deploy API of skaffold and responsible for deploying
 // the build results to a Kubernetes cluster
