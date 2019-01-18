@@ -73,7 +73,7 @@ func labelDeployResults(labels map[string]string, results []Artifact) {
 		return
 	}
 
-	client, err := kubernetes.GetClientset()
+	client, err := kubernetes.Client()
 	if err != nil {
 		logrus.Warnf("error retrieving kubernetes client: %s", err.Error())
 		return
@@ -122,26 +122,35 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 
 	modifiedJSON, _ := json.Marshal(modifiedObj)
 	p, _ := patch.CreateTwoWayMergePatch(originalJSON, modifiedJSON, modifiedObj)
-	gvr, err := groupVersionResource(disco, modifiedObj.GetObjectKind().GroupVersionKind())
+	gvr, namespaced, err := groupVersionResource(disco, modifiedObj.GetObjectKind().GroupVersionKind())
 	if err != nil {
 		return errors.Wrap(err, "getting group version resource from obj")
 	}
 
-	var namespace string
-	if accessor.GetNamespace() != "" {
-		namespace = accessor.GetNamespace()
+	// Resources can be either namespaced or cluster-scoped.
+	var ri dynamic.ResourceInterface
+	var fullname string
+	if namespaced {
+		namespace := res.Namespace
+		if accessor.GetNamespace() != "" {
+			namespace = accessor.GetNamespace()
+		}
+
+		ns, err := resolveNamespace(namespace)
+		if err != nil {
+			return errors.Wrap(err, "resolving namespace")
+		}
+		ri = client.Resource(gvr).Namespace(ns)
+		fullname = fmt.Sprintf("%s/%s", namespace, name)
+		logrus.Debugln("Patching", name, "in namespace", ns)
 	} else {
-		namespace = res.Namespace
+		ri = client.Resource(gvr)
+		fullname = name
+		logrus.Debugln("Patching", name, "(cluster-wide resource)")
 	}
 
-	ns, err := resolveNamespace(namespace)
-	if err != nil {
-		return errors.Wrap(err, "resolving namespace")
-	}
-	logrus.Debugln("Patching", name, "in namespace", ns)
-
-	if _, err := client.Resource(gvr).Namespace(ns).Patch(name, types.StrategicMergePatchType, p); err != nil {
-		return errors.Wrapf(err, "patching resource %s/%s", namespace, name)
+	if _, err := ri.Patch(name, types.StrategicMergePatchType, p); err != nil {
+		return errors.Wrapf(err, "patching resource %s", fullname)
 	}
 
 	return nil
@@ -163,10 +172,10 @@ func resolveNamespace(ns string) (string, error) {
 	return "default", nil
 }
 
-func groupVersionResource(disco discovery.DiscoveryInterface, gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) {
+func groupVersionResource(disco discovery.DiscoveryInterface, gvk schema.GroupVersionKind) (gvr schema.GroupVersionResource, namespaced bool, err error) {
 	resources, err := disco.ServerResourcesForGroupVersion(gvk.GroupVersion().String())
 	if err != nil {
-		return schema.GroupVersionResource{}, errors.Wrap(err, "getting server resources for group version")
+		return schema.GroupVersionResource{}, false, errors.Wrap(err, "getting server resources for group version")
 	}
 
 	for _, r := range resources.APIResources {
@@ -175,11 +184,11 @@ func groupVersionResource(disco discovery.DiscoveryInterface, gvk schema.GroupVe
 				Group:    gvk.Group,
 				Version:  gvk.Version,
 				Resource: r.Name,
-			}, nil
+			}, r.Namespaced, nil
 		}
 	}
 
-	return schema.GroupVersionResource{}, fmt.Errorf("could not find resource for %s", gvk.String())
+	return schema.GroupVersionResource{}, false, fmt.Errorf("could not find resource for %s", gvk.String())
 }
 
 func copyMap(dest, from map[string]string) {
