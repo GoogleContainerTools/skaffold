@@ -42,6 +42,7 @@ type kustomization struct {
 	CRDs               []string             `yaml:"crds"`
 	PatchesJSON6902    []patchJSON6902      `yaml:"patchesJson6902"`
 	ConfigMapGenerator []configMapGenerator `yaml:"configMapGenerator"`
+	SecretGenerator    []secretGenerator    `yaml:"secretGenerator"`
 }
 
 type patchJSON6902 struct {
@@ -49,6 +50,10 @@ type patchJSON6902 struct {
 }
 
 type configMapGenerator struct {
+	Files []string `yaml:"files"`
+}
+
+type secretGenerator struct {
 	Files []string `yaml:"files"`
 }
 
@@ -157,6 +162,9 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 		deps = append(deps, filepath.Join(dir, patch.Path))
 	}
 	for _, generator := range content.ConfigMapGenerator {
+		deps = append(deps, joinPaths(dir, generator.Files)...)
+	}
+	for _, generator := range content.SecretGenerator {
 		deps = append(deps, joinPaths(dir, generator.Files)...)
 	}
 
