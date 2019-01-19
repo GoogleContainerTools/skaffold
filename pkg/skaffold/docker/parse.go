@@ -145,7 +145,7 @@ func onbuildInstructions(nodes []*parser.Node) ([]*parser.Node, error) {
 		// Image names are case SENSITIVE
 		img, err := RetrieveImage(from.image)
 		if err != nil {
-			logrus.Warnf("Error processing base image for ONBUILD triggers: %s. Dependencies may be incomplete.", err)
+			logrus.Warnf("Error processing base image (%s) for ONBUILD triggers: %s. Dependencies may be incomplete.", from.image, err)
 			continue
 		}
 
