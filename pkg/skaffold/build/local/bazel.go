@@ -20,20 +20,26 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
 )
 
-func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace string, a *latest.BazelArtifact) (string, error) {
+func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace string, a *latest.Artifact) (string, error) {
 	args := []string{"build"}
-	args = append(args, a.BuildArgs...)
-	args = append(args, a.BuildTarget)
+	args = append(args, a.BazelArtifact.BuildArgs...)
+	args = append(args, a.BazelArtifact.BuildTarget)
 
 	cmd := exec.CommandContext(ctx, "bazel", args...)
 	cmd.Dir = workspace
@@ -43,19 +49,51 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace strin
 		return "", errors.Wrap(err, "running command")
 	}
 
-	bazelBin, err := bazelBin(ctx, workspace, a)
+	bazelBin, err := bazelBin(ctx, workspace, a.BazelArtifact)
 	if err != nil {
 		return "", errors.Wrap(err, "getting path of bazel-bin")
 	}
 
-	tarPath := buildTarPath(a.BuildTarget)
-	imageTar, err := os.Open(filepath.Join(bazelBin, tarPath))
+	tarPath := filepath.Join(bazelBin, buildTarPath(a.BazelArtifact.BuildTarget))
+
+	if b.pushImages {
+		uniqueTag := a.ImageName + ":" + util.RandomID()
+		return pushImage(tarPath, uniqueTag)
+	}
+
+	ref := buildImageTag(a.BazelArtifact.BuildTarget)
+	return b.loadImage(ctx, out, tarPath, ref)
+}
+
+func pushImage(tarPath, tag string) (string, error) {
+	t, err := name.NewTag(tag, name.WeakValidation)
+	if err != nil {
+		return "", errors.Wrapf(err, "parsing tag %q", tag)
+	}
+
+	auth, err := authn.DefaultKeychain.Resolve(t.Registry)
+	if err != nil {
+		return "", errors.Wrapf(err, "getting creds for %q", t)
+	}
+
+	i, err := tarball.ImageFromPath(tarPath, nil)
+	if err != nil {
+		return "", errors.Wrapf(err, "reading image %q", tarPath)
+	}
+
+	if err := remote.Write(t, i, auth, http.DefaultTransport); err != nil {
+		return "", errors.Wrapf(err, "writing image %q", t)
+	}
+
+	return docker.RemoteDigest(tag)
+}
+
+func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, ref string) (string, error) {
+	imageTar, err := os.Open(tarPath)
 	if err != nil {
 		return "", errors.Wrap(err, "opening image tarball")
 	}
 	defer imageTar.Close()
-
-	ref := buildImageTag(a.BuildTarget)
 
 	imageID, err := b.localDocker.Load(ctx, out, imageTar, ref)
 	if err != nil {
