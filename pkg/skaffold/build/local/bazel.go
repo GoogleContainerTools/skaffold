@@ -61,8 +61,7 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace strin
 		return pushImage(tarPath, tag)
 	}
 
-	bazelTag := buildImageTag(a.BuildTarget)
-	return b.loadImage(ctx, out, tarPath, bazelTag, tag)
+	return b.loadImage(ctx, out, tarPath, a, tag)
 }
 
 func pushImage(tarPath, tag string) (string, error) {
@@ -88,13 +87,14 @@ func pushImage(tarPath, tag string) (string, error) {
 	return docker.RemoteDigest(tag)
 }
 
-func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, bazelTag string, tag string) (string, error) {
+func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, a *latest.BazelArtifact, tag string) (string, error) {
 	imageTar, err := os.Open(tarPath)
 	if err != nil {
 		return "", errors.Wrap(err, "opening image tarball")
 	}
 	defer imageTar.Close()
 
+	bazelTag := buildImageTag(a.BuildTarget)
 	imageID, err := b.localDocker.Load(ctx, out, imageTar, bazelTag)
 	if err != nil {
 		return "", errors.Wrap(err, "loading image into docker daemon")

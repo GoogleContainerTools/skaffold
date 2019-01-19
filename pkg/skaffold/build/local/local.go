@@ -68,7 +68,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 	}
 
 	// Jib pushes images directly
-	if artifact.JibMavenArtifact != nil || artifact.JibGradleArtifact != nil {
+	if artifact.JibMavenArtifact != nil || artifact.JibGradleArtifact != nil || artifact.BazelArtifact != nil {
 		digest := digestOrImageID
 		return tag + "@" + digest, nil
 	}
