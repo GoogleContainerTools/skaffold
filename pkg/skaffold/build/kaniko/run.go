@@ -32,6 +32,10 @@ import (
 )
 
 func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artifact) (string, error) {
+	if artifact.DockerArtifact == nil {
+		return "", errors.New("kaniko builder supports only Docker artifacts")
+	}
+
 	initialTag := util.RandomID()
 	imageDst := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
 
