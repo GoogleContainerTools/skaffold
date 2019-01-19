@@ -34,7 +34,7 @@ func AddTag(src, target string) error {
 		return errors.Wrap(err, "getting image")
 	}
 
-	targetRef, err := name.ParseReference(target, name.StrictValidation)
+	targetRef, err := name.ParseReference(target, name.WeakValidation)
 	if err != nil {
 		return errors.Wrap(err, "getting target reference")
 	}
@@ -71,7 +71,7 @@ func retrieveRemoteConfig(identifier string) (*v1.ConfigFile, error) {
 }
 
 func remoteImage(identifier string) (v1.Image, error) {
-	ref, err := name.ParseReference(identifier, name.StrictValidation)
+	ref, err := name.ParseReference(identifier, name.WeakValidation)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing initial ref")
 	}
