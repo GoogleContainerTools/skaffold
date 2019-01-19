@@ -52,32 +52,22 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "build artifact")
 	}
 
-	if !b.pushImages {
-		imageID := digestOrImageID
-
-		// k8s doesn't recognize the imageID or any combination of the image name
-		// suffixed with the imageID, as a valid image name.
-		// So, the solution we chose is to create a tag, just for Skaffold, from
-		// the imageID, and use that in the manifests.
-		uniqueTag := artifact.ImageName + ":" + strings.TrimPrefix(imageID, "sha256:")
-		if err := b.localDocker.Tag(ctx, imageID, uniqueTag); err != nil {
-			return "", err
-		}
-
-		return uniqueTag, nil
-	}
-
-	// Jib pushes images directly
-	if artifact.JibMavenArtifact != nil || artifact.JibGradleArtifact != nil || artifact.BazelArtifact != nil {
+	if b.pushImages {
 		digest := digestOrImageID
 		return tag + "@" + digest, nil
 	}
 
-	digest, err := b.localDocker.Push(ctx, out, tag)
-	if err != nil {
-		return "", errors.Wrap(err, "pushing")
+	// k8s doesn't recognize the imageID or any combination of the image name
+	// suffixed with the imageID, as a valid image name.
+	// So, the solution we chose is to create a tag, just for Skaffold, from
+	// the imageID, and use that in the manifests.
+	imageID := digestOrImageID
+	uniqueTag := artifact.ImageName + ":" + strings.TrimPrefix(imageID, "sha256:")
+	if err := b.localDocker.Tag(ctx, imageID, uniqueTag); err != nil {
+		return "", err
 	}
-	return tag + "@" + digest, nil
+
+	return uniqueTag, nil
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
