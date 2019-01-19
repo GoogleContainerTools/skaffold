@@ -49,8 +49,8 @@ func (v ClientVersion) String() string {
 }
 
 // CheckVersion warns the user if their kubectl version is < 1.12.0
-func (c *CLI) CheckVersion() error {
-	m, err := strconv.Atoi(c.Version().Minor)
+func (c *CLI) CheckVersion(ctx context.Context) error {
+	m, err := strconv.Atoi(c.Version(ctx).Minor)
 	if err != nil {
 		return errors.Wrap(err, "couldn't get kubectl minor version")
 	}
@@ -61,7 +61,7 @@ func (c *CLI) CheckVersion() error {
 }
 
 // Version returns the client version of kubectl.
-func (c *CLI) Version() ClientVersion {
+func (c *CLI) Version(ctx context.Context) ClientVersion {
 	c.versionOnce.Do(func() {
 		version := Version{
 			Client: ClientVersion{
@@ -70,7 +70,7 @@ func (c *CLI) Version() ClientVersion {
 			},
 		}
 
-		buf, err := c.getVersion(context.Background())
+		buf, err := c.getVersion(ctx)
 		if err != nil {
 			logrus.Warnln("unable to get kubectl client version", err)
 		} else if err := json.Unmarshal(buf, &version); err != nil {

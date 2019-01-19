@@ -29,7 +29,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-const testKubeContext = "kubecontext"
+const (
+	testKubeContext = "kubecontext"
+	kubectlVersion  = `{"clientVersion":{"major":"1","minor":"12"}}`
+)
 
 const deploymentWebYAML = `apiVersion: v1
 kind: Pod
@@ -89,7 +92,7 @@ func TestKubectlDeploy(t *testing.T) {
 				Manifests: []string{"deployment.yaml"},
 			},
 			command: testutil.NewFakeCmd(t).
-				WithRunOut("kubectl version --client -ojson", "1.12").
+				WithRunOut("kubectl version --client -ojson", kubectlVersion).
 				WithRun("kubectl --context kubecontext --namespace testNamespace apply --force -f -"),
 			builds: []build.Artifact{
 				{
@@ -105,7 +108,7 @@ func TestKubectlDeploy(t *testing.T) {
 				Manifests: []string{"deployment.yaml"},
 			},
 			command: testutil.NewFakeCmd(t).
-				WithRunOut("kubectl version --client -ojson", "1.12").
+				WithRunOut("kubectl version --client -ojson", kubectlVersion).
 				WithRunErr("kubectl --context kubecontext --namespace testNamespace apply --force -f -", fmt.Errorf("")),
 			builds: []build.Artifact{
 				{
@@ -126,7 +129,7 @@ func TestKubectlDeploy(t *testing.T) {
 				},
 			},
 			command: testutil.NewFakeCmd(t).
-				WithRunOut("kubectl version --client -ojson", "1.12").
+				WithRunOut("kubectl version --client -ojson", kubectlVersion).
 				WithRunErr("kubectl --context kubecontext --namespace testNamespace -v=0 apply --overwrite=true --force -f -", fmt.Errorf("")),
 			builds: []build.Artifact{
 				{
@@ -216,7 +219,7 @@ func TestKubectlCleanup(t *testing.T) {
 func TestKubectlRedeploy(t *testing.T) {
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 	util.DefaultExecCommand = testutil.NewFakeCmd(t).
-		WithRunOut("kubectl version --client -ojson", "1.12").
+		WithRunOut("kubectl version --client -ojson", kubectlVersion).
 		WithRunInput("kubectl --context kubecontext --namespace testNamespace apply --force -f -", `apiVersion: v1
 kind: Pod
 metadata:
