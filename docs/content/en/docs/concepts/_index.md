@@ -30,6 +30,21 @@ read the configuration file from the current directory.
 You can learn more about the syntax of `skaffold.yaml` at
 [`skaffold.yaml References`](https://github.com/GoogleContainerTools/skaffold/blob/master/examples/annotated-skaffold.yaml).
 
+## Global configuration (~/.skaffold/config)
+
+Some context specific settings can be configured in a global configuration file, defaulting to `~/.skaffold/config`. Options can be configured globally or for specific contexts.
+The options are
+
+| Option | Type | Description |
+| ------ | ---- | ----------- |
+| `default-repo` | string | The image registry where images are published (See below). |
+| `local-cluster` | boolean | If true, do not try to push images after building. By default, contexts with names `docker-for-desktop`, `docker-desktop`, or `minikube` are treated as local. |
+
+For example, to treat any context as local by default:
+```
+skaffold config set --global local-cluster true
+```
+
 ## Workflow
 
 Skaffold features a five-stage workflow:
