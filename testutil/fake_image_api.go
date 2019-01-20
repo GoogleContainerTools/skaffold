@@ -37,6 +37,7 @@ type FakeAPIClient struct {
 	ErrImageInspect bool
 	ErrImageTag     bool
 	ErrImagePush    bool
+	ErrImagePull    bool
 	ErrStream       bool
 }
 
@@ -118,6 +119,14 @@ func (f *FakeAPIClient) ImagePush(_ context.Context, ref string, _ types.ImagePu
 	digest := f.TagToImageID[ref]
 
 	return f.body(digest), nil
+}
+
+func (f *FakeAPIClient) ImagePull(_ context.Context, ref string, _ types.ImagePullOptions) (io.ReadCloser, error) {
+	if f.ErrImagePull {
+		return nil, fmt.Errorf("")
+	}
+
+	return f.body(""), nil
 }
 
 func (f *FakeAPIClient) Info(context.Context) (types.Info, error) {

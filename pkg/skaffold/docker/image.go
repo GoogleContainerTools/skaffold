@@ -43,6 +43,7 @@ type LocalDaemon interface {
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
 	Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string) (string, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
+	Pull(ctx context.Context, out io.Writer, ref string) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
 	Tag(ctx context.Context, image, ref string) error
 	ImageID(ctx context.Context, ref string) (string, error)
@@ -220,6 +221,24 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 	}
 
 	return digest, nil
+}
+
+// Pull pulls an image reference from a registry.
+func (l *localDaemon) Pull(ctx context.Context, out io.Writer, ref string) error {
+	registryAuth, err := l.encodedRegistryAuth(ctx, DefaultAuthHelper, ref)
+	if err != nil {
+		return errors.Wrapf(err, "getting auth config for %s", ref)
+	}
+
+	rc, err := l.apiClient.ImagePull(ctx, ref, types.ImagePullOptions{
+		RegistryAuth: registryAuth,
+	})
+	if err != nil {
+		return errors.Wrap(err, "pulling image from repository")
+	}
+	defer rc.Close()
+
+	return streamDockerMessages(out, rc, nil)
 }
 
 // Load loads an image from a tar file. Returns the imageID for the loaded image.

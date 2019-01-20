@@ -29,6 +29,10 @@ import (
 )
 
 func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact) (string, error) {
+	if err := b.pullCacheFromImages(ctx, out, a); err != nil {
+		return "", errors.Wrap(err, "pulling cache-from images")
+	}
+
 	initialTag := util.RandomID()
 
 	if b.cfg.UseDockerCLI || b.cfg.UseBuildkit {
@@ -55,4 +59,27 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace stri
 	}
 
 	return b.localDocker.Build(ctx, out, workspace, a, initialTag)
+}
+
+func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *latest.DockerArtifact) error {
+	if len(a.CacheFrom) == 0 {
+		return nil
+	}
+
+	for _, image := range a.CacheFrom {
+		imageID, err := b.localDocker.ImageID(ctx, image)
+		if err != nil {
+			return errors.Wrapf(err, "getting imageID for %s", image)
+		}
+		if imageID != "" {
+			// already pulled
+			continue
+		}
+
+		if err := b.localDocker.Pull(ctx, out, image); err != nil {
+			return errors.Wrapf(err, "pulling image %s", image)
+		}
+	}
+
+	return nil
 }
