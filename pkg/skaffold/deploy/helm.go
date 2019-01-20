@@ -262,6 +262,9 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	if r.Wait {
 		args = append(args, "--wait")
 	}
+	if r.Force {
+		args = append(args, "--force")
+	}
 	args = append(args, setOpts...)
 
 	helmErr := h.helm(ctx, out, args...)
