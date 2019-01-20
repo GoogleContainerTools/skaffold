@@ -177,7 +177,8 @@ type KubectlFlags struct {
 
 // HelmDeploy contains the configuration needed for deploying with helm
 type HelmDeploy struct {
-	Releases []HelmRelease `yaml:"releases,omitempty"`
+	Releases []
+	`yaml:"releases,omitempty"`
 }
 
 // KustomizeDeploy contains the configuration needed for deploying with kustomize.
@@ -196,6 +197,7 @@ type HelmRelease struct {
 	SetValues         map[string]string      `yaml:"setValues,omitempty"`
 	SetValueTemplates map[string]string      `yaml:"setValueTemplates,omitempty"`
 	Wait              bool                   `yaml:"wait,omitempty"`
+	Force             bool                   `yaml:"force,omitempty"`
 	RecreatePods      bool                   `yaml:"recreatePods,omitempty"`
 	Overrides         map[string]interface{} `yaml:"overrides,omitempty"`
 	Packaged          *HelmPackaged          `yaml:"packaged,omitempty"`
