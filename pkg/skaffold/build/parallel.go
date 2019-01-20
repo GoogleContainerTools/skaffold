@@ -44,28 +44,35 @@ func InParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts
 	n := len(artifacts)
 	tags := make([]string, n)
 	errs := make([]error, n)
-	outputs := make([]chan (string), n)
+	outputs := make([]chan []byte, n)
 
 	// Run builds in //
 	for index := range artifacts {
 		i := index
-		lines := make(chan (string), bufferedLinesPerArtifact)
+		lines := make(chan []byte, bufferedLinesPerArtifact)
 		outputs[i] = lines
 
 		r, w := io.Pipe()
 
+		// Log to the pipe, output will be collected and printed later
 		go func() {
-			// Log to the pipe, output will be collected and printed later
-			fmt.Fprintf(w, "Building [%s]...\n", artifacts[i].ImageName)
+			// Make sure logs are printed in colors
+			var cw io.WriteCloser
+			if color.IsTerminal(out) {
+				cw = color.ColoredWriteCloser{WriteCloser: w}
+			} else {
+				cw = w
+			}
 
-			tags[i], errs[i] = buildArtifact(ctx, w, tagger, artifacts[i])
-			w.Close()
+			color.Default.Fprintf(cw, "Building [%s]...\n", artifacts[i].ImageName)
+			tags[i], errs[i] = buildArtifact(ctx, cw, tagger, artifacts[i])
+			cw.Close()
 		}()
 
 		go func() {
 			scanner := bufio.NewScanner(r)
 			for scanner.Scan() {
-				lines <- scanner.Text()
+				lines <- scanner.Bytes()
 			}
 			close(lines)
 		}()
@@ -76,7 +83,8 @@ func InParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts
 
 	for i, artifact := range artifacts {
 		for line := range outputs[i] {
-			color.Default.Fprintln(out, line)
+			out.Write(line)
+			fmt.Fprintln(out)
 		}
 
 		if errs[i] != nil {
