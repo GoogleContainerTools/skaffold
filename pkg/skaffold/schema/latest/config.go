@@ -177,7 +177,7 @@ type KubectlFlags struct {
 
 // HelmDeploy contains the configuration needed for deploying with helm
 type HelmDeploy struct {
-	Releases [] `yaml:"releases,omitempty"`
+	Releases []HelmRelease `yaml:"releases,omitempty"`
 }
 
 // KustomizeDeploy contains the configuration needed for deploying with kustomize.
