@@ -183,6 +183,7 @@ deploy:
 
  # helm:
     # helm releases to deploy.
+    # Uses "helm install" if not installed yet, otherwise "helm upgrade" is executed
     # releases:
     # - name: skaffold-helm
     #   chartPath: skaffold-helm
@@ -193,9 +194,11 @@ deploy:
     #     image: skaffold-helm
     #   namespace: skaffold
     #   version: ""
-    #   recreatePods: false
+    #   # use --recreate-pods for helm upgrade
+    #   recreatePods: true
     #   wait: false
-    #   force: false
+    #   # use --force for helm upgrade
+    #   force: true
     #
     #   # setValues get appended to the helm deploy with --set.
     #   setValues:
