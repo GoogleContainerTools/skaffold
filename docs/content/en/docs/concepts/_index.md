@@ -23,8 +23,8 @@ read the configuration file from the current directory.
 | `apiVersion` | The Skaffold API version you would like to use. The current API version is {{< skaffold-version >}}. |
 | `kind`  |  The Skaffold configuration file has the kind `Config`.  |
 | `build`  |  Specifies how Skaffold should build artifacts. You have control over what tool Skaffold can use, how Skaffold tags artifacts and how Skaffold pushes artifacts. Skaffold supports using local Docker daemon, Google Cloud Build, Kaniko, or Bazel to build artifacts. See [Using Builders](/docs/how-tos/builders) and [Using Taggers](/docs/how-tos/taggers) for more information. |
-| `test` |  Specifies how Skaffold should test artifacts. Skaffold supports [container-structure-tests](https://github.com/GoogleContainerTools/container-structure-test) to test built artifacts.See [Using testers](/docs/how-tos/testers) for more information. |
-| `deploy` |  Specifies how Skaffold should deploy artifacts. Skaffold supports using `kubectl`, Helm, or kustomize to deploy artifacts.See [Using Deployers](/docs/how-tos/deployers) for more information. |
+| `test` |  Specifies how Skaffold should test artifacts. Skaffold supports [container-structure-tests](https://github.com/GoogleContainerTools/container-structure-test) to test built artifacts. See [Using testers](/docs/how-tos/testers) for more information. |
+| `deploy` |  Specifies how Skaffold should deploy artifacts. Skaffold supports using `kubectl`, Helm, or kustomize to deploy artifacts. See [Using Deployers](/docs/how-tos/deployers) for more information. |
 | `profiles`|  Profile is a set of settings that, when activated, overrides the current configuration. You can use Profile to override the `build` and the`deploy`> section. |
 
 You can learn more about the syntax of `skaffold.yaml` at
@@ -86,7 +86,7 @@ the full image name is rewritten on top of the default-repo so similar image nam
 
 Automated image name rewriting strategies are determined based on the default-repo and the original image repository: 
 
-* default-repo does not contain gcr.io
+* default-repo does not begin with gcr.io
   * **strategy**: 		escape & concat & truncate to 256
   
     ```
@@ -94,14 +94,14 @@ Automated image name rewriting strategies are determined based on the default-re
      default-repo:      aws_account_id.dkr.ecr.region.amazonaws.com
      rewritten image:   aws_account_id.dkr.ecr.region.amazonaws.com/gcr_io_k8s-skaffold_skaffold-example1
     ```
-* default-repo contains "gcr.io" (special case - as GCR allows for infinite deep image repo names)
+* default-repo begins with "gcr.io" (special case - as GCR allows for infinite deep image repo names)
   * **strategy**: concat unless prefix matches
   * **example1**: prefix doesn't match:
     
     ````
       original image: 	gcr.io/k8s-skaffold/skaffold-example1
       default-repo: 	gcr.io/myproject/myimage
-      rewritten image:  gcr.io/myproject/gcr.io/k8s-skaffold/skaffold-example1
+      rewritten image:  gcr.io/myproject/myimage/gcr.io/k8s-skaffold/skaffold-example1
     ````	
   * **example2**: prefix matches:
     
@@ -109,6 +109,13 @@ Automated image name rewriting strategies are determined based on the default-re
       original image: 	gcr.io/k8s-skaffold/skaffold-example1
       default-repo: 	gcr.io/k8s-skaffold
       rewritten image:  gcr.io/k8s-skaffold/skaffold-example1	
+    ```
+  * **example3**: shared prefix:
+    
+    ```
+      original image: 	gcr.io/k8s-skaffold/skaffold-example1
+      default-repo: 	gcr.io/k8s-skaffold/myimage
+      rewritten image:  gcr.io/k8s-skaffold/myimage/skaffold-example1	
     ```
 
 ## Architecture
