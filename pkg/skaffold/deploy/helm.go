@@ -173,6 +173,9 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		if r.RecreatePods {
 			args = append(args, "--recreate-pods")
 		}
+		if r.Force {
+			args = append(args, "--force")
+		}
 	}
 
 	// There are 2 strategies:
@@ -261,9 +264,6 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	}
 	if r.Wait {
 		args = append(args, "--wait")
-	}
-	if r.Force {
-		args = append(args, "--force")
 	}
 	args = append(args, setOpts...)
 
