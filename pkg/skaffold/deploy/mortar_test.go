@@ -41,7 +41,8 @@ func TestMortarDeploy(t *testing.T) {
 				Name:   "test-shot",
 				Source: "manifests/",
 			},
-			command: testutil.NewFakeCmd("mortar fire manifests/ test-shot", nil),
+			command: testutil.NewFakeCmd(t).
+				WithRun("mortar fire manifests/ test-shot"),
 			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",
@@ -56,7 +57,8 @@ func TestMortarDeploy(t *testing.T) {
 				Source: "manifests/",
 				Config: "shot-test.yml",
 			},
-			command: testutil.NewFakeCmd("mortar fire -c shot-test.yml manifests/ test-shot", nil),
+			command: testutil.NewFakeCmd(t).
+				WithRun("mortar fire -c shot-test.yml manifests/ test-shot"),
 			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",
@@ -74,7 +76,7 @@ func TestMortarDeploy(t *testing.T) {
 			}
 
 			m := NewMortarDeployer(test.cfg)
-			_, err := m.Deploy(context.Background(), ioutil.Discard, test.builds)
+			err := m.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})
@@ -94,7 +96,7 @@ func TestMortarCleanup(t *testing.T) {
 				Name:   "test-shot",
 				Source: "manifests/",
 			},
-			command: testutil.NewFakeCmd("mortar yank --force test-shot", nil),
+			command: testutil.NewFakeCmd(t).WithRun("mortar yank --force test-shot"),
 		},
 	}
 

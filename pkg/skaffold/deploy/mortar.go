@@ -52,7 +52,8 @@ func (m *MortarDeployer) Labels() map[string]string {
 }
 
 // Deploy runs `mortar fire ...` on the configured manifests/templates.
-func (m *MortarDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
+// We really can't use the labellers at this point as only Mortar will parse and evaluate the templates
+func (m *MortarDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) error {
 	logrus.Debugf("Mortar::Deploy: Cfg: %v\n", m.MortarDeploy)
 
 	var args []string
@@ -67,9 +68,9 @@ func (m *MortarDeployer) Deploy(ctx context.Context, out io.Writer, builds []bui
 	cmd := exec.CommandContext(ctx, "mortar", args...)
 	err := util.RunCmd(cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "mortar fire")
+		return errors.Wrap(err, "mortar fire")
 	}
-	return nil, nil
+	return nil
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
