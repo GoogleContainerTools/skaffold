@@ -218,7 +218,7 @@ func TestLocalRun(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			l := Builder{
 				cfg:          &latest.LocalBuild{},
-				localDocker:  docker.NewLocalDaemon(&test.api),
+				localDocker:  docker.NewLocalDaemon(&test.api, nil),
 				localCluster: test.localCluster,
 			}
 
