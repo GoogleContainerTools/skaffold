@@ -95,29 +95,40 @@ func TestRun(t *testing.T) {
 			args:        []string{"run"},
 			pods:        []string{"getting-started"},
 			dir:         "examples/getting-started",
-		},
-		{
+		}, {
+			description: "nodejs example",
+			args:        []string{"run"},
+			pods:        []string{"node"},
+			dir:         "examples/nodejs",
+		}, {
+			description: "structure-tests example",
+			args:        []string{"run"},
+			pods:        []string{"getting-started"},
+			dir:         "examples/structure-tests",
+		}, {
+			description: "microservices example",
+			args:        []string{"run"},
+			deployments: []string{"leeroy-app", "leeroy-web"},
+			dir:         "examples/microservices",
+		}, {
 			description: "annotated getting-started example",
 			args:        []string{"run"},
 			filename:    "annotated-skaffold.yaml",
 			pods:        []string{"getting-started"},
 			dir:         "examples",
-		},
-		{
+		}, {
 			description: "getting-started envTagger",
 			args:        []string{"run"},
 			pods:        []string{"getting-started"},
 			dir:         "examples/tagging-with-environment-variables",
 			env:         []string{"FOO=foo"},
-		},
-		{
+		}, {
 			description: "gcb builder example",
 			args:        []string{"run", "-p", "gcb"},
 			pods:        []string{"getting-started"},
 			dir:         "examples/structure-tests",
 			remoteOnly:  true,
-		},
-		{
+		}, {
 			description: "deploy kustomize",
 			args:        []string{"deploy", "--images", "index.docker.io/library/busybox:1"},
 			deployments: []string{"kustomize-test"},
@@ -130,28 +141,24 @@ func TestRun(t *testing.T) {
 				}
 			},
 			dir: "examples/kustomize",
-		},
-		{
+		}, {
 			description: "bazel example",
 			args:        []string{"run"},
 			pods:        []string{"bazel"},
 			dir:         "examples/bazel",
-		},
-		{
+		}, {
 			description: "kaniko example",
 			args:        []string{"run"},
 			pods:        []string{"getting-started-kaniko"},
 			dir:         "examples/kaniko",
 			remoteOnly:  true,
-		},
-		{
+		}, {
 			description: "kaniko local example",
 			args:        []string{"run"},
 			pods:        []string{"getting-started-kaniko"},
 			dir:         "examples/kaniko-local",
 			remoteOnly:  true,
-		},
-		{
+		}, {
 			description: "helm example",
 			args:        []string{"run"},
 			deployments: []string{"skaffold-helm"},
