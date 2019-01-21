@@ -55,11 +55,10 @@ func (m *MortarDeployer) Labels() map[string]string {
 func (m *MortarDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
 	logrus.Debugf("Mortar::Deploy: Cfg: %v\n", m.MortarDeploy)
 
-	args := make([]string, 0)
+	var args []string
 	args = append(args, "fire")
 	if m.MortarDeploy.Config != "" {
-		args = append(args, "-c")
-		args = append(args, m.MortarDeploy.Config)
+		args = append(args, "-c", m.MortarDeploy.Config)
 	}
 	args = append(args, m.MortarDeploy.Source)
 	args = append(args, m.MortarDeploy.Name)
@@ -125,7 +124,7 @@ func hasKnownSuffix(file string) bool {
 }
 
 func findManifestFiles(base string) ([]string, error) {
-	files := make([]string, 0)
+	var files []string
 	err := filepath.Walk(base, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
