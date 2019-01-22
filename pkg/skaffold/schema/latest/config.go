@@ -195,9 +195,10 @@ type HelmRelease struct {
 	Version           string                 `yaml:"version,omitempty"`
 	SetValues         map[string]string      `yaml:"setValues,omitempty"`
 	SetValueTemplates map[string]string      `yaml:"setValueTemplates,omitempty"`
-	Wait              bool                   `yaml:"wait,omitempty"`
 	Force             bool                   `yaml:"force,omitempty"`
 	RecreatePods      bool                   `yaml:"recreatePods,omitempty"`
+	Wait              bool                   `yaml:"wait,omitempty"`
+	Timeout           int                    `yaml:"timeout,omitempty"`
 	Overrides         map[string]interface{} `yaml:"overrides,omitempty"`
 	Packaged          *HelmPackaged          `yaml:"packaged,omitempty"`
 	ImageStrategy     HelmImageStrategy      `yaml:"imageStrategy,omitempty"`
