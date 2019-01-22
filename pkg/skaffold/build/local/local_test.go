@@ -141,6 +141,77 @@ func TestLocalRun(t *testing.T) {
 			tagger:      &FakeTagger{Err: fmt.Errorf("")},
 			shouldErr:   true,
 		},
+		{
+			description: "cache-from images already pulled",
+			artifacts: []*latest.Artifact{{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						CacheFrom: []string{"pull1", "pull2"},
+					},
+				}},
+			},
+			api: testutil.FakeAPIClient{
+				TagToImageID: map[string]string{
+					"pull1": "imageID1",
+					"pull2": "imageID2",
+				},
+			},
+			tagger: &FakeTagger{Out: "gcr.io/test/image:tag"},
+			expected: []build.Artifact{{
+				ImageName: "gcr.io/test/image",
+				Tag:       "gcr.io/test/image:tag",
+			}},
+		},
+		{
+			description: "pull cache-from images",
+			artifacts: []*latest.Artifact{{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						CacheFrom: []string{"pull1", "pull2"},
+					},
+				}},
+			},
+			api:    testutil.FakeAPIClient{},
+			tagger: &FakeTagger{Out: "gcr.io/test/image:tag"},
+			expected: []build.Artifact{{
+				ImageName: "gcr.io/test/image",
+				Tag:       "gcr.io/test/image:tag",
+			}},
+		},
+		{
+			description: "pull error",
+			artifacts: []*latest.Artifact{{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						CacheFrom: []string{"pull1"},
+					},
+				}},
+			},
+			api: testutil.FakeAPIClient{
+				ErrImagePull: true,
+			},
+			tagger:    &FakeTagger{Out: "gcr.io/test/image:tag"},
+			shouldErr: true,
+		},
+		{
+			description: "inspect error",
+			artifacts: []*latest.Artifact{{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						CacheFrom: []string{"pull1"},
+					},
+				}},
+			},
+			api: testutil.FakeAPIClient{
+				ErrImageInspect: true,
+			},
+			tagger:    &FakeTagger{Out: "gcr.io/test/image:tag"},
+			shouldErr: true,
+		},
 	}
 
 	for _, test := range tests {
