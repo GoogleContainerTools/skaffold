@@ -33,16 +33,20 @@ type Syncer struct{}
 var syncedDirs = map[string]struct{}{}
 
 func (k *Syncer) Sync(ctx context.Context, s *sync.Item) error {
-	logrus.Infoln("Copying files:", s.Copy, "to", s.Image)
+	if len(s.Copy) > 0 {
+		logrus.Infoln("Copying files:", s.Copy, "to", s.Image)
 
-	if err := sync.Perform(ctx, s.Image, s.Copy, copyFileFn); err != nil {
-		return errors.Wrap(err, "copying files")
+		if err := sync.Perform(ctx, s.Image, s.Copy, copyFileFn); err != nil {
+			return errors.Wrap(err, "copying files")
+		}
 	}
 
-	logrus.Infoln("Deleting files:", s.Delete, "from", s.Image)
+	if len(s.Delete) > 0 {
+		logrus.Infoln("Deleting files:", s.Delete, "from", s.Image)
 
-	if err := sync.Perform(ctx, s.Image, s.Delete, deleteFileFn); err != nil {
-		return errors.Wrap(err, "deleting files")
+		if err := sync.Perform(ctx, s.Image, s.Delete, deleteFileFn); err != nil {
+			return errors.Wrap(err, "deleting files")
+		}
 	}
 
 	return nil
