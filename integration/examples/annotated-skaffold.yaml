@@ -118,7 +118,7 @@ build:
 
   # Docker artifacts can be built on a Kubernetes cluster with Kaniko.
   # Exactly one buildContext must be specified to use kaniko
-  # If localDir is specified, skaffold will mount sources directly via a emptyDir volume	
+  # If localDir is specified, skaffold will mount sources directly via a emptyDir volume  
   # If gcsBucket is specified, skaffold will send sources to the GCS bucket provided
   # Kaniko also needs access to a service account to push the final image.
   # See https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster
@@ -183,6 +183,7 @@ deploy:
 
  # helm:
     # helm releases to deploy.
+    # Uses "helm install" if not installed yet, otherwise "helm upgrade" is executed
     # releases:
     # - name: skaffold-helm
     #   chartPath: skaffold-helm
@@ -193,7 +194,15 @@ deploy:
     #     image: skaffold-helm
     #   namespace: skaffold
     #   version: ""
-    #   recreatePods: false
+    #   # Helm command line parameters:
+    #   # use --recreate-pods for helm upgrade
+    #   recreatePods: true
+    #   # use --wait
+    #   wait: false
+    #   # optional timeout for --wait
+    #   timeout: 60
+    #   # use --force for helm upgrade
+    #   force: true
     #
     #   # setValues get appended to the helm deploy with --set.
     #   setValues:

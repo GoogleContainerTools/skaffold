@@ -194,9 +194,13 @@ deploy:
     #     image: skaffold-helm
     #   namespace: skaffold
     #   version: ""
+    #   # Helm command line parameters:
     #   # use --recreate-pods for helm upgrade
     #   recreatePods: true
+    #   # use --wait
     #   wait: false
+    #   # optional timeout for --wait
+    #   timeout: 60
     #   # use --force for helm upgrade
     #   force: true
     #
