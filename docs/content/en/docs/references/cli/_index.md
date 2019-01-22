@@ -213,7 +213,7 @@ Flags:
       --skip-tests                Whether to skip the tests after building
       --tail                      Stream logs from deployed objects (default true)
       --toot                      Emit a terminal beep after the deploy is complete
-      --trigger string            How are changes detected? (polling, manual or notify) (default "polling")
+      --trigger string            How are changes detected? (polling or manual) (default "polling")
   -w, --watch-image stringArray   Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
   -i, --watch-poll-interval int   Interval (in ms) between two checks for file changes (default 1000)
 
