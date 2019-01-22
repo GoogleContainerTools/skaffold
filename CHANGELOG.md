@@ -1,3 +1,39 @@
+# v0.21.1 Release - 1/22/2019
+
+New Features:
+* Add a log when bazel deps take a long time [#1498](https://github.com/GoogleContainerTools/skaffold/pull/1498)
+* Pre-pull cache-from images [#1495](https://github.com/GoogleContainerTools/skaffold/pull/1495)
+* Pass bazel args to `bazel info hazel-bin` [#1487](https://github.com/GoogleContainerTools/skaffold/pull/1487)
+*  Support secretGenerators with kustomize  [#1488](https://github.com/GoogleContainerTools/skaffold/pull/1488)
+
+
+Fixes:
+* Fix coloured output when building in // [#1501](https://github.com/GoogleContainerTools/skaffold/pull/1501)
+* Fix onbuild analysis [#1491](https://github.com/GoogleContainerTools/skaffold/pull/1491)
+* Fix Broken link to references/config in documentation [#1486](https://github.com/GoogleContainerTools/skaffold/pull/1486)
+
+
+Updates & refactorings:
+* Add error for non Docker artifacts built with Kaniko [#1494](https://github.com/GoogleContainerTools/skaffold/pull/1494)
+* Update bazel example [#1492](https://github.com/GoogleContainerTools/skaffold/pull/1492)
+* Revert "Merge pull request #1439 from ltouati/fsnotify" [#1508](https://github.com/GoogleContainerTools/skaffold/pull/1508)
+* Don’t log if nothing is copied or deleted [#1504](https://github.com/GoogleContainerTools/skaffold/pull/1504)
+* Add more integration tests [#1502](https://github.com/GoogleContainerTools/skaffold/pull/1502)
+* Remove file committed by error [#1500](https://github.com/GoogleContainerTools/skaffold/pull/1500)
+
+
+Docs updates:
+* Update doc around local development [#1446](https://github.com/GoogleContainerTools/skaffold/pull/1446)
+* [doc] Fix default value for manifests [#1485](https://github.com/GoogleContainerTools/skaffold/pull/1485)
+
+Huge thanks goes out to all of our contributors for this release: 
+
+- David Gageot
+- Nick Kubala
+- Priya Wadhwa
+- Shane Lee
+
+
 # v0.21.0 Release - 1/17/2019
 
 Note: This release comes with a config change, use `skaffold fix` to permanently upgrade your config to `v1beta2`, however old versions are now auto-upgraded. 

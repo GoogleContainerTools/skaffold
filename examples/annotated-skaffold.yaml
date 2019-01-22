@@ -56,8 +56,8 @@ build:
         key2: "value2"
       # Images to consider as cache sources
       cacheFrom:
-      - image1
-      - image2
+      - golang:1.10.1-alpine3.7
+      - alpine:3.7
       # Dockerfile target name to build.
       # target: stageName
 
