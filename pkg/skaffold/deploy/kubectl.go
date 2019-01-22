@@ -153,5 +153,9 @@ func (k *KubectlDeployer) readManifests(ctx context.Context) (kubectl.ManifestLi
 		return nil, errors.Wrap(err, "listing manifests")
 	}
 
+	if len(manifests) == 0 {
+		return kubectl.ManifestList{}, nil
+	}
+
 	return k.kubectl.ReadManifests(ctx, manifests)
 }
