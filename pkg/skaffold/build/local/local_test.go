@@ -144,7 +144,7 @@ func TestLocalRun(t *testing.T) {
 			tagger: &FakeTagger{Out: "gcr.io/test/image:tag"},
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:tag",
+				Tag:       "gcr.io/test/image:1",
 			}},
 		},
 		{
@@ -161,7 +161,7 @@ func TestLocalRun(t *testing.T) {
 			tagger: &FakeTagger{Out: "gcr.io/test/image:tag"},
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:tag",
+				Tag:       "gcr.io/test/image:1",
 			}},
 		},
 		{
