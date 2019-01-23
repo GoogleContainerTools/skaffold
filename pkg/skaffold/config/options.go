@@ -31,6 +31,7 @@ type SkaffoldOptions struct {
 	PortForward       bool
 	SkipTests         bool
 	Profiles          []string
+	Ports             []string
 	CustomTag         string
 	Namespace         string
 	Watch             []string

@@ -44,6 +44,7 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 	cmd.Flags().IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes")
 	cmd.Flags().BoolVar(&opts.PortForward, "port-forward", true, "Port-forward exposed container ports within pods")
 	cmd.Flags().StringArrayVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels")
+	cmd.Flags().StringArrayVarP(&opts.Ports, "port", "", nil, "Specify a port to forward of the form pod/container:localPort:containerPort. Set multiple times for multiple ports.")
 	return cmd
 }
 

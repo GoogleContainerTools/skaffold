@@ -24,6 +24,7 @@ import (
 	"net"
 	"os/exec"
 	"strconv"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/pkg/errors"
@@ -39,6 +40,9 @@ type PortForwarder struct {
 
 	output      io.Writer
 	podSelector PodSelector
+
+	// userDefinedPorts is a map of portForwardEntry.key() (string) -> portForwardEntry defined via CLI
+	userDefinedPorts map[string]*portForwardEntry
 
 	// forwardedPods is a map of portForwardEntry.key() (string) -> portForwardEntry
 	forwardedPods map[string]*portForwardEntry
@@ -107,14 +111,59 @@ func (*kubectlForwarder) Terminate(p *portForwardEntry) {
 }
 
 // NewPortForwarder returns a struct that tracks and port-forwards pods as they are created and modified
-func NewPortForwarder(out io.Writer, podSelector PodSelector) *PortForwarder {
-	return &PortForwarder{
-		Forwarder:      &kubectlForwarder{},
-		output:         out,
-		podSelector:    podSelector,
-		forwardedPods:  make(map[string]*portForwardEntry),
-		forwardedPorts: make(map[int32]string),
+func NewPortForwarder(out io.Writer, podSelector PodSelector, userDefinedPorts []string) (*PortForwarder, error) {
+	userPorts, err := parseUserDefinedPorts(userDefinedPorts)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing user defined ports")
 	}
+	return &PortForwarder{
+		Forwarder:        &kubectlForwarder{},
+		output:           out,
+		podSelector:      podSelector,
+		userDefinedPorts: userPorts,
+		forwardedPods:    make(map[string]*portForwardEntry),
+		forwardedPorts:   make(map[int32]string),
+	}, nil
+}
+
+func parseUserDefinedPorts(ports []string) (map[string]*portForwardEntry, error) {
+	m := make(map[string]*portForwardEntry)
+	for _, p := range ports {
+		entry, err := parsePort(p)
+		if err != nil {
+			return nil, err
+		}
+		m[entry.key()] = entry
+	}
+	return m, nil
+}
+
+// parsePort parses a string in the form pod/container:localPort:port
+func parsePort(port string) (*portForwardEntry, error) {
+	p := &portForwardEntry{}
+	pod := strings.Split(port, "/")
+	if len(pod) != 2 {
+		return nil, errors.Errorf("%s is not in the correct format pod/container:localPort:port", port)
+	}
+	p.podName = pod[0]
+	separate := strings.Split(pod[1], ":")
+	if len(separate) != 3 {
+		return nil, errors.Errorf("%s is not in the correct format pod/container:localPort:port", port)
+	}
+	var localPort, containerPort string
+	p.containerName, localPort, containerPort = separate[0], separate[1], separate[2]
+
+	lp, err := strconv.Atoi(localPort)
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting local port for %s", port)
+	}
+	p.localPort = int32(lp)
+	cp, err := strconv.Atoi(containerPort)
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting port for %s", port)
+	}
+	p.port = int32(cp)
+	return p, nil
 }
 
 // Stop terminates all kubectl port-forward commands.
@@ -127,6 +176,9 @@ func (p *PortForwarder) Stop() {
 // Start begins a pod watcher that port forwards any pods involving containers with exposed ports.
 // TODO(r2d4): merge this event loop with pod watcher from log writer
 func (p *PortForwarder) Start(ctx context.Context) error {
+	for _, u := range p.userDefinedPorts {
+		p.forwardedPorts[u.localPort] = ""
+	}
 	watcher, err := PodWatcher()
 	if err != nil {
 		return errors.Wrap(err, "initializing pod watcher")
@@ -179,12 +231,24 @@ func (p *PortForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
 		return errors.Wrap(err, "converting resource version to integer")
 	}
 
+	for _, entry := range p.userDefinedPorts {
+		if entry.podName == pod.Name {
+			// forward this pod
+			if err := p.forward(ctx, entry); err != nil {
+				return errors.Wrap(err, "failed to forward port")
+			}
+		}
+	}
+
 	for _, c := range pod.Spec.Containers {
 		for _, port := range c.Ports {
 			// get current entry for this container
-			entry, err := p.getCurrentEntry(pod, c, port, resourceVersion)
+			entry, err := p.getCurrentEntry(pod, c.Name, port, resourceVersion)
 			if err != nil {
 				color.Red.Fprintf(p.output, "Unable to get port for %s, skipping port-forward: %v", c.Name, err)
+				continue
+			}
+			if _, ok := p.userDefinedPorts[entry.key()]; ok {
 				continue
 			}
 			if entry.port != entry.localPort {
@@ -198,13 +262,13 @@ func (p *PortForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
 	return nil
 }
 
-func (p *PortForwarder) getCurrentEntry(pod *v1.Pod, c v1.Container, port v1.ContainerPort, resourceVersion int) (*portForwardEntry, error) {
+func (p *PortForwarder) getCurrentEntry(pod *v1.Pod, containerName string, port v1.ContainerPort, resourceVersion int) (*portForwardEntry, error) {
 	// determine if we have seen this before
 	entry := &portForwardEntry{
 		resourceVersion: resourceVersion,
 		podName:         pod.Name,
 		namespace:       pod.Namespace,
-		containerName:   c.Name,
+		containerName:   containerName,
 		port:            port.ContainerPort,
 	}
 	// If we have, return the current entry
@@ -216,7 +280,7 @@ func (p *PortForwarder) getCurrentEntry(pod *v1.Pod, c v1.Container, port v1.Con
 	// If another container isn't using this port...
 	if _, exists := p.forwardedPorts[port.ContainerPort]; !exists {
 		// ...Then make sure the port is available
-		if available, err := isPortAvailable(port.ContainerPort); available && err == nil {
+		if available, err := isPortAvailable(port.ContainerPort, p.forwardedPorts); available && err == nil {
 			entry.localPort = port.ContainerPort
 			return entry, nil
 		}
@@ -239,7 +303,7 @@ func (p *PortForwarder) forward(ctx context.Context, entry *portForwardEntry) er
 		}
 	}
 
-	color.Default.Fprintln(p.output, fmt.Sprintf("Port Forwarding %s %d -> %d", entry.podName, entry.port, entry.localPort))
+	color.Default.Fprintln(p.output, fmt.Sprintf("Port Forwarding %s/%s %d -> %d", entry.podName, entry.containerName, entry.port, entry.localPort))
 	p.forwardedPods[entry.key()] = entry
 	p.forwardedPorts[entry.localPort] = entry.containerName
 
@@ -254,7 +318,7 @@ func (p *PortForwarder) forward(ctx context.Context, entry *portForwardEntry) er
 // If not, return a random port, which hopefully won't collide with any future containers
 func getAvailablePort() (int32, error) {
 	for i := 4503; i <= 4533; i++ {
-		ok, err := isPortAvailable(int32(i))
+		ok, err := isPortAvailable(int32(i), nil)
 		if ok {
 			return int32(i), err
 		}
@@ -268,7 +332,10 @@ func getAvailablePort() (int32, error) {
 	return int32(l.Addr().(*net.TCPAddr).Port), l.Close()
 }
 
-func portAvailable(p int32) (bool, error) {
+func portAvailable(p int32, forwardedPorts map[int32]string) (bool, error) {
+	if _, ok := forwardedPorts[p]; ok {
+		return false, nil
+	}
 	l, err := net.Listen("tcp", fmt.Sprintf(":%d", p))
 	if l != nil {
 		defer l.Close()

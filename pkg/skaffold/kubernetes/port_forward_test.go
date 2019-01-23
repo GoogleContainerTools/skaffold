@@ -60,9 +60,9 @@ func mockRetrieveAvailablePort(taken map[int32]struct{}, availablePorts []int32)
 	}
 }
 
-func mockIsPortAvailable(taken map[int32]struct{}, availablePorts []int32) func(p int32) (bool, error) {
+func mockIsPortAvailable(taken map[int32]struct{}, availablePorts []int32) func(p int32, forwardedPorts map[int32]string) (bool, error) {
 	// Return true if p is in availablePorts and is not in taken
-	return func(p int32) (bool, error) {
+	return func(p int32, forwardedPorts map[int32]string) (bool, error) {
 		if _, ok := taken[p]; ok {
 			return false, nil
 		}
@@ -427,7 +427,10 @@ func TestPortForwardPod(t *testing.T) {
 				isPortAvailable = originalIsPortAvailable
 			}()
 
-			p := NewPortForwarder(ioutil.Discard, NewImageList())
+			p, err := NewPortForwarder(ioutil.Discard, NewImageList(), nil)
+			if err != nil {
+				t.Errorf("error getting new port forwarder: %v", err)
+			}
 			if test.forwarder == nil {
 				test.forwarder = newTestForwarder(nil)
 			}
@@ -447,4 +450,53 @@ func TestPortForwardPod(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUserDefinedPorts(t *testing.T) {
+	tests := []struct {
+		name      string
+		ports     []string
+		shouldErr bool
+		expected  map[string]*portForwardEntry
+	}{
+		{
+			name:  "valid",
+			ports: []string{"mypod/mycontainer:8080:9000"},
+			expected: map[string]*portForwardEntry{
+				"mycontainer-9000": {
+					podName:       "mypod",
+					containerName: "mycontainer",
+					localPort:     8080,
+					port:          9000,
+				},
+			},
+		},
+		{
+			name:      "no container",
+			ports:     []string{"mypod/:8080s:9000"},
+			shouldErr: true,
+		},
+		{
+			name:      "invalid local port",
+			ports:     []string{"mypod/sometcontainer:8080s:9000"},
+			shouldErr: true,
+		},
+		{
+			name:      "no container port",
+			ports:     []string{"mypod/somecontainer:8080:"},
+			shouldErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual, err := parseUserDefinedPorts(test.ports)
+			testutil.CheckError(t, test.shouldErr, err)
+			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
+			if !reflect.DeepEqual(test.expected, actual) {
+				t.Errorf("Forwarded entries differs from expected entries. Expected: %s, Actual: %s", test.expected, actual)
+			}
+		})
+	}
+
 }
