@@ -208,6 +208,7 @@ Flags:
   -f, --filename string           Filename or URL to the pipeline file (default "skaffold.yaml")
   -l, --label stringArray         Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace string          Run deployments in the specified namespace
+      --port stringArray          Specify a port to forward to in the form pod/container:localPort:containerPort. Set multiple times for multiple ports.
       --port-forward              Port-forward exposed container ports within pods (default true)
   -p, --profile stringArray       Activate profiles by name
       --skip-tests                Whether to skip the tests after building
@@ -229,6 +230,7 @@ Env vars:
 * `SKAFFOLD_FILENAME` (same as --filename)
 * `SKAFFOLD_LABEL` (same as --label)
 * `SKAFFOLD_NAMESPACE` (same as --namespace)
+* `SKAFFOLD_PORT` (same as --port)
 * `SKAFFOLD_PORT_FORWARD` (same as --port-forward)
 * `SKAFFOLD_PROFILE` (same as --profile)
 * `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
