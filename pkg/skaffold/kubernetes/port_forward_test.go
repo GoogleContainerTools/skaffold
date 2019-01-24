@@ -46,9 +46,9 @@ func (f *testForwarder) Terminate(pfe *portForwardEntry) {
 	delete(f.forwardedPorts, pfe.port)
 }
 
-func mockRetrieveAvailablePort(taken map[int32]struct{}, availablePorts []int32) func() (int32, error) {
+func mockRetrieveAvailablePort(taken map[int32]struct{}, availablePorts []int32) func(map[int32]string) (int32, error) {
 	// Return first available port in ports that isn't taken
-	return func() (int32, error) {
+	return func(forwardedPorts map[int32]string) (int32, error) {
 		for _, p := range availablePorts {
 			if _, ok := taken[p]; ok {
 				continue
@@ -60,9 +60,9 @@ func mockRetrieveAvailablePort(taken map[int32]struct{}, availablePorts []int32)
 	}
 }
 
-func mockIsPortAvailable(taken map[int32]struct{}, availablePorts []int32) func(p int32) (bool, error) {
+func mockIsPortAvailable(taken map[int32]struct{}, availablePorts []int32) func(int32, map[int32]string) (bool, error) {
 	// Return true if p is in availablePorts and is not in taken
-	return func(p int32) (bool, error) {
+	return func(p int32, forwardedPorts map[int32]string) (bool, error) {
 		if _, ok := taken[p]; ok {
 			return false, nil
 		}
@@ -101,7 +101,7 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int32{8080},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-8080": {
+				"podname-containername-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -136,7 +136,7 @@ func TestPortForwardPod(t *testing.T) {
 				9000: true,
 			},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-8080": {
+				"podname-containername-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -202,7 +202,7 @@ func TestPortForwardPod(t *testing.T) {
 			shouldErr:      true,
 			availablePorts: []int32{8080},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-8080": {
+				"podname-containername-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -239,14 +239,14 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int32{8080, 50051},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-8080": {
+				"podname-containername-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
 					port:            8080,
 					localPort:       8080,
 				},
-				"containername2-50051": {
+				"podname2-containername2-50051": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
@@ -301,14 +301,14 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int32{8080, 9000},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-8080": {
+				"podname-containername-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
 					port:            8080,
 					localPort:       8080,
 				},
-				"containername2-8080": {
+				"podname2-containername2-8080": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
@@ -362,7 +362,7 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int32{8080},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-8080": {
+				"podname-containername-8080": {
 					resourceVersion: 2,
 					podName:         "podname",
 					containerName:   "containername",
