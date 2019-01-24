@@ -249,11 +249,16 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*la
 
 // BuildAndTest builds artifacts and runs tests on built artifacts
 func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	bRes, err := r.Build(ctx, out, r.Tagger, artifacts)
+	artifactCache := build.NewCache(r.opts.CacheArtifacts, "")
+	artifactsToBuild, bRes, err := artifactCache.RetrieveCachedArtifacts(ctx, out, artifacts)
+	res, err := r.Build(ctx, out, r.Tagger, artifactsToBuild)
+	bRes = append(bRes, res...)
 	if err != nil {
 		return nil, errors.Wrap(err, "build failed")
 	}
-
+	if err := artifactCache.CacheArtifacts(ctx, artifacts, bRes); err != nil {
+		return nil, errors.Wrapf(err, "caching artifacts")
+	}
 	if !r.opts.SkipTests {
 		if err = r.Test(ctx, out, bRes); err != nil {
 			return nil, errors.Wrap(err, "test failed")

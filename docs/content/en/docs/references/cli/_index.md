@@ -63,6 +63,7 @@ Usage:
   skaffold build [flags]
 
 Flags:
+      --cache-artifacts              Set to false to disable caching of artifacts. (default true)
   -d, --default-repo string          Default repository value (overrides global config)
   -f, --filename string              Filename or URL to the pipeline file (default "skaffold.yaml")
   -n, --namespace string             Run deployments in the specified namespace
@@ -74,12 +75,14 @@ Flags:
       --toot                         Emit a terminal beep after the deploy is complete
 
 Global Flags:
-  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
+  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
 Env vars:
 
+* `SKAFFOLD_CACHE_ARTIFACTS` (same as --cache-artifacts)
 * `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
 * `SKAFFOLD_FILENAME` (same as --filename)
 * `SKAFFOLD_NAMESPACE` (same as --namespace)
@@ -98,7 +101,8 @@ Usage:
   skaffold completion bash [flags]
 
 Global Flags:
-  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
+  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
@@ -119,7 +123,8 @@ Available Commands:
   unset       Unset a value in the global skaffold config
 
 Global Flags:
-  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
+  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 Use "skaffold config [command] --help" for more information about a command.
 
@@ -137,6 +142,7 @@ Usage:
   skaffold delete [flags]
 
 Flags:
+      --cache-artifacts       Set to false to disable caching of artifacts. (default true)
   -d, --default-repo string   Default repository value (overrides global config)
   -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
   -n, --namespace string      Run deployments in the specified namespace
@@ -145,12 +151,14 @@ Flags:
       --toot                  Emit a terminal beep after the deploy is complete
 
 Global Flags:
-  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
+  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
 Env vars:
 
+* `SKAFFOLD_CACHE_ARTIFACTS` (same as --cache-artifacts)
 * `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
 * `SKAFFOLD_FILENAME` (same as --filename)
 * `SKAFFOLD_NAMESPACE` (same as --namespace)
@@ -167,6 +175,7 @@ Usage:
   skaffold deploy [flags]
 
 Flags:
+      --cache-artifacts       Set to false to disable caching of artifacts. (default true)
   -d, --default-repo string   Default repository value (overrides global config)
   -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
       --images strings        A list of pre-built images to deploy
@@ -178,12 +187,14 @@ Flags:
       --toot                  Emit a terminal beep after the deploy is complete
 
 Global Flags:
-  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
+  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
 Env vars:
 
+* `SKAFFOLD_CACHE_ARTIFACTS` (same as --cache-artifacts)
 * `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
 * `SKAFFOLD_FILENAME` (same as --filename)
 * `SKAFFOLD_IMAGES` (same as --images)
@@ -203,6 +214,7 @@ Usage:
   skaffold dev [flags]
 
 Flags:
+      --cache-artifacts           Set to false to disable caching of artifacts. (default true)
       --cleanup                   Delete deployments after dev mode is interrupted (default true)
   -d, --default-repo string       Default repository value (overrides global config)
   -f, --filename string           Filename or URL to the pipeline file (default "skaffold.yaml")
@@ -218,12 +230,14 @@ Flags:
   -i, --watch-poll-interval int   Interval (in ms) between two checks for file changes (default 1000)
 
 Global Flags:
-  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
+  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
 Env vars:
 
+* `SKAFFOLD_CACHE_ARTIFACTS` (same as --cache-artifacts)
 * `SKAFFOLD_CLEANUP` (same as --cleanup)
 * `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
 * `SKAFFOLD_FILENAME` (same as --filename)
@@ -250,7 +264,8 @@ Flags:
   -f, --filename string   Filename or URL to the pipeline file (default "skaffold.yaml")
 
 Global Flags:
-  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
+  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
@@ -271,7 +286,8 @@ Flags:
       --overwrite         Overwrite original config with fixed config
 
 Global Flags:
-  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
+  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
@@ -297,7 +313,8 @@ Flags:
       --skip-build             Skip generating build artifacts in skaffold config
 
 Global Flags:
-  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
+  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
@@ -318,6 +335,7 @@ Usage:
   skaffold run [flags]
 
 Flags:
+      --cache-artifacts       Set to false to disable caching of artifacts. (default true)
   -d, --default-repo string   Default repository value (overrides global config)
   -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
   -l, --label stringArray     Add custom labels to deployed objects. Set multiple times for multiple labels.
@@ -329,12 +347,14 @@ Flags:
       --toot                  Emit a terminal beep after the deploy is complete
 
 Global Flags:
-  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
+  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
 Env vars:
 
+* `SKAFFOLD_CACHE_ARTIFACTS` (same as --cache-artifacts)
 * `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
 * `SKAFFOLD_FILENAME` (same as --filename)
 * `SKAFFOLD_LABEL` (same as --label)
@@ -358,7 +378,8 @@ Flags:
                                      )
 
 Global Flags:
-  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
+  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```

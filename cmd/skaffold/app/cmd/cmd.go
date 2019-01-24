@@ -148,6 +148,7 @@ func AddRunDevFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&opts.Namespace, "namespace", "n", "", "Run deployments in the specified namespace")
 	cmd.Flags().StringVarP(&opts.DefaultRepo, "default-repo", "d", "", "Default repository value (overrides global config)")
 	cmd.Flags().BoolVar(&opts.SkipTests, "skip-tests", false, "Whether to skip the tests after building")
+	cmd.Flags().BoolVar(&opts.CacheArtifacts, "cache-artifacts", true, "Set to false to disable caching of artifacts.")
 }
 
 func SetUpLogs(out io.Writer, level string) error {
