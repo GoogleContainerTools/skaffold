@@ -5,9 +5,21 @@ linkTitle: "Resources"
 weight: 130
 ---
 
-## Roadmap
+## 2019 roadmap
 
-{{% todo 134 %}}
+Note: The roadmap is subject to change and aspirational but we would like to share our plans with the user and contributor community.
+
+* Plugin model for builders
+* IDE integration - VSCode and IntelliJ skaffold dev/build/run/deploy support, skaffold.yaml code completion
+* Debugging JVM applications
+* Provide help with integration testing
+* Skaffold keeps track of what it built, for faster restarts
+* Automated kubernetes manifest generation
+* Pipeline CRD integration
+* Infrastructure scaffolding for CI/CD on GCP/GKE
+* Document end-to-end solutions
+* Status dashboard for build (test) and deployment besides logging 
+
 
 ## Contributing
 
