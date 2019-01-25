@@ -17,8 +17,15 @@ limitations under the License.
 package config
 
 import (
+	"io"
 	"strings"
 )
+
+// Output defines which zones on the screen to print to
+type Output struct {
+	Main io.Writer
+	Logs io.Writer
+}
 
 // SkaffoldOptions are options that are set by command line arguments not included
 // in the config file itself
@@ -30,6 +37,7 @@ type SkaffoldOptions struct {
 	TailDev           bool
 	PortForward       bool
 	SkipTests         bool
+	ExperimentalGUI   bool
 	Profiles          []string
 	CustomTag         string
 	Namespace         string
