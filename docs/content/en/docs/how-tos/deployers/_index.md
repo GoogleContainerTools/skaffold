@@ -142,7 +142,7 @@ section of `skaffold.yaml`. The `kustomize` type offers the following options:
 
 |Option|Description|
 |----|----|
-|`kustomizePath`| <b>Optional</b> Path to Kustomization files. The default value is `.` (current directory).|
+|`path`| <b>Optional</b> Path to Kustomization files. The default value is `.` (current directory).|
 |`flags`| OPTIONAL. Additional flags to pass to `kubectl`. You can specify three types of flags: <ul> <li>`global`: flags that apply to every command.</li> <li>`apply`: flags that apply to creation commands.</li> <li>`delete`: flags that apply to deletion commands.</li> <ul> |
 
 The following `deploy` section, for example, instructs Skaffold to deploy
@@ -153,7 +153,7 @@ apiVersion: {{< skaffold-version >}}
    kind: Config
    deploy:
      kustomize:
-        kustomizePath: "."
+        path: "."
 # The deploy section above is equal to
 # apiVersion: {{< skaffold-version >}}
 #    kind: Config
