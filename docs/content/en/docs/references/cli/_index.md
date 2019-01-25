@@ -75,8 +75,7 @@ Flags:
       --toot                         Emit a terminal beep after the deploy is complete
 
 Global Flags:
-      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
-  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
@@ -101,8 +100,7 @@ Usage:
   skaffold completion bash [flags]
 
 Global Flags:
-      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
-  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
@@ -123,8 +121,7 @@ Available Commands:
   unset       Unset a value in the global skaffold config
 
 Global Flags:
-      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
-  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 Use "skaffold config [command] --help" for more information about a command.
 
@@ -151,8 +148,7 @@ Flags:
       --toot                  Emit a terminal beep after the deploy is complete
 
 Global Flags:
-      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
-  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
@@ -187,8 +183,7 @@ Flags:
       --toot                  Emit a terminal beep after the deploy is complete
 
 Global Flags:
-      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
-  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
@@ -230,8 +225,7 @@ Flags:
   -i, --watch-poll-interval int   Interval (in ms) between two checks for file changes (default 1000)
 
 Global Flags:
-      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
-  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
@@ -264,8 +258,7 @@ Flags:
   -f, --filename string   Filename or URL to the pipeline file (default "skaffold.yaml")
 
 Global Flags:
-      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
-  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
@@ -286,8 +279,7 @@ Flags:
       --overwrite         Overwrite original config with fixed config
 
 Global Flags:
-      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
-  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
@@ -313,8 +305,7 @@ Flags:
       --skip-build             Skip generating build artifacts in skaffold config
 
 Global Flags:
-      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
-  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
@@ -347,8 +338,7 @@ Flags:
       --toot                  Emit a terminal beep after the deploy is complete
 
 Global Flags:
-      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
-  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
@@ -378,8 +368,7 @@ Flags:
                                      )
 
 Global Flags:
-      --azure-container-registry-config string   Path to the file containing Azure container registry configuration information.
-  -v, --verbosity string                         Log level (debug, info, warn, error, fatal, panic) (default "warning")
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```

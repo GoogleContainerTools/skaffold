@@ -43,11 +43,11 @@ func mockHashForArtifact(hashes map[string]string) func(context.Context, *latest
 
 func Test_NewCache(t *testing.T) {
 	tests := []struct {
-		name              string
 		useCache          bool
-		cacheFileContents interface{}
 		updateCacheFile   bool
+		name              string
 		expectedCache     *Cache
+		cacheFileContents interface{}
 	}{
 		{
 			name:              "get a valid cache from file",
@@ -160,10 +160,7 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 				hashForArtifact = originalHash
 			}()
 
-			actualArtifacts, actualBuildResults, err := test.cache.RetrieveCachedArtifacts(context.Background(), os.Stdout, test.artifacts)
-			if err != nil {
-				t.Fatalf("error retrieving artifacts: %v", err)
-			}
+			actualArtifacts, actualBuildResults := test.cache.RetrieveCachedArtifacts(context.Background(), os.Stdout, test.artifacts)
 			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedArtifacts, actualArtifacts)
 			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedBuildResults, actualBuildResults)
 		})

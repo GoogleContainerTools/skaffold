@@ -96,9 +96,9 @@ func retrieveArtifactCache(cacheFile string) (ArtifactCache, error) {
 }
 
 // RetrieveCachedArtifacts checks to see if artifacts are cached, and returns tags for cached images otherwise a list of images to be built
-func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]*latest.Artifact, []Artifact, error) {
+func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]*latest.Artifact, []Artifact) {
 	if !c.useCache {
-		return artifacts, nil, nil
+		return artifacts, nil
 	}
 	var needToBuild []*latest.Artifact
 	var built []Artifact
@@ -116,7 +116,7 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 		}
 		needToBuild = append(needToBuild, a)
 	}
-	return needToBuild, built, nil
+	return needToBuild, built
 }
 
 // CacheArtifacts determines the hash for each artifact, stores it in the artifact cache, and saves the cache at the end

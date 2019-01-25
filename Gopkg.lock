@@ -17,6 +17,17 @@
   version = "v0.17.0"
 
 [[projects]]
+  digest = "1:97a9111b6adc923649faf99446cb4e6d8a7fc6e0111de3977b5d0ac8d3e44650"
+  name = "github.com/Azure/azure-sdk-for-go"
+  packages = [
+    "services/containerregistry/mgmt/2017-10-01/containerregistry",
+    "version",
+  ]
+  pruneopts = "NUT"
+  revision = "da91af54816b4cf72949c225a2d0980f51fab01b"
+  version = "v21.3.0"
+
+[[projects]]
   branch = "master"
   digest = "1:81f8c061c3d18ed1710957910542bc17d2b789c6cd19e0f654c30b35fd255ca5"
   name = "github.com/Azure/go-ansiterm"
@@ -28,19 +39,35 @@
   revision = "d6e3b3328b783f23731bc4d058875b0371ff8109"
 
 [[projects]]
-  digest = "1:9fe4851c1eb1ab8c7486fee4e2d06db0e6509d6772211177e631c1abfb41b720"
+  digest = "1:b09b0c35e2157afee27951ec594924c69883c6bd6800cbc15ddbb12fae169e12"
   name = "github.com/Azure/go-autorest"
   packages = [
     "autorest",
     "autorest/adal",
     "autorest/azure",
     "autorest/date",
+    "autorest/to",
+    "autorest/validation",
     "logger",
     "version",
   ]
   pruneopts = "NUT"
   revision = "9bc4033dd347c7f416fca46b2f42a043dc1fbdf6"
   version = "v10.15.5"
+
+[[projects]]
+  digest = "1:af8afacc428ab4f8b58823ae48a2940b090374ef6f3ccf865e4d1855b263283a"
+  name = "github.com/GoogleContainerTools/kaniko"
+  packages = [
+    "pkg/cache",
+    "pkg/config",
+    "pkg/constants",
+    "pkg/snapshot",
+    "pkg/util",
+  ]
+  pruneopts = "NUT"
+  revision = "37ec60091639882a4c2415b8d60192d2d3642454"
+  version = "v0.5.0"
 
 [[projects]]
   digest = "1:2be791e7b333ff7c06f8fb3dc18a7d70580e9399dbdffd352621d067ff260b6e"
@@ -57,6 +84,47 @@
   packages = ["."]
   pruneopts = "NUT"
   revision = "cd527374f1e5bff4938207604a14f2e38a9cf512"
+
+[[projects]]
+  digest = "1:22f067b3b64eb77b7d54a7b3cf622dcfbe33f1246202d1100efbd74ad3294e74"
+  name = "github.com/aws/aws-sdk-go"
+  packages = [
+    "aws",
+    "aws/awserr",
+    "aws/awsutil",
+    "aws/client",
+    "aws/client/metadata",
+    "aws/corehandlers",
+    "aws/credentials",
+    "aws/credentials/ec2rolecreds",
+    "aws/credentials/endpointcreds",
+    "aws/credentials/processcreds",
+    "aws/credentials/stscreds",
+    "aws/csm",
+    "aws/defaults",
+    "aws/ec2metadata",
+    "aws/endpoints",
+    "aws/request",
+    "aws/session",
+    "aws/signer/v4",
+    "internal/ini",
+    "internal/sdkio",
+    "internal/sdkrand",
+    "internal/sdkuri",
+    "internal/shareddefaults",
+    "private/protocol",
+    "private/protocol/json/jsonutil",
+    "private/protocol/jsonrpc",
+    "private/protocol/query",
+    "private/protocol/query/queryutil",
+    "private/protocol/rest",
+    "private/protocol/xml/xmlutil",
+    "service/ecr",
+    "service/sts",
+  ]
+  pruneopts = "NUT"
+  revision = "2598a5134c77e8121a3a558f263a2dc50479a93f"
+  version = "v1.16.24"
 
 [[projects]]
   branch = "master"
@@ -139,7 +207,7 @@
   revision = "83389a148052d74ac602f5f1d62f86ff2f3c4aa5"
 
 [[projects]]
-  digest = "1:5a5ea972e858a83b5d9f4c8f3ae851eb7e60b89d64de5d034ad9cf04a1237646"
+  digest = "1:0943db304c4d036a24c9e12ed9a224993d5db330d4f300139dd453896eb6477f"
   name = "github.com/docker/docker"
   packages = [
     "api",
@@ -161,6 +229,7 @@
     "builder/dockerignore",
     "client",
     "errdefs",
+    "pkg/archive",
     "pkg/fileutils",
     "pkg/homedir",
     "pkg/idtools",
@@ -168,6 +237,7 @@
     "pkg/jsonmessage",
     "pkg/longpath",
     "pkg/mount",
+    "pkg/pools",
     "pkg/progress",
     "pkg/streamformatter",
     "pkg/stringid",
@@ -300,13 +370,16 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:6999705ae5d573f1b6f933d280f5fc2d53448de149c6b2d5710b680dcd7c3ed4"
+  digest = "1:cc86b331b025378fa97bbe4f517fe7542bd8fce96590276bd112627db7759432"
   name = "github.com/google/go-containerregistry"
   packages = [
     "pkg/authn",
+    "pkg/authn/k8schain",
     "pkg/name",
     "pkg/v1",
+    "pkg/v1/empty",
     "pkg/v1/partial",
+    "pkg/v1/random",
     "pkg/v1/remote",
     "pkg/v1/remote/transport",
     "pkg/v1/stream",
@@ -429,6 +502,13 @@
   revision = "d14ea06fba99483203c19d92cfcd13ebe73135f4"
 
 [[projects]]
+  digest = "1:1f2aebae7e7c856562355ec0198d8ca2fa222fb05e5b1b66632a1fce39631885"
+  name = "github.com/jmespath/go-jmespath"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "c2b33e84"
+
+[[projects]]
   digest = "1:8e36686e8b139f8fe240c1d5cf3a145bc675c22ff8e707857cdd3ae17b00d728"
   name = "github.com/json-iterator/go"
   packages = ["."]
@@ -501,10 +581,11 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:5b4289f0f483890552edcb868d9834ff96ffdb68847fa82ec45764cc4a83d8b8"
+  digest = "1:d24663b2e937f01e8b0b0c756e01b90bfbcfc24846928d90ead20835c7ef7658"
   name = "github.com/moby/buildkit"
   packages = [
     "frontend/dockerfile/command",
+    "frontend/dockerfile/instructions",
     "frontend/dockerfile/parser",
     "frontend/dockerfile/shell",
   ]
@@ -548,9 +629,12 @@
   version = "v1.0.1"
 
 [[projects]]
-  digest = "1:918dbd46ad099418ce9760291bb156ebf23d441aad4cb682dd9bf09e2d3c0c7b"
+  digest = "1:ea8780346eba74e5eb3e8b6bded2ec46c1c81cd745bc00e9964b730955bf4252"
   name = "github.com/opencontainers/runc"
-  packages = ["libcontainer/user"]
+  packages = [
+    "libcontainer/system",
+    "libcontainer/user",
+  ]
   pruneopts = "NUT"
   revision = "baf6536d6259209c3edfa2b22237af82942d3dfa"
   version = "v0.1.1"
@@ -687,7 +771,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:db1ea3e354c74f180589c436e1d37746df14d7033f41790af54d9ea619dd658c"
+  digest = "1:16729e2de84a0c367c8fb20696d54ae999cdc795fcf158e55ff9628f5cf54a7d"
   name = "golang.org/x/crypto"
   packages = [
     "cast5",
@@ -702,6 +786,8 @@
     "openpgp/errors",
     "openpgp/packet",
     "openpgp/s2k",
+    "pkcs12",
+    "pkcs12/internal/rc2",
     "poly1305",
     "ssh",
     "ssh/agent",
@@ -1162,6 +1248,14 @@
   version = "kubernetes-1.11.0"
 
 [[projects]]
+  digest = "1:9cc257b3c9ff6a0158c9c661ab6eebda1fe8a4a4453cd5c4044dc9a2ebfb992b"
+  name = "k8s.io/klog"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "a5bc97fbc634d635061f3146511332c7e313a55a"
+  version = "v0.1.0"
+
+[[projects]]
   branch = "master"
   digest = "1:03a96603922fc1f6895ae083e1e16d943b55ef0656b56965351bd87e7d90485f"
   name = "k8s.io/kube-openapi"
@@ -1169,11 +1263,36 @@
   pruneopts = "NUT"
   revision = "0317810137be915b9cf888946c6e115c1bfac693"
 
+[[projects]]
+  digest = "1:ea0871075d014a0c553b8430c4b162f8dd6397bf25a4938cadcd56d3e05f7afe"
+  name = "k8s.io/kubernetes"
+  packages = [
+    "pkg/cloudprovider/providers/azure/auth",
+    "pkg/credentialprovider",
+    "pkg/credentialprovider/aws",
+    "pkg/credentialprovider/azure",
+    "pkg/credentialprovider/gcp",
+    "pkg/credentialprovider/secrets",
+  ]
+  pruneopts = "NUT"
+  revision = "cff46ab41ff0bb44d8584413b598ad8360ec1def"
+  version = "v1.13.2"
+
+[[projects]]
+  digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
+  name = "sigs.k8s.io/yaml"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "fd68e9863619f6ec2fdd8625fe1f02e7c877e480"
+  version = "v1.1.0"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "cloud.google.com/go/storage",
+    "github.com/GoogleContainerTools/kaniko/pkg/snapshot",
+    "github.com/GoogleContainerTools/kaniko/pkg/util",
     "github.com/blang/semver",
     "github.com/bmatcuk/doublestar",
     "github.com/docker/cli/cli/config",
