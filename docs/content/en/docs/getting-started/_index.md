@@ -232,7 +232,7 @@ Skaffold will perform the workflow described in `skaffold.yaml` exactly once.
 ## What's next
 
 For more in-depth topics of Skaffold, explore [Skaffold Concepts: Configuration](/docs/concepts/#configuration),
-[Skaffold Concepts: Workflow](/docs/concepts/workflow), and [Skaffold Concepts: Architecture](/docs/config/architecture).
+[Skaffold Concepts: Workflow](/docs/concepts/#workflow), and [Skaffold Concepts: Architecture](/docs/concepts/#architecture).
 
 To learn more about how Skaffold builds, tags, and deploys your app, see the How-to Guides on 
 [Using Builders](/docs/how-tos/builders), [Using Taggers](/docs/how-tos/taggers), and [Using Deployers](/docs/how-tos/deployers).
