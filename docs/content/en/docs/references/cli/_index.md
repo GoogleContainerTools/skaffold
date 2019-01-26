@@ -91,11 +91,11 @@ Env vars:
 
 ### skaffold completion
 
-Output command completion script for the bash shell
+Output skaffold shell completion for the given shell (bash or zsh)
 
 ```
 Usage:
-  skaffold completion bash [flags]
+  skaffold completion SHELL [flags]
 
 Global Flags:
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
