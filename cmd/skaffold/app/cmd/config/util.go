@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 
@@ -171,4 +172,35 @@ func GetDefaultRepo(cliValue string) (string, error) {
 	}
 
 	return defaultRepo, nil
+}
+
+func GetLocalCluster() (bool, error) {
+	cfg, err := GetConfigForKubectx()
+	localCluster := isDefaultLocal(kubecontext)
+	if err != nil {
+		return localCluster, errors.Wrap(err, "retrieving global config")
+	}
+
+	if cfg != nil {
+		if cfg.LocalCluster != nil {
+			localCluster = *cfg.LocalCluster
+		}
+	} else {
+		// if no value is set for this cluster, fall back to the global setting
+		globalCfg, err := GetGlobalConfig()
+		if err != nil {
+			return localCluster, errors.Wrap(err, "retrieving global config")
+		}
+		if globalCfg != nil && globalCfg.LocalCluster != nil {
+			localCluster = *globalCfg.LocalCluster
+		}
+	}
+
+	return localCluster, nil
+}
+
+func isDefaultLocal(kubeContext string) bool {
+	return kubeContext == constants.DefaultMinikubeContext ||
+		kubeContext == constants.DefaultDockerForDesktopContext ||
+		kubeContext == constants.DefaultDockerDesktopContext
 }
