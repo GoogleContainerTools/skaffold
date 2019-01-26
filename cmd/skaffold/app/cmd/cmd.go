@@ -74,6 +74,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdVersion(out))
 	rootCmd.AddCommand(NewCmdRun(out))
 	rootCmd.AddCommand(NewCmdDev(out))
+	rootCmd.AddCommand(NewCmdDebug(out))
 	rootCmd.AddCommand(NewCmdBuild(out))
 	rootCmd.AddCommand(NewCmdDeploy(out))
 	rootCmd.AddCommand(NewCmdDelete(out))
@@ -148,6 +149,10 @@ func AddRunDevFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&opts.Namespace, "namespace", "n", "", "Run deployments in the specified namespace")
 	cmd.Flags().StringVarP(&opts.DefaultRepo, "default-repo", "d", "", "Default repository value (overrides global config)")
 	cmd.Flags().BoolVar(&opts.SkipTests, "skip-tests", false, "Whether to skip the tests after building")
+}
+
+func AddRunDebugFlags(cmd *cobra.Command) {
+	AddRunDevFlags(cmd)
 }
 
 func SetUpLogs(out io.Writer, level string) error {

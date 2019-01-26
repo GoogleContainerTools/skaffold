@@ -86,6 +86,11 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return errors.Wrap(err, "replacing images in manifests")
 	}
 
+	manifests, err = manifests.ApplyDebuggingTransforms(builds)
+	if err != nil {
+		return errors.Wrap(err, "debug transform of manifests")
+	}
+
 	updated, err := k.kubectl.Apply(ctx, out, manifests)
 	if err != nil {
 		return errors.Wrap(err, "apply")
