@@ -1,4 +1,4 @@
-apiVersion: apps/v1beta3
+apiVersion: apps/v1beta4
 kind: Deployment
 metadata:
   name: {{ template "foo.fullname" . }}
