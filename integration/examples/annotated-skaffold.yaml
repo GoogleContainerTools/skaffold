@@ -222,3 +222,8 @@ profiles:
     build:
       googleCloudBuild:
         projectId: k8s-skaffold
+  - name: other
+    # profiles can also patch some values using standard JSON patch notation
+    patches:
+      - path: /build/artifacts/0/docker/dockerfile
+        value: Dockerfile.DEV

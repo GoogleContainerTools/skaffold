@@ -21,33 +21,32 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // ApplyProfiles returns configuration modified by the application
 // of a list of profiles.
 func ApplyProfiles(c *latest.SkaffoldPipeline, profiles []string) error {
 	byName := profilesByName(c.Profiles)
+
 	for _, name := range profiles {
 		profile, present := byName[name]
 		if !present {
 			return fmt.Errorf("couldn't find profile %s", name)
 		}
 
-		applyProfile(c, profile)
-	}
-	if err := defaults.Set(c); err != nil {
-		return errors.Wrap(err, "applying default values")
+		if err := applyProfile(c, profile); err != nil {
+			return errors.Wrapf(err, "appying profile %s", name)
+		}
 	}
 
 	return nil
 }
 
-func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) {
+func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) error {
 	logrus.Infof("applying profile: %s", profile.Name)
 
 	// this intentionally removes the Profiles field from the returned config
@@ -58,6 +57,31 @@ func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) {
 		Deploy:     overlayProfileField(config.Deploy, profile.Deploy).(latest.DeployConfig),
 		Test:       overlayProfileField(config.Test, profile.Test).(latest.TestConfig),
 	}
+
+	if len(profile.Patches) == 0 {
+		return nil
+	}
+
+	// Default patch operation to `replace`
+	for i, p := range profile.Patches {
+		if p.Op == "" {
+			p.Op = "replace"
+			profile.Patches[i] = p
+		}
+	}
+
+	// Apply profile patches
+	buf, err := yaml.Marshal(*config)
+	if err != nil {
+		return err
+	}
+
+	buf, err = profile.Patches.Apply(buf)
+	if err != nil {
+		return err
+	}
+
+	return yaml.Unmarshal(buf, config)
 }
 
 func profilesByName(profiles []latest.Profile) map[string]latest.Profile {

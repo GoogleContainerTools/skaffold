@@ -21,6 +21,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	yamlpatch "github.com/krishicks/yaml-patch"
 )
 
 func TestApplyProfiles(t *testing.T) {
@@ -35,7 +36,6 @@ func TestApplyProfiles(t *testing.T) {
 			description: "unknown profile",
 			config:      config(),
 			profile:     "profile",
-			expected:    config(),
 			shouldErr:   true,
 		},
 		{
@@ -52,7 +52,10 @@ func TestApplyProfiles(t *testing.T) {
 					Build: latest.BuildConfig{
 						BuildType: latest.BuildType{
 							GoogleCloudBuild: &latest.GoogleCloudBuild{
-								ProjectID: "my-project",
+								ProjectID:   "my-project",
+								DockerImage: "gcr.io/cloud-builders/docker",
+								MavenImage:  "gcr.io/cloud-builders/mvn",
+								GradleImage: "gcr.io/cloud-builders/gradle",
 							},
 						},
 					},
@@ -103,8 +106,16 @@ func TestApplyProfiles(t *testing.T) {
 					Name: "profile",
 					Build: latest.BuildConfig{
 						Artifacts: []*latest.Artifact{
-							{ImageName: "image"},
-							{ImageName: "imageProd"},
+							{ImageName: "image", Workspace: ".", ArtifactType: latest.ArtifactType{
+								DockerArtifact: &latest.DockerArtifact{
+									DockerfilePath: "Dockerfile.DEV",
+								},
+							}},
+							{ImageName: "imageProd", Workspace: ".", ArtifactType: latest.ArtifactType{
+								DockerArtifact: &latest.DockerArtifact{
+									DockerfilePath: "Dockerfile.DEV",
+								},
+							}},
 						},
 					},
 				}),
@@ -112,8 +123,8 @@ func TestApplyProfiles(t *testing.T) {
 			expected: config(
 				withLocalBuild(
 					withGitTagger(),
-					withDockerArtifact("image", ".", "Dockerfile"),
-					withDockerArtifact("imageProd", ".", "Dockerfile"),
+					withDockerArtifact("image", ".", "Dockerfile.DEV"),
+					withDockerArtifact("imageProd", ".", "Dockerfile.DEV"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
 			),
@@ -142,13 +153,66 @@ func TestApplyProfiles(t *testing.T) {
 				withHelmDeploy(),
 			),
 		},
+		{
+			description: "patch Dockerfile",
+			profile:     "profile",
+			config: config(
+				withLocalBuild(
+					withGitTagger(),
+					withDockerArtifact("image", ".", "Dockerfile"),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+				withProfiles(latest.Profile{
+					Name: "profile",
+					Patches: yamlpatch.Patch{{
+						Path:  "/build/artifacts/0/docker/dockerfile",
+						Value: yamlpatch.NewNode(str("Dockerfile.DEV")),
+					}},
+				}),
+			),
+			expected: config(
+				withLocalBuild(
+					withGitTagger(),
+					withDockerArtifact("image", ".", "Dockerfile.DEV"),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+			),
+		},
+		{
+			description: "invalid patch path",
+			profile:     "profile",
+			config: config(
+				withLocalBuild(
+					withGitTagger(),
+					withDockerArtifact("image", ".", "Dockerfile"),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+				withProfiles(latest.Profile{
+					Name: "profile",
+					Patches: yamlpatch.Patch{{
+						Path: "/unknown",
+						Op:   "replace",
+					}},
+				}),
+			),
+			shouldErr: true,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			err := ApplyProfiles(test.config, []string{test.profile})
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, test.config)
+			if test.shouldErr {
+				testutil.CheckError(t, test.shouldErr, err)
+			} else {
+				testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, test.config)
+			}
 		})
 	}
+}
+
+func str(value string) *interface{} {
+	var v interface{} = value
+	return &v
 }

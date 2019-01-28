@@ -18,6 +18,7 @@ package latest
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	yamlpatch "github.com/krishicks/yaml-patch"
 )
 
 const Version string = "skaffold/v1beta4"
@@ -242,10 +243,11 @@ type Artifact struct {
 // Profile is additional configuration that overrides default
 // configuration when it is activated.
 type Profile struct {
-	Name   string       `yaml:"name,omitempty"`
-	Build  BuildConfig  `yaml:"build,omitempty"`
-	Test   TestConfig   `yaml:"test,omitempty"`
-	Deploy DeployConfig `yaml:"deploy,omitempty"`
+	Name    string          `yaml:"name,omitempty"`
+	Build   BuildConfig     `yaml:"build,omitempty"`
+	Test    TestConfig      `yaml:"test,omitempty"`
+	Deploy  DeployConfig    `yaml:"deploy,omitempty"`
+	Patches yamlpatch.Patch `yaml:"patches,omitempty"`
 }
 
 type ArtifactType struct {
