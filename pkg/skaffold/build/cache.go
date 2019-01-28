@@ -17,13 +17,17 @@ limitations under the License.
 package build
 
 import (
+	"bytes"
 	"context"
+	"crypto/md5"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"io"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 
-	"github.com/GoogleContainerTools/kaniko/pkg/snapshot"
-	kanikoutil "github.com/GoogleContainerTools/kaniko/pkg/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -155,12 +159,53 @@ func getHashForArtifact(ctx context.Context, a *latest.Artifact) (string, error)
 	if err != nil {
 		return "", errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
 	}
-	lm := snapshot.NewLayeredMap(kanikoutil.Hasher(), kanikoutil.CacheHasher())
-	lm.Snapshot()
+	hasher := cacheHasher()
+	var hashes []string
 	for _, d := range deps {
-		if err := lm.Add(d); err != nil {
-			logrus.Warnf("Error adding %s: %v", d, err)
+		h, err := hasher(d)
+		if err != nil {
+			return "", errors.Wrapf(err, "getting hash for %s", d)
 		}
+		hashes = append(hashes, h)
 	}
-	return lm.Key()
+	// get a key for the hashes
+
+	c := bytes.NewBuffer([]byte{})
+	enc := json.NewEncoder(c)
+	enc.Encode(hashes)
+	return SHA256(c)
+}
+
+// cacheHasher takes hashes the contents and name of a file
+func cacheHasher() func(string) (string, error) {
+	hasher := func(p string) (string, error) {
+		h := md5.New()
+		fi, err := os.Lstat(p)
+		if err != nil {
+			return "", err
+		}
+		h.Write([]byte(fi.Mode().String()))
+		if fi.Mode().IsRegular() {
+			f, err := os.Open(p)
+			if err != nil {
+				return "", err
+			}
+			defer f.Close()
+			if _, err := io.Copy(h, f); err != nil {
+				return "", err
+			}
+		}
+		return hex.EncodeToString(h.Sum(nil)), nil
+	}
+	return hasher
+}
+
+// SHA256 returns the shasum of the contents of r
+func SHA256(r io.Reader) (string, error) {
+	hasher := sha256.New()
+	_, err := io.Copy(hasher, r)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hasher.Sum(make([]byte, 0, hasher.Size()))), nil
 }
