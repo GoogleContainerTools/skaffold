@@ -28,7 +28,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
@@ -131,7 +130,7 @@ func intersect(context string, syncMap map[string]string, files []string) (map[s
 	return ret, nil
 }
 
-func Perform(ctx context.Context, image string, files map[string]string, cmdFn func(context.Context, v1.Pod, v1.Container, string, string) []*exec.Cmd) error {
+func Perform(ctx context.Context, image string, files map[string]string, cmdFn func(context.Context, v1.Pod, v1.Container, string, string) []*exec.Cmd, namespaces []string) error {
 	if len(files) == 0 {
 		return nil
 	}
@@ -141,41 +140,35 @@ func Perform(ctx context.Context, image string, files map[string]string, cmdFn f
 		return errors.Wrap(err, "getting k8s client")
 	}
 
-	// Only list the current namespace, or we get errors.
-	// FIXME: Should we override this with the --namespace option?
-	config, err := kubectx.CurrentConfig()
-	if err != nil {
-		return errors.Wrap(err, "getting k8s namespace")
-	}
-	ns := config.Contexts[config.CurrentContext].Namespace
+	for _, ns := range namespaces {
+		pods, err := client.CoreV1().Pods(ns).List(meta_v1.ListOptions{})
+		if err != nil {
+			return errors.Wrap(err, "getting pods for namespace "+ns)
+		}
 
-	pods, err := client.CoreV1().Pods(ns).List(meta_v1.ListOptions{})
-	if err != nil {
-		return errors.Wrap(err, "getting pods")
-	}
+		synced := map[string]bool{}
 
-	synced := map[string]bool{}
-
-	for _, p := range pods.Items {
-		for _, c := range p.Spec.Containers {
-			if c.Image != image {
-				continue
-			}
-
-			for src, dst := range files {
-				cmds := cmdFn(ctx, p, c, src, dst)
-				for _, cmd := range cmds {
-					if err := util.RunCmd(cmd); err != nil {
-						return err
-					}
+		for _, p := range pods.Items {
+			for _, c := range p.Spec.Containers {
+				if c.Image != image {
+					continue
 				}
-				synced[src] = true
+
+				for src, dst := range files {
+					cmds := cmdFn(ctx, p, c, src, dst)
+					for _, cmd := range cmds {
+						if err := util.RunCmd(cmd); err != nil {
+							return err
+						}
+					}
+					synced[src] = true
+				}
 			}
 		}
-	}
 
-	if len(synced) != len(files) {
-		return errors.New("couldn't sync all the files")
+		if len(synced) != len(files) {
+			return errors.New("couldn't sync all the files in " + ns)
+		}
 	}
 
 	return nil

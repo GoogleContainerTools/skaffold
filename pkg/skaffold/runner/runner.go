@@ -56,6 +56,7 @@ type SkaffoldRunner struct {
 	builds      []build.Artifact
 	hasDeployed bool
 	imageList   *kubernetes.ImageList
+	namespaces  []string
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldPipeline
@@ -65,6 +66,8 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		return nil, errors.Wrap(err, "getting current cluster context")
 	}
 	logrus.Infof("Using kubectl context: %s", kubeContext)
+
+	namespaces, err := getAllPodNamespaces(opts.Namespace)
 
 	defaultRepo, err := configutil.GetDefaultRepo(opts.DefaultRepo)
 	if err != nil {
@@ -104,15 +107,16 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 	}
 
 	return &SkaffoldRunner{
-		Builder:   builder,
-		Tester:    tester,
-		Deployer:  deployer,
-		Tagger:    tagger,
-		Syncer:    &kubectl.Syncer{},
-		Watcher:   watch.NewWatcher(trigger),
-		opts:      opts,
-		labellers: labellers,
-		imageList: kubernetes.NewImageList(),
+		Builder:    builder,
+		Tester:     tester,
+		Deployer:   deployer,
+		Tagger:     tagger,
+		Syncer:     &kubectl.Syncer{},
+		Watcher:    watch.NewWatcher(trigger),
+		opts:       opts,
+		labellers:  labellers,
+		imageList:  kubernetes.NewImageList(),
+		namespaces: namespaces,
 	}, nil
 }
 
@@ -201,7 +205,7 @@ func (r *SkaffoldRunner) newLogger(out io.Writer, artifacts []*latest.Artifact) 
 		imageNames = append(imageNames, artifact.ImageName)
 	}
 
-	return kubernetes.NewLogAggregator(out, imageNames, r.imageList)
+	return kubernetes.NewLogAggregator(out, imageNames, r.imageList, r.namespaces)
 }
 
 // HasDeployed returns true if this runner has deployed something.
@@ -304,4 +308,28 @@ func mergeWithPreviousBuilds(builds, previous []build.Artifact) []build.Artifact
 	}
 
 	return merged
+}
+
+func getAllPodNamespaces(configNamespace string) ([]string, error) {
+	// We also get the default namespace.
+	nsMap := make(map[string]bool)
+	if configNamespace == "" {
+		config, err := kubectx.CurrentConfig()
+		if err != nil {
+			return nil, errors.Wrap(err, "getting k8s configuration")
+		}
+		ns := config.Contexts[config.CurrentContext].Namespace
+		nsMap[ns] = true
+	} else {
+		nsMap[configNamespace] = true
+	}
+
+	// FIXME: Set additional namespaces from the selected yamls.
+
+	// Collate the slice of namespaces.
+	namespaces := make([]string, len(nsMap))
+	for ns := range nsMap {
+		namespaces = append(namespaces, ns)
+	}
+	return namespaces, nil
 }
