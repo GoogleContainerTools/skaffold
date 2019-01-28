@@ -18,8 +18,6 @@ package v1alpha4
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/pkg/errors"
-	yaml "gopkg.in/yaml.v2"
 )
 
 const Version string = "skaffold/v1alpha4"
@@ -34,10 +32,12 @@ type SkaffoldPipeline struct {
 	Kind       string `yaml:"kind"`
 
 	Build    BuildConfig  `yaml:"build,omitempty"`
-	Test     []TestCase   `yaml:"test,omitempty"`
+	Test     TestConfig   `yaml:"test,omitempty"`
 	Deploy   DeployConfig `yaml:"deploy,omitempty"`
 	Profiles []Profile    `yaml:"profiles,omitempty"`
 }
+
+type TestConfig []TestCase
 
 func (c *SkaffoldPipeline) GetVersion() string {
 	return c.APIVersion
@@ -261,19 +261,4 @@ type JibMavenArtifact struct {
 type JibGradleArtifact struct {
 	// Only multi-module
 	Project string `yaml:"project"`
-}
-
-// Parse reads a SkaffoldPipeline from yaml.
-func (c *SkaffoldPipeline) Parse(contents []byte, useDefaults bool) error {
-	if err := yaml.UnmarshalStrict(contents, c); err != nil {
-		return err
-	}
-
-	if useDefaults {
-		if err := c.SetDefaultValues(); err != nil {
-			return errors.Wrap(err, "applying default values")
-		}
-	}
-
-	return nil
 }

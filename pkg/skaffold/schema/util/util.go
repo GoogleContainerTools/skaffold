@@ -18,6 +18,5 @@ package util
 
 type VersionedConfig interface {
 	GetVersion() string
-	Parse([]byte, bool) error
 	Upgrade() (VersionedConfig, error)
 }

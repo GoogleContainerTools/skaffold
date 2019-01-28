@@ -18,11 +18,9 @@ package latest
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/pkg/errors"
-	yaml "gopkg.in/yaml.v2"
 )
 
-const Version string = "skaffold/v1alpha5"
+const Version string = "skaffold/v1beta3"
 
 // NewSkaffoldPipeline creates a SkaffoldPipeline
 func NewSkaffoldPipeline() util.VersionedConfig {
@@ -34,7 +32,7 @@ type SkaffoldPipeline struct {
 	Kind       string `yaml:"kind"`
 
 	Build    BuildConfig  `yaml:"build,omitempty"`
-	Test     []*TestCase  `yaml:"test,omitempty"`
+	Test     TestConfig   `yaml:"test,omitempty"`
 	Deploy   DeployConfig `yaml:"deploy,omitempty"`
 	Profiles []Profile    `yaml:"profiles,omitempty"`
 }
@@ -78,10 +76,9 @@ type DateTimeTagger struct {
 // BuildType contains the specific implementation and parameters needed
 // for the build step. Only one field should be populated.
 type BuildType struct {
-	LocalBuild          *LocalBuild          `yaml:"local,omitempty" yamltags:"oneOf=build"`
-	GoogleCloudBuild    *GoogleCloudBuild    `yaml:"googleCloudBuild,omitempty" yamltags:"oneOf=build"`
-	KanikoBuild         *KanikoBuild         `yaml:"kaniko,omitempty" yamltags:"oneOf=build"`
-	AzureContainerBuild *AzureContainerBuild `yaml:"acr,omitempty" yamltags:"oneOf=build"`
+	LocalBuild       *LocalBuild       `yaml:"local,omitempty" yamltags:"oneOf=build"`
+	GoogleCloudBuild *GoogleCloudBuild `yaml:"googleCloudBuild,omitempty" yamltags:"oneOf=build"`
+	KanikoBuild      *KanikoBuild      `yaml:"kaniko,omitempty" yamltags:"oneOf=build"`
 }
 
 // LocalBuild contains the fields needed to do a build on the local docker daemon
@@ -100,6 +97,8 @@ type GoogleCloudBuild struct {
 	MachineType string `yaml:"machineType,omitempty"`
 	Timeout     string `yaml:"timeout,omitempty"`
 	DockerImage string `yaml:"dockerImage,omitempty"`
+	MavenImage  string `yaml:"mavenImage,omitempty"`
+	GradleImage string `yaml:"gradleImage,omitempty"`
 }
 
 // LocalDir represents the local directory kaniko build context
@@ -113,25 +112,32 @@ type KanikoBuildContext struct {
 	LocalDir  *LocalDir `yaml:"localDir,omitempty" yamltags:"oneOf=buildContext"`
 }
 
+// KanikoCache contains fields related to kaniko caching
+type KanikoCache struct {
+	Repo string `yaml:"repo,omitempty"`
+}
+
 // KanikoBuild contains the fields needed to do a on-cluster build using
 // the kaniko image
 type KanikoBuild struct {
-	BuildContext   *KanikoBuildContext `yaml:"buildContext,omitempty"`
-	PullSecret     string              `yaml:"pullSecret,omitempty"`
-	PullSecretName string              `yaml:"pullSecretName,omitempty"`
-	Namespace      string              `yaml:"namespace,omitempty"`
-	Timeout        string              `yaml:"timeout,omitempty"`
-	Image          string              `yaml:"image,omitempty"`
+	BuildContext    *KanikoBuildContext `yaml:"buildContext,omitempty"`
+	Cache           *KanikoCache        `yaml:"cache,omitempty"`
+	AdditionalFlags []string            `yaml:"flags,omitempty"`
+	PullSecret      string              `yaml:"pullSecret,omitempty"`
+	PullSecretName  string              `yaml:"pullSecretName,omitempty"`
+	Namespace       string              `yaml:"namespace,omitempty"`
+	Timeout         string              `yaml:"timeout,omitempty"`
+	Image           string              `yaml:"image,omitempty"`
+	DockerConfig    *DockerConfig       `yaml:"dockerConfig,omitempty"`
 }
 
-// AzureContainerBuild contains the fields needed to do a build
-// on Azure Container Registry
-type AzureContainerBuild struct {
-	SubscriptionID string `yaml:"subscriptionId,omitempty"`
-	ClientID       string `yaml:"clientId,omitempty"`
-	ClientSecret   string `yaml:"clientSecret,omitempty"`
-	TenantID       string `yaml:"tenantId,omitempty"`
+// DockerConfig contains information about the docker config.json to mount
+type DockerConfig struct {
+	Path       string `yaml:"path,omitempty"`
+	SecretName string `yaml:"secretName,omitempty"`
 }
+
+type TestConfig []*TestCase
 
 // TestCase is a struct containing all the specified test
 // configuration for an image.
@@ -238,7 +244,7 @@ type Artifact struct {
 type Profile struct {
 	Name   string       `yaml:"name,omitempty"`
 	Build  BuildConfig  `yaml:"build,omitempty"`
-	Test   []*TestCase  `yaml:"test,omitempty"`
+	Test   TestConfig   `yaml:"test,omitempty"`
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
 }
 
@@ -260,7 +266,8 @@ type DockerArtifact struct {
 
 // BazelArtifact describes an artifact built with Bazel.
 type BazelArtifact struct {
-	BuildTarget string `yaml:"target,omitempty"`
+	BuildTarget string   `yaml:"target,omitempty"`
+	BuildArgs   []string `yaml:"args,omitempty"`
 }
 
 type JibMavenArtifact struct {
@@ -272,19 +279,4 @@ type JibMavenArtifact struct {
 type JibGradleArtifact struct {
 	// Only multi-module
 	Project string `yaml:"project"`
-}
-
-// Parse reads a SkaffoldPipeline from yaml.
-func (c *SkaffoldPipeline) Parse(contents []byte, useDefaults bool) error {
-	if err := yaml.UnmarshalStrict(contents, c); err != nil {
-		return err
-	}
-
-	if useDefaults {
-		if err := c.SetDefaultValues(); err != nil {
-			return errors.Wrap(err, "applying default values")
-		}
-	}
-
-	return nil
 }

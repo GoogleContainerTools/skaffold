@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -90,6 +90,65 @@ func TestNewSyncItem(t *testing.T) {
 				Added: []string{"index.html"},
 			},
 			shouldErr: true,
+		},
+		{
+			description: "multiple sync patterns",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: map[string]string{
+					"*.js":   ".",
+					"*.html": ".",
+					"*.json": ".",
+				},
+				Workspace: "node",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: watch.Events{
+				Added:    []string{filepath.Join("node", "index.html")},
+				Modified: []string{filepath.Join("node", "server.js")},
+				Deleted:  []string{filepath.Join("node", "package.json")},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string]string{
+					filepath.Join("node", "server.js"):  "server.js",
+					filepath.Join("node", "index.html"): "index.html",
+				},
+				Delete: map[string]string{
+					filepath.Join("node", "package.json"): "package.json",
+				},
+			},
+		},
+		{
+			description: "recursive glob patterns",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: map[string]string{
+					"src/**/*.js": "src/",
+				},
+				Workspace: "node",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: watch.Events{
+				Modified: []string{filepath.Join("node", "src/app/server/server.js")},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string]string{
+					filepath.Join("node", "src/app/server/server.js"): "src/app/server/server.js",
+				},
+				Delete: map[string]string{},
+			},
 		},
 		{
 			description: "sync all",
@@ -177,6 +236,32 @@ func TestNewSyncItem(t *testing.T) {
 				},
 			},
 		},
+		{
+			description: "slashes in glob pattern",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: map[string]string{
+					"**/**/*.js": ".",
+				},
+				Workspace: ".",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: watch.Events{
+				Added: []string{filepath.Join("dir1", "dir2/node.js")},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string]string{
+					filepath.Join("dir1", "dir2/node.js"): "dir1/dir2/node.js",
+				},
+				Delete: map[string]string{},
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -259,8 +344,8 @@ func (t *TestCmdRecorder) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	return nil, t.RunCmd(cmd)
 }
 
-func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, src, dst string) *exec.Cmd {
-	return exec.CommandContext(ctx, "copy", src, dst)
+func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, src, dst string) []*exec.Cmd {
+	return []*exec.Cmd{exec.CommandContext(ctx, "copy", src, dst)}
 }
 
 var pod = &v1.Pod{
@@ -286,7 +371,7 @@ func TestPerform(t *testing.T) {
 		description string
 		image       string
 		files       map[string]string
-		cmdFn       func(context.Context, v1.Pod, v1.Container, string, string) *exec.Cmd
+		cmdFn       func(context.Context, v1.Pod, v1.Container, string, string) []*exec.Cmd
 		cmdErr      error
 		clientErr   error
 		expected    []string

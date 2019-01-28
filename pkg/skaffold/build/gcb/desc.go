@@ -17,29 +17,18 @@ limitations under the License.
 package gcb
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"errors"
+	"fmt"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 )
 
-func (b *Builder) buildDescription(artifact *latest.Artifact, bucket, object string) *cloudbuild.Build {
-	var steps []*cloudbuild.BuildStep
-
-	for _, cacheFrom := range artifact.DockerArtifact.CacheFrom {
-		steps = append(steps, &cloudbuild.BuildStep{
-			Name: b.DockerImage,
-			Args: []string{"pull", cacheFrom},
-		})
+func (b *Builder) buildDescription(artifact *latest.Artifact, bucket, object string) (*cloudbuild.Build, error) {
+	steps, err := b.buildSteps(artifact)
+	if err != nil {
+		return nil, err
 	}
-
-	args := append([]string{"build", "--tag", artifact.ImageName, "-f", artifact.DockerArtifact.DockerfilePath})
-	args = append(args, docker.GetBuildArgs(artifact.DockerArtifact)...)
-	args = append(args, ".")
-
-	steps = append(steps, &cloudbuild.BuildStep{
-		Name: b.DockerImage,
-		Args: args,
-	})
 
 	return &cloudbuild.Build{
 		LogsBucket: bucket,
@@ -56,5 +45,24 @@ func (b *Builder) buildDescription(artifact *latest.Artifact, bucket, object str
 			MachineType: b.MachineType,
 		},
 		Timeout: b.Timeout,
+	}, nil
+}
+
+func (b *Builder) buildSteps(artifact *latest.Artifact) ([]*cloudbuild.BuildStep, error) {
+	switch {
+	case artifact.DockerArtifact != nil:
+		return b.dockerBuildSteps(artifact.ImageName, artifact.DockerArtifact), nil
+
+	case artifact.BazelArtifact != nil:
+		return nil, errors.New("skaffold can't build a bazel artifact with Google Cloud Build")
+
+	case artifact.JibMavenArtifact != nil:
+		return b.jibMavenBuildSteps(artifact.ImageName, artifact.JibMavenArtifact), nil
+
+	case artifact.JibGradleArtifact != nil:
+		return b.jibGradleBuildSteps(artifact.ImageName, artifact.JibGradleArtifact), nil
+
+	default:
+		return nil, fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 	}
 }

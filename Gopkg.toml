@@ -16,10 +16,6 @@
   version = "0.0.2"
 
 [[override]]
- name = "github.com/docker/go-metrics"
- revision = "d466d4f6fd960e01820085bd7e1a24426ee7ef18"
-
-[[override]]
   name = "github.com/xeipuuv/gojsonschema"
   revision = "0c8571ac0ce161a5feb57375a9cdf148c98c0f70"
 
@@ -66,3 +62,7 @@
 [[override]]
   name = "github.com/docker/docker"
   revision = "71cd53e4a197b303c6ba086bd584ffd67a884281"
+
+[[constraint]]
+  name = "github.com/bmatcuk/doublestar"
+  revision = "v1.1.1"

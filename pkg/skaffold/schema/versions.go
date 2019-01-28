@@ -17,7 +17,11 @@ limitations under the License.
 package schema
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v2"
 
 	apiversion "github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -26,9 +30,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha5"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta2"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
-	"gopkg.in/yaml.v2"
 )
 
 type APIVersion struct {
@@ -40,6 +46,9 @@ var schemaVersions = versions{
 	{v1alpha2.Version, v1alpha2.NewSkaffoldPipeline},
 	{v1alpha3.Version, v1alpha3.NewSkaffoldPipeline},
 	{v1alpha4.Version, v1alpha4.NewSkaffoldPipeline},
+	{v1alpha5.Version, v1alpha5.NewSkaffoldPipeline},
+	{v1beta1.Version, v1beta1.NewSkaffoldPipeline},
+	{v1beta2.Version, v1beta2.NewSkaffoldPipeline},
 	{latest.Version, latest.NewSkaffoldPipeline},
 }
 
@@ -62,7 +71,7 @@ func (v *versions) Find(apiVersion string) (func() util.VersionedConfig, bool) {
 }
 
 // ParseConfig reads a configuration file.
-func ParseConfig(filename string, applyDefaults bool) (util.VersionedConfig, error) {
+func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
 	buf, err := misc.ReadConfiguration(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "read skaffold config")
@@ -79,7 +88,7 @@ func ParseConfig(filename string, applyDefaults bool) (util.VersionedConfig, err
 	}
 
 	cfg := factory()
-	if err := cfg.Parse(buf, applyDefaults); err != nil {
+	if err := yaml.UnmarshalStrict(buf, cfg); err != nil {
 		return nil, errors.Wrap(err, "unable to parse config")
 	}
 
@@ -87,30 +96,35 @@ func ParseConfig(filename string, applyDefaults bool) (util.VersionedConfig, err
 		return nil, errors.Wrap(err, "invalid config")
 	}
 
+	if upgrade && cfg.GetVersion() != latest.Version {
+		cfg, err = upgradeToLatest(cfg)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return cfg, nil
 }
 
-// CheckVersionIsLatest checks that a given version is the most recent.
-func CheckVersionIsLatest(apiVersion string) error {
-	parsedVersion, err := apiversion.Parse(apiVersion)
-	if err != nil {
-		return errors.Wrap(err, "parsing api version")
-	}
-
-	if parsedVersion.LT(apiversion.MustParse(latest.Version)) {
-		return errors.New("config version out of date: run `skaffold fix`")
-	}
-
-	if parsedVersion.GT(apiversion.MustParse(latest.Version)) {
-		return errors.New("config version is too new for this version of skaffold: upgrade skaffold")
-	}
-
-	return nil
-}
-
-// UpgradeToLatest upgrades a configuration to the latest version.
-func UpgradeToLatest(vc util.VersionedConfig) (util.VersionedConfig, error) {
+// upgradeToLatest upgrades a configuration to the latest version.
+func upgradeToLatest(vc util.VersionedConfig) (util.VersionedConfig, error) {
 	var err error
+
+	// first, check to make sure config version isn't too new
+	version, err := apiversion.Parse(vc.GetVersion())
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing api version")
+	}
+
+	semver := apiversion.MustParse(latest.Version)
+	if version.EQ(semver) {
+		return vc, nil
+	}
+	if version.GT(semver) {
+		return nil, fmt.Errorf("config version %s is too new for this version of skaffold: upgrade skaffold", vc.GetVersion())
+	}
+
+	logrus.Warnf("config version (%s) out of date: upgrading to latest (%s)", vc.GetVersion(), latest.Version)
 
 	for vc.GetVersion() != latest.Version {
 		vc, err = vc.Upgrade()

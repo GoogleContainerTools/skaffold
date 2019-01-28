@@ -18,7 +18,7 @@ package kubectl
 
 import (
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // Replacer is used to replace portions of yaml manifests that match a given key.

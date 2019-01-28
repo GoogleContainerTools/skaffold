@@ -67,7 +67,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = testutil.NewFakeCmdOut(
+			util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOutErr(
 				strings.Join(getCommandGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{}).Args, " "),
 				test.stdout,
 				test.err,
@@ -97,7 +97,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{},
 			filesInWorkspace:  []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{"_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{":_jibSkaffoldFiles", "-q"})
 			},
 		},
 		{
@@ -113,7 +113,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{},
 			filesInWorkspace:  []string{"gradlew", "gradlew.cmd"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{"_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{":_jibSkaffoldFiles", "-q"})
 			},
 		},
 		{
@@ -141,5 +141,21 @@ func TestGetCommandGradle(t *testing.T) {
 			testutil.CheckDeepEqual(t, expectedCmd.Args, cmd.Args)
 			testutil.CheckDeepEqual(t, expectedCmd.Dir, cmd.Dir)
 		})
+	}
+}
+
+func TestGenerateGradleArgs(t *testing.T) {
+	var testCases = []struct {
+		in  latest.JibGradleArtifact
+		out []string
+	}{
+		{latest.JibGradleArtifact{}, []string{":task", "--image=image"}},
+		{latest.JibGradleArtifact{Project: "project"}, []string{":project:task", "--image=image"}},
+	}
+
+	for _, tt := range testCases {
+		command := GenerateGradleArgs("task", "image", &tt.in)
+
+		testutil.CheckDeepEqual(t, tt.out, command)
 	}
 }

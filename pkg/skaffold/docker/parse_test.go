@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 const copyServerGo = `
@@ -174,6 +174,30 @@ FROM nginx
 COPY . /
 `
 
+const fromScratch = `
+FROM scratch
+ADD ./file /etc/file
+`
+
+const fromScratchUppercase = `
+FROM SCRATCH
+ADD ./file /etc/file
+`
+
+const fromImageCaseSensitive = `
+FROM jboss/wildfly:14.0.1.Final
+ADD ./file /etc/file
+`
+
+const targets = `
+FROM scratch as target1
+ADD ./file /etc/file
+FROM target1 as target2
+ADD ./bar /etc/bar
+FROM target2
+ADD ./server.go /etc/server.go
+`
+
 type fakeImageFetcher struct {
 	fetched []string
 }
@@ -182,7 +206,7 @@ func (f *fakeImageFetcher) fetch(image string) (*v1.ConfigFile, error) {
 	f.fetched = append(f.fetched, image)
 
 	switch image {
-	case "ubuntu:14.04", "busybox", "nginx", "golang:1.9.2":
+	case "ubuntu:14.04", "busybox", "nginx", "golang:1.9.2", "jboss/wildfly:14.0.1.Final":
 		return &v1.ConfigFile{}, nil
 	case "golang:onbuild":
 		return &v1.ConfigFile{
@@ -194,7 +218,7 @@ func (f *fakeImageFetcher) fetch(image string) (*v1.ConfigFile, error) {
 		}, nil
 	}
 
-	return nil, fmt.Errorf("No image found for %s", image)
+	return nil, fmt.Errorf("no image found for %s", image)
 }
 
 func TestGetDependencies(t *testing.T) {
@@ -204,12 +228,40 @@ func TestGetDependencies(t *testing.T) {
 		workspace   string
 		ignore      string
 		buildArgs   map[string]*string
+		target      string
 
 		expected  []string
 		fetched   []string
 		badReader bool
 		shouldErr bool
 	}{
+		{
+			description: "no target",
+			dockerfile:  targets,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "bar", "file", "server.go"},
+		},
+		{
+			description: "target",
+			dockerfile:  targets,
+			workspace:   ".",
+			target:      "target1",
+			expected:    []string{"Dockerfile", "file"},
+		},
+		{
+			description: "transitive target",
+			dockerfile:  targets,
+			workspace:   ".",
+			target:      "target2",
+			expected:    []string{"Dockerfile", "bar", "file"},
+		},
+		{
+			description: "unknown target",
+			dockerfile:  targets,
+			workspace:   ".",
+			target:      "target3",
+			shouldErr:   true,
+		},
 		{
 			description: "copy dependency",
 			dockerfile:  copyServerGo,
@@ -437,6 +489,27 @@ func TestGetDependencies(t *testing.T) {
 			expected:    []string{"Dockerfile"},
 			fetched:     []string{"ubuntu:14.04"},
 		},
+		{
+			description: "from scratch",
+			dockerfile:  fromScratch,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "file"},
+			fetched:     nil,
+		},
+		{
+			description: "from scratch, ignoring case",
+			dockerfile:  fromScratchUppercase,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "file"},
+			fetched:     nil,
+		},
+		{
+			description: "case sensitive",
+			dockerfile:  fromImageCaseSensitive,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "file"},
+			fetched:     []string{"jboss/wildfly:14.0.1.Final"},
+		},
 	}
 
 	for _, test := range tests {
@@ -462,8 +535,9 @@ func TestGetDependencies(t *testing.T) {
 
 			workspace := tmpDir.Path(test.workspace)
 			deps, err := GetDependencies(context.Background(), workspace, &latest.DockerArtifact{
-				BuildArgs:      test.buildArgs,
 				DockerfilePath: "Dockerfile",
+				BuildArgs:      test.buildArgs,
+				Target:         test.target,
 			})
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)

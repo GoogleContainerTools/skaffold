@@ -59,6 +59,13 @@ func TestDependenciesForKustomization(t *testing.T) {
 			expected: []string{"kustomization.yaml", "app1.properties", "app2.properties", "app3.properties"},
 		},
 		{
+			description: "secretGenerator",
+			yaml: `secretGenerator:
+- files: [secret1.file]
+- files: [secret2.file, secret3.file]`,
+			expected: []string{"kustomization.yaml", "secret1.file", "secret2.file", "secret3.file"},
+		},
+		{
 			description: "unknown base",
 			yaml:        `bases: [other]`,
 			shouldErr:   true,

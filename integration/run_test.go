@@ -37,10 +37,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -95,29 +95,40 @@ func TestRun(t *testing.T) {
 			args:        []string{"run"},
 			pods:        []string{"getting-started"},
 			dir:         "examples/getting-started",
-		},
-		{
+		}, {
+			description: "nodejs example",
+			args:        []string{"run"},
+			pods:        []string{"node"},
+			dir:         "examples/nodejs",
+		}, {
+			description: "structure-tests example",
+			args:        []string{"run"},
+			pods:        []string{"getting-started"},
+			dir:         "examples/structure-tests",
+		}, {
+			description: "microservices example",
+			args:        []string{"run"},
+			deployments: []string{"leeroy-app", "leeroy-web"},
+			dir:         "examples/microservices",
+		}, {
 			description: "annotated getting-started example",
 			args:        []string{"run"},
 			filename:    "annotated-skaffold.yaml",
 			pods:        []string{"getting-started"},
 			dir:         "examples",
-		},
-		{
+		}, {
 			description: "getting-started envTagger",
 			args:        []string{"run"},
 			pods:        []string{"getting-started"},
 			dir:         "examples/tagging-with-environment-variables",
 			env:         []string{"FOO=foo"},
-		},
-		{
+		}, {
 			description: "gcb builder example",
 			args:        []string{"run", "-p", "gcb"},
 			pods:        []string{"getting-started"},
 			dir:         "examples/structure-tests",
 			remoteOnly:  true,
-		},
-		{
+		}, {
 			description: "deploy kustomize",
 			args:        []string{"deploy", "--images", "index.docker.io/library/busybox:1"},
 			deployments: []string{"kustomize-test"},
@@ -130,28 +141,24 @@ func TestRun(t *testing.T) {
 				}
 			},
 			dir: "examples/kustomize",
-		},
-		{
+		}, {
 			description: "bazel example",
 			args:        []string{"run"},
 			pods:        []string{"bazel"},
 			dir:         "examples/bazel",
-		},
-		{
+		}, {
 			description: "kaniko example",
 			args:        []string{"run"},
 			pods:        []string{"getting-started-kaniko"},
 			dir:         "examples/kaniko",
 			remoteOnly:  true,
-		},
-		{
+		}, {
 			description: "kaniko local example",
 			args:        []string{"run"},
 			pods:        []string{"getting-started-kaniko"},
 			dir:         "examples/kaniko-local",
 			remoteOnly:  true,
-		},
-		{
+		}, {
 			description: "helm example",
 			args:        []string{"run"},
 			deployments: []string{"skaffold-helm"},
@@ -222,8 +229,11 @@ func TestDev(t *testing.T) {
 		dir           string
 		args          []string
 		setup         func(t *testing.T) func(t *testing.T)
+		postSetup     func(t *testing.T) func(t *testing.T)
+		pods          []string
 		jobs          []string
 		jobValidation func(t *testing.T, ns *v1.Namespace, j *batchv1.Job)
+		validation    func(t *testing.T, ns *v1.Namespace)
 	}
 
 	testCases := []testDevCase{
@@ -268,6 +278,42 @@ func TestDev(t *testing.T) {
 				}
 			},
 		},
+		{
+			description: "create a directory with file sync",
+			dir:         "examples/test-file-sync",
+			args:        []string{"dev"},
+			pods:        []string{"test-file-sync"},
+			postSetup: func(t *testing.T) func(t *testing.T) {
+				cmd := exec.Command("mkdir", "-p", "test")
+				cmd.Dir = "examples/test-file-sync"
+				if output, err := util.RunCmdOut(cmd); err != nil {
+					t.Fatalf("creating test dir: %s %v", output, err)
+				}
+				cmd = exec.Command("touch", "test/foobar")
+				cmd.Dir = "examples/test-file-sync"
+				if output, err := util.RunCmdOut(cmd); err != nil {
+					t.Fatalf("creating test/foo: %s %v", output, err)
+				}
+				return func(t *testing.T) {
+					cmd := exec.Command("rm", "-rf", "test")
+					cmd.Dir = "examples/test-file-sync"
+					if output, err := util.RunCmdOut(cmd); err != nil {
+						t.Fatalf("removing test dir: %s %v", output, err)
+					}
+				}
+			},
+			validation: func(t *testing.T, ns *v1.Namespace) {
+				// try to run this command successfully for one minute
+				err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+					cmd := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "ls", "/test")
+					_, err := util.RunCmdOut(cmd)
+					return err == nil, nil
+				})
+				if err != nil {
+					t.Fatalf("checking if /test dir exists in container: %v", err)
+				}
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -275,8 +321,10 @@ func TestDev(t *testing.T) {
 			ns, deleteNs := setupNamespace(t)
 			defer deleteNs()
 
-			cleanupTC := testCase.setup(t)
-			defer cleanupTC(t)
+			if testCase.setup != nil {
+				cleanupTC := testCase.setup(t)
+				defer cleanupTC(t)
+			}
 
 			args := []string{}
 			args = append(args, testCase.args...)
@@ -303,6 +351,20 @@ func TestDev(t *testing.T) {
 				}
 			}
 
+			for _, p := range testCase.pods {
+				if err := kubernetesutil.WaitForPodReady(context.Background(), client.CoreV1().Pods(ns.Name), p); err != nil {
+					t.Fatalf("Timed out waiting for pod ready")
+				}
+			}
+
+			if testCase.postSetup != nil {
+				cleanup := testCase.postSetup(t)
+				defer cleanup(t)
+			}
+
+			if testCase.validation != nil {
+				testCase.validation(t, ns)
+			}
 			// No cleanup, since exiting skaffold dev should clean up automatically
 		})
 	}
@@ -408,9 +470,10 @@ func TestListConfig(t *testing.T) {
 
 func TestInit(t *testing.T) {
 	type testCase struct {
-		name string
-		dir  string
-		args []string
+		name             string
+		dir              string
+		args             []string
+		skipSkaffoldYaml bool
 	}
 
 	tests := []testCase{
@@ -426,16 +489,24 @@ func TestInit(t *testing.T) {
 				"-a", "leeroy-web/Dockerfile=gcr.io/k8s-skaffold/leeroy-web",
 			},
 		},
+		{
+			name:             "compose",
+			dir:              "../examples/compose",
+			args:             []string{"--compose-file", "docker-compose.yaml"},
+			skipSkaffoldYaml: true,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			oldYamlPath := filepath.Join(test.dir, "skaffold.yaml")
-			oldYaml, err := removeOldSkaffoldYaml(oldYamlPath)
-			if err != nil {
-				t.Fatalf("removing original skaffold.yaml: %s", err)
+			if !test.skipSkaffoldYaml {
+				oldYamlPath := filepath.Join(test.dir, "skaffold.yaml")
+				oldYaml, err := removeOldSkaffoldYaml(oldYamlPath)
+				if err != nil {
+					t.Fatalf("removing original skaffold.yaml: %s", err)
+				}
+				defer restoreOldSkaffoldYaml(oldYaml, oldYamlPath)
 			}
-			defer restoreOldSkaffoldYaml(oldYaml, oldYamlPath)
 
 			generatedYaml := "skaffold.yaml.out"
 			defer func() {

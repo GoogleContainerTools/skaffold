@@ -20,8 +20,11 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
-	"path"
 	"path/filepath"
+	"strings"
+
+	"github.com/bmatcuk/doublestar"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -29,7 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -87,33 +90,47 @@ func latestTag(image string, builds []build.Artifact) string {
 
 func intersect(context string, syncMap map[string]string, files []string) (map[string]string, error) {
 	ret := map[string]string{}
+
 	for _, f := range files {
 		relPath, err := filepath.Rel(context, f)
+
 		if err != nil {
 			return nil, errors.Wrapf(err, "changed file %s can't be found relative to context %s", f, context)
 		}
+		var matches bool
 		for p, dst := range syncMap {
-			match, err := filepath.Match(p, relPath)
+			match, err := doublestar.PathMatch(filepath.FromSlash(p), relPath)
 			if err != nil {
 				return nil, errors.Wrapf(err, "pattern error for %s", relPath)
 			}
-			if !match {
-				return nil, nil
+
+			if match {
+				staticPath := strings.Split(filepath.FromSlash(p), "*")[0]
+
+				// Every file must match at least one sync pattern, if not we'll have to
+				// skip the entire sync
+				matches = true
+				// If the source has special match characters,
+				// the destination must be a directory
+				// The path package must be used here to enforce slashes,
+				// since the destination is always a linux filesystem.
+				if util.HasMeta(p) {
+					relPathDynamic := strings.TrimPrefix(relPath, staticPath)
+					dst = filepath.ToSlash(filepath.Join(dst, relPathDynamic))
+				}
+				ret[f] = dst
 			}
-			// If the source has special match characters,
-			// the destination must be a directory
-			// The path package must be used here, since the destination is always
-			// a linux filesystem.
-			if util.HasMeta(p) {
-				dst = path.Join(dst, filepath.Base(relPath))
-			}
-			ret[f] = dst
 		}
+		if !matches {
+			logrus.Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
+			return nil, nil
+		}
+
 	}
 	return ret, nil
 }
 
-func Perform(ctx context.Context, image string, files map[string]string, cmdFn func(context.Context, v1.Pod, v1.Container, string, string) *exec.Cmd) error {
+func Perform(ctx context.Context, image string, files map[string]string, cmdFn func(context.Context, v1.Pod, v1.Container, string, string) []*exec.Cmd) error {
 	if len(files) == 0 {
 		return nil
 	}
@@ -137,11 +154,12 @@ func Perform(ctx context.Context, image string, files map[string]string, cmdFn f
 			}
 
 			for src, dst := range files {
-				cmd := cmdFn(ctx, p, c, src, dst)
-				if err := util.RunCmd(cmd); err != nil {
-					return err
+				cmds := cmdFn(ctx, p, c, src, dst)
+				for _, cmd := range cmds {
+					if err := util.RunCmd(cmd); err != nil {
+						return err
+					}
 				}
-
 				synced[src] = true
 			}
 		}

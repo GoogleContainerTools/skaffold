@@ -17,6 +17,7 @@ limitations under the License.
 package testutil
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -26,21 +27,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 )
-
-type BadReader struct{}
-
-func (BadReader) Read([]byte) (int, error) { return 0, fmt.Errorf("Bad read") }
-
-type BadWriter struct{}
-
-func (BadWriter) Write([]byte) (int, error) { return 0, fmt.Errorf("Bad write") }
-
-type FakeReaderCloser struct {
-	Err error
-}
-
-func (f FakeReaderCloser) Close() error             { return nil }
-func (f FakeReaderCloser) Read([]byte) (int, error) { return 0, f.Err }
 
 func CheckDeepEqual(t *testing.T, expected, actual interface{}) {
 	t.Helper()
@@ -86,10 +72,10 @@ func CheckError(t *testing.T, shouldErr bool, err error) {
 
 func checkErr(shouldErr bool, err error) error {
 	if err == nil && shouldErr {
-		return fmt.Errorf("Expected error, but returned none")
+		return errors.New("expected error, but returned none")
 	}
 	if err != nil && !shouldErr {
-		return fmt.Errorf("Unexpected error: %s", err)
+		return fmt.Errorf("unexpected error: %s", err)
 	}
 	return nil
 }

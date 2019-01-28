@@ -19,7 +19,6 @@ package local
 import (
 	"context"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"testing"
 
@@ -27,10 +26,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 type FakeTagger struct {
@@ -38,7 +35,7 @@ type FakeTagger struct {
 	Err error
 }
 
-func (f *FakeTagger) GenerateFullyQualifiedImageName(workingDir string, tagOpts *tag.Options) (string, error) {
+func (f *FakeTagger) GenerateFullyQualifiedImageName(workingDir string, tagOpts tag.Options) (string, error) {
 	return f.Out, f.Err
 }
 
@@ -57,19 +54,9 @@ func TestLocalRun(t *testing.T) {
 	defer func(h docker.AuthConfigHelper) { docker.DefaultAuthHelper = h }(docker.DefaultAuthHelper)
 	docker.DefaultAuthHelper = testAuthHelper{}
 
-	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
-	defer restore()
-
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
-
-	tmpDir.Write("Dockerfile", "")
-
 	var tests = []struct {
 		description  string
-		config       *latest.LocalBuild
-		out          io.Writer
-		api          docker.APIClient
+		api          testutil.FakeAPIClient
 		tagger       tag.Tagger
 		artifacts    []*latest.Artifact
 		expected     []build.Artifact
@@ -78,116 +65,164 @@ func TestLocalRun(t *testing.T) {
 	}{
 		{
 			description: "single build",
-			out:         ioutil.Discard,
-			config: &latest.LocalBuild{
-				Push: util.BoolPtr(false),
+			artifacts: []*latest.Artifact{{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{},
+				}},
 			},
-			artifacts: []*latest.Artifact{
-				{
-					ImageName: "gcr.io/test/image",
-					Workspace: tmpDir.Root(),
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{},
-					},
-				},
+			tagger: &FakeTagger{Out: "gcr.io/test/image:tag"},
+			expected: []build.Artifact{{
+				ImageName: "gcr.io/test/image",
+				Tag:       "gcr.io/test/image:tag",
+			}},
+		},
+		{
+			description: "single build local cluster",
+			artifacts: []*latest.Artifact{{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{},
+				}},
 			},
-			tagger: &tag.ChecksumTagger{},
-			api:    testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
-			expected: []build.Artifact{
-				{
-					ImageName: "gcr.io/test/image",
-					Tag:       "gcr.io/test/image:imageid",
-				},
-			},
+			tagger:       &FakeTagger{Out: "gcr.io/test/image:tag"},
+			localCluster: true,
+			expected: []build.Artifact{{
+				ImageName: "gcr.io/test/image",
+				Tag:       "gcr.io/test/image:tag",
+			}},
 		},
 		{
 			description: "subset build",
-			out:         ioutil.Discard,
-			config: &latest.LocalBuild{
-				Push: util.BoolPtr(true),
+			tagger:      &FakeTagger{Out: "gcr.io/test/image:tag"},
+			artifacts: []*latest.Artifact{{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{},
+				}},
 			},
-			tagger: &tag.ChecksumTagger{},
-			artifacts: []*latest.Artifact{
-				{
-					ImageName: "gcr.io/test/image",
-					Workspace: tmpDir.Root(),
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{},
-					},
-				},
-			},
-			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
-			expected: []build.Artifact{
-				{
-					ImageName: "gcr.io/test/image",
-					Tag:       "gcr.io/test/image:imageid",
-				},
-			},
-		},
-		{
-			description:  "local cluster bad writer",
-			out:          &testutil.BadWriter{},
-			config:       &latest.LocalBuild{},
-			shouldErr:    true,
-			localCluster: true,
+			expected: []build.Artifact{{
+				ImageName: "gcr.io/test/image",
+				Tag:       "gcr.io/test/image:tag",
+			}},
 		},
 		{
 			description: "error image build",
-			out:         ioutil.Discard,
 			artifacts:   []*latest.Artifact{{}},
-			tagger:      &tag.ChecksumTagger{},
-			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{
+			api: testutil.FakeAPIClient{
 				ErrImageBuild: true,
-			}),
+			},
 			shouldErr: true,
 		},
 		{
 			description: "error image tag",
-			out:         ioutil.Discard,
 			artifacts:   []*latest.Artifact{{}},
-			tagger:      &tag.ChecksumTagger{},
-			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{
+			api: testutil.FakeAPIClient{
 				ErrImageTag: true,
-			}),
+			},
 			shouldErr: true,
 		},
 		{
-			description: "bad writer",
-			out:         &testutil.BadWriter{},
+			description: "unkown artifact type",
 			artifacts:   []*latest.Artifact{{}},
-			tagger:      &tag.ChecksumTagger{},
-			api:         testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
 			shouldErr:   true,
 		},
 		{
 			description: "error image inspect",
-			out:         &testutil.BadWriter{},
 			artifacts:   []*latest.Artifact{{}},
-			tagger:      &tag.ChecksumTagger{},
-			api: testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{
+			api: testutil.FakeAPIClient{
 				ErrImageInspect: true,
-			}),
+			},
 			shouldErr: true,
 		},
 		{
 			description: "error tagger",
-			out:         ioutil.Discard,
 			artifacts:   []*latest.Artifact{{}},
 			tagger:      &FakeTagger{Err: fmt.Errorf("")},
-			api:         testutil.NewFakeImageAPIClient(map[string]string{}, &testutil.FakeImageAPIOptions{}),
 			shouldErr:   true,
+		},
+		{
+			description: "cache-from images already pulled",
+			artifacts: []*latest.Artifact{{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						CacheFrom: []string{"pull1", "pull2"},
+					},
+				}},
+			},
+			api: testutil.FakeAPIClient{
+				TagToImageID: map[string]string{
+					"pull1": "imageID1",
+					"pull2": "imageID2",
+				},
+			},
+			tagger: &FakeTagger{Out: "gcr.io/test/image:tag"},
+			expected: []build.Artifact{{
+				ImageName: "gcr.io/test/image",
+				Tag:       "gcr.io/test/image:tag",
+			}},
+		},
+		{
+			description: "pull cache-from images",
+			artifacts: []*latest.Artifact{{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						CacheFrom: []string{"pull1", "pull2"},
+					},
+				}},
+			},
+			api:    testutil.FakeAPIClient{},
+			tagger: &FakeTagger{Out: "gcr.io/test/image:tag"},
+			expected: []build.Artifact{{
+				ImageName: "gcr.io/test/image",
+				Tag:       "gcr.io/test/image:tag",
+			}},
+		},
+		{
+			description: "pull error",
+			artifacts: []*latest.Artifact{{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						CacheFrom: []string{"pull1"},
+					},
+				}},
+			},
+			api: testutil.FakeAPIClient{
+				ErrImagePull: true,
+			},
+			tagger:    &FakeTagger{Out: "gcr.io/test/image:tag"},
+			shouldErr: true,
+		},
+		{
+			description: "inspect error",
+			artifacts: []*latest.Artifact{{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						CacheFrom: []string{"pull1"},
+					},
+				}},
+			},
+			api: testutil.FakeAPIClient{
+				ErrImageInspect: true,
+			},
+			tagger:    &FakeTagger{Out: "gcr.io/test/image:tag"},
+			shouldErr: true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			l := Builder{
-				cfg:          test.config,
-				api:          test.api,
+				cfg:          &latest.LocalBuild{},
+				localDocker:  docker.NewLocalDaemon(&test.api),
 				localCluster: test.localCluster,
 			}
 
-			res, err := l.Build(context.Background(), test.out, test.tagger, test.artifacts)
+			res, err := l.Build(context.Background(), ioutil.Discard, test.tagger, test.artifacts)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
 		})
 	}

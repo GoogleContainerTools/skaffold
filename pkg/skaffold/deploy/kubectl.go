@@ -66,32 +66,36 @@ func (k *KubectlDeployer) Labels() map[string]string {
 
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
-	color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version())
-	if err := k.kubectl.CheckVersion(); err != nil {
+func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) error {
+	color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
+	if err := k.kubectl.CheckVersion(ctx); err != nil {
 		color.Default.Fprintln(out, err)
 	}
 
 	manifests, err := k.readManifests(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "reading manifests")
+		return errors.Wrap(err, "reading manifests")
 	}
 
 	if len(manifests) == 0 {
-		return nil, nil
+		return nil
 	}
 
 	manifests, err = manifests.ReplaceImages(builds, k.defaultRepo)
 	if err != nil {
-		return nil, errors.Wrap(err, "replacing images in manifests")
+		return errors.Wrap(err, "replacing images in manifests")
 	}
 
 	updated, err := k.kubectl.Apply(ctx, out, manifests)
 	if err != nil {
-		return nil, errors.Wrap(err, "apply")
+		return errors.Wrap(err, "apply")
 	}
 
-	return parseManifestsForDeploys(k.kubectl.Namespace, updated)
+	dRes := parseManifestsForDeploys(k.kubectl.Namespace, updated)
+	labels := merge(labellers...)
+	labelDeployResults(labels, dRes)
+
+	return nil
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
@@ -133,7 +137,7 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 	return filteredManifests, nil
 }
 
-func parseManifestsForDeploys(namespace string, manifests kubectl.ManifestList) ([]Artifact, error) {
+func parseManifestsForDeploys(namespace string, manifests kubectl.ManifestList) []Artifact {
 	var results []Artifact
 
 	for _, manifest := range manifests {
@@ -141,7 +145,7 @@ func parseManifestsForDeploys(namespace string, manifests kubectl.ManifestList) 
 		results = append(results, parseReleaseInfo(namespace, b)...)
 	}
 
-	return results, nil
+	return results
 }
 
 // readManifests reads the manifests to deploy/delete.
@@ -159,6 +163,16 @@ func (k *KubectlDeployer) readManifests(ctx context.Context) (kubectl.ManifestLi
 		}
 
 		manifests.Append(buf)
+	}
+
+	for _, manifest := range k.Manifests {
+		if util.IsURL(manifest) {
+			buf, err := util.Download(manifest)
+			if err != nil {
+				return nil, errors.Wrap(err, "downloading manifest")
+			}
+			manifests.Append(buf)
+		}
 	}
 
 	for _, m := range k.RemoteManifests {

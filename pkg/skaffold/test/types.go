@@ -42,7 +42,7 @@ type Tester interface {
 // FullTester should always be the ONLY implementation of the Tester interface;
 // newly added testing implementations should implement the Runner interface.
 type FullTester struct {
-	testCases  *[]*latest.TestCase
+	testCases  *latest.TestConfig
 	workingDir string
 }
 

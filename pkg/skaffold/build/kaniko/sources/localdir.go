@@ -29,9 +29,9 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -48,7 +48,7 @@ type LocalDir struct {
 
 // Setup for LocalDir creates a tarball of the buildcontext and stores it in /tmp
 func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string) (string, error) {
-	g.tarPath = filepath.Join("/tmp", fmt.Sprintf("context-%s.tar.gz", initialTag))
+	g.tarPath = filepath.Join(os.TempDir(), fmt.Sprintf("context-%s.tar.gz", initialTag))
 	color.Default.Fprintln(out, "Storing build context at", g.tarPath)
 
 	f, err := os.Create(g.tarPath)
@@ -57,7 +57,7 @@ func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Ar
 	}
 	defer f.Close()
 
-	err = docker.CreateDockerTarGzContext(ctx, f, artifact.Workspace, artifact.DockerArtifact)
+	err = sources.TarGz(ctx, f, artifact)
 
 	context := fmt.Sprintf("dir://%s", constants.DefaultKanikoEmptyDirMountPath)
 	return context, err
@@ -65,7 +65,6 @@ func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Ar
 
 // Pod returns the pod template to ModifyPod
 func (g *LocalDir) Pod(args []string) *v1.Pod {
-	p := podTemplate(g.cfg, args)
 	// Include the emptyDir volume and volume source in both containers
 	v := v1.Volume{
 		Name: constants.DefaultKanikoEmptyDirName,
@@ -79,14 +78,13 @@ func (g *LocalDir) Pod(args []string) *v1.Pod {
 	}
 	// Generate the init container, which will run until the /tmp/complete file is created
 	ic := v1.Container{
-		Name:  initContainer,
-		Image: constants.DefaultAlpineImage,
-		Args: []string{"sh", "-c", `while true; do
-	sleep 1; if [ -f /tmp/complete ]; then break; fi
-done`},
+		Name:         initContainer,
+		Image:        constants.DefaultBusyboxImage,
+		Command:      []string{"sh", "-c", "while [ ! -f /tmp/complete ]; do sleep 1; done"},
 		VolumeMounts: []v1.VolumeMount{vm},
 	}
 
+	p := podTemplate(g.cfg, args)
 	p.Spec.InitContainers = []v1.Container{ic}
 	p.Spec.Containers[0].VolumeMounts = append(p.Spec.Containers[0].VolumeMounts, vm)
 	p.Spec.Volumes = append(p.Spec.Volumes, v)
@@ -104,22 +102,25 @@ func (g *LocalDir) ModifyPod(ctx context.Context, p *v1.Pod) error {
 	if err := kubernetes.WaitForPodInitialized(ctx, client.CoreV1().Pods(p.Namespace), p.Name); err != nil {
 		return errors.Wrap(err, "waiting for pod to initialize")
 	}
-	// Copy over the buildcontext tarball into the init container
-	copy := exec.CommandContext(ctx, "kubectl", "cp", g.tarPath, fmt.Sprintf("%s:/%s", p.Name, g.tarPath), "-c", initContainer, "-n", p.Namespace)
-	if err := util.RunCmd(copy); err != nil {
-		return errors.Wrap(err, "copying buildcontext into init container")
+
+	f, err := os.Open(g.tarPath)
+	if err != nil {
+		return errors.Wrap(err, "opening context tar")
 	}
-	// Next, extract the buildcontext to the empty dir
-	extract := exec.CommandContext(ctx, "kubectl", "exec", p.Name, "-c", initContainer, "-n", p.Namespace, "--", "tar", "-xzf", g.tarPath, "-C", constants.DefaultKanikoEmptyDirMountPath)
-	if err := util.RunCmd(extract); err != nil {
-		return errors.Wrap(err, "extracting buildcontext to empty dir")
+	defer f.Close()
+
+	// Copy the context to the empty dir and extract it
+	copyAndExtract := exec.CommandContext(ctx, "kubectl", "exec", "-i", p.Name, "-c", initContainer, "-n", p.Namespace, "--", "tar", "-xzf", "-", "-C", constants.DefaultKanikoEmptyDirMountPath)
+	copyAndExtract.Stdin = f
+	if err := util.RunCmd(copyAndExtract); err != nil {
+		return errors.Wrap(err, "copying and extracting buildcontext to empty dir")
 	}
 	// Generate a file to successfully terminate the init container
 	file := exec.CommandContext(ctx, "kubectl", "exec", p.Name, "-c", initContainer, "-n", p.Namespace, "--", "touch", "/tmp/complete")
 	return util.RunCmd(file)
 }
 
-// Cleanup deletes the buidcontext tarball stored on the local filesystem
+// Cleanup deletes the buildcontext tarball stored on the local filesystem
 func (g *LocalDir) Cleanup(ctx context.Context) error {
 	return os.Remove(g.tarPath)
 }

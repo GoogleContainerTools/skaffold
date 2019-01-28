@@ -124,12 +124,16 @@ func setFlagsFromEnvVariables(commands []*cobra.Command) {
 				}
 			}
 
-			envVar := fmt.Sprintf("SKAFFOLD_%s", strings.Replace(strings.ToUpper(f.Name), "-", "_", -1))
+			envVar := FlagToEnvVarName(f)
 			if val, present := os.LookupEnv(envVar); present {
 				cmd.Flags().Set(f.Name, val)
 			}
 		})
 	}
+}
+
+func FlagToEnvVarName(f *pflag.Flag) string {
+	return fmt.Sprintf("SKAFFOLD_%s", strings.Replace(strings.ToUpper(f.Name), "-", "_", -1))
 }
 
 func AddRunDeployFlags(cmd *cobra.Command) {
@@ -143,6 +147,7 @@ func AddRunDevFlags(cmd *cobra.Command) {
 	cmd.Flags().StringArrayVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
 	cmd.Flags().StringVarP(&opts.Namespace, "namespace", "n", "", "Run deployments in the specified namespace")
 	cmd.Flags().StringVarP(&opts.DefaultRepo, "default-repo", "d", "", "Default repository value (overrides global config)")
+	cmd.Flags().BoolVar(&opts.SkipTests, "skip-tests", false, "Whether to skip the tests after building")
 }
 
 func SetUpLogs(out io.Writer, level string) error {

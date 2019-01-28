@@ -46,8 +46,8 @@ const repo = "skaffold"
 
 func main() {
 	rootCmd.Flags().StringVar(&token, "token", "", "Specify personal Github Token if you are hitting a rate limit anonymously. https://github.com/settings/tokens")
-	rootCmd.Flags().StringVar(&fromTag, "fromTag", "", "comparison of commits is based on this tag (defaults to the latest tag in the repo)")
-	rootCmd.Flags().StringVar(&toTag, "toTag", "master", "this is the commit that is compared with fromTag")
+	rootCmd.Flags().StringVar(&fromTag, "fromTag", "", "Comparison of commits is based on this tag (defaults to the latest tag in the repo)")
+	rootCmd.Flags().StringVar(&toTag, "toTag", "master", "This is the commit that is compared with fromTag")
 	if err := rootCmd.Execute(); err != nil {
 		logrus.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func printPullRequests() {
 	fmt.Println(fmt.Sprintf("Collecting pull request that were merged since the last release: %s (%s)", *releases[0].TagName, lastReleaseTime))
 
 	listSize := 1
-	for page := 0; listSize > 0; page++ {
+	for page := 1; listSize > 0; page++ {
 		pullRequests, _, _ := client.PullRequests.List(context.Background(), org, repo, &github.PullRequestListOptions{
 			State:     "closed",
 			Sort:      "updated",
@@ -86,7 +86,7 @@ func printPullRequests() {
 }
 
 func getClient() *github.Client {
-	if len(token) <= 0 {
+	if len(token) == 0 {
 		return github.NewClient(nil)
 	}
 	ctx := context.Background()

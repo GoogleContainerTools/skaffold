@@ -21,9 +21,9 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"k8s.io/client-go/tools/clientcmd/api"
 )
@@ -88,6 +88,9 @@ build:
     pullSecretName: secret-name
     namespace: nskaniko
     timeout: 120m
+    dockerConfig:
+      secretName: config-name
+      path: /kaniko/.docker
 `
 	badConfig = "bad config"
 )
@@ -107,6 +110,17 @@ func TestParseConfig(t *testing.T) {
 		{
 			apiVersion:  latest.Version,
 			description: "Minimal config",
+			config:      minimalConfig,
+			expected: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+			),
+		},
+		{
+			apiVersion:  "skaffold/v1alpha1",
+			description: "Old minimal config",
 			config:      minimalConfig,
 			expected: config(
 				withLocalBuild(
@@ -158,6 +172,7 @@ func TestParseConfig(t *testing.T) {
 			expected: config(
 				withKanikoBuild("demo", "secret-name", "nskaniko", "/secret.json", "120m",
 					withGitTagger(),
+					withDockerConfig("config-name", "/kaniko/.docker"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
 			),
@@ -191,6 +206,12 @@ func TestParseConfig(t *testing.T) {
 			tmp.Write("skaffold.yaml", yaml)
 
 			cfg, err := ParseConfig(tmp.Path("skaffold.yaml"), true)
+			if cfg != nil {
+				config := cfg.(*latest.SkaffoldPipeline)
+				if err := defaults.Set(config); err != nil {
+					t.Fatal("unable to set default values")
+				}
+			}
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cfg)
 		})
@@ -220,6 +241,8 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 		b := latest.BuildConfig{BuildType: latest.BuildType{GoogleCloudBuild: &latest.GoogleCloudBuild{
 			ProjectID:   id,
 			DockerImage: "gcr.io/cloud-builders/docker",
+			MavenImage:  "gcr.io/cloud-builders/mvn",
+			GradleImage: "gcr.io/cloud-builders/gradle",
 		}}}
 		for _, op := range ops {
 			op(&b)
@@ -244,6 +267,15 @@ func withKanikoBuild(bucket, secretName, namespace, secret string, timeout strin
 			op(&b)
 		}
 		cfg.Build = b
+	}
+}
+
+func withDockerConfig(secretName string, path string) func(*latest.BuildConfig) {
+	return func(cfg *latest.BuildConfig) {
+		cfg.KanikoBuild.DockerConfig = &latest.DockerConfig{
+			SecretName: secretName,
+			Path:       path,
+		}
 	}
 }
 
@@ -315,36 +347,6 @@ func withProfiles(profiles ...latest.Profile) func(*latest.SkaffoldPipeline) {
 	}
 }
 
-func TestCheckVersionIsLatest(t *testing.T) {
-	tests := []struct {
-		name      string
-		version   string
-		shouldErr bool
-	}{
-		{
-			name:    "latest api version",
-			version: latest.Version,
-		},
-		{
-			name:      "old api version",
-			version:   v1alpha1.Version,
-			shouldErr: true,
-		},
-		{
-			name:      "new api version",
-			version:   "skaffold/v9",
-			shouldErr: true,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			err := CheckVersionIsLatest(test.version)
-
-			testutil.CheckError(t, test.shouldErr, err)
-		})
-	}
-}
-
 func TestUpgradeToNextVersion(t *testing.T) {
 	for i, schemaVersion := range schemaVersions[0 : len(schemaVersions)-2] {
 		from := schemaVersion
@@ -360,7 +362,7 @@ func TestUpgradeToNextVersion(t *testing.T) {
 	}
 }
 
-func TestCantUpgradeFromLastestVersion(t *testing.T) {
+func TestCantUpgradeFromLatestVersion(t *testing.T) {
 	factory, present := schemaVersions.Find(latest.Version)
 	testutil.CheckDeepEqual(t, true, present)
 

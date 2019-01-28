@@ -33,28 +33,18 @@ import (
 // its checksum. It streams build progress to the writer argument.
 func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	if b.localCluster {
-		if _, err := color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext); err != nil {
-			return nil, errors.Wrap(err, "writing status")
-		}
+		color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext)
 	}
-	defer b.api.Close()
+	defer b.localDocker.Close()
 
 	// TODO(dgageot): parallel builds
 	return build.InSequence(ctx, out, tagger, artifacts, b.buildArtifact)
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error) {
-	initialTag, err := b.runBuildForArtifact(ctx, out, artifact)
+	digest, err := b.runBuildForArtifact(ctx, out, artifact)
 	if err != nil {
 		return "", errors.Wrap(err, "build artifact")
-	}
-
-	digest, err := b.getDigestForArtifact(ctx, initialTag, artifact)
-	if err != nil {
-		return "", errors.Wrapf(err, "getting digest: %s", initialTag)
-	}
-	if digest == "" {
-		return "", fmt.Errorf("digest not found")
 	}
 
 	if b.alreadyTagged == nil {
@@ -64,7 +54,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return tag, nil
 	}
 
-	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.Options{
+	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, tag.Options{
 		ImageName: artifact.ImageName,
 		Digest:    digest,
 	})
@@ -72,7 +62,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "generating tag")
 	}
 
-	if err := b.retagAndPush(ctx, out, initialTag, tag, artifact); err != nil {
+	if err := b.retagAndPush(ctx, out, digest, tag, artifact); err != nil {
 		return "", errors.Wrap(err, "tagging")
 	}
 
@@ -87,46 +77,38 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 		return b.buildDocker(ctx, out, artifact.Workspace, artifact.DockerArtifact)
 
 	case artifact.BazelArtifact != nil:
-		return b.buildBazel(ctx, out, artifact.Workspace, artifact.BazelArtifact)
+		return b.buildBazel(ctx, out, artifact.Workspace, artifact)
 
 	case artifact.JibMavenArtifact != nil:
-		if b.pushImages {
-			return b.buildJibMavenToRegistry(ctx, out, artifact.Workspace, artifact)
-		}
-		return b.buildJibMavenToDocker(ctx, out, artifact.Workspace, artifact.JibMavenArtifact)
+		return b.buildJibMaven(ctx, out, artifact.Workspace, artifact)
 
 	case artifact.JibGradleArtifact != nil:
-		if b.pushImages {
-			return b.buildJibGradleToRegistry(ctx, out, artifact.Workspace, artifact)
-		}
-		return b.buildJibGradleToDocker(ctx, out, artifact.Workspace, artifact.JibGradleArtifact)
+		return b.buildJibGradle(ctx, out, artifact.Workspace, artifact)
 
 	default:
 		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 	}
 }
 
-func (b *Builder) getDigestForArtifact(ctx context.Context, initialTag string, artifact *latest.Artifact) (string, error) {
-	if b.pushImages && (artifact.JibMavenArtifact != nil || artifact.JibGradleArtifact != nil) {
-		return docker.RemoteDigest(initialTag)
-	}
-	return docker.Digest(ctx, b.api, initialTag)
-}
+func (b *Builder) retagAndPush(ctx context.Context, out io.Writer, digest string, newTag string, artifact *latest.Artifact) error {
+	if b.pushImages && (artifact.JibMavenArtifact != nil || artifact.JibGradleArtifact != nil || artifact.BazelArtifact != nil) {
+		// when pushing images, jib/bazel build them directly to the registry. all we need to do here is add a tag to the remote.
 
-func (b *Builder) retagAndPush(ctx context.Context, out io.Writer, initialTag string, newTag string, artifact *latest.Artifact) error {
-	if b.pushImages && (artifact.JibMavenArtifact != nil || artifact.JibGradleArtifact != nil) {
-		if err := docker.AddTag(initialTag, newTag); err != nil {
+		// NOTE: the digest returned by the builders when in push mode is the digest of the remote image that was built to the registry.
+		// when adding the tag to the remote, we need to specify the registry it was built to so go-containerregistry knows
+		// where to look when grabbing the remote image reference.
+		if err := docker.AddTag(fmt.Sprintf("%s@%s", artifact.ImageName, digest), newTag); err != nil {
 			return errors.Wrap(err, "tagging image")
 		}
 		return nil
 	}
 
-	if err := b.api.ImageTag(ctx, initialTag, newTag); err != nil {
+	if err := b.localDocker.Tag(ctx, digest, newTag); err != nil {
 		return err
 	}
 
 	if b.pushImages {
-		if err := docker.RunPush(ctx, b.api, newTag, out); err != nil {
+		if _, err := b.localDocker.Push(ctx, out, newTag); err != nil {
 			return errors.Wrap(err, "pushing")
 		}
 	}

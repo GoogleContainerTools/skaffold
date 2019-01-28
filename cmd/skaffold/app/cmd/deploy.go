@@ -17,18 +17,9 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
 	"io"
-	"io/ioutil"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-)
-
-var (
-	images []string
 )
 
 // NewCmdDeploy describes the CLI command to deploy artifacts.
@@ -38,46 +29,12 @@ func NewCmdDeploy(out io.Writer) *cobra.Command {
 		Short: "Deploys the artifacts",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDeploy(out)
+			// Same actions as `skaffold run`, but with pre-built images.
+			return run(out)
 		},
 	}
 	AddRunDevFlags(cmd)
 	AddRunDeployFlags(cmd)
-	cmd.Flags().StringSliceVar(&images, "images", nil, "A list of images to deploy")
-	cmd.Flags().BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the deploy output")
+	cmd.Flags().StringSliceVar(&opts.PreBuiltImages, "images", nil, "A list of pre-built images to deploy")
 	return cmd
-}
-
-func runDeploy(out io.Writer) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	catchCtrlC(cancel)
-
-	r, config, err := newRunner(opts)
-	if err != nil {
-		return errors.Wrap(err, "creating runner")
-	}
-
-	deployOut := out
-	if quietFlag {
-		deployOut = ioutil.Discard
-	}
-
-	var builds []build.Artifact
-	for _, image := range images {
-		parsed, err := docker.ParseReference(image)
-		if err != nil {
-			return err
-		}
-		builds = append(builds, build.Artifact{
-			ImageName: parsed.BaseName,
-			Tag:       image,
-		})
-	}
-
-	if _, err := r.Deploy(ctx, deployOut, builds); err != nil {
-		return err
-	}
-
-	return r.TailLogs(ctx, out, config.Build.Artifacts, builds)
 }

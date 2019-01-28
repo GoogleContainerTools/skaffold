@@ -24,6 +24,21 @@ import (
 )
 
 // Upgrade upgrades a configuration to the next version.
+// Config changes from v1alpha1 to v1alpha2:
+// 1. Additions
+//  - Profiles
+//	- BuildType.KanikoBuild
+// 	- LocalBuild.useDockerCLI, useBuildkit
+//  - GoogleCloudBuild.	DiskSizeGb, MachineType, Timeout, DockerImage
+//  - DeployType.KustomizeDeploy
+//  - KubectlDeploy.RemoteManifests, Flags - KubectlFlags type
+//  - HelmRelease fields: setValues, setValueTemplates,wait,recreatePods,overrides,packaged,imageStrategy
+//  - BazelArtifact introduced
+//  - DockerArtifact fields: CacheFrom, Target
+// 2. No removal
+// 3. Updates
+//  - TagPolicy is a struct
+//
 func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	var tagPolicy next.TagPolicy
 	if config.Build.TagPolicy == constants.TagStrategySha256 {
@@ -38,7 +53,7 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 
 	var newHelmDeploy *next.HelmDeploy
 	if config.Deploy.DeployType.HelmDeploy != nil {
-		newReleases := make([]next.HelmRelease, 0)
+		var newReleases []next.HelmRelease
 		for _, release := range config.Deploy.DeployType.HelmDeploy.Releases {
 			newReleases = append(newReleases, next.HelmRelease{
 				Name:           release.Name,
@@ -55,7 +70,7 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	}
 	var newKubectlDeploy *next.KubectlDeploy
 	if config.Deploy.DeployType.KubectlDeploy != nil {
-		newManifests := make([]string, 0)
+		var newManifests []string
 		logrus.Warn("Ignoring manifest parameters when transforming v1alpha1 config; check kubernetes yaml before running skaffold")
 		for _, manifest := range config.Deploy.DeployType.KubectlDeploy.Manifests {
 			newManifests = append(newManifests, manifest.Paths...)
@@ -65,18 +80,23 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 		}
 	}
 
-	var newArtifacts = make([]*next.Artifact, 0)
+	var newArtifacts []*next.Artifact
 	for _, artifact := range config.Build.Artifacts {
-		newArtifacts = append(newArtifacts, &next.Artifact{
+		newArtifact := &next.Artifact{
 			ImageName: artifact.ImageName,
 			Workspace: artifact.Workspace,
-			ArtifactType: next.ArtifactType{
+		}
+
+		if artifact.DockerfilePath != "" || len(artifact.BuildArgs) > 0 {
+			newArtifact.ArtifactType = next.ArtifactType{
 				DockerArtifact: &next.DockerArtifact{
 					DockerfilePath: artifact.DockerfilePath,
 					BuildArgs:      artifact.BuildArgs,
 				},
-			},
-		})
+			}
+		}
+
+		newArtifacts = append(newArtifacts, newArtifact)
 	}
 
 	var newBuildType = next.BuildType{}

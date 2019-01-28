@@ -34,7 +34,7 @@ func parseRuntimeObject(namespace string, b []byte) (Artifact, error) {
 		return Artifact{}, fmt.Errorf("error decoding parsed yaml: %s", err.Error())
 	}
 	return Artifact{
-		Obj:       &obj,
+		Obj:       obj,
 		Namespace: namespace,
 	}, nil
 }

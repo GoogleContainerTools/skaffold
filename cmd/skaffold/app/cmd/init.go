@@ -22,18 +22,21 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"gopkg.in/AlecAivazis/survey.v1"
+	survey "gopkg.in/AlecAivazis/survey.v1"
 	yaml "gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -45,6 +48,7 @@ import (
 const NoDockerfile = "None (image not built from these sources)"
 
 var (
+	composeFile  string
 	cliArtifacts []string
 	skipBuild    bool
 	force        bool
@@ -63,12 +67,22 @@ func NewCmdInit(out io.Writer) *cobra.Command {
 	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&skipBuild, "skip-build", false, "Skip generating build artifacts in skaffold config")
 	cmd.Flags().BoolVar(&force, "force", false, "Force the generation of the skaffold config")
+	cmd.Flags().StringVar(&composeFile, "compose-file", "", "Initialize from a docker-compose file")
 	cmd.Flags().StringArrayVarP(&cliArtifacts, "artifact", "a", nil, "'='-delimited dockerfile/image pair to generate build artifact\n(example: --artifact=/web/Dockerfile.web=gcr.io/web-project/image)")
 	return cmd
 }
 
 func doInit(out io.Writer) error {
 	rootDir := "."
+
+	if composeFile != "" {
+		// run kompose first to generate k8s manifests, then run skaffold init
+		logrus.Infof("running 'kompose convert' for file %s", composeFile)
+		komposeCmd := exec.Command("kompose", "convert", "-f", composeFile)
+		if err := util.RunCmd(komposeCmd); err != nil {
+			return errors.Wrap(err, "running kompose")
+		}
+	}
 
 	var potentialConfigs, k8sConfigs, dockerfiles, images []string
 	err := filepath.Walk(rootDir, func(path string, f os.FileInfo, e error) error {
@@ -94,7 +108,7 @@ func doInit(out io.Writer) error {
 
 	for _, file := range potentialConfigs {
 		if !force {
-			config, err := schema.ParseConfig(file, true)
+			config, err := schema.ParseConfig(file, false)
 			if err == nil && config != nil {
 				return fmt.Errorf("pre-existing %s found", file)
 			}
@@ -170,6 +184,7 @@ func doInit(out io.Writer) error {
 	}
 
 	fmt.Fprintf(out, "Configuration %s was written\n", opts.ConfigurationFile)
+	tips.PrintForInit(out, opts)
 
 	return nil
 }
@@ -270,7 +285,7 @@ func generateSkaffoldPipeline(k8sConfigs []string, dockerfilePairs []dockerfileP
 		APIVersion: latest.Version,
 		Kind:       "Config",
 	}
-	if err := pipeline.SetDefaultValues(); err != nil {
+	if err := defaults.Set(pipeline); err != nil {
 		return nil, errors.Wrap(err, "generating default pipeline")
 	}
 
