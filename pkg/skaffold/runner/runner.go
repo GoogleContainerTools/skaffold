@@ -68,6 +68,9 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 	logrus.Infof("Using kubectl context: %s", kubeContext)
 
 	namespaces, err := getAllPodNamespaces(opts.Namespace)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting namespace list")
+	}
 
 	defaultRepo, err := configutil.GetDefaultRepo(opts.DefaultRepo)
 	if err != nil {

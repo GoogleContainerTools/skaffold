@@ -52,7 +52,7 @@ func AggregatePodWatcher(namespaces []string, aggregate chan watch.Event) (func(
 		}
 		watchers = append(watchers, watcher)
 		go func(w watch.Interface) {
-			for msg := range watcher.ResultChan() {
+			for msg := range w.ResultChan() {
 				aggregate <- msg
 			}
 		}(watcher)
