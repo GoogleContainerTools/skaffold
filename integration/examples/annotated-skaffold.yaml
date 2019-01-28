@@ -227,3 +227,14 @@ profiles:
     patches:
       - path: /build/artifacts/0/docker/dockerfile
         value: Dockerfile.DEV
+    # profiles can be auto-activated by external factors, like environment variables
+    # kubeContext value or depending on which skaffold command is run.
+    activation:
+      # Auto-activate this profile if the DEBUG env variable is set to `true` and the
+      # kubeContect is `ctx1`
+      #- env: DEBUG=true
+      #  kubeContext: ctx1
+      # Also auto-activate `skaffold dev` is run
+      # - command: run
+      # Also auto-activate is the kubeContext is NOT `ctx2`
+      # - kubeContext: "!ctx2"

@@ -39,6 +39,7 @@ func NewCmdBuild(out io.Writer) *cobra.Command {
 		Short: "Builds the artifacts",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			opts.Command = "build"
 			return runBuild(out)
 		},
 	}

@@ -243,11 +243,19 @@ type Artifact struct {
 // Profile is additional configuration that overrides default
 // configuration when it is activated.
 type Profile struct {
-	Name    string          `yaml:"name,omitempty"`
-	Build   BuildConfig     `yaml:"build,omitempty"`
-	Test    TestConfig      `yaml:"test,omitempty"`
-	Deploy  DeployConfig    `yaml:"deploy,omitempty"`
-	Patches yamlpatch.Patch `yaml:"patches,omitempty"`
+	Name       string          `yaml:"name,omitempty"`
+	Build      BuildConfig     `yaml:"build,omitempty"`
+	Test       TestConfig      `yaml:"test,omitempty"`
+	Deploy     DeployConfig    `yaml:"deploy,omitempty"`
+	Patches    yamlpatch.Patch `yaml:"patches,omitempty"`
+	Activation []Activation    `yaml:"activation,omitempty"`
+}
+
+// Activation defines criteria to auto-activate a profile.
+type Activation struct {
+	Env         string `yaml:"env,omitempty"`
+	KubeContext string `yaml:"kubeContext,omitempty"`
+	Command     string `yaml:"command,omitempty"`
 }
 
 type ArtifactType struct {

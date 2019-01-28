@@ -33,6 +33,7 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 		Short: "Runs a pipeline file in development mode",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			opts.Command = "dev"
 			return dev(out)
 		},
 	}

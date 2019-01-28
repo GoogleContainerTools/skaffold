@@ -39,6 +39,7 @@ type SkaffoldOptions struct {
 	WatchPollInterval int
 	DefaultRepo       string
 	PreBuiltImages    []string
+	Command           string
 }
 
 // Labels returns a map of labels to be applied to all deployed

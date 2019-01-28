@@ -18,9 +18,12 @@ package schema
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 
+	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -29,8 +32,13 @@ import (
 
 // ApplyProfiles returns configuration modified by the application
 // of a list of profiles.
-func ApplyProfiles(c *latest.SkaffoldPipeline, profiles []string) error {
+func ApplyProfiles(c *latest.SkaffoldPipeline, opts *cfg.SkaffoldOptions) error {
 	byName := profilesByName(c.Profiles)
+
+	profiles, err := activatedProfiles(c.Profiles, opts)
+	if err != nil {
+		return errors.Wrap(err, "finding auto-activated profiles")
+	}
 
 	for _, name := range profiles {
 		profile, present := byName[name]
@@ -44,6 +52,77 @@ func ApplyProfiles(c *latest.SkaffoldPipeline, profiles []string) error {
 	}
 
 	return nil
+}
+
+func activatedProfiles(profiles []latest.Profile, opts *cfg.SkaffoldOptions) ([]string, error) {
+	activated := opts.Profiles
+
+	// Auto-activated profiles
+	for _, profile := range profiles {
+		for _, cond := range profile.Activation {
+			command := isCommand(cond.Command, opts)
+
+			env, err := isEnv(cond.Env)
+			if err != nil {
+				return nil, err
+			}
+
+			kubeContext, err := isKubeContext(cond.KubeContext)
+			if err != nil {
+				return nil, err
+			}
+
+			if command && env && kubeContext {
+				activated = append(activated, profile.Name)
+			}
+		}
+	}
+
+	return activated, nil
+}
+
+func isEnv(env string) (bool, error) {
+	if env == "" {
+		return true, nil
+	}
+
+	keyValue := strings.SplitN(env, "=", 2)
+	if len(keyValue) != 2 {
+		return false, fmt.Errorf("invalid env variable format: %s, should be KEY=VALUE", env)
+	}
+
+	key := keyValue[0]
+	value := keyValue[1]
+
+	return equalValue(value, os.Getenv(key)), nil
+}
+
+func isCommand(command string, opts *cfg.SkaffoldOptions) bool {
+	if command == "" {
+		return true
+	}
+
+	return equalValue(command, opts.Command)
+}
+
+func isKubeContext(kubeContext string) (bool, error) {
+	if kubeContext == "" {
+		return true, nil
+	}
+
+	currentKubeContext, err := kubectx.CurrentContext()
+	if err != nil {
+		return false, errors.Wrap(err, "getting current cluster context")
+	}
+
+	return equalValue(kubeContext, currentKubeContext), nil
+}
+
+func equalValue(expected, actual string) bool {
+	if strings.HasPrefix(expected, "!") {
+		return actual != expected[1:]
+	}
+	return actual == expected
 }
 
 func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) error {

@@ -36,7 +36,7 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 
 	config := parsed.(*latest.SkaffoldPipeline)
 
-	err = schema.ApplyProfiles(config, opts.Profiles)
+	err = schema.ApplyProfiles(config, opts)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "applying profiles")
 	}

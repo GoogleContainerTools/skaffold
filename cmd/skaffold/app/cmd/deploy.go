@@ -30,6 +30,7 @@ func NewCmdDeploy(out io.Writer) *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Same actions as `skaffold run`, but with pre-built images.
+			opts.Command = "deploy"
 			return run(out)
 		},
 	}

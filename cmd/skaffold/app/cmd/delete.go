@@ -31,6 +31,7 @@ func NewCmdDelete(out io.Writer) *cobra.Command {
 		Short: "Delete the deployed resources",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			opts.Command = "delete"
 			return delete(out)
 		},
 	}
