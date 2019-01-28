@@ -318,8 +318,12 @@ func getAllPodNamespaces(configNamespace string) ([]string, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "getting k8s configuration")
 		}
-		ns := config.Contexts[config.CurrentContext].Namespace
-		nsMap[ns] = true
+		context, ok := config.Contexts[config.CurrentContext]
+		if ok {
+			nsMap[context.Namespace] = true
+		} else {
+			nsMap[""] = true
+		}
 	} else {
 		nsMap[configNamespace] = true
 	}
