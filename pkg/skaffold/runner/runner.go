@@ -327,7 +327,7 @@ func getAllPodNamespaces(configNamespace string) ([]string, error) {
 	// FIXME: Set additional namespaces from the selected yamls.
 
 	// Collate the slice of namespaces.
-	namespaces := make([]string, len(nsMap))
+	namespaces := make([]string, 0, len(nsMap))
 	for ns := range nsMap {
 		namespaces = append(namespaces, ns)
 	}

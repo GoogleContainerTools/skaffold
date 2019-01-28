@@ -38,7 +38,7 @@ func PodWatcher(namespace string) (watch.Interface, error) {
 
 // AggregatePodWatcher returns a watcher for multiple namespaces.
 func AggregatePodWatcher(namespaces []string, aggregate chan watch.Event) (func(), error) {
-	watchers := make([]watch.Interface, len(namespaces))
+	watchers := make([]watch.Interface, 0, len(namespaces))
 	stopWatchers := func() {
 		for _, w := range watchers {
 			w.Stop()
