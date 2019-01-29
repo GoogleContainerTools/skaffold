@@ -35,6 +35,7 @@ type SkaffoldOptions struct {
 	Namespace         string
 	Watch             []string
 	Trigger           string
+	HTTPTriggerAddr   string
 	CustomLabels      []string
 	WatchPollInterval int
 	DefaultRepo       string

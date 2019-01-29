@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/pkg/errors"
 )
 
@@ -98,6 +99,10 @@ func (w *watchList) Run(ctx context.Context, out io.Writer, onChange func() erro
 					component.events = e
 					changed++
 				}
+			}
+
+			if changed == 0 {
+				color.Yellow.Fprintln(out, "No actual change was detected")
 			}
 
 			// Rapid file changes that are more frequent than the poll interval would trigger

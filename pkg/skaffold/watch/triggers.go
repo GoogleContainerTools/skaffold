@@ -21,6 +21,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
+	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -28,6 +31,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -47,6 +51,11 @@ func NewTrigger(opts *config.SkaffoldOptions) (Trigger, error) {
 		}, nil
 	case "manual":
 		return &manualTrigger{}, nil
+	case "http":
+		return &httpTrigger{
+			addr:     opts.HTTPTriggerAddr,
+			interval: time.Duration(opts.WatchPollInterval) * time.Millisecond,
+		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported type of trigger: %s", opts.Trigger)
 	}
@@ -121,6 +130,89 @@ func (t *manualTrigger) Start(ctx context.Context) (<-chan bool, error) {
 			}
 			trigger <- true
 		}
+	}()
+
+	return trigger, nil
+}
+
+// httpTrigger triggers rebuilds from an external actor (other process, IDE...)
+type httpTrigger struct {
+	addr     string
+	interval time.Duration
+}
+
+// Debounce tells the watcher to not debounce rapid sequence of changes.
+func (t *httpTrigger) Debounce() bool {
+	return false
+}
+
+func (t *httpTrigger) WatchForChanges(out io.Writer) {
+}
+
+// Start starts listening to pressed keys.
+func (t *httpTrigger) Start(ctx context.Context) (<-chan bool, error) {
+	events := make(chan bool)
+
+	var (
+		ln  net.Listener
+		err error
+	)
+
+	url, err := url.Parse(t.addr)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to parse http trigger address")
+	}
+
+	switch url.Scheme {
+	case "npipe:":
+		return nil, errors.New("windows named pipes are not yet supported")
+	case "unix:":
+		ln, err = net.Listen("unix", url.Path)
+	default:
+		ln, err = net.Listen("tcp", url.Host)
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to start http trigger")
+	}
+
+	srv := &http.Server{}
+	http.HandleFunc("/skaffold/v1/build", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+			return
+		}
+
+		events <- true
+		w.WriteHeader(201)
+	})
+
+	trigger := make(chan bool)
+	go func() {
+		timer := time.NewTimer(1<<63 - 1) // Forever
+
+		for {
+			select {
+			case <-events:
+				logrus.Debugln("Change detected")
+
+				// Wait t.interval before triggering.
+				// This way, rapid stream of events will be grouped.
+				timer.Reset(t.interval)
+			case <-timer.C:
+				trigger <- true
+			case <-ctx.Done():
+				timer.Stop()
+			}
+		}
+	}()
+
+	go func() {
+		srv.Serve(ln)
+	}()
+
+	go func() {
+		<-ctx.Done()
+		srv.Shutdown(context.Background())
 	}()
 
 	return trigger, nil
