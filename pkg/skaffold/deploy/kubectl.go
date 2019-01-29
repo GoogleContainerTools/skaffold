@@ -21,8 +21,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
-	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -150,58 +148,14 @@ func parseManifestsForDeploys(namespace string, manifests kubectl.ManifestList) 
 
 // readManifests reads the manifests to deploy/delete.
 func (k *KubectlDeployer) readManifests(ctx context.Context) (kubectl.ManifestList, error) {
-	files, err := k.manifestFiles(k.Manifests)
+	manifests, err := k.Dependencies()
 	if err != nil {
-		return nil, errors.Wrap(err, "expanding user manifest list")
+		return nil, errors.Wrap(err, "listing manifests")
 	}
 
-	var manifests kubectl.ManifestList
-	for _, manifest := range files {
-		buf, err := ioutil.ReadFile(manifest)
-		if err != nil {
-			return nil, errors.Wrap(err, "reading manifest")
-		}
-
-		manifests.Append(buf)
+	if len(manifests) == 0 {
+		return kubectl.ManifestList{}, nil
 	}
 
-	for _, manifest := range k.Manifests {
-		if util.IsURL(manifest) {
-			buf, err := util.Download(manifest)
-			if err != nil {
-				return nil, errors.Wrap(err, "downloading manifest")
-			}
-			manifests.Append(buf)
-		}
-	}
-
-	for _, m := range k.RemoteManifests {
-		manifest, err := k.readRemoteManifest(ctx, m)
-		if err != nil {
-			return nil, errors.Wrap(err, "get remote manifests")
-		}
-
-		manifests = append(manifests, manifest)
-	}
-
-	logrus.Debugln("manifests", manifests.String())
-
-	return manifests, nil
-}
-
-func (k *KubectlDeployer) readRemoteManifest(ctx context.Context, name string) ([]byte, error) {
-	var args []string
-	if parts := strings.Split(name, ":"); len(parts) > 1 {
-		args = append(args, "--namespace", parts[0])
-		name = parts[1]
-	}
-	args = append(args, name, "-o", "yaml")
-
-	var manifest bytes.Buffer
-	err := k.kubectl.Run(ctx, nil, &manifest, "get", nil, args...)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting manifest")
-	}
-
-	return manifest.Bytes(), nil
+	return k.kubectl.ReadManifests(ctx, manifests)
 }
