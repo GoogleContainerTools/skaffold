@@ -25,7 +25,7 @@ import (
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v1beta2 to v1beta3
+// Config changes from v1beta3 to v1beta4
 // 1. Additions:
 // 2. No removals
 // 3. No updates
