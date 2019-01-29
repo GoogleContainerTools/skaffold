@@ -68,8 +68,13 @@ func (w *watchList) Register(deps func() ([]string, error), onChange func(Events
 
 // Run watches files until the context is cancelled or an error occurs.
 func (w *watchList) Run(ctx context.Context, out io.Writer, onChange func() error) error {
-	t, cleanup := w.trigger.Start()
-	defer cleanup()
+	ctxTrigger, cancelTrigger := context.WithCancel(ctx)
+	defer cancelTrigger()
+
+	t, err := w.trigger.Start(ctxTrigger)
+	if err != nil {
+		return errors.Wrap(err, "unable to start trigger")
+	}
 
 	changedComponents := map[int]bool{}
 
