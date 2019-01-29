@@ -14,21 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta2
+package v1beta3
 
 import (
 	"encoding/json"
 
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta3"
 	"github.com/pkg/errors"
 )
 
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v1beta2 to v1beta3
 // 1. Additions:
-// gcb builder mvn image
-// gcb builder gradle image
 // 2. No removals
 // 3. No updates
 func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
