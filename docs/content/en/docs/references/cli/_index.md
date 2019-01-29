@@ -213,7 +213,8 @@ Flags:
       --skip-tests                Whether to skip the tests after building
       --tail                      Stream logs from deployed objects (default true)
       --toot                      Emit a terminal beep after the deploy is complete
-      --trigger string            How are changes detected? (polling or manual) (default "polling")
+      --trigger string            How are changes detected? (polling, manual or http) (default "polling")
+      --trigger-address string    Address used by the http trigger (default "tcp://0.0.0.0:45678")
   -w, --watch-image stringArray   Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
   -i, --watch-poll-interval int   Interval (in ms) between two checks for file changes (default 1000)
 
@@ -235,6 +236,7 @@ Env vars:
 * `SKAFFOLD_TAIL` (same as --tail)
 * `SKAFFOLD_TOOT` (same as --toot)
 * `SKAFFOLD_TRIGGER` (same as --trigger)
+* `SKAFFOLD_TRIGGER_ADDRESS` (same as --trigger-address)
 * `SKAFFOLD_WATCH_IMAGE` (same as --watch-image)
 * `SKAFFOLD_WATCH_POLL_INTERVAL` (same as --watch-poll-interval)
 
