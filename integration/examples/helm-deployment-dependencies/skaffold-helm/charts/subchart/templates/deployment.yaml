@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta4
+apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: {{ template "subchart.name" . }}
