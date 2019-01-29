@@ -97,6 +97,11 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		return nil, errors.Wrap(err, "parsing deploy config")
 	}
 
+	syncer, err := getSyncer(namespaces)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating syncer")
+	}
+
 	labellers := []deploy.Labeller{opts, builder, deployer, tagger}
 
 	builder, tester, deployer = WithTimings(builder, tester, deployer)
@@ -114,7 +119,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		Tester:     tester,
 		Deployer:   deployer,
 		Tagger:     tagger,
-		Syncer:     &kubectl.Syncer{},
+		Syncer:     syncer,
 		Watcher:    watch.NewWatcher(trigger),
 		opts:       opts,
 		labellers:  labellers,
@@ -154,6 +159,10 @@ func getTester(cfg *latest.TestConfig, opts *config.SkaffoldOptions) (test.Teste
 	default:
 		return test.NewTester(cfg)
 	}
+}
+
+func getSyncer(namespaces []string) (sync.Syncer, error) {
+	return kubectl.NewSyncer(namespaces), nil
 }
 
 func getDeployer(cfg *latest.DeployConfig, kubeContext string, namespace string, defaultRepo string) (deploy.Deployer, error) {
