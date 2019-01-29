@@ -1,10 +1,6 @@
 === Example: helm-dependencies
 :icons: font
 
-ifndef::env-github[]
-link:{github-repo-tree}/examples/helm-deployment-dependencies[see on Github icon:github[]]
-endif::[]
-
 ==== Deploy helm charts with local dependencies
 
 This example follows the link:{github-repo-tree}/examples/helm-deployment-dependencies[helm] example, but with a local chart as a depenency.
