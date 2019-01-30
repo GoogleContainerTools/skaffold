@@ -18,10 +18,12 @@ package watch
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -31,7 +33,7 @@ import (
 
 // Trigger describes a mechanism that triggers the watch.
 type Trigger interface {
-	Start() (<-chan bool, func())
+	Start(context.Context) (<-chan bool, error)
 	WatchForChanges(io.Writer)
 	Debounce() bool
 }
@@ -41,7 +43,7 @@ func NewTrigger(opts *config.SkaffoldOptions) (Trigger, error) {
 	switch strings.ToLower(opts.Trigger) {
 	case "polling":
 		return &pollTrigger{
-			Interval: time.Duration(opts.WatchPollInterval) * time.Millisecond,
+			interval: time.Duration(opts.WatchPollInterval) * time.Millisecond,
 		}, nil
 	case "manual":
 		return &manualTrigger{}, nil
@@ -52,7 +54,7 @@ func NewTrigger(opts *config.SkaffoldOptions) (Trigger, error) {
 
 // pollTrigger watches for changes on a given interval of time.
 type pollTrigger struct {
-	Interval time.Duration
+	interval time.Duration
 }
 
 // Debounce tells the watcher to debounce rapid sequence of changes.
@@ -61,27 +63,30 @@ func (t *pollTrigger) Debounce() bool {
 }
 
 func (t *pollTrigger) WatchForChanges(out io.Writer) {
-	color.Yellow.Fprintf(out, "Watching for changes every %v...\n", t.Interval)
+	color.Yellow.Fprintf(out, "Watching for changes every %v...\n", t.interval)
 }
 
 // Start starts a timer.
-func (t *pollTrigger) Start() (<-chan bool, func()) {
+func (t *pollTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	trigger := make(chan bool)
 
-	ticker := time.NewTicker(t.Interval)
+	ticker := time.NewTicker(t.interval)
 	go func() {
 		for {
-			<-ticker.C
-			trigger <- true
+			select {
+			case <-ticker.C:
+				trigger <- true
+			case <-ctx.Done():
+				ticker.Stop()
+			}
 		}
 	}()
 
-	return trigger, ticker.Stop
+	return trigger, nil
 }
 
 // manualTrigger watches for changes when the user presses a key.
-type manualTrigger struct {
-}
+type manualTrigger struct{}
 
 // Debounce tells the watcher to not debounce rapid sequence of changes.
 func (t *manualTrigger) Debounce() bool {
@@ -93,8 +98,14 @@ func (t *manualTrigger) WatchForChanges(out io.Writer) {
 }
 
 // Start starts listening to pressed keys.
-func (t *manualTrigger) Start() (<-chan bool, func()) {
+func (t *manualTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	trigger := make(chan bool)
+
+	var stopped int32
+	go func() {
+		<-ctx.Done()
+		atomic.StoreInt32(&stopped, 1)
+	}()
 
 	reader := bufio.NewReader(os.Stdin)
 	go func() {
@@ -103,9 +114,14 @@ func (t *manualTrigger) Start() (<-chan bool, func()) {
 			if err != nil {
 				logrus.Debugf("manual trigger error: %s", err)
 			}
+
+			// Wait until the context is cancelled.
+			if atomic.LoadInt32(&stopped) == 1 {
+				return
+			}
 			trigger <- true
 		}
 	}()
 
-	return trigger, func() {}
+	return trigger, nil
 }
