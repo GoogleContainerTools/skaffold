@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
@@ -54,8 +55,8 @@ func NewAPIClient() (LocalDaemon, error) {
 			return
 		}
 
-		apiClient, err := newAPIClient(kubeContext)
-		dockerAPIClient = NewLocalDaemon(apiClient)
+		env, apiClient, err := newAPIClient(kubeContext)
+		dockerAPIClient = NewLocalDaemon(apiClient, env)
 		dockerAPIClientErr = err
 	})
 
@@ -63,7 +64,7 @@ func NewAPIClient() (LocalDaemon, error) {
 }
 
 // newAPIClient guesses the docker client to use based on current kubernetes context.
-func newAPIClient(kubeContext string) (client.CommonAPIClient, error) {
+func newAPIClient(kubeContext string) ([]string, client.CommonAPIClient, error) {
 	if kubeContext == constants.DefaultMinikubeContext {
 		return newMinikubeAPIClient()
 	}
@@ -73,19 +74,19 @@ func newAPIClient(kubeContext string) (client.CommonAPIClient, error) {
 // newEnvAPIClient returns a docker client based on the environment variables set.
 // It will "negotiate" the highest possible API version supported by both the client
 // and the server if there is a mismatch.
-func newEnvAPIClient() (client.CommonAPIClient, error) {
+func newEnvAPIClient() ([]string, client.CommonAPIClient, error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithHTTPHeaders(getUserAgentHeader()))
 	if err != nil {
-		return nil, fmt.Errorf("error getting docker client: %s", err)
+		return nil, nil, fmt.Errorf("error getting docker client: %s", err)
 	}
 	cli.NegotiateAPIVersion(context.Background())
 
-	return cli, nil
+	return nil, cli, nil
 }
 
 // newMinikubeAPIClient returns a docker client using the environment variables
 // provided by minikube.
-func newMinikubeAPIClient() (client.CommonAPIClient, error) {
+func newMinikubeAPIClient() ([]string, client.CommonAPIClient, error) {
 	env, err := getMinikubeDockerEnv()
 	if err != nil {
 		logrus.Warnf("Could not get minikube docker env, falling back to local docker daemon: %s", err)
@@ -102,7 +103,7 @@ func newMinikubeAPIClient() (client.CommonAPIClient, error) {
 		}
 		tlsc, err := tlsconfig.Client(options)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		httpclient = &http.Client{
@@ -122,11 +123,20 @@ func newMinikubeAPIClient() (client.CommonAPIClient, error) {
 		version = api.DefaultVersion
 	}
 
-	return client.NewClientWithOpts(
+	api, err := client.NewClientWithOpts(
 		client.WithHost(host),
 		client.WithVersion(version),
 		client.WithHTTPClient(httpclient),
 		client.WithHTTPHeaders(getUserAgentHeader()))
+
+	// Keep the minikube environment variables
+	var environment []string
+	for k, v := range env {
+		environment = append(environment, fmt.Sprintf("%s=%s", k, v))
+	}
+	sort.Strings(environment)
+
+	return environment, api, err
 }
 
 func getUserAgentHeader() map[string]string {
@@ -170,6 +180,7 @@ func getMinikubeDockerEnv() (map[string]string, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "getting minikube filename")
 	}
+
 	cmd := exec.Command(miniKubeFilename, "docker-env", "--shell", "none")
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
