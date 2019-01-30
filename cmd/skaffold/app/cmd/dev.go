@@ -38,7 +38,7 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 	}
 	AddRunDevFlags(cmd)
 	cmd.Flags().BoolVar(&opts.TailDev, "tail", true, "Stream logs from deployed objects")
-	cmd.Flags().StringVar(&opts.Trigger, "trigger", "polling", "How are changes detected? (polling or manual)")
+	cmd.Flags().StringVar(&opts.Trigger, "trigger", "polling", "How are changes detected? (polling, manual or notify)")
 	cmd.Flags().BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
 	cmd.Flags().StringArrayVarP(&opts.Watch, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")
 	cmd.Flags().IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes")

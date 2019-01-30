@@ -28,6 +28,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/rjeczalik/notify"
 	"github.com/sirupsen/logrus"
 )
 
@@ -43,6 +44,10 @@ func NewTrigger(opts *config.SkaffoldOptions) (Trigger, error) {
 	switch strings.ToLower(opts.Trigger) {
 	case "polling":
 		return &pollTrigger{
+			Interval: time.Duration(opts.WatchPollInterval) * time.Millisecond,
+		}, nil
+	case "notify":
+		return &fsNotifyTrigger{
 			Interval: time.Duration(opts.WatchPollInterval) * time.Millisecond,
 		}, nil
 	case "manual":
@@ -120,6 +125,54 @@ func (t *manualTrigger) Start(ctx context.Context) (<-chan bool, error) {
 				return
 			}
 			trigger <- true
+		}
+	}()
+
+	return trigger, nil
+}
+
+// notifyTrigger watches for changes with fsnotify
+type fsNotifyTrigger struct {
+	Interval time.Duration
+}
+
+// Debounce tells the watcher to not debounce rapid sequence of changes.
+func (t *fsNotifyTrigger) Debounce() bool {
+	// This trigger has built-in debouncing.
+	return false
+}
+
+func (t *fsNotifyTrigger) WatchForChanges(out io.Writer) {
+	color.Yellow.Fprintln(out, "Watching for changes...")
+}
+
+// Start Listening for file system changes
+func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
+	// TODO(@dgageot): If file changes happen too quickly, events might be lost
+	c := make(chan notify.EventInfo, 100)
+
+	// Watch current directory recursively
+	if err := notify.Watch("./...", c, notify.All); err != nil {
+		return nil, err
+	}
+
+	trigger := make(chan bool)
+	go func() {
+		timer := time.NewTimer(1<<63 - 1) // Forever
+
+		for {
+			select {
+			case e := <-c:
+				logrus.Debugln("Change detected", e)
+
+				// Wait t.interval before triggering.
+				// This way, rapid stream of events will be grouped.
+				timer.Reset(t.Interval)
+			case <-timer.C:
+				trigger <- true
+			case <-ctx.Done():
+				timer.Stop()
+			}
 		}
 	}()
 
