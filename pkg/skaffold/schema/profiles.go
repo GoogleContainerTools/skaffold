@@ -94,7 +94,7 @@ func isEnv(env string) (bool, error) {
 	key := keyValue[0]
 	value := keyValue[1]
 
-	return equalValue(value, os.Getenv(key)), nil
+	return satisfies(value, os.Getenv(key)), nil
 }
 
 func isCommand(command string, opts *cfg.SkaffoldOptions) bool {
@@ -102,7 +102,7 @@ func isCommand(command string, opts *cfg.SkaffoldOptions) bool {
 		return true
 	}
 
-	return equalValue(command, opts.Command)
+	return satisfies(command, opts.Command)
 }
 
 func isKubeContext(kubeContext string) (bool, error) {
@@ -115,10 +115,10 @@ func isKubeContext(kubeContext string) (bool, error) {
 		return false, errors.Wrap(err, "getting current cluster context")
 	}
 
-	return equalValue(kubeContext, currentKubeContext), nil
+	return satisfies(kubeContext, currentKubeContext), nil
 }
 
-func equalValue(expected, actual string) bool {
+func satisfies(expected, actual string) bool {
 	if strings.HasPrefix(expected, "!") {
 		return actual != expected[1:]
 	}

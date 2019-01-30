@@ -274,7 +274,7 @@ func TestActivatedProfiles(t *testing.T) {
 			},
 			expected: []string{"activated", "also-activated"},
 		}, {
-			description: "Auto-activated by combination",
+			description: "AND between activation criteria",
 			opts: &cfg.SkaffoldOptions{
 				Command: "dev",
 			},
@@ -291,6 +291,21 @@ func TestActivatedProfiles(t *testing.T) {
 						Env:         "KEY=VALUE",
 						KubeContext: "prod-context",
 						Command:     "build",
+					}},
+				},
+			},
+			expected: []string{"activated"},
+		}, {
+			description: "OR between activations",
+			opts: &cfg.SkaffoldOptions{
+				Command: "dev",
+			},
+			profiles: []latest.Profile{
+				{
+					Name: "activated", Activation: []latest.Activation{{
+						Command: "run",
+					}, {
+						Command: "dev",
 					}},
 				},
 			},
