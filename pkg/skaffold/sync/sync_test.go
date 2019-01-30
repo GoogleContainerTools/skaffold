@@ -422,7 +422,7 @@ func TestPerform(t *testing.T) {
 
 			util.DefaultExecCommand = cmdRecord
 
-			err := Perform(context.Background(), test.image, test.files, test.cmdFn)
+			err := Perform(context.Background(), test.image, test.files, test.cmdFn, []string{""})
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cmdRecord.cmds)
 		})

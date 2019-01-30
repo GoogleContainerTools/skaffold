@@ -43,6 +43,7 @@ var DynamicClient = GetDynamicClient
 type LogAggregator struct {
 	output      io.Writer
 	podSelector PodSelector
+	namespaces  []string
 	colorPicker ColorPicker
 
 	muted             int32
@@ -52,10 +53,11 @@ type LogAggregator struct {
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
-func NewLogAggregator(out io.Writer, baseImageNames []string, podSelector PodSelector) *LogAggregator {
+func NewLogAggregator(out io.Writer, baseImageNames []string, podSelector PodSelector, namespaces []string) *LogAggregator {
 	return &LogAggregator{
 		output:      out,
 		podSelector: podSelector,
+		namespaces:  namespaces,
 		colorPicker: NewColorPicker(baseImageNames),
 		trackedContainers: trackedContainers{
 			ids: map[string]bool{},
@@ -70,19 +72,21 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 	a.cancel = cancel
 	a.startTime = time.Now()
 
-	watcher, err := PodWatcher()
+	aggregate := make(chan watch.Event)
+	stopWatchers, err := AggregatePodWatcher(a.namespaces, aggregate)
 	if err != nil {
-		return errors.Wrap(err, "initializing pod watcher")
+		stopWatchers()
+		return errors.Wrap(err, "initializing aggregate pod watcher")
 	}
 
 	go func() {
-		defer watcher.Stop()
+		defer stopWatchers()
 
 		for {
 			select {
 			case <-cancelCtx.Done():
 				return
-			case evt, ok := <-watcher.ResultChan():
+			case evt, ok := <-aggregate:
 				if !ok {
 					return
 				}

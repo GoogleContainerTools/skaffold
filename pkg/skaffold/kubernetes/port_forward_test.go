@@ -427,7 +427,7 @@ func TestPortForwardPod(t *testing.T) {
 				isPortAvailable = originalIsPortAvailable
 			}()
 
-			p := NewPortForwarder(ioutil.Discard, NewImageList())
+			p := NewPortForwarder(ioutil.Discard, NewImageList(), []string{""})
 			if test.forwarder == nil {
 				test.forwarder = newTestForwarder(nil)
 			}
