@@ -40,6 +40,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		builds      []build.Artifact
 		command     util.Command
 		shouldErr   bool
+		forceDeploy bool
 	}{
 		{
 			description: "no manifest",
@@ -58,11 +59,12 @@ func TestKustomizeDeploy(t *testing.T) {
 			command: testutil.NewFakeCmd(t).
 				WithRunOut("kubectl version --client -ojson", kubectlVersion).
 				WithRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
-				WithRun("kubectl --context kubecontext --namespace testNamespace apply --force -f -"),
+				WithRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:123",
 			}},
+			forceDeploy: true,
 		},
 	}
 
@@ -83,6 +85,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				KubeContext: testKubeContext,
 				Opts: &config.SkaffoldOptions{
 					Namespace: testNamespace,
+					Force:     test.forceDeploy,
 				},
 			})
 			err := k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)

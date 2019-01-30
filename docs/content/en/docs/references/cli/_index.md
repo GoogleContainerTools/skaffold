@@ -331,6 +331,7 @@ Flags:
   -d, --default-repo string             Default repository value (overrides global config)
       --enable-rpc skaffold dev         Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
   -f, --filename string                 Filename or URL to the pipeline file (default "skaffold.yaml")
+      --force                           Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)
       --images strings                  A list of pre-built images to deploy
       --insecure-registry stringArray   Target registries for built images which are not secure
   -l, --label stringArray               Add custom labels to deployed objects. Set multiple times for multiple labels.
@@ -356,6 +357,7 @@ Env vars:
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_IMAGES` (same as `--images`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
 * `SKAFFOLD_LABEL` (same as `--label`)
@@ -521,6 +523,7 @@ Flags:
   -d, --default-repo string             Default repository value (overrides global config)
       --enable-rpc skaffold dev         Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
   -f, --filename string                 Filename or URL to the pipeline file (default "skaffold.yaml")
+      --force                           Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)
       --insecure-registry stringArray   Target registries for built images which are not secure
   -l, --label stringArray               Add custom labels to deployed objects. Set multiple times for multiple labels.
   -n, --namespace string                Run deployments in the specified namespace
@@ -546,6 +549,7 @@ Env vars:
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
