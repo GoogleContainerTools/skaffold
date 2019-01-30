@@ -15,27 +15,11 @@
   name = "github.com/spf13/cobra"
   version = "0.0.2"
 
-[[constraint]]
-  name = "github.com/docker/docker"
-  revision = "162ba6016def672690ee4a1f3978368853a1e149"
-
-[[constraint]]
-  name = "github.com/docker/cli"
-  revision = "4cb3c70f36baeade76879694a587358be2a74854"
-
-[[override]]
- name = "github.com/docker/go-metrics"
- revision = "d466d4f6fd960e01820085bd7e1a24426ee7ef18"
-
 [[override]]
   name = "github.com/xeipuuv/gojsonschema"
   revision = "0c8571ac0ce161a5feb57375a9cdf148c98c0f70"
 
 [[constraint]]
-  name = "github.com/moby/buildkit"
-  revision = "43e758232a0ac7d50c6a11413186e16684fc1e4f"
-
-[[override]]
   name = "github.com/docker/distribution"
   revision = "83389a148052d74ac602f5f1d62f86ff2f3c4aa5"
 
@@ -68,9 +52,17 @@
   revision = "v4.4.0"
 
 [[constraint]]
-  name = "github.com/google/go-containerregistry"
-  revision = "dc0a77702ddab8c3dc5630eca7c026d571c1c9b7"
+  name = "github.com/google/go-github"
+  version = "18.2.0"
 
 [[constraint]]
-  name = "github.com/google/go-github"
-  version = "15.0.0"
+  name = "gopkg.in/AlecAivazis/survey.v1"
+  revision = "17861e192dc11fd2f5081df1932c94cce262fa1e"
+
+[[override]]
+  name = "github.com/docker/docker"
+  revision = "71cd53e4a197b303c6ba086bd584ffd67a884281"
+
+[[constraint]]
+  name = "github.com/bmatcuk/doublestar"
+  revision = "v1.1.1"

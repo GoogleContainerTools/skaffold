@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -32,7 +33,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -40,19 +42,21 @@ import (
 )
 
 type HelmDeployer struct {
-	*v1alpha2.HelmDeploy
+	*latest.HelmDeploy
 
 	kubeContext string
 	namespace   string
+	defaultRepo string
 }
 
 // NewHelmDeployer returns a new HelmDeployer for a DeployConfig filled
 // with the needed configuration for `helm`
-func NewHelmDeployer(cfg *v1alpha2.HelmDeploy, kubeContext string, namespace string) *HelmDeployer {
+func NewHelmDeployer(cfg *latest.HelmDeploy, kubeContext string, namespace string, defaultRepo string) *HelmDeployer {
 	return &HelmDeployer{
 		HelmDeploy:  cfg,
 		kubeContext: kubeContext,
 		namespace:   namespace,
+		defaultRepo: defaultRepo,
 	}
 }
 
@@ -62,30 +66,44 @@ func (h *HelmDeployer) Labels() map[string]string {
 	}
 }
 
-func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]Artifact, error) {
-	deployResults := []Artifact{}
+func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) error {
+	var dRes []Artifact
+
+	labels := merge(labellers...)
+
 	for _, r := range h.Releases {
 		results, err := h.deployRelease(ctx, out, r, builds)
 		if err != nil {
 			releaseName, _ := evaluateReleaseName(r.Name)
-			return deployResults, errors.Wrapf(err, "deploying %s", releaseName)
+			return errors.Wrapf(err, "deploying %s", releaseName)
 		}
-		deployResults = append(deployResults, results...)
+
+		dRes = append(dRes, results...)
 	}
-	return deployResults, nil
+
+	labelDeployResults(labels, dRes)
+	return nil
 }
 
 func (h *HelmDeployer) Dependencies() ([]string, error) {
 	var deps []string
 	for _, release := range h.Releases {
-		deps = append(deps, release.ValuesFilePath)
-		filepath.Walk(release.ChartPath, func(path string, info os.FileInfo, err error) error {
-			if !info.IsDir() {
+		deps = append(deps, release.ValuesFiles...)
+		chartDepsDir := filepath.Join(release.ChartPath, "charts")
+		err := filepath.Walk(release.ChartPath, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return errors.Wrapf(err, "failure accessing path '%s'", path)
+			}
+			if !info.IsDir() && !strings.HasPrefix(path, chartDepsDir) {
 				deps = append(deps, path)
 			}
 			return nil
 		})
+		if err != nil {
+			return deps, errors.Wrap(err, "issue walking releases")
+		}
 	}
+	sort.Strings(deps)
 	return deps, nil
 }
 
@@ -110,7 +128,7 @@ func (h *HelmDeployer) helm(ctx context.Context, out io.Writer, arg ...string) e
 	return util.RunCmd(cmd)
 }
 
-func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r v1alpha2.HelmRelease, builds []build.Artifact) ([]Artifact, error) {
+func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r latest.HelmRelease, builds []build.Artifact) ([]Artifact, error) {
 	isInstalled := true
 
 	releaseName, err := evaluateReleaseName(r.Name)
@@ -121,7 +139,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r v1alp
 		color.Red.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
 		isInstalled = false
 	}
-	params, err := joinTagsToBuildResult(builds, r.Values)
+	params, err := h.joinTagsToBuildResult(builds, r.Values)
 	if err != nil {
 		return nil, errors.Wrap(err, "matching build results to chart values")
 	}
@@ -130,8 +148,11 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r v1alp
 	for k, v := range params {
 		setOpts = append(setOpts, "--set")
 		if r.ImageStrategy.HelmImageConfig.HelmConventionConfig != nil {
-			tagSplit := strings.Split(v.Tag, ":")
-			imageRepositoryTag := fmt.Sprintf("%s.repository=%s,%s.tag=%s", k, tagSplit[0], k, tagSplit[1])
+			dockerRef, err := docker.ParseReference(v.Tag)
+			if err != nil {
+				return nil, errors.Wrapf(err, "cannot parse the docker image reference %s", v.Tag)
+			}
+			imageRepositoryTag := fmt.Sprintf("%s.repository=%s,%s.tag=%s", k, dockerRef.BaseName, k, dockerRef.Tag)
 			setOpts = append(setOpts, imageRepositoryTag)
 		} else {
 			setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v.Tag))
@@ -149,6 +170,9 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r v1alp
 		args = append(args, "install", "--name", releaseName)
 	} else {
 		args = append(args, "upgrade", releaseName)
+		if r.RecreatePods {
+			args = append(args, "--recreate-pods")
+		}
 	}
 
 	// There are 2 strategies:
@@ -198,8 +222,8 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r v1alp
 		}
 		args = append(args, "-f", constants.HelmOverridesFilename)
 	}
-	if r.ValuesFilePath != "" {
-		args = append(args, "-f", r.ValuesFilePath)
+	for _, valuesFile := range r.ValuesFiles {
+		args = append(args, "-f", valuesFile)
 	}
 
 	setValues := r.SetValues
@@ -260,7 +284,7 @@ func extractTag(imageName string) string {
 
 // packageChart packages the chart and returns path to the chart archive file.
 // If this function returns an error, it will always be wrapped.
-func (h *HelmDeployer) packageChart(ctx context.Context, r v1alpha2.HelmRelease) (string, error) {
+func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (string, error) {
 	tmp := os.TempDir()
 	packageArgs := []string{"package", r.ChartPath, "--destination", tmp}
 	if r.Packaged.Version != "" {
@@ -313,7 +337,7 @@ func (h *HelmDeployer) getDeployResults(ctx context.Context, namespace string, r
 	return parseReleaseInfo(namespace, b)
 }
 
-func (h *HelmDeployer) deleteRelease(ctx context.Context, out io.Writer, r v1alpha2.HelmRelease) error {
+func (h *HelmDeployer) deleteRelease(ctx context.Context, out io.Writer, r latest.HelmRelease) error {
 	releaseName, err := evaluateReleaseName(r.Name)
 	if err != nil {
 		return errors.Wrap(err, "cannot parse the release name template")
@@ -324,6 +348,24 @@ func (h *HelmDeployer) deleteRelease(ctx context.Context, out io.Writer, r v1alp
 	}
 
 	return nil
+}
+
+func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {
+	imageToBuildResult := map[string]build.Artifact{}
+	for _, build := range builds {
+		imageToBuildResult[build.ImageName] = build
+	}
+
+	paramToBuildResult := map[string]build.Artifact{}
+	for param, imageName := range params {
+		newImageName := util.SubstituteDefaultRepoIntoImage(h.defaultRepo, imageName)
+		build, ok := imageToBuildResult[newImageName]
+		if !ok {
+			return nil, fmt.Errorf("no build present for %s", imageName)
+		}
+		paramToBuildResult[param] = build
+	}
+	return paramToBuildResult, nil
 }
 
 func evaluateReleaseName(nameTemplate string) (string, error) {

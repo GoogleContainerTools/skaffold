@@ -18,7 +18,6 @@ package tag
 
 import (
 	"testing"
-	"text/template"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -28,70 +27,64 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 	tests := []struct {
 		name      string
 		template  string
-		opts      *Options
+		imageName string
+		digest    string
 		env       []string
-		want      string
-		shouldErr bool
+		expected  string
 	}{
 		{
-			name:     "empty env",
-			template: "{{.IMAGE_NAME}}:{{.DIGEST}}",
-			opts: &Options{
-				ImageName: "foo",
-				Digest:    "bar",
-			},
-			want: "foo:bar",
+			name:      "empty env",
+			template:  "{{.IMAGE_NAME}}:{{.DIGEST}}",
+			imageName: "foo",
+			digest:    "bar",
+			expected:  "foo:bar",
 		},
 		{
 			name:     "env",
 			template: "{{.IMAGE_NAME}}:{{.BRANCH}}",
 			env:      []string{"BRANCH=feature/GID-001"},
-			opts: &Options{
-				ImageName: "foo",
-			},
-			want: "foo:feature-GID-001",
+			imageName: "foo",
+      expected:  "foo:feature-GID-001",
 		},
 		{
 			name:     "env",
 			template: "{{.FOO}}-{{.BAZ}}:latest",
 			env:      []string{"FOO=BAR", "BAZ=BAT"},
-			opts: &Options{
-				ImageName: "foo",
-				Digest:    "bar",
-			},
-			want: "BAR-BAT:latest",
+			imageName: "foo",
+			digest:    "bar",
+			expected:  "BAR-BAT:latest",
 		},
 		{
-			name:     "opts precedence",
-			template: "{{.IMAGE_NAME}}-{{.FROM_ENV}}:latest",
-			env:      []string{"FROM_ENV=FOO", "IMAGE_NAME=BAT"},
-			opts: &Options{
-				ImageName: "image_name",
-				Digest:    "bar",
-			},
-			want: "image_name-FOO:latest",
+			name:      "opts precedence",
+			template:  "{{.IMAGE_NAME}}-{{.FROM_ENV}}:latest",
+			env:       []string{"FROM_ENV=FOO", "IMAGE_NAME=BAT"},
+			imageName: "image_name",
+			digest:    "bar",
+			expected:  "image_name-FOO:latest",
 		},
 		{
-			name:     "digest algo hex",
-			template: "{{.IMAGE_NAME}}:{{.DIGEST_ALGO}}-{{.DIGEST_HEX}}",
-			opts: &Options{
-				ImageName: "foo",
-				Digest:    "sha256:abcd",
-			},
-			want: "foo:sha256-abcd",
+			name:      "digest algo hex",
+			template:  "{{.IMAGE_NAME}}:{{.DIGEST_ALGO}}-{{.DIGEST_HEX}}",
+			imageName: "foo",
+			digest:    "sha256:abcd",
+			expected:  "foo:sha256-abcd",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			c := &envTemplateTagger{
-				Template: template.Must(template.New("").Parse(test.template)),
-			}
 			util.OSEnviron = func() []string {
 				return test.env
 			}
 
-			got, err := c.GenerateFullyQualifiedImageName("", test.opts)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.want, got)
+			c, err := NewEnvTemplateTagger(test.template)
+			testutil.CheckError(t, false, err)
+
+			got, err := c.GenerateFullyQualifiedImageName("", Options{
+				ImageName: test.imageName,
+				Digest:    test.digest,
+			})
+
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, got)
 		})
 	}
 }

@@ -68,9 +68,9 @@ func runBuild(out io.Writer) error {
 		buildOut = ioutil.Discard
 	}
 
-	bRes, err := runner.Build(ctx, buildOut, runner.Tagger, config.Build.Artifacts)
+	bRes, err := runner.BuildAndTest(ctx, buildOut, config.Build.Artifacts)
 	if err != nil {
-		return errors.Wrap(err, "build step")
+		return err
 	}
 
 	cmdOut := BuildOutput{Builds: bRes}

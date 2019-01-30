@@ -96,12 +96,12 @@ func Load(configDir string) (*configfile.ConfigFile, error) {
 	}
 	file, err := os.Open(confFile)
 	if err != nil {
-		return configFile, errors.Wrap(err, confFile)
+		return configFile, errors.Wrap(err, filename)
 	}
 	defer file.Close()
 	err = configFile.LegacyLoadFromReader(file)
 	if err != nil {
-		return configFile, errors.Wrap(err, confFile)
+		return configFile, errors.Wrap(err, filename)
 	}
 	return configFile, nil
 }

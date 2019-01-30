@@ -100,7 +100,7 @@ spec:
 	fakeWarner := &fakeWarner{}
 	warner = fakeWarner
 
-	resultManifest, err := manifests.ReplaceImages(builds)
+	resultManifest, err := manifests.ReplaceImages(builds, "")
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
 	testutil.CheckErrorAndDeepEqual(t, false, err, []string{
@@ -114,7 +114,7 @@ func TestReplaceEmptyManifest(t *testing.T) {
 	manifests := ManifestList{[]byte(""), []byte("  ")}
 	expected := ManifestList{}
 
-	resultManifest, err := manifests.ReplaceImages(nil)
+	resultManifest, err := manifests.ReplaceImages(nil, "")
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
 }
@@ -122,7 +122,20 @@ func TestReplaceEmptyManifest(t *testing.T) {
 func TestReplaceInvalidManifest(t *testing.T) {
 	manifests := ManifestList{[]byte("INVALID")}
 
-	_, err := manifests.ReplaceImages(nil)
+	_, err := manifests.ReplaceImages(nil, "")
 
 	testutil.CheckError(t, true, err)
+}
+
+func TestReplaceNonStringImageField(t *testing.T) {
+	manifests := ManifestList{[]byte(`
+apiVersion: v1
+image:
+- value1
+- value2
+`)}
+
+	output, err := manifests.ReplaceImages(nil, "")
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, manifests.String(), output.String())
 }

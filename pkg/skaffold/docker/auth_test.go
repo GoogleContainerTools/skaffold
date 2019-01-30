@@ -78,7 +78,9 @@ func TestGetEncodedRegistryAuth(t *testing.T) {
 			defer func(h AuthConfigHelper) { DefaultAuthHelper = h }(DefaultAuthHelper)
 			DefaultAuthHelper = test.authType
 
-			out, err := encodedRegistryAuth(context.Background(), nil, test.authType, test.image)
+			l := &localDaemon{}
+			out, err := l.encodedRegistryAuth(context.Background(), test.authType, test.image)
+
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, out)
 		})
 	}

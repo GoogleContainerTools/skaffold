@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
@@ -64,6 +65,9 @@ func (credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
 	if err != nil {
 		return types.AuthConfig{}, errors.Wrap(err, "docker config")
 	}
+
+	gcp.AutoConfigureGCRCredentialHelper(cf, registry)
+
 	return cf.GetAuthConfig(registry)
 }
 
@@ -78,7 +82,7 @@ func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
 	return cf.GetCredentialsStore("").GetAll()
 }
 
-func encodedRegistryAuth(ctx context.Context, cli APIClient, a AuthConfigHelper, image string) (string, error) {
+func (l *localDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelper, image string) (string, error) {
 	ref, err := reference.ParseNormalizedNamed(image)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing image name for registry")
@@ -92,7 +96,7 @@ func encodedRegistryAuth(ctx context.Context, cli APIClient, a AuthConfigHelper,
 	index := repoInfo.Index
 	configKey := index.Name
 	if index.Official {
-		configKey = officialRegistry(ctx, cli)
+		configKey = l.officialRegistry(ctx)
 	}
 
 	ac, err := a.GetAuthConfig(configKey)
@@ -108,15 +112,17 @@ func encodedRegistryAuth(ctx context.Context, cli APIClient, a AuthConfigHelper,
 	return base64.URLEncoding.EncodeToString(buf), nil
 }
 
-func officialRegistry(ctx context.Context, cli APIClient) string {
+func (l *localDaemon) officialRegistry(ctx context.Context) string {
 	serverAddress := registry.IndexServer
 
 	// The daemon `/info` endpoint informs us of the default registry being used.
-	if info, err := cli.Info(ctx); err != nil {
+	info, err := l.apiClient.Info(ctx)
+	switch {
+	case err != nil:
 		logrus.Warnf("failed to get default registry endpoint from daemon (%v). Using system default: %s\n", err, serverAddress)
-	} else if info.IndexServerAddress == "" {
+	case info.IndexServerAddress == "":
 		logrus.Warnf("empty registry endpoint from daemon. Using system default: %s\n", serverAddress)
-	} else {
+	default:
 		serverAddress = info.IndexServerAddress
 	}
 

@@ -24,44 +24,55 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
 
 const bufferedLinesPerArtifact = 10000
 
-type artifactBuilder func(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *v1alpha2.Artifact) (string, error)
+type artifactBuilder func(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error)
 
 // InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
-func InParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
+func InParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
+	if len(artifacts) == 1 {
+		return InSequence(ctx, out, tagger, artifacts, buildArtifact)
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	n := len(artifacts)
 	tags := make([]string, n)
 	errs := make([]error, n)
-	outputs := make([]chan (string), n)
+	outputs := make([]chan []byte, n)
 
 	// Run builds in //
 	for index := range artifacts {
 		i := index
-		lines := make(chan (string), bufferedLinesPerArtifact)
+		lines := make(chan []byte, bufferedLinesPerArtifact)
 		outputs[i] = lines
 
 		r, w := io.Pipe()
 
+		// Log to the pipe, output will be collected and printed later
 		go func() {
-			// Log to the pipe, output will be collected and printed later
-			fmt.Fprintf(w, "Building [%s]...\n", artifacts[i].ImageName)
+			// Make sure logs are printed in colors
+			var cw io.WriteCloser
+			if color.IsTerminal(out) {
+				cw = color.ColoredWriteCloser{WriteCloser: w}
+			} else {
+				cw = w
+			}
 
-			tags[i], errs[i] = buildArtifact(ctx, w, tagger, artifacts[i])
-			w.Close()
+			color.Default.Fprintf(cw, "Building [%s]...\n", artifacts[i].ImageName)
+			tags[i], errs[i] = buildArtifact(ctx, cw, tagger, artifacts[i])
+			cw.Close()
 		}()
 
 		go func() {
 			scanner := bufio.NewScanner(r)
 			for scanner.Scan() {
-				lines <- scanner.Text()
+				lines <- scanner.Bytes()
 			}
 			close(lines)
 		}()
@@ -72,7 +83,8 @@ func InParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts
 
 	for i, artifact := range artifacts {
 		for line := range outputs[i] {
-			color.Default.Fprintln(out, line)
+			out.Write(line)
+			fmt.Fprintln(out)
 		}
 
 		if errs[i] != nil {

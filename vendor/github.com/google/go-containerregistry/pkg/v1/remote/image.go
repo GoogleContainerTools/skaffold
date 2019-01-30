@@ -42,33 +42,58 @@ type remoteImage struct {
 	config       []byte
 }
 
+type ImageOption func(*imageOpener) error
+
 var _ partial.CompressedImageCore = (*remoteImage)(nil)
 
-// Image accesses a given image reference over the provided transport, with the provided authentication.
-func Image(ref name.Reference, auth authn.Authenticator, t http.RoundTripper) (v1.Image, error) {
-	scopes := []string{ref.Scope(transport.PullScope)}
-	tr, err := transport.New(ref.Context().Registry, auth, t, scopes)
+type imageOpener struct {
+	auth      authn.Authenticator
+	transport http.RoundTripper
+	ref       name.Reference
+	client    *http.Client
+}
+
+func (i *imageOpener) Open() (v1.Image, error) {
+	tr, err := transport.New(i.ref.Context().Registry, i.auth, i.transport, []string{i.ref.Scope(transport.PullScope)})
 	if err != nil {
 		return nil, err
 	}
-	img, err := partial.CompressedToImage(&remoteImage{
-		ref:    ref,
+	ri := &remoteImage{
+		ref:    i.ref,
 		client: &http.Client{Transport: tr},
-	})
+	}
+	imgCore, err := partial.CompressedToImage(ri)
 	if err != nil {
-		return nil, err
+		return imgCore, err
 	}
 	// Wrap the v1.Layers returned by this v1.Image in a hint for downstream
 	// remote.Write calls to facilitate cross-repo "mounting".
 	return &mountableImage{
-		Image:      img,
-		Repository: ref.Context(),
+		Image:     imgCore,
+		Reference: i.ref,
 	}, nil
+}
+
+// Image provides access to a remote image reference, applying functional options
+// to the underlying imageOpener before resolving the reference into a v1.Image.
+func Image(ref name.Reference, options ...ImageOption) (v1.Image, error) {
+	img := &imageOpener{
+		auth:      authn.Anonymous,
+		transport: http.DefaultTransport,
+		ref:       ref,
+	}
+
+	for _, option := range options {
+		if err := option(img); err != nil {
+			return nil, err
+		}
+	}
+	return img.Open()
 }
 
 func (r *remoteImage) url(resource, identifier string) url.URL {
 	return url.URL{
-		Scheme: transport.Scheme(r.ref.Context().Registry),
+		Scheme: r.ref.Context().Registry.Scheme(),
 		Host:   r.ref.Context().RegistryStr(),
 		Path:   fmt.Sprintf("/v2/%s/%s/%s", r.ref.Context().RepositoryStr(), resource, identifier),
 	}
@@ -100,7 +125,7 @@ func (r *remoteImage) RawManifest() ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	if err := checkError(resp, http.StatusOK); err != nil {
+	if err := CheckError(resp, http.StatusOK); err != nil {
 		return nil, err
 	}
 
@@ -119,14 +144,15 @@ func (r *remoteImage) RawManifest() ([]byte, error) {
 		if digest.String() != dgst.DigestStr() {
 			return nil, fmt.Errorf("manifest digest: %q does not match requested digest: %q for %q", digest, dgst.DigestStr(), r.ref)
 		}
-	} else if checksum := resp.Header.Get("Docker-Content-Digest"); checksum != "" && checksum != digest.String() {
-		err := fmt.Errorf("manifest digest: %q does not match Docker-Content-Digest: %q for %q", digest, checksum, r.ref)
-		if r.ref.Context().RegistryStr() == name.DefaultRegistry {
-			// TODO(docker/distribution#2395): Remove this check.
-		} else {
-			// When pulling by tag, we can only validate that the digest matches what the registry told us it should be.
-			return nil, err
-		}
+	} else {
+		// Do nothing for tags; I give up.
+		//
+		// We'd like to validate that the "Docker-Content-Digest" header matches what is returned by the registry,
+		// but so many registries implement this incorrectly that it's not worth checking.
+		//
+		// For reference:
+		// https://github.com/docker/distribution/issues/2395
+		// https://github.com/GoogleContainerTools/kaniko/issues/298
 	}
 
 	r.manifest = manifest
@@ -181,7 +207,7 @@ func (rl *remoteLayer) Compressed() (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	if err := checkError(resp, http.StatusOK); err != nil {
+	if err := CheckError(resp, http.StatusOK); err != nil {
 		resp.Body.Close()
 		return nil, err
 	}

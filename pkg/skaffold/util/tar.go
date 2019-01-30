@@ -31,14 +31,8 @@ func CreateTar(w io.Writer, root string, paths []string) error {
 	tw := tar.NewWriter(w)
 	defer tw.Close()
 
-	for _, p := range paths {
-		tarPath := filepath.ToSlash(p)
-
-		if !filepath.IsAbs(p) {
-			p = filepath.Join(root, p)
-		}
-
-		if err := addFileToTar(p, tarPath, tw); err != nil {
+	for _, path := range paths {
+		if err := addFileToTar(root, path, tw); err != nil {
 			return err
 		}
 	}
@@ -52,8 +46,30 @@ func CreateTarGz(w io.Writer, root string, paths []string) error {
 	return CreateTar(gw, root, paths)
 }
 
-func addFileToTar(p string, tarPath string, tw *tar.Writer) error {
-	fi, err := os.Lstat(p)
+func addFileToTar(root string, path string, tw *tar.Writer) error {
+	var (
+		absPath string
+		err     error
+	)
+
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return err
+	}
+
+	if filepath.IsAbs(path) {
+		absPath = path
+	} else {
+		absPath = filepath.Join(absRoot, path)
+	}
+
+	tarPath, err := filepath.Rel(absRoot, absPath)
+	if err != nil {
+		return err
+	}
+	tarPath = filepath.ToSlash(tarPath)
+
+	fi, err := os.Lstat(absPath)
 	if err != nil {
 		return err
 	}
@@ -68,22 +84,22 @@ func addFileToTar(p string, tarPath string, tw *tar.Writer) error {
 		if err := tw.WriteHeader(tarHeader); err != nil {
 			return err
 		}
-		f, err := os.Open(p)
+		f, err := os.Open(absPath)
 		if err != nil {
 			return err
 		}
 		defer f.Close()
 
 		if _, err := io.Copy(tw, f); err != nil {
-			return errors.Wrapf(err, "writing real file %s", p)
+			return errors.Wrapf(err, "writing real file %s", absPath)
 		}
 	case (mode & os.ModeSymlink) != 0:
-		target, err := os.Readlink(p)
+		target, err := os.Readlink(absPath)
 		if err != nil {
 			return err
 		}
 		if filepath.IsAbs(target) {
-			logrus.Warnf("Skipping %s. Only relative symlinks are supported.", p)
+			logrus.Warnf("Skipping %s. Only relative symlinks are supported.", absPath)
 			return nil
 		}
 
@@ -96,7 +112,7 @@ func addFileToTar(p string, tarPath string, tw *tar.Writer) error {
 			return err
 		}
 	default:
-		logrus.Warnf("Adding possibly unsupported file %s of type %s.", p, mode)
+		logrus.Warnf("Adding possibly unsupported file %s of type %s.", absPath, mode)
 		// Try to add it anyway?
 		tarHeader, err := tar.FileInfoHeader(fi, "")
 		if err != nil {

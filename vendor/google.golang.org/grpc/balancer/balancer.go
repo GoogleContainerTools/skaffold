@@ -28,6 +28,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/resolver"
 )
 
@@ -88,7 +89,12 @@ type SubConn interface {
 }
 
 // NewSubConnOptions contains options to create new SubConn.
-type NewSubConnOptions struct{}
+type NewSubConnOptions struct {
+	// CredsBundle is the credentials bundle that will be used in the created
+	// SubConn. If it's nil, the original creds from grpc DialOptions will be
+	// used.
+	CredsBundle credentials.Bundle
+}
 
 // ClientConn represents a gRPC ClientConn.
 //
@@ -125,6 +131,8 @@ type BuildOptions struct {
 	// use to dial to a remote load balancer server. The Balancer implementations
 	// can ignore this if it does not need to talk to another party securely.
 	DialCreds credentials.TransportCredentials
+	// CredsBundle is the credentials bundle that the Balancer can use.
+	CredsBundle credentials.Bundle
 	// Dialer is the custom dialer the Balancer implementation can use to dial
 	// to a remote load balancer server. The Balancer implementations
 	// can ignore this if it doesn't need to talk to remote balancer.
@@ -143,12 +151,21 @@ type Builder interface {
 }
 
 // PickOptions contains addition information for the Pick operation.
-type PickOptions struct{}
+type PickOptions struct {
+	// FullMethodName is the method name that NewClientStream() is called
+	// with. The canonical format is /service/Method.
+	FullMethodName string
+	// Header contains the metadata from the RPC's client header.  The metadata
+	// should not be modified; make a copy first if needed.
+	Header metadata.MD
+}
 
 // DoneInfo contains additional information for done.
 type DoneInfo struct {
 	// Err is the rpc error the RPC finished with. It could be nil.
 	Err error
+	// Trailer contains the metadata from the RPC's trailer, if present.
+	Trailer metadata.MD
 	// BytesSent indicates if any bytes have been sent to the server.
 	BytesSent bool
 	// BytesReceived indicates if any byte has been received from the server.
@@ -225,4 +242,46 @@ type Balancer interface {
 	// Close closes the balancer. The balancer is not required to call
 	// ClientConn.RemoveSubConn for its existing SubConns.
 	Close()
+}
+
+// ConnectivityStateEvaluator takes the connectivity states of multiple SubConns
+// and returns one aggregated connectivity state.
+//
+// It's not thread safe.
+type ConnectivityStateEvaluator struct {
+	numReady            uint64 // Number of addrConns in ready state.
+	numConnecting       uint64 // Number of addrConns in connecting state.
+	numTransientFailure uint64 // Number of addrConns in transientFailure.
+}
+
+// RecordTransition records state change happening in subConn and based on that
+// it evaluates what aggregated state should be.
+//
+//  - If at least one SubConn in Ready, the aggregated state is Ready;
+//  - Else if at least one SubConn in Connecting, the aggregated state is Connecting;
+//  - Else the aggregated state is TransientFailure.
+//
+// Idle and Shutdown are not considered.
+func (cse *ConnectivityStateEvaluator) RecordTransition(oldState, newState connectivity.State) connectivity.State {
+	// Update counters.
+	for idx, state := range []connectivity.State{oldState, newState} {
+		updateVal := 2*uint64(idx) - 1 // -1 for oldState and +1 for new.
+		switch state {
+		case connectivity.Ready:
+			cse.numReady += updateVal
+		case connectivity.Connecting:
+			cse.numConnecting += updateVal
+		case connectivity.TransientFailure:
+			cse.numTransientFailure += updateVal
+		}
+	}
+
+	// Evaluate.
+	if cse.numReady > 0 {
+		return connectivity.Ready
+	}
+	if cse.numConnecting > 0 {
+		return connectivity.Connecting
+	}
+	return connectivity.TransientFailure
 }

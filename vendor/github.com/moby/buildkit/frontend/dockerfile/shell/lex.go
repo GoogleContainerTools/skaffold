@@ -2,6 +2,7 @@ package shell
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"text/scanner"
 	"unicode"
@@ -17,7 +18,9 @@ import (
 // It doesn't support all flavors of ${xx:...} formats but new ones can
 // be added by adding code to the "special ${} format processing" section
 type Lex struct {
-	escapeToken rune
+	escapeToken  rune
+	RawQuotes    bool
+	SkipUnsetEnv bool
 }
 
 // NewLex creates a new Lex which uses escapeToken to escape quotes.
@@ -28,7 +31,7 @@ func NewLex(escapeToken rune) *Lex {
 // ProcessWord will use the 'env' list of environment variables,
 // and replace any env var references in 'word'.
 func (s *Lex) ProcessWord(word string, env []string) (string, error) {
-	word, _, err := s.process(word, env)
+	word, _, err := s.process(word, BuildEnvs(env))
 	return word, err
 }
 
@@ -40,23 +43,39 @@ func (s *Lex) ProcessWord(word string, env []string) (string, error) {
 // Note, each one is trimmed to remove leading and trailing spaces (unless
 // they are quoted", but ProcessWord retains spaces between words.
 func (s *Lex) ProcessWords(word string, env []string) ([]string, error) {
+	_, words, err := s.process(word, BuildEnvs(env))
+	return words, err
+}
+
+// ProcessWordWithMap will use the 'env' list of environment variables,
+// and replace any env var references in 'word'.
+func (s *Lex) ProcessWordWithMap(word string, env map[string]string) (string, error) {
+	word, _, err := s.process(word, env)
+	return word, err
+}
+
+func (s *Lex) ProcessWordsWithMap(word string, env map[string]string) ([]string, error) {
 	_, words, err := s.process(word, env)
 	return words, err
 }
 
-func (s *Lex) process(word string, env []string) (string, []string, error) {
+func (s *Lex) process(word string, env map[string]string) (string, []string, error) {
 	sw := &shellWord{
-		envs:        env,
-		escapeToken: s.escapeToken,
+		envs:         env,
+		escapeToken:  s.escapeToken,
+		skipUnsetEnv: s.SkipUnsetEnv,
+		rawQuotes:    s.RawQuotes,
 	}
 	sw.scanner.Init(strings.NewReader(word))
 	return sw.process(word)
 }
 
 type shellWord struct {
-	scanner     scanner.Scanner
-	envs        []string
-	escapeToken rune
+	scanner      scanner.Scanner
+	envs         map[string]string
+	escapeToken  rune
+	rawQuotes    bool
+	skipUnsetEnv bool
 }
 
 func (sw *shellWord) process(source string) (string, []string, error) {
@@ -91,10 +110,8 @@ func (w *wordsStruct) addRawChar(ch rune) {
 }
 
 func (w *wordsStruct) addString(str string) {
-	var scan scanner.Scanner
-	scan.Init(strings.NewReader(str))
-	for scan.Peek() != scanner.EOF {
-		w.addChar(scan.Next())
+	for _, ch := range str {
+		w.addChar(ch)
 	}
 }
 
@@ -184,14 +201,20 @@ func (sw *shellWord) processSingleQuote() (string, error) {
 
 	var result bytes.Buffer
 
-	sw.scanner.Next()
+	ch := sw.scanner.Next()
+	if sw.rawQuotes {
+		result.WriteRune(ch)
+	}
 
 	for {
-		ch := sw.scanner.Next()
+		ch = sw.scanner.Next()
 		switch ch {
 		case scanner.EOF:
 			return "", errors.New("unexpected end of statement while looking for matching single-quote")
 		case '\'':
+			if sw.rawQuotes {
+				result.WriteRune(ch)
+			}
 			return result.String(), nil
 		}
 		result.WriteRune(ch)
@@ -213,14 +236,20 @@ func (sw *shellWord) processDoubleQuote() (string, error) {
 
 	var result bytes.Buffer
 
-	sw.scanner.Next()
+	ch := sw.scanner.Next()
+	if sw.rawQuotes {
+		result.WriteRune(ch)
+	}
 
 	for {
 		switch sw.scanner.Peek() {
 		case scanner.EOF:
 			return "", errors.New("unexpected end of statement while looking for matching double-quote")
 		case '"':
-			sw.scanner.Next()
+			ch := sw.scanner.Next()
+			if sw.rawQuotes {
+				result.WriteRune(ch)
+			}
 			return result.String(), nil
 		case '$':
 			value, err := sw.processDollar()
@@ -257,7 +286,11 @@ func (sw *shellWord) processDollar() (string, error) {
 		if name == "" {
 			return "$", nil
 		}
-		return sw.getEnv(name), nil
+		value, found := sw.getEnv(name)
+		if !found && sw.skipUnsetEnv {
+			return "$" + name, nil
+		}
+		return value, nil
 	}
 
 	sw.scanner.Next()
@@ -273,7 +306,11 @@ func (sw *shellWord) processDollar() (string, error) {
 	switch ch {
 	case '}':
 		// Normal ${xx} case
-		return sw.getEnv(name), nil
+		value, found := sw.getEnv(name)
+		if !found && sw.skipUnsetEnv {
+			return fmt.Sprintf("${%s}", name), nil
+		}
+		return value, nil
 	case ':':
 		// Special ${xx:...} format processing
 		// Yes it allows for recursive $'s in the ... spot
@@ -289,12 +326,15 @@ func (sw *shellWord) processDollar() (string, error) {
 
 		// Grab the current value of the variable in question so we
 		// can use to to determine what to do based on the modifier
-		newValue := sw.getEnv(name)
+		newValue, found := sw.getEnv(name)
 
 		switch modifier {
 		case '+':
 			if newValue != "" {
 				newValue = word
+			}
+			if !found && sw.skipUnsetEnv {
+				return fmt.Sprintf("${%s:%s%s}", name, string(modifier), word), nil
 			}
 			return newValue, nil
 
@@ -302,6 +342,10 @@ func (sw *shellWord) processDollar() (string, error) {
 			if newValue == "" {
 				newValue = word
 			}
+			if !found && sw.skipUnsetEnv {
+				return fmt.Sprintf("${%s:%s%s}", name, string(modifier), word), nil
+			}
+
 			return newValue, nil
 
 		default:
@@ -352,22 +396,34 @@ func isSpecialParam(char rune) bool {
 	return false
 }
 
-func (sw *shellWord) getEnv(name string) string {
-	for _, env := range sw.envs {
-		i := strings.Index(env, "=")
-		if i < 0 {
-			if EqualEnvKeys(name, env) {
-				// Should probably never get here, but just in case treat
-				// it like "var" and "var=" are the same
-				return ""
-			}
-			continue
+func (sw *shellWord) getEnv(name string) (string, bool) {
+	for key, value := range sw.envs {
+		if EqualEnvKeys(name, key) {
+			return value, true
 		}
-		compareName := env[:i]
-		if !EqualEnvKeys(name, compareName) {
-			continue
-		}
-		return env[i+1:]
 	}
-	return ""
+	return "", false
+}
+
+func BuildEnvs(env []string) map[string]string {
+	envs := map[string]string{}
+
+	for _, e := range env {
+		i := strings.Index(e, "=")
+
+		if i < 0 {
+			envs[e] = ""
+		} else {
+			k := e[:i]
+			v := e[i+1:]
+
+			// If key already exists, keep previous value.
+			if _, ok := envs[k]; ok {
+				continue
+			}
+			envs[k] = v
+		}
+	}
+
+	return envs
 }

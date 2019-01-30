@@ -33,10 +33,10 @@ scripts=(
     "hack/gofmt.sh"
     "hack/linter.sh"
     "hack/dep.sh"
+    "hack/check-docs.sh"
 )
 fail=0
-for s in "${scripts[@]}"
-do
+for s in "${scripts[@]}"; do
     echo "RUN ${s}"
     set +e
     ./$s

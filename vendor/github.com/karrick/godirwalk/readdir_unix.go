@@ -11,13 +11,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-var defaultBufferSize, pageSize int
-
-func init() {
-	pageSize = os.Getpagesize()
-	defaultBufferSize = 2 * pageSize
-}
-
 func readdirents(osDirname string, scratchBuffer []byte) (Dirents, error) {
 	dh, err := os.Open(osDirname)
 	if err != nil {
@@ -28,8 +21,8 @@ func readdirents(osDirname string, scratchBuffer []byte) (Dirents, error) {
 
 	fd := int(dh.Fd())
 
-	if len(scratchBuffer) < pageSize {
-		scratchBuffer = make([]byte, defaultBufferSize)
+	if len(scratchBuffer) < MinimumScratchBufferSize {
+		scratchBuffer = make([]byte, DefaultScratchBufferSize)
 	}
 
 	var de *syscall.Dirent
@@ -49,7 +42,7 @@ func readdirents(osDirname string, scratchBuffer []byte) (Dirents, error) {
 			de = (*syscall.Dirent)(unsafe.Pointer(&buf[0])) // point entry to first syscall.Dirent in buffer
 			buf = buf[de.Reclen:]                           // advance buffer
 
-			if direntIno(de) == 0 {
+			if inoFromDirent(de) == 0 {
 				continue // this item has been deleted, but not yet removed from directory
 			}
 
@@ -81,7 +74,7 @@ func readdirents(osDirname string, scratchBuffer []byte) (Dirents, error) {
 			default:
 				// If syscall returned unknown type (e.g., DT_UNKNOWN, DT_WHT),
 				// then resolve actual mode by getting stat.
-				fi, err := os.Stat(filepath.Join(osDirname, osChildname))
+				fi, err := os.Lstat(filepath.Join(osDirname, osChildname))
 				if err != nil {
 					_ = dh.Close() // ignore potential error returned by Close
 					return nil, errors.Wrap(err, "cannot Stat")

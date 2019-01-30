@@ -1,0 +1,32 @@
+steps:
+
+# Download the latest version of the docs-controller image
+- name: gcr.io/cloud-builders/docker
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      docker pull gcr.io/$PROJECT_ID/docs-controller:latest || exit 0
+  # until https://github.com/GoogleCloudPlatform/cloud-builders/issues/253 is fixed
+
+  # Get cluster credentials
+- name: gcr.io/k8s-skaffold/skaffold:v0.18.0
+  args:
+  - 'gcloud'
+  - 'container'
+  - 'clusters'
+  - 'get-credentials'
+  - 'docs'
+  - '--zone'
+  - 'us-west2-a'
+  - '--project'
+  - 'k8s-skaffold'
+  # Build and push the image with the :commit_sha tag
+- name: gcr.io/k8s-skaffold/skaffold:v0.18.0
+  args:
+  - 'skaffold'
+  - '-f'
+  - 'deploy/webhook/skaffold.yaml'
+  - 'run'
+  - '--tag'
+  - '${COMMIT_SHA}'

@@ -18,7 +18,6 @@ package deploy
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -27,7 +26,7 @@ import (
 
 // Artifact contains all information about a completed deployment
 type Artifact struct {
-	Obj       *runtime.Object
+	Obj       runtime.Object
 	Namespace string
 }
 
@@ -38,7 +37,7 @@ type Deployer interface {
 
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster.
-	Deploy(context.Context, io.Writer, []build.Artifact) ([]Artifact, error)
+	Deploy(context.Context, io.Writer, []build.Artifact, []Labeller) error
 
 	// Dependencies returns a list of files that the deployer depends on.
 	// In dev mode, a redeploy will be triggered
@@ -46,21 +45,4 @@ type Deployer interface {
 
 	// Cleanup deletes what was deployed by calling Deploy.
 	Cleanup(context.Context, io.Writer) error
-}
-
-func joinTagsToBuildResult(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {
-	imageToBuildResult := map[string]build.Artifact{}
-	for _, build := range builds {
-		imageToBuildResult[build.ImageName] = build
-	}
-
-	paramToBuildResult := map[string]build.Artifact{}
-	for param, imageName := range params {
-		build, ok := imageToBuildResult[imageName]
-		if !ok {
-			return nil, fmt.Errorf("No build present for %s", imageName)
-		}
-		paramToBuildResult[param] = build
-	}
-	return paramToBuildResult, nil
 }

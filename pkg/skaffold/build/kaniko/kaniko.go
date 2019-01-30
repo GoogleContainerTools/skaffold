@@ -23,23 +23,31 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
 
 // Build builds a list of artifacts with Kaniko.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*v1alpha2.Artifact) ([]build.Artifact, error) {
-	teardown, err := b.setupSecret()
+func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	teardownPullSecret, err := b.setupPullSecret(out)
 	if err != nil {
-		return nil, errors.Wrap(err, "setting up secret")
+		return nil, errors.Wrap(err, "setting up pull secret")
 	}
-	defer teardown()
+	defer teardownPullSecret()
 
-	return build.InParallel(ctx, out, tagger, artifacts, b.buildArtifact)
+	if b.DockerConfig != nil {
+		teardownDockerConfigSecret, err := b.setupDockerConfigSecret(out)
+		if err != nil {
+			return nil, errors.Wrap(err, "setting up docker config secret")
+		}
+		defer teardownDockerConfigSecret()
+	}
+
+	return build.InParallel(ctx, out, tagger, artifacts, b.buildArtifactWithKaniko)
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *v1alpha2.Artifact) (string, error) {
-	initialTag, err := runKaniko(ctx, out, artifact, b.KanikoBuild)
+func (b *Builder) buildArtifactWithKaniko(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error) {
+	initialTag, err := b.run(ctx, out, artifact)
 	if err != nil {
 		return "", errors.Wrapf(err, "kaniko build for [%s]", artifact.ImageName)
 	}
@@ -49,7 +57,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.T
 		return "", errors.Wrap(err, "getting digest")
 	}
 
-	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, &tag.Options{
+	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, tag.Options{
 		ImageName: artifact.ImageName,
 		Digest:    digest,
 	})

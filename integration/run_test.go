@@ -20,10 +20,13 @@ package integration
 
 import (
 	"bytes"
+	"context"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -32,12 +35,11 @@ import (
 	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
-	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	yaml "gopkg.in/yaml.v2"
+	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -71,136 +73,204 @@ func TestMain(m *testing.M) {
 }
 
 func TestRun(t *testing.T) {
-	type testRunCase struct {
-		description          string
-		dir                  string
-		filename             string
-		args                 []string
-		deployments          []string
-		pods                 []string
-		deploymentValidation func(t *testing.T, d *appsv1.Deployment)
-		env                  []string
-
-		remoteOnly bool
-	}
-
-	var testCases = []testRunCase{
+	tests := []struct {
+		description string
+		dir         string
+		filename    string
+		args        []string
+		deployments []string
+		pods        []string
+		env         []string
+		remoteOnly  bool
+	}{
 		{
-			description: "getting-started example",
-			args:        []string{"run"},
+			description: "getting-started",
+			dir:         "examples/getting-started",
 			pods:        []string{"getting-started"},
-			dir:         "../examples/getting-started",
-		},
-		{
-			description: "annotated getting-started example",
-			args:        []string{"run"},
+		}, {
+			description: "nodejs",
+			dir:         "examples/nodejs",
+			pods:        []string{"node"},
+		}, {
+			description: "structure-tests",
+			dir:         "examples/structure-tests",
+			pods:        []string{"getting-started"},
+		}, {
+			description: "microservices",
+			dir:         "examples/microservices",
+			deployments: []string{"leeroy-app", "leeroy-web"},
+		}, {
+			description: "annotated-skaffold",
+			dir:         "examples",
 			filename:    "annotated-skaffold.yaml",
 			pods:        []string{"getting-started"},
-			dir:         "../examples",
-		},
-		{
-			description: "getting-started envTagger",
-			args:        []string{"run"},
+		}, {
+			description: "envTagger",
+			dir:         "examples/tagging-with-environment-variables",
 			pods:        []string{"getting-started"},
-			dir:         "../examples/tagging-with-environment-variables",
 			env:         []string{"FOO=foo"},
-		},
-		{
-			description: "gcb builder example",
-			args:        []string{"run", "-p", "gcb"},
-			pods:        []string{"getting-started"},
-			dir:         "../examples/getting-started",
-			remoteOnly:  true,
-		},
-		{
-			description: "deploy kustomize",
-			args:        []string{"deploy", "--images", "index.docker.io/library/busybox:1"},
-			deployments: []string{"kustomize-test"},
-			deploymentValidation: func(t *testing.T, d *appsv1.Deployment) {
-				if d == nil {
-					t.Fatalf("Could not find deployment")
-				}
-				if d.Spec.Template.Spec.Containers[0].Image != "index.docker.io/library/busybox:1" {
-					t.Fatalf("Wrong image name in kustomized deployment: %s", d.Spec.Template.Spec.Containers[0].Image)
-				}
-			},
-			dir: "../examples/kustomize",
-		},
-		{
-			description: "bazel example",
-			args:        []string{"run"},
+		}, {
+			description: "bazel",
+			dir:         "examples/bazel",
 			pods:        []string{"bazel"},
-			dir:         "../examples/bazel",
-		},
-		{
-			description: "kaniko example",
-			args:        []string{"run"},
-			pods:        []string{"getting-started-kaniko"},
-			dir:         "../examples/kaniko",
+		}, {
+			description: "Google Cloud Build",
+			dir:         "examples/structure-tests",
+			args:        []string{"-p", "gcb"},
+			pods:        []string{"getting-started"},
 			remoteOnly:  true,
-		},
-		{
-			description: "helm example",
-			args:        []string{"run"},
+		}, {
+			description: "kaniko",
+			dir:         "examples/kaniko",
+			pods:        []string{"getting-started-kaniko"},
+			remoteOnly:  true,
+		}, {
+			description: "kaniko local",
+			dir:         "examples/kaniko-local",
+			pods:        []string{"getting-started-kaniko"},
+			remoteOnly:  true,
+		}, {
+			description: "helm",
+			dir:         "examples/helm-deployment",
 			deployments: []string{"skaffold-helm"},
-			dir:         "../examples/helm-deployment",
 			remoteOnly:  true,
 		},
 	}
 
-	for _, testCase := range testCases {
-		t.Run(testCase.description, func(t *testing.T) {
-			if !*remote && testCase.remoteOnly {
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			if !*remote && test.remoteOnly {
 				t.Skip("skipping remote only test")
 			}
 
 			ns, deleteNs := setupNamespace(t)
 			defer deleteNs()
 
-			args := []string{}
-			args = append(args, testCase.args...)
-			args = append(args, "--namespace", ns.Name)
-			if testCase.filename != "" {
-				args = append(args, "-f", testCase.filename)
-			}
+			runSkaffold(t, "run", test.dir, ns.Name, test.filename, test.env)
 
-			cmd := exec.Command("skaffold", args...)
-			cmd.Env = append(os.Environ(), testCase.env...)
-			cmd.Dir = testCase.dir
-			if output, err := util.RunCmdOut(cmd); err != nil {
-				t.Fatalf("skaffold: %s %v", output, err)
-			}
-
-			for _, p := range testCase.pods {
-				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(ns.Name), p); err != nil {
+			for _, p := range test.pods {
+				if err := kubernetesutil.WaitForPodReady(context.Background(), client.CoreV1().Pods(ns.Name), p); err != nil {
 					t.Fatalf("Timed out waiting for pod ready")
 				}
 			}
 
-			for _, d := range testCase.deployments {
-				if err := kubernetesutil.WaitForDeploymentToStabilize(client, ns.Name, d, 10*time.Minute); err != nil {
+			for _, d := range test.deployments {
+				if err := kubernetesutil.WaitForDeploymentToStabilize(context.Background(), client, ns.Name, d, 10*time.Minute); err != nil {
 					t.Fatalf("Timed out waiting for deployment to stabilize")
-				}
-				if testCase.deploymentValidation != nil {
-					deployment, err := client.AppsV1().Deployments(ns.Name).Get(d, meta_v1.GetOptions{})
-					if err != nil {
-						t.Fatalf("Could not find deployment: %s %s", ns.Name, d)
-					}
-					testCase.deploymentValidation(t, deployment)
 				}
 			}
 
-			// Cleanup
-			args = []string{"delete", "--namespace", ns.Name}
-			if testCase.filename != "" {
-				args = append(args, "-f", testCase.filename)
-			}
-			cmd = exec.Command("skaffold", args...)
-			cmd.Dir = testCase.dir
-			if output, err := util.RunCmdOut(cmd); err != nil {
-				t.Fatalf("skaffold delete: %s %v", output, err)
-			}
+			runSkaffold(t, "delete", test.dir, ns.Name, test.filename, test.env)
 		})
+	}
+}
+
+func TestDeploy(t *testing.T) {
+	ns, deleteNs := setupNamespace(t)
+	defer deleteNs()
+
+	runSkaffold(t, "deploy", "examples/kustomize", ns.Name, "", nil, "--images", "index.docker.io/library/busybox:1")
+
+	depName := "kustomize-test"
+	if err := kubernetesutil.WaitForDeploymentToStabilize(context.Background(), client, ns.Name, depName, 10*time.Minute); err != nil {
+		t.Fatalf("Timed out waiting for deployment to stabilize")
+	}
+
+	dep, err := client.AppsV1().Deployments(ns.Name).Get(depName, meta_v1.GetOptions{})
+	if err != nil {
+		t.Fatalf("Could not find deployment: %s %s", ns.Name, depName)
+	}
+
+	if dep.Spec.Template.Spec.Containers[0].Image != "index.docker.io/library/busybox:1" {
+		t.Fatalf("Wrong image name in kustomized deployment: %s", dep.Spec.Template.Spec.Containers[0].Image)
+	}
+
+	runSkaffold(t, "delete", "examples/kustomize", ns.Name, "", nil)
+}
+
+func TestDev(t *testing.T) {
+	ns, deleteNs := setupNamespace(t)
+	defer deleteNs()
+
+	run(t, "examples/test-dev-job", "touch", "foo")
+	defer run(t, "examples/test-dev-job", "rm", "foo")
+
+	go runSkaffoldNoFail("dev", "examples/test-dev-job", ns.Name, "", nil)
+
+	jobName := "test-dev-job"
+	if err := kubernetesutil.WaitForJobToStabilize(context.Background(), client, ns.Name, jobName, 10*time.Minute); err != nil {
+		t.Fatalf("Timed out waiting for job to stabilize")
+	}
+
+	job, err := client.BatchV1().Jobs(ns.Name).Get(jobName, meta_v1.GetOptions{})
+	if err != nil {
+		t.Fatalf("Could not find job: %s %s", ns.Name, jobName)
+	}
+
+	// Make a change to foo so that dev is forced to delete the job and redeploy
+	run(t, "examples/test-dev-job", "sh", "-c", "echo bar > foo")
+
+	// Make sure the UID of the old Job and the UID of the new Job is different
+	err = wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
+		newJob, err := client.BatchV1().Jobs(ns.Name).Get(job.Name, meta_v1.GetOptions{})
+		if err != nil {
+			return false, nil
+		}
+		return job.GetUID() != newJob.GetUID(), nil
+	})
+	if err != nil {
+		t.Fatalf("redeploy failed: %v", err)
+	}
+}
+
+func TestDevSync(t *testing.T) {
+	ns, deleteNs := setupNamespace(t)
+	defer deleteNs()
+
+	go runSkaffoldNoFail("dev", "examples/test-file-sync", ns.Name, "", nil)
+
+	if err := kubernetesutil.WaitForPodReady(context.Background(), client.CoreV1().Pods(ns.Name), "test-file-sync"); err != nil {
+		t.Fatalf("Timed out waiting for pod ready")
+	}
+
+	run(t, "examples/test-file-sync", "mkdir", "-p", "test")
+	run(t, "examples/test-file-sync", "touch", "test/foobar")
+	defer run(t, "examples/test-file-sync", "rm", "-rf", "test")
+
+	err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+		cmd := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "ls", "/test")
+		_, err := util.RunCmdOut(cmd)
+		return err == nil, nil
+	})
+	if err != nil {
+		t.Fatalf("checking if /test dir exists in container: %v", err)
+	}
+}
+
+func runSkaffold(t *testing.T, command, dir, namespace, filename string, env []string, additionalArgs ...string) {
+	if output, err := runSkaffoldNoFail(command, dir, namespace, filename, env, additionalArgs...); err != nil {
+		t.Fatalf("skaffold delete: %s %v", output, err)
+	}
+}
+
+func runSkaffoldNoFail(command, dir, namespace, filename string, env []string, additionalArgs ...string) ([]byte, error) {
+	args := []string{command, "--namespace", namespace}
+	if filename != "" {
+		args = append(args, "-f", filename)
+	}
+	args = append(args, additionalArgs...)
+
+	cmd := exec.Command("skaffold", args...)
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), env...)
+	return util.RunCmdOut(cmd)
+}
+
+func run(t *testing.T, dir, command string, args ...string) {
+	cmd := exec.Command(command, args...)
+	cmd.Dir = dir
+	if output, err := util.RunCmdOut(cmd); err != nil {
+		t.Fatalf("running command [%s %v]: %s %v", command, args, output, err)
 	}
 }
 
@@ -218,19 +288,20 @@ func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
 		client.CoreV1().Namespaces().Delete(ns.Name, &meta_v1.DeleteOptions{})
 	}
 }
+
 func TestFix(t *testing.T) {
 	ns, deleteNs := setupNamespace(t)
 	defer deleteNs()
 
 	fixCmd := exec.Command("skaffold", "fix", "-f", "skaffold.yaml")
-	fixCmd.Dir = "testdata/old-config"
+	fixCmd.Dir = "testdata"
 	out, err := util.RunCmdOut(fixCmd)
 	if err != nil {
 		t.Fatalf("testing error: %v", err)
 	}
 
 	runCmd := exec.Command("skaffold", "run", "--namespace", ns.Name, "-f", "-")
-	runCmd.Dir = "testdata/old-config"
+	runCmd.Dir = "testdata"
 	runCmd.Stdin = bytes.NewReader(out)
 	err = util.RunCmd(runCmd)
 	if err != nil {
@@ -296,6 +367,73 @@ func TestListConfig(t *testing.T) {
 				if !strings.Contains(out, output) {
 					t.Errorf("expected output %s not found in output: %s", output, out)
 				}
+			}
+		})
+	}
+}
+
+func TestInit(t *testing.T) {
+	type testCase struct {
+		name             string
+		dir              string
+		args             []string
+		skipSkaffoldYaml bool
+	}
+
+	tests := []testCase{
+		{
+			name: "getting-started",
+			dir:  "../examples/getting-started",
+		},
+		{
+			name: "microservices",
+			dir:  "../examples/microservices",
+			args: []string{
+				"-a", "leeroy-app/Dockerfile=gcr.io/k8s-skaffold/leeroy-app",
+				"-a", "leeroy-web/Dockerfile=gcr.io/k8s-skaffold/leeroy-web",
+			},
+		},
+		{
+			name:             "compose",
+			dir:              "../examples/compose",
+			args:             []string{"--compose-file", "docker-compose.yaml"},
+			skipSkaffoldYaml: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if !test.skipSkaffoldYaml {
+				oldYamlPath := filepath.Join(test.dir, "skaffold.yaml")
+				oldYaml, err := removeOldSkaffoldYaml(oldYamlPath)
+				if err != nil {
+					t.Fatalf("removing original skaffold.yaml: %s", err)
+				}
+				defer restoreOldSkaffoldYaml(oldYaml, oldYamlPath)
+			}
+
+			generatedYaml := "skaffold.yaml.out"
+			defer func() {
+				err := os.Remove(filepath.Join(test.dir, generatedYaml))
+				if err != nil {
+					t.Errorf("error removing generated skaffold yaml: %v", err)
+				}
+			}()
+			initArgs := []string{"init", "--force", "-f", generatedYaml}
+			initArgs = append(initArgs, test.args...)
+			initCmd := exec.Command("skaffold", initArgs...)
+			initCmd.Dir = test.dir
+
+			out, err := util.RunCmdOut(initCmd)
+			if err != nil {
+				t.Fatalf("running init: %v, output: %s", err, out)
+			}
+
+			runCmd := exec.Command("skaffold", "run", "-f", generatedYaml)
+			runCmd.Dir = test.dir
+			out, err = util.RunCmdOut(runCmd)
+			if err != nil {
+				t.Fatalf("running skaffold on generated yaml: %v, output: %s", err, out)
 			}
 		})
 	}
@@ -377,4 +515,26 @@ func TestSetConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func removeOldSkaffoldYaml(path string) ([]byte, error) {
+	skaffoldYaml, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	if err = os.Remove(path); err != nil {
+		return nil, err
+	}
+	return skaffoldYaml, nil
+}
+
+func restoreOldSkaffoldYaml(contents []byte, path string) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(contents); err != nil {
+		return err
+	}
+	return nil
 }

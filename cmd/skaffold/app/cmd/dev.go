@@ -37,7 +37,13 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 		},
 	}
 	AddRunDevFlags(cmd)
-	AddDevFlags(cmd)
+	cmd.Flags().BoolVar(&opts.TailDev, "tail", true, "Stream logs from deployed objects")
+	cmd.Flags().StringVar(&opts.Trigger, "trigger", "polling", "How are changes detected? (polling or manual)")
+	cmd.Flags().BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
+	cmd.Flags().StringArrayVarP(&opts.Watch, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")
+	cmd.Flags().IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes")
+	cmd.Flags().BoolVar(&opts.PortForward, "port-forward", true, "Port-forward exposed container ports within pods")
+	cmd.Flags().StringArrayVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels")
 	return cmd
 }
 
@@ -46,11 +52,10 @@ func dev(out io.Writer) error {
 	defer cancel()
 	catchCtrlC(cancel)
 
+	cleanup := func() {}
 	if opts.Cleanup {
 		defer func() {
-			if err := delete(out); err != nil {
-				logrus.Warnln("cleanup:", err)
-			}
+			cleanup()
 		}()
 	}
 
@@ -64,7 +69,15 @@ func dev(out io.Writer) error {
 				return errors.Wrap(err, "creating runner")
 			}
 
-			if _, err := r.Dev(ctx, out, config.Build.Artifacts); err != nil {
+			err = r.Dev(ctx, out, config.Build.Artifacts)
+			if r.HasDeployed() {
+				cleanup = func() {
+					if err := r.Cleanup(context.Background(), out); err != nil {
+						logrus.Warnln("cleanup:", err)
+					}
+				}
+			}
+			if err != nil {
 				if errors.Cause(err) != runner.ErrorConfigurationChanged {
 					return err
 				}

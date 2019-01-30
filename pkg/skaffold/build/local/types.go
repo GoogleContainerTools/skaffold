@@ -20,18 +20,19 @@ import (
 	"context"
 	"fmt"
 
+	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 // Builder uses the host docker daemon to build and tag the image.
 type Builder struct {
-	cfg *v1alpha2.LocalBuild
+	cfg *latest.LocalBuild
 
-	api          docker.APIClient
+	localDocker  docker.LocalDaemon
 	localCluster bool
 	pushImages   bool
 	kubeContext  string
@@ -40,25 +41,29 @@ type Builder struct {
 }
 
 // NewBuilder returns an new instance of a local Builder.
-func NewBuilder(cfg *v1alpha2.LocalBuild, kubeContext string) (*Builder, error) {
-	api, err := docker.NewAPIClient()
+func NewBuilder(cfg *latest.LocalBuild, kubeContext string) (*Builder, error) {
+	localDocker, err := docker.NewAPIClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
 
-	localCluster := kubeContext == constants.DefaultMinikubeContext || kubeContext == constants.DefaultDockerForDesktopContext
+	localCluster, err := configutil.GetLocalCluster()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting localCluster")
+	}
+
 	var pushImages bool
-	if cfg.SkipPush == nil {
-		logrus.Debugf("skipPush value not present. defaulting to cluster default %t (minikube=true, d4d=true, gke=false)", localCluster)
+	if cfg.Push == nil {
 		pushImages = !localCluster
+		logrus.Debugf("push value not present, defaulting to %t because localCluster is %t", pushImages, localCluster)
 	} else {
-		pushImages = !*cfg.SkipPush
+		pushImages = *cfg.Push
 	}
 
 	return &Builder{
 		cfg:          cfg,
 		kubeContext:  kubeContext,
-		api:          api,
+		localDocker:  localDocker,
 		localCluster: localCluster,
 		pushImages:   pushImages,
 	}, nil
@@ -70,7 +75,7 @@ func (b *Builder) Labels() map[string]string {
 		constants.Labels.Builder: "local",
 	}
 
-	v, err := b.api.ServerVersion(context.Background())
+	v, err := b.localDocker.ServerVersion(context.Background())
 	if err == nil {
 		labels[constants.Labels.DockerAPIVersion] = fmt.Sprintf("%v", v.APIVersion)
 	}

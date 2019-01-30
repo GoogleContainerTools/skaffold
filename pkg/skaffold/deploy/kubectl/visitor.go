@@ -18,14 +18,14 @@ package kubectl
 
 import (
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // Replacer is used to replace portions of yaml manifests that match a given key.
 type Replacer interface {
 	Matches(key string) bool
 
-	NewValue(key string, old interface{}) (bool, interface{})
+	NewValue(old interface{}) (bool, interface{})
 }
 
 // Visit recursively visits a list of manifests and applies transformations of them.
@@ -70,7 +70,7 @@ func recursiveVisit(i interface{}, replacer Replacer) {
 				continue
 			}
 
-			ok, newValue := replacer.NewValue(key, v)
+			ok, newValue := replacer.NewValue(v)
 			if ok {
 				t[k] = newValue
 			}

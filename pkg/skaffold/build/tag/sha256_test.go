@@ -25,39 +25,27 @@ import (
 func TestGenerateFullyQualifiedImageName(t *testing.T) {
 	var tests = []struct {
 		description string
-		opts        *Options
+		imageName   string
 		digest      string
-		image       string
 		expected    string
-
-		shouldErr bool
+		shouldErr   bool
 	}{
 		{
 			description: "no error",
-			opts: &Options{
-				ImageName: "test",
-				Digest:    "sha256:12345abcde",
-			},
-			expected: "test:12345abcde",
+			imageName:   "test",
+			digest:      "sha256:12345abcde",
+			expected:    "test:12345abcde",
 		},
 		{
 			description: "wrong digest format",
-			opts: &Options{
-				ImageName: "test",
-				Digest:    "wrong:digest:format",
-			},
-			shouldErr: true,
+			imageName:   "test",
+			digest:      "wrong:digest:format",
+			shouldErr:   true,
 		},
 		{
 			description: "wrong digest format no colon",
-			opts: &Options{
-				ImageName: "test",
-				Digest:    "sha256",
-			},
-			shouldErr: true,
-		},
-		{
-			description: "error no tag opts",
+			imageName:   "test",
+			digest:      "sha256",
 			shouldErr:   true,
 		},
 	}
@@ -65,7 +53,12 @@ func TestGenerateFullyQualifiedImageName(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			c := &ChecksumTagger{}
-			tag, err := c.GenerateFullyQualifiedImageName(".", test.opts)
+
+			tag, err := c.GenerateFullyQualifiedImageName(".", Options{
+				ImageName: test.imageName,
+				Digest:    test.digest,
+			})
+
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, tag)
 		})
 	}

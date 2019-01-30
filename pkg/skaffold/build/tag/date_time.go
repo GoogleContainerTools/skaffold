@@ -38,7 +38,7 @@ func NewDateTimeTagger(format, timezone string) Tagger {
 	return &dateTimeTagger{
 		Format:   format,
 		TimeZone: timezone,
-		timeFn:   func() time.Time { return time.Now() },
+		timeFn:   time.Now,
 	}
 }
 
@@ -49,11 +49,7 @@ func (tagger *dateTimeTagger) Labels() map[string]string {
 }
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the current timestamp
-func (tagger *dateTimeTagger) GenerateFullyQualifiedImageName(workingDir string, opts *Options) (string, error) {
-	if opts == nil {
-		return "", fmt.Errorf("tag options not provided")
-	}
-
+func (tagger *dateTimeTagger) GenerateFullyQualifiedImageName(workingDir string, opts Options) (string, error) {
 	format := tagTime
 	if len(tagger.Format) > 0 {
 		format = tagger.Format

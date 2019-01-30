@@ -18,18 +18,21 @@ package local
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
-func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace string, a *v1alpha2.DockerArtifact) (string, error) {
+func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact) (string, error) {
+	if err := b.pullCacheFromImages(ctx, out, a); err != nil {
+		return "", errors.Wrap(err, "pulling cache-from images")
+	}
+
 	initialTag := util.RandomID()
 
 	if b.cfg.UseDockerCLI || b.cfg.UseBuildkit {
@@ -51,11 +54,32 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace stri
 		if err := util.RunCmd(cmd); err != nil {
 			return "", errors.Wrap(err, "running build")
 		}
-	} else {
-		if err := docker.BuildArtifact(ctx, out, b.api, workspace, a, initialTag); err != nil {
-			return "", errors.Wrap(err, "running build")
+
+		return b.localDocker.ImageID(ctx, initialTag)
+	}
+
+	return b.localDocker.Build(ctx, out, workspace, a, initialTag)
+}
+
+func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *latest.DockerArtifact) error {
+	if len(a.CacheFrom) == 0 {
+		return nil
+	}
+
+	for _, image := range a.CacheFrom {
+		imageID, err := b.localDocker.ImageID(ctx, image)
+		if err != nil {
+			return errors.Wrapf(err, "getting imageID for %s", image)
+		}
+		if imageID != "" {
+			// already pulled
+			continue
+		}
+
+		if err := b.localDocker.Pull(ctx, out, image); err != nil {
+			return errors.Wrapf(err, "pulling image %s", image)
 		}
 	}
 
-	return fmt.Sprintf("%s:latest", initialTag), nil
+	return nil
 }

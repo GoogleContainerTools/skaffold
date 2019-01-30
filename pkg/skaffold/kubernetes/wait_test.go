@@ -17,6 +17,7 @@ limitations under the License.
 package kubernetes
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -111,7 +112,7 @@ func TestWaitForPodReady(t *testing.T) {
 			errCh := make(chan error, 1)
 			done := make(chan struct{}, 1)
 			go func() {
-				errCh <- WaitForPodReady(pods, "podname")
+				errCh <- WaitForPodReady(context.Background(), pods, "podname")
 				done <- struct{}{}
 			}()
 			for _, p := range test.phases {

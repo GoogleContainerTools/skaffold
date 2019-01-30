@@ -21,6 +21,7 @@ import (
 	"io"
 	"io/ioutil"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -34,11 +35,10 @@ func NewCmdSet(out io.Writer) *cobra.Command {
 		Short: "Set a value in the global skaffold config",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			resolveKubectlContext()
 			if err := setConfigValue(args[0], args[1]); err != nil {
 				return err
 			}
-			logConfigChangeForUser(out, args[0], args[1])
+			logSetConfigForUser(out, args[0], args[1])
 			return nil
 		},
 	}
@@ -47,12 +47,29 @@ func NewCmdSet(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func setConfigValue(name string, value interface{}) error {
+func setConfigValue(name string, value string) error {
 	cfg, err := getOrCreateConfigForKubectx()
 	if err != nil {
 		return err
 	}
 
+	fieldName := getFieldName(cfg, name)
+	if fieldName == "" {
+		return fmt.Errorf("%s is not a valid config field", name)
+	}
+
+	field := reflect.Indirect(reflect.ValueOf(cfg)).FieldByName(fieldName)
+	val, err := parseAsType(value, field.Type())
+	if err != nil {
+		return fmt.Errorf("%s is not a valid value for field %s", value, name)
+	}
+
+	reflect.ValueOf(cfg).Elem().FieldByName(fieldName).Set(val)
+
+	return writeConfig(cfg)
+}
+
+func getFieldName(cfg *ContextConfig, name string) string {
 	cfgValue := reflect.Indirect(reflect.ValueOf(cfg))
 	var fieldName string
 	for i := 0; i < cfgValue.NumField(); i++ {
@@ -63,21 +80,25 @@ func setConfigValue(name string, value interface{}) error {
 			}
 		}
 	}
-	if fieldName == "" {
-		return fmt.Errorf("%s is not a valid config field", name)
+	return fieldName
+}
+
+func parseAsType(value string, fieldType reflect.Type) (reflect.Value, error) {
+	switch fieldType.String() {
+	case "string":
+		return reflect.ValueOf(value), nil
+	case "*bool":
+		if value == "" {
+			return reflect.Zero(fieldType), nil
+		}
+		valBase, err := strconv.ParseBool(value)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(&valBase), nil
+	default:
+		return reflect.Value{}, fmt.Errorf("unsupported type: %s", fieldType)
 	}
-	fieldValue := cfgValue.FieldByName(fieldName)
-
-	fieldType := fieldValue.Type()
-	val := reflect.ValueOf(value)
-
-	if fieldType != val.Type() {
-		return fmt.Errorf("%s is not a valid value for field %s", value, fieldName)
-	}
-
-	reflect.ValueOf(cfg).Elem().FieldByName(fieldName).Set(val)
-
-	return writeConfig(cfg)
 }
 
 func writeConfig(cfg *ContextConfig) error {
@@ -109,7 +130,7 @@ func writeFullConfig(cfg *Config) error {
 	return nil
 }
 
-func logConfigChangeForUser(out io.Writer, key string, value string) {
+func logSetConfigForUser(out io.Writer, key string, value string) {
 	if global {
 		out.Write([]byte(fmt.Sprintf("set global value %s to %s\n", key, value)))
 	} else {

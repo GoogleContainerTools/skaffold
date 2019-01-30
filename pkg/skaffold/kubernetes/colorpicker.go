@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -53,12 +52,16 @@ type colorPicker struct {
 // sequentially from `colorCodes`. If all colors are used, the first color will be used
 // again. The formatter for the associated color will then be returned by `Pick` each
 // time it is called for the artifact and can be used to write to out in that color.
-func NewColorPicker(artifacts []*v1alpha2.Artifact) ColorPicker {
-	c := colorPicker{imageColors: map[string]color.Color{}}
-	for i, artifact := range artifacts {
-		c.imageColors[artifact.ImageName] = colorCodes[i%len(colorCodes)]
+func NewColorPicker(baseImageNames []string) ColorPicker {
+	imageColors := make(map[string]color.Color)
+
+	for i, baseImageName := range baseImageNames {
+		imageColors[baseImageName] = colorCodes[i%len(colorCodes)]
 	}
-	return &c
+
+	return &colorPicker{
+		imageColors: imageColors,
+	}
 }
 
 // Pick will return the color that was associated with pod when `NewColorPicker` was called.

@@ -18,7 +18,7 @@ package watch
 
 import (
 	"context"
-	"time"
+	"io"
 
 	"github.com/pkg/errors"
 )
@@ -28,31 +28,37 @@ type Factory func() Watcher
 
 // Watcher monitors files changes for multiples components.
 type Watcher interface {
-	Register(deps func() ([]string, error), onChange func()) error
-	Run(ctx context.Context, pollInterval time.Duration, onChange func() error) error
+	Register(deps func() ([]string, error), onChange func(Events)) error
+	Run(ctx context.Context, out io.Writer, onChange func() error) error
 }
 
-type watchList []*component
+type watchList struct {
+	components []*component
+	trigger    Trigger
+}
 
 // NewWatcher creates a new Watcher.
-func NewWatcher() Watcher {
-	return &watchList{}
+func NewWatcher(trigger Trigger) Watcher {
+	return &watchList{
+		trigger: trigger,
+	}
 }
 
 type component struct {
 	deps     func() ([]string, error)
-	onChange func()
-	state    fileMap
+	onChange func(Events)
+	state    FileMap
+	events   Events
 }
 
 // Register adds a new component to the watch list.
-func (w *watchList) Register(deps func() ([]string, error), onChange func()) error {
-	state, err := stat(deps)
+func (w *watchList) Register(deps func() ([]string, error), onChange func(Events)) error {
+	state, err := Stat(deps)
 	if err != nil {
 		return errors.Wrap(err, "listing files")
 	}
 
-	*w = append(*w, &component{
+	w.components = append(w.components, &component{
 		deps:     deps,
 		onChange: onChange,
 		state:    state,
@@ -61,34 +67,53 @@ func (w *watchList) Register(deps func() ([]string, error), onChange func()) err
 }
 
 // Run watches files until the context is cancelled or an error occurs.
-func (w *watchList) Run(ctx context.Context, pollInterval time.Duration, onChange func() error) error {
-	ticker := time.NewTicker(pollInterval)
-	defer ticker.Stop()
+func (w *watchList) Run(ctx context.Context, out io.Writer, onChange func() error) error {
+	t, cleanup := w.trigger.Start()
+	defer cleanup()
 
+	changedComponents := map[int]bool{}
+
+	w.trigger.WatchForChanges(out)
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-ticker.C:
+		case <-t:
 			changed := 0
-
-			for _, component := range *w {
-				state, err := stat(component.deps)
+			for i, component := range w.components {
+				state, err := Stat(component.deps)
 				if err != nil {
 					return errors.Wrap(err, "listing files")
 				}
+				e := events(component.state, state)
 
-				if hasChanged(component.state, state) {
-					component.onChange()
+				if e.HasChanged() {
+					changedComponents[i] = true
 					component.state = state
+					component.events = e
 					changed++
 				}
 			}
 
-			if changed > 0 {
+			// Rapid file changes that are more frequent than the poll interval would trigger
+			// multiple rebuilds.
+			// To prevent that, we debounce changes that happen too quickly
+			// by waiting for a full turn where nothing happens and trigger a rebuild for
+			// the accumulated changes.
+			debounce := w.trigger.Debounce()
+			if (!debounce && changed > 0) || (debounce && changed == 0 && len(changedComponents) > 0) {
+				for i, component := range w.components {
+					if changedComponents[i] {
+						component.onChange(component.events)
+					}
+				}
+
 				if err := onChange(); err != nil {
 					return errors.Wrap(err, "calling final callback")
 				}
+
+				changedComponents = map[int]bool{}
+				w.trigger.WatchForChanges(out)
 			}
 		}
 	}

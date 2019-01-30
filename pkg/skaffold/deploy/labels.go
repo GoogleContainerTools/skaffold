@@ -17,17 +17,14 @@ limitations under the License.
 package deploy
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"io"
+	"strings"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -35,7 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	patch "k8s.io/apimachinery/pkg/util/strategicpatch"
-
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 )
@@ -45,38 +41,12 @@ type Labeller interface {
 	Labels() map[string]string
 }
 
-type withLabels struct {
-	Deployer
-
-	labellers []Labeller
-}
-
-// WithLabels creates a deployer that sets labels on deployed resources.
-func WithLabels(d Deployer, labellers ...Labeller) Deployer {
-	return &withLabels{
-		Deployer:  d,
-		labellers: labellers,
-	}
-}
-
-func (w *withLabels) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) ([]Artifact, error) {
-	dRes, err := w.Deployer.Deploy(ctx, out, artifacts)
-
-	labelDeployResults(merge(w.labellers...), dRes)
-
-	return dRes, err
-}
-
 // merge merges the labels from multiple sources.
 func merge(sources ...Labeller) map[string]string {
 	merged := make(map[string]string)
 
 	for _, src := range sources {
-		if src != nil {
-			for k, v := range src.Labels() {
-				merged[k] = v
-			}
-		}
+		copyMap(merged, src.Labels())
 	}
 
 	return merged
@@ -117,30 +87,30 @@ func labelDeployResults(labels map[string]string, results []Artifact) {
 }
 
 func addLabels(labels map[string]string, accessor metav1.Object) {
-	objLabels := accessor.GetLabels()
-	if objLabels == nil {
-		objLabels = make(map[string]string)
-	}
-	for k, v := range constants.Labels.DefaultLabels {
-		if _, ok := objLabels[k]; !ok {
-			objLabels[k] = v
-		}
-	}
-	for key, value := range labels {
-		objLabels[key] = value
-	}
-	accessor.SetLabels(objLabels)
+	kv := make(map[string]string)
+
+	copyMap(kv, constants.Labels.DefaultLabels)
+	copyMap(kv, accessor.GetLabels())
+	copyMap(kv, labels)
+
+	accessor.SetLabels(kv)
 }
 
 func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInterface, labels map[string]string, res Artifact) error {
-	originalJSON, _ := json.Marshal(*res.Obj)
-	modifiedObj := (*res.Obj).DeepCopyObject()
+	originalJSON, _ := json.Marshal(res.Obj)
+	modifiedObj := res.Obj.DeepCopyObject()
 	accessor, err := meta.Accessor(modifiedObj)
 	if err != nil {
 		return errors.Wrap(err, "getting metadata accessor")
 	}
 	name := accessor.GetName()
-	namespace := res.Namespace
+
+	kind := modifiedObj.GetObjectKind().GroupVersionKind().Kind
+	if strings.EqualFold(kind, "Service") {
+		logrus.Debugf("Labels are not applied to service [%s] because of issue: https://github.com/GoogleContainerTools/skaffold/issues/887", name)
+		return nil
+	}
+
 	addLabels(labels, accessor)
 
 	modifiedJSON, _ := json.Marshal(modifiedObj)
@@ -149,10 +119,20 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 	if err != nil {
 		return errors.Wrap(err, "getting group version resource from obj")
 	}
+
+	var namespace string
+	if accessor.GetNamespace() != "" {
+		namespace = accessor.GetNamespace()
+	} else {
+		namespace = res.Namespace
+	}
+
 	ns, err := resolveNamespace(namespace)
 	if err != nil {
 		return errors.Wrap(err, "resolving namespace")
 	}
+	logrus.Debugln("Patching", name, "in namespace", ns)
+
 	if _, err := client.Resource(gvr).Namespace(ns).Patch(name, types.StrategicMergePatchType, p); err != nil {
 		return errors.Wrapf(err, "patching resource %s/%s", namespace, name)
 	}
@@ -192,5 +172,11 @@ func groupVersionResource(disco discovery.DiscoveryInterface, gvk schema.GroupVe
 		}
 	}
 
-	return schema.GroupVersionResource{}, fmt.Errorf("Could not find resource for %s", gvk.String())
+	return schema.GroupVersionResource{}, fmt.Errorf("could not find resource for %s", gvk.String())
+}
+
+func copyMap(dest, from map[string]string) {
+	for k, v := range from {
+		dest[k] = v
+	}
 }

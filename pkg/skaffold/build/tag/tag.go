@@ -20,7 +20,7 @@ package tag
 type Tagger interface {
 	Labels() map[string]string
 
-	GenerateFullyQualifiedImageName(workingDir string, tagOpts *Options) (string, error)
+	GenerateFullyQualifiedImageName(workingDir string, tagOpts Options) (string, error)
 }
 
 type Options struct {

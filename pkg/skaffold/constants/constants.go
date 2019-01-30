@@ -40,19 +40,32 @@ const (
 
 	DefaultMinikubeContext         = "minikube"
 	DefaultDockerForDesktopContext = "docker-for-desktop"
+	DefaultDockerDesktopContext    = "docker-desktop"
 	GCSBucketSuffix                = "_cloudbuild"
 
 	HelmOverridesFilename = "skaffold-overrides.yaml"
 
 	DefaultKustomizationPath = "."
 
-	DefaultKanikoImage      = "gcr.io/kaniko-project/executor:v0.2.0@sha256:bebe80bb97950d88b8d8eab315a58e0bc50307135cf25147d7e0b8f3db50a84a"
-	DefaultKanikoSecretName = "kaniko-secret"
-	DefaultKanikoTimeout    = "20m"
+	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.7.0@sha256:0b4e0812aa17c54a9b8d8c8d7cb35559a892a341650acf7cb428c3e8cb4a3919"
+	DefaultKanikoSecretName             = "kaniko-secret"
+	DefaultKanikoTimeout                = "20m"
+	DefaultKanikoContainerName          = "kaniko"
+	DefaultKanikoEmptyDirName           = "kaniko-emptydir"
+	DefaultKanikoEmptyDirMountPath      = "/kaniko/buildcontext"
+	DefaultKanikoDockerConfigSecretName = "docker-cfg"
+	DefaultKanikoDockerConfigPath       = "/kaniko/.docker"
+
+	DefaultBusyboxImage = "busybox"
 
 	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
 
 	DefaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
+	DefaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn"
+	DefaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
+
+	// A regex matching valid repository names (https://github.com/docker/distribution/blob/master/reference/reference.go)
+	RepositoryComponentRegex string = `^[a-z\d]+(?:(?:[_.]|__|-+)[a-z\d]+)*$`
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}

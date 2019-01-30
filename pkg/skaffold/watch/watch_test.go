@@ -18,6 +18,7 @@ package watch
 
 import (
 	"context"
+	"io/ioutil"
 	"sync"
 	"testing"
 	"time"
@@ -70,14 +71,19 @@ func TestWatch(t *testing.T) {
 			somethingChanged := newCallback()
 
 			// Watch folder
-			watcher := NewWatcher()
+			watcher := NewWatcher(&pollTrigger{
+				Interval: 10 * time.Millisecond,
+			})
 			err := watcher.Register(folder.List, folderChanged.call)
 			testutil.CheckError(t, false, err)
 
 			// Run the watcher
 			ctx, cancel := context.WithCancel(context.Background())
+			var stopped sync.WaitGroup
+			stopped.Add(1)
 			go func() {
-				err = watcher.Run(ctx, 10*time.Millisecond, somethingChanged.callNoErr)
+				err = watcher.Run(ctx, ioutil.Discard, somethingChanged.callNoErr)
+				stopped.Done()
 				testutil.CheckError(t, false, err)
 			}()
 
@@ -87,6 +93,7 @@ func TestWatch(t *testing.T) {
 			folderChanged.wait()
 			somethingChanged.wait()
 			cancel()
+			stopped.Wait() // Make sure the watcher is stopped before deleting the tmp folder
 		})
 	}
 }
@@ -104,7 +111,7 @@ func newCallback() *callback {
 	}
 }
 
-func (c *callback) call() {
+func (c *callback) call(e Events) {
 	c.wg.Done()
 }
 

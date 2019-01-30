@@ -94,9 +94,18 @@ func (c Color) Fprintf(out io.Writer, format string, a ...interface{}) (n int, e
 	return fmt.Fprintf(out, format, a...)
 }
 
+// ColoredWriteCloser forces printing with colors to an io.WriteCloser.
+type ColoredWriteCloser struct {
+	io.WriteCloser
+}
+
 // This implementation comes from logrus (https://github.com/sirupsen/logrus/blob/master/terminal_check_notappengine.go),
 // unfortunately logrus doesn't expose a public interface we can use to call it.
 func isTerminal(w io.Writer) bool {
+	if _, ok := w.(ColoredWriteCloser); ok {
+		return true
+	}
+
 	switch v := w.(type) {
 	case *os.File:
 		return terminal.IsTerminal(int(v.Fd()))

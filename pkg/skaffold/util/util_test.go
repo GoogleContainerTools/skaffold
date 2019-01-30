@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -88,11 +89,6 @@ func TestExpandPathsGlob(t *testing.T) {
 			in:          []string{"dir*"},
 			out:         []string{tmpDir.Path("dir/sub_dir/file"), tmpDir.Path("dir_b/sub_dir_b/file")},
 		},
-		{
-			description: "error unmatched glob",
-			in:          []string{"dir/sub_dir_c/*"},
-			shouldErr:   true,
-		},
 	}
 
 	for _, tt := range tests {
@@ -113,4 +109,102 @@ func TestDefaultConfigFilenameAlternate(t *testing.T) {
 	content, err := ReadConfiguration(tmpDir.Path("skaffold.yaml"))
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, []byte("foo"), content)
+}
+
+func TestExpand(t *testing.T) {
+	var tests = []struct {
+		description string
+		text        string
+		key         string
+		value       string
+		expected    string
+	}{
+		{
+			description: "${key} syntax",
+			text:        "BEFORE[${key}]AFTER",
+			key:         "key",
+			value:       "VALUE",
+			expected:    "BEFORE[VALUE]AFTER",
+		},
+		{
+			description: "$key syntax",
+			text:        "BEFORE[$key]AFTER",
+			key:         "key",
+			value:       "VALUE",
+			expected:    "BEFORE[VALUE]AFTER",
+		},
+		{
+			description: "replace all",
+			text:        "BEFORE[$key][${key}][$key][${key}]AFTER",
+			key:         "key",
+			value:       "VALUE",
+			expected:    "BEFORE[VALUE][VALUE][VALUE][VALUE]AFTER",
+		},
+		{
+			description: "ignore common prefix",
+			text:        "BEFORE[$key1][${key1}]AFTER",
+			key:         "key",
+			value:       "VALUE",
+			expected:    "BEFORE[$key1][${key1}]AFTER",
+		},
+		{
+			description: "just the ${key} placeholder",
+			text:        "${key}",
+			key:         "key",
+			value:       "VALUE",
+			expected:    "VALUE",
+		},
+		{
+			description: "just the $key placeholder",
+			text:        "$key",
+			key:         "key",
+			value:       "VALUE",
+			expected:    "VALUE",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			actual := Expand(test.text, test.key, test.value)
+
+			testutil.CheckDeepEqual(t, test.expected, actual)
+		})
+	}
+}
+
+func TestAbsFile(t *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+	tmpDir.Write("file", "")
+	expectedFile, err := filepath.Abs(filepath.Join(tmpDir.Root(), "file"))
+	testutil.CheckError(t, false, err)
+
+	file, err := AbsFile(tmpDir.Root(), "file")
+	testutil.CheckErrorAndDeepEqual(t, false, err, expectedFile, file)
+
+	_, err = AbsFile(tmpDir.Root(), "")
+	testutil.CheckErrorAndDeepEqual(t, true, err, tmpDir.Root()+" is a directory", err.Error())
+
+	_, err = AbsFile(tmpDir.Root(), "does-not-exist")
+	testutil.CheckError(t, true, err)
+}
+
+func TestNonEmptyLines(t *testing.T) {
+	var testCases = []struct {
+		in  string
+		out []string
+	}{
+		{"", nil},
+		{"a\n", []string{"a"}},
+		{"a\r\n", []string{"a"}},
+		{"a\r\nb", []string{"a", "b"}},
+		{"a\r\nb\n\n", []string{"a", "b"}},
+		{"\na\r\n\n\n", []string{"a"}},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.in, func(t *testing.T) {
+			result := NonEmptyLines([]byte(tt.in))
+			testutil.CheckDeepEqual(t, tt.out, result)
+		})
+	}
 }

@@ -17,29 +17,56 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"io"
 	"os"
 
 	"github.com/spf13/cobra"
 )
 
-// completionCmd represents the completion command
+const longDescription = `
+	Outputs skaffold shell completion for the given shell (bash or zsh)
+
+	This depends on the bash-completion binary.  Example installation instructions:
+	OS X:
+		$ brew install bash-completion
+		$ source $(brew --prefix)/etc/bash_completion
+		$ skaffold completion bash > ~/.skaffold-completion  # for bash users
+		$ skaffold completion zsh > ~/.skaffold-completion   # for zsh users
+		$ source ~/.skaffold-completion
+	Ubuntu:
+		$ apt-get install bash-completion
+		$ source /etc/bash-completion
+		$ source <(skaffold completion bash) # for bash users
+		$ source <(skaffold completion zsh)  # for zsh users
+
+	Additionally, you may want to output the completion to a file and source in your .bashrc
+`
+
 var completionCmd = &cobra.Command{
-	Use:   "completion",
-	Short: "Generate shell completion scripts",
-	Long: `To enable command completion run
-
-eval "$(skaffold completion bash)"
-
-To configure bash shell completion for all your sessions, add the following to your
-~/.bashrc or ~/.bash_profile:
-
-eval "$(skaffold completion bash)"`,
-	Run: func(cmd *cobra.Command, args []string) {
-		rootCmd.GenBashCompletion(os.Stdout)
+	Use: "completion SHELL",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("requires 1 arg, found %d", len(args))
+		}
+		return cobra.OnlyValidArgs(cmd, args)
 	},
+	ValidArgs: []string{"bash", "zsh"},
+	Short:     "Output skaffold shell completion for the given shell (bash or zsh)",
+	Long:      longDescription,
+	Run:       completion,
 }
 
+func completion(_cmd *cobra.Command, args []string) {
+	switch args[0] {
+	case "bash":
+		rootCmd.GenBashCompletion(os.Stdout)
+	case "zsh":
+		rootCmd.GenZshCompletion(os.Stdout)
+	}
+}
+
+// NewCmdCompletion returns the cobra command that outputs shell completion code
 func NewCmdCompletion(out io.Writer) *cobra.Command {
 	return completionCmd
 }

@@ -8,6 +8,24 @@ import (
 	"github.com/pkg/errors"
 )
 
+// DefaultScratchBufferSize specifies the size of the scratch buffer that will
+// be allocated by Walk, ReadDirents, or ReadDirnames when a scratch buffer is
+// not provided or the scratch buffer that is provided is smaller than
+// MinimumScratchBufferSize bytes. This may seem like a large value; however,
+// when a program intends to enumerate large directories, having a larger
+// scratch buffer results in fewer operating system calls.
+const DefaultScratchBufferSize = 64 * 1024
+
+// MinimumScratchBufferSize specifies the minimum size of the scratch buffer
+// that Walk, ReadDirents, and ReadDirnames will use when reading file entries
+// from the operating system. It is initialized to the result from calling
+// `os.Getpagesize()` during program startup.
+var MinimumScratchBufferSize int
+
+func init() {
+	MinimumScratchBufferSize = os.Getpagesize()
+}
+
 // Options provide parameters for how the Walk function operates.
 type Options struct {
 	// ErrorCallback specifies a function to be invoked in the case of an error
@@ -62,9 +80,12 @@ type Options struct {
 	// processed.
 	PostChildrenCallback WalkFunc
 
-	// ScratchBuffer is an optional scratch buffer for Walk to use when reading
-	// directory entries, to reduce amount of garbage generation. Not all
-	// architectures take advantage of the scratch buffer.
+	// ScratchBuffer is an optional byte slice to use as a scratch buffer for
+	// Walk to use when reading directory entries, to reduce amount of garbage
+	// generation. Not all architectures take advantage of the scratch
+	// buffer. If omitted or the provided buffer has fewer bytes than
+	// MinimumScratchBufferSize, then a buffer with DefaultScratchBufferSize
+	// bytes will be created and used once per Walk invocation.
 	ScratchBuffer []byte
 }
 
@@ -188,8 +209,8 @@ func Walk(pathname string, options *Options) error {
 		options.ErrorCallback = defaultErrorCallback
 	}
 
-	if options.ScratchBuffer == nil {
-		options.ScratchBuffer = make([]byte, 64*1024)
+	if len(options.ScratchBuffer) < MinimumScratchBufferSize {
+		options.ScratchBuffer = make([]byte, DefaultScratchBufferSize)
 	}
 
 	err = walk(pathname, dirent, options)

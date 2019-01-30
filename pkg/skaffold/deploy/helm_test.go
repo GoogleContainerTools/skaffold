@@ -28,7 +28,8 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/sirupsen/logrus"
@@ -37,7 +38,7 @@ import (
 var testBuilds = []build.Artifact{
 	{
 		ImageName: "skaffold-helm",
-		Tag:       "skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184",
+		Tag:       "docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184",
 	},
 }
 
@@ -48,8 +49,8 @@ var testBuildsFoo = []build.Artifact{
 	},
 }
 
-var testDeployConfig = &v1alpha2.HelmDeploy{
-	Releases: []v1alpha2.HelmRelease{
+var testDeployConfig = &latest.HelmDeploy{
+	Releases: []latest.HelmRelease{
 		{
 			Name:      "skaffold-helm",
 			ChartPath: "examples/test",
@@ -66,8 +67,8 @@ var testDeployConfig = &v1alpha2.HelmDeploy{
 	},
 }
 
-var testDeployHelmStyleConfig = &v1alpha2.HelmDeploy{
-	Releases: []v1alpha2.HelmRelease{
+var testDeployRecreatePodsConfig = &latest.HelmDeploy{
+	Releases: []latest.HelmRelease{
 		{
 			Name:      "skaffold-helm",
 			ChartPath: "examples/test",
@@ -80,17 +81,36 @@ var testDeployHelmStyleConfig = &v1alpha2.HelmDeploy{
 			SetValues: map[string]string{
 				"some.key": "somevalue",
 			},
-			ImageStrategy: v1alpha2.HelmImageStrategy{
-				HelmImageConfig: v1alpha2.HelmImageConfig{
-					HelmConventionConfig: &v1alpha2.HelmConventionConfig{},
+			RecreatePods: true,
+		},
+	},
+}
+
+var testDeployHelmStyleConfig = &latest.HelmDeploy{
+	Releases: []latest.HelmRelease{
+		{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Values: map[string]string{
+				"image": "skaffold-helm",
+			},
+			Overrides: map[string]interface{}{
+				"foo": "bar",
+			},
+			SetValues: map[string]string{
+				"some.key": "somevalue",
+			},
+			ImageStrategy: latest.HelmImageStrategy{
+				HelmImageConfig: latest.HelmImageConfig{
+					HelmConventionConfig: &latest.HelmConventionConfig{},
 				},
 			},
 		},
 	},
 }
 
-var testDeployConfigParameterUnmatched = &v1alpha2.HelmDeploy{
-	Releases: []v1alpha2.HelmRelease{
+var testDeployConfigParameterUnmatched = &latest.HelmDeploy{
+	Releases: []latest.HelmRelease{
 		{
 			Name:      "skaffold-helm",
 			ChartPath: "examples/test",
@@ -101,15 +121,15 @@ var testDeployConfigParameterUnmatched = &v1alpha2.HelmDeploy{
 	},
 }
 
-var testDeployFooWithPackaged = &v1alpha2.HelmDeploy{
-	Releases: []v1alpha2.HelmRelease{
+var testDeployFooWithPackaged = &latest.HelmDeploy{
+	Releases: []latest.HelmRelease{
 		{
 			Name:      "foo",
 			ChartPath: "testdata/foo",
 			Values: map[string]string{
 				"image": "foo",
 			},
-			Packaged: &v1alpha2.HelmPackaged{
+			Packaged: &latest.HelmPackaged{
 				Version:    "0.1.2",
 				AppVersion: "1.2.3",
 			},
@@ -117,8 +137,8 @@ var testDeployFooWithPackaged = &v1alpha2.HelmDeploy{
 	},
 }
 
-var testDeployWithTemplatedName = &v1alpha2.HelmDeploy{
-	Releases: []v1alpha2.HelmRelease{
+var testDeployWithTemplatedName = &latest.HelmDeploy{
+	Releases: []latest.HelmRelease{
 		{
 			Name:      "{{.USER}}-skaffold-helm",
 			ChartPath: "examples/test",
@@ -232,13 +252,19 @@ func TestHelmDeploy(t *testing.T) {
 		{
 			description: "deploy success",
 			cmd:         &MockHelm{t: t},
-			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace),
+			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace, ""),
+			builds:      testBuilds,
+		},
+		{
+			description: "deploy success with recreatePods",
+			cmd:         &MockHelm{t: t},
+			deployer:    NewHelmDeployer(testDeployRecreatePodsConfig, testKubeContext, testNamespace, ""),
 			builds:      testBuilds,
 		},
 		{
 			description: "deploy error unmatched parameter",
 			cmd:         &MockHelm{t: t},
-			deployer:    NewHelmDeployer(testDeployConfigParameterUnmatched, testKubeContext, testNamespace),
+			deployer:    NewHelmDeployer(testDeployConfigParameterUnmatched, testKubeContext, testNamespace, ""),
 			builds:      testBuilds,
 			shouldErr:   true,
 		},
@@ -258,7 +284,7 @@ func TestHelmDeploy(t *testing.T) {
 				},
 				upgradeResult: fmt.Errorf("should not have called upgrade"),
 			},
-			deployer: NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace),
+			deployer: NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace, ""),
 			builds:   testBuilds,
 		},
 		{
@@ -267,8 +293,12 @@ func TestHelmDeploy(t *testing.T) {
 				t:         t,
 				getResult: fmt.Errorf("not found"),
 				installMatcher: func(cmd *exec.Cmd) bool {
-					builds := strings.Split(testBuilds[0].Tag, ":")
-					expected := map[string]bool{fmt.Sprintf("image.repository=%s,image.tag=%s", builds[0], builds[1]): true}
+					dockerRef, err := docker.ParseReference(testBuilds[0].Tag)
+					if err != nil {
+						return false
+					}
+
+					expected := map[string]bool{fmt.Sprintf("image.repository=%s,image.tag=%s", dockerRef.BaseName, dockerRef.Tag): true}
 					for _, arg := range cmd.Args {
 						if expected[arg] {
 							return true
@@ -278,7 +308,7 @@ func TestHelmDeploy(t *testing.T) {
 				},
 				upgradeResult: fmt.Errorf("should not have called upgrade"),
 			},
-			deployer: NewHelmDeployer(testDeployHelmStyleConfig, testKubeContext, testNamespace),
+			deployer: NewHelmDeployer(testDeployHelmStyleConfig, testKubeContext, testNamespace, ""),
 			builds:   testBuilds,
 		},
 		{
@@ -287,7 +317,7 @@ func TestHelmDeploy(t *testing.T) {
 				t:             t,
 				installResult: fmt.Errorf("should not have called install"),
 			},
-			deployer: NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace),
+			deployer: NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace, ""),
 			builds:   testBuilds,
 		},
 		{
@@ -297,7 +327,7 @@ func TestHelmDeploy(t *testing.T) {
 				upgradeResult: fmt.Errorf("unexpected error"),
 			},
 			shouldErr: true,
-			deployer:  NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace),
+			deployer:  NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace, ""),
 			builds:    testBuilds,
 		},
 		{
@@ -307,7 +337,7 @@ func TestHelmDeploy(t *testing.T) {
 				depResult: fmt.Errorf("unexpected error"),
 			},
 			shouldErr: true,
-			deployer:  NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace),
+			deployer:  NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace, ""),
 			builds:    testBuilds,
 		},
 		{
@@ -321,6 +351,7 @@ func TestHelmDeploy(t *testing.T) {
 				testDeployFooWithPackaged,
 				testKubeContext,
 				testNamespace,
+				"",
 			),
 			builds: testBuildsFoo,
 		},
@@ -335,13 +366,14 @@ func TestHelmDeploy(t *testing.T) {
 				testDeployFooWithPackaged,
 				testKubeContext,
 				testNamespace,
+				"",
 			),
 			builds: testBuildsFoo,
 		},
 		{
 			description: "deploy and get templated release name",
 			cmd:         &MockHelm{t: t},
-			deployer:    NewHelmDeployer(testDeployWithTemplatedName, testKubeContext, testNamespace),
+			deployer:    NewHelmDeployer(testDeployWithTemplatedName, testKubeContext, testNamespace, ""),
 			builds:      testBuilds,
 		},
 	}
@@ -351,7 +383,8 @@ func TestHelmDeploy(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = tt.cmd
 
-			_, err := tt.deployer.Deploy(context.Background(), &bytes.Buffer{}, tt.builds)
+			err := tt.deployer.Deploy(context.Background(), ioutil.Discard, tt.builds, nil)
+
 			testutil.CheckError(t, tt.shouldErr, err)
 		})
 	}
@@ -432,19 +465,17 @@ func TestParseHelmRelease(t *testing.T) {
 		shouldErr bool
 	}{
 		{
-			name:      "parse valid deployment yaml",
-			yaml:      []byte(validDeployYaml),
-			shouldErr: false,
+			name: "parse valid deployment yaml",
+			yaml: []byte(validDeployYaml),
+		},
+		{
+			name: "parse valid service yaml",
+			yaml: []byte(validServiceYaml),
 		},
 		{
 			name:      "parse invalid deployment yaml",
 			yaml:      []byte(invalidDeployYaml),
 			shouldErr: true,
-		},
-		{
-			name:      "parse valid service yaml",
-			yaml:      []byte(validServiceYaml),
-			shouldErr: false,
 		},
 	}
 
@@ -457,27 +488,62 @@ func TestParseHelmRelease(t *testing.T) {
 }
 
 func TestExtractChartFilename(t *testing.T) {
-	testCases := map[string]struct {
-		input     string
-		tmp       string
-		output    string
-		shouldErr bool
+	out, err := extractChartFilename(
+		"Successfully packaged chart and saved it to: /var/folders/gm/rrs_712142x8vymmd7xq7h340000gn/T/foo-1.2.3-dirty.tgz\n",
+		"/var/folders/gm/rrs_712142x8vymmd7xq7h340000gn/T/",
+	)
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, "foo-1.2.3-dirty.tgz", out)
+}
+
+func TestHelmDependencies(t *testing.T) {
+	var tests = []struct {
+		description string
+		files       []string
+		valuesFiles []string
+		expected    func(folder *testutil.TempDir) []string
 	}{
-		"1": {
-			input:     "Successfully packaged chart and saved it to: /var/folders/gm/rrs_712142x8vymmd7xq7h340000gn/T/foo-1.2.3-dirty.tgz\n",
-			tmp:       "/var/folders/gm/rrs_712142x8vymmd7xq7h340000gn/T/",
-			output:    "foo-1.2.3-dirty.tgz",
-			shouldErr: false,
+		{
+			description: "charts dir is excluded",
+			files:       []string{"Chart.yaml", "charts/xyz.tar", "templates/deploy.yaml"},
+			expected: func(folder *testutil.TempDir) []string {
+				return []string{folder.Path("Chart.yaml"), folder.Path("templates/deploy.yaml")}
+			},
+		},
+		{
+			description: "values file is included",
+			files:       []string{"Chart.yaml"},
+			valuesFiles: []string{"/folder/values.yaml"},
+			expected: func(folder *testutil.TempDir) []string {
+				return []string{"/folder/values.yaml", folder.Path("Chart.yaml")}
+			},
 		},
 	}
 
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			out, err := extractChartFilename(tc.input, tc.tmp)
-			testutil.CheckError(t, tc.shouldErr, err)
-			if out != tc.output {
-				t.Errorf("Expected output to be %q but got %q", tc.output, out)
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			folder, cleanup := testutil.NewTempDir(t)
+			defer cleanup()
+			for _, file := range tt.files {
+				folder.Write(file, "")
 			}
+
+			deployer := NewHelmDeployer(&latest.HelmDeploy{
+				Releases: []latest.HelmRelease{
+					{
+						Name:        "skaffold-helm",
+						ChartPath:   folder.Root(),
+						ValuesFiles: tt.valuesFiles,
+						Values:      map[string]string{"image": "skaffold-helm"},
+						Overrides:   map[string]interface{}{"foo": "bar"},
+						SetValues:   map[string]string{"some.key": "somevalue"},
+					},
+				},
+			}, testKubeContext, testNamespace, "")
+
+			deps, err := deployer.Dependencies()
+
+			testutil.CheckErrorAndDeepEqual(t, false, err, tt.expected(folder), deps)
 		})
 	}
 }
