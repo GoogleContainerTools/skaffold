@@ -1,4 +1,4 @@
-# v0.22.0 Release - 1/29/2019
+# v0.22.0 Release - 1/31/2019
 
 Note: This release comes with a config change, use `skaffold fix` to permanently upgrade your config to `v1beta4`, however old versions are now auto-upgraded. 
 See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
