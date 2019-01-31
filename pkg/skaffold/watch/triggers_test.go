@@ -38,18 +38,15 @@ func TestNewTrigger(t *testing.T) {
 			expected: &pollTrigger{
 				Interval: time.Duration(1) * time.Millisecond,
 			},
-			shouldErr: false,
 		},
 		{
 			description: "manual trigger",
 			opts:        &config.SkaffoldOptions{Trigger: "manual"},
 			expected:    &manualTrigger{},
-			shouldErr:   false,
 		},
 		{
 			description: "unknown trigger",
 			opts:        &config.SkaffoldOptions{Trigger: "unknown"},
-			expected:    nil,
 			shouldErr:   true,
 		},
 	}
