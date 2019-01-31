@@ -43,7 +43,7 @@ func NewTrigger(opts *config.SkaffoldOptions) (Trigger, error) {
 	switch strings.ToLower(opts.Trigger) {
 	case "polling":
 		return &pollTrigger{
-			interval: time.Duration(opts.WatchPollInterval) * time.Millisecond,
+			Interval: time.Duration(opts.WatchPollInterval) * time.Millisecond,
 		}, nil
 	case "manual":
 		return &manualTrigger{}, nil
@@ -54,7 +54,7 @@ func NewTrigger(opts *config.SkaffoldOptions) (Trigger, error) {
 
 // pollTrigger watches for changes on a given interval of time.
 type pollTrigger struct {
-	interval time.Duration
+	Interval time.Duration
 }
 
 // Debounce tells the watcher to debounce rapid sequence of changes.
@@ -63,14 +63,14 @@ func (t *pollTrigger) Debounce() bool {
 }
 
 func (t *pollTrigger) WatchForChanges(out io.Writer) {
-	color.Yellow.Fprintf(out, "Watching for changes every %v...\n", t.interval)
+	color.Yellow.Fprintf(out, "Watching for changes every %v...\n", t.Interval)
 }
 
 // Start starts a timer.
 func (t *pollTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	trigger := make(chan bool)
 
-	ticker := time.NewTicker(t.interval)
+	ticker := time.NewTicker(t.Interval)
 	go func() {
 		for {
 			select {
