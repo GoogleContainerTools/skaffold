@@ -56,6 +56,7 @@ $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 
 $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
 	GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
+	go build -o ~/go/bin/docker-skaffold ./pkg/skaffold/plugin/builders/docker
 
 %.sha256: %
 	shasum -a 256 $< > $@

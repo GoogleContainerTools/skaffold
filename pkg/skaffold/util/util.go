@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -241,4 +242,16 @@ func NonEmptyLines(input []byte) []string {
 		}
 	}
 	return result
+}
+
+// Convert marshals the old interface into the new one
+func Convert(old interface{}, new interface{}) error {
+	o, err := json.Marshal(old)
+	if err != nil {
+		return errors.Wrap(err, "marshalling old")
+	}
+	if err := json.Unmarshal(o, &new); err != nil {
+		return errors.Wrap(err, "unmarshalling new")
+	}
+	return nil
 }

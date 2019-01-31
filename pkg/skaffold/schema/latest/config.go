@@ -43,9 +43,21 @@ func (c *SkaffoldPipeline) GetVersion() string {
 
 // BuildConfig contains all the configuration for the build steps
 type BuildConfig struct {
-	Artifacts []*Artifact `yaml:"artifacts,omitempty"`
-	TagPolicy TagPolicy   `yaml:"tagPolicy,omitempty"`
-	BuildType `yaml:",inline"`
+	Artifacts            []*Artifact           `yaml:"artifacts,omitempty"`
+	TagPolicy            TagPolicy             `yaml:"tagPolicy,omitempty"`
+	ExecutionEnvironment *ExecutionEnvironment `yaml:"executionEnvironment,omitempty"`
+	BuildType            `yaml:",inline"`
+}
+
+type ExecutionEnvironment struct {
+	Name       string                 `yaml:"name,omitempty"`
+	Properties map[string]interface{} `yaml:"properties,omitempty"`
+}
+
+type Plugin struct {
+	Name       string                 `yaml:"name,omitempty"`
+	Properties map[string]interface{} `yaml:"properties,omitempty"`
+	Contents   []byte                 `yaml:",omitempty"`
 }
 
 // TagPolicy contains all the configuration for the tagging step
@@ -232,10 +244,12 @@ type HelmConventionConfig struct {
 // Artifact represents items that need to be built, along with the context in which
 // they should be built.
 type Artifact struct {
-	ImageName    string            `yaml:"image,omitempty"`
-	Workspace    string            `yaml:"context,omitempty"`
-	Sync         map[string]string `yaml:"sync,omitempty"`
-	ArtifactType `yaml:",inline"`
+	ImageName            string                `yaml:"image,omitempty"`
+	Workspace            string                `yaml:"context,omitempty"`
+	Sync                 map[string]string     `yaml:"sync,omitempty"`
+	Plugin               *Plugin               `yaml:"plugin,omitempty"`
+	ExecutionEnvironment *ExecutionEnvironment `yaml:"executionEnvironment,omitempty"`
+	ArtifactType         `yaml:",inline"`
 }
 
 // Profile is additional configuration that overrides default

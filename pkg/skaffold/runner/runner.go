@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/plugin"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
@@ -125,6 +126,9 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 
 func getBuilder(cfg *latest.BuildConfig, kubeContext string, opts *config.SkaffoldOptions) (build.Builder, error) {
 	switch {
+	case buildWithPlugin(cfg.Artifacts):
+		logrus.Debugln("Using builder plugins")
+		return plugin.NewPluginBuilder(cfg)
 	case len(opts.PreBuiltImages) > 0:
 		logrus.Debugln("Using pre-built images")
 		return build.NewPreBuiltImagesBuilder(opts.PreBuiltImages), nil
@@ -144,6 +148,15 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string, opts *config.Skaffo
 	default:
 		return nil, fmt.Errorf("unknown builder for config %+v", cfg)
 	}
+}
+
+func buildWithPlugin(artifacts []*latest.Artifact) bool {
+	for _, a := range artifacts {
+		if a.Plugin != nil {
+			return true
+		}
+	}
+	return false
 }
 
 func getTester(cfg *latest.TestConfig, opts *config.SkaffoldOptions) (test.Tester, error) {
