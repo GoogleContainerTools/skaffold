@@ -27,10 +27,9 @@ import (
 )
 
 // ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.
-func (l *ManifestList) ApplyDebuggingTransforms(builds []build.Artifact) (ManifestList, error) {
+func ApplyDebuggingTransforms(l ManifestList, builds []build.Artifact) (ManifestList, error) {
 	var updated ManifestList
-
-	for _, manifest := range *l {
+	for _, manifest := range l {
 		m := make(map[interface{}]interface{})
 		if err := yaml.Unmarshal(manifest, m); err != nil {
 			return nil, errors.Wrap(err, "reading kubernetes YAML")
@@ -42,7 +41,7 @@ func (l *ManifestList) ApplyDebuggingTransforms(builds []build.Artifact) (Manife
 
 		if transformManifest(m) && logrus.IsLevelEnabled(logrus.DebugLevel) {
 			bytes, _ := yaml.Marshal(m)
-			logrus.Debugln("Transformed Pod manifest:\n", string(bytes))
+			logrus.Debugln("Applied debugging transforms:\n", string(bytes))
 		}
 
 		updatedManifest, err := yaml.Marshal(m)
@@ -134,8 +133,8 @@ func configureJvmDebugging(container map[interface{}]interface{}) map[string]int
 	container["ports"] = append(ports, containerPort)
 
 	return map[string]interface{}{
-		"type": "jvm",
-		"jdwp": 5005,
+		"runtime": "jvm",
+		"jdwp":    5005,
 	}
 }
 

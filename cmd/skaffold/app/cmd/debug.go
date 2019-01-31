@@ -20,6 +20,8 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -58,6 +60,8 @@ func debug(out io.Writer) error {
 			cleanup()
 		}()
 	}
+
+	deploy.AddManifestTransform(kubectl.ApplyDebuggingTransforms)
 
 	for {
 		select {
