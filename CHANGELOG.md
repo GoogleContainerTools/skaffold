@@ -1,10 +1,63 @@
+# v0.22.0 Release - 1/29/2019
+
+Note: This release comes with a config change, use `skaffold fix` to permanently upgrade your config to `v1beta4`, however old versions are now auto-upgraded. 
+See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+
+New features: 
+* Introduce configuration option to configure image pushing per kube-context [#1355](https://github.com/GoogleContainerTools/skaffold/pull/1355)
+* Better support for docker build with a target [#1497](https://github.com/GoogleContainerTools/skaffold/pull/1497)
+* Reintroduce the fsNotify trigger [#1562](https://github.com/GoogleContainerTools/skaffold/pull/1562)
+* Add zsh completion [#1531](https://github.com/GoogleContainerTools/skaffold/pull/1531)
+* `#296` Support remote helm chart repositories [#1254](https://github.com/GoogleContainerTools/skaffold/pull/1254)
+
+Fixes: 
+* Fix bug in port forwarding [#1529](https://github.com/GoogleContainerTools/skaffold/pull/1529)
+* Fix doc for Kustomize deploy: path option [#1527](https://github.com/GoogleContainerTools/skaffold/pull/1527)
+* Fix broken links in Getting Started [#1523](https://github.com/GoogleContainerTools/skaffold/pull/1523)
+* Use configured namespace for pod watcher. [#1473](https://github.com/GoogleContainerTools/skaffold/pull/1473)
+* Pass DOCKER* env variables for jib to connect to minikube [#1505](https://github.com/GoogleContainerTools/skaffold/pull/1505)
+
+Updates & Refactorings: 
+* Upgrade to jib 1.0.0 [#1512](https://github.com/GoogleContainerTools/skaffold/pull/1512)
+* Don’t use local Docker to push Bazel images [#1493](https://github.com/GoogleContainerTools/skaffold/pull/1493)
+* Use kubectl to read the manifests [#1451](https://github.com/GoogleContainerTools/skaffold/pull/1451)
+* Simplify integration tests [#1539](https://github.com/GoogleContainerTools/skaffold/pull/1539)
+* Fix master branch [#1569](https://github.com/GoogleContainerTools/skaffold/pull/1569)
+* Add missing tests for watch/triggers [#1557](https://github.com/GoogleContainerTools/skaffold/pull/1557)
+* Improve triggers [#1561](https://github.com/GoogleContainerTools/skaffold/pull/1561)
+* Add tests for labels package [#1534](https://github.com/GoogleContainerTools/skaffold/pull/1534)
+
+Docs updates: 
+* Fix skaffold.dev indexing on Google [#1547](https://github.com/GoogleContainerTools/skaffold/pull/1547)
+* 2019 roadmap [#1530](https://github.com/GoogleContainerTools/skaffold/pull/1530)
+* Should be v1beta3 [#1515](https://github.com/GoogleContainerTools/skaffold/pull/1515)
+* Renaming the CoC for GitHub [#1518](https://github.com/GoogleContainerTools/skaffold/pull/1518)
+* Add Priya as a Codeowner [#1544](https://github.com/GoogleContainerTools/skaffold/pull/1544)
+* Add Priya as a maintainer [#1542](https://github.com/GoogleContainerTools/skaffold/pull/1542)
+* Note JVM flags specific to Java 8 in examples/jib [#1563](https://github.com/GoogleContainerTools/skaffold/pull/1563)
+
+Huge thanks goes out to all of our contributors for this release: 
+
+- Balint Pato
+- Brian de Alwis
+- Cornelius Weig
+- David Gageot
+- Koen De Keyser
+- Labesse Kévin
+- Michael FIG
+- Nick Kubala
+- Priya Wadhwa
+- Shuhei Kitagawa
+- czhc
+
+
 # v0.21.1 Release - 1/22/2019
 
 New Features:
 * Add a log when bazel deps take a long time [#1498](https://github.com/GoogleContainerTools/skaffold/pull/1498)
 * Pre-pull cache-from images [#1495](https://github.com/GoogleContainerTools/skaffold/pull/1495)
-* Pass bazel args to `bazel info hazel-bin` [#1487](https://github.com/GoogleContainerTools/skaffold/pull/1487)
-*  Support secretGenerators with kustomize  [#1488](https://github.com/GoogleContainerTools/skaffold/pull/1488)
+* Pass bazel args to `bazel info bazel-bin` [#1487](https://github.com/GoogleContainerTools/skaffold/pull/1487)
+* Support secretGenerators with kustomize  [#1488](https://github.com/GoogleContainerTools/skaffold/pull/1488)
 
 
 Fixes:

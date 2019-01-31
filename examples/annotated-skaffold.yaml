@@ -1,4 +1,4 @@
-apiVersion: skaffold/v1beta3
+apiVersion: skaffold/v1beta4
 kind: Config
 build:
   # tagPolicy (beta) determines how Skaffold is going to tag your images.
@@ -194,6 +194,8 @@ deploy:
     #   namespace: skaffold
     #   version: ""
     #   recreatePods: false
+    #   # set to true if you need to skip "helm dep build". Necessary for use with remote chart.
+    #   skipBuildDependencies: false
     #
     #   # setValues get appended to the helm deploy with --set.
     #   setValues:
