@@ -40,6 +40,13 @@ func TestNewTrigger(t *testing.T) {
 			},
 		},
 		{
+			description: "notify trigger",
+			opts:        &config.SkaffoldOptions{Trigger: "notify", WatchPollInterval: 1},
+			expected: &fsNotifyTrigger{
+				Interval: time.Duration(1) * time.Millisecond,
+			},
+		},
+		{
 			description: "manual trigger",
 			opts:        &config.SkaffoldOptions{Trigger: "manual"},
 			expected:    &manualTrigger{},
@@ -72,6 +79,22 @@ func TestPollTrigger_WatchForChanges(t *testing.T) {
 	trigger.WatchForChanges(out)
 
 	got, want := out.String(), "Watching for changes every 10ns...\n"
+	testutil.CheckDeepEqual(t, want, got)
+}
+
+func TestNotifyTrigger_Debounce(t *testing.T) {
+	trigger := &fsNotifyTrigger{}
+	got, want := trigger.Debounce(), false
+	testutil.CheckDeepEqual(t, want, got)
+}
+
+func TestNotifyTrigger_WatchForChanges(t *testing.T) {
+	out := new(bytes.Buffer)
+
+	trigger := &fsNotifyTrigger{Interval: 10}
+	trigger.WatchForChanges(out)
+
+	got, want := out.String(), "Watching for changes...\n"
 	testutil.CheckDeepEqual(t, want, got)
 }
 
