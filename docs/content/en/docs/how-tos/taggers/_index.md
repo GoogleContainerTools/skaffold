@@ -36,7 +36,6 @@ build:
     - image: gcr.io/k8s-skaffold/example
     tagPolicy:
         gitCommit: {}
-    local: {}
 ```
 
 `gitCommit` tag policy features no options.
@@ -61,7 +60,6 @@ build:
     - image: gcr.io/k8s-skaffold/example
     tagPolicy:
         sha256: {}
-    local: {}
 ```
 
 `sha256` tag policy features no options.
@@ -94,7 +92,6 @@ build:
     tagPolicy:
         envTemplate:
             template: "{{.IMAGE_NAME}}:{{.FOO}}"
-    local: {}
 ```
 
 Suppose the value of the `FOO` environment variable is `v1`, the image built
@@ -123,7 +120,6 @@ build:
         dateTime:
             format: "2006-01-02_15-04-05.999_MST"
             timezone: "Local"
-    local: {}
 # The build section above is equal to
 # build:
 #   artifacts:
