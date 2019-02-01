@@ -17,7 +17,7 @@ provides building blocks and describe customizations for a CI/CD pipeline.
 ## Features
 
 * Fast local Kubernetes Development
-  * **optimized source-to-k8s** - Skaffold detects changes in your source code and handles the pipeline to
+  * **optimized "Source to Kubernetes"** - Skaffold detects changes in your source code and handles the pipeline to
   **build**, **push**, and **deploy** your application automatically with **policy based image tagging** and **highly optimized, fast local workflows**
   * **continuous feedback** - Skaffold automatically manages logging and port-forwarding   
 * Skaffold projects work everywhere
