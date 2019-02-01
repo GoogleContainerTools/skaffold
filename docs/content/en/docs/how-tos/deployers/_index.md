@@ -51,7 +51,7 @@ artifacts using `kubectl`:
 ```yaml
 deploy:
     kubectl:
-    manifests:
+      manifests:
         - k8s-*
     # Uncomment the following lines to add remote manifests and flags
     # remoteManifests:
@@ -149,14 +149,10 @@ The following `deploy` section, for example, instructs Skaffold to deploy
 artifacts using kustomize:
 
 ```yaml
-apiVersion: {{< skaffold-version >}}
-   kind: Config
-   deploy:
-     kustomize:
-        path: "."
+deploy:
+  kustomize:
+    path: "."
 # The deploy section above is equal to
-# apiVersion: {{< skaffold-version >}}
-#    kind: Config
-#    deploy:
-#      kustomize: {}
+# deploy:
+#   kustomize: {}
 ```

@@ -162,10 +162,8 @@ Docker image `gcr.io/k8s-skaffold/example` with Bazel:
 ```yaml
 build:
     artifacts:
-        - image: gcr.io/k8s-skaffold/example
-          context: .
-          bazel:
-            target: //:example.tar
-    local: {}
+    - image: gcr.io/k8s-skaffold/example
+      bazel:
+        target: //:example.tar
 ```
 

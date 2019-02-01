@@ -42,24 +42,24 @@ for building with Google Cloud Build:
 apiVersion: skaffold/v1beta2
 kind: Config
 build:
-    artifacts:
-    - image: gcr.io/k8s-skaffold/skaffold-example
-    deploy:
-        kubectl:
-        manifests:
-        - k8s-pod
-    profiles:
-    - name: test-env
-      build:
-        googleCloudBuild:
-            projectId: k8s-skaffold
+  artifacts:
+  - image: gcr.io/k8s-skaffold/skaffold-example
+deploy:
+  kubectl:
+    manifests:
+    - k8s-pod
+profiles:
+- name: gcb
+  build:
+  googleCloudBuild:
+    projectId: k8s-skaffold
 ```
 
 With no profile activated, Skaffold will build the artifact
 `gcr.io/k8s-skaffold/skaffold-example` using local Docker daemon and deploy it
 with `kubectl`. However, if you run Skaffold with the following command:
 
-`skaffold dev -p test-env` (or `skaffold run -p test-env`)
+`skaffold dev -p gcb` (or `skaffold run -p gcb`)
 
 Skaffold will switch to Google Cloud Build for building artifacts. Note that
 since the `gcb` profile does not specify a deploy configuration, Skaffold will
