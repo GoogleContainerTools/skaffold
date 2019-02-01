@@ -13,7 +13,7 @@ understanding of Skaffold.
 
 You can configure Skaffold with the Skaffold configuration file,
 `skaffold.yaml`. The configuration file should be placed in the root of your
-project directory; when you run the `Skaffold` command, Skaffold will try to
+project directory; when you run the `skaffold` command, Skaffold will try to
 read the configuration file from the current directory.
 
 `skaffold.yaml` consists of five different components:
@@ -22,10 +22,10 @@ read the configuration file from the current directory.
 | ---------- | ------------|
 | `apiVersion` | The Skaffold API version you would like to use. The current API version is {{< skaffold-version >}}. |
 | `kind`  |  The Skaffold configuration file has the kind `Config`.  |
-| `build`  |  Specifies how Skaffold should build artifacts. You have control over what tool Skaffold can use, how Skaffold tags artifacts and how Skaffold pushes artifacts. Skaffold supports using local Docker daemon, Google Cloud Build, Kaniko, or Bazel to build artifacts. See [Using Builders](/docs/how-tos/builders) and [Using Taggers](/docs/how-tos/taggers) for more information. |
-| `test` |  Specifies how Skaffold should test artifacts. Skaffold supports [container-structure-tests](https://github.com/GoogleContainerTools/container-structure-test) to test built artifacts. See [Using testers](/docs/how-tos/testers) for more information. |
-| `deploy` |  Specifies how Skaffold should deploy artifacts. Skaffold supports using `kubectl`, Helm, or kustomize to deploy artifacts. See [Using Deployers](/docs/how-tos/deployers) for more information. |
-| `profiles`|  Profile is a set of settings that, when activated, overrides the current configuration. You can use Profile to override the `build` and the`deploy`> section. |
+| `build`  |  Specifies how Skaffold should build artifacts. You have control over what tool Skaffold can use, how Skaffold tags artifacts and how Skaffold pushes artifacts. Skaffold supports using local Docker daemon, Google Cloud Build, Kaniko, or Bazel to build artifacts. See [Builders](/docs/how-tos/builders) and [Taggers](/docs/how-tos/taggers) for more information. |
+| `test` |  Specifies how Skaffold should test artifacts. Skaffold supports [container-structure-tests](https://github.com/GoogleContainerTools/container-structure-test) to test built artifacts. See [Testers](/docs/how-tos/testers) for more information. |
+| `deploy` |  Specifies how Skaffold should deploy artifacts. Skaffold supports using `kubectl`, Helm, or kustomize to deploy artifacts. See [Deployers](/docs/how-tos/deployers) for more information. |
+| `profiles`|  Profile is a set of settings that, when activated, overrides the current configuration. You can use Profile to override the `build`, `test` and `deploy` sections. |
 
 You can learn more about the syntax of `skaffold.yaml` at
 [`skaffold.yaml References`](https://github.com/GoogleContainerTools/skaffold/blob/master/examples/annotated-skaffold.yaml).
@@ -33,7 +33,7 @@ You can learn more about the syntax of `skaffold.yaml` at
 ## Global configuration (~/.skaffold/config)
 
 Some context specific settings can be configured in a global configuration file, defaulting to `~/.skaffold/config`. Options can be configured globally or for specific contexts.
-The options are
+The options are:
 
 | Option | Type | Description |
 | ------ | ---- | ----------- |
@@ -64,7 +64,7 @@ will not push artifacts to a remote repository.
 ## Image repository handling 
 
 Skaffold allows for automatically rewriting image names to your repository.
-This way you can grab a skaffold project and just `skaffold run` it to deploy to your cluster.  
+This way you can grab a Skaffold project and just `skaffold run` it to deploy to your cluster.  
 The way to achieve this is the `default-repo` functionality: 
 
 1. Via `default-repo` flag
@@ -75,11 +75,11 @@ The way to achieve this is the `default-repo` functionality:
 
         SKAFFOLD_DEFAULT_REPO=<myrepo> skaffold dev  
 
-1. Via skaffold's global config           
+1. Via Skaffold's global config           
         
         skaffold config set default-repo <myrepo>
 
-If skaffold doesn't find `default-repo`, there is no automated image name rewriting. 
+If Skaffold doesn't find `default-repo`, there is no automated image name rewriting. 
 
 The image name rewriting strategies are designed to be *conflict-free*: 
 the full image name is rewritten on top of the default-repo so similar image names don't collide in the base namespace (e.g.: repo1/example and repo2/example would collide in the target_namespace/example without this)
@@ -130,7 +130,7 @@ provides built-in support for the following tools:
 * Build
   * Dockerfile locally, in-cluster with kaniko or using Google Cloud Build
   * Bazel locally 
-  * Jib Maven and Jib Gradle locally 
+  * Jib Maven and Jib Gradle locally or using Google Cloud Build
 * Test 
   * [container-structure-test](https://github.com/GoogleContainerTools/container-structure-test)
 * Deploy 
@@ -157,7 +157,7 @@ Cloud Build and deploy using Helm:
 Skaffold also supports development profiles. You can specify multiple different
 profiles in the configuration and use whichever best serves your need in the
 moment without having to modify the configuration file. You can learn more about
-profiles from [Using Profiles](/docs/how-tos/profiles).
+profiles from [Profiles](/docs/how-tos/profiles).
 
 ## Operating modes
 
@@ -171,5 +171,5 @@ Skaffold provides two separate operating modes:
     you will have to call `skaffold run` again to build and deploy your
     application.
 
-Skaffold command-line interfact also provides other functionalities that may
+Skaffold command-line interface also provides other functionalities that may
 be helpful to your project. For more information, see [CLI References](/docs/references/cli).

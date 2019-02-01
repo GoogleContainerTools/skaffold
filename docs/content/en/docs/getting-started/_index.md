@@ -235,6 +235,6 @@ For more in-depth topics of Skaffold, explore [Skaffold Concepts: Configuration]
 [Skaffold Concepts: Workflow](/docs/concepts/#workflow), and [Skaffold Concepts: Architecture](/docs/concepts/#architecture).
 
 To learn more about how Skaffold builds, tags, and deploys your app, see the How-to Guides on 
-[Using Builders](/docs/how-tos/builders), [Using Taggers](/docs/how-tos/taggers), and [Using Deployers](/docs/how-tos/deployers).
+using [Builders](/docs/how-tos/builders), [Taggers](/docs/how-tos/taggers), and [Deployers](/docs/how-tos/deployers).
 
 [Skaffold Tutorials](/docs/tutorials) details some of the common use cases of Skaffold.

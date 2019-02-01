@@ -1,7 +1,7 @@
 
 ---
-title: "Using file sync"
-linkTitle: "Using file sync"
+title: "File sync"
+linkTitle: "File sync"
 weight: 40
 ---
 

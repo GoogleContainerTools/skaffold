@@ -1,7 +1,7 @@
 
 ---
-title: "Using templated fields"
-linkTitle: "Using templated fields"
+title: "Templated fields"
+linkTitle: "Templated fields"
 weight: 90
 ---
 
@@ -28,7 +28,7 @@ List of fields that support templating:
 
 List of variables that are available for templating: 
 
-* all environment variables passed to the skaffold process as startup 
+* all environment variables passed to the Skaffold process as startup 
 * `IMAGE_NAME` - the artifacts' image name - the [image name rewriting](/docs/concepts/#image-repository-handling) acts after the template was calculated  
 * `DIGEST` - the image digest calculated by the docker registry after pushing the image 
 * if `DIGEST` is of format `algo:hex`, `DIGEST_ALGO` and `DIGEST_HEX` parts correspond to the parts of the string otherwise `DIGEST_HEX`=`DIGEST` is set

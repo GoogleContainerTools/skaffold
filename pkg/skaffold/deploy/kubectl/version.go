@@ -55,7 +55,7 @@ func (c *CLI) CheckVersion(ctx context.Context) error {
 		return errors.Wrap(err, "couldn't get kubectl minor version")
 	}
 	if m < 12 {
-		return errors.New("kubectl version 1.12.0 or greater is recommended for use with skaffold")
+		return errors.New("kubectl version 1.12.0 or greater is recommended for use with Skaffold")
 	}
 	return nil
 }

@@ -32,7 +32,7 @@ import (
 func NewCmdSet(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set",
-		Short: "Set a value in the global skaffold config",
+		Short: "Set a value in the global Skaffold config",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := setConfigValue(args[0], args[1]); err != nil {

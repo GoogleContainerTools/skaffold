@@ -7,7 +7,11 @@ weight: 30
 
 | Skaffold Workflow   |
 |----------|
-| [Using Builders](/docs/how-tos/builders) |
-| [Using Deployers](/docs/how-tos/deployers) |
-| [Using Taggers](/docs/how-tos/taggers) |
-| [Using Profiles](/docs/how-tos/profiles) |
+| [Builders](/docs/how-tos/builders) |
+| [Testers](/docs/how-tos/testers) |
+| [Deployers](/docs/how-tos/deployers) |
+| [Taggers](/docs/how-tos/taggers) |
+| [File sync](/docs/how-tos/filesync) |
+| [Port forwarding](/docs/how-tos/portforward) |
+| [Profiles](/docs/how-tos/profiles) |
+| [Templated fields](/docs/how-tos/templating) |

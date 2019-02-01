@@ -1,7 +1,7 @@
 
 ---
-title: "Using taggers"
-linkTitle: "Using taggers"
+title: "Taggers"
+linkTitle: "Taggers"
 weight: 30
 ---
 
@@ -36,7 +36,6 @@ build:
     - image: gcr.io/k8s-skaffold/example
     tagPolicy:
         gitCommit: {}
-    local: {}
 ```
 
 `gitCommit` tag policy features no options.
@@ -61,7 +60,6 @@ build:
     - image: gcr.io/k8s-skaffold/example
     tagPolicy:
         sha256: {}
-    local: {}
 ```
 
 `sha256` tag policy features no options.
@@ -94,7 +92,6 @@ build:
     tagPolicy:
         envTemplate:
             template: "{{.IMAGE_NAME}}:{{.FOO}}"
-    local: {}
 ```
 
 Suppose the value of the `FOO` environment variable is `v1`, the image built
@@ -102,7 +99,7 @@ will be `gcr.io/k8s-skaffold/example:v1`.
 
 The tag template uses the [Go Programming Language Syntax](https://golang.org/pkg/text/template/).
 As showcased in the example, `envTemplate` tag policy features one
-**required** parameter, `template`, which is the tag template to use. To learn more about templating support in skaffold.yaml see [Using templated fields](/docs/how-tos/templating)
+**required** parameter, `template`, which is the tag template to use. To learn more about templating support in Skaffold.yaml see [Templated fields](/docs/how-tos/templating)
 
 ## `dateTime`: using data and time values as tags
 
@@ -123,7 +120,6 @@ build:
         dateTime:
             format: "2006-01-02_15-04-05.999_MST"
             timezone: "Local"
-    local: {}
 # The build section above is equal to
 # build:
 #   artifacts:

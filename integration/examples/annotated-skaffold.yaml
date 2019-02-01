@@ -1,5 +1,7 @@
 apiVersion: skaffold/v1beta4
 kind: Config
+# The build section has all the information needed to build images.
+# It is a required section.
 build:
   # tagPolicy (beta) determines how Skaffold is going to tag your images.
   # We provide a few strategies here, although you most likely won't need to care!
@@ -146,8 +148,16 @@ build:
   #     path: path to the docker config.json
   #     secretName: docker-cfg
 
-# The deploy section has all the information needed to deploy. Along with build:
-# it is a required section.
+# The test section has all the information needed to test images.
+test:
+    # For each image listed here, Skaffold will run a series of structure tests using
+    # the [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test)
+    # project
+    # - image: gcr.io/k8s-skaffold/skaffold-example
+    #   structureTests:
+    #     - ./test/*
+
+# The deploy section has all the information needed to deploy.
 deploy:
   # The type of the deployment method can be `kubectl` (beta), `helm` (beta) or `kustomize` (beta).
 

@@ -10,7 +10,7 @@ Skaffold adopts the [Kubernetes deprecation policy for admin facing components](
 
 **Breaking changes** 
 A breaking change is when the primary functionality of a feature changes in a way that the user has to make changes to their workflows/configuration.
-- **Breaking config change**:  In case of skaffold's pipeline config (skaffold.yaml) a breaking change between an old and new version occurs when the skaffold binary cannot parse the input yaml with auto-upgrade. This can happen when the new version removes a feature or when the new version introduces a mandatory field with no default value
+- **Breaking config change**:  In case of Skaffold's pipeline config (skaffold.yaml) a breaking change between an old and new version occurs when the skaffold binary cannot parse the input yaml with auto-upgrade. This can happen when the new version removes a feature or when the new version introduces a mandatory field with no default value
 - **Breaking functional change**: functional changes that force user workflow changes even when the config is the same or upgradeable.
 
 ## How do we deprecate things? 

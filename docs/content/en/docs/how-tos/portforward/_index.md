@@ -1,7 +1,7 @@
 
 ---
-title: "Using port forwarding"
-linkTitle: "Using port forwarding"
+title: "Port forwarding"
+linkTitle: "Port forwarding"
 weight: 50
 ---
 
