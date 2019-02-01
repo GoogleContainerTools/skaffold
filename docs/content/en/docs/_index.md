@@ -91,7 +91,7 @@ Skaffold supports the following tools:
 * tag by git commit
 * tag by current date&time 
 * tag by environment variables based template
-* tag by checksum of the source code
+* tag by digest of the Docker image
 {{% /tab %}}
 
 {{% tab "PUSH STRATEGIES" %}}
