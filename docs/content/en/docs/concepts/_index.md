@@ -130,7 +130,7 @@ provides built-in support for the following tools:
 * Build
   * Dockerfile locally, in-cluster with kaniko or using Google Cloud Build
   * Bazel locally 
-  * Jib Maven and Jib Gradle locally 
+  * Jib Maven and Jib Gradle locally or using Google Cloud Build
 * Test 
   * [container-structure-test](https://github.com/GoogleContainerTools/container-structure-test)
 * Deploy 

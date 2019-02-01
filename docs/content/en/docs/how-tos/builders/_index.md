@@ -12,10 +12,10 @@ Skaffold supports the following tools to build your image:
 
 * Dockerfile locally with Docker
 * Dockerfile remotely with Google Cloud Build
-* Dockerfile in-cluster with Kaniko  
-* Bazel locally with bazel and Docker daemon 
-* JIB Maven and Gradle projects locally  
-
+* Dockerfile in-cluster with Kaniko
+* Bazel locally with bazel and Docker daemon
+* JIB Maven and Gradle projects locally
+* JIB Maven and Gradle projects remotely with Google Cloud Build
   
 The `build` section in the Skaffold configuration file, `skaffold.yaml`,
 controls how Skaffold builds artifacts. To use a specific tool for building
@@ -139,6 +139,9 @@ build:
 
 {{% todo 1299 %}} 
 
+## Jib Maven and Gradle remotely with Google Cloud Build 
+
+{{% todo 1299 %}} 
 
 ## Bazel locally with bazel and Docker daemon 
 

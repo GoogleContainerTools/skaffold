@@ -75,6 +75,7 @@ Skaffold supports the following tools:
 * Dockerfile on cloud (Google Cloud Build)
 * Bazel locally
 * Jib Maven/Gradle locally
+* Jib Maven/Gradle on cloud (Google Cloud Build)
 {{% /tab %}}
 
 {{% tab "TESTERS" %}}
