@@ -33,7 +33,7 @@ You can learn more about the syntax of `skaffold.yaml` at
 ## Global configuration (~/.skaffold/config)
 
 Some context specific settings can be configured in a global configuration file, defaulting to `~/.skaffold/config`. Options can be configured globally or for specific contexts.
-The options are
+The options are:
 
 | Option | Type | Description |
 | ------ | ---- | ----------- |
