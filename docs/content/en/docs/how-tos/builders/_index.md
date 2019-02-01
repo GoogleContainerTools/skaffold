@@ -13,7 +13,7 @@ Skaffold supports the following tools to build your image:
 * Dockerfile locally with Docker
 * Dockerfile remotely with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
 * Dockerfile in-cluster with [Kaniko](https://github.com/GoogleContainerTools/kaniko)
-* Bazel locally with bazel and Docker daemon
+* Bazel locally
 * [Jib](https://github.com/GoogleContainerTools/jib) Maven and Gradle projects locally
 * [Jib](https://github.com/GoogleContainerTools/jib) Maven and Gradle projects remotely with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
   
@@ -143,7 +143,7 @@ build:
 
 {{% todo 1299 %}} 
 
-## Bazel locally with bazel and Docker daemon 
+## Bazel locally
 
 [Bazel](https://bazel.build/) is a fast, scalable, multi-language, and
 extensible build system. 
