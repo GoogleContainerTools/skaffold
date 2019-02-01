@@ -31,7 +31,7 @@ import (
 func NewCmdFix(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fix",
-		Short: "Converts old skaffold.yaml to newest schema version",
+		Short: "Converts old Skaffold config to newest schema version",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runFix(out, opts.ConfigurationFile, overwrite)
 		},

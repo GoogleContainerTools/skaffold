@@ -20,7 +20,7 @@ Pipeline building blocks for CI/CD:
 
 Getting started with a new project:
 
-* [skaffold init](#skaffold-init) - to bootstrap skaffold.yaml
+* [skaffold init](#skaffold-init) - to bootstrap Skaffold config
 * [skaffold fix](#skaffold-fix) - to upgrade from
 
 Utilities:
@@ -260,7 +260,7 @@ Env vars:
 
 ### skaffold fix
 
-Converts old skaffold.yaml to newest schema version
+Converts old Skaffold config to newest schema version
 
 ```
 Usage:
