@@ -85,10 +85,12 @@ options:
 |Option|Description|
 |-----|-----|
 |`projectId`| <b>REQUIRED</b> The ID of your Google Cloud Platform Project. |
-|`DiskSizeGb`| OPTIONAL. The disk size of the VM that runs the build. See [Cloud Build API Reference: Build Options](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions) for more information. |
+|`diskSizeGb`| OPTIONAL. The disk size of the VM that runs the build. See [Cloud Build API Reference: Build Options](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions) for more information. |
 |`machineType`| OPTIONAL. The type of the VM that runs the build. See [Cloud Build API Reference: Build Options](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions) for more information. |
 |`timeOut`| OPTIONAL. The amount of time (in seconds) that this build should be allowed to run. See [Cloud Build API Reference: Resource/Build](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build) for more information. |
-|`dockerImage`| OPTIONAL. The name of the image that will run the build. See [Cloud Build API Reference: BuildStep](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildstep) for more information. Default value is `gcr.io/cloud-builders/docker`. |
+|`dockerImage`| OPTIONAL. The name of the image that will run a docker build. See [Cloud builders](https://cloud.google.com/cloud-build/docs/cloud-builders) for more information. Default value is `gcr.io/cloud-builders/docker`. |
+|`gradleImage`| OPTIONAL. The name of the image that will run a gradle build. See [Cloud builders](https://cloud.google.com/cloud-build/docs/cloud-builders) for more information. Default value is `gcr.io/cloud-builders/gradle`. |
+|`mavenImage`| OPTIONAL. The name of the image that will run a maven build. See [Cloud builders](https://cloud.google.com/cloud-build/docs/cloud-builders) for more information. Default value is `gcr.io/cloud-builders/mvn`. |
 
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with Google Cloud Build: 
