@@ -19,18 +19,25 @@ package cmd
 import (
 	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // newRunner creates a SkaffoldRunner and returns the SkaffoldPipeline associated with it.
 func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.SkaffoldPipeline, error) {
 	parsed, err := schema.ParseConfig(opts.ConfigurationFile, true)
 	if err != nil {
+		version, isAhead, versionErr := update.VersionCheck()
+		if versionErr == nil && isAhead {
+			logrus.Warnf("Your Skaffold version might be too old. Download the latest version (%s) at %s\n", version, constants.LatestDownloadURL)
+		}
 		return nil, nil, errors.Wrap(err, "parsing skaffold config")
 	}
 
