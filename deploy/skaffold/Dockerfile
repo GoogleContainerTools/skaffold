@@ -96,6 +96,7 @@ FROM builder as integration
 ARG VERSION
 
 RUN make out/skaffold-linux-amd64 VERSION=$VERSION && mv out/skaffold-linux-amd64 /usr/bin/skaffold
+RUN make plugins && mv ~/go/bin/* /usr/local/bin
 
 CMD ["make", "integration"]
 

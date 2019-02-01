@@ -56,7 +56,6 @@ $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 
 $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
 	GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
-	go build -o ~/go/bin/docker-skaffold ./pkg/skaffold/plugin/builders/docker
 
 %.sha256: %
 	shasum -a 256 $< > $@
@@ -83,6 +82,10 @@ test:
 .PHONY: install
 install: $(GO_FILES) $(BUILD_DIR)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go install -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) $(BUILD_PACKAGE)
+
+.PHONY: plugins
+plugins: 
+	go build -o ~/go/bin/docker-skaffold ./pkg/skaffold/plugin/builders/docker
 
 .PHONY: integration
 integration: install $(BUILD_DIR)/$(PROJECT)
@@ -147,7 +150,7 @@ integration-in-docker:
 		-f deploy/skaffold/Dockerfile \
 		--target integration \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-integration .
-	docker run \
+	docker run -ti \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		-v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
