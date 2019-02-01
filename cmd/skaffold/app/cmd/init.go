@@ -54,19 +54,19 @@ var (
 	force        bool
 )
 
-// NewCmdInit describes the CLI command to generate a skaffold configuration.
+// NewCmdInit describes the CLI command to generate a Skaffold configuration.
 func NewCmdInit(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
-		Short: "Automatically generate skaffold configuration for deploying an application",
+		Short: "Automatically generate Skaffold configuration for deploying an application",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return doInit(out)
 		},
 	}
 	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
-	cmd.Flags().BoolVar(&skipBuild, "skip-build", false, "Skip generating build artifacts in skaffold config")
-	cmd.Flags().BoolVar(&force, "force", false, "Force the generation of the skaffold config")
+	cmd.Flags().BoolVar(&skipBuild, "skip-build", false, "Skip generating build artifacts in Skaffold config")
+	cmd.Flags().BoolVar(&force, "force", false, "Force the generation of the Skaffold config")
 	cmd.Flags().StringVar(&composeFile, "compose-file", "", "Initialize from a docker-compose file")
 	cmd.Flags().StringArrayVarP(&cliArtifacts, "artifact", "a", nil, "'='-delimited dockerfile/image pair to generate build artifact\n(example: --artifact=/web/Dockerfile.web=gcr.io/web-project/image)")
 	return cmd

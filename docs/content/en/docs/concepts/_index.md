@@ -13,7 +13,7 @@ understanding of Skaffold.
 
 You can configure Skaffold with the Skaffold configuration file,
 `skaffold.yaml`. The configuration file should be placed in the root of your
-project directory; when you run the `Skaffold` command, Skaffold will try to
+project directory; when you run the `skaffold` command, Skaffold will try to
 read the configuration file from the current directory.
 
 `skaffold.yaml` consists of five different components:
@@ -64,7 +64,7 @@ will not push artifacts to a remote repository.
 ## Image repository handling 
 
 Skaffold allows for automatically rewriting image names to your repository.
-This way you can grab a skaffold project and just `skaffold run` it to deploy to your cluster.  
+This way you can grab a Skaffold project and just `skaffold run` it to deploy to your cluster.  
 The way to achieve this is the `default-repo` functionality: 
 
 1. Via `default-repo` flag
@@ -75,11 +75,11 @@ The way to achieve this is the `default-repo` functionality:
 
         SKAFFOLD_DEFAULT_REPO=<myrepo> skaffold dev  
 
-1. Via skaffold's global config           
+1. Via Skaffold's global config           
         
         skaffold config set default-repo <myrepo>
 
-If skaffold doesn't find `default-repo`, there is no automated image name rewriting. 
+If Skaffold doesn't find `default-repo`, there is no automated image name rewriting. 
 
 The image name rewriting strategies are designed to be *conflict-free*: 
 the full image name is rewritten on top of the default-repo so similar image names don't collide in the base namespace (e.g.: repo1/example and repo2/example would collide in the target_namespace/example without this)

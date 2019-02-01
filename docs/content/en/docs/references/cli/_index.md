@@ -29,7 +29,7 @@ Utilities:
 * [skaffold version](#skaffold-version) - get Skaffold version
 * [skaffold completion](#skaffold-completion) - setup tab completion for the CLI
 * [skaffold config](#skaffold-config) - manage context specific parameters
-* [skaffold diagnose](#skaffold-diagnose) - diagnostics of skaffold works in your project
+* [skaffold diagnose](#skaffold-diagnose) - diagnostics of Skaffold works in your project
 
 
 ## Global flags
@@ -43,7 +43,7 @@ Utilities:
 
 | Flag | Description |
 |------- |---------------|
-|`SKAFFOLD_UPDATE_CHECK`|Enables checking for latest version of the skaffold binary. By default it's `true`. |
+|`SKAFFOLD_UPDATE_CHECK`|Enables checking for latest version of the Skaffold binary. By default it's `true`. |
 
 
 ## Skaffold commands
@@ -91,7 +91,7 @@ Env vars:
 
 ### skaffold completion
 
-Output skaffold shell completion for the given shell (bash or zsh)
+Output shell completion for the given shell (bash or zsh)
 
 ```
 Usage:
@@ -107,16 +107,16 @@ Env vars:
 
 ### skaffold config
 
-A set of commands for interacting with the skaffold config.
+A set of commands for interacting with the Skaffold config.
 
 ```
 Usage:
   skaffold config [command]
 
 Available Commands:
-  list        List all values set in the global skaffold config
-  set         Set a value in the global skaffold config
-  unset       Unset a value in the global skaffold config
+  list        List all values set in the global Skaffold config
+  set         Set a value in the global Skaffold config
+  unset       Unset a value in the global Skaffold config
 
 Global Flags:
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
@@ -282,7 +282,7 @@ Env vars:
 
 ### skaffold init
 
-Automatically generate skaffold configuration for deploying an application
+Automatically generate Skaffold configuration for deploying an application
 
 ```
 Usage:
@@ -293,8 +293,8 @@ Flags:
                                (example: --artifact=/web/Dockerfile.web=gcr.io/web-project/image)
       --compose-file string    Initialize from a docker-compose file
   -f, --filename string        Filename or URL to the pipeline file (default "skaffold.yaml")
-      --force                  Force the generation of the skaffold config
-      --skip-build             Skip generating build artifacts in skaffold config
+      --force                  Force the generation of the Skaffold config
+      --skip-build             Skip generating build artifacts in Skaffold config
 
 Global Flags:
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")

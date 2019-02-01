@@ -26,7 +26,7 @@ import (
 func NewCmdUnset(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "unset",
-		Short: "Unset a value in the global skaffold config",
+		Short: "Unset a value in the global Skaffold config",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			resolveKubectlContext()

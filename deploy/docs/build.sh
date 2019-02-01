@@ -16,7 +16,7 @@
 
 
 ## This script builds the Skaffold site assuming it's ran from a
-## cloned skaffold repo with no submodules initialized. The script initializes the git submodules for
+## cloned Skaffold repo with no submodules initialized. The script initializes the git submodules for
 ## the site's theme in a standard manner, thus this script can be used locally as well as for the PR review flow.
 set -x
 

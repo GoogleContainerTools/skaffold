@@ -28,7 +28,7 @@ import (
 func NewCmdList(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List all values set in the global skaffold config",
+		Short: "List all values set in the global Skaffold config",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runList(out)

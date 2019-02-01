@@ -10,7 +10,7 @@ weight: 130
 Note: The roadmap is subject to change and aspirational but we would like to share our plans with the user and contributor community.
 
 * Plugin model for builders
-* IDE integration - VSCode and IntelliJ skaffold dev/build/run/deploy support, skaffold.yaml code completion
+* IDE integration - VSCode and IntelliJ Skaffold dev/build/run/deploy support, skaffold.yaml code completion
 * Debugging JVM applications
 * Provide help with integration testing
 * Skaffold keeps track of what it built, for faster restarts

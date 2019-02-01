@@ -102,7 +102,7 @@ will be `gcr.io/k8s-skaffold/example:v1`.
 
 The tag template uses the [Go Programming Language Syntax](https://golang.org/pkg/text/template/).
 As showcased in the example, `envTemplate` tag policy features one
-**required** parameter, `template`, which is the tag template to use. To learn more about templating support in skaffold.yaml see [Using templated fields](/docs/how-tos/templating)
+**required** parameter, `template`, which is the tag template to use. To learn more about templating support in Skaffold.yaml see [Using templated fields](/docs/how-tos/templating)
 
 ## `dateTime`: using data and time values as tags
 

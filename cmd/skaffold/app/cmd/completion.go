@@ -25,7 +25,7 @@ import (
 )
 
 const longDescription = `
-	Outputs skaffold shell completion for the given shell (bash or zsh)
+	Outputs shell completion for the given shell (bash or zsh)
 
 	This depends on the bash-completion binary.  Example installation instructions:
 	OS X:
@@ -52,7 +52,7 @@ var completionCmd = &cobra.Command{
 		return cobra.OnlyValidArgs(cmd, args)
 	},
 	ValidArgs: []string{"bash", "zsh"},
-	Short:     "Output skaffold shell completion for the given shell (bash or zsh)",
+	Short:     "Output shell completion for the given shell (bash or zsh)",
 	Long:      longDescription,
 	Run:       completion,
 }
