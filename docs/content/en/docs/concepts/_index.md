@@ -171,5 +171,5 @@ Skaffold provides two separate operating modes:
     you will have to call `skaffold run` again to build and deploy your
     application.
 
-Skaffold command-line interfact also provides other functionalities that may
+Skaffold command-line interface also provides other functionalities that may
 be helpful to your project. For more information, see [CLI References](/docs/references/cli).
