@@ -24,11 +24,10 @@ import (
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/hashicorp/go-plugin"
+	plugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
 )
 
@@ -67,17 +66,17 @@ func NewPluginBuilder(cfg *latest.BuildConfig) (build.Builder, error) {
 		builders[p] = raw.(build.Builder)
 	}
 
-	return &PluginBuilder{
+	return &Builder{
 		Builders: builders,
 	}, nil
 }
 
-type PluginBuilder struct {
+type Builder struct {
 	Builders map[string]build.Builder
 }
 
 // Labels are labels applied to deployed resources.
-func (b *PluginBuilder) Labels() map[string]string {
+func (b *Builder) Labels() map[string]string {
 	labels := map[string]string{}
 	for _, builder := range b.Builders {
 		for k, v := range builder.Labels() {
@@ -87,7 +86,7 @@ func (b *PluginBuilder) Labels() map[string]string {
 	return labels
 }
 
-func (b *PluginBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	var builtArtifacts []build.Artifact
 	// Group artifacts by builder
 	for name, builder := range b.Builders {
