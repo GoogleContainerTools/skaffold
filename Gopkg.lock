@@ -461,6 +461,14 @@
   version = "v1.0.1"
 
 [[projects]]
+  digest = "1:27885e80e300ed44b6ccaa01b4db40e155e374ed12410ac1aa8f1fe4cc69b2bf"
+  name = "github.com/krishicks/yaml-patch"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "83cc9ac50becbbfafb86a89167f3bc5372e8e530"
+  version = "v0.0.10"
+
+[[projects]]
   digest = "1:08c231ec84231a7e23d67e4b58f975e1423695a32467a362ee55a803f9de8061"
   name = "github.com/mattn/go-colorable"
   packages = ["."]
@@ -1208,6 +1216,7 @@
     "github.com/google/go-containerregistry/pkg/v1/tarball",
     "github.com/google/go-github/github",
     "github.com/karrick/godirwalk",
+    "github.com/krishicks/yaml-patch",
     "github.com/mitchellh/go-homedir",
     "github.com/moby/buildkit/frontend/dockerfile/command",
     "github.com/moby/buildkit/frontend/dockerfile/parser",

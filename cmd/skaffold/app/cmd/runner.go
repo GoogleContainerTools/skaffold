@@ -35,13 +35,14 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 	}
 
 	config := parsed.(*latest.SkaffoldPipeline)
-	if err := defaults.Set(config); err != nil {
-		return nil, nil, errors.Wrap(err, "setting default values")
-	}
 
-	err = schema.ApplyProfiles(config, opts.Profiles)
+	err = schema.ApplyProfiles(config, opts)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "applying profiles")
+	}
+
+	if err := defaults.Set(config); err != nil {
+		return nil, nil, errors.Wrap(err, "setting default values")
 	}
 
 	defaultRepo, err := configutil.GetDefaultRepo(opts.DefaultRepo)

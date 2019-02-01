@@ -222,3 +222,18 @@ profiles:
     build:
       googleCloudBuild:
         projectId: k8s-skaffold
+  - name: other
+    # profiles can also patch some values using standard JSON patch notation
+    patches:
+        # This profile will replace the `dockerfile` value of the first artifact by `Dockerfile.DEV`
+      - path: /build/artifacts/0/docker/dockerfile
+        value: Dockerfile.DEV
+    # profiles can be auto-activated by external factors, like environment variables
+    # kubeContext value or depending on which skaffold command is run.
+    activation:
+      # Auto-activate this profile if the DEBUG env variable is set to `true` AND the kubeContext is `ctx1`
+      # - env: DEBUG=true
+      #   kubeContext: ctx1
+      # Auto-activate if the skaffold command is `skaffold run` OR if the kubeContext is NOT `ctx2`
+      # - command: run
+      # - kubeContext: "!ctx2"

@@ -17,10 +17,14 @@ limitations under the License.
 package schema
 
 import (
+	"os"
 	"testing"
 
+	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	yamlpatch "github.com/krishicks/yaml-patch"
+	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 func TestApplyProfiles(t *testing.T) {
@@ -35,7 +39,6 @@ func TestApplyProfiles(t *testing.T) {
 			description: "unknown profile",
 			config:      config(),
 			profile:     "profile",
-			expected:    config(),
 			shouldErr:   true,
 		},
 		{
@@ -52,7 +55,10 @@ func TestApplyProfiles(t *testing.T) {
 					Build: latest.BuildConfig{
 						BuildType: latest.BuildType{
 							GoogleCloudBuild: &latest.GoogleCloudBuild{
-								ProjectID: "my-project",
+								ProjectID:   "my-project",
+								DockerImage: "gcr.io/cloud-builders/docker",
+								MavenImage:  "gcr.io/cloud-builders/mvn",
+								GradleImage: "gcr.io/cloud-builders/gradle",
 							},
 						},
 					},
@@ -103,8 +109,16 @@ func TestApplyProfiles(t *testing.T) {
 					Name: "profile",
 					Build: latest.BuildConfig{
 						Artifacts: []*latest.Artifact{
-							{ImageName: "image"},
-							{ImageName: "imageProd"},
+							{ImageName: "image", Workspace: ".", ArtifactType: latest.ArtifactType{
+								DockerArtifact: &latest.DockerArtifact{
+									DockerfilePath: "Dockerfile.DEV",
+								},
+							}},
+							{ImageName: "imageProd", Workspace: ".", ArtifactType: latest.ArtifactType{
+								DockerArtifact: &latest.DockerArtifact{
+									DockerfilePath: "Dockerfile.DEV",
+								},
+							}},
 						},
 					},
 				}),
@@ -112,8 +126,8 @@ func TestApplyProfiles(t *testing.T) {
 			expected: config(
 				withLocalBuild(
 					withGitTagger(),
-					withDockerArtifact("image", ".", "Dockerfile"),
-					withDockerArtifact("imageProd", ".", "Dockerfile"),
+					withDockerArtifact("image", ".", "Dockerfile.DEV"),
+					withDockerArtifact("imageProd", ".", "Dockerfile.DEV"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
 			),
@@ -142,13 +156,179 @@ func TestApplyProfiles(t *testing.T) {
 				withHelmDeploy(),
 			),
 		},
+		{
+			description: "patch Dockerfile",
+			profile:     "profile",
+			config: config(
+				withLocalBuild(
+					withGitTagger(),
+					withDockerArtifact("image", ".", "Dockerfile"),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+				withProfiles(latest.Profile{
+					Name: "profile",
+					Patches: yamlpatch.Patch{{
+						Path:  "/build/artifacts/0/docker/dockerfile",
+						Value: yamlpatch.NewNode(str("Dockerfile.DEV")),
+					}},
+				}),
+			),
+			expected: config(
+				withLocalBuild(
+					withGitTagger(),
+					withDockerArtifact("image", ".", "Dockerfile.DEV"),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+			),
+		},
+		{
+			description: "invalid patch path",
+			profile:     "profile",
+			config: config(
+				withLocalBuild(
+					withGitTagger(),
+					withDockerArtifact("image", ".", "Dockerfile"),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+				withProfiles(latest.Profile{
+					Name: "profile",
+					Patches: yamlpatch.Patch{{
+						Path: "/unknown",
+						Op:   "replace",
+					}},
+				}),
+			),
+			shouldErr: true,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			err := ApplyProfiles(test.config, []string{test.profile})
+			err := ApplyProfiles(test.config, &cfg.SkaffoldOptions{
+				Profiles: []string{test.profile},
+			})
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, test.config)
+			if test.shouldErr {
+				testutil.CheckError(t, test.shouldErr, err)
+			} else {
+				testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, test.config)
+			}
 		})
 	}
+}
+
+func TestActivatedProfiles(t *testing.T) {
+	tests := []struct {
+		description string
+		profiles    []latest.Profile
+		opts        *cfg.SkaffoldOptions
+		expected    []string
+		shouldErr   bool
+	}{
+		{
+			description: "Selected on the command line",
+			opts: &cfg.SkaffoldOptions{
+				Command:  "dev",
+				Profiles: []string{"activated", "also-activated"},
+			},
+			profiles: []latest.Profile{
+				{Name: "activated"},
+				{Name: "not-activated"},
+				{Name: "also-activated"},
+			},
+			expected: []string{"activated", "also-activated"},
+		}, {
+			description: "Auto-activated by command",
+			opts: &cfg.SkaffoldOptions{
+				Command: "dev",
+			},
+			profiles: []latest.Profile{
+				{Name: "run-profile", Activation: []latest.Activation{{Command: "run"}}},
+				{Name: "dev-profile", Activation: []latest.Activation{{Command: "dev"}}},
+				{Name: "non-run-profile", Activation: []latest.Activation{{Command: "!run"}}},
+			},
+			expected: []string{"dev-profile", "non-run-profile"},
+		}, {
+			description: "Auto-activated by env variable",
+			opts:        &cfg.SkaffoldOptions{},
+			profiles: []latest.Profile{
+				{Name: "activated", Activation: []latest.Activation{{Env: "KEY=VALUE"}}},
+				{Name: "not-activated", Activation: []latest.Activation{{Env: "KEY=OTHER"}}},
+				{Name: "also-activated", Activation: []latest.Activation{{Env: "KEY=!OTHER"}}},
+			},
+			expected: []string{"activated", "also-activated"},
+		}, {
+			description: "Invalid env variable",
+			opts:        &cfg.SkaffoldOptions{},
+			profiles: []latest.Profile{
+				{Name: "activated", Activation: []latest.Activation{{Env: "KEY:VALUE"}}},
+			},
+			shouldErr: true,
+		}, {
+			description: "Auto-activated by kube context",
+			opts:        &cfg.SkaffoldOptions{},
+			profiles: []latest.Profile{
+				{Name: "activated", Activation: []latest.Activation{{KubeContext: "prod-context"}}},
+				{Name: "not-activated", Activation: []latest.Activation{{KubeContext: "dev-context"}}},
+				{Name: "also-activated", Activation: []latest.Activation{{KubeContext: "!dev-context"}}},
+			},
+			expected: []string{"activated", "also-activated"},
+		}, {
+			description: "AND between activation criteria",
+			opts: &cfg.SkaffoldOptions{
+				Command: "dev",
+			},
+			profiles: []latest.Profile{
+				{
+					Name: "activated", Activation: []latest.Activation{{
+						Env:         "KEY=VALUE",
+						KubeContext: "prod-context",
+						Command:     "dev",
+					}},
+				},
+				{
+					Name: "not-activated", Activation: []latest.Activation{{
+						Env:         "KEY=VALUE",
+						KubeContext: "prod-context",
+						Command:     "build",
+					}},
+				},
+			},
+			expected: []string{"activated"},
+		}, {
+			description: "OR between activations",
+			opts: &cfg.SkaffoldOptions{
+				Command: "dev",
+			},
+			profiles: []latest.Profile{
+				{
+					Name: "activated", Activation: []latest.Activation{{
+						Command: "run",
+					}, {
+						Command: "dev",
+					}},
+				},
+			},
+			expected: []string{"activated"},
+		},
+	}
+
+	os.Setenv("KEY", "VALUE")
+	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "prod-context"})
+	defer restore()
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+
+			activated, err := activatedProfiles(test.profiles, test.opts)
+
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, activated)
+		})
+	}
+
+}
+
+func str(value string) *interface{} {
+	var v interface{} = value
+	return &v
 }
