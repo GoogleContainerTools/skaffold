@@ -1,7 +1,7 @@
 
 ---
-title: "Using templated fields"
-linkTitle: "Using templated fields"
+title: "Templated fields"
+linkTitle: "Templated fields"
 weight: 90
 ---
 

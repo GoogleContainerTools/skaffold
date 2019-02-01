@@ -1,7 +1,7 @@
 
 ---
-title: "Using builders"
-linkTitle: "Using builders"
+title: "Builders"
+linkTitle: "Builders"
 weight: 10
 ---
 
@@ -11,11 +11,11 @@ to build Docker images.
 Skaffold supports the following tools to build your image:
 
 * Dockerfile locally with Docker
-* Dockerfile remotely with Google Cloud Build
-* Dockerfile in-cluster with Kaniko
+* Dockerfile remotely with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
+* Dockerfile in-cluster with [Kaniko](https://github.com/GoogleContainerTools/kaniko)
 * Bazel locally with bazel and Docker daemon
 * JIB Maven and Gradle projects locally
-* JIB Maven and Gradle projects remotely with Google Cloud Build
+* JIB Maven and Gradle projects remotely with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
   
 The `build` section in the Skaffold configuration file, `skaffold.yaml`,
 controls how Skaffold builds artifacts. To use a specific tool for building

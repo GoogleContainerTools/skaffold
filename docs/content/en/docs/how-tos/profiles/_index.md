@@ -1,7 +1,7 @@
 
 ---
-title: "Using profiles"
-linkTitle: "Using profiles"
+title: "Profiles"
+linkTitle: "Profiles"
 weight: 70
 ---
 
@@ -27,8 +27,8 @@ Once activated, the specified build and deploy configuration
 in the profile will override the `build` and `deploy` section declared
 in `skaffold.yaml`. The build and deploy configuration in the `profiles`
 section use the same syntax as the `build` and `deploy` section of
-`skaffold.yaml`; for more information, see [Using Builders](/docs/how-tos/builders),
-[Using Taggers](/docs/how-tos/taggers), and [Using Deployers](/docs/how-tos/deployers).
+`skaffold.yaml`; for more information, see [Builders](/docs/how-tos/builders),
+[Taggers](/docs/how-tos/taggers), and [Deployers](/docs/how-tos/deployers).
 
 You can activate a profile with the `-p` (`--profile`) parameter in the
 `skaffold dev` and `skaffold run` commands.

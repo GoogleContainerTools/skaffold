@@ -146,6 +146,15 @@ build:
   #     path: path to the docker config.json
   #     secretName: docker-cfg
 
+# The test section has all the information needed to test images.
+test:
+    # For each image listed here, Skaffold will run a series of structure tests using
+    # the [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test)
+    # project.
+    # - image: gcr.io/k8s-skaffold/skaffold-example
+    #   structureTests:
+    #     - ./test/*
+
 # The deploy section has all the information needed to deploy. Along with build:
 # it is a required section.
 deploy:
