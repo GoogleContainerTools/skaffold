@@ -35,7 +35,7 @@ By default, Skaffold connects to the local Docker daemon using
 ask Skaffold to use the [command-line interface](https://docs.docker.com/engine/reference/commandline/cli/)
 instead. Additionally, Skaffold offers the option to build artifacts with
 [BuildKit](https://github.com/moby/buildkit). After the artifacts are
-successfully built, Skaffold will try pushing the Docker
+successfully built, Skaffold will push the Docker
 images to the remote registry. You can choose to skip this step.
 
 To use the local Docker daemon, add build type `local` to the `build` section
