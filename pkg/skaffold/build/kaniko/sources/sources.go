@@ -58,7 +58,7 @@ func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 			Containers: []v1.Container{
 				{
 					Name:            constants.DefaultKanikoContainerName,
-					Image:           constants.DefaultKanikoImage,
+					Image:           cfg.Image,
 					Args:            args,
 					ImagePullPolicy: v1.PullIfNotPresent,
 					Env: []v1.EnvVar{{
