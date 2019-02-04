@@ -47,6 +47,8 @@ type LocalDaemon interface {
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
 	Tag(ctx context.Context, image, ref string) error
 	ImageID(ctx context.Context, ref string) (string, error)
+	ImageFromID(ctx context.Context, id string) (string, error)
+	ImageExists(ctx context.Context, image string) bool
 }
 
 type localDaemon struct {
@@ -273,6 +275,38 @@ func (l *localDaemon) ImageID(ctx context.Context, ref string) (string, error) {
 	}
 
 	return image.ID, nil
+}
+
+func (l *localDaemon) ImageExists(ctx context.Context, image string) bool {
+	resp, err := l.apiClient.ImageList(ctx, types.ImageListOptions{})
+	if err != nil {
+		return false
+	}
+	for _, r := range resp {
+		for _, d := range r.RepoTags {
+			if image == d {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// ImageFromID returns the name of an image with the given id
+func (l *localDaemon) ImageFromID(ctx context.Context, id string) (string, error) {
+	resp, err := l.apiClient.ImageList(ctx, types.ImageListOptions{})
+	if err != nil {
+		return "", errors.Wrap(err, "listing images")
+	}
+	for _, r := range resp {
+		if r.ID == id {
+			if len(r.RepoTags) == 0 {
+				return "", nil
+			}
+			return r.RepoTags[0], nil
+		}
+	}
+	return "", nil
 }
 
 // GetBuildArgs gives the build args flags for docker build.

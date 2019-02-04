@@ -243,7 +243,7 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*la
 		}
 		<-ctx.Done()
 	}
-
+	 
 	return nil
 }
 
