@@ -8,15 +8,7 @@ weight: 90
 Skaffold config allows for certain fields to have values injected that are either environment variables or calculated by Skaffold.
 For example: 
 
-```yaml
-build:
-    artifacts:
-    - image: gcr.io/k8s-skaffold/example
-    tagPolicy:
-        envTemplate:
-            template: "{{.IMAGE_NAME}}:{{.FOO}}"
-    local: {}
-```
+{{% readfile file="samples/templating/env.yaml" %}}
 
 Suppose the value of the `FOO` environment variable is `v1`, the image built
 will be `gcr.io/k8s-skaffold/example:v1`.

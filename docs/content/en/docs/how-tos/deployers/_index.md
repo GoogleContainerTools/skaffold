@@ -48,22 +48,7 @@ To use `kubectl`, add deploy type `kubectl` to the `deploy` section of
 The following `deploy` section, for example, instructs Skaffold to deploy
 artifacts using `kubectl`:
 
-```yaml
-deploy:
-    kubectl:
-      manifests:
-        - k8s-*
-    # Uncomment the following lines to add remote manifests and flags
-    # remoteManifests:
-    #    - YOUR-REMOTE-MANIFESTS
-    # flags:
-    #    global:
-    #    - YOUR-GLOBAL-FLAGS
-    #    apply:
-    #    - YOUR-APPLY-FLAGS
-    #    delete:
-    #    - YOUR-DELETE-FLAGS
-```
+{{% readfile file="samples/deployers/kubectl.yaml" %}}
 
 ## Deploying with Helm
 
@@ -98,38 +83,7 @@ Each release includes the following fields:
 The following `deploy` section, for example, instructs Skaffold to deploy
 artifacts using `helm`:
 
-```yaml
-deploy:
-  helm:
-    releases:
-    - name: skaffold-helm
-      chartPath: skaffold-helm
-      values:
-        image: gcr.io/k8s-skaffold/skaffold-helm
-      # Uncomment the following lines to specify more parameters
-      # valuesFilePath: YOUR-VALUES-FILE-PATH
-      # namespace: YOUR-NAMESPACE
-      # version: YOUR-VERSION
-      # setValues:
-      #     SOME-KEY: SOME-VALUE
-      # setValues:
-      #     SOME-KEY: SOME-VALUE-TEMPLATE
-      # setValueTemplates:
-      #     SOME-KEY: "{{.SOME-ENV-VARIABLE}}"
-      # wait: true
-      # recreatePods: true
-      # overrides:
-      #     SOME-KEY: SOME-VALUE
-      #     SOME-MORE-KEY:
-      #         SOME-KEY: SOME-VALUE
-      # packaged:
-      #     version: YOUR-VERSION
-      #     appVersion: YOUR-APP-VERSION
-      # imageStrategy:
-      #     helm: {}
-      # OR
-      #     fqn: {}
-```
+{{% readfile file="samples/deployers/helm.yaml" %}}
 
 ## Deploying with kustomize
 
@@ -148,11 +102,4 @@ section of `skaffold.yaml`. The `kustomize` type offers the following options:
 The following `deploy` section, for example, instructs Skaffold to deploy
 artifacts using kustomize:
 
-```yaml
-deploy:
-  kustomize:
-    path: "."
-# The deploy section above is equal to
-# deploy:
-#   kustomize: {}
-```
+{{% readfile file="samples/deployers/kustomize.yaml" %}}
