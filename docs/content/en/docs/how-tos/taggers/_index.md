@@ -30,13 +30,7 @@ The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with the `gitCommit` tag policy
 specified explicitly:
 
-```yaml
-build:
-    artifacts:
-    - image: gcr.io/k8s-skaffold/example
-    tagPolicy:
-        gitCommit: {}
-```
+{{% readfile file="samples/taggers/git.yaml" %}}
 
 `gitCommit` tag policy features no options.
 
@@ -54,13 +48,7 @@ it allows Kubernetes to re-deploy images every time your source code changes.
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with the `sha256` tag policy:
 
-```yaml
-build:
-    artifacts:
-    - image: gcr.io/k8s-skaffold/example
-    tagPolicy:
-        sha256: {}
-```
+{{% readfile file="samples/taggers/sha256.yaml" %}}
 
 `sha256` tag policy features no options.
 
@@ -85,14 +73,7 @@ image.
 the <code>artifacts</code> part of the <code>build</code> section.
 {{< /alert >}}
 
-```yaml
-build:
-    artifacts:
-    - image: gcr.io/k8s-skaffold/example
-    tagPolicy:
-        envTemplate:
-            template: "{{.IMAGE_NAME}}:{{.FOO}}"
-```
+{{% readfile file="samples/taggers/envTemplate.yaml" %}}
 
 Suppose the value of the `FOO` environment variable is `v1`, the image built
 will be `gcr.io/k8s-skaffold/example:v1`.
@@ -112,22 +93,7 @@ The following `build` section, for example, instructs Skaffold to build a Docker
 image `gcr.io/k8s-skaffold/example` with the `dateTime`
 tag policy:
 
-```yaml
-build:
-    artifacts:
-    - image: gcr.io/k8s-skaffold/example
-    tagPolicy:
-        dateTime:
-            format: "2006-01-02_15-04-05.999_MST"
-            timezone: "Local"
-# The build section above is equal to
-# build:
-#   artifacts:
-#   - image: gcr.io/k8s-skaffold/example
-#   tagPolicy:
-#       dateTime: {}
-#   local: {}
-```
+{{% readfile file="samples/taggers/datetime.yaml" %}}
 
 Suppose current time is `15:04:09.999 January 2nd, 2006` and current time zone
 is `MST` (`US Mountain Standard Time`), the image built will

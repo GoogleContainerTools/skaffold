@@ -1,0 +1,13 @@
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/example
+  local: {}
+
+# The build section above is equal to
+# build:
+#   artifacts:
+#   - image: gcr.io/k8s-skaffold/example
+#   local:
+#     push: true
+#     useDockerCLI: false
+#     useBuildkit: false

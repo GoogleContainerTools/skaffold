@@ -38,22 +38,7 @@ You can activate a profile with the `-p` (`--profile`) parameter in the
 The following example, showcases a `skaffold.yaml` with one profile, `gcb`,
 for building with Google Cloud Build:
 
-```yaml
-apiVersion: skaffold/v1beta2
-kind: Config
-build:
-  artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-example
-deploy:
-  kubectl:
-    manifests:
-    - k8s-pod
-profiles:
-- name: gcb
-  build:
-  googleCloudBuild:
-    projectId: k8s-skaffold
-```
+{{% readfile file="samples/profiles/profiles.yaml" %}}
 
 With no profile activated, Skaffold will build the artifact
 `gcr.io/k8s-skaffold/skaffold-example` using local Docker daemon and deploy it

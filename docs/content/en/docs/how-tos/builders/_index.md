@@ -50,21 +50,7 @@ of `skaffold.yaml`. The `local` type offers the following options:
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with the local Docker daemon: 
 
-```yaml
-build:
-    artifacts:
-    - image: gcr.io/k8s-skaffold/example
-    # Use local Docker daemon to build artifacts
-    local:
-        push: true
-        useDockerCLI: false
-        useBuildkit: false
-# The build section above is equal to
-# build:
-#   artifacts:
-#   - image: gcr.io/k8s-skaffold/example
-#   local: {}
-```
+{{% readfile file="samples/builders/local.yaml" %}}
 
 ## Dockerfile remotely with Google Cloud Build
 
@@ -95,14 +81,7 @@ options:
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with Google Cloud Build: 
 
-```yaml
-build:
-    artifacts:
-    - image: gcr.io/k8s-skaffold/example
-    # Use Google Cloud Build to build artifacts
-    googleCloudBuild:
-        projectId: YOUR-GCP-PROJECT
-```
+{{% readfile file="samples/builders/gcb.yaml" %}}
 
 ## Dockerfile in-cluster with Kaniko  
 
@@ -127,15 +106,7 @@ To use Kaniko, add build type `kaniko` to the `build` section of
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with Kaniko: 
 
-```yaml
-build:
-    artifacts:
-    - image: gcr.io/k8s-skaffold/example
-    # Use Kaniko to build artifacts
-    kaniko:
-        buildContext:
-          gcsBucket: YOUR-BUCKET
-```
+{{% readfile file="samples/builders/kaniko.yaml" %}}
 
 ## Jib Maven and Gradle locally 
 
@@ -161,11 +132,4 @@ specification, which Skaffold will use to load the image to the Docker daemon.
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with Bazel:
 
-```yaml
-build:
-    artifacts:
-    - image: gcr.io/k8s-skaffold/example
-      bazel:
-        target: //:example.tar
-```
-
+{{% readfile file="samples/builders/bazel.yaml" %}}
