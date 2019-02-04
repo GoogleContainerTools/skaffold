@@ -17,20 +17,31 @@ limitations under the License.
 package tag
 
 import (
+	"fmt"
+	"sort"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+type fakeWarner struct {
+	warnings []string
+}
+
+func (l *fakeWarner) Warnf(format string, args ...interface{}) {
+	l.warnings = append(l.warnings, fmt.Sprintf(format, args...))
+	sort.Strings(l.warnings)
+}
+
 func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 	tests := []struct {
-		name      string
-		template  string
-		imageName string
-		env       []string
-		expected  string
-		shoudErr  bool
+		name             string
+		template         string
+		imageName        string
+		env              []string
+		expected         string
+		expectedWarnings []string
 	}{
 		{
 			name:      "empty env",
@@ -53,22 +64,39 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			expected:  "image_name-FOO:latest",
 		},
 		{
-			name:      "digest is not supported anymore",
-			template:  "{{.IMAGE_NAME}}@{{.DIGEST}}",
-			imageName: "foo",
-			shoudErr:  true,
+			name:             "ignore @{{.DIGEST}} suffix",
+			template:         "{{.IMAGE_NAME}}:tag@{{.DIGEST}}",
+			imageName:        "foo",
+			expected:         "foo:tag",
+			expectedWarnings: []string{"{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be apppended to image tags"},
 		},
 		{
-			name:      "digest algo is not supported anymore",
-			template:  "{{.IMAGE_NAME}}@{{.DIGEST_ALGO}}",
-			imageName: "foo",
-			shoudErr:  true,
+			name:             "ignore @{{.DIGEST_ALGO}}:{{.DIGEST_HEX}} suffix",
+			template:         "{{.IMAGE_NAME}}:tag@{{.DIGEST_ALGO}}:{{.DIGEST_HEX}}",
+			imageName:        "image_name",
+			expected:         "image_name:tag",
+			expectedWarnings: []string{"{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be apppended to image tags"},
 		},
 		{
-			name:      "digest hex is not supported anymore",
-			template:  "{{.IMAGE_NAME}}@{{.DIGEST_HEX}}",
-			imageName: "foo",
-			shoudErr:  true,
+			name:             "digest is deprecated",
+			template:         "{{.IMAGE_NAME}}:{{.DIGEST}}",
+			imageName:        "foo",
+			expected:         "foo:[DEPRECATED_DIGEST]",
+			expectedWarnings: []string{"{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be apppended to image tags"},
+		},
+		{
+			name:             "digest algo is deprecated",
+			template:         "{{.IMAGE_NAME}}:{{.DIGEST_ALGO}}",
+			imageName:        "foo",
+			expected:         "foo:[DEPRECATED_DIGEST_ALGO]",
+			expectedWarnings: []string{"{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be apppended to image tags"},
+		},
+		{
+			name:             "digest hex is deprecated",
+			template:         "{{.IMAGE_NAME}}:{{.DIGEST_HEX}}",
+			imageName:        "foo",
+			expected:         "foo:[DEPRECATED_DIGEST_HEX]",
+			expectedWarnings: []string{"{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be apppended to image tags"},
 		},
 	}
 	for _, test := range tests {
@@ -77,14 +105,17 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 				return test.env
 			}
 
+			defer func(w Warner) { warner = w }(warner)
+			fakeWarner := &fakeWarner{}
+			warner = fakeWarner
+
 			c, err := NewEnvTemplateTagger(test.template)
-			testutil.CheckError(t, test.shoudErr, err)
+			testutil.CheckError(t, false, err)
 
-			if !test.shoudErr {
-				got, err := c.GenerateFullyQualifiedImageName("", test.imageName)
+			got, err := c.GenerateFullyQualifiedImageName("", test.imageName)
 
-				testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, got)
-			}
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, got)
+			testutil.CheckDeepEqual(t, test.expectedWarnings, fakeWarner.warnings)
 		})
 	}
 }

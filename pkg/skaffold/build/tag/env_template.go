@@ -23,7 +23,22 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
+
+// for testing
+var warner Warner = &logrusWarner{}
+
+// Warner shows warnings.
+type Warner interface {
+	Warnf(format string, args ...interface{})
+}
+
+type logrusWarner struct{}
+
+func (l *logrusWarner) Warnf(format string, args ...interface{}) {
+	logrus.Warnf(format, args...)
+}
 
 // envTemplateTagger implements Tagger
 type envTemplateTagger struct {
@@ -32,16 +47,6 @@ type envTemplateTagger struct {
 
 // NewEnvTemplateTagger creates a new envTemplateTagger
 func NewEnvTemplateTagger(t string) (Tagger, error) {
-	if strings.Contains(t, "{{.DIGEST}}") {
-		return nil, errors.New("{{.DIGEST}} is deprecated, image digest will automatically be apppended to image tags")
-	}
-	if strings.Contains(t, "{{.DIGEST_ALGO}}") {
-		return nil, errors.New("{{.DIGEST_ALGO}} is deprecated, image digest will automatically be apppended to image tags")
-	}
-	if strings.Contains(t, "{{.DIGEST_HEX}}") {
-		return nil, errors.New("{{.DIGEST_HEX}} is deprecated, image digest will automatically be apppended to image tags")
-	}
-
 	tmpl, err := util.ParseEnvTemplate(t)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing template")
@@ -60,7 +65,29 @@ func (t *envTemplateTagger) Labels() map[string]string {
 
 // GenerateFullyQualifiedImageName tags an image with the custom tag
 func (t *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
-	return util.ExecuteEnvTemplate(t.Template, map[string]string{
-		"IMAGE_NAME": imageName,
+	tag, err := util.ExecuteEnvTemplate(t.Template, map[string]string{
+		"IMAGE_NAME":  imageName,
+		"DIGEST":      "[DEPRECATED_DIGEST]",
+		"DIGEST_ALGO": "[DEPRECATED_DIGEST_ALGO]",
+		"DIGEST_HEX":  "[DEPRECATED_DIGEST_HEX]",
 	})
+	if err != nil {
+		return "", err
+	}
+
+	if strings.Contains(tag, "[DEPRECATED_DIGEST]") ||
+		strings.Contains(tag, "[DEPRECATED_DIGEST_ALGO]") ||
+		strings.Contains(tag, "[DEPRECATED_DIGEST_HEX]") {
+		warner.Warnf("{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be apppended to image tags")
+
+		switch {
+		case strings.HasSuffix(tag, "@[DEPRECATED_DIGEST]"):
+			tag = strings.TrimSuffix(tag, "@[DEPRECATED_DIGEST]")
+
+		case strings.HasSuffix(tag, "@[DEPRECATED_DIGEST_ALGO]:[DEPRECATED_DIGEST_HEX]"):
+			tag = strings.TrimSuffix(tag, "@[DEPRECATED_DIGEST_ALGO]:[DEPRECATED_DIGEST_HEX]")
+		}
+	}
+
+	return tag, nil
 }
