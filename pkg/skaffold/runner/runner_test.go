@@ -66,7 +66,7 @@ func (t *TestBench) enterNewCycle() {
 	t.currentActions = Actions{}
 }
 
-func (t *TestBench) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (t *TestBench) Build(ctx context.Context, w io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	if len(t.buildErrors) > 0 {
 		err := t.buildErrors[0]
 		t.buildErrors = t.buildErrors[1:]
@@ -85,7 +85,7 @@ func (t *TestBench) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, a
 		})
 	}
 
-	t.currentActions.Built = tags(builds)
+	t.currentActions.Built = findTags(builds)
 	return builds, nil
 }
 
@@ -111,7 +111,7 @@ func (t *TestBench) Test(ctx context.Context, out io.Writer, artifacts []build.A
 		}
 	}
 
-	t.currentActions.Tested = tags(artifacts)
+	t.currentActions.Tested = findTags(artifacts)
 	return nil
 }
 
@@ -124,7 +124,7 @@ func (t *TestBench) Deploy(ctx context.Context, out io.Writer, artifacts []build
 		}
 	}
 
-	t.currentActions.Deployed = tags(artifacts)
+	t.currentActions.Deployed = findTags(artifacts)
 	return nil
 }
 
@@ -132,7 +132,7 @@ func (t *TestBench) Actions() []Actions {
 	return append(t.actions, t.currentActions)
 }
 
-func tags(artifacts []build.Artifact) []string {
+func findTags(artifacts []build.Artifact) []string {
 	var tags []string
 	for _, artifact := range artifacts {
 		tags = append(tags, artifact.Tag)
