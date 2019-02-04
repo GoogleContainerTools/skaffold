@@ -110,7 +110,7 @@ release-in-docker:
     		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
     		--target builder \
     		.
-	docker run \
+	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder make -j release VERSION=$(VERSION) RELEASE_BUCKET=$(RELEASE_BUCKET) GCP_PROJECT=$(GCP_PROJECT)
@@ -132,7 +132,7 @@ release-build-in-docker:
     		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
     		--target builder \
     		.
-	docker run \
+	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder make -j release-build RELEASE_BUCKET=$(RELEASE_BUCKET) GCP_PROJECT=$(GCP_PROJECT)
@@ -147,7 +147,7 @@ integration-in-docker:
 		-f deploy/skaffold/Dockerfile \
 		--target integration \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-integration .
-	docker run \
+	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		-v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
@@ -171,7 +171,7 @@ submit-release-trigger:
 #utilities for skaffold site - not used anywhere else
 
 .PHONY: docs-controller-image
-docs-controller-image: 
+docs-controller-image:
 	docker build -t gcr.io/$(GCP_PROJECT)/docs-controller -f deploy/webhook/Dockerfile .
 
 
@@ -184,12 +184,12 @@ docs-preview-image:
 
 .PHONY: start-docs-preview
 start-docs-preview:	docs-preview-image
-	docker run -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/preview.sh
+	docker run --rm -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/preview.sh
 
 .PHONY: build-docs-preview
 build-docs-preview:	docs-preview-image
-	docker run -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/build.sh
+	docker run --rm -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/build.sh
 
 .PHONY: clean-docs-preview
 clean-docs-preview: docs-preview-image
-	docker run -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/clean.sh
+	docker run --rm -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/clean.sh
