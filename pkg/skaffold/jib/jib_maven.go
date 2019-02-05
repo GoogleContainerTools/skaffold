@@ -47,8 +47,12 @@ func getCommandMaven(ctx context.Context, workspace string, a *latest.JibMavenAr
 }
 
 // GenerateMavenArgs generates the arguments to Maven for building the project as an image.
-func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact) []string {
+func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact, skipTests bool) []string {
 	args := mavenArgs(a)
+
+	if skipTests {
+		args = append(args, "-DskipTests=true")
+	}
 
 	if a.Module == "" {
 		// single-module project

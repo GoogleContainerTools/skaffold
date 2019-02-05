@@ -41,6 +41,7 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace strin
 	args = append(args, a.BazelArtifact.BuildArgs...)
 	args = append(args, a.BazelArtifact.BuildTarget)
 
+	// FIXME: is it possible to apply b.skipTests?
 	cmd := exec.CommandContext(ctx, "bazel", args...)
 	cmd.Dir = workspace
 	cmd.Stdout = out

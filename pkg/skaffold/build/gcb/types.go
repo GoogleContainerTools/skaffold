@@ -55,12 +55,14 @@ const (
 // Builder builds artifacts with Google Cloud Build.
 type Builder struct {
 	*latest.GoogleCloudBuild
+	skipTests bool
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
-func NewBuilder(cfg *latest.GoogleCloudBuild) *Builder {
+func NewBuilder(cfg *latest.GoogleCloudBuild, skipTests bool) *Builder {
 	return &Builder{
 		GoogleCloudBuild: cfg,
+		skipTests:        skipTests,
 	}
 }
 

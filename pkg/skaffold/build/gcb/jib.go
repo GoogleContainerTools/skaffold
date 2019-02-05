@@ -26,13 +26,13 @@ import (
 func (b *Builder) jibMavenBuildSteps(imageName string, artifact *latest.JibMavenArtifact) []*cloudbuild.BuildStep {
 	return []*cloudbuild.BuildStep{{
 		Name: b.MavenImage,
-		Args: jib.GenerateMavenArgs("dockerBuild", imageName, artifact),
+		Args: jib.GenerateMavenArgs("dockerBuild", imageName, artifact, b.skipTests),
 	}}
 }
 
 func (b *Builder) jibGradleBuildSteps(imageName string, artifact *latest.JibGradleArtifact) []*cloudbuild.BuildStep {
 	return []*cloudbuild.BuildStep{{
 		Name: b.GradleImage,
-		Args: jib.GenerateGradleArgs("jibDockerBuild", imageName, artifact),
+		Args: jib.GenerateGradleArgs("jibDockerBuild", imageName, artifact, b.skipTests),
 	}}
 }
