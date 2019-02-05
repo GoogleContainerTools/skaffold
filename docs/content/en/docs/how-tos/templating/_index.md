@@ -1,4 +1,3 @@
-
 ---
 title: "Templated fields"
 linkTitle: "Templated fields"

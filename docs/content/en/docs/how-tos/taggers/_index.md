@@ -1,8 +1,7 @@
-
 ---
 title: "Taggers"
 linkTitle: "Taggers"
-weight: 30
+weight: 20
 ---
 
 This page discusses how to set up Skaffold to tag artifacts as you see fit.

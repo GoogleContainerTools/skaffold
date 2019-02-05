@@ -1,4 +1,3 @@
-
 ---
 title: "Concepts"
 linkTitle: "Concepts"
@@ -7,7 +6,6 @@ weight: 80
 
 This document discusses some concepts that can help you develop a deep
 understanding of Skaffold.
-
 
 ## Configuration of the Skaffold pipeline (skaffold.yaml)
 
@@ -22,9 +20,9 @@ read the configuration file from the current directory.
 | ---------- | ------------|
 | `apiVersion` | The Skaffold API version you would like to use. The current API version is {{< skaffold-version >}}. |
 | `kind`  |  The Skaffold configuration file has the kind `Config`.  |
-| `build`  |  Specifies how Skaffold should build artifacts. You have control over what tool Skaffold can use, how Skaffold tags artifacts and how Skaffold pushes artifacts. Skaffold supports using local Docker daemon, Google Cloud Build, Kaniko, or Bazel to build artifacts. See [Builders](/docs/how-tos/builders) and [Taggers](/docs/how-tos/taggers) for more information. |
-| `test` |  Specifies how Skaffold should test artifacts. Skaffold supports [container-structure-tests](https://github.com/GoogleContainerTools/container-structure-test) to test built artifacts. See [Testers](/docs/how-tos/testers) for more information. |
-| `deploy` |  Specifies how Skaffold should deploy artifacts. Skaffold supports using `kubectl`, Helm, or kustomize to deploy artifacts. See [Deployers](/docs/how-tos/deployers) for more information. |
+| `build`  |  Specifies how Skaffold builds artifacts. You have control over what tool Skaffold can use, how Skaffold tags artifacts and how Skaffold pushes artifacts. Skaffold supports using local Docker daemon, Google Cloud Build, Kaniko, or Bazel to build artifacts. See [Builders](/docs/how-tos/builders) and [Taggers](/docs/how-tos/taggers) for more information. |
+| `test` |  Specifies how Skaffold tests artifacts. Skaffold supports [container-structure-tests](https://github.com/GoogleContainerTools/container-structure-test) to test built artifacts. See [Testers](/docs/how-tos/testers) for more information. |
+| `deploy` |  Specifies how Skaffold deploys artifacts. Skaffold supports using `kubectl`, `helm`, or `kustomize` to deploy artifacts. See [Deployers](/docs/how-tos/deployers) for more information. |
 | `profiles`|  Profile is a set of settings that, when activated, overrides the current configuration. You can use Profile to override the `build`, `test` and `deploy` sections. |
 
 You can learn more about the syntax of `skaffold.yaml` at
@@ -33,6 +31,7 @@ You can learn more about the syntax of `skaffold.yaml` at
 ## Global configuration (~/.skaffold/config)
 
 Some context specific settings can be configured in a global configuration file, defaulting to `~/.skaffold/config`. Options can be configured globally or for specific contexts.
+
 The options are:
 
 | Option | Type | Description |
@@ -41,7 +40,8 @@ The options are:
 | `local-cluster` | boolean | If true, do not try to push images after building. By default, contexts with names `docker-for-desktop`, `docker-desktop`, or `minikube` are treated as local. |
 
 For example, to treat any context as local by default:
-```
+
+```bash
 skaffold config set --global local-cluster true
 ```
 
@@ -68,16 +68,22 @@ This way you can grab a Skaffold project and just `skaffold run` it to deploy to
 The way to achieve this is the `default-repo` functionality: 
 
 1. Via `default-repo` flag
-  
-        skaffold dev --default-repo <myrepo> 
-  
+
+    ```bash
+    skaffold dev --default-repo <myrepo>
+    ```
+
 1. Via `SKAFFOLD_DEFAULT_REPO` environment variable
 
-        SKAFFOLD_DEFAULT_REPO=<myrepo> skaffold dev  
+    ```bash
+    SKAFFOLD_DEFAULT_REPO=<myrepo> skaffold dev  
+    ```
 
 1. Via Skaffold's global config           
-        
-        skaffold config set default-repo <myrepo>
+
+    ```bash
+    skaffold config set default-repo <myrepo>
+    ```
 
 If Skaffold doesn't find `default-repo`, there is no automated image name rewriting. 
 
@@ -94,15 +100,16 @@ Automated image name rewriting strategies are determined based on the default-re
      default-repo:      aws_account_id.dkr.ecr.region.amazonaws.com
      rewritten image:   aws_account_id.dkr.ecr.region.amazonaws.com/gcr_io_k8s-skaffold_skaffold-example1
     ```
+
 * default-repo begins with "gcr.io" (special case - as GCR allows for infinite deep image repo names)
   * **strategy**: concat unless prefix matches
   * **example1**: prefix doesn't match:
     
-    ````
+    ```
       original image: 	gcr.io/k8s-skaffold/skaffold-example1
       default-repo: 	gcr.io/myproject/myimage
       rewritten image:  gcr.io/myproject/myimage/gcr.io/k8s-skaffold/skaffold-example1
-    ````	
+    ```
   * **example2**: prefix matches:
     
     ```
@@ -120,28 +127,28 @@ Automated image name rewriting strategies are determined based on the default-re
 
 ## Architecture
 
-Skaffold has is designed with pluggability in mind:
+Skaffold is designed with pluggability in mind:
 
 ![architecture](/images/architecture.png)
 
 The architecture allows you to use Skaffold with the tool you prefer. Skaffold
 provides built-in support for the following tools:
 
-* Build
+* **Build**
   * Dockerfile locally, in-cluster with kaniko or using Google Cloud Build
   * Bazel locally 
   * Jib Maven and Jib Gradle locally or using Google Cloud Build
-* Test 
+* **Test**
   * [container-structure-test](https://github.com/GoogleContainerTools/container-structure-test)
-* Deploy 
-  * Kubernetes Command-Line Interface (`kubectl`)
-  * Helm
-  * kustomize
-* Taggers
+* **Tag**
   * Git tagger 
   * Sha256 tagger
   * Env Template tagger 
   * DateTime tagger
+* **Deploy**
+  * Kubernetes Command-Line Interface (`kubectl`)
+  * [Helm](https://helm.sh/)
+  * [kustomize](https://github.com/kubernetes-sigs/kustomize)
  
 And you can combine the tools as you see fit in Skaffold. For experimental
 projects, you may want to use local Docker daemon for building artifacts, and

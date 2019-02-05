@@ -1,8 +1,7 @@
-
 ---
 title: "Deployers"
 linkTitle: "Deployers"
-weight: 20
+weight: 30
 ---
 
 This page discusses how to set up Skaffold to use the tool of your choice
@@ -29,21 +28,26 @@ see [Skaffold Concepts: Configuration](/docs/concepts/#configuration) and
 
 ## Deploying with kubectl
 
-[`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl/) is 
-Kubernetes command-line tool for deploying and managing
-applications on Kubernetes clusters. Skaffold can work with `kubectl` to
+`kubectl` is Kubernetes
+[command-line tool](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+for deploying and managing
+applications on Kubernetes clusters.
+
+Skaffold can work with `kubectl` to
 deploy artifacts on any Kubernetes cluster, including
 [Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine)
 clusters and local [Minikube](https://github.com/kubernetes/minikube) clusters.
 
 To use `kubectl`, add deploy type `kubectl` to the `deploy` section of
-`skaffold.yaml`. The `kubectl` type offers the following options:
+`skaffold.yaml`.
 
-|Option|Description|
-|----|----|
-|`manifests`| OPTIONAL. A list of paths to Kubernetes Manifests. Default value is `k8s/*.yaml`.|
-|`remoteManifests`|OPTIONAL. A list of paths to Kubernetes Manifests in remote clusters.|
-|`flags`| OPTIONAL. Additional flags to pass to `kubectl`. You can specify three types of flags: <ul> <li>`global`: flags that apply to every command.</li> <li>`apply`: flags that apply to creation commands.</li> <li>`delete`: flags that apply to deletion commands.</li><ul>|
+The `kubectl` type offers the following options:
+
+| Option | Description | Default |
+|--------|-------------|---------|
+|`manifests`| A list of paths to Kubernetes Manifests | `k8s/*.yaml` |
+|`remoteManifests`| A list of paths to Kubernetes Manifests in remote clusters | |
+|`flags`| Additional flags to pass to `kubectl`. You can specify three types of flags: <ul> <li>`global`: flags that apply to every command.</li> <li>`apply`: flags that apply to creation commands.</li> <li>`delete`: flags that apply to deletion commands.</li><ul>| |
 
 The following `deploy` section, for example, instructs Skaffold to deploy
 artifacts using `kubectl`:
@@ -59,16 +63,16 @@ command-line interface.
 To use Helm with Skaffold, add deploy type `helm` to the `deploy` section
 of `skaffold.yaml`. The `helm` type offers the following options:
 
-|Option|Description|
-|----|----|
-|`releases`|<b>Required</b> A list of Helm releases. See the table below for the schema of `releases`.|
+| Option | Description |
+|--------|-------------|
+| `releases` | **Required** A list of Helm releases. See the table below for the schema of `releases`. |
 
 Each release includes the following fields:
 
-|Option|Description|
-|----|----|
-|`name`| <b>Required</b> The name of the Helm release.|
-|`chartPath`|<b>Required</b> The path to the Helm chart.|
+| Option | Description |
+|--------|-------------|
+|`name`| **Required** The name of the Helm release.|
+|`chartPath`| **Required** The path to the Helm chart.|
 |`valuesFilePath`| The path to the Helm `values` file.|
 |`values`| A list of key-value pairs supplementing the Helm `values` file.|
 |`namespace`| The Kubernetes namespace.|
@@ -89,15 +93,15 @@ artifacts using `helm`:
 
 [kustomize](https://github.com/kubernetes-sigs/kustomize) allows Kubernetes
 developers to customize raw, template-free YAML files for multiple purposes.
-Skaffold can work with kustomize by calling its command-line interface.
+Skaffold can work with `kustomize` by calling its command-line interface.
 
 To use kustomize with Skaffold, add deploy type `kustomize` to the `deploy`
 section of `skaffold.yaml`. The `kustomize` type offers the following options:
 
-|Option|Description|
-|----|----|
-|`path`| <b>Optional</b> Path to Kustomization files. The default value is `.` (current directory).|
-|`flags`| OPTIONAL. Additional flags to pass to `kubectl`. You can specify three types of flags: <ul> <li>`global`: flags that apply to every command.</li> <li>`apply`: flags that apply to creation commands.</li> <li>`delete`: flags that apply to deletion commands.</li> <ul> |
+| Option | Description | Default |
+|--------|-------------|---------|
+|`path`| Path to Kustomization files | `.` (current directory) |
+|`flags`| Additional flags to pass to `kubectl`. You can specify three types of flags: <ul> <li>`global`: flags that apply to every command.</li> <li>`apply`: flags that apply to creation commands.</li> <li>`delete`: flags that apply to deletion commands.</li> <ul> | |
 
 The following `deploy` section, for example, instructs Skaffold to deploy
 artifacts using kustomize:
