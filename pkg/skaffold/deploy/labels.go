@@ -29,12 +29,19 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	patch "k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 )
+
+// Artifact contains all information about a completed deployment
+type Artifact struct {
+	Obj       runtime.Object
+	Namespace string
+}
 
 // Labeller can give key/value labels to set on deployed resources.
 type Labeller interface {

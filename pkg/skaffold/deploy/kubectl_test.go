@@ -222,6 +222,8 @@ func TestKubectlRedeploy(t *testing.T) {
 		WithRunInput("kubectl --context kubecontext --namespace testNamespace apply --force -f -", `apiVersion: v1
 kind: Pod
 metadata:
+  labels:
+    skaffold-deployer: kubectl
   name: leeroy-app
 spec:
   containers:
@@ -231,6 +233,8 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
+  labels:
+    skaffold-deployer: kubectl
   name: leeroy-web
 spec:
   containers:
@@ -240,6 +244,8 @@ spec:
 		WithRunInput("kubectl --context kubecontext --namespace testNamespace apply --force -f -", `apiVersion: v1
 kind: Pod
 metadata:
+  labels:
+    skaffold-deployer: kubectl
   name: leeroy-app
 spec:
   containers:
@@ -251,25 +257,26 @@ spec:
 		Manifests: []string{"*.yaml"},
 	}
 	deployer := NewKubectlDeployer(tmpDir.Root(), cfg, testKubeContext, testNamespace, "")
+	labellers := []Labeller{deployer}
 
 	// Deploy one manifest
 	err := deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 		{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 		{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
-	}, nil)
+	}, labellers)
 	testutil.CheckError(t, false, err)
 
 	// Deploy one manifest since only one image is updated
 	err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 		{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 		{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-	}, nil)
+	}, labellers)
 	testutil.CheckError(t, false, err)
 
 	// Deploy zero manifest since no image is updated
 	err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 		{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 		{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-	}, nil)
+	}, labellers)
 	testutil.CheckError(t, false, err)
 }
