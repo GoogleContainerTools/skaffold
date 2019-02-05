@@ -1,0 +1,59 @@
+{{ $root := .Get "root" }}
+{{ if not $root}}
+    {{ errorf "missing value for param 'root': %s" .Position }}
+{{ end }}
+
+{{ $schema := getJSON "static/schema/v1beta4/schema.json" }}
+{{ if not $schema}}
+    {{ errorf "missing json schema: %s" .Position }}
+{{ end }}
+
+{{ $definition := $schema }}
+{{ range $part := split $root "." }}
+    {{ $found := false }}
+
+    {{ range $property := $definition.properties }}
+        {{ if eq $property.name $part }}
+            {{ $definition = $property }}
+            {{ $found = true }}
+        {{ end }}
+    {{ end }}
+
+    {{ range $property := $definition.oneOf }}
+        {{ if eq $property.name $part }}
+            {{ $definition = $property }}
+            {{ $found = true }}
+        {{ end }}
+    {{ end }}
+
+    {{ if not $found }}
+        {{ errorf "missing properties: %s" $root }}
+    {{ end }}
+{{end}}
+
+{{ $showDefaults := false }}
+{{ range $definition.properties }}
+    {{ if .default }}
+        {{ $showDefaults = true }}
+    {{ end }}
+{{ end }}
+
+<table>
+    <thead>
+        <tr>
+            <th>Option</th>
+            <th>Description</th>
+            {{ if $showDefaults }}<th>Default</th>{{ end }}
+        </tr>
+    </thead>
+    <tbody>
+        {{range $definition.properties}}
+        <tr>
+            <td><code>{{.name}}</code></td>
+            <td>{{if .required}}<strong>Required</strong> {{end}}{{.description | markdownify}}</td>
+            {{ if $showDefaults }}<td>{{.default | markdownify}}</td>{{ end }}
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+    

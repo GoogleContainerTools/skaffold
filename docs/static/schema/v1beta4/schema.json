@@ -1,0 +1,295 @@
+{
+  "description": "TODO",
+  "properties": [
+    {
+      "name": "build",
+      "description": "TODO",
+      "properties": [
+        {
+          "name": "artifacts",
+          "description": "TODO",
+          "type": "[]interface",
+          "properties": [
+            {
+              "name": "image",
+              "description": "TODO",
+              "type": "string"
+            },
+            {
+              "name": "context",
+              "description": "TODO",
+              "type": "string"
+            },
+            {
+              "name": "sync",
+              "description": "TODO",
+              "type": "map[string]string"
+            }
+          ],
+          "oneOf": [
+            {
+              "name": "docker",
+              "description": "TODO"
+            },
+            {
+              "name": "bazel",
+              "description": "TODO",
+              "properties": [
+                {
+                  "name": "target",
+                  "description": "The `bazel build` target to run",
+                  "required": true,
+                  "type": "string"
+                },
+                {
+                  "name": "tags",
+                  "description": "Additional args to pass to `bazel build`",
+                  "type": "[]string"
+                }
+              ]
+            },
+            {
+              "name": "jibMaven",
+              "description": "TODO"
+            },
+            {
+              "name": "jibDocker",
+              "description": "TODO"
+            }
+          ]
+        }
+      ],
+      "oneOf": [
+        {
+          "name": "local",
+          "description": "TODO",
+          "properties": [
+            {
+              "name": "push",
+              "description": "Should images be pushed to a registry",
+              "default": "`false` for local clusters, `true` for remote clusters",
+              "type": "bool"
+            },
+            {
+              "name": "useDockerCLI",
+              "description": "Uses `docker` command-line interface instead of Docker Engine APIs",
+              "default": "`false`",
+              "type": "bool"
+            },
+            {
+              "name": "useBuildkit",
+              "description": "Uses BuildKit to build Docker images",
+              "default": "`false`",
+              "type": "bool"
+            }
+          ]
+        },
+        {
+          "name": "googleCloudBuild",
+          "description": "TODO",
+          "properties": [
+            {
+              "name": "projectId",
+              "description": "The ID of your Google Cloud Platform Project",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "diskSizeGb",
+              "description": "The disk size of the VM that runs the build. See [Cloud Build API Reference: Build Options](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions) for more information",
+              "type": "string"
+            },
+            {
+              "name": "machineType",
+              "description": "The type of the VM that runs the build. See [Cloud Build API Reference: Build Options](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions) for more information",
+              "type": "string"
+            },
+            {
+              "name": "timeOut",
+              "description": "The amount of time (in seconds) that this build should be allowed to run. See [Cloud Build API Reference: Resource/Build](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build) for more information",
+              "type": "string"
+            },
+            {
+              "name": "dockerImage",
+              "description": "The name of the image that will run a docker build. See [Cloud builders](https://cloud.google.com/cloud-build/docs/cloud-builders) for more information",
+              "default": "`gcr.io/cloud-builders/docker`",
+              "type": "string"
+            },
+            {
+              "name": "gradleImage",
+              "description": "The name of the image that will run a gradle build. See [Cloud builders](https://cloud.google.com/cloud-build/docs/cloud-builders) for more information",
+              "default": "`gcr.io/cloud-builders/gradle`",
+              "type": "string"
+            },
+            {
+              "name": "mavenImage",
+              "description": "The name of the image that will run a maven build. See [Cloud builders](https://cloud.google.com/cloud-build/docs/cloud-builders) for more information",
+              "default": "`gcr.io/cloud-builders/mvn`",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "name": "kaniko",
+          "description": "TODO",
+          "properties": [
+            {
+              "name": "buildContext",
+              "description": "The Kaniko build context: `gcsBucket` or `localDir`",
+              "default": "`localDir`"
+            },
+            {
+              "name": "pullSecret",
+              "description": "The path to the secret key file. See [Kaniko Documentation: Running Kaniko in a Kubernetes cluster](https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster) for more information",
+              "type": "string"
+            },
+            {
+              "name": "pullSecretName",
+              "description": "The name of the Kubernetes secret for pulling the files from the build context and pushing the final image",
+              "default": "`kaniko-secret`",
+              "type": "string"
+            },
+            {
+              "name": "namespace",
+              "description": "The Kubernetes namespace",
+              "default": "Current namespace in Kubernetes configuration",
+              "type": "string"
+            },
+            {
+              "name": "timeout",
+              "description": "The amount of time (in seconds) that this build should be allowed to run",
+              "default": "20 minutes (`20m`)",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "deploy",
+      "description": "TODO",
+      "properties": [
+      ],
+      "oneOf": [
+        {
+          "name": "kubectl",
+          "description": "TODO",
+          "properties": [
+            {
+              "name": "manifests",
+              "description": "A list of paths to Kubernetes Manifests",
+              "default": "`[\"k8s/*.yaml\"]`",
+              "type": "[]string"
+            },
+            {
+              "name": "remoteManifests",
+              "description": "A list of paths to Kubernetes Manifests in remote clusters",
+              "type": "[]string"
+            },
+            {
+              "name": "flags",
+              "description": "Additional flags to pass to `kubectl`. You can specify three types of flags: <ul> <li>`global`: flags that apply to every command.</li> <li>`apply`: flags that apply to creation commands.</li> <li>`delete`: flags that apply to deletion commands.</li><ul>"
+            }
+          ]
+        },
+        {
+          "name": "helm",
+          "description": "TODO",
+          "properties": [
+            {
+              "name": "releases",
+              "description": "A list of Helm releases",
+              "required": true,
+              "type": "[]interface",
+              "properties": [
+                {
+                  "name": "name",
+                  "description": "The name of the Helm release",
+                  "required": true,
+                  "type": "string"
+                },
+                {
+                  "name": "chartPath",
+                  "description": "The path to the Helm chart",
+                  "required": true,
+                  "type": "string"
+                },
+                {
+                  "name": "valuesFiles",
+                  "description": "The paths to the Helm `values` files",
+                  "type": "[]string"
+                },
+                {
+                  "name": "values",
+                  "description": "A list of key-value pairs supplementing the Helm `values` file",
+                  "type": "map[string]string"
+                },
+                {
+                  "name": "namespace",
+                  "description": "The Kubernetes namespace",
+                  "type": "string"
+                },
+                {
+                  "name": "version",
+                  "description": "The version of the chart",
+                  "type": "string"
+                },
+                {
+                  "name": "setValues",
+                  "description": "A list of key-value pairs; if present, Skaffold will sent `--set` flag to Helm CLI and append all pairs after the flag",
+                  "type": "map[string]string"
+                },
+                {
+                  "name": "setValueTemplates",
+                  "description": "A list of key-value pairs; if present, Skaffold will try to parse the value part of each key-value pair using environment variables in the system, then send `--set` flag to Helm CLI and append all parsed pairs after the flag",
+                  "type": "map[string]string"
+                },
+                {
+                  "name": "wait",
+                  "description": "if `true`, Skaffold will send `--wait` flag to Helm CLI",
+                  "default": "`false`",
+                  "type": "bool"
+                },
+                {
+                  "name": "recreatePods",
+                  "description": "if `true`, Skaffold will send `--recreate-pods` flag to Helm CLI",
+                  "default": "`false`",
+                  "type": "bool"
+                },
+                {
+                  "name": "overrides",
+                  "description": "A list of key-value pairs; if present, Skaffold will build a Helm `values` file that overrides the original and use it to call Helm CLI (`--f` flag)",
+                  "type": "map[string]interface{}"
+                },
+                {
+                  "name": "packaged",
+                  "description": "Packages the chart (`helm package`) Includes two fields: <ul> <li>`version`: Version of the chart.</li> <li>`appVersion`: Version of the app.</li> </ul>"
+                },
+                {
+                  "name": "imageStrategy",
+                  "description": "Add image configurations to the Helm `values` file. Includes one of the two following fields: <ul> <li> `fqn`: The image configuration uses the syntax `IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG`. </li> <li>`helm`: The image configuration uses the syntax `IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG`.</li> </ul>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "kustomize",
+          "description": "TODO",
+          "properties": [
+            {
+              "name": "path",
+              "description": "Path to Kustomization files",
+              "default": "`.` (current directory)",
+              "type": "string"
+            },
+            {
+              "name": "flags",
+              "description": "Additional flags to pass to `kubectl`. You can specify three types of flags: <ul> <li>`global`: flags that apply to every command.</li> <li>`apply`: flags that apply to creation commands.</li> <li>`delete`: flags that apply to deletion commands.</li><ul>"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
