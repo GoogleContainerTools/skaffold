@@ -56,6 +56,8 @@ var (
 	Purple = Color(35)
 	// Cyan can format text to be displayed to the terminal in cyan, using ANSI escape codes.
 	Cyan = Color(36)
+	// White can format text to be displayed to the terminal in white, using ANSI escape codes.
+	White = Color(37)
 	// None uses ANSI escape codes to reset all formatting.
 	None = Color(0)
 
@@ -99,10 +101,18 @@ type ColoredWriteCloser struct {
 	io.WriteCloser
 }
 
+// ColoredWriter forces printing with colors to an io.Writer.
+type ColoredWriter struct {
+	io.Writer
+}
+
 // This implementation comes from logrus (https://github.com/sirupsen/logrus/blob/master/terminal_check_notappengine.go),
 // unfortunately logrus doesn't expose a public interface we can use to call it.
 func isTerminal(w io.Writer) bool {
 	if _, ok := w.(ColoredWriteCloser); ok {
+		return true
+	}
+	if _, ok := w.(ColoredWriter); ok {
 		return true
 	}
 

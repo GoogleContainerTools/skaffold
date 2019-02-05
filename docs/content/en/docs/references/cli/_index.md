@@ -207,6 +207,7 @@ Usage:
 Flags:
       --cleanup                   Delete deployments after dev mode is interrupted (default true)
   -d, --default-repo string       Default repository value (overrides global config)
+      --experimental-gui          Experimental Graphical User Interface
   -f, --filename string           Filename or URL to the pipeline file (default "skaffold.yaml")
   -l, --label stringArray         Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace string          Run deployments in the specified namespace
@@ -228,6 +229,7 @@ Env vars:
 
 * `SKAFFOLD_CLEANUP` (same as --cleanup)
 * `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
+* `SKAFFOLD_EXPERIMENTAL_GUI` (same as --experimental-gui)
 * `SKAFFOLD_FILENAME` (same as --filename)
 * `SKAFFOLD_LABEL` (same as --label)
 * `SKAFFOLD_NAMESPACE` (same as --namespace)

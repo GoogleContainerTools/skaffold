@@ -196,7 +196,7 @@ func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Col
 		if _, err := headerColor.Fprintf(a.output, "%s ", header); err != nil {
 			return errors.Wrap(err, "writing pod prefix header to out")
 		}
-		if _, err := fmt.Fprint(a.output, string(line)); err != nil {
+		if _, err := color.White.Fprint(a.output, string(line)); err != nil {
 			return errors.Wrap(err, "writing pod log to out")
 		}
 	}
