@@ -1,4 +1,3 @@
-
 ---
 title: "Profiles"
 linkTitle: "Profiles"
@@ -20,7 +19,7 @@ see [Skaffold Concepts: Configuration](/docs/concepts/#configuration) and
 
 Each profile has four parts:
 
-* Name (`name`): The name of the profile.
+* Name (`name`): The name of the profile
 * Build configuration (`build`)
 * Test configuration (`test`)
 * Deploy configuration (`deploy`)
@@ -44,7 +43,9 @@ With no profile activated, Skaffold will build the artifact
 `gcr.io/k8s-skaffold/skaffold-example` using local Docker daemon and deploy it
 with `kubectl`. However, if you run Skaffold with the following command:
 
-`skaffold dev -p gcb` (or `skaffold run -p gcb`)
+```bash
+skaffold dev -p gcb
+```
 
 Skaffold will switch to Google Cloud Build for building artifacts. Note that
 since the `gcb` profile does not specify a deploy configuration, Skaffold will

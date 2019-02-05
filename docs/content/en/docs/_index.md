@@ -1,4 +1,3 @@
-
 ---
 title: "Skaffold Documentation"
 linkTitle: "Documentation"
