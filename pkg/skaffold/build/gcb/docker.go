@@ -17,6 +17,8 @@ limitations under the License.
 package gcb
 
 import (
+	"fmt"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
@@ -27,8 +29,9 @@ func (b *Builder) dockerBuildSteps(artifact *latest.DockerArtifact, tag string) 
 
 	for _, cacheFrom := range artifact.CacheFrom {
 		steps = append(steps, &cloudbuild.BuildStep{
-			Name: b.DockerImage,
-			Args: []string{"pull", cacheFrom},
+			Name:       b.DockerImage,
+			Entrypoint: "sh",
+			Args:       []string{"-c", fmt.Sprintf("docker pull %s || true", cacheFrom)},
 		})
 	}
 
