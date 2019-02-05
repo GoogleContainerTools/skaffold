@@ -22,7 +22,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
@@ -47,27 +46,15 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 }
 
 func (b *Builder) buildArtifactWithKaniko(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error) {
-	initialTag, err := b.run(ctx, out, artifact)
-	if err != nil {
-		return "", errors.Wrapf(err, "kaniko build for [%s]", artifact.ImageName)
-	}
-
-	digest, err := docker.RemoteDigest(initialTag)
-	if err != nil {
-		return "", errors.Wrap(err, "getting digest")
-	}
-
-	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, tag.Options{
-		ImageName: artifact.ImageName,
-		Digest:    digest,
-	})
+	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, artifact.ImageName)
 	if err != nil {
 		return "", errors.Wrap(err, "generating tag")
 	}
 
-	if err := docker.AddTag(initialTag, tag); err != nil {
-		return "", errors.Wrap(err, "tagging image")
+	digest, err := b.run(ctx, out, artifact, tag)
+	if err != nil {
+		return "", errors.Wrapf(err, "kaniko build for [%s]", artifact.ImageName)
 	}
 
-	return tag, nil
+	return tag + "@" + digest, nil
 }

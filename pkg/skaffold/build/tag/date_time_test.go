@@ -66,9 +66,7 @@ func TestDateTime_GenerateFullyQualifiedImageName(t *testing.T) {
 				TimeZone: test.timezone,
 				timeFn:   func() time.Time { return test.buildTime },
 			}
-			tag, err := c.GenerateFullyQualifiedImageName(".", Options{
-				ImageName: test.imageName,
-			})
+			tag, err := c.GenerateFullyQualifiedImageName(".", test.imageName)
 
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.want, tag)
 		})

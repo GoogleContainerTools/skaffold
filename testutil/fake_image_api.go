@@ -18,7 +18,7 @@ package testutil
 
 import (
 	"context"
-	"crypto/rand"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -39,6 +39,8 @@ type FakeAPIClient struct {
 	ErrImagePush    bool
 	ErrImagePull    bool
 	ErrStream       bool
+
+	nextImageID int
 }
 
 type errReader struct{}
@@ -62,7 +64,8 @@ func (f *FakeAPIClient) ImageBuild(_ context.Context, _ io.Reader, options types
 		f.TagToImageID = make(map[string]string)
 	}
 
-	imageID := "sha256:" + randomID()
+	f.nextImageID++
+	imageID := fmt.Sprintf("sha256:%d", f.nextImageID)
 	f.TagToImageID[imageID] = imageID
 
 	for _, tag := range options.Tags {
@@ -75,12 +78,6 @@ func (f *FakeAPIClient) ImageBuild(_ context.Context, _ io.Reader, options types
 	return types.ImageBuildResponse{
 		Body: f.body(imageID),
 	}, nil
-}
-
-func randomID() string {
-	b := make([]byte, 16)
-	rand.Read(b)
-	return fmt.Sprintf("%x", b)
 }
 
 func (f *FakeAPIClient) ImageInspectWithRaw(_ context.Context, ref string) (types.ImageInspect, []byte, error) {
@@ -116,7 +113,7 @@ func (f *FakeAPIClient) ImagePush(_ context.Context, ref string, _ types.ImagePu
 		return nil, fmt.Errorf("")
 	}
 
-	digest := f.TagToImageID[ref]
+	digest := fmt.Sprintf("sha256:%x", sha256.New().Sum([]byte(f.TagToImageID[ref])))
 
 	return f.body(digest), nil
 }

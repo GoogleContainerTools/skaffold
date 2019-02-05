@@ -28,37 +28,50 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact) (string, error) {
+func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, tag string) (string, error) {
 	if err := b.pullCacheFromImages(ctx, out, a); err != nil {
 		return "", errors.Wrap(err, "pulling cache-from images")
 	}
 
-	initialTag := util.RandomID()
+	var (
+		imageID string
+		err     error
+	)
 
 	if b.cfg.UseDockerCLI || b.cfg.UseBuildkit {
-		dockerfilePath, err := docker.NormalizeDockerfilePath(workspace, a.DockerfilePath)
-		if err != nil {
-			return "", errors.Wrap(err, "normalizing dockerfile path")
-		}
-
-		args := []string{"build", workspace, "--file", dockerfilePath, "-t", initialTag}
-		args = append(args, docker.GetBuildArgs(a)...)
-
-		cmd := exec.CommandContext(ctx, "docker", args...)
-		if b.cfg.UseBuildkit {
-			cmd.Env = append(os.Environ(), "DOCKER_BUILDKIT=1")
-		}
-		cmd.Stdout = out
-		cmd.Stderr = out
-
-		if err := util.RunCmd(cmd); err != nil {
-			return "", errors.Wrap(err, "running build")
-		}
-
-		return b.localDocker.ImageID(ctx, initialTag)
+		imageID, err = b.dockerCLIBuild(ctx, out, workspace, a, tag)
+	} else {
+		imageID, err = b.localDocker.Build(ctx, out, workspace, a, tag)
 	}
 
-	return b.localDocker.Build(ctx, out, workspace, a, initialTag)
+	if b.pushImages {
+		return b.localDocker.Push(ctx, out, tag)
+	}
+
+	return imageID, err
+}
+
+func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, tag string) (string, error) {
+	dockerfilePath, err := docker.NormalizeDockerfilePath(workspace, a.DockerfilePath)
+	if err != nil {
+		return "", errors.Wrap(err, "normalizing dockerfile path")
+	}
+
+	args := []string{"build", workspace, "--file", dockerfilePath, "-t", tag}
+	args = append(args, docker.GetBuildArgs(a)...)
+
+	cmd := exec.CommandContext(ctx, "docker", args...)
+	if b.cfg.UseBuildkit {
+		cmd.Env = append(os.Environ(), "DOCKER_BUILDKIT=1")
+	}
+	cmd.Stdout = out
+	cmd.Stderr = out
+
+	if err := util.RunCmd(cmd); err != nil {
+		return "", errors.Wrap(err, "running build")
+	}
+
+	return b.localDocker.ImageID(ctx, tag)
 }
 
 func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *latest.DockerArtifact) error {

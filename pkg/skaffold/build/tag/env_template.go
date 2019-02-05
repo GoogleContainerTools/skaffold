@@ -23,7 +23,22 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
+
+// for testing
+var warner Warner = &logrusWarner{}
+
+// Warner shows warnings.
+type Warner interface {
+	Warnf(format string, args ...interface{})
+}
+
+type logrusWarner struct{}
+
+func (l *logrusWarner) Warnf(format string, args ...interface{}) {
+	logrus.Warnf(format, args...)
+}
 
 // envTemplateTagger implements Tagger
 type envTemplateTagger struct {
@@ -36,6 +51,7 @@ func NewEnvTemplateTagger(t string) (Tagger, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing template")
 	}
+
 	return &envTemplateTagger{
 		Template: tmpl,
 	}, nil
@@ -48,25 +64,30 @@ func (t *envTemplateTagger) Labels() map[string]string {
 }
 
 // GenerateFullyQualifiedImageName tags an image with the custom tag
-func (t *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir string, opts Options) (string, error) {
-	customMap := CreateEnvVarMap(opts.ImageName, opts.Digest)
-	return util.ExecuteEnvTemplate(t.Template, customMap)
-}
+func (t *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
+	tag, err := util.ExecuteEnvTemplate(t.Template, map[string]string{
+		"IMAGE_NAME":  imageName,
+		"DIGEST":      "_DEPRECATED_DIGEST_",
+		"DIGEST_ALGO": "_DEPRECATED_DIGEST_ALGO_",
+		"DIGEST_HEX":  "_DEPRECATED_DIGEST_HEX_",
+	})
+	if err != nil {
+		return "", err
+	}
 
-// CreateEnvVarMap creates a set of environment variables for use in Templates from the given
-// image name and digest
-func CreateEnvVarMap(imageName string, digest string) map[string]string {
-	customMap := map[string]string{}
-	customMap["IMAGE_NAME"] = imageName
-	customMap["DIGEST"] = digest
-	if digest != "" {
-		names := strings.SplitN(digest, ":", 2)
-		if len(names) >= 2 {
-			customMap["DIGEST_ALGO"] = names[0]
-			customMap["DIGEST_HEX"] = names[1]
-		} else {
-			customMap["DIGEST_HEX"] = digest
+	if strings.Contains(tag, "_DEPRECATED_DIGEST_") ||
+		strings.Contains(tag, "_DEPRECATED_DIGEST_ALGO_") ||
+		strings.Contains(tag, "_DEPRECATED_DIGEST_HEX_") {
+		warner.Warnf("{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be appended to image tags")
+
+		switch {
+		case strings.HasSuffix(tag, "@_DEPRECATED_DIGEST_"):
+			tag = strings.TrimSuffix(tag, "@_DEPRECATED_DIGEST_")
+
+		case strings.HasSuffix(tag, "@_DEPRECATED_DIGEST_ALGO_:_DEPRECATED_DIGEST_HEX_"):
+			tag = strings.TrimSuffix(tag, "@_DEPRECATED_DIGEST_ALGO_:_DEPRECATED_DIGEST_HEX_")
 		}
 	}
-	return customMap
+
+	return tag, nil
 }

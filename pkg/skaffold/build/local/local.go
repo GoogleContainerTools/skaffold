@@ -20,11 +20,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
@@ -42,76 +42,49 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error) {
-	digest, err := b.runBuildForArtifact(ctx, out, artifact)
-	if err != nil {
-		return "", errors.Wrap(err, "build artifact")
-	}
-
-	if b.alreadyTagged == nil {
-		b.alreadyTagged = make(map[string]string)
-	}
-	if tag, present := b.alreadyTagged[digest]; present {
-		return tag, nil
-	}
-
-	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, tag.Options{
-		ImageName: artifact.ImageName,
-		Digest:    digest,
-	})
+	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, artifact.ImageName)
 	if err != nil {
 		return "", errors.Wrap(err, "generating tag")
 	}
 
-	if err := b.retagAndPush(ctx, out, digest, tag, artifact); err != nil {
-		return "", errors.Wrap(err, "tagging")
+	digestOrImageID, err := b.runBuildForArtifact(ctx, out, artifact, tag)
+	if err != nil {
+		return "", errors.Wrap(err, "build artifact")
 	}
 
-	b.alreadyTagged[digest] = tag
+	if b.pushImages {
+		digest := digestOrImageID
+		return tag + "@" + digest, nil
+	}
 
-	return tag, nil
+	// k8s doesn't recognize the imageID or any combination of the image name
+	// suffixed with the imageID, as a valid image name.
+	// So, the solution we chose is to create a tag, just for Skaffold, from
+	// the imageID, and use that in the manifests.
+	imageID := digestOrImageID
+	uniqueTag := artifact.ImageName + ":" + strings.TrimPrefix(imageID, "sha256:")
+	if err := b.localDocker.Tag(ctx, imageID, uniqueTag); err != nil {
+		return "", err
+	}
+
+	return uniqueTag, nil
 }
 
-func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact) (string, error) {
+func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	switch {
 	case artifact.DockerArtifact != nil:
-		return b.buildDocker(ctx, out, artifact.Workspace, artifact.DockerArtifact)
+		return b.buildDocker(ctx, out, artifact.Workspace, artifact.DockerArtifact, tag)
 
 	case artifact.BazelArtifact != nil:
-		return b.buildBazel(ctx, out, artifact.Workspace, artifact)
+		return b.buildBazel(ctx, out, artifact.Workspace, artifact.BazelArtifact, tag)
 
 	case artifact.JibMavenArtifact != nil:
-		return b.buildJibMaven(ctx, out, artifact.Workspace, artifact)
+		return b.buildJibMaven(ctx, out, artifact.Workspace, artifact.JibMavenArtifact, tag)
 
 	case artifact.JibGradleArtifact != nil:
-		return b.buildJibGradle(ctx, out, artifact.Workspace, artifact)
+		return b.buildJibGradle(ctx, out, artifact.Workspace, artifact.JibGradleArtifact, tag)
 
 	default:
 		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 	}
-}
-
-func (b *Builder) retagAndPush(ctx context.Context, out io.Writer, digest string, newTag string, artifact *latest.Artifact) error {
-	if b.pushImages && (artifact.JibMavenArtifact != nil || artifact.JibGradleArtifact != nil || artifact.BazelArtifact != nil) {
-		// when pushing images, jib/bazel build them directly to the registry. all we need to do here is add a tag to the remote.
-
-		// NOTE: the digest returned by the builders when in push mode is the digest of the remote image that was built to the registry.
-		// when adding the tag to the remote, we need to specify the registry it was built to so go-containerregistry knows
-		// where to look when grabbing the remote image reference.
-		if err := docker.AddTag(fmt.Sprintf("%s@%s", artifact.ImageName, digest), newTag); err != nil {
-			return errors.Wrap(err, "tagging image")
-		}
-		return nil
-	}
-
-	if err := b.localDocker.Tag(ctx, digest, newTag); err != nil {
-		return err
-	}
-
-	if b.pushImages {
-		if _, err := b.localDocker.Push(ctx, out, newTag); err != nil {
-			return errors.Wrap(err, "pushing")
-		}
-	}
-
-	return nil
 }

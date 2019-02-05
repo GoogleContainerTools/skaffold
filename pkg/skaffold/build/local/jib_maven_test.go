@@ -52,22 +52,3 @@ func TestMavenVerifyJibPackageGoal(t *testing.T) {
 		}
 	}
 }
-
-func TestGenerateJibImageRef(t *testing.T) {
-	var testCases = []struct {
-		workspace string
-		project   string
-		out       string
-	}{
-		{"simple", "", "jibsimple"},
-		{"simple", "project", "jibsimple_project"},
-		{".", "project", "jib__d8c7cbe8892fe8442b7f6ef42026769ee6a01e67"},
-		{"complex/workspace", "project", "jib__965ec099f720d3ccc9c038c21ea4a598c9632883"},
-	}
-
-	for _, tt := range testCases {
-		computed := generateJibImageRef(tt.workspace, tt.project)
-
-		testutil.CheckDeepEqual(t, tt.out, computed)
-	}
-}

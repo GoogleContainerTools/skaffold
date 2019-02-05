@@ -19,9 +19,6 @@ build:
     # The template is compiled and executed against the current environment,
     # with those variables injected:
     #   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.
-    #   DIGEST       |  Digest of the newly built image. For eg. `sha256:27ffc7f352665cc50ae3cbcc4b2725e36062f1b38c611b6f95d6df9a7510de23`.
-    #   DIGEST_ALGO  |  Algorithm used by the digest: For eg. `sha256`.
-    #   DIGEST_HEX   |  Digest of the newly built image. For eg. `27ffc7f352665cc50ae3cbcc4b2725e36062f1b38c611b6f95d6df9a7510de23`.
     # Example
     # envTemplate:
     #  template: "{{.RELEASE}}-{{.IMAGE_NAME}}"

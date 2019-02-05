@@ -41,7 +41,7 @@ func TestJibMavenBuildSteps(t *testing.T) {
 			},
 			skipTests: tt.skipTests,
 		}
-		steps := builder.jibMavenBuildSteps("img", artifact)
+		steps := builder.jibMavenBuildSteps(artifact, "img")
 
 		expected := []*cloudbuild.BuildStep{{
 			Name: "maven:3.6.0",
@@ -69,7 +69,7 @@ func TestJibGradleBuildSteps(t *testing.T) {
 			},
 			skipTests: tt.skipTests,
 		}
-		steps := builder.jibGradleBuildSteps("img", artifact)
+		steps := builder.jibGradleBuildSteps(artifact, "img")
 
 		expected := []*cloudbuild.BuildStep{{
 			Name: "gradle:5.1.1",

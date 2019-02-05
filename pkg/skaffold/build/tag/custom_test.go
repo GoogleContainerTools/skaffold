@@ -27,9 +27,7 @@ func TestCustomTag_GenerateFullyQualifiedImageName(t *testing.T) {
 		Tag: "1.2.3-beta",
 	}
 
-	tag, err := c.GenerateFullyQualifiedImageName(".", Options{
-		ImageName: "test",
-	})
+	tag, err := c.GenerateFullyQualifiedImageName(".", "test")
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, "test:1.2.3-beta", tag)
 }
