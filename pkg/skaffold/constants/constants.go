@@ -31,9 +31,6 @@ const (
 	// context directory
 	DefaultDockerfilePath = "Dockerfile"
 
-	DefaultDevTagStrategy = TagStrategySha256
-	DefaultRunTagStrategy = TagStrategyGitCommit
-
 	// TagStrategySha256 uses the checksum of the built artifact as the tag
 	TagStrategySha256    = "sha256"
 	TagStrategyGitCommit = "gitCommit"
@@ -63,9 +60,6 @@ const (
 	DefaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
 	DefaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn"
 	DefaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
-
-	// A regex matching valid repository names (https://github.com/docker/distribution/blob/master/reference/reference.go)
-	RepositoryComponentRegex string = `^[a-z\d]+(?:(?:[_.]|__|-+)[a-z\d]+)*$`
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}
