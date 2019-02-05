@@ -67,25 +67,25 @@ func (t *envTemplateTagger) Labels() map[string]string {
 func (t *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
 	tag, err := util.ExecuteEnvTemplate(t.Template, map[string]string{
 		"IMAGE_NAME":  imageName,
-		"DIGEST":      "[DEPRECATED_DIGEST]",
-		"DIGEST_ALGO": "[DEPRECATED_DIGEST_ALGO]",
-		"DIGEST_HEX":  "[DEPRECATED_DIGEST_HEX]",
+		"DIGEST":      "_DEPRECATED_DIGEST_",
+		"DIGEST_ALGO": "_DEPRECATED_DIGEST_ALGO_",
+		"DIGEST_HEX":  "_DEPRECATED_DIGEST_HEX_",
 	})
 	if err != nil {
 		return "", err
 	}
 
-	if strings.Contains(tag, "[DEPRECATED_DIGEST]") ||
-		strings.Contains(tag, "[DEPRECATED_DIGEST_ALGO]") ||
-		strings.Contains(tag, "[DEPRECATED_DIGEST_HEX]") {
-		warner.Warnf("{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be apppended to image tags")
+	if strings.Contains(tag, "_DEPRECATED_DIGEST_") ||
+		strings.Contains(tag, "_DEPRECATED_DIGEST_ALGO_") ||
+		strings.Contains(tag, "_DEPRECATED_DIGEST_HEX_") {
+		warner.Warnf("{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be appended to image tags")
 
 		switch {
-		case strings.HasSuffix(tag, "@[DEPRECATED_DIGEST]"):
-			tag = strings.TrimSuffix(tag, "@[DEPRECATED_DIGEST]")
+		case strings.HasSuffix(tag, "@_DEPRECATED_DIGEST_"):
+			tag = strings.TrimSuffix(tag, "@_DEPRECATED_DIGEST_")
 
-		case strings.HasSuffix(tag, "@[DEPRECATED_DIGEST_ALGO]:[DEPRECATED_DIGEST_HEX]"):
-			tag = strings.TrimSuffix(tag, "@[DEPRECATED_DIGEST_ALGO]:[DEPRECATED_DIGEST_HEX]")
+		case strings.HasSuffix(tag, "@_DEPRECATED_DIGEST_ALGO_:_DEPRECATED_DIGEST_HEX_"):
+			tag = strings.TrimSuffix(tag, "@_DEPRECATED_DIGEST_ALGO_:_DEPRECATED_DIGEST_HEX_")
 		}
 	}
 
