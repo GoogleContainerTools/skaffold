@@ -94,7 +94,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	for i := range artifacts {
 		artifact := artifacts[i]
 
-		if !r.shouldWatch(artifact) {
+		if !r.IsTargetImage(artifact) {
 			continue
 		}
 

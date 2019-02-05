@@ -24,35 +24,35 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestShouldWatch(t *testing.T) {
+func TestIsTargetImage(t *testing.T) {
 	var tests = []struct {
 		description   string
-		watch         []string
+		targetImages  []string
 		expectedMatch bool
 	}{
 		{
 			description:   "match all",
-			watch:         nil,
+			targetImages:  nil,
 			expectedMatch: true,
 		},
 		{
 			description:   "match full name",
-			watch:         []string{"domain/image"},
+			targetImages:  []string{"domain/image"},
 			expectedMatch: true,
 		},
 		{
 			description:   "match partial name",
-			watch:         []string{"image"},
+			targetImages:  []string{"image"},
 			expectedMatch: true,
 		},
 		{
 			description:   "match any",
-			watch:         []string{"other", "image"},
+			targetImages:  []string{"other", "image"},
 			expectedMatch: true,
 		},
 		{
 			description:   "no match",
-			watch:         []string{"other"},
+			targetImages:  []string{"other"},
 			expectedMatch: false,
 		},
 	}
@@ -61,11 +61,11 @@ func TestShouldWatch(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			runner := &SkaffoldRunner{
 				opts: &config.SkaffoldOptions{
-					Watch: test.watch,
+					TargetImages: test.targetImages,
 				},
 			}
 
-			match := runner.shouldWatch(&latest.Artifact{
+			match := runner.IsTargetImage(&latest.Artifact{
 				ImageName: "domain/image",
 			})
 

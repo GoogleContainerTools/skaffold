@@ -33,7 +33,7 @@ type SkaffoldOptions struct {
 	Profiles          []string
 	CustomTag         string
 	Namespace         string
-	Watch             []string
+	TargetImages      []string
 	Trigger           string
 	CustomLabels      []string
 	WatchPollInterval int

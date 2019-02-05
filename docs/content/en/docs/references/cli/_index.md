@@ -63,6 +63,7 @@ Usage:
   skaffold build [flags]
 
 Flags:
+  -b, --build-image stringArray      Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts
   -d, --default-repo string          Default repository value (overrides global config)
   -f, --filename string              Filename or URL to the pipeline file (default "skaffold.yaml")
   -n, --namespace string             Run deployments in the specified namespace
@@ -80,6 +81,7 @@ Global Flags:
 ```
 Env vars:
 
+* `SKAFFOLD_BUILD_IMAGE` (same as --build-image)
 * `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
 * `SKAFFOLD_FILENAME` (same as --filename)
 * `SKAFFOLD_NAMESPACE` (same as --namespace)
