@@ -146,15 +146,18 @@ func TestGetCommandGradle(t *testing.T) {
 
 func TestGenerateGradleArgs(t *testing.T) {
 	var testCases = []struct {
-		in  latest.JibGradleArtifact
-		out []string
+		in        latest.JibGradleArtifact
+		skipTests bool
+		out       []string
 	}{
-		{latest.JibGradleArtifact{}, []string{":task", "--image=image"}},
-		{latest.JibGradleArtifact{Project: "project"}, []string{":project:task", "--image=image"}},
+		{latest.JibGradleArtifact{}, false, []string{":task", "--image=image"}},
+		{latest.JibGradleArtifact{}, true, []string{":task", "--image=image", "-x", "test"}},
+		{latest.JibGradleArtifact{Project: "project"}, false, []string{":project:task", "--image=image"}},
+		{latest.JibGradleArtifact{Project: "project"}, true, []string{":project:task", "--image=image", "-x", "test"}},
 	}
 
 	for _, tt := range testCases {
-		command := GenerateGradleArgs("task", "image", &tt.in)
+		command := GenerateGradleArgs("task", "image", &tt.in, tt.skipTests)
 
 		testutil.CheckDeepEqual(t, tt.out, command)
 	}

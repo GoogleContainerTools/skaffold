@@ -131,11 +131,11 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string, opts *config.Skaffo
 
 	case cfg.LocalBuild != nil:
 		logrus.Debugln("Using builder: local")
-		return local.NewBuilder(cfg.LocalBuild, kubeContext)
+		return local.NewBuilder(cfg.LocalBuild, kubeContext, opts.SkipTests)
 
 	case cfg.GoogleCloudBuild != nil:
 		logrus.Debugln("Using builder: google cloud")
-		return gcb.NewBuilder(cfg.GoogleCloudBuild), nil
+		return gcb.NewBuilder(cfg.GoogleCloudBuild, opts.SkipTests), nil
 
 	case cfg.KanikoBuild != nil:
 		logrus.Debugln("Using builder: kaniko")

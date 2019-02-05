@@ -35,13 +35,14 @@ type Builder struct {
 	localDocker  docker.LocalDaemon
 	localCluster bool
 	pushImages   bool
+	skipTests    bool
 	kubeContext  string
 
 	alreadyTagged map[string]string
 }
 
 // NewBuilder returns an new instance of a local Builder.
-func NewBuilder(cfg *latest.LocalBuild, kubeContext string) (*Builder, error) {
+func NewBuilder(cfg *latest.LocalBuild, kubeContext string, skipTests bool) (*Builder, error) {
 	localDocker, err := docker.NewAPIClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
@@ -66,6 +67,7 @@ func NewBuilder(cfg *latest.LocalBuild, kubeContext string) (*Builder, error) {
 		localDocker:  localDocker,
 		localCluster: localCluster,
 		pushImages:   pushImages,
+		skipTests:    skipTests,
 	}, nil
 }
 

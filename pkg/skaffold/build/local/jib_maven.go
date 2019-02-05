@@ -46,7 +46,7 @@ func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, work
 	}
 
 	skaffoldImage := generateJibImageRef(workspace, artifact.Module)
-	args := jib.GenerateMavenArgs("dockerBuild", skaffoldImage, artifact)
+	args := jib.GenerateMavenArgs("dockerBuild", skaffoldImage, artifact, b.skipTests)
 
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
@@ -65,7 +65,7 @@ func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, wo
 
 	initialTag := util.RandomID()
 	skaffoldImage := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
-	args := jib.GenerateMavenArgs("build", skaffoldImage, artifact.JibMavenArtifact)
+	args := jib.GenerateMavenArgs("build", skaffoldImage, artifact.JibMavenArtifact, b.skipTests)
 
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
