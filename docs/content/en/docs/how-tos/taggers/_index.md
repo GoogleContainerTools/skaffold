@@ -93,7 +93,7 @@ The following `build` section, for example, instructs Skaffold to build a Docker
 image `gcr.io/k8s-skaffold/example` with the `dateTime`
 tag policy:
 
-{{% readfile file="samples/taggers/datetime.yaml" %}}
+{{% readfile file="samples/taggers/dateTime.yaml" %}}
 
 Suppose current time is `15:04:09.999 January 2nd, 2006` and current time zone
 is `MST` (`US Mountain Standard Time`), the image built will
