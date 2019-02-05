@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright 2018 The Skaffold Authors
+# Copyright 2019 The Skaffold Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -143,7 +143,7 @@ def get_regexs():
     # Search for "YEAR" which exists in the boilerplate, but shouldn't in the real thing
     regexs["year"] = re.compile( 'YEAR' )
     # dates can be 2018, company holder names can be anything
-    regexs["date"] = re.compile( '(2018)' )
+    regexs["date"] = re.compile( '(2019)' )
     # strip // +build \n\n build constraints
     regexs["go_build_constraints"] = re.compile(r"^(// \+build.*\n)+\n", re.MULTILINE)
     # strip #!.* from shell scripts
