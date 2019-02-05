@@ -42,27 +42,29 @@ func IsUpdateCheckEnabled() bool {
 	return v == "" || strings.ToLower(v) == "true"
 }
 
-// VersionCheck uses a VERSION file stored on GCS to determine the latest released version of skaffold
-func VersionCheck() (semver.Version, bool, error) {
+// GetLatestAndCurrentVersion uses a VERSION file stored on GCS to determine the latest released version
+// and returns it with the current version of Skaffold
+func GetLatestAndCurrentVersion() (semver.Version, semver.Version, error) {
+	none := semver.Version{}
 	resp, err := http.Get(latestVersionURL)
 	if err != nil {
-		return semver.Version{}, false, errors.Wrap(err, "getting latest version info from GCS")
+		return none, none, errors.Wrap(err, "getting latest version info from GCS")
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return semver.Version{}, false, errors.Wrapf(err, "http %d, error: %s", resp.StatusCode, resp.Status)
+		return none, none, errors.Wrapf(err, "http %d, error: %s", resp.StatusCode, resp.Status)
 	}
 	versionBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return semver.Version{}, false, errors.Wrap(err, "reading version file from GCS")
+		return none, none, errors.Wrap(err, "reading version file from GCS")
 	}
 	latest, err := version.ParseVersion(string(versionBytes))
 	if err != nil {
-		return semver.Version{}, false, errors.Wrap(err, "parsing latest version from GCS")
+		return none, none, errors.Wrap(err, "parsing latest version from GCS")
 	}
 	current, err := version.ParseVersion(version.Get().Version)
 	if err != nil {
-		return semver.Version{}, false, errors.Wrap(err, "parsing current semver, skipping update check")
+		return none, none, errors.Wrap(err, "parsing current semver, skipping update check")
 	}
-	return latest, latest.GT(current), nil
+	return latest, current, nil
 }

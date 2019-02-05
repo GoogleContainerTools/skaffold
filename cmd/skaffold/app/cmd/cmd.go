@@ -97,11 +97,11 @@ func updateCheck(ch chan string) error {
 		logrus.Debugf("Update check not enabled, skipping.")
 		return nil
 	}
-	latest, isAhead, err := update.VersionCheck()
+	latest, current, err := update.GetLatestAndCurrentVersion()
 	if err != nil {
-		return errors.Wrap(err, "version check")
+		return errors.Wrap(err, "get latest and current Skaffold version")
 	}
-	if isAhead {
+	if latest.GT(current) {
 		ch <- fmt.Sprintf("There is a new version (%s) of Skaffold available. Download it at %s\n", latest, constants.LatestDownloadURL)
 	}
 	return nil
