@@ -17,22 +17,12 @@ limitations under the License.
 package kubectl
 
 import (
-	"fmt"
-	"sort"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
-
-type fakeWarner struct {
-	warnings []string
-}
-
-func (l *fakeWarner) Warnf(format string, args ...interface{}) {
-	l.warnings = append(l.warnings, fmt.Sprintf(format, args...))
-	sort.Strings(l.warnings)
-}
 
 func TestReplaceImages(t *testing.T) {
 	manifests := ManifestList{[]byte(`
@@ -96,9 +86,9 @@ spec:
   - image: in valid
 `)}
 
-	defer func(w Warner) { warner = w }(warner)
-	fakeWarner := &fakeWarner{}
-	warner = fakeWarner
+	defer func(w warnings.Warner) { warnings.Printf = w }(warnings.Printf)
+	fakeWarner := &warnings.Collect{}
+	warnings.Printf = fakeWarner.Warnf
 
 	resultManifest, err := manifests.ReplaceImages(builds, "")
 
@@ -107,7 +97,7 @@ spec:
 		"Couldn't parse image: in valid",
 		"image [skaffold/unused] is not used by the deployment",
 		"image [skaffold/usedwrongfqn] is not used by the deployment",
-	}, fakeWarner.warnings)
+	}, fakeWarner.Warnings)
 }
 
 func TestReplaceEmptyManifest(t *testing.T) {

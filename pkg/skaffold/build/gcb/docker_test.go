@@ -85,11 +85,13 @@ func TestPullCacheFrom(t *testing.T) {
 	steps := builder.dockerBuildSteps(artifact, "nginx2")
 
 	expected := []*cloudbuild.BuildStep{{
-		Name: "docker/docker",
-		Args: []string{"pull", "from/image1"},
+		Name:       "docker/docker",
+		Entrypoint: "sh",
+		Args:       []string{"-c", "docker pull from/image1 || true"},
 	}, {
-		Name: "docker/docker",
-		Args: []string{"pull", "from/image2"},
+		Name:       "docker/docker",
+		Entrypoint: "sh",
+		Args:       []string{"-c", "docker pull from/image2 || true"},
 	}, {
 		Name: "docker/docker",
 		Args: []string{"build", "--tag", "nginx2", "-f", "Dockerfile", "--cache-from", "from/image1", "--cache-from", "from/image2", "."},

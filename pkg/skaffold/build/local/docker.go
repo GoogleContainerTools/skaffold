@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/pkg/errors"
 )
 
@@ -90,7 +91,7 @@ func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *lat
 		}
 
 		if err := b.localDocker.Pull(ctx, out, image); err != nil {
-			return errors.Wrapf(err, "pulling image %s", image)
+			warnings.Printf("Cache-From image couldn't be pulled: %s\n", image)
 		}
 	}
 

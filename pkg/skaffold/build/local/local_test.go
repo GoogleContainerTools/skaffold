@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
 )
@@ -55,13 +56,14 @@ func TestLocalRun(t *testing.T) {
 	docker.DefaultAuthHelper = testAuthHelper{}
 
 	var tests = []struct {
-		description string
-		api         testutil.FakeAPIClient
-		tagger      tag.Tagger
-		artifacts   []*latest.Artifact
-		expected    []build.Artifact
-		pushImages  bool
-		shouldErr   bool
+		description      string
+		api              testutil.FakeAPIClient
+		tagger           tag.Tagger
+		artifacts        []*latest.Artifact
+		expected         []build.Artifact
+		expectedWarnings []string
+		pushImages       bool
+		shouldErr        bool
 	}{
 		{
 			description: "single build (local)",
@@ -165,7 +167,7 @@ func TestLocalRun(t *testing.T) {
 			}},
 		},
 		{
-			description: "pull error",
+			description: "ignore cache-from pull error",
 			artifacts: []*latest.Artifact{{
 				ImageName: "gcr.io/test/image",
 				ArtifactType: latest.ArtifactType{
@@ -177,8 +179,12 @@ func TestLocalRun(t *testing.T) {
 			api: testutil.FakeAPIClient{
 				ErrImagePull: true,
 			},
-			tagger:    &FakeTagger{Out: "gcr.io/test/image:tag"},
-			shouldErr: true,
+			tagger: &FakeTagger{Out: "gcr.io/test/image:tag"},
+			expected: []build.Artifact{{
+				ImageName: "gcr.io/test/image",
+				Tag:       "gcr.io/test/image:1",
+			}},
+			expectedWarnings: []string{"Cache-From image couldn't be pulled: pull1\n"},
 		},
 		{
 			description: "inspect error",
@@ -200,6 +206,10 @@ func TestLocalRun(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			defer func(w warnings.Warner) { warnings.Printf = w }(warnings.Printf)
+			fakeWarner := &warnings.Collect{}
+			warnings.Printf = fakeWarner.Warnf
+
 			l := Builder{
 				cfg:         &latest.LocalBuild{},
 				localDocker: docker.NewLocalDaemon(&test.api, nil),
@@ -209,6 +219,7 @@ func TestLocalRun(t *testing.T) {
 			res, err := l.Build(context.Background(), ioutil.Discard, test.tagger, test.artifacts)
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
+			testutil.CheckDeepEqual(t, test.expectedWarnings, fakeWarner.Warnings)
 		})
 	}
 }

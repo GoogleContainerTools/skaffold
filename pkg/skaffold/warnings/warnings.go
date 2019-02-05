@@ -14,17 +14,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubectl
+package warnings
 
-import "github.com/sirupsen/logrus"
+import (
+	"fmt"
+	"sort"
 
-// Warner shows warnings.
-type Warner interface {
-	Warnf(format string, args ...interface{})
+	"github.com/sirupsen/logrus"
+)
+
+// Warner prints warnings
+type Warner func(format string, args ...interface{})
+
+// Printf can be overridden for testing
+var Printf = logrus.Warnf
+
+// Collect is used for testing to collect warnings
+// instead of printing them
+type Collect struct {
+	Warnings []string
 }
 
-type logrusWarner struct{}
-
-func (l *logrusWarner) Warnf(format string, args ...interface{}) {
-	logrus.Warnf(format, args...)
+// Warnf collects all the warnings for unit tests
+func (l *Collect) Warnf(format string, args ...interface{}) {
+	l.Warnings = append(l.Warnings, fmt.Sprintf(format, args...))
+	sort.Strings(l.Warnings)
 }
