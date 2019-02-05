@@ -17,22 +17,12 @@ limitations under the License.
 package tag
 
 import (
-	"fmt"
-	"sort"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
-
-type fakeWarner struct {
-	warnings []string
-}
-
-func (l *fakeWarner) Warnf(format string, args ...interface{}) {
-	l.warnings = append(l.warnings, fmt.Sprintf(format, args...))
-	sort.Strings(l.warnings)
-}
 
 func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 	tests := []struct {
@@ -105,9 +95,9 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 				return test.env
 			}
 
-			defer func(w Warner) { warner = w }(warner)
-			fakeWarner := &fakeWarner{}
-			warner = fakeWarner
+			defer func(w warnings.Warner) { warnings.Printf = w }(warnings.Printf)
+			fakeWarner := &warnings.Collect{}
+			warnings.Printf = fakeWarner.Warnf
 
 			c, err := NewEnvTemplateTagger(test.template)
 			testutil.CheckError(t, false, err)
@@ -115,7 +105,7 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			got, err := c.GenerateFullyQualifiedImageName("", test.imageName)
 
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, got)
-			testutil.CheckDeepEqual(t, test.expectedWarnings, fakeWarner.warnings)
+			testutil.CheckDeepEqual(t, test.expectedWarnings, fakeWarner.Warnings)
 		})
 	}
 }

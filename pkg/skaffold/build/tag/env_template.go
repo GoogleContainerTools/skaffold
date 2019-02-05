@@ -22,23 +22,9 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
-
-// for testing
-var warner Warner = &logrusWarner{}
-
-// Warner shows warnings.
-type Warner interface {
-	Warnf(format string, args ...interface{})
-}
-
-type logrusWarner struct{}
-
-func (l *logrusWarner) Warnf(format string, args ...interface{}) {
-	logrus.Warnf(format, args...)
-}
 
 // envTemplateTagger implements Tagger
 type envTemplateTagger struct {
@@ -78,7 +64,7 @@ func (t *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir, imageNam
 	if strings.Contains(tag, "_DEPRECATED_DIGEST_") ||
 		strings.Contains(tag, "_DEPRECATED_DIGEST_ALGO_") ||
 		strings.Contains(tag, "_DEPRECATED_DIGEST_HEX_") {
-		warner.Warnf("{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be appended to image tags")
+		warnings.Printf("{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be appended to image tags")
 
 		switch {
 		case strings.HasSuffix(tag, "@_DEPRECATED_DIGEST_"):
