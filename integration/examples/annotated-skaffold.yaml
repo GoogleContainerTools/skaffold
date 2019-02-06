@@ -1,4 +1,4 @@
-apiVersion: skaffold/v1beta4
+apiVersion: skaffold/v1beta5
 kind: Config
 # The build section has all the information needed to build images.
 # It is a required section.

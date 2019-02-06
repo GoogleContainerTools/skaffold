@@ -14,18 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta3
+package v1beta4
 
 import (
 	"encoding/json"
 
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta4"
 	"github.com/pkg/errors"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v1beta3 to v1beta4
+// Config changes from v1beta4 to v1beta5
 // 1. Additions:
 // 2. No removals
 // 3. No updates
