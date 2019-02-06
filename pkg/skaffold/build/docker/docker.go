@@ -72,7 +72,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 // googleCloudBuild sets any necessary defaults and then builds artifacts with docker in GCB
 func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, env *latest.ExecutionEnvironment) ([]build.Artifact, error) {
 	var g *latest.GoogleCloudBuild
-	if err := util.Convert(env.Properties, &g); err != nil {
+	if err := util.CloneThroughJSON(env.Properties, &g); err != nil {
 		return nil, errors.Wrap(err, "converting execution environment to googlecloudbuild struct")
 	}
 	defaults.SetDefaultCloudBuildDockerImage(g)

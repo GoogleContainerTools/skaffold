@@ -244,8 +244,8 @@ func NonEmptyLines(input []byte) []string {
 	return result
 }
 
-// Convert marshals the old interface into the new one
-func Convert(old interface{}, new interface{}) error {
+// CloneThroughJSON marshals the old interface into the new one
+func CloneThroughJSON(old interface{}, new interface{}) error {
 	o, err := json.Marshal(old)
 	if err != nil {
 		return errors.Wrap(err, "marshalling old")
