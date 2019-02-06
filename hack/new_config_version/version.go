@@ -24,5 +24,5 @@ import (
 )
 
 func main() {
-	fmt.Println(strings.ReplaceAll(latest.Version, "skaffold/", ""))
+	fmt.Println(strings.TrimPrefix(latest.Version, "skaffold/"))
 }
