@@ -70,6 +70,27 @@ func CheckError(t *testing.T, shouldErr bool, err error) {
 	}
 }
 
+// Chdir changes current directory for a test
+func Chdir(t *testing.T, dir string) func() {
+	t.Helper()
+
+	pwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal("unable to get current directory")
+	}
+
+	err = os.Chdir(dir)
+	if err != nil {
+		t.Fatal("unable to change current directory")
+	}
+
+	return func() {
+		if err := os.Chdir(pwd); err != nil {
+			t.Fatal("unable to reset current directory")
+		}
+	}
+}
+
 func checkErr(shouldErr bool, err error) error {
 	if err == nil && shouldErr {
 		return errors.New("expected error, but returned none")

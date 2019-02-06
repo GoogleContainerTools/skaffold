@@ -19,6 +19,7 @@ package docker
 import (
 	"context"
 	"io"
+	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -31,7 +32,12 @@ func CreateDockerTarContext(ctx context.Context, w io.Writer, workspace string, 
 		return errors.Wrap(err, "getting relative tar paths")
 	}
 
-	if err := util.CreateTar(w, workspace, paths); err != nil {
+	var p []string
+	for _, path := range paths {
+		p = append(p, filepath.Join(workspace, path))
+	}
+
+	if err := util.CreateTar(w, workspace, p); err != nil {
 		return errors.Wrap(err, "creating tar gz")
 	}
 
