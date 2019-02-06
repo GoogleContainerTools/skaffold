@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -50,24 +50,5 @@ func TestMavenVerifyJibPackageGoal(t *testing.T) {
 		if hasError := err != nil; tt.shouldError != hasError {
 			t.Error("Unexpected return result")
 		}
-	}
-}
-
-func TestGenerateJibImageRef(t *testing.T) {
-	var testCases = []struct {
-		workspace string
-		project   string
-		out       string
-	}{
-		{"simple", "", "jibsimple"},
-		{"simple", "project", "jibsimple_project"},
-		{".", "project", "jib__d8c7cbe8892fe8442b7f6ef42026769ee6a01e67"},
-		{"complex/workspace", "project", "jib__965ec099f720d3ccc9c038c21ea4a598c9632883"},
-	}
-
-	for _, tt := range testCases {
-		computed := generateJibImageRef(tt.workspace, tt.project)
-
-		testutil.CheckDeepEqual(t, tt.out, computed)
 	}
 }

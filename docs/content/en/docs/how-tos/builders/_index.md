@@ -1,7 +1,6 @@
-
 ---
-title: "Using builders"
-linkTitle: "Using builders"
+title: "Builders"
+linkTitle: "Builders"
 weight: 10
 ---
 
@@ -11,12 +10,12 @@ to build Docker images.
 Skaffold supports the following tools to build your image:
 
 * Dockerfile locally with Docker
-* Dockerfile remotely with Google Cloud Build
-* Dockerfile in-cluster with Kaniko  
-* Bazel locally with bazel and Docker daemon 
-* JIB Maven and Gradle projects locally  
+* Dockerfile remotely with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
+* Dockerfile in-cluster with [Kaniko](https://github.com/GoogleContainerTools/kaniko)
+* Bazel locally
+* [Jib](https://github.com/GoogleContainerTools/jib) Maven and Gradle projects locally
+* [Jib](https://github.com/GoogleContainerTools/jib) Maven and Gradle projects remotely with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
 
-  
 The `build` section in the Skaffold configuration file, `skaffold.yaml`,
 controls how Skaffold builds artifacts. To use a specific tool for building
 artifacts, add the value representing the tool and options for using the tool
@@ -35,36 +34,24 @@ By default, Skaffold connects to the local Docker daemon using
 ask Skaffold to use the [command-line interface](https://docs.docker.com/engine/reference/commandline/cli/)
 instead. Additionally, Skaffold offers the option to build artifacts with
 [BuildKit](https://github.com/moby/buildkit). After the artifacts are
-successfully built, Skaffold will try pushing the Docker
+successfully built, Skaffold will push the Docker
 images to the remote registry. You can choose to skip this step.
 
 To use the local Docker daemon, add build type `local` to the `build` section
-of `skaffold.yaml`. The `local` type offers the following options:
+of `skaffold.yaml`.
 
-|Option|Description|
-|-----|-----|
-|`push`| OPTIONAL. Should images be pushed to a registry. Default value is `false` for local clusters, `true` for remote clusters. |                    
-|`useDockerCLI`| OPTIONAL. Uses Docker command-line interface instead of Docker Engine APIs. Default value is `false`. |                    
-|`useBuildkit`| OPTIONAL Uses BuildKit to build Docker images. Default value is `false`. |    
+The `local` type offers the following options:
+
+| Option        | Description | Default |
+|---------------|-------------|---------|
+| `push`        | Should images be pushed to a registry | `false` for local clusters, `true` for remote clusters. |
+| `useDockerCLI`| Uses `docker` command-line interface instead of Docker Engine APIs | `false` |
+| `useBuildkit` | Uses BuildKit to build Docker images | `false` |
 
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with the local Docker daemon: 
 
-```yaml
-build:
-    artifacts:
-    - image: gcr.io/k8s-skaffold/example
-    # Use local Docker daemon to build artifacts
-    local:
-        push: true
-        useDockerCLI: false
-        useBuildkit: false
-# The build section above is equal to
-# build:
-#   artifacts:
-#   - image: gcr.io/k8s-skaffold/example
-#   local: {}
-```
+{{% readfile file="samples/builders/local.yaml" %}}
 
 ## Dockerfile remotely with Google Cloud Build
 
@@ -79,28 +66,24 @@ be saved to the specified remote registry, such as
 [Google Container Registry](https://cloud.google.com/container-registry/).
 
 To use Google Cloud Build, add build type `googleCloudBuild` to the `build`
-section of `skaffold.yaml`. The `googleCloudBuild` type offers the following
-options:
+section of `skaffold.yaml`.
 
-|Option|Description|
-|-----|-----|
-|`projectId`| <b>REQUIRED</b> The ID of your Google Cloud Platform Project. | 
-|`DiskSizeGb`| OPTIONAL The disk size of the VM that runs the build. See [Cloud Build API Reference: Build Options](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions) for more information. |                    
-|`machineType`| OPTIONAL The type of the VM that runs the build. See [Cloud Build API Reference: Build Options](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions) for more information. |                    
-|`timeOut`| OPTIONAL The amount of time (in seconds) that this build should be allowed to run. See [Cloud Build API Reference: Resource/Build](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build) for more information. |                    
-|`dockerImage`| OPTIONAL The name of the image that will run the build. See [Cloud Build API Reference: BuildStep](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildstep) for more information. Default value is `gcr.io/cloud-builders/docker`. |    
+The `googleCloudBuild` type offers the following options:
+
+| Option        | Description | Default |
+|---------------|-------------|---------|
+| `projectId`   | **Required** The ID of your Google Cloud Platform Project | |
+| `diskSizeGb`  | The disk size of the VM that runs the build. See [Cloud Build API Reference: Build Options](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions) for more information | |
+| `machineType` | The type of the VM that runs the build. See [Cloud Build API Reference: Build Options](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions) for more information | |
+| `timeOut`     | The amount of time (in seconds) that this build should be allowed to run. See [Cloud Build API Reference: Resource/Build](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build) for more information. | |
+| `dockerImage` | The name of the image that will run a docker build. See [Cloud builders](https://cloud.google.com/cloud-build/docs/cloud-builders) for more information | `gcr.io/cloud-builders/docker` |
+| `gradleImage` | The name of the image that will run a gradle build. See [Cloud builders](https://cloud.google.com/cloud-build/docs/cloud-builders) for more information | `gcr.io/cloud-builders/gradle` |
+| `mavenImage`  | The name of the image that will run a maven build. See [Cloud builders](https://cloud.google.com/cloud-build/docs/cloud-builders) for more information | `gcr.io/cloud-builders/mvn` |
 
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with Google Cloud Build: 
 
-```yaml
-build:
-    artifacts:
-    - image: gcr.io/k8s-skaffold/example
-    # Use Google Cloud Build to build artifacts
-    googleCloudBuild:
-        projectId: YOUR-GCP-PROJECT
-```
+{{% readfile file="samples/builders/gcb.yaml" %}}
 
 ## Dockerfile in-cluster with Kaniko  
 
@@ -112,57 +95,51 @@ that cannot easily or securely run a Docker daemon.
 Skaffold can help build artifacts in a Kubernetes cluster using the Kaniko
 image; after the artifacts are built, kaniko can push them to remote registries.
 To use Kaniko, add build type `kaniko` to the `build` section of
-`skaffold.yaml`. The `kaniko` type offers the following options:
+`skaffold.yaml`.
 
-|Option|Description|
-|-----|-----|
-|`buildContext`| OPTIONAL The Kaniko build context. See [Kaniko Documentation: Using Kaniko](https://github.com/GoogleContainerTools/kaniko#using-kaniko) for more information. |
-|`pullSecret`| OPTIONAL The path to the secret key file. See [Kaniko Documentation: Running Kaniko in a Kubernetes cluster](https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster) for more information. |                    
-|`pullSecretName`| OPTIONAL The name of the Kubernetes secret for pulling the files from the build context and pushing the final image. See [Kaniko Documentation: Running Kaniko in a Kubernetes cluster](https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster) for more information. Default value is `kaniko-secret`. |                    
-|`namespace`| OPTIONAL The Kubernetes namespace. Default value is the current namespace in Kubernetes configuration. |                    
-|`timeout`| OPTIONAL The amount of time (in seconds) that this build should be allowed to run. Default value is 20 minutes (`20m`). |    
+The `kaniko` type offers the following options:
+
+| Option          | Description | Default |
+|-----------------|-------------|---------|
+| `buildContext`  | The Kaniko build context: `gcsBucket` or `localDir` | `localDir` |
+| `pullSecret`    | The path to the secret key file. See [Kaniko Documentation: Running Kaniko in a Kubernetes cluster](https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster) for more information | |
+| `pullSecretName`| The name of the Kubernetes secret for pulling the files from the build context and pushing the final image | `kaniko-secret` |
+| `namespace`     | The Kubernetes namespace | Current namespace in Kubernetes configuration |
+| `timeout`       | The amount of time (in seconds) that this build should be allowed to run | 20 minutes (`20m`) |
 
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with Kaniko: 
 
-```yaml
-build:
-    artifacts:
-    - image: gcr.io/k8s-skaffold/example
-    # Use Kaniko to build artifacts
-    kaniko:
-        buildContext:
-          gcsBucket: YOUR-BUCKET
-```
+{{% readfile file="samples/builders/kaniko.yaml" %}}
 
 ## Jib Maven and Gradle locally 
 
 {{% todo 1299 %}} 
 
+## Jib Maven and Gradle remotely with Google Cloud Build 
 
-## Bazel locally with bazel and Docker daemon 
+{{% todo 1299 %}} 
+
+## Bazel locally
 
 [Bazel](https://bazel.build/) is a fast, scalable, multi-language, and
 extensible build system. 
 
 Skaffold can help build artifacts using Bazel; after Bazel finishes building
 container images, they will be loaded into the local Docker daemon. To use
-Bazel, add `workspace` and `bazel` fields to each artifact you specify in the
+Bazel, `bazel` field to each artifact you specify in the
 `artifacts` part of the `build` section, and use the build type `local`.
 `context` should be a path containing the bazel files
-(`WORKSPACE` and `BUILD`); The `bazel` field should have a `target`
-specification, which Skaffold will use to load the image to the Docker daemon.
+(`WORKSPACE` and `BUILD`).
+
+The `bazel` type offers the following options:
+
+| Option    | Description |
+|-----------|-------------|
+| `target`  | **Required** The `bazel build` target to run |
+| `args`    | Additional args to pass to `bazel build` |
 
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with Bazel:
 
-```yaml
-build:
-    artifacts:
-        - image: gcr.io/k8s-skaffold/example
-          context: .
-          bazel:
-            target: //:example.tar
-    local: {}
-```
-
+{{% readfile file="samples/builders/bazel.yaml" %}}

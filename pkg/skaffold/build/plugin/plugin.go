@@ -86,7 +86,7 @@ func (b *Builder) Labels() map[string]string {
 	return labels
 }
 
-func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	var builtArtifacts []build.Artifact
 	// Group artifacts by builder
 	for name, builder := range b.Builders {
@@ -96,7 +96,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 				arts = append(arts, a)
 			}
 		}
-		bArts, err := builder.Build(ctx, out, tagger, arts)
+		bArts, err := builder.Build(ctx, out, tags, arts)
 		if err != nil {
 			return nil, errors.Wrapf(err, "building artifacts with builder %s", name)
 		}

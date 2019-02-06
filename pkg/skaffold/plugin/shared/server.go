@@ -48,13 +48,13 @@ func (b *BuilderRPC) Labels() map[string]string {
 	return resp
 }
 
-func (b *BuilderRPC) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (b *BuilderRPC) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, skipTests bool) ([]build.Artifact, error) {
 	var resp []build.Artifact
 	if err := convertPropertiesToBytes(artifacts); err != nil {
 		return nil, errors.Wrapf(err, "converting properties to bytes")
 	}
 	args := BuilderArgs{
-		Tagger:    &tag.GitCommit{},
+		ImageTags: tags,
 		Artifacts: artifacts,
 	}
 	err := b.client.Call("Plugin.Build", args, &resp)
@@ -88,7 +88,7 @@ func (s *BuilderRPCServer) Labels(args interface{}, resp *map[string]string) err
 }
 
 func (s *BuilderRPCServer) Build(b BuilderArgs, resp *[]build.Artifact) error {
-	artifacts, err := s.Impl.Build(context.Background(), os.Stdout, b.Tagger, b.Artifacts)
+	artifacts, err := s.Impl.Build(context.Background(), os.Stdout, b.ImageTags, b.Artifacts)
 	if err != nil {
 		return errors.Wrap(err, "building artifacts")
 	}
@@ -98,8 +98,7 @@ func (s *BuilderRPCServer) Build(b BuilderArgs, resp *[]build.Artifact) error {
 
 // BuilderArgs are the args passed via rpc to the builder plugin
 type BuilderArgs struct {
-	// TODO: priyawadhwa@ to remove once tagging is no longer part of the build interface
-	Tagger    *tag.GitCommit
+	tag.ImageTags
 	Artifacts []*latest.Artifact
 }
 

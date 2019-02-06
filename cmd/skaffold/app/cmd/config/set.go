@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import (
 func NewCmdSet(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set",
-		Short: "Set a value in the global skaffold config",
+		Short: "Set a value in the global Skaffold config",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := setConfigValue(args[0], args[1]); err != nil {

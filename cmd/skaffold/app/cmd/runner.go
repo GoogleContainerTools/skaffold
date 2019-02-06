@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -35,13 +35,14 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 	}
 
 	config := parsed.(*latest.SkaffoldPipeline)
-	if err := defaults.Set(config); err != nil {
-		return nil, nil, errors.Wrap(err, "setting default values")
-	}
 
-	err = schema.ApplyProfiles(config, opts.Profiles)
+	err = schema.ApplyProfiles(config, opts)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "applying profiles")
+	}
+
+	if err := defaults.Set(config); err != nil {
+		return nil, nil, errors.Wrap(err, "setting default values")
 	}
 
 	defaultRepo, err := configutil.GetDefaultRepo(opts.DefaultRepo)

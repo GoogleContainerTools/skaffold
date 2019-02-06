@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package local
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"testing"
 
@@ -26,22 +25,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
 )
-
-type FakeTagger struct {
-	Out string
-	Err error
-}
-
-func (f *FakeTagger) GenerateFullyQualifiedImageName(workingDir string, tagOpts tag.Options) (string, error) {
-	return f.Out, f.Err
-}
-
-func (f *FakeTagger) Labels() map[string]string {
-	return map[string]string{}
-}
 
 type testAuthHelper struct{}
 
@@ -55,55 +42,45 @@ func TestLocalRun(t *testing.T) {
 	docker.DefaultAuthHelper = testAuthHelper{}
 
 	var tests = []struct {
-		description  string
-		api          testutil.FakeAPIClient
-		tagger       tag.Tagger
-		artifacts    []*latest.Artifact
-		expected     []build.Artifact
-		localCluster bool
-		shouldErr    bool
+		description      string
+		api              testutil.FakeAPIClient
+		tags             tag.ImageTags
+		artifacts        []*latest.Artifact
+		expected         []build.Artifact
+		expectedWarnings []string
+		pushImages       bool
+		shouldErr        bool
 	}{
 		{
-			description: "single build",
+			description: "single build (local)",
 			artifacts: []*latest.Artifact{{
 				ImageName: "gcr.io/test/image",
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{},
 				}},
 			},
-			tagger: &FakeTagger{Out: "gcr.io/test/image:tag"},
+			tags:       tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			api:        testutil.FakeAPIClient{},
+			pushImages: false,
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:tag",
+				Tag:       "gcr.io/test/image:1",
 			}},
 		},
 		{
-			description: "single build local cluster",
+			description: "single build (remote)",
 			artifacts: []*latest.Artifact{{
 				ImageName: "gcr.io/test/image",
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{},
 				}},
 			},
-			tagger:       &FakeTagger{Out: "gcr.io/test/image:tag"},
-			localCluster: true,
+			tags:       tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			api:        testutil.FakeAPIClient{},
+			pushImages: true,
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:tag",
-			}},
-		},
-		{
-			description: "subset build",
-			tagger:      &FakeTagger{Out: "gcr.io/test/image:tag"},
-			artifacts: []*latest.Artifact{{
-				ImageName: "gcr.io/test/image",
-				ArtifactType: latest.ArtifactType{
-					DockerArtifact: &latest.DockerArtifact{},
-				}},
-			},
-			expected: []build.Artifact{{
-				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:tag",
+				Tag:       "gcr.io/test/image:tag@sha256:7368613235363a31e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 			}},
 		},
 		{
@@ -111,14 +88,6 @@ func TestLocalRun(t *testing.T) {
 			artifacts:   []*latest.Artifact{{}},
 			api: testutil.FakeAPIClient{
 				ErrImageBuild: true,
-			},
-			shouldErr: true,
-		},
-		{
-			description: "error image tag",
-			artifacts:   []*latest.Artifact{{}},
-			api: testutil.FakeAPIClient{
-				ErrImageTag: true,
 			},
 			shouldErr: true,
 		},
@@ -136,12 +105,6 @@ func TestLocalRun(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "error tagger",
-			artifacts:   []*latest.Artifact{{}},
-			tagger:      &FakeTagger{Err: fmt.Errorf("")},
-			shouldErr:   true,
-		},
-		{
 			description: "cache-from images already pulled",
 			artifacts: []*latest.Artifact{{
 				ImageName: "gcr.io/test/image",
@@ -157,10 +120,10 @@ func TestLocalRun(t *testing.T) {
 					"pull2": "imageID2",
 				},
 			},
-			tagger: &FakeTagger{Out: "gcr.io/test/image:tag"},
+			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:tag",
+				Tag:       "gcr.io/test/image:1",
 			}},
 		},
 		{
@@ -173,15 +136,15 @@ func TestLocalRun(t *testing.T) {
 					},
 				}},
 			},
-			api:    testutil.FakeAPIClient{},
-			tagger: &FakeTagger{Out: "gcr.io/test/image:tag"},
+			api:  testutil.FakeAPIClient{},
+			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:tag",
+				Tag:       "gcr.io/test/image:1",
 			}},
 		},
 		{
-			description: "pull error",
+			description: "ignore cache-from pull error",
 			artifacts: []*latest.Artifact{{
 				ImageName: "gcr.io/test/image",
 				ArtifactType: latest.ArtifactType{
@@ -193,8 +156,12 @@ func TestLocalRun(t *testing.T) {
 			api: testutil.FakeAPIClient{
 				ErrImagePull: true,
 			},
-			tagger:    &FakeTagger{Out: "gcr.io/test/image:tag"},
-			shouldErr: true,
+			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			expected: []build.Artifact{{
+				ImageName: "gcr.io/test/image",
+				Tag:       "gcr.io/test/image:1",
+			}},
+			expectedWarnings: []string{"Cache-From image couldn't be pulled: pull1\n"},
 		},
 		{
 			description: "inspect error",
@@ -209,21 +176,26 @@ func TestLocalRun(t *testing.T) {
 			api: testutil.FakeAPIClient{
 				ErrImageInspect: true,
 			},
-			tagger:    &FakeTagger{Out: "gcr.io/test/image:tag"},
 			shouldErr: true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			defer func(w warnings.Warner) { warnings.Printf = w }(warnings.Printf)
+			fakeWarner := &warnings.Collect{}
+			warnings.Printf = fakeWarner.Warnf
+
 			l := Builder{
-				cfg:          &latest.LocalBuild{},
-				localDocker:  docker.NewLocalDaemon(&test.api, nil),
-				localCluster: test.localCluster,
+				cfg:         &latest.LocalBuild{},
+				localDocker: docker.NewLocalDaemon(&test.api, nil),
+				pushImages:  test.pushImages,
 			}
 
-			res, err := l.Build(context.Background(), ioutil.Discard, test.tagger, test.artifacts)
+			res, err := l.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
+
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
+			testutil.CheckDeepEqual(t, test.expectedWarnings, fakeWarner.Warnings)
 		})
 	}
 }

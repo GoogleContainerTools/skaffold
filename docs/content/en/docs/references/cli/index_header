@@ -20,7 +20,7 @@ Pipeline building blocks for CI/CD:
 
 Getting started with a new project:
 
-* [skaffold init](#skaffold-init) - to bootstrap skaffold.yaml
+* [skaffold init](#skaffold-init) - to bootstrap Skaffold config
 * [skaffold fix](#skaffold-fix) - to upgrade from
 
 Utilities:
@@ -29,7 +29,7 @@ Utilities:
 * [skaffold version](#skaffold-version) - get Skaffold version
 * [skaffold completion](#skaffold-completion) - setup tab completion for the CLI
 * [skaffold config](#skaffold-config) - manage context specific parameters
-* [skaffold diagnose](#skaffold-diagnose) - diagnostics of skaffold works in your project
+* [skaffold diagnose](#skaffold-diagnose) - diagnostics of Skaffold works in your project
 
 
 ## Global flags
@@ -43,7 +43,7 @@ Utilities:
 
 | Flag | Description |
 |------- |---------------|
-|`SKAFFOLD_UPDATE_CHECK`|Enables checking for latest version of the skaffold binary. By default it's `true`. |
+|`SKAFFOLD_UPDATE_CHECK`|Enables checking for latest version of the Skaffold binary. By default it's `true`. |
 
 
 ## Skaffold commands

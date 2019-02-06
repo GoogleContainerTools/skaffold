@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@ limitations under the License.
 package deploy
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"io"
 
@@ -84,16 +82,12 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return errors.Wrap(err, "replacing images in manifests")
 	}
 
-	updated, err := k.kubectl.Apply(ctx, out, manifests)
+	manifests, err = manifests.SetLabels(merge(labellers...))
 	if err != nil {
-		return errors.Wrap(err, "apply")
+		return errors.Wrap(err, "setting labels in manifests")
 	}
 
-	dRes := parseManifestsForDeploys(k.kubectl.Namespace, updated)
-	labels := merge(labellers...)
-	labelDeployResults(labels, dRes)
-
-	return nil
+	return k.kubectl.Apply(ctx, out, manifests)
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
@@ -133,17 +127,6 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 	}
 
 	return filteredManifests, nil
-}
-
-func parseManifestsForDeploys(namespace string, manifests kubectl.ManifestList) []Artifact {
-	var results []Artifact
-
-	for _, manifest := range manifests {
-		b := bufio.NewReader(bytes.NewReader(manifest))
-		results = append(results, parseReleaseInfo(namespace, b)...)
-	}
-
-	return results
 }
 
 // readManifests reads the manifests to deploy/delete.

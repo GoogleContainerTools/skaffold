@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,9 +17,6 @@ limitations under the License.
 package tag
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
@@ -33,13 +30,6 @@ func (c *ChecksumTagger) Labels() map[string]string {
 	}
 }
 
-// GenerateFullyQualifiedImageName tags an image with the supplied image name and the sha256 checksum of the image
-func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir string, opts Options) (string, error) {
-	digest := opts.Digest
-	sha256 := strings.TrimPrefix(opts.Digest, "sha256:")
-	if sha256 == digest {
-		return "", fmt.Errorf("digest wrong format: %s, expected sha256:<checksum>", digest)
-	}
-
-	return fmt.Sprintf("%s:%s", opts.ImageName, sha256), nil
+func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
+	return imageName, nil
 }

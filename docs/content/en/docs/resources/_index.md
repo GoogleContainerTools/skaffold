@@ -1,16 +1,15 @@
-
 ---
 title: "Resources"
 linkTitle: "Resources"
 weight: 130
 ---
 
-## 2019 roadmap
+## 2019 Roadmap
 
 Note: The roadmap is subject to change and aspirational but we would like to share our plans with the user and contributor community.
 
 * Plugin model for builders
-* IDE integration - VSCode and IntelliJ skaffold dev/build/run/deploy support, skaffold.yaml code completion
+* IDE integration - VSCode and IntelliJ Skaffold dev/build/run/deploy support, Skaffold Config code completion
 * Debugging JVM applications
 * Provide help with integration testing
 * Skaffold keeps track of what it built, for faster restarts
@@ -18,8 +17,7 @@ Note: The roadmap is subject to change and aspirational but we would like to sha
 * Pipeline CRD integration
 * Infrastructure scaffolding for CI/CD on GCP/GKE
 * Document end-to-end solutions
-* Status dashboard for build (test) and deployment besides logging 
-
+* Status dashboard for build (test) and deployment besides logging
 
 ## Contributing
 
@@ -28,7 +26,7 @@ See [Contributing Guide](https://github.com/GoogleContainerTools/skaffold/blob/m
 and our [Code of Conduct](https://github.com/GoogleContainerTools/skaffold/blob/master/code-of-conduct.md)
 on GitHub.
 
-## Release notes
+## Release Notes
 
 See [Release Notes](https://github.com/GoogleContainerTools/skaffold/blob/master/CHANGELOG.md) on Github.
 

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import (
 )
 
 const longDescription = `
-	Outputs skaffold shell completion for the given shell (bash or zsh)
+	Outputs shell completion for the given shell (bash or zsh)
 
 	This depends on the bash-completion binary.  Example installation instructions:
 	OS X:
@@ -52,7 +52,7 @@ var completionCmd = &cobra.Command{
 		return cobra.OnlyValidArgs(cmd, args)
 	},
 	ValidArgs: []string{"bash", "zsh"},
-	Short:     "Output skaffold shell completion for the given shell (bash or zsh)",
+	Short:     "Output shell completion for the given shell (bash or zsh)",
 	Long:      longDescription,
 	Run:       completion,
 }

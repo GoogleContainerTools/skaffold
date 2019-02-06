@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import (
 
 func TestDockerBuildDescription(t *testing.T) {
 	artifact := &latest.Artifact{
-		ImageName: "nginx",
 		ArtifactType: latest.ArtifactType{
 			DockerArtifact: &latest.DockerArtifact{
 				DockerfilePath: "Dockerfile",
@@ -47,7 +46,7 @@ func TestDockerBuildDescription(t *testing.T) {
 			Timeout:     "10m",
 		},
 	}
-	desc, err := builder.buildDescription(artifact, "bucket", "object")
+	desc, err := builder.buildDescription(artifact, "nginx", "bucket", "object")
 
 	expected := cloudbuild.Build{
 		LogsBucket: "bucket",
@@ -61,7 +60,7 @@ func TestDockerBuildDescription(t *testing.T) {
 			Name: "docker/docker",
 			Args: []string{"build", "--tag", "nginx", "-f", "Dockerfile", "--build-arg", "arg1=value1", "--build-arg", "arg2", "."},
 		}},
-		Images: []string{artifact.ImageName},
+		Images: []string{"nginx"},
 		Options: &cloudbuild.BuildOptions{
 			DiskSizeGb:  100,
 			MachineType: "n1-standard-1",
@@ -83,14 +82,16 @@ func TestPullCacheFrom(t *testing.T) {
 			DockerImage: "docker/docker",
 		},
 	}
-	steps := builder.dockerBuildSteps("nginx2", artifact)
+	steps := builder.dockerBuildSteps(artifact, "nginx2")
 
 	expected := []*cloudbuild.BuildStep{{
-		Name: "docker/docker",
-		Args: []string{"pull", "from/image1"},
+		Name:       "docker/docker",
+		Entrypoint: "sh",
+		Args:       []string{"-c", "docker pull from/image1 || true"},
 	}, {
-		Name: "docker/docker",
-		Args: []string{"pull", "from/image2"},
+		Name:       "docker/docker",
+		Entrypoint: "sh",
+		Args:       []string{"-c", "docker pull from/image2 || true"},
 	}, {
 		Name: "docker/docker",
 		Args: []string{"build", "--tag", "nginx2", "-f", "Dockerfile", "--cache-from", "from/image1", "--cache-from", "from/image2", "."},

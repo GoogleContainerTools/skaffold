@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -107,7 +107,7 @@ func updateCheck(ch chan string) error {
 		return errors.Wrap(err, "getting latest version")
 	}
 	if latest.GT(current) {
-		ch <- fmt.Sprintf("There is a new version (%s) of skaffold available. Download it at %s\n", latest, constants.LatestDownloadURL)
+		ch <- fmt.Sprintf("There is a new version (%s) of Skaffold available. Download it at %s\n", latest, constants.LatestDownloadURL)
 	}
 	return nil
 }

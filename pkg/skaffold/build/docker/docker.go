@@ -32,7 +32,9 @@ import (
 )
 
 // Builder builds artifacts with Docker.
-type Builder struct{}
+type Builder struct {
+	skipTests bool
+}
 
 // NewBuilder creates a new Builder that builds artifacts with Docker.
 func NewBuilder() *Builder {
@@ -48,18 +50,18 @@ func (b *Builder) Labels() map[string]string {
 
 // Build is responsible for building artifacts in their respective execution environments
 // The builder plugin is also responsible for setting any necessary defaults
-func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	m := pluginutil.GroupArtifactsByEnvironment(artifacts)
 	var builds []build.Artifact
 
 	for env, arts := range m {
 		switch env.Name {
 		case constants.GoogleCloudBuildExecEnv:
-			b, err := googleCloudBuild(ctx, out, tagger, arts, env)
+			build, err := b.googleCloudBuild(ctx, out, tags, arts, env)
 			if err != nil {
 				return nil, err
 			}
-			builds = append(builds, b...)
+			builds = append(builds, build...)
 		default:
 			return nil, errors.Errorf("%s is not a supported environment for builder docker", env.Name)
 		}
@@ -68,11 +70,11 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 }
 
 // googleCloudBuild sets any necessary defaults and then builds artifacts with docker in GCB
-func googleCloudBuild(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact, env *latest.ExecutionEnvironment) ([]build.Artifact, error) {
+func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, env *latest.ExecutionEnvironment) ([]build.Artifact, error) {
 	var g *latest.GoogleCloudBuild
 	if err := util.Convert(env.Properties, &g); err != nil {
 		return nil, errors.Wrap(err, "converting execution environment to googlecloudbuild struct")
 	}
 	defaults.SetDefaultCloudBuildDockerImage(g)
-	return gcb.NewBuilder(g).Build(ctx, out, tagger, artifacts)
+	return gcb.NewBuilder(g, b.skipTests).Build(ctx, out, tags, artifacts)
 }

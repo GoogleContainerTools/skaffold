@@ -1,5 +1,7 @@
 apiVersion: skaffold/v1beta4
 kind: Config
+# The build section has all the information needed to build images.
+# It is a required section.
 build:
   # tagPolicy (beta) determines how Skaffold is going to tag your images.
   # We provide a few strategies here, although you most likely won't need to care!
@@ -17,9 +19,6 @@ build:
     # The template is compiled and executed against the current environment,
     # with those variables injected:
     #   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.
-    #   DIGEST       |  Digest of the newly built image. For eg. `sha256:27ffc7f352665cc50ae3cbcc4b2725e36062f1b38c611b6f95d6df9a7510de23`.
-    #   DIGEST_ALGO  |  Algorithm used by the digest: For eg. `sha256`.
-    #   DIGEST_HEX   |  Digest of the newly built image. For eg. `27ffc7f352665cc50ae3cbcc4b2725e36062f1b38c611b6f95d6df9a7510de23`.
     # Example
     # envTemplate:
     #  template: "{{.RELEASE}}-{{.IMAGE_NAME}}"
@@ -146,8 +145,16 @@ build:
   #     path: path to the docker config.json
   #     secretName: docker-cfg
 
-# The deploy section has all the information needed to deploy. Along with build:
-# it is a required section.
+# The test section has all the information needed to test images.
+test:
+    # For each image listed here, Skaffold will run a series of structure tests using
+    # the [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test)
+    # project
+    # - image: gcr.io/k8s-skaffold/skaffold-example
+    #   structureTests:
+    #     - ./test/*
+
+# The deploy section has all the information needed to deploy.
 deploy:
   # The type of the deployment method can be `kubectl` (beta), `helm` (beta) or `kustomize` (beta).
 
@@ -194,6 +201,8 @@ deploy:
     #   namespace: skaffold
     #   version: ""
     #   recreatePods: false
+    #   # set to true if you need to skip "helm dep build". Necessary for use with remote chart.
+    #   skipBuildDependencies: false
     #
     #   # setValues get appended to the helm deploy with --set.
     #   setValues:
@@ -220,3 +229,18 @@ profiles:
     build:
       googleCloudBuild:
         projectId: k8s-skaffold
+  - name: other
+    # profiles can also patch some values using standard JSON patch notation
+    patches:
+        # This profile will replace the `dockerfile` value of the first artifact by `Dockerfile.DEV`
+      - path: /build/artifacts/0/docker/dockerfile
+        value: Dockerfile.DEV
+    # profiles can be auto-activated by external factors, like environment variables
+    # kubeContext value or depending on which skaffold command is run.
+    activation:
+      # Auto-activate this profile if the DEBUG env variable is set to `true` AND the kubeContext is `ctx1`
+      # - env: DEBUG=true
+      #   kubeContext: ctx1
+      # Auto-activate if the skaffold command is `skaffold run` OR if the kubeContext is NOT `ctx2`
+      # - command: run
+      # - kubeContext: "!ctx2"
