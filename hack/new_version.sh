@@ -46,8 +46,15 @@ find integration -name "skaffold.yaml" | xargs -I xx sed -i xx -e "s;$CURRENT_VE
 
 git --no-pager diff --minimal
 
-git status -s
-
 make test
 
-echo "Files generated. Docs change is expected to fail, other tests should have passed. For the docs change, commit the results and rerun 'make test'. Please double check manually the generated files as well: the upgrade functionality, and the examples!!"
+echo
+echo "---------------------------------------"
+echo
+echo "Files generated for $NEW_VERSION. Don't worry about the hack/check-docs change failure, it is expected!"
+echo "Other tests should have passed. For the docs change, commit the results and rerun 'make test'."
+echo "Please double check manually the generated files as well: the upgrade functionality, and all the examples:"
+echo
+git status -s
+echo
+echo "---------------------------------------"
