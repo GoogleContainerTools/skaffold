@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -196,7 +196,7 @@ func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Col
 		if _, err := headerColor.Fprintf(a.output, "%s ", header); err != nil {
 			return errors.Wrap(err, "writing pod prefix header to out")
 		}
-		if _, err := fmt.Fprint(a.output, string(line)); err != nil {
+		if _, err := color.White.Fprint(a.output, string(line)); err != nil {
 			return errors.Wrap(err, "writing pod log to out")
 		}
 	}

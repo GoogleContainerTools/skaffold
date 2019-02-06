@@ -1,4 +1,3 @@
-
 ---
 title: "Getting Started"
 linkTitle: "Getting Started"
@@ -7,31 +6,31 @@ weight: 10
 
 This document showcases how to get started with Skaffold using [Docker](https://www.docker.com/)
 and Kubernetes command-line tool, [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
-Aside from Docker and kubectl, Skaffold also supports a variety of other tools
+Aside from `Docker` and `kubectl`, Skaffold also supports a variety of other tools
 and workflows; see [How-to Guides](/docs/how-tos) and [Tutorials](/docs/tutorials) for
 more information.
 
 In this quickstart, you will:
 
-* Install Skaffold
-* Download a sample go app
-* Use `skaffold dev` to build and deploy your app every time your code changes
-* Use `skaffold run` to build and deploy your app once, on demand
+* Install Skaffold,
+* Download a sample go app,
+* Use `skaffold dev` to build and deploy your app every time your code changes,
+* Use `skaffold run` to build and deploy your app once, on demand.
 
 ## Before you begin
 
 * [Install Docker](https://www.docker.com/get-started)
 * [Install kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
-* Configure kubectl to connect to a Kubernetes cluster. You can use
+* Configure `kubectl` to connect to a Kubernetes cluster. You can use
     * any Kubernetes platform with Skaffold; see [Picking the Right Solution](https://kubernetes.io/docs/setup/pick-right-solution/)
     from Kubernetes documentation for instructions on choosing the
     right platfrom.
     * [Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine/)
-    is a hosted Kubernetes solution. To set up kubectl with Google Kubernetes Engine,
+    is a hosted Kubernetes solution. To set up `kubectl` with Google Kubernetes Engine,
     see [Kubernetes Engine Quickstart](https://cloud.google.com/kubernetes-engine/docs/quickstart).
     * [Minikube](https://kubernetes.io/docs/setup/minikube/) is
     a local Kubernetes solution best for development and testing. To set up
-    kubectl with Minikube, see [Installing Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/).</p>
+    `kubectl` with Minikube, see [Installing Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/).</p>
 
 {{< alert title="Note" >}}
 If you use a non-local solution, your Docker client needs to be configured
@@ -69,7 +68,6 @@ curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold
 chmod +x skaffold
 sudo mv skaffold /usr/local/bin
 ```
-
 
 {{% /tab %}}
 
@@ -109,7 +107,6 @@ sudo mv skaffold /usr/local/bin
 ```
 {{% /tab %}}
 
-
 {{% tab "WINDOWS" %}}
 
 ### Chocolatey 
@@ -128,7 +125,6 @@ For the latest **bleeding edge** build, download and place it in your `PATH`:
 
 https://storage.googleapis.com/skaffold/builds/latest/skaffold-windows-amd64.exe 
 
-
 {{% /tab %}}
 {{% /tabs %}}
 
@@ -136,21 +132,22 @@ https://storage.googleapis.com/skaffold/builds/latest/skaffold-windows-amd64.exe
 
 1. Clone the Skaffold repository:
 
-    ```
+    ```bash
     git clone https://github.com/GoogleContainerTools/skaffold
     ```
+
 1. Change to the `examples/getting-started` directory.
 
-    ```
+    ```bash
     cd examples/getting-started
     ```
-  
+
 ## `skaffold dev`: Build and deploy your app every time your code changes
 
 Run command `skaffold dev` to build and deploy your app continuously. You should
 see some outputs similar to the following entries:
 
-```bash
+```
 Starting build...
 Found [minikube] context, using local docker daemon.
 Sending build context to Docker daemon  6.144kB
@@ -194,7 +191,6 @@ workflow, which, in this example, is
 For skaffold dev, if `imagePullPolicy` is set to `Always` in your Kubernetes manifest, it will expect the image to exist in a remote registry.
 {{< /alert >}}
 
-
 Let's re-trigger the workflow just by a single code change! 
 Update `main.go` as follows:
 
@@ -218,7 +214,7 @@ The moment you save the file, Skaffold will repeat the workflow described in
 `skaffold.yaml` and eventually re-deploy your application. Once the pipeline
 is completed, you should see updated outputs in the terminal:
 
-```bash
+```
 [getting-started] Hello Skaffold!
 ```
 
