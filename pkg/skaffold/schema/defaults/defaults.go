@@ -156,9 +156,9 @@ func setDefaultWorkspace(a *latest.Artifact) {
 	a.Workspace = valueOrDefault(a.Workspace, ".")
 }
 
-func setExecutionEnvironment(a *latest.Artifact, global *latest.ExecutionEnvironment) {
+func setExecutionEnvironment(a *latest.Artifact, env *latest.ExecutionEnvironment) {
 	if a.ExecutionEnvironment == nil {
-		a.ExecutionEnvironment = global
+		a.ExecutionEnvironment = env
 	}
 }
 

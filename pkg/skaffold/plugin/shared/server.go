@@ -66,12 +66,12 @@ func (b *BuilderRPC) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 
 func convertPropertiesToBytes(artifacts []*latest.Artifact) error {
 	for _, a := range artifacts {
-		data, err := yaml.Marshal(a.Plugin.Properties)
+		data, err := yaml.Marshal(a.BuilderPlugin.Properties)
 		if err != nil {
 			return err
 		}
-		a.Plugin.Contents = data
-		a.Plugin.Properties = nil
+		a.BuilderPlugin.Contents = data
+		a.BuilderPlugin.Properties = nil
 	}
 	return nil
 }

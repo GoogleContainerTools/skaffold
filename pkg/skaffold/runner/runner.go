@@ -153,7 +153,7 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string, opts *config.Skaffo
 
 func buildWithPlugin(artifacts []*latest.Artifact) bool {
 	for _, a := range artifacts {
-		if a.Plugin != nil {
+		if a.BuilderPlugin != nil {
 			return true
 		}
 	}

@@ -35,13 +35,14 @@ func NewPluginBuilder(cfg *latest.BuildConfig) (build.Builder, error) {
 	// We're a host. Start by launching the plugin process.
 	log.SetOutput(os.Stdout)
 
-	plugins := map[string]struct{}{}
-	for _, a := range cfg.Artifacts {
-		plugins[a.Plugin.Name] = struct{}{}
-	}
-
 	builders := map[string]build.Builder{}
-	for p := range plugins {
+
+	for _, a := range cfg.Artifacts {
+
+		p := a.BuilderPlugin.Name
+		if _, ok := builders[p]; ok {
+			continue
+		}
 		client := plugin.NewClient(&plugin.ClientConfig{
 			Stderr:          os.Stderr,
 			SyncStderr:      os.Stderr,
@@ -88,19 +89,27 @@ func (b *Builder) Labels() map[string]string {
 
 func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	var builtArtifacts []build.Artifact
+	// Group artifacts by plugin name
+	m := retrieveArtifactsByPlugin(artifacts)
 	// Group artifacts by builder
 	for name, builder := range b.Builders {
-		var arts []*latest.Artifact
-		for _, a := range artifacts {
-			if a.Plugin.Name == name {
-				arts = append(arts, a)
-			}
-		}
-		bArts, err := builder.Build(ctx, out, tags, arts)
+		bArts, err := builder.Build(ctx, out, tags, m[name])
 		if err != nil {
 			return nil, errors.Wrapf(err, "building artifacts with builder %s", name)
 		}
 		builtArtifacts = append(builtArtifacts, bArts...)
 	}
 	return builtArtifacts, nil
+}
+
+func retrieveArtifactsByPlugin(artifacts []*latest.Artifact) map[string][]*latest.Artifact {
+	m := map[string][]*latest.Artifact{}
+	for _, a := range artifacts {
+		if _, ok := m[a.BuilderPlugin.Name]; ok {
+			m[a.BuilderPlugin.Name] = append(m[a.BuilderPlugin.Name], a)
+			continue
+		}
+		m[a.BuilderPlugin.Name] = []*latest.Artifact{a}
+	}
+	return m
 }

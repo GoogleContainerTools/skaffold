@@ -55,7 +55,7 @@ type ExecutionEnvironment struct {
 	Properties map[string]interface{} `yaml:"properties,omitempty"`
 }
 
-type Plugin struct {
+type BuilderPlugin struct {
 	Name       string                 `yaml:"name,omitempty"`
 	Properties map[string]interface{} `yaml:"properties,omitempty"`
 	Contents   []byte                 `yaml:",omitempty"`
@@ -249,7 +249,7 @@ type Artifact struct {
 	ImageName            string                `yaml:"image,omitempty"`
 	Workspace            string                `yaml:"context,omitempty"`
 	Sync                 map[string]string     `yaml:"sync,omitempty"`
-	Plugin               *Plugin               `yaml:"plugin,omitempty"`
+	BuilderPlugin        *BuilderPlugin        `yaml:"plugin,omitempty"`
 	ExecutionEnvironment *ExecutionEnvironment `yaml:"executionEnvironment,omitempty"`
 	ArtifactType         `yaml:",inline"`
 }

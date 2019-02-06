@@ -137,7 +137,7 @@ func TestRun(t *testing.T) {
 		}, {
 			description: "docker in gcb plugin",
 			dir:         "examples/test-plugin/gcb",
-			pods:        []string{"getting-started"},
+			deployments: []string{"leeroy-app", "leeroy-web"},
 		},
 	}
 

@@ -53,7 +53,7 @@ func (b *Builder) buildDescription(artifact *latest.Artifact, tag, bucket, objec
 
 func (b *Builder) buildSteps(artifact *latest.Artifact, tag string) ([]*cloudbuild.BuildStep, error) {
 	switch {
-	case artifact.Plugin != nil:
+	case artifact.BuilderPlugin != nil:
 		return b.pluginBuildSteps(artifact, tag)
 	case artifact.DockerArtifact != nil:
 		return b.dockerBuildSteps(artifact.DockerArtifact, tag), nil
@@ -73,15 +73,15 @@ func (b *Builder) buildSteps(artifact *latest.Artifact, tag string) ([]*cloudbui
 }
 
 func (b *Builder) pluginBuildSteps(artifact *latest.Artifact, tag string) ([]*cloudbuild.BuildStep, error) {
-	switch artifact.Plugin.Name {
+	switch artifact.BuilderPlugin.Name {
 	case constants.DockerBuilderPluginName:
 		var da *latest.DockerArtifact
-		if err := yaml.Unmarshal(artifact.Plugin.Contents, &da); err != nil {
+		if err := yaml.Unmarshal(artifact.BuilderPlugin.Contents, &da); err != nil {
 			return nil, errors.Wrap(err, "getting docker artifact details")
 		}
 		defaults.SetDefaultDockerArtifact(da)
 		return b.dockerBuildSteps(da, tag), nil
 	default:
-		return nil, errors.Errorf("the %s builder is currently unsupported", artifact.Plugin.Name)
+		return nil, errors.Errorf("the '%s' builder is not supported", artifact.BuilderPlugin.Name)
 	}
 }
