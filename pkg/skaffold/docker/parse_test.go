@@ -198,6 +198,17 @@ FROM target2
 ADD ./server.go /etc/server.go
 `
 
+const targetsCopyFrom = `
+FROM scratch as target1
+ADD ./file /etc/file
+FROM scratch as target2
+COPY --from=target1 /tmp /tmp
+ADD ./bar /etc/bar
+FROM scratch as target3
+COPY --from=0 /tmp /tmp
+ADD ./server.go /etc/server.go
+`
+
 type fakeImageFetcher struct {
 	fetched []string
 }
@@ -261,6 +272,33 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   ".",
 			target:      "target3",
 			shouldErr:   true,
+		},
+		{
+			description: "no target with copy --from",
+			dockerfile:  targetsCopyFrom,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "bar", "file", "server.go"},
+		},
+		{
+			description: "target with copy --from",
+			dockerfile:  targetsCopyFrom,
+			workspace:   ".",
+			target:      "target1",
+			expected:    []string{"Dockerfile", "file"},
+		},
+		{
+			description: "transitive target with copy --from",
+			dockerfile:  targetsCopyFrom,
+			workspace:   ".",
+			target:      "target2",
+			expected:    []string{"Dockerfile", "bar", "file"},
+		},
+		{
+			description: "transitive target with copy --from index",
+			dockerfile:  targetsCopyFrom,
+			workspace:   ".",
+			target:      "target3",
+			expected:    []string{"Dockerfile", "file", "server.go"},
 		},
 		{
 			description: "copy dependency",

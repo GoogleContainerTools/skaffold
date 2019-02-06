@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -228,12 +229,17 @@ func forTarget(target string, nodes []*parser.Node) ([]*parser.Node, error) {
 	byTarget := make(map[string][]*parser.Node)
 
 	var currentTarget string
+	var currentTargetIndex = -1
+	var currentTargetIndexStr string
 	for _, node := range nodes {
 		if node.Value == command.From {
 			currentTarget = fromInstruction(node).as
+			currentTargetIndex++
+			currentTargetIndexStr = strconv.Itoa(currentTargetIndex)
 		}
 
 		byTarget[currentTarget] = append(byTarget[currentTarget], node)
+		byTarget[currentTargetIndexStr] = append(byTarget[currentTargetIndexStr], node)
 	}
 
 	if _, present := byTarget[target]; !present {
@@ -249,7 +255,15 @@ func nodesForTarget(target string, nodesByTarget map[string][]*parser.Node) []*p
 	for _, node := range nodesByTarget[target] {
 		if node.Value == command.From {
 			inst := fromInstruction(node)
-			nodes = append(nodes, nodesForTarget(inst.image, nodesByTarget)...)
+			depTarget := inst.image
+			nodes = append(nodes, nodesForTarget(depTarget, nodesByTarget)...)
+		} else if node.Value == command.Copy {
+			for _, flag := range node.Flags {
+				if strings.HasPrefix(flag, "--from=") {
+					depTarget := strings.TrimPrefix(flag, "--from=")
+					nodes = append(nodes, nodesForTarget(depTarget, nodesByTarget)...)
+				}
+			}
 		}
 
 		nodes = append(nodes, node)
