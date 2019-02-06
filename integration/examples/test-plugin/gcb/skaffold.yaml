@@ -2,14 +2,20 @@ apiVersion: skaffold/v1beta4
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-example
+  - image: gcr.io/k8s-skaffold/leeroy-web
+    context: ./leeroy-web/
     plugin:
+      name: docker-skaffold
+  - image: gcr.io/k8s-skaffold/leeroy-app
+    context: ./leeroy-app/
+    plugin: 
       name: docker-skaffold
   executionEnvironment:
     name: googlecloudbuild
     properties:
-      projectId: k8s-skaffold
+      projectId: priya-wadhwa
 deploy:
   kubectl:
     manifests:
-      - k8s-*
+    - ./leeroy-web/kubernetes/*
+    - ./leeroy-app/kubernetes/*

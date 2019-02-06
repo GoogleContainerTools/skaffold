@@ -48,7 +48,7 @@ func (b *BuilderRPC) Labels() map[string]string {
 	return resp
 }
 
-func (b *BuilderRPC) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, skipTests bool) ([]build.Artifact, error) {
+func (b *BuilderRPC) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	var resp []build.Artifact
 	if err := convertPropertiesToBytes(artifacts); err != nil {
 		return nil, errors.Wrapf(err, "converting properties to bytes")
