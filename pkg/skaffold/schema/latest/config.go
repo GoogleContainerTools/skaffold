@@ -506,7 +506,7 @@ type JibMavenArtifact struct {
 	Profile string `yaml:"profile"`
 
 	// Flags is passed as additional build flags to maven
-	Flags []string `yaml:"mavenArgs,omitempty"`
+	BuildArgs []string `yaml:"args,omitempty"`
 }
 
 // JibGradleArtifact builds containers using the Jib plugin for Gradle.
@@ -515,5 +515,5 @@ type JibGradleArtifact struct {
 	Project string `yaml:"project"`
 
 	// Flags is passed as additional build flags to gradle
-	Flags []string `yaml:"gradleArgs,omitempty"`
+	BuildArgs []string `yaml:"args,omitempty"`
 }

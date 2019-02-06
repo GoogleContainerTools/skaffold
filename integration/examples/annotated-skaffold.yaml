@@ -73,14 +73,14 @@ build:
     # jibMaven:
     #  module: modulename     # selects which maven module to build, for a multimodule project
     #  profile: profilename   # selects which maven profile to activate
-    #  mavenArgs:             # additional arguments to pass to maven
+    #  args:             # additional arguments to pass to maven
     #  - "arg1"
     #  - "arg2"
 
     # jibGradle builds containers using the Jib plugin for Gradle.
     # jibGradle:
     #  project: projectname   # selects which gradle project to build
-    #  gradleArgs:            # additional arguments to pass to gradle
+    #  args:            # additional arguments to pass to gradle
     #  - "arg1"
     #  - "arg2"
 

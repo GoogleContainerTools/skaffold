@@ -70,7 +70,7 @@ func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact
 func mavenArgs(a *latest.JibMavenArtifact) []string {
 	var args []string
 
-	args = append(args, a.Flags...)
+	args = append(args, a.BuildArgs...)
 
 	if a.Profile != "" {
 		args = append(args, "--activate-profiles", a.Profile)
