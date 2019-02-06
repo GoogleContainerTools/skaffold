@@ -30,19 +30,19 @@ import (
 
 const bufferedLinesPerArtifact = 10000
 
-type artifactBuilder func(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error)
+type artifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error)
 
 // InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
-func InParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
+func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
 	if len(artifacts) == 1 {
-		return InSequence(ctx, out, tagger, artifacts, buildArtifact)
+		return InSequence(ctx, out, tags, artifacts, buildArtifact)
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	n := len(artifacts)
-	tags := make([]string, n)
+	finalTags := make([]string, n)
 	errs := make([]error, n)
 	outputs := make([]chan []byte, n)
 
@@ -65,7 +65,14 @@ func InParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts
 			}
 
 			color.Default.Fprintf(cw, "Building [%s]...\n", artifacts[i].ImageName)
-			tags[i], errs[i] = buildArtifact(ctx, cw, tagger, artifacts[i])
+
+			tag, present := tags[artifacts[i].ImageName]
+			if !present {
+				errs[i] = fmt.Errorf("unable to find tag for image %s", artifacts[i].ImageName)
+			} else {
+				finalTags[i], errs[i] = buildArtifact(ctx, cw, artifacts[i], tag)
+			}
+
 			cw.Close()
 		}()
 
@@ -93,7 +100,7 @@ func InParallel(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts
 
 		built = append(built, Artifact{
 			ImageName: artifact.ImageName,
-			Tag:       tags[i],
+			Tag:       finalTags[i],
 		})
 	}
 

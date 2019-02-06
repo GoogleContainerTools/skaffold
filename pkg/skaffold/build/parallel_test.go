@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestInSequence(t *testing.T) {
+func TestInParallel(t *testing.T) {
 	var tests = []struct {
 		description       string
 		buildArtifact     artifactBuilder
@@ -78,7 +78,7 @@ func TestInSequence(t *testing.T) {
 				{ImageName: "skaffold/image2"},
 			}
 
-			got, err := InSequence(context.Background(), out, test.tags, artifacts, test.buildArtifact)
+			got, err := InParallel(context.Background(), out, test.tags, artifacts, test.buildArtifact)
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedArtifacts, got)
 			testutil.CheckDeepEqual(t, test.expectedOut, out.String())

@@ -18,7 +18,6 @@ package local
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"testing"
 
@@ -30,19 +29,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
 )
-
-type FakeTagger struct {
-	Out string
-	Err error
-}
-
-func (f *FakeTagger) GenerateFullyQualifiedImageName(string, string) (string, error) {
-	return f.Out, f.Err
-}
-
-func (f *FakeTagger) Labels() map[string]string {
-	return map[string]string{}
-}
 
 type testAuthHelper struct{}
 
@@ -58,7 +44,7 @@ func TestLocalRun(t *testing.T) {
 	var tests = []struct {
 		description      string
 		api              testutil.FakeAPIClient
-		tagger           tag.Tagger
+		tags             tag.ImageTags
 		artifacts        []*latest.Artifact
 		expected         []build.Artifact
 		expectedWarnings []string
@@ -73,7 +59,7 @@ func TestLocalRun(t *testing.T) {
 					DockerArtifact: &latest.DockerArtifact{},
 				}},
 			},
-			tagger:     &FakeTagger{Out: "gcr.io/test/image:tag"},
+			tags:       tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			api:        testutil.FakeAPIClient{},
 			pushImages: false,
 			expected: []build.Artifact{{
@@ -89,7 +75,7 @@ func TestLocalRun(t *testing.T) {
 					DockerArtifact: &latest.DockerArtifact{},
 				}},
 			},
-			tagger:     &FakeTagger{Out: "gcr.io/test/image:tag"},
+			tags:       tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			api:        testutil.FakeAPIClient{},
 			pushImages: true,
 			expected: []build.Artifact{{
@@ -99,7 +85,6 @@ func TestLocalRun(t *testing.T) {
 		},
 		{
 			description: "error image build",
-			tagger:      &FakeTagger{Out: "gcr.io/test/image:tag"},
 			artifacts:   []*latest.Artifact{{}},
 			api: testutil.FakeAPIClient{
 				ErrImageBuild: true,
@@ -108,24 +93,16 @@ func TestLocalRun(t *testing.T) {
 		},
 		{
 			description: "unkown artifact type",
-			tagger:      &FakeTagger{Out: "gcr.io/test/image:tag"},
 			artifacts:   []*latest.Artifact{{}},
 			shouldErr:   true,
 		},
 		{
 			description: "error image inspect",
-			tagger:      &FakeTagger{Out: "gcr.io/test/image:tag"},
 			artifacts:   []*latest.Artifact{{}},
 			api: testutil.FakeAPIClient{
 				ErrImageInspect: true,
 			},
 			shouldErr: true,
-		},
-		{
-			description: "error tagger",
-			artifacts:   []*latest.Artifact{{}},
-			tagger:      &FakeTagger{Err: fmt.Errorf("")},
-			shouldErr:   true,
 		},
 		{
 			description: "cache-from images already pulled",
@@ -143,7 +120,7 @@ func TestLocalRun(t *testing.T) {
 					"pull2": "imageID2",
 				},
 			},
-			tagger: &FakeTagger{Out: "gcr.io/test/image:tag"},
+			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
 				Tag:       "gcr.io/test/image:1",
@@ -159,8 +136,8 @@ func TestLocalRun(t *testing.T) {
 					},
 				}},
 			},
-			api:    testutil.FakeAPIClient{},
-			tagger: &FakeTagger{Out: "gcr.io/test/image:tag"},
+			api:  testutil.FakeAPIClient{},
+			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
 				Tag:       "gcr.io/test/image:1",
@@ -179,7 +156,7 @@ func TestLocalRun(t *testing.T) {
 			api: testutil.FakeAPIClient{
 				ErrImagePull: true,
 			},
-			tagger: &FakeTagger{Out: "gcr.io/test/image:tag"},
+			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
 				Tag:       "gcr.io/test/image:1",
@@ -199,7 +176,6 @@ func TestLocalRun(t *testing.T) {
 			api: testutil.FakeAPIClient{
 				ErrImageInspect: true,
 			},
-			tagger:    &FakeTagger{Out: "gcr.io/test/image:tag"},
 			shouldErr: true,
 		},
 	}
@@ -216,7 +192,7 @@ func TestLocalRun(t *testing.T) {
 				pushImages:  test.pushImages,
 			}
 
-			res, err := l.Build(context.Background(), ioutil.Discard, test.tagger, test.artifacts)
+			res, err := l.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
 			testutil.CheckDeepEqual(t, test.expectedWarnings, fakeWarner.Warnings)

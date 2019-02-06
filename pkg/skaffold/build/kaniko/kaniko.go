@@ -27,7 +27,7 @@ import (
 )
 
 // Build builds a list of artifacts with Kaniko.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	teardownPullSecret, err := b.setupPullSecret(out)
 	if err != nil {
 		return nil, errors.Wrap(err, "setting up pull secret")
@@ -42,15 +42,10 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, a
 		defer teardownDockerConfigSecret()
 	}
 
-	return build.InParallel(ctx, out, tagger, artifacts, b.buildArtifactWithKaniko)
+	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifactWithKaniko)
 }
 
-func (b *Builder) buildArtifactWithKaniko(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error) {
-	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, artifact.ImageName)
-	if err != nil {
-		return "", errors.Wrap(err, "generating tag")
-	}
-
+func (b *Builder) buildArtifactWithKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	digest, err := b.run(ctx, out, artifact, tag)
 	if err != nil {
 		return "", errors.Wrapf(err, "kaniko build for [%s]", artifact.ImageName)
