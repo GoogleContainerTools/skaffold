@@ -30,6 +30,15 @@ func TestCreateTar(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
+	mockCurrentDir := func() (string, error) {
+		return tmpDir.Root(), nil
+	}
+	originalCurrentDir := RetrieveCurrentDir
+	RetrieveCurrentDir = mockCurrentDir
+	defer func() {
+		RetrieveCurrentDir = originalCurrentDir
+	}()
+
 	files := map[string]string{
 		"foo":     "baz1",
 		"bar/bat": "baz2",

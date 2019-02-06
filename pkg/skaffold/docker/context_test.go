@@ -23,12 +23,22 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestDockerContext(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
+
+	mockCurrentDir := func() (string, error) {
+		return tmpDir.Root(), nil
+	}
+	originalCurrentDir := util.RetrieveCurrentDir
+	util.RetrieveCurrentDir = mockCurrentDir
+	defer func() {
+		util.RetrieveCurrentDir = originalCurrentDir
+	}()
 
 	imageFetcher := fakeImageFetcher{}
 	RetrieveImage = imageFetcher.fetch
