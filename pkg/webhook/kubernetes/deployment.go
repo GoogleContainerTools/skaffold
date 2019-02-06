@@ -139,6 +139,7 @@ func WaitForDeploymentToStabilize(d *appsv1.Deployment, ip string) error {
 		if err != nil {
 			return false, nil
 		}
+		defer resp.Body.Close()
 		return resp.StatusCode == http.StatusOK, nil
 	})
 }

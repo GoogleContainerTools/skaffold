@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -98,13 +97,9 @@ func updateCheck(ch chan string) error {
 		logrus.Debugf("Update check not enabled, skipping.")
 		return nil
 	}
-	current, err := version.ParseVersion(version.Get().Version)
+	latest, current, err := update.GetLatestAndCurrentVersion()
 	if err != nil {
-		return errors.Wrap(err, "parsing current semver, skipping update check")
-	}
-	latest, err := update.GetLatestVersion(context.Background())
-	if err != nil {
-		return errors.Wrap(err, "getting latest version")
+		return errors.Wrap(err, "get latest and current Skaffold version")
 	}
 	if latest.GT(current) {
 		ch <- fmt.Sprintf("There is a new version (%s) of Skaffold available. Download it at %s\n", latest, constants.LatestDownloadURL)
