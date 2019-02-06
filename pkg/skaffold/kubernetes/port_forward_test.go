@@ -101,7 +101,7 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int32{8080},
 			expectedEntries: map[string]*portForwardEntry{
-				"podname-containername-8080": {
+				"containername-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -136,7 +136,7 @@ func TestPortForwardPod(t *testing.T) {
 				9000: true,
 			},
 			expectedEntries: map[string]*portForwardEntry{
-				"podname-containername-8080": {
+				"containername-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -202,7 +202,7 @@ func TestPortForwardPod(t *testing.T) {
 			shouldErr:      true,
 			availablePorts: []int32{8080},
 			expectedEntries: map[string]*portForwardEntry{
-				"podname-containername-8080": {
+				"containername-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -239,14 +239,14 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int32{8080, 50051},
 			expectedEntries: map[string]*portForwardEntry{
-				"podname-containername-8080": {
+				"containername-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
 					port:            8080,
 					localPort:       8080,
 				},
-				"podname2-containername2-50051": {
+				"containername2-50051": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
@@ -301,14 +301,14 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int32{8080, 9000},
 			expectedEntries: map[string]*portForwardEntry{
-				"podname-containername-8080": {
+				"containername-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
 					port:            8080,
 					localPort:       8080,
 				},
-				"podname2-containername2-8080": {
+				"containername2-8080": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
@@ -362,7 +362,7 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int32{8080},
 			expectedEntries: map[string]*portForwardEntry{
-				"podname-containername-8080": {
+				"containername-8080": {
 					resourceVersion: 2,
 					podName:         "podname",
 					containerName:   "containername",

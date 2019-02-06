@@ -286,7 +286,7 @@ func portAvailable(p int32, forwardedPorts map[int32]string) (bool, error) {
 
 // Key is an identifier for the lock on a port during the skaffold dev cycle.
 func (p *portForwardEntry) key() string {
-	return fmt.Sprintf("%s-%s-%d", p.podName, p.containerName, p.port)
+	return fmt.Sprintf("%s-%d", p.containerName, p.port)
 }
 
 // String is a utility function that returns the port forward entry as a user-readable string

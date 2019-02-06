@@ -46,7 +46,7 @@ func (b *prebuiltImagesBuilder) Labels() map[string]string {
 	}
 }
 
-func (b *prebuiltImagesBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]Artifact, error) {
+func (b *prebuiltImagesBuilder) Build(ctx context.Context, out io.Writer, _ tag.ImageTags, artifacts []*latest.Artifact) ([]Artifact, error) {
 	tags := make(map[string]string)
 
 	for _, tag := range b.images {

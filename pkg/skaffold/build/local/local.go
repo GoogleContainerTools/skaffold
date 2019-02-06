@@ -31,22 +31,17 @@ import (
 
 // Build runs a docker build on the host and tags the resulting image with
 // its checksum. It streams build progress to the writer argument.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	if b.localCluster {
 		color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext)
 	}
 	defer b.localDocker.Close()
 
 	// TODO(dgageot): parallel builds
-	return build.InSequence(ctx, out, tagger, artifacts, b.buildArtifact)
+	return build.InSequence(ctx, out, tags, artifacts, b.buildArtifact)
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, tagger tag.Tagger, artifact *latest.Artifact) (string, error) {
-	tag, err := tagger.GenerateFullyQualifiedImageName(artifact.Workspace, artifact.ImageName)
-	if err != nil {
-		return "", errors.Wrap(err, "generating tag")
-	}
-
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	digestOrImageID, err := b.runBuildForArtifact(ctx, out, artifact, tag)
 	if err != nil {
 		return "", errors.Wrap(err, "build artifact")

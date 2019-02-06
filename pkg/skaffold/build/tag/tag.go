@@ -16,6 +16,9 @@ limitations under the License.
 
 package tag
 
+// ImageTags maps image names to tags
+type ImageTags map[string]string
+
 // Tagger is an interface for tag strategies to be implemented against
 type Tagger interface {
 	Labels() map[string]string
