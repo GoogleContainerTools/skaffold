@@ -1,0 +1,15 @@
+deploy:
+  kubectl:
+    manifests:
+    - k8s-*
+    # Uncomment the following lines to add remote manifests
+    # remoteManifests:
+    # - YOUR-REMOTE-MANIFESTS
+    # Uncomment the following lines to add flags
+    # flags:
+    # global:
+    # - YOUR-GLOBAL-FLAGS
+    # apply:
+    # - YOUR-APPLY-FLAGS
+    # delete:
+    # - YOUR-DELETE-FLAGS

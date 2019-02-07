@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ type PortForwarder struct {
 
 	output      io.Writer
 	podSelector PodSelector
+	namespaces  []string
 
 	// forwardedPods is a map of portForwardEntry.key() (string) -> portForwardEntry
 	forwardedPods map[string]*portForwardEntry
@@ -107,11 +108,12 @@ func (*kubectlForwarder) Terminate(p *portForwardEntry) {
 }
 
 // NewPortForwarder returns a struct that tracks and port-forwards pods as they are created and modified
-func NewPortForwarder(out io.Writer, podSelector PodSelector) *PortForwarder {
+func NewPortForwarder(out io.Writer, podSelector PodSelector, namespaces []string) *PortForwarder {
 	return &PortForwarder{
 		Forwarder:      &kubectlForwarder{},
 		output:         out,
 		podSelector:    podSelector,
+		namespaces:     namespaces,
 		forwardedPods:  make(map[string]*portForwardEntry),
 		forwardedPorts: make(map[int32]string),
 	}
@@ -127,19 +129,21 @@ func (p *PortForwarder) Stop() {
 // Start begins a pod watcher that port forwards any pods involving containers with exposed ports.
 // TODO(r2d4): merge this event loop with pod watcher from log writer
 func (p *PortForwarder) Start(ctx context.Context) error {
-	watcher, err := PodWatcher()
+	aggregate := make(chan watch.Event)
+	stopWatchers, err := AggregatePodWatcher(p.namespaces, aggregate)
 	if err != nil {
+		stopWatchers()
 		return errors.Wrap(err, "initializing pod watcher")
 	}
 
 	go func() {
-		defer watcher.Stop()
+		defer stopWatchers()
 
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case evt, ok := <-watcher.ResultChan():
+			case evt, ok := <-aggregate:
 				if !ok {
 					return
 				}
@@ -282,7 +286,7 @@ func portAvailable(p int32, forwardedPorts map[int32]string) (bool, error) {
 
 // Key is an identifier for the lock on a port during the skaffold dev cycle.
 func (p *portForwardEntry) key() string {
-	return fmt.Sprintf("%s-%s-%d", p.podName, p.containerName, p.port)
+	return fmt.Sprintf("%s-%d", p.containerName, p.port)
 }
 
 // String is a utility function that returns the port forward entry as a user-readable string

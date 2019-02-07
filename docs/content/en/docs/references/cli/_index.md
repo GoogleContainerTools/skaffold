@@ -20,7 +20,7 @@ Pipeline building blocks for CI/CD:
 
 Getting started with a new project:
 
-* [skaffold init](#skaffold-init) - to bootstrap skaffold.yaml
+* [skaffold init](#skaffold-init) - to bootstrap Skaffold config
 * [skaffold fix](#skaffold-fix) - to upgrade from
 
 Utilities:
@@ -29,7 +29,7 @@ Utilities:
 * [skaffold version](#skaffold-version) - get Skaffold version
 * [skaffold completion](#skaffold-completion) - setup tab completion for the CLI
 * [skaffold config](#skaffold-config) - manage context specific parameters
-* [skaffold diagnose](#skaffold-diagnose) - diagnostics of skaffold works in your project
+* [skaffold diagnose](#skaffold-diagnose) - diagnostics of Skaffold works in your project
 
 
 ## Global flags
@@ -43,7 +43,7 @@ Utilities:
 
 | Flag | Description |
 |------- |---------------|
-|`SKAFFOLD_UPDATE_CHECK`|Enables checking for latest version of the skaffold binary. By default it's `true`. |
+|`SKAFFOLD_UPDATE_CHECK`|Enables checking for latest version of the Skaffold binary. By default it's `true`. |
 
 
 ## Skaffold commands
@@ -63,6 +63,7 @@ Usage:
   skaffold build [flags]
 
 Flags:
+  -b, --build-image stringArray      Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts
   -d, --default-repo string          Default repository value (overrides global config)
   -f, --filename string              Filename or URL to the pipeline file (default "skaffold.yaml")
   -n, --namespace string             Run deployments in the specified namespace
@@ -80,6 +81,7 @@ Global Flags:
 ```
 Env vars:
 
+* `SKAFFOLD_BUILD_IMAGE` (same as --build-image)
 * `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
 * `SKAFFOLD_FILENAME` (same as --filename)
 * `SKAFFOLD_NAMESPACE` (same as --namespace)
@@ -91,11 +93,11 @@ Env vars:
 
 ### skaffold completion
 
-Output command completion script for the bash shell
+Output shell completion for the given shell (bash or zsh)
 
 ```
 Usage:
-  skaffold completion bash [flags]
+  skaffold completion SHELL [flags]
 
 Global Flags:
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
@@ -107,16 +109,16 @@ Env vars:
 
 ### skaffold config
 
-A set of commands for interacting with the skaffold config.
+A set of commands for interacting with the Skaffold config.
 
 ```
 Usage:
   skaffold config [command]
 
 Available Commands:
-  list        List all values set in the global skaffold config
-  set         Set a value in the global skaffold config
-  unset       Unset a value in the global skaffold config
+  list        List all values set in the global Skaffold config
+  set         Set a value in the global Skaffold config
+  unset       Unset a value in the global Skaffold config
 
 Global Flags:
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
@@ -205,6 +207,7 @@ Usage:
 Flags:
       --cleanup                   Delete deployments after dev mode is interrupted (default true)
   -d, --default-repo string       Default repository value (overrides global config)
+      --experimental-gui          Experimental Graphical User Interface
   -f, --filename string           Filename or URL to the pipeline file (default "skaffold.yaml")
   -l, --label stringArray         Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace string          Run deployments in the specified namespace
@@ -213,7 +216,7 @@ Flags:
       --skip-tests                Whether to skip the tests after building
       --tail                      Stream logs from deployed objects (default true)
       --toot                      Emit a terminal beep after the deploy is complete
-      --trigger string            How are changes detected? (polling or manual) (default "polling")
+      --trigger string            How are changes detected? (polling, manual or notify) (default "polling")
   -w, --watch-image stringArray   Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
   -i, --watch-poll-interval int   Interval (in ms) between two checks for file changes (default 1000)
 
@@ -226,6 +229,7 @@ Env vars:
 
 * `SKAFFOLD_CLEANUP` (same as --cleanup)
 * `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
+* `SKAFFOLD_EXPERIMENTAL_GUI` (same as --experimental-gui)
 * `SKAFFOLD_FILENAME` (same as --filename)
 * `SKAFFOLD_LABEL` (same as --label)
 * `SKAFFOLD_NAMESPACE` (same as --namespace)
@@ -260,7 +264,7 @@ Env vars:
 
 ### skaffold fix
 
-Converts old skaffold.yaml to newest schema version
+Converts old Skaffold config to newest schema version
 
 ```
 Usage:
@@ -282,7 +286,7 @@ Env vars:
 
 ### skaffold init
 
-Automatically generate skaffold configuration for deploying an application
+Automatically generate Skaffold configuration for deploying an application
 
 ```
 Usage:
@@ -293,8 +297,8 @@ Flags:
                                (example: --artifact=/web/Dockerfile.web=gcr.io/web-project/image)
       --compose-file string    Initialize from a docker-compose file
   -f, --filename string        Filename or URL to the pipeline file (default "skaffold.yaml")
-      --force                  Force the generation of the skaffold config
-      --skip-build             Skip generating build artifacts in skaffold config
+      --force                  Force the generation of the Skaffold config
+      --skip-build             Skip generating build artifacts in Skaffold config
 
 Global Flags:
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")

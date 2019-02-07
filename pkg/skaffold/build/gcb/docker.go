@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,22 +17,25 @@ limitations under the License.
 package gcb
 
 import (
+	"fmt"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 )
 
-func (b *Builder) dockerBuildSteps(imageName string, artifact *latest.DockerArtifact) []*cloudbuild.BuildStep {
+func (b *Builder) dockerBuildSteps(artifact *latest.DockerArtifact, tag string) []*cloudbuild.BuildStep {
 	var steps []*cloudbuild.BuildStep
 
 	for _, cacheFrom := range artifact.CacheFrom {
 		steps = append(steps, &cloudbuild.BuildStep{
-			Name: b.DockerImage,
-			Args: []string{"pull", cacheFrom},
+			Name:       b.DockerImage,
+			Entrypoint: "sh",
+			Args:       []string{"-c", fmt.Sprintf("docker pull %s || true", cacheFrom)},
 		})
 	}
 
-	args := append([]string{"build", "--tag", imageName, "-f", artifact.DockerfilePath})
+	args := append([]string{"build", "--tag", tag, "-f", artifact.DockerfilePath})
 	args = append(args, docker.GetBuildArgs(artifact)...)
 	args = append(args, ".")
 

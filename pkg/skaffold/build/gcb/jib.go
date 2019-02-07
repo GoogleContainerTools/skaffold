@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,16 +23,16 @@ import (
 )
 
 // TODO(dgageot): check that `package` is bound to `jib:build`
-func (b *Builder) jibMavenBuildSteps(imageName string, artifact *latest.JibMavenArtifact) []*cloudbuild.BuildStep {
+func (b *Builder) jibMavenBuildSteps(artifact *latest.JibMavenArtifact, tag string) []*cloudbuild.BuildStep {
 	return []*cloudbuild.BuildStep{{
 		Name: b.MavenImage,
-		Args: jib.GenerateMavenArgs("dockerBuild", imageName, artifact),
+		Args: jib.GenerateMavenArgs("dockerBuild", tag, artifact, b.skipTests),
 	}}
 }
 
-func (b *Builder) jibGradleBuildSteps(imageName string, artifact *latest.JibGradleArtifact) []*cloudbuild.BuildStep {
+func (b *Builder) jibGradleBuildSteps(artifact *latest.JibGradleArtifact, tag string) []*cloudbuild.BuildStep {
 	return []*cloudbuild.BuildStep{{
 		Name: b.GradleImage,
-		Args: jib.GenerateGradleArgs("jibDockerBuild", imageName, artifact),
+		Args: jib.GenerateGradleArgs("jibDockerBuild", tag, artifact, b.skipTests),
 	}}
 }

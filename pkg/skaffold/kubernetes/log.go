@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ var DynamicClient = GetDynamicClient
 type LogAggregator struct {
 	output      io.Writer
 	podSelector PodSelector
+	namespaces  []string
 	colorPicker ColorPicker
 
 	muted             int32
@@ -52,10 +53,11 @@ type LogAggregator struct {
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
-func NewLogAggregator(out io.Writer, baseImageNames []string, podSelector PodSelector) *LogAggregator {
+func NewLogAggregator(out io.Writer, baseImageNames []string, podSelector PodSelector, namespaces []string) *LogAggregator {
 	return &LogAggregator{
 		output:      out,
 		podSelector: podSelector,
+		namespaces:  namespaces,
 		colorPicker: NewColorPicker(baseImageNames),
 		trackedContainers: trackedContainers{
 			ids: map[string]bool{},
@@ -70,19 +72,21 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 	a.cancel = cancel
 	a.startTime = time.Now()
 
-	watcher, err := PodWatcher()
+	aggregate := make(chan watch.Event)
+	stopWatchers, err := AggregatePodWatcher(a.namespaces, aggregate)
 	if err != nil {
-		return errors.Wrap(err, "initializing pod watcher")
+		stopWatchers()
+		return errors.Wrap(err, "initializing aggregate pod watcher")
 	}
 
 	go func() {
-		defer watcher.Stop()
+		defer stopWatchers()
 
 		for {
 			select {
 			case <-cancelCtx.Done():
 				return
-			case evt, ok := <-watcher.ResultChan():
+			case evt, ok := <-aggregate:
 				if !ok {
 					return
 				}
@@ -192,7 +196,7 @@ func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Col
 		if _, err := headerColor.Fprintf(a.output, "%s ", header); err != nil {
 			return errors.Wrap(err, "writing pod prefix header to out")
 		}
-		if _, err := fmt.Fprint(a.output, string(line)); err != nil {
+		if _, err := color.White.Fprint(a.output, string(line)); err != nil {
 			return errors.Wrap(err, "writing pod log to out")
 		}
 	}

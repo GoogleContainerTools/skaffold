@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ func TestBuildBazelDescriptionFail(t *testing.T) {
 	builder := Builder{
 		GoogleCloudBuild: &latest.GoogleCloudBuild{},
 	}
-	_, err := builder.buildDescription(artifact, "bucket", "object")
+	_, err := builder.buildDescription(artifact, "tag", "bucket", "object")
 
 	testutil.CheckError(t, true, err)
 }

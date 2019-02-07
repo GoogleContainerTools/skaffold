@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -99,16 +98,12 @@ func updateCheck(ch chan string) error {
 		logrus.Debugf("Update check not enabled, skipping.")
 		return nil
 	}
-	current, err := version.ParseVersion(version.Get().Version)
+	latest, current, err := update.GetLatestAndCurrentVersion()
 	if err != nil {
-		return errors.Wrap(err, "parsing current semver, skipping update check")
-	}
-	latest, err := update.GetLatestVersion(context.Background())
-	if err != nil {
-		return errors.Wrap(err, "getting latest version")
+		return errors.Wrap(err, "get latest and current Skaffold version")
 	}
 	if latest.GT(current) {
-		ch <- fmt.Sprintf("There is a new version (%s) of skaffold available. Download it at %s\n", latest, constants.LatestDownloadURL)
+		ch <- fmt.Sprintf("There is a new version (%s) of Skaffold available. Download it at %s\n", latest, constants.LatestDownloadURL)
 	}
 	return nil
 }

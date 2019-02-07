@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 			Containers: []v1.Container{
 				{
 					Name:            constants.DefaultKanikoContainerName,
-					Image:           constants.DefaultKanikoImage,
+					Image:           cfg.Image,
 					Args:            args,
 					ImagePullPolicy: v1.PullIfNotPresent,
 					Env: []v1.EnvVar{{

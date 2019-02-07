@@ -1,7 +1,7 @@
 // +build integration
 
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -35,11 +35,8 @@ import (
 	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
-	appsv1 "k8s.io/api/apps/v1"
-	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -76,297 +73,204 @@ func TestMain(m *testing.M) {
 }
 
 func TestRun(t *testing.T) {
-	type testRunCase struct {
-		description          string
-		dir                  string
-		filename             string
-		args                 []string
-		deployments          []string
-		pods                 []string
-		deploymentValidation func(t *testing.T, d *appsv1.Deployment)
-		env                  []string
-
-		remoteOnly bool
-	}
-
-	var testCases = []testRunCase{
+	tests := []struct {
+		description string
+		dir         string
+		filename    string
+		args        []string
+		deployments []string
+		pods        []string
+		env         []string
+		remoteOnly  bool
+	}{
 		{
-			description: "getting-started example",
-			args:        []string{"run"},
-			pods:        []string{"getting-started"},
+			description: "getting-started",
 			dir:         "examples/getting-started",
-		}, {
-			description: "nodejs example",
-			args:        []string{"run"},
-			pods:        []string{"node"},
-			dir:         "examples/nodejs",
-		}, {
-			description: "structure-tests example",
-			args:        []string{"run"},
 			pods:        []string{"getting-started"},
+		}, {
+			description: "nodejs",
+			dir:         "examples/nodejs",
+			pods:        []string{"node"},
+		}, {
+			description: "structure-tests",
 			dir:         "examples/structure-tests",
+			pods:        []string{"getting-started"},
 		}, {
-			description: "microservices example",
-			args:        []string{"run"},
-			deployments: []string{"leeroy-app", "leeroy-web"},
+			description: "microservices",
 			dir:         "examples/microservices",
+			deployments: []string{"leeroy-app", "leeroy-web"},
 		}, {
-			description: "annotated getting-started example",
-			args:        []string{"run"},
+			description: "annotated-skaffold",
+			dir:         "examples",
 			filename:    "annotated-skaffold.yaml",
 			pods:        []string{"getting-started"},
-			dir:         "examples",
 		}, {
-			description: "getting-started envTagger",
-			args:        []string{"run"},
-			pods:        []string{"getting-started"},
+			description: "envTagger",
 			dir:         "examples/tagging-with-environment-variables",
+			pods:        []string{"getting-started"},
 			env:         []string{"FOO=foo"},
 		}, {
-			description: "gcb builder example",
-			args:        []string{"run", "-p", "gcb"},
-			pods:        []string{"getting-started"},
-			dir:         "examples/structure-tests",
-			remoteOnly:  true,
-		}, {
-			description: "deploy kustomize",
-			args:        []string{"deploy", "--images", "index.docker.io/library/busybox:1"},
-			deployments: []string{"kustomize-test"},
-			deploymentValidation: func(t *testing.T, d *appsv1.Deployment) {
-				if d == nil {
-					t.Fatalf("Could not find deployment")
-				}
-				if d.Spec.Template.Spec.Containers[0].Image != "index.docker.io/library/busybox:1" {
-					t.Fatalf("Wrong image name in kustomized deployment: %s", d.Spec.Template.Spec.Containers[0].Image)
-				}
-			},
-			dir: "examples/kustomize",
-		}, {
-			description: "bazel example",
-			args:        []string{"run"},
-			pods:        []string{"bazel"},
+			description: "bazel",
 			dir:         "examples/bazel",
+			pods:        []string{"bazel"},
 		}, {
-			description: "kaniko example",
-			args:        []string{"run"},
-			pods:        []string{"getting-started-kaniko"},
+			description: "Google Cloud Build",
+			dir:         "examples/structure-tests",
+			args:        []string{"-p", "gcb"},
+			pods:        []string{"getting-started"},
+			remoteOnly:  true,
+		}, {
+			description: "kaniko",
 			dir:         "examples/kaniko",
-			remoteOnly:  true,
-		}, {
-			description: "kaniko local example",
-			args:        []string{"run"},
 			pods:        []string{"getting-started-kaniko"},
-			dir:         "examples/kaniko-local",
 			remoteOnly:  true,
 		}, {
-			description: "helm example",
-			args:        []string{"run"},
-			deployments: []string{"skaffold-helm"},
+			description: "kaniko local",
+			dir:         "examples/kaniko-local",
+			pods:        []string{"getting-started-kaniko"},
+			remoteOnly:  true,
+		}, {
+			description: "helm",
 			dir:         "examples/helm-deployment",
+			deployments: []string{"skaffold-helm"},
 			remoteOnly:  true,
 		},
 	}
 
-	for _, testCase := range testCases {
-		t.Run(testCase.description, func(t *testing.T) {
-			if !*remote && testCase.remoteOnly {
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			if !*remote && test.remoteOnly {
 				t.Skip("skipping remote only test")
 			}
 
 			ns, deleteNs := setupNamespace(t)
 			defer deleteNs()
 
-			args := []string{}
-			args = append(args, testCase.args...)
-			args = append(args, "--namespace", ns.Name)
-			if testCase.filename != "" {
-				args = append(args, "-f", testCase.filename)
-			}
+			runSkaffold(t, "run", test.dir, ns.Name, test.filename, test.env)
 
-			cmd := exec.Command("skaffold", args...)
-			cmd.Env = append(os.Environ(), testCase.env...)
-			cmd.Dir = testCase.dir
-			if output, err := util.RunCmdOut(cmd); err != nil {
-				t.Fatalf("skaffold: %s %v", output, err)
-			}
-
-			for _, p := range testCase.pods {
+			for _, p := range test.pods {
 				if err := kubernetesutil.WaitForPodReady(context.Background(), client.CoreV1().Pods(ns.Name), p); err != nil {
 					t.Fatalf("Timed out waiting for pod ready")
 				}
 			}
 
-			for _, d := range testCase.deployments {
+			for _, d := range test.deployments {
 				if err := kubernetesutil.WaitForDeploymentToStabilize(context.Background(), client, ns.Name, d, 10*time.Minute); err != nil {
 					t.Fatalf("Timed out waiting for deployment to stabilize")
 				}
-				if testCase.deploymentValidation != nil {
-					deployment, err := client.AppsV1().Deployments(ns.Name).Get(d, meta_v1.GetOptions{})
-					if err != nil {
-						t.Fatalf("Could not find deployment: %s %s", ns.Name, d)
-					}
-					testCase.deploymentValidation(t, deployment)
-				}
 			}
 
-			// Cleanup
-			args = []string{"delete", "--namespace", ns.Name}
-			if testCase.filename != "" {
-				args = append(args, "-f", testCase.filename)
-			}
-			cmd = exec.Command("skaffold", args...)
-			cmd.Dir = testCase.dir
-			if output, err := util.RunCmdOut(cmd); err != nil {
-				t.Fatalf("skaffold delete: %s %v", output, err)
-			}
+			runSkaffold(t, "delete", test.dir, ns.Name, test.filename, test.env)
 		})
 	}
 }
 
+func TestDeploy(t *testing.T) {
+	ns, deleteNs := setupNamespace(t)
+	defer deleteNs()
+
+	runSkaffold(t, "deploy", "examples/kustomize", ns.Name, "", nil, "--images", "index.docker.io/library/busybox:1")
+
+	depName := "kustomize-test"
+	if err := kubernetesutil.WaitForDeploymentToStabilize(context.Background(), client, ns.Name, depName, 10*time.Minute); err != nil {
+		t.Fatalf("Timed out waiting for deployment to stabilize")
+	}
+
+	dep, err := client.AppsV1().Deployments(ns.Name).Get(depName, meta_v1.GetOptions{})
+	if err != nil {
+		t.Fatalf("Could not find deployment: %s %s", ns.Name, depName)
+	}
+
+	if dep.Spec.Template.Spec.Containers[0].Image != "index.docker.io/library/busybox:1" {
+		t.Fatalf("Wrong image name in kustomized deployment: %s", dep.Spec.Template.Spec.Containers[0].Image)
+	}
+
+	runSkaffold(t, "delete", "examples/kustomize", ns.Name, "", nil)
+}
+
 func TestDev(t *testing.T) {
-	type testDevCase struct {
-		description   string
-		dir           string
-		args          []string
-		setup         func(t *testing.T) func(t *testing.T)
-		postSetup     func(t *testing.T) func(t *testing.T)
-		pods          []string
-		jobs          []string
-		jobValidation func(t *testing.T, ns *v1.Namespace, j *batchv1.Job)
-		validation    func(t *testing.T, ns *v1.Namespace)
+	ns, deleteNs := setupNamespace(t)
+	defer deleteNs()
+
+	run(t, "examples/test-dev-job", "touch", "foo")
+	defer run(t, "examples/test-dev-job", "rm", "foo")
+
+	go runSkaffoldNoFail("dev", "examples/test-dev-job", ns.Name, "", nil)
+
+	jobName := "test-dev-job"
+	if err := kubernetesutil.WaitForJobToStabilize(context.Background(), client, ns.Name, jobName, 10*time.Minute); err != nil {
+		t.Fatalf("Timed out waiting for job to stabilize")
 	}
 
-	testCases := []testDevCase{
-		{
-			description: "delete and redeploy job",
-			dir:         "examples/test-dev-job",
-			args:        []string{"dev"},
-			setup: func(t *testing.T) func(t *testing.T) {
-				// create foo
-				cmd := exec.Command("touch", "examples/test-dev-job/foo")
-				if output, err := util.RunCmdOut(cmd); err != nil {
-					t.Fatalf("creating foo: %s %v", output, err)
-				}
-				return func(t *testing.T) {
-					// delete foo
-					cmd := exec.Command("rm", "examples/test-dev-job/foo")
-					if output, err := util.RunCmdOut(cmd); err != nil {
-						t.Fatalf("creating foo: %s %v", output, err)
-					}
-				}
-			},
-			jobs: []string{
-				"test-dev-job",
-			},
-			jobValidation: func(t *testing.T, ns *v1.Namespace, j *batchv1.Job) {
-				originalUID := j.GetUID()
-				// Make a change to foo so that dev is forced to delete the job and redeploy
-				cmd := exec.Command("sh", "-c", "echo bar > examples/test-dev-job/foo")
-				if output, err := util.RunCmdOut(cmd); err != nil {
-					t.Fatalf("creating bar: %s %v", output, err)
-				}
-				// Make sure the UID of the old Job and the UID of the new Job is different
-				err := wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
-					newJob, err := client.BatchV1().Jobs(ns.Name).Get(j.Name, meta_v1.GetOptions{})
-					if err != nil {
-						return false, nil
-					}
-					return originalUID != newJob.GetUID(), nil
-				})
-				if err != nil {
-					t.Fatalf("redeploy failed: %v", err)
-				}
-			},
-		},
-		{
-			description: "create a directory with file sync",
-			dir:         "examples/test-file-sync",
-			args:        []string{"dev"},
-			pods:        []string{"test-file-sync"},
-			postSetup: func(t *testing.T) func(t *testing.T) {
-				cmd := exec.Command("mkdir", "-p", "test")
-				cmd.Dir = "examples/test-file-sync"
-				if output, err := util.RunCmdOut(cmd); err != nil {
-					t.Fatalf("creating test dir: %s %v", output, err)
-				}
-				cmd = exec.Command("touch", "test/foobar")
-				cmd.Dir = "examples/test-file-sync"
-				if output, err := util.RunCmdOut(cmd); err != nil {
-					t.Fatalf("creating test/foo: %s %v", output, err)
-				}
-				return func(t *testing.T) {
-					cmd := exec.Command("rm", "-rf", "test")
-					cmd.Dir = "examples/test-file-sync"
-					if output, err := util.RunCmdOut(cmd); err != nil {
-						t.Fatalf("removing test dir: %s %v", output, err)
-					}
-				}
-			},
-			validation: func(t *testing.T, ns *v1.Namespace) {
-				// try to run this command successfully for one minute
-				err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
-					cmd := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "ls", "/test")
-					_, err := util.RunCmdOut(cmd)
-					return err == nil, nil
-				})
-				if err != nil {
-					t.Fatalf("checking if /test dir exists in container: %v", err)
-				}
-			},
-		},
+	job, err := client.BatchV1().Jobs(ns.Name).Get(jobName, meta_v1.GetOptions{})
+	if err != nil {
+		t.Fatalf("Could not find job: %s %s", ns.Name, jobName)
 	}
 
-	for _, testCase := range testCases {
-		t.Run(testCase.description, func(t *testing.T) {
-			ns, deleteNs := setupNamespace(t)
-			defer deleteNs()
+	// Make a change to foo so that dev is forced to delete the job and redeploy
+	run(t, "examples/test-dev-job", "sh", "-c", "echo bar > foo")
 
-			if testCase.setup != nil {
-				cleanupTC := testCase.setup(t)
-				defer cleanupTC(t)
-			}
+	// Make sure the UID of the old Job and the UID of the new Job is different
+	err = wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
+		newJob, err := client.BatchV1().Jobs(ns.Name).Get(job.Name, meta_v1.GetOptions{})
+		if err != nil {
+			return false, nil
+		}
+		return job.GetUID() != newJob.GetUID(), nil
+	})
+	if err != nil {
+		t.Fatalf("redeploy failed: %v", err)
+	}
+}
 
-			args := []string{}
-			args = append(args, testCase.args...)
-			args = append(args, "--namespace", ns.Name)
+func TestDevSync(t *testing.T) {
+	ns, deleteNs := setupNamespace(t)
+	defer deleteNs()
 
-			cmd := exec.Command("skaffold", args...)
-			cmd.Dir = testCase.dir
-			go func() {
-				if output, err := util.RunCmdOut(cmd); err != nil {
-					logrus.Warnf("skaffold: %s %v", output, err)
-				}
-			}()
+	go runSkaffoldNoFail("dev", "examples/test-file-sync", ns.Name, "", nil)
 
-			for _, j := range testCase.jobs {
-				if err := kubernetesutil.WaitForJobToStabilize(context.Background(), client, ns.Name, j, 10*time.Minute); err != nil {
-					t.Fatalf("Timed out waiting for job to stabilize")
-				}
-				if testCase.jobValidation != nil {
-					job, err := client.BatchV1().Jobs(ns.Name).Get(j, meta_v1.GetOptions{})
-					if err != nil {
-						t.Fatalf("Could not find job: %s %s", ns.Name, j)
-					}
-					testCase.jobValidation(t, ns, job)
-				}
-			}
+	if err := kubernetesutil.WaitForPodReady(context.Background(), client.CoreV1().Pods(ns.Name), "test-file-sync"); err != nil {
+		t.Fatalf("Timed out waiting for pod ready")
+	}
 
-			for _, p := range testCase.pods {
-				if err := kubernetesutil.WaitForPodReady(context.Background(), client.CoreV1().Pods(ns.Name), p); err != nil {
-					t.Fatalf("Timed out waiting for pod ready")
-				}
-			}
+	run(t, "examples/test-file-sync", "mkdir", "-p", "test")
+	run(t, "examples/test-file-sync", "touch", "test/foobar")
+	defer run(t, "examples/test-file-sync", "rm", "-rf", "test")
 
-			if testCase.postSetup != nil {
-				cleanup := testCase.postSetup(t)
-				defer cleanup(t)
-			}
+	err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+		cmd := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "ls", "/test")
+		_, err := util.RunCmdOut(cmd)
+		return err == nil, nil
+	})
+	if err != nil {
+		t.Fatalf("checking if /test dir exists in container: %v", err)
+	}
+}
 
-			if testCase.validation != nil {
-				testCase.validation(t, ns)
-			}
-			// No cleanup, since exiting skaffold dev should clean up automatically
-		})
+func runSkaffold(t *testing.T, command, dir, namespace, filename string, env []string, additionalArgs ...string) {
+	if output, err := runSkaffoldNoFail(command, dir, namespace, filename, env, additionalArgs...); err != nil {
+		t.Fatalf("skaffold delete: %s %v", output, err)
+	}
+}
+
+func runSkaffoldNoFail(command, dir, namespace, filename string, env []string, additionalArgs ...string) ([]byte, error) {
+	args := []string{command, "--namespace", namespace}
+	if filename != "" {
+		args = append(args, "-f", filename)
+	}
+	args = append(args, additionalArgs...)
+
+	cmd := exec.Command("skaffold", args...)
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), env...)
+	return util.RunCmdOut(cmd)
+}
+
+func run(t *testing.T, dir, command string, args ...string) {
+	cmd := exec.Command(command, args...)
+	cmd.Dir = dir
+	if output, err := util.RunCmdOut(cmd); err != nil {
+		t.Fatalf("running command [%s %v]: %s %v", command, args, output, err)
 	}
 }
 

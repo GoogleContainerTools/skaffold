@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import (
 // LocalDaemon talks to a local Docker API.
 type LocalDaemon interface {
 	Close() error
+	ExtraEnv() []string
 	ServerVersion(ctx context.Context) (types.Version, error)
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
 	Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string) (string, error)
@@ -51,14 +52,22 @@ type LocalDaemon interface {
 
 type localDaemon struct {
 	apiClient  client.CommonAPIClient
+	extraEnv   []string
 	imageCache sync.Map
 }
 
 // NewLocalDaemon creates a new LocalDaemon.
-func NewLocalDaemon(apiClient client.CommonAPIClient) LocalDaemon {
+func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string) LocalDaemon {
 	return &localDaemon{
 		apiClient: apiClient,
+		extraEnv:  extraEnv,
 	}
+}
+
+// ExtraEnv returns the env variables needed to point at this local Docker
+// eg. minikube. This has be set in addition to the current environment.
+func (l *localDaemon) ExtraEnv() []string {
+	return l.extraEnv
 }
 
 // PushResult gives the information on an image that has been pushed.

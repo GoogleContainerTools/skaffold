@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -31,9 +31,6 @@ const (
 	// context directory
 	DefaultDockerfilePath = "Dockerfile"
 
-	DefaultDevTagStrategy = TagStrategySha256
-	DefaultRunTagStrategy = TagStrategyGitCommit
-
 	// TagStrategySha256 uses the checksum of the built artifact as the tag
 	TagStrategySha256    = "sha256"
 	TagStrategyGitCommit = "gitCommit"
@@ -47,7 +44,7 @@ const (
 
 	DefaultKustomizationPath = "."
 
-	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.7.0@sha256:0b4e0812aa17c54a9b8d8c8d7cb35559a892a341650acf7cb428c3e8cb4a3919"
+	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.8.0@sha256:32ed8afc3c808d7159a7c1789d46c2abe95c1cb5b7afdd6867e360f0ed952c13"
 	DefaultKanikoSecretName             = "kaniko-secret"
 	DefaultKanikoTimeout                = "20m"
 	DefaultKanikoContainerName          = "kaniko"
@@ -63,9 +60,6 @@ const (
 	DefaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
 	DefaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn"
 	DefaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
-
-	// A regex matching valid repository names (https://github.com/docker/distribution/blob/master/reference/reference.go)
-	RepositoryComponentRegex string = `^[a-z\d]+(?:(?:[_.]|__|-+)[a-z\d]+)*$`
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -161,17 +161,22 @@ func TestGetCommandMaven(t *testing.T) {
 
 func TestGenerateMavenArgs(t *testing.T) {
 	var testCases = []struct {
-		in  latest.JibMavenArtifact
-		out []string
+		in        latest.JibMavenArtifact
+		skipTests bool
+		out       []string
 	}{
-		{latest.JibMavenArtifact{}, []string{"--non-recursive", "prepare-package", "jib:goal", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Profile: "profile"}, []string{"--activate-profiles", "profile", "--non-recursive", "prepare-package", "jib:goal", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Module: "module"}, []string{"--projects", "module", "--also-make", "package", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, []string{"--activate-profiles", "profile", "--projects", "module", "--also-make", "package", "-Dimage=image"}},
+		{latest.JibMavenArtifact{}, false, []string{"--non-recursive", "prepare-package", "jib:goal", "-Dimage=image"}},
+		{latest.JibMavenArtifact{}, true, []string{"--non-recursive", "-DskipTests=true", "prepare-package", "jib:goal", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Profile: "profile"}, false, []string{"--activate-profiles", "profile", "--non-recursive", "prepare-package", "jib:goal", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Profile: "profile"}, true, []string{"--activate-profiles", "profile", "--non-recursive", "-DskipTests=true", "prepare-package", "jib:goal", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Module: "module"}, false, []string{"--projects", "module", "--also-make", "package", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Module: "module"}, true, []string{"--projects", "module", "--also-make", "-DskipTests=true", "package", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, false, []string{"--activate-profiles", "profile", "--projects", "module", "--also-make", "package", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, true, []string{"--activate-profiles", "profile", "--projects", "module", "--also-make", "-DskipTests=true", "package", "-Dimage=image"}},
 	}
 
 	for _, tt := range testCases {
-		args := GenerateMavenArgs("goal", "image", &tt.in)
+		args := GenerateMavenArgs("goal", "image", &tt.in, tt.skipTests)
 
 		testutil.CheckDeepEqual(t, tt.out, args)
 	}
