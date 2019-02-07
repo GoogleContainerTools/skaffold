@@ -124,7 +124,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 	}
 	shutdown, err := event.InitializeState(&cfg.Build, &cfg.Deploy, portOrSocket)
 	if err != nil {
-		return nil, errors.Wrap(err, "initializing global state")
+		return nil, errors.Wrap(err, "initializing skaffold event handler")
 	}
 	event.LogSkaffoldMetadata(version.Get())
 
