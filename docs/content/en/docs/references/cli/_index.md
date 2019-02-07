@@ -73,6 +73,8 @@ Flags:
                                      {{end}})
   -p, --profile stringArray          Activate profiles by name
   -q, --quiet                        Suppress the build output and print image built on success
+      --rpc-port string              tcp port to expose event API (Windows only) (default ":50051")
+      --rpc-socket string            unix socket to expose event API (Unix systems only) (default "/tmp/skaffold.sock")
       --skip-tests                   Whether to skip the tests after building
       --toot                         Emit a terminal beep after the deploy is complete
 
@@ -93,6 +95,8 @@ Env vars:
 * `SKAFFOLD_OUTPUT` (same as --output)
 * `SKAFFOLD_PROFILE` (same as --profile)
 * `SKAFFOLD_QUIET` (same as --quiet)
+* `SKAFFOLD_RPC_PORT` (same as --rpc-port)
+* `SKAFFOLD_RPC_SOCKET` (same as --rpc-socket)
 * `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
 * `SKAFFOLD_TOOT` (same as --toot)
 
@@ -152,6 +156,8 @@ Flags:
   -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
   -n, --namespace string      Run deployments in the specified namespace
   -p, --profile stringArray   Activate profiles by name
+      --rpc-port string       tcp port to expose event API (Windows only) (default ":50051")
+      --rpc-socket string     unix socket to expose event API (Unix systems only) (default "/tmp/skaffold.sock")
       --skip-tests            Whether to skip the tests after building
       --toot                  Emit a terminal beep after the deploy is complete
 
@@ -169,6 +175,8 @@ Env vars:
 * `SKAFFOLD_FILENAME` (same as --filename)
 * `SKAFFOLD_NAMESPACE` (same as --namespace)
 * `SKAFFOLD_PROFILE` (same as --profile)
+* `SKAFFOLD_RPC_PORT` (same as --rpc-port)
+* `SKAFFOLD_RPC_SOCKET` (same as --rpc-socket)
 * `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
 * `SKAFFOLD_TOOT` (same as --toot)
 
@@ -189,6 +197,8 @@ Flags:
   -l, --label stringArray     Add custom labels to deployed objects. Set multiple times for multiple labels.
   -n, --namespace string      Run deployments in the specified namespace
   -p, --profile stringArray   Activate profiles by name
+      --rpc-port string       tcp port to expose event API (Windows only) (default ":50051")
+      --rpc-socket string     unix socket to expose event API (Unix systems only) (default "/tmp/skaffold.sock")
       --skip-tests            Whether to skip the tests after building
       --tail                  Stream logs from deployed objects
       --toot                  Emit a terminal beep after the deploy is complete
@@ -209,6 +219,8 @@ Env vars:
 * `SKAFFOLD_LABEL` (same as --label)
 * `SKAFFOLD_NAMESPACE` (same as --namespace)
 * `SKAFFOLD_PROFILE` (same as --profile)
+* `SKAFFOLD_RPC_PORT` (same as --rpc-port)
+* `SKAFFOLD_RPC_SOCKET` (same as --rpc-socket)
 * `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
 * `SKAFFOLD_TAIL` (same as --tail)
 * `SKAFFOLD_TOOT` (same as --toot)
@@ -232,6 +244,8 @@ Flags:
   -n, --namespace string          Run deployments in the specified namespace
       --port-forward              Port-forward exposed container ports within pods (default true)
   -p, --profile stringArray       Activate profiles by name
+      --rpc-port string           tcp port to expose event API (Windows only) (default ":50051")
+      --rpc-socket string         unix socket to expose event API (Unix systems only) (default "/tmp/skaffold.sock")
       --skip-tests                Whether to skip the tests after building
       --tail                      Stream logs from deployed objects (default true)
       --toot                      Emit a terminal beep after the deploy is complete
@@ -257,6 +271,8 @@ Env vars:
 * `SKAFFOLD_NAMESPACE` (same as --namespace)
 * `SKAFFOLD_PORT_FORWARD` (same as --port-forward)
 * `SKAFFOLD_PROFILE` (same as --profile)
+* `SKAFFOLD_RPC_PORT` (same as --rpc-port)
+* `SKAFFOLD_RPC_SOCKET` (same as --rpc-socket)
 * `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
 * `SKAFFOLD_TAIL` (same as --tail)
 * `SKAFFOLD_TOOT` (same as --toot)
@@ -356,6 +372,8 @@ Flags:
   -l, --label stringArray     Add custom labels to deployed objects. Set multiple times for multiple labels.
   -n, --namespace string      Run deployments in the specified namespace
   -p, --profile stringArray   Activate profiles by name
+      --rpc-port string       tcp port to expose event API (Windows only) (default ":50051")
+      --rpc-socket string     unix socket to expose event API (Unix systems only) (default "/tmp/skaffold.sock")
       --skip-tests            Whether to skip the tests after building
   -t, --tag string            The optional custom tag to use for images which overrides the current Tagger configuration
       --tail                  Stream logs from deployed objects
@@ -376,6 +394,8 @@ Env vars:
 * `SKAFFOLD_LABEL` (same as --label)
 * `SKAFFOLD_NAMESPACE` (same as --namespace)
 * `SKAFFOLD_PROFILE` (same as --profile)
+* `SKAFFOLD_RPC_PORT` (same as --rpc-port)
+* `SKAFFOLD_RPC_SOCKET` (same as --rpc-socket)
 * `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
 * `SKAFFOLD_TAG` (same as --tag)
 * `SKAFFOLD_TAIL` (same as --tail)
