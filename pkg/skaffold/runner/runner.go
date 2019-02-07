@@ -264,7 +264,7 @@ func (r *SkaffoldRunner) imageTags(out io.Writer, artifacts []*latest.Artifact) 
 		imageName := artifact.ImageName
 		color.Default.Fprintf(out, "Generating Tag for [%s]...\n", imageName)
 
-		if strings.Index(imageName, ":") >= 0 {
+		if strings.Contains(imageName, ":") {
 			// Use a name with a colon verbatim.
 			logrus.Debugf("Tag for %s is self\n", imageName)
 			tags[imageName] = imageName
