@@ -14,13 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-readonly REPO_DIR=$(pwd)
+set -e
 
-pushd ${REPO_DIR}/docs
+CURRENT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+DOCS_DIR="${CURRENT_DIR}/../../docs"
 
-rm -rf public resources node_modules package-lock.json &&  \
-git submodule deinit -f . && \
-rm -rf themes/docsy/* && \
-rm -rf ${REPO_DIR}/.git/modules/docsy
+# Build the Hugo image
+tar -cz -C ${DOCS_DIR} Dockerfile | docker build --target hugo-preview -t skaffold-docs-preview -
 
-popd
+# Find the local files to mount
+mounts="-v ${DOCS_DIR}/config.toml:/docs/config.toml"
+for dir in $(find ${DOCS_DIR} -type dir -mindepth 1 -maxdepth 1 | grep -v themes | grep -v public | grep -v resources); do
+    mounts="$mounts -v $dir:/docs/$(basename $dir):delegated"
+done
+
+# Run Hugo
+docker run --rm -ti -p 1313:1313 $mounts skaffold-docs-preview

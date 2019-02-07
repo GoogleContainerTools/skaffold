@@ -14,16 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-## This script starts a preview of the Skaffold site assuming it's ran from a
-## cloned Skaffold repo with no submodules initialized. The script initializes the git submodules for
-## the site's theme in a standard manner, thus this script can be used locally as well as for the PR review flow.
-set -x
+set -e
 
-readonly REPO_DIR=$(pwd)
-readonly BASE_URL=${1:-"http://localhost:1313"}
+CURRENT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+DOCS_DIR="${CURRENT_DIR}/../../docs"
 
-bash ${REPO_DIR}/deploy/docs/build.sh ${BASE_URL}
+# Build the Hugo image
+docker build --target hugo-publish -t skaffold-docs-publish "${DOCS_DIR}"
 
-cd ${REPO_DIR}/docs
-
-hugo serve --bind=0.0.0.0 -D --baseURL=${BASE_URL}
+# Run Hugo
+docker run --rm -ti skaffold-docs-publish

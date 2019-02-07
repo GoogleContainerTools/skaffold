@@ -50,8 +50,6 @@ GO_LDFLAGS +="
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 GO_BUILD_TAGS := "kqueue"
 
-DOCSY_COMMIT:=a7141a2eac26cb598b707cab87d224f9105c315d
-
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
 
@@ -168,33 +166,13 @@ submit-release-trigger:
 		--config=deploy/cloudbuild-release.yaml \
 		--substitutions="_RELEASE_BUCKET=$(RELEASE_BUCKET),TAG_NAME=$(VERSION)"
 
-#utilities for skaffold site - not used anywhere else
-
-.PHONY: docs-controller-image
-docs-controller-image:
-	docker build -t gcr.io/$(GCP_PROJECT)/docs-controller -f deploy/webhook/Dockerfile .
-
-
 .PHONY: preview-docs
-preview-docs: start-docs-preview clean-docs-preview
+preview-docs:
+	./hack/doc/preview.sh
 
-.PHONY: docs-preview-image
-docs-preview-image:
-	docker build -t skaffold-docs-previewer -f deploy/webhook/Dockerfile --target runtime_deps .
-
-.PHONY: start-docs-preview
-start-docs-preview:	docs-preview-image
-	docker run --rm -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/preview.sh
-
-.PHONY: build-docs-preview
-build-docs-preview:	docs-preview-image
-	docker run --rm -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/build.sh
-
-.PHONY: clean-docs-preview
-clean-docs-preview: docs-preview-image
-	docker run --rm -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/clean.sh
-
-# schema generation
+.PHONY: publish-docs
+publish-docs:
+	./hack/doc/publish.sh
 
 .PHONY: generate-schemas
 generate-schemas:
