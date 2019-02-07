@@ -23,76 +23,72 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestDockerContext(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
+	for _, dir := range []string{".", "sub"} {
+		t.Run(dir, func(t *testing.T) {
+			tmpDir, cleanup := testutil.NewTempDir(t)
+			defer cleanup()
 
-	mockCurrentDir := func() (string, error) {
-		return tmpDir.Root(), nil
-	}
-	originalCurrentDir := util.RetrieveCurrentDir
-	util.RetrieveCurrentDir = mockCurrentDir
-	defer func() {
-		util.RetrieveCurrentDir = originalCurrentDir
-	}()
+			imageFetcher := fakeImageFetcher{}
+			RetrieveImage = imageFetcher.fetch
+			defer func() { RetrieveImage = retrieveImage }()
 
-	imageFetcher := fakeImageFetcher{}
-	RetrieveImage = imageFetcher.fetch
-	defer func() { RetrieveImage = retrieveImage }()
+			artifact := &latest.DockerArtifact{
+				DockerfilePath: "Dockerfile",
+			}
 
-	artifact := &latest.DockerArtifact{
-		DockerfilePath: "Dockerfile",
-		BuildArgs:      map[string]*string{},
-	}
+			tmpDir.Write(dir+"/files/ignored.txt", "")
+			tmpDir.Write(dir+"/files/included.txt", "")
+			tmpDir.Write(dir+"/.dockerignore", "**/ignored.txt\nalsoignored.txt")
+			tmpDir.Write(dir+"/Dockerfile", "FROM alpine\nCOPY ./files /files")
+			tmpDir.Write(dir+"/ignored.txt", "")
+			tmpDir.Write(dir+"/alsoignored.txt", "")
 
-	tmpDir.Write("files/ignored.txt", "")
-	tmpDir.Write("files/included.txt", "")
-	tmpDir.Write(".dockerignore", "**/ignored.txt\nalsoignored.txt")
-	tmpDir.Write("Dockerfile", "FROM alpine\nCOPY ./files /files")
-	tmpDir.Write("ignored.txt", "")
-	tmpDir.Write("alsoignored.txt", "")
+			reset := testutil.Chdir(t, tmpDir.Root())
+			defer reset()
 
-	reader, writer := io.Pipe()
-	go func() {
-		err := CreateDockerTarContext(context.Background(), writer, tmpDir.Root(), artifact)
-		if err != nil {
-			writer.CloseWithError(err)
-		} else {
-			writer.Close()
-		}
-	}()
+			reader, writer := io.Pipe()
+			go func() {
+				err := CreateDockerTarContext(context.Background(), writer, dir, artifact)
+				if err != nil {
+					writer.CloseWithError(err)
+				} else {
+					writer.Close()
+				}
+			}()
 
-	files := make(map[string]bool)
-	tr := tar.NewReader(reader)
-	for {
-		header, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			t.Fatal(err)
-		}
+			files := make(map[string]bool)
+			tr := tar.NewReader(reader)
+			for {
+				header, err := tr.Next()
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					t.Fatal(err)
+				}
 
-		files[header.Name] = true
-	}
+				files[header.Name] = true
+			}
 
-	if files["ignored.txt"] {
-		t.Error("File ignored.txt should have been excluded, but was not")
-	}
-	if files["alsoignored.txt"] {
-		t.Error("File alsoignored.txt should have been excluded, but was not")
-	}
-	if files["files/ignored.txt"] {
-		t.Error("File files/ignored.txt should have been excluded, but was not")
-	}
-	if !files["files/included.txt"] {
-		t.Error("File files/included.txt should have been included, but was not")
-	}
-	if !files["Dockerfile"] {
-		t.Error("File Dockerfile should have been included, but was not")
+			if files["ignored.txt"] {
+				t.Error("File ignored.txt should have been excluded, but was not")
+			}
+			if files["alsoignored.txt"] {
+				t.Error("File alsoignored.txt should have been excluded, but was not")
+			}
+			if files["files/ignored.txt"] {
+				t.Error("File files/ignored.txt should have been excluded, but was not")
+			}
+			if !files["files/included.txt"] {
+				t.Error("File files/included.txt should have been included, but was not")
+			}
+			if !files["Dockerfile"] {
+				t.Error("File Dockerfile should have been included, but was not")
+			}
+		})
 	}
 }

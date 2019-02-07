@@ -30,15 +30,6 @@ func TestCreateTar(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	mockCurrentDir := func() (string, error) {
-		return tmpDir.Root(), nil
-	}
-	originalCurrentDir := RetrieveCurrentDir
-	RetrieveCurrentDir = mockCurrentDir
-	defer func() {
-		RetrieveCurrentDir = originalCurrentDir
-	}()
-
 	files := map[string]string{
 		"foo":     "baz1",
 		"bar/bat": "baz2",
@@ -50,8 +41,11 @@ func TestCreateTar(t *testing.T) {
 		paths = append(paths, path)
 	}
 
+	reset := testutil.Chdir(t, tmpDir.Root())
+	defer reset()
+
 	var b bytes.Buffer
-	err := CreateTar(&b, tmpDir.Root(), paths)
+	err := CreateTar(&b, ".", paths)
 	testutil.CheckError(t, false, err)
 
 	// Make sure the contents match.
@@ -73,6 +67,47 @@ func TestCreateTar(t *testing.T) {
 	testutil.CheckErrorAndDeepEqual(t, false, err, files, tarFiles)
 }
 
+func TestCreateTarSubDirectory(t *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+
+	files := map[string]string{
+		"sub/foo":     "baz1",
+		"sub/bar/bat": "baz2",
+		"sub/bar/baz": "baz3",
+	}
+	var paths []string
+	for path, content := range files {
+		tmpDir.Write(path, content)
+		paths = append(paths, path)
+	}
+
+	reset := testutil.Chdir(t, tmpDir.Root())
+	defer reset()
+
+	var b bytes.Buffer
+	err := CreateTar(&b, "sub", paths)
+	testutil.CheckError(t, false, err)
+
+	// Make sure the contents match.
+	tarFiles := make(map[string]string)
+	tr := tar.NewReader(&b)
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		testutil.CheckError(t, false, err)
+
+		content, err := ioutil.ReadAll(tr)
+		testutil.CheckError(t, false, err)
+
+		tarFiles["sub/"+hdr.Name] = string(content)
+	}
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, files, tarFiles)
+}
+
 func TestCreateTarWithAbsolutePaths(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
@@ -87,6 +122,9 @@ func TestCreateTarWithAbsolutePaths(t *testing.T) {
 		tmpDir.Write(path, content)
 		paths = append(paths, tmpDir.Path(path))
 	}
+
+	reset := testutil.Chdir(t, tmpDir.Root())
+	defer reset()
 
 	var b bytes.Buffer
 	err := CreateTar(&b, tmpDir.Root(), paths)

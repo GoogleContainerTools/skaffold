@@ -14,32 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package docker
+package main
 
 import (
-	"context"
-	"io"
-	"path/filepath"
+	"fmt"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
 )
 
-func CreateDockerTarContext(ctx context.Context, w io.Writer, workspace string, a *latest.DockerArtifact) error {
-	paths, err := GetDependencies(ctx, workspace, a)
-	if err != nil {
-		return errors.Wrap(err, "getting relative tar paths")
-	}
-
-	var p []string
-	for _, path := range paths {
-		p = append(p, filepath.Join(workspace, path))
-	}
-
-	if err := util.CreateTar(w, workspace, p); err != nil {
-		return errors.Wrap(err, "creating tar gz")
-	}
-
-	return nil
+func main() {
+	fmt.Println(strings.TrimPrefix(latest.Version, "skaffold/"))
 }

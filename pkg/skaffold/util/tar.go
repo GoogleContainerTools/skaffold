@@ -27,11 +27,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	// RetrieveCurrentDir is for testing
-	RetrieveCurrentDir = currentWorkingDirectory
-)
-
 func CreateTar(w io.Writer, root string, paths []string) error {
 	tw := tar.NewWriter(w)
 	defer tw.Close()
@@ -57,10 +52,6 @@ func addFileToTar(root string, path string, tw *tar.Writer) error {
 		err     error
 	)
 
-	currentDir, err := RetrieveCurrentDir()
-	if err != nil {
-		return err
-	}
 	absRoot, err := filepath.Abs(root)
 	if err != nil {
 		return err
@@ -69,7 +60,10 @@ func addFileToTar(root string, path string, tw *tar.Writer) error {
 	if filepath.IsAbs(path) {
 		absPath = path
 	} else {
-		absPath = filepath.Join(currentDir, path)
+		absPath, err = filepath.Abs(path)
+		if err != nil {
+			return err
+		}
 	}
 
 	tarPath, err := filepath.Rel(absRoot, absPath)
@@ -132,8 +126,4 @@ func addFileToTar(root string, path string, tw *tar.Writer) error {
 		}
 	}
 	return nil
-}
-
-func currentWorkingDirectory() (string, error) {
-	return os.Getwd()
 }
