@@ -37,7 +37,7 @@ build:
   tagPolicy:
     gitCommit: {}
 `
-	verityUpgrade(t, yaml, expected)
+	verifyUpgrade(t, yaml, expected)
 }
 
 func TestUpgrade_sha256Tagger(t *testing.T) {
@@ -52,7 +52,7 @@ build:
   tagPolicy:
     sha256: {}
 `
-	verityUpgrade(t, yaml, expected)
+	verifyUpgrade(t, yaml, expected)
 }
 
 func TestUpgrade_deploy(t *testing.T) {
@@ -77,10 +77,10 @@ deploy:
     manifests:
     - k8s-*
 `
-	verityUpgrade(t, yaml, expected)
+	verifyUpgrade(t, yaml, expected)
 }
 
-func verityUpgrade(t *testing.T, input, output string) {
+func verifyUpgrade(t *testing.T, input, output string) {
 	pipeline := NewSkaffoldPipeline()
 	err := yaml.UnmarshalStrict([]byte(input), pipeline)
 	testutil.CheckErrorAndDeepEqual(t, false, err, Version, pipeline.GetVersion())
