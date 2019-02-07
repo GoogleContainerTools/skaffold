@@ -68,16 +68,16 @@ func TestPluginBuilderLabels(t *testing.T) {
 			builder: Builder{
 				Builders: map[string]build.Builder{
 					"mock-one": &mockBuilder{
-						labels: map[string]string{"key-one": "value-one"},
+						labels: map[string]string{"key-one": "value"},
 					},
 					"mock-two": &mockBuilder{
-						labels: map[string]string{"key-one": "value-two"},
+						labels: map[string]string{"key-one": "value"},
 					},
 				},
 			},
 			expected: map[string]string{
-				"key-one":      "value-one",
-				"key-one-rand": "value-two",
+				"key-one":      "value",
+				"key-one-rand": "value",
 			},
 		},
 	}
