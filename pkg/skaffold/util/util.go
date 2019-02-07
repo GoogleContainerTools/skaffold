@@ -44,6 +44,15 @@ func RandomID() string {
 	return fmt.Sprintf("%x", b)
 }
 
+func RandomFourCharacterID() string {
+	b := make([]byte, 2)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("%x", b)
+}
+
 // These are the supported file formats for kubernetes manifests
 var validSuffixes = []string{".yml", ".yaml", ".json"}
 

@@ -18,6 +18,7 @@ package plugin
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -27,8 +28,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	plugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+)
+
+var (
+	// For testing
+	randomID = util.RandomFourCharacterID
 )
 
 func NewPluginBuilder(cfg *latest.BuildConfig) (build.Builder, error) {
@@ -81,6 +89,12 @@ func (b *Builder) Labels() map[string]string {
 	labels := map[string]string{}
 	for _, builder := range b.Builders {
 		for k, v := range builder.Labels() {
+			if val, ok := labels[k]; ok {
+				random := fmt.Sprintf("%s-%s", k, randomID())
+				logrus.Warnf("%s=%s label exists, saving %s=%s as %s=%s to avoid overlap", k, val, k, v, random, v)
+				labels[random] = v
+				continue
+			}
 			labels[k] = v
 		}
 	}

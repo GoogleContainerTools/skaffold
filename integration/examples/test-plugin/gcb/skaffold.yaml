@@ -13,7 +13,7 @@ build:
   executionEnvironment:
     name: googlecloudbuild
     properties:
-      projectId: priya-wadhwa
+      projectId: k8s-skaffold
 deploy:
   kubectl:
     manifests:
