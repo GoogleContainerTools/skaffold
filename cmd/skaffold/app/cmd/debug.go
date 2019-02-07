@@ -33,6 +33,7 @@ func NewCmdDebug(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "debug",
 		Short: "Runs a pipeline file in debug mode",
+		Long:  "Similar to `dev`, but runs the pipeline for debugging. Artifacts that are debugged are not watched.",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return debug(out)
@@ -59,6 +60,12 @@ func debug(out io.Writer) error {
 		defer func() {
 			cleanup()
 		}()
+	}
+
+	// HACK: prevent redeploying changed containers during debugging
+	// TODO: build to ignore debuggable artifacts
+	if len(opts.Watch) == 0 {
+		opts.Watch = []string{"none"}
 	}
 
 	deploy.AddManifestTransform(kubectl.ApplyDebuggingTransforms)
