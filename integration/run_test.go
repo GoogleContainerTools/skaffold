@@ -120,6 +120,11 @@ func TestRun(t *testing.T) {
 			pods:        []string{"getting-started"},
 			remoteOnly:  true,
 		}, {
+			description: "Google Cloud Build - sub folder",
+			dir:         "testdata/gcb-sub-folder",
+			pods:        []string{"getting-started"},
+			remoteOnly:  true,
+		}, {
 			description: "kaniko",
 			dir:         "examples/kaniko",
 			pods:        []string{"getting-started-kaniko"},
@@ -127,6 +132,11 @@ func TestRun(t *testing.T) {
 		}, {
 			description: "kaniko local",
 			dir:         "examples/kaniko-local",
+			pods:        []string{"getting-started-kaniko"},
+			remoteOnly:  true,
+		}, {
+			description: "kaniko local - sub folder",
+			dir:         "testdata/kaniko-sub-folder",
 			pods:        []string{"getting-started-kaniko"},
 			remoteOnly:  true,
 		}, {
@@ -294,14 +304,14 @@ func TestFix(t *testing.T) {
 	defer deleteNs()
 
 	fixCmd := exec.Command("skaffold", "fix", "-f", "skaffold.yaml")
-	fixCmd.Dir = "testdata"
+	fixCmd.Dir = "testdata/fix"
 	out, err := util.RunCmdOut(fixCmd)
 	if err != nil {
 		t.Fatalf("testing error: %v", err)
 	}
 
 	runCmd := exec.Command("skaffold", "run", "--namespace", ns.Name, "-f", "-")
-	runCmd.Dir = "testdata"
+	runCmd.Dir = "testdata/fix"
 	runCmd.Stdin = bytes.NewReader(out)
 	err = util.RunCmd(runCmd)
 	if err != nil {

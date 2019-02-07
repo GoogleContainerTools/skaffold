@@ -60,7 +60,10 @@ func addFileToTar(root string, path string, tw *tar.Writer) error {
 	if filepath.IsAbs(path) {
 		absPath = path
 	} else {
-		absPath = filepath.Join(absRoot, path)
+		absPath, err = filepath.Abs(path)
+		if err != nil {
+			return err
+		}
 	}
 
 	tarPath, err := filepath.Rel(absRoot, absPath)
