@@ -40,6 +40,19 @@ var once sync.Once
 
 type eventLog []proto.LogEntry
 
+type Event struct {
+	Artifact  string
+	EventType proto.EventType
+	Status    string
+	Err       error
+}
+
+const (
+	Build  = proto.EventType_buildEvent
+	Deploy = proto.EventType_deployEvent
+	Meta   = proto.EventType_metaEvent
+)
+
 type eventer struct {
 	*eventHandler
 }
@@ -62,10 +75,12 @@ func (ev *eventHandler) logEvent(entry proto.LogEntry) {
 	ev.eventLog = append(ev.eventLog, entry)
 }
 
-// InitializeState instantiates the global state of the skaffold runner, as well as the event log
+// InitializeState instantiates the global state of the skaffold runner, as well as the event log.
+// It returns a shutdown callback for tearing down the grpc server, which the runner is responsible for calling.
 // This function can only be called once.
-func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, port string) error {
+func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, port string) (func(), error) {
 	var err error
+	var shutdown func()
 	once.Do(func() {
 		builds := map[string]string{}
 		deploys := map[string]string{}
@@ -90,81 +105,53 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, por
 			eventLog: eventLog{},
 			state:    state,
 		}
-		if err = newStatusServer(port); err != nil {
+		shutdown, err = newStatusServer(port)
+		if err != nil {
 			err = errors.Wrap(err, "creating status server")
 		}
 		ev = &eventer{
 			eventHandler: handler,
 		}
 	})
-	return err
+	return shutdown, err
 }
 
-// HandleBuildEvent translates an artifact/status pair into a build logEntry,
-// logs it to the eventLog, and updates the global state.
-func HandleBuildEvent(artifact string, status string) {
-	HandleBuildEventWithError(artifact, status, nil)
-}
-
-// HandleBuildEventWithError translates an artifact/status/error tuple into
-// a build logEntry, logs it to the eventLog, and updates the global state.
-func HandleBuildEventWithError(artifact string, status string, err error) {
-	var errMsg string
-	if err != nil {
-		errMsg = err.Error()
-	}
-
+func Handle(event Event) {
 	var entry string
-	switch status {
-	case InProgress:
-		entry = fmt.Sprintf("Build started for artifact %s", artifact)
-	case Complete:
-		entry = fmt.Sprintf("Build completed for artifact %s", artifact)
-	case Failed:
-		entry = fmt.Sprintf("Build failed for artifact %s", artifact)
-	default:
+	if event.EventType == Build {
+		ev.eventHandler.state.BuildState.Artifacts[event.Artifact] = event.Status
+		switch event.Status {
+		case InProgress:
+			entry = fmt.Sprintf("Build started for artifact %s", event.Artifact)
+		case Complete:
+			entry = fmt.Sprintf("Build completed for artifact %s", event.Artifact)
+		case Failed:
+			entry = fmt.Sprintf("Build failed for artifact %s", event.Artifact)
+		default:
+		}
+	}
+	if event.EventType == Deploy {
+		ev.eventHandler.state.DeployState.Status = event.Status
+		switch event.Status {
+		case InProgress:
+			entry = "Deploy started"
+		case Complete:
+			entry = "Deploy complete"
+		case Failed:
+			entry = "Deploy failed"
+		default:
+		}
 	}
 
-	ev.eventHandler.state.BuildState.Artifacts[artifact] = status
+	var errStr string
+	if event.Err != nil {
+		errStr = event.Err.Error()
+	}
 	ev.logEvent(proto.LogEntry{
 		Timestamp: ptypes.TimestampNow(),
-		Type:      proto.EventType_buildEvent,
+		Type:      event.EventType,
 		Entry:     entry,
-		Error:     errMsg,
-	})
-}
-
-// HandleDeployEvent translates a status update to a deploy logEntry,
-// logs it to the eventLog, and updates the global state.
-func HandleDeployEvent(status string) {
-	HandleDeployEventWithError(status, nil)
-}
-
-// HandleDeployEventWithError translates a status update to a deploy logEntry with
-// the provided error, logs it to the eventLog, and updates the global state.
-func HandleDeployEventWithError(status string, err error) {
-	var errMsg string
-	if err != nil {
-		errMsg = err.Error()
-	}
-
-	var entry string
-	switch status {
-	case InProgress:
-		entry = "Deploy started"
-	case Complete:
-		entry = "Deploy complete"
-	case Failed:
-		entry = "Deploy failed"
-	default:
-	}
-
-	ev.eventHandler.state.DeployState.Status = status
-	ev.logEvent(proto.LogEntry{
-		Timestamp: ptypes.TimestampNow(),
-		Type:      proto.EventType_deployEvent,
-		Entry:     entry,
-		Error:     errMsg,
+		Error:     errStr,
 	})
 }
 

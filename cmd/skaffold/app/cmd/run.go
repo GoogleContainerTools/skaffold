@@ -57,5 +57,7 @@ func run(out io.Writer) error {
 		return errors.Wrap(err, "creating runner")
 	}
 
-	return runner.Run(ctx, out, config.Build.Artifacts)
+	err = runner.Run(ctx, out, config.Build.Artifacts)
+	runner.RPCServerShutdown()
+	return err
 }

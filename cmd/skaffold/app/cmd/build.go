@@ -82,6 +82,7 @@ func runBuild(out io.Writer) error {
 	if err != nil {
 		return err
 	}
+	runner.RPCServerShutdown()
 
 	cmdOut := BuildOutput{Builds: bRes}
 	if err := buildFormatFlag.Template().Execute(out, cmdOut); err != nil {

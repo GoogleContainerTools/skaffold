@@ -34,7 +34,11 @@ func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 
 	for _, artifact := range artifacts {
 		color.Default.Fprintf(out, "Building [%s]...\n", artifact.ImageName)
-		event.HandleBuildEvent(artifact.ImageName, event.InProgress)
+		event.Handle(event.Event{
+			Artifact:  artifact.ImageName,
+			EventType: event.Build,
+			Status:    event.InProgress,
+		})
 
 		tag, present := tags[artifact.ImageName]
 		if !present {
@@ -43,10 +47,19 @@ func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 
 		finalTag, err := buildArtifact(ctx, out, artifact, tag)
 		if err != nil {
-			event.HandleBuildEventWithError(artifact.ImageName, event.Failed, err)
+			event.Handle(event.Event{
+				Artifact:  artifact.ImageName,
+				EventType: event.Build,
+				Status:    event.Failed,
+				Err:       err,
+			})
 			return nil, errors.Wrapf(err, "building [%s]", artifact.ImageName)
 		}
-		event.HandleBuildEvent(artifact.ImageName, event.Complete)
+		event.Handle(event.Event{
+			Artifact:  artifact.ImageName,
+			EventType: event.Build,
+			Status:    event.Complete,
+		})
 
 		builds = append(builds, Artifact{
 			ImageName: artifact.ImageName,

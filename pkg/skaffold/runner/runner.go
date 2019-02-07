@@ -55,13 +55,14 @@ type SkaffoldRunner struct {
 	sync.Syncer
 	watch.Watcher
 
-	opts        *config.SkaffoldOptions
-	labellers   []deploy.Labeller
-	builds      []build.Artifact
-	hasDeployed bool
-	needsPush   bool
-	imageList   *kubernetes.ImageList
-	namespaces  []string
+	opts              *config.SkaffoldOptions
+	labellers         []deploy.Labeller
+	builds            []build.Artifact
+	hasDeployed       bool
+	needsPush         bool
+	imageList         *kubernetes.ImageList
+	namespaces        []string
+	RPCServerShutdown func()
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldPipeline
@@ -114,23 +115,25 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		return nil, errors.Wrap(err, "creating watch trigger")
 	}
 
-	if err = event.InitializeState(&cfg.Build, &cfg.Deploy, opts.Address); err != nil {
+	shutdown, err := event.InitializeState(&cfg.Build, &cfg.Deploy, opts.Address)
+	if err != nil {
 		return nil, errors.Wrap(err, "initializing global state")
 	}
 	event.LogSkaffoldMetadata(version.Get())
 
 	return &SkaffoldRunner{
-		Builder:    builder,
-		Tester:     tester,
-		Deployer:   deployer,
-		Tagger:     tagger,
-		Syncer:     kubectl.NewSyncer(namespaces),
-		Watcher:    watch.NewWatcher(trigger),
-		opts:       opts,
-		labellers:  labellers,
-		imageList:  kubernetes.NewImageList(),
-		namespaces: namespaces,
-		needsPush:  needsPush(cfg.Build),
+		Builder:           builder,
+		Tester:            tester,
+		Deployer:          deployer,
+		Tagger:            tagger,
+		Syncer:            kubectl.NewSyncer(namespaces),
+		Watcher:           watch.NewWatcher(trigger),
+		opts:              opts,
+		labellers:         labellers,
+		imageList:         kubernetes.NewImageList(),
+		namespaces:        namespaces,
+		needsPush:         needsPush(cfg.Build),
+		RPCServerShutdown: shutdown,
 	}, nil
 }
 

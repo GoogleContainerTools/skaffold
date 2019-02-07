@@ -66,19 +66,37 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 			}
 
 			color.Default.Fprintf(cw, "Building [%s]...\n", artifacts[i].ImageName)
-			event.HandleBuildEvent(artifacts[i].ImageName, event.InProgress)
+			event.Handle(event.Event{
+				Artifact:  artifacts[i].ImageName,
+				EventType: event.Build,
+				Status:    event.InProgress,
+			})
 
 			tag, present := tags[artifacts[i].ImageName]
 			if !present {
 				errs[i] = fmt.Errorf("unable to find tag for image %s", artifacts[i].ImageName)
-				event.HandleBuildEventWithError(artifacts[i].ImageName, event.Failed, errs[i])
+				event.Handle(event.Event{
+					Artifact:  artifacts[i].ImageName,
+					EventType: event.Build,
+					Status:    event.Failed,
+					Err:       errs[i],
+				})
 			} else {
 				finalTags[i], errs[i] = buildArtifact(ctx, cw, artifacts[i], tag)
 				if errs[i] != nil {
-					event.HandleBuildEventWithError(artifacts[i].ImageName, event.Failed, errs[i])
+					event.Handle(event.Event{
+						Artifact:  artifacts[i].ImageName,
+						EventType: event.Build,
+						Status:    event.Failed,
+						Err:       errs[i],
+					})
 				}
 			}
-			event.HandleBuildEvent(artifacts[i].ImageName, event.Complete)
+			event.Handle(event.Event{
+				Artifact:  artifacts[i].ImageName,
+				EventType: event.Build,
+				Status:    event.Complete,
+			})
 			cw.Close()
 		}()
 

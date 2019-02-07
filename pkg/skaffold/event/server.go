@@ -53,10 +53,12 @@ func (s *server) EventLog(stream proto.SkaffoldService_EventLogServer) error {
 }
 
 // newStatusServer creates the grpc server for serving the state and event log.
-func newStatusServer(address string) error {
-	l, err := net.Listen("tcp", address)
+func newStatusServer(address string) (func(), error) {
+	l, err := net.Listen("unix", "/tmp/skaffold.sock")
+	// TODO(nkubala): Windows
+	// l, err := net.Listen("tcp", address)
 	if err != nil {
-		return errors.Wrap(err, "creating listener")
+		return func() {}, errors.Wrap(err, "creating listener")
 	}
 
 	s := grpc.NewServer()
@@ -67,5 +69,8 @@ func newStatusServer(address string) error {
 			logrus.Errorf("failed to start grpc server: %s", err)
 		}
 	}()
-	return nil
+	return func() {
+		s.Stop()
+		l.Close()
+	}, nil
 }

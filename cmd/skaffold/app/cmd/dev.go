@@ -105,6 +105,7 @@ func dev(out io.Writer, ui bool) error {
 					}
 				}
 			}
+			r.RPCServerShutdown()
 			if err != nil {
 				if errors.Cause(err) != runner.ErrorConfigurationChanged {
 					return err

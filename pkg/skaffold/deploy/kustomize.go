@@ -94,7 +94,11 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 
 	manifests, err := k.readManifests(ctx)
 	if err != nil {
-		event.HandleDeployEventWithError(event.Failed, err)
+		event.Handle(event.Event{
+			EventType: event.Deploy,
+			Status:    event.Failed,
+			Err:       err,
+		})
 		return errors.Wrap(err, "reading manifests")
 	}
 
@@ -102,25 +106,43 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 		return nil
 	}
 
-	event.HandleDeployEvent(event.InProgress)
+	event.Handle(event.Event{
+		EventType: event.Deploy,
+		Status:    event.InProgress,
+	})
 	manifests, err = manifests.ReplaceImages(builds, k.defaultRepo)
 	if err != nil {
-		event.HandleDeployEventWithError(event.Failed, err)
+		event.Handle(event.Event{
+			EventType: event.Deploy,
+			Status:    event.Failed,
+			Err:       err,
+		})
 		return errors.Wrap(err, "replacing images in manifests")
 	}
 
 	manifests, err = manifests.SetLabels(merge(labellers...))
 	if err != nil {
-		event.HandleDeployEventWithError(event.Failed, err)
+		event.Handle(event.Event{
+			EventType: event.Deploy,
+			Status:    event.Failed,
+			Err:       err,
+		})
 		return errors.Wrap(err, "setting labels in manifests")
 	}
 
 	err = k.kubectl.Apply(ctx, out, manifests)
 	if err != nil {
-		event.HandleDeployEventWithError(event.Failed, err)
+		event.Handle(event.Event{
+			EventType: event.Deploy,
+			Status:    event.Failed,
+			Err:       err,
+		})
 	}
 
-	event.HandleDeployEvent(event.Complete)
+	event.Handle(event.Event{
+		EventType: event.Deploy,
+		Status:    event.Complete,
+	})
 	return nil
 }
 
