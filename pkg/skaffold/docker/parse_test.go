@@ -80,6 +80,13 @@ WORKDIR ${foo}   # WORKDIR /bar
 COPY $foo /quux # COPY bar /quux
 `
 
+const multiEnvTest = `
+FROM busybox
+ENV baz=bar \
+    foo=docker
+COPY $foo/nginx.conf . # COPY docker/nginx.conf .
+`
+
 const copyDirectory = `
 FROM nginx
 ADD . /etc/
@@ -328,6 +335,13 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  envTest,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "bar"},
+			fetched:     []string{"busybox"},
+		},
+		{
+			description: "multiple env test",
+			dockerfile:  multiEnvTest,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", filepath.Join("docker", "nginx.conf")},
 			fetched:     []string{"busybox"},
 		},
 		{
