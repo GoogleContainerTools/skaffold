@@ -19,9 +19,13 @@ package util
 import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 
 // GroupArtifactsByEnvironment returns artifacts grouped by environment
-func GroupArtifactsByEnvironment(artifacts []*latest.Artifact) map[*latest.ExecutionEnvironment][]*latest.Artifact {
+func GroupArtifactsByEnvironment(artifacts []*latest.Artifact, env *latest.ExecutionEnvironment) map[*latest.ExecutionEnvironment][]*latest.Artifact {
 	m := make(map[*latest.ExecutionEnvironment][]*latest.Artifact)
 	for _, a := range artifacts {
+		if a.ExecutionEnvironment == nil {
+			m[env] = append(m[env], a)
+			continue
+		}
 		m[a.ExecutionEnvironment] = append(m[a.ExecutionEnvironment], a)
 	}
 	return m

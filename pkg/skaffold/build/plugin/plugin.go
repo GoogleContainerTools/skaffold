@@ -40,16 +40,12 @@ var (
 	randomID = util.RandomFourCharacterID
 )
 
-type PluginBuilder interface {
-	Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment)
-	build.Builder
-}
-
-func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions) (PluginBuilder, error) {
+// NewPluginBuilder initializes and returns all required plugin builders
+func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions) (shared.PluginBuilder, error) {
 	// We're a host. Start by launching the plugin process.
 	log.SetOutput(os.Stdout)
 
-	builders := map[string]PluginBuilder{}
+	builders := map[string]shared.PluginBuilder{}
 
 	for _, a := range cfg.Artifacts {
 
@@ -78,7 +74,7 @@ func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions) (Pl
 		if err != nil {
 			return nil, errors.Wrap(err, "requesting rpc plugin")
 		}
-		pluginBuilder := raw.(PluginBuilder)
+		pluginBuilder := raw.(shared.PluginBuilder)
 		builders[p] = pluginBuilder
 	}
 
@@ -90,7 +86,7 @@ func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions) (Pl
 }
 
 type Builder struct {
-	Builders map[string]PluginBuilder
+	Builders map[string]shared.PluginBuilder
 }
 
 func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {

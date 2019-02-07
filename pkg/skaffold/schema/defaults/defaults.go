@@ -58,7 +58,6 @@ func Set(c *latest.SkaffoldPipeline) error {
 		defaultToDockerArtifact(a)
 		setDefaultDockerfile(a)
 		setDefaultWorkspace(a)
-		setExecutionEnvironment(a, c.Build.ExecutionEnvironment)
 	}
 
 	return nil
@@ -154,12 +153,6 @@ func SetDefaultDockerArtifact(a *latest.DockerArtifact) {
 
 func setDefaultWorkspace(a *latest.Artifact) {
 	a.Workspace = valueOrDefault(a.Workspace, ".")
-}
-
-func setExecutionEnvironment(a *latest.Artifact, env *latest.ExecutionEnvironment) {
-	if a.ExecutionEnvironment == nil {
-		a.ExecutionEnvironment = env
-	}
 }
 
 func withKanikoConfig(c *latest.SkaffoldPipeline, operations ...func(kaniko *latest.KanikoBuild) error) error {

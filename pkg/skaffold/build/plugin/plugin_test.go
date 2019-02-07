@@ -23,6 +23,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -40,16 +42,18 @@ func (b *mockBuilder) Labels() map[string]string {
 	return b.labels
 }
 
+func (b *mockBuilder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {}
+
 func TestPluginBuilderLabels(t *testing.T) {
 	tests := []struct {
 		name     string
-		builder  Builder
+		builder  shared.PluginBuilder
 		expected map[string]string
 	}{
 		{
 			name: "check labels",
-			builder: Builder{
-				Builders: map[string]build.Builder{
+			builder: &Builder{
+				Builders: map[string]shared.PluginBuilder{
 					"mock-one": &mockBuilder{
 						labels: map[string]string{"key-one": "value-one"},
 					},
@@ -65,8 +69,8 @@ func TestPluginBuilderLabels(t *testing.T) {
 		},
 		{
 			name: "check overlapping labels",
-			builder: Builder{
-				Builders: map[string]build.Builder{
+			builder: &Builder{
+				Builders: map[string]shared.PluginBuilder{
 					"mock-one": &mockBuilder{
 						labels: map[string]string{"key-one": "value"},
 					},

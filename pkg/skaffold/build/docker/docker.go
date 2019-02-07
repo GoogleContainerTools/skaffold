@@ -18,7 +18,6 @@ package docker
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -46,7 +45,6 @@ func NewBuilder() *Builder {
 
 // Init stores skaffold options and the execution environment
 func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
-	fmt.Println("builder init called")
 	b.opts = opts
 	b.env = env
 }
@@ -61,7 +59,7 @@ func (b *Builder) Labels() map[string]string {
 // Build is responsible for building artifacts in their respective execution environments
 // The builder plugin is also responsible for setting any necessary defaults
 func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	m := pluginutil.GroupArtifactsByEnvironment(artifacts)
+	m := pluginutil.GroupArtifactsByEnvironment(artifacts, b.env)
 	var builds []build.Artifact
 
 	for env, arts := range m {
