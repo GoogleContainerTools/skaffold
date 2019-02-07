@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -55,6 +55,9 @@ func (s *server) EventLog(stream proto.SkaffoldService_EventLogServer) error {
 
 // newStatusServer creates the grpc server for serving the state and event log.
 func newStatusServer(portOrSocket string) (func(), error) {
+	if portOrSocket == "" {
+		return func() {}, nil
+	}
 	var err error
 	var l net.Listener
 	if runtime.GOOS == "windows" {
