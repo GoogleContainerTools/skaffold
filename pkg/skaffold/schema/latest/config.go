@@ -50,8 +50,10 @@ type BuildConfig struct {
 	BuildType            `yaml:",inline"`
 }
 
+type ExecEnvironment string
+
 type ExecutionEnvironment struct {
-	Name       string                 `yaml:"name,omitempty"`
+	Name       ExecEnvironment        `yaml:"name,omitempty"`
 	Properties map[string]interface{} `yaml:"properties,omitempty"`
 }
 

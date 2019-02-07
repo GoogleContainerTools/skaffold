@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"runtime"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/sirupsen/logrus"
 )
 
@@ -64,9 +65,11 @@ const (
 	// A regex matching valid repository names (https://github.com/docker/distribution/blob/master/reference/reference.go)
 	RepositoryComponentRegex string = `^[a-z\d]+(?:(?:[_.]|__|-+)[a-z\d]+)*$`
 
-	GoogleCloudBuildExecEnv = "googlecloudbuild"
-
 	DockerBuilderPluginName = "docker-skaffold"
+)
+
+var (
+	GoogleCloudBuild latest.ExecEnvironment = "googlecloudbuild"
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}

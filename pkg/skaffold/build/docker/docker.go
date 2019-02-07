@@ -21,9 +21,9 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/environments/gcb"
 	pluginutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -56,7 +56,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 
 	for env, arts := range m {
 		switch env.Name {
-		case constants.GoogleCloudBuildExecEnv:
+		case constants.GoogleCloudBuild:
 			build, err := b.googleCloudBuild(ctx, out, tags, arts, env)
 			if err != nil {
 				return nil, err
