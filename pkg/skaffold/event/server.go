@@ -19,6 +19,7 @@ package event
 import (
 	"context"
 	"net"
+	"runtime"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 
@@ -53,10 +54,16 @@ func (s *server) EventLog(stream proto.SkaffoldService_EventLogServer) error {
 }
 
 // newStatusServer creates the grpc server for serving the state and event log.
-func newStatusServer(address string) (func(), error) {
-	l, err := net.Listen("unix", "/tmp/skaffold.sock")
-	// TODO(nkubala): Windows
-	// l, err := net.Listen("tcp", address)
+func newStatusServer(portOrSocket string) (func(), error) {
+	var err error
+	var l net.Listener
+	if runtime.GOOS == "windows" {
+		// use tcp port on windows
+		l, err = net.Listen("tcp", portOrSocket)
+	} else {
+		// otherwise use unix sockets
+		l, err = net.Listen("unix", portOrSocket)
+	}
 	if err != nil {
 		return func() {}, errors.Wrap(err, "creating listener")
 	}

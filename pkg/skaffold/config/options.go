@@ -30,13 +30,14 @@ type Output struct {
 // SkaffoldOptions are options that are set by command line arguments not included
 // in the config file itself
 type SkaffoldOptions struct {
-	Address           string
 	ConfigurationFile string
 	Cleanup           bool
 	Notification      bool
 	Tail              bool
 	TailDev           bool
 	PortForward       bool
+	RPCPort           string
+	RPCSocket         string
 	SkipTests         bool
 	CacheArtifacts    bool
 	ExperimentalGUI   bool

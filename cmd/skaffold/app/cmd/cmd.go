@@ -142,7 +142,8 @@ func AddRunDeployFlags(cmd *cobra.Command) {
 }
 
 func AddRunDevFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&opts.Address, "address", ":50051", "port to expose event API")
+	cmd.Flags().StringVar(&opts.RPCPort, "rpc-port", ":50051", "tcp port to expose event API (Windows only)")
+	cmd.Flags().StringVar(&opts.RPCSocket, "rpc-socket", "/tmp/skaffold.sock", "unix socket to expose event API (Unix systems only)")
 	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
 	cmd.Flags().StringArrayVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -115,7 +116,13 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		return nil, errors.Wrap(err, "creating watch trigger")
 	}
 
-	shutdown, err := event.InitializeState(&cfg.Build, &cfg.Deploy, opts.Address)
+	var portOrSocket string
+	if runtime.GOOS == "windows" {
+		portOrSocket = opts.RPCPort
+	} else {
+		portOrSocket = opts.RPCSocket
+	}
+	shutdown, err := event.InitializeState(&cfg.Build, &cfg.Deploy, portOrSocket)
 	if err != nil {
 		return nil, errors.Wrap(err, "initializing global state")
 	}
