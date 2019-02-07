@@ -129,7 +129,7 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string, opts *config.Skaffo
 	switch {
 	case buildWithPlugin(cfg.Artifacts):
 		logrus.Debugln("Using builder plugins")
-		return plugin.NewPluginBuilder(cfg)
+		return plugin.NewPluginBuilder(cfg, opts)
 	case len(opts.PreBuiltImages) > 0:
 		logrus.Debugln("Using pre-built images")
 		return build.NewPreBuiltImagesBuilder(opts.PreBuiltImages), nil

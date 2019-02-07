@@ -24,6 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	plugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
@@ -34,6 +35,16 @@ import (
 // Here is an implementation that talks over RPC
 type BuilderRPC struct {
 	client *rpc.Client
+}
+
+func (b *BuilderRPC) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
+	// We don't expect a response, so we can just use interface{}
+	var resp interface{}
+	args := InitArgs{
+		Opts: opts,
+		Env:  env,
+	}
+	b.client.Call("Plugin.Init", args, &resp)
 }
 
 func (b *BuilderRPC) Labels() map[string]string {
@@ -53,7 +64,7 @@ func (b *BuilderRPC) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 	if err := convertPropertiesToBytes(artifacts); err != nil {
 		return nil, errors.Wrapf(err, "converting properties to bytes")
 	}
-	args := BuilderArgs{
+	args := BuildArgs{
 		ImageTags: tags,
 		Artifacts: artifacts,
 	}
@@ -79,7 +90,12 @@ func convertPropertiesToBytes(artifacts []*latest.Artifact) error {
 // Here is the RPC server that BuilderRPC talks to, conforming to
 // the requirements of net/r
 type BuilderRPCServer struct {
-	Impl build.Builder
+	Impl PluginBuilder
+}
+
+func (s *BuilderRPCServer) Init(args InitArgs, resp *interface{}) error {
+	s.Impl.Init(args.Opts, args.Env)
+	return nil
 }
 
 func (s *BuilderRPCServer) Labels(args interface{}, resp *map[string]string) error {
@@ -87,7 +103,7 @@ func (s *BuilderRPCServer) Labels(args interface{}, resp *map[string]string) err
 	return nil
 }
 
-func (s *BuilderRPCServer) Build(b BuilderArgs, resp *[]build.Artifact) error {
+func (s *BuilderRPCServer) Build(b BuildArgs, resp *[]build.Artifact) error {
 	artifacts, err := s.Impl.Build(context.Background(), os.Stdout, b.ImageTags, b.Artifacts)
 	if err != nil {
 		return errors.Wrap(err, "building artifacts")
@@ -96,8 +112,14 @@ func (s *BuilderRPCServer) Build(b BuilderArgs, resp *[]build.Artifact) error {
 	return nil
 }
 
-// BuilderArgs are the args passed via rpc to the builder plugin
-type BuilderArgs struct {
+// InitArgs are args passed via rpc to the builder plugin on Init()
+type InitArgs struct {
+	Opts *config.SkaffoldOptions
+	Env  *latest.ExecutionEnvironment
+}
+
+// BuildArgs are the args passed via rpc to the builder plugin on Build()
+type BuildArgs struct {
 	tag.ImageTags
 	Artifacts []*latest.Artifact
 }
@@ -114,7 +136,7 @@ type BuilderArgs struct {
 // plugin connection and is a more advanced use case.
 type BuilderPlugin struct {
 	// Impl Injection
-	Impl build.Builder
+	Impl PluginBuilder
 }
 
 func (p *BuilderPlugin) Server(*plugin.MuxBroker) (interface{}, error) {

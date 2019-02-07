@@ -18,10 +18,12 @@ package docker
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/environments/gcb"
 	pluginutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/util"
@@ -33,12 +35,20 @@ import (
 
 // Builder builds artifacts with Docker.
 type Builder struct {
-	skipTests bool
+	opts *config.SkaffoldOptions
+	env  *latest.ExecutionEnvironment
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Docker.
 func NewBuilder() *Builder {
 	return &Builder{}
+}
+
+// Init stores skaffold options and the execution environment
+func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
+	fmt.Println("builder init called")
+	b.opts = opts
+	b.env = env
 }
 
 // Labels are labels specific to Docker.
@@ -76,5 +86,5 @@ func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.
 		return nil, errors.Wrap(err, "converting execution environment to googlecloudbuild struct")
 	}
 	defaults.SetDefaultCloudBuildDockerImage(g)
-	return gcb.NewBuilder(g, b.skipTests).Build(ctx, out, tags, artifacts)
+	return gcb.NewBuilder(g, b.opts.SkipTests).Build(ctx, out, tags, artifacts)
 }

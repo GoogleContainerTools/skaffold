@@ -26,6 +26,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -39,11 +40,16 @@ var (
 	randomID = util.RandomFourCharacterID
 )
 
-func NewPluginBuilder(cfg *latest.BuildConfig) (build.Builder, error) {
+type PluginBuilder interface {
+	Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment)
+	build.Builder
+}
+
+func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions) (PluginBuilder, error) {
 	// We're a host. Start by launching the plugin process.
 	log.SetOutput(os.Stdout)
 
-	builders := map[string]build.Builder{}
+	builders := map[string]PluginBuilder{}
 
 	for _, a := range cfg.Artifacts {
 
@@ -72,16 +78,25 @@ func NewPluginBuilder(cfg *latest.BuildConfig) (build.Builder, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "requesting rpc plugin")
 		}
-		builders[p] = raw.(build.Builder)
+		pluginBuilder := raw.(PluginBuilder)
+		builders[p] = pluginBuilder
 	}
 
-	return &Builder{
+	b := &Builder{
 		Builders: builders,
-	}, nil
+	}
+	b.Init(opts, cfg.ExecutionEnvironment)
+	return b, nil
 }
 
 type Builder struct {
-	Builders map[string]build.Builder
+	Builders map[string]PluginBuilder
+}
+
+func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
+	for _, builder := range b.Builders {
+		builder.Init(opts, env)
+	}
 }
 
 // Labels are labels applied to deployed resources.
