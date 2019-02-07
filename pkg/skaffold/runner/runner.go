@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -263,13 +264,19 @@ func (r *SkaffoldRunner) imageTags(out io.Writer, artifacts []*latest.Artifact) 
 		imageName := artifact.ImageName
 		color.Default.Fprintf(out, "Generating Tag for [%s]...\n", imageName)
 
-		tag, err := r.Tagger.GenerateFullyQualifiedImageName(artifact.Workspace, imageName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "generating tag for %s", imageName)
-		}
+		if strings.Index(imageName, ":") >= 0 {
+			// Use a name with a colon verbatim.
+			logrus.Debugf("Tag for %s is self\n", imageName)
+			tags[imageName] = imageName
+		} else {
+			tag, err := r.Tagger.GenerateFullyQualifiedImageName(artifact.Workspace, imageName)
+			if err != nil {
+				return nil, errors.Wrapf(err, "generating tag for %s", imageName)
+			}
 
-		logrus.Debugf("Tag for %s: %s\n", imageName, tag)
-		tags[imageName] = tag
+			logrus.Debugf("Tag for %s: %s\n", imageName, tag)
+			tags[imageName] = tag
+		}
 	}
 
 	return tags, nil
