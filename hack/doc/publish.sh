@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # Copyright 2019 The Skaffold Authors
 #
@@ -13,14 +13,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+set -e
 
-readonly REPO_DIR=$(pwd)
+DOCDIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+SKAFFOLDDIR="${DOCDIR}/../.."
 
-pushd ${REPO_DIR}/docs
+# Build the Hugo image
+tar -cz -C ${SKAFFOLDDIR} docs hack/doc/Dockerfile | docker build --target hugo-publish -t skaffold-docs-publish -f hack/doc/Dockerfile -
 
-rm -rf public resources node_modules package-lock.json &&  \
-git submodule deinit -f . && \
-rm -rf themes/docsy/* && \
-rm -rf ${REPO_DIR}/.git/modules/docsy
-
-popd
+# Run Hugo
+docker run --rm -ti skaffold-docs-publish
