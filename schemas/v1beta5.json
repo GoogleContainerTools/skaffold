@@ -249,7 +249,7 @@
             "$ref": "#/definitions/HelmRelease"
           },
           "type": "array",
-          "description": "Releases a list of Helm releases.\n**Required**\n"
+          "description": "Releases a list of Helm releases.\n"
         }
       },
       "description": "HelmDeploy contains the configuration needed for deploying with helm\n"
@@ -298,7 +298,7 @@
       "properties": {
         "chartPath": {
           "type": "string",
-          "description": "ChartPath the path to the Helm chart.\n**Required**\n"
+          "description": "ChartPath the path to the Helm chart.\n"
         },
         "imageStrategy": {
           "$ref": "#/definitions/HelmImageStrategy",
@@ -306,7 +306,7 @@
         },
         "name": {
           "type": "string",
-          "description": "Name the name of the Helm release.\n**Required**\n"
+          "description": "Name the name of the Helm release.\n"
         },
         "namespace": {
           "type": "string",
@@ -587,7 +587,7 @@
         },
         "build": {
           "$ref": "#/definitions/BuildConfig",
-          "description": "Build describes how images are built.\n**Required**\n"
+          "description": "Build describes how images are built.\n"
         },
         "deploy": {
           "$ref": "#/definitions/DeployConfig",

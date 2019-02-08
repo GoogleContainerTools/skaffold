@@ -33,7 +33,6 @@ type SkaffoldPipeline struct {
 	Kind       string `yaml:"kind"`
 
 	// Build describes how images are built.
-	// **Required**
 	Build BuildConfig `yaml:"build,omitempty"`
 
 	// Test describes how images are tested.
@@ -93,7 +92,7 @@ type EnvTemplateTagger struct {
 	// with those variables injected:
 	//   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.
 	// For example: `{{.RELEASE}}-{{.IMAGE_NAME}}`.
-	Template string `yaml:"template,omitempty"`
+	Template string `yaml:"template,omitempty" yamltags:"required"`
 }
 
 // DateTimeTagger tags images with the build timestamp.
@@ -181,8 +180,7 @@ type GoogleCloudBuild struct {
 }
 
 // LocalDir represents the local directory kaniko build context
-type LocalDir struct {
-}
+type LocalDir struct{}
 
 // KanikoBuildContext contains the different fields available to specify
 // a kaniko build context
@@ -259,7 +257,7 @@ type TestConfig []*TestCase
 // builds.
 type TestCase struct {
 	// ImageName on which artifact to run those tests.
-	ImageName string `yaml:"image"`
+	ImageName string `yaml:"image" yamltags:"required"`
 
 	// StructureTests lists the [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test)
 	// to run on that artifact.
@@ -315,8 +313,7 @@ type KubectlFlags struct {
 // HelmDeploy contains the configuration needed for deploying with helm
 type HelmDeploy struct {
 	// Releases a list of Helm releases.
-	// **Required**
-	Releases []HelmRelease `yaml:"releases,omitempty"`
+	Releases []HelmRelease `yaml:"releases,omitempty" yamltags:"required"`
 }
 
 // KustomizeDeploy contains the configuration needed for deploying with kustomize.
@@ -331,12 +328,10 @@ type KustomizeDeploy struct {
 
 type HelmRelease struct {
 	// Name the name of the Helm release.
-	// **Required**
-	Name string `yaml:"name,omitempty"`
+	Name string `yaml:"name,omitempty" yamltags:"required"`
 
 	// ChartPath the path to the Helm chart.
-	// **Required**
-	ChartPath string `yaml:"chartPath,omitempty"`
+	ChartPath string `yaml:"chartPath,omitempty" yamltags:"required"`
 
 	// ValuesFiles the paths to the Helm `values` files".
 	ValuesFiles []string `yaml:"valuesFiles,omitempty"`
@@ -417,7 +412,7 @@ type HelmConventionConfig struct {
 // they should be built.
 type Artifact struct {
 	// ImageName name of the image to be built.
-	ImageName string `yaml:"image,omitempty"`
+	ImageName string `yaml:"image,omitempty" yamltags:"required"`
 
 	// Workspace directory where the artifact's sources are to be found.
 	// Defaults to `.`.
@@ -435,7 +430,7 @@ type Artifact struct {
 // Profile (beta) profiles are used to override any `build`, `test` or `deploy` configuration.
 type Profile struct {
 	// Name unique profile name.
-	Name string `yaml:"name,omitempty"`
+	Name string `yaml:"name,omitempty" yamltags:"required"`
 
 	// Build replaces the main `build` configuration.
 	Build BuildConfig `yaml:"build,omitempty"`
@@ -516,7 +511,7 @@ type DockerArtifact struct {
 type BazelArtifact struct {
 	// BuildTarget the `bazel build` target to run.
 	// For example: `//:skaffold_example.tar`.
-	BuildTarget string `yaml:"target,omitempty"`
+	BuildTarget string `yaml:"target,omitempty" yamltags:"required"`
 
 	// BuildArgs additional args to pass to `bazel build`.
 	// For example: `["arg1", "arg2"]`.
