@@ -152,6 +152,8 @@ func typeOfArtifact(a *latest.Artifact) string {
 		return "Jib Gradle artifact"
 	case a.JibMavenArtifact != nil:
 		return "Jib Maven artifact"
+	case a.PleaseArtifact != nil:
+		return "Please artifact"
 	default:
 		return "Unknown artifact"
 	}

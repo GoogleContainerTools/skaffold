@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/please"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
@@ -48,6 +50,9 @@ func DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string,
 
 	case a.JibGradleArtifact != nil:
 		paths, err = jib.GetDependenciesGradle(ctx, a.Workspace, a.JibGradleArtifact)
+
+	case a.PleaseArtifact != nil:
+		paths, err = please.GetDependencies(ctx, a.Workspace, a.PleaseArtifact)
 
 	default:
 		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
