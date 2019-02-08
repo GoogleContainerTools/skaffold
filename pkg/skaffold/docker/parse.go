@@ -165,7 +165,7 @@ func onbuildInstructions(nodes []*parser.Node) ([]*parser.Node, error) {
 func copiedFiles(nodes []*parser.Node) ([][]string, error) {
 	var copied [][]string
 
-	envs := map[string]string{}
+	envs := make([]string, 0)
 	for _, node := range nodes {
 		switch node.Value {
 		case command.Add, command.Copy:
@@ -180,7 +180,7 @@ func copiedFiles(nodes []*parser.Node) ([][]string, error) {
 		case command.Env:
 			// one env command may define multiple variables
 			for node := node.Next; node != nil && node.Next != nil; node = node.Next.Next {
-				envs[node.Value] = node.Next.Value
+				envs = append(envs, fmt.Sprintf("%s=%s", node.Value, node.Next.Value))
 			}
 		}
 	}
@@ -392,7 +392,7 @@ func retrieveImage(image string) (*v1.ConfigFile, error) {
 	return localDaemon.ConfigFile(context.Background(), image)
 }
 
-func processCopy(value *parser.Node, envs map[string]string) ([]string, error) {
+func processCopy(value *parser.Node, envs []string) ([]string, error) {
 	var copied []string
 
 	slex := shell.NewLex('\\')
@@ -401,7 +401,7 @@ func processCopy(value *parser.Node, envs map[string]string) ([]string, error) {
 		if value.Next.Next == nil || strings.HasPrefix(value.Next.Next.Value, "#") {
 			break
 		}
-		src, err := processShellWord(slex, value.Next.Value, envs)
+		src, err := slex.ProcessWord(value.Next.Value, envs)
 		if err != nil {
 			return nil, errors.Wrap(err, "processing word")
 		}
@@ -420,14 +420,6 @@ func processCopy(value *parser.Node, envs map[string]string) ([]string, error) {
 	}
 
 	return copied, nil
-}
-
-func processShellWord(lex *shell.Lex, word string, envs map[string]string) (string, error) {
-	envSlice := []string{}
-	for envKey, envVal := range envs {
-		envSlice = append(envSlice, fmt.Sprintf("%s=%s", envKey, envVal))
-	}
-	return lex.ProcessWord(word, envSlice)
 }
 
 func hasMultiStageFlag(flags []string) bool {
