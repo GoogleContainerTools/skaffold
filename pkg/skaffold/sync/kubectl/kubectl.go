@@ -73,5 +73,8 @@ func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, src, ds
 		syncedDirs[dir] = struct{}{}
 	}
 	copy := exec.CommandContext(ctx, "kubectl", "cp", src, fmt.Sprintf("%s/%s:%s", pod.Namespace, pod.Name, dst), "-c", container.Name)
-	return append(cmds, copy)
+
+	// Run a touch in the pod to let inotify/dnotify know of our presence.
+	touch := exec.CommandContext(ctx, "kubectl", "exec", pod.Name, "-c", container.Name, "-n", pod.Namespace, "--", "touch", dst)
+	return append(cmds, copy, touch)
 }
