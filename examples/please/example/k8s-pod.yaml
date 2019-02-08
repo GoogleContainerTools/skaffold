@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: please
+spec:
+  containers:
+  - name: please
+    image: gcr.io/tcn-cloud-dev/skaffold/test/image

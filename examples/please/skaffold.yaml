@@ -1,0 +1,12 @@
+apiVersion: skaffold/v1beta4
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/tcn-cloud-dev/skaffold/test/image
+    context: .
+    please:
+      target: //example:image 
+deploy:
+  kubectl:
+    manifests:
+    - example/k8s-pod.yaml
