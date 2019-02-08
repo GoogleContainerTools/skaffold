@@ -263,6 +263,7 @@ type ArtifactType struct {
 	BazelArtifact     *BazelArtifact     `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
 	JibMavenArtifact  *JibMavenArtifact  `yaml:"jibMaven,omitempty" yamltags:"oneOf=artifact"`
 	JibGradleArtifact *JibGradleArtifact `yaml:"jibGradle,omitempty" yamltags:"oneOf=artifact"`
+	PleaseArtifact    *PleaseArtifact    `yaml:"please,omitempty" yamltags:"oneOf=artifact"`
 }
 
 // DockerArtifact describes an artifact built from a Dockerfile,
@@ -289,4 +290,10 @@ type JibMavenArtifact struct {
 type JibGradleArtifact struct {
 	// Only multi-module
 	Project string `yaml:"project"`
+}
+
+// PleaseArtifact describes an artifact built with Please
+type PleaseArtifact struct {
+	BuildTarget string   `yaml:"target,omitempty"`
+	BuildArgs   []string `yaml:"args,omitempty`
 }
