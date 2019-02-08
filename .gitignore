@@ -1,5 +1,6 @@
 out/
 examples/bazel/bazel-*
+examples/please/plz-*
 integration/examples/bazel/bazel-*
 *.new
 .idea/
