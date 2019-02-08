@@ -34,6 +34,7 @@ type FakeAPIClient struct {
 
 	TagToImageID    map[string]string
 	ImageSummaries  []types.ImageSummary
+	RepoDigests     []string
 	ErrImageBuild   bool
 	ErrImageInspect bool
 	ErrImageTag     bool
@@ -86,8 +87,13 @@ func (f *FakeAPIClient) ImageInspectWithRaw(_ context.Context, ref string) (type
 		return types.ImageInspect{}, nil, fmt.Errorf("")
 	}
 
+	if _, ok := f.TagToImageID[ref]; !ok {
+		return types.ImageInspect{}, nil, fmt.Errorf("")
+	}
+
 	return types.ImageInspect{
-		ID: f.TagToImageID[ref],
+		ID:          f.TagToImageID[ref],
+		RepoDigests: f.RepoDigests,
 	}, nil, nil
 }
 

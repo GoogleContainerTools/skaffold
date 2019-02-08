@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,17 +23,13 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	yaml "gopkg.in/yaml.v2"
 )
 
-var defaultArtifactCache = ArtifactCache{
-	"key": Artifact{
-		ImageName: "image",
-		Tag:       "image:tag",
-	},
-}
+var defaultArtifactCache = ArtifactCache{"key": "hash"}
 
 func mockHashForArtifact(hashes map[string]string) func(context.Context, *latest.Artifact) (string, error) {
 	return func(ctx context.Context, a *latest.Artifact) (string, error) {
@@ -42,6 +38,10 @@ func mockHashForArtifact(hashes map[string]string) func(context.Context, *latest
 }
 
 func Test_NewCache(t *testing.T) {
+	client, err := docker.NewAPIClient()
+	if err != nil {
+		t.Fatalf("error gettting docker api client: %v", err)
+	}
 	tests := []struct {
 		useCache          bool
 		updateCacheFile   bool
@@ -57,6 +57,7 @@ func Test_NewCache(t *testing.T) {
 			expectedCache: &Cache{
 				artifactCache: defaultArtifactCache,
 				useCache:      true,
+				client:        client,
 			},
 		},
 		{
@@ -99,6 +100,7 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 		hashes               map[string]string
 		artifacts            []*latest.Artifact
 		expectedArtifacts    []*latest.Artifact
+		api                  testutil.FakeAPIClient
 		expectedBuildResults []Artifact
 	}{
 		{
@@ -117,38 +119,33 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 		{
 			name: "one artifact in cache",
 			cache: &Cache{
-				useCache: true,
-				artifactCache: ArtifactCache{
-					"hash": Artifact{
-						ImageName: "image1",
-						Tag:       "image1:tag",
-					},
-				},
+				useCache:      true,
+				artifactCache: ArtifactCache{"workspace-hash": "sha256@digest"},
 			},
-			hashes:               map[string]string{"image1": "hash"},
+			hashes: map[string]string{"image1": "workspace-hash"},
+			api: testutil.FakeAPIClient{
+				TagToImageID: map[string]string{"image1:digest": "image1:tag"},
+			},
 			artifacts:            []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			expectedBuildResults: []Artifact{{ImageName: "image1", Tag: "image1:tag"}},
+			expectedBuildResults: []Artifact{{ImageName: "image1", Tag: "image1:digest"}},
 			expectedArtifacts:    []*latest.Artifact{{ImageName: "image2"}},
 		},
 		{
-			name: "both artifacts in cache, but one needs to be rebuilt",
+			name: "both artifacts in cache, but only one exists locally",
 			cache: &Cache{
 				useCache: true,
 				artifactCache: ArtifactCache{
-					"hash": Artifact{
-						ImageName: "image1",
-						Tag:       "image1:tag",
-					},
-					"hash2": Artifact{
-						ImageName: "image2",
-						Tag:       "image2:tag",
-					},
+					"hash":  "sha256@digest1",
+					"hash2": "sha256@digest2",
 				},
 			},
-			hashes:               map[string]string{"image1": "hash", "image2": "newhash"},
+			api: testutil.FakeAPIClient{
+				TagToImageID: map[string]string{"image1:digest1": "image1:tag"},
+			},
+			hashes:               map[string]string{"image1": "hash", "image2": "hash2"},
 			artifacts:            []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
 			expectedArtifacts:    []*latest.Artifact{{ImageName: "image2"}},
-			expectedBuildResults: []Artifact{{ImageName: "image1", Tag: "image1:tag"}},
+			expectedBuildResults: []Artifact{{ImageName: "image1", Tag: "image1:digest1"}},
 		},
 	}
 
@@ -159,6 +156,8 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 			defer func() {
 				hashForArtifact = originalHash
 			}()
+
+			test.cache.client = docker.NewLocalDaemon(&test.api, nil)
 
 			actualArtifacts, actualBuildResults := test.cache.RetrieveCachedArtifacts(context.Background(), os.Stdout, test.artifacts)
 			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedArtifacts, actualArtifacts)

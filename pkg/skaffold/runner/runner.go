@@ -291,7 +291,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	bRes = append(bRes, res...)
 
 	if err := artifactCache.CacheArtifacts(ctx, artifacts, bRes); err != nil {
-		return nil, errors.Wrapf(err, "caching artifacts")
+		logrus.Warnf("error caching artifacts: %v", err)
 	}
 	if !r.opts.SkipTests {
 		if err = r.Test(ctx, out, bRes); err != nil {

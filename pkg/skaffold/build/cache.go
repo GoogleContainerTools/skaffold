@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -42,9 +41,10 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-// ArtifactCache is a map of hash to image digest
+// ArtifactCache is a map of [workspace hash : image digest]
 type ArtifactCache map[string]string
 
+// Cache holds any data necessary for accessing the cache
 type Cache struct {
 	artifactCache ArtifactCache
 	client        docker.LocalDaemon
@@ -64,17 +64,17 @@ func NewCache(useCache bool, cacheFile string) *Cache {
 	}
 	cf, err := resolveCacheFile(cacheFile)
 	if err != nil {
-		logrus.Warnf("Error resolving cache file, not using cache: %v", err)
+		logrus.Warnf("Error resolving cache file, not using skaffold cache: %v", err)
 		return &Cache{}
 	}
 	cache, err := retrieveArtifactCache(cf)
 	if err != nil {
-		logrus.Warnf("Error retrieving artifact cache, not using cache: %v", err)
+		logrus.Warnf("Error retrieving artifact cache, not using skaffold cache: %v", err)
 		return &Cache{}
 	}
 	client, err := docker.NewAPIClient()
 	if err != nil {
-		logrus.Warnf("Error retrieving local daemon client, not using cache: %v", err)
+		logrus.Warnf("Error retrieving local daemon client, not using skaffold cache: %v", err)
 		return &Cache{}
 	}
 	return &Cache{
@@ -110,7 +110,7 @@ func retrieveArtifactCache(cacheFile string) (ArtifactCache, error) {
 	return cache, nil
 }
 
-// RetrieveCachedArtifacts checks to see if artifacts are cached, and returns tags for cached images otherwise a list of images to be built
+// RetrieveCachedArtifacts checks to see if artifacts are cached, and returns tags for cached images, otherwise a list of images to be built
 func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]*latest.Artifact, []Artifact) {
 	if !c.useCache {
 		return artifacts, nil
@@ -121,7 +121,7 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 	for _, a := range artifacts {
 		artifact, err := c.retrieveCachedArtifact(ctx, out, a)
 		if err != nil {
-			fmt.Printf("error retrieving cached artifact for %s: %v\n", a.ImageName, err)
+			logrus.Debugf("error retrieving cached artifact for %s: %v\n", a.ImageName, err)
 			needToBuild = append(needToBuild, a)
 			continue
 		}
@@ -139,25 +139,20 @@ func (c *Cache) retrieveCachedArtifact(ctx context.Context, out io.Writer, a *la
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting hash for artifact %s", a.ImageName)
 	}
-	imageID, ok := c.artifactCache[hash]
-	if !ok {
+	imageDigest, cacheHit := c.artifactCache[hash]
+	if !cacheHit {
 		return nil, nil
 	}
-	newTag := fmt.Sprintf("%s:%s", a.ImageName, imageID[7:])
+	newTag := fmt.Sprintf("%s:%s", a.ImageName, imageDigest[7:])
 	// Check if image exists remotely
-	existsRemotely := imageExistsRemotely(newTag, imageID)
-	if existsRemotely {
-		return &Artifact{
-			ImageName: a.ImageName,
-			Tag:       newTag,
-		}, nil
-	}
+	existsRemotely := imageExistsRemotely(newTag, imageDigest)
 
-	// First, check if this image has already been built and pushed remotely
+	// See if this image exists in the local daemon
 	if c.client.ImageExists(ctx, newTag) {
-		color.Yellow.Fprintf(out, "Found %s locally as %s, checking if image is available remotely...\n", a.ImageName, newTag)
+		color.Yellow.Fprintf(out, "Found %s locally...\n", a.ImageName)
 		// Push if the image doesn't exist remotely
 		if !existsRemotely {
+			color.Yellow.Fprintf(out, "Pushing %s since it doesn't exist remotely...\n", a.ImageName)
 			if _, err := c.client.Push(ctx, out, newTag); err != nil {
 				return nil, errors.Wrapf(err, "pushing %s", newTag)
 			}
@@ -168,27 +163,26 @@ func (c *Cache) retrieveCachedArtifact(ctx context.Context, out io.Writer, a *la
 			Tag:       newTag,
 		}, nil
 	}
-	// Check for local image with the same id as cached
-	id, err := c.client.ImageFromID(ctx, imageID)
+
+	// Check for a local image with the same digest as the image we want to build
+	prebuiltImage, err := c.client.TaggedImageFromDigest(ctx, imageDigest)
 	if err != nil {
-		return nil, errors.Wrapf(err, "getting image from id %s", imageID)
+		return nil, errors.Wrapf(err, "getting image from digest %s", imageDigest)
 	}
-	if id == "" {
-		return nil, errors.Wrapf(err, "empty id")
+	if prebuiltImage == "" {
+		return nil, errors.Wrapf(err, "no prebuilt image")
 	}
+	color.Yellow.Fprintf(out, "Found %s locally, retagging and pushing...\n", a.ImageName)
 	// Retag the image
-	if err := c.client.Tag(ctx, id, newTag); err != nil {
+	if err := c.client.Tag(ctx, prebuiltImage, newTag); err != nil {
 		return nil, errors.Wrap(err, "retagging image")
 	}
 	// Push the retagged image
-	color.Yellow.Fprintf(out, "Found %s locally, retagging and pushing...\n", a.ImageName)
-	if !existsRemotely {
-		if _, err := c.client.Push(ctx, out, newTag); err != nil {
-			return nil, errors.Wrap(err, "pushing image")
-		}
+	if _, err := c.client.Push(ctx, out, newTag); err != nil {
+		return nil, errors.Wrap(err, "pushing image")
 	}
 
-	color.Yellow.Fprintf(out, "Retagged %s, skipping rebuild.\n", id)
+	color.Yellow.Fprintf(out, "Retagged %s, skipping rebuild.\n", prebuiltImage)
 	return &Artifact{
 		ImageName: a.ImageName,
 		Tag:       newTag,
@@ -208,7 +202,7 @@ func imageExistsRemotely(image, digest string) bool {
 	if err != nil {
 		return false
 	}
-	return d.Hex == digest
+	return d.Hex == digest[7:]
 }
 
 // CacheArtifacts determines the hash for each artifact, stores it in the artifact cache, and saves the cache at the end
@@ -216,7 +210,6 @@ func (c *Cache) CacheArtifacts(ctx context.Context, artifacts []*latest.Artifact
 	if !c.useCache {
 		return nil
 	}
-	fmt.Println("Caching artifacts", buildArtifacts)
 	tags := map[string]string{}
 	for _, t := range buildArtifacts {
 		tags[t.ImageName] = t.Tag
@@ -226,27 +219,28 @@ func (c *Cache) CacheArtifacts(ctx context.Context, artifacts []*latest.Artifact
 		if err != nil {
 			continue
 		}
-		id, err := c.retrieveImageID(ctx, tags[a.ImageName])
+		digest, err := c.retrieveImageDigest(ctx, tags[a.ImageName])
 		if err != nil {
-			logrus.Warn("error getting id for %s: %v", a.ImageName, err)
+			logrus.Debugf("error getting id for %s: %v, skipping caching", tags[a.ImageName], err)
 			continue
 		}
-		if id == "" {
-			logrus.Debugf("not caching %s because image id is empty", a.ImageName)
+		if digest == "" {
+			logrus.Debugf("skipping caching %s because image id is empty", tags[a.ImageName])
 			continue
 		}
-		c.artifactCache[hash] = id
+		c.artifactCache[hash] = digest
 	}
 	return c.save()
 }
 
-// First, check the local daemon. If that doesn't exist, check a remote registry.
-func (c *Cache) retrieveImageID(ctx context.Context, img string) (string, error) {
-	id, err := c.client.ImageID(ctx, img)
-	if err == nil && id != "" {
-		return id, nil
+// Check local daemon for img digest
+func (c *Cache) retrieveImageDigest(ctx context.Context, img string) (string, error) {
+	repoDigest, err := c.client.RepoDigest(ctx, img)
+	if err != nil {
+		return docker.RemoteDigest(img)
 	}
-	return docker.RemoteDigest(img)
+	ref, err := name.NewDigest(repoDigest, name.WeakValidation)
+	return ref.DigestStr(), err
 }
 
 // Save saves the artifactCache to the cacheFile
@@ -255,7 +249,6 @@ func (c *Cache) save() error {
 	if err != nil {
 		return errors.Wrap(err, "marshalling hashes")
 	}
-	fmt.Println("writing", c.artifactCache, "to", c.cacheFile)
 	return ioutil.WriteFile(c.cacheFile, data, 0755)
 }
 
@@ -274,11 +267,10 @@ func getHashForArtifact(ctx context.Context, a *latest.Artifact) (string, error)
 		hashes = append(hashes, h)
 	}
 	// get a key for the hashes
-
 	c := bytes.NewBuffer([]byte{})
 	enc := json.NewEncoder(c)
 	enc.Encode(hashes)
-	return SHA256(c)
+	return util.SHA256(c)
 }
 
 // cacheHasher takes hashes the contents and name of a file
@@ -303,14 +295,4 @@ func cacheHasher() func(string) (string, error) {
 		return hex.EncodeToString(h.Sum(nil)), nil
 	}
 	return hasher
-}
-
-// SHA256 returns the shasum of the contents of r
-func SHA256(r io.Reader) (string, error) {
-	hasher := sha256.New()
-	_, err := io.Copy(hasher, r)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(hasher.Sum(make([]byte, 0, hasher.Size()))), nil
 }

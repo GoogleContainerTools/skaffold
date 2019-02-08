@@ -63,8 +63,8 @@ Usage:
   skaffold build [flags]
 
 Flags:
-      --cache-artifacts              Set to false to disable caching of artifacts. (default true)
   -b, --build-image stringArray      Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts
+      --cache-artifacts              Set to false to disable caching of artifacts. (default true)
   -d, --default-repo string          Default repository value (overrides global config)
   -f, --filename string              Filename or URL to the pipeline file (default "skaffold.yaml")
   -n, --namespace string             Run deployments in the specified namespace
@@ -82,8 +82,8 @@ Global Flags:
 ```
 Env vars:
 
-* `SKAFFOLD_CACHE_ARTIFACTS` (same as --cache-artifacts)
 * `SKAFFOLD_BUILD_IMAGE` (same as --build-image)
+* `SKAFFOLD_CACHE_ARTIFACTS` (same as --cache-artifacts)
 * `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
 * `SKAFFOLD_FILENAME` (same as --filename)
 * `SKAFFOLD_NAMESPACE` (same as --namespace)

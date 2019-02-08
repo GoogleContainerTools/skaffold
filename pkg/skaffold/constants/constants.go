@@ -61,9 +61,6 @@ const (
 	DefaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn"
 	DefaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
 
-	// A regex matching valid repository names (https://github.com/docker/distribution/blob/master/reference/reference.go)
-	RepositoryComponentRegex string = `^[a-z\d]+(?:(?:[_.]|__|-+)[a-z\d]+)*$`
-
 	DefaultSkaffoldDir = ".skaffold"
 	DefaultCacheFile   = "cache"
 )
