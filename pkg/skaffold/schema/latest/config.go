@@ -295,5 +295,5 @@ type JibGradleArtifact struct {
 // PleaseArtifact describes an artifact built with Please
 type PleaseArtifact struct {
 	BuildTarget string   `yaml:"target,omitempty"`
-	BuildArgs   []string `yaml:"args,omitempty`
+	BuildArgs   []string `yaml:"args,omitempty"`
 }
