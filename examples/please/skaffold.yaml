@@ -2,7 +2,7 @@ apiVersion: skaffold/v1beta4
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/tcn-cloud-dev/skaffold/test/image
+  - image: gcr.io/k8s-skaffold/skaffold-please/image
     context: .
     please:
       target: //example:image 

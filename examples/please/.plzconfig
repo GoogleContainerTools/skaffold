@@ -3,4 +3,4 @@ version = 13.4.0
 
 
 [buildconfig]
-default-docker-repo = gcr.io/tcn-cloud-dev/skaffold/test 
+default-docker-repo = gcr.io/k8s-skaffold/skaffold-please
