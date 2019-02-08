@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -198,14 +198,16 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 		return nil, errors.Wrap(err, "parsing dockerfile")
 	}
 
-	expandBuildArgs(res.AST.Children, buildArgs)
+	dockerfileLines := res.AST.Children
 
-	instructions, err := onbuildInstructions(res.AST.Children)
+	expandBuildArgs(dockerfileLines, buildArgs)
+
+	instructions, err := onbuildInstructions(dockerfileLines)
 	if err != nil {
 		return nil, errors.Wrap(err, "listing ONBUILD instructions")
 	}
 
-	copied, err := copiedFiles(append(instructions, res.AST.Children...))
+	copied, err := copiedFiles(append(instructions, dockerfileLines...))
 	if err != nil {
 		return nil, errors.Wrap(err, "listing copied files")
 	}

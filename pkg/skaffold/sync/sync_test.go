@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -422,7 +422,7 @@ func TestPerform(t *testing.T) {
 
 			util.DefaultExecCommand = cmdRecord
 
-			err := Perform(context.Background(), test.image, test.files, test.cmdFn)
+			err := Perform(context.Background(), test.image, test.files, test.cmdFn, []string{""})
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cmdRecord.cmds)
 		})

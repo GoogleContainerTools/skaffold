@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,37 +25,57 @@ import (
 )
 
 func TestJibMavenBuildSteps(t *testing.T) {
-	artifact := &latest.JibMavenArtifact{}
-
-	builder := Builder{
-		GoogleCloudBuild: &latest.GoogleCloudBuild{
-			MavenImage: "maven:3.6.0",
-		},
+	var testCases = []struct {
+		skipTests bool
+		args      []string
+	}{
+		{false, []string{"--non-recursive", "prepare-package", "jib:dockerBuild", "-Dimage=img"}},
+		{true, []string{"--non-recursive", "-DskipTests=true", "prepare-package", "jib:dockerBuild", "-Dimage=img"}},
 	}
-	steps := builder.jibMavenBuildSteps("img", artifact)
+	for _, tt := range testCases {
+		artifact := &latest.JibMavenArtifact{}
 
-	expected := []*cloudbuild.BuildStep{{
-		Name: "maven:3.6.0",
-		Args: []string{"--non-recursive", "prepare-package", "jib:dockerBuild", "-Dimage=img"},
-	}}
+		builder := Builder{
+			GoogleCloudBuild: &latest.GoogleCloudBuild{
+				MavenImage: "maven:3.6.0",
+			},
+			skipTests: tt.skipTests,
+		}
+		steps := builder.jibMavenBuildSteps(artifact, "img")
 
-	testutil.CheckDeepEqual(t, expected, steps)
+		expected := []*cloudbuild.BuildStep{{
+			Name: "maven:3.6.0",
+			Args: tt.args,
+		}}
+
+		testutil.CheckDeepEqual(t, expected, steps)
+	}
 }
 
 func TestJibGradleBuildSteps(t *testing.T) {
-	artifact := &latest.JibGradleArtifact{}
-
-	builder := Builder{
-		GoogleCloudBuild: &latest.GoogleCloudBuild{
-			GradleImage: "gradle:5.1.1",
-		},
+	var testCases = []struct {
+		skipTests bool
+		args      []string
+	}{
+		{false, []string{":jibDockerBuild", "--image=img"}},
+		{true, []string{":jibDockerBuild", "--image=img", "-x", "test"}},
 	}
-	steps := builder.jibGradleBuildSteps("img", artifact)
+	for _, tt := range testCases {
+		artifact := &latest.JibGradleArtifact{}
 
-	expected := []*cloudbuild.BuildStep{{
-		Name: "gradle:5.1.1",
-		Args: []string{":jibDockerBuild", "--image=img"},
-	}}
+		builder := Builder{
+			GoogleCloudBuild: &latest.GoogleCloudBuild{
+				GradleImage: "gradle:5.1.1",
+			},
+			skipTests: tt.skipTests,
+		}
+		steps := builder.jibGradleBuildSteps(artifact, "img")
 
-	testutil.CheckDeepEqual(t, expected, steps)
+		expected := []*cloudbuild.BuildStep{{
+			Name: "gradle:5.1.1",
+			Args: tt.args,
+		}}
+
+		testutil.CheckDeepEqual(t, expected, steps)
+	}
 }

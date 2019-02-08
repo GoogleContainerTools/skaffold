@@ -1,4 +1,4 @@
-# Copyright 2018 The Skaffold Authors
+# Copyright 2019 The Skaffold Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ GO_LDFLAGS += -X $(VERSION_PACKAGE).gitTreeState=$(if $(shell git status --porce
 GO_LDFLAGS +="
 
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+GO_BUILD_TAGS := "kqueue"
 
 DOCSY_COMMIT:=a7141a2eac26cb598b707cab87d224f9105c315d
 
@@ -55,7 +56,7 @@ $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
 
 $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
-	GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
+	GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -tags $(GO_BUILD_TAGS) -o $@ $(BUILD_PACKAGE)
 
 %.sha256: %
 	shasum -a 256 $< > $@
@@ -81,7 +82,7 @@ test:
 
 .PHONY: install
 install: $(GO_FILES) $(BUILD_DIR)
-	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go install -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) $(BUILD_PACKAGE)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go install -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -tags $(GO_BUILD_TAGS) $(BUILD_PACKAGE)
 
 .PHONY: integration
 integration: install $(BUILD_DIR)/$(PROJECT)
@@ -109,7 +110,7 @@ release-in-docker:
     		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
     		--target builder \
     		.
-	docker run \
+	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder make -j release VERSION=$(VERSION) RELEASE_BUCKET=$(RELEASE_BUCKET) GCP_PROJECT=$(GCP_PROJECT)
@@ -131,7 +132,7 @@ release-build-in-docker:
     		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
     		--target builder \
     		.
-	docker run \
+	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder make -j release-build RELEASE_BUCKET=$(RELEASE_BUCKET) GCP_PROJECT=$(GCP_PROJECT)
@@ -146,7 +147,7 @@ integration-in-docker:
 		-f deploy/skaffold/Dockerfile \
 		--target integration \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-integration .
-	docker run \
+	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		-v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
@@ -170,7 +171,7 @@ submit-release-trigger:
 #utilities for skaffold site - not used anywhere else
 
 .PHONY: docs-controller-image
-docs-controller-image: 
+docs-controller-image:
 	docker build -t gcr.io/$(GCP_PROJECT)/docs-controller -f deploy/webhook/Dockerfile .
 
 
@@ -183,12 +184,12 @@ docs-preview-image:
 
 .PHONY: start-docs-preview
 start-docs-preview:	docs-preview-image
-	docker run -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/preview.sh
+	docker run --rm -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/preview.sh
 
 .PHONY: build-docs-preview
 build-docs-preview:	docs-preview-image
-	docker run -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/build.sh
+	docker run --rm -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/build.sh
 
 .PHONY: clean-docs-preview
 clean-docs-preview: docs-preview-image
-	docker run -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/clean.sh
+	docker run --rm -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/clean.sh

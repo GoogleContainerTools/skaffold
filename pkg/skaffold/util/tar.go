@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -60,7 +60,10 @@ func addFileToTar(root string, path string, tw *tar.Writer) error {
 	if filepath.IsAbs(path) {
 		absPath = path
 	} else {
-		absPath = filepath.Join(absRoot, path)
+		absPath, err = filepath.Abs(path)
+		if err != nil {
+			return err
+		}
 	}
 
 	tarPath, err := filepath.Rel(absRoot, absPath)

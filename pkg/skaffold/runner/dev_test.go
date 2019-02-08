@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -82,6 +83,13 @@ func (t *TestWatcher) Run(ctx context.Context, out io.Writer, onChange func() er
 	return nil
 }
 
+func discardOutput() *config.Output {
+	return &config.Output{
+		Main: ioutil.Discard,
+		Logs: ioutil.Discard,
+	}
+}
+
 func TestDevFailFirstCycle(t *testing.T) {
 	var tests = []struct {
 		description     string
@@ -129,7 +137,7 @@ func TestDevFailFirstCycle(t *testing.T) {
 			runner := createRunner(t, test.testBench)
 			runner.Watcher = test.watcher
 
-			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{{
+			err := runner.Dev(context.Background(), discardOutput(), []*latest.Artifact{{
 				ImageName: "img",
 			}})
 
@@ -260,7 +268,7 @@ func TestDev(t *testing.T) {
 				testBench: test.testBench,
 			}
 
-			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{
+			err := runner.Dev(context.Background(), discardOutput(), []*latest.Artifact{
 				{ImageName: "img1"},
 				{ImageName: "img2"},
 			})
@@ -325,7 +333,7 @@ func TestDevSync(t *testing.T) {
 				testBench: test.testBench,
 			}
 
-			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{
+			err := runner.Dev(context.Background(), discardOutput(), []*latest.Artifact{
 				{
 					ImageName: "img1",
 					Sync: map[string]string{

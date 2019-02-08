@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -50,10 +50,10 @@ func TestPush(t *testing.T) {
 			imageName:   "gcr.io/scratchman",
 			api: testutil.FakeAPIClient{
 				TagToImageID: map[string]string{
-					"gcr.io/scratchman": "sha256:abcab",
+					"gcr.io/scratchman": "sha256:imageIDabcab",
 				},
 			},
-			expectedDigest: "sha256:abcab",
+			expectedDigest: "sha256:7368613235363a696d61676549446162636162e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 		},
 		{
 			description: "stream error",

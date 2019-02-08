@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,13 +22,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func (r *SkaffoldRunner) shouldWatch(artifact *latest.Artifact) bool {
-	if len(r.opts.Watch) == 0 {
+func (r *SkaffoldRunner) IsTargetImage(artifact *latest.Artifact) bool {
+	if len(r.opts.TargetImages) == 0 {
 		return true
 	}
 
-	for _, watchExpression := range r.opts.Watch {
-		if strings.Contains(artifact.ImageName, watchExpression) {
+	for _, targetImage := range r.opts.TargetImages {
+		if strings.Contains(artifact.ImageName, targetImage) {
 			return true
 		}
 	}

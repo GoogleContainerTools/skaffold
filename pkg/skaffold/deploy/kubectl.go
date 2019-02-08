@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,12 +17,8 @@ limitations under the License.
 package deploy
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
-	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -86,16 +82,12 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return errors.Wrap(err, "replacing images in manifests")
 	}
 
-	updated, err := k.kubectl.Apply(ctx, out, manifests)
+	manifests, err = manifests.SetLabels(merge(labellers...))
 	if err != nil {
-		return errors.Wrap(err, "apply")
+		return errors.Wrap(err, "setting labels in manifests")
 	}
 
-	dRes := parseManifestsForDeploys(k.kubectl.Namespace, updated)
-	labels := merge(labellers...)
-	labelDeployResults(labels, dRes)
-
-	return nil
+	return k.kubectl.Apply(ctx, out, manifests)
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
@@ -137,71 +129,16 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 	return filteredManifests, nil
 }
 
-func parseManifestsForDeploys(namespace string, manifests kubectl.ManifestList) []Artifact {
-	var results []Artifact
-
-	for _, manifest := range manifests {
-		b := bufio.NewReader(bytes.NewReader(manifest))
-		results = append(results, parseReleaseInfo(namespace, b)...)
-	}
-
-	return results
-}
-
 // readManifests reads the manifests to deploy/delete.
 func (k *KubectlDeployer) readManifests(ctx context.Context) (kubectl.ManifestList, error) {
-	files, err := k.manifestFiles(k.Manifests)
+	manifests, err := k.Dependencies()
 	if err != nil {
-		return nil, errors.Wrap(err, "expanding user manifest list")
+		return nil, errors.Wrap(err, "listing manifests")
 	}
 
-	var manifests kubectl.ManifestList
-	for _, manifest := range files {
-		buf, err := ioutil.ReadFile(manifest)
-		if err != nil {
-			return nil, errors.Wrap(err, "reading manifest")
-		}
-
-		manifests.Append(buf)
+	if len(manifests) == 0 {
+		return kubectl.ManifestList{}, nil
 	}
 
-	for _, manifest := range k.Manifests {
-		if util.IsURL(manifest) {
-			buf, err := util.Download(manifest)
-			if err != nil {
-				return nil, errors.Wrap(err, "downloading manifest")
-			}
-			manifests.Append(buf)
-		}
-	}
-
-	for _, m := range k.RemoteManifests {
-		manifest, err := k.readRemoteManifest(ctx, m)
-		if err != nil {
-			return nil, errors.Wrap(err, "get remote manifests")
-		}
-
-		manifests = append(manifests, manifest)
-	}
-
-	logrus.Debugln("manifests", manifests.String())
-
-	return manifests, nil
-}
-
-func (k *KubectlDeployer) readRemoteManifest(ctx context.Context, name string) ([]byte, error) {
-	var args []string
-	if parts := strings.Split(name, ":"); len(parts) > 1 {
-		args = append(args, "--namespace", parts[0])
-		name = parts[1]
-	}
-	args = append(args, name, "-o", "yaml")
-
-	var manifest bytes.Buffer
-	err := k.kubectl.Run(ctx, nil, &manifest, "get", nil, args...)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting manifest")
-	}
-
-	return manifest.Bytes(), nil
+	return k.kubectl.ReadManifests(ctx, manifests)
 }

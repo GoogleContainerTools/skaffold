@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ func (c *CLI) CheckVersion(ctx context.Context) error {
 		return errors.Wrap(err, "couldn't get kubectl minor version")
 	}
 	if m < 12 {
-		return errors.New("kubectl version 1.12.0 or greater is recommended for use with skaffold")
+		return errors.New("kubectl version 1.12.0 or greater is recommended for use with Skaffold")
 	}
 	return nil
 }

@@ -22,6 +22,8 @@ steps:
   - '.'
 
 - name: gcr.io/$PROJECT_ID/docs-controller:latest
+  env:
+    - 'HUGO_ENV=production'
   args:
   - 'bash'
   - '-xc'

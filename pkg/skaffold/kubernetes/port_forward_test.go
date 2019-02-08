@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -46,9 +46,9 @@ func (f *testForwarder) Terminate(pfe *portForwardEntry) {
 	delete(f.forwardedPorts, pfe.port)
 }
 
-func mockRetrieveAvailablePort(taken map[int32]struct{}, availablePorts []int32) func() (int32, error) {
+func mockRetrieveAvailablePort(taken map[int32]struct{}, availablePorts []int32) func(map[int32]string) (int32, error) {
 	// Return first available port in ports that isn't taken
-	return func() (int32, error) {
+	return func(forwardedPorts map[int32]string) (int32, error) {
 		for _, p := range availablePorts {
 			if _, ok := taken[p]; ok {
 				continue
@@ -60,9 +60,9 @@ func mockRetrieveAvailablePort(taken map[int32]struct{}, availablePorts []int32)
 	}
 }
 
-func mockIsPortAvailable(taken map[int32]struct{}, availablePorts []int32) func(p int32) (bool, error) {
+func mockIsPortAvailable(taken map[int32]struct{}, availablePorts []int32) func(int32, map[int32]string) (bool, error) {
 	// Return true if p is in availablePorts and is not in taken
-	return func(p int32) (bool, error) {
+	return func(p int32, forwardedPorts map[int32]string) (bool, error) {
 		if _, ok := taken[p]; ok {
 			return false, nil
 		}
@@ -427,7 +427,7 @@ func TestPortForwardPod(t *testing.T) {
 				isPortAvailable = originalIsPortAvailable
 			}()
 
-			p := NewPortForwarder(ioutil.Discard, NewImageList())
+			p := NewPortForwarder(ioutil.Discard, NewImageList(), []string{""})
 			if test.forwarder == nil {
 				test.forwarder = newTestForwarder(nil)
 			}
