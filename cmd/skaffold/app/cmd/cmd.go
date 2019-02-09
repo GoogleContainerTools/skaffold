@@ -97,7 +97,7 @@ func updateCheck(ch chan string) error {
 		logrus.Debugf("Update check not enabled, skipping.")
 		return nil
 	}
-	latest, current, err := update.GetLatestAndCurrentVersion()
+	latest, current, err := update.GetLatestAndCurrentVersion(update.LatestVersionURL)
 	if err != nil {
 		return errors.Wrap(err, "get latest and current Skaffold version")
 	}

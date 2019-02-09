@@ -17,6 +17,7 @@ limitations under the License.
 package update
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -28,7 +29,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const latestVersionURL = "https://storage.googleapis.com/skaffold/releases/latest/VERSION"
+const LatestVersionURL = "https://storage.googleapis.com/skaffold/releases/latest/VERSION"
 
 // IsUpdateCheckEnabled returns whether or not the update check is enabled
 // It is true by default, but setting it to any other value than true will disable the check
@@ -44,15 +45,15 @@ func IsUpdateCheckEnabled() bool {
 
 // GetLatestAndCurrentVersion uses a VERSION file stored on GCS to determine the latest released version
 // and returns it with the current version of Skaffold
-func GetLatestAndCurrentVersion() (semver.Version, semver.Version, error) {
+func GetLatestAndCurrentVersion(url string) (semver.Version, semver.Version, error) {
 	none := semver.Version{}
-	resp, err := http.Get(latestVersionURL)
+	resp, err := http.Get(url)
 	if err != nil {
 		return none, none, errors.Wrap(err, "getting latest version info from GCS")
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return none, none, errors.Wrapf(err, "http %d, error: %s", resp.StatusCode, resp.Status)
+		return none, none, fmt.Errorf("http %d, error: %s", resp.StatusCode, resp.Status)
 	}
 	versionBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

@@ -34,7 +34,7 @@ import (
 func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.SkaffoldPipeline, error) {
 	parsed, err := schema.ParseConfig(opts.ConfigurationFile, true)
 	if err != nil {
-		latest, current, versionErr := update.GetLatestAndCurrentVersion()
+		latest, current, versionErr := update.GetLatestAndCurrentVersion(update.LatestVersionURL)
 		if versionErr == nil && latest.GT(current) {
 			logrus.Warnf("Your Skaffold version might be too old. Download the latest version (%s) at %s\n", latest, constants.LatestDownloadURL)
 		}
