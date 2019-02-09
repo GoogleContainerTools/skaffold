@@ -18,12 +18,15 @@ package tag
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
 // ChecksumTagger tags an image by the sha256 of the image tarball
 type ChecksumTagger struct{}
+
+var repoPortRe *regexp.Regexp
 
 // Labels are labels specific to the sha256 tagger.
 func (c *ChecksumTagger) Labels() map[string]string {
@@ -33,13 +36,21 @@ func (c *ChecksumTagger) Labels() map[string]string {
 }
 
 func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
-	matched, err := regexp.MatchString("^[^/:]*(:[^/])?[^:]*$", imageName)
-	if err != nil {
-		return "", err
+	// Strip repositories that have a port number.
+	var err error
+	if repoPortRe == nil {
+		repoPortRe, err = regexp.Compile("^[^/:]+(:[^/]+)/")
+		if err != nil {
+			return "", err
+		}
 	}
-	if matched {
-		// No supplied tag, so use latest.
-		return imageName + ":latest", nil
+
+	noRepo := repoPortRe.ReplaceAllLiteralString(imageName, "")
+	if strings.Contains(noRepo, ":") {
+		// They have a tag, so use it.
+		return imageName, nil
 	}
-	return imageName, nil
+
+	// No supplied tag, so use skaffold.
+	return imageName + ":skaffold", nil
 }

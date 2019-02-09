@@ -28,4 +28,13 @@ func TestGenerateFullyQualifiedImageName(t *testing.T) {
 	tag, err := c.GenerateFullyQualifiedImageName(".", "img:tag")
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, "img:tag", tag)
+
+	tag, err = c.GenerateFullyQualifiedImageName(".", "repo:port/img:tag")
+	testutil.CheckErrorAndDeepEqual(t, false, err, "repo:port/img:tag", tag)
+
+	tag, err = c.GenerateFullyQualifiedImageName(".", "repo:port/img")
+	testutil.CheckErrorAndDeepEqual(t, false, err, "repo:port/img:skaffold", tag)
+
+	tag, err = c.GenerateFullyQualifiedImageName(".", "repo/img")
+	testutil.CheckErrorAndDeepEqual(t, false, err, "repo/img:skaffold", tag)
 }
