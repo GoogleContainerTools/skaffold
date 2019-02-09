@@ -313,9 +313,19 @@ func TestFix(t *testing.T) {
 	runCmd := exec.Command("skaffold", "run", "--namespace", ns.Name, "-f", "-")
 	runCmd.Dir = "testdata/fix"
 	runCmd.Stdin = bytes.NewReader(out)
-	err = util.RunCmd(runCmd)
-	if err != nil {
+
+	if err := util.RunCmd(runCmd); err != nil {
 		t.Fatalf("testing error: %v", err)
+	}
+}
+
+func TestBuild(t *testing.T) {
+	buildCmd := exec.Command("skaffold", "build")
+	buildCmd.Dir = "testdata/build"
+
+	out, err := util.RunCmdOut(buildCmd)
+	if err != nil {
+		t.Fatalf("testing error: %v, %s", err, out)
 	}
 }
 
