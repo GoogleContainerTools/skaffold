@@ -120,7 +120,8 @@ func inArray(artifact *latest.Artifact, artifacts []*latest.Artifact) (bool, int
 }
 
 func ReadAdditionalConfigurationFile(originalConfigFile *latest.SkaffoldPipeline, filename string, upgrade bool) {
-	if misc.FileExists(filename) {
+	fileExists, _ := misc.FileExists(filename)
+	if fileExists {
 		profileConfiguration, err := ParseSingleConfigFile(filename, upgrade)
 		if err != nil {
 			logrus.Warnf("unable to %s %s", filename, err)

@@ -52,7 +52,7 @@ func TestParseSamples(t *testing.T) {
 
 			tmpDir.Write(name, addHeader(buf))
 
-			_, err = ParseConfig(tmpDir.Path(name), true)
+			_, err = ParseConfig(tmpDir.Path(name), true, []string{"dev"})
 			testutil.CheckError(t, false, err)
 		})
 	}

@@ -68,13 +68,14 @@ func StrSliceContains(sl []string, s string) bool {
 }
 
 // Tests if a file exists
-func FileExists(filapath string) bool {
-	if _, err := os.Stat(filapath); !os.IsNotExist(err) {
+func FileExists(filepath string) (bool, error) {
+	if _, err := os.Stat(filepath); !os.IsNotExist(err) {
 		if err == nil {
-			return true
+			return true, err
 		}
+		return false, err
 	}
-	return false
+	return false, nil
 }
 
 // ExpandPathsGlob expands paths according to filepath.Glob patterns
