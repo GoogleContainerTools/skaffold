@@ -1,5 +1,7 @@
-apiVersion: skaffold/v1beta2
+apiVersion: skaffold/v1beta4
 kind: Config
+# The build section has all the information needed to build images.
+# It is a required section.
 build:
   # tagPolicy (beta) determines how Skaffold is going to tag your images.
   # We provide a few strategies here, although you most likely won't need to care!
@@ -56,8 +58,8 @@ build:
         key2: "value2"
       # Images to consider as cache sources
       cacheFrom:
-      - image1
-      - image2
+      - golang:1.10.1-alpine3.7
+      - alpine:3.7
       # Dockerfile target name to build.
       # target: stageName
 
@@ -100,7 +102,7 @@ build:
   #   useDockerCLI: false
   #   useBuildkit: false
 
-  # Docker artifacts can be built on Google Cloud Build. The projectId then needs
+  # Docker and Jib artifacts can be built on Google Cloud Build. The projectId then needs
   # to be provided and the currently logged user should be given permissions to trigger
   # new builds on Cloud Build.
   # If the projectId is not provided, Skaffold will try to guess it from the image name.
@@ -113,6 +115,8 @@ build:
   #   machineType: "N1_HIGHCPU_8"|"N1_HIGHCPU_32"
   #   timeout: 10000s
   #   dockerImage: gcr.io/cloud-builders/docker
+  #   mavenImage: gcr.io/cloud-builders/mvn
+  #   gradleImage: gcr.io/cloud-builders/gradle
 
   # Docker artifacts can be built on a Kubernetes cluster with Kaniko.
   # Exactly one buildContext must be specified to use kaniko
@@ -140,9 +144,20 @@ build:
   #   namespace: default
   #   timeout: 20m
   #   image: defaults to the latest released version of `gcr.io/kaniko-project/executor`
+  #   dockerConfig:
+  #     path: path to the docker config.json
+  #     secretName: docker-cfg
 
-# The deploy section has all the information needed to deploy. Along with build:
-# it is a required section.
+# The test section has all the information needed to test images.
+test:
+    # For each image listed here, Skaffold will run a series of structure tests using
+    # the [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test)
+    # project.
+    # - image: gcr.io/k8s-skaffold/skaffold-example
+    #   structureTests:
+    #     - ./test/*
+
+# The deploy section has all the information needed to deploy.
 deploy:
   # The type of the deployment method can be `kubectl` (beta), `helm` (beta) or `kustomize` (beta).
 
@@ -189,6 +204,8 @@ deploy:
     #   namespace: skaffold
     #   version: ""
     #   recreatePods: false
+    #   # set to true if you need to skip "helm dep build". Necessary for use with remote chart.
+    #   skipBuildDependencies: false
     #
     #   # setValues get appended to the helm deploy with --set.
     #   setValues:

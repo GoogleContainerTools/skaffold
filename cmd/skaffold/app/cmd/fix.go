@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -31,19 +31,20 @@ import (
 func NewCmdFix(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fix",
-		Short: "Converts old skaffold.yaml to newest schema version",
+		Short: "Converts old Skaffold config to newest schema version",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runFix(out, opts.ConfigurationFile, overwrite)
 		},
 		Args: cobra.NoArgs,
 	}
 	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
+	cmd.Flags().StringVarP(&opts.EnvironmentConfigurationFile, "env", "", "", "Filename to an environment file")
 	cmd.Flags().BoolVar(&overwrite, "overwrite", false, "Overwrite original config with fixed config")
 	return cmd
 }
 
 func runFix(out io.Writer, configFile string, overwrite bool) error {
-	cfg, err := schema.ParseConfig(configFile, false, []string{})
+	cfg, err := schema.ParseConfig(configFile, opts.EnvironmentConfigurationFile, false, []string{})
 	if err != nil {
 		return err
 	}
@@ -53,7 +54,7 @@ func runFix(out io.Writer, configFile string, overwrite bool) error {
 		return nil
 	}
 
-	cfg, err = schema.ParseConfig(configFile, true, []string{})
+	cfg, err = schema.ParseConfig(configFile, opts.EnvironmentConfigurationFile, true, []string{})
 	if err != nil {
 		return err
 	}

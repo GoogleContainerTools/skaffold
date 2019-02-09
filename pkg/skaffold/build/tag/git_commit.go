@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 	"os/exec"
-	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -39,10 +38,11 @@ func (c *GitCommit) Labels() map[string]string {
 }
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the git commit.
-func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts Options) (string, error) {
+func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, imageName string) (string, error) {
 	hash, err := runGit(workingDir, "rev-parse", "--short", "HEAD")
 	if err != nil {
-		return fallbackOnDigest(opts, err), nil
+		logrus.Warnln("Unable to find git commit:", err)
+		return fmt.Sprintf("%s:dirty", imageName), nil
 	}
 
 	changes, err := runGit(workingDir, "status", ".", "--porcelain")
@@ -51,13 +51,16 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, opts Opti
 	}
 
 	if len(changes) > 0 {
-		return dirtyTag(hash, opts), nil
+		return fmt.Sprintf("%s:%s-dirty", imageName, hash), nil
 	}
 
 	// Ignore error. It means there's no tag.
 	tag, _ := runGit(workingDir, "describe", "--tags", "--exact-match")
+	if len(tag) > 0 {
+		return fmt.Sprintf("%s:%s", imageName, tag), nil
+	}
 
-	return commitOrTag(hash, tag, opts), nil
+	return fmt.Sprintf("%s:%s", imageName, hash), nil
 }
 
 func runGit(workingDir string, arg ...string) (string, error) {
@@ -70,26 +73,4 @@ func runGit(workingDir string, arg ...string) (string, error) {
 	}
 
 	return string(bytes.TrimSpace(out)), nil
-}
-
-func commitOrTag(currentTag string, tag string, opts Options) string {
-	if len(tag) > 0 {
-		currentTag = tag
-	}
-
-	return fmt.Sprintf("%s:%s", opts.ImageName, currentTag)
-}
-
-func shortDigest(opts Options) string {
-	return strings.TrimPrefix(opts.Digest, "sha256:")[0:7]
-}
-
-func dirtyTag(currentTag string, opts Options) string {
-	return fmt.Sprintf("%s:%s-dirty-%s", opts.ImageName, currentTag, shortDigest(opts))
-}
-
-func fallbackOnDigest(opts Options, err error) string {
-	logrus.Warnln("Using digest instead of git commit:", err)
-
-	return fmt.Sprintf("%s:dirty-%s", opts.ImageName, shortDigest(opts))
 }

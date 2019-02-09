@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,9 +29,9 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -57,7 +57,7 @@ func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Ar
 	}
 	defer f.Close()
 
-	err = docker.CreateDockerTarGzContext(ctx, f, artifact.Workspace, artifact.DockerArtifact)
+	err = sources.TarGz(ctx, f, artifact)
 
 	context := fmt.Sprintf("dir://%s", constants.DefaultKanikoEmptyDirMountPath)
 	return context, err
@@ -65,7 +65,6 @@ func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Ar
 
 // Pod returns the pod template to ModifyPod
 func (g *LocalDir) Pod(args []string) *v1.Pod {
-	p := podTemplate(g.cfg, args)
 	// Include the emptyDir volume and volume source in both containers
 	v := v1.Volume{
 		Name: constants.DefaultKanikoEmptyDirName,
@@ -79,14 +78,13 @@ func (g *LocalDir) Pod(args []string) *v1.Pod {
 	}
 	// Generate the init container, which will run until the /tmp/complete file is created
 	ic := v1.Container{
-		Name:  initContainer,
-		Image: constants.DefaultAlpineImage,
-		Args: []string{"sh", "-c", `while true; do
-	sleep 1; if [ -f /tmp/complete ]; then break; fi
-done`},
+		Name:         initContainer,
+		Image:        constants.DefaultBusyboxImage,
+		Command:      []string{"sh", "-c", "while [ ! -f /tmp/complete ]; do sleep 1; done"},
 		VolumeMounts: []v1.VolumeMount{vm},
 	}
 
+	p := podTemplate(g.cfg, args)
 	p.Spec.InitContainers = []v1.Container{ic}
 	p.Spec.Containers[0].VolumeMounts = append(p.Spec.Containers[0].VolumeMounts, vm)
 	p.Spec.Volumes = append(p.Spec.Volumes, v)

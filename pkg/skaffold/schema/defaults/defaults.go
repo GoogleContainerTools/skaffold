@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,23 +19,29 @@ package defaults
 import (
 	"fmt"
 
-	homedir "github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	homedir "github.com/mitchellh/go-homedir"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // Set makes sure default values are set on a SkaffoldPipeline.
 func Set(c *latest.SkaffoldPipeline) error {
 	defaultToLocalBuild(c)
 	defaultToKubectlDeploy(c)
-	setDefaultCloudBuildDockerImage(c)
 	setDefaultTagger(c)
 	setDefaultKustomizePath(c)
 	setDefaultKubectlManifests(c)
+
+	if err := withCloudBuildConfig(c,
+		setDefaultCloudBuildDockerImage,
+		setDefaultCloudBuildMavenImage,
+		setDefaultCloudBuildGradleImage,
+	); err != nil {
+		return err
+	}
 
 	if err := withKanikoConfig(c,
 		setDefaultKanikoTimeout,
@@ -43,6 +49,7 @@ func Set(c *latest.SkaffoldPipeline) error {
 		setDefaultKanikoNamespace,
 		setDefaultKanikoSecret,
 		setDefaultKanikoBuildContext,
+		setDefaultDockerConfigSecret,
 	); err != nil {
 		return err
 	}
@@ -74,13 +81,31 @@ func defaultToKubectlDeploy(c *latest.SkaffoldPipeline) {
 	c.Deploy.DeployType.KubectlDeploy = &latest.KubectlDeploy{}
 }
 
-func setDefaultCloudBuildDockerImage(c *latest.SkaffoldPipeline) {
-	cloudBuild := c.Build.BuildType.GoogleCloudBuild
-	if cloudBuild == nil {
-		return
+func withCloudBuildConfig(c *latest.SkaffoldPipeline, operations ...func(kaniko *latest.GoogleCloudBuild) error) error {
+	if gcb := c.Build.GoogleCloudBuild; gcb != nil {
+		for _, operation := range operations {
+			if err := operation(gcb); err != nil {
+				return err
+			}
+		}
 	}
 
-	cloudBuild.DockerImage = valueOrDefault(cloudBuild.DockerImage, constants.DefaultCloudBuildDockerImage)
+	return nil
+}
+
+func setDefaultCloudBuildDockerImage(gcb *latest.GoogleCloudBuild) error {
+	gcb.DockerImage = valueOrDefault(gcb.DockerImage, constants.DefaultCloudBuildDockerImage)
+	return nil
+}
+
+func setDefaultCloudBuildMavenImage(gcb *latest.GoogleCloudBuild) error {
+	gcb.MavenImage = valueOrDefault(gcb.MavenImage, constants.DefaultCloudBuildMavenImage)
+	return nil
+}
+
+func setDefaultCloudBuildGradleImage(gcb *latest.GoogleCloudBuild) error {
+	gcb.GradleImage = valueOrDefault(gcb.GradleImage, constants.DefaultCloudBuildGradleImage)
+	return nil
 }
 
 func setDefaultTagger(c *latest.SkaffoldPipeline) {
@@ -169,6 +194,26 @@ func setDefaultKanikoSecret(kaniko *latest.KanikoBuild) error {
 		}
 
 		kaniko.PullSecret = absPath
+		return nil
+	}
+
+	return nil
+}
+
+func setDefaultDockerConfigSecret(kaniko *latest.KanikoBuild) error {
+	if kaniko.DockerConfig == nil {
+		return nil
+	}
+
+	kaniko.DockerConfig.SecretName = valueOrDefault(kaniko.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName)
+
+	if kaniko.DockerConfig.Path != "" {
+		absPath, err := homedir.Expand(kaniko.DockerConfig.Path)
+		if err != nil {
+			return fmt.Errorf("unable to expand dockerConfig.path %s", kaniko.DockerConfig.Path)
+		}
+
+		kaniko.DockerConfig.Path = absPath
 		return nil
 	}
 

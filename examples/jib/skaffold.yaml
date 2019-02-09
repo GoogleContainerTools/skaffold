@@ -1,6 +1,12 @@
-apiVersion: skaffold/v1beta2
+apiVersion: skaffold/v1beta4
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-jib
     jibMaven: {}
+
+# optional profile to run the jib build on Google Cloud Build
+profiles:
+  - name: gcb
+    build:
+      googleCloudBuild: {}

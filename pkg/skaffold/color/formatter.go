@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -56,6 +56,8 @@ var (
 	Purple = Color(35)
 	// Cyan can format text to be displayed to the terminal in cyan, using ANSI escape codes.
 	Cyan = Color(36)
+	// White can format text to be displayed to the terminal in white, using ANSI escape codes.
+	White = Color(37)
 	// None uses ANSI escape codes to reset all formatting.
 	None = Color(0)
 
@@ -94,9 +96,26 @@ func (c Color) Fprintf(out io.Writer, format string, a ...interface{}) (n int, e
 	return fmt.Fprintf(out, format, a...)
 }
 
+// ColoredWriteCloser forces printing with colors to an io.WriteCloser.
+type ColoredWriteCloser struct {
+	io.WriteCloser
+}
+
+// ColoredWriter forces printing with colors to an io.Writer.
+type ColoredWriter struct {
+	io.Writer
+}
+
 // This implementation comes from logrus (https://github.com/sirupsen/logrus/blob/master/terminal_check_notappengine.go),
 // unfortunately logrus doesn't expose a public interface we can use to call it.
 func isTerminal(w io.Writer) bool {
+	if _, ok := w.(ColoredWriteCloser); ok {
+		return true
+	}
+	if _, ok := w.(ColoredWriter); ok {
+		return true
+	}
+
 	switch v := w.(type) {
 	case *os.File:
 		return terminal.IsTerminal(int(v.Fd()))

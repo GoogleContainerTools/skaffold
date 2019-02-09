@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,6 +32,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha5"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta4"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
@@ -47,6 +50,9 @@ var schemaVersions = versions{
 	{v1alpha4.Version, v1alpha4.NewSkaffoldPipeline},
 	{v1alpha5.Version, v1alpha5.NewSkaffoldPipeline},
 	{v1beta1.Version, v1beta1.NewSkaffoldPipeline},
+	{v1beta2.Version, v1beta2.NewSkaffoldPipeline},
+	{v1beta3.Version, v1beta3.NewSkaffoldPipeline},
+	{v1beta4.Version, v1beta4.NewSkaffoldPipeline},
 	{latest.Version, latest.NewSkaffoldPipeline},
 }
 
@@ -69,16 +75,16 @@ func (v *versions) Find(apiVersion string) (func() util.VersionedConfig, bool) {
 }
 
 // ParseConfig reads a configuration file.
-func ParseConfig(filename string, upgrade bool, profiles []string) (util.VersionedConfig, error) {
-	logrus.Warnf("%s", profiles)
+func ParseConfig(filename string, environmentConfigurationFile string, upgrade bool, profiles []string) (util.VersionedConfig, error) {
 	buf, err := misc.ReadConfiguration(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "read skaffold config")
 	}
-
-	buf, err = misc.InjectEnvironnmentVariables(filename, buf, profiles)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to inject environment variables")
+	if environmentConfigurationFile != "" {
+		buf, err = misc.InjectEnvironnmentVariables(environmentConfigurationFile, buf, profiles)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to inject environment variables")
+		}
 	}
 	apiVersion := &APIVersion{}
 	if err := yaml.Unmarshal(buf, apiVersion); err != nil {
@@ -123,7 +129,7 @@ func upgradeToLatest(vc util.VersionedConfig) (util.VersionedConfig, error) {
 		return vc, nil
 	}
 	if version.GT(semver) {
-		return nil, fmt.Errorf("config version %s is too new for this version of skaffold: upgrade skaffold", vc.GetVersion())
+		return nil, fmt.Errorf("config version %s is too new for this version: upgrade Skaffold", vc.GetVersion())
 	}
 
 	logrus.Warnf("config version (%s) out of date: upgrading to latest (%s)", vc.GetVersion(), latest.Version)

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,28 +17,38 @@ limitations under the License.
 package config
 
 import (
+	"io"
 	"strings"
 )
+
+// Output defines which zones on the screen to print to
+type Output struct {
+	Main io.Writer
+	Logs io.Writer
+}
 
 // SkaffoldOptions are options that are set by command line arguments not included
 // in the config file itself
 type SkaffoldOptions struct {
-	ConfigurationFile string
-	Cleanup           bool
-	Notification      bool
-	Tail              bool
-	TailDev           bool
-	PortForward       bool
-	SkipTests         bool
-	Profiles          []string
-	CustomTag         string
-	Namespace         string
-	Watch             []string
-	Trigger           string
-	CustomLabels      []string
-	WatchPollInterval int
-	DefaultRepo       string
-	PreBuiltImages    []string
+	ConfigurationFile            string
+	EnvironmentConfigurationFile string
+	Cleanup                      bool
+	Notification                 bool
+	Tail                         bool
+	TailDev                      bool
+	PortForward                  bool
+	SkipTests                    bool
+	ExperimentalGUI              bool
+	Profiles                     []string
+	CustomTag                    string
+	Namespace                    string
+	TargetImages                 []string
+	Trigger                      string
+	CustomLabels                 []string
+	WatchPollInterval            int
+	DefaultRepo                  string
+	PreBuiltImages               []string
+	Command                      string
 }
 
 // Labels returns a map of labels to be applied to all deployed

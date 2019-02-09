@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,12 +18,13 @@ package runner
 
 import (
 	"context"
-	"io"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -35,8 +36,12 @@ var ErrorConfigurationChanged = errors.New("configuration changed")
 
 // Dev watches for changes and runs the skaffold build and deploy
 // pipeline until interrupted by the user.
-func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
-	logger := r.newLogger(out, artifacts)
+func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifacts []*latest.Artifact) error {
+	logger := r.newLogger(output.Logs, artifacts)
+	defer logger.Stop()
+
+	portForwarder := kubernetes.NewPortForwarder(output.Main, r.imageList, r.namespaces)
+	defer portForwarder.Stop()
 
 	// Create watcher and register artifacts to build current state of files.
 	changed := changes{}
@@ -59,11 +64,10 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 		switch {
 		case changed.needsReload:
-			logger.Stop()
 			return ErrorConfigurationChanged
 		case len(changed.needsResync) > 0:
 			for _, s := range changed.needsResync {
-				color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
+				color.Default.Fprintf(output.Main, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
 
 				if err := r.Syncer.Sync(ctx, s); err != nil {
 					logrus.Warnln("Skipping deploy due to sync error:", err)
@@ -71,12 +75,12 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 				}
 			}
 		case len(changed.needsRebuild) > 0:
-			if err := r.buildTestDeploy(ctx, out, changed.needsRebuild); err != nil {
+			if err := r.buildTestDeploy(ctx, output.Main, changed.needsRebuild); err != nil {
 				logrus.Warnln("Skipping deploy due to error:", err)
 				return nil
 			}
 		case changed.needsRedeploy:
-			if _, err := r.Deploy(ctx, out, r.builds); err != nil {
+			if err := r.Deploy(ctx, output.Main, r.builds); err != nil {
 				logrus.Warnln("Skipping deploy due to error:", err)
 				return nil
 			}
@@ -90,12 +94,12 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	for i := range artifacts {
 		artifact := artifacts[i]
 
-		if !r.shouldWatch(artifact) {
+		if !r.IsTargetImage(artifact) {
 			continue
 		}
 
 		if err := r.Watcher.Register(
-			func() ([]string, error) { return DependenciesForArtifact(ctx, artifact) },
+			func() ([]string, error) { return build.DependenciesForArtifact(ctx, artifact) },
 			func(e watch.Events) { changed.AddDirtyArtifact(artifact, e) },
 		); err != nil {
 			return errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
@@ -127,7 +131,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	// First run
-	if err := r.buildTestDeploy(ctx, out, artifacts); err != nil {
+	if err := r.buildTestDeploy(ctx, output.Main, artifacts); err != nil {
 		return errors.Wrap(err, "exiting dev mode because first run failed")
 	}
 
@@ -139,12 +143,10 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	if r.opts.PortForward {
-		portForwarder := kubernetes.NewPortForwarder(out, r.imageList)
-
 		if err := portForwarder.Start(ctx); err != nil {
 			return errors.Wrap(err, "starting port-forwarder")
 		}
 	}
 
-	return r.Watcher.Run(ctx, out, onChange)
+	return r.Watcher.Run(ctx, output.Main, onChange)
 }

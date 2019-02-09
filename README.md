@@ -54,7 +54,7 @@ stages into one simple command. Every time you run `skaffold dev`, the system
 1. Cleans up deployed artifacts on exit (Ctrl+C) 
    
 What's more, the pluggable architecture is central to Skaffold's design, allowing you to use
-the tool you prefer in each stage. Also, skaffold's `profiles` feature grants
+the tool you prefer in each stage. Also, Skaffold's `profiles` feature grants
 you the freedom to switch tools as you see fit depending on the context. 
 
 For example, if you are coding on a local machine, you can configure Skaffold to build artifacts

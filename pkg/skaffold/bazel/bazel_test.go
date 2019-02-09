@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,10 +27,9 @@ import (
 
 func TestGetDependenciesWithWorkspace(t *testing.T) {
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-	util.DefaultExecCommand = testutil.NewFakeCmdOut(
+	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
 		"bazel query kind('source file', deps('target')) union buildfiles('target') --noimplicit_deps --order_output=no",
 		"@ignored\n//external/ignored\n\n//:dep1\n//:dep2\n",
-		nil,
 	)
 
 	tmpDir, cleanup := testutil.NewTempDir(t)
@@ -46,10 +45,9 @@ func TestGetDependenciesWithWorkspace(t *testing.T) {
 
 func TestGetDependenciesWithoutWorkspace(t *testing.T) {
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-	util.DefaultExecCommand = testutil.NewFakeCmdOut(
+	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
 		"bazel query kind('source file', deps('target2')) union buildfiles('target2') --noimplicit_deps --order_output=no",
 		"@ignored\n//external/ignored\n\n//:dep3\n",
-		nil,
 	)
 
 	deps, err := GetDependencies(context.Background(), ".", &latest.BazelArtifact{

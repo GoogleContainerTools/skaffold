@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -158,8 +158,8 @@ func ReadConfiguration(filename string) ([]byte, error) {
 type ConfigProperties map[string]string
 
 // Tests if a file exists
-func FileExists(filapath string) bool {
-	if _, err := os.Stat(filapath); !os.IsNotExist(err) {
+func FileExists(filepath string) bool {
+	if _, err := os.Stat(filepath); !os.IsNotExist(err) {
 		if err == nil {
 			return true
 		}
@@ -167,30 +167,29 @@ func FileExists(filapath string) bool {
 	return false
 }
 
-// Reads an environment file  that contains a set of environment variables
-func ReadEnvironmentConfigProperties(pathToSkaffoldFile string) (*viper.Viper, error) {
-	directory := filepath.Dir(pathToSkaffoldFile)
-	baseName := filepath.Base(pathToSkaffoldFile)
-	targetDirectory := ""
-	re := regexp.MustCompile("skaffold.*ya?ml")
-	if re.FindString(baseName) == "" {
-		targetDirectory = pathToSkaffoldFile
-	} else {
-		targetDirectory = directory
+var defaultPropsPaths = []string{"/etc/skaffold/", "$HOME/.skaffold"}
+
+// Reads an environment file that contains a set of environment variables
+// The file is expected to be in YAML. Once read, the function will
+// return an object that contains all the properties defined in the file
+func ReadEnvironmentConfigProperties(pathToEnvFile string) (*viper.Viper, error) {
+
+	logrus.Debugf("Will load environment file from :%s", pathToEnvFile)
+	configuration := viper.New()
+	for _, path := range defaultPropsPaths {
+		configuration.AddConfigPath(path)
 	}
-	//
-	logrus.Debugf("Will load environment file from :%s", targetDirectory)
-	ret := viper.New()
-	ret.SetConfigType("yaml")
-	ret.SetConfigName("env")
-	ret.AddConfigPath("/etc/skaffold/")
-	ret.AddConfigPath("$HOME/.skaffold")
-	ret.AddConfigPath(targetDirectory)
-	err := ret.ReadInConfig()
+	configuration.SetConfigType("yaml")
+	f, err := os.Open(pathToEnvFile)
+	defer f.Close()
 	if err != nil {
-		return ret, nil
+		return nil, err
 	}
-	return ret, nil
+	err = configuration.ReadConfig(bufio.NewReader(f))
+	if err != nil {
+		return nil, err
+	}
+	return configuration, nil
 }
 
 // Replace all the environment variables present in a skaffold configuration
@@ -203,27 +202,18 @@ func ReplaceEnvironmentVariables(configurationSource *viper.Viper, skaffoldConfi
 		logrus.Debugf("Configuration file replace of %s by %s", currentMatch, configurationValue)
 		return []byte(configurationValue)
 	})
-	logrus.Debugf("Replaced configuration file:%s", string(replacedBuffer))
+	logrus.Debugf("Replaced configuration file: %s", string(replacedBuffer))
 	return replacedBuffer
 }
 
-// Inject  environment variables into skaffold configuration
-func InjectEnvironnmentVariables(pathToSkaffoldFile string, skaffoldConfiguration []byte, profiles []string) ([]byte, error) {
-	configurationSource, err := ReadEnvironmentConfigProperties(pathToSkaffoldFile)
+// Inject environment variables into skaffold configuration
+func InjectEnvironnmentVariables(environmentConfigurationFile string, skaffoldConfiguration []byte, profiles []string) ([]byte, error) {
+	configurationSource, err := ReadEnvironmentConfigProperties(environmentConfigurationFile)
 	if err != nil {
 		return nil, errors.Wrap(err, "read environment config")
 	}
-	configurationSource.SetDefault("profile", strings.Join(profiles, ","))
 	return ReplaceEnvironmentVariables(configurationSource, skaffoldConfiguration), nil
 }
-func CopyStringMap(m map[string]string) map[string]string {
-	cp := make(map[string]string)
-	for k, v := range m {
-		cp[k] = v
-	}
-	return cp
-}
-
 func IsURL(s string) bool {
 	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
 }

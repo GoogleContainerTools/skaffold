@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func Test_addFileToTar(t *testing.T) {
+func TestCreateTar(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
@@ -35,41 +35,116 @@ func Test_addFileToTar(t *testing.T) {
 		"bar/bat": "baz2",
 		"bar/baz": "baz3",
 	}
-	for p, c := range files {
-		tmpDir.Write(p, c)
+	var paths []string
+	for path, content := range files {
+		tmpDir.Write(path, content)
+		paths = append(paths, path)
 	}
 
-	// Add all the files to a tar.
+	reset := testutil.Chdir(t, tmpDir.Root())
+	defer reset()
+
 	var b bytes.Buffer
-	tw := tar.NewWriter(&b)
-	for p := range files {
-		path := tmpDir.Path(p)
-		if err := addFileToTar(path, p, tw); err != nil {
-			t.Fatalf("addFileToTar() error = %v", err)
-		}
-	}
-	tw.Close()
+	err := CreateTar(&b, ".", paths)
+	testutil.CheckError(t, false, err)
 
 	// Make sure the contents match.
+	tarFiles := make(map[string]string)
 	tr := tar.NewReader(&b)
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
 			break
 		}
-		if err != nil {
-			t.Errorf("Error reading tar: %s", err)
-		}
-		expectedContents, ok := files[hdr.Name]
-		if !ok {
-			t.Errorf("Unexpected file in tar: %s", hdr.Name)
-		}
-		actualContents, err := ioutil.ReadAll(tr)
-		if err != nil {
-			t.Errorf("Error %s reading file %s from tar", err, hdr.Name)
-		}
-		if expectedContents != string(actualContents) {
-			t.Errorf("File contents don't match. %s != %s", actualContents, expectedContents)
-		}
+		testutil.CheckError(t, false, err)
+
+		content, err := ioutil.ReadAll(tr)
+		testutil.CheckError(t, false, err)
+
+		tarFiles[hdr.Name] = string(content)
 	}
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, files, tarFiles)
+}
+
+func TestCreateTarSubDirectory(t *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+
+	files := map[string]string{
+		"sub/foo":     "baz1",
+		"sub/bar/bat": "baz2",
+		"sub/bar/baz": "baz3",
+	}
+	var paths []string
+	for path, content := range files {
+		tmpDir.Write(path, content)
+		paths = append(paths, path)
+	}
+
+	reset := testutil.Chdir(t, tmpDir.Root())
+	defer reset()
+
+	var b bytes.Buffer
+	err := CreateTar(&b, "sub", paths)
+	testutil.CheckError(t, false, err)
+
+	// Make sure the contents match.
+	tarFiles := make(map[string]string)
+	tr := tar.NewReader(&b)
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		testutil.CheckError(t, false, err)
+
+		content, err := ioutil.ReadAll(tr)
+		testutil.CheckError(t, false, err)
+
+		tarFiles["sub/"+hdr.Name] = string(content)
+	}
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, files, tarFiles)
+}
+
+func TestCreateTarWithAbsolutePaths(t *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+
+	files := map[string]string{
+		"foo":     "baz1",
+		"bar/bat": "baz2",
+		"bar/baz": "baz3",
+	}
+	var paths []string
+	for path, content := range files {
+		tmpDir.Write(path, content)
+		paths = append(paths, tmpDir.Path(path))
+	}
+
+	reset := testutil.Chdir(t, tmpDir.Root())
+	defer reset()
+
+	var b bytes.Buffer
+	err := CreateTar(&b, tmpDir.Root(), paths)
+	testutil.CheckError(t, false, err)
+
+	// Make sure the contents match.
+	tarFiles := make(map[string]string)
+	tr := tar.NewReader(&b)
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		testutil.CheckError(t, false, err)
+
+		content, err := ioutil.ReadAll(tr)
+		testutil.CheckError(t, false, err)
+
+		tarFiles[hdr.Name] = string(content)
+	}
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, files, tarFiles)
 }

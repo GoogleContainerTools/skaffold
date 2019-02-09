@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ type Config struct {
 // ContextConfig is the context-specific config information provided in
 // the global Skaffold config.
 type ContextConfig struct {
-	Kubecontext string `yaml:"kube-context,omitempty"`
-	DefaultRepo string `yaml:"default-repo,omitempty"`
+	Kubecontext  string `yaml:"kube-context,omitempty"`
+	DefaultRepo  string `yaml:"default-repo,omitempty"`
+	LocalCluster *bool  `yaml:"local-cluster,omitempty"`
 }

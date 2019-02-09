@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -66,9 +66,7 @@ func TestDateTime_GenerateFullyQualifiedImageName(t *testing.T) {
 				TimeZone: test.timezone,
 				timeFn:   func() time.Time { return test.buildTime },
 			}
-			tag, err := c.GenerateFullyQualifiedImageName(".", Options{
-				ImageName: test.imageName,
-			})
+			tag, err := c.GenerateFullyQualifiedImageName(".", test.imageName)
 
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.want, tag)
 		})

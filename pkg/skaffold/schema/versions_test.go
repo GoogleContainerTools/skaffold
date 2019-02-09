@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -88,6 +88,9 @@ build:
     pullSecretName: secret-name
     namespace: nskaniko
     timeout: 120m
+    dockerConfig:
+      secretName: config-name
+      path: /kaniko/.docker
 `
 	badConfig = "bad config"
 )
@@ -169,6 +172,7 @@ func TestParseConfig(t *testing.T) {
 			expected: config(
 				withKanikoBuild("demo", "secret-name", "nskaniko", "/secret.json", "120m",
 					withGitTagger(),
+					withDockerConfig("config-name", "/kaniko/.docker"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
 			),
@@ -201,7 +205,7 @@ func TestParseConfig(t *testing.T) {
 			yaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", test.apiVersion, test.config)
 			tmp.Write("skaffold.yaml", yaml)
 
-			cfg, err := ParseConfig(tmp.Path("skaffold.yaml"), true, []string{})
+			cfg, err := ParseConfig(tmp.Path("skaffold.yaml"), "", true, []string{})
 			if cfg != nil {
 				config := cfg.(*latest.SkaffoldPipeline)
 				if err := defaults.Set(config); err != nil {
@@ -237,6 +241,8 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 		b := latest.BuildConfig{BuildType: latest.BuildType{GoogleCloudBuild: &latest.GoogleCloudBuild{
 			ProjectID:   id,
 			DockerImage: "gcr.io/cloud-builders/docker",
+			MavenImage:  "gcr.io/cloud-builders/mvn",
+			GradleImage: "gcr.io/cloud-builders/gradle",
 		}}}
 		for _, op := range ops {
 			op(&b)
@@ -261,6 +267,15 @@ func withKanikoBuild(bucket, secretName, namespace, secret string, timeout strin
 			op(&b)
 		}
 		cfg.Build = b
+	}
+}
+
+func withDockerConfig(secretName string, path string) func(*latest.BuildConfig) {
+	return func(cfg *latest.BuildConfig) {
+		cfg.KanikoBuild.DockerConfig = &latest.DockerConfig{
+			SecretName: secretName,
+			Path:       path,
+		}
 	}
 }
 

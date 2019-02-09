@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -49,8 +49,10 @@ func TestNewEnvClient(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			unsetEnvs := testutil.SetEnvs(t, test.envs)
-			_, err := newEnvAPIClient()
-			testutil.CheckError(t, test.shouldErr, err)
+
+			env, _, err := newEnvAPIClient()
+
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, []string(nil), env)
 			unsetEnvs(t)
 		})
 	}
@@ -60,62 +62,69 @@ func TestNewEnvClient(t *testing.T) {
 func TestNewMinikubeImageAPIClient(t *testing.T) {
 	var tests = []struct {
 		description string
-		cmd         util.Command
-
-		expected  client.CommonAPIClient
-		shouldErr bool
+		env         string
+		expected    client.CommonAPIClient
+		expectedEnv []string
+		shouldErr   bool
 	}{
 		{
 			description: "correct client",
-			cmd: testutil.NewFakeCmdOut("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
+			env: `DOCKER_TLS_VERIFY=1
 DOCKER_HOST=http://127.0.0.1:8080
 DOCKER_CERT_PATH=testdata
-DOCKER_API_VERSION=1.23`, nil),
+DOCKER_API_VERSION=1.23`,
+			expectedEnv: []string{"DOCKER_API_VERSION=1.23", "DOCKER_CERT_PATH=testdata", "DOCKER_HOST=http://127.0.0.1:8080", "DOCKER_TLS_VERIFY=1"},
 		},
 		{
-			description: "correct client",
-			cmd: testutil.NewFakeCmdOut("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
+			description: "bad certificate",
+			env: `DOCKER_TLS_VERIFY=1
 DOCKER_HOST=http://127.0.0.1:8080
 DOCKER_CERT_PATH=bad/cert/path
-DOCKER_API_VERSION=1.23`, nil),
+DOCKER_API_VERSION=1.23`,
 			shouldErr: true,
 		},
 		{
 			description: "missing host env, no error",
-			cmd: testutil.NewFakeCmdOut("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
+			env: `DOCKER_TLS_VERIFY=1
 DOCKER_CERT_PATH=testdata
-DOCKER_API_VERSION=1.23`, nil),
+DOCKER_API_VERSION=1.23`,
+			expectedEnv: []string{"DOCKER_API_VERSION=1.23", "DOCKER_CERT_PATH=testdata", "DOCKER_TLS_VERIFY=1"},
 		},
 		{
 			description: "missing version env, no error",
-			cmd: testutil.NewFakeCmdOut("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
+			env: `DOCKER_TLS_VERIFY=1
 DOCKER_HOST=http://127.0.0.1:8080
-DOCKER_CERT_PATH=testdata`, nil),
+DOCKER_CERT_PATH=testdata`,
+			expectedEnv: []string{"DOCKER_CERT_PATH=testdata", "DOCKER_HOST=http://127.0.0.1:8080", "DOCKER_TLS_VERIFY=1"},
 		},
 		{
-			description: "missing version env, no error",
-			cmd: testutil.NewFakeCmdOut("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
+			description: "bad url",
+			env: `DOCKER_TLS_VERIFY=1
 DOCKER_HOST=badurl
 DOCKER_CERT_PATH=testdata
-DOCKER_API_VERSION=1.23`, nil),
+DOCKER_API_VERSION=1.23`,
 			shouldErr: true,
 		},
 		{
 			description: "bad env output, should fallback to host docker",
-			cmd: testutil.NewFakeCmdOut("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
+			env: `DOCKER_TLS_VERIFY=1
 DOCKER_HOST=http://127.0.0.1:8080=toomanyvalues
 DOCKER_CERT_PATH=testdata
-DOCKER_API_VERSION=1.23`, nil),
+DOCKER_API_VERSION=1.23`,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = test.cmd
+			util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut("minikube docker-env --shell none", test.env)
 
-			_, err := newMinikubeAPIClient()
+			env, _, err := newMinikubeAPIClient()
+
 			testutil.CheckError(t, test.shouldErr, err)
+			if !test.shouldErr {
+				testutil.CheckDeepEqual(t, test.expectedEnv, env)
+			}
 		})
 	}
 }
