@@ -4,9 +4,9 @@ linkTitle: "Port forwarding"
 weight: 50
 ---
 
-This page discusses how skaffold sets up port forwarding for container ports from pods. When skaffold deploys an application, it will automatically forward any ports mentioned in the pod spec.
+This page discusses how Skaffold sets up port forwarding for container ports from pods. When Skaffold deploys an application, it will automatically forward any ports mentioned in the pod spec.
 
-For example, if we have the following pod manifest, skaffold will forward port 8000 to port 8000 on our machine:
+For example, if we have the following pod manifest, Skaffold will forward port 8000 to port 8000 on our machine:
 
 ```
 apiVersion: v1
