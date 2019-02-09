@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -87,10 +87,9 @@ func TestGetDependencies(t *testing.T) {
 	for _, test := range tests {
 		t.Run("getDependencies", func(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = testutil.NewFakeCmdOut(
+			util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
 				"ignored",
 				test.stdout,
-				nil,
 			)
 
 			deps, err := getDependencies(&exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()})

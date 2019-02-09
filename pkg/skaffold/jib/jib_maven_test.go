@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ func TestGetDependenciesMaven(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = testutil.NewFakeCmdOut(
+			util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOutErr(
 				strings.Join(getCommandMaven(ctx, tmpDir.Root(), &latest.JibMavenArtifact{}).Args, " "),
 				test.stdout,
 				test.err,
@@ -96,7 +96,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--quiet", "--non-recursive", "jib:_skaffold-files"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--non-recursive", "jib:_skaffold-files", "--quiet"})
 			},
 		},
 		{
@@ -104,7 +104,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{Profile: "profile"},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--quiet", "--non-recursive", "jib:_skaffold-files", "--activate-profiles", "profile"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--activate-profiles", "profile", "--non-recursive", "jib:_skaffold-files", "--quiet"})
 			},
 		},
 		{
@@ -112,7 +112,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{},
 			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--quiet", "--non-recursive", "jib:_skaffold-files"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--non-recursive", "jib:_skaffold-files", "--quiet"})
 			},
 		},
 		{
@@ -120,7 +120,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{},
 			filesInWorkspace: []string{"mvnw", "mvnw.cmd"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--quiet", "--non-recursive", "jib:_skaffold-files"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--non-recursive", "jib:_skaffold-files", "--quiet"})
 			},
 		},
 		{
@@ -128,7 +128,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{Profile: "profile"},
 			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--quiet", "--non-recursive", "jib:_skaffold-files", "--activate-profiles", "profile"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--activate-profiles", "profile", "--non-recursive", "jib:_skaffold-files", "--quiet"})
 			},
 		},
 		{
@@ -136,7 +136,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{Module: "module"},
 			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--quiet", "--projects", "module", "--also-make", "jib:_skaffold-files"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--projects", "module", "--also-make", "jib:_skaffold-files", "--quiet"})
 			},
 		},
 	}
@@ -156,5 +156,28 @@ func TestGetCommandMaven(t *testing.T) {
 			testutil.CheckDeepEqual(t, expectedCmd.Args, cmd.Args)
 			testutil.CheckDeepEqual(t, expectedCmd.Dir, cmd.Dir)
 		})
+	}
+}
+
+func TestGenerateMavenArgs(t *testing.T) {
+	var testCases = []struct {
+		in        latest.JibMavenArtifact
+		skipTests bool
+		out       []string
+	}{
+		{latest.JibMavenArtifact{}, false, []string{"--non-recursive", "prepare-package", "jib:goal", "-Dimage=image"}},
+		{latest.JibMavenArtifact{}, true, []string{"--non-recursive", "-DskipTests=true", "prepare-package", "jib:goal", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Profile: "profile"}, false, []string{"--activate-profiles", "profile", "--non-recursive", "prepare-package", "jib:goal", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Profile: "profile"}, true, []string{"--activate-profiles", "profile", "--non-recursive", "-DskipTests=true", "prepare-package", "jib:goal", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Module: "module"}, false, []string{"--projects", "module", "--also-make", "package", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Module: "module"}, true, []string{"--projects", "module", "--also-make", "-DskipTests=true", "package", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, false, []string{"--activate-profiles", "profile", "--projects", "module", "--also-make", "package", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, true, []string{"--activate-profiles", "profile", "--projects", "module", "--also-make", "-DskipTests=true", "package", "-Dimage=image"}},
+	}
+
+	for _, tt := range testCases {
+		args := GenerateMavenArgs("goal", "image", &tt.in, tt.skipTests)
+
+		testutil.CheckDeepEqual(t, tt.out, args)
 	}
 }

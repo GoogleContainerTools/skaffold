@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -78,6 +78,13 @@ FROM busybox
 ENV foo bar
 WORKDIR ${foo}   # WORKDIR /bar
 COPY $foo /quux # COPY bar /quux
+`
+
+const multiEnvTest = `
+FROM busybox
+ENV baz=bar \
+    foo=docker
+COPY $foo/nginx.conf . # COPY docker/nginx.conf .
 `
 
 const copyDirectory = `
@@ -294,6 +301,13 @@ func TestGetDependencies(t *testing.T) {
 			fetched:     []string{"busybox"},
 		},
 		{
+			description: "multiple env test",
+			dockerfile:  multiEnvTest,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", filepath.Join("docker", "nginx.conf")},
+			fetched:     []string{"busybox"},
+		},
+		{
 			description: "multi file copy",
 			dockerfile:  multiFileCopy,
 			workspace:   ".",
@@ -498,8 +512,8 @@ func TestGetDependencies(t *testing.T) {
 
 			workspace := tmpDir.Path(test.workspace)
 			deps, err := GetDependencies(context.Background(), workspace, &latest.DockerArtifact{
-				BuildArgs:      test.buildArgs,
 				DockerfilePath: "Dockerfile",
+				BuildArgs:      test.buildArgs,
 			})
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package build
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -27,20 +28,25 @@ import (
 )
 
 // InSequence builds a list of artifacts in sequence.
-func InSequence(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
+func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
 	var builds []Artifact
 
 	for _, artifact := range artifacts {
 		color.Default.Fprintf(out, "Building [%s]...\n", artifact.ImageName)
 
-		tag, err := buildArtifact(ctx, out, tagger, artifact)
+		tag, present := tags[artifact.ImageName]
+		if !present {
+			return nil, fmt.Errorf("unable to find tag for image %s", artifact.ImageName)
+		}
+
+		finalTag, err := buildArtifact(ctx, out, artifact, tag)
 		if err != nil {
 			return nil, errors.Wrapf(err, "building [%s]", artifact.ImageName)
 		}
 
 		builds = append(builds, Artifact{
 			ImageName: artifact.ImageName,
-			Tag:       tag,
+			Tag:       finalTag,
 		})
 	}
 

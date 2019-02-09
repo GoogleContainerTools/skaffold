@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package testutil
 
 import (
 	"context"
-	"crypto/rand"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -37,7 +37,10 @@ type FakeAPIClient struct {
 	ErrImageInspect bool
 	ErrImageTag     bool
 	ErrImagePush    bool
+	ErrImagePull    bool
 	ErrStream       bool
+
+	nextImageID int
 }
 
 type errReader struct{}
@@ -61,7 +64,8 @@ func (f *FakeAPIClient) ImageBuild(_ context.Context, _ io.Reader, options types
 		f.TagToImageID = make(map[string]string)
 	}
 
-	imageID := "sha256:" + randomID()
+	f.nextImageID++
+	imageID := fmt.Sprintf("sha256:%d", f.nextImageID)
 	f.TagToImageID[imageID] = imageID
 
 	for _, tag := range options.Tags {
@@ -74,12 +78,6 @@ func (f *FakeAPIClient) ImageBuild(_ context.Context, _ io.Reader, options types
 	return types.ImageBuildResponse{
 		Body: f.body(imageID),
 	}, nil
-}
-
-func randomID() string {
-	b := make([]byte, 16)
-	rand.Read(b)
-	return fmt.Sprintf("%x", b)
 }
 
 func (f *FakeAPIClient) ImageInspectWithRaw(_ context.Context, ref string) (types.ImageInspect, []byte, error) {
@@ -115,9 +113,17 @@ func (f *FakeAPIClient) ImagePush(_ context.Context, ref string, _ types.ImagePu
 		return nil, fmt.Errorf("")
 	}
 
-	digest := f.TagToImageID[ref]
+	digest := fmt.Sprintf("sha256:%x", sha256.New().Sum([]byte(f.TagToImageID[ref])))
 
 	return f.body(digest), nil
+}
+
+func (f *FakeAPIClient) ImagePull(_ context.Context, ref string, _ types.ImagePullOptions) (io.ReadCloser, error) {
+	if f.ErrImagePull {
+		return nil, fmt.Errorf("")
+	}
+
+	return f.body(""), nil
 }
 
 func (f *FakeAPIClient) Info(context.Context) (types.Info, error) {

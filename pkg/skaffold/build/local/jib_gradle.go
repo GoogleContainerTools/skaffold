@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package local
 
 import (
 	"context"
-	"fmt"
 	"io"
+	"os"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
@@ -29,51 +29,34 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace string, artifact *latest.Artifact) (string, error) {
+func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibGradleArtifact, tag string) (string, error) {
 	if b.pushImages {
-		return b.buildJibGradleToRegistry(ctx, out, workspace, artifact)
+		return b.buildJibGradleToRegistry(ctx, out, workspace, artifact, tag)
 	}
-	return b.buildJibGradleToDocker(ctx, out, workspace, artifact.JibGradleArtifact)
+	return b.buildJibGradleToDocker(ctx, out, workspace, artifact, tag)
 }
 
-func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibGradleArtifact) (string, error) {
-	skaffoldImage := generateJibImageRef(workspace, artifact.Project)
-	args := generateGradleArgs("jibDockerBuild", skaffoldImage, artifact)
-
-	if err := runGradleCommand(ctx, out, workspace, args); err != nil {
+func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibGradleArtifact, tag string) (string, error) {
+	args := jib.GenerateGradleArgs("jibDockerBuild", tag, artifact, b.skipTests)
+	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
 
-	return b.localDocker.ImageID(ctx, skaffoldImage)
+	return b.localDocker.ImageID(ctx, tag)
 }
 
-func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.Artifact) (string, error) {
-	initialTag := util.RandomID()
-	skaffoldImage := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
-	args := generateGradleArgs("jib", skaffoldImage, artifact.JibGradleArtifact)
-
-	if err := runGradleCommand(ctx, out, workspace, args); err != nil {
+func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibGradleArtifact, tag string) (string, error) {
+	args := jib.GenerateGradleArgs("jib", tag, artifact, b.skipTests)
+	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
 
-	return docker.RemoteDigest(skaffoldImage)
+	return docker.RemoteDigest(tag)
 }
 
-// generateGradleArgs generates the arguments to Gradle for building the project as an image called `skaffoldImage`.
-func generateGradleArgs(task string, imageName string, artifact *latest.JibGradleArtifact) []string {
-	var command string
-	if artifact.Project == "" {
-		command = ":" + task
-	} else {
-		// multi-module
-		command = fmt.Sprintf(":%s:%s", artifact.Project, task)
-	}
-
-	return []string{command, "--image=" + imageName}
-}
-
-func runGradleCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {
+func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {
 	cmd := jib.GradleCommand.CreateCommand(ctx, workspace, args)
+	cmd.Env = append(os.Environ(), b.localDocker.ExtraEnv()...)
 	cmd.Stdout = out
 	cmd.Stderr = out
 

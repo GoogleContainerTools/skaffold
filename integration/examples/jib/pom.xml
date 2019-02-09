@@ -34,11 +34,12 @@
             <plugin>
                 <groupId>com.google.cloud.tools</groupId>
                 <artifactId>jib-maven-plugin</artifactId>
-                <version>0.10.1</version>
+                <version>1.0.0</version>
                 <configuration>
                     <container>
                         <jvmFlags>
                             <jvmFlag>-Djava.security.egd=file:/dev/./urandom</jvmFlag>
+                            <!-- specific to Java 8 containers -->
                             <jvmFlag>-XX:+UnlockExperimentalVMOptions</jvmFlag>
                             <jvmFlag>-XX:+UseCGroupMemoryLimitForHeap</jvmFlag>
                         </jvmFlags>

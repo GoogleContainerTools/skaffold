@@ -1,8 +1,7 @@
-
 ---
-title: "Using taggers"
-linkTitle: "Using taggers"
-weight: 30
+title: "Taggers"
+linkTitle: "Taggers"
+weight: 20
 ---
 
 This page discusses how to set up Skaffold to tag artifacts as you see fit.
@@ -18,7 +17,7 @@ Tag policy is specified in the `tagPolicy` field of the `build` section of the
 Skaffold configuration file, `skaffold.yaml`. For a detailed discussion on
 Skaffold configuration,
 see [Skaffold Concepts: Configuration](/docs/concepts/#configuration) and
-[skaffold.yaml References](/docs/references/config).
+[skaffold.yaml References](https://github.com/GoogleContainerTools/skaffold/blob/master/examples/annotated-skaffold.yaml).
 
 ## `gitCommit`: using Git commit IDs as tags
 
@@ -30,14 +29,7 @@ The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with the `gitCommit` tag policy
 specified explicitly:
 
-```yaml
-build:
-    artifacts:
-    - imageName: gcr.io/k8s-skaffold/example
-    tagPolicy:
-        gitCommit: {}
-    local: {}
-```
+{{% readfile file="samples/taggers/git.yaml" %}}
 
 `gitCommit` tag policy features no options.
 
@@ -55,14 +47,7 @@ it allows Kubernetes to re-deploy images every time your source code changes.
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with the `sha256` tag policy:
 
-```yaml
-build:
-    artifacts:
-    - imageName: gcr.io/k8s-skaffold/example
-    tagPolicy:
-        sha256: {}
-    local: {}
-```
+{{% readfile file="samples/taggers/sha256.yaml" %}}
 
 `sha256` tag policy features no options.
 
@@ -87,22 +72,14 @@ image.
 the <code>artifacts</code> part of the <code>build</code> section.
 {{< /alert >}}
 
-```yaml
-build:
-    artifacts:
-    - imageName: gcr.io/k8s-skaffold/example
-    tagPolicy:
-        envTemplate:
-            template: "{{.IMAGE_NAME}}:{{.FOO}}"
-    local: {}
-```
+{{% readfile file="samples/taggers/envTemplate.yaml" %}}
 
 Suppose the value of the `FOO` environment variable is `v1`, the image built
 will be `gcr.io/k8s-skaffold/example:v1`.
 
 The tag template uses the [Go Programming Language Syntax](https://golang.org/pkg/text/template/).
 As showcased in the example, `envTemplate` tag policy features one
-**required** parameter, `template`, which is the tag template to use. To learn more about templating support in skaffold.yaml see [Using templated fields](/docs/how-tos/templating)
+**required** parameter, `template`, which is the tag template to use. To learn more about templating support in Skaffold.yaml see [Templated fields](/docs/how-tos/templating)
 
 ## `dateTime`: using data and time values as tags
 
@@ -115,23 +92,7 @@ The following `build` section, for example, instructs Skaffold to build a Docker
 image `gcr.io/k8s-skaffold/example` with the `dateTime`
 tag policy:
 
-```yaml
-build:
-    artifacts:
-    - imageName: gcr.io/k8s-skaffold/example
-    tagPolicy:
-        dateTime:
-            format: "2006-01-02_15-04-05.999_MST"
-            timezone: "Local"
-    local: {}
-# The build section above is equal to
-# build:
-#   artifacts:
-#   - imageName: gcr.io/k8s-skaffold/example
-#   tagPolicy:
-#       dateTime: {}
-#   local: {}
-```
+{{% readfile file="samples/taggers/dateTime.yaml" %}}
 
 Suppose current time is `15:04:09.999 January 2nd, 2006` and current time zone
 is `MST` (`US Mountain Standard Time`), the image built will

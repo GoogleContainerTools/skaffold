@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -55,12 +55,14 @@ const (
 // Builder builds artifacts with Google Cloud Build.
 type Builder struct {
 	*latest.GoogleCloudBuild
+	skipTests bool
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
-func NewBuilder(cfg *latest.GoogleCloudBuild) *Builder {
+func NewBuilder(cfg *latest.GoogleCloudBuild, skipTests bool) *Builder {
 	return &Builder{
 		GoogleCloudBuild: cfg,
+		skipTests:        skipTests,
 	}
 }
 

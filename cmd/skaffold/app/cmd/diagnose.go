@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,9 +23,9 @@ import (
 	"io/ioutil"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
@@ -110,7 +110,7 @@ func diagnoseArtifacts(out io.Writer, artifacts []*latest.Artifact) error {
 func timeToListDependencies(ctx context.Context, a *latest.Artifact) (time.Duration, []string, error) {
 	start := time.Now()
 
-	deps, err := runner.DependenciesForArtifact(ctx, a)
+	deps, err := build.DependenciesForArtifact(ctx, a)
 	if err != nil {
 		return 0, nil, errors.Wrap(err, "listing artifact dependencies")
 	}

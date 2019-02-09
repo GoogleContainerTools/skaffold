@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -39,10 +40,12 @@ func NewCmdBuild(out io.Writer) *cobra.Command {
 		Short: "Builds the artifacts",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			opts.Command = "build"
 			return runBuild(out)
 		},
 	}
 	AddRunDevFlags(cmd)
+	cmd.Flags().StringArrayVarP(&opts.TargetImages, "build-image", "b", nil, "Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts")
 	cmd.Flags().BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success")
 	cmd.Flags().VarP(buildFormatFlag, "output", "o", buildFormatFlag.Usage())
 	return cmd
@@ -68,7 +71,14 @@ func runBuild(out io.Writer) error {
 		buildOut = ioutil.Discard
 	}
 
-	bRes, err := runner.BuildAndTest(ctx, buildOut, config.Build.Artifacts)
+	var targetArtifacts []*latest.Artifact
+	for _, artifact := range config.Build.Artifacts {
+		if runner.IsTargetImage(artifact) {
+			targetArtifacts = append(targetArtifacts, artifact)
+		}
+	}
+
+	bRes, err := runner.BuildAndTest(ctx, buildOut, targetArtifacts)
 	if err != nil {
 		return err
 	}

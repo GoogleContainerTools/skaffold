@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -155,6 +155,26 @@ var testDeployWithTemplatedName = &latest.HelmDeploy{
 	},
 }
 
+var testDeploySkipBuildDependencies = &latest.HelmDeploy{
+	Releases: []latest.HelmRelease{
+		{
+			Name:                  "skaffold-helm",
+			ChartPath:             "stable/chartmuseum",
+			SkipBuildDependencies: true,
+		},
+	},
+}
+
+var testDeployRemoteChart = &latest.HelmDeploy{
+	Releases: []latest.HelmRelease{
+		{
+			Name:                  "skaffold-helm-remote",
+			ChartPath:             "stable/chartmuseum",
+			SkipBuildDependencies: false,
+		},
+	},
+}
+
 var testNamespace = "testNamespace"
 
 var validDeployYaml = `
@@ -267,6 +287,22 @@ func TestHelmDeploy(t *testing.T) {
 			deployer:    NewHelmDeployer(testDeployConfigParameterUnmatched, testKubeContext, testNamespace, ""),
 			builds:      testBuilds,
 			shouldErr:   true,
+		},
+		{
+			description: "deploy success remote chart with skipBuildDependencies",
+			cmd:         &MockHelm{t: t},
+			deployer:    NewHelmDeployer(testDeploySkipBuildDependencies, testKubeContext, testNamespace, ""),
+			builds:      testBuilds,
+		},
+		{
+			description: "deploy error remote chart without skipBuildDependencies",
+			cmd: &MockHelm{
+				t:         t,
+				depResult: fmt.Errorf("unexpected error"),
+			},
+			deployer:  NewHelmDeployer(testDeployRemoteChart, testKubeContext, testNamespace, ""),
+			builds:    testBuilds,
+			shouldErr: true,
 		},
 		{
 			description: "get failure should install not upgrade",
@@ -383,7 +419,7 @@ func TestHelmDeploy(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = tt.cmd
 
-			_, err := tt.deployer.Deploy(context.Background(), ioutil.Discard, tt.builds)
+			err := tt.deployer.Deploy(context.Background(), ioutil.Discard, tt.builds, nil)
 
 			testutil.CheckError(t, tt.shouldErr, err)
 		})

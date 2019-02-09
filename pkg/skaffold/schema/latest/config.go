@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,9 +18,10 @@ package latest
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	yamlpatch "github.com/krishicks/yaml-patch"
 )
 
-const Version string = "skaffold/v1beta2"
+const Version string = "skaffold/v1beta5"
 
 // NewSkaffoldPipeline creates a SkaffoldPipeline
 func NewSkaffoldPipeline() util.VersionedConfig {
@@ -97,6 +98,8 @@ type GoogleCloudBuild struct {
 	MachineType string `yaml:"machineType,omitempty"`
 	Timeout     string `yaml:"timeout,omitempty"`
 	DockerImage string `yaml:"dockerImage,omitempty"`
+	MavenImage  string `yaml:"mavenImage,omitempty"`
+	GradleImage string `yaml:"gradleImage,omitempty"`
 }
 
 // LocalDir represents the local directory kaniko build context
@@ -126,6 +129,13 @@ type KanikoBuild struct {
 	Namespace       string              `yaml:"namespace,omitempty"`
 	Timeout         string              `yaml:"timeout,omitempty"`
 	Image           string              `yaml:"image,omitempty"`
+	DockerConfig    *DockerConfig       `yaml:"dockerConfig,omitempty"`
+}
+
+// DockerConfig contains information about the docker config.json to mount
+type DockerConfig struct {
+	Path       string `yaml:"path,omitempty"`
+	SecretName string `yaml:"secretName,omitempty"`
 }
 
 type TestConfig []*TestCase
@@ -178,19 +188,20 @@ type KustomizeDeploy struct {
 }
 
 type HelmRelease struct {
-	Name              string                 `yaml:"name,omitempty"`
-	ChartPath         string                 `yaml:"chartPath,omitempty"`
-	ValuesFiles       []string               `yaml:"valuesFiles,omitempty"`
-	Values            map[string]string      `yaml:"values,omitempty,omitempty"`
-	Namespace         string                 `yaml:"namespace,omitempty"`
-	Version           string                 `yaml:"version,omitempty"`
-	SetValues         map[string]string      `yaml:"setValues,omitempty"`
-	SetValueTemplates map[string]string      `yaml:"setValueTemplates,omitempty"`
-	Wait              bool                   `yaml:"wait,omitempty"`
-	RecreatePods      bool                   `yaml:"recreatePods,omitempty"`
-	Overrides         map[string]interface{} `yaml:"overrides,omitempty"`
-	Packaged          *HelmPackaged          `yaml:"packaged,omitempty"`
-	ImageStrategy     HelmImageStrategy      `yaml:"imageStrategy,omitempty"`
+	Name                  string                 `yaml:"name,omitempty"`
+	ChartPath             string                 `yaml:"chartPath,omitempty"`
+	ValuesFiles           []string               `yaml:"valuesFiles,omitempty"`
+	Values                map[string]string      `yaml:"values,omitempty,omitempty"`
+	Namespace             string                 `yaml:"namespace,omitempty"`
+	Version               string                 `yaml:"version,omitempty"`
+	SetValues             map[string]string      `yaml:"setValues,omitempty"`
+	SetValueTemplates     map[string]string      `yaml:"setValueTemplates,omitempty"`
+	Wait                  bool                   `yaml:"wait,omitempty"`
+	RecreatePods          bool                   `yaml:"recreatePods,omitempty"`
+	SkipBuildDependencies bool                   `yaml:"skipBuildDependencies,omitempty"`
+	Overrides             map[string]interface{} `yaml:"overrides,omitempty"`
+	Packaged              *HelmPackaged          `yaml:"packaged,omitempty"`
+	ImageStrategy         HelmImageStrategy      `yaml:"imageStrategy,omitempty"`
 }
 
 // HelmPackaged represents parameters for packaging helm chart.
@@ -232,10 +243,19 @@ type Artifact struct {
 // Profile is additional configuration that overrides default
 // configuration when it is activated.
 type Profile struct {
-	Name   string       `yaml:"name,omitempty"`
-	Build  BuildConfig  `yaml:"build,omitempty"`
-	Test   TestConfig   `yaml:"test,omitempty"`
-	Deploy DeployConfig `yaml:"deploy,omitempty"`
+	Name       string          `yaml:"name,omitempty"`
+	Build      BuildConfig     `yaml:"build,omitempty"`
+	Test       TestConfig      `yaml:"test,omitempty"`
+	Deploy     DeployConfig    `yaml:"deploy,omitempty"`
+	Patches    yamlpatch.Patch `yaml:"patches,omitempty"`
+	Activation []Activation    `yaml:"activation,omitempty"`
+}
+
+// Activation defines criteria to auto-activate a profile.
+type Activation struct {
+	Env         string `yaml:"env,omitempty"`
+	KubeContext string `yaml:"kubeContext,omitempty"`
+	Command     string `yaml:"command,omitempty"`
 }
 
 type ArtifactType struct {

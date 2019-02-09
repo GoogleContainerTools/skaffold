@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,19 +20,21 @@ import (
 	"context"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestBazelBin(t *testing.T) {
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-	util.DefaultExecCommand = testutil.NewFakeCmdOut(
-		"bazel info bazel-bin",
+	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
+		"bazel info bazel-bin --arg1 --arg2",
 		"/absolute/path/bin\n",
-		nil,
 	)
 
-	bazelBin, err := bazelBin(context.Background(), ".")
+	bazelBin, err := bazelBin(context.Background(), ".", &latest.BazelArtifact{
+		BuildArgs: []string{"--arg1", "--arg2"},
+	})
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, "/absolute/path/bin", bazelBin)
 }

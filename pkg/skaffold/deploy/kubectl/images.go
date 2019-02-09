@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,10 +23,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
-
-// for testing
-var warner Warner = &logrusWarner{}
 
 // ReplaceImages replaces image names in a list of manifests.
 func (l *ManifestList) ReplaceImages(builds []build.Artifact, defaultRepo string) (ManifestList, error) {
@@ -87,7 +85,7 @@ func (r *imageReplacer) NewValue(old interface{}) (bool, interface{}) {
 func (r *imageReplacer) parseAndReplace(image string) (bool, interface{}) {
 	parsed, err := docker.ParseReference(image)
 	if err != nil {
-		warner.Warnf("Couldn't parse image: %s", image)
+		warnings.Printf("Couldn't parse image: %s", image)
 		return false, nil
 	}
 
@@ -107,7 +105,7 @@ func (r *imageReplacer) parseAndReplace(image string) (bool, interface{}) {
 func (r *imageReplacer) Check() {
 	for imageName := range r.tagsByImageName {
 		if !r.found[imageName] {
-			warner.Warnf("image [%s] is not used by the deployment", imageName)
+			warnings.Printf("image [%s] is not used by the deployment", imageName)
 		}
 	}
 }

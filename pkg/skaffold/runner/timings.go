@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -52,11 +52,11 @@ func (w withTimings) Labels() map[string]string {
 	return labels.Merge(w.Builder.Labels(), w.Deployer.Labels())
 }
 
-func (w withTimings) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	start := time.Now()
 	color.Default.Fprintln(out, "Starting build...")
 
-	bRes, err := w.Builder.Build(ctx, out, tagger, artifacts)
+	bRes, err := w.Builder.Build(ctx, out, tags, artifacts)
 	if err != nil {
 		return nil, err
 	}
@@ -78,17 +78,16 @@ func (w withTimings) Test(ctx context.Context, out io.Writer, builds []build.Art
 	return nil
 }
 
-func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]deploy.Artifact, error) {
+func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []deploy.Labeller) error {
 	start := time.Now()
 	color.Default.Fprintln(out, "Starting deploy...")
 
-	dRes, err := w.Deployer.Deploy(ctx, out, builds)
-	if err != nil {
-		return nil, err
+	if err := w.Deployer.Deploy(ctx, out, builds, labellers); err != nil {
+		return err
 	}
 
 	color.Default.Fprintln(out, "Deploy complete in", time.Since(start))
-	return dRes, nil
+	return nil
 }
 
 func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {

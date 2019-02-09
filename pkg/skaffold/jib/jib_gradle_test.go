@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = testutil.NewFakeCmdOut(
+			util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOutErr(
 				strings.Join(getCommandGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{}).Args, " "),
 				test.stdout,
 				test.err,
@@ -97,7 +97,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{},
 			filesInWorkspace:  []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{"_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{":_jibSkaffoldFiles", "-q"})
 			},
 		},
 		{
@@ -113,7 +113,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{},
 			filesInWorkspace:  []string{"gradlew", "gradlew.cmd"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{"_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{":_jibSkaffoldFiles", "-q"})
 			},
 		},
 		{
@@ -141,5 +141,24 @@ func TestGetCommandGradle(t *testing.T) {
 			testutil.CheckDeepEqual(t, expectedCmd.Args, cmd.Args)
 			testutil.CheckDeepEqual(t, expectedCmd.Dir, cmd.Dir)
 		})
+	}
+}
+
+func TestGenerateGradleArgs(t *testing.T) {
+	var testCases = []struct {
+		in        latest.JibGradleArtifact
+		skipTests bool
+		out       []string
+	}{
+		{latest.JibGradleArtifact{}, false, []string{":task", "--image=image"}},
+		{latest.JibGradleArtifact{}, true, []string{":task", "--image=image", "-x", "test"}},
+		{latest.JibGradleArtifact{Project: "project"}, false, []string{":project:task", "--image=image"}},
+		{latest.JibGradleArtifact{Project: "project"}, true, []string{":project:task", "--image=image", "-x", "test"}},
+	}
+
+	for _, tt := range testCases {
+		command := GenerateGradleArgs("task", "image", &tt.in, tt.skipTests)
+
+		testutil.CheckDeepEqual(t, tt.out, command)
 	}
 }

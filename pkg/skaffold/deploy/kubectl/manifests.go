@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package kubectl
 import (
 	"bytes"
 	"io"
+	"regexp"
 	"strings"
 )
 
@@ -38,7 +39,13 @@ func (l *ManifestList) String() string {
 
 // Append appends the yaml manifests defined in the given buffer.
 func (l *ManifestList) Append(buf []byte) {
-	parts := bytes.Split(buf, []byte("\n---"))
+	// `kubectl create --dry-run -oyaml` outputs manifests without --- separator
+	// But we can rely on `apiVersion:` being here as a "separator".
+	buf = regexp.
+		MustCompile("\n(|---\n)apiVersion: ").
+		ReplaceAll(buf, []byte("\n---\napiVersion: "))
+
+	parts := bytes.Split(buf, []byte("\n---\n"))
 	for _, part := range parts {
 		*l = append(*l, part)
 	}

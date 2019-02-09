@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,21 +28,33 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-type Syncer struct{}
+type Syncer struct {
+	namespaces []string
+}
 
 var syncedDirs = map[string]struct{}{}
 
-func (k *Syncer) Sync(ctx context.Context, s *sync.Item) error {
-	logrus.Infoln("Copying files:", s.Copy, "to", s.Image)
+func NewSyncer(namespaces []string) *Syncer {
+	return &Syncer{
+		namespaces: namespaces,
+	}
+}
 
-	if err := sync.Perform(ctx, s.Image, s.Copy, copyFileFn); err != nil {
-		return errors.Wrap(err, "copying files")
+func (k *Syncer) Sync(ctx context.Context, s *sync.Item) error {
+	if len(s.Copy) > 0 {
+		logrus.Infoln("Copying files:", s.Copy, "to", s.Image)
+
+		if err := sync.Perform(ctx, s.Image, s.Copy, copyFileFn, k.namespaces); err != nil {
+			return errors.Wrap(err, "copying files")
+		}
 	}
 
-	logrus.Infoln("Deleting files:", s.Delete, "from", s.Image)
+	if len(s.Delete) > 0 {
+		logrus.Infoln("Deleting files:", s.Delete, "from", s.Image)
 
-	if err := sync.Perform(ctx, s.Image, s.Delete, deleteFileFn); err != nil {
-		return errors.Wrap(err, "deleting files")
+		if err := sync.Perform(ctx, s.Image, s.Delete, deleteFileFn, k.namespaces); err != nil {
+			return errors.Wrap(err, "deleting files")
+		}
 	}
 
 	return nil

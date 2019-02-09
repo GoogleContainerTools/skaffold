@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -57,6 +57,13 @@ func TestDependenciesForKustomization(t *testing.T) {
 - files: [app1.properties]
 - files: [app2.properties, app3.properties]`,
 			expected: []string{"kustomization.yaml", "app1.properties", "app2.properties", "app3.properties"},
+		},
+		{
+			description: "secretGenerator",
+			yaml: `secretGenerator:
+- files: [secret1.file]
+- files: [secret2.file, secret3.file]`,
+			expected: []string{"kustomization.yaml", "secret1.file", "secret2.file", "secret3.file"},
 		},
 		{
 			description: "unknown base",

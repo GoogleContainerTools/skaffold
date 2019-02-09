@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -31,27 +31,25 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artifact) (string, error) {
-	initialTag := util.RandomID()
+func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+	if artifact.DockerArtifact == nil {
+		return "", errors.New("kaniko builder supports only Docker artifacts")
+	}
 
+	// Prepare context
 	s := sources.Retrieve(b.KanikoBuild)
-	context, err := s.Setup(ctx, out, artifact, initialTag)
+	context, err := s.Setup(ctx, out, artifact, util.RandomID())
 	if err != nil {
 		return "", errors.Wrap(err, "setting up build context")
 	}
 	defer s.Cleanup(ctx)
 
-	client, err := kubernetes.GetClientset()
-	if err != nil {
-		return "", errors.Wrap(err, "")
-	}
-
-	imageDst := fmt.Sprintf("%s:%s", artifact.ImageName, initialTag)
+	// Create pod spec
 	args := []string{
-		fmt.Sprintf("--dockerfile=%s", artifact.DockerArtifact.DockerfilePath),
-		fmt.Sprintf("--context=%s", context),
-		fmt.Sprintf("--destination=%s", imageDst),
-		fmt.Sprintf("-v=%s", logLevel().String())}
+		"--dockerfile", artifact.DockerArtifact.DockerfilePath,
+		"--context", context,
+		"--destination", tag,
+		"-v", logLevel().String()}
 	args = append(args, b.AdditionalFlags...)
 	args = append(args, docker.GetBuildArgs(artifact.DockerArtifact)...)
 
@@ -62,30 +60,38 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 		}
 	}
 
+	podSpec := s.Pod(args)
+
+	// Create pod
+	client, err := kubernetes.GetClientset()
+	if err != nil {
+		return "", errors.Wrap(err, "")
+	}
 	pods := client.CoreV1().Pods(b.Namespace)
-	p, err := pods.Create(s.Pod(args))
+
+	pod, err := pods.Create(podSpec)
 	if err != nil {
 		return "", errors.Wrap(err, "creating kaniko pod")
 	}
 	defer func() {
-		if err := pods.Delete(p.Name, &metav1.DeleteOptions{
+		if err := pods.Delete(pod.Name, &metav1.DeleteOptions{
 			GracePeriodSeconds: new(int64),
 		}); err != nil {
 			logrus.Fatalf("deleting pod: %s", err)
 		}
 	}()
 
-	if err := s.ModifyPod(ctx, p); err != nil {
+	if err := s.ModifyPod(ctx, pod); err != nil {
 		return "", errors.Wrap(err, "modifying kaniko pod")
 	}
 
-	waitForLogs := streamLogs(out, p.Name, pods)
+	waitForLogs := streamLogs(out, pod.Name, pods)
 
-	if err := kubernetes.WaitForPodComplete(ctx, pods, p.Name, b.timeout); err != nil {
+	if err := kubernetes.WaitForPodComplete(ctx, pods, pod.Name, b.timeout); err != nil {
 		return "", errors.Wrap(err, "waiting for pod to complete")
 	}
 
 	waitForLogs()
 
-	return imageDst, nil
+	return docker.RemoteDigest(tag)
 }
