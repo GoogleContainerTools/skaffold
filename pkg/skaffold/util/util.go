@@ -181,10 +181,10 @@ func ReadEnvironmentConfigProperties(pathToEnvFile string) (*viper.Viper, error)
 	}
 	configuration.SetConfigType("yaml")
 	f, err := os.Open(pathToEnvFile)
-	defer f.Close()
 	if err != nil {
 		return nil, err
 	}
+	defer f.Close()
 	err = configuration.ReadConfig(bufio.NewReader(f))
 	if err != nil {
 		return nil, err
