@@ -37,15 +37,11 @@ func (c *ChecksumTagger) Labels() map[string]string {
 
 func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
 	// Strip repositories that have a port number.
-	var err error
 	if repoPortRe == nil {
-		repoPortRe, err = regexp.Compile("^[^/:]+(:[^/]+)/")
-		if err != nil {
-			return "", err
-		}
+		repoPortRe = regexp.MustCompile("^[^/:]+(:[^/]+)/")
 	}
-
 	noRepo := repoPortRe.ReplaceAllLiteralString(imageName, "")
+
 	if strings.Contains(noRepo, ":") {
 		// They have a tag, so use it.
 		return imageName, nil
