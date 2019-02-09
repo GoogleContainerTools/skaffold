@@ -17,6 +17,8 @@ limitations under the License.
 package tag
 
 import (
+	"regexp"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
@@ -31,5 +33,13 @@ func (c *ChecksumTagger) Labels() map[string]string {
 }
 
 func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
+	matched, err := regexp.MatchString("^[^/:]*(:[^/])?[^:]*$", imageName)
+	if err != nil {
+		return "", err
+	}
+	if matched {
+		// No supplied tag, so use latest.
+		return imageName + ":latest", nil
+	}
 	return imageName, nil
 }
