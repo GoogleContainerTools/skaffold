@@ -21,13 +21,20 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/google/go-containerregistry/pkg/name"
+	config "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // Artifact is the result corresponding to each successful build.
 type Artifact struct {
 	ImageName string
 	Tag       string
+	Config    ConfigurationRetriever
 }
 
 // Builder is an interface to the Build API of Skaffold.
@@ -38,4 +45,50 @@ type Builder interface {
 	Labels() map[string]string
 
 	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]Artifact, error)
+}
+
+// ConfigurationRetriever is a function signature for a function that returns an OCI image configuration
+type ConfigurationRetriever func(ctx context.Context) (config.Config, error)
+
+// RegistryConfigurationRetriever returns a function to retrieve an image configuration from a registry
+func RegistryConfigurationRetriever(image string) ConfigurationRetriever {
+	return func(ctx context.Context) (config.Config, error) {
+		logrus.Debugf("Retrieving image configuration for %v", image)
+		ref, err := name.ParseReference(image, name.WeakValidation)
+		if err != nil {
+			logrus.Debugf("Error parsing image %v: %v", image, err)
+			return config.Config{}, errors.Wrapf(err, "parsing image %q", image)
+		}
+
+		remoteImage, err := remote.Image(ref)
+		if err != nil {
+			logrus.Debugf("Error retrieving remote image details %v: %v", image, err)
+			return config.Config{}, errors.Wrapf(err, "retrieving image %q", ref)
+		}
+		manifest, err := remoteImage.ConfigFile()
+		if err != nil {
+			logrus.Debugf("Error retrieving remote image manifest %v: %v", image, err)
+			return config.Config{}, errors.Wrapf(err, "retrieving image config for %q", ref)
+		}
+		return manifest.Config, nil
+		// return &imageConfiguration{
+		// 	env:        envAsMap(config.Env),
+		// 	entrypoint: config.Entrypoint,
+		// 	arguments:  config.Cmd,
+		// 	labels:     config.Labels,
+		// }, nil
+	}
+}
+
+// DockerConfigurationRetriever returns a function to retrieve an image configuration from a local docker daemon
+func DockerConfigurationRetriever(localDocker docker.LocalDaemon, image string) ConfigurationRetriever {
+	return func(ctx context.Context) (config.Config, error) {
+		manifest, err := localDocker.ConfigFile(ctx, image)
+		if err != nil {
+			logrus.Debugf("Error retrieving local image manifest for %v: %v", image, err)
+			return config.Config{}, errors.Wrapf(err, "retrieving image config for %q", image)
+		}
+		logrus.Debugf("Retrieved local image configuration for %v: %v", image, manifest.Config)
+		return manifest.Config, nil
+	}
 }

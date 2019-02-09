@@ -30,7 +30,7 @@ import (
 
 const bufferedLinesPerArtifact = 10000
 
-type artifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error)
+type artifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, ConfigurationRetriever, error)
 
 // InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
 func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
@@ -43,6 +43,7 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 
 	n := len(artifacts)
 	finalTags := make([]string, n)
+	retrievers := make([]ConfigurationRetriever, n)
 	errs := make([]error, n)
 	outputs := make([]chan []byte, n)
 
@@ -70,7 +71,7 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 			if !present {
 				errs[i] = fmt.Errorf("unable to find tag for image %s", artifacts[i].ImageName)
 			} else {
-				finalTags[i], errs[i] = buildArtifact(ctx, cw, artifacts[i], tag)
+				finalTags[i], retrievers[i], errs[i] = buildArtifact(ctx, cw, artifacts[i], tag)
 			}
 
 			cw.Close()
@@ -101,6 +102,7 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 		built = append(built, Artifact{
 			ImageName: artifact.ImageName,
 			Tag:       finalTags[i],
+			Config:    retrievers[i],
 		})
 	}
 

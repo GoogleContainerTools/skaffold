@@ -183,6 +183,36 @@ func TestGuessRuntime(t *testing.T) {
 			result:      JVM,
 		},
 		{
+			description: "entrypoint java",
+			source:      imageConfiguration{entrypoint: []string{"java", "-jar", "foo.jar"}},
+			result:      JVM,
+		},
+		{
+			description: "entrypoint /usr/bin/java",
+			source:      imageConfiguration{entrypoint: []string{"/usr/bin/java", "-jar", "foo.jar"}},
+			result:      JVM,
+		},
+		{
+			description: "no entrypoint, args java",
+			source:      imageConfiguration{arguments: []string{"java", "-jar", "foo.jar"}},
+			result:      JVM,
+		},
+		{
+			description: "no entrypoint, arguments /usr/bin/java",
+			source:      imageConfiguration{arguments: []string{"/usr/bin/java", "-jar", "foo.jar"}},
+			result:      JVM,
+		},
+		{
+			description: "other entrypoint, arguments /usr/bin/java",
+			source:      imageConfiguration{entrypoint: []string{"/bin/sh"}, arguments: []string{"/usr/bin/java", "-jar", "foo.jar"}},
+			result:      UNKNOWN,
+		},
+		{
+			description: "entrypoint /bin/sh",
+			source:      imageConfiguration{entrypoint: []string{"/bin/sh"}},
+			result:      UNKNOWN,
+		},
+		{
 			description: "nothing",
 			source:      imageConfiguration{},
 			result:      UNKNOWN,

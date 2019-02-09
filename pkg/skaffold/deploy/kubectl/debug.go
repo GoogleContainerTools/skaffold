@@ -17,6 +17,7 @@ limitations under the License.
 package kubectl
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 
@@ -145,9 +146,20 @@ type imageConfiguration struct {
 }
 
 func retrieveImageConfiguration(image string, artifact build.Artifact) imageConfiguration {
-	// TODO: obtain the built image configuration; note that the build artifact's
-	// name not actually correspond to the image name (for example, when built to the local docker daemon)
-	return imageConfiguration{env: map[string]string{"JAVA_VERSION": "8"}}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	config, err := artifact.Config(ctx)
+	if err != nil {
+		logrus.Errorf("unable to retrieve image configuration for %q: %v", image, err)
+		return imageConfiguration{}
+	}
+	return imageConfiguration{
+		env:        envAsMap(config.Env),
+		entrypoint: config.Entrypoint,
+		arguments:  config.Cmd,
+		labels:     config.Labels,
+	}
 }
 
 func guessRuntime(config imageConfiguration) string {
@@ -155,6 +167,13 @@ func guessRuntime(config imageConfiguration) string {
 		return JVM
 	}
 	if _, found := config.env["JAVA_VERSION"]; found {
+		return JVM
+	}
+	if len(config.entrypoint) > 0 {
+		if config.entrypoint[0] == "java" || strings.HasSuffix(config.entrypoint[0], "/java") {
+			return JVM
+		}
+	} else if len(config.arguments) > 0 && (config.arguments[0] == "java" || strings.HasSuffix(config.arguments[0], "/java")) {
 		return JVM
 	}
 	return UNKNOWN

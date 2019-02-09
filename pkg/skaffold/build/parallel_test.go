@@ -39,8 +39,8 @@ func TestInParallel(t *testing.T) {
 	}{
 		{
 			description: "build succeeds",
-			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-				return fmt.Sprintf("%s@sha256:abac", tag), nil
+			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, ConfigurationRetriever, error) {
+				return fmt.Sprintf("%s@sha256:abac", tag), nil, nil
 			},
 			tags: tag.ImageTags{
 				"skaffold/image1": "skaffold/image1:v0.0.1",
@@ -54,8 +54,8 @@ func TestInParallel(t *testing.T) {
 		},
 		{
 			description: "build fails",
-			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-				return "", fmt.Errorf("build fails")
+			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, ConfigurationRetriever, error) {
+				return "", nil, fmt.Errorf("build fails")
 			},
 			tags: tag.ImageTags{
 				"skaffold/image1": "",

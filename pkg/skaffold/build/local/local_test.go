@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
+	"github.com/google/go-cmp/cmp"
 )
 
 type testAuthHelper struct{}
@@ -194,7 +195,15 @@ func TestLocalRun(t *testing.T) {
 
 			res, err := l.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
+			testutil.CheckError(t, test.shouldErr, err)
+
+			// this feels like a total hack
+			filter := func(p cmp.Path) bool {
+				return p.Last().String() == ".Config"
+			}
+			ignoreConfigField := cmp.Options{cmp.FilterPath(filter, cmp.Ignore())}
+
+			testutil.CheckEqual(t, ignoreConfigField, test.expected, res)
 			testutil.CheckDeepEqual(t, test.expectedWarnings, fakeWarner.Warnings)
 		})
 	}
