@@ -18,6 +18,7 @@ package tag
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
 // ChecksumTagger tags an image by the sha256 of the image tarball
@@ -31,5 +32,16 @@ func (c *ChecksumTagger) Labels() map[string]string {
 }
 
 func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
+	parsed, err := docker.ParseReference(imageName)
+	if err != nil {
+		return "", err
+	}
+
+	if parsed.Tag == "" {
+		// No supplied tag, so use "latest".
+		return imageName + ":latest", nil
+	}
+
+	// They already have a tag.
 	return imageName, nil
 }
