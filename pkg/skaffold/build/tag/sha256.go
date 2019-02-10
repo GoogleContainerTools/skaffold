@@ -17,16 +17,12 @@ limitations under the License.
 package tag
 
 import (
-	"regexp"
-	"strings"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
 // ChecksumTagger tags an image by the sha256 of the image tarball
 type ChecksumTagger struct{}
-
-var repoPortRe *regexp.Regexp
 
 // Labels are labels specific to the sha256 tagger.
 func (c *ChecksumTagger) Labels() map[string]string {
@@ -36,17 +32,16 @@ func (c *ChecksumTagger) Labels() map[string]string {
 }
 
 func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
-	// Strip repositories that have a port number.
-	if repoPortRe == nil {
-		repoPortRe = regexp.MustCompile("^[^/:]+:[^/:]+/")
-	}
-	noRepo := repoPortRe.ReplaceAllLiteralString(imageName, "")
-
-	if strings.Contains(noRepo, ":") {
-		// They have a tag, so use it.
-		return imageName, nil
+	parsed, err := docker.ParseReference(imageName)
+	if err != nil {
+		return "", err
 	}
 
-	// No supplied tag, so use skaffold.
-	return imageName + ":skaffold", nil
+	if parsed.Tag == "" {
+		// No supplied tag, so use "latest".
+		return imageName + ":latest", nil
+	}
+
+	// They already have a tag.
+	return imageName, nil
 }
