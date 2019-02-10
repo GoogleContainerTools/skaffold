@@ -21,7 +21,7 @@ import (
 	yamlpatch "github.com/krishicks/yaml-patch"
 )
 
-const Version string = "skaffold/v1beta4"
+const Version string = "skaffold/v1beta5"
 
 // NewSkaffoldPipeline creates a SkaffoldPipeline
 func NewSkaffoldPipeline() util.VersionedConfig {

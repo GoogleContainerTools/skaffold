@@ -43,7 +43,7 @@ deploy:
       valuesFiles:
       - values.yaml
 `
-	verityUpgrade(t, yaml, expected)
+	verifyUpgrade(t, yaml, expected)
 }
 
 func TestUpgrade_kanikoWithProfile(t *testing.T) {
@@ -92,10 +92,10 @@ profiles:
         manifests:
         - k8s-*
 `
-	verityUpgrade(t, yaml, expected)
+	verifyUpgrade(t, yaml, expected)
 }
 
-func verityUpgrade(t *testing.T, input, output string) {
+func verifyUpgrade(t *testing.T, input, output string) {
 	pipeline := NewSkaffoldPipeline()
 	err := yaml.UnmarshalStrict([]byte(input), pipeline)
 	testutil.CheckErrorAndDeepEqual(t, false, err, Version, pipeline.GetVersion())
