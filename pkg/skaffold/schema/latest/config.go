@@ -415,7 +415,7 @@ type Artifact struct {
 	Sync map[string]string `yaml:"sync,omitempty"`
 
 	ArtifactType  `yaml:",inline"`
-	WorkspaceHash string `yaml:",inline"`
+	WorkspaceHash string `yaml:"-,omitempty"`
 }
 
 // Profile is additional configuration that overrides default

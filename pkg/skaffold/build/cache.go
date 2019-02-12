@@ -48,7 +48,7 @@ type ImageDetails struct {
 	ID     string `yaml:"id,omitempty"`
 }
 
-// ArtifactCache is a map of [workspace hash : ImageDetails]
+// ArtifactCache is a map of [artifact dependencies hash : ImageDetails]
 type ArtifactCache map[string]ImageDetails
 
 // Cache holds any data necessary for accessing the cache
@@ -277,6 +277,9 @@ func (c *Cache) CacheArtifacts(ctx context.Context, artifacts []*latest.Artifact
 
 // Retag retags newly built images in the format [imageName:workspaceHash] and pushes them if using a remote cluster
 func (c *Cache) Retag(ctx context.Context, out io.Writer, artifactsToBuild []*latest.Artifact, buildArtifacts []Artifact) {
+	if !c.useCache {
+		return
+	}
 	tags := map[string]string{}
 	for _, t := range buildArtifacts {
 		tags[t.ImageName] = t.Tag
