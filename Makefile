@@ -84,10 +84,6 @@ test:
 install: $(GO_FILES) $(BUILD_DIR)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go install -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -tags $(GO_BUILD_TAGS) $(BUILD_PACKAGE)
 
-.PHONY: plugins
-plugins: 
-	go build -o ~/go/bin/docker-skaffold ./pkg/skaffold/plugin/builders/docker
-
 .PHONY: integration
 integration: install $(BUILD_DIR)/$(PROJECT)
 	go test -v -tags integration $(REPOPATH)/integration -timeout 10m --remote=$(REMOTE_INTEGRATION)

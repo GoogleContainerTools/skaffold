@@ -14,34 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package docker
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
 	plugin "github.com/hashicorp/go-plugin"
 )
 
-func main() {
+// Execute an image build with docker
+func Execute() error {
 	// pluginMap is the map of plugins we can dispense.
 	var pluginMap = map[string]plugin.Plugin{
-		"docker-skaffold": &shared.BuilderPlugin{Impl: docker.NewBuilder()},
+		"docker": &shared.BuilderPlugin{Impl: docker.NewBuilder()},
 	}
 
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		plugin.Serve(&plugin.ServeConfig{
-			HandshakeConfig: shared.Handshake,
-			Plugins:         pluginMap,
-		})
-	}()
-
-	<-sigs
-	plugin.CleanupClients()
+	plugin.Serve(&plugin.ServeConfig{
+		HandshakeConfig: shared.Handshake,
+		Plugins:         pluginMap,
+	})
+	return nil
 }

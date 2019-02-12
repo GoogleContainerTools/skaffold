@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -53,6 +54,13 @@ func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions) (sh
 		if _, ok := builders[p]; ok {
 			continue
 		}
+		cmd := exec.Command(p)
+		if _, ok := SkaffoldCorePluginExecutionMap[p]; ok {
+			cmd = exec.Command("skaffold")
+			cmd.Env = []string{fmt.Sprintf("%s=%s", constants.SkaffoldPluginKey, constants.SkaffoldPluginValue),
+				fmt.Sprintf("%s=%s", constants.SkaffoldPluginName, p)}
+		}
+
 		client := plugin.NewClient(&plugin.ClientConfig{
 			Stderr:          os.Stderr,
 			SyncStderr:      os.Stderr,
@@ -60,7 +68,7 @@ func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions) (sh
 			Managed:         true,
 			HandshakeConfig: shared.Handshake,
 			Plugins:         shared.PluginMap,
-			Cmd:             exec.Command(p),
+			Cmd:             cmd,
 		})
 
 		// Connect via RPC

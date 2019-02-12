@@ -1,15 +1,15 @@
-apiVersion: skaffold/v1beta4
+apiVersion: skaffold/v1beta5
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/leeroy-web
     context: ./leeroy-web/
     plugin:
-      name: docker-skaffold
+      name: docker
   - image: gcr.io/k8s-skaffold/leeroy-app
     context: ./leeroy-app/
     plugin: 
-      name: docker-skaffold
+      name: docker
   executionEnvironment:
     name: googlecloudbuild
     properties:

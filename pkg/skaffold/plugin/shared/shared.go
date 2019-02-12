@@ -29,6 +29,7 @@ var Handshake = plugin.HandshakeConfig{
 	MagicCookieValue: "hello",
 }
 
+// PluginMap is a map of all accepted plugins
 var PluginMap = map[string]plugin.Plugin{
-	"docker-skaffold": &BuilderPlugin{},
+	"docker": &BuilderPlugin{},
 }
