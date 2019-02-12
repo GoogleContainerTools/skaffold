@@ -420,7 +420,7 @@ type HelmRelease struct {
 	// Overrides are key-value pairs.
 	// If present, Skaffold will build a Helm `values` file that overrides
 	// the original and use it to call Helm CLI (`--f` flag).
-	Overrides map[string]interface{} `yaml:"overrides,omitempty"`
+	Overrides util.HelmOverrides `yaml:"overrides,omitempty"`
 
 	// Packaged parameters for packaging helm chart (`helm package`).
 	Packaged *HelmPackaged `yaml:"packaged,omitempty"`
