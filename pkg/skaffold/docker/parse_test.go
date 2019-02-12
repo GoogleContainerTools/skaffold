@@ -80,6 +80,13 @@ WORKDIR ${foo}   # WORKDIR /bar
 COPY $foo /quux # COPY bar /quux
 `
 
+const multiEnvTest = `
+FROM busybox
+ENV baz=bar \
+    foo=docker
+COPY $foo/nginx.conf . # COPY docker/nginx.conf .
+`
+
 const copyDirectory = `
 FROM nginx
 ADD . /etc/
@@ -189,15 +196,6 @@ FROM jboss/wildfly:14.0.1.Final
 ADD ./file /etc/file
 `
 
-const targets = `
-FROM scratch as target1
-ADD ./file /etc/file
-FROM target1 as target2
-ADD ./bar /etc/bar
-FROM target2
-ADD ./server.go /etc/server.go
-`
-
 type fakeImageFetcher struct {
 	fetched []string
 }
@@ -228,40 +226,12 @@ func TestGetDependencies(t *testing.T) {
 		workspace   string
 		ignore      string
 		buildArgs   map[string]*string
-		target      string
 
 		expected  []string
 		fetched   []string
 		badReader bool
 		shouldErr bool
 	}{
-		{
-			description: "no target",
-			dockerfile:  targets,
-			workspace:   ".",
-			expected:    []string{"Dockerfile", "bar", "file", "server.go"},
-		},
-		{
-			description: "target",
-			dockerfile:  targets,
-			workspace:   ".",
-			target:      "target1",
-			expected:    []string{"Dockerfile", "file"},
-		},
-		{
-			description: "transitive target",
-			dockerfile:  targets,
-			workspace:   ".",
-			target:      "target2",
-			expected:    []string{"Dockerfile", "bar", "file"},
-		},
-		{
-			description: "unknown target",
-			dockerfile:  targets,
-			workspace:   ".",
-			target:      "target3",
-			shouldErr:   true,
-		},
 		{
 			description: "copy dependency",
 			dockerfile:  copyServerGo,
@@ -328,6 +298,13 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  envTest,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "bar"},
+			fetched:     []string{"busybox"},
+		},
+		{
+			description: "multiple env test",
+			dockerfile:  multiEnvTest,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", filepath.Join("docker", "nginx.conf")},
 			fetched:     []string{"busybox"},
 		},
 		{
@@ -537,7 +514,6 @@ func TestGetDependencies(t *testing.T) {
 			deps, err := GetDependencies(context.Background(), workspace, &latest.DockerArtifact{
 				DockerfilePath: "Dockerfile",
 				BuildArgs:      test.buildArgs,
-				Target:         test.target,
 			})
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)

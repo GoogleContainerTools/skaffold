@@ -22,6 +22,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
@@ -33,9 +34,10 @@ import (
 )
 
 var (
-	opts      = &config.SkaffoldOptions{}
-	v         string
-	overwrite bool
+	opts         = &config.SkaffoldOptions{}
+	v            string
+	defaultColor int
+	overwrite    bool
 
 	updateMsg = make(chan string)
 )
@@ -57,6 +59,8 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 				logrus.Infof("update check failed: %s", err)
 			}
 		}()
+
+		color.OverwriteDefault(color.Color(defaultColor))
 		return nil
 	}
 
@@ -82,6 +86,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdDiagnose(out))
 
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
+	rootCmd.PersistentFlags().IntVar(&defaultColor, "color", int(color.Default), "Specify the default output color in ANSI escape codes")
 
 	setFlagsFromEnvVariables(rootCmd.Commands())
 
