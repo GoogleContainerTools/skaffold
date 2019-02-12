@@ -25,7 +25,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/environments/gcb"
-	pluginutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -59,28 +58,18 @@ func (b *Builder) Labels() map[string]string {
 // Build is responsible for building artifacts in their respective execution environments
 // The builder plugin is also responsible for setting any necessary defaults
 func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	m := pluginutil.GroupArtifactsByEnvironment(artifacts, b.env)
-	var builds []build.Artifact
-
-	for env, arts := range m {
-		switch env.Name {
-		case constants.GoogleCloudBuild:
-			build, err := b.googleCloudBuild(ctx, out, tags, arts, env)
-			if err != nil {
-				return nil, err
-			}
-			builds = append(builds, build...)
-		default:
-			return nil, errors.Errorf("%s is not a supported environment for builder docker", env.Name)
-		}
+	switch b.env.Name {
+	case constants.GoogleCloudBuild:
+		return b.googleCloudBuild(ctx, out, tags, artifacts)
+	default:
+		return nil, errors.Errorf("%s is not a supported environment for builder docker", b.env.Name)
 	}
-	return builds, nil
 }
 
 // googleCloudBuild sets any necessary defaults and then builds artifacts with docker in GCB
-func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, env *latest.ExecutionEnvironment) ([]build.Artifact, error) {
+func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	var g *latest.GoogleCloudBuild
-	if err := util.CloneThroughJSON(env.Properties, &g); err != nil {
+	if err := util.CloneThroughJSON(b.env.Properties, &g); err != nil {
 		return nil, errors.Wrap(err, "converting execution environment to googlecloudbuild struct")
 	}
 	defaults.SetDefaultCloudBuildDockerImage(g)

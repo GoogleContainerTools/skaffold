@@ -437,8 +437,6 @@ type Artifact struct {
 
 	// The plugin used to build this artifact
 	BuilderPlugin *BuilderPlugin `yaml:"plugin,omitempty"`
-	// The environment this artifact should be built in
-	ExecutionEnvironment *ExecutionEnvironment `yaml:"executionEnvironment,omitempty"`
 }
 
 // Profile is additional configuration that overrides default
