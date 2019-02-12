@@ -130,7 +130,7 @@ func intersect(context string, syncMap map[string]string, files []string) (map[s
 	return ret, nil
 }
 
-func Perform(ctx context.Context, image string, files map[string]string, cmdFn func(context.Context, v1.Pod, v1.Container, string, string) []*exec.Cmd, namespaces []string) error {
+func Perform(ctx context.Context, image string, files map[string]string, cmdFn func(context.Context, v1.Pod, v1.Container, map[string]string) []*exec.Cmd, namespaces []string) error {
 	if len(files) == 0 {
 		return nil
 	}
@@ -146,28 +146,19 @@ func Perform(ctx context.Context, image string, files map[string]string, cmdFn f
 			return errors.Wrap(err, "getting pods for namespace "+ns)
 		}
 
-		synced := map[string]bool{}
-
 		for _, p := range pods.Items {
 			for _, c := range p.Spec.Containers {
 				if c.Image != image {
 					continue
 				}
 
-				for src, dst := range files {
-					cmds := cmdFn(ctx, p, c, src, dst)
-					for _, cmd := range cmds {
-						if err := util.RunCmd(cmd); err != nil {
-							return err
-						}
+				cmds := cmdFn(ctx, p, c, files)
+				for _, cmd := range cmds {
+					if err := util.RunCmd(cmd); err != nil {
+						return err
 					}
-					synced[src] = true
 				}
 			}
-		}
-
-		if len(synced) != len(files) {
-			return errors.New("couldn't sync all the files in " + ns)
 		}
 	}
 
