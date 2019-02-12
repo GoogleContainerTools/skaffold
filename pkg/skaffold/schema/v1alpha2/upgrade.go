@@ -37,11 +37,15 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	if err := convert(config.Deploy, &newDeploy); err != nil {
 		return nil, errors.Wrap(err, "converting deploy config")
 	}
+
 	// if the helm deploy config was set, then convert ValueFilePath to ValuesFiles
+	// and manually set the overrides
 	if oldHelmDeploy := config.Deploy.DeployType.HelmDeploy; oldHelmDeploy != nil {
 		for i, oldHelmRelease := range oldHelmDeploy.Releases {
+			newHelmRelease := &newDeploy.DeployType.HelmDeploy.Releases[i]
+			newHelmRelease.Overrides = oldHelmRelease.Overrides
 			if oldHelmRelease.ValuesFilePath != "" {
-				newDeploy.DeployType.HelmDeploy.Releases[i].ValuesFiles = []string{oldHelmRelease.ValuesFilePath}
+				newHelmRelease.ValuesFiles = []string{oldHelmRelease.ValuesFilePath}
 			}
 		}
 	}

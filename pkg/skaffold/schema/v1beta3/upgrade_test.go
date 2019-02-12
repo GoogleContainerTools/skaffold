@@ -94,6 +94,32 @@ profiles:
 	verifyUpgrade(t, yaml, expected)
 }
 
+func TestUpgrade_helmReleaseOverrides(t *testing.T) {
+	yaml := `apiVersion: skaffold/v1beta3
+kind: Config
+deploy:
+  helm:
+    releases:
+    - name: test release
+      overrides:
+        global:
+          localstack:
+            enabled: true
+`
+	expected := `apiVersion: skaffold/v1beta4
+kind: Config
+deploy:
+  helm:
+    releases:
+    - name: test release
+      overrides:
+        global:
+          localstack:
+            enabled: true
+`
+	verifyUpgrade(t, yaml, expected)
+}
+
 func verifyUpgrade(t *testing.T, input, output string) {
 	pipeline := NewSkaffoldPipeline()
 	err := yaml.UnmarshalStrict([]byte(input), pipeline)

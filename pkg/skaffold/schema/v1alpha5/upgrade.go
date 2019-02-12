@@ -44,6 +44,13 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 		return nil, errors.Wrap(err, "converting deploy config")
 	}
 
+	// if the helm deploy config was set, then manually set the overrides
+	if oldHelmDeploy := config.Deploy.DeployType.HelmDeploy; oldHelmDeploy != nil {
+		for i, oldHelmRelease := range oldHelmDeploy.Releases {
+			newDeploy.DeployType.HelmDeploy.Releases[i].Overrides = oldHelmRelease.Overrides
+		}
+	}
+
 	// convert Profiles (should be the same)
 	var newProfiles []next.Profile
 	if config.Profiles != nil {

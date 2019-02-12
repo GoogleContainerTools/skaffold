@@ -164,7 +164,7 @@ type HelmRelease struct {
 	SetValueTemplates map[string]string      `yaml:"setValueTemplates"`
 	Wait              bool                   `yaml:"wait"`
 	RecreatePods      bool                   `yaml:"recreatePods"`
-	Overrides         map[string]interface{} `yaml:"overrides"`
+	Overrides         map[string]interface{} `yaml:"overrides" json:"-"` // Overrides cannot be serialized to json
 	Packaged          *HelmPackaged          `yaml:"packaged"`
 	ImageStrategy     HelmImageStrategy      `yaml:"imageStrategy"`
 }
