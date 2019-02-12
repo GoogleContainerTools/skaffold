@@ -313,9 +313,50 @@ func TestFix(t *testing.T) {
 	runCmd := exec.Command("skaffold", "run", "--namespace", ns.Name, "-f", "-")
 	runCmd.Dir = "testdata/fix"
 	runCmd.Stdin = bytes.NewReader(out)
-	err = util.RunCmd(runCmd)
-	if err != nil {
+
+	if err := util.RunCmd(runCmd); err != nil {
 		t.Fatalf("testing error: %v", err)
+	}
+}
+
+func TestBuild(t *testing.T) {
+	tests := []struct {
+		description string
+		dir         string
+		args        []string
+	}{
+		{
+			description: "docker build",
+			dir:         "testdata/build",
+		}, {
+			description: "git tagger",
+			dir:         "testdata/tagPolicy",
+			args:        []string{"-p", "gitCommit"},
+		}, {
+			description: "sha256 tagger",
+			dir:         "testdata/tagPolicy",
+			args:        []string{"-p", "sha256"},
+		}, {
+			description: "dateTime tagger",
+			dir:         "testdata/tagPolicy",
+			args:        []string{"-p", "dateTime"},
+		}, {
+			description: "envTemplate tagger",
+			dir:         "testdata/tagPolicy",
+			args:        []string{"-p", "envTemplate"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			buildCmd := exec.Command("skaffold", append([]string{"build"}, test.args...)...)
+			buildCmd.Dir = test.dir
+
+			out, err := util.RunCmdOut(buildCmd)
+			if err != nil {
+				t.Fatalf("testing error: %v, %s", err, out)
+			}
+		})
 	}
 }
 

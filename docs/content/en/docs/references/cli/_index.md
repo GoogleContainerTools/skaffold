@@ -76,6 +76,7 @@ Flags:
       --toot                         Emit a terminal beep after the deploy is complete
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
@@ -102,6 +103,7 @@ Usage:
   skaffold completion SHELL [flags]
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
@@ -123,6 +125,7 @@ Available Commands:
   unset       Unset a value in the global Skaffold config
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 Use "skaffold config [command] --help" for more information about a command.
@@ -150,6 +153,7 @@ Flags:
       --toot                  Emit a terminal beep after the deploy is complete
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
@@ -185,6 +189,7 @@ Flags:
       --toot                  Emit a terminal beep after the deploy is complete
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
@@ -228,6 +233,7 @@ Flags:
   -i, --watch-poll-interval int   Interval (in ms) between two checks for file changes (default 1000)
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
@@ -262,6 +268,7 @@ Flags:
   -f, --filename string   Filename or URL to the pipeline file (default "skaffold.yaml")
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
@@ -283,6 +290,7 @@ Flags:
       --overwrite         Overwrite original config with fixed config
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
@@ -309,6 +317,7 @@ Flags:
       --skip-build             Skip generating build artifacts in Skaffold config
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
@@ -342,6 +351,7 @@ Flags:
       --toot                  Emit a terminal beep after the deploy is complete
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
@@ -372,6 +382,7 @@ Flags:
                                      )
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 

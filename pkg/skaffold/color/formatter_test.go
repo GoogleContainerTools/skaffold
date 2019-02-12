@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"io"
 	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func compareText(t *testing.T, expected, actual string, expectedN int, actualN int, err error) {
@@ -84,4 +86,10 @@ func TestFprintfNoTTY(t *testing.T) {
 	n, err := Green.Fprintf(&b, "It's been %d %s", 1, "week")
 	expected := "It's been 1 week"
 	compareText(t, expected, b.String(), 16, n, err)
+}
+
+func TestOverwriteDefault(t *testing.T) {
+	testutil.CheckDeepEqual(t, Blue, Default)
+	OverwriteDefault(Red)
+	testutil.CheckDeepEqual(t, Red, Default)
 }

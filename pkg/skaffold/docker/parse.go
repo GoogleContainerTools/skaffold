@@ -179,7 +179,10 @@ func copiedFiles(nodes []*parser.Node) ([][]string, error) {
 				copied = append(copied, files)
 			}
 		case command.Env:
-			envs[node.Next.Value] = node.Next.Next.Value
+			// one env command may define multiple variables
+			for node := node.Next; node != nil && node.Next != nil; node = node.Next.Next {
+				envs[node.Value] = node.Next.Value
+			}
 		}
 	}
 
