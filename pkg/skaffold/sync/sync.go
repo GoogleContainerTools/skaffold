@@ -158,7 +158,7 @@ func Perform(ctx context.Context, image string, files map[string]string, cmdFn f
 					if err := util.RunCmd(cmd); err != nil {
 						return err
 					}
-					numSynced += 1
+					numSynced++
 				}
 			}
 		}

@@ -349,7 +349,7 @@ func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files map[string]str
 	i := 0
 	for src, dst := range files {
 		cmds[i] = exec.CommandContext(ctx, "copy", src, dst)
-		i += 1
+		i++
 	}
 	return cmds
 }

@@ -32,8 +32,6 @@ type Syncer struct {
 	namespaces []string
 }
 
-var syncedDirs = map[string]struct{}{}
-
 func NewSyncer(namespaces []string) *Syncer {
 	return &Syncer{
 		namespaces: namespaces,
