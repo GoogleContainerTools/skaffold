@@ -288,8 +288,8 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	if err != nil {
 		return nil, errors.Wrap(err, "build failed")
 	}
+	artifactCache.Retag(ctx, out, artifactsToBuild, bRes)
 	bRes = append(bRes, res...)
-
 	if err := artifactCache.CacheArtifacts(ctx, artifacts, bRes); err != nil {
 		logrus.Warnf("error caching artifacts: %v", err)
 	}

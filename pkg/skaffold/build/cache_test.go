@@ -26,10 +26,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/docker/docker/api/types"
 	yaml "gopkg.in/yaml.v2"
 )
 
-var defaultArtifactCache = ArtifactCache{"key": "hash"}
+var defaultArtifactCache = ArtifactCache{"hash": ImageDetails{
+	Digest: "digest",
+	ID:     "id",
+}}
 
 func mockHashForArtifact(hashes map[string]string) func(context.Context, *latest.Artifact) (string, error) {
 	return func(ctx context.Context, a *latest.Artifact) (string, error) {
@@ -112,40 +116,55 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 		{
 			name:              "no artifacts in cache",
 			cache:             &Cache{useCache: true},
-			hashes:            map[string]string{"image1": "hash"},
+			hashes:            map[string]string{"image1": "hash", "image2": "hash2"},
 			artifacts:         []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			expectedArtifacts: []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
+			expectedArtifacts: []*latest.Artifact{{ImageName: "image1", WorkspaceHash: "hash"}, {ImageName: "image2", WorkspaceHash: "hash2"}},
 		},
 		{
 			name: "one artifact in cache",
 			cache: &Cache{
-				useCache:      true,
-				artifactCache: ArtifactCache{"workspace-hash": "sha256@digest"},
+				useCache: true,
+				artifactCache: ArtifactCache{"workspace-hash": ImageDetails{
+					Digest: "sha256@digest",
+				}},
 			},
-			hashes: map[string]string{"image1": "workspace-hash"},
+			hashes: map[string]string{"image1": "workspace-hash", "image2": "workspace-hash-2"},
 			api: testutil.FakeAPIClient{
-				TagToImageID: map[string]string{"image1:digest": "image1:tag"},
+				TagToImageID: map[string]string{"image1:workspace-hash": "image1:tag"},
+				ImageSummaries: []types.ImageSummary{
+					{
+						RepoDigests: []string{"sha256@digest"},
+						RepoTags:    []string{"image1:workspace-hash"},
+					},
+				},
 			},
 			artifacts:            []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			expectedBuildResults: []Artifact{{ImageName: "image1", Tag: "image1:digest"}},
-			expectedArtifacts:    []*latest.Artifact{{ImageName: "image2"}},
+			expectedBuildResults: []Artifact{{ImageName: "image1", Tag: "image1:workspace-hash"}},
+			expectedArtifacts:    []*latest.Artifact{{ImageName: "image2", WorkspaceHash: "workspace-hash-2"}},
 		},
 		{
 			name: "both artifacts in cache, but only one exists locally",
 			cache: &Cache{
 				useCache: true,
 				artifactCache: ArtifactCache{
-					"hash":  "sha256@digest1",
-					"hash2": "sha256@digest2",
+					"hash":  ImageDetails{Digest: "sha256@digest1"},
+					"hash2": ImageDetails{Digest: "sha256@digest2"},
 				},
 			},
 			api: testutil.FakeAPIClient{
-				TagToImageID: map[string]string{"image1:digest1": "image1:tag"},
+				TagToImageID: map[string]string{"image1:hash": "image1:tag"},
+				ImageSummaries: []types.ImageSummary{
+					{
+						ID:          "id",
+						RepoDigests: []string{"sha256@digest1"},
+						RepoTags:    []string{"image1:hash"},
+					},
+				},
 			},
 			hashes:               map[string]string{"image1": "hash", "image2": "hash2"},
 			artifacts:            []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			expectedArtifacts:    []*latest.Artifact{{ImageName: "image2"}},
-			expectedBuildResults: []Artifact{{ImageName: "image1", Tag: "image1:digest1"}},
+			expectedArtifacts:    []*latest.Artifact{{ImageName: "image2", WorkspaceHash: "hash2"}},
+			expectedBuildResults: []Artifact{{ImageName: "image1", Tag: "image1:hash"}},
 		},
 	}
 
@@ -155,6 +174,14 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 			hashForArtifact = mockHashForArtifact(test.hashes)
 			defer func() {
 				hashForArtifact = originalHash
+			}()
+
+			originalLocal := localCluster
+			localCluster = func() (bool, error) {
+				return true, nil
+			}
+			defer func() {
+				localCluster = originalLocal
 			}()
 
 			test.cache.client = docker.NewLocalDaemon(&test.api, nil)

@@ -381,3 +381,71 @@ func TestRepoDigest(t *testing.T) {
 		})
 	}
 }
+func TestImageFromID(t *testing.T) {
+	tests := []struct {
+		name           string
+		id             string
+		imageSummaries []types.ImageSummary
+		expected       string
+	}{
+		{
+			name: "one image id exists",
+			id:   "imageid",
+			imageSummaries: []types.ImageSummary{
+				{
+					RepoTags: []string{"image1", "image2"},
+					ID:       "something",
+				},
+				{
+					RepoTags: []string{"image3"},
+					ID:       "imageid",
+				},
+			},
+			expected: "image3",
+		},
+		{
+			name: "multiple image ids exist",
+			id:   "imageid",
+			imageSummaries: []types.ImageSummary{
+				{
+					RepoTags: []string{"image1", "image2"},
+					ID:       "something",
+				},
+				{
+					RepoTags: []string{"image3", "image4"},
+					ID:       "imageid",
+				},
+			},
+			expected: "image3",
+		},
+		{
+			name: "no image id exists",
+			id:   "imageid",
+			imageSummaries: []types.ImageSummary{
+				{
+					RepoTags: []string{"image1", "image2"},
+					ID:       "something",
+				},
+				{
+					RepoTags: []string{"image3"},
+					ID:       "somethingelse",
+				},
+			},
+			expected: "",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			api := &testutil.FakeAPIClient{
+				ImageSummaries: test.imageSummaries,
+			}
+
+			localDocker := &localDaemon{
+				apiClient: api,
+			}
+
+			actual, err := localDocker.ImageFromID(context.Background(), test.id)
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
+		})
+	}
+}

@@ -28,6 +28,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -41,8 +42,14 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-// ArtifactCache is a map of [workspace hash : image digest]
-type ArtifactCache map[string]string
+// ImageDetails holds the Digest and ID of an image
+type ImageDetails struct {
+	Digest string `yaml:"digest,omitempty"`
+	ID     string `yaml:"id,omitempty"`
+}
+
+// ArtifactCache is a map of [workspace hash : ImageDetails]
+type ArtifactCache map[string]ImageDetails
 
 // Cache holds any data necessary for accessing the cache
 type Cache struct {
@@ -55,6 +62,7 @@ type Cache struct {
 var (
 	// For testing
 	hashForArtifact = getHashForArtifact
+	localCluster    = config.GetLocalCluster
 )
 
 // NewCache returns the current state of the cache
@@ -139,19 +147,22 @@ func (c *Cache) retrieveCachedArtifact(ctx context.Context, out io.Writer, a *la
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting hash for artifact %s", a.ImageName)
 	}
-	imageDigest, cacheHit := c.artifactCache[hash]
+	a.WorkspaceHash = hash
+	imageDetails, cacheHit := c.artifactCache[hash]
 	if !cacheHit {
 		return nil, nil
 	}
-	newTag := fmt.Sprintf("%s:%s", a.ImageName, imageDigest[7:])
-	// Check if image exists remotely
-	existsRemotely := imageExistsRemotely(newTag, imageDigest)
+	newTag := fmt.Sprintf("%s:%s", a.ImageName, hash)
+	// Check if tagged image exists remotely with the same digest
+	existsRemotely := imageExistsRemotely(newTag, imageDetails.Digest)
+	// Check if we are using a local cluster
+	local, _ := localCluster()
 
 	// See if this image exists in the local daemon
 	if c.client.ImageExists(ctx, newTag) {
 		color.Yellow.Fprintf(out, "Found %s locally...\n", a.ImageName)
 		// Push if the image doesn't exist remotely
-		if !existsRemotely {
+		if !existsRemotely && !local {
 			color.Yellow.Fprintf(out, "Pushing %s since it doesn't exist remotely...\n", a.ImageName)
 			if _, err := c.client.Push(ctx, out, newTag); err != nil {
 				return nil, errors.Wrapf(err, "pushing %s", newTag)
@@ -163,14 +174,13 @@ func (c *Cache) retrieveCachedArtifact(ctx context.Context, out io.Writer, a *la
 			Tag:       newTag,
 		}, nil
 	}
-
 	// Check for a local image with the same digest as the image we want to build
-	prebuiltImage, err := c.client.TaggedImageFromDigest(ctx, imageDigest)
+	prebuiltImage, err := c.retrievePrebuiltImage(ctx, imageDetails)
 	if err != nil {
-		return nil, errors.Wrapf(err, "getting image from digest %s", imageDigest)
+		return nil, errors.Wrapf(err, "getting prebuilt image")
 	}
 	if prebuiltImage == "" {
-		return nil, errors.Wrapf(err, "no prebuilt image")
+		return nil, errors.New("no prebuilt image")
 	}
 	color.Yellow.Fprintf(out, "Found %s locally, retagging and pushing...\n", a.ImageName)
 	// Retag the image
@@ -189,7 +199,30 @@ func (c *Cache) retrieveCachedArtifact(ctx context.Context, out io.Writer, a *la
 	}, nil
 }
 
+func (c *Cache) retrievePrebuiltImage(ctx context.Context, details ImageDetails) (string, error) {
+	// first, search for an image with the same image ID
+	img, err := c.client.ImageFromID(ctx, details.ID)
+	if err != nil {
+		logrus.Debugf("error getting tagged image with id %s, checking digest: %v", details.ID, err)
+	}
+	if err == nil && img != "" {
+		return img, nil
+	}
+	// else, search for an image with the same digest
+	img, err = c.client.TaggedImageFromDigest(ctx, details.Digest)
+	if err != nil {
+		return "", errors.Wrapf(err, "getting image from digest %s", details.Digest)
+	}
+	if img == "" {
+		return "", errors.New("no prebuilt image")
+	}
+	return img, nil
+}
+
 func imageExistsRemotely(image, digest string) bool {
+	if digest == "" {
+		return false
+	}
 	ref, err := name.ParseReference(image, name.WeakValidation)
 	if err != nil {
 		return false
@@ -221,16 +254,50 @@ func (c *Cache) CacheArtifacts(ctx context.Context, artifacts []*latest.Artifact
 		}
 		digest, err := c.retrieveImageDigest(ctx, tags[a.ImageName])
 		if err != nil {
-			logrus.Debugf("error getting id for %s: %v, skipping caching", tags[a.ImageName], err)
-			continue
+			logrus.Debugf("error getting id for %s: %v, will try to get image id (expected with a local cluster)", tags[a.ImageName], err)
 		}
 		if digest == "" {
-			logrus.Debugf("skipping caching %s because image id is empty", tags[a.ImageName])
+			logrus.Debugf("couldn't get image digest for %s, will try to cache just image id (expected with a local cluster)", tags[a.ImageName])
+		}
+		id, err := c.client.ImageID(ctx, tags[a.ImageName])
+		if err != nil {
+			logrus.Debugf("couldn't get image id for %s", tags[a.ImageName])
+		}
+		if id == "" && digest == "" {
+			logrus.Debugf("both image id and digest are empty for %s, skipping caching", tags[a.ImageName])
 			continue
 		}
-		c.artifactCache[hash] = digest
+		c.artifactCache[hash] = ImageDetails{
+			Digest: digest,
+			ID:     id,
+		}
 	}
 	return c.save()
+}
+
+// Retag retags newly built images in the format [imageName:workspaceHash] and pushes them if using a remote cluster
+func (c *Cache) Retag(ctx context.Context, out io.Writer, artifactsToBuild []*latest.Artifact, buildArtifacts []Artifact) {
+	tags := map[string]string{}
+	for _, t := range buildArtifacts {
+		tags[t.ImageName] = t.Tag
+	}
+	local, _ := localCluster()
+	color.Default.Fprintln(out, "Retagging cached images...")
+	for _, artifact := range artifactsToBuild {
+		newTag := fmt.Sprintf("%s:%s", artifact.ImageName, artifact.WorkspaceHash)
+		// Retag the image
+		if err := c.client.Tag(ctx, tags[artifact.ImageName], newTag); err != nil {
+			logrus.Warnf("error retagging %s as %s, caching for this image may not work: %v", tags[artifact.ImageName], newTag, err)
+			continue
+		}
+		if local {
+			continue
+		}
+		// Push the retagged image
+		if _, err := c.client.Push(ctx, out, newTag); err != nil {
+			logrus.Warnf("error pushing %s, caching for this image may not work: %v", newTag, err)
+		}
+	}
 }
 
 // Check local daemon for img digest

@@ -51,6 +51,7 @@ type LocalDaemon interface {
 	ImageID(ctx context.Context, ref string) (string, error)
 	RepoDigest(ctx context.Context, ref string) (string, error)
 	TaggedImageFromDigest(ctx context.Context, id string) (string, error)
+	ImageFromID(ctx context.Context, id string) (string, error)
 	ImageExists(ctx context.Context, ref string) bool
 }
 
@@ -286,6 +287,23 @@ func (l *localDaemon) ImageID(ctx context.Context, ref string) (string, error) {
 	}
 
 	return image.ID, nil
+}
+
+// ImageFromID returns the name of an image with the given id
+func (l *localDaemon) ImageFromID(ctx context.Context, id string) (string, error) {
+	resp, err := l.apiClient.ImageList(ctx, types.ImageListOptions{})
+	if err != nil {
+		return "", errors.Wrap(err, "listing images")
+	}
+	for _, r := range resp {
+		if r.ID == id {
+			if len(r.RepoTags) == 0 {
+				return "", nil
+			}
+			return r.RepoTags[0], nil
+		}
+	}
+	return "", nil
 }
 
 // RepoDigest returns a repo digest for the given ref
