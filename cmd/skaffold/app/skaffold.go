@@ -21,13 +21,13 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/plugin"
-	"github.com/pkg/errors"
 )
 
 func Run() error {
-	if err := plugin.ExecutePlugin(); err != nil {
-		return errors.Wrap(err, "executing plugin")
+	if plugin.ShouldExecuteCorePlugin() {
+		return plugin.Execute()
 	}
+
 	c := cmd.NewSkaffoldCommand(os.Stdout, os.Stderr)
 	return c.Execute()
 }

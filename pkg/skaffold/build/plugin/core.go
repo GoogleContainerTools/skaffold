@@ -31,19 +31,25 @@ var SkaffoldCorePluginExecutionMap = map[string]func() error{
 	"docker": docker.Execute,
 }
 
-// ExecutePlugin executes a plugin if the env variables are set correctly
-func ExecutePlugin() error {
+// ShouldExecuteCorePlugin returns true if env variables for plugins are set properly
+// and the plugin passed in is a core plugin
+func ShouldExecuteCorePlugin() bool {
 	if os.Getenv(constants.SkaffoldPluginKey) != constants.SkaffoldPluginValue {
-		return nil
+		return false
 	}
 	plugin := os.Getenv(constants.SkaffoldPluginName)
+	_, ok := SkaffoldCorePluginExecutionMap[plugin]
+	return ok
+}
+
+// Execute executes a plugin, assumes ShouldExecuteCorePlugin has already been called
+func Execute() error {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	plugin := os.Getenv(constants.SkaffoldPluginName)
 
 	go func() {
-		if execute, ok := SkaffoldCorePluginExecutionMap[plugin]; ok {
-			execute()
-		}
+		SkaffoldCorePluginExecutionMap[plugin]()
 	}()
 
 	<-sigs
