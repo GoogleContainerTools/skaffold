@@ -76,21 +76,9 @@ type TagPolicy struct {
 	ShaTagger *ShaTagger `yaml:"sha256,omitempty" yamltags:"oneOf=tag"`
 
 	// EnvTemplateTagger tags images with a configurable template string.
-	// The template must be in the golang text/template syntax: https://golang.org/pkg/text/template/
-	// The template is compiled and executed against the current environment,
-	// with those variables injected:
-	//   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.
-	// For example: "{{.RELEASE}}-{{.IMAGE_NAME}}"
 	EnvTemplateTagger *EnvTemplateTagger `yaml:"envTemplate,omitempty" yamltags:"oneOf=tag"`
 
 	// DateTimeTagger tags images with the build timestamp.
-	// The format can be overridden with golang formats, see: https://golang.org/pkg/time/#Time.Format
-	// Default format is "2006-01-02_15-04-05.999_MST
-	// The timezone is by default the local timezone, this can be overridden, see https://golang.org/pkg/time/#Time.LoadLocation
-	// For example:
-	// dateTime:
-	//   format: "2006-01-02"
-	//   timezone: "UTC"
 	DateTimeTagger *DateTimeTagger `yaml:"dateTime,omitempty" yamltags:"oneOf=tag"`
 }
 
@@ -100,14 +88,27 @@ type ShaTagger struct{}
 // GitTagger contains the configuration for the git tagger.
 type GitTagger struct{}
 
-// EnvTemplateTagger contains the configuration for the envTemplate tagger.
+// EnvTemplateTagger tags images with a configurable template string.
 type EnvTemplateTagger struct {
+	// Template defines the image name and tag. It must be in the golang text/template syntax:
+	// https://golang.org/pkg/text/template/
+	// The template is compiled and executed against the current environment,
+	// with those variables injected:
+	//   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.
+	// For example: `{{.RELEASE}}-{{.IMAGE_NAME}}`
 	Template string `yaml:"template,omitempty"`
 }
 
-// DateTimeTagger contains the configuration for the DateTime tagger.
+// DateTimeTagger tags images with the build timestamp.
 type DateTimeTagger struct {
-	Format   string `yaml:"format,omitempty"`
+	// Format formats the date and time.
+	// This can be overridden with golang formats, see: https://golang.org/pkg/time/#Time.Format.
+	// Defaults to `2006-01-02_15-04-05.999_MST`.
+	Format string `yaml:"format,omitempty"`
+
+	// TimeZone sets the timezone for the date and time.
+	// This can be overridden, see https://golang.org/pkg/time/#Time.LoadLocation.
+	// Defaults to the local timezone.
 	TimeZone string `yaml:"timezone,omitempty"`
 }
 
@@ -130,7 +131,7 @@ type BuildType struct {
 // and optionally push to a repository.
 type LocalBuild struct {
 	// Push should images be pushed to a registry.
-	// Default: `false` for local clusters, `true` for remote clusters.
+	// Defaults to `false` for local clusters, `true` for remote clusters.
 	Push *bool `yaml:"push,omitempty"`
 
 	// UseDockerCLI use `docker` command-line interface instead of Docker Engine APIs.
@@ -148,7 +149,7 @@ type LocalBuild struct {
 type GoogleCloudBuild struct {
 	// ProjectID the ID of your Google Cloud Platform Project.
 	// If the projectId is not provided, Skaffold will guess it from the image name.
-	// For example, if the artifact image name is `gcr.io/myproject/image`, then Skaffold
+	// For example, given the artifact image name `gcr.io/myproject/image`, Skaffold
 	// will use the `myproject` GCP project.
 	ProjectID string `yaml:"projectId,omitempty"`
 
@@ -193,23 +194,34 @@ type LocalDir struct {
 // KanikoBuildContext contains the different fields available to specify
 // a kaniko build context
 type KanikoBuildContext struct {
-	GCSBucket string    `yaml:"gcsBucket,omitempty" yamltags:"oneOf=buildContext"`
-	LocalDir  *LocalDir `yaml:"localDir,omitempty" yamltags:"oneOf=buildContext"`
+	// GCSBucket defines the CGS bucket to which sources are upload by Skaffold.
+	// Kaniko will need access to that bucket to download the sources.
+	GCSBucket string `yaml:"gcsBucket,omitempty" yamltags:"oneOf=buildContext"`
+
+	// LocalDir configures how Skaffol will mount sources directly via a emptyDir volume.
+	LocalDir *LocalDir `yaml:"localDir,omitempty" yamltags:"oneOf=buildContext"`
 }
 
-// KanikoCache contains fields related to kaniko caching
+// KanikoCache configures Kaniko caching. If a cache is specified, Kaniko will
+// use a remote cache which will speed up builds.
 type KanikoCache struct {
+	// Repo defines a remote repository to store cached layers. If none is specified, one will be
+	// inferred from the image name. See https://github.com/GoogleContainerTools/kaniko#caching.
 	Repo string `yaml:"repo,omitempty"`
 }
 
-// KanikoBuild describes how to do a on-cluster build using the kaniko image.
+// KanikoBuild describes how to do a on-cluster build using the Kaniko image.
 type KanikoBuild struct {
 	// BuildContext the Kaniko build context: `gcsBucket` or `localDir`.
 	// Defaults to `localDir`.
 	BuildContext *KanikoBuildContext `yaml:"buildContext,omitempty"`
 
+	// Cache configures Kaniko caching. If a cache is specified, Kaniko will
+	// use a remote cache which will speed up builds.
 	Cache *KanikoCache `yaml:"cache,omitempty"`
 
+	// AdditionalFlags defines a list of additional flags to be passed to Kaniko command line.
+	// See:https://github.com/GoogleContainerTools/kaniko#additional-flags.
 	AdditionalFlags []string `yaml:"flags,omitempty"`
 
 	// PullSecret the path to the secret key file.
@@ -230,11 +242,12 @@ type KanikoBuild struct {
 	// Defaults to 20 minutes (`20m`).
 	Timeout string `yaml:"timeout,omitempty"`
 
-	// Image used bu the Kaniko pod.
+	// Image used by the Kaniko pod.
 	// Defaults to the latest released version of `gcr.io/kaniko-project/executor`
 	Image string `yaml:"image,omitempty"`
 
-	// DockerConfig
+	// DockerConfig defines how to mount the local Docker configuration into the
+	// Kaniko pod.
 	DockerConfig *DockerConfig `yaml:"dockerConfig,omitempty"`
 }
 
@@ -243,15 +256,21 @@ type DockerConfig struct {
 	// Path path to the docker `config.json`
 	Path string `yaml:"path,omitempty"`
 
+	// SecretName defines the Kubernetes secret that will hold the Docker configuration.
 	SecretName string `yaml:"secretName,omitempty"`
 }
 
 type TestConfig []*TestCase
 
-// TestCase is a struct containing all the specified test
-// configuration for an image.
+// TestCase defines a list of structure tests to run on images that Skaffold
+// builds.
 type TestCase struct {
-	ImageName      string   `yaml:"image"`
+	// ImageName defines on which artifact to run those tests.
+	ImageName string `yaml:"image"`
+
+	// StructureTests lists the [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test)
+	// to run on that artifact.
+	// For example: `["./test/*"]`
 	StructureTests []string `yaml:"structureTests,omitempty"`
 }
 
@@ -269,6 +288,7 @@ type DeployType struct {
 	// You'll need a kubectl CLI version installed that's compatible with your cluster.
 	KubectlDeploy *KubectlDeploy `yaml:"kubectl,omitempty" yamltags:"oneOf=deploy"`
 
+	// KustomizeDeploy uses the `kustomize` CLI to "patch" a deployment for a target environment.
 	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty" yamltags:"oneOf=deploy"`
 }
 
@@ -289,8 +309,13 @@ type KubectlDeploy struct {
 // line to kubectl either on every command (Global), on creations (Apply)
 // or deletions (Delete).
 type KubectlFlags struct {
+	// Global lists the additional option flags passed to `kubectl` on every command.
 	Global []string `yaml:"global,omitempty"`
-	Apply  []string `yaml:"apply,omitempty"`
+
+	// Apply lists the additional option flags passed to `kubectl` on creations. (`kubectl apply`)
+	Apply []string `yaml:"apply,omitempty"`
+
+	// Delete lists the additional option flags passed to `kubectl` on deletions. (`kubectl delete`)
 	Delete []string `yaml:"delete,omitempty"`
 }
 
@@ -304,7 +329,7 @@ type HelmDeploy struct {
 // KustomizeDeploy contains the configuration needed for deploying with kustomize.
 type KustomizeDeploy struct {
 	// KustomizePath path to Kustomization files.
-	// Default to `.` (current directory).
+	// Defaults to `.` (current directory).
 	KustomizePath string `yaml:"path,omitempty"`
 
 	// Flags additional flags to pass to `kubectl`.
@@ -423,9 +448,22 @@ type Profile struct {
 	// Name unique profile name.
 	Name string `yaml:"name,omitempty"`
 
-	Build   BuildConfig     `yaml:"build,omitempty"`
-	Test    TestConfig      `yaml:"test,omitempty"`
-	Deploy  DeployConfig    `yaml:"deploy,omitempty"`
+	// Build defines how to override the main `build` configuration.
+	Build BuildConfig `yaml:"build,omitempty"`
+
+	// Test defines how to override the main `test` configuration.
+	Test TestConfig `yaml:"test,omitempty"`
+
+	// Deploy defines how to override the main `deploy` configuration.
+	Deploy DeployConfig `yaml:"deploy,omitempty"`
+
+	// Patches defines a list of patches that will modify the default configuration.
+	// This is used to not replace a whole configuration section but change a few values.
+	// Each patch uses the JSON patch notation.
+	// For example, This profile will replace the `dockerfile` value of the first artifact by `Dockerfile.DEV`.
+	// patches:
+	// - path: /build/artifacts/0/docker/dockerfile
+	//   value: Dockerfile.DEV
 	Patches yamlpatch.Patch `yaml:"patches,omitempty"`
 
 	// Activation criteria by which a profile can be auto-activated.
@@ -457,10 +495,12 @@ type ArtifactType struct {
 	// contain Bazel configuration files.
 	BazelArtifact *BazelArtifact `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
 
-	// JibMavenArtifact builds containers using the Jib plugin for Maven.
+	// JibMavenArtifact builds containers using the
+	// [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).
 	JibMavenArtifact *JibMavenArtifact `yaml:"jibMaven,omitempty" yamltags:"oneOf=artifact"`
 
-	// JibGradleArtifact builds containers using the Jib plugin for Gradle.
+	// JibGradleArtifact builds containers using the
+	// [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).
 	JibGradleArtifact *JibGradleArtifact `yaml:"jibGradle,omitempty" yamltags:"oneOf=artifact"`
 }
 
@@ -468,7 +508,7 @@ type ArtifactType struct {
 // usually using `docker build`.
 type DockerArtifact struct {
 	// DockerfilePath locates the Dockerfile relative to workspace.
-	// Defaults to "Dockerfile"
+	// Defaults to "Dockerfile".
 	DockerfilePath string `yaml:"dockerfile,omitempty"`
 
 	// BuildArgs arguments passed to the docker build.
@@ -497,17 +537,19 @@ type BazelArtifact struct {
 	BuildArgs []string `yaml:"args,omitempty"`
 }
 
-// JibMavenArtifact builds containers using the Jib plugin for Maven.
+// JibMavenArtifact builds containers using the
+// [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).
 type JibMavenArtifact struct {
-	// Module selects which maven module to build, for a multimodule project.
+	// Module selects which Maven module to build, for a multimodule project.
 	Module string `yaml:"module"`
 
-	// Profile selects which maven profile to activate.
+	// Profile selects which Maven profile to activate.
 	Profile string `yaml:"profile"`
 }
 
-// JibGradleArtifact builds containers using the Jib plugin for Gradle.
+// JibGradleArtifact builds containers using the
+// [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).
 type JibGradleArtifact struct {
-	// Project selects which gradle project to build.
+	// Project selects which Gradle project to build.
 	Project string `yaml:"project"`
 }
