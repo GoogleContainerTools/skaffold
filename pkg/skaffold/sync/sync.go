@@ -140,6 +140,7 @@ func Perform(ctx context.Context, image string, files map[string]string, cmdFn f
 		return errors.Wrap(err, "getting k8s client")
 	}
 
+	numSynced := 0
 	for _, ns := range namespaces {
 		pods, err := client.CoreV1().Pods(ns).List(meta_v1.ListOptions{})
 		if err != nil {
@@ -157,9 +158,14 @@ func Perform(ctx context.Context, image string, files map[string]string, cmdFn f
 					if err := util.RunCmd(cmd); err != nil {
 						return err
 					}
+					numSynced += 1
 				}
 			}
 		}
+	}
+
+	if numSynced == 0 {
+		return errors.New("didn't sync any files")
 	}
 
 	return nil
