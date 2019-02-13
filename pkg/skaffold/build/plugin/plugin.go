@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 
@@ -44,12 +43,11 @@ var (
 // NewPluginBuilder initializes and returns all required plugin builders
 func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions) (shared.PluginBuilder, error) {
 	// We're a host. Start by launching the plugin process.
-	log.SetOutput(os.Stdout)
+	logrus.SetOutput(os.Stdout)
 
 	builders := map[string]shared.PluginBuilder{}
 
 	for _, a := range cfg.Artifacts {
-
 		p := a.BuilderPlugin.Name
 		if _, ok := builders[p]; ok {
 			continue

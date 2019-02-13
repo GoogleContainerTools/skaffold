@@ -32,7 +32,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-// Here is an implementation that talks over RPC
+// BuilderRPC is an implementation of an rpc client
 type BuilderRPC struct {
 	client *rpc.Client
 }
@@ -51,10 +51,8 @@ func (b *BuilderRPC) Labels() map[string]string {
 	var resp map[string]string
 	err := b.client.Call("Plugin.Labels", new(interface{}), &resp)
 	if err != nil {
-		// You usually want your interfaces to return errors. If they don't,
-		// there isn't much other choice here.
-		logrus.Error("Unable to get labels from server.")
-		panic(err)
+		// Can't return error, so log it instead
+		logrus.Errorf("Unable to get labels from server: %v", err)
 	}
 	return resp
 }
@@ -87,8 +85,8 @@ func convertPropertiesToBytes(artifacts []*latest.Artifact) error {
 	return nil
 }
 
-// Here is the RPC server that BuilderRPC talks to, conforming to
-// the requirements of net/r
+// BuilderRPCServer is the RPC server that BuilderRPC talks to, conforming to
+// the requirements of net/rpc
 type BuilderRPCServer struct {
 	Impl PluginBuilder
 }
@@ -124,18 +122,8 @@ type BuildArgs struct {
 	Artifacts []*latest.Artifact
 }
 
-// This is the implementation of plugin.Plugin so we can serve/consume this
-//
-// This has two methods: Server must return an RPC server for this plugin
-// type. We construct a BuilderRPCServer for this.
-//
-// Client must return an implementation of our interface that communicates
-// over an RPC client. We return BuilderRPC for this.
-//
-// Ignore MuxBroker. That is used to create more multiplexed streams on our
-// plugin connection and is a more advanced use case.
+// BuilderPlugin is the implementation of the hashicorp plugin.Plugin interface
 type BuilderPlugin struct {
-	// Impl Injection
 	Impl PluginBuilder
 }
 

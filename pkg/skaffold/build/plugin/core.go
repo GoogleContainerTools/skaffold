@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/docker"
 	hashiplugin "github.com/hashicorp/go-plugin"
+	"github.com/pkg/errors"
 )
 
 // SkaffoldCorePluginExecutionMap maps the core plugin name to the execution function
@@ -42,18 +43,34 @@ func ShouldExecuteCorePlugin() bool {
 	return ok
 }
 
+var cancelError error
+
 // Execute executes a plugin, assumes ShouldExecuteCorePlugin has already been called
 func Execute() error {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	plugin := os.Getenv(constants.SkaffoldPluginName)
 
+	errCh := make(chan error, 1)
+
 	go func() {
-		SkaffoldCorePluginExecutionMap[plugin]()
+		errCh <- SkaffoldCorePluginExecutionMap[plugin]()
 	}()
 
-	<-sigs
-	hashiplugin.CleanupClients()
+	go func() {
+		<-sigs
+		errCh <- cancelError
+	}()
+
+	var err error
+	err = <-errCh
+
+	if err == cancelError {
+		hashiplugin.CleanupClients()
+	}
+	if err != nil {
+		return errors.Wrap(err, "executing plugin")
+	}
 
 	return nil
 }

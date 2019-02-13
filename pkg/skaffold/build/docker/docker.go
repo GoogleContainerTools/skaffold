@@ -70,7 +70,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	var g *latest.GoogleCloudBuild
 	if err := util.CloneThroughJSON(b.env.Properties, &g); err != nil {
-		return nil, errors.Wrap(err, "converting execution environment to googlecloudbuild struct")
+		return nil, errors.Wrap(err, "converting execution environment to googleCloudBuild struct")
 	}
 	defaults.SetDefaultCloudBuildDockerImage(g)
 	return gcb.NewBuilder(g, b.opts.SkipTests).Build(ctx, out, tags, artifacts)

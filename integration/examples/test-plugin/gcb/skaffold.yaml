@@ -11,7 +11,7 @@ build:
     plugin: 
       name: docker
   executionEnvironment:
-    name: googlecloudbuild
+    name: googleCloudBuild
     properties:
       projectId: k8s-skaffold
 deploy:

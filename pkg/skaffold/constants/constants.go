@@ -72,7 +72,7 @@ const (
 )
 
 var (
-	GoogleCloudBuild latest.ExecEnvironment = "googlecloudbuild"
+	GoogleCloudBuild latest.ExecEnvironment = "googleCloudBuild"
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}
