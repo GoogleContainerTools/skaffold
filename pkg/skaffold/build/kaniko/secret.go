@@ -93,7 +93,7 @@ func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 		logrus.Debug("No docker config specified. Checking for one in the cluster.")
 
 		if _, err := secrets.Get(b.DockerConfig.SecretName, metav1.GetOptions{}); err != nil {
-			return nil, errors.Wrap(err, "checking for existing kaniko secret")
+			return nil, errors.Wrap(err, "checking for existing kaniko docker secret")
 		}
 
 		return func() {}, nil
@@ -121,6 +121,56 @@ func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 	return func() {
 		if err := secrets.Delete(b.DockerConfig.SecretName, &metav1.DeleteOptions{}); err != nil {
 			logrus.Warnf("deleting docker config secret")
+		}
+	}, nil
+}
+
+func (b *Builder) setupAWSSecretSecret(out io.Writer) (func(), error) {
+	if b.AWSSecret == nil {
+		return func() {}, nil
+	}
+
+	color.Default.Fprintf(out, "Creating AWS secret [%s]...\n", b.AWSSecret.SecretName)
+
+	client, err := kubernetes.GetClientset()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting kubernetes client")
+	}
+
+	secrets := client.CoreV1().Secrets(b.Namespace)
+
+	if b.AWSSecret.Path == "" {
+		logrus.Debug("No AWS secret specified. Checking for one in the cluster.")
+
+		if _, err := secrets.Get(b.DockerConfig.SecretName, metav1.GetOptions{}); err != nil {
+			return nil, errors.Wrap(err, "checking for existing kaniko AWS secret")
+		}
+
+		return func() {}, nil
+	}
+
+	secretData, err := ioutil.ReadFile(b.AWSSecret.Path)
+	if err != nil {
+		return nil, errors.Wrap(err, "reading AWS secret")
+	}
+
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   b.AWSSecret.SecretName,
+			Labels: map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
+		},
+		Data: map[string][]byte{
+			"credentials": secretData,
+		},
+	}
+
+	if _, err := secrets.Create(secret); err != nil {
+		return nil, errors.Wrapf(err, "creating AWS secret: %s", err)
+	}
+
+	return func() {
+		if err := secrets.Delete(b.AWSSecret.SecretName, &metav1.DeleteOptions{}); err != nil {
+			logrus.Warnf("deleting AWS secret")
 		}
 	}, nil
 }

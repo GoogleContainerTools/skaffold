@@ -90,14 +90,22 @@ func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 		return pod
 	}
 
-	volumeMount := v1.VolumeMount{
+	dockerConfigVolumeMount := v1.VolumeMount{
 		Name:      constants.DefaultKanikoDockerConfigSecretName,
 		MountPath: constants.DefaultKanikoDockerConfigPath,
 	}
+	awsSecretVolumeMount := v1.VolumeMount{
+		Name:      constants.DefaultKanikoAWSSecretName,
+		MountPath: constants.DefaultKanikoAWSSecretPath,
+	}
 
-	pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, volumeMount)
+	pod.Spec.Containers[0].VolumeMounts = append(
+		pod.Spec.Containers[0].VolumeMounts,
+		dockerConfigVolumeMount,
+		awsSecretVolumeMount,
+	)
 
-	volume := v1.Volume{
+	dockerConfigVolume := v1.Volume{
 		Name: constants.DefaultKanikoDockerConfigSecretName,
 		VolumeSource: v1.VolumeSource{
 			Secret: &v1.SecretVolumeSource{
@@ -105,8 +113,20 @@ func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 			},
 		},
 	}
+	awsSecretVolume := v1.Volume{
+		Name: constants.DefaultKanikoAWSSecretName,
+		VolumeSource: v1.VolumeSource{
+			Secret: &v1.SecretVolumeSource{
+				SecretName: cfg.AWSSecret.SecretName,
+			},
+		},
+	}
 
-	pod.Spec.Volumes = append(pod.Spec.Volumes, volume)
+	pod.Spec.Volumes = append(
+		pod.Spec.Volumes,
+		dockerConfigVolume,
+		awsSecretVolume,
+	)
 
 	return pod
 }

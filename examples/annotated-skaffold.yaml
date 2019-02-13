@@ -147,6 +147,9 @@ build:
   #   dockerConfig:
   #     path: path to the docker config.json
   #     secretName: docker-cfg
+  #   awsSecret:
+  #     path: path to the AWS credentials
+  #     secretName: aws-secret
 
 # The test section has all the information needed to test images.
 test:

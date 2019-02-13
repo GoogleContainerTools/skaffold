@@ -52,6 +52,8 @@ const (
 	DefaultKanikoEmptyDirMountPath      = "/kaniko/buildcontext"
 	DefaultKanikoDockerConfigSecretName = "docker-cfg"
 	DefaultKanikoDockerConfigPath       = "/kaniko/.docker"
+	DefaultKanikoAWSSecretName          = "aws-secret"
+	DefaultKanikoAWSSecretPath          = "/root/.aws"
 
 	DefaultBusyboxImage = "busybox"
 

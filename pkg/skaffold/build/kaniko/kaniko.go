@@ -41,6 +41,13 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 		}
 		defer teardownDockerConfigSecret()
 	}
+	if b.AWSSecret != nil {
+		teardownAWSSecret, err := b.setupAWSSecretSecret(out)
+		if err != nil {
+			return nil, errors.Wrap(err, "setting up AWS secret")
+		}
+		defer teardownAWSSecret()
+	}
 
 	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifactWithKaniko)
 }
