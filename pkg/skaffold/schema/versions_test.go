@@ -348,22 +348,22 @@ func withProfiles(profiles ...latest.Profile) func(*latest.SkaffoldPipeline) {
 }
 
 func TestUpgradeToNextVersion(t *testing.T) {
-	for i, schemaVersion := range schemaVersions[0 : len(schemaVersions)-2] {
+	for i, schemaVersion := range SchemaVersions[0 : len(SchemaVersions)-2] {
 		from := schemaVersion
-		to := schemaVersions[i+1]
-		description := fmt.Sprintf("Upgrade from %s to %s", from.apiVersion, to.apiVersion)
+		to := SchemaVersions[i+1]
+		description := fmt.Sprintf("Upgrade from %s to %s", from.APIVersion, to.APIVersion)
 
 		t.Run(description, func(t *testing.T) {
-			factory, _ := schemaVersions.Find(from.apiVersion)
+			factory, _ := SchemaVersions.Find(from.APIVersion)
 			newer, err := factory().Upgrade()
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, to.apiVersion, newer.GetVersion())
+			testutil.CheckErrorAndDeepEqual(t, false, err, to.APIVersion, newer.GetVersion())
 		})
 	}
 }
 
 func TestCantUpgradeFromLatestVersion(t *testing.T) {
-	factory, present := schemaVersions.Find(latest.Version)
+	factory, present := SchemaVersions.Find(latest.Version)
 	testutil.CheckDeepEqual(t, true, present)
 
 	_, err := factory().Upgrade()
