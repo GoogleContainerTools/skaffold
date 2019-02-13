@@ -282,7 +282,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 		return nil, errors.Wrap(err, "generating tag")
 	}
 
-	artifactCache := build.NewCache(r.opts.CacheArtifacts, "")
+	artifactCache := build.NewCache(r.opts.CacheArtifacts, r.opts.CacheFile)
 	artifactsToBuild, res := artifactCache.RetrieveCachedArtifacts(ctx, out, artifacts)
 	bRes, err := r.Build(ctx, out, tags, artifactsToBuild)
 	if err != nil {

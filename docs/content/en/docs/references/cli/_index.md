@@ -65,6 +65,7 @@ Usage:
 Flags:
   -b, --build-image stringArray      Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts
       --cache-artifacts              Set to false to disable caching of artifacts. (default true)
+      --cache-file string            Specify the location of the cache file (default $HOME/.skaffold/cache)
   -d, --default-repo string          Default repository value (overrides global config)
   -f, --filename string              Filename or URL to the pipeline file (default "skaffold.yaml")
   -n, --namespace string             Run deployments in the specified namespace
@@ -85,6 +86,7 @@ Env vars:
 
 * `SKAFFOLD_BUILD_IMAGE` (same as --build-image)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as --cache-artifacts)
+* `SKAFFOLD_CACHE_FILE` (same as --cache-file)
 * `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
 * `SKAFFOLD_FILENAME` (same as --filename)
 * `SKAFFOLD_NAMESPACE` (same as --namespace)
@@ -145,6 +147,7 @@ Usage:
 
 Flags:
       --cache-artifacts       Set to false to disable caching of artifacts. (default true)
+      --cache-file string     Specify the location of the cache file (default $HOME/.skaffold/cache)
   -d, --default-repo string   Default repository value (overrides global config)
   -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
   -n, --namespace string      Run deployments in the specified namespace
@@ -161,6 +164,7 @@ Global Flags:
 Env vars:
 
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as --cache-artifacts)
+* `SKAFFOLD_CACHE_FILE` (same as --cache-file)
 * `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
 * `SKAFFOLD_FILENAME` (same as --filename)
 * `SKAFFOLD_NAMESPACE` (same as --namespace)
@@ -178,6 +182,7 @@ Usage:
 
 Flags:
       --cache-artifacts       Set to false to disable caching of artifacts. (default true)
+      --cache-file string     Specify the location of the cache file (default $HOME/.skaffold/cache)
   -d, --default-repo string   Default repository value (overrides global config)
   -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
       --images strings        A list of pre-built images to deploy
@@ -197,6 +202,7 @@ Global Flags:
 Env vars:
 
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as --cache-artifacts)
+* `SKAFFOLD_CACHE_FILE` (same as --cache-file)
 * `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
 * `SKAFFOLD_FILENAME` (same as --filename)
 * `SKAFFOLD_IMAGES` (same as --images)
@@ -217,6 +223,7 @@ Usage:
 
 Flags:
       --cache-artifacts           Set to false to disable caching of artifacts. (default true)
+      --cache-file string         Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup                   Delete deployments after dev mode is interrupted (default true)
   -d, --default-repo string       Default repository value (overrides global config)
       --experimental-gui          Experimental Graphical User Interface
@@ -241,6 +248,7 @@ Global Flags:
 Env vars:
 
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as --cache-artifacts)
+* `SKAFFOLD_CACHE_FILE` (same as --cache-file)
 * `SKAFFOLD_CLEANUP` (same as --cleanup)
 * `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
 * `SKAFFOLD_EXPERIMENTAL_GUI` (same as --experimental-gui)
@@ -340,6 +348,7 @@ Usage:
 
 Flags:
       --cache-artifacts       Set to false to disable caching of artifacts. (default true)
+      --cache-file string     Specify the location of the cache file (default $HOME/.skaffold/cache)
   -d, --default-repo string   Default repository value (overrides global config)
   -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
   -l, --label stringArray     Add custom labels to deployed objects. Set multiple times for multiple labels.
@@ -359,6 +368,7 @@ Global Flags:
 Env vars:
 
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as --cache-artifacts)
+* `SKAFFOLD_CACHE_FILE` (same as --cache-file)
 * `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
 * `SKAFFOLD_FILENAME` (same as --filename)
 * `SKAFFOLD_LABEL` (same as --label)

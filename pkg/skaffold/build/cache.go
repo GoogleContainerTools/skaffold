@@ -63,27 +63,32 @@ var (
 	// For testing
 	hashForArtifact = getHashForArtifact
 	localCluster    = config.GetLocalCluster
+	noCache         = &Cache{}
+)
+
+const (
+	prefixLength = len("sha256:")
 )
 
 // NewCache returns the current state of the cache
 func NewCache(useCache bool, cacheFile string) *Cache {
 	if !useCache {
-		return &Cache{}
+		return noCache
 	}
 	cf, err := resolveCacheFile(cacheFile)
 	if err != nil {
 		logrus.Warnf("Error resolving cache file, not using skaffold cache: %v", err)
-		return &Cache{}
+		return noCache
 	}
 	cache, err := retrieveArtifactCache(cf)
 	if err != nil {
 		logrus.Warnf("Error retrieving artifact cache, not using skaffold cache: %v", err)
-		return &Cache{}
+		return noCache
 	}
 	client, err := docker.NewAPIClient()
 	if err != nil {
 		logrus.Warnf("Error retrieving local daemon client, not using skaffold cache: %v", err)
-		return &Cache{}
+		return noCache
 	}
 	return &Cache{
 		artifactCache: cache,
@@ -235,7 +240,7 @@ func imageExistsRemotely(image, digest string) bool {
 	if err != nil {
 		return false
 	}
-	return d.Hex == digest[7:]
+	return d.Hex == digest[prefixLength:]
 }
 
 // CacheArtifacts determines the hash for each artifact, stores it in the artifact cache, and saves the cache at the end
@@ -277,7 +282,7 @@ func (c *Cache) CacheArtifacts(ctx context.Context, artifacts []*latest.Artifact
 
 // Retag retags newly built images in the format [imageName:workspaceHash] and pushes them if using a remote cluster
 func (c *Cache) Retag(ctx context.Context, out io.Writer, artifactsToBuild []*latest.Artifact, buildArtifacts []Artifact) {
-	if !c.useCache {
+	if !c.useCache || len(artifactsToBuild) == 0 {
 		return
 	}
 	tags := map[string]string{}

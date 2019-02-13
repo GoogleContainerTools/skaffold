@@ -42,6 +42,7 @@ type SkaffoldOptions struct {
 	Profiles          []string
 	CustomTag         string
 	Namespace         string
+	CacheFile         string
 	TargetImages      []string
 	Trigger           string
 	CustomLabels      []string
