@@ -360,9 +360,16 @@ func generateSchemas(root string, dryRun bool) (bool, error) {
 		}
 
 		output := fmt.Sprintf("%s/schemas/%s.json", root, apiVersion)
-		current, err := ioutil.ReadFile(output)
-		if err != nil {
-			return false, errors.Wrapf(err, "unable to read existing schema for version %s", version.APIVersion)
+		var current []byte
+
+		if _, err := os.Stat(output); err == nil {
+			var err error
+			current, err = ioutil.ReadFile(output)
+			if err != nil {
+				return false, errors.Wrapf(err, "unable to read existing schema for version %s", version.APIVersion)
+			}
+		} else if !os.IsNotExist(err) {
+			return false, errors.Wrapf(err, "unable to check that file exists %s", output)
 		}
 
 		if string(current) != string(buf) {
