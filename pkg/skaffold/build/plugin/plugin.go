@@ -54,7 +54,11 @@ func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions) (sh
 		}
 		cmd := exec.Command(p)
 		if _, ok := SkaffoldCorePluginExecutionMap[p]; ok {
-			cmd = exec.Command("skaffold")
+			executable, err := os.Executable()
+			if err != nil {
+				return nil, errors.Wrap(err, "getting executable path")
+			}
+			cmd = exec.Command(executable)
 			cmd.Env = []string{fmt.Sprintf("%s=%s", constants.SkaffoldPluginKey, constants.SkaffoldPluginValue),
 				fmt.Sprintf("%s=%s", constants.SkaffoldPluginName, p)}
 		}
