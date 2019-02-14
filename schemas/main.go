@@ -69,12 +69,15 @@ func (d *Definitions) MarshalJSON() ([]byte, error) {
 		}
 		buf.Write(key)
 		buf.WriteString(":")
+
 		// marshal value
-		val, err := json.Marshal(d.values[k])
-		if err != nil {
+		var val bytes.Buffer
+		encoder := json.NewEncoder(&val)
+		encoder.SetEscapeHTML(false)
+		if err := encoder.Encode(d.values[k]); err != nil {
 			return nil, err
 		}
-		buf.Write(val)
+		buf.Write(val.Bytes())
 	}
 	buf.WriteString("}")
 
@@ -199,15 +202,19 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 		for _, field := range tt.Fields.List {
 			yamlName := yamlFieldName(field)
 
-			if strings.Contains(field.Tag.Value, "required") {
-				def.Required = append(def.Required, yamlName)
-			}
-
 			if strings.Contains(field.Tag.Value, "inline") {
 				def.OneOf = append(def.OneOf, &Definition{
 					Ref: defPrefix + field.Type.(*ast.Ident).Name,
 				})
 				continue
+			}
+
+			if yamlName == "" {
+				continue
+			}
+
+			if strings.Contains(field.Tag.Value, "required") {
+				def.Required = append(def.Required, yamlName)
 			}
 
 			if def.Properties == nil {
@@ -233,8 +240,11 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 	}
 
 	// Remove type prefix
+	description = strings.TrimPrefix(description, name+" is the ")
 	description = strings.TrimPrefix(description, name+" is ")
+	description = strings.TrimPrefix(description, name+" are the ")
 	description = strings.TrimPrefix(description, name+" are ")
+	description = strings.TrimPrefix(description, name+" lists ")
 	description = strings.TrimPrefix(description, name+" ")
 
 	// Convert to HTML
@@ -273,26 +283,24 @@ func generateSchema(inputPath string) ([]byte, error) {
 	}
 
 	// Inline oneOfs
-	if true {
-		for _, v := range definitions.values {
-			var options []*Definition
+	for _, v := range definitions.values {
+		var options []*Definition
 
-			for _, oneOf := range v.OneOf {
-				ref := strings.TrimPrefix(oneOf.Ref, defPrefix)
-				referenced := definitions.values[ref]
+		for _, oneOf := range v.OneOf {
+			ref := strings.TrimPrefix(oneOf.Ref, defPrefix)
+			referenced := definitions.values[ref]
 
-				for _, key := range referenced.Properties.keys {
-					choice := &Definitions{}
-					choice.Add(key, referenced.Properties.values[key])
+			for _, key := range referenced.Properties.keys {
+				choice := &Definitions{}
+				choice.Add(key, referenced.Properties.values[key])
 
-					options = append(options, &Definition{
-						Properties: choice,
-					})
-				}
+				options = append(options, &Definition{
+					Properties: choice,
+				})
 			}
-
-			v.OneOf = options
 		}
+
+		v.OneOf = options
 	}
 
 	schema := Schema{

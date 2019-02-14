@@ -1,0 +1,59 @@
+.comment {
+    color: #008000;
+}
+
+.key {
+    color: #811f3f;
+}
+
+.key.required {
+    font-weight: bold;
+}
+
+.value {
+    color: blue;
+}
+
+.example {
+    color: gray;
+    font-weight: 100;
+}
+
+.key, .value, .comment, .gray, .example {
+    font-family: 'Roboto Mono', monospace;
+    white-space: nowrap;
+}
+  
+table {
+    border-collapse: collapse;
+}
+
+td {
+    border-bottom: 1px solid #EEE;
+    padding: 2px 0;
+}
+
+td.top {
+    background-color: #EEE;
+}
+
+td.top .comment {
+    color: gray;
+}
+
+td:first-child {
+    white-space: nowrap;
+    padding-right: 10px;
+}
+
+tr:hover td {
+    background: #EEE;
+}
+
+code {
+    font-family: unset;
+    font-size: 85%;
+    border: 1px dotted gray;
+    border-radius: 3px;
+    padding: 0 .2em;
+}
