@@ -59,8 +59,8 @@ func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions) (sh
 				return nil, errors.Wrap(err, "getting executable path")
 			}
 			cmd = exec.Command(executable)
-			cmd.Env = []string{fmt.Sprintf("%s=%s", constants.SkaffoldPluginKey, constants.SkaffoldPluginValue),
-				fmt.Sprintf("%s=%s", constants.SkaffoldPluginName, p)}
+			cmd.Env = append(os.Environ(), []string{fmt.Sprintf("%s=%s", constants.SkaffoldPluginKey, constants.SkaffoldPluginValue),
+				fmt.Sprintf("%s=%s", constants.SkaffoldPluginName, p)}...)
 		}
 
 		client := plugin.NewClient(&plugin.ClientConfig{
