@@ -1,99 +1,222 @@
 {
   "type": "object",
+  "oneOf": [
+    {
+      "$ref": "#/definitions/SkaffoldPipeline"
+    }
+  ],
   "definitions": {
-    "Artifact": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/ArtifactType"
+    "SkaffoldPipeline": {
+      "properties": {
+        "apiVersion": {
+          "type": "string",
+          "default": "\"\""
         },
-        {
-          "required": [
-            "imageName"
-          ],
-          "properties": {
-            "imageName": {
-              "type": "string"
-            },
-            "workspace": {
-              "type": "string"
-            }
+        "kind": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "build": {
+          "$ref": "#/definitions/BuildConfig"
+        },
+        "deploy": {
+          "$ref": "#/definitions/DeployConfig"
+        },
+        "profiles": {
+          "items": {
+            "$ref": "#/definitions/Profile"
           },
-          "description": "Artifact represents items that need to be built, along with the context in which\nthey should be built.\n"
-        }
-      ]
-    },
-    "ArtifactType": {
-      "properties": {
-        "bazel": {
-          "$ref": "#/definitions/BazelArtifact"
-        },
-        "docker": {
-          "$ref": "#/definitions/DockerArtifact"
-        }
-      }
-    },
-    "BazelArtifact": {
-      "required": [
-        "target"
-      ],
-      "properties": {
-        "target": {
-          "type": "string"
+          "type": "array"
         }
       }
     },
     "BuildConfig": {
-      "allOf": [
+      "properties": {
+        "artifacts": {
+          "items": {
+            "$ref": "#/definitions/Artifact"
+          },
+          "type": "array"
+        },
+        "tagPolicy": {
+          "$ref": "#/definitions/TagPolicy"
+        }
+      },
+      "oneOf": [
         {
-          "$ref": "#/definitions/BuildType"
+          "properties": {
+            "local": {
+              "$ref": "#/definitions/LocalBuild"
+            }
+          }
         },
         {
           "properties": {
-            "artifacts": {
-              "items": {
-                "$ref": "#/definitions/Artifact"
-              },
-              "type": "array"
-            },
-            "tagPolicy": {
-              "$ref": "#/definitions/TagPolicy"
+            "googleCloudBuild": {
+              "$ref": "#/definitions/GoogleCloudBuild"
             }
-          },
-          "description": "BuildConfig contains all the configuration for the build steps\n"
+          }
+        },
+        {
+          "properties": {
+            "kaniko": {
+              "$ref": "#/definitions/KanikoBuild"
+            }
+          }
         }
-      ]
+      ],
+      "description": "contains all the configuration for the build steps"
+    },
+    "TagPolicy": {
+      "properties": {
+        "gitCommit": {
+          "$ref": "#/definitions/GitTagger"
+        },
+        "sha256": {
+          "$ref": "#/definitions/ShaTagger"
+        },
+        "envTemplate": {
+          "$ref": "#/definitions/EnvTemplateTagger"
+        },
+        "dateTime": {
+          "$ref": "#/definitions/DateTimeTagger"
+        }
+      },
+      "description": "contains all the configuration for the tagging step"
+    },
+    "ShaTagger": {
+      "description": "contains the configuration for the SHA tagger."
+    },
+    "GitTagger": {
+      "description": "contains the configuration for the git tagger."
+    },
+    "EnvTemplateTagger": {
+      "properties": {
+        "template": {
+          "type": "string",
+          "default": "\"\""
+        }
+      },
+      "description": "contains the configuration for the envTemplate tagger."
+    },
+    "DateTimeTagger": {
+      "properties": {
+        "format": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "timezone": {
+          "type": "string",
+          "default": "\"\""
+        }
+      },
+      "description": "contains the configuration for the DateTime tagger."
     },
     "BuildType": {
       "properties": {
+        "local": {
+          "$ref": "#/definitions/LocalBuild"
+        },
         "googleCloudBuild": {
           "$ref": "#/definitions/GoogleCloudBuild"
         },
         "kaniko": {
           "$ref": "#/definitions/KanikoBuild"
-        },
-        "local": {
-          "$ref": "#/definitions/LocalBuild"
         }
       },
-      "description": "BuildType contains the specific implementation and parameters needed\nfor the build step. Only one field should be populated.\n"
+      "description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated."
     },
-    "DateTimeTagger": {
+    "LocalBuild": {
       "properties": {
-        "format": {
-          "type": "string"
+        "skipPush": {
+          "type": "boolean"
         },
-        "timezone": {
-          "type": "string"
+        "useDockerCLI": {
+          "type": "boolean",
+          "default": "false"
+        },
+        "useBuildkit": {
+          "type": "boolean",
+          "default": "false"
         }
       },
-      "description": "DateTimeTagger contains the configuration for the DateTime tagger.\n"
+      "description": "contains the fields needed to do a build on the local docker daemon and optionally push to a repository."
+    },
+    "GoogleCloudBuild": {
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "diskSizeGb": {
+          "type": "number",
+          "default": "0"
+        },
+        "machineType": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "timeout": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "dockerImage": {
+          "type": "string",
+          "default": "\"\""
+        }
+      },
+      "description": "contains the fields needed to do a remote build on Google Cloud Build."
+    },
+    "KanikoBuild": {
+      "properties": {
+        "gcsBucket": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "pullSecret": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "pullSecretName": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "namespace": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "timeout": {
+          "type": "string",
+          "default": "\"\""
+        }
+      },
+      "description": "contains the fields needed to do a on-cluster build using the kaniko image"
     },
     "DeployConfig": {
-      "allOf": [
+      "oneOf": [
         {
-          "$ref": "#/definitions/DeployType"
+          "properties": {
+            "helm": {
+              "$ref": "#/definitions/HelmDeploy"
+            }
+          }
+        },
+        {
+          "properties": {
+            "kubectl": {
+              "$ref": "#/definitions/KubectlDeploy"
+            }
+          }
+        },
+        {
+          "properties": {
+            "kustomize": {
+              "$ref": "#/definitions/KustomizeDeploy"
+            }
+          }
         }
-      ]
+      ],
+      "description": "contains all the configuration needed by the deploy steps"
     },
     "DeployType": {
       "properties": {
@@ -107,66 +230,60 @@
           "$ref": "#/definitions/KustomizeDeploy"
         }
       },
-      "description": "DeployType contains the specific implementation and parameters needed\nfor the deploy step. Only one field should be populated.\n"
+      "description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated."
     },
-    "DockerArtifact": {
+    "KubectlDeploy": {
       "properties": {
-        "buildArgs": {
-          "type": "object"
-        },
-        "cacheFrom": {
+        "manifests": {
           "items": {
-            "type": "string"
+            "type": "string",
+            "default": "\"\""
           },
-          "type": "array"
+          "type": "array",
+          "default": "[]"
         },
-        "dockerfilePath": {
-          "type": "string"
+        "remoteManifests": {
+          "items": {
+            "type": "string",
+            "default": "\"\""
+          },
+          "type": "array",
+          "default": "[]"
         },
-        "target": {
-          "type": "string"
-        }
-      }
-    },
-    "EnvTemplateTagger": {
-      "required": [
-        "template"
-      ],
-      "properties": {
-        "template": {
-          "type": "string"
+        "flags": {
+          "$ref": "#/definitions/KubectlFlags"
         }
       },
-      "description": "EnvTemplateTagger contains the configuration for the envTemplate tagger.\n"
+      "description": "contains the configuration needed for deploying with \u003ccode\u003ekubectl apply\u003c/code\u003e"
     },
-    "GitTagger": {
-      "description": "GitTagger contains the configuration for the git tagger.\n"
-    },
-    "GoogleCloudBuild": {
-      "required": [
-        "projectId"
-      ],
+    "KubectlFlags": {
       "properties": {
-        "diskSizeGb": {
-          "type": "number"
+        "global": {
+          "items": {
+            "type": "string",
+            "default": "\"\""
+          },
+          "type": "array",
+          "default": "[]"
         },
-        "dockerImage": {
-          "type": "string"
+        "apply": {
+          "items": {
+            "type": "string",
+            "default": "\"\""
+          },
+          "type": "array",
+          "default": "[]"
         },
-        "machineType": {
-          "type": "string"
-        },
-        "projectId": {
-          "type": "string"
-        },
-        "timeout": {
-          "type": "string"
+        "delete": {
+          "items": {
+            "type": "string",
+            "default": "\"\""
+          },
+          "type": "array",
+          "default": "[]"
         }
       },
-      "description": "GoogleCloudBuild contains the fields needed to do a remote build on\nGoogle Cloud Build.\n"
-    },
-    "HelmConventionConfig": {
-      "description": "HelmConventionConfig represents image config in the syntax of image.repository and image.tag\n"
+      "description": "describes additional options flags that are passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete)."
     },
     "HelmDeploy": {
       "properties": {
@@ -177,24 +294,120 @@
           "type": "array"
         }
       },
-      "description": "HelmDeploy contains the configuration needed for deploying with helm\n"
+      "description": "contains the configuration needed for deploying with helm"
     },
-    "HelmFQNConfig": {
-      "required": [
-        "property"
-      ],
+    "KustomizeDeploy": {
       "properties": {
-        "property": {
-          "type": "string"
+        "kustomizePath": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "flags": {
+          "$ref": "#/definitions/KubectlFlags"
+        }
+      }
+    },
+    "HelmRelease": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "chartPath": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "valuesFilePath": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "values": {
+          "additionalProperties": {
+            "type": "string",
+            "default": "\"\""
+          },
+          "type": "object",
+          "default": "{}"
+        },
+        "namespace": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "version": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "setValues": {
+          "additionalProperties": {
+            "type": "string",
+            "default": "\"\""
+          },
+          "type": "object",
+          "default": "{}"
+        },
+        "setValueTemplates": {
+          "additionalProperties": {
+            "type": "string",
+            "default": "\"\""
+          },
+          "type": "object",
+          "default": "{}"
+        },
+        "wait": {
+          "type": "boolean",
+          "default": "false"
+        },
+        "recreatePods": {
+          "type": "boolean",
+          "default": "false"
+        },
+        "overrides": {
+          "additionalProperties": {},
+          "type": "object",
+          "default": "{}"
+        },
+        "packaged": {
+          "$ref": "#/definitions/HelmPackaged"
+        },
+        "imageStrategy": {
+          "$ref": "#/definitions/HelmImageStrategy"
+        }
+      }
+    },
+    "HelmPackaged": {
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "sets the version on the chart to this semver version.",
+          "default": "\"\""
+        },
+        "appVersion": {
+          "type": "string",
+          "description": "set the appVersion on the chart to this version",
+          "default": "\"\""
         }
       },
-      "description": "HelmFQNConfig represents image config to use the FullyQualifiedImageName as param to set\n"
+      "description": "represents parameters for packaging helm chart."
+    },
+    "HelmImageStrategy": {
+      "oneOf": [
+        {
+          "properties": {
+            "fqn": {
+              "$ref": "#/definitions/HelmFQNConfig"
+            }
+          }
+        },
+        {
+          "properties": {
+            "helm": {
+              "$ref": "#/definitions/HelmConventionConfig"
+            }
+          }
+        }
+      ]
     },
     "HelmImageConfig": {
-      "required": [
-        "fqn",
-        "helm"
-      ],
       "properties": {
         "fqn": {
           "$ref": "#/definitions/HelmFQNConfig"
@@ -204,245 +417,106 @@
         }
       }
     },
-    "HelmImageStrategy": {
-      "allOf": [
+    "HelmFQNConfig": {
+      "properties": {
+        "property": {
+          "type": "string",
+          "default": "\"\""
+        }
+      },
+      "description": "represents image config to use the FullyQualifiedImageName as param to set"
+    },
+    "HelmConventionConfig": {
+      "description": "represents image config in the syntax of image.repository and image.tag"
+    },
+    "Artifact": {
+      "properties": {
+        "imageName": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "workspace": {
+          "type": "string",
+          "default": "\"\""
+        }
+      },
+      "oneOf": [
         {
-          "$ref": "#/definitions/HelmImageConfig"
+          "properties": {
+            "docker": {
+              "$ref": "#/definitions/DockerArtifact"
+            }
+          }
+        },
+        {
+          "properties": {
+            "bazel": {
+              "$ref": "#/definitions/BazelArtifact"
+            }
+          }
         }
-      ]
-    },
-    "HelmPackaged": {
-      "required": [
-        "version",
-        "appVersion"
       ],
-      "properties": {
-        "appVersion": {
-          "type": "string",
-          "description": "AppVersion set the appVersion on the chart to this version\n"
-        },
-        "version": {
-          "type": "string",
-          "description": "Version sets the version on the chart to this semver version.\n"
-        }
-      },
-      "description": "HelmPackaged represents parameters for packaging helm chart.\n"
-    },
-    "HelmRelease": {
-      "required": [
-        "name",
-        "chartPath",
-        "valuesFilePath",
-        "namespace",
-        "version",
-        "setValues",
-        "setValueTemplates",
-        "wait",
-        "recreatePods",
-        "overrides",
-        "packaged",
-        "imageStrategy"
-      ],
-      "properties": {
-        "chartPath": {
-          "type": "string"
-        },
-        "imageStrategy": {
-          "$ref": "#/definitions/HelmImageStrategy"
-        },
-        "name": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "overrides": {
-          "type": "object"
-        },
-        "packaged": {
-          "$ref": "#/definitions/HelmPackaged"
-        },
-        "recreatePods": {
-          "type": "boolean"
-        },
-        "setValueTemplates": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "type": "object"
-        },
-        "setValues": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "type": "object"
-        },
-        "values": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "type": "object"
-        },
-        "valuesFilePath": {
-          "type": "string"
-        },
-        "version": {
-          "type": "string"
-        },
-        "wait": {
-          "type": "boolean"
-        }
-      }
-    },
-    "KanikoBuild": {
-      "properties": {
-        "gcsBucket": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "pullSecret": {
-          "type": "string"
-        },
-        "pullSecretName": {
-          "type": "string"
-        },
-        "timeout": {
-          "type": "string"
-        }
-      },
-      "description": "KanikoBuild contains the fields needed to do a on-cluster build using\nthe kaniko image\n"
-    },
-    "KubectlDeploy": {
-      "properties": {
-        "flags": {
-          "$ref": "#/definitions/KubectlFlags"
-        },
-        "manifests": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "remoteManifests": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        }
-      },
-      "description": "KubectlDeploy contains the configuration needed for deploying with `kubectl apply`\n"
-    },
-    "KubectlFlags": {
-      "properties": {
-        "apply": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "delete": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "global": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        }
-      },
-      "description": "KubectlFlags describes additional options flags that are passed on the command\nline to kubectl either on every command (Global), on creations (Apply)\nor deletions (Delete).\n"
-    },
-    "KustomizeDeploy": {
-      "properties": {
-        "flags": {
-          "$ref": "#/definitions/KubectlFlags"
-        },
-        "kustomizePath": {
-          "type": "string"
-        }
-      }
-    },
-    "LocalBuild": {
-      "properties": {
-        "skipPush": {
-          "type": "boolean"
-        },
-        "useBuildkit": {
-          "type": "boolean"
-        },
-        "useDockerCLI": {
-          "type": "boolean"
-        }
-      },
-      "description": "LocalBuild contains the fields needed to do a build on the local docker daemon\nand optionally push to a repository.\n"
+      "description": "represents items that need to be built, along with the context in which they should be built."
     },
     "Profile": {
-      "required": [
-        "name"
-      ],
       "properties": {
+        "name": {
+          "type": "string",
+          "default": "\"\""
+        },
         "build": {
           "$ref": "#/definitions/BuildConfig"
         },
         "deploy": {
           "$ref": "#/definitions/DeployConfig"
-        },
-        "name": {
-          "type": "string"
         }
       },
-      "description": "Profile is additional configuration that overrides default\nconfiguration when it is activated.\n"
+      "description": "additional configuration that overrides default configuration when it is activated."
     },
-    "ShaTagger": {
-      "description": "ShaTagger contains the configuration for the SHA tagger.\n"
-    },
-    "SkaffoldPipeline": {
-      "required": [
-        "apiVersion",
-        "kind"
-      ],
+    "ArtifactType": {
       "properties": {
-        "apiVersion": {
-          "type": "string"
+        "docker": {
+          "$ref": "#/definitions/DockerArtifact"
         },
-        "build": {
-          "$ref": "#/definitions/BuildConfig"
-        },
-        "deploy": {
-          "$ref": "#/definitions/DeployConfig"
-        },
-        "kind": {
-          "type": "string"
-        },
-        "profiles": {
-          "items": {
-            "$ref": "#/definitions/Profile"
-          },
-          "type": "array"
+        "bazel": {
+          "$ref": "#/definitions/BazelArtifact"
         }
       }
     },
-    "TagPolicy": {
+    "DockerArtifact": {
       "properties": {
-        "dateTime": {
-          "$ref": "#/definitions/DateTimeTagger"
+        "dockerfilePath": {
+          "type": "string",
+          "default": "\"\""
         },
-        "envTemplate": {
-          "$ref": "#/definitions/EnvTemplateTagger"
+        "buildArgs": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "default": "{}"
         },
-        "gitCommit": {
-          "$ref": "#/definitions/GitTagger"
+        "cacheFrom": {
+          "items": {
+            "type": "string",
+            "default": "\"\""
+          },
+          "type": "array",
+          "default": "[]"
         },
-        "sha256": {
-          "$ref": "#/definitions/ShaTagger"
+        "target": {
+          "type": "string",
+          "default": "\"\""
         }
-      },
-      "description": "TagPolicy contains all the configuration for the tagging step\n"
+      }
+    },
+    "BazelArtifact": {
+      "properties": {
+        "target": {
+          "type": "string",
+          "default": "\"\""
+        }
+      }
     }
   }
 }
