@@ -49,7 +49,12 @@ type Builder interface {
 	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]Artifact, error)
 }
 
-// ConfigurationRetriever is a function signature for a function that returns an OCI image configuration
+// ConfigurationRetriever is a function signature for a function that returns an OCI image configuration.
+// There are two ConfigurationRetrievers available:
+//
+// - RegistryConfigurationRetriever for querying a registry based on the provided image reference
+//
+// - DockerConfigurationRetriever for querying the local docker daemon's cache
 type ConfigurationRetriever func(ctx context.Context) (config.Config, error)
 
 // RegistryConfigurationRetriever returns a function to retrieve an image configuration from a registry
@@ -79,12 +84,6 @@ func RegistryConfigurationRetriever(image string) ConfigurationRetriever {
 			return config.Config{}, errors.Wrapf(err, "retrieving image config for %q", ref)
 		}
 		return manifest.Config, nil
-		// return &imageConfiguration{
-		// 	env:        envAsMap(config.Env),
-		// 	entrypoint: config.Entrypoint,
-		// 	arguments:  config.Cmd,
-		// 	labels:     config.Labels,
-		// }, nil
 	}
 }
 
