@@ -209,35 +209,6 @@ func transformContainer(container map[interface{}]interface{}, artifact build.Ar
 	}
 }
 
-// configureJvmDebugging configured a container definition for JVM debugging.
-// Returns a simple map describing the debug configuration details.
-func configureJvmDebugging(container map[interface{}]interface{}, config imageConfiguration) map[string]interface{} {
-	env, ok := container["env"].([]map[interface{}]interface{})
-	if !ok {
-		env = make([]map[interface{}]interface{}, 0)
-	}
-	// FIXME try to find existing JAVA_TOOL_OPTIONS or jdwp command argument
-	javaToolOptions := map[interface{}]interface{}{
-		"name":  "JAVA_TOOL_OPTIONS",
-		"value": "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y",
-	}
-	container["env"] = append(env, javaToolOptions)
-
-	ports, ok := container["ports"].([]map[interface{}]interface{})
-	if !ok {
-		ports = make([]map[interface{}]interface{}, 0)
-	}
-	containerPort := map[interface{}]interface{}{
-		"containerPort": 5005,
-	}
-	container["ports"] = append(ports, containerPort)
-
-	return map[string]interface{}{
-		"runtime": "jvm",
-		"jdwp":    5005,
-	}
-}
-
 func encodeConfigurations(configurations map[string]map[string]interface{}) string {
 	bytes, err := json.Marshal(configurations)
 	if err != nil {
