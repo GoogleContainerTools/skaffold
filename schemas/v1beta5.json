@@ -25,6 +25,9 @@
         },
         {
           "properties": {
+            "-": {
+              "type": "string"
+            },
             "context": {
               "type": "string",
               "description": "Workspace directory where the artifact's sources are to be found.\nDefaults to `.`.\n"
@@ -370,6 +373,13 @@
         "project"
       ],
       "properties": {
+        "args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Flags is passed as additional build flags to gradle\n"
+        },
         "project": {
           "type": "string",
           "description": "Project selects which Gradle project to build.\n"
@@ -383,6 +393,13 @@
         "profile"
       ],
       "properties": {
+        "args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Flags is passed as additional build flags to maven\n"
+        },
         "module": {
           "type": "string",
           "description": "Module selects which Maven module to build, for a multi module project.\n"
