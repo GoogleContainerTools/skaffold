@@ -33,6 +33,10 @@
               "type": "string",
               "description": "ImageName name of the image to be built.\n"
             },
+            "plugin": {
+              "$ref": "#/definitions/BuilderPlugin",
+              "description": "The plugin used to build this artifact\n"
+            },
             "sync": {
               "additionalProperties": {
                 "type": "string"
@@ -95,6 +99,9 @@
               "type": "array",
               "description": "Artifacts lists the images you're going to be building.\n"
             },
+            "executionEnvironment": {
+              "$ref": "#/definitions/ExecutionEnvironment"
+            },
             "tagPolicy": {
               "$ref": "#/definitions/TagPolicy",
               "description": "TagPolicy (beta) determines how images are tagged.\nA few strategies are provided here, although you most likely won't need to care!\nThe policy can be `gitCommit` (beta), `sha256` (beta), `envTemplate` (beta) or `dateTime` (beta).\nIf not specified, it defaults to `gitCommit: {}`.\n"
@@ -120,6 +127,25 @@
         }
       },
       "description": "BuildType contains the specific implementation and parameters needed\nfor the build step. Only one field should be populated.\n"
+    },
+    "BuilderPlugin": {
+      "properties": {
+        "": {
+          "items": {
+            "$ref": "#/definitions/byte"
+          },
+          "type": "array"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the build plugin\n"
+        },
+        "properties": {
+          "type": "object",
+          "description": "Properties associated with the plugin\n"
+        }
+      },
+      "description": "BuilderPlugin contains all fields necessary for specifying a build plugin\n"
     },
     "DateTimeTagger": {
       "properties": {
@@ -202,6 +228,17 @@
         }
       },
       "description": "EnvTemplateTagger tags images with a configurable template string.\n"
+    },
+    "ExecutionEnvironment": {
+      "properties": {
+        "name": {
+          "$ref": "#/definitions/ExecEnvironment"
+        },
+        "properties": {
+          "type": "object"
+        }
+      },
+      "description": "ExecutionEnvironment is the environment in which the build should run (ex. local or in-cluster, etc.)\n"
     },
     "GitTagger": {
       "description": "GitTagger contains the configuration for the git tagger.\n"
@@ -370,6 +407,13 @@
         "project"
       ],
       "properties": {
+        "args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Flags is passed as additional build flags to gradle\n"
+        },
         "project": {
           "type": "string",
           "description": "Project selects which Gradle project to build.\n"
@@ -383,6 +427,13 @@
         "profile"
       ],
       "properties": {
+        "args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Flags is passed as additional build flags to maven\n"
+        },
         "module": {
           "type": "string",
           "description": "Module selects which Maven module to build, for a multi module project.\n"
