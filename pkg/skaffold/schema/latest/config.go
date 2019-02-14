@@ -526,6 +526,9 @@ type JibMavenArtifact struct {
 
 	// Profile selects which Maven profile to activate.
 	Profile string `yaml:"profile"`
+
+	// Flags is passed as additional build flags to maven
+	BuildArgs []string `yaml:"args,omitempty"`
 }
 
 // JibGradleArtifact builds images using the
@@ -533,4 +536,7 @@ type JibMavenArtifact struct {
 type JibGradleArtifact struct {
 	// Project selects which Gradle project to build.
 	Project string `yaml:"project"`
+
+	// Flags is passed as additional build flags to gradle
+	BuildArgs []string `yaml:"args,omitempty"`
 }

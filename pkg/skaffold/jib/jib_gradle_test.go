@@ -151,6 +151,7 @@ func TestGenerateGradleArgs(t *testing.T) {
 		out       []string
 	}{
 		{latest.JibGradleArtifact{}, false, []string{":task", "--image=image"}},
+		{latest.JibGradleArtifact{BuildArgs: []string{"-extra", "args"}}, false, []string{":task", "--image=image", "-extra", "args"}},
 		{latest.JibGradleArtifact{}, true, []string{":task", "--image=image", "-x", "test"}},
 		{latest.JibGradleArtifact{Project: "project"}, false, []string{":project:task", "--image=image"}},
 		{latest.JibGradleArtifact{Project: "project"}, true, []string{":project:task", "--image=image", "-x", "test"}},
