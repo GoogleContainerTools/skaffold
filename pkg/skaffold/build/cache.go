@@ -169,15 +169,15 @@ func (c *Cache) retrieveCachedArtifact(ctx context.Context, out io.Writer, a *la
 
 	// See if this image exists in the local daemon
 	if c.client.ImageExists(ctx, hashTag) {
-		color.Yellow.Fprintf(out, "Found %s locally...\n", a.ImageName)
+		color.Green.Fprintf(out, "Found %s locally...\n", a.ImageName)
 		// Push if the image doesn't exist remotely
 		if !existsRemotely && !local {
-			color.Yellow.Fprintf(out, "Pushing %s since it doesn't exist remotely...\n", a.ImageName)
+			color.Green.Fprintf(out, "Pushing %s since it doesn't exist remotely...\n", a.ImageName)
 			if _, err := c.client.Push(ctx, out, hashTag); err != nil {
 				return nil, errors.Wrapf(err, "pushing %s", hashTag)
 			}
 		}
-		color.Yellow.Fprintf(out, "%s ready, skipping rebuild\n", hashTag)
+		color.Green.Fprintf(out, "%s ready, skipping rebuild\n", hashTag)
 		return &Artifact{
 			ImageName: a.ImageName,
 			Tag:       hashTag,
@@ -191,7 +191,7 @@ func (c *Cache) retrieveCachedArtifact(ctx context.Context, out io.Writer, a *la
 	if prebuiltImage == "" {
 		return nil, errors.New("no tagged prebuilt image")
 	}
-	color.Yellow.Fprintf(out, "Found %s locally, retagging and pushing...\n", a.ImageName)
+	color.Green.Fprintf(out, "Found %s locally, retagging and pushing...\n", a.ImageName)
 	// Retag the image
 	if err := c.client.Tag(ctx, prebuiltImage, hashTag); err != nil {
 		return nil, errors.Wrap(err, "retagging image")
@@ -201,7 +201,7 @@ func (c *Cache) retrieveCachedArtifact(ctx context.Context, out io.Writer, a *la
 		return nil, errors.Wrap(err, "pushing image")
 	}
 
-	color.Yellow.Fprintf(out, "Retagged %s, skipping rebuild.\n", prebuiltImage)
+	color.Green.Fprintf(out, "Retagged %s, skipping rebuild.\n", prebuiltImage)
 	return &Artifact{
 		ImageName: a.ImageName,
 		Tag:       hashTag,
