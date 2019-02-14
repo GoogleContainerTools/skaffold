@@ -102,7 +102,7 @@ func TestGetCommandMaven(t *testing.T) {
 		{
 			description: "maven with extra flags",
 			jibMavenArtifact: latest.JibMavenArtifact{
-				BuildArgs: []string{"-DskipTests", "-x"},
+				Flags: []string{"-DskipTests", "-x"},
 			},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {

@@ -1,76 +1,112 @@
 {
   "type": "object",
+  "oneOf": [
+    {
+      "$ref": "#/definitions/SkaffoldPipeline"
+    }
+  ],
   "definitions": {
-    "Artifact": {
-      "required": [
-        "imageName",
-        "workspace"
-      ],
+    "SkaffoldPipeline": {
       "properties": {
-        "buildArgs": {
-          "type": "object"
+        "apiVersion": {
+          "type": "string",
+          "default": "\"\""
         },
-        "dockerfilePath": {
-          "type": "string"
+        "kind": {
+          "type": "string",
+          "default": "\"\""
         },
-        "imageName": {
-          "type": "string"
+        "build": {
+          "$ref": "#/definitions/BuildConfig"
         },
-        "workspace": {
-          "type": "string"
+        "deploy": {
+          "$ref": "#/definitions/DeployConfig"
         }
       },
-      "description": "Artifact represents items that need should be built, along with the context in which\nthey should be built.\n"
+      "description": "the top level config object that is parsed from a skaffold.yaml"
     },
     "BuildConfig": {
-      "allOf": [
+      "properties": {
+        "artifacts": {
+          "items": {
+            "$ref": "#/definitions/Artifact"
+          },
+          "type": "array"
+        },
+        "tagPolicy": {
+          "type": "string",
+          "default": "\"\""
+        }
+      },
+      "oneOf": [
         {
-          "$ref": "#/definitions/BuildType"
+          "properties": {
+            "local": {
+              "$ref": "#/definitions/LocalBuild"
+            }
+          }
         },
         {
-          "required": [
-            "artifacts"
-          ],
           "properties": {
-            "artifacts": {
-              "items": {
-                "$ref": "#/definitions/Artifact"
-              },
-              "type": "array"
-            },
-            "tagPolicy": {
-              "type": "string"
+            "googleCloudBuild": {
+              "$ref": "#/definitions/GoogleCloudBuild"
             }
-          },
-          "description": "BuildConfig contains all the configuration for the build steps\n"
+          }
         }
-      ]
+      ],
+      "description": "contains all the configuration for the build steps"
     },
     "BuildType": {
       "properties": {
-        "googleCloudBuild": {
-          "$ref": "#/definitions/GoogleCloudBuild"
-        },
         "local": {
           "$ref": "#/definitions/LocalBuild"
+        },
+        "googleCloudBuild": {
+          "$ref": "#/definitions/GoogleCloudBuild"
         }
       },
-      "description": "BuildType contains the specific implementation and parameters needed\nfor the build step. Only one field should be populated.\n"
+      "description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated."
+    },
+    "LocalBuild": {
+      "properties": {
+        "skipPush": {
+          "type": "boolean"
+        }
+      },
+      "description": "contains the fields needed to do a build on the local docker daemon and optionally push to a repository."
+    },
+    "GoogleCloudBuild": {
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "default": "\"\""
+        }
+      }
     },
     "DeployConfig": {
-      "allOf": [
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": "\"\""
+        }
+      },
+      "oneOf": [
         {
-          "$ref": "#/definitions/DeployType"
+          "properties": {
+            "helm": {
+              "$ref": "#/definitions/HelmDeploy"
+            }
+          }
         },
         {
           "properties": {
-            "name": {
-              "type": "string"
+            "kubectl": {
+              "$ref": "#/definitions/KubectlDeploy"
             }
-          },
-          "description": "DeployConfig contains all the configuration needed by the deploy steps\n"
+          }
         }
-      ]
+      ],
+      "description": "contains all the configuration needed by the deploy steps"
     },
     "DeployType": {
       "properties": {
@@ -81,22 +117,40 @@
           "$ref": "#/definitions/KubectlDeploy"
         }
       },
-      "description": "DeployType contains the specific implementation and parameters needed\nfor the deploy step. Only one field should be populated.\n"
+      "description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated."
     },
-    "GoogleCloudBuild": {
-      "required": [
-        "projectId"
-      ],
+    "KubectlDeploy": {
       "properties": {
-        "projectId": {
-          "type": "string"
+        "manifests": {
+          "items": {
+            "$ref": "#/definitions/Manifest"
+          },
+          "type": "array"
+        }
+      },
+      "description": "contains the configuration needed for deploying with \u003ccode\u003ekubectl apply\u003c/code\u003e"
+    },
+    "Manifest": {
+      "properties": {
+        "paths": {
+          "items": {
+            "type": "string",
+            "default": "\"\""
+          },
+          "type": "array",
+          "default": "[]"
+        },
+        "parameters": {
+          "additionalProperties": {
+            "type": "string",
+            "default": "\"\""
+          },
+          "type": "object",
+          "default": "{}"
         }
       }
     },
     "HelmDeploy": {
-      "required": [
-        "releases"
-      ],
       "properties": {
         "releases": {
           "items": {
@@ -107,101 +161,60 @@
       }
     },
     "HelmRelease": {
-      "required": [
-        "name",
-        "chartPath",
-        "valuesFilePath",
-        "values",
-        "namespace",
-        "version"
-      ],
       "properties": {
-        "chartPath": {
-          "type": "string"
-        },
         "name": {
-          "type": "string"
+          "type": "string",
+          "default": "\"\""
         },
-        "namespace": {
-          "type": "string"
+        "chartPath": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "valuesFilePath": {
+          "type": "string",
+          "default": "\"\""
         },
         "values": {
           "additionalProperties": {
-            "type": "string"
+            "type": "string",
+            "default": "\"\""
           },
-          "type": "object"
+          "type": "object",
+          "default": "{}"
         },
-        "valuesFilePath": {
-          "type": "string"
+        "namespace": {
+          "type": "string",
+          "default": "\"\""
         },
         "version": {
-          "type": "string"
+          "type": "string",
+          "default": "\"\""
         }
       }
     },
-    "KubectlDeploy": {
-      "required": [
-        "manifests"
-      ],
+    "Artifact": {
       "properties": {
-        "manifests": {
-          "items": {
-            "$ref": "#/definitions/Manifest"
-          },
-          "type": "array"
-        }
-      },
-      "description": "KubectlDeploy contains the configuration needed for deploying with `kubectl apply`\n"
-    },
-    "LocalBuild": {
-      "properties": {
-        "skipPush": {
-          "type": "boolean"
-        }
-      },
-      "description": "LocalBuild contains the fields needed to do a build on the local docker daemon\nand optionally push to a repository.\n"
-    },
-    "Manifest": {
-      "required": [
-        "paths"
-      ],
-      "properties": {
-        "parameters": {
+        "imageName": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "dockerfilePath": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "workspace": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "buildArgs": {
           "additionalProperties": {
             "type": "string"
           },
-          "type": "object"
-        },
-        "paths": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        }
-      }
-    },
-    "SkaffoldPipeline": {
-      "required": [
-        "apiVersion",
-        "kind",
-        "build",
-        "deploy"
-      ],
-      "properties": {
-        "apiVersion": {
-          "type": "string"
-        },
-        "build": {
-          "$ref": "#/definitions/BuildConfig"
-        },
-        "deploy": {
-          "$ref": "#/definitions/DeployConfig"
-        },
-        "kind": {
-          "type": "string"
+          "type": "object",
+          "default": "{}"
         }
       },
-      "description": "SkaffoldPipeline is the top level config object\nthat is parsed from a skaffold.yaml\n"
+      "description": "represents items that need should be built, along with the context in which they should be built."
     }
   }
 }
