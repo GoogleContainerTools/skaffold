@@ -18,11 +18,11 @@ package kubectl
 
 import (
 	"context"
-	"fmt"
+	"io"
 	"os/exec"
-	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -31,8 +31,6 @@ import (
 type Syncer struct {
 	namespaces []string
 }
-
-var syncedDirs = map[string]struct{}{}
 
 func NewSyncer(namespaces []string) *Syncer {
 	return &Syncer{
@@ -60,18 +58,30 @@ func (k *Syncer) Sync(ctx context.Context, s *sync.Item) error {
 	return nil
 }
 
-func deleteFileFn(ctx context.Context, pod v1.Pod, container v1.Container, src, dst string) []*exec.Cmd {
-	delete := exec.CommandContext(ctx, "kubectl", "exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name, "--", "rm", "-rf", dst)
+func deleteFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files map[string]string) []*exec.Cmd {
+	// "kubectl" is below...
+	deleteCmd := []string{"exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name, "--", "rm", "-rf"}
+	args := make([]string, 0, len(deleteCmd)+len(files))
+	args = append(args, deleteCmd...)
+	for _, dst := range files {
+		args = append(args, dst)
+	}
+	delete := exec.CommandContext(ctx, "kubectl", args...)
 	return []*exec.Cmd{delete}
 }
 
-func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, src, dst string) []*exec.Cmd {
-	dir := filepath.Dir(dst)
-	var cmds []*exec.Cmd
-	if _, ok := syncedDirs[dir]; !ok {
-		cmds = []*exec.Cmd{exec.CommandContext(ctx, "kubectl", "exec", pod.Name, "-c", container.Name, "-n", pod.Namespace, "--", "mkdir", "-p", dir)}
-		syncedDirs[dir] = struct{}{}
-	}
-	copy := exec.CommandContext(ctx, "kubectl", "cp", src, fmt.Sprintf("%s/%s:%s", pod.Namespace, pod.Name, dst), "-c", container.Name)
-	return append(cmds, copy)
+func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files map[string]string) []*exec.Cmd {
+	// Use "m" flag to touch the files as they are copied.
+	reader, writer := io.Pipe()
+	copy := exec.CommandContext(ctx, "kubectl", "exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name, "-i",
+		"--", "tar", "xmf", "-", "-C", "/", "--no-same-owner")
+	copy.Stdin = reader
+	go func() {
+		defer writer.Close()
+
+		if err := util.CreateMappedTar(writer, "/", files); err != nil {
+			logrus.Errorln("Error creating tar archive:", err)
+		}
+	}()
+	return []*exec.Cmd{copy}
 }
