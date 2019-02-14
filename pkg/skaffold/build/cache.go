@@ -35,7 +35,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1/remote"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -63,11 +62,8 @@ var (
 	// For testing
 	hashForArtifact = getHashForArtifact
 	localCluster    = config.GetLocalCluster
+	remoteDigest    = docker.RemoteDigest
 	noCache         = &Cache{}
-)
-
-const (
-	prefixLength = len("sha256:")
 )
 
 // NewCache returns the current state of the cache
@@ -132,7 +128,7 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 	var needToBuild []*latest.Artifact
 	var built []Artifact
 	for _, a := range artifacts {
-		artifact, err := c.retrieveCachedArtifact(ctx, out, a)
+		artifact, err := c.resolveCachedArtifact(ctx, out, a)
 		if err != nil {
 			logrus.Debugf("error retrieving cached artifact for %s: %v\n", a.ImageName, err)
 			needToBuild = append(needToBuild, a)
@@ -147,40 +143,67 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 	return needToBuild, built
 }
 
-func (c *Cache) retrieveCachedArtifact(ctx context.Context, out io.Writer, a *latest.Artifact) (*Artifact, error) {
+func (c *Cache) resolveCachedArtifact(ctx context.Context, out io.Writer, a *latest.Artifact) (*Artifact, error) {
+	details, err := c.retrieveCachedArtifactDetails(ctx, out, a)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting cached artifact details")
+	}
+	if details.needsRebuild {
+		return nil, nil
+	}
+	color.Green.Fprintf(out, "Found %s locally, retagging and pushing if necessary ...\n", a.ImageName)
+	if details.needsRetag {
+		if err := c.client.Tag(ctx, details.prebuiltImage, details.hashTag); err != nil {
+			return nil, errors.Wrap(err, "retagging image")
+		}
+	}
+	if details.needsPush {
+		if _, err := c.client.Push(ctx, out, details.hashTag); err != nil {
+			return nil, errors.Wrap(err, "pushing image")
+		}
+	}
+	color.Green.Fprintf(out, "Resolved %s, skipping rebuild.\n", details.hashTag)
+	return &Artifact{
+		ImageName: a.ImageName,
+		Tag:       details.hashTag,
+	}, nil
+}
+
+type cachedArtifactDetails struct {
+	needsRebuild  bool
+	needsRetag    bool
+	needsPush     bool
+	prebuiltImage string
+	hashTag       string
+}
+
+func (c *Cache) retrieveCachedArtifactDetails(ctx context.Context, out io.Writer, a *latest.Artifact) (*cachedArtifactDetails, error) {
 	hash, err := hashForArtifact(ctx, a)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting hash for artifact %s", a.ImageName)
 	}
 	a.WorkspaceHash = hash
+	localCluster, _ := localCluster()
 	imageDetails, cacheHit := c.artifactCache[hash]
 	if !cacheHit {
-		return nil, nil
+		return &cachedArtifactDetails{
+			needsRebuild: true,
+		}, nil
 	}
 	hashTag := fmt.Sprintf("%s:%s", a.ImageName, hash)
 
 	// Check if we are using a local cluster
-	local, _ := localCluster()
 	var existsRemotely bool
-	if !local {
+	if !localCluster {
 		// Check if tagged image exists remotely with the same digest
 		existsRemotely = imageExistsRemotely(hashTag, imageDetails.Digest)
 	}
 
 	// See if this image exists in the local daemon
 	if c.client.ImageExists(ctx, hashTag) {
-		color.Green.Fprintf(out, "Found %s locally...\n", a.ImageName)
-		// Push if the image doesn't exist remotely
-		if !existsRemotely && !local {
-			color.Green.Fprintf(out, "Pushing %s since it doesn't exist remotely...\n", a.ImageName)
-			if _, err := c.client.Push(ctx, out, hashTag); err != nil {
-				return nil, errors.Wrapf(err, "pushing %s", hashTag)
-			}
-		}
-		color.Green.Fprintf(out, "%s ready, skipping rebuild\n", hashTag)
-		return &Artifact{
-			ImageName: a.ImageName,
-			Tag:       hashTag,
+		return &cachedArtifactDetails{
+			needsPush: !existsRemotely && !localCluster,
+			hashTag:   hashTag,
 		}, nil
 	}
 	// Check for a local image with the same digest as the image we want to build
@@ -191,20 +214,12 @@ func (c *Cache) retrieveCachedArtifact(ctx context.Context, out io.Writer, a *la
 	if prebuiltImage == "" {
 		return nil, errors.New("no tagged prebuilt image")
 	}
-	color.Green.Fprintf(out, "Found %s locally, retagging and pushing...\n", a.ImageName)
-	// Retag the image
-	if err := c.client.Tag(ctx, prebuiltImage, hashTag); err != nil {
-		return nil, errors.Wrap(err, "retagging image")
-	}
-	// Push the retagged image
-	if _, err := c.client.Push(ctx, out, hashTag); err != nil {
-		return nil, errors.Wrap(err, "pushing image")
-	}
 
-	color.Green.Fprintf(out, "Retagged %s, skipping rebuild.\n", prebuiltImage)
-	return &Artifact{
-		ImageName: a.ImageName,
-		Tag:       hashTag,
+	return &cachedArtifactDetails{
+		needsRetag:    true,
+		needsPush:     !localCluster,
+		prebuiltImage: prebuiltImage,
+		hashTag:       hashTag,
 	}, nil
 }
 
@@ -230,21 +245,15 @@ func (c *Cache) retrievePrebuiltImage(ctx context.Context, details ImageDetails)
 
 func imageExistsRemotely(image, digest string) bool {
 	if digest == "" {
+		logrus.Debugf("Checking if %s exists remotely, but digest is empty", image)
 		return false
 	}
-	ref, err := name.ParseReference(image, name.WeakValidation)
+	d, err := remoteDigest(image)
 	if err != nil {
+		logrus.Debugf("Checking if %s exists remotely, can't get digest: %v", image, err)
 		return false
 	}
-	img, err := remote.Image(ref)
-	if err != nil {
-		return false
-	}
-	d, err := img.Digest()
-	if err != nil {
-		return false
-	}
-	return d.Hex == digest[prefixLength:]
+	return d == digest
 }
 
 // CacheArtifacts determines the hash for each artifact, stores it in the artifact cache, and saves the cache at the end

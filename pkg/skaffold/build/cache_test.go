@@ -208,3 +208,165 @@ func createTempCacheFile(t *testing.T, cacheFileContents interface{}) string {
 	}
 	return temp.Name()
 }
+
+func TestRetrieveCachedArtifactDetails(t *testing.T) {
+	tests := []struct {
+		name         string
+		localCluster bool
+		artifact     *latest.Artifact
+		hashes       map[string]string
+		digest       string
+		api          testutil.FakeAPIClient
+		cache        *Cache
+		expected     *cachedArtifactDetails
+	}{
+		{
+			name:     "image doesn't exist in cache, remote cluster",
+			artifact: &latest.Artifact{ImageName: "image"},
+			hashes:   map[string]string{"image": "hash"},
+			cache:    noCache,
+			expected: &cachedArtifactDetails{
+				needsRebuild: true,
+			},
+		},
+		{
+			name:         "image doesn't exist in cache, local cluster",
+			artifact:     &latest.Artifact{ImageName: "image"},
+			hashes:       map[string]string{"image": "hash"},
+			localCluster: true,
+			cache:        noCache,
+			expected: &cachedArtifactDetails{
+				needsRebuild: true,
+			},
+		},
+		{
+			name:     "image in cache and exists remotely, remote cluster",
+			artifact: &latest.Artifact{ImageName: "image"},
+			hashes:   map[string]string{"image": "hash"},
+			api: testutil.FakeAPIClient{
+				TagToImageID: map[string]string{"image:hash": "image:tag"},
+				ImageSummaries: []types.ImageSummary{
+					{
+						RepoDigests: []string{"digest"},
+						RepoTags:    []string{"image:hash"},
+					},
+				},
+			},
+			cache: &Cache{
+				useCache:      true,
+				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: "digest"}},
+			},
+			digest: "digest",
+			expected: &cachedArtifactDetails{
+				hashTag: "image:hash",
+			},
+		},
+		{
+			name:         "image in cache and exists in daemon, local cluster",
+			artifact:     &latest.Artifact{ImageName: "image"},
+			hashes:       map[string]string{"image": "hash"},
+			localCluster: true,
+			api: testutil.FakeAPIClient{
+				TagToImageID: map[string]string{"image:hash": "image:tag"},
+				ImageSummaries: []types.ImageSummary{
+					{
+						RepoDigests: []string{"digest"},
+						RepoTags:    []string{"image:hash"},
+					},
+				},
+			},
+			cache: &Cache{
+				useCache:      true,
+				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: "digest"}},
+			},
+			digest: "digest",
+			expected: &cachedArtifactDetails{
+				hashTag: "image:hash",
+			},
+		},
+		{
+			name:     "image in cache, prebuilt image exists, remote cluster",
+			artifact: &latest.Artifact{ImageName: "image"},
+			hashes:   map[string]string{"image": "hash"},
+			api: testutil.FakeAPIClient{
+				ImageSummaries: []types.ImageSummary{
+					{
+						RepoDigests: []string{"digest"},
+						RepoTags:    []string{"anotherimage:hash"},
+					},
+				},
+			},
+			cache: &Cache{
+				useCache:      true,
+				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: "digest"}},
+			},
+			digest: "digest",
+			expected: &cachedArtifactDetails{
+				needsRetag:    true,
+				needsPush:     true,
+				prebuiltImage: "anotherimage:hash",
+				hashTag:       "image:hash",
+			},
+		},
+		{
+			name:         "image in cache, prebuilt image exists, local cluster",
+			artifact:     &latest.Artifact{ImageName: "image"},
+			hashes:       map[string]string{"image": "hash"},
+			localCluster: true,
+			api: testutil.FakeAPIClient{
+				ImageSummaries: []types.ImageSummary{
+					{
+						RepoDigests: []string{"digest"},
+						RepoTags:    []string{"anotherimage:hash"},
+					},
+				},
+			},
+			cache: &Cache{
+				useCache:      true,
+				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: "digest"}},
+			},
+			digest: "digest",
+			expected: &cachedArtifactDetails{
+				needsRetag:    true,
+				prebuiltImage: "anotherimage:hash",
+				hashTag:       "image:hash",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			originalHash := hashForArtifact
+			hashForArtifact = mockHashForArtifact(test.hashes)
+			defer func() {
+				hashForArtifact = originalHash
+			}()
+
+			originalLocal := localCluster
+			localCluster = func() (bool, error) {
+				return test.localCluster, nil
+			}
+			defer func() {
+				localCluster = originalLocal
+			}()
+
+			originalRemoteDigest := remoteDigest
+			remoteDigest = func(string) (string, error) {
+				return test.digest, nil
+			}
+			defer func() {
+				remoteDigest = originalRemoteDigest
+			}()
+
+			test.cache.client = docker.NewLocalDaemon(&test.api, nil)
+			actual, err := test.cache.retrieveCachedArtifactDetails(context.Background(), os.Stdout, test.artifact)
+			if err != nil {
+				t.Fatalf("error retrieving artifact details: %v", err)
+			}
+			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
+			if !reflect.DeepEqual(test.expected, actual) {
+				t.Errorf("Expected: %v, Actual: %v", test.expected, actual)
+			}
+		})
+	}
+}
