@@ -19,7 +19,7 @@ build:
 Please note that this example is for a standalone Maven project, where
 all dependencies are resolved from outside. The Jib builder requires
 that the projects are configured to use the Jib plugins for Maven or Gradle.
-Multi-module builds require a bit additional configuration.
+For multi-module builds the `module` field should be set to the module which should be built.
 
 ifndef::env-github[]
 ==== link:{github-repo-tree}/examples/jib[Example files icon:github[]]
