@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	config "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -61,11 +62,17 @@ func RegistryConfigurationRetriever(image string) ConfigurationRetriever {
 			return config.Config{}, errors.Wrapf(err, "parsing image %q", image)
 		}
 
-		remoteImage, err := remote.Image(ref)
+		auth, err := authn.DefaultKeychain.Resolve(ref.Context().Registry)
+		if err != nil {
+			return config.Config{}, errors.Wrap(err, "getting default keychain auth")
+		}
+
+		remoteImage, err := remote.Image(ref, remote.WithAuth(auth))
 		if err != nil {
 			logrus.Debugf("Error retrieving remote image details %v: %v", image, err)
 			return config.Config{}, errors.Wrapf(err, "retrieving image %q", ref)
 		}
+
 		manifest, err := remoteImage.ConfigFile()
 		if err != nil {
 			logrus.Debugf("Error retrieving remote image manifest %v: %v", image, err)
