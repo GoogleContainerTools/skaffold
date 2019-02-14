@@ -158,10 +158,14 @@ func (c *Cache) retrieveCachedArtifact(ctx context.Context, out io.Writer, a *la
 		return nil, nil
 	}
 	hashTag := fmt.Sprintf("%s:%s", a.ImageName, hash)
-	// Check if tagged image exists remotely with the same digest
-	existsRemotely := imageExistsRemotely(hashTag, imageDetails.Digest)
+
 	// Check if we are using a local cluster
 	local, _ := localCluster()
+	var existsRemotely bool
+	if !local {
+		// Check if tagged image exists remotely with the same digest
+		existsRemotely = imageExistsRemotely(hashTag, imageDetails.Digest)
+	}
 
 	// See if this image exists in the local daemon
 	if c.client.ImageExists(ctx, hashTag) {

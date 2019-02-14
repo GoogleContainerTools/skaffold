@@ -148,7 +148,7 @@ func AddRunDevFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&opts.Namespace, "namespace", "n", "", "Run deployments in the specified namespace")
 	cmd.Flags().StringVarP(&opts.DefaultRepo, "default-repo", "d", "", "Default repository value (overrides global config)")
 	cmd.Flags().BoolVar(&opts.SkipTests, "skip-tests", false, "Whether to skip the tests after building")
-	cmd.Flags().BoolVar(&opts.CacheArtifacts, "cache-artifacts", true, "Set to false to disable caching of artifacts.")
+	cmd.Flags().BoolVar(&opts.CacheArtifacts, "cache-artifacts", false, "Set to true to enable caching of artifacts.")
 	cmd.Flags().StringVarP(&opts.CacheFile, "cache-file", "", "", "Specify the location of the cache file (default $HOME/.skaffold/cache)")
 }
 

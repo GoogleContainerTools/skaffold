@@ -64,7 +64,7 @@ Usage:
 
 Flags:
   -b, --build-image stringArray      Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts
-      --cache-artifacts              Set to false to disable caching of artifacts. (default true)
+      --cache-artifacts              Set to true to enable caching of artifacts.
       --cache-file string            Specify the location of the cache file (default $HOME/.skaffold/cache)
   -d, --default-repo string          Default repository value (overrides global config)
   -f, --filename string              Filename or URL to the pipeline file (default "skaffold.yaml")
@@ -146,7 +146,7 @@ Usage:
   skaffold delete [flags]
 
 Flags:
-      --cache-artifacts       Set to false to disable caching of artifacts. (default true)
+      --cache-artifacts       Set to true to enable caching of artifacts.
       --cache-file string     Specify the location of the cache file (default $HOME/.skaffold/cache)
   -d, --default-repo string   Default repository value (overrides global config)
   -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
@@ -181,7 +181,7 @@ Usage:
   skaffold deploy [flags]
 
 Flags:
-      --cache-artifacts       Set to false to disable caching of artifacts. (default true)
+      --cache-artifacts       Set to true to enable caching of artifacts.
       --cache-file string     Specify the location of the cache file (default $HOME/.skaffold/cache)
   -d, --default-repo string   Default repository value (overrides global config)
   -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
@@ -222,7 +222,7 @@ Usage:
   skaffold dev [flags]
 
 Flags:
-      --cache-artifacts           Set to false to disable caching of artifacts. (default true)
+      --cache-artifacts           Set to true to enable caching of artifacts.
       --cache-file string         Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup                   Delete deployments after dev mode is interrupted (default true)
   -d, --default-repo string       Default repository value (overrides global config)
@@ -347,7 +347,7 @@ Usage:
   skaffold run [flags]
 
 Flags:
-      --cache-artifacts       Set to false to disable caching of artifacts. (default true)
+      --cache-artifacts       Set to true to enable caching of artifacts.
       --cache-file string     Specify the location of the cache file (default $HOME/.skaffold/cache)
   -d, --default-repo string   Default repository value (overrides global config)
   -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
