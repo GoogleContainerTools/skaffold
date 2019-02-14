@@ -50,8 +50,8 @@ type LocalDaemon interface {
 	Tag(ctx context.Context, image, ref string) error
 	ImageID(ctx context.Context, ref string) (string, error)
 	RepoDigest(ctx context.Context, ref string) (string, error)
-	TaggedImageFromDigest(ctx context.Context, id string) (string, error)
-	ImageFromID(ctx context.Context, id string) (string, error)
+	FindTaggedImageByDigest(ctx context.Context, id string) (string, error)
+	FindImageByID(ctx context.Context, id string) (string, error)
 	ImageExists(ctx context.Context, ref string) bool
 }
 
@@ -289,8 +289,8 @@ func (l *localDaemon) ImageID(ctx context.Context, ref string) (string, error) {
 	return image.ID, nil
 }
 
-// ImageFromID returns the name of an image with the given id
-func (l *localDaemon) ImageFromID(ctx context.Context, id string) (string, error) {
+// FindImageByID returns the name of an image with the given id
+func (l *localDaemon) FindImageByID(ctx context.Context, id string) (string, error) {
 	resp, err := l.apiClient.ImageList(ctx, types.ImageListOptions{})
 	if err != nil {
 		return "", errors.Wrap(err, "listing images")
@@ -323,8 +323,8 @@ func (l *localDaemon) ImageExists(ctx context.Context, ref string) bool {
 	return err == nil
 }
 
-// TaggedImageFromDigest returns the name of a tagged image with the given digest, if one exists
-func (l *localDaemon) TaggedImageFromDigest(ctx context.Context, digest string) (string, error) {
+// FindTaggedImageByDigest returns the name of a tagged image with the given digest, if one exists
+func (l *localDaemon) FindTaggedImageByDigest(ctx context.Context, digest string) (string, error) {
 	resp, err := l.apiClient.ImageList(ctx, types.ImageListOptions{})
 	if err != nil {
 		return "", errors.Wrap(err, "listing images")

@@ -157,26 +157,26 @@ func (c *Cache) retrieveCachedArtifact(ctx context.Context, out io.Writer, a *la
 	if !cacheHit {
 		return nil, nil
 	}
-	newTag := fmt.Sprintf("%s:%s", a.ImageName, hash)
+	hashTag := fmt.Sprintf("%s:%s", a.ImageName, hash)
 	// Check if tagged image exists remotely with the same digest
-	existsRemotely := imageExistsRemotely(newTag, imageDetails.Digest)
+	existsRemotely := imageExistsRemotely(hashTag, imageDetails.Digest)
 	// Check if we are using a local cluster
 	local, _ := localCluster()
 
 	// See if this image exists in the local daemon
-	if c.client.ImageExists(ctx, newTag) {
+	if c.client.ImageExists(ctx, hashTag) {
 		color.Yellow.Fprintf(out, "Found %s locally...\n", a.ImageName)
 		// Push if the image doesn't exist remotely
 		if !existsRemotely && !local {
 			color.Yellow.Fprintf(out, "Pushing %s since it doesn't exist remotely...\n", a.ImageName)
-			if _, err := c.client.Push(ctx, out, newTag); err != nil {
-				return nil, errors.Wrapf(err, "pushing %s", newTag)
+			if _, err := c.client.Push(ctx, out, hashTag); err != nil {
+				return nil, errors.Wrapf(err, "pushing %s", hashTag)
 			}
 		}
-		color.Yellow.Fprintf(out, "%s ready, skipping rebuild\n", newTag)
+		color.Yellow.Fprintf(out, "%s ready, skipping rebuild\n", hashTag)
 		return &Artifact{
 			ImageName: a.ImageName,
-			Tag:       newTag,
+			Tag:       hashTag,
 		}, nil
 	}
 	// Check for a local image with the same digest as the image we want to build
@@ -185,28 +185,28 @@ func (c *Cache) retrieveCachedArtifact(ctx context.Context, out io.Writer, a *la
 		return nil, errors.Wrapf(err, "getting prebuilt image")
 	}
 	if prebuiltImage == "" {
-		return nil, errors.New("no prebuilt image")
+		return nil, errors.New("no tagged prebuilt image")
 	}
 	color.Yellow.Fprintf(out, "Found %s locally, retagging and pushing...\n", a.ImageName)
 	// Retag the image
-	if err := c.client.Tag(ctx, prebuiltImage, newTag); err != nil {
+	if err := c.client.Tag(ctx, prebuiltImage, hashTag); err != nil {
 		return nil, errors.Wrap(err, "retagging image")
 	}
 	// Push the retagged image
-	if _, err := c.client.Push(ctx, out, newTag); err != nil {
+	if _, err := c.client.Push(ctx, out, hashTag); err != nil {
 		return nil, errors.Wrap(err, "pushing image")
 	}
 
 	color.Yellow.Fprintf(out, "Retagged %s, skipping rebuild.\n", prebuiltImage)
 	return &Artifact{
 		ImageName: a.ImageName,
-		Tag:       newTag,
+		Tag:       hashTag,
 	}, nil
 }
 
 func (c *Cache) retrievePrebuiltImage(ctx context.Context, details ImageDetails) (string, error) {
 	// first, search for an image with the same image ID
-	img, err := c.client.ImageFromID(ctx, details.ID)
+	img, err := c.client.FindImageByID(ctx, details.ID)
 	if err != nil {
 		logrus.Debugf("error getting tagged image with id %s, checking digest: %v", details.ID, err)
 	}
@@ -214,7 +214,7 @@ func (c *Cache) retrievePrebuiltImage(ctx context.Context, details ImageDetails)
 		return img, nil
 	}
 	// else, search for an image with the same digest
-	img, err = c.client.TaggedImageFromDigest(ctx, details.Digest)
+	img, err = c.client.FindTaggedImageByDigest(ctx, details.Digest)
 	if err != nil {
 		return "", errors.Wrapf(err, "getting image from digest %s", details.Digest)
 	}
@@ -292,18 +292,18 @@ func (c *Cache) Retag(ctx context.Context, out io.Writer, artifactsToBuild []*la
 	local, _ := localCluster()
 	color.Default.Fprintln(out, "Retagging cached images...")
 	for _, artifact := range artifactsToBuild {
-		newTag := fmt.Sprintf("%s:%s", artifact.ImageName, artifact.WorkspaceHash)
+		hashTag := fmt.Sprintf("%s:%s", artifact.ImageName, artifact.WorkspaceHash)
 		// Retag the image
-		if err := c.client.Tag(ctx, tags[artifact.ImageName], newTag); err != nil {
-			logrus.Warnf("error retagging %s as %s, caching for this image may not work: %v", tags[artifact.ImageName], newTag, err)
+		if err := c.client.Tag(ctx, tags[artifact.ImageName], hashTag); err != nil {
+			logrus.Warnf("error retagging %s as %s, caching for this image may not work: %v", tags[artifact.ImageName], hashTag, err)
 			continue
 		}
 		if local {
 			continue
 		}
 		// Push the retagged image
-		if _, err := c.client.Push(ctx, out, newTag); err != nil {
-			logrus.Warnf("error pushing %s, caching for this image may not work: %v", newTag, err)
+		if _, err := c.client.Push(ctx, out, hashTag); err != nil {
+			logrus.Warnf("error pushing %s, caching for this image may not work: %v", hashTag, err)
 		}
 	}
 }

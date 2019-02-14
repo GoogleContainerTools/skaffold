@@ -229,7 +229,7 @@ var (
 	imageOne  = fmt.Sprintf("image1@%s", digestOne)
 )
 
-func TestTaggedImageFromDigest(t *testing.T) {
+func TestFindTaggedImageByDigest(t *testing.T) {
 	tests := []struct {
 		name           string
 		digest         string
@@ -277,7 +277,7 @@ func TestTaggedImageFromDigest(t *testing.T) {
 				apiClient: api,
 			}
 
-			actual, err := localDocker.TaggedImageFromDigest(context.Background(), test.digest)
+			actual, err := localDocker.FindTaggedImageByDigest(context.Background(), test.digest)
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
 		})
 	}
@@ -381,7 +381,7 @@ func TestRepoDigest(t *testing.T) {
 		})
 	}
 }
-func TestImageFromID(t *testing.T) {
+func TestFindImageByID(t *testing.T) {
 	tests := []struct {
 		name           string
 		id             string
@@ -444,7 +444,7 @@ func TestImageFromID(t *testing.T) {
 				apiClient: api,
 			}
 
-			actual, err := localDocker.ImageFromID(context.Background(), test.id)
+			actual, err := localDocker.FindImageByID(context.Background(), test.id)
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
 		})
 	}
