@@ -193,3 +193,9 @@ build-docs-preview:	docs-preview-image
 .PHONY: clean-docs-preview
 clean-docs-preview: docs-preview-image
 	docker run --rm -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/clean.sh
+
+# schema generation
+
+.PHONY: generate-schemas
+generate-schemas:
+	go run schemas/main.go

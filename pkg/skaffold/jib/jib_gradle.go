@@ -52,6 +52,7 @@ func GenerateGradleArgs(task string, imageName string, a *latest.JibGradleArtifa
 	if skipTests {
 		args = append(args, "-x", "test")
 	}
+	args = append(args, a.BuildArgs...)
 	return args
 }
 

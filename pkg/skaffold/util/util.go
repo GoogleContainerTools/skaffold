@@ -94,6 +94,9 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "glob")
 		}
+		if len(files) == 0 {
+			logrus.Warnf("%s did not match any file", p)
+		}
 
 		for _, f := range files {
 			err := filepath.Walk(f, func(path string, info os.FileInfo, err error) error {

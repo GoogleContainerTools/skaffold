@@ -48,6 +48,8 @@ sed -i integration/examples/annotated-skaffold.yaml -e "s;$CURRENT_VERSION;$NEW_
 sed pkg/skaffold/schema/versions.go -i -e "s;\(.*\)$PREV_VERSION.Version\(.*\)$PREV_VERSION\(.*\);&\n\1$CURRENT_VERSION.Version\2$CURRENT_VERSION\3;g"
 sed pkg/skaffold/schema/versions.go -i -e "s;\(.*\)/$PREV_VERSION\(.*\);&\n\1/$CURRENT_VERSION\2;g"
 
+make generate-schemas
+
 git --no-pager diff --minimal
 
 make test
