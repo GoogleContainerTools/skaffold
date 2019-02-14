@@ -62,8 +62,7 @@ func Execute() error {
 		errCh <- cancelError
 	}()
 
-	var err error
-	err = <-errCh
+	err := <-errCh
 
 	if err == cancelError {
 		hashiplugin.CleanupClients()
