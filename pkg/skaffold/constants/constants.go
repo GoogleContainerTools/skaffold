@@ -66,7 +66,7 @@ const (
 	RepositoryComponentRegex string = `^[a-z\d]+(?:(?:[_.]|__|-+)[a-z\d]+)*$`
 
 	SkaffoldPluginKey       = "SKAFFOLD_PLUGIN_KEY"
-	SkaffoldPluginValue     = "42"
+	SkaffoldPluginValue     = "1337"
 	SkaffoldPluginName      = "SKAFFOLD_PLUGIN_NAME"
 	DockerBuilderPluginName = "docker"
 )
