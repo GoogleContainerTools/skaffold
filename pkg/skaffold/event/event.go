@@ -17,13 +17,16 @@ limitations under the License.
 package event
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc"
 
 	"github.com/golang/protobuf/ptypes"
 )
@@ -55,6 +58,7 @@ const (
 
 type eventer struct {
 	*eventHandler
+	cli proto.SkaffoldServiceClient
 }
 
 type eventHandler struct {
@@ -78,9 +82,10 @@ func (ev *eventHandler) logEvent(entry proto.LogEntry) {
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
 // It returns a shutdown callback for tearing down the grpc server, which the runner is responsible for calling.
 // This function can only be called once.
-func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, portOrSocket string) (func(), error) {
+func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, addr string) (func(), error) {
 	var err error
-	var shutdown func()
+	var serverShutdown func()
+	var conn *grpc.ClientConn
 	once.Do(func() {
 		builds := map[string]string{}
 		deploys := map[string]string{}
@@ -105,54 +110,29 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, por
 			eventLog: eventLog{},
 			state:    state,
 		}
-		shutdown, err = newStatusServer(portOrSocket)
+		serverShutdown, err = newStatusServer(addr)
 		if err != nil {
 			err = errors.Wrap(err, "creating status server")
 		}
+		conn, err = grpc.Dial(addr, grpc.WithInsecure())
+		if err != nil {
+			fmt.Printf("error opening connection: %s\n", err.Error())
+			os.Exit(1)
+		}
+		client := proto.NewSkaffoldServiceClient(conn)
 		ev = &eventer{
+			cli:          client,
 			eventHandler: handler,
 		}
 	})
-	return shutdown, err
+	return func() {
+		serverShutdown()
+		conn.Close()
+	}, err
 }
 
-func Handle(event Event) {
-	var entry string
-	if event.EventType == Build {
-		ev.eventHandler.state.BuildState.Artifacts[event.Artifact] = event.Status
-		switch event.Status {
-		case InProgress:
-			entry = fmt.Sprintf("Build started for artifact %s", event.Artifact)
-		case Complete:
-			entry = fmt.Sprintf("Build completed for artifact %s", event.Artifact)
-		case Failed:
-			entry = fmt.Sprintf("Build failed for artifact %s", event.Artifact)
-		default:
-		}
-	}
-	if event.EventType == Deploy {
-		ev.eventHandler.state.DeployState.Status = event.Status
-		switch event.Status {
-		case InProgress:
-			entry = "Deploy started"
-		case Complete:
-			entry = "Deploy complete"
-		case Failed:
-			entry = "Deploy failed"
-		default:
-		}
-	}
-
-	var errStr string
-	if event.Err != nil {
-		errStr = event.Err.Error()
-	}
-	ev.logEvent(proto.LogEntry{
-		Timestamp: ptypes.TimestampNow(),
-		Type:      event.EventType,
-		Entry:     entry,
-		Error:     errStr,
-	})
+func Handle(event proto.Event) {
+	go ev.cli.Handle(context.Background(), &event)
 }
 
 func LogSkaffoldMetadata(info *version.Info) {

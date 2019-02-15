@@ -34,6 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -70,7 +71,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 	var dRes []Artifact
 
 	labels := merge(labellers...)
-	event.Handle(event.Event{
+	event.Handle(proto.Event{
 		EventType: event.Deploy,
 		Status:    event.InProgress,
 	})
@@ -79,17 +80,17 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 		results, err := h.deployRelease(ctx, out, r, builds)
 		if err != nil {
 			releaseName, _ := evaluateReleaseName(r.Name)
-			event.Handle(event.Event{
+			event.Handle(proto.Event{
 				EventType: event.Deploy,
 				Status:    event.Failed,
-				Err:       err,
+				Err:       err.Error(),
 			})
 			return errors.Wrapf(err, "deploying %s", releaseName)
 		}
 
 		dRes = append(dRes, results...)
 	}
-	event.Handle(event.Event{
+	event.Handle(proto.Event{
 		EventType: event.Deploy,
 		Status:    event.Complete,
 	})

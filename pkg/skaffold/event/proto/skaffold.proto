@@ -38,6 +38,13 @@ enum EventType {
   metaEvent = 2;
 }
 
+message Event {
+  string artifact = 1;
+  EventType eventType = 2;
+  string status = 3;
+  string err = 4;
+}
+
 message LogEntry {
   google.protobuf.Timestamp timestamp = 1;
   EventType type = 2;
@@ -48,4 +55,5 @@ message LogEntry {
 service SkaffoldService {
   rpc GetState(google.protobuf.Empty) returns (State);
   rpc EventLog(stream LogEntry) returns (stream LogEntry);
+  rpc Handle(Event) returns (google.protobuf.Empty);
 }

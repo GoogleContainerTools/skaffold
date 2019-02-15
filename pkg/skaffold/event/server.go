@@ -18,10 +18,12 @@ package event
 
 import (
 	"context"
+	"fmt"
 	"net"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 
+	"github.com/golang/protobuf/ptypes"
 	empty "github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -50,6 +52,46 @@ func (s *server) EventLog(stream proto.SkaffoldService_EventLogServer) error {
 			return err
 		}
 	}
+}
+
+func (s *server) Handle(ctx context.Context, event *proto.Event) (*empty.Empty, error) {
+	var entry string
+	if event.EventType == Build {
+		ev.eventHandler.state.BuildState.Artifacts[event.Artifact] = event.Status
+		switch event.Status {
+		case InProgress:
+			entry = fmt.Sprintf("Build started for artifact %s", event.Artifact)
+		case Complete:
+			entry = fmt.Sprintf("Build completed for artifact %s", event.Artifact)
+		case Failed:
+			entry = fmt.Sprintf("Build failed for artifact %s", event.Artifact)
+		default:
+		}
+	}
+	if event.EventType == Deploy {
+		ev.eventHandler.state.DeployState.Status = event.Status
+		switch event.Status {
+		case InProgress:
+			entry = "Deploy started"
+		case Complete:
+			entry = "Deploy complete"
+		case Failed:
+			entry = "Deploy failed"
+		default:
+		}
+	}
+
+	// var errStr string
+	// if event.Err != nil {
+	// 	errStr = event.Err.Error()
+	// }
+	ev.logEvent(proto.LogEntry{
+		Timestamp: ptypes.TimestampNow(),
+		Type:      event.EventType,
+		Entry:     entry,
+		Error:     event.Err,
+	})
+	return &empty.Empty{}, nil
 }
 
 // newStatusServer creates the grpc server for serving the state and event log.
