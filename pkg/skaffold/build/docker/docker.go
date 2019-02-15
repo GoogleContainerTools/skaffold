@@ -21,9 +21,11 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/environments/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -61,9 +63,30 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	switch b.env.Name {
 	case constants.GoogleCloudBuild:
 		return b.googleCloudBuild(ctx, out, tags, artifacts)
+	case constants.Local:
+		return b.local(ctx, out, tags, artifacts)
 	default:
 		return nil, errors.Errorf("%s is not a supported environment for builder docker", b.env.Name)
 	}
+}
+
+func (b *Builder) local(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	var l *latest.LocalBuild
+	if err := util.CloneThroughJSON(b.env.Properties, &l); err != nil {
+		return nil, errors.Wrap(err, "converting execution env to localBuild struct")
+	}
+	if l == nil {
+		l = &latest.LocalBuild{}
+	}
+	kubeContext, err := kubectx.CurrentContext()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting current cluster context")
+	}
+	builder, err := local.NewBuilder(l, kubeContext, b.opts.SkipTests)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting local builder")
+	}
+	return builder.Build(ctx, out, tags, artifacts)
 }
 
 // googleCloudBuild sets any necessary defaults and then builds artifacts with docker in GCB
