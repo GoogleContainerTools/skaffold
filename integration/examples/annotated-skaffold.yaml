@@ -1,4 +1,4 @@
-apiVersion: skaffold/v1beta4
+apiVersion: skaffold/v1beta5
 kind: Config
 # The build section has all the information needed to build images.
 # It is a required section.
@@ -73,10 +73,16 @@ build:
     # jibMaven:
     #  module: modulename     # selects which maven module to build, for a multimodule project
     #  profile: profilename   # selects which maven profile to activate
+    #  args:             # additional arguments to pass to maven
+    #  - "arg1"
+    #  - "arg2"
 
     # jibGradle builds containers using the Jib plugin for Gradle.
     # jibGradle:
     #  project: projectname   # selects which gradle project to build
+    #  args:            # additional arguments to pass to gradle
+    #  - "arg1"
+    #  - "arg2"
 
 # This next section is where you'll put your specific builder configuration.
   # Valid builders are `local` (beta), `googleCloudBuild` (beta) and `kaniko` (beta).
@@ -117,17 +123,17 @@ build:
 
   # Docker artifacts can be built on a Kubernetes cluster with Kaniko.
   # Exactly one buildContext must be specified to use kaniko
-  # If localDir is specified, skaffold will mount sources directly via a emptyDir volume	
+  # If localDir is specified, skaffold will mount sources directly via a emptyDir volume
   # If gcsBucket is specified, skaffold will send sources to the GCS bucket provided
   # Kaniko also needs access to a service account to push the final image.
   # See https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster
   # If cache is specified, kaniko will use a remote cache which will speed up builds.
   # A cache repo can be specified to store cached layers, otherwise one will be inferred
-  # from the image name. See https://github.com/GoogleContainerTools/kaniko#caching 
+  # from the image name. See https://github.com/GoogleContainerTools/kaniko#caching
   #
   # Additional flags can be specified as a list. To see all additional flags, visit:
   # https://github.com/GoogleContainerTools/kaniko#additional-flags
-  # 
+  #
   # kaniko:
   #   buildContext:
   #     gcsBucket: k8s-skaffold

@@ -17,7 +17,6 @@ limitations under the License.
 package yamltags
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -56,7 +55,9 @@ func ProcessTags(yamltags string, val reflect.Value, parentStruct reflect.Value,
 		var yt YamlTag
 		switch tagParts[0] {
 		case "required":
-			yt = &RequiredTag{}
+			yt = &RequiredTag{
+				Field: field,
+			}
 		case "default":
 			yt = &DefaultTag{}
 		case "oneOf":
@@ -81,6 +82,7 @@ type YamlTag interface {
 }
 
 type RequiredTag struct {
+	Field reflect.StructField
 }
 
 func (rt *RequiredTag) Load(s []string) error {
@@ -89,7 +91,10 @@ func (rt *RequiredTag) Load(s []string) error {
 
 func (rt *RequiredTag) Process(val reflect.Value) error {
 	if isZeroValue(val) {
-		return errors.New("required value not set")
+		if tags, ok := rt.Field.Tag.Lookup("yaml"); ok {
+			return fmt.Errorf("required value not set: %s", strings.Split(tags, ",")[0])
+		}
+		return fmt.Errorf("required value not set: %s", rt.Field.Name)
 	}
 	return nil
 }

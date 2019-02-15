@@ -27,12 +27,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func CreateMappedTar(w io.Writer, root string, pathMap map[string]string) error {
+	tw := tar.NewWriter(w)
+	defer tw.Close()
+
+	for src, dst := range pathMap {
+		if err := addFileToTar(root, src, dst, tw); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func CreateTar(w io.Writer, root string, paths []string) error {
 	tw := tar.NewWriter(w)
 	defer tw.Close()
 
 	for _, path := range paths {
-		if err := addFileToTar(root, path, tw); err != nil {
+		if err := addFileToTar(root, path, "", tw); err != nil {
 			return err
 		}
 	}
@@ -46,7 +59,7 @@ func CreateTarGz(w io.Writer, root string, paths []string) error {
 	return CreateTar(gw, root, paths)
 }
 
-func addFileToTar(root string, path string, tw *tar.Writer) error {
+func addFileToTar(root string, src string, dst string, tw *tar.Writer) error {
 	var (
 		absPath string
 		err     error
@@ -57,15 +70,21 @@ func addFileToTar(root string, path string, tw *tar.Writer) error {
 		return err
 	}
 
-	if filepath.IsAbs(path) {
-		absPath = path
+	if filepath.IsAbs(src) {
+		absPath = src
 	} else {
-		absPath = filepath.Join(absRoot, path)
+		absPath, err = filepath.Abs(src)
+		if err != nil {
+			return err
+		}
 	}
 
-	tarPath, err := filepath.Rel(absRoot, absPath)
-	if err != nil {
-		return err
+	tarPath := dst
+	if tarPath == "" {
+		tarPath, err = filepath.Rel(absRoot, absPath)
+		if err != nil {
+			return err
+		}
 	}
 	tarPath = filepath.ToSlash(tarPath)
 

@@ -19,7 +19,7 @@ package v1beta3
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta4"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -91,10 +91,10 @@ profiles:
         manifests:
         - k8s-*
 `
-	verityUpgrade(t, yaml, expected)
+	verifyUpgrade(t, yaml, expected)
 }
 
-func verityUpgrade(t *testing.T, input, output string) {
+func verifyUpgrade(t *testing.T, input, output string) {
 	pipeline := NewSkaffoldPipeline()
 	err := yaml.UnmarshalStrict([]byte(input), pipeline)
 	testutil.CheckErrorAndDeepEqual(t, false, err, Version, pipeline.GetVersion())
@@ -102,7 +102,7 @@ func verityUpgrade(t *testing.T, input, output string) {
 	upgraded, err := pipeline.Upgrade()
 	testutil.CheckError(t, false, err)
 
-	expected := latest.NewSkaffoldPipeline()
+	expected := v1beta4.NewSkaffoldPipeline()
 	err = yaml.UnmarshalStrict([]byte(output), expected)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, upgraded)

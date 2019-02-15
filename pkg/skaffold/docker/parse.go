@@ -179,14 +179,17 @@ func copiedFiles(nodes []*parser.Node) ([][]string, error) {
 				copied = append(copied, files)
 			}
 		case command.Env:
-			envs[node.Next.Value] = node.Next.Next.Value
+			// one env command may define multiple variables
+			for node := node.Next; node != nil && node.Next != nil; node = node.Next.Next {
+				envs[node.Value] = node.Next.Value
+			}
 		}
 	}
 
 	return copied, nil
 }
 
-func readDockerfile(workspace, absDockerfilePath string, target string, buildArgs map[string]*string) ([]string, error) {
+func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*string) ([]string, error) {
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "opening dockerfile: %s", absDockerfilePath)
@@ -202,11 +205,6 @@ func readDockerfile(workspace, absDockerfilePath string, target string, buildArg
 
 	expandBuildArgs(dockerfileLines, buildArgs)
 
-	dockerfileLines, err = forTarget(target, dockerfileLines)
-	if err != nil {
-		return nil, errors.Wrap(err, "filtering on target")
-	}
-
 	instructions, err := onbuildInstructions(dockerfileLines)
 	if err != nil {
 		return nil, errors.Wrap(err, "listing ONBUILD instructions")
@@ -218,44 +216,6 @@ func readDockerfile(workspace, absDockerfilePath string, target string, buildArg
 	}
 
 	return expandPaths(workspace, copied)
-}
-
-func forTarget(target string, nodes []*parser.Node) ([]*parser.Node, error) {
-	if target == "" {
-		return nodes, nil
-	}
-
-	byTarget := make(map[string][]*parser.Node)
-
-	var currentTarget string
-	for _, node := range nodes {
-		if node.Value == command.From {
-			currentTarget = fromInstruction(node).as
-		}
-
-		byTarget[currentTarget] = append(byTarget[currentTarget], node)
-	}
-
-	if _, present := byTarget[target]; !present {
-		return nil, fmt.Errorf("failed to reach build target %s in Dockerfile", target)
-	}
-
-	return nodesForTarget(target, byTarget), nil
-}
-
-func nodesForTarget(target string, nodesByTarget map[string][]*parser.Node) []*parser.Node {
-	var nodes []*parser.Node
-
-	for _, node := range nodesByTarget[target] {
-		if node.Value == command.From {
-			inst := fromInstruction(node)
-			nodes = append(nodes, nodesForTarget(inst.image, nodesByTarget)...)
-		}
-
-		nodes = append(nodes, node)
-	}
-
-	return nodes
 }
 
 func expandPaths(workspace string, copied [][]string) ([]string, error) {
@@ -324,7 +284,7 @@ func GetDependencies(ctx context.Context, workspace string, a *latest.DockerArti
 		return nil, errors.Wrap(err, "normalizing dockerfile path")
 	}
 
-	deps, err := readDockerfile(workspace, absDockerfilePath, a.Target, a.BuildArgs)
+	deps, err := readDockerfile(workspace, absDockerfilePath, a.BuildArgs)
 	if err != nil {
 		return nil, err
 	}

@@ -59,16 +59,19 @@ func Test_addLinksToTar(t *testing.T) {
 		}
 	}
 
+	reset := testutil.Chdir(t, tmpDir.Root())
+	defer reset()
+
 	// Add all the files and links to a tar.
 	var b bytes.Buffer
 	tw := tar.NewWriter(&b)
 	for p := range files {
-		if err := addFileToTar(tmpDir.Path(p), p, tw); err != nil {
+		if err := addFileToTar(".", p, tw); err != nil {
 			t.Fatalf("addFileToTar() error = %v", err)
 		}
 	}
 	for l := range links {
-		if err := addFileToTar(tmpDir.Path(l), l, tw); err != nil {
+		if err := addFileToTar(".", l, tw); err != nil {
 			t.Fatalf("addFileToTar() error = %v", err)
 		}
 	}

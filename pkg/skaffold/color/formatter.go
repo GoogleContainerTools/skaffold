@@ -106,6 +106,11 @@ type ColoredWriter struct {
 	io.Writer
 }
 
+// OverwriteDefault overwrites default color
+func OverwriteDefault(color Color) {
+	Default = color
+}
+
 // This implementation comes from logrus (https://github.com/sirupsen/logrus/blob/master/terminal_check_notappengine.go),
 // unfortunately logrus doesn't expose a public interface we can use to call it.
 func isTerminal(w io.Writer) bool {

@@ -19,8 +19,8 @@ package v1beta3
 import (
 	"encoding/json"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta4"
 	"github.com/pkg/errors"
 )
 

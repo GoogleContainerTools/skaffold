@@ -1,0 +1,28 @@
+apiVersion: skaffold/v1beta5
+kind: Config
+build:
+  artifacts:
+  - image: simple-build
+  local:
+    push: false
+
+profiles:
+- name: gitCommit
+  build:
+    tagPolicy:
+      gitCommit: {}
+- name: sha256
+  build:
+    tagPolicy:
+      sha256: {}
+- name: dateTime
+  build:
+    tagPolicy:
+      dateTime:
+        format: "2006-01-02"
+        timezone: "UTC"
+- name: envTemplate
+  build:
+    tagPolicy:
+      envTemplate:
+        template: "{{.IMAGE_NAME}}:tag"

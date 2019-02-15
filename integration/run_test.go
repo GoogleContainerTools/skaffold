@@ -120,6 +120,11 @@ func TestRun(t *testing.T) {
 			pods:        []string{"getting-started"},
 			remoteOnly:  true,
 		}, {
+			description: "Google Cloud Build - sub folder",
+			dir:         "testdata/gcb-sub-folder",
+			pods:        []string{"getting-started"},
+			remoteOnly:  true,
+		}, {
 			description: "kaniko",
 			dir:         "examples/kaniko",
 			pods:        []string{"getting-started-kaniko"},
@@ -130,10 +135,19 @@ func TestRun(t *testing.T) {
 			pods:        []string{"getting-started-kaniko"},
 			remoteOnly:  true,
 		}, {
+			description: "kaniko local - sub folder",
+			dir:         "testdata/kaniko-sub-folder",
+			pods:        []string{"getting-started-kaniko"},
+			remoteOnly:  true,
+		}, {
 			description: "helm",
 			dir:         "examples/helm-deployment",
 			deployments: []string{"skaffold-helm"},
 			remoteOnly:  true,
+		}, {
+			description: "docker in gcb plugin",
+			dir:         "examples/test-plugin/gcb",
+			deployments: []string{"leeroy-app", "leeroy-web"},
 		},
 	}
 
@@ -294,18 +308,59 @@ func TestFix(t *testing.T) {
 	defer deleteNs()
 
 	fixCmd := exec.Command("skaffold", "fix", "-f", "skaffold.yaml")
-	fixCmd.Dir = "testdata"
+	fixCmd.Dir = "testdata/fix"
 	out, err := util.RunCmdOut(fixCmd)
 	if err != nil {
 		t.Fatalf("testing error: %v", err)
 	}
 
 	runCmd := exec.Command("skaffold", "run", "--namespace", ns.Name, "-f", "-")
-	runCmd.Dir = "testdata"
+	runCmd.Dir = "testdata/fix"
 	runCmd.Stdin = bytes.NewReader(out)
-	err = util.RunCmd(runCmd)
-	if err != nil {
+
+	if err := util.RunCmd(runCmd); err != nil {
 		t.Fatalf("testing error: %v", err)
+	}
+}
+
+func TestBuild(t *testing.T) {
+	tests := []struct {
+		description string
+		dir         string
+		args        []string
+	}{
+		{
+			description: "docker build",
+			dir:         "testdata/build",
+		}, {
+			description: "git tagger",
+			dir:         "testdata/tagPolicy",
+			args:        []string{"-p", "gitCommit"},
+		}, {
+			description: "sha256 tagger",
+			dir:         "testdata/tagPolicy",
+			args:        []string{"-p", "sha256"},
+		}, {
+			description: "dateTime tagger",
+			dir:         "testdata/tagPolicy",
+			args:        []string{"-p", "dateTime"},
+		}, {
+			description: "envTemplate tagger",
+			dir:         "testdata/tagPolicy",
+			args:        []string{"-p", "envTemplate"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			buildCmd := exec.Command("skaffold", append([]string{"build"}, test.args...)...)
+			buildCmd.Dir = test.dir
+
+			out, err := util.RunCmdOut(buildCmd)
+			if err != nil {
+				t.Fatalf("testing error: %v, %s", err, out)
+			}
+		})
 	}
 }
 
