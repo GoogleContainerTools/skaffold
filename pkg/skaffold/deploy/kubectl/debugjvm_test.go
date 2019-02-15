@@ -19,52 +19,43 @@ package kubectl
 import (
 	"testing"
 
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestConfigureJvmDebugging(t *testing.T) {
 	tests := []struct {
 		description   string
-		containerSpec map[interface{}]interface{}
+		containerSpec v1.Container
 		configuration imageConfiguration
-		result        map[interface{}]interface{}
+		result        v1.Container
 	}{
 		{
 			description:   "empty",
-			containerSpec: map[interface{}]interface{}{},
+			containerSpec: v1.Container{},
 			configuration: imageConfiguration{},
-			result: map[interface{}]interface{}{
-				"env": []interface{}{
-					map[interface{}]interface{}{"name": "JAVA_TOOL_OPTIONS", "value": "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y"},
-				},
-				"ports": []interface{}{
-					map[interface{}]interface{}{"name": "jdwp", "containerPort": 5005},
-				},
+			result: v1.Container{
+				Env:   []v1.EnvVar{v1.EnvVar{Name: "JAVA_TOOL_OPTIONS", Value: "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y"}},
+				Ports: []v1.ContainerPort{v1.ContainerPort{Name: "jdwp", ContainerPort: 5005}},
 			},
 		},
 		{
-			description:   "existing port",
-			containerSpec: map[interface{}]interface{}{
-				"ports": []interface{}{
-					map[interface{}]interface{}{"name": "http-server", "containerPort": 8080},
-				},
+			description: "existing port",
+			containerSpec: v1.Container{
+				Ports: []v1.ContainerPort{v1.ContainerPort{Name: "http-server", ContainerPort: 8080}},
 			},
 			configuration: imageConfiguration{},
-			result: map[interface{}]interface{}{
-				"env": []interface{}{
-					map[interface{}]interface{}{"name": "JAVA_TOOL_OPTIONS", "value": "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y"},
-				},
-				"ports": []interface{}{
-					map[interface{}]interface{}{"name": "http-server", "containerPort": 8080},
-					map[interface{}]interface{}{"name": "jdwp", "containerPort": 5005},
-				},
+			result: v1.Container{
+				Env:   []v1.EnvVar{v1.EnvVar{Name: "JAVA_TOOL_OPTIONS", Value: "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y"}},
+				Ports: []v1.ContainerPort{v1.ContainerPort{Name: "http-server", ContainerPort: 8080}, v1.ContainerPort{Name: "jdwp", ContainerPort: 5005}},
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			configureJvmDebugging(test.containerSpec, test.configuration)
+			configureJvmDebugging(&test.containerSpec, test.configuration)
 			testutil.CheckDeepEqual(t, test.result, test.containerSpec)
 		})
 	}

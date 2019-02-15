@@ -16,29 +16,25 @@ limitations under the License.
 
 package kubectl
 
+import (
+	v1 "k8s.io/api/core/v1"
+)
+
 // configureJvmDebugging configured a container definition for JVM debugging.
 // Returns a simple map describing the debug configuration details.
-func configureJvmDebugging(container map[interface{}]interface{}, config imageConfiguration) map[string]interface{} {
-	env, ok := container["env"].([]interface{}) // []map[interface{}]interface{}
-	if !ok {
-		env = make([]interface{},0) ///[]map[interface{}]interface{}
-	}
+func configureJvmDebugging(container *v1.Container, config imageConfiguration) map[string]interface{} {
 	// FIXME try to find existing JAVA_TOOL_OPTIONS or jdwp command argument
-	javaToolOptions := map[interface{}]interface{}{
-		"name":  "JAVA_TOOL_OPTIONS",
-		"value": "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y",
+	javaToolOptions := v1.EnvVar{
+		Name:  "JAVA_TOOL_OPTIONS",
+		Value: "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y",
 	}
-	container["env"] = append(env, javaToolOptions)
+	container.Env = append(container.Env, javaToolOptions)
 
-	ports, ok := container["ports"].([]interface{}) // []map[string]interface{}
-	if !ok {
-		ports = make([]interface{},0) ///[]map[interface{}]interface{}
+	jdwpPort := v1.ContainerPort{
+		Name:          "jdwp",
+		ContainerPort: 5005,
 	}
-	jdwpPort := map[interface{}]interface{}{
-		"name": "jdwp",
-		"containerPort": 5005,
-	}
-	container["ports"] = append(ports, jdwpPort)
+	container.Ports = append(container.Ports, jdwpPort)
 
 	return map[string]interface{}{
 		"runtime": "jvm",

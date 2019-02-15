@@ -17,13 +17,21 @@ limitations under the License.
 package kubectl
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
+
+	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	serializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 )
@@ -31,26 +39,37 @@ import (
 // ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.
 func ApplyDebuggingTransforms(l ManifestList, builds []build.Artifact) (ManifestList, error) {
 	var updated ManifestList
+	//decode := api.Codecs.UniversalDeserializer().Decode
+	decode := scheme.Codecs.UniversalDeserializer().Decode
+
+	s := serializer.NewYAMLSerializer(serializer.DefaultMetaFactory, scheme.Scheme, scheme.Scheme)
+	encode := func(o runtime.Object) ([]byte, error) {
+		var b bytes.Buffer
+		w := bufio.NewWriter(&b)
+		if err := s.Encode(o, w); err != nil {
+			return nil, err
+		}
+		w.Flush()
+		return b.Bytes(), nil
+	}
+
 	for _, manifest := range l {
-		m := make(map[interface{}]interface{})
-		if err := yaml.Unmarshal(manifest, m); err != nil {
+
+		obj, _, err := decode(manifest, nil, nil)
+		if err != nil {
 			return nil, errors.Wrap(err, "reading kubernetes YAML")
 		}
 
-		if len(m) == 0 {
-			continue
+		if transformManifest(obj, builds) {
+			manifest, err := encode(obj)
+			if err != nil {
+				return nil, errors.Wrap(err, "marshalling yaml")
+			}
+			if logrus.IsLevelEnabled(logrus.DebugLevel) {
+				logrus.Debugln("Applied debugging transform:\n", string(manifest))
+			}
 		}
-
-		if transformManifest(m, builds) && logrus.IsLevelEnabled(logrus.DebugLevel) {
-			bytes, _ := yaml.Marshal(m)
-			logrus.Debugln("Applied debugging transforms:\n", string(bytes))
-		}
-
-		updatedManifest, err := yaml.Marshal(m)
-		if err != nil {
-			return nil, errors.Wrap(err, "marshalling yaml")
-		}
-		updated = append(updated, updatedManifest)
+		updated = append(updated, manifest)
 	}
 
 	return updated, nil
@@ -58,29 +77,17 @@ func ApplyDebuggingTransforms(l ManifestList, builds []build.Artifact) (Manifest
 
 // transformManifest attempts to configure a manifest for debugging.
 // Returns true if changed, false otherwise.
-func transformManifest(m map[interface{}]interface{}, builds []build.Artifact) bool {
-	switch {
-	case m["kind"] == "Pod" && m["apiVersion"] == "v1":
-		return transformPodSpec(m, builds)
-	case m["kind"] == "Deployment" && (m["apiVersion"] == "extensions/v1beta1" || m["apiVersion"] == "apps/v1"):
-		return transformDeployment(m, builds)
+func transformManifest(obj runtime.Object, builds []build.Artifact) bool {
+	// FIXME: add other types
+	switch o := obj.(type) {
+	case *v1.Pod:
+		return transformPodSpec(&o.ObjectMeta, &o.Spec, builds)
+	case *appsv1.Deployment:
+		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, builds)
 	default:
-		logrus.Debugf("skipping manifest kind:%v apiVersion:%v\n", m["kind"], m["apiVersion"])
+		logrus.Debugf("skipping unknown object:%v\n", obj)
 		return false
 	}
-}
-
-// transformDeployment attempts to configure a deployment's podspec for debugging.
-// Returns true if changed, false otherwise.
-func transformDeployment(m map[interface{}]interface{}, builds []build.Artifact) bool {
-	template, ok := traverse(m, "spec", "template")
-	if ok {
-		podSpec, ok := template.(map[interface{}]interface{})
-		if ok {
-			return transformPodSpec(podSpec, builds)
-		}
-	}
-	return false
 }
 
 const (
@@ -92,37 +99,28 @@ const (
 
 // transformPodSpec attempts to configure a podspec for debugging.
 // Returns true if changed, false otherwise.
-func transformPodSpec(podSpec map[interface{}]interface{}, builds []build.Artifact) bool {
-	containers, found := traverse(podSpec, "spec", "containers")
-	if !found {
-		return false
-	}
-	switch containers := containers.(type) {
-	case []interface{}: // can't use []map[interface{}]interface{} !?
-		// configurations maps a container-name -> debugging configuration description
-		configurations := make(map[string]map[string]interface{})
-		for _, container := range containers {
-			switch container := container.(type) {
-			case map[interface{}]interface{}:
-				containerName := container["name"].(string) // containers are required have unique name
-				image := container["image"].(string)
-				// we only reconfigure build artifacts
-				if artifact := findArtifact(image, builds); artifact != nil {
-					logrus.Debugf("Found artifact for image %v", image)
-					if configuration := transformContainer(container, *artifact); configuration != nil {
-						configurations[containerName] = configuration
-					}
-					// fixme: add this artifact to the watch list?
-				} else {
-					logrus.Debugf("Ignoring image %v for debugging: no corresponding build artifact", image)
-				}
+func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, builds []build.Artifact) bool {
+	configurations := make(map[string]map[string]interface{})
+	// containers are required have unique name within a pod
+	for i, _ := range podSpec.Containers {
+		container := &podSpec.Containers[i]
+		// we only reconfigure build artifacts
+		if artifact := findArtifact(container.Image, builds); artifact != nil {
+			logrus.Debugf("Found artifact for image %v", container.Image)
+			if configuration := transformContainer(container, *artifact); configuration != nil {
+				configurations[container.Name] = configuration
 			}
+			// fixme: add this artifact to the watch list?
+		} else {
+			logrus.Debugf("Ignoring image %v for debugging: no corresponding build artifact", container.Image)
 		}
-		if len(configurations) > 0 {
-			annotations := traverseToMap(podSpec, "metadata", "annotations")
-			annotations["debug.cloud.google.com/config"] = encodeConfigurations(configurations)
-			return true
+	}
+	if len(configurations) > 0 {
+		if metadata.Annotations == nil {
+			metadata.Annotations = make(map[string]string)
 		}
+		metadata.Annotations["debug.cloud.google.com/config"] = encodeConfigurations(configurations)
+		return true
 	}
 	return false
 }
@@ -162,6 +160,33 @@ func retrieveImageConfiguration(image string, artifact build.Artifact) imageConf
 	}
 }
 
+// transformContainer rewrites the container definition to enable debugging and returns a debugging configuration description
+func transformContainer(container *v1.Container, artifact build.Artifact) map[string]interface{} {
+	config := retrieveImageConfiguration(container.Image, artifact)
+
+	// update image configuration values with those set in the k8s manifest
+	for _, envVar := range container.Env {
+		// FIXME handle ValueFrom?
+		config.env[envVar.Name] = envVar.Value
+	}
+
+	if len(container.Command) > 0 {
+		config.entrypoint = container.Command
+	}
+	if len(container.Args) > 0 {
+		config.arguments = container.Args
+	}
+
+	switch guessRuntime(config) {
+	case JVM:
+		logrus.Debugf("Configuring %v for JVM", container.Name)
+		return configureJvmDebugging(container, config)
+	default:
+		logrus.Debugf("Unable to determine runtime for %v\n", container.Name)
+		return nil
+	}
+}
+
 func guessRuntime(config imageConfiguration) string {
 	if _, found := config.env["JAVA_TOOL_OPTIONS"]; found {
 		return JVM
@@ -177,36 +202,6 @@ func guessRuntime(config imageConfiguration) string {
 		return JVM
 	}
 	return UNKNOWN
-}
-
-// transformContainer rewrites the container definition to enable debugging and returns a debugging configuration description
-func transformContainer(container map[interface{}]interface{}, artifact build.Artifact) map[string]interface{} {
-	containerName := container["name"].(string)
-	image := container["image"].(string)
-	config := retrieveImageConfiguration(image, artifact)
-
-	// update image configuration values with those set in the k8s manifest
-	switch env := container["env"].(type) {
-	case map[interface{}]interface{}:
-		for key, value := range env {
-			config.env[key.(string)] = value.(string)
-		}
-	}
-	if cmd, found := container["command"]; found {
-		config.entrypoint = cmd.([]string)
-	}
-	if args, found := container["args"]; found {
-		config.arguments = args.([]string)
-	}
-
-	switch guessRuntime(config) {
-	case JVM:
-		logrus.Debugf("Configuring %v for JVM", containerName)
-		return configureJvmDebugging(container, config)
-	default:
-		logrus.Debugf("Unable to determine runtime for %v\n", containerName)
-		return nil
-	}
 }
 
 func encodeConfigurations(configurations map[string]map[string]interface{}) string {
