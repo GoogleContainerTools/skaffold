@@ -14,20 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package app
+package shared
 
 import (
-	"os"
-
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/plugin"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func Run() error {
-	if plugin.ShouldExecuteCorePlugin() {
-		return plugin.Execute()
-	}
-
-	c := cmd.NewSkaffoldCommand(os.Stdout, os.Stderr)
-	return c.Execute()
+type PluginBuilder interface {
+	Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment)
+	build.Builder
 }

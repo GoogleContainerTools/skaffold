@@ -36,7 +36,7 @@ func Set(c *latest.SkaffoldPipeline) error {
 	setDefaultKubectlManifests(c)
 
 	if err := withCloudBuildConfig(c,
-		setDefaultCloudBuildDockerImage,
+		SetDefaultCloudBuildDockerImage,
 		setDefaultCloudBuildMavenImage,
 		setDefaultCloudBuildGradleImage,
 	); err != nil {
@@ -93,7 +93,8 @@ func withCloudBuildConfig(c *latest.SkaffoldPipeline, operations ...func(kaniko 
 	return nil
 }
 
-func setDefaultCloudBuildDockerImage(gcb *latest.GoogleCloudBuild) error {
+// SetDefaultCloudBuildDockerImage sets the default cloud build image if it doesn't exist
+func SetDefaultCloudBuildDockerImage(gcb *latest.GoogleCloudBuild) error {
 	gcb.DockerImage = valueOrDefault(gcb.DockerImage, constants.DefaultCloudBuildDockerImage)
 	return nil
 }
@@ -141,8 +142,13 @@ func defaultToDockerArtifact(a *latest.Artifact) {
 
 func setDefaultDockerfile(a *latest.Artifact) {
 	if a.DockerArtifact != nil {
-		a.DockerArtifact.DockerfilePath = valueOrDefault(a.DockerArtifact.DockerfilePath, constants.DefaultDockerfilePath)
+		SetDefaultDockerArtifact(a.DockerArtifact)
 	}
+}
+
+// SetDefaultDockerArtifact sets defaults on docker artifacts
+func SetDefaultDockerArtifact(a *latest.DockerArtifact) {
+	a.DockerfilePath = valueOrDefault(a.DockerfilePath, constants.DefaultDockerfilePath)
 }
 
 func setDefaultWorkspace(a *latest.Artifact) {

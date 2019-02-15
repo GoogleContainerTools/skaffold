@@ -14,20 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package app
+package docker
 
 import (
-	"os"
-
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/plugin"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
+	plugin "github.com/hashicorp/go-plugin"
 )
 
-func Run() error {
-	if plugin.ShouldExecuteCorePlugin() {
-		return plugin.Execute()
+// Execute an image build with docker
+func Execute() error {
+	// pluginMap is the map of plugins we can dispense.
+	var pluginMap = map[string]plugin.Plugin{
+		"docker": &shared.BuilderPlugin{Impl: docker.NewBuilder()},
 	}
 
-	c := cmd.NewSkaffoldCommand(os.Stdout, os.Stderr)
-	return c.Execute()
+	plugin.Serve(&plugin.ServeConfig{
+		HandshakeConfig: shared.Handshake,
+		Plugins:         pluginMap,
+	})
+	return nil
 }

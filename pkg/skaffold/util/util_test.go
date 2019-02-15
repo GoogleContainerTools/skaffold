@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -205,6 +206,32 @@ func TestNonEmptyLines(t *testing.T) {
 		t.Run(tt.in, func(t *testing.T) {
 			result := NonEmptyLines([]byte(tt.in))
 			testutil.CheckDeepEqual(t, tt.out, result)
+		})
+	}
+}
+
+func TestCloneThroughJSON(t *testing.T) {
+	tests := []struct {
+		name     string
+		old      interface{}
+		new      interface{}
+		expected interface{}
+	}{
+		{
+			name: "google cloud build",
+			old: map[string]string{
+				"projectId": "unit-test",
+			},
+			new: &latest.GoogleCloudBuild{},
+			expected: &latest.GoogleCloudBuild{
+				ProjectID: "unit-test",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			CloneThroughJSON(test.old, test.new)
+			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expected, test.new)
 		})
 	}
 }

@@ -22,6 +22,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -39,6 +40,15 @@ import (
 
 func RandomID() string {
 	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("%x", b)
+}
+
+func RandomFourCharacterID() string {
+	b := make([]byte, 2)
 	_, err := rand.Read(b)
 	if err != nil {
 		panic(err)
@@ -257,4 +267,16 @@ func SHA256(r io.Reader) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(hasher.Sum(make([]byte, 0, hasher.Size()))), nil
+}
+
+// CloneThroughJSON marshals the old interface into the new one
+func CloneThroughJSON(old interface{}, new interface{}) error {
+	o, err := json.Marshal(old)
+	if err != nil {
+		return errors.Wrap(err, "marshalling old")
+	}
+	if err := json.Unmarshal(o, &new); err != nil {
+		return errors.Wrap(err, "unmarshalling new")
+	}
+	return nil
 }
