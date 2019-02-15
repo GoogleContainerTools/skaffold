@@ -17,7 +17,6 @@ limitations under the License.
 package docker
 
 import (
-	"bytes"
 	"context"
 	"io"
 
@@ -30,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // Builder builds artifacts with Docker.
@@ -58,13 +58,9 @@ func (b *Builder) Labels() map[string]string {
 
 // DependenciesForArtifact returns the dependencies for this docker artifact
 func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
-	var d *latest.DockerArtifact
-	if err := util.CloneThroughJSON(bytes.NewReader(artifact.BuilderPlugin.Contents), &d); err != nil {
-		return nil, errors.Wrap(err, "cloning bazel artifact")
+	if err := setArtifact(artifact); err != nil {
+		return nil, err
 	}
-	// Set defaults on the docker artifact
-	defaults.SetDefaultDockerArtifact(d)
-	artifact.ArtifactType.DockerArtifact = d
 	return build.DependenciesForArtifact(ctx, artifact)
 }
 
@@ -86,5 +82,26 @@ func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.
 		return nil, errors.Wrap(err, "converting execution environment to googleCloudBuild struct")
 	}
 	defaults.SetDefaultCloudBuildDockerImage(g)
+	for _, a := range artifacts {
+		if err := setArtifact(a); err != nil {
+			return nil, err
+		}
+	}
 	return gcb.NewBuilder(g, b.opts.SkipTests).Build(ctx, out, tags, artifacts)
+}
+
+func setArtifact(artifact *latest.Artifact) error {
+	if artifact.ArtifactType.DockerArtifact != nil {
+		return nil
+	}
+	var a *latest.DockerArtifact
+	if err := yaml.UnmarshalStrict(artifact.BuilderPlugin.Contents, &a); err != nil {
+		return errors.Wrap(err, "unmarshalling docker artifact")
+	}
+	if a == nil {
+		a = &latest.DockerArtifact{}
+	}
+	defaults.SetDefaultDockerArtifact(a)
+	artifact.ArtifactType.DockerArtifact = a
+	return nil
 }

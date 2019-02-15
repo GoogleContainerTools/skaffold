@@ -31,6 +31,7 @@ import (
 func Set(c *latest.SkaffoldPipeline) error {
 	if pluginsDefined(c) {
 		defaultToLocalExecEnvironment(c)
+		defaultToEmptyProperties(c)
 	}
 	defaultToLocalBuild(c)
 	defaultToKubectlDeploy(c)
@@ -75,6 +76,12 @@ func defaultToLocalExecEnvironment(c *latest.SkaffoldPipeline) {
 		c.Build.ExecutionEnvironment = &latest.ExecutionEnvironment{
 			Name: constants.Local,
 		}
+	}
+}
+
+func defaultToEmptyProperties(c *latest.SkaffoldPipeline) {
+	if c.Build.ExecutionEnvironment.Properties == nil {
+		c.Build.ExecutionEnvironment.Properties = map[string]interface{}{}
 	}
 }
 
