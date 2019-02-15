@@ -100,7 +100,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 
 	labellers := []deploy.Labeller{opts, builder, deployer, tagger}
 
-	builder, tester, deployer = WithTimings(builder, tester, deployer)
+	builder, tester, deployer = WithTimings(builder, tester, deployer, opts.CacheArtifacts)
 	if opts.Notification {
 		deployer = WithNotification(deployer)
 	}
