@@ -17,11 +17,14 @@ limitations under the License.
 package gcb
 
 import (
-	"errors"
 	"fmt"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/pkg/errors"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
+	yaml "gopkg.in/yaml.v2"
 )
 
 func (b *Builder) buildDescription(artifact *latest.Artifact, tag, bucket, object string) (*cloudbuild.Build, error) {
@@ -50,6 +53,8 @@ func (b *Builder) buildDescription(artifact *latest.Artifact, tag, bucket, objec
 
 func (b *Builder) buildSteps(artifact *latest.Artifact, tag string) ([]*cloudbuild.BuildStep, error) {
 	switch {
+	case artifact.BuilderPlugin != nil:
+		return b.pluginBuildSteps(artifact, tag)
 	case artifact.DockerArtifact != nil:
 		return b.dockerBuildSteps(artifact.DockerArtifact, tag), nil
 
@@ -64,5 +69,19 @@ func (b *Builder) buildSteps(artifact *latest.Artifact, tag string) ([]*cloudbui
 
 	default:
 		return nil, fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
+	}
+}
+
+func (b *Builder) pluginBuildSteps(artifact *latest.Artifact, tag string) ([]*cloudbuild.BuildStep, error) {
+	switch artifact.BuilderPlugin.Name {
+	case constants.DockerBuilderPluginName:
+		var da *latest.DockerArtifact
+		if err := yaml.Unmarshal(artifact.BuilderPlugin.Contents, &da); err != nil {
+			return nil, errors.Wrap(err, "getting docker artifact details")
+		}
+		defaults.SetDefaultDockerArtifact(da)
+		return b.dockerBuildSteps(da, tag), nil
+	default:
+		return nil, errors.Errorf("the '%s' builder is not supported", artifact.BuilderPlugin.Name)
 	}
 }

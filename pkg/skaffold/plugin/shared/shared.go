@@ -14,20 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package app
+package shared
 
 import (
-	"os"
-
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/plugin"
+	plugin "github.com/hashicorp/go-plugin"
 )
 
-func Run() error {
-	if plugin.ShouldExecuteCorePlugin() {
-		return plugin.Execute()
-	}
+// Handshake is a common handshake that is shared by plugin and host.
+var Handshake = plugin.HandshakeConfig{
+	ProtocolVersion: 1,
 
-	c := cmd.NewSkaffoldCommand(os.Stdout, os.Stderr)
-	return c.Execute()
+	MagicCookieKey:   "SKAFFOLD_BUILDER_PLUGIN",
+	MagicCookieValue: "hello",
+}
+
+// PluginMap is a map of all accepted plugins
+var PluginMap = map[string]plugin.Plugin{
+	"docker": &BuilderPlugin{},
 }

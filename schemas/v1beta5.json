@@ -49,6 +49,9 @@
         "tagPolicy": {
           "$ref": "#/definitions/TagPolicy",
           "description": "(beta) determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! The policy can be \u003ccode\u003egitCommit\u003c/code\u003e (beta), \u003ccode\u003esha256\u003c/code\u003e (beta), \u003ccode\u003eenvTemplate\u003c/code\u003e (beta) or \u003ccode\u003edateTime\u003c/code\u003e (beta). If not specified, it defaults to \u003ccode\u003egitCommit: {}\u003c/code\u003e."
+        },
+        "executionEnvironment": {
+          "$ref": "#/definitions/ExecutionEnvironment"
         }
       },
       "oneOf": [
@@ -78,6 +81,45 @@
         }
       ],
       "description": "contains all the configuration for the build steps."
+    },
+    "ExecEnvironment": {
+      "type": "string",
+      "default": "\"\""
+    },
+    "ExecutionEnvironment": {
+      "properties": {
+        "name": {
+          "$ref": "#/definitions/ExecEnvironment"
+        },
+        "properties": {
+          "additionalProperties": {},
+          "type": "object",
+          "default": "{}"
+        }
+      },
+      "description": "the environment in which the build should run (ex. local or in-cluster, etc.)"
+    },
+    "BuilderPlugin": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "of the build plugin",
+          "default": "\"\""
+        },
+        "properties": {
+          "additionalProperties": {},
+          "type": "object",
+          "description": "associated with the plugin",
+          "default": "{}"
+        },
+        "": {
+          "items": {
+            "$ref": "#/definitions/byte"
+          },
+          "type": "array"
+        }
+      },
+      "description": "contains all fields necessary for specifying a build plugin"
     },
     "TagPolicy": {
       "properties": {
@@ -647,6 +689,10 @@
           "examples": [
             "{'*.py': .}"
           ]
+        },
+        "plugin": {
+          "$ref": "#/definitions/BuilderPlugin",
+          "description": "The plugin used to build this artifact"
         }
       },
       "oneOf": [

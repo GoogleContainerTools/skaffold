@@ -60,7 +60,26 @@ type BuildConfig struct {
 	// If not specified, it defaults to `gitCommit: {}`.
 	TagPolicy TagPolicy `yaml:"tagPolicy,omitempty"`
 
+	ExecutionEnvironment *ExecutionEnvironment `yaml:"executionEnvironment,omitempty"`
+
 	BuildType `yaml:",inline"`
+}
+
+type ExecEnvironment string
+
+// ExecutionEnvironment is the environment in which the build should run (ex. local or in-cluster, etc.)
+type ExecutionEnvironment struct {
+	Name       ExecEnvironment        `yaml:"name,omitempty"`
+	Properties map[string]interface{} `yaml:"properties,omitempty"`
+}
+
+// BuilderPlugin contains all fields necessary for specifying a build plugin
+type BuilderPlugin struct {
+	// Name of the build plugin
+	Name string `yaml:"name,omitempty"`
+	// Properties associated with the plugin
+	Properties map[string]interface{} `yaml:"properties,omitempty"`
+	Contents   []byte                 `yaml:",omitempty"`
 }
 
 // TagPolicy contains all the configuration for the tagging step.
@@ -423,6 +442,9 @@ type Artifact struct {
 	Sync map[string]string `yaml:"sync,omitempty"`
 
 	ArtifactType `yaml:",inline"`
+
+	// The plugin used to build this artifact
+	BuilderPlugin *BuilderPlugin `yaml:"plugin,omitempty"`
 }
 
 // Profile (beta) profiles are used to override any `build`, `test` or `deploy` configuration.

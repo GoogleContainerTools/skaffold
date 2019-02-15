@@ -144,6 +144,10 @@ func TestRun(t *testing.T) {
 			dir:         "examples/helm-deployment",
 			deployments: []string{"skaffold-helm"},
 			remoteOnly:  true,
+		}, {
+			description: "docker in gcb plugin",
+			dir:         "examples/test-plugin/gcb",
+			deployments: []string{"leeroy-app", "leeroy-web"},
 		},
 	}
 

@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -36,6 +37,15 @@ import (
 
 func RandomID() string {
 	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("%x", b)
+}
+
+func RandomFourCharacterID() string {
+	b := make([]byte, 2)
 	_, err := rand.Read(b)
 	if err != nil {
 		panic(err)
@@ -244,4 +254,16 @@ func NonEmptyLines(input []byte) []string {
 		}
 	}
 	return result
+}
+
+// CloneThroughJSON marshals the old interface into the new one
+func CloneThroughJSON(old interface{}, new interface{}) error {
+	o, err := json.Marshal(old)
+	if err != nil {
+		return errors.Wrap(err, "marshalling old")
+	}
+	if err := json.Unmarshal(o, &new); err != nil {
+		return errors.Wrap(err, "unmarshalling new")
+	}
+	return nil
 }
