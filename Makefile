@@ -170,6 +170,10 @@ submit-release-trigger:
 preview-docs:
 	./hack/doc/preview.sh
 
+.PHONY: check-docs
+check-docs:
+	DRY_RUN=1 ./hack/doc/publish.sh
+
 .PHONY: publish-docs
 publish-docs:
 	./hack/doc/publish.sh

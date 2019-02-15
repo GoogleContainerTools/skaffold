@@ -23,4 +23,6 @@ DOCS_DIR="${CURRENT_DIR}/../../docs"
 docker build --target hugo-publish -t skaffold-docs-publish "${DOCS_DIR}"
 
 # Run Hugo
-docker run --rm -ti skaffold-docs-publish
+if [[ "${DRY_RUN}" != "1" ]]; then
+    docker run --rm -ti skaffold-docs-publish
+fi

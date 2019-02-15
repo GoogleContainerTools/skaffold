@@ -37,12 +37,13 @@ const manTemplate = `
 ` + "```\n"
 
 func main() {
+	tmpl, err := template.New("test").Parse(manTemplate)
+	if err != nil {
+		panic(err)
+	}
+
 	command := cmd.NewSkaffoldCommand(os.Stdout, os.Stderr)
 	for _, command := range command.Commands() {
-		tmpl, err := template.New("test").Parse(manTemplate)
-		if err != nil {
-			panic(err)
-		}
 		err = tmpl.Execute(os.Stdout, command)
 		if err != nil {
 			panic(err)
