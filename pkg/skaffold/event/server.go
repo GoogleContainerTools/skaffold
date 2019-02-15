@@ -80,6 +80,10 @@ func (s *server) Handle(ctx context.Context, event *proto.Event) (*empty.Empty, 
 		default:
 		}
 	}
+	if event.EventType == Port {
+		ev.eventHandler.state.PortState.ForwardedPorts = append(ev.eventHandler.state.PortState.ForwardedPorts, event.PortInfo)
+		// ev.eventHandler.state.ForwardedPorts = append(ev.eventHandler.state.ForwardedPorts, event.PortInfo)
+	}
 
 	// var errStr string
 	// if event.Err != nil {

@@ -26,6 +26,8 @@ import (
 	"strconv"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -92,6 +94,16 @@ func (*kubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntr
 		}
 		return errors.Wrapf(err, "port forwarding pod: %s/%s, port: %d to local port: %d, err: %s", pfe.namespace, pfe.podName, pfe.port, pfe.localPort, buf.String())
 	}
+
+	event.Handle(proto.Event{
+		EventType: proto.EventType_portEvent,
+		PortInfo: &proto.PortInfo{
+			PodName:       pfe.podName,
+			ContainerName: pfe.containerName,
+			LocalPort:     pfe.localPort,
+			RemotePort:    pfe.port,
+		},
+	})
 
 	go cmd.Wait()
 

@@ -53,6 +53,7 @@ type Event struct {
 const (
 	Build  = proto.EventType_buildEvent
 	Deploy = proto.EventType_deployEvent
+	Port   = proto.EventType_portEvent
 	Meta   = proto.EventType_metaEvent
 )
 
@@ -104,6 +105,7 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, add
 			DeployState: &proto.DeployState{
 				Status: NotStarted,
 			},
+			PortState: &proto.PortState{},
 		}
 
 		handler := &eventHandler{

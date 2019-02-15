@@ -19,6 +19,11 @@ message Request {
 message State {
   BuildState buildState = 1;
   DeployState deployState = 2;
+  PortState portState = 3;
+}
+
+message PortState {
+  repeated PortInfo forwardedPorts = 1;
 }
 
 // BuildState contains a map of all skaffold artifacts to their current build
@@ -35,14 +40,23 @@ message DeployState {
 enum EventType {
   buildEvent = 0;
   deployEvent = 1;
-  metaEvent = 2;
+  portEvent = 2;
+  metaEvent = 3;
+}
+
+message PortInfo {
+  int32 localPort = 1;
+  int32 remotePort = 2;
+  string podName = 3;
+  string containerName = 4;
 }
 
 message Event {
   string artifact = 1;
-  EventType eventType = 2;
-  string status = 3;
-  string err = 4;
+  string status = 2;
+  string err = 3;
+  EventType eventType = 4;
+  PortInfo portInfo = 5;
 }
 
 message LogEntry {
