@@ -114,7 +114,61 @@ Docker image `gcr.io/k8s-skaffold/example` with Kaniko:
 
 ## Jib Maven and Gradle locally 
 
-{{% todo 1299 %}} 
+[Jib](https://github.com/GoogleContainerTools/jib#jib) is a set of plugins for
+[Maven](https://github.com/GoogleContainerTools/jib/blob/master/jib-maven-plugin) and 
+[Gradle](https://github.com/GoogleContainerTools/jib/blob/master/jib-gradle-plugin)
+for building optimized Docker and OCI images for Java applications
+without a Docker daemon.
+
+Skaffold can help build artifacts using Jib; Jib builds the container images and then
+pushes them to the local Docker daemon or to remote registries as instructed by Skaffold.
+To use Jib, add a `jibMaven` or `jibGradle` field to each artifact you specify in the
+`artifacts` part of the `build` section.  `context` should be a path to
+your Maven or Gradle project.  Note that your project must be configured
+to use Jib already.
+
+The `jibMaven` type offers the following options:
+
+| Option          | Description | Default |
+|-----------------|-------------|---------|
+| `args`          | Additional command-line arguments for Maven | |
+| `profile`       | The Maven build profile to use | |
+| `module`        | The module to be built for a multi-module project; see below | |
+
+The `jibGradle` type offers the following options:
+
+| Option          | Description | Default |
+|-----------------|-------------|---------|
+| `args`          | Additional command-line arguments for Gradle | |
+| `project`       | The sub-project to be built for a multi-module project; see below | |
+
+See the [Skaffold-Jib demo project](https://github.com/GoogleContainerTools/skaffold/blob/master/examples/jib/)
+for an example.
+
+### Multi-Module Projects
+
+Skaffold can be configured for _multi-module projects_ too.  A multi-module project
+has several _modules_ (Maven terminology) or _sub-projects_ (Gradle terminology) that
+each produce a separate container image.
+
+#### Maven
+
+To build a multi-module project with Maven, specify each module as a separate
+Skaffold artifact.  For each artifact, add a `jibMaven` field with a `module` field
+specifying either the module's `:artifactId`, `groupId:artifactId`, or the relative path
+to the module _within the project_.  Each artifact's `context` field
+should point to the root project location.
+
+Building multi-module projects with Skaffold-Jib has one additional requirement: 
+a Jib goal must be explicitly bound to the `package` phase for each specific
+module that produces a container image.
+
+#### Gradle
+
+To build a multi-module project with Gradle, specify each sub-project as a separate
+Skaffold artifact.  For each artifact, add a `jibGradle` field with a `project` field
+containing the sub-project's name (the directory, by default).  Each artifact's `context` field
+should point to the root project location.
 
 ## Jib Maven and Gradle remotely with Google Cloud Build 
 
