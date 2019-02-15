@@ -81,14 +81,10 @@ func (s *server) Handle(ctx context.Context, event *proto.Event) (*empty.Empty, 
 		}
 	}
 	if event.EventType == Port {
-		ev.eventHandler.state.PortState.ForwardedPorts = append(ev.eventHandler.state.PortState.ForwardedPorts, event.PortInfo)
-		// ev.eventHandler.state.ForwardedPorts = append(ev.eventHandler.state.ForwardedPorts, event.PortInfo)
+		ev.eventHandler.state.ForwardedPorts = append(ev.eventHandler.state.ForwardedPorts, event.PortInfo)
+		entry = fmt.Sprintf("Forwarding container %s to local port %d", event.PortInfo.ContainerName, event.PortInfo.LocalPort)
 	}
 
-	// var errStr string
-	// if event.Err != nil {
-	// 	errStr = event.Err.Error()
-	// }
 	ev.logEvent(proto.LogEntry{
 		Timestamp: ptypes.TimestampNow(),
 		Type:      event.EventType,

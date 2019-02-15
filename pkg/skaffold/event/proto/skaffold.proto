@@ -19,11 +19,7 @@ message Request {
 message State {
   BuildState buildState = 1;
   DeployState deployState = 2;
-  PortState portState = 3;
-}
-
-message PortState {
-  repeated PortInfo forwardedPorts = 1;
+  repeated PortInfo forwardedPorts = 3;
 }
 
 // BuildState contains a map of all skaffold artifacts to their current build
