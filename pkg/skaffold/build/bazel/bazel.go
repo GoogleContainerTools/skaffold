@@ -111,6 +111,9 @@ func setArtifact(artifact *latest.Artifact) error {
 	if a == nil {
 		return errors.New("artifact is nil")
 	}
+	if a.BuildTarget == "" {
+		return errors.Errorf("%s must have an associated build target", artifact.ImageName)
+	}
 	artifact.ArtifactType.BazelArtifact = a
 	return nil
 }
