@@ -44,9 +44,10 @@ However the **behavior** of individual component might suffer breaking changes d
 
 - Filewatcher: beta
 - Builders
-  - local (beta) 
-  - googleCloudBuild (beta) 
-  - kaniko (beta) 
+  - local: beta
+  - googleCloudBuild: beta 
+  - kaniko: beta
+  - plugins gcb: alpha
 - Artifact types: 
   - Dockerfile: beta
   - Bazel: beta
@@ -56,7 +57,7 @@ However the **behavior** of individual component might suffer breaking changes d
 - Port-forwarding: alpha 
 - Taggers: beta 
   - gitCommit : beta
-  - Sha256: beta
+  - sha256: beta
   - dateTime : beta
   - envTagger: beta
 - Testers: alpha
