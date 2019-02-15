@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"bytes"
 	"context"
 	"io"
 
@@ -53,6 +54,18 @@ func (b *Builder) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.Builder: "docker",
 	}
+}
+
+// DependenciesForArtifact returns the dependencies for this docker artifact
+func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+	var d *latest.DockerArtifact
+	if err := util.CloneThroughJSON(bytes.NewReader(artifact.BuilderPlugin.Contents), &d); err != nil {
+		return nil, errors.Wrap(err, "cloning bazel artifact")
+	}
+	// Set defaults on the docker artifact
+	defaults.SetDefaultDockerArtifact(d)
+	artifact.ArtifactType.DockerArtifact = d
+	return build.DependenciesForArtifact(ctx, artifact)
 }
 
 // Build is responsible for building artifacts in their respective execution environments

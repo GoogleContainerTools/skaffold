@@ -17,8 +17,10 @@ limitations under the License.
 package kaniko
 
 import (
+	"context"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
@@ -49,4 +51,8 @@ func (b *Builder) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.Builder: "kaniko",
 	}
+}
+
+func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+	return build.DependenciesForArtifact(ctx, artifact)
 }

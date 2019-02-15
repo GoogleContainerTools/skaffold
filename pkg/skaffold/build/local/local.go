@@ -83,3 +83,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 	}
 }
+
+func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+	return build.DependenciesForArtifact(ctx, artifact)
+}
