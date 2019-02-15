@@ -144,7 +144,7 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 }
 
 func (c *Cache) resolveCachedArtifact(ctx context.Context, out io.Writer, a *latest.Artifact) (*Artifact, error) {
-	details, err := c.retrieveCachedArtifactDetails(ctx, out, a)
+	details, err := c.retrieveCachedArtifactDetails(ctx, a)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting cached artifact details")
 	}
@@ -177,7 +177,7 @@ type cachedArtifactDetails struct {
 	hashTag       string
 }
 
-func (c *Cache) retrieveCachedArtifactDetails(ctx context.Context, out io.Writer, a *latest.Artifact) (*cachedArtifactDetails, error) {
+func (c *Cache) retrieveCachedArtifactDetails(ctx context.Context, a *latest.Artifact) (*cachedArtifactDetails, error) {
 	hash, err := hashForArtifact(ctx, a)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting hash for artifact %s", a.ImageName)

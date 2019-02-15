@@ -359,7 +359,7 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			}()
 
 			test.cache.client = docker.NewLocalDaemon(&test.api, nil)
-			actual, err := test.cache.retrieveCachedArtifactDetails(context.Background(), os.Stdout, test.artifact)
+			actual, err := test.cache.retrieveCachedArtifactDetails(context.Background(), test.artifact)
 			if err != nil {
 				t.Fatalf("error retrieving artifact details: %v", err)
 			}
