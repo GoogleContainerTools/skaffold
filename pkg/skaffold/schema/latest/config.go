@@ -329,6 +329,9 @@ type KubectlFlags struct {
 
 // HelmDeploy contains the configuration needed for deploying with `helm`.
 type HelmDeploy struct {
+	// Repositories is a list of helm additional repositories
+	Repositories map[string]string `yaml:"values,omitempty,omitempty"`
+
 	// Releases is a list of Helm releases.
 	Releases []HelmRelease `yaml:"releases,omitempty" yamltags:"required"`
 }
