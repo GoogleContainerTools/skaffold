@@ -493,9 +493,42 @@
           },
           "type": "array",
           "description": "a list of Helm releases."
+        },
+        "flags": {
+          "$ref": "#/definitions/HelmDeployFlags",
+          "description": "Optional flags to send to the helm command"
         }
       },
       "description": "contains the configuration needed for deploying with \u003ccode\u003ehelm\u003c/code\u003e."
+    },
+    "HelmDeployFlags": {
+      "properties": {
+        "global": {
+          "items": {
+            "type": "string",
+            "default": "\"\""
+          },
+          "type": "array",
+          "default": "[]"
+        },
+        "apply": {
+          "items": {
+            "type": "string",
+            "default": "\"\""
+          },
+          "type": "array",
+          "default": "[]"
+        },
+        "delete": {
+          "items": {
+            "type": "string",
+            "default": "\"\""
+          },
+          "type": "array",
+          "default": "[]"
+        }
+      },
+      "description": "describes additional options flags that are passed on the command line to helm either on every command (Global), on install (Install) or on update (Update)."
     },
     "KustomizeDeploy": {
       "properties": {
