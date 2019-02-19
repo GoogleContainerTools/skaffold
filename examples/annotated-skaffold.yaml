@@ -195,6 +195,13 @@ deploy:
     #   delete: [""]
 
  # helm:
+    # helm can be passed additional option flags either 
+    # on every command (Global), on install (Install) or on update (Update).
+    # Note: Parameters can also be set on Release level, but only some flags
+    # flags:
+    #   global: [""]
+    #   apply: [""]
+    #   delete: [""]
     # helm releases to deploy.
     # releases:
     # - name: skaffold-helm
