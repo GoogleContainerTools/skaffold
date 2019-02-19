@@ -144,8 +144,8 @@ https://storage.googleapis.com/skaffold/builds/latest/skaffold-windows-amd64.exe
 
 ## `skaffold dev`: Build and deploy your app every time your code changes
 
-Run command `skaffold dev --default-repo <myrepo>` to build and deploy your app continuously. 
-The `--default-repo` functionality enables to push images to your own repository instead of the default `gcr.io/k8s-skaffold` repo. 
+Run `skaffold dev --default-repo <myrepo>` to build and deploy your app continuously. 
+The `--default-repo` functionality enables pushing images to your own repository instead of the default `gcr.io/k8s-skaffold` repo. 
 You should see some outputs similar to the following entries:
 
 ```
