@@ -200,7 +200,7 @@ deploy:
     # flags:
     #   global: [""]
     #   install: [""]
-    #   update: [""]
+    #   upgrade: [""]
     # helm releases to deploy.
     # releases:
     # - name: skaffold-helm
