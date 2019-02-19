@@ -144,8 +144,9 @@ https://storage.googleapis.com/skaffold/builds/latest/skaffold-windows-amd64.exe
 
 ## `skaffold dev`: Build and deploy your app every time your code changes
 
-Run command `skaffold dev` to build and deploy your app continuously. You should
-see some outputs similar to the following entries:
+Run command `skaffold dev --default-repo <myrepo>` to build and deploy your app continuously. 
+The `--default-repo` functionality enables to push images to your own repository instead of the default `gcr.io/k8s-skaffold` repo. 
+You should see some outputs similar to the following entries:
 
 ```
 Starting build...
@@ -167,7 +168,7 @@ Step 5/5 : RUN go build -o app main.go
  ---> 9c4622e8f0e7
 Successfully built 9c4622e8f0e7
 Successfully tagged 930080f0965230e824a79b9e7eccffbd:latest
-Successfully tagged gcr.io/k8s-skaffold/skaffold-example:9c4622e8f0e7b5549a61a503bf73366a9cf7f7512aa8e9d64f3327a3c7fded1b
+Successfully tagged <myrepo>/gcr.io/k8s-skaffold/skaffold-example:9c4622e8f0e7b5549a61a503bf73366a9cf7f7512aa8e9d64f3327a3c7fded1b
 Build complete in 657.426821ms
 Starting deploy...
 Deploying k8s-pod.yaml...
