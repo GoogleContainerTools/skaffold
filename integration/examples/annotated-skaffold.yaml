@@ -196,7 +196,7 @@ deploy:
 
  # helm:    
     # helm can be passed additional option flags either 
-    # on every command (Global), on install (Install) or on update (Update).
+    # on every command (Global), on install (Install) or on upgrade (Upgrade).
     # flags:
     #   global: [""]
     #   install: [""]
