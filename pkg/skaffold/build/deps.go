@@ -19,12 +19,12 @@ package build
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -64,13 +64,5 @@ func DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string,
 		return nil, err
 	}
 
-	var p []string
-	for _, path := range paths {
-		// TODO(dgageot): this is only done for jib builder.
-		if !filepath.IsAbs(path) {
-			path = filepath.Join(a.Workspace, path)
-		}
-		p = append(p, path)
-	}
-	return p, nil
+	return util.AbsolutePaths(a.Workspace, paths), nil
 }

@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -61,7 +62,14 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.
 	if err := setArtifact(artifact); err != nil {
 		return nil, err
 	}
-	return build.DependenciesForArtifact(ctx, artifact)
+	if artifact.BazelArtifact == nil {
+		return nil, errors.New("bazel artifact is nil")
+	}
+	paths, err := bazel.GetDependencies(ctx, artifact.Workspace, artifact.BazelArtifact)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting bazel dependencies")
+	}
+	return util.AbsolutePaths(artifact.Workspace, paths), nil
 }
 
 // Build is responsible for building artifacts in their respective execution environments
