@@ -13,7 +13,7 @@ environments in your app's lifecycle, like Production or Development.
 You can create profiles in the `profiles` section of `skaffold.yaml`. For a
 detailed discussion on Skaffold configuration,
 see [Skaffold Concepts: Configuration](/docs/concepts/#configuration) and
-[skaffold.yaml References](https://github.com/GoogleContainerTools/skaffold/blob/master/examples/annotated-skaffold.yaml).
+[skaffold.yaml References](/docs/references/yaml).
 
 ## Profiles (`profiles`)
 

@@ -100,11 +100,6 @@ func TestRun(t *testing.T) {
 			dir:         "examples/microservices",
 			deployments: []string{"leeroy-app", "leeroy-web"},
 		}, {
-			description: "annotated-skaffold",
-			dir:         "examples",
-			filename:    "annotated-skaffold.yaml",
-			pods:        []string{"getting-started"},
-		}, {
 			description: "envTagger",
 			dir:         "examples/tagging-with-environment-variables",
 			pods:        []string{"getting-started"},

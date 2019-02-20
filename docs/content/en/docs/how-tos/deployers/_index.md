@@ -24,7 +24,7 @@ controls how Skaffold builds artifacts. To use a specific tool for deploying
 artifacts, add the value representing the tool and options for using the tool
 to the `build` section. For a detailed discussion on Skaffold configuration,
 see [Skaffold Concepts: Configuration](/docs/concepts/#configuration) and
-[Skaffold.yaml References](https://github.com/GoogleContainerTools/skaffold/blob/master/examples/annotated-skaffold.yaml).
+[Skaffold.yaml References](/docs/references/yaml).
 
 ## Deploying with kubectl
 

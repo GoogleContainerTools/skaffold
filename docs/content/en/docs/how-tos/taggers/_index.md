@@ -17,7 +17,7 @@ Tag policy is specified in the `tagPolicy` field of the `build` section of the
 Skaffold configuration file, `skaffold.yaml`. For a detailed discussion on
 Skaffold configuration,
 see [Skaffold Concepts: Configuration](/docs/concepts/#configuration) and
-[skaffold.yaml References](https://github.com/GoogleContainerTools/skaffold/blob/master/examples/annotated-skaffold.yaml).
+[skaffold.yaml References](/docs/references/yaml).
 
 ## `gitCommit`: using Git commit IDs as tags
 
