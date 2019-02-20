@@ -17,27 +17,31 @@ limitations under the License.
 package kubectl
 
 import (
+"fmt"
 	v1 "k8s.io/api/core/v1"
 )
 
 // configureJvmDebugging configured a container definition for JVM debugging.
 // Returns a simple map describing the debug configuration details.
-func configureJvmDebugging(container *v1.Container, config imageConfiguration) map[string]interface{} {
+func configureJvmDebugging(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
+	// no standard port for JDWP; most examples use 5005 or 8000
+	port := portAlloc(5005)
+
 	// FIXME try to find existing JAVA_TOOL_OPTIONS or jdwp command argument
 	javaToolOptions := v1.EnvVar{
 		Name:  "JAVA_TOOL_OPTIONS",
-		Value: "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y",
+		Value: fmt.Sprintf("-agentlib:jdwp=transport=dt_socket,server=y,address=%d,suspend=n,quiet=y", port),
 	}
 	container.Env = append(container.Env, javaToolOptions)
 
 	jdwpPort := v1.ContainerPort{
 		Name:          "jdwp",
-		ContainerPort: 5005,
+		ContainerPort: port,
 	}
 	container.Ports = append(container.Ports, jdwpPort)
 
 	return map[string]interface{}{
 		"runtime": "jvm",
-		"jdwp":    5005,
+		"jdwp":    port,
 	}
 }

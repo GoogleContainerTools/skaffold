@@ -36,6 +36,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 )
 
+// portAllocator is a function that takes a desired port and returns an available port
+// Ports are normally uint16 but Kubernetes ContainerPort.containerPort is an integer
+type portAllocator func(int32) int32
+
 // ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.
 func ApplyDebuggingTransforms(l ManifestList, builds []build.Artifact) (ManifestList, error) {
 	var updated ManifestList
@@ -101,13 +105,16 @@ const (
 // Returns true if changed, false otherwise.
 func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, builds []build.Artifact) bool {
 	configurations := make(map[string]map[string]interface{})
+	portAlloc := func(desiredPort int32) int32 {
+		return allocatePort(podSpec, desiredPort)
+	}
 	// containers are required have unique name within a pod
-	for i, _ := range podSpec.Containers {
+	for i := range podSpec.Containers {
 		container := &podSpec.Containers[i]
 		// we only reconfigure build artifacts
 		if artifact := findArtifact(container.Image, builds); artifact != nil {
 			logrus.Debugf("Found artifact for image %v", container.Image)
-			if configuration := transformContainer(container, *artifact); configuration != nil {
+			if configuration := transformContainer(container, *artifact, portAlloc); configuration != nil {
 				configurations[container.Name] = configuration
 			}
 			// fixme: add this artifact to the watch list?
@@ -133,6 +140,39 @@ func findArtifact(image string, builds []build.Artifact) *build.Artifact {
 		}
 	}
 	return nil
+}
+
+// allocatePort walkas the podSpec's containers looking for an available port that is as close to desiredPort as possible
+// We deal with wrapping and avoid allocating ports < 1024
+func allocatePort(podSpec *v1.PodSpec, desiredPort int32) int32 {
+	var maxPort int32 = 65535 // ports are normally [1-65535]
+	// Theoretically the port-space could be full, but that seems unlikely
+	for {
+		if desiredPort < 1024 || desiredPort > maxPort {
+			desiredPort = 1024 // skip reserved ports
+		}
+		windowSize := maxPort - desiredPort + 1
+		// check pod containers for the next 20 ports
+		if windowSize > 20 {
+			windowSize = 20
+		}
+		var allocated = make([]bool, windowSize)
+		for _, container := range podSpec.Containers {
+			for _, portSpec := range container.Ports {
+				if portSpec.ContainerPort >= desiredPort && portSpec.ContainerPort-desiredPort < windowSize {
+					allocated[portSpec.ContainerPort-desiredPort] = true
+				}
+			}
+		}
+		for i := range allocated {
+			if !allocated[i] {
+				return desiredPort + int32(i)
+			}
+		}
+		// on to the next window
+		desiredPort += windowSize
+	}
+	// NOTREACHED
 }
 
 // imageConfiguration captures information from a docker/oci image configuration
@@ -161,7 +201,7 @@ func retrieveImageConfiguration(image string, artifact build.Artifact) imageConf
 }
 
 // transformContainer rewrites the container definition to enable debugging and returns a debugging configuration description
-func transformContainer(container *v1.Container, artifact build.Artifact) map[string]interface{} {
+func transformContainer(container *v1.Container, artifact build.Artifact, portAlloc portAllocator) map[string]interface{} {
 	config := retrieveImageConfiguration(container.Image, artifact)
 
 	// update image configuration values with those set in the k8s manifest
@@ -180,7 +220,7 @@ func transformContainer(container *v1.Container, artifact build.Artifact) map[st
 	switch guessRuntime(config) {
 	case JVM:
 		logrus.Debugf("Configuring %v for JVM", container.Name)
-		return configureJvmDebugging(container, config)
+		return configureJvmDebugging(container, config, portAlloc)
 	default:
 		logrus.Debugf("Unable to determine runtime for %v\n", container.Name)
 		return nil

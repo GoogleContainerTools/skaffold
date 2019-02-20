@@ -52,10 +52,12 @@ func TestConfigureJvmDebugging(t *testing.T) {
 			},
 		},
 	}
-
+	var identity portAllocator = func(port int32) int32 {
+		return port
+	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			configureJvmDebugging(&test.containerSpec, test.configuration)
+			configureJvmDebugging(&test.containerSpec, test.configuration, identity)
 			testutil.CheckDeepEqual(t, test.result, test.containerSpec)
 		})
 	}
