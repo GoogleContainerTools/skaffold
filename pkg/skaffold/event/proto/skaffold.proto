@@ -19,7 +19,7 @@ message Request {
 message State {
   BuildState buildState = 1;
   DeployState deployState = 2;
-  repeated PortInfo forwardedPorts = 3;
+  map<string, PortInfo> forwardedPorts = 3;
 }
 
 // BuildState contains a map of all skaffold artifacts to their current build
@@ -45,6 +45,7 @@ message PortInfo {
   int32 remotePort = 2;
   string podName = 3;
   string containerName = 4;
+  string namespace = 5;
 }
 
 message Event {

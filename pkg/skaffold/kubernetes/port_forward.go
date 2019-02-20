@@ -100,6 +100,7 @@ func (*kubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntr
 		PortInfo: &proto.PortInfo{
 			PodName:       pfe.podName,
 			ContainerName: pfe.containerName,
+			Namespace:     pfe.namespace,
 			LocalPort:     pfe.localPort,
 			RemotePort:    pfe.port,
 		},

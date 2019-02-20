@@ -81,7 +81,7 @@ func (s *server) Handle(ctx context.Context, event *proto.Event) (*empty.Empty, 
 		}
 	}
 	if event.EventType == Port {
-		ev.eventHandler.state.ForwardedPorts = append(ev.eventHandler.state.ForwardedPorts, event.PortInfo)
+		ev.eventHandler.state.ForwardedPorts[event.PortInfo.ContainerName] = event.PortInfo
 		entry = fmt.Sprintf("Forwarding container %s to local port %d", event.PortInfo.ContainerName, event.PortInfo.LocalPort)
 	}
 

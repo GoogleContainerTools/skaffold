@@ -105,6 +105,7 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, add
 			DeployState: &proto.DeployState{
 				Status: NotStarted,
 			},
+			ForwardedPorts: make(map[string]*proto.PortInfo),
 		}
 
 		handler := &eventHandler{
