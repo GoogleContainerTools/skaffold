@@ -21,7 +21,7 @@ import (
 )
 
 func TestSchemas(t *testing.T) {
-	same, err := generateSchemas("..", true)
+	same, err := generateSchemas("../..", true)
 	if err != nil {
 		t.Fatalf("unable to check json schemas: %v", err)
 	}

@@ -50,7 +50,7 @@
         },
         "tagPolicy": {
           "$ref": "#/definitions/TagPolicy",
-          "description": "(beta) determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! The policy can be <code>gitCommit</code> (beta), <code>sha256</code> (beta), <code>envTemplate</code> (beta) or <code>dateTime</code> (beta). If not specified, it defaults to <code>gitCommit: {}</code>."
+          "description": "(beta) determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {}</code>."
         },
         "executionEnvironment": {
           "$ref": "#/definitions/ExecutionEnvironment",
@@ -124,7 +124,7 @@
       "properties": {
         "gitCommit": {
           "$ref": "#/definitions/GitTagger",
-          "description": "(beta) tags images with the git tag or git commit of the artifact workspace directory."
+          "description": "(beta) tags images with the git tag or commit of the artifact's workspace."
         },
         "sha256": {
           "$ref": "#/definitions/ShaTagger",
@@ -145,7 +145,7 @@
       "description": "(beta) tags images with their sha256 digest."
     },
     "GitTagger": {
-      "description": "(beta) tags images with the git tag or git commit of the artifact workspace directory."
+      "description": "(beta) tags images with the git tag or commit of the artifact's workspace."
     },
     "EnvTemplateTagger": {
       "required": [
@@ -446,7 +446,7 @@
         },
         "flags": {
           "$ref": "#/definitions/KubectlFlags",
-          "description": "additional flags to pass to <code>kubectl</code>."
+          "description": "additional flags passed to <code>kubectl</code>."
         }
       },
       "description": "(beta) uses a client side <code>kubectl apply</code> to deploy manifests. You'll need a <code>kubectl</code> CLI version installed that's compatible with your cluster."
@@ -507,7 +507,7 @@
         },
         "flags": {
           "$ref": "#/definitions/KubectlFlags",
-          "description": "additional flags to pass to <code>kubectl</code>."
+          "description": "additional flags passed to <code>kubectl</code>."
         }
       },
       "description": "(beta) uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment."
@@ -706,7 +706,7 @@
           "properties": {
             "docker": {
               "$ref": "#/definitions/DockerArtifact",
-              "description": "(beta) describes an artifact built from a Dockerfile, usually using <code>docker build</code>."
+              "description": "(beta) describes an artifact built from a Dockerfile."
             }
           }
         },
@@ -714,7 +714,7 @@
           "properties": {
             "bazel": {
               "$ref": "#/definitions/BazelArtifact",
-              "description": "(beta) requires bazel CLI to be installed and the artifacts sources to contain <a href=\"https://bazel.build/\">Bazel</a> configuration files."
+              "description": "(beta) requires bazel CLI to be installed and the sources to contain <a href=\"https://bazel.build/\">Bazel</a> configuration files."
             }
           }
         },
@@ -785,7 +785,7 @@
       "properties": {
         "env": {
           "type": "string",
-          "description": "holds a key=value pair. The profile is auto-activated if an Environment Variable <code>key</code> has value <code>value</code>.",
+          "description": "a key=value pair. The profile is auto-activated if an Environment Variable <code>key</code> has value <code>value</code>.",
           "default": "\"\"",
           "examples": [
             "ENV=production"
@@ -793,7 +793,7 @@
         },
         "kubeContext": {
           "type": "string",
-          "description": "a Kubernetes context for which a profile is auto-activated.",
+          "description": "a Kubernetes context for which the profile is auto-activated.",
           "default": "\"\"",
           "examples": [
             "minikube"
@@ -801,7 +801,7 @@
         },
         "command": {
           "type": "string",
-          "description": "a Skaffold command for which a profile is auto-activated.",
+          "description": "a Skaffold command for which the profile is auto-activated.",
           "default": "\"\"",
           "examples": [
             "dev"
@@ -814,11 +814,11 @@
       "properties": {
         "docker": {
           "$ref": "#/definitions/DockerArtifact",
-          "description": "(beta) describes an artifact built from a Dockerfile, usually using <code>docker build</code>."
+          "description": "(beta) describes an artifact built from a Dockerfile."
         },
         "bazel": {
           "$ref": "#/definitions/BazelArtifact",
-          "description": "(beta) requires bazel CLI to be installed and the artifacts sources to contain <a href=\"https://bazel.build/\">Bazel</a> configuration files."
+          "description": "(beta) requires bazel CLI to be installed and the sources to contain <a href=\"https://bazel.build/\">Bazel</a> configuration files."
         },
         "jibMaven": {
           "$ref": "#/definitions/JibMavenArtifact",

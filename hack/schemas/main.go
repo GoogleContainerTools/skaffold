@@ -119,7 +119,7 @@ func generateSchemas(root string, dryRun bool) (bool, error) {
 			return false, errors.Wrapf(err, "unable to generate schema for version %s", version.APIVersion)
 		}
 
-		output := fmt.Sprintf("%s/schemas/%s.json", root, apiVersion)
+		output := fmt.Sprintf("%s/docs/content/en/schemas/%s.json", root, apiVersion)
 		var current []byte
 
 		if _, err := os.Stat(output); err == nil {
