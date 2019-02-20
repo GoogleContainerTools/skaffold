@@ -27,6 +27,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -124,6 +125,7 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 	if !c.useCache {
 		return artifacts, nil
 	}
+	start := time.Now()
 	color.Default.Fprintln(out, "Checking cache...")
 	var needToBuild []*latest.Artifact
 	var built []Artifact
@@ -140,6 +142,7 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 		}
 		built = append(built, *artifact)
 	}
+	color.Default.Fprintln(out, "Cache check complete in", time.Since(start))
 	return needToBuild, built
 }
 
@@ -151,18 +154,20 @@ func (c *Cache) resolveCachedArtifact(ctx context.Context, out io.Writer, a *lat
 	if details.needsRebuild {
 		return nil, nil
 	}
-	color.Green.Fprintf(out, "Found %s locally, retagging and pushing if necessary ...\n", a.ImageName)
+	color.Default.Fprintf(out, "Found %s in cache, resolving...\n", a.ImageName)
 	if details.needsRetag {
+		color.Green.Fprintf(out, "Retagging image...\n")
 		if err := c.client.Tag(ctx, details.prebuiltImage, details.hashTag); err != nil {
 			return nil, errors.Wrap(err, "retagging image")
 		}
 	}
 	if details.needsPush {
+		color.Green.Fprintf(out, "Pushing %s...\n", a.ImageName)
 		if _, err := c.client.Push(ctx, out, details.hashTag); err != nil {
 			return nil, errors.Wrap(err, "pushing image")
 		}
 	}
-	color.Green.Fprintf(out, "Resolved %s, skipping rebuild.\n", details.hashTag)
+	color.Default.Fprintf(out, "Resolved %s, skipping rebuild.\n", details.hashTag)
 	return &Artifact{
 		ImageName: a.ImageName,
 		Tag:       details.hashTag,
