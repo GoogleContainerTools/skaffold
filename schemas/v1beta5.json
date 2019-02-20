@@ -511,7 +511,7 @@
           "type": "array",
           "default": "[]"
         },
-        "apply": {
+        "install": {
           "items": {
             "type": "string",
             "default": "\"\""
@@ -519,7 +519,7 @@
           "type": "array",
           "default": "[]"
         },
-        "delete": {
+        "upgrade": {
           "items": {
             "type": "string",
             "default": "\"\""

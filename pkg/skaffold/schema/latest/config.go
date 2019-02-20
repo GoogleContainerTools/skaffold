@@ -341,8 +341,8 @@ type HelmDeploy struct {
 // or on update (Update).
 type HelmDeployFlags struct {
 	Global  []string `yaml:"global,omitempty"`
-	Install []string `yaml:"apply,omitempty"`
-	Upgrade []string `yaml:"delete,omitempty"`
+	Install []string `yaml:"install,omitempty"`
+	Upgrade []string `yaml:"upgrade,omitempty"`
 }
 
 // KustomizeDeploy contains the configuration needed for deploying with `kustomize`.
