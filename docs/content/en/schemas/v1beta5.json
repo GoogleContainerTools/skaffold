@@ -1,6 +1,6 @@
 {
   "type": "object",
-  "oneOf": [
+  "anyOf": [
     {
       "$ref": "#/definitions/SkaffoldPipeline"
     }
@@ -37,7 +37,8 @@
           "type": "array",
           "description": "(beta) can override be used to <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
         }
-      }
+      },
+      "additionalProperties": false
     },
     "BuildConfig": {
       "properties": {
@@ -57,7 +58,8 @@
           "description": "environment in which the build should run. Possible values: googleCloudBuild."
         }
       },
-      "oneOf": [
+      "additionalProperties": false,
+      "anyOf": [
         {
           "properties": {
             "local": {
@@ -86,6 +88,7 @@
       "description": "contains all the configuration for the build steps."
     },
     "ExecEnvironment": {
+      "additionalProperties": false,
       "type": "string",
       "default": "\"\""
     },
@@ -102,6 +105,7 @@
           "default": "{}"
         }
       },
+      "additionalProperties": false,
       "description": "environment in which the build should run (ex. local or in-cluster, etc.)."
     },
     "BuilderPlugin": {
@@ -118,6 +122,7 @@
           "default": "{}"
         }
       },
+      "additionalProperties": false,
       "description": "contains all fields necessary for specifying a build plugin."
     },
     "TagPolicy": {
@@ -139,12 +144,15 @@
           "description": "(beta) tags images with the build timestamp."
         }
       },
+      "additionalProperties": false,
       "description": "contains all the configuration for the tagging step."
     },
     "ShaTagger": {
+      "additionalProperties": false,
       "description": "(beta) tags images with their sha256 digest."
     },
     "GitTagger": {
+      "additionalProperties": false,
       "description": "(beta) tags images with the git tag or commit of the artifact's workspace."
     },
     "EnvTemplateTagger": {
@@ -161,6 +169,7 @@
           ]
         }
       },
+      "additionalProperties": false,
       "description": "(beta) tags images with a configurable template string."
     },
     "DateTimeTagger": {
@@ -176,6 +185,7 @@
           "default": "\"\""
         }
       },
+      "additionalProperties": false,
       "description": "(beta) tags images with the build timestamp."
     },
     "BuildType": {
@@ -193,6 +203,7 @@
           "description": "(beta) describes how to do an on-cluster build using <a href=\"https://github.com/GoogleContainerTools/kaniko\">Kaniko</a>."
         }
       },
+      "additionalProperties": false,
       "description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated."
     },
     "LocalBuild": {
@@ -212,6 +223,7 @@
           "default": "false"
         }
       },
+      "additionalProperties": false,
       "description": "(beta) describes how to do a build on the local docker daemon and optionally push to a repository."
     },
     "GoogleCloudBuild": {
@@ -252,9 +264,11 @@
           "default": "gcr.io/cloud-builders/gradle"
         }
       },
+      "additionalProperties": false,
       "description": "(beta) describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/docs/\">Google Cloud Build</a>. Docker and Jib artifacts can be built on Cloud Build. The <code>projectId</code> needs to be provided and the currently logged in user should be given permissions to trigger new builds."
     },
     "LocalDir": {
+      "additionalProperties": false,
       "description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume."
     },
     "KanikoBuildContext": {
@@ -269,6 +283,7 @@
           "description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume."
         }
       },
+      "additionalProperties": false,
       "description": "contains the different fields available to specify a Kaniko build context."
     },
     "KanikoCache": {
@@ -279,6 +294,7 @@
           "default": "\"\""
         }
       },
+      "additionalProperties": false,
       "description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds."
     },
     "KanikoBuild": {
@@ -330,6 +346,7 @@
           "description": "describes how to mount the local Docker configuration into the Kaniko pod."
         }
       },
+      "additionalProperties": false,
       "description": "(beta) describes how to do an on-cluster build using <a href=\"https://github.com/GoogleContainerTools/kaniko\">Kaniko</a>."
     },
     "DockerConfig": {
@@ -345,12 +362,14 @@
           "default": "\"\""
         }
       },
+      "additionalProperties": false,
       "description": "contains information about the docker <code>config.json</code> to mount."
     },
     "TestConfig": {
       "items": {
         "$ref": "#/definitions/TestCase"
       },
+      "additionalProperties": false,
       "type": "array"
     },
     "TestCase": {
@@ -376,10 +395,12 @@
           ]
         }
       },
+      "additionalProperties": false,
       "description": "a list of structure tests to run on images that Skaffold builds."
     },
     "DeployConfig": {
-      "oneOf": [
+      "additionalProperties": false,
+      "anyOf": [
         {
           "properties": {
             "helm": {
@@ -422,6 +443,7 @@
           "description": "(beta) uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment."
         }
       },
+      "additionalProperties": false,
       "description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated."
     },
     "KubectlDeploy": {
@@ -449,6 +471,7 @@
           "description": "additional flags passed to <code>kubectl</code>."
         }
       },
+      "additionalProperties": false,
       "description": "(beta) uses a client side <code>kubectl apply</code> to deploy manifests. You'll need a <code>kubectl</code> CLI version installed that's compatible with your cluster."
     },
     "KubectlFlags": {
@@ -481,6 +504,7 @@
           "default": "[]"
         }
       },
+      "additionalProperties": false,
       "description": "additional flags passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete)."
     },
     "HelmDeploy": {
@@ -496,6 +520,7 @@
           "description": "a list of Helm releases."
         }
       },
+      "additionalProperties": false,
       "description": "(beta) uses the <code>helm</code> CLI to apply the charts to the cluster."
     },
     "KustomizeDeploy": {
@@ -510,6 +535,7 @@
           "description": "additional flags passed to <code>kubectl</code>."
         }
       },
+      "additionalProperties": false,
       "description": "(beta) uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment."
     },
     "HelmRelease": {
@@ -603,7 +629,8 @@
           "$ref": "#/definitions/HelmImageStrategy",
           "description": "adds image configurations to the Helm <code>values</code> file."
         }
-      }
+      },
+      "additionalProperties": false
     },
     "HelmPackaged": {
       "properties": {
@@ -618,10 +645,12 @@
           "default": "\"\""
         }
       },
+      "additionalProperties": false,
       "description": "parameters for packaging helm chart (<code>helm package</code>)."
     },
     "HelmImageStrategy": {
-      "oneOf": [
+      "additionalProperties": false,
+      "anyOf": [
         {
           "properties": {
             "fqn": {
@@ -651,7 +680,8 @@
           "$ref": "#/definitions/HelmConventionConfig",
           "description": "image configuration uses the syntax <code>IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG</code>."
         }
-      }
+      },
+      "additionalProperties": false
     },
     "HelmFQNConfig": {
       "properties": {
@@ -661,9 +691,11 @@
           "default": "\"\""
         }
       },
+      "additionalProperties": false,
       "description": "image config to use the FullyQualifiedImageName as param to set."
     },
     "HelmConventionConfig": {
+      "additionalProperties": false,
       "description": "image config in the syntax of image.repository and image.tag."
     },
     "Artifact": {
@@ -701,7 +733,8 @@
           "description": "plugin used to build this artifact."
         }
       },
-      "oneOf": [
+      "additionalProperties": false,
+      "anyOf": [
         {
           "properties": {
             "docker": {
@@ -779,6 +812,7 @@
           "description": "criteria by which a profile can be auto-activated. This can be based on Environment Variables, the current Kubernetes context name, or depending on which Skaffold command is running."
         }
       },
+      "additionalProperties": false,
       "description": "(beta) profiles are used to override any <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
     },
     "Activation": {
@@ -808,6 +842,7 @@
           ]
         }
       },
+      "additionalProperties": false,
       "description": "criteria by which a profile is auto-activated."
     },
     "ArtifactType": {
@@ -828,7 +863,8 @@
           "$ref": "#/definitions/JibGradleArtifact",
           "description": "(alpha) builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin\">Jib plugin for Gradle</a>."
         }
-      }
+      },
+      "additionalProperties": false
     },
     "DockerArtifact": {
       "properties": {
@@ -866,6 +902,7 @@
           ]
         }
       },
+      "additionalProperties": false,
       "description": "(beta) describes an artifact built from a Dockerfile, usually using <code>docker build</code>."
     },
     "BazelArtifact": {
@@ -894,6 +931,7 @@
           ]
         }
       },
+      "additionalProperties": false,
       "description": "(beta) describes an artifact built with <a href=\"https://bazel.build/\">Bazel</a>."
     },
     "JibMavenArtifact": {
@@ -921,6 +959,7 @@
           ]
         }
       },
+      "additionalProperties": false,
       "description": "(alpha) builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin\">Jib plugin for Maven</a>."
     },
     "JibGradleArtifact": {
@@ -943,6 +982,7 @@
           ]
         }
       },
+      "additionalProperties": false,
       "description": "(alpha) builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin\">Jib plugin for Gradle</a>."
     }
   }

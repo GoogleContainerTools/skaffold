@@ -20,8 +20,8 @@ function* template(definitions, parentDefinition, ref, ident) {
   for (var key in properties) {
       allProperties.push([key, properties[key]]);
   }
-  if (definitions[name].oneOf) {
-      for (var properties of definitions[name].oneOf) {
+  if (definitions[name].anyOf) {
+      for (var properties of definitions[name].anyOf) {
           for (var key in properties.properties) {
               allProperties.push([key, properties.properties[key]]);
           }
@@ -70,7 +70,7 @@ function* template(definitions, parentDefinition, ref, ident) {
     if (definition.$ref) {
         // Check if the referenced description is a final one
         const refName = definition.$ref.replace('#/definitions/', '');
-        if (!definitions[refName].properties && !definitions[refName].oneOf) {
+        if (!definitions[refName].properties && !definitions[refName].anyOf) {
             value = '{}'
         }
 
