@@ -262,7 +262,7 @@
           "$ref": "#/definitions/KubectlFlags"
         }
       },
-      "description": "contains the configuration needed for deploying with \u003ccode\u003ekubectl apply\u003c/code\u003e"
+      "description": "contains the configuration needed for deploying with <code>kubectl apply</code>"
     },
     "KubectlFlags": {
       "properties": {

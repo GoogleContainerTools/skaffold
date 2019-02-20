@@ -25,6 +25,7 @@ import (
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	yamlpatch "github.com/krishicks/yaml-patch"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
@@ -155,7 +156,7 @@ func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) error
 		return err
 	}
 
-	buf, err = profile.Patches.Apply(buf)
+	buf, err = yamlpatch.Patch(profile.Patches).Apply(buf)
 	if err != nil {
 		return err
 	}

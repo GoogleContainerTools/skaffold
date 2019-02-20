@@ -23,7 +23,7 @@
           "$ref": "#/definitions/DeployConfig"
         }
       },
-      "description": "the top level config object that is parsed from a skaffold.yaml"
+      "description": "top level config object that is parsed from a skaffold.yaml"
     },
     "BuildConfig": {
       "properties": {
@@ -128,7 +128,7 @@
           "type": "array"
         }
       },
-      "description": "contains the configuration needed for deploying with \u003ccode\u003ekubectl apply\u003c/code\u003e"
+      "description": "contains the configuration needed for deploying with <code>kubectl apply</code>"
     },
     "Manifest": {
       "properties": {

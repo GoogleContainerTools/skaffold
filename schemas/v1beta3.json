@@ -342,7 +342,7 @@
           "$ref": "#/definitions/KubectlFlags"
         }
       },
-      "description": "contains the configuration needed for deploying with \u003ccode\u003ekubectl apply\u003c/code\u003e"
+      "description": "contains the configuration needed for deploying with <code>kubectl apply</code>"
     },
     "KubectlFlags": {
       "properties": {
@@ -633,7 +633,7 @@
           "default": "\"\""
         }
       },
-      "description": "describes an artifact built from a Dockerfile, usually using \u003ccode\u003edocker build\u003c/code\u003e."
+      "description": "describes an artifact built from a Dockerfile, usually using <code>docker build</code>."
     },
     "BazelArtifact": {
       "properties": {
