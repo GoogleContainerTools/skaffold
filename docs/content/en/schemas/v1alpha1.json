@@ -9,12 +9,10 @@
     "SkaffoldPipeline": {
       "properties": {
         "apiVersion": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "kind": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "build": {
           "$ref": "#/definitions/BuildConfig"
@@ -35,8 +33,7 @@
           "type": "array"
         },
         "tagPolicy": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -82,8 +79,7 @@
     "GoogleCloudBuild": {
       "properties": {
         "projectId": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         }
       },
       "additionalProperties": false
@@ -91,8 +87,7 @@
     "DeployConfig": {
       "properties": {
         "name": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -142,16 +137,14 @@
       "properties": {
         "paths": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "default": "[]"
         },
         "parameters": {
           "additionalProperties": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "object",
           "default": "{}"
@@ -173,32 +166,26 @@
     "HelmRelease": {
       "properties": {
         "name": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "chartPath": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "valuesFilePath": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "values": {
           "additionalProperties": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "object",
           "default": "{}"
         },
         "namespace": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "version": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         }
       },
       "additionalProperties": false
@@ -206,16 +193,13 @@
     "Artifact": {
       "properties": {
         "imageName": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "dockerfilePath": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "workspace": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "buildArgs": {
           "additionalProperties": {

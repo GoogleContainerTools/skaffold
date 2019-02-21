@@ -24,6 +24,22 @@
     {{ end }}
 {{ end }}
 
+<style>
+@media (min-width: 992px) {
+    table {
+        max-width: 80%;
+    }
+}
+
+td.desc {
+    width: 100%;
+}
+
+td.default {
+    white-space: nowrap;
+}
+</style>
+
 <table>
     <thead>
         <tr>
@@ -36,8 +52,8 @@
         {{range $k, $v :=  $definition.properties}}
         <tr>
             <td><code>{{$k}}</code></td>
-            <td style="width: 100%;">{{if .required}}<strong>Required</strong> {{end}}{{.description | markdownify}}</td>
-            {{ if $showDefaults }}<td><code>{{ .default }}</code></td>{{ end }}
+            <td class="desc">{{if .required}}<strong>Required</strong> {{end}}{{.description | markdownify}}</td>
+            {{ if $showDefaults }}<td class="default"><code>{{ .default }}</code></td>{{ end }}
         </tr>
         {{end}}
     </tbody>

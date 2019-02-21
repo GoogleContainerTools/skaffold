@@ -175,11 +175,11 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 
 		switch typeName {
 		case "string":
-			def.Default = "\"\""
+			// def.Default = "\"\""
 		case "bool":
 			def.Default = "false"
 		case "int", "int64":
-			def.Default = "0"
+			// def.Default = "0"
 		}
 
 	case *ast.StarExpr:

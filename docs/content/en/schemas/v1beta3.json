@@ -9,12 +9,10 @@
     "SkaffoldPipeline": {
       "properties": {
         "apiVersion": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "kind": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "build": {
           "$ref": "#/definitions/BuildConfig"
@@ -101,8 +99,7 @@
     "EnvTemplateTagger": {
       "properties": {
         "template": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -111,12 +108,10 @@
     "DateTimeTagger": {
       "properties": {
         "format": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "timezone": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -157,32 +152,25 @@
     "GoogleCloudBuild": {
       "properties": {
         "projectId": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "diskSizeGb": {
-          "type": "number",
-          "default": "0"
+          "type": "number"
         },
         "machineType": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "timeout": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "dockerImage": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "mavenImage": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "gradleImage": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -195,8 +183,7 @@
     "KanikoBuildContext": {
       "properties": {
         "gcsBucket": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "localDir": {
           "$ref": "#/definitions/LocalDir"
@@ -208,8 +195,7 @@
     "KanikoCache": {
       "properties": {
         "repo": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -225,31 +211,25 @@
         },
         "flags": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "default": "[]"
         },
         "pullSecret": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "pullSecretName": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "namespace": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "timeout": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "image": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "dockerConfig": {
           "$ref": "#/definitions/DockerConfig"
@@ -261,12 +241,10 @@
     "DockerConfig": {
       "properties": {
         "path": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "secretName": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -282,13 +260,11 @@
     "TestCase": {
       "properties": {
         "image": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "structureTests": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "default": "[]"
@@ -343,16 +319,14 @@
       "properties": {
         "manifests": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "default": "[]"
         },
         "remoteManifests": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "default": "[]"
@@ -368,24 +342,21 @@
       "properties": {
         "global": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "default": "[]"
         },
         "apply": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "default": "[]"
         },
         "delete": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "default": "[]"
@@ -409,8 +380,7 @@
     "KustomizeDeploy": {
       "properties": {
         "path": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "flags": {
           "$ref": "#/definitions/KubectlFlags"
@@ -422,49 +392,41 @@
     "HelmRelease": {
       "properties": {
         "name": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "chartPath": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "valuesFiles": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "default": "[]"
         },
         "values": {
           "additionalProperties": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "object",
           "default": "{}"
         },
         "namespace": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "version": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "setValues": {
           "additionalProperties": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "object",
           "default": "{}"
         },
         "setValueTemplates": {
           "additionalProperties": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "object",
           "default": "{}"
@@ -495,13 +457,11 @@
       "properties": {
         "version": {
           "type": "string",
-          "description": "sets the version on the chart to this semver version.",
-          "default": "\"\""
+          "description": "sets the version on the chart to this semver version."
         },
         "appVersion": {
           "type": "string",
-          "description": "set the appVersion on the chart to this version",
-          "default": "\"\""
+          "description": "set the appVersion on the chart to this version"
         }
       },
       "additionalProperties": false,
@@ -540,8 +500,7 @@
     "HelmFQNConfig": {
       "properties": {
         "property": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -554,17 +513,14 @@
     "Artifact": {
       "properties": {
         "image": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "context": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "sync": {
           "additionalProperties": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "object",
           "default": "{}"
@@ -606,8 +562,7 @@
     "Profile": {
       "properties": {
         "name": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "build": {
           "$ref": "#/definitions/BuildConfig"
@@ -642,8 +597,7 @@
     "DockerArtifact": {
       "properties": {
         "dockerfile": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "buildArgs": {
           "additionalProperties": {
@@ -654,15 +608,13 @@
         },
         "cacheFrom": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "default": "[]"
         },
         "target": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -671,13 +623,11 @@
     "BazelArtifact": {
       "properties": {
         "target": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         },
         "args": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "default": "[]"
@@ -690,12 +640,10 @@
       "properties": {
         "module": {
           "type": "string",
-          "description": "Only multi-module",
-          "default": "\"\""
+          "description": "Only multi-module"
         },
         "profile": {
-          "type": "string",
-          "default": "\"\""
+          "type": "string"
         }
       },
       "additionalProperties": false
@@ -704,8 +652,7 @@
       "properties": {
         "project": {
           "type": "string",
-          "description": "Only multi-module",
-          "default": "\"\""
+          "description": "Only multi-module"
         }
       },
       "additionalProperties": false

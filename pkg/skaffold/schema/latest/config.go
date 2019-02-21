@@ -485,8 +485,6 @@ type Profile struct {
 	Patches []yamlpatch.Operation `yaml:"patches,omitempty"`
 
 	// Activation criteria by which a profile can be auto-activated.
-	// This can be based on Environment Variables, the current Kubernetes
-	// context name, or depending on which Skaffold command is running.
 	Activation []Activation `yaml:"activation,omitempty"`
 }
 

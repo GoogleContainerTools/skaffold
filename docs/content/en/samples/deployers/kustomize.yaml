@@ -2,5 +2,5 @@ deploy:
   kustomize: {}
 # The deploy section above is equal to
 # deploy:
-#   kustomize: {}
+#   kustomize:
 #     path: "."
