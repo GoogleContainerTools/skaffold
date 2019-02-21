@@ -135,19 +135,11 @@ func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) error
 		Kind:       config.Kind,
 		Build:      overlayProfileField(config.Build, profile.Build).(latest.BuildConfig),
 		Deploy:     overlayProfileField(config.Deploy, profile.Deploy).(latest.DeployConfig),
-		Test:       overlayProfileField(config.Test, profile.Test).(latest.TestConfig),
+		Test:       overlayProfileField(config.Test, profile.Test).([]*latest.TestCase),
 	}
 
 	if len(profile.Patches) == 0 {
 		return nil
-	}
-
-	// Default patch operation to `replace`
-	for i, p := range profile.Patches {
-		if p.Op == "" {
-			p.Op = "replace"
-			profile.Patches[i] = p
-		}
 	}
 
 	// Apply profile patches
@@ -156,7 +148,23 @@ func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) error
 		return err
 	}
 
-	buf, err = yamlpatch.Patch(profile.Patches).Apply(buf)
+	var patches []yamlpatch.Operation
+	for _, patch := range profile.Patches {
+		// Default patch operation to `replace`
+		op := patch.Op
+		if op == "" {
+			op = "replace"
+		}
+
+		patches = append(patches, yamlpatch.Operation{
+			Op:    yamlpatch.Op(op),
+			Path:  yamlpatch.OpPath(patch.Path),
+			From:  yamlpatch.OpPath(patch.From),
+			Value: patch.Value,
+		})
+	}
+
+	buf, err = yamlpatch.Patch(patches).Apply(buf)
 	if err != nil {
 		return err
 	}

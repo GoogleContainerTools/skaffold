@@ -10,8 +10,7 @@
       "properties": {
         "apiVersion": {
           "type": "string",
-          "description": "version of the configuration.",
-          "default": "\"\""
+          "description": "version of the configuration."
         },
         "kind": {
           "type": "string",
@@ -23,7 +22,10 @@
           "description": "describes how images are built."
         },
         "test": {
-          "$ref": "#/definitions/TestConfig",
+          "items": {
+            "$ref": "#/definitions/TestCase"
+          },
+          "type": "array",
           "description": "describes how images are tested."
         },
         "deploy": {
@@ -89,8 +91,7 @@
     },
     "ExecEnvironment": {
       "additionalProperties": false,
-      "type": "string",
-      "default": "\"\""
+      "type": "string"
     },
     "ExecutionEnvironment": {
       "properties": {
@@ -112,8 +113,7 @@
       "properties": {
         "name": {
           "type": "string",
-          "description": "name of the build plugin.",
-          "default": "\"\""
+          "description": "name of the build plugin."
         },
         "properties": {
           "additionalProperties": {},
@@ -163,7 +163,6 @@
         "template": {
           "type": "string",
           "description": "used to produce the image name and tag. See golang <a href=\"https://golang.org/pkg/text/template/\">text/template</a>. The template is executed against the current environment, with those variables injected:   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.",
-          "default": "\"\"",
           "examples": [
             "{{.RELEASE}}-{{.IMAGE_NAME}}"
           ]
@@ -181,8 +180,7 @@
         },
         "timezone": {
           "type": "string",
-          "description": "sets the timezone for the date and time. See <a href=\"https://golang.org/pkg/time/#Time.LoadLocation\">Time.LoadLocation</a>. Defaults to the local timezone.",
-          "default": "\"\""
+          "description": "sets the timezone for the date and time. See <a href=\"https://golang.org/pkg/time/#Time.LoadLocation\">Time.LoadLocation</a>. Defaults to the local timezone."
         }
       },
       "additionalProperties": false,
@@ -230,23 +228,19 @@
       "properties": {
         "projectId": {
           "type": "string",
-          "description": "ID of your Cloud Platform Project. If it is not provided, Skaffold will guess it from the image name. For example, given the artifact image name <code>gcr.io/myproject/image</code>, Skaffold will use the <code>myproject</code> GCP project.",
-          "default": "\"\""
+          "description": "ID of your Cloud Platform Project. If it is not provided, Skaffold will guess it from the image name. For example, given the artifact image name <code>gcr.io/myproject/image</code>, Skaffold will use the <code>myproject</code> GCP project."
         },
         "diskSizeGb": {
           "type": "number",
-          "description": "disk size of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions\">Cloud Build Reference</a>.",
-          "default": "0"
+          "description": "disk size of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions\">Cloud Build Reference</a>."
         },
         "machineType": {
           "type": "string",
-          "description": "type of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions\">Cloud Build Reference</a>.",
-          "default": "\"\""
+          "description": "type of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions\">Cloud Build Reference</a>."
         },
         "timeout": {
           "type": "string",
-          "description": "amount of time (in seconds) that this build should be allowed to run. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build\">Cloud Build Reference</a>.",
-          "default": "\"\""
+          "description": "amount of time (in seconds) that this build should be allowed to run. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build\">Cloud Build Reference</a>."
         },
         "dockerImage": {
           "type": "string",
@@ -275,8 +269,7 @@
       "properties": {
         "gcsBucket": {
           "type": "string",
-          "description": "CGS bucket to which sources are uploaded by Skaffold. Kaniko will need access to that bucket to download the sources.",
-          "default": "\"\""
+          "description": "CGS bucket to which sources are uploaded by Skaffold. Kaniko will need access to that bucket to download the sources."
         },
         "localDir": {
           "$ref": "#/definitions/LocalDir",
@@ -290,8 +283,7 @@
       "properties": {
         "repo": {
           "type": "string",
-          "description": "a remote repository to store cached layers. If none is specified, one will be inferred from the image name. See <a href=\"https://github.com/GoogleContainerTools/kaniko#caching\">Kaniko Caching</a>.",
-          "default": "\"\""
+          "description": "a remote repository to store cached layers. If none is specified, one will be inferred from the image name. See <a href=\"https://github.com/GoogleContainerTools/kaniko#caching\">Kaniko Caching</a>."
         }
       },
       "additionalProperties": false,
@@ -309,8 +301,7 @@
         },
         "flags": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "description": "additional flags to be passed to Kaniko command line. See <a href=\"https://github.com/GoogleContainerTools/kaniko#additional-flags\">Kaniko Additional Flags</a>.",
@@ -318,8 +309,7 @@
         },
         "pullSecret": {
           "type": "string",
-          "description": "path to the secret key file. See <a href=\"https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster\">Kaniko Documentation</a>.",
-          "default": "\"\""
+          "description": "path to the secret key file. See <a href=\"https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster\">Kaniko Documentation</a>."
         },
         "pullSecretName": {
           "type": "string",
@@ -328,18 +318,15 @@
         },
         "namespace": {
           "type": "string",
-          "description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration.",
-          "default": "\"\""
+          "description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration."
         },
         "timeout": {
           "type": "string",
-          "description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (<code>20m</code>).",
-          "default": "\"\""
+          "description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (<code>20m</code>)."
         },
         "image": {
           "type": "string",
-          "description": "Docker image used by the Kaniko pod. Defaults to the latest released version of <code>gcr.io/kaniko-project/executor</code>.",
-          "default": "\"\""
+          "description": "Docker image used by the Kaniko pod. Defaults to the latest released version of <code>gcr.io/kaniko-project/executor</code>."
         },
         "dockerConfig": {
           "$ref": "#/definitions/DockerConfig",
@@ -353,24 +340,15 @@
       "properties": {
         "path": {
           "type": "string",
-          "description": "path to the docker <code>config.json</code>.",
-          "default": "\"\""
+          "description": "path to the docker <code>config.json</code>."
         },
         "secretName": {
           "type": "string",
-          "description": "Kubernetes secret that will hold the Docker configuration.",
-          "default": "\"\""
+          "description": "Kubernetes secret that will hold the Docker configuration."
         }
       },
       "additionalProperties": false,
       "description": "contains information about the docker <code>config.json</code> to mount."
-    },
-    "TestConfig": {
-      "items": {
-        "$ref": "#/definitions/TestCase"
-      },
-      "additionalProperties": false,
-      "type": "array"
     },
     "TestCase": {
       "required": [
@@ -380,12 +358,13 @@
         "image": {
           "type": "string",
           "description": "artifact on which to run those tests.",
-          "default": "\"\""
+          "examples": [
+            "gcr.io/k8s-skaffold/example"
+          ]
         },
         "structureTests": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "description": "the <a href=\"https://github.com/GoogleContainerTools/container-structure-test\">Container Structure Tests</a> to run on that artifact.",
@@ -450,8 +429,7 @@
       "properties": {
         "manifests": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "description": "the Kubernetes yaml or json manifests.",
@@ -459,8 +437,7 @@
         },
         "remoteManifests": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "description": "Kubernetes manifests in remote clusters.",
@@ -478,8 +455,7 @@
       "properties": {
         "global": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "description": "additional flags passed on every command.",
@@ -487,8 +463,7 @@
         },
         "apply": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "description": "additional flags passed on creations (<code>kubectl apply</code>).",
@@ -496,8 +471,7 @@
         },
         "delete": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "description": "additional flags passed on deletions (<code>kubectl delete</code>).",
@@ -546,18 +520,15 @@
       "properties": {
         "name": {
           "type": "string",
-          "description": "name of the Helm release.",
-          "default": "\"\""
+          "description": "name of the Helm release."
         },
         "chartPath": {
           "type": "string",
-          "description": "path to the Helm chart.",
-          "default": "\"\""
+          "description": "path to the Helm chart."
         },
         "valuesFiles": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "description": "paths to the Helm <code>values</code> files&quot;.",
@@ -565,8 +536,7 @@
         },
         "values": {
           "additionalProperties": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "object",
           "description": "key-value pairs supplementing the Helm <code>values</code> file&quot;.",
@@ -574,18 +544,15 @@
         },
         "namespace": {
           "type": "string",
-          "description": "Kubernetes namespace.",
-          "default": "\"\""
+          "description": "Kubernetes namespace."
         },
         "version": {
           "type": "string",
-          "description": "version of the chart.",
-          "default": "\"\""
+          "description": "version of the chart."
         },
         "setValues": {
           "additionalProperties": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "object",
           "description": "key-value pairs. If present, Skaffold will send <code>--set</code> flag to Helm CLI and append all pairs after the flag.",
@@ -593,8 +560,7 @@
         },
         "setValueTemplates": {
           "additionalProperties": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "object",
           "description": "key-value pairs. If present, Skaffold will try to parse the value part of each key-value pair using environment variables in the system, then send <code>--set</code> flag to Helm CLI and append all parsed pairs after the flag.",
@@ -636,13 +602,11 @@
       "properties": {
         "version": {
           "type": "string",
-          "description": "sets the <code>version</code> on the chart to this semver version.",
-          "default": "\"\""
+          "description": "sets the <code>version</code> on the chart to this semver version."
         },
         "appVersion": {
           "type": "string",
-          "description": "sets the <code>appVersion</code> on the chart to this version.",
-          "default": "\"\""
+          "description": "sets the <code>appVersion</code> on the chart to this version."
         }
       },
       "additionalProperties": false,
@@ -687,8 +651,7 @@
       "properties": {
         "property": {
           "type": "string",
-          "description": "defines the image config.",
-          "default": "\"\""
+          "description": "defines the image config."
         }
       },
       "additionalProperties": false,
@@ -706,7 +669,6 @@
         "image": {
           "type": "string",
           "description": "name of the image to be built.",
-          "default": "\"\"",
           "examples": [
             "gcr.io/k8s-skaffold/example"
           ]
@@ -718,8 +680,7 @@
         },
         "sync": {
           "additionalProperties": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "object",
           "description": "(alpha) lists local files that can be synced to remote pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
@@ -778,7 +739,6 @@
         "name": {
           "type": "string",
           "description": "a unique profile name.",
-          "default": "\"\"",
           "examples": [
             "profile-prod"
           ]
@@ -788,7 +748,10 @@
           "description": "replaces the main <code>build</code> configuration."
         },
         "test": {
-          "$ref": "#/definitions/TestConfig",
+          "items": {
+            "$ref": "#/definitions/TestCase"
+          },
+          "type": "array",
           "description": "replaces the main <code>test</code> configuration."
         },
         "deploy": {
@@ -796,31 +759,57 @@
           "description": "replaces the main <code>deploy</code> configuration."
         },
         "patches": {
-          "items": {},
+          "items": {
+            "$ref": "#/definitions/JSONPatch"
+          },
           "type": "array",
-          "description": "a list of patches applied to the configuration. This is used change a few values and not replace whole sections. Patches use the JSON patch notation. For example, this replaces the <code>dockerfile</code> of the 1st artifact with <code>Dockerfile.DEV</code>.",
-          "default": "[]",
-          "examples": [
-            "[{\"path:\": \"/build/artifacts/0/docker/dockerfile\", \"value\": \"Dockerfile.DEV\"}]"
-          ]
+          "description": "a list of patches applied to the configuration. Patches use the JSON patch notation."
         },
         "activation": {
           "items": {
             "$ref": "#/definitions/Activation"
           },
           "type": "array",
-          "description": "criteria by which a profile can be auto-activated. This can be based on Environment Variables, the current Kubernetes context name, or depending on which Skaffold command is running."
+          "description": "criteria by which a profile can be auto-activated."
         }
       },
       "additionalProperties": false,
       "description": "(beta) profiles are used to override any <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
+    },
+    "JSONPatch": {
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "op": {
+          "type": "string",
+          "description": "operation carried by the patch: <code>add</code>, <code>remove</code>, <code>replace</code>, <code>move</code>, <code>copy</code> or <code>test</code>.",
+          "default": "replace"
+        },
+        "path": {
+          "type": "string",
+          "description": "position in the yaml where the operation takes place. For example, this targets the <code>dockerfile</code> of the first artifact built.",
+          "examples": [
+            "/build/artifacts/0/docker/dockerfile"
+          ]
+        },
+        "from": {
+          "type": "string",
+          "description": "source position in the yaml, used for <code>copy</code> or <code>move</code> operations."
+        },
+        "value": {
+          "type": "object",
+          "description": "value to apply. Can be any portion of yaml."
+        }
+      },
+      "additionalProperties": false,
+      "description": "patch to be applied by a profile."
     },
     "Activation": {
       "properties": {
         "env": {
           "type": "string",
           "description": "a key=value pair. The profile is auto-activated if an Environment Variable <code>key</code> has value <code>value</code>.",
-          "default": "\"\"",
           "examples": [
             "ENV=production"
           ]
@@ -828,7 +817,6 @@
         "kubeContext": {
           "type": "string",
           "description": "a Kubernetes context for which the profile is auto-activated.",
-          "default": "\"\"",
           "examples": [
             "minikube"
           ]
@@ -836,7 +824,6 @@
         "command": {
           "type": "string",
           "description": "a Skaffold command for which the profile is auto-activated.",
-          "default": "\"\"",
           "examples": [
             "dev"
           ]
@@ -875,8 +862,7 @@
         },
         "target": {
           "type": "string",
-          "description": "Dockerfile target name to build.",
-          "default": "\"\""
+          "description": "Dockerfile target name to build."
         },
         "buildArgs": {
           "additionalProperties": {
@@ -891,8 +877,7 @@
         },
         "cacheFrom": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "description": "the Docker images to consider as cache sources.",
@@ -913,15 +898,13 @@
         "target": {
           "type": "string",
           "description": "<code>bazel build</code> target to run.",
-          "default": "\"\"",
           "examples": [
             "//:skaffold_example.tar"
           ]
         },
         "args": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "description": "additional args to pass to <code>bazel build</code>.",
@@ -938,18 +921,15 @@
       "properties": {
         "module": {
           "type": "string",
-          "description": "selects which Maven module to build, for a multi module project.",
-          "default": "\"\""
+          "description": "selects which Maven module to build, for a multi module project."
         },
         "profile": {
           "type": "string",
-          "description": "selects which Maven profile to activate.",
-          "default": "\"\""
+          "description": "selects which Maven profile to activate."
         },
         "args": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "description": "additional build flags passed to Maven.",
@@ -966,13 +946,11 @@
       "properties": {
         "project": {
           "type": "string",
-          "description": "selects which Gradle project to build.",
-          "default": "\"\""
+          "description": "selects which Gradle project to build."
         },
         "args": {
           "items": {
-            "type": "string",
-            "default": "\"\""
+            "type": "string"
           },
           "type": "array",
           "description": "additional build flags passed to Gradle.",

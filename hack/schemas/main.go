@@ -175,16 +175,20 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 
 		switch typeName {
 		case "string":
-			def.Default = "\"\""
+			// def.Default = "\"\""
 		case "bool":
 			def.Default = "false"
 		case "int", "int64":
-			def.Default = "0"
+			// def.Default = "0"
 		}
 
 	case *ast.StarExpr:
-		typeName := tt.X.(*ast.Ident).Name
-		setTypeOrRef(def, typeName)
+		if ident, ok := tt.X.(*ast.Ident); ok {
+			typeName := ident.Name
+			setTypeOrRef(def, typeName)
+		} else if _, ok := tt.X.(*ast.SelectorExpr); ok {
+			def.Type = "object"
+		}
 
 	case *ast.ArrayType:
 		def.Type = "array"

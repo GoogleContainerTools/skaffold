@@ -4,15 +4,14 @@ linkTitle: "Profiles"
 weight: 70
 ---
 
-This page discusses Skaffold profiles.
-
 Skaffold profiles allow you to define build, test and deployment
 configurations for different contexts. Different contexts are typically different
 environments in your app's lifecycle, like Production or Development. 
 
-You can create profiles in the `profiles` section of `skaffold.yaml`. For a
-detailed discussion on Skaffold configuration,
-see [Skaffold Concepts: Configuration](/docs/concepts/#configuration) and
+You can create profiles in the `profiles` section of `skaffold.yaml`.
+
+For a detailed discussion on Skaffold configuration, see
+[Skaffold Concepts](/docs/concepts/#configuration) and
 [skaffold.yaml References](/docs/references/yaml).
 
 ## Profiles (`profiles`)
@@ -31,8 +30,16 @@ section use the same syntax as the `build`, `test` and `deploy` sections of
 `skaffold.yaml`; for more information, see [Builders](/docs/how-tos/builders),
 [Testers](/docs/how-tos/testers), and [Deployers](/docs/how-tos/deployers).
 
-You can activate a profile with the `-p` (`--profile`) parameter in the
+### Activation
+
+You can activate profiles with the `-p` (`--profile`) parameter in the
 `skaffold dev` and `skaffold run` commands.
+
+```bash
+skaffold run -p [PROFILE]
+```
+
+### Example
 
 The following example, showcases a `skaffold.yaml` with one profile, `gcb`,
 for building with Google Cloud Build:
@@ -41,7 +48,9 @@ for building with Google Cloud Build:
 
 With no profile activated, Skaffold will build the artifact
 `gcr.io/k8s-skaffold/skaffold-example` using local Docker daemon and deploy it
-with `kubectl`. However, if you run Skaffold with the following command:
+with `kubectl`.
+
+However, if you run Skaffold with the following command:
 
 ```bash
 skaffold dev -p gcb

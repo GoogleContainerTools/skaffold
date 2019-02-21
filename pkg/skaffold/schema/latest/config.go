@@ -39,7 +39,7 @@ type SkaffoldPipeline struct {
 	Build BuildConfig `yaml:"build,omitempty"`
 
 	// Test describes how images are tested.
-	Test TestConfig `yaml:"test,omitempty"`
+	Test []*TestCase `yaml:"test,omitempty"`
 
 	// Deploy describes how images are deployed.
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
@@ -279,11 +279,10 @@ type DockerConfig struct {
 	SecretName string `yaml:"secretName,omitempty"`
 }
 
-type TestConfig []*TestCase
-
 // TestCase is a list of structure tests to run on images that Skaffold builds.
 type TestCase struct {
 	// ImageName is the artifact on which to run those tests.
+	// For example: `gcr.io/k8s-skaffold/example`.
 	ImageName string `yaml:"image" yamltags:"required"`
 
 	// StructureTests lists the [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test)
@@ -472,22 +471,35 @@ type Profile struct {
 	Build BuildConfig `yaml:"build,omitempty"`
 
 	// Test replaces the main `test` configuration.
-	Test TestConfig `yaml:"test,omitempty"`
+	Test []*TestCase `yaml:"test,omitempty"`
 
 	// Deploy replaces the main `deploy` configuration.
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
 
 	// Patches is a list of patches applied to the configuration.
-	// This is used change a few values and not replace whole sections.
 	// Patches use the JSON patch notation.
-	// For example, this replaces the `dockerfile` of the 1st artifact with `Dockerfile.DEV`.
-	// For example: `[{"path:": "/build/artifacts/0/docker/dockerfile", "value": "Dockerfile.DEV"}]`.
-	Patches []yamlpatch.Operation `yaml:"patches,omitempty"`
+	Patches []JSONPatch `yaml:"patches,omitempty"`
 
 	// Activation criteria by which a profile can be auto-activated.
-	// This can be based on Environment Variables, the current Kubernetes
-	// context name, or depending on which Skaffold command is running.
 	Activation []Activation `yaml:"activation,omitempty"`
+}
+
+// JSONPatch patch to be applied by a profile.
+type JSONPatch struct {
+	// Op is the operation carried by the patch: `add`, `remove`, `replace`, `move`, `copy` or `test`.
+	// Defaults to `replace`.
+	Op string `yaml:"op,omitempty"`
+
+	// Path is the position in the yaml where the operation takes place.
+	// For example, this targets the `dockerfile` of the first artifact built.
+	// For example: `/build/artifacts/0/docker/dockerfile`.
+	Path string `yaml:"path,omitempty" yamltags:"required"`
+
+	// From is the source position in the yaml, used for `copy` or `move` operations.
+	From string `yaml:"from,omitempty"`
+
+	// Value is the value to apply. Can be any portion of yaml.
+	Value *yamlpatch.Node `yaml:"value,omitempty"`
 }
 
 // Activation criteria by which a profile is auto-activated.

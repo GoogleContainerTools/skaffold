@@ -19,5 +19,5 @@ List of fields that support templating:
 
 List of variables that are available for templating: 
 
-* all environment variables passed to the skaffold process as startup 
-* `IMAGE_NAME` - the artifacts' image name - the [image name rewriting](/docs/concepts/#image-repository-handling) acts after the template was calculated
+* all environment variables passed to the Skaffold process at startup 
+* `IMAGE_NAME` - the artifacts' image name - the [image name rewriting](/docs/concepts/#image-repository-handling) acts after the template is calculated
