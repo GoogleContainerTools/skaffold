@@ -23,15 +23,12 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/bazel"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
-	"github.com/sirupsen/logrus"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -52,7 +49,7 @@ func NewCmdDiagnose(out io.Writer) *cobra.Command {
 }
 
 func doDiagnose(out io.Writer) error {
-	_, config, err := newRunner(opts)
+	runner, config, err := newRunner(opts)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}
@@ -61,14 +58,14 @@ func doDiagnose(out io.Writer) error {
 	fmt.Fprintln(out, "Configuration version:", config.APIVersion)
 	fmt.Fprintln(out, "Number of artifacts:", len(config.Build.Artifacts))
 
-	if err := diagnoseArtifacts(out, config.Build.Artifacts); err != nil {
+	if err := diagnoseArtifacts(out, runner.Builder, config.Build.Artifacts); err != nil {
 		return errors.Wrap(err, "running diagnostic on artifacts")
 	}
 
 	return nil
 }
 
-func diagnoseArtifacts(out io.Writer, artifacts []*latest.Artifact) error {
+func diagnoseArtifacts(out io.Writer, builder build.Builder, artifacts []*latest.Artifact) error {
 	ctx := context.Background()
 
 	for _, artifact := range artifacts {
@@ -83,11 +80,11 @@ func diagnoseArtifacts(out io.Writer, artifacts []*latest.Artifact) error {
 			fmt.Fprintf(out, " - Size of the context: %vbytes\n", size)
 		}
 
-		timeDeps1, deps, err := timeToListDependencies(ctx, artifact)
+		timeDeps1, deps, err := timeToListDependencies(ctx, builder, artifact)
 		if err != nil {
 			return errors.Wrap(err, "listing artifact dependencies")
 		}
-		timeDeps2, _, err := timeToListDependencies(ctx, artifact)
+		timeDeps2, _, err := timeToListDependencies(ctx, builder, artifact)
 		if err != nil {
 			return errors.Wrap(err, "listing artifact dependencies")
 		}
@@ -110,43 +107,10 @@ func diagnoseArtifacts(out io.Writer, artifacts []*latest.Artifact) error {
 	return nil
 }
 
-func timeToListDependencies(ctx context.Context, a *latest.Artifact) (time.Duration, []string, error) {
+func timeToListDependencies(ctx context.Context, builder build.Builder, a *latest.Artifact) (time.Duration, []string, error) {
 	start := time.Now()
-
-	var (
-		paths []string
-		err   error
-	)
-
-	switch {
-	case a.DockerArtifact != nil:
-		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact)
-
-	case a.BazelArtifact != nil:
-		paths, err = bazel.GetDependencies(ctx, a.Workspace, a.BazelArtifact)
-
-	case a.JibMavenArtifact != nil:
-		paths, err = jib.GetDependenciesMaven(ctx, a.Workspace, a.JibMavenArtifact)
-
-	case a.JibGradleArtifact != nil:
-		paths, err = jib.GetDependenciesGradle(ctx, a.Workspace, a.JibGradleArtifact)
-
-	default:
-		return 0, nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
-	}
-
-	if err != nil {
-		// if the context was cancelled act as if all is well
-		// TODO(dgageot): this should be even higher in the call chain.
-		if ctx.Err() == context.Canceled {
-			logrus.Debugln(errors.Wrap(err, "ignore error since context is cancelled"))
-			return 0, nil, nil
-		}
-
-		return 0, nil, err
-	}
-
-	return time.Since(start), util.AbsolutePaths(a.Workspace, paths), nil
+	paths, err := builder.DependenciesForArtifact(ctx, a)
+	return time.Since(start), paths, err
 }
 
 func timeToComputeMTimes(deps []string) (time.Duration, error) {
