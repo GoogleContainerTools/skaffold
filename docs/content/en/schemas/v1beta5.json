@@ -784,7 +784,25 @@
           "x-intellij-html-description": "image that runs a Maven build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.",
           "default": "gcr.io/cloud-builders/mvn"
         },
+<<<<<<< HEAD
         "projectId": {
+=======
+        "dockerConfig": {
+          "$ref": "#/definitions/DockerConfig",
+          "description": "describes how to mount the local Docker configuration into the Kaniko pod."
+        },
+        "resources": {
+          "$ref": "#/definitions/ResourceRequirements",
+          "description": "ResourceRequirements define the resource requirements for the kaniko pod"
+        }
+      },
+      "additionalProperties": false,
+      "description": "(beta) describes how to do an on-cluster build using <a href=\"https://github.com/GoogleContainerTools/kaniko\">Kaniko</a>."
+    },
+    "DockerConfig": {
+      "properties": {
+        "path": {
+>>>>>>> feat: specify the resource requirements for the kaniko pod
           "type": "string",
           "description": "ID of your Cloud Platform Project. If it is not provided, Skaffold will guess it from the image name. For example, given the artifact image name `gcr.io/myproject/image`, Skaffold will use the `myproject` GCP project.",
           "x-intellij-html-description": "ID of your Cloud Platform Project. If it is not provided, Skaffold will guess it from the image name. For example, given the artifact image name <code>gcr.io/myproject/image</code>, Skaffold will use the <code>myproject</code> GCP project."
@@ -808,11 +826,48 @@
       "description": "*beta* describes how to do a remote build on [Google Cloud Build](https://cloud.google.com/cloud-build/docs/). Docker and Jib artifacts can be built on Cloud Build. The `projectId` needs to be provided and the currently logged in user should be given permissions to trigger new builds.",
       "x-intellij-html-description": "<em>beta</em> describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/docs/\">Google Cloud Build</a>. Docker and Jib artifacts can be built on Cloud Build. The <code>projectId</code> needs to be provided and the currently logged in user should be given permissions to trigger new builds."
     },
+<<<<<<< HEAD
     "HelmConventionConfig": {
       "description": "image config in the syntax of image.repository and image.tag.",
       "x-intellij-html-description": "image config in the syntax of image.repository and image.tag."
     },
     "HelmDeploy": {
+=======
+    "ResourceRequirements": {
+      "properties": {
+        "requests": {
+          "$ref": "#/definitions/ResourceRequirement",
+          "description": "https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container"
+        },
+        "limits": {
+          "$ref": "#/definitions/ResourceRequirement",
+          "description": "https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container"
+        }
+      },
+      "additionalProperties": false,
+      "description": "describes the resource requirements for the kaniko pod"
+    },
+    "ResourceRequirement": {
+      "properties": {
+        "cpu": {
+          "type": "string"
+        },
+        "memory": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "description": "see https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container"
+    },
+    "TestConfig": {
+      "items": {
+        "$ref": "#/definitions/TestCase"
+      },
+      "additionalProperties": false,
+      "type": "array"
+    },
+    "TestCase": {
+>>>>>>> feat: specify the resource requirements for the kaniko pod
       "required": [
         "releases"
       ],

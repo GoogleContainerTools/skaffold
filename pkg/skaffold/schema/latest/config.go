@@ -18,7 +18,7 @@ package latest
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	yamlpatch "github.com/krishicks/yaml-patch"
+	"github.com/krishicks/yaml-patch"
 )
 
 const Version string = "skaffold/v1beta8"
@@ -254,6 +254,9 @@ type ClusterDetails struct {
 
 	// DockerConfig describes how to mount the local Docker configuration into a pod.
 	DockerConfig *DockerConfig `yaml:"dockerConfig,omitempty"`
+
+	// ResourceRequirements define the resource requirements for the kaniko pod
+	Resources *ResourceRequirements `yaml:"resources,omitempty"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.
@@ -264,6 +267,22 @@ type DockerConfig struct {
 	// SecretName is the Kubernetes secret that will hold the Docker configuration.
 	SecretName string `yaml:"secretName,omitempty"`
 }
+
+// ResourceRequirements describes the resource requirements for the kaniko pod
+type ResourceRequirements struct {
+	// Requests https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container
+	Requests *ResourceRequirement `yaml:"requests,omitempty"`
+	// Limits https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container
+	Limits *ResourceRequirement `yaml:"limits,omitempty"`
+}
+
+// ResourceRequirement see https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container
+type ResourceRequirement struct {
+	CPU    string `yaml:"cpu,omitempty"`
+	Memory string `yaml:"memory,omitempty"`
+}
+
+type TestConfig []*TestCase
 
 // TestCase is a list of structure tests to run on images that Skaffold builds.
 type TestCase struct {
