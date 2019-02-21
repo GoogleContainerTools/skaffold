@@ -5,7 +5,7 @@ Jib is one of the supported builders in Skaffold.
 [Jib](https://github.com/GoogleContainerTools/jib) builds Docker and OCI images
 for your Java applications and is available as plugins for Maven and Gradle.
 
-Sometime a project is configured to have multiple modules to create several
+Sometimes a project is configured to have multiple modules to create several
 container images.  Skaffold can work with Jib to build these containers as
 required.
 
