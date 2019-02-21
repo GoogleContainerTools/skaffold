@@ -230,8 +230,8 @@ func TestCloneThroughJSON(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			CloneThroughJSON(test.old, test.new)
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expected, test.new)
+			err := CloneThroughJSON(test.old, test.new)
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, test.new)
 		})
 	}
 }

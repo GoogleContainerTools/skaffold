@@ -100,11 +100,6 @@ func TestRun(t *testing.T) {
 			dir:         "examples/microservices",
 			deployments: []string{"leeroy-app", "leeroy-web"},
 		}, {
-			description: "annotated-skaffold",
-			dir:         "examples",
-			filename:    "annotated-skaffold.yaml",
-			pods:        []string{"getting-started"},
-		}, {
 			description: "envTagger",
 			dir:         "examples/tagging-with-environment-variables",
 			pods:        []string{"getting-started"},
@@ -145,12 +140,16 @@ func TestRun(t *testing.T) {
 			deployments: []string{"skaffold-helm"},
 			remoteOnly:  true,
 		}, {
-			description: "docker in gcb environment plugin",
+			description: "docker plugin in gcb exec environment",
 			dir:         "examples/test-plugin/gcb",
 			deployments: []string{"leeroy-app", "leeroy-web"},
 		}, {
-			description: "docker in local environment plugin",
-			dir:         "examples/test-plugin/gcb",
+			description: "bazel plugin in local exec environment",
+			dir:         "examples/test-plugin/local/bazel",
+			pods:        []string{"bazel"},
+		}, {
+			description: "docker plugin in local exec environment",
+			dir:         "examples/test-plugin/local/docker",
 			deployments: []string{"leeroy-app", "leeroy-web"},
 		},
 	}
@@ -213,7 +212,9 @@ func TestDev(t *testing.T) {
 	run(t, "examples/test-dev-job", "touch", "foo")
 	defer run(t, "examples/test-dev-job", "rm", "foo")
 
-	go runSkaffoldNoFail("dev", "examples/test-dev-job", ns.Name, "", nil)
+	cancel := make(chan bool)
+	go runSkaffoldNoFail(cancel, "dev", "examples/test-dev-job", ns.Name, "", nil)
+	defer func() { cancel <- true }()
 
 	jobName := "test-dev-job"
 	if err := kubernetesutil.WaitForJobToStabilize(context.Background(), client, ns.Name, jobName, 10*time.Minute); err != nil {
@@ -245,7 +246,9 @@ func TestDevSync(t *testing.T) {
 	ns, deleteNs := setupNamespace(t)
 	defer deleteNs()
 
-	go runSkaffoldNoFail("dev", "examples/test-file-sync", ns.Name, "", nil)
+	cancel := make(chan bool)
+	go runSkaffoldNoFail(cancel, "dev", "examples/test-file-sync", ns.Name, "", nil)
+	defer func() { cancel <- true }()
 
 	if err := kubernetesutil.WaitForPodReady(context.Background(), client.CoreV1().Pods(ns.Name), "test-file-sync"); err != nil {
 		t.Fatalf("Timed out waiting for pod ready")
@@ -266,12 +269,12 @@ func TestDevSync(t *testing.T) {
 }
 
 func runSkaffold(t *testing.T, command, dir, namespace, filename string, env []string, additionalArgs ...string) {
-	if output, err := runSkaffoldNoFail(command, dir, namespace, filename, env, additionalArgs...); err != nil {
-		t.Fatalf("skaffold delete: %s %v", output, err)
+	if err := runSkaffoldNoFail(make(chan bool), command, dir, namespace, filename, env, additionalArgs...); err != nil {
+		t.Fatalf("skaffold delete: %v", err)
 	}
 }
 
-func runSkaffoldNoFail(command, dir, namespace, filename string, env []string, additionalArgs ...string) ([]byte, error) {
+func runSkaffoldNoFail(cancel chan bool, command, dir, namespace, filename string, env []string, additionalArgs ...string) error {
 	args := []string{command, "--namespace", namespace}
 	if filename != "" {
 		args = append(args, "-f", filename)
@@ -281,7 +284,23 @@ func runSkaffoldNoFail(command, dir, namespace, filename string, env []string, a
 	cmd := exec.Command("skaffold", args...)
 	cmd.Dir = dir
 	cmd.Env = append(os.Environ(), env...)
-	return util.RunCmdOut(cmd)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+
+	cmd.Start()
+
+	result := make(chan error)
+	go func() {
+		err := cmd.Wait()
+		result <- err
+	}()
+
+	select {
+	case err := <-result:
+		return err
+	case <-cancel:
+		return cmd.Process.Kill()
+	}
 }
 
 func run(t *testing.T, dir, command string, args ...string) {

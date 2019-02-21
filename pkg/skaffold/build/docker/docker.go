@@ -25,12 +25,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/environments/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // Builder builds artifacts with Docker.
@@ -55,6 +57,18 @@ func (b *Builder) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.Builder: "docker",
 	}
+}
+
+// DependenciesForArtifact returns the dependencies for this docker artifact
+func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+	if err := setArtifact(artifact); err != nil {
+		return nil, err
+	}
+	paths, err := docker.GetDependencies(ctx, artifact.Workspace, artifact.DockerArtifact)
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting dependencies for %s", artifact.ImageName)
+	}
+	return util.AbsolutePaths(artifact.Workspace, paths), nil
 }
 
 // Build is responsible for building artifacts in their respective execution environments
@@ -86,6 +100,11 @@ func (b *Builder) local(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	if err != nil {
 		return nil, errors.Wrap(err, "getting local builder")
 	}
+	for _, a := range artifacts {
+		if err := setArtifact(a); err != nil {
+			return nil, err
+		}
+	}
 	return builder.Build(ctx, out, tags, artifacts)
 }
 
@@ -96,5 +115,26 @@ func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.
 		return nil, errors.Wrap(err, "converting execution environment to googleCloudBuild struct")
 	}
 	defaults.SetDefaultCloudBuildDockerImage(g)
+	for _, a := range artifacts {
+		if err := setArtifact(a); err != nil {
+			return nil, err
+		}
+	}
 	return gcb.NewBuilder(g, b.opts.SkipTests).Build(ctx, out, tags, artifacts)
+}
+
+func setArtifact(artifact *latest.Artifact) error {
+	if artifact.ArtifactType.DockerArtifact != nil {
+		return nil
+	}
+	var a *latest.DockerArtifact
+	if err := yaml.UnmarshalStrict(artifact.BuilderPlugin.Contents, &a); err != nil {
+		return errors.Wrap(err, "unmarshalling docker artifact")
+	}
+	if a == nil {
+		a = &latest.DockerArtifact{}
+	}
+	defaults.SetDefaultDockerArtifact(a)
+	artifact.ArtifactType.DockerArtifact = a
+	return nil
 }

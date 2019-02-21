@@ -5,26 +5,3 @@ deploy:
       chartPath: skaffold-helm
       values:
         image: gcr.io/k8s-skaffold/skaffold-helm
-      # Uncomment the following lines to specify more parameters
-      # valuesFilePath: YOUR-VALUES-FILE-PATH
-      # namespace: YOUR-NAMESPACE
-      # version: YOUR-VERSION
-      # setValues:
-      #     SOME-KEY: SOME-VALUE
-      # setValues:
-      #     SOME-KEY: SOME-VALUE-TEMPLATE
-      # setValueTemplates:
-      #     SOME-KEY: "{{.SOME-ENV-VARIABLE}}"
-      # wait: true
-      # recreatePods: true
-      # overrides:
-      #     SOME-KEY: SOME-VALUE
-      #     SOME-MORE-KEY:
-      #         SOME-KEY: SOME-VALUE
-      # packaged:
-      #     version: YOUR-VERSION
-      #     appVersion: YOUR-APP-VERSION
-      # imageStrategy:
-      #     helm: {}
-      # OR
-      #     fqn: {}

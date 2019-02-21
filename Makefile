@@ -198,4 +198,4 @@ clean-docs-preview: docs-preview-image
 
 .PHONY: generate-schemas
 generate-schemas:
-	go run schemas/main.go
+	go run hack/schemas/main.go

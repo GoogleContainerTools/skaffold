@@ -137,6 +137,17 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	return builtArtifacts, nil
 }
 
+func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+	// Group artifacts by builder
+	for name, builder := range b.Builders {
+		if name != artifact.BuilderPlugin.Name {
+			continue
+		}
+		return builder.DependenciesForArtifact(ctx, artifact)
+	}
+	return nil, errors.New("couldn't find plugin builder to get dependencies for artifact")
+}
+
 func retrieveArtifactsByPlugin(artifacts []*latest.Artifact) map[string][]*latest.Artifact {
 	m := map[string][]*latest.Artifact{}
 	for _, a := range artifacts {
