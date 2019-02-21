@@ -49,6 +49,8 @@ func TestDev(t *testing.T) {
 		t.Fatalf("Could not find job: %s %s", ns.Name, jobName)
 	}
 
+	time.Sleep(5 * time.Second)
+
 	// Make a change to foo so that dev is forced to delete the job and redeploy
 	Run(t, "examples/test-dev-job", "sh", "-c", "echo bar > foo")
 
