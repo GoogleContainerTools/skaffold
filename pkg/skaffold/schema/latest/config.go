@@ -478,14 +478,29 @@ type Profile struct {
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
 
 	// Patches is a list of patches applied to the configuration.
-	// This is used change a few values and not replace whole sections.
 	// Patches use the JSON patch notation.
-	// For example, this replaces the `dockerfile` of the 1st artifact with `Dockerfile.DEV`.
-	// For example: `[{"path:": "/build/artifacts/0/docker/dockerfile", "value": "Dockerfile.DEV"}]`.
-	Patches []yamlpatch.Operation `yaml:"patches,omitempty"`
+	Patches []JSONPatch `yaml:"patches,omitempty"`
 
 	// Activation criteria by which a profile can be auto-activated.
 	Activation []Activation `yaml:"activation,omitempty"`
+}
+
+// JSONPatch patch to be applied by a profile.
+type JSONPatch struct {
+	// Op is the operation carried by the patch: `add`, `remove`, `replace`, `move`, `copy` or `test`.
+	// Defaults to `replace`.
+	Op string `yaml:"op,omitempty"`
+
+	// Path is the position in the yaml where the operation takes place.
+	// For example, this targets the `dockerfile` of the first artifact built.
+	// For example: `/build/artifacts/0/docker/dockerfile`.
+	Path string `yaml:"path,omitempty" yamltags:"required"`
+
+	// From is the source position in the yaml, used for `copy` or `move` operations.
+	From string `yaml:"from,omitempty"`
+
+	// Value is the value to apply. Can be any portion of yaml.
+	Value *yamlpatch.Node `yaml:"value,omitempty"`
 }
 
 // Activation criteria by which a profile is auto-activated.

@@ -757,13 +757,11 @@
           "description": "replaces the main <code>deploy</code> configuration."
         },
         "patches": {
-          "items": {},
+          "items": {
+            "$ref": "#/definitions/JSONPatch"
+          },
           "type": "array",
-          "description": "a list of patches applied to the configuration. This is used change a few values and not replace whole sections. Patches use the JSON patch notation. For example, this replaces the <code>dockerfile</code> of the 1st artifact with <code>Dockerfile.DEV</code>.",
-          "default": "[]",
-          "examples": [
-            "[{\"path:\": \"/build/artifacts/0/docker/dockerfile\", \"value\": \"Dockerfile.DEV\"}]"
-          ]
+          "description": "a list of patches applied to the configuration. Patches use the JSON patch notation."
         },
         "activation": {
           "items": {
@@ -775,6 +773,35 @@
       },
       "additionalProperties": false,
       "description": "(beta) profiles are used to override any <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
+    },
+    "JSONPatch": {
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "op": {
+          "type": "string",
+          "description": "operation carried by the patch: <code>add</code>, <code>remove</code>, <code>replace</code>, <code>move</code>, <code>copy</code> or <code>test</code>.",
+          "default": "replace"
+        },
+        "path": {
+          "type": "string",
+          "description": "position in the yaml where the operation takes place. For example, this targets the <code>dockerfile</code> of the first artifact built.",
+          "examples": [
+            "/build/artifacts/0/docker/dockerfile"
+          ]
+        },
+        "from": {
+          "type": "string",
+          "description": "source position in the yaml, used for <code>copy</code> or <code>move</code> operations."
+        },
+        "value": {
+          "type": "object",
+          "description": "value to apply. Can be any portion of yaml."
+        }
+      },
+      "additionalProperties": false,
+      "description": "patch to be applied by a profile."
     },
     "Activation": {
       "properties": {

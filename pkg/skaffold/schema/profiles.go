@@ -142,21 +142,29 @@ func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) error
 		return nil
 	}
 
-	// Default patch operation to `replace`
-	for i, p := range profile.Patches {
-		if p.Op == "" {
-			p.Op = "replace"
-			profile.Patches[i] = p
-		}
-	}
-
 	// Apply profile patches
 	buf, err := yaml.Marshal(*config)
 	if err != nil {
 		return err
 	}
 
-	buf, err = yamlpatch.Patch(profile.Patches).Apply(buf)
+	var patches []yamlpatch.Operation
+	for _, patch := range profile.Patches {
+		// Default patch operation to `replace`
+		op := patch.Op
+		if op == "" {
+			op = "replace"
+		}
+
+		patches = append(patches, yamlpatch.Operation{
+			Op:    yamlpatch.Op(op),
+			Path:  yamlpatch.OpPath(patch.Path),
+			From:  yamlpatch.OpPath(patch.From),
+			Value: patch.Value,
+		})
+	}
+
+	buf, err = yamlpatch.Patch(patches).Apply(buf)
 	if err != nil {
 		return err
 	}

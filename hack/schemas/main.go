@@ -183,8 +183,12 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 		}
 
 	case *ast.StarExpr:
-		typeName := tt.X.(*ast.Ident).Name
-		setTypeOrRef(def, typeName)
+		if ident, ok := tt.X.(*ast.Ident); ok {
+			typeName := ident.Name
+			setTypeOrRef(def, typeName)
+		} else if _, ok := tt.X.(*ast.SelectorExpr); ok {
+			def.Type = "object"
+		}
 
 	case *ast.ArrayType:
 		def.Type = "array"
