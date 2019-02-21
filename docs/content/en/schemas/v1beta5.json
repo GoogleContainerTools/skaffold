@@ -22,7 +22,10 @@
           "description": "describes how images are built."
         },
         "test": {
-          "$ref": "#/definitions/TestConfig",
+          "items": {
+            "$ref": "#/definitions/TestCase"
+          },
+          "type": "array",
           "description": "describes how images are tested."
         },
         "deploy": {
@@ -347,13 +350,6 @@
       "additionalProperties": false,
       "description": "contains information about the docker <code>config.json</code> to mount."
     },
-    "TestConfig": {
-      "items": {
-        "$ref": "#/definitions/TestCase"
-      },
-      "additionalProperties": false,
-      "type": "array"
-    },
     "TestCase": {
       "required": [
         "image"
@@ -361,7 +357,10 @@
       "properties": {
         "image": {
           "type": "string",
-          "description": "artifact on which to run those tests."
+          "description": "artifact on which to run those tests.",
+          "examples": [
+            "gcr.io/k8s-skaffold/example"
+          ]
         },
         "structureTests": {
           "items": {
@@ -749,7 +748,10 @@
           "description": "replaces the main <code>build</code> configuration."
         },
         "test": {
-          "$ref": "#/definitions/TestConfig",
+          "items": {
+            "$ref": "#/definitions/TestCase"
+          },
+          "type": "array",
           "description": "replaces the main <code>test</code> configuration."
         },
         "deploy": {

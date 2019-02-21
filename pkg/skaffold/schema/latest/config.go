@@ -39,7 +39,7 @@ type SkaffoldPipeline struct {
 	Build BuildConfig `yaml:"build,omitempty"`
 
 	// Test describes how images are tested.
-	Test TestConfig `yaml:"test,omitempty"`
+	Test []*TestCase `yaml:"test,omitempty"`
 
 	// Deploy describes how images are deployed.
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
@@ -279,11 +279,10 @@ type DockerConfig struct {
 	SecretName string `yaml:"secretName,omitempty"`
 }
 
-type TestConfig []*TestCase
-
 // TestCase is a list of structure tests to run on images that Skaffold builds.
 type TestCase struct {
 	// ImageName is the artifact on which to run those tests.
+	// For example: `gcr.io/k8s-skaffold/example`.
 	ImageName string `yaml:"image" yamltags:"required"`
 
 	// StructureTests lists the [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test)
@@ -472,7 +471,7 @@ type Profile struct {
 	Build BuildConfig `yaml:"build,omitempty"`
 
 	// Test replaces the main `test` configuration.
-	Test TestConfig `yaml:"test,omitempty"`
+	Test []*TestCase `yaml:"test,omitempty"`
 
 	// Deploy replaces the main `deploy` configuration.
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
