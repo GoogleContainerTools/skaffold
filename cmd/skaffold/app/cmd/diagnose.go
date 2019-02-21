@@ -23,12 +23,15 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
+	"github.com/sirupsen/logrus"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -110,12 +113,40 @@ func diagnoseArtifacts(out io.Writer, artifacts []*latest.Artifact) error {
 func timeToListDependencies(ctx context.Context, a *latest.Artifact) (time.Duration, []string, error) {
 	start := time.Now()
 
-	deps, err := build.DependenciesForArtifact(ctx, a)
-	if err != nil {
-		return 0, nil, errors.Wrap(err, "listing artifact dependencies")
+	var (
+		paths []string
+		err   error
+	)
+
+	switch {
+	case a.DockerArtifact != nil:
+		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact)
+
+	case a.BazelArtifact != nil:
+		paths, err = bazel.GetDependencies(ctx, a.Workspace, a.BazelArtifact)
+
+	case a.JibMavenArtifact != nil:
+		paths, err = jib.GetDependenciesMaven(ctx, a.Workspace, a.JibMavenArtifact)
+
+	case a.JibGradleArtifact != nil:
+		paths, err = jib.GetDependenciesGradle(ctx, a.Workspace, a.JibGradleArtifact)
+
+	default:
+		return 0, nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
 	}
 
-	return time.Since(start), deps, nil
+	if err != nil {
+		// if the context was cancelled act as if all is well
+		// TODO(dgageot): this should be even higher in the call chain.
+		if ctx.Err() == context.Canceled {
+			logrus.Debugln(errors.Wrap(err, "ignore error since context is cancelled"))
+			return 0, nil, nil
+		}
+
+		return 0, nil, err
+	}
+
+	return time.Since(start), util.AbsolutePaths(a.Workspace, paths), nil
 }
 
 func timeToComputeMTimes(deps []string) (time.Duration, error) {

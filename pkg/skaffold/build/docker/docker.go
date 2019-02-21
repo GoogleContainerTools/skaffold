@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/environments/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -61,7 +62,11 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.
 	if err := setArtifact(artifact); err != nil {
 		return nil, err
 	}
-	return build.DependenciesForArtifact(ctx, artifact)
+	paths, err := docker.GetDependencies(ctx, artifact.Workspace, artifact.DockerArtifact)
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting dependencies for %s", artifact.ImageName)
+	}
+	return util.AbsolutePaths(artifact.Workspace, paths), nil
 }
 
 // Build is responsible for building artifacts in their respective execution environments

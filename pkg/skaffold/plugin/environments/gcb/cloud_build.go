@@ -90,8 +90,13 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		return "", errors.Wrap(err, "could not create build description")
 	}
 
+	dependencies, err := b.DependenciesForArtifact(ctx, artifact)
+	if err != nil {
+		return "", errors.Wrapf(err, "getting dependencies for %s", artifact.ImageName)
+	}
+
 	color.Default.Fprintf(out, "Pushing code to gs://%s/%s\n", cbBucket, buildObject)
-	if err := sources.UploadToGCS(ctx, artifact, cbBucket, buildObject); err != nil {
+	if err := sources.UploadToGCS(ctx, artifact, cbBucket, buildObject, dependencies); err != nil {
 		return "", errors.Wrap(err, "uploading source tarball")
 	}
 

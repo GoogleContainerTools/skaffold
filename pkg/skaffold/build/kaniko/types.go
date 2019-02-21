@@ -20,9 +20,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
@@ -53,6 +54,11 @@ func (b *Builder) Labels() map[string]string {
 	}
 }
 
-func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
-	return build.DependenciesForArtifact(ctx, artifact)
+// DependenciesForArtifact returns the Dockerfile dependencies for this kaniko artifact
+func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
+	paths, err := docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact)
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
+	}
+	return util.AbsolutePaths(a.Workspace, paths), nil
 }
