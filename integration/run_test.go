@@ -208,7 +208,9 @@ func TestDev(t *testing.T) {
 	run(t, "examples/test-dev-job", "touch", "foo")
 	defer run(t, "examples/test-dev-job", "rm", "foo")
 
-	go runSkaffoldNoFail("dev", "examples/test-dev-job", ns.Name, "", nil)
+	cancel := make(chan bool)
+	go runSkaffoldNoFail(cancel, "dev", "examples/test-dev-job", ns.Name, "", nil)
+	defer func() { cancel <- true }()
 
 	jobName := "test-dev-job"
 	if err := kubernetesutil.WaitForJobToStabilize(context.Background(), client, ns.Name, jobName, 10*time.Minute); err != nil {
@@ -240,7 +242,9 @@ func TestDevSync(t *testing.T) {
 	ns, deleteNs := setupNamespace(t)
 	defer deleteNs()
 
-	go runSkaffoldNoFail("dev", "examples/test-file-sync", ns.Name, "", nil)
+	cancel := make(chan bool)
+	go runSkaffoldNoFail(cancel, "dev", "examples/test-file-sync", ns.Name, "", nil)
+	defer func() { cancel <- true }()
 
 	if err := kubernetesutil.WaitForPodReady(context.Background(), client.CoreV1().Pods(ns.Name), "test-file-sync"); err != nil {
 		t.Fatalf("Timed out waiting for pod ready")
@@ -261,12 +265,12 @@ func TestDevSync(t *testing.T) {
 }
 
 func runSkaffold(t *testing.T, command, dir, namespace, filename string, env []string, additionalArgs ...string) {
-	if output, err := runSkaffoldNoFail(command, dir, namespace, filename, env, additionalArgs...); err != nil {
-		t.Fatalf("skaffold delete: %s %v", output, err)
+	if err := runSkaffoldNoFail(make(chan bool), command, dir, namespace, filename, env, additionalArgs...); err != nil {
+		t.Fatalf("skaffold delete: %v", err)
 	}
 }
 
-func runSkaffoldNoFail(command, dir, namespace, filename string, env []string, additionalArgs ...string) ([]byte, error) {
+func runSkaffoldNoFail(cancel chan bool, command, dir, namespace, filename string, env []string, additionalArgs ...string) error {
 	args := []string{command, "--namespace", namespace}
 	if filename != "" {
 		args = append(args, "-f", filename)
@@ -276,7 +280,23 @@ func runSkaffoldNoFail(command, dir, namespace, filename string, env []string, a
 	cmd := exec.Command("skaffold", args...)
 	cmd.Dir = dir
 	cmd.Env = append(os.Environ(), env...)
-	return util.RunCmdOut(cmd)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+
+	cmd.Start()
+
+	result := make(chan error)
+	go func() {
+		err := cmd.Wait()
+		result <- err
+	}()
+
+	select {
+	case err := <-result:
+		return err
+	case <-cancel:
+		return cmd.Process.Kill()
+	}
 }
 
 func run(t *testing.T, dir, command string, args ...string) {
