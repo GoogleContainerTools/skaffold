@@ -19,8 +19,12 @@
     font-weight: 100;
 }
 
-.key, .value, .comment, .gray, .example {
+.key, .value, .comment, .example {
     font-family: 'Roboto Mono', monospace;
+    font-size: 14px;
+}
+
+.key, .value, .example {
     white-space: nowrap;
 }
   
@@ -30,7 +34,11 @@ table {
 
 td {
     border-bottom: 1px solid #EEE;
-    padding: 2px 0;
+    padding: 1px 0 !important;
+}
+
+td:first-child {
+    padding: 1px 5px !important;
 }
 
 td.top {
@@ -47,7 +55,7 @@ td:first-child {
 }
 
 tr:hover td {
-    background: #EEE;
+    background: #DDD;
 }
 
 code {

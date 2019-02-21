@@ -1,6 +1,6 @@
 {
   "type": "object",
-  "oneOf": [
+  "anyOf": [
     {
       "$ref": "#/definitions/SkaffoldPipeline"
     }
@@ -19,6 +19,9 @@
         "build": {
           "$ref": "#/definitions/BuildConfig"
         },
+        "test": {
+          "$ref": "#/definitions/TestConfig"
+        },
         "deploy": {
           "$ref": "#/definitions/DeployConfig"
         },
@@ -28,7 +31,8 @@
           },
           "type": "array"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "BuildConfig": {
       "properties": {
@@ -42,7 +46,8 @@
           "$ref": "#/definitions/TagPolicy"
         }
       },
-      "oneOf": [
+      "additionalProperties": false,
+      "anyOf": [
         {
           "properties": {
             "local": {
@@ -61,6 +66,13 @@
           "properties": {
             "kaniko": {
               "$ref": "#/definitions/KanikoBuild"
+            }
+          }
+        },
+        {
+          "properties": {
+            "acr": {
+              "$ref": "#/definitions/AzureContainerBuild"
             }
           }
         }
@@ -82,12 +94,15 @@
           "$ref": "#/definitions/DateTimeTagger"
         }
       },
+      "additionalProperties": false,
       "description": "contains all the configuration for the tagging step"
     },
     "ShaTagger": {
+      "additionalProperties": false,
       "description": "contains the configuration for the SHA tagger."
     },
     "GitTagger": {
+      "additionalProperties": false,
       "description": "contains the configuration for the git tagger."
     },
     "EnvTemplateTagger": {
@@ -97,6 +112,7 @@
           "default": "\"\""
         }
       },
+      "additionalProperties": false,
       "description": "contains the configuration for the envTemplate tagger."
     },
     "DateTimeTagger": {
@@ -110,6 +126,7 @@
           "default": "\"\""
         }
       },
+      "additionalProperties": false,
       "description": "contains the configuration for the DateTime tagger."
     },
     "BuildType": {
@@ -122,13 +139,17 @@
         },
         "kaniko": {
           "$ref": "#/definitions/KanikoBuild"
+        },
+        "acr": {
+          "$ref": "#/definitions/AzureContainerBuild"
         }
       },
+      "additionalProperties": false,
       "description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated."
     },
     "LocalBuild": {
       "properties": {
-        "skipPush": {
+        "push": {
           "type": "boolean"
         },
         "useDockerCLI": {
@@ -140,6 +161,7 @@
           "default": "false"
         }
       },
+      "additionalProperties": false,
       "description": "contains the fields needed to do a build on the local docker daemon and optionally push to a repository."
     },
     "GoogleCloudBuild": {
@@ -165,15 +187,24 @@
           "default": "\"\""
         }
       },
+      "additionalProperties": false,
       "description": "contains the fields needed to do a remote build on Google Cloud Build."
+    },
+    "LocalDir": {
+      "additionalProperties": false,
+      "description": "represents the local directory kaniko build context"
     },
     "KanikoBuildContext": {
       "properties": {
         "gcsBucket": {
           "type": "string",
           "default": "\"\""
+        },
+        "localDir": {
+          "$ref": "#/definitions/LocalDir"
         }
       },
+      "additionalProperties": false,
       "description": "contains the different fields available to specify a kaniko build context"
     },
     "KanikoBuild": {
@@ -196,12 +227,65 @@
         "timeout": {
           "type": "string",
           "default": "\"\""
+        },
+        "image": {
+          "type": "string",
+          "default": "\"\""
         }
       },
+      "additionalProperties": false,
       "description": "contains the fields needed to do a on-cluster build using the kaniko image"
     },
+    "AzureContainerBuild": {
+      "properties": {
+        "subscriptionId": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "clientId": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "clientSecret": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "tenantId": {
+          "type": "string",
+          "default": "\"\""
+        }
+      },
+      "additionalProperties": false,
+      "description": "contains the fields needed to do a build on Azure Container Registry"
+    },
+    "TestConfig": {
+      "items": {
+        "$ref": "#/definitions/TestCase"
+      },
+      "additionalProperties": false,
+      "type": "array"
+    },
+    "TestCase": {
+      "properties": {
+        "image": {
+          "type": "string",
+          "default": "\"\""
+        },
+        "structureTests": {
+          "items": {
+            "type": "string",
+            "default": "\"\""
+          },
+          "type": "array",
+          "default": "[]"
+        }
+      },
+      "additionalProperties": false,
+      "description": "a struct containing all the specified test configuration for an image."
+    },
     "DeployConfig": {
-      "oneOf": [
+      "additionalProperties": false,
+      "anyOf": [
         {
           "properties": {
             "helm": {
@@ -238,6 +322,7 @@
           "$ref": "#/definitions/KustomizeDeploy"
         }
       },
+      "additionalProperties": false,
       "description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated."
     },
     "KubectlDeploy": {
@@ -262,6 +347,7 @@
           "$ref": "#/definitions/KubectlFlags"
         }
       },
+      "additionalProperties": false,
       "description": "contains the configuration needed for deploying with <code>kubectl apply</code>"
     },
     "KubectlFlags": {
@@ -291,6 +377,7 @@
           "default": "[]"
         }
       },
+      "additionalProperties": false,
       "description": "describes additional options flags that are passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete)."
     },
     "HelmDeploy": {
@@ -302,18 +389,21 @@
           "type": "array"
         }
       },
+      "additionalProperties": false,
       "description": "contains the configuration needed for deploying with helm"
     },
     "KustomizeDeploy": {
       "properties": {
-        "kustomizePath": {
+        "path": {
           "type": "string",
           "default": "\"\""
         },
         "flags": {
           "$ref": "#/definitions/KubectlFlags"
         }
-      }
+      },
+      "additionalProperties": false,
+      "description": "contains the configuration needed for deploying with kustomize."
     },
     "HelmRelease": {
       "properties": {
@@ -384,7 +474,8 @@
         "imageStrategy": {
           "$ref": "#/definitions/HelmImageStrategy"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "HelmPackaged": {
       "properties": {
@@ -399,10 +490,12 @@
           "default": "\"\""
         }
       },
+      "additionalProperties": false,
       "description": "represents parameters for packaging helm chart."
     },
     "HelmImageStrategy": {
-      "oneOf": [
+      "additionalProperties": false,
+      "anyOf": [
         {
           "properties": {
             "fqn": {
@@ -427,7 +520,8 @@
         "helm": {
           "$ref": "#/definitions/HelmConventionConfig"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "HelmFQNConfig": {
       "properties": {
@@ -436,23 +530,34 @@
           "default": "\"\""
         }
       },
+      "additionalProperties": false,
       "description": "represents image config to use the FullyQualifiedImageName as param to set"
     },
     "HelmConventionConfig": {
+      "additionalProperties": false,
       "description": "represents image config in the syntax of image.repository and image.tag"
     },
     "Artifact": {
       "properties": {
-        "imageName": {
+        "image": {
           "type": "string",
           "default": "\"\""
         },
-        "workspace": {
+        "context": {
           "type": "string",
           "default": "\"\""
+        },
+        "sync": {
+          "additionalProperties": {
+            "type": "string",
+            "default": "\"\""
+          },
+          "type": "object",
+          "default": "{}"
         }
       },
-      "oneOf": [
+      "additionalProperties": false,
+      "anyOf": [
         {
           "properties": {
             "docker": {
@@ -464,6 +569,20 @@
           "properties": {
             "bazel": {
               "$ref": "#/definitions/BazelArtifact"
+            }
+          }
+        },
+        {
+          "properties": {
+            "jibMaven": {
+              "$ref": "#/definitions/JibMavenArtifact"
+            }
+          }
+        },
+        {
+          "properties": {
+            "jibGradle": {
+              "$ref": "#/definitions/JibGradleArtifact"
             }
           }
         }
@@ -479,10 +598,14 @@
         "build": {
           "$ref": "#/definitions/BuildConfig"
         },
+        "test": {
+          "$ref": "#/definitions/TestConfig"
+        },
         "deploy": {
           "$ref": "#/definitions/DeployConfig"
         }
       },
+      "additionalProperties": false,
       "description": "additional configuration that overrides default configuration when it is activated."
     },
     "ArtifactType": {
@@ -492,12 +615,19 @@
         },
         "bazel": {
           "$ref": "#/definitions/BazelArtifact"
+        },
+        "jibMaven": {
+          "$ref": "#/definitions/JibMavenArtifact"
+        },
+        "jibGradle": {
+          "$ref": "#/definitions/JibGradleArtifact"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "DockerArtifact": {
       "properties": {
-        "dockerfilePath": {
+        "dockerfile": {
           "type": "string",
           "default": "\"\""
         },
@@ -520,7 +650,9 @@
           "type": "string",
           "default": "\"\""
         }
-      }
+      },
+      "additionalProperties": false,
+      "description": "describes an artifact built from a Dockerfile, usually using <code>docker build</code>."
     },
     "BazelArtifact": {
       "properties": {
@@ -528,7 +660,33 @@
           "type": "string",
           "default": "\"\""
         }
-      }
+      },
+      "additionalProperties": false,
+      "description": "describes an artifact built with Bazel."
+    },
+    "JibMavenArtifact": {
+      "properties": {
+        "module": {
+          "type": "string",
+          "description": "Only multi-module",
+          "default": "\"\""
+        },
+        "profile": {
+          "type": "string",
+          "default": "\"\""
+        }
+      },
+      "additionalProperties": false
+    },
+    "JibGradleArtifact": {
+      "properties": {
+        "project": {
+          "type": "string",
+          "description": "Only multi-module",
+          "default": "\"\""
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

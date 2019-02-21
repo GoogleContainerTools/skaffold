@@ -43,7 +43,6 @@ goimports -w pkg/skaffold/schema/${PREV_VERSION}/upgrade*.go
 sed -i pkg/skaffold/schema/latest/config.go -e "s;$CURRENT_VERSION;$NEW_VERSION;g"
 
 find integration -name "skaffold.yaml" -print0 | xargs -0 -I xx sed -i xx -e "s;$CURRENT_VERSION;$NEW_VERSION;g"
-sed -i integration/examples/annotated-skaffold.yaml -e "s;$CURRENT_VERSION;$NEW_VERSION;g"
 
 sed pkg/skaffold/schema/versions.go -i -e "s;\(.*\)$PREV_VERSION.Version\(.*\)$PREV_VERSION\(.*\);&\n\1$CURRENT_VERSION.Version\2$CURRENT_VERSION\3;g"
 sed pkg/skaffold/schema/versions.go -i -e "s;\(.*\)/$PREV_VERSION\(.*\);&\n\1/$CURRENT_VERSION\2;g"

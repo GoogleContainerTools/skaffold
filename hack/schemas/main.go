@@ -89,9 +89,9 @@ type Definition struct {
 	Items                *Definition   `json:"items,omitempty"`
 	Required             []string      `json:"required,omitempty"`
 	Properties           *Definitions  `json:"properties,omitempty"`
-	AdditionalProperties *Definition   `json:"additionalProperties,omitempty"`
+	AdditionalProperties interface{}   `json:"additionalProperties,omitempty"`
 	Type                 string        `json:"type,omitempty"`
-	OneOf                []*Definition `json:"oneOf,omitempty"`
+	AnyOf                []*Definition `json:"anyOf,omitempty"`
 	Description          string        `json:"description,omitempty"`
 	Default              interface{}   `json:"default,omitempty"`
 	Examples             []string      `json:"examples,omitempty"`
@@ -119,7 +119,7 @@ func generateSchemas(root string, dryRun bool) (bool, error) {
 			return false, errors.Wrapf(err, "unable to generate schema for version %s", version.APIVersion)
 		}
 
-		output := fmt.Sprintf("%s/schemas/%s.json", root, apiVersion)
+		output := fmt.Sprintf("%s/docs/content/en/schemas/%s.json", root, apiVersion)
 		var current []byte
 
 		if _, err := os.Stat(output); err == nil {
@@ -203,7 +203,7 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 			yamlName := yamlFieldName(field)
 
 			if strings.Contains(field.Tag.Value, "inline") {
-				def.OneOf = append(def.OneOf, &Definition{
+				def.AnyOf = append(def.AnyOf, &Definition{
 					Ref: defPrefix + field.Type.(*ast.Ident).Name,
 				})
 				continue
@@ -222,6 +222,7 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 			}
 
 			def.Properties.Add(yamlName, newDefinition(field.Names[0].Name, field.Type, field.Doc.Text()))
+			def.AdditionalProperties = false
 		}
 	}
 
@@ -282,12 +283,12 @@ func generateSchema(inputPath string) ([]byte, error) {
 		}
 	}
 
-	// Inline oneOfs
+	// Inline anyOfs
 	for _, v := range definitions.values {
 		var options []*Definition
 
-		for _, oneOf := range v.OneOf {
-			ref := strings.TrimPrefix(oneOf.Ref, defPrefix)
+		for _, anyOf := range v.AnyOf {
+			ref := strings.TrimPrefix(anyOf.Ref, defPrefix)
 			referenced := definitions.values[ref]
 
 			for _, key := range referenced.Properties.keys {
@@ -300,13 +301,14 @@ func generateSchema(inputPath string) ([]byte, error) {
 			}
 		}
 
-		v.OneOf = options
+		v.AnyOf = options
+		v.AdditionalProperties = false
 	}
 
 	schema := Schema{
 		Definition: &Definition{
 			Type: "object",
-			OneOf: []*Definition{{
+			AnyOf: []*Definition{{
 				Ref: defPrefix + "SkaffoldPipeline",
 			}},
 		},

@@ -1,0 +1,45 @@
+{{ $root := .Get "root" }}
+{{ if not $root}}
+    {{ errorf "missing value for param 'root': %s" .Position }}
+{{ end }}
+
+{{ $version := $.Page.Site.Params.skaffold_version }}
+{{ $short_version := index (split $version "/") 1 }}
+{{ $json_schema := printf "schemas/%s.json" $short_version }}
+{{ if not (fileExists $json_schema)}}
+    {{ errorf "file not found %s at %s" $json_schema .Position }}
+{{ end }}
+
+{{ $schema := (readFile $json_schema) | unmarshal }}
+{{ if not $schema}}
+    {{ errorf "missing json schema: %s" .Position }}
+{{ end }}
+
+{{ $definition := index $schema.definitions $root }}
+
+{{ $showDefaults := false }}
+{{ range $definition.properties }}
+    {{ if .default }}
+        {{ $showDefaults = true }}
+    {{ end }}
+{{ end }}
+
+<table>
+    <thead>
+        <tr>
+            <th>Option</th>
+            <th>Description</th>
+            {{ if $showDefaults }}<th>Default</th>{{ end }}
+        </tr>
+    </thead>
+    <tbody>
+        {{range $k, $v :=  $definition.properties}}
+        <tr>
+            <td><code>{{$k}}</code></td>
+            <td style="width: 100%;">{{if .required}}<strong>Required</strong> {{end}}{{.description | markdownify}}</td>
+            {{ if $showDefaults }}<td><code>{{ .default }}</code></td>{{ end }}
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+    

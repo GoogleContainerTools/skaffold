@@ -59,7 +59,6 @@ type BuildConfig struct {
 
 	// TagPolicy (beta) determines how images are tagged.
 	// A few strategies are provided here, although you most likely won't need to care!
-	// The policy can be `gitCommit` (beta), `sha256` (beta), `envTemplate` (beta) or `dateTime` (beta).
 	// If not specified, it defaults to `gitCommit: {}`.
 	TagPolicy TagPolicy `yaml:"tagPolicy,omitempty"`
 
@@ -95,7 +94,7 @@ type BuilderPlugin struct {
 
 // TagPolicy contains all the configuration for the tagging step.
 type TagPolicy struct {
-	// GitTagger (beta) tags images with the git tag or git commit of the artifact workspace directory.
+	// GitTagger (beta) tags images with the git tag or commit of the artifact's workspace.
 	GitTagger *GitTagger `yaml:"gitCommit,omitempty" yamltags:"oneOf=tag"`
 
 	// ShaTagger (beta) tags images with their sha256 digest.
@@ -111,7 +110,7 @@ type TagPolicy struct {
 // ShaTagger (beta) tags images with their sha256 digest.
 type ShaTagger struct{}
 
-// GitTagger (beta) tags images with the git tag or git commit of the artifact workspace directory.
+// GitTagger (beta) tags images with the git tag or commit of the artifact's workspace.
 type GitTagger struct{}
 
 // EnvTemplateTagger (beta) tags images with a configurable template string.
@@ -322,7 +321,7 @@ type KubectlDeploy struct {
 	// RemoteManifests lists Kubernetes manifests in remote clusters.
 	RemoteManifests []string `yaml:"remoteManifests,omitempty"`
 
-	// Flags are additional flags to pass to `kubectl`.
+	// Flags are additional flags passed to `kubectl`.
 	Flags KubectlFlags `yaml:"flags,omitempty"`
 }
 
@@ -352,7 +351,7 @@ type KustomizeDeploy struct {
 	// Defaults to `.`.
 	KustomizePath string `yaml:"path,omitempty"`
 
-	// Flags are additional flags to pass to `kubectl`.
+	// Flags are additional flags passed to `kubectl`.
 	Flags KubectlFlags `yaml:"flags,omitempty"`
 }
 
@@ -493,26 +492,25 @@ type Profile struct {
 
 // Activation criteria by which a profile is auto-activated.
 type Activation struct {
-	// Env holds a key=value pair. The profile is auto-activated if an Environment
+	// Env is a key=value pair. The profile is auto-activated if an Environment
 	// Variable `key` has value `value`.
 	// For example: `ENV=production`.
 	Env string `yaml:"env,omitempty"`
 
-	// KubeContext is a Kubernetes context for which a profile is auto-activated.
+	// KubeContext is a Kubernetes context for which the profile is auto-activated.
 	// For example: `minikube`.
 	KubeContext string `yaml:"kubeContext,omitempty"`
 
-	// Command is a Skaffold command for which a profile is auto-activated.
+	// Command is a Skaffold command for which the profile is auto-activated.
 	// For example: `dev`.
 	Command string `yaml:"command,omitempty"`
 }
 
 type ArtifactType struct {
-	// DockerArtifact (beta) describes an artifact built from a Dockerfile,
-	// usually using `docker build`.
+	// DockerArtifact (beta) describes an artifact built from a Dockerfile.
 	DockerArtifact *DockerArtifact `yaml:"docker,omitempty" yamltags:"oneOf=artifact"`
 
-	// BazelArtifact (beta) requires bazel CLI to be installed and the artifacts sources to
+	// BazelArtifact (beta) requires bazel CLI to be installed and the sources to
 	// contain [Bazel](https://bazel.build/) configuration files.
 	BazelArtifact *BazelArtifact `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
 
