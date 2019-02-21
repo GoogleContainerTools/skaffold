@@ -29,6 +29,10 @@ import (
 
 // Set makes sure default values are set on a SkaffoldPipeline.
 func Set(c *latest.SkaffoldPipeline) error {
+	if pluginsDefined(c) {
+		defaultToLocalExecEnvironment(c)
+		defaultToEmptyProperties(c)
+	}
 	defaultToLocalBuild(c)
 	defaultToKubectlDeploy(c)
 	setDefaultTagger(c)
@@ -54,6 +58,10 @@ func Set(c *latest.SkaffoldPipeline) error {
 		return err
 	}
 
+	if pluginsDefined(c) {
+		return nil
+	}
+	// Only set defaults on artifacts if not using plugin builders
 	for _, a := range c.Build.Artifacts {
 		defaultToDockerArtifact(a)
 		setDefaultDockerfile(a)
@@ -61,6 +69,29 @@ func Set(c *latest.SkaffoldPipeline) error {
 	}
 
 	return nil
+}
+
+func defaultToLocalExecEnvironment(c *latest.SkaffoldPipeline) {
+	if c.Build.ExecutionEnvironment == nil {
+		c.Build.ExecutionEnvironment = &latest.ExecutionEnvironment{
+			Name: constants.Local,
+		}
+	}
+}
+
+func defaultToEmptyProperties(c *latest.SkaffoldPipeline) {
+	if c.Build.ExecutionEnvironment.Properties == nil {
+		c.Build.ExecutionEnvironment.Properties = map[string]interface{}{}
+	}
+}
+
+func pluginsDefined(c *latest.SkaffoldPipeline) bool {
+	for _, a := range c.Build.Artifacts {
+		if a.BuilderPlugin != nil {
+			return true
+		}
+	}
+	return false
 }
 
 func defaultToLocalBuild(c *latest.SkaffoldPipeline) {

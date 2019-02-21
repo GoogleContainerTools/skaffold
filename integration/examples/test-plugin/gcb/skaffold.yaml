@@ -10,10 +10,10 @@ build:
     context: ./leeroy-app/
     plugin: 
       name: docker
+      properties:
+        target: targetStage
   executionEnvironment:
     name: googleCloudBuild
-    properties:
-      projectId: k8s-skaffold
 deploy:
   kubectl:
     manifests:

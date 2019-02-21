@@ -38,7 +38,11 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 
 	// Prepare context
 	s := sources.Retrieve(b.KanikoBuild)
-	context, err := s.Setup(ctx, out, artifact, util.RandomID())
+	dependencies, err := b.DependenciesForArtifact(ctx, artifact)
+	if err != nil {
+		return "", errors.Wrapf(err, "getting dependencies for %s", artifact.ImageName)
+	}
+	context, err := s.Setup(ctx, out, artifact, util.RandomID(), dependencies)
 	if err != nil {
 		return "", errors.Wrap(err, "setting up build context")
 	}

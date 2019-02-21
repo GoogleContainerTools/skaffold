@@ -22,6 +22,7 @@ import (
 	"syscall"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/docker"
 	hashiplugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
@@ -30,6 +31,7 @@ import (
 // SkaffoldCorePluginExecutionMap maps the core plugin name to the execution function
 var SkaffoldCorePluginExecutionMap = map[string]func() error{
 	"docker": docker.Execute,
+	"bazel":  bazel.Execute,
 }
 
 // ShouldExecuteCorePlugin returns true if env variables for plugins are set properly
@@ -68,6 +70,7 @@ func Execute() error {
 		hashiplugin.CleanupClients()
 	}
 	if err != nil {
+		hashiplugin.CleanupClients()
 		return errors.Wrap(err, "executing plugin")
 	}
 

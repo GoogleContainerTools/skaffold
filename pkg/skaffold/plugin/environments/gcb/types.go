@@ -17,10 +17,14 @@ limitations under the License.
 package gcb
 
 import (
+	"context"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -71,4 +75,13 @@ func (b *Builder) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.Builder: "google-cloud-build",
 	}
+}
+
+// DependenciesForArtifact returns the Dockerfile dependencies for this gcb artifact
+func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
+	paths, err := docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact)
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
+	}
+	return util.AbsolutePaths(a.Workspace, paths), nil
 }

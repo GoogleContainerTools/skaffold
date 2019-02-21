@@ -79,6 +79,9 @@ func (b *Builder) pluginBuildSteps(artifact *latest.Artifact, tag string) ([]*cl
 		if err := yaml.Unmarshal(artifact.BuilderPlugin.Contents, &da); err != nil {
 			return nil, errors.Wrap(err, "getting docker artifact details")
 		}
+		if da == nil {
+			da = &latest.DockerArtifact{}
+		}
 		defaults.SetDefaultDockerArtifact(da)
 		return b.dockerBuildSteps(da, tag), nil
 	default:
