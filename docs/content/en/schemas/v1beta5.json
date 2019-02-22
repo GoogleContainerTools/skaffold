@@ -793,7 +793,7 @@
         },
         "resources": {
           "$ref": "#/definitions/ResourceRequirements",
-          "description": "ResourceRequirements define the resource requirements for the kaniko pod"
+          "description": "define the resource requirements for the kaniko pod."
         }
       },
       "additionalProperties": false,
@@ -837,27 +837,35 @@
       "properties": {
         "requests": {
           "$ref": "#/definitions/ResourceRequirement",
-          "description": "https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container"
+          "description": "resource requests for the Kaniko pod. <a href=\"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container\">More on requests</a>."
         },
         "limits": {
           "$ref": "#/definitions/ResourceRequirement",
-          "description": "https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container"
+          "description": "resource limits for the Kaniko pod. <a href=\"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container\">More on limits</a>."
         }
       },
       "additionalProperties": false,
-      "description": "describes the resource requirements for the kaniko pod"
+      "description": "describes the resource requirements for the kaniko pod."
     },
     "ResourceRequirement": {
       "properties": {
         "cpu": {
-          "type": "string"
+          "type": "string",
+          "description": "the number cores to be used.",
+          "examples": [
+            "2`, `2.0` or `200m"
+          ]
         },
         "memory": {
-          "type": "string"
+          "type": "string",
+          "description": "the amount of memory to allocate to the pod.",
+          "examples": [
+            "1Gi` or `1000Mi"
+          ]
         }
       },
       "additionalProperties": false,
-      "description": "see https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container"
+      "description": "stores the CPU/Memory requirements for the pod."
     },
     "TestConfig": {
       "items": {

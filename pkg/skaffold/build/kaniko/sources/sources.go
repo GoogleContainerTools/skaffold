@@ -19,6 +19,7 @@ package sources
 import (
 	"context"
 	"io"
+
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
