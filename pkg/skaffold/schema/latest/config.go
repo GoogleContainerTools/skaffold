@@ -18,7 +18,7 @@ package latest
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/krishicks/yaml-patch"
+	yamlpatch "github.com/krishicks/yaml-patch"
 )
 
 const Version string = "skaffold/v1beta8"
