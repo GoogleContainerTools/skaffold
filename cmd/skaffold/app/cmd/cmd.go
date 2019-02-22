@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,12 +17,12 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
@@ -34,9 +34,10 @@ import (
 )
 
 var (
-	opts      = &config.SkaffoldOptions{}
-	v         string
-	overwrite bool
+	opts         = &config.SkaffoldOptions{}
+	v            string
+	defaultColor int
+	overwrite    bool
 
 	updateMsg = make(chan string)
 )
@@ -58,6 +59,8 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 				logrus.Infof("update check failed: %s", err)
 			}
 		}()
+
+		color.OverwriteDefault(color.Color(defaultColor))
 		return nil
 	}
 
@@ -83,6 +86,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdDiagnose(out))
 
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
+	rootCmd.PersistentFlags().IntVar(&defaultColor, "color", int(color.Default), "Specify the default output color in ANSI escape codes")
 
 	setFlagsFromEnvVariables(rootCmd.Commands())
 
@@ -98,16 +102,12 @@ func updateCheck(ch chan string) error {
 		logrus.Debugf("Update check not enabled, skipping.")
 		return nil
 	}
-	current, err := version.ParseVersion(version.Get().Version)
+	latest, current, err := update.GetLatestAndCurrentVersion()
 	if err != nil {
-		return errors.Wrap(err, "parsing current semver, skipping update check")
-	}
-	latest, err := update.GetLatestVersion(context.Background())
-	if err != nil {
-		return errors.Wrap(err, "getting latest version")
+		return errors.Wrap(err, "get latest and current Skaffold version")
 	}
 	if latest.GT(current) {
-		ch <- fmt.Sprintf("There is a new version (%s) of skaffold available. Download it at %s\n", latest, constants.LatestDownloadURL)
+		ch <- fmt.Sprintf("There is a new version (%s) of Skaffold available. Download it at %s\n", latest, constants.LatestDownloadURL)
 	}
 	return nil
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import (
 func NewCmdList(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List all values set in the global skaffold config",
+		Short: "List all values set in the global Skaffold config",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runList(out)

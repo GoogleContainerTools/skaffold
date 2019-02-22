@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -344,8 +344,14 @@ func (t *TestCmdRecorder) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	return nil, t.RunCmd(cmd)
 }
 
-func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, src, dst string) []*exec.Cmd {
-	return []*exec.Cmd{exec.CommandContext(ctx, "copy", src, dst)}
+func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files map[string]string) []*exec.Cmd {
+	cmds := make([]*exec.Cmd, len(files))
+	i := 0
+	for src, dst := range files {
+		cmds[i] = exec.CommandContext(ctx, "copy", src, dst)
+		i++
+	}
+	return cmds
 }
 
 var pod = &v1.Pod{
@@ -371,7 +377,7 @@ func TestPerform(t *testing.T) {
 		description string
 		image       string
 		files       map[string]string
-		cmdFn       func(context.Context, v1.Pod, v1.Container, string, string) []*exec.Cmd
+		cmdFn       func(context.Context, v1.Pod, v1.Container, map[string]string) []*exec.Cmd
 		cmdErr      error
 		clientErr   error
 		expected    []string
@@ -422,7 +428,7 @@ func TestPerform(t *testing.T) {
 
 			util.DefaultExecCommand = cmdRecord
 
-			err := Perform(context.Background(), test.image, test.files, test.cmdFn)
+			err := Perform(context.Background(), test.image, test.files, test.cmdFn, []string{""})
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cmdRecord.cmds)
 		})

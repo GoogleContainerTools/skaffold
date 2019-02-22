@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -60,13 +60,16 @@ func (t *TestBench) Labels() map[string]string                        { return m
 func (t *TestBench) TestDependencies() ([]string, error)              { return nil, nil }
 func (t *TestBench) Dependencies() ([]string, error)                  { return nil, nil }
 func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error { return nil }
+func (t *TestBench) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+	return nil, nil
+}
 
 func (t *TestBench) enterNewCycle() {
 	t.actions = append(t.actions, t.currentActions)
 	t.currentActions = Actions{}
 }
 
-func (t *TestBench) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (t *TestBench) Build(ctx context.Context, w io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	if len(t.buildErrors) > 0 {
 		err := t.buildErrors[0]
 		t.buildErrors = t.buildErrors[1:]
@@ -85,7 +88,7 @@ func (t *TestBench) Build(ctx context.Context, w io.Writer, tagger tag.Tagger, a
 		})
 	}
 
-	t.currentActions.Built = tags(builds)
+	t.currentActions.Built = findTags(builds)
 	return builds, nil
 }
 
@@ -111,28 +114,28 @@ func (t *TestBench) Test(ctx context.Context, out io.Writer, artifacts []build.A
 		}
 	}
 
-	t.currentActions.Tested = tags(artifacts)
+	t.currentActions.Tested = findTags(artifacts)
 	return nil
 }
 
-func (t *TestBench) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) ([]deploy.Artifact, error) {
+func (t *TestBench) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact, labellers []deploy.Labeller) error {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	t.currentActions.Deployed = tags(artifacts)
-	return nil, nil
+	t.currentActions.Deployed = findTags(artifacts)
+	return nil
 }
 
 func (t *TestBench) Actions() []Actions {
 	return append(t.actions, t.currentActions)
 }
 
-func tags(artifacts []build.Artifact) []string {
+func findTags(artifacts []build.Artifact) []string {
 	var tags []string
 	for _, artifact := range artifacts {
 		tags = append(tags, artifact.Tag)

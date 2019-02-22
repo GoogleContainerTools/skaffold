@@ -1,4 +1,4 @@
-# Copyright 2018 The Skaffold Authors All rights reserved.
+# Copyright 2019 The Skaffold Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ ENV KUBECTL_VERSION v1.12.0
 RUN curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl  && \
     chmod +x /usr/local/bin/kubectl
 
-ENV HUGO_VERSION=0.51
+ENV HUGO_VERSION=0.54.0
 RUN curl -LO https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_Linux-64bit.tar.gz && \
     tar -xzf hugo_extended_${HUGO_VERSION}_Linux-64bit.tar.gz && \
     mv hugo /usr/local/bin/hugo

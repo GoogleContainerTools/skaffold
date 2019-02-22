@@ -1,0 +1,216 @@
+{
+  "type": "object",
+  "anyOf": [
+    {
+      "$ref": "#/definitions/SkaffoldPipeline"
+    }
+  ],
+  "definitions": {
+    "SkaffoldPipeline": {
+      "properties": {
+        "apiVersion": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "build": {
+          "$ref": "#/definitions/BuildConfig"
+        },
+        "deploy": {
+          "$ref": "#/definitions/DeployConfig"
+        }
+      },
+      "additionalProperties": false,
+      "description": "top level config object that is parsed from a skaffold.yaml"
+    },
+    "BuildConfig": {
+      "properties": {
+        "artifacts": {
+          "items": {
+            "$ref": "#/definitions/Artifact"
+          },
+          "type": "array"
+        },
+        "tagPolicy": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "properties": {
+            "local": {
+              "$ref": "#/definitions/LocalBuild"
+            }
+          }
+        },
+        {
+          "properties": {
+            "googleCloudBuild": {
+              "$ref": "#/definitions/GoogleCloudBuild"
+            }
+          }
+        }
+      ],
+      "description": "contains all the configuration for the build steps"
+    },
+    "BuildType": {
+      "properties": {
+        "local": {
+          "$ref": "#/definitions/LocalBuild"
+        },
+        "googleCloudBuild": {
+          "$ref": "#/definitions/GoogleCloudBuild"
+        }
+      },
+      "additionalProperties": false,
+      "description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated."
+    },
+    "LocalBuild": {
+      "properties": {
+        "skipPush": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "description": "contains the fields needed to do a build on the local docker daemon and optionally push to a repository."
+    },
+    "GoogleCloudBuild": {
+      "properties": {
+        "projectId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "DeployConfig": {
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "properties": {
+            "helm": {
+              "$ref": "#/definitions/HelmDeploy"
+            }
+          }
+        },
+        {
+          "properties": {
+            "kubectl": {
+              "$ref": "#/definitions/KubectlDeploy"
+            }
+          }
+        }
+      ],
+      "description": "contains all the configuration needed by the deploy steps"
+    },
+    "DeployType": {
+      "properties": {
+        "helm": {
+          "$ref": "#/definitions/HelmDeploy"
+        },
+        "kubectl": {
+          "$ref": "#/definitions/KubectlDeploy"
+        }
+      },
+      "additionalProperties": false,
+      "description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated."
+    },
+    "KubectlDeploy": {
+      "properties": {
+        "manifests": {
+          "items": {
+            "$ref": "#/definitions/Manifest"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "description": "contains the configuration needed for deploying with <code>kubectl apply</code>"
+    },
+    "Manifest": {
+      "properties": {
+        "paths": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "default": "[]"
+        },
+        "parameters": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "default": "{}"
+        }
+      },
+      "additionalProperties": false
+    },
+    "HelmDeploy": {
+      "properties": {
+        "releases": {
+          "items": {
+            "$ref": "#/definitions/HelmRelease"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "HelmRelease": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "chartPath": {
+          "type": "string"
+        },
+        "valuesFilePath": {
+          "type": "string"
+        },
+        "values": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "default": "{}"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Artifact": {
+      "properties": {
+        "imageName": {
+          "type": "string"
+        },
+        "dockerfilePath": {
+          "type": "string"
+        },
+        "workspace": {
+          "type": "string"
+        },
+        "buildArgs": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "default": "{}"
+        }
+      },
+      "additionalProperties": false,
+      "description": "represents items that need should be built, along with the context in which they should be built."
+    }
+  }
+}

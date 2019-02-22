@@ -1,0 +1,5 @@
+build:
+  tagPolicy:
+    sha256: {}
+  artifacts:
+  - image: gcr.io/k8s-skaffold/example

@@ -1,0 +1,51 @@
+=== Example: Jib Multi-Module
+:icons: font
+
+Jib is one of the supported builders in Skaffold.
+[Jib](https://github.com/GoogleContainerTools/jib) builds Docker and OCI images
+for your Java applications and is available as plugins for Maven and Gradle.
+
+Sometimes a project is configured to have multiple modules to create several
+container images.  Skaffold can work with Jib to build these containers as
+required.
+
+The way you configure it in `skaffold.yaml` is the following build stanza:
+
+[source,yaml]
+----
+build:
+     artifacts:
+     - image: gcr.io/k8s-skaffold/skaffold-jib-1
+       # context is the root of the multi-module project
+       context: .
+       jibMaven:
+          # module is either the relative location within the project (i.e.,
+          # relative to `context`) or :artifactId or groupId:artifactId
+          module: moduleLocation
+     - image: gcr.io/k8s-skaffold/skaffold-jib-2
+       context: .
+       jibMaven:
+          module: :artifactId
+----
+
+There are a few caveats:
+
+  - The `jib-maven-plugin` must be either be configured referenced in the
+    root module of the project.  This is easily done through a `pluginManagement`
+    block.
+
+  - The artifact modules must have a `jib:xxx` goal bound to the `package` phase.
+
+ifndef::env-github[]
+==== link:{github-repo-tree}/examples/jib[Example files icon:github[]]
+
+[source,yaml, indent=3, title=skaffold.yaml]
+----
+include::skaffold.yaml[]
+----
+
+[source,xml, indent=3, title=pom.xml, syntax=xml]
+----
+include::pom.xml[]
+----
+endif::[]

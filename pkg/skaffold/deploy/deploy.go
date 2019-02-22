@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,15 +21,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-
-	"k8s.io/apimachinery/pkg/runtime"
 )
-
-// Artifact contains all information about a completed deployment
-type Artifact struct {
-	Obj       runtime.Object
-	Namespace string
-}
 
 // Deployer is the Deploy API of skaffold and responsible for deploying
 // the build results to a Kubernetes cluster
@@ -38,7 +30,7 @@ type Deployer interface {
 
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster.
-	Deploy(context.Context, io.Writer, []build.Artifact) ([]Artifact, error)
+	Deploy(context.Context, io.Writer, []build.Artifact, []Labeller) error
 
 	// Dependencies returns a list of files that the deployer depends on.
 	// In dev mode, a redeploy will be triggered

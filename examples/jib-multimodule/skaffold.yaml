@@ -1,0 +1,18 @@
+apiVersion: skaffold/v1beta5
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/skaffold-jib-1
+    jibMaven:
+      # module can be the relative directory
+      module: project1
+  - image: gcr.io/k8s-skaffold/skaffold-jib-2
+    jibMaven:
+      # module can be [groupId]:artifactId
+      module: :skaffold-project-2
+
+# optional profile to run the jib build on Google Cloud Build
+profiles:
+  - name: gcb
+    build:
+      googleCloudBuild: {}

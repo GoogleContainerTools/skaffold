@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,9 +20,14 @@ import (
 	"os"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/plugin"
 )
 
 func Run() error {
+	if plugin.ShouldExecuteCorePlugin() {
+		return plugin.Execute()
+	}
+
 	c := cmd.NewSkaffoldCommand(os.Stdout, os.Stderr)
 	return c.Execute()
 }

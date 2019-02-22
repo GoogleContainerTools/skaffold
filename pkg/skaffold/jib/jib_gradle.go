@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -47,8 +47,13 @@ func getCommandGradle(ctx context.Context, workspace string, a *latest.JibGradle
 }
 
 // GenerateGradleArgs generates the arguments to Gradle for building the project as an image.
-func GenerateGradleArgs(task string, imageName string, a *latest.JibGradleArtifact) []string {
-	return []string{gradleCommand(a, task), "--image=" + imageName}
+func GenerateGradleArgs(task string, imageName string, a *latest.JibGradleArtifact, skipTests bool) []string {
+	args := []string{gradleCommand(a, task), "--image=" + imageName}
+	if skipTests {
+		args = append(args, "-x", "test")
+	}
+	args = append(args, a.Flags...)
+	return args
 }
 
 func gradleCommand(a *latest.JibGradleArtifact, task string) string {

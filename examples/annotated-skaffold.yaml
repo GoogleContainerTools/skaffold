@@ -1,5 +1,7 @@
-apiVersion: skaffold/v1beta2
+apiVersion: skaffold/v1beta5
 kind: Config
+# The build section has all the information needed to build images.
+# It is a required section.
 build:
   # tagPolicy (beta) determines how Skaffold is going to tag your images.
   # We provide a few strategies here, although you most likely won't need to care!
@@ -17,9 +19,6 @@ build:
     # The template is compiled and executed against the current environment,
     # with those variables injected:
     #   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.
-    #   DIGEST       |  Digest of the newly built image. For eg. `sha256:27ffc7f352665cc50ae3cbcc4b2725e36062f1b38c611b6f95d6df9a7510de23`.
-    #   DIGEST_ALGO  |  Algorithm used by the digest: For eg. `sha256`.
-    #   DIGEST_HEX   |  Digest of the newly built image. For eg. `27ffc7f352665cc50ae3cbcc4b2725e36062f1b38c611b6f95d6df9a7510de23`.
     # Example
     # envTemplate:
     #  template: "{{.RELEASE}}-{{.IMAGE_NAME}}"
@@ -56,8 +55,8 @@ build:
         key2: "value2"
       # Images to consider as cache sources
       cacheFrom:
-      - image1
-      - image2
+      - golang:1.10.1-alpine3.7
+      - alpine:3.7
       # Dockerfile target name to build.
       # target: stageName
 
@@ -74,10 +73,16 @@ build:
     # jibMaven:
     #  module: modulename     # selects which maven module to build, for a multimodule project
     #  profile: profilename   # selects which maven profile to activate
+    #  args:             # additional arguments to pass to maven
+    #  - "arg1"
+    #  - "arg2"
 
     # jibGradle builds containers using the Jib plugin for Gradle.
     # jibGradle:
     #  project: projectname   # selects which gradle project to build
+    #  args:            # additional arguments to pass to gradle
+    #  - "arg1"
+    #  - "arg2"
 
 # This next section is where you'll put your specific builder configuration.
   # Valid builders are `local` (beta), `googleCloudBuild` (beta) and `kaniko` (beta).
@@ -100,7 +105,7 @@ build:
   #   useDockerCLI: false
   #   useBuildkit: false
 
-  # Docker artifacts can be built on Google Cloud Build. The projectId then needs
+  # Docker and Jib artifacts can be built on Google Cloud Build. The projectId then needs
   # to be provided and the currently logged user should be given permissions to trigger
   # new builds on Cloud Build.
   # If the projectId is not provided, Skaffold will try to guess it from the image name.
@@ -113,20 +118,22 @@ build:
   #   machineType: "N1_HIGHCPU_8"|"N1_HIGHCPU_32"
   #   timeout: 10000s
   #   dockerImage: gcr.io/cloud-builders/docker
+  #   mavenImage: gcr.io/cloud-builders/mvn
+  #   gradleImage: gcr.io/cloud-builders/gradle
 
   # Docker artifacts can be built on a Kubernetes cluster with Kaniko.
   # Exactly one buildContext must be specified to use kaniko
-  # If localDir is specified, skaffold will mount sources directly via a emptyDir volume	
+  # If localDir is specified, skaffold will mount sources directly via a emptyDir volume
   # If gcsBucket is specified, skaffold will send sources to the GCS bucket provided
   # Kaniko also needs access to a service account to push the final image.
   # See https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster
   # If cache is specified, kaniko will use a remote cache which will speed up builds.
   # A cache repo can be specified to store cached layers, otherwise one will be inferred
-  # from the image name. See https://github.com/GoogleContainerTools/kaniko#caching 
+  # from the image name. See https://github.com/GoogleContainerTools/kaniko#caching
   #
   # Additional flags can be specified as a list. To see all additional flags, visit:
   # https://github.com/GoogleContainerTools/kaniko#additional-flags
-  # 
+  #
   # kaniko:
   #   buildContext:
   #     gcsBucket: k8s-skaffold
@@ -140,9 +147,20 @@ build:
   #   namespace: default
   #   timeout: 20m
   #   image: defaults to the latest released version of `gcr.io/kaniko-project/executor`
+  #   dockerConfig:
+  #     path: path to the docker config.json
+  #     secretName: docker-cfg
 
-# The deploy section has all the information needed to deploy. Along with build:
-# it is a required section.
+# The test section has all the information needed to test images.
+test:
+    # For each image listed here, Skaffold will run a series of structure tests using
+    # the [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test)
+    # project
+    # - image: gcr.io/k8s-skaffold/skaffold-example
+    #   structureTests:
+    #     - ./test/*
+
+# The deploy section has all the information needed to deploy.
 deploy:
   # The type of the deployment method can be `kubectl` (beta), `helm` (beta) or `kustomize` (beta).
 
@@ -189,6 +207,8 @@ deploy:
     #   namespace: skaffold
     #   version: ""
     #   recreatePods: false
+    #   # set to true if you need to skip "helm dep build". Necessary for use with remote chart.
+    #   skipBuildDependencies: false
     #
     #   # setValues get appended to the helm deploy with --set.
     #   setValues:
@@ -215,3 +235,18 @@ profiles:
     build:
       googleCloudBuild:
         projectId: k8s-skaffold
+  - name: other
+    # profiles can also patch some values using standard JSON patch notation
+    patches:
+        # This profile will replace the `dockerfile` value of the first artifact by `Dockerfile.DEV`
+      - path: /build/artifacts/0/docker/dockerfile
+        value: Dockerfile.DEV
+    # profiles can be auto-activated by external factors, like environment variables
+    # kubeContext value or depending on which skaffold command is run.
+    activation:
+      # Auto-activate this profile if the DEBUG env variable is set to `true` AND the kubeContext is `ctx1`
+      # - env: DEBUG=true
+      #   kubeContext: ctx1
+      # Auto-activate if the skaffold command is `skaffold run` OR if the kubeContext is NOT `ctx2`
+      # - command: run
+      # - kubeContext: "!ctx2"

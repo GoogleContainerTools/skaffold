@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,9 +29,9 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -47,7 +47,7 @@ type LocalDir struct {
 }
 
 // Setup for LocalDir creates a tarball of the buildcontext and stores it in /tmp
-func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string) (string, error) {
+func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string, dependencies []string) (string, error) {
 	g.tarPath = filepath.Join(os.TempDir(), fmt.Sprintf("context-%s.tar.gz", initialTag))
 	color.Default.Fprintln(out, "Storing build context at", g.tarPath)
 
@@ -57,7 +57,7 @@ func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Ar
 	}
 	defer f.Close()
 
-	err = docker.CreateDockerTarGzContext(ctx, f, artifact.Workspace, artifact.DockerArtifact)
+	err = sources.TarGz(ctx, f, artifact, dependencies)
 
 	context := fmt.Sprintf("dir://%s", constants.DefaultKanikoEmptyDirMountPath)
 	return context, err

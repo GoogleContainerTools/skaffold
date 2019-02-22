@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,36 +18,115 @@ package schema
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 
+	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	yamlpatch "github.com/krishicks/yaml-patch"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // ApplyProfiles returns configuration modified by the application
 // of a list of profiles.
-func ApplyProfiles(c *latest.SkaffoldPipeline, profiles []string) error {
+func ApplyProfiles(c *latest.SkaffoldPipeline, opts *cfg.SkaffoldOptions) error {
 	byName := profilesByName(c.Profiles)
+
+	profiles, err := activatedProfiles(c.Profiles, opts)
+	if err != nil {
+		return errors.Wrap(err, "finding auto-activated profiles")
+	}
+
 	for _, name := range profiles {
 		profile, present := byName[name]
 		if !present {
 			return fmt.Errorf("couldn't find profile %s", name)
 		}
 
-		applyProfile(c, profile)
-	}
-	if err := defaults.Set(c); err != nil {
-		return errors.Wrap(err, "applying default values")
+		if err := applyProfile(c, profile); err != nil {
+			return errors.Wrapf(err, "appying profile %s", name)
+		}
 	}
 
 	return nil
 }
 
-func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) {
+func activatedProfiles(profiles []latest.Profile, opts *cfg.SkaffoldOptions) ([]string, error) {
+	activated := opts.Profiles
+
+	// Auto-activated profiles
+	for _, profile := range profiles {
+		for _, cond := range profile.Activation {
+			command := isCommand(cond.Command, opts)
+
+			env, err := isEnv(cond.Env)
+			if err != nil {
+				return nil, err
+			}
+
+			kubeContext, err := isKubeContext(cond.KubeContext)
+			if err != nil {
+				return nil, err
+			}
+
+			if command && env && kubeContext {
+				activated = append(activated, profile.Name)
+			}
+		}
+	}
+
+	return activated, nil
+}
+
+func isEnv(env string) (bool, error) {
+	if env == "" {
+		return true, nil
+	}
+
+	keyValue := strings.SplitN(env, "=", 2)
+	if len(keyValue) != 2 {
+		return false, fmt.Errorf("invalid env variable format: %s, should be KEY=VALUE", env)
+	}
+
+	key := keyValue[0]
+	value := keyValue[1]
+
+	return satisfies(value, os.Getenv(key)), nil
+}
+
+func isCommand(command string, opts *cfg.SkaffoldOptions) bool {
+	if command == "" {
+		return true
+	}
+
+	return satisfies(command, opts.Command)
+}
+
+func isKubeContext(kubeContext string) (bool, error) {
+	if kubeContext == "" {
+		return true, nil
+	}
+
+	currentKubeContext, err := kubectx.CurrentContext()
+	if err != nil {
+		return false, errors.Wrap(err, "getting current cluster context")
+	}
+
+	return satisfies(kubeContext, currentKubeContext), nil
+}
+
+func satisfies(expected, actual string) bool {
+	if strings.HasPrefix(expected, "!") {
+		return actual != expected[1:]
+	}
+	return actual == expected
+}
+
+func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) error {
 	logrus.Infof("applying profile: %s", profile.Name)
 
 	// this intentionally removes the Profiles field from the returned config
@@ -56,8 +135,41 @@ func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) {
 		Kind:       config.Kind,
 		Build:      overlayProfileField(config.Build, profile.Build).(latest.BuildConfig),
 		Deploy:     overlayProfileField(config.Deploy, profile.Deploy).(latest.DeployConfig),
-		Test:       overlayProfileField(config.Test, profile.Test).(latest.TestConfig),
+		Test:       overlayProfileField(config.Test, profile.Test).([]*latest.TestCase),
 	}
+
+	if len(profile.Patches) == 0 {
+		return nil
+	}
+
+	// Apply profile patches
+	buf, err := yaml.Marshal(*config)
+	if err != nil {
+		return err
+	}
+
+	var patches []yamlpatch.Operation
+	for _, patch := range profile.Patches {
+		// Default patch operation to `replace`
+		op := patch.Op
+		if op == "" {
+			op = "replace"
+		}
+
+		patches = append(patches, yamlpatch.Operation{
+			Op:    yamlpatch.Op(op),
+			Path:  yamlpatch.OpPath(patch.Path),
+			From:  yamlpatch.OpPath(patch.From),
+			Value: patch.Value,
+		})
+	}
+
+	buf, err = yamlpatch.Patch(patches).Apply(buf)
+	if err != nil {
+		return err
+	}
+
+	return yaml.Unmarshal(buf, config)
 }
 
 func profilesByName(profiles []latest.Profile) map[string]latest.Profile {

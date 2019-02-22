@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,10 +17,13 @@ limitations under the License.
 package kaniko
 
 import (
+	"context"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
@@ -49,4 +52,13 @@ func (b *Builder) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.Builder: "kaniko",
 	}
+}
+
+// DependenciesForArtifact returns the Dockerfile dependencies for this kaniko artifact
+func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
+	paths, err := docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact)
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
+	}
+	return util.AbsolutePaths(a.Workspace, paths), nil
 }

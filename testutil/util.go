@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -67,6 +67,27 @@ func CheckError(t *testing.T, shouldErr bool, err error) {
 	t.Helper()
 	if err := checkErr(shouldErr, err); err != nil {
 		t.Error(err)
+	}
+}
+
+// Chdir changes current directory for a test
+func Chdir(t *testing.T, dir string) func() {
+	t.Helper()
+
+	pwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal("unable to get current directory")
+	}
+
+	err = os.Chdir(dir)
+	if err != nil {
+		t.Fatal("unable to change current directory")
+	}
+
+	return func() {
+		if err := os.Chdir(pwd); err != nil {
+			t.Fatal("unable to reset current directory")
+		}
 	}
 }
 

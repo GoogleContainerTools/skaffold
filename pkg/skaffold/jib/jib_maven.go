@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -47,8 +47,12 @@ func getCommandMaven(ctx context.Context, workspace string, a *latest.JibMavenAr
 }
 
 // GenerateMavenArgs generates the arguments to Maven for building the project as an image.
-func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact) []string {
+func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact, skipTests bool) []string {
 	args := mavenArgs(a)
+
+	if skipTests {
+		args = append(args, "-DskipTests=true")
+	}
 
 	if a.Module == "" {
 		// single-module project
@@ -65,6 +69,8 @@ func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact
 
 func mavenArgs(a *latest.JibMavenArtifact) []string {
 	var args []string
+
+	args = append(args, a.Flags...)
 
 	if a.Profile != "" {
 		args = append(args, "--activate-profiles", a.Profile)

@@ -10,7 +10,7 @@ Skaffold adopts the [Kubernetes deprecation policy for admin facing components](
 
 **Breaking changes** 
 A breaking change is when the primary functionality of a feature changes in a way that the user has to make changes to their workflows/configuration.
-- **Breaking config change**:  In case of skaffold's pipeline config (skaffold.yaml) a breaking change between an old and new version occurs when the skaffold binary cannot parse the input yaml with auto-upgrade. This can happen when the new version removes a feature or when the new version introduces a mandatory field with no default value
+- **Breaking config change**:  In case of Skaffold's pipeline config (skaffold.yaml) a breaking change between an old and new version occurs when the skaffold binary cannot parse the input yaml with auto-upgrade. This can happen when the new version removes a feature or when the new version introduces a mandatory field with no default value
 - **Breaking functional change**: functional changes that force user workflow changes even when the config is the same or upgradeable.
 
 ## How do we deprecate things? 
@@ -21,7 +21,7 @@ A "deprecation event" would coincide with a release.
 a.) docs
 b.) release notes 
 c.) command help (if applicable)
-d.) annotated-skaffold.yaml (if applicable)
+d.) https://skaffold.dev/docs/references/yaml/ (if applicable)
 
 2. if applicable, [from the kubernetes policy](https://kubernetes.io/docs/reference/using-api/deprecation-policy/#deprecating-a-flag-or-cli): 
  > Rule #6: Deprecated CLI elements must emit warnings (optionally disable) when used.
@@ -44,9 +44,10 @@ However the **behavior** of individual component might suffer breaking changes d
 
 - Filewatcher: beta
 - Builders
-  - local (beta) 
-  - googleCloudBuild (beta) 
-  - kaniko (beta) 
+  - local: beta
+  - googleCloudBuild: beta 
+  - kaniko: beta
+  - plugins gcb: alpha
 - Artifact types: 
   - Dockerfile: beta
   - Bazel: beta
@@ -56,7 +57,7 @@ However the **behavior** of individual component might suffer breaking changes d
 - Port-forwarding: alpha 
 - Taggers: beta 
   - gitCommit : beta
-  - Sha256: beta
+  - sha256: beta
   - dateTime : beta
   - envTagger: beta
 - Testers: alpha
