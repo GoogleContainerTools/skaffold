@@ -255,7 +255,7 @@ type ClusterDetails struct {
 	// DockerConfig describes how to mount the local Docker configuration into a pod.
 	DockerConfig *DockerConfig `yaml:"dockerConfig,omitempty"`
 
-	// ResourceRequirements define the resource requirements for the kaniko pod
+	// Resources define the resource requirements for the kaniko pod.
 	Resources *ResourceRequirements `yaml:"resources,omitempty"`
 }
 
@@ -268,17 +268,23 @@ type DockerConfig struct {
 	SecretName string `yaml:"secretName,omitempty"`
 }
 
-// ResourceRequirements describes the resource requirements for the kaniko pod
+// ResourceRequirements describes the resource requirements for the kaniko pod.
 type ResourceRequirements struct {
-	// Requests https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container
+	// Requests resource requests for the Kaniko pod. [More on requests](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container).
 	Requests *ResourceRequirement `yaml:"requests,omitempty"`
-	// Limits https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container
+
+	// Limits resource limits for the Kaniko pod. [More on limits](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container).
 	Limits *ResourceRequirement `yaml:"limits,omitempty"`
 }
 
-// ResourceRequirement see https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container
+// ResourceRequirement stores the CPU/Memory requirements for the pod.
 type ResourceRequirement struct {
-	CPU    string `yaml:"cpu,omitempty"`
+	// CPU the number cores to be used.
+	// For example: `2`, `2.0` or `200m`.
+	CPU string `yaml:"cpu,omitempty"`
+
+	// Memory the amount of memory to allocate to the pod.
+	// For example: `1Gi` or `1000Mi`.
 	Memory string `yaml:"memory,omitempty"`
 }
 
