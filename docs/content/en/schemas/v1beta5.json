@@ -576,7 +576,7 @@
           "description": "if <code>true</code>, Skaffold will send <code>--recreate-pods</code> flag to Helm CLI.",
           "default": "false"
         },
-        "skipBuildDependencies": {
+        "skipDependencyBuild": {
           "type": "boolean",
           "description": "should build dependencies be skipped.",
           "default": "false"
