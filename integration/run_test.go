@@ -101,6 +101,10 @@ func TestRun(t *testing.T) {
 			description: "bazel plugin in local exec environment",
 			dir:         "examples/test-plugin/local/bazel",
 			pods:        []string{"bazel"},
+		}, {
+			description: "docker plugin in local exec environment",
+			dir:         "examples/test-plugin/local/docker",
+			deployments: []string{"leeroy-app", "leeroy-web"},
 		},
 	}
 
