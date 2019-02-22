@@ -22,6 +22,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestConfigureJvmDebugging(t *testing.T) {
@@ -51,6 +52,18 @@ func TestConfigureJvmDebugging(t *testing.T) {
 				Ports: []v1.ContainerPort{v1.ContainerPort{Name: "http-server", ContainerPort: 8080}, v1.ContainerPort{Name: "jdwp", ContainerPort: 5005}},
 			},
 		},
+		{
+			description: "existing jdwp spec",
+			containerSpec: v1.Container{
+				Env:   []v1.EnvVar{v1.EnvVar{Name: "JAVA_TOOL_OPTIONS", Value: "-agentlib:jdwp=transport=dt_socket,server=y,address=8000,suspend=n,quiet=y"}},
+				Ports: []v1.ContainerPort{v1.ContainerPort{ContainerPort: 5005}},
+			},
+			configuration: imageConfiguration{env: map[string]string{"JAVA_TOOL_OPTIONS":"-agentlib:jdwp=transport=dt_socket,server=y,address=8000,suspend=n,quiet=y"}},
+			result: v1.Container{
+				Env:   []v1.EnvVar{v1.EnvVar{Name: "JAVA_TOOL_OPTIONS", Value: "-agentlib:jdwp=transport=dt_socket,server=y,address=8000,suspend=n,quiet=y"}},
+				Ports: []v1.ContainerPort{v1.ContainerPort{ContainerPort: 5005}, v1.ContainerPort{Name: "jdwp", ContainerPort: 8000}},
+			},
+		},
 	}
 	var identity portAllocator = func(port int32) int32 {
 		return port
@@ -59,6 +72,56 @@ func TestConfigureJvmDebugging(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			configureJvmDebugging(&test.containerSpec, test.configuration, identity)
 			testutil.CheckDeepEqual(t, test.result, test.containerSpec)
+		})
+	}
+}
+
+func TestParseJdwpSpec(t *testing.T) {
+	tests := []struct {
+		in     string
+		result jdwpSpec
+	}{
+		{"", jdwpSpec{transport: "dt_socket", quiet: false, suspend: true, server: false, host: "", port: 0}},
+		{"transport=foo", jdwpSpec{transport: "foo", quiet: false, suspend: true, server: false, host: "", port: 0}},
+		{"quiet=n", jdwpSpec{transport: "dt_socket", quiet: false, suspend: true, server: false, host: "", port: 0}},
+		{"quiet=y", jdwpSpec{transport: "dt_socket", quiet: true, suspend: true, server: false, host: "", port: 0}},
+		{"server=n", jdwpSpec{transport: "dt_socket", quiet: false, suspend: true, server: false, host: "", port: 0}},
+		{"server=y", jdwpSpec{transport: "dt_socket", quiet: false, suspend: true, server: true, host: "", port: 0}},
+		{"suspend=y", jdwpSpec{transport: "dt_socket", quiet: false, suspend: true, server: false, host: "", port: 0}},
+		{"suspend=n", jdwpSpec{transport: "dt_socket", quiet: false, suspend: false, server: false, host: "", port: 0}},
+		{"address=5005", jdwpSpec{transport: "dt_socket", quiet: false, suspend: true, server: false, host: "", port: 5005}},
+		{"address=:5005", jdwpSpec{transport: "dt_socket", quiet: false, suspend: true, server: false, host: "", port: 5005}},
+		{"address=localhost:5005", jdwpSpec{transport: "dt_socket", quiet: false, suspend: true, server: false, host: "localhost", port: 5005}},
+		{"address=localhost:5005,quiet=y,server=y,suspend=n", jdwpSpec{transport: "dt_socket", quiet: true, suspend: false, server: true, host: "localhost", port: 5005}},
+	}
+	for _, test := range tests {
+		t.Run(test.in, func(t *testing.T) {
+			testutil.CheckEqual(t, cmp.Options{cmp.AllowUnexported(jdwpSpec{})}, test.result, *parseJdwpSpec(test.in))
+			testutil.CheckEqual(t, cmp.Options{cmp.AllowUnexported(jdwpSpec{})}, test.result, *extractJdwpArg("-agentlib:jdwp=" + test.in))
+			testutil.CheckEqual(t, cmp.Options{cmp.AllowUnexported(jdwpSpec{})}, test.result, *extractJdwpArg("-Xrunjdwp:" + test.in))
+		})
+	}
+}
+
+func TestJdwpSpecString(t *testing.T) {
+	tests := []struct {
+		in     jdwpSpec
+		result string
+	}{
+		{jdwpSpec{transport: "dt_socket", quiet: false, suspend: true, server: false, host: "", port: 0}, "transport=dt_socket"},
+		{jdwpSpec{transport: "foo", quiet: false, suspend: true, server: false, host: "", port: 0}, "transport=foo"},
+		{jdwpSpec{transport: "dt_socket", quiet: false, suspend: true, server: false, host: "", port: 0}, "transport=dt_socket"},
+		{jdwpSpec{transport: "dt_socket", quiet: true, suspend: true, server: false, host: "", port: 0}, "transport=dt_socket,quiet=y"},
+		{jdwpSpec{transport: "dt_socket", quiet: false, suspend: true, server: false, host: "", port: 0}, "transport=dt_socket"},
+		{jdwpSpec{transport: "dt_socket", quiet: false, suspend: true, server: true, host: "", port: 0}, "transport=dt_socket,server=y"},
+		{jdwpSpec{transport: "dt_socket", quiet: false, suspend: true, server: false, host: "", port: 0}, "transport=dt_socket"},
+		{jdwpSpec{transport: "dt_socket", quiet: false, suspend: false, server: false, host: "", port: 0}, "transport=dt_socket,suspend=n"},
+		{jdwpSpec{transport: "dt_socket", quiet: false, suspend: true, server: false, host: "", port: 5005}, "transport=dt_socket,address=5005"},
+		{jdwpSpec{transport: "dt_socket", quiet: false, suspend: true, server: false, host: "localhost", port: 5005}, "transport=dt_socket,address=localhost:5005"},
+	}
+	for _, test := range tests {
+		t.Run(test.result, func(t *testing.T) {
+			testutil.CheckDeepEqual(t, test.result, test.in.String())
 		})
 	}
 }

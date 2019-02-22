@@ -17,22 +17,44 @@ limitations under the License.
 package kubectl
 
 import (
-"fmt"
+	"fmt"
+	"strconv"
+	"strings"
+
 	v1 "k8s.io/api/core/v1"
 )
+
+// captures the useful jdwp options (see `java -agentlib:jdwp=help`)
+type jdwpSpec struct {
+	transport string
+	quiet     bool
+	suspend   bool
+	server    bool
+	// split address into host/port
+	host string
+	port uint16
+}
 
 // configureJvmDebugging configured a container definition for JVM debugging.
 // Returns a simple map describing the debug configuration details.
 func configureJvmDebugging(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
-	// no standard port for JDWP; most examples use 5005 or 8000
-	port := portAlloc(5005)
+	// try to find existing JAVA_TOOL_OPTIONS or jdwp command argument
+	// todo: find existing containerPort "jdwp" and use port. But what if it conflicts with jdwp spec?
+	spec := retrieveJdwpSpec(config)
+	var port int32
 
-	// FIXME try to find existing JAVA_TOOL_OPTIONS or jdwp command argument
-	javaToolOptions := v1.EnvVar{
-		Name:  "JAVA_TOOL_OPTIONS",
-		Value: fmt.Sprintf("-agentlib:jdwp=transport=dt_socket,server=y,address=%d,suspend=n,quiet=y", port),
+	if spec != nil {
+		port = int32(spec.port)
+	} else {
+		// no standard port for JDWP; most examples use 5005 or 8000
+		port = portAlloc(5005)
+
+		javaToolOptions := v1.EnvVar{
+			Name:  "JAVA_TOOL_OPTIONS",
+			Value: fmt.Sprintf("-agentlib:jdwp=transport=dt_socket,server=y,address=%d,suspend=n,quiet=y", port),
+		}
+		container.Env = append(container.Env, javaToolOptions)
 	}
-	container.Env = append(container.Env, javaToolOptions)
 
 	jdwpPort := v1.ContainerPort{
 		Name:          "jdwp",
@@ -44,4 +66,110 @@ func configureJvmDebugging(container *v1.Container, config imageConfiguration, p
 		"runtime": "jvm",
 		"jdwp":    port,
 	}
+}
+
+func retrieveJdwpSpec(config imageConfiguration) *jdwpSpec {
+	for _, arg := range config.entrypoint {
+		if spec := extractJdwpArg(arg); spec != nil {
+			return spec
+		}
+	}
+	for _, arg := range config.arguments {
+		if spec := extractJdwpArg(arg); spec != nil {
+			return spec
+		}
+	}
+	// Nobody should be setting JDWP options via _JAVA_OPTIONS and IBM_JAVA_OPTIONS
+	for key, value := range config.env {
+		if key == "JAVA_TOOL_OPTIONS" {
+			for _, arg := range strings.Split(value, " ") {
+				if spec := extractJdwpArg(arg); spec != nil {
+					return spec
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func extractJdwpArg(spec string) *jdwpSpec {
+	if strings.Index(spec, "-agentlib:jdwp=") == 0 {
+		return parseJdwpSpec(spec[15:])
+	} else if strings.Index(spec, "-Xrunjdwp:") == 0 {
+		return parseJdwpSpec(spec[10:])
+	}
+	return nil
+}
+
+func (spec jdwpSpec) String() string {
+	result := "transport=" + spec.transport
+	if spec.quiet {
+		result = result + ",quiet=y"
+	}
+	if spec.server {
+		result = result + ",server=y"
+	}
+	if !spec.suspend {
+		result = result + ",suspend=n"
+	}
+	if spec.port > 0 {
+		if len(spec.host) > 0 {
+			result = result + ",address=" + spec.host + ":" + strconv.FormatUint(uint64(spec.port), 10)
+		} else {
+			result = result + ",address=" + strconv.FormatUint(uint64(spec.port), 10)
+		}
+	}
+	return result
+}
+
+// parseJdwpSpec parses a JDWP spec string as passed to `-agentlib:jdwp=` or `-Xrunjdwp:`
+// like `transport=dt_socket,server=y,address=8000,quiet=y,suspend=n`
+func parseJdwpSpec(specification string) *jdwpSpec {
+	parsed := make(map[string]string)
+	for _, component := range strings.Split(specification, ",") {
+		if len(component) > 0 {
+			keyValue := strings.SplitN(component, "=", 2)
+			if len(keyValue) == 2 {
+				parsed[keyValue[0]] = keyValue[1]
+			}
+			// else return error?
+		}
+	}
+	// use defaults as per https://docs.oracle.com/javase/7/docs/technotes/guides/jpda/conninv.html#jdwpoptions
+	spec := jdwpSpec{
+		transport: "dt_socket",
+		quiet:     false,
+		suspend:   true,
+		server:    false,
+		host:      "",
+		port:      0,
+	}
+	if transport, found := parsed["transport"]; found {
+		spec.transport = transport
+	}
+	if quietYN, found := parsed["quiet"]; found {
+		spec.quiet = quietYN == "y"
+	}
+	if suspendYN, found := parsed["suspend"]; found {
+		spec.suspend = suspendYN == "y"
+	}
+	if serverYN, found := parsed["server"]; found {
+		spec.server = serverYN == "y"
+	}
+	if address, found := parsed["address"]; found {
+		split := strings.SplitN(address, ":", 2)
+		switch len(split) {
+		// port only
+		case 1:
+			p, _ := strconv.ParseUint(split[0], 10, 16)
+			spec.port = uint16(p)
+
+		// host and port
+		case 2:
+			spec.host = split[0]
+			p, _ := strconv.ParseUint(split[1], 10, 16)
+			spec.port = uint16(p)
+		}
+	}
+	return &spec
 }
