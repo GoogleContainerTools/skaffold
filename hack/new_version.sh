@@ -29,7 +29,7 @@ sed -i docs/config.toml -e "s;$CURRENT_VERSION;$NEW_VERSION;g"
 
 cp -R pkg/skaffold/schema/latest pkg/skaffold/schema/${CURRENT_VERSION}
 
-sed -i pkg/skaffold/schema/${CURRENT_VERSION}/*.go -e "s;latest;$CURRENT_VERSION;g"
+sed -i pkg/skaffold/schema/${CURRENT_VERSION}/*.go -e "s;package latest;package $CURRENT_VERSION;g"
 
 sed pkg/skaffold/schema/${PREV_VERSION}/upgrade_test.go -e "s;$CURRENT_VERSION;$NEW_VERSION;g" > pkg/skaffold/schema/${CURRENT_VERSION}/upgrade_test.go
 sed -i pkg/skaffold/schema/${CURRENT_VERSION}/upgrade_test.go -e "s;$PREV_VERSION;$CURRENT_VERSION;g"
