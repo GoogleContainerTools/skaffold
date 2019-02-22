@@ -174,12 +174,12 @@ var testDeployWithTemplatedName = &latest.HelmDeploy{
 	},
 }
 
-var testDeploySkipBuildDependencies = &latest.HelmDeploy{
+var testDeploySkipDependencyBuild = &latest.HelmDeploy{
 	Releases: []latest.HelmRelease{
 		{
-			Name:                  "skaffold-helm",
-			ChartPath:             "stable/chartmuseum",
-			SkipBuildDependencies: true,
+			Name:                "skaffold-helm",
+			ChartPath:           "stable/chartmuseum",
+			SkipDependencyBuild: true,
 		},
 	},
 }
@@ -187,9 +187,9 @@ var testDeploySkipBuildDependencies = &latest.HelmDeploy{
 var testDeployRemoteChart = &latest.HelmDeploy{
 	Releases: []latest.HelmRelease{
 		{
-			Name:                  "skaffold-helm-remote",
-			ChartPath:             "stable/chartmuseum",
-			SkipBuildDependencies: false,
+			Name:                "skaffold-helm-remote",
+			ChartPath:           "stable/chartmuseum",
+			SkipDependencyBuild: false,
 		},
 	},
 }
@@ -314,13 +314,13 @@ func TestHelmDeploy(t *testing.T) {
 			shouldErr:   true,
 		},
 		{
-			description: "deploy success remote chart with skipBuildDependencies",
+			description: "deploy success remote chart with skipDependencyBuild",
 			cmd:         &MockHelm{t: t},
-			deployer:    NewHelmDeployer(testDeploySkipBuildDependencies, testKubeContext, testNamespace, ""),
+			deployer:    NewHelmDeployer(testDeploySkipDependencyBuild, testKubeContext, testNamespace, ""),
 			builds:      testBuilds,
 		},
 		{
-			description: "deploy error remote chart without skipBuildDependencies",
+			description: "deploy error remote chart without skipDependencyBuild",
 			cmd: &MockHelm{
 				t:         t,
 				depResult: fmt.Errorf("unexpected error"),

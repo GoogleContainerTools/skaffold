@@ -391,8 +391,8 @@ type HelmRelease struct {
 	// Defaults to `false`.
 	RecreatePods bool `yaml:"recreatePods,omitempty"`
 
-	// SkipBuildDependencies should build dependencies be skipped.
-	SkipBuildDependencies bool `yaml:"skipBuildDependencies,omitempty"`
+	// SkipDependencyBuild should build dependencies be skipped.
+	SkipDependencyBuild bool `yaml:"skipDependencyBuild,omitempty"`
 
 	// Overrides are key-value pairs.
 	// If present, Skaffold will build a Helm `values` file that overrides

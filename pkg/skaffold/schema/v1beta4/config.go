@@ -188,20 +188,20 @@ type KustomizeDeploy struct {
 }
 
 type HelmRelease struct {
-	Name                  string                 `yaml:"name,omitempty"`
-	ChartPath             string                 `yaml:"chartPath,omitempty"`
-	ValuesFiles           []string               `yaml:"valuesFiles,omitempty"`
-	Values                map[string]string      `yaml:"values,omitempty,omitempty"`
-	Namespace             string                 `yaml:"namespace,omitempty"`
-	Version               string                 `yaml:"version,omitempty"`
-	SetValues             map[string]string      `yaml:"setValues,omitempty"`
-	SetValueTemplates     map[string]string      `yaml:"setValueTemplates,omitempty"`
-	Wait                  bool                   `yaml:"wait,omitempty"`
-	RecreatePods          bool                   `yaml:"recreatePods,omitempty"`
-	SkipBuildDependencies bool                   `yaml:"skipBuildDependencies,omitempty"`
-	Overrides             map[string]interface{} `yaml:"overrides,omitempty"`
-	Packaged              *HelmPackaged          `yaml:"packaged,omitempty"`
-	ImageStrategy         HelmImageStrategy      `yaml:"imageStrategy,omitempty"`
+	Name                string                 `yaml:"name,omitempty"`
+	ChartPath           string                 `yaml:"chartPath,omitempty"`
+	ValuesFiles         []string               `yaml:"valuesFiles,omitempty"`
+	Values              map[string]string      `yaml:"values,omitempty,omitempty"`
+	Namespace           string                 `yaml:"namespace,omitempty"`
+	Version             string                 `yaml:"version,omitempty"`
+	SetValues           map[string]string      `yaml:"setValues,omitempty"`
+	SetValueTemplates   map[string]string      `yaml:"setValueTemplates,omitempty"`
+	Wait                bool                   `yaml:"wait,omitempty"`
+	RecreatePods        bool                   `yaml:"recreatePods,omitempty"`
+	SkipDependencyBuild bool                   `yaml:"skipDependencyBuild,omitempty"`
+	Overrides           map[string]interface{} `yaml:"overrides,omitempty"`
+	Packaged            *HelmPackaged          `yaml:"packaged,omitempty"`
+	ImageStrategy       HelmImageStrategy      `yaml:"imageStrategy,omitempty"`
 }
 
 // HelmPackaged represents parameters for packaging helm chart.
