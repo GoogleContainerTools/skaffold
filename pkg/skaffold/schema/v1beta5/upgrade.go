@@ -64,5 +64,3 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 		Profiles:   newProfiles,
 	}, nil
 }
-
-
