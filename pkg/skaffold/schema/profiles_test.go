@@ -242,6 +242,31 @@ func TestApplyProfiles(t *testing.T) {
 			),
 			shouldErr: true,
 		},
+		{
+			description: "add test case",
+			profile:     "profile",
+			config: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withProfiles(latest.Profile{
+					Name: "profile",
+					Test: []*latest.TestCase{{
+						ImageName:      "image",
+						StructureTests: []string{"test/*"},
+					}},
+				}),
+			),
+			expected: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withTests(&latest.TestCase{
+					ImageName:      "image",
+					StructureTests: []string{"test/*"},
+				}),
+			),
+		},
 	}
 
 	for _, test := range tests {

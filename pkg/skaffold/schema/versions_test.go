@@ -347,6 +347,12 @@ func withProfiles(profiles ...latest.Profile) func(*latest.SkaffoldPipeline) {
 	}
 }
 
+func withTests(testCases ...*latest.TestCase) func(*latest.SkaffoldPipeline) {
+	return func(cfg *latest.SkaffoldPipeline) {
+		cfg.Test = testCases
+	}
+}
+
 func TestUpgradeToNextVersion(t *testing.T) {
 	for i, schemaVersion := range SchemaVersions[0 : len(SchemaVersions)-2] {
 		from := schemaVersion
