@@ -280,3 +280,16 @@ func CloneThroughJSON(old interface{}, new interface{}) error {
 	}
 	return nil
 }
+
+// AbsolutePaths prepends each path in paths with workspace if the path isn't absolute
+func AbsolutePaths(workspace string, paths []string) []string {
+	var p []string
+	for _, path := range paths {
+		// TODO(dgageot): this is only done for jib builder.
+		if !filepath.IsAbs(path) {
+			path = filepath.Join(workspace, path)
+		}
+		p = append(p, path)
+	}
+	return p
+}

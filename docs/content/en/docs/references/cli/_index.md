@@ -1,6 +1,6 @@
 ---
-title: "CLI References"
-linkTitle: "CLI References"
+title: "CLI"
+linkTitle: "CLI"
 weight: 110
 ---
 
@@ -273,7 +273,8 @@ Usage:
   skaffold diagnose [flags]
 
 Flags:
-  -f, --filename string   Filename or URL to the pipeline file (default "skaffold.yaml")
+  -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
+  -p, --profile stringArray   Activate profiles by name
 
 Global Flags:
       --color int          Specify the default output color in ANSI escape codes (default 34)
@@ -284,6 +285,7 @@ Global Flags:
 Env vars:
 
 * `SKAFFOLD_FILENAME` (same as --filename)
+* `SKAFFOLD_PROFILE` (same as --profile)
 
 ### skaffold fix
 

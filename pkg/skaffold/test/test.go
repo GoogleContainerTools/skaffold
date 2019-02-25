@@ -32,7 +32,7 @@ import (
 // NewTester parses the provided test cases from the Skaffold config,
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
-func NewTester(testCases *latest.TestConfig) (Tester, error) {
+func NewTester(testCases []*latest.TestCase) (Tester, error) {
 	// TODO(nkubala): copied this from runner.getDeployer(), this should be moved somewhere else
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -49,7 +49,7 @@ func NewTester(testCases *latest.TestConfig) (Tester, error) {
 func (t FullTester) TestDependencies() ([]string, error) {
 	var deps []string
 
-	for _, test := range *t.testCases {
+	for _, test := range t.testCases {
 		if test.StructureTests == nil {
 			continue
 		}
@@ -68,7 +68,7 @@ func (t FullTester) TestDependencies() ([]string, error) {
 // Test is the top level testing execution call. It serves as the
 // entrypoint to all individual tests.
 func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
-	for _, test := range *t.testCases {
+	for _, test := range t.testCases {
 		if err := t.runStructureTests(ctx, out, bRes, test); err != nil {
 			return errors.Wrap(err, "running structure tests")
 		}

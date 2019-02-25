@@ -89,7 +89,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		return nil, errors.Wrap(err, "parsing build config")
 	}
 
-	tester, err := getTester(&cfg.Test, opts)
+	tester, err := getTester(cfg.Test, opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing test config")
 	}
@@ -160,11 +160,11 @@ func buildWithPlugin(artifacts []*latest.Artifact) bool {
 	return false
 }
 
-func getTester(cfg *latest.TestConfig, opts *config.SkaffoldOptions) (test.Tester, error) {
+func getTester(cfg []*latest.TestCase, opts *config.SkaffoldOptions) (test.Tester, error) {
 	switch {
 	case len(opts.PreBuiltImages) > 0:
 		logrus.Debugln("Skipping tests")
-		return test.NewTester(&latest.TestConfig{})
+		return test.NewTester(nil)
 	default:
 		return test.NewTester(cfg)
 	}

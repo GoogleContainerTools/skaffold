@@ -1,6 +1,6 @@
 ---
-title: "CLI References"
-linkTitle: "CLI References"
+title: "CLI"
+linkTitle: "CLI"
 weight: 110
 ---
 

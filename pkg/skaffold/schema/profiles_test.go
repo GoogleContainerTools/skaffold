@@ -17,6 +17,7 @@ limitations under the License.
 package schema
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -26,6 +27,47 @@ import (
 	yamlpatch "github.com/krishicks/yaml-patch"
 	"k8s.io/client-go/tools/clientcmd/api"
 )
+
+func TestApplyPatch(t *testing.T) {
+	config := `build:
+  artifacts:
+  - image: example
+profiles:
+- name: patches
+  patches:
+  - path: /build/artifacts/0/image
+    value: replacement
+  - op: add
+    path: /build/artifacts/0/docker
+    value:
+      dockerfile: Dockerfile.DEV
+  - op: add
+    path: /build/artifacts/-
+    value:
+      image: second
+      docker:
+        dockerfile: Dockerfile.second
+`
+
+	tmp, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+
+	yaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, config)
+	tmp.Write("skaffold.yaml", yaml)
+
+	parsed, err := ParseConfig(tmp.Path("skaffold.yaml"), false)
+	testutil.CheckError(t, false, err)
+
+	pipeline := parsed.(*latest.SkaffoldPipeline)
+	err = ApplyProfiles(pipeline, &cfg.SkaffoldOptions{
+		Profiles: []string{"patches"},
+	})
+	testutil.CheckError(t, false, err)
+
+	testutil.CheckDeepEqual(t, "replacement", pipeline.Build.Artifacts[0].ImageName)
+	testutil.CheckDeepEqual(t, "Dockerfile.DEV", pipeline.Build.Artifacts[0].DockerArtifact.DockerfilePath)
+	testutil.CheckDeepEqual(t, "Dockerfile.second", pipeline.Build.Artifacts[1].DockerArtifact.DockerfilePath)
+}
 
 func TestApplyProfiles(t *testing.T) {
 	tests := []struct {
@@ -167,7 +209,7 @@ func TestApplyProfiles(t *testing.T) {
 				withKubectlDeploy("k8s/*.yaml"),
 				withProfiles(latest.Profile{
 					Name: "profile",
-					Patches: yamlpatch.Patch{{
+					Patches: []latest.JSONPatch{{
 						Path:  "/build/artifacts/0/docker/dockerfile",
 						Value: yamlpatch.NewNode(str("Dockerfile.DEV")),
 					}},
@@ -192,13 +234,38 @@ func TestApplyProfiles(t *testing.T) {
 				withKubectlDeploy("k8s/*.yaml"),
 				withProfiles(latest.Profile{
 					Name: "profile",
-					Patches: yamlpatch.Patch{{
+					Patches: []latest.JSONPatch{{
 						Path: "/unknown",
 						Op:   "replace",
 					}},
 				}),
 			),
 			shouldErr: true,
+		},
+		{
+			description: "add test case",
+			profile:     "profile",
+			config: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withProfiles(latest.Profile{
+					Name: "profile",
+					Test: []*latest.TestCase{{
+						ImageName:      "image",
+						StructureTests: []string{"test/*"},
+					}},
+				}),
+			),
+			expected: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withTests(&latest.TestCase{
+					ImageName:      "image",
+					StructureTests: []string{"test/*"},
+				}),
+			),
 		},
 	}
 

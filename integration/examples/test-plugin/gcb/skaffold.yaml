@@ -1,4 +1,4 @@
-apiVersion: skaffold/v1beta5
+apiVersion: skaffold/v1beta6
 kind: Config
 build:
   artifacts:
@@ -10,10 +10,10 @@ build:
     context: ./leeroy-app/
     plugin: 
       name: docker
+      properties:
+        target: targetStage
   executionEnvironment:
     name: googleCloudBuild
-    properties:
-      projectId: k8s-skaffold
 deploy:
   kubectl:
     manifests:
