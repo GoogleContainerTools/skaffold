@@ -353,6 +353,13 @@ func withTests(testCases ...*latest.TestCase) func(*latest.SkaffoldPipeline) {
 	}
 }
 
+func withExecutionEnvironment(name latest.ExecEnvironment) func(*latest.BuildConfig) {
+	return func(cfg *latest.BuildConfig) {
+		cfg.ExecutionEnvironment = &latest.ExecutionEnvironment{
+			Name: name,
+		}
+	}
+}
 func TestUpgradeToNextVersion(t *testing.T) {
 	for i, schemaVersion := range SchemaVersions[0 : len(SchemaVersions)-2] {
 		from := schemaVersion
