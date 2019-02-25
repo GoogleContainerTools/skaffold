@@ -35,8 +35,8 @@ var defaultArtifactCache = ArtifactCache{"hash": ImageDetails{
 	ID:     "id",
 }}
 
-func mockHashForArtifact(hashes map[string]string) func(context.Context, *latest.Artifact) (string, error) {
-	return func(ctx context.Context, a *latest.Artifact) (string, error) {
+func mockHashForArtifact(hashes map[string]string) func(context.Context, Builder, *latest.Artifact) (string, error) {
+	return func(ctx context.Context, _ Builder, a *latest.Artifact) (string, error) {
 		return hashes[a.ImageName], nil
 	}
 }
@@ -87,7 +87,7 @@ func Test_NewCache(t *testing.T) {
 			if test.updateCacheFile {
 				test.expectedCache.cacheFile = cacheFile
 			}
-			actualCache := NewCache(test.useCache, cacheFile)
+			actualCache := NewCache(nil, test.useCache, cacheFile)
 
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
 			if !reflect.DeepEqual(test.expectedCache, actualCache) {

@@ -55,6 +55,7 @@ type ArtifactCache map[string]ImageDetails
 type Cache struct {
 	artifactCache ArtifactCache
 	client        docker.LocalDaemon
+	builder       Builder
 	cacheFile     string
 	useCache      bool
 }
@@ -68,7 +69,7 @@ var (
 )
 
 // NewCache returns the current state of the cache
-func NewCache(useCache bool, cacheFile string) *Cache {
+func NewCache(builder Builder, useCache bool, cacheFile string) *Cache {
 	if !useCache {
 		return noCache
 	}
@@ -92,6 +93,7 @@ func NewCache(useCache bool, cacheFile string) *Cache {
 		cacheFile:     cf,
 		useCache:      useCache,
 		client:        client,
+		builder:       builder,
 	}
 }
 
@@ -183,7 +185,7 @@ type cachedArtifactDetails struct {
 }
 
 func (c *Cache) retrieveCachedArtifactDetails(ctx context.Context, a *latest.Artifact) (*cachedArtifactDetails, error) {
-	hash, err := hashForArtifact(ctx, a)
+	hash, err := hashForArtifact(ctx, c.builder, a)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting hash for artifact %s", a.ImageName)
 	}
@@ -271,7 +273,7 @@ func (c *Cache) CacheArtifacts(ctx context.Context, artifacts []*latest.Artifact
 		tags[t.ImageName] = t.Tag
 	}
 	for _, a := range artifacts {
-		hash, err := hashForArtifact(ctx, a)
+		hash, err := hashForArtifact(ctx, c.builder, a)
 		if err != nil {
 			continue
 		}
@@ -345,8 +347,8 @@ func (c *Cache) save() error {
 	return ioutil.WriteFile(c.cacheFile, data, 0755)
 }
 
-func getHashForArtifact(ctx context.Context, a *latest.Artifact) (string, error) {
-	deps, err := DependenciesForArtifact(ctx, a)
+func getHashForArtifact(ctx context.Context, builder Builder, a *latest.Artifact) (string, error) {
+	deps, err := builder.DependenciesForArtifact(ctx, a)
 	if err != nil {
 		return "", errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
 	}
