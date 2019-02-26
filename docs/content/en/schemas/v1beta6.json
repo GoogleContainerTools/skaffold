@@ -492,10 +492,41 @@
           },
           "type": "array",
           "description": "a list of Helm releases."
+        },
+        "flags": {
+          "$ref": "#/definitions/HelmDeployFlags",
+          "description": "Optional flags to send to the helm command"
         }
       },
       "additionalProperties": false,
       "description": "(beta) uses the <code>helm</code> CLI to apply the charts to the cluster."
+    },
+    "HelmDeployFlags": {
+      "properties": {
+        "global": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "default": "[]"
+        },
+        "install": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "default": "[]"
+        },
+        "upgrade": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "default": "[]"
+        }
+      },
+      "additionalProperties": false,
+      "description": "describes additional options flags that are passed on the command line to helm either on every command (Global), on install (Install) or on update (Update)."
     },
     "KustomizeDeploy": {
       "properties": {
