@@ -22,11 +22,16 @@ import (
 	"io"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // Build runs a docker build on the host and tags the resulting image with
@@ -82,4 +87,41 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 	default:
 		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 	}
+}
+
+func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
+	var (
+		paths []string
+		err   error
+	)
+
+	switch {
+	case a.DockerArtifact != nil:
+		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact)
+
+	case a.BazelArtifact != nil:
+		paths, err = bazel.GetDependencies(ctx, a.Workspace, a.BazelArtifact)
+
+	case a.JibMavenArtifact != nil:
+		paths, err = jib.GetDependenciesMaven(ctx, a.Workspace, a.JibMavenArtifact)
+
+	case a.JibGradleArtifact != nil:
+		paths, err = jib.GetDependenciesGradle(ctx, a.Workspace, a.JibGradleArtifact)
+
+	default:
+		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
+	}
+
+	if err != nil {
+		// if the context was cancelled act as if all is well
+		// TODO(dgageot): this should be even higher in the call chain.
+		if ctx.Err() == context.Canceled {
+			logrus.Debugln(errors.Wrap(err, "ignore error since context is cancelled"))
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return util.AbsolutePaths(a.Workspace, paths), nil
 }

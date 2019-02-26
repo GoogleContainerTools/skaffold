@@ -47,6 +47,19 @@ func (b *BuilderRPC) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnv
 	b.client.Call("Plugin.Init", args, &resp)
 }
 
+func (b *BuilderRPC) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+	var resp []string
+	if err := convertPropertiesToBytes([]*latest.Artifact{artifact}); err != nil {
+		return nil, errors.Wrapf(err, "converting properties to bytes")
+	}
+	args := DependencyArgs{artifact}
+	err := b.client.Call("Plugin.DependenciesForArtifact", args, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 func (b *BuilderRPC) Labels() map[string]string {
 	var resp map[string]string
 	err := b.client.Call("Plugin.Labels", new(interface{}), &resp)
@@ -75,6 +88,9 @@ func (b *BuilderRPC) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 
 func convertPropertiesToBytes(artifacts []*latest.Artifact) error {
 	for _, a := range artifacts {
+		if a.BuilderPlugin.Properties == nil {
+			continue
+		}
 		data, err := yaml.Marshal(a.BuilderPlugin.Properties)
 		if err != nil {
 			return err
@@ -108,6 +124,20 @@ func (s *BuilderRPCServer) Build(b BuildArgs, resp *[]build.Artifact) error {
 	}
 	*resp = artifacts
 	return nil
+}
+
+func (s *BuilderRPCServer) DependenciesForArtifact(d DependencyArgs, resp *[]string) error {
+	dependencies, err := s.Impl.DependenciesForArtifact(context.Background(), d.Artifact)
+	if err != nil {
+		return errors.Wrapf(err, "getting dependencies for %s", d.Artifact.ImageName)
+	}
+	*resp = dependencies
+	return nil
+}
+
+// DependencyArgs are args passed via rpc to the build plugin on DependencyForArtifact()
+type DependencyArgs struct {
+	*latest.Artifact
 }
 
 // InitArgs are args passed via rpc to the builder plugin on Init()

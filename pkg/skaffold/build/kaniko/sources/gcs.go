@@ -36,7 +36,7 @@ type GCSBucket struct {
 }
 
 // Setup uploads the context to the provided GCS bucket
-func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string) (string, error) {
+func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string, dependencies []string) (string, error) {
 	bucket := g.cfg.BuildContext.GCSBucket
 	if bucket == "" {
 		guessedProjectID, err := gcp.ExtractProjectID(artifact.ImageName)
@@ -50,7 +50,7 @@ func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.A
 	color.Default.Fprintln(out, "Uploading sources to", bucket, "GCS bucket")
 
 	g.tarName = fmt.Sprintf("context-%s.tar.gz", initialTag)
-	if err := sources.UploadToGCS(ctx, artifact, bucket, g.tarName); err != nil {
+	if err := sources.UploadToGCS(ctx, artifact, bucket, g.tarName, dependencies); err != nil {
 		return "", errors.Wrap(err, "uploading sources to GCS")
 	}
 

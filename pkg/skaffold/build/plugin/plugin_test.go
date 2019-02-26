@@ -44,6 +44,10 @@ func (b *mockBuilder) Labels() map[string]string {
 
 func (b *mockBuilder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {}
 
+func (b *mockBuilder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+	return nil, nil
+}
+
 func TestPluginBuilderLabels(t *testing.T) {
 	tests := []struct {
 		name     string
