@@ -29,6 +29,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/golang/protobuf/ptypes"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -40,6 +41,7 @@ const (
 
 var ev *eventer
 var once sync.Once
+var disabled bool
 
 type eventLog []proto.LogEntry
 
@@ -80,6 +82,10 @@ func (ev *eventHandler) logEvent(entry proto.LogEntry) {
 	ev.eventLog = append(ev.eventLog, entry)
 }
 
+func Disable() {
+	disabled = true
+}
+
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
 // It returns a shutdown callback for tearing down the grpc server, which the runner is responsible for calling.
 // This function can only be called once.
@@ -90,14 +96,12 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, add
 	once.Do(func() {
 		builds := map[string]string{}
 		deploys := map[string]string{}
-
 		if build != nil {
 			for _, a := range build.Artifacts {
 				builds[a.ImageName] = NotStarted
 				deploys[a.ImageName] = NotStarted
 			}
 		}
-
 		state := &proto.State{
 			BuildState: &proto.BuildState{
 				Artifacts: builds,
@@ -107,7 +111,6 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, add
 			},
 			ForwardedPorts: make(map[string]*proto.PortInfo),
 		}
-
 		handler := &eventHandler{
 			eventLog: eventLog{},
 			state:    state,
@@ -134,6 +137,11 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, add
 }
 
 func Handle(event proto.Event) {
+	if disabled {
+		logrus.Warnf("cannot handle event from event package when executing plugin: please use RPC handler directly")
+		return
+	}
+	fmt.Fprintf(os.Stdout, "handling event: %+v\n", event)
 	go ev.cli.Handle(context.Background(), &event)
 }
 

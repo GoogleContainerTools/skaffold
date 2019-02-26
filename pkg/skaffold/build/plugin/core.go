@@ -22,6 +22,7 @@ import (
 	"syscall"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/docker"
 	hashiplugin "github.com/hashicorp/go-plugin"
@@ -49,6 +50,7 @@ var cancelError error
 
 // Execute executes a plugin, assumes ShouldExecuteCorePlugin has already been called
 func Execute() error {
+	event.Disable() // when running a plugin, events must be handled directly through the RPC handler
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	plugin := os.Getenv(constants.SkaffoldPluginName)
