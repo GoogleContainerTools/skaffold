@@ -57,6 +57,7 @@ type SkaffoldRunner struct {
 	labellers   []deploy.Labeller
 	builds      []build.Artifact
 	hasDeployed bool
+	needsPush   bool
 	imageList   *kubernetes.ImageList
 	namespaces  []string
 }
@@ -122,6 +123,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		labellers:  labellers,
 		imageList:  kubernetes.NewImageList(),
 		namespaces: namespaces,
+		needsPush:  needsPush(cfg.Build),
 	}, nil
 }
 
@@ -149,6 +151,16 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string, opts *config.Skaffo
 	default:
 		return nil, fmt.Errorf("unknown builder for config %+v", cfg)
 	}
+}
+
+func needsPush(cfg latest.BuildConfig) bool {
+	if cfg.LocalBuild == nil {
+		return false
+	}
+	if cfg.LocalBuild.Push == nil {
+		return false
+	}
+	return *cfg.LocalBuild.Push
 }
 
 func buildWithPlugin(artifacts []*latest.Artifact) bool {
@@ -295,7 +307,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 		return nil, errors.Wrap(err, "generating tag")
 	}
 
-	artifactCache := build.NewCache(r.Builder, r.opts.CacheArtifacts, r.opts.CacheFile)
+	artifactCache := build.NewCache(r.Builder, r.opts, r.needsPush)
 	artifactsToBuild, res := artifactCache.RetrieveCachedArtifacts(ctx, out, artifacts)
 	bRes, err := r.Build(ctx, out, tags, artifactsToBuild)
 	if err != nil {

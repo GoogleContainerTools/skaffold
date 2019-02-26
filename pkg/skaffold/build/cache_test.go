@@ -23,6 +23,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -47,17 +48,20 @@ func Test_NewCache(t *testing.T) {
 		t.Fatalf("error gettting docker api client: %v", err)
 	}
 	tests := []struct {
-		useCache          bool
 		updateCacheFile   bool
+		needsPush         bool
 		name              string
+		opts              *config.SkaffoldOptions
 		expectedCache     *Cache
 		cacheFileContents interface{}
 	}{
 		{
 			name:              "get a valid cache from file",
-			useCache:          true,
 			cacheFileContents: defaultArtifactCache,
 			updateCacheFile:   true,
+			opts: &config.SkaffoldOptions{
+				CacheArtifacts: true,
+			},
 			expectedCache: &Cache{
 				artifactCache: defaultArtifactCache,
 				useCache:      true,
@@ -65,17 +69,34 @@ func Test_NewCache(t *testing.T) {
 			},
 		},
 		{
-			name:              "valid cache file exists, but useCache is false",
-			useCache:          false,
+			name:              "needs push",
 			cacheFileContents: defaultArtifactCache,
+			needsPush:         true,
+			updateCacheFile:   true,
+			opts: &config.SkaffoldOptions{
+				CacheArtifacts: true,
+			},
+			expectedCache: &Cache{
+				artifactCache: defaultArtifactCache,
+				useCache:      true,
+				client:        client,
+				needsPush:     true,
+			},
+		},
+		{
+			name:              "valid cache file exists, but useCache is false",
+			cacheFileContents: defaultArtifactCache,
+			opts:              &config.SkaffoldOptions{},
 			expectedCache:     &Cache{},
 		},
 		{
 
 			name:              "corrupted cache file",
-			useCache:          true,
 			cacheFileContents: "corrupted cache file",
-			expectedCache:     &Cache{},
+			opts: &config.SkaffoldOptions{
+				CacheArtifacts: true,
+			},
+			expectedCache: &Cache{},
 		},
 	}
 
@@ -87,7 +108,8 @@ func Test_NewCache(t *testing.T) {
 			if test.updateCacheFile {
 				test.expectedCache.cacheFile = cacheFile
 			}
-			actualCache := NewCache(nil, test.useCache, cacheFile)
+			test.opts.CacheFile = cacheFile
+			actualCache := NewCache(nil, test.opts, test.needsPush)
 
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
 			if !reflect.DeepEqual(test.expectedCache, actualCache) {
@@ -328,6 +350,32 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			digest: "digest",
 			expected: &cachedArtifactDetails{
 				needsRetag:    true,
+				prebuiltImage: "anotherimage:hash",
+				hashTag:       "image:hash",
+			},
+		},
+		{
+			name:         "needs push is true, local cluster",
+			artifact:     &latest.Artifact{ImageName: "image"},
+			hashes:       map[string]string{"image": "hash"},
+			localCluster: true,
+			api: testutil.FakeAPIClient{
+				ImageSummaries: []types.ImageSummary{
+					{
+						RepoDigests: []string{"digest"},
+						RepoTags:    []string{"anotherimage:hash"},
+					},
+				},
+			},
+			cache: &Cache{
+				useCache:      true,
+				needsPush:     true,
+				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: "digest"}},
+			},
+			digest: "digest",
+			expected: &cachedArtifactDetails{
+				needsRetag:    true,
+				needsPush:     true,
 				prebuiltImage: "anotherimage:hash",
 				hashTag:       "image:hash",
 			},

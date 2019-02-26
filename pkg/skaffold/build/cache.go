@@ -29,6 +29,8 @@ import (
 	"path/filepath"
 	"time"
 
+	skafconfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -58,6 +60,7 @@ type Cache struct {
 	builder       Builder
 	cacheFile     string
 	useCache      bool
+	needsPush     bool
 }
 
 var (
@@ -69,11 +72,11 @@ var (
 )
 
 // NewCache returns the current state of the cache
-func NewCache(builder Builder, useCache bool, cacheFile string) *Cache {
-	if !useCache {
+func NewCache(builder Builder, opts *skafconfig.SkaffoldOptions, needsPush bool) *Cache {
+	if !opts.CacheArtifacts {
 		return noCache
 	}
-	cf, err := resolveCacheFile(cacheFile)
+	cf, err := resolveCacheFile(opts.CacheFile)
 	if err != nil {
 		logrus.Warnf("Error resolving cache file, not using skaffold cache: %v", err)
 		return noCache
@@ -91,9 +94,10 @@ func NewCache(builder Builder, useCache bool, cacheFile string) *Cache {
 	return &Cache{
 		artifactCache: cache,
 		cacheFile:     cf,
-		useCache:      useCache,
+		useCache:      opts.CacheArtifacts,
 		client:        client,
 		builder:       builder,
+		needsPush:     needsPush,
 	}
 }
 
@@ -135,6 +139,7 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 		artifact, err := c.resolveCachedArtifact(ctx, out, a)
 		if err != nil {
 			logrus.Debugf("error retrieving cached artifact for %s: %v\n", a.ImageName, err)
+			color.Red.Fprintf(out, "Unable to retrieve %s from cache; this image will be rebuilt.", a.ImageName)
 			needToBuild = append(needToBuild, a)
 			continue
 		}
@@ -209,7 +214,7 @@ func (c *Cache) retrieveCachedArtifactDetails(ctx context.Context, a *latest.Art
 	// See if this image exists in the local daemon
 	if c.client.ImageExists(ctx, hashTag) {
 		return &cachedArtifactDetails{
-			needsPush: !existsRemotely && !localCluster,
+			needsPush: (!existsRemotely && !localCluster) || (localCluster && c.needsPush),
 			hashTag:   hashTag,
 		}, nil
 	}
@@ -224,7 +229,7 @@ func (c *Cache) retrieveCachedArtifactDetails(ctx context.Context, a *latest.Art
 
 	return &cachedArtifactDetails{
 		needsRetag:    true,
-		needsPush:     !localCluster,
+		needsPush:     !localCluster || c.needsPush,
 		prebuiltImage: prebuiltImage,
 		hashTag:       hashTag,
 	}, nil
