@@ -22,7 +22,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -99,7 +98,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifac
 		}
 
 		if err := r.Watcher.Register(
-			func() ([]string, error) { return build.DependenciesForArtifact(ctx, artifact) },
+			func() ([]string, error) { return r.Builder.DependenciesForArtifact(ctx, artifact) },
 			func(e watch.Events) { changed.AddDirtyArtifact(artifact, e) },
 		); err != nil {
 			return errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)

@@ -21,7 +21,7 @@ A "deprecation event" would coincide with a release.
 a.) docs
 b.) release notes 
 c.) command help (if applicable)
-d.) annotated-skaffold.yaml (if applicable)
+d.) https://skaffold.dev/docs/references/yaml/ (if applicable)
 
 2. if applicable, [from the kubernetes policy](https://kubernetes.io/docs/reference/using-api/deprecation-policy/#deprecating-a-flag-or-cli): 
  > Rule #6: Deprecated CLI elements must emit warnings (optionally disable) when used.

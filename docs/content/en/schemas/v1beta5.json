@@ -1,0 +1,967 @@
+{
+  "type": "object",
+  "anyOf": [
+    {
+      "$ref": "#/definitions/SkaffoldPipeline"
+    }
+  ],
+  "definitions": {
+    "SkaffoldPipeline": {
+      "properties": {
+        "apiVersion": {
+          "type": "string",
+          "description": "version of the configuration."
+        },
+        "kind": {
+          "type": "string",
+          "description": "always <code>Config</code>.",
+          "default": "Config"
+        },
+        "build": {
+          "$ref": "#/definitions/BuildConfig",
+          "description": "describes how images are built."
+        },
+        "test": {
+          "items": {
+            "$ref": "#/definitions/TestCase"
+          },
+          "type": "array",
+          "description": "describes how images are tested."
+        },
+        "deploy": {
+          "$ref": "#/definitions/DeployConfig",
+          "description": "describes how images are deployed."
+        },
+        "profiles": {
+          "items": {
+            "$ref": "#/definitions/Profile"
+          },
+          "type": "array",
+          "description": "(beta) can override be used to <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
+        }
+      },
+      "additionalProperties": false
+    },
+    "BuildConfig": {
+      "properties": {
+        "artifacts": {
+          "items": {
+            "$ref": "#/definitions/Artifact"
+          },
+          "type": "array",
+          "description": "the images you're going to be building."
+        },
+        "tagPolicy": {
+          "$ref": "#/definitions/TagPolicy",
+          "description": "(beta) determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {}</code>."
+        },
+        "executionEnvironment": {
+          "$ref": "#/definitions/ExecutionEnvironment",
+          "description": "environment in which the build should run. Possible values: googleCloudBuild."
+        }
+      },
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "properties": {
+            "local": {
+              "$ref": "#/definitions/LocalBuild",
+              "description": "(beta) describes how to do a build on the local docker daemon and optionally push to a repository."
+            }
+          }
+        },
+        {
+          "properties": {
+            "googleCloudBuild": {
+              "$ref": "#/definitions/GoogleCloudBuild",
+              "description": "(beta) describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/\">Google Cloud Build</a>."
+            }
+          }
+        },
+        {
+          "properties": {
+            "kaniko": {
+              "$ref": "#/definitions/KanikoBuild",
+              "description": "(beta) describes how to do an on-cluster build using <a href=\"https://github.com/GoogleContainerTools/kaniko\">Kaniko</a>."
+            }
+          }
+        }
+      ],
+      "description": "contains all the configuration for the build steps."
+    },
+    "ExecEnvironment": {
+      "additionalProperties": false,
+      "type": "string"
+    },
+    "ExecutionEnvironment": {
+      "properties": {
+        "name": {
+          "$ref": "#/definitions/ExecEnvironment",
+          "description": "name of the environment."
+        },
+        "properties": {
+          "additionalProperties": {},
+          "type": "object",
+          "description": "key-value pairs passed to the environment.",
+          "default": "{}"
+        }
+      },
+      "additionalProperties": false,
+      "description": "environment in which the build should run (ex. local or in-cluster, etc.)."
+    },
+    "BuilderPlugin": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "name of the build plugin."
+        },
+        "properties": {
+          "additionalProperties": {},
+          "type": "object",
+          "description": "key-value pairs passed to the plugin.",
+          "default": "{}"
+        }
+      },
+      "additionalProperties": false,
+      "description": "contains all fields necessary for specifying a build plugin."
+    },
+    "TagPolicy": {
+      "properties": {
+        "gitCommit": {
+          "$ref": "#/definitions/GitTagger",
+          "description": "(beta) tags images with the git tag or commit of the artifact's workspace."
+        },
+        "sha256": {
+          "$ref": "#/definitions/ShaTagger",
+          "description": "(beta) tags images with their sha256 digest."
+        },
+        "envTemplate": {
+          "$ref": "#/definitions/EnvTemplateTagger",
+          "description": "(beta) tags images with a configurable template string."
+        },
+        "dateTime": {
+          "$ref": "#/definitions/DateTimeTagger",
+          "description": "(beta) tags images with the build timestamp."
+        }
+      },
+      "additionalProperties": false,
+      "description": "contains all the configuration for the tagging step."
+    },
+    "ShaTagger": {
+      "additionalProperties": false,
+      "description": "(beta) tags images with their sha256 digest."
+    },
+    "GitTagger": {
+      "additionalProperties": false,
+      "description": "(beta) tags images with the git tag or commit of the artifact's workspace."
+    },
+    "EnvTemplateTagger": {
+      "required": [
+        "template"
+      ],
+      "properties": {
+        "template": {
+          "type": "string",
+          "description": "used to produce the image name and tag. See golang <a href=\"https://golang.org/pkg/text/template/\">text/template</a>. The template is executed against the current environment, with those variables injected:   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.",
+          "examples": [
+            "{{.RELEASE}}-{{.IMAGE_NAME}}"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "description": "(beta) tags images with a configurable template string."
+    },
+    "DateTimeTagger": {
+      "properties": {
+        "format": {
+          "type": "string",
+          "description": "formats the date and time. See <a href=\"https://golang.org/pkg/time/#Time.Format\">#Time.Format</a>.",
+          "default": "2006-01-02_15-04-05.999_MST"
+        },
+        "timezone": {
+          "type": "string",
+          "description": "sets the timezone for the date and time. See <a href=\"https://golang.org/pkg/time/#Time.LoadLocation\">Time.LoadLocation</a>. Defaults to the local timezone."
+        }
+      },
+      "additionalProperties": false,
+      "description": "(beta) tags images with the build timestamp."
+    },
+    "BuildType": {
+      "properties": {
+        "local": {
+          "$ref": "#/definitions/LocalBuild",
+          "description": "(beta) describes how to do a build on the local docker daemon and optionally push to a repository."
+        },
+        "googleCloudBuild": {
+          "$ref": "#/definitions/GoogleCloudBuild",
+          "description": "(beta) describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/\">Google Cloud Build</a>."
+        },
+        "kaniko": {
+          "$ref": "#/definitions/KanikoBuild",
+          "description": "(beta) describes how to do an on-cluster build using <a href=\"https://github.com/GoogleContainerTools/kaniko\">Kaniko</a>."
+        }
+      },
+      "additionalProperties": false,
+      "description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated."
+    },
+    "LocalBuild": {
+      "properties": {
+        "push": {
+          "type": "boolean",
+          "description": "should images be pushed to a registry. If not specified, images are pushed only if the current Kubernetes context connects to a remote cluster."
+        },
+        "useDockerCLI": {
+          "type": "boolean",
+          "description": "use <code>docker</code> command-line interface instead of Docker Engine APIs.",
+          "default": "false"
+        },
+        "useBuildkit": {
+          "type": "boolean",
+          "description": "use BuildKit to build Docker images.",
+          "default": "false"
+        }
+      },
+      "additionalProperties": false,
+      "description": "(beta) describes how to do a build on the local docker daemon and optionally push to a repository."
+    },
+    "GoogleCloudBuild": {
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "description": "ID of your Cloud Platform Project. If it is not provided, Skaffold will guess it from the image name. For example, given the artifact image name <code>gcr.io/myproject/image</code>, Skaffold will use the <code>myproject</code> GCP project."
+        },
+        "diskSizeGb": {
+          "type": "number",
+          "description": "disk size of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions\">Cloud Build Reference</a>."
+        },
+        "machineType": {
+          "type": "string",
+          "description": "type of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions\">Cloud Build Reference</a>."
+        },
+        "timeout": {
+          "type": "string",
+          "description": "amount of time (in seconds) that this build should be allowed to run. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build\">Cloud Build Reference</a>."
+        },
+        "dockerImage": {
+          "type": "string",
+          "description": "image that runs a Docker build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.",
+          "default": "gcr.io/cloud-builders/docker"
+        },
+        "mavenImage": {
+          "type": "string",
+          "description": "image that runs a Maven build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.",
+          "default": "gcr.io/cloud-builders/mvn"
+        },
+        "gradleImage": {
+          "type": "string",
+          "description": "image that runs a Gradle build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.",
+          "default": "gcr.io/cloud-builders/gradle"
+        }
+      },
+      "additionalProperties": false,
+      "description": "(beta) describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/docs/\">Google Cloud Build</a>. Docker and Jib artifacts can be built on Cloud Build. The <code>projectId</code> needs to be provided and the currently logged in user should be given permissions to trigger new builds."
+    },
+    "LocalDir": {
+      "additionalProperties": false,
+      "description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume."
+    },
+    "KanikoBuildContext": {
+      "properties": {
+        "gcsBucket": {
+          "type": "string",
+          "description": "CGS bucket to which sources are uploaded by Skaffold. Kaniko will need access to that bucket to download the sources."
+        },
+        "localDir": {
+          "$ref": "#/definitions/LocalDir",
+          "description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume."
+        }
+      },
+      "additionalProperties": false,
+      "description": "contains the different fields available to specify a Kaniko build context."
+    },
+    "KanikoCache": {
+      "properties": {
+        "repo": {
+          "type": "string",
+          "description": "a remote repository to store cached layers. If none is specified, one will be inferred from the image name. See <a href=\"https://github.com/GoogleContainerTools/kaniko#caching\">Kaniko Caching</a>."
+        }
+      },
+      "additionalProperties": false,
+      "description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds."
+    },
+    "KanikoBuild": {
+      "properties": {
+        "buildContext": {
+          "$ref": "#/definitions/KanikoBuildContext",
+          "description": "defines where Kaniko gets the sources from."
+        },
+        "cache": {
+          "$ref": "#/definitions/KanikoCache",
+          "description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds."
+        },
+        "flags": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional flags to be passed to Kaniko command line. See <a href=\"https://github.com/GoogleContainerTools/kaniko#additional-flags\">Kaniko Additional Flags</a>.",
+          "default": "[]"
+        },
+        "pullSecret": {
+          "type": "string",
+          "description": "path to the secret key file. See <a href=\"https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster\">Kaniko Documentation</a>."
+        },
+        "pullSecretName": {
+          "type": "string",
+          "description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image.",
+          "default": "kaniko-secret"
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration."
+        },
+        "timeout": {
+          "type": "string",
+          "description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (<code>20m</code>)."
+        },
+        "image": {
+          "type": "string",
+          "description": "Docker image used by the Kaniko pod. Defaults to the latest released version of <code>gcr.io/kaniko-project/executor</code>."
+        },
+        "dockerConfig": {
+          "$ref": "#/definitions/DockerConfig",
+          "description": "describes how to mount the local Docker configuration into the Kaniko pod."
+        }
+      },
+      "additionalProperties": false,
+      "description": "(beta) describes how to do an on-cluster build using <a href=\"https://github.com/GoogleContainerTools/kaniko\">Kaniko</a>."
+    },
+    "DockerConfig": {
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "path to the docker <code>config.json</code>."
+        },
+        "secretName": {
+          "type": "string",
+          "description": "Kubernetes secret that will hold the Docker configuration."
+        }
+      },
+      "additionalProperties": false,
+      "description": "contains information about the docker <code>config.json</code> to mount."
+    },
+    "TestCase": {
+      "required": [
+        "image"
+      ],
+      "properties": {
+        "image": {
+          "type": "string",
+          "description": "artifact on which to run those tests.",
+          "examples": [
+            "gcr.io/k8s-skaffold/example"
+          ]
+        },
+        "structureTests": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "the <a href=\"https://github.com/GoogleContainerTools/container-structure-test\">Container Structure Tests</a> to run on that artifact.",
+          "default": "[]",
+          "examples": [
+            "[\"./test/*\"]"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "description": "a list of structure tests to run on images that Skaffold builds."
+    },
+    "DeployConfig": {
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "properties": {
+            "helm": {
+              "$ref": "#/definitions/HelmDeploy",
+              "description": "(beta) uses the <code>helm</code> CLI to apply the charts to the cluster."
+            }
+          }
+        },
+        {
+          "properties": {
+            "kubectl": {
+              "$ref": "#/definitions/KubectlDeploy",
+              "description": "(beta) uses a client side <code>kubectl apply</code> to deploy manifests. You'll need a <code>kubectl</code> CLI version installed that's compatible with your cluster."
+            }
+          }
+        },
+        {
+          "properties": {
+            "kustomize": {
+              "$ref": "#/definitions/KustomizeDeploy",
+              "description": "(beta) uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment."
+            }
+          }
+        }
+      ],
+      "description": "contains all the configuration needed by the deploy steps."
+    },
+    "DeployType": {
+      "properties": {
+        "helm": {
+          "$ref": "#/definitions/HelmDeploy",
+          "description": "(beta) uses the <code>helm</code> CLI to apply the charts to the cluster."
+        },
+        "kubectl": {
+          "$ref": "#/definitions/KubectlDeploy",
+          "description": "(beta) uses a client side <code>kubectl apply</code> to deploy manifests. You'll need a <code>kubectl</code> CLI version installed that's compatible with your cluster."
+        },
+        "kustomize": {
+          "$ref": "#/definitions/KustomizeDeploy",
+          "description": "(beta) uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment."
+        }
+      },
+      "additionalProperties": false,
+      "description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated."
+    },
+    "KubectlDeploy": {
+      "properties": {
+        "manifests": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "the Kubernetes yaml or json manifests.",
+          "default": "[\"k8s/*.yaml\"]"
+        },
+        "remoteManifests": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Kubernetes manifests in remote clusters.",
+          "default": "[]"
+        },
+        "flags": {
+          "$ref": "#/definitions/KubectlFlags",
+          "description": "additional flags passed to <code>kubectl</code>."
+        }
+      },
+      "additionalProperties": false,
+      "description": "(beta) uses a client side <code>kubectl apply</code> to deploy manifests. You'll need a <code>kubectl</code> CLI version installed that's compatible with your cluster."
+    },
+    "KubectlFlags": {
+      "properties": {
+        "global": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional flags passed on every command.",
+          "default": "[]"
+        },
+        "apply": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional flags passed on creations (<code>kubectl apply</code>).",
+          "default": "[]"
+        },
+        "delete": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional flags passed on deletions (<code>kubectl delete</code>).",
+          "default": "[]"
+        }
+      },
+      "additionalProperties": false,
+      "description": "additional flags passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete)."
+    },
+    "HelmDeploy": {
+      "required": [
+        "releases"
+      ],
+      "properties": {
+        "releases": {
+          "items": {
+            "$ref": "#/definitions/HelmRelease"
+          },
+          "type": "array",
+          "description": "a list of Helm releases."
+        }
+      },
+      "additionalProperties": false,
+      "description": "(beta) uses the <code>helm</code> CLI to apply the charts to the cluster."
+    },
+    "KustomizeDeploy": {
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "path to Kustomization files.",
+          "default": "."
+        },
+        "flags": {
+          "$ref": "#/definitions/KubectlFlags",
+          "description": "additional flags passed to <code>kubectl</code>."
+        }
+      },
+      "additionalProperties": false,
+      "description": "(beta) uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment."
+    },
+    "HelmRelease": {
+      "required": [
+        "name",
+        "chartPath"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "name of the Helm release."
+        },
+        "chartPath": {
+          "type": "string",
+          "description": "path to the Helm chart."
+        },
+        "valuesFiles": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "paths to the Helm <code>values</code> files&quot;.",
+          "default": "[]"
+        },
+        "values": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "key-value pairs supplementing the Helm <code>values</code> file&quot;.",
+          "default": "{}"
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Kubernetes namespace."
+        },
+        "version": {
+          "type": "string",
+          "description": "version of the chart."
+        },
+        "setValues": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "key-value pairs. If present, Skaffold will send <code>--set</code> flag to Helm CLI and append all pairs after the flag.",
+          "default": "{}"
+        },
+        "setValueTemplates": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "key-value pairs. If present, Skaffold will try to parse the value part of each key-value pair using environment variables in the system, then send <code>--set</code> flag to Helm CLI and append all parsed pairs after the flag.",
+          "default": "{}"
+        },
+        "wait": {
+          "type": "boolean",
+          "description": "if <code>true</code>, Skaffold will send <code>--wait</code> flag to Helm CLI.",
+          "default": "false"
+        },
+        "recreatePods": {
+          "type": "boolean",
+          "description": "if <code>true</code>, Skaffold will send <code>--recreate-pods</code> flag to Helm CLI.",
+          "default": "false"
+        },
+        "skipBuildDependencies": {
+          "type": "boolean",
+          "description": "should build dependencies be skipped.",
+          "default": "false"
+        },
+        "overrides": {
+          "additionalProperties": {},
+          "type": "object",
+          "description": "key-value pairs. If present, Skaffold will build a Helm <code>values</code> file that overrides the original and use it to call Helm CLI (<code>--f</code> flag).",
+          "default": "{}"
+        },
+        "packaged": {
+          "$ref": "#/definitions/HelmPackaged",
+          "description": "parameters for packaging helm chart (<code>helm package</code>)."
+        },
+        "imageStrategy": {
+          "$ref": "#/definitions/HelmImageStrategy",
+          "description": "adds image configurations to the Helm <code>values</code> file."
+        }
+      },
+      "additionalProperties": false
+    },
+    "HelmPackaged": {
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "sets the <code>version</code> on the chart to this semver version."
+        },
+        "appVersion": {
+          "type": "string",
+          "description": "sets the <code>appVersion</code> on the chart to this version."
+        }
+      },
+      "additionalProperties": false,
+      "description": "parameters for packaging helm chart (<code>helm package</code>)."
+    },
+    "HelmImageStrategy": {
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "properties": {
+            "fqn": {
+              "$ref": "#/definitions/HelmFQNConfig",
+              "description": "image configuration uses the syntax <code>IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG</code>."
+            }
+          }
+        },
+        {
+          "properties": {
+            "helm": {
+              "$ref": "#/definitions/HelmConventionConfig",
+              "description": "image configuration uses the syntax <code>IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG</code>."
+            }
+          }
+        }
+      ],
+      "description": "adds image configurations to the Helm <code>values</code> file."
+    },
+    "HelmImageConfig": {
+      "properties": {
+        "fqn": {
+          "$ref": "#/definitions/HelmFQNConfig",
+          "description": "image configuration uses the syntax <code>IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG</code>."
+        },
+        "helm": {
+          "$ref": "#/definitions/HelmConventionConfig",
+          "description": "image configuration uses the syntax <code>IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG</code>."
+        }
+      },
+      "additionalProperties": false
+    },
+    "HelmFQNConfig": {
+      "properties": {
+        "property": {
+          "type": "string",
+          "description": "defines the image config."
+        }
+      },
+      "additionalProperties": false,
+      "description": "image config to use the FullyQualifiedImageName as param to set."
+    },
+    "HelmConventionConfig": {
+      "additionalProperties": false,
+      "description": "image config in the syntax of image.repository and image.tag."
+    },
+    "Artifact": {
+      "required": [
+        "image"
+      ],
+      "properties": {
+        "image": {
+          "type": "string",
+          "description": "name of the image to be built.",
+          "examples": [
+            "gcr.io/k8s-skaffold/example"
+          ]
+        },
+        "context": {
+          "type": "string",
+          "description": "directory where the artifact's sources are to be found.",
+          "default": "."
+        },
+        "sync": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "(alpha) lists local files that can be synced to remote pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
+          "default": "{}",
+          "examples": [
+            "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
+          ]
+        },
+        "plugin": {
+          "$ref": "#/definitions/BuilderPlugin",
+          "description": "plugin used to build this artifact."
+        }
+      },
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "properties": {
+            "docker": {
+              "$ref": "#/definitions/DockerArtifact",
+              "description": "(beta) describes an artifact built from a Dockerfile."
+            }
+          }
+        },
+        {
+          "properties": {
+            "bazel": {
+              "$ref": "#/definitions/BazelArtifact",
+              "description": "(beta) requires bazel CLI to be installed and the sources to contain <a href=\"https://bazel.build/\">Bazel</a> configuration files."
+            }
+          }
+        },
+        {
+          "properties": {
+            "jibMaven": {
+              "$ref": "#/definitions/JibMavenArtifact",
+              "description": "(alpha) builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin\">Jib plugin for Maven</a>."
+            }
+          }
+        },
+        {
+          "properties": {
+            "jibGradle": {
+              "$ref": "#/definitions/JibGradleArtifact",
+              "description": "(alpha) builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin\">Jib plugin for Gradle</a>."
+            }
+          }
+        }
+      ],
+      "description": "items that need to be built, along with the context in which they should be built."
+    },
+    "Profile": {
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "a unique profile name.",
+          "examples": [
+            "profile-prod"
+          ]
+        },
+        "build": {
+          "$ref": "#/definitions/BuildConfig",
+          "description": "replaces the main <code>build</code> configuration."
+        },
+        "test": {
+          "items": {
+            "$ref": "#/definitions/TestCase"
+          },
+          "type": "array",
+          "description": "replaces the main <code>test</code> configuration."
+        },
+        "deploy": {
+          "$ref": "#/definitions/DeployConfig",
+          "description": "replaces the main <code>deploy</code> configuration."
+        },
+        "patches": {
+          "items": {
+            "$ref": "#/definitions/JSONPatch"
+          },
+          "type": "array",
+          "description": "a list of patches applied to the configuration. Patches use the JSON patch notation."
+        },
+        "activation": {
+          "items": {
+            "$ref": "#/definitions/Activation"
+          },
+          "type": "array",
+          "description": "criteria by which a profile can be auto-activated."
+        }
+      },
+      "additionalProperties": false,
+      "description": "(beta) profiles are used to override any <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
+    },
+    "JSONPatch": {
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "op": {
+          "type": "string",
+          "description": "operation carried by the patch: <code>add</code>, <code>remove</code>, <code>replace</code>, <code>move</code>, <code>copy</code> or <code>test</code>.",
+          "default": "replace"
+        },
+        "path": {
+          "type": "string",
+          "description": "position in the yaml where the operation takes place. For example, this targets the <code>dockerfile</code> of the first artifact built.",
+          "examples": [
+            "/build/artifacts/0/docker/dockerfile"
+          ]
+        },
+        "from": {
+          "type": "string",
+          "description": "source position in the yaml, used for <code>copy</code> or <code>move</code> operations."
+        },
+        "value": {
+          "type": "object",
+          "description": "value to apply. Can be any portion of yaml."
+        }
+      },
+      "additionalProperties": false,
+      "description": "patch to be applied by a profile."
+    },
+    "Activation": {
+      "properties": {
+        "env": {
+          "type": "string",
+          "description": "a key=value pair. The profile is auto-activated if an Environment Variable <code>key</code> has value <code>value</code>.",
+          "examples": [
+            "ENV=production"
+          ]
+        },
+        "kubeContext": {
+          "type": "string",
+          "description": "a Kubernetes context for which the profile is auto-activated.",
+          "examples": [
+            "minikube"
+          ]
+        },
+        "command": {
+          "type": "string",
+          "description": "a Skaffold command for which the profile is auto-activated.",
+          "examples": [
+            "dev"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "description": "criteria by which a profile is auto-activated."
+    },
+    "ArtifactType": {
+      "properties": {
+        "docker": {
+          "$ref": "#/definitions/DockerArtifact",
+          "description": "(beta) describes an artifact built from a Dockerfile."
+        },
+        "bazel": {
+          "$ref": "#/definitions/BazelArtifact",
+          "description": "(beta) requires bazel CLI to be installed and the sources to contain <a href=\"https://bazel.build/\">Bazel</a> configuration files."
+        },
+        "jibMaven": {
+          "$ref": "#/definitions/JibMavenArtifact",
+          "description": "(alpha) builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin\">Jib plugin for Maven</a>."
+        },
+        "jibGradle": {
+          "$ref": "#/definitions/JibGradleArtifact",
+          "description": "(alpha) builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin\">Jib plugin for Gradle</a>."
+        }
+      },
+      "additionalProperties": false
+    },
+    "DockerArtifact": {
+      "properties": {
+        "dockerfile": {
+          "type": "string",
+          "description": "locates the Dockerfile relative to workspace.",
+          "default": "Dockerfile"
+        },
+        "target": {
+          "type": "string",
+          "description": "Dockerfile target name to build."
+        },
+        "buildArgs": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "arguments passed to the docker build.",
+          "default": "{}",
+          "examples": [
+            "{\"key1\": \"value1\", \"key2\": \"value2\"}"
+          ]
+        },
+        "cacheFrom": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "the Docker images to consider as cache sources.",
+          "default": "[]",
+          "examples": [
+            "[\"golang:1.10.1-alpine3.7\", \"alpine:3.7\"]"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "description": "(beta) describes an artifact built from a Dockerfile, usually using <code>docker build</code>."
+    },
+    "BazelArtifact": {
+      "required": [
+        "target"
+      ],
+      "properties": {
+        "target": {
+          "type": "string",
+          "description": "<code>bazel build</code> target to run.",
+          "examples": [
+            "//:skaffold_example.tar"
+          ]
+        },
+        "args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional args to pass to <code>bazel build</code>.",
+          "default": "[]",
+          "examples": [
+            "[\"-flag\", \"--otherflag\"]"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "description": "(beta) describes an artifact built with <a href=\"https://bazel.build/\">Bazel</a>."
+    },
+    "JibMavenArtifact": {
+      "properties": {
+        "module": {
+          "type": "string",
+          "description": "selects which Maven module to build, for a multi module project."
+        },
+        "profile": {
+          "type": "string",
+          "description": "selects which Maven profile to activate."
+        },
+        "args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional build flags passed to Maven.",
+          "default": "[]",
+          "examples": [
+            "[\"-x\", \"-DskipTests\"]"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "description": "(alpha) builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin\">Jib plugin for Maven</a>."
+    },
+    "JibGradleArtifact": {
+      "properties": {
+        "project": {
+          "type": "string",
+          "description": "selects which Gradle project to build."
+        },
+        "args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional build flags passed to Gradle.",
+          "default": "[]",
+          "examples": [
+            "[\"--no-build-cache\"]"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "description": "(alpha) builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin\">Jib plugin for Gradle</a>."
+    }
+  }
+}

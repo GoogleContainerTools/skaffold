@@ -32,6 +32,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // NewCmdDiagnose describes the CLI command to diagnose skaffold.
@@ -45,11 +46,12 @@ func NewCmdDiagnose(out io.Writer) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
+	cmd.Flags().StringArrayVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
 	return cmd
 }
 
 func doDiagnose(out io.Writer) error {
-	_, config, err := newRunner(opts)
+	runner, config, err := newRunner(opts)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}
@@ -58,14 +60,21 @@ func doDiagnose(out io.Writer) error {
 	fmt.Fprintln(out, "Configuration version:", config.APIVersion)
 	fmt.Fprintln(out, "Number of artifacts:", len(config.Build.Artifacts))
 
-	if err := diagnoseArtifacts(out, config.Build.Artifacts); err != nil {
+	if err := diagnoseArtifacts(out, runner.Builder, config.Build.Artifacts); err != nil {
 		return errors.Wrap(err, "running diagnostic on artifacts")
 	}
+
+	color.Blue.Fprintln(out, "\nConfiguration")
+	buf, err := yaml.Marshal(config)
+	if err != nil {
+		return errors.Wrap(err, "marshalling configuration")
+	}
+	out.Write(buf)
 
 	return nil
 }
 
-func diagnoseArtifacts(out io.Writer, artifacts []*latest.Artifact) error {
+func diagnoseArtifacts(out io.Writer, builder build.Builder, artifacts []*latest.Artifact) error {
 	ctx := context.Background()
 
 	for _, artifact := range artifacts {
@@ -80,11 +89,11 @@ func diagnoseArtifacts(out io.Writer, artifacts []*latest.Artifact) error {
 			fmt.Fprintf(out, " - Size of the context: %vbytes\n", size)
 		}
 
-		timeDeps1, deps, err := timeToListDependencies(ctx, artifact)
+		timeDeps1, deps, err := timeToListDependencies(ctx, builder, artifact)
 		if err != nil {
 			return errors.Wrap(err, "listing artifact dependencies")
 		}
-		timeDeps2, _, err := timeToListDependencies(ctx, artifact)
+		timeDeps2, _, err := timeToListDependencies(ctx, builder, artifact)
 		if err != nil {
 			return errors.Wrap(err, "listing artifact dependencies")
 		}
@@ -107,15 +116,10 @@ func diagnoseArtifacts(out io.Writer, artifacts []*latest.Artifact) error {
 	return nil
 }
 
-func timeToListDependencies(ctx context.Context, a *latest.Artifact) (time.Duration, []string, error) {
+func timeToListDependencies(ctx context.Context, builder build.Builder, a *latest.Artifact) (time.Duration, []string, error) {
 	start := time.Now()
-
-	deps, err := build.DependenciesForArtifact(ctx, a)
-	if err != nil {
-		return 0, nil, errors.Wrap(err, "listing artifact dependencies")
-	}
-
-	return time.Since(start), deps, nil
+	paths, err := builder.DependenciesForArtifact(ctx, a)
+	return time.Since(start), paths, err
 }
 
 func timeToComputeMTimes(deps []string) (time.Duration, error) {

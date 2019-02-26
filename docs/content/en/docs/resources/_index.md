@@ -6,8 +6,6 @@ weight: 130
 
 ## 2019 Roadmap
 
-Note: The roadmap is subject to change and aspirational but we would like to share our plans with the user and contributor community.
-
 * Plugin model for builders
 * IDE integration - VSCode and IntelliJ Skaffold dev/build/run/deploy support, Skaffold Config code completion
 * Debugging JVM applications
@@ -18,6 +16,10 @@ Note: The roadmap is subject to change and aspirational but we would like to sha
 * Infrastructure scaffolding for CI/CD on GCP/GKE
 * Document end-to-end solutions
 * Status dashboard for build (test) and deployment besides logging
+
+{{< alert title="Note" >}}
+The roadmap is subject to change and aspirational but we would like to share our plans with the user and contributor community.
+{{< /alert >}}
 
 ## Contributing
 

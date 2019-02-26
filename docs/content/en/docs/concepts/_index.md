@@ -25,8 +25,7 @@ read the configuration file from the current directory.
 | `deploy` |  Specifies how Skaffold deploys artifacts. Skaffold supports using `kubectl`, `helm`, or `kustomize` to deploy artifacts. See [Deployers](/docs/how-tos/deployers) for more information. |
 | `profiles`|  Profile is a set of settings that, when activated, overrides the current configuration. You can use Profile to override the `build`, `test` and `deploy` sections. |
 
-You can learn more about the syntax of `skaffold.yaml` at
-[`skaffold.yaml References`](https://github.com/GoogleContainerTools/skaffold/blob/master/examples/annotated-skaffold.yaml).
+You can [learn more](/docs/references/yaml) about the syntax of `skaffold.yaml`.
 
 ## Global configuration (~/.skaffold/config)
 

@@ -1,0 +1,10 @@
+apiVersion: skaffold/v1beta6
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/skaffold-bazel
+    context: .
+    plugin:
+      name: bazel
+      properties:
+        target: //:skaffold_example.tar
