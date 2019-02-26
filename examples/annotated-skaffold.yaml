@@ -195,6 +195,12 @@ deploy:
     #   delete: [""]
 
  # helm:
+    # helm can be passed additional option flags either 
+    # on every command (Global), on install (Install) or on upgrade (Upgrade).
+    # flags:
+    #   global: [""]
+    #   install: [""]
+    #   upgrade: [""]
     # helm releases to deploy.
     # releases:
     # - name: skaffold-helm

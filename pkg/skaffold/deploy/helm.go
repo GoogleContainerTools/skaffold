@@ -119,6 +119,7 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 
 func (h *HelmDeployer) helm(ctx context.Context, out io.Writer, arg ...string) error {
 	args := append([]string{"--kube-context", h.kubeContext}, arg...)
+	args = append(args, h.Flags.Global...)
 
 	cmd := exec.CommandContext(ctx, "helm", args...)
 	cmd.Stdout = out
@@ -169,8 +170,10 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	var args []string
 	if !isInstalled {
 		args = append(args, "install", "--name", releaseName)
+		args = append(args, h.Flags.Install...)
 	} else {
 		args = append(args, "upgrade", releaseName)
+		args = append(args, h.Flags.Upgrade...)
 		if r.RecreatePods {
 			args = append(args, "--recreate-pods")
 		}

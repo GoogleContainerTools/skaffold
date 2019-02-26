@@ -342,6 +342,18 @@ type KubectlFlags struct {
 type HelmDeploy struct {
 	// Releases is a list of Helm releases.
 	Releases []HelmRelease `yaml:"releases,omitempty" yamltags:"required"`
+
+	// Optional flags to send to the helm command
+	Flags HelmDeployFlags `yaml:"flags,omitempty"`
+}
+
+// HelmDeployFlags describes additional options flags that are passed on the command
+// line to helm either on every command (Global), on install (Install)
+// or on update (Update).
+type HelmDeployFlags struct {
+	Global  []string `yaml:"global,omitempty"`
+	Install []string `yaml:"install,omitempty"`
+	Upgrade []string `yaml:"upgrade,omitempty"`
 }
 
 // KustomizeDeploy (beta) uses the `kustomize` CLI to "patch" a deployment for a target environment.
