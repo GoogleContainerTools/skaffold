@@ -35,14 +35,14 @@ type jdwpSpec struct {
 	port uint16
 }
 
-// configureJvmDebugging configured a container definition for JVM debugging.
+// configureJvmDebugging configures a container definition for JVM debugging.
 // Returns a simple map describing the debug configuration details.
 func configureJvmDebugging(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
 	// try to find existing JAVA_TOOL_OPTIONS or jdwp command argument
 	// todo: find existing containerPort "jdwp" and use port. But what if it conflicts with jdwp spec?
 	spec := retrieveJdwpSpec(config)
-	var port int32
 
+	var port int32
 	if spec != nil {
 		port = int32(spec.port)
 	} else {

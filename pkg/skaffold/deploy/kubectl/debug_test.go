@@ -87,9 +87,29 @@ func TestGuessRuntime(t *testing.T) {
 			result:      JVM,
 		},
 		{
-			description: "other entrypoint, arguments /usr/bin/java",
-			source:      imageConfiguration{entrypoint: []string{"/bin/sh"}, arguments: []string{"/usr/bin/java", "-jar", "foo.jar"}},
-			result:      UNKNOWN,
+			description: "NODE_VERSION",
+			source:      imageConfiguration{env: map[string]string{"NODE_VERSION": "10"}},
+			result:      NODEJS,
+		},
+		{
+			description: "entrypoint node",
+			source:      imageConfiguration{entrypoint: []string{"node", "init.js"}},
+			result:      NODEJS,
+		},
+		{
+			description: "entrypoint /usr/bin/node",
+			source:      imageConfiguration{entrypoint: []string{"/usr/bin/node", "init.js"}},
+			result:      NODEJS,
+		},
+		{
+			description: "no entrypoint, args node",
+			source:      imageConfiguration{arguments: []string{"node", "init.js"}},
+			result:      NODEJS,
+		},
+		{
+			description: "no entrypoint, arguments /usr/bin/node",
+			source:      imageConfiguration{arguments: []string{"/usr/bin/node", "init.js"}},
+			result:      NODEJS,
 		},
 		{
 			description: "entrypoint /bin/sh",

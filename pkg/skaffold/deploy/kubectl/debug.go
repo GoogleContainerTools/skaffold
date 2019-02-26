@@ -97,6 +97,8 @@ func transformManifest(obj runtime.Object, builds []build.Artifact) bool {
 const (
 	// JVM indicates an application that requires the Java Virtual Machine
 	JVM = "jvm"
+	// NODEJS indicates an application that requires NodeJS
+	NODEJS = "nodejs"
 	// UNKNOWN indicates that runtime cannot be determined
 	UNKNOWN = ""
 )
@@ -221,6 +223,9 @@ func transformContainer(container *v1.Container, artifact build.Artifact, portAl
 	case JVM:
 		logrus.Debugf("Configuring %v for JVM", container.Name)
 		return configureJvmDebugging(container, config, portAlloc)
+	case NODEJS:
+		logrus.Debugf("Configuring %v for NODEJS", container.Name)
+		return configureNodeJSDebugging(container, config, portAlloc)
 	default:
 		logrus.Debugf("Unable to determine runtime for %v\n", container.Name)
 		return nil
@@ -234,12 +239,24 @@ func guessRuntime(config imageConfiguration) string {
 	if _, found := config.env["JAVA_VERSION"]; found {
 		return JVM
 	}
+	if _, found := config.env["NODE_VERSION"]; found {
+		return NODEJS
+	}
 	if len(config.entrypoint) > 0 {
 		if config.entrypoint[0] == "java" || strings.HasSuffix(config.entrypoint[0], "/java") {
 			return JVM
 		}
-	} else if len(config.arguments) > 0 && (config.arguments[0] == "java" || strings.HasSuffix(config.arguments[0], "/java")) {
-		return JVM
+		if config.entrypoint[0] == "node" || strings.HasSuffix(config.entrypoint[0], "/node") {
+			return NODEJS
+		}
+	} 
+	if len(config.arguments) > 0 {
+		if config.arguments[0] == "java" || strings.HasSuffix(config.arguments[0], "/java") {
+			return JVM
+		}
+		if config.arguments[0] == "node" || strings.HasSuffix(config.arguments[0], "/node") {
+			return NODEJS
+		}
 	}
 	return UNKNOWN
 }
