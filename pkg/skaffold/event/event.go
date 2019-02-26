@@ -19,7 +19,6 @@ package event
 import (
 	"context"
 	"fmt"
-	"os"
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
@@ -118,11 +117,13 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, add
 		serverShutdown, err = newStatusServer(addr)
 		if err != nil {
 			err = errors.Wrap(err, "creating status server")
+			return
 		}
 		conn, err = grpc.Dial(addr, grpc.WithInsecure())
 		if err != nil {
-			fmt.Printf("error opening connection: %s\n", err.Error())
-			os.Exit(1)
+			logrus.Errorf("error opening grpc connection: %s", err.Error())
+			logrus.Errorf("skaffold events will not be handled correctly!")
+			err = errors.Wrap(err, "opening grpc connection")
 		}
 		client := proto.NewSkaffoldServiceClient(conn)
 		ev = &eventer{
@@ -132,7 +133,9 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, add
 	})
 	return func() {
 		serverShutdown()
-		conn.Close()
+		if conn != nil {
+			conn.Close()
+		}
 	}, err
 }
 
