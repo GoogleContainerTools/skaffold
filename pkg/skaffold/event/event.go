@@ -138,10 +138,9 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, add
 
 func Handle(event proto.Event) {
 	if disabled {
-		logrus.Warnf("cannot handle event from event package when executing plugin: please use RPC handler directly")
+		logrus.Debugf("cannot handle event from event package when executing plugin: please use RPC handler directly")
 		return
 	}
-	fmt.Fprintf(os.Stdout, "handling event: %+v\n", event)
 	go ev.cli.Handle(context.Background(), &event)
 }
 
