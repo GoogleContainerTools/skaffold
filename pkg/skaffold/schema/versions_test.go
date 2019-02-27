@@ -262,6 +262,7 @@ func withKanikoBuild(bucket, secretName, namespace, secret string, timeout strin
 			PullSecret:     secret,
 			Timeout:        timeout,
 			Image:          constants.DefaultKanikoImage,
+			AwsRegion:      constants.DefaultKanikoAWSRegion,
 		}}}
 		for _, op := range ops {
 			op(&b)
