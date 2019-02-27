@@ -154,7 +154,7 @@ func intersect(context string, syncMap map[string]string, files []string, workin
 	return ret, nil
 }
 
-func Perform(ctx context.Context, image string, files map[string]string, cmdFn func(context.Context, v1.Pod, v1.Container, map[string]string) []*exec.Cmd, namespaces []string) error {
+func Perform(ctx context.Context, image string, files map[string]string, cmdFn func(context.Context, v1.Pod, v1.Container, map[string]string) *exec.Cmd, namespaces []string) error {
 	if len(files) == 0 {
 		return nil
 	}
@@ -164,7 +164,6 @@ func Perform(ctx context.Context, image string, files map[string]string, cmdFn f
 		return errors.Wrap(err, "getting k8s client")
 	}
 
-	numSynced := 0
 	for _, ns := range namespaces {
 		pods, err := client.CoreV1().Pods(ns).List(meta_v1.ListOptions{})
 		if err != nil {
@@ -177,19 +176,12 @@ func Perform(ctx context.Context, image string, files map[string]string, cmdFn f
 					continue
 				}
 
-				cmds := cmdFn(ctx, p, c, files)
-				for _, cmd := range cmds {
-					if err := util.RunCmd(cmd); err != nil {
-						return err
-					}
-					numSynced++
+				cmd := cmdFn(ctx, p, c, files)
+				if err := util.RunCmd(cmd); err != nil {
+					return err
 				}
 			}
 		}
-	}
-
-	if numSynced == 0 {
-		return errors.New("didn't sync any files")
 	}
 
 	return nil

@@ -365,14 +365,11 @@ func (t *TestCmdRecorder) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	return nil, t.RunCmd(cmd)
 }
 
-func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files map[string]string) []*exec.Cmd {
-	cmds := make([]*exec.Cmd, len(files))
-	i := 0
+func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files map[string]string) *exec.Cmd {
 	for src, dst := range files {
-		cmds[i] = exec.CommandContext(ctx, "copy", src, dst)
-		i++
+		return exec.CommandContext(ctx, "copy", src, dst)
 	}
-	return cmds
+	return nil
 }
 
 var pod = &v1.Pod{
@@ -398,7 +395,7 @@ func TestPerform(t *testing.T) {
 		description string
 		image       string
 		files       map[string]string
-		cmdFn       func(context.Context, v1.Pod, v1.Container, map[string]string) []*exec.Cmd
+		cmdFn       func(context.Context, v1.Pod, v1.Container, map[string]string) *exec.Cmd
 		cmdErr      error
 		clientErr   error
 		expected    []string
@@ -425,13 +422,6 @@ func TestPerform(t *testing.T) {
 			files:       map[string]string{"test.go": "/test.go"},
 			cmdFn:       fakeCmd,
 			clientErr:   fmt.Errorf(""),
-			shouldErr:   true,
-		},
-		{
-			description: "no copy",
-			image:       "gcr.io/different-pod:123",
-			files:       map[string]string{"test.go": "/test.go"},
-			cmdFn:       fakeCmd,
 			shouldErr:   true,
 		},
 	}

@@ -58,7 +58,7 @@ func (k *Syncer) Sync(ctx context.Context, s *sync.Item) error {
 	return nil
 }
 
-func deleteFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files map[string]string) []*exec.Cmd {
+func deleteFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files map[string]string) *exec.Cmd {
 	// "kubectl" is below...
 	deleteCmd := []string{"exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name, "--", "rm", "-rf"}
 	args := make([]string, 0, len(deleteCmd)+len(files))
@@ -66,11 +66,10 @@ func deleteFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files
 	for _, dst := range files {
 		args = append(args, dst)
 	}
-	delete := exec.CommandContext(ctx, "kubectl", args...)
-	return []*exec.Cmd{delete}
+	return exec.CommandContext(ctx, "kubectl", args...)
 }
 
-func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files map[string]string) []*exec.Cmd {
+func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files map[string]string) *exec.Cmd {
 	// Use "m" flag to touch the files as they are copied.
 	reader, writer := io.Pipe()
 	copy := exec.CommandContext(ctx, "kubectl", "exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name, "-i",
@@ -83,5 +82,5 @@ func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files m
 			logrus.Errorln("Error creating tar archive:", err)
 		}
 	}()
-	return []*exec.Cmd{copy}
+	return copy
 }
