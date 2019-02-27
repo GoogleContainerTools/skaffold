@@ -54,6 +54,7 @@ func Set(c *latest.SkaffoldPipeline) error {
 		setDefaultKanikoSecret,
 		setDefaultKanikoBuildContext,
 		setDefaultDockerConfigSecret,
+		setDefaultKanikoAWSRegion,
 	); err != nil {
 		return err
 	}
@@ -234,6 +235,11 @@ func setDefaultKanikoSecret(kaniko *latest.KanikoBuild) error {
 		return nil
 	}
 
+	return nil
+}
+
+func setDefaultKanikoAWSRegion(kaniko *latest.KanikoBuild) error {
+	kaniko.AwsRegion = valueOrDefault(kaniko.AwsRegion, constants.DefaultKanikoAWSRegion)
 	return nil
 }
 

@@ -55,6 +55,7 @@ func (w withTimings) Labels() map[string]string {
 func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	start := time.Now()
 	color.Default.Fprintln(out, "Starting build...")
+	color.Default.Fprintln(out, "Tags of artifacts:", tags)
 
 	bRes, err := w.Builder.Build(ctx, out, tags, artifacts)
 	if err != nil {

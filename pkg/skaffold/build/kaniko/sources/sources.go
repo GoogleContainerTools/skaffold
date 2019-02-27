@@ -79,11 +79,34 @@ func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 				VolumeSource: v1.VolumeSource{
 					Secret: &v1.SecretVolumeSource{
 						SecretName: cfg.PullSecretName,
+						Items: []v1.KeyToPath{
+							{
+								Key:  constants.DefaultKanikoSecretName,
+								Path: "./" + constants.DefaultKanikoSecretName,
+							},
+							{
+								Key:  constants.DefaultKanikoSecretName,
+								Path: "./credentials",
+							},
+						},
 					},
 				},
 			},
 			},
 		},
+	}
+
+	if cfg.IsECR == true {
+		volumeMountECR := v1.VolumeMount{
+			Name:      constants.DefaultKanikoSecretName,
+			MountPath: constants.DefaultKanikoECRSecretPath,
+		}
+		envVarECR := v1.EnvVar{
+							Name:  "AWS_DEFAULT_REGION",
+							Value: cfg.AwsRegion,
+		}
+		pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, volumeMountECR)
+		pod.Spec.Containers[0].Env = append(pod.Spec.Containers[0].Env, envVarECR)
 	}
 
 	if cfg.DockerConfig == nil {

@@ -268,6 +268,13 @@ type KanikoBuild struct {
 	// DockerConfig describes how to mount the local Docker configuration into the
 	// Kaniko pod.
 	DockerConfig *DockerConfig `yaml:"dockerConfig,omitempty"`
+
+	// Specifies if kaniko pod would be configured with ECR secret settings in mind
+	IsECR bool `yaml:"isECR,omitempty"`
+
+	// Specifies AWS region where the ECR images will be pushed if ECR is enabled
+	// Defaults to `us-east-1`
+	AwsRegion string `yaml:"awsRegion,omitempty"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.
