@@ -40,8 +40,10 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	if *remote {
 		cmd := exec.Command("gcloud", "container", "clusters", "get-credentials", *gkeClusterName, "--zone", *gkeZone, "--project", *gcpProject)
-		if err := util.RunCmd(cmd); err != nil {
-			logrus.Fatalf("Error authenticating to GKE cluster stdout: %v", err)
+		logrus.Infoln(cmd)
+
+		if out, err := util.RunCmdOut(cmd); err != nil {
+			logrus.Fatalf("Error authenticating to GKE cluster: %v, stdout: %v", err, out)
 		}
 	}
 
