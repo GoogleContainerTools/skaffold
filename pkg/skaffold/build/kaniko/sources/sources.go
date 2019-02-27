@@ -96,14 +96,14 @@ func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 		},
 	}
 
-	if cfg.IsECR == true {
+	if cfg.IsECR {
 		volumeMountECR := v1.VolumeMount{
 			Name:      constants.DefaultKanikoSecretName,
 			MountPath: constants.DefaultKanikoECRSecretPath,
 		}
 		envVarECR := v1.EnvVar{
-							Name:  "AWS_DEFAULT_REGION",
-							Value: cfg.AwsRegion,
+			Name:  "AWS_DEFAULT_REGION",
+			Value: cfg.AwsRegion,
 		}
 		pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, volumeMountECR)
 		pod.Spec.Containers[0].Env = append(pod.Spec.Containers[0].Env, envVarECR)
