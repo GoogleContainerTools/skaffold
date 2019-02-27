@@ -36,11 +36,13 @@ func (s *server) GetState(context.Context, *empty.Empty) (*proto.State, error) {
 }
 
 func (s *server) EventLog(stream proto.SkaffoldService_EventLogServer) error {
+	ev.logLock.Lock()
 	for _, entry := range ev.eventLog {
 		if err := stream.Send(&entry); err != nil {
 			return err
 		}
 	}
+	ev.logLock.Unlock()
 	c := make(chan proto.LogEntry)
 	ev.RegisterListener(c)
 	var entry proto.LogEntry

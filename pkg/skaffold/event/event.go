@@ -67,6 +67,9 @@ type eventHandler struct {
 
 	listeners []chan proto.LogEntry
 	state     *proto.State
+
+	logLock   *sync.Mutex
+	stateLock *sync.Mutex
 }
 
 func (ev *eventHandler) RegisterListener(listener chan proto.LogEntry) {
@@ -105,8 +108,10 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, opt
 			ForwardedPorts: make(map[string]*proto.PortInfo),
 		}
 		ev = &eventHandler{
-			eventLog: eventLog{},
-			state:    state,
+			eventLog:  eventLog{},
+			state:     state,
+			logLock:   &sync.Mutex{},
+			stateLock: &sync.Mutex{},
 		}
 		if opts.EnableRPC {
 			serverShutdown, err = newStatusServer(opts.RPCPort)
@@ -140,7 +145,9 @@ func Handle(event proto.Event) {
 func handle(event proto.Event) {
 	var entry string
 	if event.EventType == Build {
+		ev.stateLock.Lock()
 		ev.state.BuildState.Artifacts[event.Artifact] = event.Status
+		ev.stateLock.Unlock()
 		switch event.Status {
 		case InProgress:
 			entry = fmt.Sprintf("Build started for artifact %s", event.Artifact)
@@ -152,7 +159,9 @@ func handle(event proto.Event) {
 		}
 	}
 	if event.EventType == Deploy {
+		ev.stateLock.Lock()
 		ev.state.DeployState.Status = event.Status
+		ev.stateLock.Unlock()
 		switch event.Status {
 		case InProgress:
 			entry = "Deploy started"
@@ -164,22 +173,28 @@ func handle(event proto.Event) {
 		}
 	}
 	if event.EventType == Port {
+		ev.stateLock.Lock()
 		ev.state.ForwardedPorts[event.PortInfo.ContainerName] = event.PortInfo
+		ev.stateLock.Unlock()
 		entry = fmt.Sprintf("Forwarding container %s to local port %d", event.PortInfo.ContainerName, event.PortInfo.LocalPort)
 	}
 
+	ev.logLock.Lock()
 	ev.logEvent(proto.LogEntry{
 		Timestamp: ptypes.TimestampNow(),
 		Type:      event.EventType,
 		Entry:     entry,
 		Error:     event.Err,
 	})
+	ev.logLock.Unlock()
 }
 
 func LogSkaffoldMetadata(info *version.Info) {
+	ev.logLock.Lock()
 	ev.logEvent(proto.LogEntry{
 		Timestamp: ptypes.TimestampNow(),
 		Type:      proto.EventType_metaEvent,
 		Entry:     fmt.Sprintf("Starting Skaffold: %+v", info),
 	})
+	ev.logLock.Unlock()
 }
