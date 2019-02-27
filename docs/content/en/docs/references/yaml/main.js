@@ -16,21 +16,30 @@ function* template(definitions, parentDefinition, ref, ident) {
   const name = ref.replace('#/definitions/', '');
   
   let allProperties = [];
-  var properties = definitions[name].properties;
-  for (var key in properties) {
-      allProperties.push([key, properties[key]]);
+  let seen = {}
+  if (definitions[name].properties) {
+      var properties = definitions[name].properties;
+      for (var key of definitions[name].preferredOrder) {
+          allProperties.push([key, properties[key]]);
+          seen[key] = true;
+      }
   }
   if (definitions[name].anyOf) {
-      for (var properties of definitions[name].anyOf) {
-          for (var key in properties.properties) {
-              allProperties.push([key, properties.properties[key]]);
+      for (var anyOf of definitions[name].anyOf) {
+          if (anyOf.preferredOrder) {
+              for (var key of anyOf.preferredOrder) {
+                  if (!seen[key]) {
+                      allProperties.push([key, anyOf.properties[key]]);
+                      seen[key] = true;
+                  }
+              }
           }
       }
   }
 
   let index = -1
   for (var [key, definition] of allProperties) {
-    var desc = definition.description;
+    var desc = definition['x-intellij-html-description'];
     let value = definition.default;
     index++;
 
