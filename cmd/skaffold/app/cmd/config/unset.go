@@ -29,7 +29,7 @@ func NewCmdUnset(out io.Writer) *cobra.Command {
 		Short: "Unset a value in the global Skaffold config",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			resolveKubectlContext()
+			resolveKubectlContext(kubecontext)
 			if err := unsetConfigValue(args[0]); err != nil {
 				return err
 			}

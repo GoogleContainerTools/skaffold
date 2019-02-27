@@ -33,20 +33,17 @@ import (
 const defaultConfigDir = ".skaffold"
 const defaultConfigFile = "config"
 
-func resolveKubectlContext() {
+func resolveKubectlContext(kubeContext string) {
 	if kubecontext != "" {
 		return
 	}
 
-	context, err := context.CurrentContext()
-	if err != nil {
-		logrus.Warn(errors.Wrap(err, "retrieving current kubectl context"))
-	}
-	if context == "" {
+	if kubeContext == "" {
 		logrus.Infof("no kubectl context currently set, using global values")
 		global = true
 	}
-	kubecontext = context
+
+	kubecontext = kubeContext
 }
 
 func resolveConfigFile() error {
@@ -85,8 +82,8 @@ func readConfig() (*Config, error) {
 // provided kube context.
 // Either returns the config corresponding to the provided or current context,
 // or the global config if that is specified (or if no current context is set).
-func GetConfigForKubectx() (*ContextConfig, error) {
-	resolveKubectlContext()
+func GetConfigForKubectx(kubeContext string) (*ContextConfig, error) {
+	resolveKubectlContext(kubeContext)
 	cfg, err := readConfig()
 	if err != nil {
 		return nil, err
@@ -103,6 +100,22 @@ func GetConfigForKubectx() (*ContextConfig, error) {
 	return nil, nil
 }
 
+// GetKubeContext returns the kube-context to be used. If a context is
+// provided in skaffold.yml it takes precedence over the current kubectl
+// context.
+func GetKubeContext(schemaContext string) (string, error) {
+	if schemaContext != "" {
+		return schemaContext, nil
+	}
+
+	kubeContext, err := context.CurrentContext()
+	if err != nil {
+		return "", errors.Wrap(err, "getting current cluster context")
+	}
+
+	return kubeContext, nil
+}
+
 // GetGlobalConfig returns the global config values
 func GetGlobalConfig() (*ContextConfig, error) {
 	cfg, err := readConfig()
@@ -113,7 +126,7 @@ func GetGlobalConfig() (*ContextConfig, error) {
 }
 
 func getOrCreateConfigForKubectx() (*ContextConfig, error) {
-	resolveKubectlContext()
+	resolveKubectlContext(kubecontext)
 	cfg, err := readConfig()
 	if err != nil {
 		return nil, err
@@ -145,13 +158,13 @@ func getOrCreateConfigForKubectx() (*ContextConfig, error) {
 	return newCfg, nil
 }
 
-func GetDefaultRepo(cliValue string) (string, error) {
+func GetDefaultRepo(cliValue, kubeContext string) (string, error) {
 	// CLI flag takes precedence. If no default-repo specified from a flag,
 	// retrieve the value from the global config.
 	if cliValue != "" {
 		return cliValue, nil
 	}
-	cfg, err := GetConfigForKubectx()
+	cfg, err := GetConfigForKubectx(kubeContext)
 	if err != nil {
 		return "", errors.Wrap(err, "retrieving global config")
 	}
@@ -175,7 +188,7 @@ func GetDefaultRepo(cliValue string) (string, error) {
 }
 
 func GetLocalCluster() (bool, error) {
-	cfg, err := GetConfigForKubectx()
+	cfg, err := GetConfigForKubectx(kubecontext)
 	localCluster := isDefaultLocal(kubecontext)
 	if err != nil {
 		return localCluster, errors.Wrap(err, "retrieving global config")

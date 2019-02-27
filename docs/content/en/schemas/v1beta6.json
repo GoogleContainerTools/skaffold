@@ -564,10 +564,21 @@
     "DeployConfig": {
       "anyOf": [
         {
+          "properties": {
+            "context": {
+              "type": "string"
+            }
+          },
+          "preferredOrder": [
+            "context"
+          ],
           "additionalProperties": false
         },
         {
           "properties": {
+            "context": {
+              "type": "string"
+            },
             "helm": {
               "$ref": "#/definitions/HelmDeploy",
               "description": "*beta* uses the `helm` CLI to apply the charts to the cluster.",
@@ -575,12 +586,16 @@
             }
           },
           "preferredOrder": [
+            "context",
             "helm"
           ],
           "additionalProperties": false
         },
         {
           "properties": {
+            "context": {
+              "type": "string"
+            },
             "kubectl": {
               "$ref": "#/definitions/KubectlDeploy",
               "description": "*beta* uses a client side `kubectl apply` to deploy manifests. You'll need a `kubectl` CLI version installed that's compatible with your cluster.",
@@ -588,12 +603,16 @@
             }
           },
           "preferredOrder": [
+            "context",
             "kubectl"
           ],
           "additionalProperties": false
         },
         {
           "properties": {
+            "context": {
+              "type": "string"
+            },
             "kustomize": {
               "$ref": "#/definitions/KustomizeDeploy",
               "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
@@ -601,6 +620,7 @@
             }
           },
           "preferredOrder": [
+            "context",
             "kustomize"
           ],
           "additionalProperties": false

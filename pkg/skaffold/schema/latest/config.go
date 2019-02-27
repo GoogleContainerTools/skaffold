@@ -298,7 +298,8 @@ type TestCase struct {
 
 // DeployConfig contains all the configuration needed by the deploy steps.
 type DeployConfig struct {
-	DeployType `yaml:",inline"`
+	KubeContext string `yaml:"context,omitempty"`
+	DeployType  `yaml:",inline"`
 }
 
 // DeployType contains the specific implementation and parameters needed

@@ -54,7 +54,7 @@ func runList(out io.Writer) error {
 			return errors.Wrap(err, "marshaling config")
 		}
 	} else {
-		config, err := GetConfigForKubectx()
+		config, err := GetConfigForKubectx(kubecontext)
 		if err != nil {
 			return err
 		}

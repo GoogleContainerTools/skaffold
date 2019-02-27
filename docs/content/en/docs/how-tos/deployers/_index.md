@@ -24,7 +24,7 @@ Skaffold supports the following tools for deploying applications:
 The `deploy` section in the Skaffold configuration file, `skaffold.yaml`,
 controls how Skaffold builds artifacts. To use a specific tool for deploying
 artifacts, add the value representing the tool and options for using the tool
-to the `deploy` section. 
+to the `deploy` section.
 
 For a detailed discussion on Skaffold configuration, see
 [Skaffold Concepts](/docs/concepts/#configuration) and
