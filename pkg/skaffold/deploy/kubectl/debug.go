@@ -65,7 +65,7 @@ func ApplyDebuggingTransforms(l ManifestList, builds []build.Artifact) (Manifest
 		}
 
 		if transformManifest(obj, builds) {
-			manifest, err := encode(obj)
+			manifest, err = encode(obj)
 			if err != nil {
 				return nil, errors.Wrap(err, "marshalling yaml")
 			}
