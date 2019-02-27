@@ -18,7 +18,6 @@ package bazel
 
 import (
 	"context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/bazel"
@@ -27,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"

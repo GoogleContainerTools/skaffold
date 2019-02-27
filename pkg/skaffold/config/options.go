@@ -39,6 +39,7 @@ type SkaffoldOptions struct {
 	SkipTests         bool
 	CacheArtifacts    bool
 	ExperimentalGUI   bool
+	EnableRPC         bool
 	Profiles          []string
 	CustomTag         string
 	Namespace         string

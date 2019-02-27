@@ -60,13 +60,13 @@ func (s *server) Handle(ctx context.Context, event *proto.Event) (*empty.Empty, 
 }
 
 // newStatusServer creates the grpc server for serving the state and event log.
-func newStatusServer(port string) (func(), error) {
+func newStatusServer(port string) (func() error, error) {
 	if port == "" {
-		return func() {}, nil
+		return func() error { return nil }, nil
 	}
 	l, err := net.Listen("tcp", port)
 	if err != nil {
-		return func() {}, errors.Wrap(err, "creating listener")
+		return func() error { return nil }, errors.Wrap(err, "creating listener")
 	}
 
 	s := grpc.NewServer()
@@ -77,8 +77,8 @@ func newStatusServer(port string) (func(), error) {
 			logrus.Errorf("failed to start grpc server: %s", err)
 		}
 	}()
-	return func() {
+	return func() error {
 		s.Stop()
-		l.Close()
+		return l.Close()
 	}, nil
 }

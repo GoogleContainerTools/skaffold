@@ -62,10 +62,6 @@ const (
 	Meta   = proto.EventType_metaEvent
 )
 
-type eventer struct {
-	*eventHandler
-}
-
 type eventHandler struct {
 	eventLog
 
@@ -87,10 +83,9 @@ func (ev *eventHandler) logEvent(entry proto.LogEntry) {
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
 // It returns a shutdown callback for tearing down the grpc server, which the runner is responsible for calling.
 // This function can only be called once.
-func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, addr string) (func(), error) {
+func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, opts *config.SkaffoldOptions) (func() error, error) {
 	var err error
-	var serverShutdown func()
-	var conn *grpc.ClientConn
+	serverShutdown := func() error { return nil }
 	once.Do(func() {
 		builds := map[string]string{}
 		deploys := map[string]string{}
@@ -113,18 +108,15 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, add
 			eventLog: eventLog{},
 			state:    state,
 		}
-		serverShutdown, err = newStatusServer(addr)
-		if err != nil {
-			err = errors.Wrap(err, "creating status server")
-			return
+		if opts.EnableRPC {
+			serverShutdown, err = newStatusServer(opts.RPCPort)
+			if err != nil {
+				err = errors.Wrap(err, "creating status server")
+				return
+			}
 		}
 	})
-	return func() {
-		serverShutdown()
-		if conn != nil {
-			conn.Close()
-		}
-	}, err
+	return serverShutdown, err
 }
 
 func SetupRPCClient(opts *config.SkaffoldOptions) error {
