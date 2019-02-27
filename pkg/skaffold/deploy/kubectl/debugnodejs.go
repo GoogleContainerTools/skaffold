@@ -41,11 +41,13 @@ func configureNodeJSDebugging(container *v1.Container, config imageConfiguration
 	if spec == nil {
 		// most examples use 9229
 		spec = &inspectSpec{port: portAlloc(9229)}
-		if len(config.entrypoint) > 0 && (config.entrypoint[0] == "node" || strings.HasSuffix(config.entrypoint[0], "/node")) {
+		if len(config.entrypoint) > 0 && (config.entrypoint[0] == "node" || strings.HasSuffix(config.entrypoint[0], "/node") ||
+				config.entrypoint[0] == "nodemon" || strings.HasSuffix(config.entrypoint[0], "/nodemon")) {
 			container.Command = append(config.entrypoint, "")
 			copy(container.Command[2:], container.Command[1:])
 			container.Command[1] = spec.String()
-		} else if len(config.entrypoint) == 0 && len(config.arguments) > 0 && (config.arguments[0] == "node" || strings.HasSuffix(config.arguments[0], "/node")) {
+		} else if len(config.entrypoint) == 0 && len(config.arguments) > 0 && (config.arguments[0] == "node" || strings.HasSuffix(config.arguments[0], "/node") ||
+				config.arguments[0] == "nodemon" || strings.HasSuffix(config.arguments[0], "/nodemon")) {
 			container.Args = append(config.arguments, "")
 			copy(container.Args[2:], container.Args[1:])
 			container.Args[1] = spec.String()
