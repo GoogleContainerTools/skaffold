@@ -331,6 +331,16 @@
         "dockerConfig": {
           "$ref": "#/definitions/DockerConfig",
           "description": "describes how to mount the local Docker configuration into the Kaniko pod."
+        },
+        "isECR": {
+          "type": "boolean",
+          "description": "Specifies if kaniko pod would be configured with ECR secret settings in mind",
+          "default": "false"
+        },
+        "awsRegion": {
+          "type": "string",
+          "description": "Specifies AWS region where the ECR images will be pushed if ECR is enabled",
+          "default": "us-east-1"
         }
       },
       "additionalProperties": false,
