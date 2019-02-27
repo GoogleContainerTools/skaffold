@@ -34,8 +34,6 @@ var (
 	gkeClusterName = flag.String("gke-cluster-name", "integration-tests", "name of the integration test cluster")
 	gcpProject     = flag.String("gcp-project", "k8s-skaffold", "the gcp project where the integration test cluster lives")
 	remote         = flag.Bool("remote", false, "if true, run tests on a remote GKE cluster")
-
-	// Client kubernetes.Interface
 )
 
 func TestMain(m *testing.M) {
