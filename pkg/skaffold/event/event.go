@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
@@ -28,7 +29,6 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/golang/protobuf/ptypes"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -38,9 +38,13 @@ const (
 	Failed     = "Failed"
 )
 
-var ev *eventer
-var once sync.Once
-var disabled bool
+var (
+	ev         *eventHandler
+	once       sync.Once
+	pluginMode bool
+
+	cli proto.SkaffoldServiceClient // for plugin RPC connections
+)
 
 type eventLog []proto.LogEntry
 
@@ -60,7 +64,6 @@ const (
 
 type eventer struct {
 	*eventHandler
-	cli proto.SkaffoldServiceClient
 }
 
 type eventHandler struct {
@@ -79,10 +82,6 @@ func (ev *eventHandler) logEvent(entry proto.LogEntry) {
 		c <- entry
 	}
 	ev.eventLog = append(ev.eventLog, entry)
-}
-
-func Disable() {
-	disabled = true
 }
 
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
@@ -110,7 +109,7 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, add
 			},
 			ForwardedPorts: make(map[string]*proto.PortInfo),
 		}
-		handler := &eventHandler{
+		ev = &eventHandler{
 			eventLog: eventLog{},
 			state:    state,
 		}
@@ -118,17 +117,6 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, add
 		if err != nil {
 			err = errors.Wrap(err, "creating status server")
 			return
-		}
-		conn, err = grpc.Dial(addr, grpc.WithInsecure())
-		if err != nil {
-			logrus.Errorf("error opening grpc connection: %s", err.Error())
-			logrus.Errorf("skaffold events will not be handled correctly!")
-			err = errors.Wrap(err, "opening grpc connection")
-		}
-		client := proto.NewSkaffoldServiceClient(conn)
-		ev = &eventer{
-			cli:          client,
-			eventHandler: handler,
 		}
 	})
 	return func() {
@@ -139,12 +127,61 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, add
 	}, err
 }
 
-func Handle(event proto.Event) {
-	if disabled {
-		logrus.Debugf("cannot handle event from event package when executing plugin: please use RPC handler directly")
-		return
+func SetupRPCClient(opts *config.SkaffoldOptions) error {
+	pluginMode = true
+	conn, err := grpc.Dial(opts.RPCPort, grpc.WithInsecure())
+	if err != nil {
+		return errors.Wrap(err, "opening gRPC connection to remote skaffold process")
 	}
-	go ev.cli.Handle(context.Background(), &event)
+	cli = proto.NewSkaffoldServiceClient(conn)
+	return nil
+}
+
+func Handle(event proto.Event) {
+	if pluginMode {
+		go cli.Handle(context.Background(), &event)
+	} else {
+		go handle(event)
+	}
+}
+
+func handle(event proto.Event) {
+	var entry string
+	if event.EventType == Build {
+		ev.state.BuildState.Artifacts[event.Artifact] = event.Status
+		switch event.Status {
+		case InProgress:
+			entry = fmt.Sprintf("Build started for artifact %s", event.Artifact)
+		case Complete:
+			entry = fmt.Sprintf("Build completed for artifact %s", event.Artifact)
+		case Failed:
+			entry = fmt.Sprintf("Build failed for artifact %s", event.Artifact)
+		default:
+		}
+	}
+	if event.EventType == Deploy {
+		ev.state.DeployState.Status = event.Status
+		switch event.Status {
+		case InProgress:
+			entry = "Deploy started"
+		case Complete:
+			entry = "Deploy complete"
+		case Failed:
+			entry = "Deploy failed"
+		default:
+		}
+	}
+	if event.EventType == Port {
+		ev.state.ForwardedPorts[event.PortInfo.ContainerName] = event.PortInfo
+		entry = fmt.Sprintf("Forwarding container %s to local port %d", event.PortInfo.ContainerName, event.PortInfo.LocalPort)
+	}
+
+	ev.logEvent(proto.LogEntry{
+		Timestamp: ptypes.TimestampNow(),
+		Type:      event.EventType,
+		Entry:     entry,
+		Error:     event.Err,
+	})
 }
 
 func LogSkaffoldMetadata(info *version.Info) {

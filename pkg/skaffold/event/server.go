@@ -18,12 +18,10 @@ package event
 
 import (
 	"context"
-	"fmt"
 	"net"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 
-	"github.com/golang/protobuf/ptypes"
 	empty "github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -55,42 +53,9 @@ func (s *server) EventLog(stream proto.SkaffoldService_EventLogServer) error {
 }
 
 func (s *server) Handle(ctx context.Context, event *proto.Event) (*empty.Empty, error) {
-	var entry string
-	if event.EventType == Build {
-		ev.eventHandler.state.BuildState.Artifacts[event.Artifact] = event.Status
-		switch event.Status {
-		case InProgress:
-			entry = fmt.Sprintf("Build started for artifact %s", event.Artifact)
-		case Complete:
-			entry = fmt.Sprintf("Build completed for artifact %s", event.Artifact)
-		case Failed:
-			entry = fmt.Sprintf("Build failed for artifact %s", event.Artifact)
-		default:
-		}
+	if event != nil {
+		handle(*event)
 	}
-	if event.EventType == Deploy {
-		ev.eventHandler.state.DeployState.Status = event.Status
-		switch event.Status {
-		case InProgress:
-			entry = "Deploy started"
-		case Complete:
-			entry = "Deploy complete"
-		case Failed:
-			entry = "Deploy failed"
-		default:
-		}
-	}
-	if event.EventType == Port {
-		ev.eventHandler.state.ForwardedPorts[event.PortInfo.ContainerName] = event.PortInfo
-		entry = fmt.Sprintf("Forwarding container %s to local port %d", event.PortInfo.ContainerName, event.PortInfo.LocalPort)
-	}
-
-	ev.logEvent(proto.LogEntry{
-		Timestamp: ptypes.TimestampNow(),
-		Type:      event.EventType,
-		Entry:     entry,
-		Error:     event.Err,
-	})
 	return &empty.Empty{}, nil
 }
 

@@ -18,6 +18,7 @@ package bazel
 
 import (
 	"context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/bazel"
@@ -30,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -46,6 +48,10 @@ func NewBuilder() *Builder {
 
 // Init stores skaffold options and the execution environment
 func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
+	if err := event.SetupRPCClient(opts); err != nil {
+		logrus.Warn("error establishing gRPC connection to skaffold process; events will not be handled correctly")
+		logrus.Warn(err.Error())
+	}
 	b.opts = opts
 	b.env = env
 }

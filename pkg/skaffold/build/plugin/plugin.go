@@ -23,8 +23,6 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -36,7 +34,6 @@ import (
 	plugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
 )
 
 var (
@@ -92,15 +89,7 @@ func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions) (sh
 		builders[p] = pluginBuilder
 	}
 
-	conn, err := grpc.Dial(opts.RPCPort, grpc.WithInsecure())
-	if err != nil {
-		logrus.Warnf("unable to open gRPC connection to skaffold [%s]: events will not be handled properly!", err.Error())
-		// os.Exit(1)
-	}
-	client := proto.NewSkaffoldServiceClient(conn)
-
 	b := &Builder{
-		cli:      client,
 		Builders: builders,
 	}
 	b.Init(opts, cfg.ExecutionEnvironment)
@@ -141,33 +130,11 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	m := retrieveArtifactsByPlugin(artifacts)
 	// Group artifacts by builder
 	for name, builder := range b.Builders {
-		for _, a := range m[name] {
-			b.cli.Handle(context.Background(), &proto.Event{
-				Artifact:  a.ImageName,
-				Status:    event.InProgress,
-				EventType: proto.EventType_buildEvent,
-			})
-		}
-
 		bArts, err := builder.Build(ctx, out, tags, m[name])
 		if err != nil {
-			for _, a := range m[name] {
-				b.cli.Handle(context.Background(), &proto.Event{
-					Artifact:  a.ImageName,
-					Status:    event.Failed,
-					EventType: proto.EventType_buildEvent,
-				})
-			}
 			return nil, errors.Wrapf(err, "building artifacts with builder %s", name)
 		}
 		builtArtifacts = append(builtArtifacts, bArts...)
-		for _, a := range m[name] {
-			b.cli.Handle(context.Background(), &proto.Event{
-				Artifact:  a.ImageName,
-				Status:    event.Complete,
-				EventType: proto.EventType_buildEvent,
-			})
-		}
 	}
 	return builtArtifacts, nil
 }
