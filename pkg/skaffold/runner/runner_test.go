@@ -153,7 +153,7 @@ func createRunner(t *testing.T, testBench *TestBench) *SkaffoldRunner {
 	pipeline := &latest.SkaffoldPipeline{}
 	defaults.Set(pipeline)
 
-	runner, err := NewForConfig(opts, pipeline, "")
+	runner, err := NewForConfig(opts, pipeline)
 
 	testutil.CheckError(t, false, err)
 
@@ -275,7 +275,7 @@ func TestNewForConfig(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			cfg, err := NewForConfig(&config.SkaffoldOptions{
 				Trigger: "polling",
-			}, test.pipeline, "")
+			}, test.pipeline)
 
 			testutil.CheckError(t, test.shouldErr, err)
 			if cfg != nil {

@@ -20,38 +20,37 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
 
-func TestGetKubeContext(t *testing.T) {
+func TestResolveKubectlContext(t *testing.T) {
 	tests := []struct {
 		description   string
-		kubeContext   string
+		cmdContext    string
 		schemaContext string
 		expected      string
-		shouldErr     bool
 	}{
 		{
-			description:   "kubectl current context",
-			kubeContext:   "kubectl-current-context",
-			schemaContext: "",
-			expected:      "kubectl-current-context",
+			description:   "resolve command context",
+			cmdContext:    "cmd-context",
+			schemaContext: "schema-context",
+			expected:      "cmd-context",
 		},
 		{
-			description:   "schema context",
-			kubeContext:   "kubectl-current-context",
+			description:   "resolve schema context",
 			schemaContext: "schema-context",
 			expected:      "schema-context",
 		},
 	}
 
 	for _, test := range tests {
-		if test.kubeContext != "" {
-			restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: test.kubeContext})
-			defer restore()
-		}
+		t.Run(test.description, func(t *testing.T) {
+			if test.cmdContext != "" {
+				kubecontext = test.cmdContext
+				defer func() { kubecontext = "" }()
+			}
 
-		actual, err := GetKubeContext(test.schemaContext)
-		testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
+			ResolveKubectlContext(test.schemaContext)
+			testutil.CheckDeepEqual(t, test.expected, kubecontext)
+		})
 	}
 }

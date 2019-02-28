@@ -67,7 +67,8 @@ type SkaffoldRunner struct {
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldPipeline
-func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline, kubeContext string) (*SkaffoldRunner, error) {
+func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*SkaffoldRunner, error) {
+	kubeContext := configutil.GetKubeContextAfterInitilization()
 	logrus.Infof("Using kubectl context: %s", kubeContext)
 
 	namespaces, err := getAllPodNamespaces(opts.Namespace)
@@ -75,7 +76,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline, ku
 		return nil, errors.Wrap(err, "getting namespace list")
 	}
 
-	defaultRepo, err := configutil.GetDefaultRepo(opts.DefaultRepo, kubeContext)
+	defaultRepo, err := configutil.GetDefaultRepo(opts.DefaultRepo)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting default repo")
 	}

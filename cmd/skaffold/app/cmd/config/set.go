@@ -48,6 +48,7 @@ func NewCmdSet(out io.Writer) *cobra.Command {
 }
 
 func setConfigValue(name string, value string) error {
+	ResolveKubectlContext("")
 	cfg, err := getOrCreateConfigForKubectx()
 	if err != nil {
 		return err

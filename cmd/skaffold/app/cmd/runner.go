@@ -48,16 +48,14 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 		return nil, nil, errors.Wrap(err, "applying profiles")
 	}
 
+	// initialization must happen as early as possible
+	configutil.ResolveKubectlContext(config.Deploy.KubeContext)
+
 	if err := defaults.Set(config); err != nil {
 		return nil, nil, errors.Wrap(err, "setting default values")
 	}
 
-	kubeContext, err := configutil.GetKubeContext(config.Deploy.KubeContext)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "getting kube-context")
-	}
-
-	defaultRepo, err := configutil.GetDefaultRepo(opts.DefaultRepo, kubeContext)
+	defaultRepo, err := configutil.GetDefaultRepo(opts.DefaultRepo)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting default repo")
 	}
@@ -66,7 +64,7 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 		return nil, nil, errors.Wrap(err, "substituting default repos")
 	}
 
-	runner, err := runner.NewForConfig(opts, config, kubeContext)
+	runner, err := runner.NewForConfig(opts, config)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "creating runner")
 	}
