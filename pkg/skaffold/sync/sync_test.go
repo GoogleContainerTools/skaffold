@@ -44,6 +44,7 @@ func TestNewSyncItem(t *testing.T) {
 		builds      []build.Artifact
 		shouldErr   bool
 		expected    *Item
+		workingDir  string
 	}{
 		{
 			description: "match copy",
@@ -142,10 +143,11 @@ func TestNewSyncItem(t *testing.T) {
 			evt: watch.Events{
 				Modified: []string{filepath.Join("node", "src/app/server/server.js")},
 			},
+			workingDir: "/",
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string]string{
-					filepath.Join("node", "src/app/server/server.js"): "src/app/server/server.js",
+					filepath.Join("node", "src/app/server/server.js"): "/src/server.js",
 				},
 				Delete: map[string]string{},
 			},
@@ -193,6 +195,12 @@ func TestNewSyncItem(t *testing.T) {
 				Added:   []string{"main.go"},
 				Deleted: []string{"index.html"},
 			},
+			builds: []build.Artifact{
+				{
+					ImageName: "",
+					Tag:       "placeholder",
+				},
+			},
 		},
 		{
 			description: "not delete syncable",
@@ -205,6 +213,12 @@ func TestNewSyncItem(t *testing.T) {
 			evt: watch.Events{
 				Added:   []string{"index.html"},
 				Deleted: []string{"some/other/file"},
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "",
+					Tag:       "placeholder",
+				},
 			},
 		},
 		{
@@ -245,6 +259,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
+			workingDir: "/some/dir",
 			builds: []build.Artifact{
 				{
 					ImageName: "test",
@@ -257,7 +272,7 @@ func TestNewSyncItem(t *testing.T) {
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string]string{
-					filepath.Join("dir1", "dir2/node.js"): "dir1/dir2/node.js",
+					filepath.Join("dir1", "dir2/node.js"): "/some/dir/node.js",
 				},
 				Delete: map[string]string{},
 			},
@@ -266,6 +281,13 @@ func TestNewSyncItem(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			originalWorkingDir := workingDir
+			workingDir = func(image string) (string, error) {
+				return test.workingDir, nil
+			}
+			defer func() {
+				workingDir = originalWorkingDir
+			}()
 			actual, err := NewItem(test.artifact, test.evt, test.builds)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
 		})
@@ -279,6 +301,7 @@ func TestIntersect(t *testing.T) {
 		syncPatterns map[string]string
 		files        []string
 		context      string
+		workingDir   string
 		expected     map[string]string
 		shouldErr    bool
 	}{
@@ -321,7 +344,7 @@ func TestIntersect(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			actual, err := intersect(test.context, test.syncPatterns, test.files)
+			actual, err := intersect(test.context, test.syncPatterns, test.files, test.workingDir)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
 		})
 	}
