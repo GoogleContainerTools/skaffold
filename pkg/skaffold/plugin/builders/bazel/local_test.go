@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package local
+package bazel
 
 import (
 	"context"
@@ -32,7 +32,7 @@ func TestBazelBin(t *testing.T) {
 		"/absolute/path/bin\n",
 	)
 
-	bazelBin, err := bazelBin(context.Background(), ".", &latest.BazelArtifact{
+	bazelBin, err := BazelBin(context.Background(), ".", &latest.BazelArtifact{
 		BuildArgs: []string{"--arg1", "--arg2"},
 	})
 
@@ -42,7 +42,7 @@ func TestBazelBin(t *testing.T) {
 func TestBuildTarPath(t *testing.T) {
 	buildTarget := "//:skaffold_example.tar"
 
-	tarPath := buildTarPath(buildTarget)
+	tarPath := BuildTarPath(buildTarget)
 
 	testutil.CheckDeepEqual(t, "skaffold_example.tar", tarPath)
 }
@@ -50,7 +50,7 @@ func TestBuildTarPath(t *testing.T) {
 func TestBuildImageTag(t *testing.T) {
 	buildTarget := "//:skaffold_example.tar"
 
-	imageTag := buildImageTag(buildTarget)
+	imageTag := BuildImageTag(buildTarget)
 
 	testutil.CheckDeepEqual(t, "bazel:skaffold_example", imageTag)
 }
