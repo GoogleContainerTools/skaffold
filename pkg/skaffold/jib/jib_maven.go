@@ -40,6 +40,25 @@ func GetDependenciesMaven(ctx context.Context, workspace string, a *latest.JibMa
 	return deps, nil
 }
 
+// GetBuildFilesMaven finds the build files for the given jib-maven artifact.
+// All paths are absolute.
+func GetBuildFilesMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) ([]string, error) {
+	deps, err := getBuildFiles(getCommandMaven(ctx, workspace, a))
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting jibMaven build files")
+	}
+	logrus.Debugf("Found build files for jibMaven artifact: %v", deps)
+	return deps, nil
+}
+
+// RefreshDependenciesMaven calls out to Jib to retrieve an updated list of dependencies
+func RefreshDependenciesMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) error {
+	if err := refreshDependencyList(getCommandMaven(ctx, workspace, a)); err != nil {
+		return errors.Wrapf(err, "refreshing jibMaven dependencies")
+	}
+	return nil
+}
+
 func getCommandMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) *exec.Cmd {
 	args := mavenArgs(a)
 	args = append(args, "jib:_skaffold-files-v2", "--quiet")

@@ -42,6 +42,26 @@ func GetDependenciesGradle(ctx context.Context, workspace string, a *latest.JibG
 	return deps, nil
 }
 
+// GetBuildFilesGradle finds the build configuration for the given jib-gradle artifact.
+// All paths are absolute.
+func GetBuildFilesGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) ([]string, error) {
+	cmd := getCommandGradle(ctx, workspace, a)
+	deps, err := getBuildFiles(cmd)
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting jibGradle build files")
+	}
+	logrus.Debugf("Found build files for jibGradle artifact: %v", deps)
+	return deps, nil
+}
+
+// RefreshDependenciesGradle calls out to Jib to retrieve an updated list of dependencies
+func RefreshDependenciesGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) error {
+	if err := refreshDependencyList(getCommandGradle(ctx, workspace, a)); err != nil {
+		return errors.Wrapf(err, "refreshing jibGradle dependencies")
+	}
+	return nil
+}
+
 func getCommandGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) *exec.Cmd {
 	args := []string{gradleCommand(a, "_jibSkaffoldFilesV2"), "-q"}
 	return GradleCommand.CreateCommand(ctx, workspace, args)
