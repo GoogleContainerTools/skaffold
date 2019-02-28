@@ -39,6 +39,7 @@ type SkaffoldOptions struct {
 	SkipTests         bool
 	CacheArtifacts    bool
 	ExperimentalGUI   bool
+	EnableRPC         bool
 	Profiles          []string
 	CustomTag         string
 	Namespace         string
@@ -50,6 +51,7 @@ type SkaffoldOptions struct {
 	DefaultRepo       string
 	PreBuiltImages    []string
 	Command           string
+	RPCPort           string
 }
 
 // Labels returns a map of labels to be applied to all deployed

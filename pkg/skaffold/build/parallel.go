@@ -24,6 +24,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
@@ -65,14 +67,49 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 			}
 
 			color.Default.Fprintf(cw, "Building [%s]...\n", artifacts[i].ImageName)
+			event.Handle(&proto.Event{
+				EventType: &proto.Event_BuildEvent{
+					BuildEvent: &proto.BuildEvent{
+						Artifact: artifacts[i].ImageName,
+						Status:   event.InProgress,
+					},
+				},
+			})
 
 			tag, present := tags[artifacts[i].ImageName]
 			if !present {
 				errs[i] = fmt.Errorf("unable to find tag for image %s", artifacts[i].ImageName)
+				event.Handle(&proto.Event{
+					EventType: &proto.Event_BuildEvent{
+						BuildEvent: &proto.BuildEvent{
+							Artifact: artifacts[i].ImageName,
+							Status:   event.Failed,
+							Err:      errs[i].Error(),
+						},
+					},
+				})
 			} else {
 				finalTags[i], errs[i] = buildArtifact(ctx, cw, artifacts[i], tag)
+				if errs[i] != nil {
+					event.Handle(&proto.Event{
+						EventType: &proto.Event_BuildEvent{
+							BuildEvent: &proto.BuildEvent{
+								Artifact: artifacts[i].ImageName,
+								Status:   event.Failed,
+								Err:      errs[i].Error(),
+							},
+						},
+					})
+				}
 			}
-
+			event.Handle(&proto.Event{
+				EventType: &proto.Event_BuildEvent{
+					BuildEvent: &proto.BuildEvent{
+						Artifact: artifacts[i].ImageName,
+						Status:   event.Complete,
+					},
+				},
+			})
 			cw.Close()
 		}()
 
