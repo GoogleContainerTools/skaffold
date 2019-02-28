@@ -145,7 +145,7 @@ func TestNewSyncItem(t *testing.T) {
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string]string{
-					filepath.Join("node", "src/app/server/server.js"): "src/app/server/server.js",
+					filepath.Join("node", "src/app/server/server.js"): "src/server.js",
 				},
 				Delete: map[string]string{},
 			},
@@ -257,7 +257,33 @@ func TestNewSyncItem(t *testing.T) {
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string]string{
-					filepath.Join("dir1", "dir2/node.js"): "dir1/dir2/node.js",
+					filepath.Join("dir1", "dir2/node.js"): "node.js",
+				},
+				Delete: map[string]string{},
+			},
+		},
+		{
+			description: "copy subdirectory",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: map[string]string{
+					"**/*.py": ".",
+				},
+				Workspace: "python",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: watch.Events{
+				Modified: []string{filepath.Join("src", "app.py")},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string]string{
+					filepath.Join("src", "app.py"): "app.py",
 				},
 				Delete: map[string]string{},
 			},

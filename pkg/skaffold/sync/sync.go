@@ -93,7 +93,6 @@ func intersect(context string, syncMap map[string]string, files []string) (map[s
 
 	for _, f := range files {
 		relPath, err := filepath.Rel(context, f)
-
 		if err != nil {
 			return nil, errors.Wrapf(err, "changed file %s can't be found relative to context %s", f, context)
 		}
@@ -103,10 +102,8 @@ func intersect(context string, syncMap map[string]string, files []string) (map[s
 			if err != nil {
 				return nil, errors.Wrapf(err, "pattern error for %s", relPath)
 			}
-
 			if match {
 				staticPath := strings.Split(filepath.FromSlash(p), "*")[0]
-
 				// Every file must match at least one sync pattern, if not we'll have to
 				// skip the entire sync
 				matches = true
@@ -116,7 +113,7 @@ func intersect(context string, syncMap map[string]string, files []string) (map[s
 				// since the destination is always a linux filesystem.
 				if util.HasMeta(p) {
 					relPathDynamic := strings.TrimPrefix(relPath, staticPath)
-					dst = filepath.ToSlash(filepath.Join(dst, relPathDynamic))
+					dst = filepath.ToSlash(filepath.Join(dst, filepath.Base(relPathDynamic)))
 				}
 				ret[f] = dst
 			}
