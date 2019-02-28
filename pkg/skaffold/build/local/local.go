@@ -125,3 +125,52 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 
 	return util.AbsolutePaths(a.Workspace, paths), nil
 }
+
+func BuildFilesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
+	var (
+		paths []string
+		err   error
+	)
+
+	switch {
+	case a.JibMavenArtifact != nil:
+		paths, err = jib.GetBuildFilesMaven(ctx, a.Workspace, a.JibMavenArtifact)
+
+	case a.JibGradleArtifact != nil:
+		paths, err = jib.GetBuildFilesGradle(ctx, a.Workspace, a.JibGradleArtifact)
+
+	default:
+		return nil, nil
+	}
+
+	if err != nil {
+		// if the context was cancelled act as if all is well
+		if ctx.Err() == context.Canceled {
+			logrus.Debugln(errors.Wrap(err, "ignore error since context is cancelled"))
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return util.AbsolutePaths(a.Workspace, paths), nil
+}
+
+func RefreshDependenciesForArtifact(ctx context.Context, a *latest.Artifact) error {
+	switch {
+	case a.JibMavenArtifact != nil:
+		if err := jib.RefreshDependenciesMaven(ctx, a.Workspace, a.JibMavenArtifact); err != nil {
+			return err
+		}
+
+	case a.JibGradleArtifact != nil:
+		if err := jib.RefreshDependenciesGradle(ctx, a.Workspace, a.JibGradleArtifact); err != nil {
+			return err
+		}
+
+	default:
+		return nil
+	}
+
+	return nil
+}

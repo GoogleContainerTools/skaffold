@@ -17,9 +17,9 @@ limitations under the License.
 package jib
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
-	"sort"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/karrick/godirwalk"
@@ -27,22 +27,71 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func getDependencies(cmd *exec.Cmd) ([]string, error) {
+type filesTemplate struct {
+	Build  []string
+	Inputs []string
+	Ignore []string
+}
+
+var watchedInputFiles, watchedBuildFiles []string
+
+func getInputFiles(cmd *exec.Cmd) ([]string, error) {
+	if len(watchedInputFiles) == 0 && len(watchedBuildFiles) == 0 {
+		// Refresh dependency list if empty
+		if err := refreshDependencyList(cmd); err != nil {
+			return nil, err
+		}
+	}
+	return watchedInputFiles, nil
+}
+
+func getBuildFiles(cmd *exec.Cmd) ([]string, error) {
+	if len(watchedInputFiles) == 0 && len(watchedBuildFiles) == 0 {
+		// Refresh dependency list if empty
+		if err := refreshDependencyList(cmd); err != nil {
+			return nil, err
+		}
+	}
+	return watchedBuildFiles, nil
+}
+
+func refreshDependencyList(cmd *exec.Cmd) error {
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	cmdDirInfo, err := os.Stat(cmd.Dir)
-	if err != nil {
-		return nil, err
-	}
-
-	// Parses stdout for the dependencies, one per line
 	lines := util.NonEmptyLines(stdout)
+	for i := range lines {
+		if lines[i] == "BEGIN JIB JSON" {
+			// Found Jib JSON header, next line is the JSON
+			var filesOutput filesTemplate
+			if err := json.Unmarshal([]byte(lines[i+1]), &filesOutput); err != nil {
+				return err
+			}
 
-	var deps []string
-	for _, dep := range lines {
+			// Walk the files in each list and filter out ignores
+			if err := walkFiles(&watchedBuildFiles, &filesOutput.Build, &filesOutput.Ignore); err != nil {
+				return err
+			}
+			if err := walkFiles(&watchedInputFiles, &filesOutput.Inputs, &filesOutput.Ignore); err != nil {
+				return err
+			}
+
+			return nil
+		}
+	}
+
+	return errors.New("failed to get Jib dependencies")
+}
+
+func walkFiles(filesList *[]string, filesOutputList *[]string, filesOutputIgnore *[]string) error {
+	*filesList = []string{}
+	for _, dep := range *filesOutputList {
+		if util.StrSliceContains(*filesOutputIgnore, dep) {
+			continue
+		}
+
 		// Resolves directories recursively.
 		info, err := os.Stat(dep)
 		if err != nil {
@@ -50,31 +99,25 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 				logrus.Debugf("could not stat dependency: %s", err)
 				continue // Ignore files that don't exist
 			}
-			return nil, errors.Wrapf(err, "unable to stat file %s", dep)
-		}
-
-		// TODO(coollog): Remove this once Jib deps are prepended with special sequence.
-		// Skips the project directory itself. This is necessary as some wrappers print the project directory for some reason.
-		if os.SameFile(cmdDirInfo, info) {
-			continue
+			return errors.Wrapf(err, "unable to stat file %s", dep)
 		}
 
 		if !info.IsDir() {
-			deps = append(deps, dep)
+			*filesList = append(*filesList, dep)
 			continue
 		}
 
 		if err = godirwalk.Walk(dep, &godirwalk.Options{
 			Unsorted: true,
 			Callback: func(path string, _ *godirwalk.Dirent) error {
-				deps = append(deps, path)
+				if !util.StrSliceContains(*filesOutputIgnore, path) {
+					*filesList = append(*filesList, path)
+				}
 				return nil
 			},
 		}); err != nil {
-			return nil, errors.Wrap(err, "filepath walk")
+			return errors.Wrap(err, "filepath walk")
 		}
 	}
-
-	sort.Strings(deps)
-	return deps, nil
+	return nil
 }
