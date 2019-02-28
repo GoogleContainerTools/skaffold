@@ -37,10 +37,12 @@ type SkaffoldOptions struct {
 	TailDev           bool
 	PortForward       bool
 	SkipTests         bool
+	CacheArtifacts    bool
 	ExperimentalGUI   bool
 	Profiles          []string
 	CustomTag         string
 	Namespace         string
+	CacheFile         string
 	TargetImages      []string
 	Trigger           string
 	CustomLabels      []string

@@ -467,7 +467,8 @@ type Artifact struct {
 	// For example: `{"*.py": ".", "css/**/*.css": "app/css"}`.
 	Sync map[string]string `yaml:"sync,omitempty"`
 
-	ArtifactType `yaml:",inline"`
+	ArtifactType  `yaml:",inline"`
+	WorkspaceHash string `yaml:"-,omitempty"`
 
 	// BuilderPlugin is the plugin used to build this artifact.
 	BuilderPlugin *BuilderPlugin `yaml:"plugin,omitempty"`

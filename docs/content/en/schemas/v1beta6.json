@@ -720,6 +720,9 @@
             "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
           ]
         },
+        "-": {
+          "type": "string"
+        },
         "plugin": {
           "$ref": "#/definitions/BuilderPlugin",
           "description": "plugin used to build this artifact."

@@ -33,6 +33,8 @@ type FakeAPIClient struct {
 	client.CommonAPIClient
 
 	TagToImageID    map[string]string
+	ImageSummaries  []types.ImageSummary
+	RepoDigests     []string
 	ErrImageBuild   bool
 	ErrImageInspect bool
 	ErrImageTag     bool
@@ -85,8 +87,13 @@ func (f *FakeAPIClient) ImageInspectWithRaw(_ context.Context, ref string) (type
 		return types.ImageInspect{}, nil, fmt.Errorf("")
 	}
 
+	if _, ok := f.TagToImageID[ref]; !ok {
+		return types.ImageInspect{}, nil, fmt.Errorf("")
+	}
+
 	return types.ImageInspect{
-		ID: f.TagToImageID[ref],
+		ID:          f.TagToImageID[ref],
+		RepoDigests: f.RepoDigests,
 	}, nil, nil
 }
 
@@ -130,6 +137,10 @@ func (f *FakeAPIClient) Info(context.Context) (types.Info, error) {
 	return types.Info{
 		IndexServerAddress: registry.IndexServer,
 	}, nil
+}
+
+func (f *FakeAPIClient) ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error) {
+	return f.ImageSummaries, nil
 }
 
 func (f *FakeAPIClient) Close() error { return nil }

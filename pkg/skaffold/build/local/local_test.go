@@ -136,7 +136,9 @@ func TestLocalRun(t *testing.T) {
 					},
 				}},
 			},
-			api:  testutil.FakeAPIClient{},
+			api: testutil.FakeAPIClient{
+				TagToImageID: map[string]string{"pull1": "imageid", "pull2": "anotherimageid"},
+			},
 			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
@@ -155,6 +157,7 @@ func TestLocalRun(t *testing.T) {
 			},
 			api: testutil.FakeAPIClient{
 				ErrImagePull: true,
+				TagToImageID: map[string]string{"pull1": ""},
 			},
 			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			expected: []build.Artifact{{
