@@ -141,7 +141,7 @@ Use "skaffold config [command] --help" for more information about a command.
 Env vars:
 
 
-### skaffold delete 
+### skaffold delete
 
 Delete the deployed resources
 
