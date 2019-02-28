@@ -184,7 +184,13 @@ func LogSkaffoldMetadata(info *version.Info) {
 	ev.logLock.Lock()
 	ev.logEvent(proto.LogEntry{
 		Timestamp: ptypes.TimestampNow(),
-		Entry:     fmt.Sprintf("Starting Skaffold: %+v", info),
+		Event: &proto.Event{
+			EventType: &proto.Event_MetaEvent{
+				MetaEvent: &proto.MetaEvent{
+					Entry: fmt.Sprintf("Starting Skaffold: %+v", info),
+				},
+			},
+		},
 	})
 	ev.logLock.Unlock()
 }
