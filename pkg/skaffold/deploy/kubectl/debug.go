@@ -43,7 +43,6 @@ type portAllocator func(int32) int32
 // ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.
 func ApplyDebuggingTransforms(l ManifestList, builds []build.Artifact) (ManifestList, error) {
 	var updated ManifestList
-	//decode := api.Codecs.UniversalDeserializer().Decode
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 
 	s := serializer.NewYAMLSerializer(serializer.DefaultMetaFactory, scheme.Scheme, scheme.Scheme)
@@ -89,7 +88,7 @@ func transformManifest(obj runtime.Object, builds []build.Artifact) bool {
 	case *appsv1.Deployment:
 		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, builds)
 	default:
-		logrus.Debugf("skipping unknown object:%v\n", obj)
+		logrus.Debugf("skipping unknown object: %v\n", obj)
 		return false
 	}
 }
@@ -115,13 +114,15 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, builds [
 		container := &podSpec.Containers[i]
 		// we only reconfigure build artifacts
 		if artifact := findArtifact(container.Image, builds); artifact != nil {
-			logrus.Debugf("Found artifact for image %v", container.Image)
-			if configuration := transformContainer(container, *artifact, portAlloc); configuration != nil {
+			logrus.Debugf("Found artifact for image [%s]", container.Image)
+			if configuration, err := transformContainer(container, *artifact, portAlloc); err == nil {
 				configurations[container.Name] = configuration
+				// todo: add this artifact to the watch list?
+			} else {
+				logrus.Infof("Could not configure image [%s] for debugging: %v", container.Image, err)
 			}
-			// fixme: add this artifact to the watch list?
 		} else {
-			logrus.Debugf("Ignoring image %v for debugging: no corresponding build artifact", container.Image)
+			logrus.Debugf("Ignoring image [%s] for debugging: no corresponding build artifact", container.Image)
 		}
 	}
 	if len(configurations) > 0 {
@@ -191,7 +192,7 @@ func retrieveImageConfiguration(image string, artifact build.Artifact) imageConf
 
 	config, err := artifact.Config(ctx)
 	if err != nil {
-		logrus.Errorf("unable to retrieve image configuration for %q: %v", image, err)
+		logrus.Errorf("unable to retrieve image configuration for [%q]: %v", image, err)
 		return imageConfiguration{}
 	}
 	return imageConfiguration{
@@ -202,8 +203,9 @@ func retrieveImageConfiguration(image string, artifact build.Artifact) imageConf
 	}
 }
 
-// transformContainer rewrites the container definition to enable debugging and returns a debugging configuration description
-func transformContainer(container *v1.Container, artifact build.Artifact, portAlloc portAllocator) map[string]interface{} {
+// transformContainer rewrites the container definition to enable debugging. 
+// Returns a debugging configuration description or an error if the rewrite was unsuccessful.
+func transformContainer(container *v1.Container, artifact build.Artifact, portAlloc portAllocator) (map[string]interface{}, error) {
 	config := retrieveImageConfiguration(container.Image, artifact)
 
 	// update image configuration values with those set in the k8s manifest
@@ -221,14 +223,13 @@ func transformContainer(container *v1.Container, artifact build.Artifact, portAl
 
 	switch guessRuntime(config) {
 	case JVM:
-		logrus.Debugf("Configuring %v for JVM", container.Name)
-		return configureJvmDebugging(container, config, portAlloc)
+		logrus.Infof("Configuring [%s] for JVM debugging", container.Name)
+		return configureJvmDebugging(container, config, portAlloc), nil
 	case NODEJS:
-		logrus.Debugf("Configuring %v for NODEJS", container.Name)
-		return configureNodeJSDebugging(container, config, portAlloc)
+		logrus.Infof("Configuring [%s] for node.js debugging", container.Name)
+		return configureNodeJSDebugging(container, config, portAlloc), nil
 	default:
-		logrus.Debugf("Unable to determine runtime for %v\n", container.Name)
-		return nil
+		return nil, errors.Errorf("unable to determine runtime for [%s]", container.Name)
 	}
 }
 
@@ -249,7 +250,7 @@ func guessRuntime(config imageConfiguration) string {
 		if config.entrypoint[0] == "node" || strings.HasSuffix(config.entrypoint[0], "/node") {
 			return NODEJS
 		}
-	} 
+	}
 	if len(config.arguments) > 0 {
 		if config.arguments[0] == "java" || strings.HasSuffix(config.arguments[0], "/java") {
 			return JVM

@@ -151,8 +151,15 @@ func AddRunDevFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.SkipTests, "skip-tests", false, "Whether to skip the tests after building")
 }
 
-func AddRunDebugFlags(cmd *cobra.Command) {
-	AddRunDevFlags(cmd)
+func AddDevDebugFlags(cmd *cobra.Command) {
+	cmd.Flags().BoolVar(&opts.TailDev, "tail", true, "Stream logs from deployed objects")
+	cmd.Flags().StringVar(&opts.Trigger, "trigger", "polling", "How are changes detected? (polling, manual or notify)")
+	cmd.Flags().BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
+	cmd.Flags().StringArrayVarP(&opts.TargetImages, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")
+	cmd.Flags().IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes")
+	cmd.Flags().BoolVar(&opts.PortForward, "port-forward", true, "Port-forward exposed container ports within pods")
+	cmd.Flags().StringArrayVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels")
+	cmd.Flags().BoolVar(&opts.ExperimentalGUI, "experimental-gui", false, "Experimental Graphical User Interface")
 }
 
 func SetUpLogs(out io.Writer, level string) error {

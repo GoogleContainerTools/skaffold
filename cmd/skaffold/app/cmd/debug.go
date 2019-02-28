@@ -34,20 +34,14 @@ func NewCmdDebug(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "debug",
 		Short: "Runs a pipeline file in debug mode",
-		Long:  "Similar to `dev`, but runs the pipeline for debugging. Artifacts that are debugged are not watched.",
+		Long:  "Similar to `dev`, but runs the pipeline for debugging.",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return debug(out)
 		},
 	}
-	AddRunDebugFlags(cmd)
-	cmd.Flags().BoolVar(&opts.TailDev, "tail", true, "Stream logs from deployed objects")
-	cmd.Flags().StringVar(&opts.Trigger, "trigger", "polling", "How are changes detected? (polling or manual)")
-	cmd.Flags().BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
-	cmd.Flags().StringArrayVarP(&opts.TargetImages, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")
-	cmd.Flags().IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes")
-	cmd.Flags().BoolVar(&opts.PortForward, "port-forward", true, "Port-forward exposed container ports within pods")
-	cmd.Flags().StringArrayVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels")
+	AddRunDevFlags(cmd)
+	AddDevDebugFlags(cmd)
 	return cmd
 }
 
@@ -68,8 +62,8 @@ func debug(out io.Writer) error {
 		Logs: out,
 	}
 
-	// HACK: prevent redeploying changed containers during debugging
-	// TODO: build to ignore debuggable artifacts
+	// HACK: disable watcher to prevent redeploying changed containers during debugging
+	// TODO: avoid redeploys of debuggable artifacts, but still enable file-sync
 	if len(opts.TargetImages) == 0 {
 		opts.TargetImages = []string{"none"}
 	}
