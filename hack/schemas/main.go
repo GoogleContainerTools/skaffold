@@ -34,67 +34,30 @@ import (
 	blackfriday "gopkg.in/russross/blackfriday.v2"
 )
 
-const defPrefix = "#/definitions/"
+const (
+	version7  = "http://json-schema-org/draft-07/schema#"
+	defPrefix = "#/definitions/"
+)
 
 type Schema struct {
 	*Definition
-	Definitions *Definitions `json:"definitions,omitempty"`
-}
-
-type Definitions struct {
-	keys   []string
-	values map[string]*Definition
-}
-
-func (d *Definitions) Add(key string, value *Definition) {
-	d.keys = append(d.keys, key)
-	if d.values == nil {
-		d.values = make(map[string]*Definition)
-	}
-	d.values[key] = value
-}
-
-func (d *Definitions) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-
-	buf.WriteString("{")
-	for i, k := range d.keys {
-		if i != 0 {
-			buf.WriteString(",")
-		}
-		// marshal key
-		key, err := json.Marshal(k)
-		if err != nil {
-			return nil, err
-		}
-		buf.Write(key)
-		buf.WriteString(":")
-
-		// marshal value
-		var val bytes.Buffer
-		encoder := json.NewEncoder(&val)
-		encoder.SetEscapeHTML(false)
-		if err := encoder.Encode(d.values[k]); err != nil {
-			return nil, err
-		}
-		buf.Write(val.Bytes())
-	}
-	buf.WriteString("}")
-
-	return buf.Bytes(), nil
+	Version     string                 `json:"$schema,omitempty"`
+	Definitions map[string]*Definition `json:"definitions,omitempty"`
 }
 
 type Definition struct {
-	Ref                  string        `json:"$ref,omitempty"`
-	Items                *Definition   `json:"items,omitempty"`
-	Required             []string      `json:"required,omitempty"`
-	Properties           *Definitions  `json:"properties,omitempty"`
-	AdditionalProperties interface{}   `json:"additionalProperties,omitempty"`
-	Type                 string        `json:"type,omitempty"`
-	AnyOf                []*Definition `json:"anyOf,omitempty"`
-	Description          string        `json:"description,omitempty"`
-	Default              interface{}   `json:"default,omitempty"`
-	Examples             []string      `json:"examples,omitempty"`
+	Ref                  string                 `json:"$ref,omitempty"`
+	Items                *Definition            `json:"items,omitempty"`
+	Required             []string               `json:"required,omitempty"`
+	Properties           map[string]*Definition `json:"properties,omitempty"`
+	PreferredOrder       []string               `json:"preferredOrder,omitempty"`
+	AdditionalProperties interface{}            `json:"additionalProperties,omitempty"`
+	Type                 string                 `json:"type,omitempty"`
+	AnyOf                []*Definition          `json:"anyOf,omitempty"`
+	Description          string                 `json:"description,omitempty"`
+	HTMLDescription      string                 `json:"x-intellij-html-description,omitempty"`
+	Default              interface{}            `json:"default,omitempty"`
+	Examples             []string               `json:"examples,omitempty"`
 }
 
 func main() {
@@ -222,10 +185,11 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 			}
 
 			if def.Properties == nil {
-				def.Properties = &Definitions{}
+				def.Properties = make(map[string]*Definition)
 			}
 
-			def.Properties.Add(yamlName, newDefinition(field.Names[0].Name, field.Type, field.Doc.Text()))
+			def.PreferredOrder = append(def.PreferredOrder, yamlName)
+			def.Properties[yamlName] = newDefinition(field.Names[0].Name, field.Type, field.Doc.Text())
 			def.AdditionalProperties = false
 		}
 	}
@@ -252,11 +216,13 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 	description = strings.TrimPrefix(description, name+" lists ")
 	description = strings.TrimPrefix(description, name+" ")
 
+	def.Description = description
+
 	// Convert to HTML
 	html := string(blackfriday.Run([]byte(description), blackfriday.WithNoExtensions()))
 	html = strings.Replace(html, "<p>", "", -1)
 	html = strings.Replace(html, "</p>", "", -1)
-	def.Description = strings.TrimSpace(html)
+	def.HTMLDescription = html
 
 	return def
 }
@@ -268,7 +234,8 @@ func generateSchema(inputPath string) ([]byte, error) {
 		return nil, err
 	}
 
-	definitions := &Definitions{}
+	var preferredOrder []string
+	definitions := make(map[string]*Definition)
 
 	for _, i := range node.Decls {
 		declaration, ok := i.(*ast.GenDecl)
@@ -283,33 +250,59 @@ func generateSchema(inputPath string) ([]byte, error) {
 			}
 
 			name := typeSpec.Name.Name
-			definitions.Add(name, newDefinition(name, typeSpec.Type, declaration.Doc.Text()))
+			preferredOrder = append(preferredOrder, name)
+			definitions[name] = newDefinition(name, typeSpec.Type, declaration.Doc.Text())
 		}
 	}
 
 	// Inline anyOfs
-	for _, v := range definitions.values {
+	for _, k := range preferredOrder {
+		def := definitions[k]
+		if len(def.AnyOf) == 0 {
+			continue
+		}
+
 		var options []*Definition
+		options = append(options, &Definition{
+			Properties:           def.Properties,
+			PreferredOrder:       def.PreferredOrder,
+			AdditionalProperties: false,
+		})
 
-		for _, anyOf := range v.AnyOf {
+		for _, anyOf := range def.AnyOf {
 			ref := strings.TrimPrefix(anyOf.Ref, defPrefix)
-			referenced := definitions.values[ref]
+			referenced := definitions[ref]
 
-			for _, key := range referenced.Properties.keys {
-				choice := &Definitions{}
-				choice.Add(key, referenced.Properties.values[key])
+			for _, key := range referenced.PreferredOrder {
+				var preferredOrder []string
+				choice := make(map[string]*Definition)
+
+				if len(def.Properties) > 0 {
+					for _, pkey := range def.PreferredOrder {
+						preferredOrder = append(preferredOrder, pkey)
+						choice[pkey] = def.Properties[pkey]
+					}
+				}
+
+				preferredOrder = append(preferredOrder, key)
+				choice[key] = referenced.Properties[key]
 
 				options = append(options, &Definition{
-					Properties: choice,
+					Properties:           choice,
+					PreferredOrder:       preferredOrder,
+					AdditionalProperties: false,
 				})
 			}
 		}
 
-		v.AnyOf = options
-		v.AdditionalProperties = false
+		def.Properties = nil
+		def.PreferredOrder = nil
+		def.AdditionalProperties = nil
+		def.AnyOf = options
 	}
 
 	schema := Schema{
+		Version: version7,
 		Definition: &Definition{
 			Type: "object",
 			AnyOf: []*Definition{{
