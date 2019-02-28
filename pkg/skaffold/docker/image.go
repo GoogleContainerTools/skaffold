@@ -110,7 +110,7 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 			return nil, err
 		}
 	} else {
-		cfg, err = retrieveRemoteConfig(image)
+		cfg, err = RetrieveRemoteConfig(image)
 		if err != nil {
 			return nil, errors.Wrap(err, "getting remote config")
 		}

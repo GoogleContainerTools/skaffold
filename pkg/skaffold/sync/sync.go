@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/bmatcuk/doublestar"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -34,6 +34,11 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+var (
+	// For testing
+	WorkingDir = retrieveWorkingDir
 )
 
 type Syncer interface {
@@ -52,12 +57,22 @@ func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact) (*Item
 		return nil, nil
 	}
 
-	toCopy, err := intersect(a.Workspace, a.Sync, append(e.Added, e.Modified...))
+	tag := latestTag(a.ImageName, builds)
+	if tag == "" {
+		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
+	}
+
+	wd, err := WorkingDir(tag)
+	if err != nil {
+		return nil, errors.Wrapf(err, "retrieving working dir for %s", tag)
+	}
+
+	toCopy, err := intersect(a.Workspace, a.Sync, append(e.Added, e.Modified...), wd)
 	if err != nil {
 		return nil, errors.Wrap(err, "intersecting sync map and added, modified files")
 	}
 
-	toDelete, err := intersect(a.Workspace, a.Sync, e.Deleted)
+	toDelete, err := intersect(a.Workspace, a.Sync, e.Deleted, wd)
 	if err != nil {
 		return nil, errors.Wrap(err, "intersecting sync map and deleted files")
 	}
@@ -67,16 +82,22 @@ func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact) (*Item
 		return nil, nil
 	}
 
-	tag := latestTag(a.ImageName, builds)
-	if tag == "" {
-		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
-	}
-
 	return &Item{
 		Image:  tag,
 		Copy:   toCopy,
 		Delete: toDelete,
 	}, nil
+}
+
+func retrieveWorkingDir(image string) (string, error) {
+	cf, err := docker.RetrieveRemoteConfig(image)
+	if err != nil {
+		return "", errors.Wrap(err, "retrieving remote config")
+	}
+	if cf.Config.WorkingDir == "" {
+		return "/", nil
+	}
+	return cf.Config.WorkingDir, nil
 }
 
 func latestTag(image string, builds []build.Artifact) string {
@@ -88,7 +109,7 @@ func latestTag(image string, builds []build.Artifact) string {
 	return ""
 }
 
-func intersect(context string, syncMap map[string]string, files []string) (map[string]string, error) {
+func intersect(context string, syncMap map[string]string, files []string, workingDir string) (map[string]string, error) {
 	ret := map[string]string{}
 
 	for _, f := range files {
@@ -103,18 +124,14 @@ func intersect(context string, syncMap map[string]string, files []string) (map[s
 				return nil, errors.Wrapf(err, "pattern error for %s", relPath)
 			}
 			if match {
-				staticPath := strings.Split(filepath.FromSlash(p), "*")[0]
+				if filepath.IsAbs(dst) {
+					dst = filepath.ToSlash(filepath.Join(dst, filepath.Base(relPath)))
+				} else {
+					dst = filepath.ToSlash(filepath.Join(workingDir, dst, filepath.Base(relPath)))
+				}
 				// Every file must match at least one sync pattern, if not we'll have to
 				// skip the entire sync
 				matches = true
-				// If the source has special match characters,
-				// the destination must be a directory
-				// The path package must be used here to enforce slashes,
-				// since the destination is always a linux filesystem.
-				if util.HasMeta(p) {
-					relPathDynamic := strings.TrimPrefix(relPath, staticPath)
-					dst = filepath.ToSlash(filepath.Join(dst, filepath.Base(relPathDynamic)))
-				}
 				ret[f] = dst
 			}
 		}
