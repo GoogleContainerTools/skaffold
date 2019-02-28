@@ -1,5 +1,3 @@
-// +build integration
-
 /*
 Copyright 2019 The Skaffold Authors
 
@@ -109,14 +107,14 @@ func TestEventLog(t *testing.T) {
 	}
 	metaEntries, buildEntries, deployEntries := 0, 0, 0
 	for _, entry := range logEntries {
-		if entry.Type == proto.EventType_metaEvent {
+		switch entry.Event.GetEventType().(type) {
+		case *proto.Event_MetaEvent:
 			metaEntries = metaEntries + 1
-		}
-		if entry.Type == proto.EventType_buildEvent {
+		case *proto.Event_BuildEvent:
 			buildEntries = buildEntries + 1
-		}
-		if entry.Type == proto.EventType_deployEvent {
+		case *proto.Event_DeployEvent:
 			deployEntries = deployEntries + 1
+		default:
 		}
 	}
 	// make sure we have exactly 1 meta entry, 2 deploy entries and 2 build entries

@@ -42,6 +42,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 )
 
@@ -118,6 +119,8 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 	if err != nil {
 		return nil, errors.Wrap(err, "initializing skaffold event handler")
 	}
+
+	event.LogSkaffoldMetadata(version.Get())
 
 	return &SkaffoldRunner{
 		Builder:           builder,

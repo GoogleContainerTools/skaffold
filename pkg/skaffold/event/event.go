@@ -48,20 +48,6 @@ var (
 
 type eventLog []proto.LogEntry
 
-type Event struct {
-	Artifact  string
-	EventType proto.EventType
-	Status    string
-	Err       error
-}
-
-const (
-	Build  = proto.EventType_buildEvent
-	Deploy = proto.EventType_deployEvent
-	Port   = proto.EventType_portEvent
-	Meta   = proto.EventType_metaEvent
-)
-
 type eventHandler struct {
 	eventLog
 
@@ -105,7 +91,7 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, opt
 			DeployState: &proto.DeployState{
 				Status: NotStarted,
 			},
-			ForwardedPorts: make(map[string]*proto.PortInfo),
+			ForwardedPorts: make(map[string]*proto.PortEvent),
 		}
 		ev = &eventHandler{
 			eventLog:  eventLog{},
@@ -134,58 +120,63 @@ func SetupRPCClient(opts *config.SkaffoldOptions) error {
 	return nil
 }
 
-func Handle(event proto.Event) {
+func Handle(event *proto.Event) {
 	if pluginMode {
-		go cli.Handle(context.Background(), &event)
+		go cli.Handle(context.Background(), event)
 	} else {
 		go handle(event)
 	}
 }
 
-func handle(event proto.Event) {
-	var entry string
-	if event.EventType == Build {
+func handle(event *proto.Event) {
+	logEntry := &proto.LogEntry{
+		Timestamp: ptypes.TimestampNow(),
+		Event:     event,
+	}
+
+	switch e := event.GetEventType().(type) {
+	case *proto.Event_BuildEvent:
+		be := e.BuildEvent
 		ev.stateLock.Lock()
-		ev.state.BuildState.Artifacts[event.Artifact] = event.Status
+		ev.state.BuildState.Artifacts[be.Artifact] = be.Status
 		ev.stateLock.Unlock()
-		switch event.Status {
+		switch be.Status {
 		case InProgress:
-			entry = fmt.Sprintf("Build started for artifact %s", event.Artifact)
+			logEntry.Entry = fmt.Sprintf("Build started for artifact %s", be.Artifact)
 		case Complete:
-			entry = fmt.Sprintf("Build completed for artifact %s", event.Artifact)
+			logEntry.Entry = fmt.Sprintf("Build completed for artifact %s", be.Artifact)
 		case Failed:
-			entry = fmt.Sprintf("Build failed for artifact %s", event.Artifact)
+			logEntry.Entry = fmt.Sprintf("Build failed for artifact %s", be.Artifact)
+			// logEntry.Err = be.Err
 		default:
 		}
-	}
-	if event.EventType == Deploy {
+	case *proto.Event_DeployEvent:
+		de := e.DeployEvent
 		ev.stateLock.Lock()
-		ev.state.DeployState.Status = event.Status
+		ev.state.DeployState.Status = de.Status
 		ev.stateLock.Unlock()
-		switch event.Status {
+		switch de.Status {
 		case InProgress:
-			entry = "Deploy started"
+			logEntry.Entry = "Deploy started"
 		case Complete:
-			entry = "Deploy complete"
+			logEntry.Entry = "Deploy complete"
 		case Failed:
-			entry = "Deploy failed"
+			logEntry.Entry = "Deploy failed"
+			// logEntry.Err = de.Err
 		default:
 		}
-	}
-	if event.EventType == Port {
+	case *proto.Event_PortEvent:
+		pe := e.PortEvent
 		ev.stateLock.Lock()
-		ev.state.ForwardedPorts[event.PortInfo.ContainerName] = event.PortInfo
+		ev.state.ForwardedPorts[pe.ContainerName] = pe
 		ev.stateLock.Unlock()
-		entry = fmt.Sprintf("Forwarding container %s to local port %d", event.PortInfo.ContainerName, event.PortInfo.LocalPort)
+		logEntry.Entry = fmt.Sprintf("Forwarding container %s to local port %d", pe.ContainerName, pe.LocalPort)
+	default:
+		return
 	}
 
 	ev.logLock.Lock()
-	ev.logEvent(proto.LogEntry{
-		Timestamp: ptypes.TimestampNow(),
-		Type:      event.EventType,
-		Entry:     entry,
-		Error:     event.Err,
-	})
+	ev.logEvent(*logEntry)
 	ev.logLock.Unlock()
 }
 
@@ -193,7 +184,6 @@ func LogSkaffoldMetadata(info *version.Info) {
 	ev.logLock.Lock()
 	ev.logEvent(proto.LogEntry{
 		Timestamp: ptypes.TimestampNow(),
-		Type:      proto.EventType_metaEvent,
 		Entry:     fmt.Sprintf("Starting Skaffold: %+v", info),
 	})
 	ev.logLock.Unlock()

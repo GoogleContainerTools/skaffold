@@ -95,14 +95,15 @@ func (*kubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntr
 		return errors.Wrapf(err, "port forwarding pod: %s/%s, port: %d to local port: %d, err: %s", pfe.namespace, pfe.podName, pfe.port, pfe.localPort, buf.String())
 	}
 
-	event.Handle(proto.Event{
-		EventType: proto.EventType_portEvent,
-		PortInfo: &proto.PortInfo{
-			PodName:       pfe.podName,
-			ContainerName: pfe.containerName,
-			Namespace:     pfe.namespace,
-			LocalPort:     pfe.localPort,
-			RemotePort:    pfe.port,
+	event.Handle(&proto.Event{
+		EventType: &proto.Event_PortEvent{
+			PortEvent: &proto.PortEvent{
+				LocalPort:     pfe.localPort,
+				RemotePort:    pfe.port,
+				PodName:       pfe.podName,
+				ContainerName: pfe.containerName,
+				Namespace:     pfe.namespace,
+			},
 		},
 	})
 

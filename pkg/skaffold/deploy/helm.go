@@ -71,28 +71,37 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 	var dRes []Artifact
 
 	labels := merge(labellers...)
-	event.Handle(proto.Event{
-		EventType: event.Deploy,
-		Status:    event.InProgress,
+	event.Handle(&proto.Event{
+		EventType: &proto.Event_DeployEvent{
+			DeployEvent: &proto.DeployEvent{
+				Status: event.InProgress,
+			},
+		},
 	})
 
 	for _, r := range h.Releases {
 		results, err := h.deployRelease(ctx, out, r, builds)
 		if err != nil {
 			releaseName, _ := evaluateReleaseName(r.Name)
-			event.Handle(proto.Event{
-				EventType: event.Deploy,
-				Status:    event.Failed,
-				Err:       err.Error(),
+			event.Handle(&proto.Event{
+				EventType: &proto.Event_DeployEvent{
+					DeployEvent: &proto.DeployEvent{
+						Status: event.Failed,
+						Err:    err.Error(),
+					},
+				},
 			})
 			return errors.Wrapf(err, "deploying %s", releaseName)
 		}
 
 		dRes = append(dRes, results...)
 	}
-	event.Handle(proto.Event{
-		EventType: event.Deploy,
-		Status:    event.Complete,
+	event.Handle(&proto.Event{
+		EventType: &proto.Event_DeployEvent{
+			DeployEvent: &proto.DeployEvent{
+				Status: event.Complete,
+			},
+		},
 	})
 	labelDeployResults(labels, dRes)
 	return nil

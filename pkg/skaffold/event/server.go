@@ -56,7 +56,7 @@ func (s *server) EventLog(stream proto.SkaffoldService_EventLogServer) error {
 
 func (s *server) Handle(ctx context.Context, event *proto.Event) (*empty.Empty, error) {
 	if event != nil {
-		handle(*event)
+		handle(event)
 	}
 	return &empty.Empty{}, nil
 }
