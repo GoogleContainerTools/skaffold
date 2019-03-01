@@ -456,7 +456,7 @@ func TestPerform(t *testing.T) {
 	}
 }
 
-func TeststripTagIfDigestPresent(t *testing.T) {
+func TestStripTagIfDigestPresent(t *testing.T) {
 	tests := []struct {
 		name     string
 		image    string
