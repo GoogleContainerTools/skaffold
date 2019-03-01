@@ -39,6 +39,10 @@ const (
 	defPrefix = "#/definitions/"
 )
 
+type schemaGenerator struct {
+	strict bool
+}
+
 type Schema struct {
 	*Definition
 	Version     string                 `json:"$schema,omitempty"`
@@ -71,20 +75,27 @@ func generateSchemas(root string, dryRun bool) (bool, error) {
 
 	for i, version := range schema.SchemaVersions {
 		apiVersion := strings.TrimPrefix(version.APIVersion, "skaffold/")
+
 		folder := apiVersion
+		strict := false
 		if i == len(schema.SchemaVersions)-1 {
 			folder = "latest"
+			strict = true
 		}
 
 		input := fmt.Sprintf("%s/pkg/skaffold/schema/%s/config.go", root, folder)
-		buf, err := generateSchema(input)
+		output := fmt.Sprintf("%s/docs/content/en/schemas/%s.json", root, apiVersion)
+
+		generator := schemaGenerator{
+			strict: strict,
+		}
+
+		buf, err := generator.Apply(input)
 		if err != nil {
 			return false, errors.Wrapf(err, "unable to generate schema for version %s", version.APIVersion)
 		}
 
-		output := fmt.Sprintf("%s/docs/content/en/schemas/%s.json", root, apiVersion)
 		var current []byte
-
 		if _, err := os.Stat(output); err == nil {
 			var err error
 			current, err = ioutil.ReadFile(output)
@@ -128,7 +139,7 @@ func setTypeOrRef(def *Definition, typeName string) {
 	}
 }
 
-func newDefinition(name string, t ast.Expr, comment string) *Definition {
+func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string) *Definition {
 	def := &Definition{}
 
 	switch tt := t.(type) {
@@ -155,7 +166,7 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 
 	case *ast.ArrayType:
 		def.Type = "array"
-		def.Items = newDefinition("", tt.Elt, "")
+		def.Items = g.newDefinition("", tt.Elt, "")
 		if def.Items.Ref == "" {
 			def.Default = "[]"
 		}
@@ -163,7 +174,7 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 	case *ast.MapType:
 		def.Type = "object"
 		def.Default = "{}"
-		def.AdditionalProperties = newDefinition("", tt.Value, "")
+		def.AdditionalProperties = g.newDefinition("", tt.Value, "")
 
 	case *ast.StructType:
 		for _, field := range tt.Fields.List {
@@ -176,7 +187,7 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 				continue
 			}
 
-			if yamlName == "" {
+			if yamlName == "" || yamlName == "-" {
 				continue
 			}
 
@@ -189,7 +200,7 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 			}
 
 			def.PreferredOrder = append(def.PreferredOrder, yamlName)
-			def.Properties[yamlName] = newDefinition(field.Names[0].Name, field.Type, field.Doc.Text())
+			def.Properties[yamlName] = g.newDefinition(field.Names[0].Name, field.Type, field.Doc.Text())
 			def.AdditionalProperties = false
 		}
 	}
@@ -217,6 +228,9 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 	description = strings.TrimPrefix(description, name+" ")
 
 	def.Description = description
+	if g.strict && name != "" && description == "" {
+		panic(fmt.Sprintf("no description on field %s", name))
+	}
 
 	// Convert to HTML
 	html := string(blackfriday.Run([]byte(description), blackfriday.WithNoExtensions()))
@@ -227,7 +241,7 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 	return def
 }
 
-func generateSchema(inputPath string) ([]byte, error) {
+func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 	fset := token.NewFileSet()
 	node, err := parser.ParseFile(fset, inputPath, nil, parser.ParseComments)
 	if err != nil {
@@ -251,7 +265,7 @@ func generateSchema(inputPath string) ([]byte, error) {
 
 			name := typeSpec.Name.Name
 			preferredOrder = append(preferredOrder, name)
-			definitions[name] = newDefinition(name, typeSpec.Type, declaration.Doc.Text())
+			definitions[name] = g.newDefinition(name, typeSpec.Type, declaration.Doc.Text())
 		}
 	}
 

@@ -28,6 +28,7 @@ func NewSkaffoldPipeline() util.VersionedConfig {
 	return new(SkaffoldPipeline)
 }
 
+// SkaffoldPipeline describes a Skaffold pipeline.
 type SkaffoldPipeline struct {
 	// APIVersion is the version of the configuration.
 	APIVersion string `yaml:"apiVersion"`
@@ -69,6 +70,7 @@ type BuildConfig struct {
 	BuildType `yaml:",inline"`
 }
 
+// ExecEnvironment is the name of an execution environment.
 type ExecEnvironment string
 
 // ExecutionEnvironment is the environment in which the build should run (ex. local or in-cluster, etc.).
@@ -351,8 +353,13 @@ type HelmDeploy struct {
 // line to helm either on every command (Global), on install (Install)
 // or on update (Update).
 type HelmDeployFlags struct {
-	Global  []string `yaml:"global,omitempty"`
+	// Global are additional flags passed on every command.
+	Global []string `yaml:"global,omitempty"`
+
+	// Install are additional flags passed to (`helm install`).
 	Install []string `yaml:"install,omitempty"`
+
+	// Upgrade are additional flags passed to (`helm upgrade`).
 	Upgrade []string `yaml:"upgrade,omitempty"`
 }
 
@@ -366,6 +373,7 @@ type KustomizeDeploy struct {
 	Flags KubectlFlags `yaml:"flags,omitempty"`
 }
 
+// HelmRelease describes a helm release to be deployed.
 type HelmRelease struct {
 	// Name is the name of the Helm release.
 	Name string `yaml:"name,omitempty" yamltags:"required"`
@@ -432,6 +440,7 @@ type HelmImageStrategy struct {
 	HelmImageConfig `yaml:",inline"`
 }
 
+// HelmImageConfig describes an image configuration.
 type HelmImageConfig struct {
 	// HelmFQNConfig is the image configuration uses the syntax `IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG`.
 	HelmFQNConfig *HelmFQNConfig `yaml:"fqn,omitempty"`
@@ -467,7 +476,9 @@ type Artifact struct {
 	// For example: `{"*.py": ".", "css/**/*.css": "app/css"}`.
 	Sync map[string]string `yaml:"sync,omitempty"`
 
-	ArtifactType  `yaml:",inline"`
+	// ArtifactType describes how to build an artifact.
+	ArtifactType `yaml:",inline"`
+
 	WorkspaceHash string `yaml:"-,omitempty"`
 
 	// BuilderPlugin is the plugin used to build this artifact.
@@ -531,6 +542,7 @@ type Activation struct {
 	Command string `yaml:"command,omitempty"`
 }
 
+// ArtifactType describes how to build an artifact.
 type ArtifactType struct {
 	// DockerArtifact (beta) describes an artifact built from a Dockerfile.
 	DockerArtifact *DockerArtifact `yaml:"docker,omitempty" yamltags:"oneOf=artifact"`
