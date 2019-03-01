@@ -39,6 +39,12 @@ const (
 	defPrefix = "#/definitions/"
 )
 
+var (
+	regexpDefaults = regexp.MustCompile("(.*)Defaults to `(.*)`")
+	regexpExample  = regexp.MustCompile("(.*)For example: `(.*)`")
+	pTags          = regexp.MustCompile("(<p>)|(</p>)")
+)
+
 type schemaGenerator struct {
 	strict bool
 }
@@ -208,35 +214,30 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string)
 	description := strings.TrimSpace(strings.Replace(comment, "\n", " ", -1))
 
 	// Extract default value
-	if m := regexp.MustCompile("(.*)Defaults to `(.*)`").FindStringSubmatch(description); m != nil {
+	if m := regexpDefaults.FindStringSubmatch(description); m != nil {
 		description = strings.TrimSpace(m[1])
 		def.Default = m[2]
 	}
 
 	// Extract example
-	if m := regexp.MustCompile("(.*)For example: `(.*)`").FindStringSubmatch(description); m != nil {
+	if m := regexpExample.FindStringSubmatch(description); m != nil {
 		description = strings.TrimSpace(m[1])
 		def.Examples = []string{m[2]}
 	}
 
 	// Remove type prefix
-	description = strings.TrimPrefix(description, name+" is the ")
-	description = strings.TrimPrefix(description, name+" is ")
-	description = strings.TrimPrefix(description, name+" are the ")
-	description = strings.TrimPrefix(description, name+" are ")
-	description = strings.TrimPrefix(description, name+" lists ")
-	description = strings.TrimPrefix(description, name+" ")
+	if m := regexp.MustCompile("^" + name + " ((is (the )?)|(are (the )?)|(lists ))?(.*)").FindStringSubmatch(description); m != nil {
+		description = m[7]
+	}
 
-	def.Description = description
 	if g.strict && name != "" && description == "" {
 		panic(fmt.Sprintf("no description on field %s", name))
 	}
+	def.Description = description
 
 	// Convert to HTML
 	html := string(blackfriday.Run([]byte(description), blackfriday.WithNoExtensions()))
-	html = strings.Replace(html, "<p>", "", -1)
-	html = strings.Replace(html, "</p>", "", -1)
-	def.HTMLDescription = html
+	def.HTMLDescription = pTags.ReplaceAllString(html, "")
 
 	return def
 }
