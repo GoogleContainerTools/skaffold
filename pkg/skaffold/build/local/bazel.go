@@ -43,7 +43,7 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace strin
 		return "", errors.Wrap(err, "running command")
 	}
 
-	bazelBin, err := bazel.BazelBin(ctx, workspace, a)
+	bazelBin, err := bazel.RunBazelBin(ctx, workspace, a)
 	if err != nil {
 		return "", errors.Wrap(err, "getting path of bazel-bin")
 	}

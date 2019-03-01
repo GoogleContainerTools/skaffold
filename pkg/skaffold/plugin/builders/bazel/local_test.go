@@ -25,14 +25,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestBazelBin(t *testing.T) {
+func TestRunBazelBin(t *testing.T) {
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
 		"bazel info bazel-bin --arg1 --arg2",
 		"/absolute/path/bin\n",
 	)
 
-	bazelBin, err := BazelBin(context.Background(), ".", &latest.BazelArtifact{
+	bazelBin, err := RunBazelBin(context.Background(), ".", &latest.BazelArtifact{
 		BuildArgs: []string{"--arg1", "--arg2"},
 	})
 

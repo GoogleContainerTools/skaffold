@@ -83,7 +83,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 		return "", errors.Wrap(err, "running command")
 	}
 
-	bazelBin, err := BazelBin(ctx, workspace, a)
+	bazelBin, err := RunBazelBin(ctx, workspace, a)
 	if err != nil {
 		return "", errors.Wrap(err, "getting path of bazel-bin")
 	}
@@ -97,6 +97,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 	return b.loadImage(ctx, out, tarPath, a, tag)
 }
 
+// PushImage pushes the tarball image created by bazel
 func PushImage(tarPath, tag string) (string, error) {
 	t, err := name.NewTag(tag, name.WeakValidation)
 	if err != nil {
@@ -140,7 +141,8 @@ func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, 
 	return imageID, nil
 }
 
-func BazelBin(ctx context.Context, workspace string, a *latest.BazelArtifact) (string, error) {
+// RunBazelBin runs the bazel-bin command
+func RunBazelBin(ctx context.Context, workspace string, a *latest.BazelArtifact) (string, error) {
 	args := []string{"info", "bazel-bin"}
 	args = append(args, a.BuildArgs...)
 
@@ -155,6 +157,7 @@ func BazelBin(ctx context.Context, workspace string, a *latest.BazelArtifact) (s
 	return strings.TrimSpace(string(buf)), nil
 }
 
+// TrimTarget trims the build target
 func TrimTarget(buildTarget string) string {
 	//TODO(r2d4): strip off leading //:, bad
 	trimmedTarget := strings.TrimPrefix(buildTarget, "//")
@@ -164,6 +167,7 @@ func TrimTarget(buildTarget string) string {
 	return trimmedTarget
 }
 
+// BuildTarPath builds the tar path for the image
 func BuildTarPath(buildTarget string) string {
 	tarPath := TrimTarget(buildTarget)
 	tarPath = strings.Replace(tarPath, ":", string(os.PathSeparator), 1)
@@ -171,6 +175,7 @@ func BuildTarPath(buildTarget string) string {
 	return tarPath
 }
 
+// BuildImageTag builds the image tag
 func BuildImageTag(buildTarget string) string {
 	imageTag := TrimTarget(buildTarget)
 	imageTag = strings.TrimPrefix(imageTag, ":")

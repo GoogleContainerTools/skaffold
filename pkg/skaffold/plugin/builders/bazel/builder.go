@@ -63,6 +63,7 @@ func NewBuilder() (*Builder, error) {
 		localCluster: localCluster,
 		kubeContext:  kubeContext,
 		localDocker:  localDocker,
+		pushImages:   true,
 	}, nil
 }
 
