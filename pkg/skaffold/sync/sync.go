@@ -114,12 +114,12 @@ func stripTagIfDigestPresent(image, tagged string) string {
 	// try to parse the reference, return image if it works
 	_, err := name.ParseReference(tagged, name.WeakValidation)
 	if err == nil {
-		return image
+		return tagged
 	}
 	// strip out the tag
 	digestIndex := strings.Index(tagged, "sha256:")
 	if digestIndex == -1 {
-		return image
+		return tagged
 	}
 	digest := tagged[digestIndex : digestIndex+lenDigest]
 	return fmt.Sprintf("%s@%s", image, digest)
