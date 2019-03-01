@@ -1047,8 +1047,8 @@
             "type": "string"
           },
           "type": "object",
-          "description": "key-value pairs supplementing the Helm `values` file\".",
-          "x-intellij-html-description": "key-value pairs supplementing the Helm <code>values</code> file&quot;.",
+          "description": "key-value pairs supplementing the Helm `values` file.",
+          "x-intellij-html-description": "key-value pairs supplementing the Helm <code>values</code> file.",
           "default": "{}"
         },
         "valuesFiles": {
@@ -1056,8 +1056,8 @@
             "type": "string"
           },
           "type": "array",
-          "description": "paths to the Helm `values` files\".",
-          "x-intellij-html-description": "paths to the Helm <code>values</code> files&quot;.",
+          "description": "paths to the Helm `values` files.",
+          "x-intellij-html-description": "paths to the Helm <code>values</code> files.",
           "default": "[]"
         },
         "version": {
@@ -1266,8 +1266,8 @@
       "properties": {
         "gcsBucket": {
           "type": "string",
-          "description": "CGS bucket to which sources are uploaded by Skaffold. Kaniko will need access to that bucket to download the sources.",
-          "x-intellij-html-description": "CGS bucket to which sources are uploaded by Skaffold. Kaniko will need access to that bucket to download the sources."
+          "description": "CGS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources.",
+          "x-intellij-html-description": "CGS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources."
         },
         "localDir": {
           "$ref": "#/definitions/LocalDir",
@@ -1463,8 +1463,8 @@
             "$ref": "#/definitions/JSONPatch"
           },
           "type": "array",
-          "description": "a list of patches applied to the configuration. Patches use the JSON patch notation.",
-          "x-intellij-html-description": "a list of patches applied to the configuration. Patches use the JSON patch notation."
+          "description": "patches applied to the configuration. Patches use the JSON patch notation.",
+          "x-intellij-html-description": "patches applied to the configuration. Patches use the JSON patch notation."
         },
         "test": {
           "items": {

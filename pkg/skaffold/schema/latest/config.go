@@ -216,7 +216,7 @@ type LocalDir struct{}
 // KanikoBuildContext contains the different fields available to specify
 // a Kaniko build context.
 type KanikoBuildContext struct {
-	// GCSBucket is the CGS bucket to which sources are uploaded by Skaffold.
+	// GCSBucket is the CGS bucket to which sources are uploaded.
 	// Kaniko will need access to that bucket to download the sources.
 	GCSBucket string `yaml:"gcsBucket,omitempty" yamltags:"oneOf=buildContext"`
 
@@ -381,10 +381,10 @@ type HelmRelease struct {
 	// ChartPath is the path to the Helm chart.
 	ChartPath string `yaml:"chartPath,omitempty" yamltags:"required"`
 
-	// ValuesFiles are the paths to the Helm `values` files".
+	// ValuesFiles are the paths to the Helm `values` files.
 	ValuesFiles []string `yaml:"valuesFiles,omitempty"`
 
-	// Values are key-value pairs supplementing the Helm `values` file".
+	// Values are key-value pairs supplementing the Helm `values` file.
 	Values map[string]string `yaml:"values,omitempty,omitempty"`
 
 	// Namespace is the Kubernetes namespace.
@@ -500,7 +500,7 @@ type Profile struct {
 	// Deploy replaces the main `deploy` configuration.
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
 
-	// Patches is a list of patches applied to the configuration.
+	// Patches lists patches applied to the configuration.
 	// Patches use the JSON patch notation.
 	Patches []JSONPatch `yaml:"patches,omitempty"`
 
