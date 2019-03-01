@@ -66,8 +66,31 @@ func (b *Builder) buildArtifacts(ctx context.Context, out io.Writer, tags tag.Im
 	return build.InSequence(ctx, out, tags, artifacts, b.buildArtifact)
 }
 
-// buildArtifact builds the bazel artifact
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+	digestOrImageID, err := b.runBuild(ctx, out, artifact, tag)
+	if err != nil {
+		return "", errors.Wrap(err, "build artifact")
+	}
+	if b.pushImages {
+		digest := digestOrImageID
+		return tag + "@" + digest, nil
+	}
+
+	// k8s doesn't recognize the imageID or any combination of the image name
+	// suffixed with the imageID, as a valid image name.
+	// So, the solution we chose is to create a tag, just for Skaffold, from
+	// the imageID, and use that in the manifests.
+	imageID := digestOrImageID
+	uniqueTag := artifact.ImageName + ":" + strings.TrimPrefix(imageID, "sha256:")
+	if err := b.localDocker.Tag(ctx, imageID, uniqueTag); err != nil {
+		return "", err
+	}
+
+	return uniqueTag, nil
+}
+
+// buildArtifact builds the bazel artifact
+func (b *Builder) runBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	args := []string{"build"}
 	a := artifact.ArtifactType.BazelArtifact
 	workspace := artifact.Workspace
