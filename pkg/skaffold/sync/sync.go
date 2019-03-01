@@ -37,7 +37,7 @@ import (
 )
 
 var (
-	// For testing
+	// WorkingDir is here for testing
 	WorkingDir = retrieveWorkingDir
 )
 
