@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGetDependencies(t *testing.T) {
+func TestRefreshDependencyList(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
@@ -47,54 +47,50 @@ func TestGetDependencies(t *testing.T) {
 		expectedDeps []string
 	}{
 		{
-			stdout:       "",
-			expectedDeps: nil,
+			stdout:       "BEGIN JIB JSON\n{\"build\":[],\"inputs\":[],\"ignore\":[]}",
+			expectedDeps: []string{},
 		},
 		{
-			stdout:       fmt.Sprintf("%s\n%s", dep1, dep2),
+			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\"],\"ignore\":[]}\n", dep1, dep2),
 			expectedDeps: []string{dep1, dep2},
 		},
 		{
-			stdout:       fmt.Sprintf("%s\n%s\n", dep1, dep2),
-			expectedDeps: []string{dep1, dep2},
-		},
-		{
-			stdout:       fmt.Sprintf("%s\n%s\n%s\n", dep1, dep2, tmpDir.Root()),
-			expectedDeps: []string{dep1, dep2},
-		},
-		{
-			stdout:       "\n\n\n",
-			expectedDeps: nil,
-		},
-		{
-			stdout:       fmt.Sprintf("\n\n%s\n\n%s\n\n\n", dep1, dep2),
-			expectedDeps: []string{dep1, dep2},
-		},
-		{
-			stdout:       dep3,
+			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\"],\"ignore\":[]}\n", dep3),
 			expectedDeps: []string{dep3, dep3FileA, dep3Sub, dep3SubPath, dep3SubPathFileB},
 		},
 		{
-			stdout:       fmt.Sprintf("%s\n%s\n%s\n", dep1, dep2, dep3),
+			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\",\"%s\"],\"ignore\":[]}\n", dep1, dep2, dep3),
 			expectedDeps: []string{dep1, dep2, dep3, dep3FileA, dep3Sub, dep3SubPath, dep3SubPathFileB},
 		},
 		{
-			stdout:       fmt.Sprintf("%s\nnonexistent\n%s\n%s\n", dep1, dep2, dep3),
+			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\",\"nonexistent\",\"%s\"],\"ignore\":[]}\n", dep1, dep2, dep3),
 			expectedDeps: []string{dep1, dep2, dep3, dep3FileA, dep3Sub, dep3SubPath, dep3SubPathFileB},
+		},
+		{
+			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\"],\"ignore\":[\"%s\"]}\n", dep1, dep2, dep2),
+			expectedDeps: []string{dep1},
+		},
+		{
+			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\"],\"ignore\":[\"%s\",\"%s\"]}\n", dep1, dep3, dep1, dep3),
+			expectedDeps: []string{},
+		},
+		{
+			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\",\"%s\"],\"ignore\":[\"%s\"]}\n", dep1, dep2, dep3, dep3SubPath),
+			expectedDeps: []string{dep1, dep2, dep3, dep3FileA, dep3Sub},
 		},
 	}
 
 	for _, test := range tests {
-		t.Run("getDependencies", func(t *testing.T) {
+		t.Run("refreshDependencyList", func(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
 				"ignored",
 				test.stdout,
 			)
 
-			deps, err := getDependencies(&exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()})
+			err := refreshDependencyList(&exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()})
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedDeps, deps)
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedDeps, watchedInputFiles)
 		})
 	}
 }

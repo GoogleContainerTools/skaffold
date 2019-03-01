@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/karrick/godirwalk"
@@ -110,9 +111,10 @@ func walkFiles(filesList *[]string, filesOutputList *[]string, filesOutputIgnore
 		if err = godirwalk.Walk(dep, &godirwalk.Options{
 			Unsorted: true,
 			Callback: func(path string, _ *godirwalk.Dirent) error {
-				if !util.StrSliceContains(*filesOutputIgnore, path) {
-					*filesList = append(*filesList, path)
+				if util.StrSliceContains(*filesOutputIgnore, path) {
+					return filepath.SkipDir
 				}
+				*filesList = append(*filesList, path)
 				return nil
 			},
 		}); err != nil {
