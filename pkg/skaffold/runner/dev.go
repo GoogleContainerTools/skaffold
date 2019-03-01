@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -99,9 +100,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifac
 
 		// Watch build files
 		if err := r.Watcher.Register(
-			func() ([]string, error) { return BuildFilesForArtifact(ctx, artifact) },
+			func() ([]string, error) { return local.BuildFilesForArtifact(ctx, artifact) },
 			func(e watch.Events) {
-				RefreshDependenciesForArtifact(ctx, artifact)
+				local.RefreshDependenciesForArtifact(ctx, artifact)
 				changed.AddDirtyArtifact(artifact, e)
 			},
 		); err != nil {
