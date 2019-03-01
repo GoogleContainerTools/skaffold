@@ -49,12 +49,21 @@ td.default {
         </tr>
     </thead>
     <tbody>
-        {{range $k, $v :=  $definition.properties}}
-        <tr>
-            <td><code>{{$k}}</code></td>
-            <td class="desc">{{if .required}}<strong>Required</strong> {{end}}{{.description | markdownify}}</td>
-            {{ if $showDefaults }}<td class="default"><code>{{ .default }}</code></td>{{ end }}
-        </tr>
+        {{range $k := $definition.preferredOrder}}
+            {{ $v := index $definition.properties $k}}
+
+            {{ $isRequired := false }}
+            {{ range $requiredKey := $definition.required }}
+                {{ if eq $requiredKey $k }}
+                    {{ $isRequired = true }}
+                {{ end }}
+            {{ end }}
+
+            <tr>
+                <td><code>{{$k}}</code></td>
+                <td class="desc">{{if $isRequired}}<strong>Required</strong> {{end}}{{$v.description | markdownify}}</td>
+                {{ if $showDefaults }}<td class="default"><code>{{ $v.default }}</code></td>{{ end }}
+            </tr>
         {{end}}
     </tbody>
 </table>

@@ -142,12 +142,16 @@ func AddRunDeployFlags(cmd *cobra.Command) {
 }
 
 func AddRunDevFlags(cmd *cobra.Command) {
+	cmd.Flags().BoolVar(&opts.EnableRPC, "--enable-rpc", false, "Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)")
+	cmd.Flags().StringVar(&opts.RPCPort, "rpc-port", ":50051", "tcp port to expose event API")
 	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
 	cmd.Flags().StringArrayVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
 	cmd.Flags().StringVarP(&opts.Namespace, "namespace", "n", "", "Run deployments in the specified namespace")
 	cmd.Flags().StringVarP(&opts.DefaultRepo, "default-repo", "d", "", "Default repository value (overrides global config)")
 	cmd.Flags().BoolVar(&opts.SkipTests, "skip-tests", false, "Whether to skip the tests after building")
+	cmd.Flags().BoolVar(&opts.CacheArtifacts, "cache-artifacts", false, "Set to true to enable caching of artifacts.")
+	cmd.Flags().StringVarP(&opts.CacheFile, "cache-file", "", "", "Specify the location of the cache file (default $HOME/.skaffold/cache)")
 }
 
 func SetUpLogs(out io.Writer, level string) error {

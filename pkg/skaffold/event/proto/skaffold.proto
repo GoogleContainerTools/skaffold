@@ -1,0 +1,78 @@
+syntax = "proto3";
+package proto;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+message StateResponse {
+  State state = 1;
+}
+
+message Response {
+  string msg = 1;
+}
+
+message Request {
+  string name = 1;
+}
+
+message State {
+  BuildState buildState = 1;
+  DeployState deployState = 2;
+  map<string, PortEvent> forwardedPorts = 3;
+}
+
+// BuildState contains a map of all skaffold artifacts to their current build
+// states
+message BuildState {
+  map<string, string> artifacts = 1;
+}
+
+// DeployState contains the status of the current deploy
+message DeployState {
+  string status = 1;
+}
+
+message Event {
+  oneof event_type {
+    MetaEvent metaEvent = 1;
+    BuildEvent buildEvent = 2;
+    DeployEvent deployEvent = 3;
+    PortEvent portEvent = 4;
+  }
+}
+
+message MetaEvent {
+  string entry = 1;
+}
+
+message BuildEvent {
+  string artifact = 1;
+  string status = 2;
+  string err = 3;
+}
+
+message DeployEvent {
+  string status = 1;
+  string err = 2;
+}
+
+message PortEvent {
+  int32 localPort = 1;
+  int32 remotePort = 2;
+  string podName = 3;
+  string containerName = 4;
+  string namespace = 5;
+}
+
+message LogEntry {
+  google.protobuf.Timestamp timestamp = 1;
+  Event event = 2;
+  string entry = 3;
+}
+
+service SkaffoldService {
+  rpc GetState(google.protobuf.Empty) returns (State);
+  rpc EventLog(stream LogEntry) returns (stream LogEntry);
+  rpc Handle(Event) returns (google.protobuf.Empty);
+}

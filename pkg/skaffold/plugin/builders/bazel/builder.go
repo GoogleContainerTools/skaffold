@@ -26,10 +26,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -66,6 +68,10 @@ func NewBuilder() (*Builder, error) {
 
 // Init stores skaffold options and the execution environment
 func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
+	if err := event.SetupRPCClient(opts); err != nil {
+		logrus.Warn("error establishing gRPC connection to skaffold process; events will not be handled correctly")
+		logrus.Warn(err.Error())
+	}
 	b.opts = opts
 	b.env = env
 }

@@ -23,7 +23,9 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -136,7 +138,9 @@ func TestLocalRun(t *testing.T) {
 					},
 				}},
 			},
-			api:  testutil.FakeAPIClient{},
+			api: testutil.FakeAPIClient{
+				TagToImageID: map[string]string{"pull1": "imageid", "pull2": "anotherimageid"},
+			},
 			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
@@ -155,6 +159,7 @@ func TestLocalRun(t *testing.T) {
 			},
 			api: testutil.FakeAPIClient{
 				ErrImagePull: true,
+				TagToImageID: map[string]string{"pull1": ""},
 			},
 			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			expected: []build.Artifact{{
@@ -185,7 +190,12 @@ func TestLocalRun(t *testing.T) {
 			defer func(w warnings.Warner) { warnings.Printf = w }(warnings.Printf)
 			fakeWarner := &warnings.Collect{}
 			warnings.Printf = fakeWarner.Warnf
-
+			cfg := &latest.BuildConfig{
+				BuildType: latest.BuildType{
+					LocalBuild: &latest.LocalBuild{},
+				},
+			}
+			event.InitializeState(cfg, nil, &config.SkaffoldOptions{})
 			l := Builder{
 				cfg:         &latest.LocalBuild{},
 				localDocker: docker.NewLocalDaemon(&test.api, nil),

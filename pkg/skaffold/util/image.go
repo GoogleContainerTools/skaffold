@@ -25,7 +25,7 @@ const maxLength = 255
 
 const gcr = "gcr.io"
 const escapeChars = "[/._:@]"
-const prefixRegexStr = "gcr.io/[a-zA-Z]+/"
+const prefixRegexStr = "gcr.io/[a-zA-Z0-9-_]+/"
 
 var escapeRegex = regexp.MustCompile(escapeChars)
 var prefixRegex = regexp.MustCompile(prefixRegexStr)
