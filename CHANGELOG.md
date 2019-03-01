@@ -1,3 +1,52 @@
+# v0.24.0 Release - 3/1/2019
+
+New Features:
+* Add gRPC based event API [#1574](https://github.com/GoogleContainerTools/skaffold/pull/1574)
+* Add artifact cache to track artifacts for faster restart  [#1632](https://github.com/GoogleContainerTools/skaffold/pull/1632)
+* Helm flags for Global, Install and Upgrade helm commands [#1673](https://github.com/GoogleContainerTools/skaffold/pull/1673)
+* v1beta6 [#1674](https://github.com/GoogleContainerTools/skaffold/pull/1674)
+* Diagnose skaffold.yaml [#1686](https://github.com/GoogleContainerTools/skaffold/pull/1686)
+* Added local execution environment to docker builder plugin [#1656](https://github.com/GoogleContainerTools/skaffold/pull/1656)
+* Added bazel in local execution environment [#1662](https://github.com/GoogleContainerTools/skaffold/pull/1662)
+
+Fixes:
+* Fix bug in sync [#1709](https://github.com/GoogleContainerTools/skaffold/pull/1709)
+* Fix schemas [#1701](https://github.com/GoogleContainerTools/skaffold/pull/1701)
+* Fix default-repo handling for images with non-alphabetic characters [#1697](https://github.com/GoogleContainerTools/skaffold/pull/1697)
+* Fix gke connection for Integration tests [#1699](https://github.com/GoogleContainerTools/skaffold/pull/1699)
+* Handle pointers in profile overlay [#1693](https://github.com/GoogleContainerTools/skaffold/pull/1693)
+
+Updates & refactorings:
+* Build before [#1694](https://github.com/GoogleContainerTools/skaffold/pull/1694)
+* completion: add wrapper code to transform bash to zsh completion [#1685](https://github.com/GoogleContainerTools/skaffold/pull/1685)
+* Add a test for changing tests with a profile [#1687](https://github.com/GoogleContainerTools/skaffold/pull/1687)
+* Add example of a Jib-Maven multi-module project [#1676](https://github.com/GoogleContainerTools/skaffold/pull/1676)
+* Restructure integration tests [#1678](https://github.com/GoogleContainerTools/skaffold/pull/1678)
+* added logging to skaffold dev integration tests [#1684](https://github.com/GoogleContainerTools/skaffold/pull/1684)
+* added default-repo to getting started [#1672](https://github.com/GoogleContainerTools/skaffold/pull/1672)
+* Make the hot-reload example more exemplary [#1680](https://github.com/GoogleContainerTools/skaffold/pull/1680)
+
+
+Docs updates:
+* Generate skaffold references [#1675](https://github.com/GoogleContainerTools/skaffold/pull/1675)
+* Update HUGO [#1679](https://github.com/GoogleContainerTools/skaffold/pull/1679)
+* first cut at jib doc [#1661](https://github.com/GoogleContainerTools/skaffold/pull/1661)
+* Generate annotated-skaffold.yaml [#1659](https://github.com/GoogleContainerTools/skaffold/pull/1659)
+* Improve documentation [#1713](https://github.com/GoogleContainerTools/skaffold/pull/1713)
+* Improve docs [#1682](https://github.com/GoogleContainerTools/skaffold/pull/1682)
+
+Huge thanks goes out to all of our contributors for this release: 
+
+- Balint Pato
+- Brian de Alwis
+- Cornelius Weig
+- David Gageot
+- Jonas Eckerström
+- Nick Kubala
+- Priya Wadhwa
+- Tjerk Wolterink
+
+
 # v0.23.0 Release - 2/14/2019
 
 *Note*: This release comes with a config change, use `skaffold fix` to permanently upgrade your config to `v1beta5`, however old versions are now auto-upgraded. 
