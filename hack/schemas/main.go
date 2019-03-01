@@ -246,7 +246,7 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string)
 
 	// Convert to HTML
 	html := string(blackfriday.Run([]byte(description), blackfriday.WithNoExtensions()))
-	def.HTMLDescription = html
+	def.HTMLDescription = strings.TrimSpace(pTags.ReplaceAllString(html, ""))
 
 	return def
 }
