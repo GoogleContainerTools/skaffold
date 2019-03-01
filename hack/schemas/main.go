@@ -232,9 +232,7 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string)
 	}
 
 	// Remove type prefix
-	if m := regexp.MustCompile("^" + name + " ((is (the )?)|(are (the )?)|(lists ))?(.*)").FindStringSubmatch(description); m != nil {
-		description = m[7]
-	}
+	description = regexp.MustCompile("^"+name+" (\\*.*\\* )?((is (the )?)|(are (the )?)|(lists ))?").ReplaceAllString(description, "$1")
 
 	if g.strict && name != "" {
 		if description == "" {
@@ -248,7 +246,7 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string)
 
 	// Convert to HTML
 	html := string(blackfriday.Run([]byte(description), blackfriday.WithNoExtensions()))
-	def.HTMLDescription = pTags.ReplaceAllString(html, "")
+	def.HTMLDescription = html
 
 	return def
 }

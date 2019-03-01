@@ -12,15 +12,15 @@
         "command": {
           "type": "string",
           "description": "a Skaffold command for which the profile is auto-activated.",
-          "x-intellij-html-description": "a Skaffold command for which the profile is auto-activated.\n",
+          "x-intellij-html-description": "<p>a Skaffold command for which the profile is auto-activated.</p>\n",
           "examples": [
             "dev"
           ]
         },
         "env": {
           "type": "string",
-          "description": "a key=value pair. The profile is auto-activated if an Environment Variable `key` has value `value`.",
-          "x-intellij-html-description": "a key=value pair. The profile is auto-activated if an Environment Variable <code>key</code> has value <code>value</code>.\n",
+          "description": "a `key=value` pair. The profile is auto-activated if an Environment Variable `key` has value `value`.",
+          "x-intellij-html-description": "<p>a <code>key=value</code> pair. The profile is auto-activated if an Environment Variable <code>key</code> has value <code>value</code>.</p>\n",
           "examples": [
             "ENV=production"
           ]
@@ -28,7 +28,7 @@
         "kubeContext": {
           "type": "string",
           "description": "a Kubernetes context for which the profile is auto-activated.",
-          "x-intellij-html-description": "a Kubernetes context for which the profile is auto-activated.\n",
+          "x-intellij-html-description": "<p>a Kubernetes context for which the profile is auto-activated.</p>\n",
           "examples": [
             "minikube"
           ]
@@ -41,7 +41,7 @@
       ],
       "additionalProperties": false,
       "description": "criteria by which a profile is auto-activated.",
-      "x-intellij-html-description": "criteria by which a profile is auto-activated.\n"
+      "x-intellij-html-description": "<p>criteria by which a profile is auto-activated.</p>\n"
     },
     "Artifact": {
       "required": [
@@ -52,14 +52,14 @@
           "properties": {
             "context": {
               "type": "string",
-              "description": "directory where the artifact's sources are to be found.",
-              "x-intellij-html-description": "directory where the artifact's sources are to be found.\n",
+              "description": "directory containing the artifact's sources.",
+              "x-intellij-html-description": "<p>directory containing the artifact's sources.</p>\n",
               "default": "."
             },
             "image": {
               "type": "string",
               "description": "name of the image to be built.",
-              "x-intellij-html-description": "name of the image to be built.\n",
+              "x-intellij-html-description": "<p>name of the image to be built.</p>\n",
               "examples": [
                 "gcr.io/k8s-skaffold/example"
               ]
@@ -67,15 +67,15 @@
             "plugin": {
               "$ref": "#/definitions/BuilderPlugin",
               "description": "plugin used to build this artifact.",
-              "x-intellij-html-description": "plugin used to build this artifact.\n"
+              "x-intellij-html-description": "<p>plugin used to build this artifact.</p>\n"
             },
             "sync": {
               "additionalProperties": {
                 "type": "string"
               },
               "type": "object",
-              "description": "(alpha) lists local files that can be synced to remote pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "x-intellij-html-description": "(alpha) lists local files that can be synced to remote pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.\n",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
+              "x-intellij-html-description": "<p><em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.</p>\n",
               "default": "{}",
               "examples": [
                 "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
@@ -94,19 +94,19 @@
           "properties": {
             "context": {
               "type": "string",
-              "description": "directory where the artifact's sources are to be found.",
-              "x-intellij-html-description": "directory where the artifact's sources are to be found.\n",
+              "description": "directory containing the artifact's sources.",
+              "x-intellij-html-description": "<p>directory containing the artifact's sources.</p>\n",
               "default": "."
             },
             "docker": {
               "$ref": "#/definitions/DockerArtifact",
-              "description": "(beta) describes an artifact built from a Dockerfile.",
-              "x-intellij-html-description": "(beta) describes an artifact built from a Dockerfile.\n"
+              "description": "*beta* describes an artifact built from a Dockerfile.",
+              "x-intellij-html-description": "<p><em>beta</em> describes an artifact built from a Dockerfile.</p>\n"
             },
             "image": {
               "type": "string",
               "description": "name of the image to be built.",
-              "x-intellij-html-description": "name of the image to be built.\n",
+              "x-intellij-html-description": "<p>name of the image to be built.</p>\n",
               "examples": [
                 "gcr.io/k8s-skaffold/example"
               ]
@@ -114,15 +114,15 @@
             "plugin": {
               "$ref": "#/definitions/BuilderPlugin",
               "description": "plugin used to build this artifact.",
-              "x-intellij-html-description": "plugin used to build this artifact.\n"
+              "x-intellij-html-description": "<p>plugin used to build this artifact.</p>\n"
             },
             "sync": {
               "additionalProperties": {
                 "type": "string"
               },
               "type": "object",
-              "description": "(alpha) lists local files that can be synced to remote pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "x-intellij-html-description": "(alpha) lists local files that can be synced to remote pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.\n",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
+              "x-intellij-html-description": "<p><em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.</p>\n",
               "default": "{}",
               "examples": [
                 "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
@@ -142,19 +142,19 @@
           "properties": {
             "bazel": {
               "$ref": "#/definitions/BazelArtifact",
-              "description": "(beta) requires bazel CLI to be installed and the sources to contain [Bazel](https://bazel.build/) configuration files.",
-              "x-intellij-html-description": "(beta) requires bazel CLI to be installed and the sources to contain <a href=\"https://bazel.build/\">Bazel</a> configuration files.\n"
+              "description": "*beta* requires bazel CLI to be installed and the sources to contain [Bazel](https://bazel.build/) configuration files.",
+              "x-intellij-html-description": "<p><em>beta</em> requires bazel CLI to be installed and the sources to contain <a href=\"https://bazel.build/\">Bazel</a> configuration files.</p>\n"
             },
             "context": {
               "type": "string",
-              "description": "directory where the artifact's sources are to be found.",
-              "x-intellij-html-description": "directory where the artifact's sources are to be found.\n",
+              "description": "directory containing the artifact's sources.",
+              "x-intellij-html-description": "<p>directory containing the artifact's sources.</p>\n",
               "default": "."
             },
             "image": {
               "type": "string",
               "description": "name of the image to be built.",
-              "x-intellij-html-description": "name of the image to be built.\n",
+              "x-intellij-html-description": "<p>name of the image to be built.</p>\n",
               "examples": [
                 "gcr.io/k8s-skaffold/example"
               ]
@@ -162,15 +162,15 @@
             "plugin": {
               "$ref": "#/definitions/BuilderPlugin",
               "description": "plugin used to build this artifact.",
-              "x-intellij-html-description": "plugin used to build this artifact.\n"
+              "x-intellij-html-description": "<p>plugin used to build this artifact.</p>\n"
             },
             "sync": {
               "additionalProperties": {
                 "type": "string"
               },
               "type": "object",
-              "description": "(alpha) lists local files that can be synced to remote pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "x-intellij-html-description": "(alpha) lists local files that can be synced to remote pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.\n",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
+              "x-intellij-html-description": "<p><em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.</p>\n",
               "default": "{}",
               "examples": [
                 "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
@@ -190,35 +190,35 @@
           "properties": {
             "context": {
               "type": "string",
-              "description": "directory where the artifact's sources are to be found.",
-              "x-intellij-html-description": "directory where the artifact's sources are to be found.\n",
+              "description": "directory containing the artifact's sources.",
+              "x-intellij-html-description": "<p>directory containing the artifact's sources.</p>\n",
               "default": "."
             },
             "image": {
               "type": "string",
               "description": "name of the image to be built.",
-              "x-intellij-html-description": "name of the image to be built.\n",
+              "x-intellij-html-description": "<p>name of the image to be built.</p>\n",
               "examples": [
                 "gcr.io/k8s-skaffold/example"
               ]
             },
             "jibMaven": {
               "$ref": "#/definitions/JibMavenArtifact",
-              "description": "(alpha) builds images using the [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).",
-              "x-intellij-html-description": "(alpha) builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin\">Jib plugin for Maven</a>.\n"
+              "description": "*alpha* builds images using the [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).",
+              "x-intellij-html-description": "<p><em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin\">Jib plugin for Maven</a>.</p>\n"
             },
             "plugin": {
               "$ref": "#/definitions/BuilderPlugin",
               "description": "plugin used to build this artifact.",
-              "x-intellij-html-description": "plugin used to build this artifact.\n"
+              "x-intellij-html-description": "<p>plugin used to build this artifact.</p>\n"
             },
             "sync": {
               "additionalProperties": {
                 "type": "string"
               },
               "type": "object",
-              "description": "(alpha) lists local files that can be synced to remote pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "x-intellij-html-description": "(alpha) lists local files that can be synced to remote pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.\n",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
+              "x-intellij-html-description": "<p><em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.</p>\n",
               "default": "{}",
               "examples": [
                 "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
@@ -238,35 +238,35 @@
           "properties": {
             "context": {
               "type": "string",
-              "description": "directory where the artifact's sources are to be found.",
-              "x-intellij-html-description": "directory where the artifact's sources are to be found.\n",
+              "description": "directory containing the artifact's sources.",
+              "x-intellij-html-description": "<p>directory containing the artifact's sources.</p>\n",
               "default": "."
             },
             "image": {
               "type": "string",
               "description": "name of the image to be built.",
-              "x-intellij-html-description": "name of the image to be built.\n",
+              "x-intellij-html-description": "<p>name of the image to be built.</p>\n",
               "examples": [
                 "gcr.io/k8s-skaffold/example"
               ]
             },
             "jibGradle": {
               "$ref": "#/definitions/JibGradleArtifact",
-              "description": "(alpha) builds images using the [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).",
-              "x-intellij-html-description": "(alpha) builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin\">Jib plugin for Gradle</a>.\n"
+              "description": "*alpha* builds images using the [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).",
+              "x-intellij-html-description": "<p><em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin\">Jib plugin for Gradle</a>.</p>\n"
             },
             "plugin": {
               "$ref": "#/definitions/BuilderPlugin",
               "description": "plugin used to build this artifact.",
-              "x-intellij-html-description": "plugin used to build this artifact.\n"
+              "x-intellij-html-description": "<p>plugin used to build this artifact.</p>\n"
             },
             "sync": {
               "additionalProperties": {
                 "type": "string"
               },
               "type": "object",
-              "description": "(alpha) lists local files that can be synced to remote pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "x-intellij-html-description": "(alpha) lists local files that can be synced to remote pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.\n",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
+              "x-intellij-html-description": "<p><em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.</p>\n",
               "default": "{}",
               "examples": [
                 "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
@@ -284,29 +284,29 @@
         }
       ],
       "description": "items that need to be built, along with the context in which they should be built.",
-      "x-intellij-html-description": "items that need to be built, along with the context in which they should be built.\n"
+      "x-intellij-html-description": "<p>items that need to be built, along with the context in which they should be built.</p>\n"
     },
     "ArtifactType": {
       "properties": {
         "bazel": {
           "$ref": "#/definitions/BazelArtifact",
-          "description": "(beta) requires bazel CLI to be installed and the sources to contain [Bazel](https://bazel.build/) configuration files.",
-          "x-intellij-html-description": "(beta) requires bazel CLI to be installed and the sources to contain <a href=\"https://bazel.build/\">Bazel</a> configuration files.\n"
+          "description": "*beta* requires bazel CLI to be installed and the sources to contain [Bazel](https://bazel.build/) configuration files.",
+          "x-intellij-html-description": "<p><em>beta</em> requires bazel CLI to be installed and the sources to contain <a href=\"https://bazel.build/\">Bazel</a> configuration files.</p>\n"
         },
         "docker": {
           "$ref": "#/definitions/DockerArtifact",
-          "description": "(beta) describes an artifact built from a Dockerfile.",
-          "x-intellij-html-description": "(beta) describes an artifact built from a Dockerfile.\n"
+          "description": "*beta* describes an artifact built from a Dockerfile.",
+          "x-intellij-html-description": "<p><em>beta</em> describes an artifact built from a Dockerfile.</p>\n"
         },
         "jibGradle": {
           "$ref": "#/definitions/JibGradleArtifact",
-          "description": "(alpha) builds images using the [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).",
-          "x-intellij-html-description": "(alpha) builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin\">Jib plugin for Gradle</a>.\n"
+          "description": "*alpha* builds images using the [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).",
+          "x-intellij-html-description": "<p><em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin\">Jib plugin for Gradle</a>.</p>\n"
         },
         "jibMaven": {
           "$ref": "#/definitions/JibMavenArtifact",
-          "description": "(alpha) builds images using the [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).",
-          "x-intellij-html-description": "(alpha) builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin\">Jib plugin for Maven</a>.\n"
+          "description": "*alpha* builds images using the [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).",
+          "x-intellij-html-description": "<p><em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin\">Jib plugin for Maven</a>.</p>\n"
         }
       },
       "preferredOrder": [
@@ -317,7 +317,7 @@
       ],
       "additionalProperties": false,
       "description": "describes how to build an artifact.",
-      "x-intellij-html-description": "describes how to build an artifact.\n"
+      "x-intellij-html-description": "<p>describes how to build an artifact.</p>\n"
     },
     "BazelArtifact": {
       "required": [
@@ -330,7 +330,7 @@
           },
           "type": "array",
           "description": "additional args to pass to `bazel build`.",
-          "x-intellij-html-description": "additional args to pass to <code>bazel build</code>.\n",
+          "x-intellij-html-description": "<p>additional args to pass to <code>bazel build</code>.</p>\n",
           "default": "[]",
           "examples": [
             "[\"-flag\", \"--otherflag\"]"
@@ -339,7 +339,7 @@
         "target": {
           "type": "string",
           "description": "`bazel build` target to run.",
-          "x-intellij-html-description": "<code>bazel build</code> target to run.\n",
+          "x-intellij-html-description": "<p><code>bazel build</code> target to run.</p>\n",
           "examples": [
             "//:skaffold_example.tar"
           ]
@@ -350,8 +350,8 @@
         "args"
       ],
       "additionalProperties": false,
-      "description": "(beta) describes an artifact built with [Bazel](https://bazel.build/).",
-      "x-intellij-html-description": "(beta) describes an artifact built with <a href=\"https://bazel.build/\">Bazel</a>.\n"
+      "description": "*beta* describes an artifact built with [Bazel](https://bazel.build/).",
+      "x-intellij-html-description": "<p><em>beta</em> describes an artifact built with <a href=\"https://bazel.build/\">Bazel</a>.</p>\n"
     },
     "BuildConfig": {
       "anyOf": [
@@ -363,17 +363,17 @@
               },
               "type": "array",
               "description": "the images you're going to be building.",
-              "x-intellij-html-description": "the images you're going to be building.\n"
+              "x-intellij-html-description": "<p>the images you're going to be building.</p>\n"
             },
             "executionEnvironment": {
               "$ref": "#/definitions/ExecutionEnvironment",
               "description": "environment in which the build should run. Possible values: googleCloudBuild.",
-              "x-intellij-html-description": "environment in which the build should run. Possible values: googleCloudBuild.\n"
+              "x-intellij-html-description": "<p>environment in which the build should run. Possible values: googleCloudBuild.</p>\n"
             },
             "tagPolicy": {
               "$ref": "#/definitions/TagPolicy",
-              "description": "(beta) determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {}`.",
-              "x-intellij-html-description": "(beta) determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {}</code>.\n"
+              "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {}`.",
+              "x-intellij-html-description": "<p><em>beta</em> determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {}</code>.</p>\n"
             }
           },
           "preferredOrder": [
@@ -391,22 +391,22 @@
               },
               "type": "array",
               "description": "the images you're going to be building.",
-              "x-intellij-html-description": "the images you're going to be building.\n"
+              "x-intellij-html-description": "<p>the images you're going to be building.</p>\n"
             },
             "executionEnvironment": {
               "$ref": "#/definitions/ExecutionEnvironment",
               "description": "environment in which the build should run. Possible values: googleCloudBuild.",
-              "x-intellij-html-description": "environment in which the build should run. Possible values: googleCloudBuild.\n"
+              "x-intellij-html-description": "<p>environment in which the build should run. Possible values: googleCloudBuild.</p>\n"
             },
             "local": {
               "$ref": "#/definitions/LocalBuild",
-              "description": "(beta) describes how to do a build on the local docker daemon and optionally push to a repository.",
-              "x-intellij-html-description": "(beta) describes how to do a build on the local docker daemon and optionally push to a repository.\n"
+              "description": "*beta* describes how to do a build on the local docker daemon and optionally push to a repository.",
+              "x-intellij-html-description": "<p><em>beta</em> describes how to do a build on the local docker daemon and optionally push to a repository.</p>\n"
             },
             "tagPolicy": {
               "$ref": "#/definitions/TagPolicy",
-              "description": "(beta) determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {}`.",
-              "x-intellij-html-description": "(beta) determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {}</code>.\n"
+              "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {}`.",
+              "x-intellij-html-description": "<p><em>beta</em> determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {}</code>.</p>\n"
             }
           },
           "preferredOrder": [
@@ -425,22 +425,22 @@
               },
               "type": "array",
               "description": "the images you're going to be building.",
-              "x-intellij-html-description": "the images you're going to be building.\n"
+              "x-intellij-html-description": "<p>the images you're going to be building.</p>\n"
             },
             "executionEnvironment": {
               "$ref": "#/definitions/ExecutionEnvironment",
               "description": "environment in which the build should run. Possible values: googleCloudBuild.",
-              "x-intellij-html-description": "environment in which the build should run. Possible values: googleCloudBuild.\n"
+              "x-intellij-html-description": "<p>environment in which the build should run. Possible values: googleCloudBuild.</p>\n"
             },
             "googleCloudBuild": {
               "$ref": "#/definitions/GoogleCloudBuild",
-              "description": "(beta) describes how to do a remote build on [Google Cloud Build](https://cloud.google.com/cloud-build/).",
-              "x-intellij-html-description": "(beta) describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/\">Google Cloud Build</a>.\n"
+              "description": "*beta* describes how to do a remote build on [Google Cloud Build](https://cloud.google.com/cloud-build/).",
+              "x-intellij-html-description": "<p><em>beta</em> describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/\">Google Cloud Build</a>.</p>\n"
             },
             "tagPolicy": {
               "$ref": "#/definitions/TagPolicy",
-              "description": "(beta) determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {}`.",
-              "x-intellij-html-description": "(beta) determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {}</code>.\n"
+              "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {}`.",
+              "x-intellij-html-description": "<p><em>beta</em> determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {}</code>.</p>\n"
             }
           },
           "preferredOrder": [
@@ -459,22 +459,22 @@
               },
               "type": "array",
               "description": "the images you're going to be building.",
-              "x-intellij-html-description": "the images you're going to be building.\n"
+              "x-intellij-html-description": "<p>the images you're going to be building.</p>\n"
             },
             "executionEnvironment": {
               "$ref": "#/definitions/ExecutionEnvironment",
               "description": "environment in which the build should run. Possible values: googleCloudBuild.",
-              "x-intellij-html-description": "environment in which the build should run. Possible values: googleCloudBuild.\n"
+              "x-intellij-html-description": "<p>environment in which the build should run. Possible values: googleCloudBuild.</p>\n"
             },
             "kaniko": {
               "$ref": "#/definitions/KanikoBuild",
-              "description": "(beta) describes how to do an on-cluster build using [Kaniko](https://github.com/GoogleContainerTools/kaniko).",
-              "x-intellij-html-description": "(beta) describes how to do an on-cluster build using <a href=\"https://github.com/GoogleContainerTools/kaniko\">Kaniko</a>.\n"
+              "description": "*beta* describes how to do an on-cluster build using [Kaniko](https://github.com/GoogleContainerTools/kaniko).",
+              "x-intellij-html-description": "<p><em>beta</em> describes how to do an on-cluster build using <a href=\"https://github.com/GoogleContainerTools/kaniko\">Kaniko</a>.</p>\n"
             },
             "tagPolicy": {
               "$ref": "#/definitions/TagPolicy",
-              "description": "(beta) determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {}`.",
-              "x-intellij-html-description": "(beta) determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {}</code>.\n"
+              "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {}`.",
+              "x-intellij-html-description": "<p><em>beta</em> determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {}</code>.</p>\n"
             }
           },
           "preferredOrder": [
@@ -487,24 +487,24 @@
         }
       ],
       "description": "contains all the configuration for the build steps.",
-      "x-intellij-html-description": "contains all the configuration for the build steps.\n"
+      "x-intellij-html-description": "<p>contains all the configuration for the build steps.</p>\n"
     },
     "BuildType": {
       "properties": {
         "googleCloudBuild": {
           "$ref": "#/definitions/GoogleCloudBuild",
-          "description": "(beta) describes how to do a remote build on [Google Cloud Build](https://cloud.google.com/cloud-build/).",
-          "x-intellij-html-description": "(beta) describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/\">Google Cloud Build</a>.\n"
+          "description": "*beta* describes how to do a remote build on [Google Cloud Build](https://cloud.google.com/cloud-build/).",
+          "x-intellij-html-description": "<p><em>beta</em> describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/\">Google Cloud Build</a>.</p>\n"
         },
         "kaniko": {
           "$ref": "#/definitions/KanikoBuild",
-          "description": "(beta) describes how to do an on-cluster build using [Kaniko](https://github.com/GoogleContainerTools/kaniko).",
-          "x-intellij-html-description": "(beta) describes how to do an on-cluster build using <a href=\"https://github.com/GoogleContainerTools/kaniko\">Kaniko</a>.\n"
+          "description": "*beta* describes how to do an on-cluster build using [Kaniko](https://github.com/GoogleContainerTools/kaniko).",
+          "x-intellij-html-description": "<p><em>beta</em> describes how to do an on-cluster build using <a href=\"https://github.com/GoogleContainerTools/kaniko\">Kaniko</a>.</p>\n"
         },
         "local": {
           "$ref": "#/definitions/LocalBuild",
-          "description": "(beta) describes how to do a build on the local docker daemon and optionally push to a repository.",
-          "x-intellij-html-description": "(beta) describes how to do a build on the local docker daemon and optionally push to a repository.\n"
+          "description": "*beta* describes how to do a build on the local docker daemon and optionally push to a repository.",
+          "x-intellij-html-description": "<p><em>beta</em> describes how to do a build on the local docker daemon and optionally push to a repository.</p>\n"
         }
       },
       "preferredOrder": [
@@ -514,20 +514,20 @@
       ],
       "additionalProperties": false,
       "description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated.",
-      "x-intellij-html-description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated.\n"
+      "x-intellij-html-description": "<p>contains the specific implementation and parameters needed for the build step. Only one field should be populated.</p>\n"
     },
     "BuilderPlugin": {
       "properties": {
         "name": {
           "type": "string",
           "description": "name of the build plugin.",
-          "x-intellij-html-description": "name of the build plugin.\n"
+          "x-intellij-html-description": "<p>name of the build plugin.</p>\n"
         },
         "properties": {
           "additionalProperties": {},
           "type": "object",
           "description": "key-value pairs passed to the plugin.",
-          "x-intellij-html-description": "key-value pairs passed to the plugin.\n",
+          "x-intellij-html-description": "<p>key-value pairs passed to the plugin.</p>\n",
           "default": "{}"
         }
       },
@@ -537,20 +537,20 @@
       ],
       "additionalProperties": false,
       "description": "contains all fields necessary for specifying a build plugin.",
-      "x-intellij-html-description": "contains all fields necessary for specifying a build plugin.\n"
+      "x-intellij-html-description": "<p>contains all fields necessary for specifying a build plugin.</p>\n"
     },
     "DateTimeTagger": {
       "properties": {
         "format": {
           "type": "string",
           "description": "formats the date and time. See [#Time.Format](https://golang.org/pkg/time/#Time.Format).",
-          "x-intellij-html-description": "formats the date and time. See <a href=\"https://golang.org/pkg/time/#Time.Format\">#Time.Format</a>.\n",
+          "x-intellij-html-description": "<p>formats the date and time. See <a href=\"https://golang.org/pkg/time/#Time.Format\">#Time.Format</a>.</p>\n",
           "default": "2006-01-02_15-04-05.999_MST"
         },
         "timezone": {
           "type": "string",
           "description": "sets the timezone for the date and time. See [Time.LoadLocation](https://golang.org/pkg/time/#Time.LoadLocation). Defaults to the local timezone.",
-          "x-intellij-html-description": "sets the timezone for the date and time. See <a href=\"https://golang.org/pkg/time/#Time.LoadLocation\">Time.LoadLocation</a>. Defaults to the local timezone.\n"
+          "x-intellij-html-description": "<p>sets the timezone for the date and time. See <a href=\"https://golang.org/pkg/time/#Time.LoadLocation\">Time.LoadLocation</a>. Defaults to the local timezone.</p>\n"
         }
       },
       "preferredOrder": [
@@ -558,8 +558,8 @@
         "timezone"
       ],
       "additionalProperties": false,
-      "description": "(beta) tags images with the build timestamp.",
-      "x-intellij-html-description": "(beta) tags images with the build timestamp.\n"
+      "description": "*beta* tags images with the build timestamp.",
+      "x-intellij-html-description": "<p><em>beta</em> tags images with the build timestamp.</p>\n"
     },
     "DeployConfig": {
       "anyOf": [
@@ -570,8 +570,8 @@
           "properties": {
             "helm": {
               "$ref": "#/definitions/HelmDeploy",
-              "description": "(beta) uses the `helm` CLI to apply the charts to the cluster.",
-              "x-intellij-html-description": "(beta) uses the <code>helm</code> CLI to apply the charts to the cluster.\n"
+              "description": "*beta* uses the `helm` CLI to apply the charts to the cluster.",
+              "x-intellij-html-description": "<p><em>beta</em> uses the <code>helm</code> CLI to apply the charts to the cluster.</p>\n"
             }
           },
           "preferredOrder": [
@@ -583,8 +583,8 @@
           "properties": {
             "kubectl": {
               "$ref": "#/definitions/KubectlDeploy",
-              "description": "(beta) uses a client side `kubectl apply` to deploy manifests. You'll need a `kubectl` CLI version installed that's compatible with your cluster.",
-              "x-intellij-html-description": "(beta) uses a client side <code>kubectl apply</code> to deploy manifests. You'll need a <code>kubectl</code> CLI version installed that's compatible with your cluster.\n"
+              "description": "*beta* uses a client side `kubectl apply` to deploy manifests. You'll need a `kubectl` CLI version installed that's compatible with your cluster.",
+              "x-intellij-html-description": "<p><em>beta</em> uses a client side <code>kubectl apply</code> to deploy manifests. You'll need a <code>kubectl</code> CLI version installed that's compatible with your cluster.</p>\n"
             }
           },
           "preferredOrder": [
@@ -596,8 +596,8 @@
           "properties": {
             "kustomize": {
               "$ref": "#/definitions/KustomizeDeploy",
-              "description": "(beta) uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
-              "x-intellij-html-description": "(beta) uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment.\n"
+              "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
+              "x-intellij-html-description": "<p><em>beta</em> uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment.</p>\n"
             }
           },
           "preferredOrder": [
@@ -607,24 +607,24 @@
         }
       ],
       "description": "contains all the configuration needed by the deploy steps.",
-      "x-intellij-html-description": "contains all the configuration needed by the deploy steps.\n"
+      "x-intellij-html-description": "<p>contains all the configuration needed by the deploy steps.</p>\n"
     },
     "DeployType": {
       "properties": {
         "helm": {
           "$ref": "#/definitions/HelmDeploy",
-          "description": "(beta) uses the `helm` CLI to apply the charts to the cluster.",
-          "x-intellij-html-description": "(beta) uses the <code>helm</code> CLI to apply the charts to the cluster.\n"
+          "description": "*beta* uses the `helm` CLI to apply the charts to the cluster.",
+          "x-intellij-html-description": "<p><em>beta</em> uses the <code>helm</code> CLI to apply the charts to the cluster.</p>\n"
         },
         "kubectl": {
           "$ref": "#/definitions/KubectlDeploy",
-          "description": "(beta) uses a client side `kubectl apply` to deploy manifests. You'll need a `kubectl` CLI version installed that's compatible with your cluster.",
-          "x-intellij-html-description": "(beta) uses a client side <code>kubectl apply</code> to deploy manifests. You'll need a <code>kubectl</code> CLI version installed that's compatible with your cluster.\n"
+          "description": "*beta* uses a client side `kubectl apply` to deploy manifests. You'll need a `kubectl` CLI version installed that's compatible with your cluster.",
+          "x-intellij-html-description": "<p><em>beta</em> uses a client side <code>kubectl apply</code> to deploy manifests. You'll need a <code>kubectl</code> CLI version installed that's compatible with your cluster.</p>\n"
         },
         "kustomize": {
           "$ref": "#/definitions/KustomizeDeploy",
-          "description": "(beta) uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
-          "x-intellij-html-description": "(beta) uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment.\n"
+          "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
+          "x-intellij-html-description": "<p><em>beta</em> uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment.</p>\n"
         }
       },
       "preferredOrder": [
@@ -634,7 +634,7 @@
       ],
       "additionalProperties": false,
       "description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated.",
-      "x-intellij-html-description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated.\n"
+      "x-intellij-html-description": "<p>contains the specific implementation and parameters needed for the deploy step. Only one field should be populated.</p>\n"
     },
     "DockerArtifact": {
       "properties": {
@@ -644,7 +644,7 @@
           },
           "type": "object",
           "description": "arguments passed to the docker build.",
-          "x-intellij-html-description": "arguments passed to the docker build.\n",
+          "x-intellij-html-description": "<p>arguments passed to the docker build.</p>\n",
           "default": "{}",
           "examples": [
             "{\"key1\": \"value1\", \"key2\": \"value2\"}"
@@ -655,8 +655,8 @@
             "type": "string"
           },
           "type": "array",
-          "description": "the Docker images to consider as cache sources.",
-          "x-intellij-html-description": "the Docker images to consider as cache sources.\n",
+          "description": "the Docker images used as cache sources.",
+          "x-intellij-html-description": "<p>the Docker images used as cache sources.</p>\n",
           "default": "[]",
           "examples": [
             "[\"golang:1.10.1-alpine3.7\", \"alpine:3.7\"]"
@@ -665,13 +665,13 @@
         "dockerfile": {
           "type": "string",
           "description": "locates the Dockerfile relative to workspace.",
-          "x-intellij-html-description": "locates the Dockerfile relative to workspace.\n",
+          "x-intellij-html-description": "<p>locates the Dockerfile relative to workspace.</p>\n",
           "default": "Dockerfile"
         },
         "target": {
           "type": "string",
           "description": "Dockerfile target name to build.",
-          "x-intellij-html-description": "Dockerfile target name to build.\n"
+          "x-intellij-html-description": "<p>Dockerfile target name to build.</p>\n"
         }
       },
       "preferredOrder": [
@@ -681,20 +681,20 @@
         "cacheFrom"
       ],
       "additionalProperties": false,
-      "description": "(beta) describes an artifact built from a Dockerfile, usually using `docker build`.",
-      "x-intellij-html-description": "(beta) describes an artifact built from a Dockerfile, usually using <code>docker build</code>.\n"
+      "description": "*beta* describes an artifact built from a Dockerfile, usually using `docker build`.",
+      "x-intellij-html-description": "<p><em>beta</em> describes an artifact built from a Dockerfile, usually using <code>docker build</code>.</p>\n"
     },
     "DockerConfig": {
       "properties": {
         "path": {
           "type": "string",
           "description": "path to the docker `config.json`.",
-          "x-intellij-html-description": "path to the docker <code>config.json</code>.\n"
+          "x-intellij-html-description": "<p>path to the docker <code>config.json</code>.</p>\n"
         },
         "secretName": {
           "type": "string",
           "description": "Kubernetes secret that will hold the Docker configuration.",
-          "x-intellij-html-description": "Kubernetes secret that will hold the Docker configuration.\n"
+          "x-intellij-html-description": "<p>Kubernetes secret that will hold the Docker configuration.</p>\n"
         }
       },
       "preferredOrder": [
@@ -703,7 +703,7 @@
       ],
       "additionalProperties": false,
       "description": "contains information about the docker `config.json` to mount.",
-      "x-intellij-html-description": "contains information about the docker <code>config.json</code> to mount.\n"
+      "x-intellij-html-description": "<p>contains information about the docker <code>config.json</code> to mount.</p>\n"
     },
     "EnvTemplateTagger": {
       "required": [
@@ -713,7 +713,7 @@
         "template": {
           "type": "string",
           "description": "used to produce the image name and tag. See golang [text/template](https://golang.org/pkg/text/template/). The template is executed against the current environment, with those variables injected:   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.",
-          "x-intellij-html-description": "used to produce the image name and tag. See golang <a href=\"https://golang.org/pkg/text/template/\">text/template</a>. The template is executed against the current environment, with those variables injected:   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.\n",
+          "x-intellij-html-description": "<p>used to produce the image name and tag. See golang <a href=\"https://golang.org/pkg/text/template/\">text/template</a>. The template is executed against the current environment, with those variables injected:   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.</p>\n",
           "examples": [
             "{{.RELEASE}}-{{.IMAGE_NAME}}"
           ]
@@ -723,26 +723,26 @@
         "template"
       ],
       "additionalProperties": false,
-      "description": "(beta) tags images with a configurable template string.",
-      "x-intellij-html-description": "(beta) tags images with a configurable template string.\n"
+      "description": "*beta* tags images with a configurable template string.",
+      "x-intellij-html-description": "<p><em>beta</em> tags images with a configurable template string.</p>\n"
     },
     "ExecEnvironment": {
       "type": "string",
       "description": "name of an execution environment.",
-      "x-intellij-html-description": "name of an execution environment.\n"
+      "x-intellij-html-description": "<p>name of an execution environment.</p>\n"
     },
     "ExecutionEnvironment": {
       "properties": {
         "name": {
           "$ref": "#/definitions/ExecEnvironment",
           "description": "name of the environment.",
-          "x-intellij-html-description": "name of the environment.\n"
+          "x-intellij-html-description": "<p>name of the environment.</p>\n"
         },
         "properties": {
           "additionalProperties": {},
           "type": "object",
           "description": "key-value pairs passed to the environment.",
-          "x-intellij-html-description": "key-value pairs passed to the environment.\n",
+          "x-intellij-html-description": "<p>key-value pairs passed to the environment.</p>\n",
           "default": "{}"
         }
       },
@@ -752,51 +752,51 @@
       ],
       "additionalProperties": false,
       "description": "environment in which the build should run (ex. local or in-cluster, etc.).",
-      "x-intellij-html-description": "environment in which the build should run (ex. local or in-cluster, etc.).\n"
+      "x-intellij-html-description": "<p>environment in which the build should run (ex. local or in-cluster, etc.).</p>\n"
     },
     "GitTagger": {
-      "description": "(beta) tags images with the git tag or commit of the artifact's workspace.",
-      "x-intellij-html-description": "(beta) tags images with the git tag or commit of the artifact's workspace.\n"
+      "description": "*beta* tags images with the git tag or commit of the artifact's workspace.",
+      "x-intellij-html-description": "<p><em>beta</em> tags images with the git tag or commit of the artifact's workspace.</p>\n"
     },
     "GoogleCloudBuild": {
       "properties": {
         "diskSizeGb": {
           "type": "number",
           "description": "disk size of the VM that runs the build. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions).",
-          "x-intellij-html-description": "disk size of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions\">Cloud Build Reference</a>.\n"
+          "x-intellij-html-description": "<p>disk size of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions\">Cloud Build Reference</a>.</p>\n"
         },
         "dockerImage": {
           "type": "string",
           "description": "image that runs a Docker build. See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).",
-          "x-intellij-html-description": "image that runs a Docker build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.\n",
+          "x-intellij-html-description": "<p>image that runs a Docker build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.</p>\n",
           "default": "gcr.io/cloud-builders/docker"
         },
         "gradleImage": {
           "type": "string",
           "description": "image that runs a Gradle build. See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).",
-          "x-intellij-html-description": "image that runs a Gradle build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.\n",
+          "x-intellij-html-description": "<p>image that runs a Gradle build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.</p>\n",
           "default": "gcr.io/cloud-builders/gradle"
         },
         "machineType": {
           "type": "string",
           "description": "type of the VM that runs the build. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions).",
-          "x-intellij-html-description": "type of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions\">Cloud Build Reference</a>.\n"
+          "x-intellij-html-description": "<p>type of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions\">Cloud Build Reference</a>.</p>\n"
         },
         "mavenImage": {
           "type": "string",
           "description": "image that runs a Maven build. See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).",
-          "x-intellij-html-description": "image that runs a Maven build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.\n",
+          "x-intellij-html-description": "<p>image that runs a Maven build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.</p>\n",
           "default": "gcr.io/cloud-builders/mvn"
         },
         "projectId": {
           "type": "string",
           "description": "ID of your Cloud Platform Project. If it is not provided, Skaffold will guess it from the image name. For example, given the artifact image name `gcr.io/myproject/image`, Skaffold will use the `myproject` GCP project.",
-          "x-intellij-html-description": "ID of your Cloud Platform Project. If it is not provided, Skaffold will guess it from the image name. For example, given the artifact image name <code>gcr.io/myproject/image</code>, Skaffold will use the <code>myproject</code> GCP project.\n"
+          "x-intellij-html-description": "<p>ID of your Cloud Platform Project. If it is not provided, Skaffold will guess it from the image name. For example, given the artifact image name <code>gcr.io/myproject/image</code>, Skaffold will use the <code>myproject</code> GCP project.</p>\n"
         },
         "timeout": {
           "type": "string",
           "description": "amount of time (in seconds) that this build should be allowed to run. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build).",
-          "x-intellij-html-description": "amount of time (in seconds) that this build should be allowed to run. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build\">Cloud Build Reference</a>.\n"
+          "x-intellij-html-description": "<p>amount of time (in seconds) that this build should be allowed to run. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build\">Cloud Build Reference</a>.</p>\n"
         }
       },
       "preferredOrder": [
@@ -809,12 +809,12 @@
         "gradleImage"
       ],
       "additionalProperties": false,
-      "description": "(beta) describes how to do a remote build on [Google Cloud Build](https://cloud.google.com/cloud-build/docs/). Docker and Jib artifacts can be built on Cloud Build. The `projectId` needs to be provided and the currently logged in user should be given permissions to trigger new builds.",
-      "x-intellij-html-description": "(beta) describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/docs/\">Google Cloud Build</a>. Docker and Jib artifacts can be built on Cloud Build. The <code>projectId</code> needs to be provided and the currently logged in user should be given permissions to trigger new builds.\n"
+      "description": "*beta* describes how to do a remote build on [Google Cloud Build](https://cloud.google.com/cloud-build/docs/). Docker and Jib artifacts can be built on Cloud Build. The `projectId` needs to be provided and the currently logged in user should be given permissions to trigger new builds.",
+      "x-intellij-html-description": "<p><em>beta</em> describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/docs/\">Google Cloud Build</a>. Docker and Jib artifacts can be built on Cloud Build. The <code>projectId</code> needs to be provided and the currently logged in user should be given permissions to trigger new builds.</p>\n"
     },
     "HelmConventionConfig": {
       "description": "image config in the syntax of image.repository and image.tag.",
-      "x-intellij-html-description": "image config in the syntax of image.repository and image.tag.\n"
+      "x-intellij-html-description": "<p>image config in the syntax of image.repository and image.tag.</p>\n"
     },
     "HelmDeploy": {
       "required": [
@@ -824,7 +824,7 @@
         "flags": {
           "$ref": "#/definitions/HelmDeployFlags",
           "description": "additional option flags that are passed on the command line to `helm`.",
-          "x-intellij-html-description": "additional option flags that are passed on the command line to <code>helm</code>.\n"
+          "x-intellij-html-description": "<p>additional option flags that are passed on the command line to <code>helm</code>.</p>\n"
         },
         "releases": {
           "items": {
@@ -832,7 +832,7 @@
           },
           "type": "array",
           "description": "a list of Helm releases.",
-          "x-intellij-html-description": "a list of Helm releases.\n"
+          "x-intellij-html-description": "<p>a list of Helm releases.</p>\n"
         }
       },
       "preferredOrder": [
@@ -840,8 +840,8 @@
         "flags"
       ],
       "additionalProperties": false,
-      "description": "(beta) uses the `helm` CLI to apply the charts to the cluster.",
-      "x-intellij-html-description": "(beta) uses the <code>helm</code> CLI to apply the charts to the cluster.\n"
+      "description": "*beta* uses the `helm` CLI to apply the charts to the cluster.",
+      "x-intellij-html-description": "<p><em>beta</em> uses the <code>helm</code> CLI to apply the charts to the cluster.</p>\n"
     },
     "HelmDeployFlags": {
       "properties": {
@@ -851,7 +851,7 @@
           },
           "type": "array",
           "description": "additional flags passed on every command.",
-          "x-intellij-html-description": "additional flags passed on every command.\n",
+          "x-intellij-html-description": "<p>additional flags passed on every command.</p>\n",
           "default": "[]"
         },
         "install": {
@@ -860,7 +860,7 @@
           },
           "type": "array",
           "description": "additional flags passed to (`helm install`).",
-          "x-intellij-html-description": "additional flags passed to (<code>helm install</code>).\n",
+          "x-intellij-html-description": "<p>additional flags passed to (<code>helm install</code>).</p>\n",
           "default": "[]"
         },
         "upgrade": {
@@ -869,7 +869,7 @@
           },
           "type": "array",
           "description": "additional flags passed to (`helm upgrade`).",
-          "x-intellij-html-description": "additional flags passed to (<code>helm upgrade</code>).\n",
+          "x-intellij-html-description": "<p>additional flags passed to (<code>helm upgrade</code>).</p>\n",
           "default": "[]"
         }
       },
@@ -880,14 +880,14 @@
       ],
       "additionalProperties": false,
       "description": "additional option flags that are passed on the command line to `helm`.",
-      "x-intellij-html-description": "additional option flags that are passed on the command line to <code>helm</code>.\n"
+      "x-intellij-html-description": "<p>additional option flags that are passed on the command line to <code>helm</code>.</p>\n"
     },
     "HelmFQNConfig": {
       "properties": {
         "property": {
           "type": "string",
           "description": "defines the image config.",
-          "x-intellij-html-description": "defines the image config.\n"
+          "x-intellij-html-description": "<p>defines the image config.</p>\n"
         }
       },
       "preferredOrder": [
@@ -895,19 +895,19 @@
       ],
       "additionalProperties": false,
       "description": "image config to use the FullyQualifiedImageName as param to set.",
-      "x-intellij-html-description": "image config to use the FullyQualifiedImageName as param to set.\n"
+      "x-intellij-html-description": "<p>image config to use the FullyQualifiedImageName as param to set.</p>\n"
     },
     "HelmImageConfig": {
       "properties": {
         "fqn": {
           "$ref": "#/definitions/HelmFQNConfig",
           "description": "image configuration uses the syntax `IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG`.",
-          "x-intellij-html-description": "image configuration uses the syntax <code>IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG</code>.\n"
+          "x-intellij-html-description": "<p>image configuration uses the syntax <code>IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG</code>.</p>\n"
         },
         "helm": {
           "$ref": "#/definitions/HelmConventionConfig",
           "description": "image configuration uses the syntax `IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG`.",
-          "x-intellij-html-description": "image configuration uses the syntax <code>IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG</code>.\n"
+          "x-intellij-html-description": "<p>image configuration uses the syntax <code>IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG</code>.</p>\n"
         }
       },
       "preferredOrder": [
@@ -916,7 +916,7 @@
       ],
       "additionalProperties": false,
       "description": "describes an image configuration.",
-      "x-intellij-html-description": "describes an image configuration.\n"
+      "x-intellij-html-description": "<p>describes an image configuration.</p>\n"
     },
     "HelmImageStrategy": {
       "anyOf": [
@@ -928,7 +928,7 @@
             "fqn": {
               "$ref": "#/definitions/HelmFQNConfig",
               "description": "image configuration uses the syntax `IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG`.",
-              "x-intellij-html-description": "image configuration uses the syntax <code>IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG</code>.\n"
+              "x-intellij-html-description": "<p>image configuration uses the syntax <code>IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG</code>.</p>\n"
             }
           },
           "preferredOrder": [
@@ -941,7 +941,7 @@
             "helm": {
               "$ref": "#/definitions/HelmConventionConfig",
               "description": "image configuration uses the syntax `IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG`.",
-              "x-intellij-html-description": "image configuration uses the syntax <code>IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG</code>.\n"
+              "x-intellij-html-description": "<p>image configuration uses the syntax <code>IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG</code>.</p>\n"
             }
           },
           "preferredOrder": [
@@ -951,19 +951,19 @@
         }
       ],
       "description": "adds image configurations to the Helm `values` file.",
-      "x-intellij-html-description": "adds image configurations to the Helm <code>values</code> file.\n"
+      "x-intellij-html-description": "<p>adds image configurations to the Helm <code>values</code> file.</p>\n"
     },
     "HelmPackaged": {
       "properties": {
         "appVersion": {
           "type": "string",
           "description": "sets the `appVersion` on the chart to this version.",
-          "x-intellij-html-description": "sets the <code>appVersion</code> on the chart to this version.\n"
+          "x-intellij-html-description": "<p>sets the <code>appVersion</code> on the chart to this version.</p>\n"
         },
         "version": {
           "type": "string",
           "description": "sets the `version` on the chart to this semver version.",
-          "x-intellij-html-description": "sets the <code>version</code> on the chart to this semver version.\n"
+          "x-intellij-html-description": "<p>sets the <code>version</code> on the chart to this semver version.</p>\n"
         }
       },
       "preferredOrder": [
@@ -972,7 +972,7 @@
       ],
       "additionalProperties": false,
       "description": "parameters for packaging helm chart (`helm package`).",
-      "x-intellij-html-description": "parameters for packaging helm chart (<code>helm package</code>).\n"
+      "x-intellij-html-description": "<p>parameters for packaging helm chart (<code>helm package</code>).</p>\n"
     },
     "HelmRelease": {
       "required": [
@@ -983,39 +983,39 @@
         "chartPath": {
           "type": "string",
           "description": "path to the Helm chart.",
-          "x-intellij-html-description": "path to the Helm chart.\n"
+          "x-intellij-html-description": "<p>path to the Helm chart.</p>\n"
         },
         "imageStrategy": {
           "$ref": "#/definitions/HelmImageStrategy",
           "description": "adds image configurations to the Helm `values` file.",
-          "x-intellij-html-description": "adds image configurations to the Helm <code>values</code> file.\n"
+          "x-intellij-html-description": "<p>adds image configurations to the Helm <code>values</code> file.</p>\n"
         },
         "name": {
           "type": "string",
           "description": "name of the Helm release.",
-          "x-intellij-html-description": "name of the Helm release.\n"
+          "x-intellij-html-description": "<p>name of the Helm release.</p>\n"
         },
         "namespace": {
           "type": "string",
           "description": "Kubernetes namespace.",
-          "x-intellij-html-description": "Kubernetes namespace.\n"
+          "x-intellij-html-description": "<p>Kubernetes namespace.</p>\n"
         },
         "overrides": {
           "additionalProperties": {},
           "type": "object",
           "description": "key-value pairs. If present, Skaffold will build a Helm `values` file that overrides the original and use it to call Helm CLI (`--f` flag).",
-          "x-intellij-html-description": "key-value pairs. If present, Skaffold will build a Helm <code>values</code> file that overrides the original and use it to call Helm CLI (<code>--f</code> flag).\n",
+          "x-intellij-html-description": "<p>key-value pairs. If present, Skaffold will build a Helm <code>values</code> file that overrides the original and use it to call Helm CLI (<code>--f</code> flag).</p>\n",
           "default": "{}"
         },
         "packaged": {
           "$ref": "#/definitions/HelmPackaged",
           "description": "parameters for packaging helm chart (`helm package`).",
-          "x-intellij-html-description": "parameters for packaging helm chart (<code>helm package</code>).\n"
+          "x-intellij-html-description": "<p>parameters for packaging helm chart (<code>helm package</code>).</p>\n"
         },
         "recreatePods": {
           "type": "boolean",
           "description": "if `true`, Skaffold will send `--recreate-pods` flag to Helm CLI.",
-          "x-intellij-html-description": "if <code>true</code>, Skaffold will send <code>--recreate-pods</code> flag to Helm CLI.\n",
+          "x-intellij-html-description": "<p>if <code>true</code>, Skaffold will send <code>--recreate-pods</code> flag to Helm CLI.</p>\n",
           "default": "false"
         },
         "setValueTemplates": {
@@ -1024,7 +1024,7 @@
           },
           "type": "object",
           "description": "key-value pairs. If present, Skaffold will try to parse the value part of each key-value pair using environment variables in the system, then send `--set` flag to Helm CLI and append all parsed pairs after the flag.",
-          "x-intellij-html-description": "key-value pairs. If present, Skaffold will try to parse the value part of each key-value pair using environment variables in the system, then send <code>--set</code> flag to Helm CLI and append all parsed pairs after the flag.\n",
+          "x-intellij-html-description": "<p>key-value pairs. If present, Skaffold will try to parse the value part of each key-value pair using environment variables in the system, then send <code>--set</code> flag to Helm CLI and append all parsed pairs after the flag.</p>\n",
           "default": "{}"
         },
         "setValues": {
@@ -1033,13 +1033,13 @@
           },
           "type": "object",
           "description": "key-value pairs. If present, Skaffold will send `--set` flag to Helm CLI and append all pairs after the flag.",
-          "x-intellij-html-description": "key-value pairs. If present, Skaffold will send <code>--set</code> flag to Helm CLI and append all pairs after the flag.\n",
+          "x-intellij-html-description": "<p>key-value pairs. If present, Skaffold will send <code>--set</code> flag to Helm CLI and append all pairs after the flag.</p>\n",
           "default": "{}"
         },
         "skipBuildDependencies": {
           "type": "boolean",
           "description": "should build dependencies be skipped.",
-          "x-intellij-html-description": "should build dependencies be skipped.\n",
+          "x-intellij-html-description": "<p>should build dependencies be skipped.</p>\n",
           "default": "false"
         },
         "values": {
@@ -1048,7 +1048,7 @@
           },
           "type": "object",
           "description": "key-value pairs supplementing the Helm `values` file\".",
-          "x-intellij-html-description": "key-value pairs supplementing the Helm <code>values</code> file&quot;.\n",
+          "x-intellij-html-description": "<p>key-value pairs supplementing the Helm <code>values</code> file&quot;.</p>\n",
           "default": "{}"
         },
         "valuesFiles": {
@@ -1057,18 +1057,18 @@
           },
           "type": "array",
           "description": "paths to the Helm `values` files\".",
-          "x-intellij-html-description": "paths to the Helm <code>values</code> files&quot;.\n",
+          "x-intellij-html-description": "<p>paths to the Helm <code>values</code> files&quot;.</p>\n",
           "default": "[]"
         },
         "version": {
           "type": "string",
           "description": "version of the chart.",
-          "x-intellij-html-description": "version of the chart.\n"
+          "x-intellij-html-description": "<p>version of the chart.</p>\n"
         },
         "wait": {
           "type": "boolean",
           "description": "if `true`, Skaffold will send `--wait` flag to Helm CLI.",
-          "x-intellij-html-description": "if <code>true</code>, Skaffold will send <code>--wait</code> flag to Helm CLI.\n",
+          "x-intellij-html-description": "<p>if <code>true</code>, Skaffold will send <code>--wait</code> flag to Helm CLI.</p>\n",
           "default": "false"
         }
       },
@@ -1090,7 +1090,7 @@
       ],
       "additionalProperties": false,
       "description": "describes a helm release to be deployed.",
-      "x-intellij-html-description": "describes a helm release to be deployed.\n"
+      "x-intellij-html-description": "<p>describes a helm release to be deployed.</p>\n"
     },
     "JSONPatch": {
       "required": [
@@ -1100,18 +1100,18 @@
         "from": {
           "type": "string",
           "description": "source position in the yaml, used for `copy` or `move` operations.",
-          "x-intellij-html-description": "source position in the yaml, used for <code>copy</code> or <code>move</code> operations.\n"
+          "x-intellij-html-description": "<p>source position in the yaml, used for <code>copy</code> or <code>move</code> operations.</p>\n"
         },
         "op": {
           "type": "string",
           "description": "operation carried by the patch: `add`, `remove`, `replace`, `move`, `copy` or `test`.",
-          "x-intellij-html-description": "operation carried by the patch: <code>add</code>, <code>remove</code>, <code>replace</code>, <code>move</code>, <code>copy</code> or <code>test</code>.\n",
+          "x-intellij-html-description": "<p>operation carried by the patch: <code>add</code>, <code>remove</code>, <code>replace</code>, <code>move</code>, <code>copy</code> or <code>test</code>.</p>\n",
           "default": "replace"
         },
         "path": {
           "type": "string",
           "description": "position in the yaml where the operation takes place. For example, this targets the `dockerfile` of the first artifact built.",
-          "x-intellij-html-description": "position in the yaml where the operation takes place. For example, this targets the <code>dockerfile</code> of the first artifact built.\n",
+          "x-intellij-html-description": "<p>position in the yaml where the operation takes place. For example, this targets the <code>dockerfile</code> of the first artifact built.</p>\n",
           "examples": [
             "/build/artifacts/0/docker/dockerfile"
           ]
@@ -1119,7 +1119,7 @@
         "value": {
           "type": "object",
           "description": "value to apply. Can be any portion of yaml.",
-          "x-intellij-html-description": "value to apply. Can be any portion of yaml.\n"
+          "x-intellij-html-description": "<p>value to apply. Can be any portion of yaml.</p>\n"
         }
       },
       "preferredOrder": [
@@ -1130,7 +1130,7 @@
       ],
       "additionalProperties": false,
       "description": "patch to be applied by a profile.",
-      "x-intellij-html-description": "patch to be applied by a profile.\n"
+      "x-intellij-html-description": "<p>patch to be applied by a profile.</p>\n"
     },
     "JibGradleArtifact": {
       "properties": {
@@ -1140,7 +1140,7 @@
           },
           "type": "array",
           "description": "additional build flags passed to Gradle.",
-          "x-intellij-html-description": "additional build flags passed to Gradle.\n",
+          "x-intellij-html-description": "<p>additional build flags passed to Gradle.</p>\n",
           "default": "[]",
           "examples": [
             "[\"--no-build-cache\"]"
@@ -1149,7 +1149,7 @@
         "project": {
           "type": "string",
           "description": "selects which Gradle project to build.",
-          "x-intellij-html-description": "selects which Gradle project to build.\n"
+          "x-intellij-html-description": "<p>selects which Gradle project to build.</p>\n"
         }
       },
       "preferredOrder": [
@@ -1157,8 +1157,8 @@
         "args"
       ],
       "additionalProperties": false,
-      "description": "(alpha) builds images using the [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).",
-      "x-intellij-html-description": "(alpha) builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin\">Jib plugin for Gradle</a>.\n"
+      "description": "*alpha* builds images using the [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).",
+      "x-intellij-html-description": "<p><em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin\">Jib plugin for Gradle</a>.</p>\n"
     },
     "JibMavenArtifact": {
       "properties": {
@@ -1168,7 +1168,7 @@
           },
           "type": "array",
           "description": "additional build flags passed to Maven.",
-          "x-intellij-html-description": "additional build flags passed to Maven.\n",
+          "x-intellij-html-description": "<p>additional build flags passed to Maven.</p>\n",
           "default": "[]",
           "examples": [
             "[\"-x\", \"-DskipTests\"]"
@@ -1177,12 +1177,12 @@
         "module": {
           "type": "string",
           "description": "selects which Maven module to build, for a multi module project.",
-          "x-intellij-html-description": "selects which Maven module to build, for a multi module project.\n"
+          "x-intellij-html-description": "<p>selects which Maven module to build, for a multi module project.</p>\n"
         },
         "profile": {
           "type": "string",
           "description": "selects which Maven profile to activate.",
-          "x-intellij-html-description": "selects which Maven profile to activate.\n"
+          "x-intellij-html-description": "<p>selects which Maven profile to activate.</p>\n"
         }
       },
       "preferredOrder": [
@@ -1191,25 +1191,25 @@
         "args"
       ],
       "additionalProperties": false,
-      "description": "(alpha) builds images using the [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).",
-      "x-intellij-html-description": "(alpha) builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin\">Jib plugin for Maven</a>.\n"
+      "description": "*alpha* builds images using the [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).",
+      "x-intellij-html-description": "<p><em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin\">Jib plugin for Maven</a>.</p>\n"
     },
     "KanikoBuild": {
       "properties": {
         "buildContext": {
           "$ref": "#/definitions/KanikoBuildContext",
           "description": "defines where Kaniko gets the sources from.",
-          "x-intellij-html-description": "defines where Kaniko gets the sources from.\n"
+          "x-intellij-html-description": "<p>defines where Kaniko gets the sources from.</p>\n"
         },
         "cache": {
           "$ref": "#/definitions/KanikoCache",
           "description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds.",
-          "x-intellij-html-description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds.\n"
+          "x-intellij-html-description": "<p>configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds.</p>\n"
         },
         "dockerConfig": {
           "$ref": "#/definitions/DockerConfig",
           "description": "describes how to mount the local Docker configuration into the Kaniko pod.",
-          "x-intellij-html-description": "describes how to mount the local Docker configuration into the Kaniko pod.\n"
+          "x-intellij-html-description": "<p>describes how to mount the local Docker configuration into the Kaniko pod.</p>\n"
         },
         "flags": {
           "items": {
@@ -1217,34 +1217,34 @@
           },
           "type": "array",
           "description": "additional flags to be passed to Kaniko command line. See [Kaniko Additional Flags](https://github.com/GoogleContainerTools/kaniko#additional-flags).",
-          "x-intellij-html-description": "additional flags to be passed to Kaniko command line. See <a href=\"https://github.com/GoogleContainerTools/kaniko#additional-flags\">Kaniko Additional Flags</a>.\n",
+          "x-intellij-html-description": "<p>additional flags to be passed to Kaniko command line. See <a href=\"https://github.com/GoogleContainerTools/kaniko#additional-flags\">Kaniko Additional Flags</a>.</p>\n",
           "default": "[]"
         },
         "image": {
           "type": "string",
           "description": "Docker image used by the Kaniko pod. Defaults to the latest released version of `gcr.io/kaniko-project/executor`.",
-          "x-intellij-html-description": "Docker image used by the Kaniko pod. Defaults to the latest released version of <code>gcr.io/kaniko-project/executor</code>.\n"
+          "x-intellij-html-description": "<p>Docker image used by the Kaniko pod. Defaults to the latest released version of <code>gcr.io/kaniko-project/executor</code>.</p>\n"
         },
         "namespace": {
           "type": "string",
           "description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration.",
-          "x-intellij-html-description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration.\n"
+          "x-intellij-html-description": "<p>Kubernetes namespace. Defaults to current namespace in Kubernetes configuration.</p>\n"
         },
         "pullSecret": {
           "type": "string",
           "description": "path to the secret key file. See [Kaniko Documentation](https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster).",
-          "x-intellij-html-description": "path to the secret key file. See <a href=\"https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster\">Kaniko Documentation</a>.\n"
+          "x-intellij-html-description": "<p>path to the secret key file. See <a href=\"https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster\">Kaniko Documentation</a>.</p>\n"
         },
         "pullSecretName": {
           "type": "string",
           "description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image.",
-          "x-intellij-html-description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image.\n",
+          "x-intellij-html-description": "<p>name of the Kubernetes secret for pulling the files from the build context and pushing the final image.</p>\n",
           "default": "kaniko-secret"
         },
         "timeout": {
           "type": "string",
           "description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (`20m`).",
-          "x-intellij-html-description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (<code>20m</code>).\n"
+          "x-intellij-html-description": "<p>amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (<code>20m</code>).</p>\n"
         }
       },
       "preferredOrder": [
@@ -1259,20 +1259,20 @@
         "dockerConfig"
       ],
       "additionalProperties": false,
-      "description": "(beta) describes how to do an on-cluster build using [Kaniko](https://github.com/GoogleContainerTools/kaniko).",
-      "x-intellij-html-description": "(beta) describes how to do an on-cluster build using <a href=\"https://github.com/GoogleContainerTools/kaniko\">Kaniko</a>.\n"
+      "description": "*beta* describes how to do an on-cluster build using [Kaniko](https://github.com/GoogleContainerTools/kaniko).",
+      "x-intellij-html-description": "<p><em>beta</em> describes how to do an on-cluster build using <a href=\"https://github.com/GoogleContainerTools/kaniko\">Kaniko</a>.</p>\n"
     },
     "KanikoBuildContext": {
       "properties": {
         "gcsBucket": {
           "type": "string",
           "description": "CGS bucket to which sources are uploaded by Skaffold. Kaniko will need access to that bucket to download the sources.",
-          "x-intellij-html-description": "CGS bucket to which sources are uploaded by Skaffold. Kaniko will need access to that bucket to download the sources.\n"
+          "x-intellij-html-description": "<p>CGS bucket to which sources are uploaded by Skaffold. Kaniko will need access to that bucket to download the sources.</p>\n"
         },
         "localDir": {
           "$ref": "#/definitions/LocalDir",
           "description": "configures how Kaniko mounts sources directly via an `emptyDir` volume.",
-          "x-intellij-html-description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume.\n"
+          "x-intellij-html-description": "<p>configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume.</p>\n"
         }
       },
       "preferredOrder": [
@@ -1281,14 +1281,14 @@
       ],
       "additionalProperties": false,
       "description": "contains the different fields available to specify a Kaniko build context.",
-      "x-intellij-html-description": "contains the different fields available to specify a Kaniko build context.\n"
+      "x-intellij-html-description": "<p>contains the different fields available to specify a Kaniko build context.</p>\n"
     },
     "KanikoCache": {
       "properties": {
         "repo": {
           "type": "string",
           "description": "a remote repository to store cached layers. If none is specified, one will be inferred from the image name. See [Kaniko Caching](https://github.com/GoogleContainerTools/kaniko#caching).",
-          "x-intellij-html-description": "a remote repository to store cached layers. If none is specified, one will be inferred from the image name. See <a href=\"https://github.com/GoogleContainerTools/kaniko#caching\">Kaniko Caching</a>.\n"
+          "x-intellij-html-description": "<p>a remote repository to store cached layers. If none is specified, one will be inferred from the image name. See <a href=\"https://github.com/GoogleContainerTools/kaniko#caching\">Kaniko Caching</a>.</p>\n"
         }
       },
       "preferredOrder": [
@@ -1296,14 +1296,14 @@
       ],
       "additionalProperties": false,
       "description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds.",
-      "x-intellij-html-description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds.\n"
+      "x-intellij-html-description": "<p>configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds.</p>\n"
     },
     "KubectlDeploy": {
       "properties": {
         "flags": {
           "$ref": "#/definitions/KubectlFlags",
           "description": "additional flags passed to `kubectl`.",
-          "x-intellij-html-description": "additional flags passed to <code>kubectl</code>.\n"
+          "x-intellij-html-description": "<p>additional flags passed to <code>kubectl</code>.</p>\n"
         },
         "manifests": {
           "items": {
@@ -1311,7 +1311,7 @@
           },
           "type": "array",
           "description": "the Kubernetes yaml or json manifests.",
-          "x-intellij-html-description": "the Kubernetes yaml or json manifests.\n",
+          "x-intellij-html-description": "<p>the Kubernetes yaml or json manifests.</p>\n",
           "default": "[\"k8s/*.yaml\"]"
         },
         "remoteManifests": {
@@ -1320,7 +1320,7 @@
           },
           "type": "array",
           "description": "Kubernetes manifests in remote clusters.",
-          "x-intellij-html-description": "Kubernetes manifests in remote clusters.\n",
+          "x-intellij-html-description": "<p>Kubernetes manifests in remote clusters.</p>\n",
           "default": "[]"
         }
       },
@@ -1330,8 +1330,8 @@
         "flags"
       ],
       "additionalProperties": false,
-      "description": "(beta) uses a client side `kubectl apply` to deploy manifests. You'll need a `kubectl` CLI version installed that's compatible with your cluster.",
-      "x-intellij-html-description": "(beta) uses a client side <code>kubectl apply</code> to deploy manifests. You'll need a <code>kubectl</code> CLI version installed that's compatible with your cluster.\n"
+      "description": "*beta* uses a client side `kubectl apply` to deploy manifests. You'll need a `kubectl` CLI version installed that's compatible with your cluster.",
+      "x-intellij-html-description": "<p><em>beta</em> uses a client side <code>kubectl apply</code> to deploy manifests. You'll need a <code>kubectl</code> CLI version installed that's compatible with your cluster.</p>\n"
     },
     "KubectlFlags": {
       "properties": {
@@ -1341,7 +1341,7 @@
           },
           "type": "array",
           "description": "additional flags passed on creations (`kubectl apply`).",
-          "x-intellij-html-description": "additional flags passed on creations (<code>kubectl apply</code>).\n",
+          "x-intellij-html-description": "<p>additional flags passed on creations (<code>kubectl apply</code>).</p>\n",
           "default": "[]"
         },
         "delete": {
@@ -1350,7 +1350,7 @@
           },
           "type": "array",
           "description": "additional flags passed on deletions (`kubectl delete`).",
-          "x-intellij-html-description": "additional flags passed on deletions (<code>kubectl delete</code>).\n",
+          "x-intellij-html-description": "<p>additional flags passed on deletions (<code>kubectl delete</code>).</p>\n",
           "default": "[]"
         },
         "global": {
@@ -1359,7 +1359,7 @@
           },
           "type": "array",
           "description": "additional flags passed on every command.",
-          "x-intellij-html-description": "additional flags passed on every command.\n",
+          "x-intellij-html-description": "<p>additional flags passed on every command.</p>\n",
           "default": "[]"
         }
       },
@@ -1370,19 +1370,19 @@
       ],
       "additionalProperties": false,
       "description": "additional flags passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete).",
-      "x-intellij-html-description": "additional flags passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete).\n"
+      "x-intellij-html-description": "<p>additional flags passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete).</p>\n"
     },
     "KustomizeDeploy": {
       "properties": {
         "flags": {
           "$ref": "#/definitions/KubectlFlags",
           "description": "additional flags passed to `kubectl`.",
-          "x-intellij-html-description": "additional flags passed to <code>kubectl</code>.\n"
+          "x-intellij-html-description": "<p>additional flags passed to <code>kubectl</code>.</p>\n"
         },
         "path": {
           "type": "string",
           "description": "path to Kustomization files.",
-          "x-intellij-html-description": "path to Kustomization files.\n",
+          "x-intellij-html-description": "<p>path to Kustomization files.</p>\n",
           "default": "."
         }
       },
@@ -1391,26 +1391,26 @@
         "flags"
       ],
       "additionalProperties": false,
-      "description": "(beta) uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
-      "x-intellij-html-description": "(beta) uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment.\n"
+      "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
+      "x-intellij-html-description": "<p><em>beta</em> uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment.</p>\n"
     },
     "LocalBuild": {
       "properties": {
         "push": {
           "type": "boolean",
           "description": "should images be pushed to a registry. If not specified, images are pushed only if the current Kubernetes context connects to a remote cluster.",
-          "x-intellij-html-description": "should images be pushed to a registry. If not specified, images are pushed only if the current Kubernetes context connects to a remote cluster.\n"
+          "x-intellij-html-description": "<p>should images be pushed to a registry. If not specified, images are pushed only if the current Kubernetes context connects to a remote cluster.</p>\n"
         },
         "useBuildkit": {
           "type": "boolean",
           "description": "use BuildKit to build Docker images.",
-          "x-intellij-html-description": "use BuildKit to build Docker images.\n",
+          "x-intellij-html-description": "<p>use BuildKit to build Docker images.</p>\n",
           "default": "false"
         },
         "useDockerCLI": {
           "type": "boolean",
           "description": "use `docker` command-line interface instead of Docker Engine APIs.",
-          "x-intellij-html-description": "use <code>docker</code> command-line interface instead of Docker Engine APIs.\n",
+          "x-intellij-html-description": "<p>use <code>docker</code> command-line interface instead of Docker Engine APIs.</p>\n",
           "default": "false"
         }
       },
@@ -1420,12 +1420,12 @@
         "useBuildkit"
       ],
       "additionalProperties": false,
-      "description": "(beta) describes how to do a build on the local docker daemon and optionally push to a repository.",
-      "x-intellij-html-description": "(beta) describes how to do a build on the local docker daemon and optionally push to a repository.\n"
+      "description": "*beta* describes how to do a build on the local docker daemon and optionally push to a repository.",
+      "x-intellij-html-description": "<p><em>beta</em> describes how to do a build on the local docker daemon and optionally push to a repository.</p>\n"
     },
     "LocalDir": {
       "description": "configures how Kaniko mounts sources directly via an `emptyDir` volume.",
-      "x-intellij-html-description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume.\n"
+      "x-intellij-html-description": "<p>configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume.</p>\n"
     },
     "Profile": {
       "required": [
@@ -1438,22 +1438,22 @@
           },
           "type": "array",
           "description": "criteria by which a profile can be auto-activated.",
-          "x-intellij-html-description": "criteria by which a profile can be auto-activated.\n"
+          "x-intellij-html-description": "<p>criteria by which a profile can be auto-activated.</p>\n"
         },
         "build": {
           "$ref": "#/definitions/BuildConfig",
           "description": "replaces the main `build` configuration.",
-          "x-intellij-html-description": "replaces the main <code>build</code> configuration.\n"
+          "x-intellij-html-description": "<p>replaces the main <code>build</code> configuration.</p>\n"
         },
         "deploy": {
           "$ref": "#/definitions/DeployConfig",
           "description": "replaces the main `deploy` configuration.",
-          "x-intellij-html-description": "replaces the main <code>deploy</code> configuration.\n"
+          "x-intellij-html-description": "<p>replaces the main <code>deploy</code> configuration.</p>\n"
         },
         "name": {
           "type": "string",
           "description": "a unique profile name.",
-          "x-intellij-html-description": "a unique profile name.\n",
+          "x-intellij-html-description": "<p>a unique profile name.</p>\n",
           "examples": [
             "profile-prod"
           ]
@@ -1464,7 +1464,7 @@
           },
           "type": "array",
           "description": "a list of patches applied to the configuration. Patches use the JSON patch notation.",
-          "x-intellij-html-description": "a list of patches applied to the configuration. Patches use the JSON patch notation.\n"
+          "x-intellij-html-description": "<p>a list of patches applied to the configuration. Patches use the JSON patch notation.</p>\n"
         },
         "test": {
           "items": {
@@ -1472,7 +1472,7 @@
           },
           "type": "array",
           "description": "replaces the main `test` configuration.",
-          "x-intellij-html-description": "replaces the main <code>test</code> configuration.\n"
+          "x-intellij-html-description": "<p>replaces the main <code>test</code> configuration.</p>\n"
         }
       },
       "preferredOrder": [
@@ -1484,34 +1484,34 @@
         "activation"
       ],
       "additionalProperties": false,
-      "description": "(beta) profiles are used to override any `build`, `test` or `deploy` configuration.",
-      "x-intellij-html-description": "(beta) profiles are used to override any <code>build</code>, <code>test</code> or <code>deploy</code> configuration.\n"
+      "description": "*beta* profiles are used to override any `build`, `test` or `deploy` configuration.",
+      "x-intellij-html-description": "<p><em>beta</em> profiles are used to override any <code>build</code>, <code>test</code> or <code>deploy</code> configuration.</p>\n"
     },
     "ShaTagger": {
-      "description": "(beta) tags images with their sha256 digest.",
-      "x-intellij-html-description": "(beta) tags images with their sha256 digest.\n"
+      "description": "*beta* tags images with their sha256 digest.",
+      "x-intellij-html-description": "<p><em>beta</em> tags images with their sha256 digest.</p>\n"
     },
     "SkaffoldPipeline": {
       "properties": {
         "apiVersion": {
           "type": "string",
           "description": "version of the configuration.",
-          "x-intellij-html-description": "version of the configuration.\n"
+          "x-intellij-html-description": "<p>version of the configuration.</p>\n"
         },
         "build": {
           "$ref": "#/definitions/BuildConfig",
           "description": "describes how images are built.",
-          "x-intellij-html-description": "describes how images are built.\n"
+          "x-intellij-html-description": "<p>describes how images are built.</p>\n"
         },
         "deploy": {
           "$ref": "#/definitions/DeployConfig",
           "description": "describes how images are deployed.",
-          "x-intellij-html-description": "describes how images are deployed.\n"
+          "x-intellij-html-description": "<p>describes how images are deployed.</p>\n"
         },
         "kind": {
           "type": "string",
           "description": "always `Config`.",
-          "x-intellij-html-description": "always <code>Config</code>.\n",
+          "x-intellij-html-description": "<p>always <code>Config</code>.</p>\n",
           "default": "Config"
         },
         "profiles": {
@@ -1519,8 +1519,8 @@
             "$ref": "#/definitions/Profile"
           },
           "type": "array",
-          "description": "(beta) can override be used to `build`, `test` or `deploy` configuration.",
-          "x-intellij-html-description": "(beta) can override be used to <code>build</code>, <code>test</code> or <code>deploy</code> configuration.\n"
+          "description": "*beta* can override be used to `build`, `test` or `deploy` configuration.",
+          "x-intellij-html-description": "<p><em>beta</em> can override be used to <code>build</code>, <code>test</code> or <code>deploy</code> configuration.</p>\n"
         },
         "test": {
           "items": {
@@ -1528,7 +1528,7 @@
           },
           "type": "array",
           "description": "describes how images are tested.",
-          "x-intellij-html-description": "describes how images are tested.\n"
+          "x-intellij-html-description": "<p>describes how images are tested.</p>\n"
         }
       },
       "preferredOrder": [
@@ -1541,29 +1541,29 @@
       ],
       "additionalProperties": false,
       "description": "describes a Skaffold pipeline.",
-      "x-intellij-html-description": "describes a Skaffold pipeline.\n"
+      "x-intellij-html-description": "<p>describes a Skaffold pipeline.</p>\n"
     },
     "TagPolicy": {
       "properties": {
         "dateTime": {
           "$ref": "#/definitions/DateTimeTagger",
-          "description": "(beta) tags images with the build timestamp.",
-          "x-intellij-html-description": "(beta) tags images with the build timestamp.\n"
+          "description": "*beta* tags images with the build timestamp.",
+          "x-intellij-html-description": "<p><em>beta</em> tags images with the build timestamp.</p>\n"
         },
         "envTemplate": {
           "$ref": "#/definitions/EnvTemplateTagger",
-          "description": "(beta) tags images with a configurable template string.",
-          "x-intellij-html-description": "(beta) tags images with a configurable template string.\n"
+          "description": "*beta* tags images with a configurable template string.",
+          "x-intellij-html-description": "<p><em>beta</em> tags images with a configurable template string.</p>\n"
         },
         "gitCommit": {
           "$ref": "#/definitions/GitTagger",
-          "description": "(beta) tags images with the git tag or commit of the artifact's workspace.",
-          "x-intellij-html-description": "(beta) tags images with the git tag or commit of the artifact's workspace.\n"
+          "description": "*beta* tags images with the git tag or commit of the artifact's workspace.",
+          "x-intellij-html-description": "<p><em>beta</em> tags images with the git tag or commit of the artifact's workspace.</p>\n"
         },
         "sha256": {
           "$ref": "#/definitions/ShaTagger",
-          "description": "(beta) tags images with their sha256 digest.",
-          "x-intellij-html-description": "(beta) tags images with their sha256 digest.\n"
+          "description": "*beta* tags images with their sha256 digest.",
+          "x-intellij-html-description": "<p><em>beta</em> tags images with their sha256 digest.</p>\n"
         }
       },
       "preferredOrder": [
@@ -1574,7 +1574,7 @@
       ],
       "additionalProperties": false,
       "description": "contains all the configuration for the tagging step.",
-      "x-intellij-html-description": "contains all the configuration for the tagging step.\n"
+      "x-intellij-html-description": "<p>contains all the configuration for the tagging step.</p>\n"
     },
     "TestCase": {
       "required": [
@@ -1584,7 +1584,7 @@
         "image": {
           "type": "string",
           "description": "artifact on which to run those tests.",
-          "x-intellij-html-description": "artifact on which to run those tests.\n",
+          "x-intellij-html-description": "<p>artifact on which to run those tests.</p>\n",
           "examples": [
             "gcr.io/k8s-skaffold/example"
           ]
@@ -1595,7 +1595,7 @@
           },
           "type": "array",
           "description": "the [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test) to run on that artifact.",
-          "x-intellij-html-description": "the <a href=\"https://github.com/GoogleContainerTools/container-structure-test\">Container Structure Tests</a> to run on that artifact.\n",
+          "x-intellij-html-description": "<p>the <a href=\"https://github.com/GoogleContainerTools/container-structure-test\">Container Structure Tests</a> to run on that artifact.</p>\n",
           "default": "[]",
           "examples": [
             "[\"./test/*\"]"
@@ -1608,7 +1608,7 @@
       ],
       "additionalProperties": false,
       "description": "a list of structure tests to run on images that Skaffold builds.",
-      "x-intellij-html-description": "a list of structure tests to run on images that Skaffold builds.\n"
+      "x-intellij-html-description": "<p>a list of structure tests to run on images that Skaffold builds.</p>\n"
     }
   }
 }

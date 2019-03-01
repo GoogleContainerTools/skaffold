@@ -65,3 +65,11 @@ code {
     border-radius: 3px;
     padding: 0 .2em;
 }
+
+em {
+    font-family: unset;
+    font-size: 85%;
+    border: 1px dotted gray;
+    border-radius: 3px;
+    padding: 0 .2em;
+}
