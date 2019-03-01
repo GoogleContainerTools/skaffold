@@ -34,7 +34,7 @@
       ],
       "additionalProperties": false,
       "description": "represents items that need should be built, along with the context in which they should be built.",
-      "x-intellij-html-description": "represents items that need should be built, along with the context in which they should be built.\n"
+      "x-intellij-html-description": "represents items that need should be built, along with the context in which they should be built."
     },
     "BuildConfig": {
       "anyOf": [
@@ -102,7 +102,7 @@
         }
       ],
       "description": "contains all the configuration for the build steps",
-      "x-intellij-html-description": "contains all the configuration for the build steps\n"
+      "x-intellij-html-description": "contains all the configuration for the build steps"
     },
     "BuildType": {
       "properties": {
@@ -119,7 +119,7 @@
       ],
       "additionalProperties": false,
       "description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated.",
-      "x-intellij-html-description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated.\n"
+      "x-intellij-html-description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated."
     },
     "DeployConfig": {
       "anyOf": [
@@ -166,7 +166,7 @@
         }
       ],
       "description": "contains all the configuration needed by the deploy steps",
-      "x-intellij-html-description": "contains all the configuration needed by the deploy steps\n"
+      "x-intellij-html-description": "contains all the configuration needed by the deploy steps"
     },
     "DeployType": {
       "properties": {
@@ -183,7 +183,7 @@
       ],
       "additionalProperties": false,
       "description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated.",
-      "x-intellij-html-description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated.\n"
+      "x-intellij-html-description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated."
     },
     "GoogleCloudBuild": {
       "properties": {
@@ -259,7 +259,7 @@
       ],
       "additionalProperties": false,
       "description": "contains the configuration needed for deploying with `kubectl apply`",
-      "x-intellij-html-description": "contains the configuration needed for deploying with <code>kubectl apply</code>\n"
+      "x-intellij-html-description": "contains the configuration needed for deploying with <code>kubectl apply</code>"
     },
     "LocalBuild": {
       "properties": {
@@ -272,7 +272,7 @@
       ],
       "additionalProperties": false,
       "description": "contains the fields needed to do a build on the local docker daemon and optionally push to a repository.",
-      "x-intellij-html-description": "contains the fields needed to do a build on the local docker daemon and optionally push to a repository.\n"
+      "x-intellij-html-description": "contains the fields needed to do a build on the local docker daemon and optionally push to a repository."
     },
     "Manifest": {
       "properties": {
@@ -320,7 +320,7 @@
       ],
       "additionalProperties": false,
       "description": "top level config object that is parsed from a skaffold.yaml",
-      "x-intellij-html-description": "top level config object that is parsed from a skaffold.yaml\n"
+      "x-intellij-html-description": "top level config object that is parsed from a skaffold.yaml"
     }
   }
 }

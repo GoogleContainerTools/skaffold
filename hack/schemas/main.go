@@ -39,6 +39,16 @@ const (
 	defPrefix = "#/definitions/"
 )
 
+var (
+	regexpDefaults = regexp.MustCompile("(.*)Defaults to `(.*)`")
+	regexpExample  = regexp.MustCompile("(.*)For example: `(.*)`")
+	pTags          = regexp.MustCompile("(<p>)|(</p>)")
+)
+
+type schemaGenerator struct {
+	strict bool
+}
+
 type Schema struct {
 	*Definition
 	Version     string                 `json:"$schema,omitempty"`
@@ -71,20 +81,27 @@ func generateSchemas(root string, dryRun bool) (bool, error) {
 
 	for i, version := range schema.SchemaVersions {
 		apiVersion := strings.TrimPrefix(version.APIVersion, "skaffold/")
+
 		folder := apiVersion
+		strict := false
 		if i == len(schema.SchemaVersions)-1 {
 			folder = "latest"
+			strict = true
 		}
 
 		input := fmt.Sprintf("%s/pkg/skaffold/schema/%s/config.go", root, folder)
-		buf, err := generateSchema(input)
+		output := fmt.Sprintf("%s/docs/content/en/schemas/%s.json", root, apiVersion)
+
+		generator := schemaGenerator{
+			strict: strict,
+		}
+
+		buf, err := generator.Apply(input)
 		if err != nil {
 			return false, errors.Wrapf(err, "unable to generate schema for version %s", version.APIVersion)
 		}
 
-		output := fmt.Sprintf("%s/docs/content/en/schemas/%s.json", root, apiVersion)
 		var current []byte
-
 		if _, err := os.Stat(output); err == nil {
 			var err error
 			current, err = ioutil.ReadFile(output)
@@ -128,7 +145,7 @@ func setTypeOrRef(def *Definition, typeName string) {
 	}
 }
 
-func newDefinition(name string, t ast.Expr, comment string) *Definition {
+func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string) *Definition {
 	def := &Definition{}
 
 	switch tt := t.(type) {
@@ -155,7 +172,7 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 
 	case *ast.ArrayType:
 		def.Type = "array"
-		def.Items = newDefinition("", tt.Elt, "")
+		def.Items = g.newDefinition("", tt.Elt, "")
 		if def.Items.Ref == "" {
 			def.Default = "[]"
 		}
@@ -163,7 +180,7 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 	case *ast.MapType:
 		def.Type = "object"
 		def.Default = "{}"
-		def.AdditionalProperties = newDefinition("", tt.Value, "")
+		def.AdditionalProperties = g.newDefinition("", tt.Value, "")
 
 	case *ast.StructType:
 		for _, field := range tt.Fields.List {
@@ -176,7 +193,7 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 				continue
 			}
 
-			if yamlName == "" {
+			if yamlName == "" || yamlName == "-" {
 				continue
 			}
 
@@ -189,45 +206,52 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 			}
 
 			def.PreferredOrder = append(def.PreferredOrder, yamlName)
-			def.Properties[yamlName] = newDefinition(field.Names[0].Name, field.Type, field.Doc.Text())
+			def.Properties[yamlName] = g.newDefinition(field.Names[0].Name, field.Type, field.Doc.Text())
 			def.AdditionalProperties = false
+		}
+	}
+
+	if g.strict && name != "" {
+		if !strings.HasPrefix(comment, name+" ") {
+			panic(fmt.Sprintf("comment should start with field name on field %s", name))
 		}
 	}
 
 	description := strings.TrimSpace(strings.Replace(comment, "\n", " ", -1))
 
 	// Extract default value
-	if m := regexp.MustCompile("(.*)Defaults to `(.*)`").FindStringSubmatch(description); m != nil {
+	if m := regexpDefaults.FindStringSubmatch(description); m != nil {
 		description = strings.TrimSpace(m[1])
 		def.Default = m[2]
 	}
 
 	// Extract example
-	if m := regexp.MustCompile("(.*)For example: `(.*)`").FindStringSubmatch(description); m != nil {
+	if m := regexpExample.FindStringSubmatch(description); m != nil {
 		description = strings.TrimSpace(m[1])
 		def.Examples = []string{m[2]}
 	}
 
 	// Remove type prefix
-	description = strings.TrimPrefix(description, name+" is the ")
-	description = strings.TrimPrefix(description, name+" is ")
-	description = strings.TrimPrefix(description, name+" are the ")
-	description = strings.TrimPrefix(description, name+" are ")
-	description = strings.TrimPrefix(description, name+" lists ")
-	description = strings.TrimPrefix(description, name+" ")
+	description = regexp.MustCompile("^"+name+" (\\*.*\\* )?((is (the )?)|(are (the )?)|(lists ))?").ReplaceAllString(description, "$1")
 
+	if g.strict && name != "" {
+		if description == "" {
+			panic(fmt.Sprintf("no description on field %s", name))
+		}
+		if !strings.HasSuffix(description, ".") {
+			panic(fmt.Sprintf("description should end with a dot on field %s", name))
+		}
+	}
 	def.Description = description
 
 	// Convert to HTML
 	html := string(blackfriday.Run([]byte(description), blackfriday.WithNoExtensions()))
-	html = strings.Replace(html, "<p>", "", -1)
-	html = strings.Replace(html, "</p>", "", -1)
-	def.HTMLDescription = html
+	def.HTMLDescription = strings.TrimSpace(pTags.ReplaceAllString(html, ""))
 
 	return def
 }
 
-func generateSchema(inputPath string) ([]byte, error) {
+func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 	fset := token.NewFileSet()
 	node, err := parser.ParseFile(fset, inputPath, nil, parser.ParseComments)
 	if err != nil {
@@ -251,7 +275,7 @@ func generateSchema(inputPath string) ([]byte, error) {
 
 			name := typeSpec.Name.Name
 			preferredOrder = append(preferredOrder, name)
-			definitions[name] = newDefinition(name, typeSpec.Type, declaration.Doc.Text())
+			definitions[name] = g.newDefinition(name, typeSpec.Type, declaration.Doc.Text())
 		}
 	}
 

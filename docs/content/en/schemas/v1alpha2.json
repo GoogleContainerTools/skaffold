@@ -64,7 +64,7 @@
         }
       ],
       "description": "represents items that need to be built, along with the context in which they should be built.",
-      "x-intellij-html-description": "represents items that need to be built, along with the context in which they should be built.\n"
+      "x-intellij-html-description": "represents items that need to be built, along with the context in which they should be built."
     },
     "ArtifactType": {
       "properties": {
@@ -180,7 +180,7 @@
         }
       ],
       "description": "contains all the configuration for the build steps",
-      "x-intellij-html-description": "contains all the configuration for the build steps\n"
+      "x-intellij-html-description": "contains all the configuration for the build steps"
     },
     "BuildType": {
       "properties": {
@@ -201,7 +201,7 @@
       ],
       "additionalProperties": false,
       "description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated.",
-      "x-intellij-html-description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated.\n"
+      "x-intellij-html-description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated."
     },
     "DateTimeTagger": {
       "properties": {
@@ -218,7 +218,7 @@
       ],
       "additionalProperties": false,
       "description": "contains the configuration for the DateTime tagger.",
-      "x-intellij-html-description": "contains the configuration for the DateTime tagger.\n"
+      "x-intellij-html-description": "contains the configuration for the DateTime tagger."
     },
     "DeployConfig": {
       "anyOf": [
@@ -260,7 +260,7 @@
         }
       ],
       "description": "contains all the configuration needed by the deploy steps",
-      "x-intellij-html-description": "contains all the configuration needed by the deploy steps\n"
+      "x-intellij-html-description": "contains all the configuration needed by the deploy steps"
     },
     "DeployType": {
       "properties": {
@@ -281,7 +281,7 @@
       ],
       "additionalProperties": false,
       "description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated.",
-      "x-intellij-html-description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated.\n"
+      "x-intellij-html-description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated."
     },
     "DockerArtifact": {
       "properties": {
@@ -325,11 +325,11 @@
       ],
       "additionalProperties": false,
       "description": "contains the configuration for the envTemplate tagger.",
-      "x-intellij-html-description": "contains the configuration for the envTemplate tagger.\n"
+      "x-intellij-html-description": "contains the configuration for the envTemplate tagger."
     },
     "GitTagger": {
       "description": "contains the configuration for the git tagger.",
-      "x-intellij-html-description": "contains the configuration for the git tagger.\n"
+      "x-intellij-html-description": "contains the configuration for the git tagger."
     },
     "GoogleCloudBuild": {
       "properties": {
@@ -358,11 +358,11 @@
       ],
       "additionalProperties": false,
       "description": "contains the fields needed to do a remote build on Google Cloud Build.",
-      "x-intellij-html-description": "contains the fields needed to do a remote build on Google Cloud Build.\n"
+      "x-intellij-html-description": "contains the fields needed to do a remote build on Google Cloud Build."
     },
     "HelmConventionConfig": {
       "description": "represents image config in the syntax of image.repository and image.tag",
-      "x-intellij-html-description": "represents image config in the syntax of image.repository and image.tag\n"
+      "x-intellij-html-description": "represents image config in the syntax of image.repository and image.tag"
     },
     "HelmDeploy": {
       "properties": {
@@ -378,7 +378,7 @@
       ],
       "additionalProperties": false,
       "description": "contains the configuration needed for deploying with helm",
-      "x-intellij-html-description": "contains the configuration needed for deploying with helm\n"
+      "x-intellij-html-description": "contains the configuration needed for deploying with helm"
     },
     "HelmFQNConfig": {
       "properties": {
@@ -391,7 +391,7 @@
       ],
       "additionalProperties": false,
       "description": "represents image config to use the FullyQualifiedImageName as param to set",
-      "x-intellij-html-description": "represents image config to use the FullyQualifiedImageName as param to set\n"
+      "x-intellij-html-description": "represents image config to use the FullyQualifiedImageName as param to set"
     },
     "HelmImageConfig": {
       "properties": {
@@ -442,12 +442,12 @@
         "appVersion": {
           "type": "string",
           "description": "set the appVersion on the chart to this version",
-          "x-intellij-html-description": "set the appVersion on the chart to this version\n"
+          "x-intellij-html-description": "set the appVersion on the chart to this version"
         },
         "version": {
           "type": "string",
           "description": "sets the version on the chart to this semver version.",
-          "x-intellij-html-description": "sets the version on the chart to this semver version.\n"
+          "x-intellij-html-description": "sets the version on the chart to this semver version."
         }
       },
       "preferredOrder": [
@@ -456,7 +456,7 @@
       ],
       "additionalProperties": false,
       "description": "represents parameters for packaging helm chart.",
-      "x-intellij-html-description": "represents parameters for packaging helm chart.\n"
+      "x-intellij-html-description": "represents parameters for packaging helm chart."
     },
     "HelmRelease": {
       "properties": {
@@ -560,7 +560,7 @@
       ],
       "additionalProperties": false,
       "description": "contains the fields needed to do a on-cluster build using the kaniko image",
-      "x-intellij-html-description": "contains the fields needed to do a on-cluster build using the kaniko image\n"
+      "x-intellij-html-description": "contains the fields needed to do a on-cluster build using the kaniko image"
     },
     "KubectlDeploy": {
       "properties": {
@@ -589,7 +589,7 @@
       ],
       "additionalProperties": false,
       "description": "contains the configuration needed for deploying with `kubectl apply`",
-      "x-intellij-html-description": "contains the configuration needed for deploying with <code>kubectl apply</code>\n"
+      "x-intellij-html-description": "contains the configuration needed for deploying with <code>kubectl apply</code>"
     },
     "KubectlFlags": {
       "properties": {
@@ -622,7 +622,7 @@
       ],
       "additionalProperties": false,
       "description": "describes additional options flags that are passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete).",
-      "x-intellij-html-description": "describes additional options flags that are passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete).\n"
+      "x-intellij-html-description": "describes additional options flags that are passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete)."
     },
     "KustomizeDeploy": {
       "properties": {
@@ -660,7 +660,7 @@
       ],
       "additionalProperties": false,
       "description": "contains the fields needed to do a build on the local docker daemon and optionally push to a repository.",
-      "x-intellij-html-description": "contains the fields needed to do a build on the local docker daemon and optionally push to a repository.\n"
+      "x-intellij-html-description": "contains the fields needed to do a build on the local docker daemon and optionally push to a repository."
     },
     "Profile": {
       "properties": {
@@ -681,11 +681,11 @@
       ],
       "additionalProperties": false,
       "description": "additional configuration that overrides default configuration when it is activated.",
-      "x-intellij-html-description": "additional configuration that overrides default configuration when it is activated.\n"
+      "x-intellij-html-description": "additional configuration that overrides default configuration when it is activated."
     },
     "ShaTagger": {
       "description": "contains the configuration for the SHA tagger.",
-      "x-intellij-html-description": "contains the configuration for the SHA tagger.\n"
+      "x-intellij-html-description": "contains the configuration for the SHA tagger."
     },
     "SkaffoldPipeline": {
       "properties": {
@@ -740,7 +740,7 @@
       ],
       "additionalProperties": false,
       "description": "contains all the configuration for the tagging step",
-      "x-intellij-html-description": "contains all the configuration for the tagging step\n"
+      "x-intellij-html-description": "contains all the configuration for the tagging step"
     }
   }
 }
