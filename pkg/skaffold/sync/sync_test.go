@@ -280,7 +280,7 @@ func TestNewSyncItem(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			originalWorkingDir := WorkingDir
-			WorkingDir = func(image string) (string, error) {
+			WorkingDir = func(image, tagged string) (string, error) {
 				return test.workingDir, nil
 			}
 			defer func() {
@@ -452,6 +452,41 @@ func TestPerform(t *testing.T) {
 			err := Perform(context.Background(), test.image, test.files, test.cmdFn, []string{""})
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cmdRecord.cmds)
+		})
+	}
+}
+
+func TeststripTagIfDigestPresent(t *testing.T) {
+	tests := []struct {
+		name     string
+		image    string
+		tagged   string
+		expected string
+	}{
+		{
+			name:     "strip out tag",
+			image:    "gcr.io/test/test",
+			tagged:   "gcr.io/test/test:sometag@sha256:13e30612be9aa5dae72fb06619ff0dabf80ca600e8f949da683abe73d2f0113b",
+			expected: "gcr.io/test/test@sha256:13e30612be9aa5dae72fb06619ff0dabf80ca600e8f949da683abe73d2f0113b",
+		},
+		{
+			name:     "only tag provided",
+			image:    "gcr.io/test/test",
+			tagged:   "gcr.io/test/test:sometag",
+			expected: "gcr.io/test/test:sometag",
+		},
+		{
+			name:     "only digest provided",
+			image:    "gcr.io/test/test",
+			tagged:   "gcr.io/test/test@sha256:13e30612be9aa5dae72fb06619ff0dabf80ca600e8f949da683abe73d2f0113b",
+			expected: "gcr.io/test/test@sha256:13e30612be9aa5dae72fb06619ff0dabf80ca600e8f949da683abe73d2f0113b",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual := stripTagIfDigestPresent(test.image, test.tagged)
+			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expected, actual)
 		})
 	}
 }

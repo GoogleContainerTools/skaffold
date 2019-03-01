@@ -31,9 +31,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strings"
+)
+
+const (
+	lenDigest = 71
 )
 
 var (
@@ -62,7 +68,7 @@ func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact) (*Item
 		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
 	}
 
-	wd, err := WorkingDir(tag)
+	wd, err := WorkingDir(a.ImageName, tag)
 	if err != nil {
 		return nil, errors.Wrapf(err, "retrieving working dir for %s", tag)
 	}
@@ -89,15 +95,33 @@ func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact) (*Item
 	}, nil
 }
 
-func retrieveWorkingDir(image string) (string, error) {
-	cf, err := docker.RetrieveRemoteConfig(image)
+func retrieveWorkingDir(image, tagged string) (string, error) {
+	fullyQualifedImage := stripTagIfDigestPresent(image, tagged)
+	cf, err := docker.RetrieveRemoteConfig(fullyQualifedImage)
 	if err != nil {
 		return "", errors.Wrap(err, "retrieving remote config")
+
 	}
 	if cf.Config.WorkingDir == "" {
 		return "/", nil
 	}
 	return cf.Config.WorkingDir, nil
+}
+
+// stripTagIfDigestPresent removes the tag from the image if there is a tag and a digest
+func stripTagIfDigestPresent(image, tagged string) string {
+	// try to parse the reference, return image if it works
+	_, err := name.ParseReference(tagged, name.WeakValidation)
+	if err == nil {
+		return image
+	}
+	// strip out the tag
+	digestIndex := strings.Index(tagged, "sha256:")
+	if digestIndex == -1 {
+		return image
+	}
+	digest := tagged[digestIndex : digestIndex+lenDigest]
+	return fmt.Sprintf("%s@%s", image, digest)
 }
 
 func latestTag(image string, builds []build.Artifact) string {
