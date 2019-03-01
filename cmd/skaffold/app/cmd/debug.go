@@ -21,8 +21,8 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debugging"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -68,7 +68,7 @@ func debug(out io.Writer) error {
 		opts.TargetImages = []string{"none"}
 	}
 
-	deploy.AddManifestTransform(kubectl.ApplyDebuggingTransforms)
+	deploy.AddManifestTransform(debugging.ApplyDebuggingTransforms)
 
 	for {
 		select {

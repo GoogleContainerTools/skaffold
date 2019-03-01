@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubectl
+package debugging
 
 import (
 	"bufio"
@@ -26,23 +26,45 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 )
 
 // portAllocator is a function that takes a desired port and returns an available port
 // Ports are normally uint16 but Kubernetes ContainerPort.containerPort is an integer
 type portAllocator func(int32) int32
 
+// imageConfiguration captures information from a docker/oci image configuration
+type imageConfiguration struct {
+	labels     map[string]string
+	env        map[string]string
+	entrypoint []string
+	arguments  []string
+}
+
+// containerTransformer transforms a container definition
+type containerTransformer interface {
+
+	// IsApplicable determines if this container is suitable to be transformed.
+	IsApplicable(config imageConfiguration) bool
+
+	// Apply configures a container definition for debugging, returning a simple map describing the debug configuration details or `nil` if it could not be done
+	Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{}
+}
+
+var containerTransforms []containerTransformer
+
 // ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.
-func ApplyDebuggingTransforms(l ManifestList, builds []build.Artifact) (ManifestList, error) {
-	var updated ManifestList
+func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact) (kubectl.ManifestList, error) {
+	var updated kubectl.ManifestList
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 
 	s := serializer.NewYAMLSerializer(serializer.DefaultMetaFactory, scheme.Scheme, scheme.Scheme)
@@ -81,26 +103,26 @@ func ApplyDebuggingTransforms(l ManifestList, builds []build.Artifact) (Manifest
 // transformManifest attempts to configure a manifest for debugging.
 // Returns true if changed, false otherwise.
 func transformManifest(obj runtime.Object, builds []build.Artifact) bool {
-	// FIXME: add other types
 	switch o := obj.(type) {
 	case *v1.Pod:
 		return transformPodSpec(&o.ObjectMeta, &o.Spec, builds)
+	case *v1.ReplicationController:
+		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, builds)
 	case *appsv1.Deployment:
+		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, builds)
+	case *appsv1.DaemonSet:
+		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, builds)
+	case *appsv1.ReplicaSet:
+		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, builds)
+	case *appsv1.StatefulSet:
+		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, builds)
+	case *batchv1.Job:
 		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, builds)
 	default:
 		logrus.Debugf("skipping unknown object: %v\n", obj)
 		return false
 	}
 }
-
-const (
-	// JVM indicates an application that requires the Java Virtual Machine
-	JVM = "jvm"
-	// NODEJS indicates an application that requires NodeJS
-	NODEJS = "nodejs"
-	// UNKNOWN indicates that runtime cannot be determined
-	UNKNOWN = ""
-)
 
 // transformPodSpec attempts to configure a podspec for debugging.
 // Returns true if changed, false otherwise.
@@ -178,14 +200,8 @@ func allocatePort(podSpec *v1.PodSpec, desiredPort int32) int32 {
 	// NOTREACHED
 }
 
-// imageConfiguration captures information from a docker/oci image configuration
-type imageConfiguration struct {
-	labels     map[string]string
-	env        map[string]string
-	entrypoint []string
-	arguments  []string
-}
-
+// retrieveImageConfiguration retrieves the image container configuration for
+// the given build artifact
 func retrieveImageConfiguration(image string, artifact build.Artifact) imageConfiguration {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -221,45 +237,12 @@ func transformContainer(container *v1.Container, artifact build.Artifact, portAl
 		config.arguments = container.Args
 	}
 
-	switch guessRuntime(config) {
-	case JVM:
-		logrus.Infof("Configuring [%s] for JVM debugging", container.Name)
-		return configureJvmDebugging(container, config, portAlloc), nil
-	case NODEJS:
-		logrus.Infof("Configuring [%s] for node.js debugging", container.Name)
-		return configureNodeJSDebugging(container, config, portAlloc), nil
-	default:
-		return nil, errors.Errorf("unable to determine runtime for [%s]", container.Name)
-	}
-}
-
-func guessRuntime(config imageConfiguration) string {
-	if _, found := config.env["JAVA_TOOL_OPTIONS"]; found {
-		return JVM
-	}
-	if _, found := config.env["JAVA_VERSION"]; found {
-		return JVM
-	}
-	if _, found := config.env["NODE_VERSION"]; found {
-		return NODEJS
-	}
-	if len(config.entrypoint) > 0 {
-		if config.entrypoint[0] == "java" || strings.HasSuffix(config.entrypoint[0], "/java") {
-			return JVM
+	for _, transform := range containerTransforms {
+		if transform.IsApplicable(config) {
+			return transform.Apply(container, config, portAlloc), nil
 		}
-		if config.entrypoint[0] == "node" || strings.HasSuffix(config.entrypoint[0], "/node") {
-			return NODEJS
-		}
-	}
-	if len(config.arguments) > 0 {
-		if config.arguments[0] == "java" || strings.HasSuffix(config.arguments[0], "/java") {
-			return JVM
-		}
-		if config.arguments[0] == "node" || strings.HasSuffix(config.arguments[0], "/node") {
-			return NODEJS
-		}
-	}
-	return UNKNOWN
+	} 
+	return nil, errors.Errorf("unable to determine runtime for [%s]", container.Name)
 }
 
 func encodeConfigurations(configurations map[string]map[string]interface{}) string {

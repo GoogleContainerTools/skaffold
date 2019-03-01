@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubectl
+package debugging
 
 import (
 	"testing"
@@ -46,88 +46,6 @@ func TestFindArtifact(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			result := findArtifact(test.source, buildArtifacts)
 			testutil.CheckDeepEqual(t, test.returnNil, result == nil)
-		})
-	}
-}
-
-func TestGuessRuntime(t *testing.T) {
-	tests := []struct {
-		description string
-		source      imageConfiguration
-		result      string
-	}{
-		{
-			description: "JAVA_TOOL_OPTIONS",
-			source:      imageConfiguration{env: map[string]string{"JAVA_TOOL_OPTIONS": "-agent:jdwp"}},
-			result:      JVM,
-		},
-		{
-			description: "JAVA_VERSION",
-			source:      imageConfiguration{env: map[string]string{"JAVA_VERSION": "8"}},
-			result:      JVM,
-		},
-		{
-			description: "entrypoint java",
-			source:      imageConfiguration{entrypoint: []string{"java", "-jar", "foo.jar"}},
-			result:      JVM,
-		},
-		{
-			description: "entrypoint /usr/bin/java",
-			source:      imageConfiguration{entrypoint: []string{"/usr/bin/java", "-jar", "foo.jar"}},
-			result:      JVM,
-		},
-		{
-			description: "no entrypoint, args java",
-			source:      imageConfiguration{arguments: []string{"java", "-jar", "foo.jar"}},
-			result:      JVM,
-		},
-		{
-			description: "no entrypoint, arguments /usr/bin/java",
-			source:      imageConfiguration{arguments: []string{"/usr/bin/java", "-jar", "foo.jar"}},
-			result:      JVM,
-		},
-		{
-			description: "NODE_VERSION",
-			source:      imageConfiguration{env: map[string]string{"NODE_VERSION": "10"}},
-			result:      NODEJS,
-		},
-		{
-			description: "entrypoint node",
-			source:      imageConfiguration{entrypoint: []string{"node", "init.js"}},
-			result:      NODEJS,
-		},
-		{
-			description: "entrypoint /usr/bin/node",
-			source:      imageConfiguration{entrypoint: []string{"/usr/bin/node", "init.js"}},
-			result:      NODEJS,
-		},
-		{
-			description: "no entrypoint, args node",
-			source:      imageConfiguration{arguments: []string{"node", "init.js"}},
-			result:      NODEJS,
-		},
-		{
-			description: "no entrypoint, arguments /usr/bin/node",
-			source:      imageConfiguration{arguments: []string{"/usr/bin/node", "init.js"}},
-			result:      NODEJS,
-		},
-		{
-			description: "entrypoint /bin/sh",
-			source:      imageConfiguration{entrypoint: []string{"/bin/sh"}},
-			result:      UNKNOWN,
-		},
-		{
-			description: "nothing",
-			source:      imageConfiguration{},
-			result:      UNKNOWN,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			// retrieve from the source map and make a change
-			result := guessRuntime(test.source)
-			testutil.CheckDeepEqual(t, test.result, result)
 		})
 	}
 }

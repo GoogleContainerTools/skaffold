@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubectl
+package debugging
 
 import (
 	"fmt"
@@ -22,7 +22,33 @@ import (
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
+	"github.com/sirupsen/logrus"
 )
+
+type jdwpTransformer struct {}
+ 
+func init() {
+	containerTransforms = append(containerTransforms, jdwpTransformer{})
+}
+
+func (t jdwpTransformer) IsApplicable(config imageConfiguration) bool {
+	if _, found := config.env["JAVA_TOOL_OPTIONS"]; found {
+		return true
+	}
+	if _, found := config.env["JAVA_VERSION"]; found {
+		return true
+	}
+	if len(config.entrypoint) > 0 {
+		if config.entrypoint[0] == "java" || strings.HasSuffix(config.entrypoint[0], "/java") {
+			return true
+		}
+	} else if len(config.arguments) > 0 {
+		if config.arguments[0] == "java" || strings.HasSuffix(config.arguments[0], "/java") {
+			return true
+		}
+	}
+	return false
+}
 
 // captures the useful jdwp options (see `java -agentlib:jdwp=help`)
 type jdwpSpec struct {
@@ -35,9 +61,10 @@ type jdwpSpec struct {
 	port uint16
 }
 
-// configureJvmDebugging configures a container definition for JVM debugging.
+// Apply configures a container definition for JVM debugging.
 // Returns a simple map describing the debug configuration details.
-func configureJvmDebugging(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
+func (t jdwpTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
+	logrus.Infof("Configuring [%s] for JVM debugging", container.Name)
 	// try to find existing JAVA_TOOL_OPTIONS or jdwp command argument
 	// todo: find existing containerPort "jdwp" and use port. But what if it conflicts with jdwp spec?
 	spec := retrieveJdwpSpec(config)

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubectl
+package debugging
 
 import (
 	"testing"
@@ -56,8 +56,78 @@ func TestExtractInspectArg(t *testing.T) {
 	}
 }
 
+func TestNodeTransformer_IsApplicable(t *testing.T) {
+	tests := []struct {
+		description string
+		source      imageConfiguration
+		result      bool
+	}{
+		{
+			description: "NODE_VERSION",
+			source:      imageConfiguration{env: map[string]string{"NODE_VERSION": "10"}},
+			result:      true,
+		},
+		{
+			description: "entrypoint node",
+			source:      imageConfiguration{entrypoint: []string{"node", "init.js"}},
+			result:      true,
+		},
+		{
+			description: "entrypoint /usr/bin/node",
+			source:      imageConfiguration{entrypoint: []string{"/usr/bin/node", "init.js"}},
+			result:      true,
+		},
+		{
+			description: "no entrypoint, args node",
+			source:      imageConfiguration{arguments: []string{"node", "init.js"}},
+			result:      true,
+		},
+		{
+			description: "no entrypoint, arguments /usr/bin/node",
+			source:      imageConfiguration{arguments: []string{"/usr/bin/node", "init.js"}},
+			result:      true,
+		},
+		{
+			description: "entrypoint nodemon",
+			source:      imageConfiguration{entrypoint: []string{"nodemon", "init.js"}},
+			result:      true,
+		},
+		{
+			description: "entrypoint /usr/bin/nodemon",
+			source:      imageConfiguration{entrypoint: []string{"/usr/bin/nodemon", "init.js"}},
+			result:      true,
+		},
+		{
+			description: "no entrypoint, args nodemon",
+			source:      imageConfiguration{arguments: []string{"nodemon", "init.js"}},
+			result:      true,
+		},
+		{
+			description: "no entrypoint, arguments /usr/bin/nodemon",
+			source:      imageConfiguration{arguments: []string{"/usr/bin/nodemon", "init.js"}},
+			result:      true,
+		},
+		{
+			description: "entrypoint /bin/sh",
+			source:      imageConfiguration{entrypoint: []string{"/bin/sh"}},
+			result:      false,
+		},
+		{
+			description: "nothing",
+			source:      imageConfiguration{},
+			result:      false,
+		},
+	}
 
-func TestConfigureNodeJSDebugging(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			result := nodeTransformer{}.IsApplicable(test.source)
+			testutil.CheckDeepEqual(t, test.result, result)
+		})
+	}
+}
+
+func TestNodeTransformerApply(t *testing.T) {
 	tests := []struct {
 		description   string
 		containerSpec v1.Container
@@ -105,7 +175,7 @@ func TestConfigureNodeJSDebugging(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			configureNodeJSDebugging(&test.containerSpec, test.configuration, identity)
+			nodeTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
 			testutil.CheckDeepEqual(t, test.result, test.containerSpec)
 		})
 	}

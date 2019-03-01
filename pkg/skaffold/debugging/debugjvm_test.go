@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubectl
+package debugging
 
 import (
 	"testing"
@@ -25,7 +25,63 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestConfigureJvmDebugging(t *testing.T) {
+func TestJdwpTransformer_IsApplicable(t *testing.T) {
+	tests := []struct {
+		description string
+		source      imageConfiguration
+		result      bool
+	}{
+		{
+			description: "JAVA_TOOL_OPTIONS",
+			source:      imageConfiguration{env: map[string]string{"JAVA_TOOL_OPTIONS": "-agent:jdwp"}},
+			result:      true,
+		},
+		{
+			description: "JAVA_VERSION",
+			source:      imageConfiguration{env: map[string]string{"JAVA_VERSION": "8"}},
+			result:      true,
+		},
+		{
+			description: "entrypoint java",
+			source:      imageConfiguration{entrypoint: []string{"java", "-jar", "foo.jar"}},
+			result:      true,
+		},
+		{
+			description: "entrypoint /usr/bin/java",
+			source:      imageConfiguration{entrypoint: []string{"/usr/bin/java", "-jar", "foo.jar"}},
+			result:      true,
+		},
+		{
+			description: "no entrypoint, args java",
+			source:      imageConfiguration{arguments: []string{"java", "-jar", "foo.jar"}},
+			result:      true,
+		},
+		{
+			description: "no entrypoint, arguments /usr/bin/java",
+			source:      imageConfiguration{arguments: []string{"/usr/bin/java", "-jar", "foo.jar"}},
+			result:      true,
+		},
+		{
+			description: "entrypoint /bin/sh",
+			source:      imageConfiguration{entrypoint: []string{"/bin/sh"}},
+			result:      false,
+		},
+		{
+			description: "nothing",
+			source:      imageConfiguration{},
+			result:      false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			result := jdwpTransformer{}.IsApplicable(test.source)
+			testutil.CheckDeepEqual(t, test.result, result)
+		})
+	}
+}
+
+func TestJdwpTransformerApply(t *testing.T) {
 	tests := []struct {
 		description   string
 		containerSpec v1.Container
@@ -70,7 +126,7 @@ func TestConfigureJvmDebugging(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			configureJvmDebugging(&test.containerSpec, test.configuration, identity)
+			jdwpTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
 			testutil.CheckDeepEqual(t, test.result, test.containerSpec)
 		})
 	}
