@@ -823,8 +823,8 @@
       "properties": {
         "flags": {
           "$ref": "#/definitions/HelmDeployFlags",
-          "description": "Optional flags to send to the helm command",
-          "x-intellij-html-description": "Optional flags to send to the helm command\n"
+          "description": "additional option flags that are passed on the command line to `helm`.",
+          "x-intellij-html-description": "additional option flags that are passed on the command line to <code>helm</code>.\n"
         },
         "releases": {
           "items": {
@@ -879,8 +879,8 @@
         "upgrade"
       ],
       "additionalProperties": false,
-      "description": "describes additional options flags that are passed on the command line to helm either on every command (Global), on install (Install) or on update (Update).",
-      "x-intellij-html-description": "describes additional options flags that are passed on the command line to helm either on every command (Global), on install (Install) or on update (Update).\n"
+      "description": "additional option flags that are passed on the command line to `helm`.",
+      "x-intellij-html-description": "additional option flags that are passed on the command line to <code>helm</code>.\n"
     },
     "HelmFQNConfig": {
       "properties": {

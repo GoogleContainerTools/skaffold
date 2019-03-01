@@ -211,6 +211,12 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string)
 		}
 	}
 
+	if g.strict && name != "" {
+		if !strings.HasPrefix(comment, name+" ") {
+			panic(fmt.Sprintf("comment should start with field name on field %s", name))
+		}
+	}
+
 	description := strings.TrimSpace(strings.Replace(comment, "\n", " ", -1))
 
 	// Extract default value
@@ -230,8 +236,13 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string)
 		description = m[7]
 	}
 
-	if g.strict && name != "" && description == "" {
-		panic(fmt.Sprintf("no description on field %s", name))
+	if g.strict && name != "" {
+		if description == "" {
+			panic(fmt.Sprintf("no description on field %s", name))
+		}
+		if !strings.HasSuffix(description, ".") {
+			panic(fmt.Sprintf("description should end with a dot on field %s", name))
+		}
 	}
 	def.Description = description
 

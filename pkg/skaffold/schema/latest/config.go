@@ -345,13 +345,13 @@ type HelmDeploy struct {
 	// Releases is a list of Helm releases.
 	Releases []HelmRelease `yaml:"releases,omitempty" yamltags:"required"`
 
-	// Optional flags to send to the helm command
+	// Flags are additional option flags that are passed on the command
+	// line to `helm`.
 	Flags HelmDeployFlags `yaml:"flags,omitempty"`
 }
 
-// HelmDeployFlags describes additional options flags that are passed on the command
-// line to helm either on every command (Global), on install (Install)
-// or on update (Update).
+// HelmDeployFlags are additional option flags that are passed on the command
+// line to `helm`.
 type HelmDeployFlags struct {
 	// Global are additional flags passed on every command.
 	Global []string `yaml:"global,omitempty"`
@@ -528,7 +528,7 @@ type JSONPatch struct {
 
 // Activation criteria by which a profile is auto-activated.
 type Activation struct {
-	// Env is a key=value pair. The profile is auto-activated if an Environment
+	// Env is a `key=value` pair. The profile is auto-activated if an Environment
 	// Variable `key` has value `value`.
 	// For example: `ENV=production`.
 	Env string `yaml:"env,omitempty"`
