@@ -74,7 +74,7 @@ func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files m
 	// Use "m" flag to touch the files as they are copied.
 	reader, writer := io.Pipe()
 	copy := exec.CommandContext(ctx, "kubectl", "exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name, "-i",
-		"--", "tar", "xmf", "-", "-C", "/", "--no-same-owner")
+		"--", "tar", "xmf", "-", "--no-same-owner")
 	copy.Stdin = reader
 	go func() {
 		defer writer.Close()
