@@ -41,11 +41,11 @@ td:first-child {
     padding: 1px 5px !important;
 }
 
-td.top {
+tr.top td {
     background-color: #EEE;
 }
 
-td.top .comment {
+tr.top .comment {
     color: gray;
 }
 
