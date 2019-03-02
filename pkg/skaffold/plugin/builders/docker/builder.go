@@ -21,13 +21,11 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/environments/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -41,6 +39,11 @@ import (
 type Builder struct {
 	opts *config.SkaffoldOptions
 	env  *latest.ExecutionEnvironment
+	*latest.LocalBuild
+	LocalDocker  docker.LocalDaemon
+	LocalCluster bool
+	PushImages   bool
+	KubeContext  string
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Docker.
@@ -88,30 +91,6 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	default:
 		return nil, errors.Errorf("%s is not a supported environment for builder docker", b.env.Name)
 	}
-}
-
-func (b *Builder) local(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	var l *latest.LocalBuild
-	if err := util.CloneThroughJSON(b.env.Properties, &l); err != nil {
-		return nil, errors.Wrap(err, "converting execution env to localBuild struct")
-	}
-	if l == nil {
-		l = &latest.LocalBuild{}
-	}
-	kubeContext, err := kubectx.CurrentContext()
-	if err != nil {
-		return nil, errors.Wrap(err, "getting current cluster context")
-	}
-	builder, err := local.NewBuilder(l, kubeContext, b.opts.SkipTests)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting local builder")
-	}
-	for _, a := range artifacts {
-		if err := setArtifact(a); err != nil {
-			return nil, err
-		}
-	}
-	return builder.Build(ctx, out, tags, artifacts)
 }
 
 // googleCloudBuild sets any necessary defaults and then builds artifacts with docker in GCB

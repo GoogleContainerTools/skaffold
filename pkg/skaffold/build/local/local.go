@@ -73,7 +73,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	switch {
 	case artifact.DockerArtifact != nil:
-		return b.buildDocker(ctx, out, artifact.Workspace, artifact.DockerArtifact, tag)
+		return b.buildDocker(ctx, out, artifact, tag)
 
 	case artifact.BazelArtifact != nil:
 		return b.buildBazel(ctx, out, artifact.Workspace, artifact.BazelArtifact, tag)
