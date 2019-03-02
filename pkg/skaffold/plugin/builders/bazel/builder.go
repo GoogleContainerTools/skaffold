@@ -20,14 +20,12 @@ import (
 	"context"
 	"io"
 
-	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -37,34 +35,20 @@ import (
 
 // Builder builds artifacts with Bazel.
 type Builder struct {
-	opts         *config.SkaffoldOptions
-	env          *latest.ExecutionEnvironment
-	localDocker  docker.LocalDaemon
-	localCluster bool
-	pushImages   bool
-	kubeContext  string
+	opts *config.SkaffoldOptions
+	env  *latest.ExecutionEnvironment
+	*latest.LocalBuild
+	LocalDocker  docker.LocalDaemon
+	LocalCluster bool
+	PushImages   bool
+	KubeContext  string
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Bazel.
-func NewBuilder() (*Builder, error) {
-	localCluster, err := configutil.GetLocalCluster()
-	if err != nil {
-		return nil, errors.Wrap(err, "getting localCluster")
-	}
-	kubeContext, err := kubectx.CurrentContext()
-	if err != nil {
-		return nil, errors.Wrap(err, "getting current cluster context")
-	}
-	localDocker, err := docker.NewAPIClient()
-	if err != nil {
-		return nil, errors.Wrap(err, "getting docker client")
-	}
+func NewBuilder() *Builder {
 	return &Builder{
-		localCluster: localCluster,
-		kubeContext:  kubeContext,
-		localDocker:  localDocker,
-		pushImages:   true,
-	}, nil
+		PushImages: true,
+	}
 }
 
 // Init stores skaffold options and the execution environment

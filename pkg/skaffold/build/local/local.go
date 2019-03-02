@@ -76,7 +76,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 		return b.buildDocker(ctx, out, artifact.Workspace, artifact.DockerArtifact, tag)
 
 	case artifact.BazelArtifact != nil:
-		return b.buildBazel(ctx, out, artifact.Workspace, artifact.BazelArtifact, tag)
+		return b.buildBazel(ctx, out, artifact, tag)
 
 	case artifact.JibMavenArtifact != nil:
 		return b.buildJibMaven(ctx, out, artifact.Workspace, artifact.JibMavenArtifact, tag)

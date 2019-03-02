@@ -26,10 +26,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -41,6 +43,21 @@ import (
 
 // local sets any necessary defaults and then builds artifacts with bazel locally
 func (b *Builder) local(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	localCluster, err := configutil.GetLocalCluster()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting localCluster")
+	}
+	b.LocalCluster = localCluster
+	kubeContext, err := kubectx.CurrentContext()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting current cluster context")
+	}
+	b.KubeContext = kubeContext
+	localDocker, err := docker.NewAPIClient()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting docker client")
+	}
+	b.LocalDocker = localDocker
 	var l *latest.LocalBuild
 	if err := util.CloneThroughJSON(b.env.Properties, &l); err != nil {
 		return nil, errors.Wrap(err, "converting execution env to localBuild struct")
@@ -48,8 +65,9 @@ func (b *Builder) local(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	if l == nil {
 		l = &latest.LocalBuild{}
 	}
+	b.LocalBuild = l
 	if l.Push != nil {
-		b.pushImages = *l.Push
+		b.PushImages = *l.Push
 	}
 	for _, a := range artifacts {
 		if err := setArtifact(a); err != nil {
@@ -60,18 +78,18 @@ func (b *Builder) local(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 }
 
 func (b *Builder) buildArtifacts(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	if b.localCluster {
-		color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext)
+	if b.LocalCluster {
+		color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.KubeContext)
 	}
-	return build.InSequence(ctx, out, tags, artifacts, b.buildArtifact)
+	return build.InSequence(ctx, out, tags, artifacts, b.runBuild)
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	digestOrImageID, err := b.runBuild(ctx, out, artifact, tag)
+func (b *Builder) runBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+	digestOrImageID, err := b.BuildArtifact(ctx, out, artifact, tag)
 	if err != nil {
 		return "", errors.Wrap(err, "build artifact")
 	}
-	if b.pushImages {
+	if b.PushImages {
 		digest := digestOrImageID
 		return tag + "@" + digest, nil
 	}
@@ -82,15 +100,15 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 	// the imageID, and use that in the manifests.
 	imageID := digestOrImageID
 	uniqueTag := artifact.ImageName + ":" + strings.TrimPrefix(imageID, "sha256:")
-	if err := b.localDocker.Tag(ctx, imageID, uniqueTag); err != nil {
+	if err := b.LocalDocker.Tag(ctx, imageID, uniqueTag); err != nil {
 		return "", err
 	}
 
 	return uniqueTag, nil
 }
 
-// buildArtifact builds the bazel artifact
-func (b *Builder) runBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+// BuildArtifact builds the bazel artifact
+func (b *Builder) BuildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	args := []string{"build"}
 	a := artifact.ArtifactType.BazelArtifact
 	workspace := artifact.Workspace
@@ -106,14 +124,14 @@ func (b *Builder) runBuild(ctx context.Context, out io.Writer, artifact *latest.
 		return "", errors.Wrap(err, "running command")
 	}
 
-	bazelBin, err := RunBazelBin(ctx, workspace, a)
+	bazelBin, err := bazelBin(ctx, workspace, a)
 	if err != nil {
 		return "", errors.Wrap(err, "getting path of bazel-bin")
 	}
 
-	tarPath := filepath.Join(bazelBin, BuildTarPath(a.BuildTarget))
+	tarPath := filepath.Join(bazelBin, buildTarPath(a.BuildTarget))
 
-	if b.pushImages {
+	if b.PushImages {
 		return PushImage(tarPath, tag)
 	}
 
@@ -151,21 +169,20 @@ func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, 
 	}
 	defer imageTar.Close()
 
-	bazelTag := BuildImageTag(a.BuildTarget)
-	imageID, err := b.localDocker.Load(ctx, out, imageTar, bazelTag)
+	bazelTag := buildImageTag(a.BuildTarget)
+	imageID, err := b.LocalDocker.Load(ctx, out, imageTar, bazelTag)
 	if err != nil {
 		return "", errors.Wrap(err, "loading image into docker daemon")
 	}
 
-	if err := b.localDocker.Tag(ctx, imageID, tag); err != nil {
+	if err := b.LocalDocker.Tag(ctx, imageID, tag); err != nil {
 		return "", errors.Wrap(err, "tagging the image")
 	}
 
 	return imageID, nil
 }
 
-// RunBazelBin runs the bazel-bin command
-func RunBazelBin(ctx context.Context, workspace string, a *latest.BazelArtifact) (string, error) {
+func bazelBin(ctx context.Context, workspace string, a *latest.BazelArtifact) (string, error) {
 	args := []string{"info", "bazel-bin"}
 	args = append(args, a.BuildArgs...)
 
@@ -180,8 +197,7 @@ func RunBazelBin(ctx context.Context, workspace string, a *latest.BazelArtifact)
 	return strings.TrimSpace(string(buf)), nil
 }
 
-// TrimTarget trims the build target
-func TrimTarget(buildTarget string) string {
+func trimTarget(buildTarget string) string {
 	//TODO(r2d4): strip off leading //:, bad
 	trimmedTarget := strings.TrimPrefix(buildTarget, "//")
 	// Useful if root target "//:target"
@@ -190,17 +206,15 @@ func TrimTarget(buildTarget string) string {
 	return trimmedTarget
 }
 
-// BuildTarPath builds the tar path for the image
-func BuildTarPath(buildTarget string) string {
-	tarPath := TrimTarget(buildTarget)
+func buildTarPath(buildTarget string) string {
+	tarPath := trimTarget(buildTarget)
 	tarPath = strings.Replace(tarPath, ":", string(os.PathSeparator), 1)
 
 	return tarPath
 }
 
-// BuildImageTag builds the image tag
-func BuildImageTag(buildTarget string) string {
-	imageTag := TrimTarget(buildTarget)
+func buildImageTag(buildTarget string) string {
+	imageTag := trimTarget(buildTarget)
 	imageTag = strings.TrimPrefix(imageTag, ":")
 
 	//TODO(r2d4): strip off trailing .tar, even worse

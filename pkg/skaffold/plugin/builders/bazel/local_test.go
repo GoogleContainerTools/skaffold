@@ -25,14 +25,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestRunBazelBin(t *testing.T) {
+func TestBazelBin(t *testing.T) {
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
 		"bazel info bazel-bin --arg1 --arg2",
 		"/absolute/path/bin\n",
 	)
 
-	bazelBin, err := RunBazelBin(context.Background(), ".", &latest.BazelArtifact{
+	bazelBin, err := bazelBin(context.Background(), ".", &latest.BazelArtifact{
 		BuildArgs: []string{"--arg1", "--arg2"},
 	})
 
@@ -42,7 +42,7 @@ func TestRunBazelBin(t *testing.T) {
 func TestBuildTarPath(t *testing.T) {
 	buildTarget := "//:skaffold_example.tar"
 
-	tarPath := BuildTarPath(buildTarget)
+	tarPath := buildTarPath(buildTarget)
 
 	testutil.CheckDeepEqual(t, "skaffold_example.tar", tarPath)
 }
@@ -50,7 +50,7 @@ func TestBuildTarPath(t *testing.T) {
 func TestBuildImageTag(t *testing.T) {
 	buildTarget := "//:skaffold_example.tar"
 
-	imageTag := BuildImageTag(buildTarget)
+	imageTag := buildImageTag(buildTarget)
 
 	testutil.CheckDeepEqual(t, "bazel:skaffold_example", imageTag)
 }

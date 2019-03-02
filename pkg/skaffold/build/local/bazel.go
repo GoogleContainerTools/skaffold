@@ -19,60 +19,22 @@ package local
 import (
 	"context"
 	"io"
-	"os"
-	"os/exec"
-	"path/filepath"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
 )
 
-func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace string, a *latest.BazelArtifact, tag string) (string, error) {
-	args := []string{"build"}
-	args = append(args, a.BuildArgs...)
-	args = append(args, a.BuildTarget)
+func (b *Builder) buildBazel(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
+	builder := bazel.NewBuilder()
+	builder.LocalBuild = b.cfg
+	builder.LocalDocker = b.localDocker
+	builder.KubeContext = b.kubeContext
+	builder.PushImages = b.pushImages
 
-	// FIXME: is it possible to apply b.skipTests?
-	cmd := exec.CommandContext(ctx, "bazel", args...)
-	cmd.Dir = workspace
-	cmd.Stdout = out
-	cmd.Stderr = out
-	if err := util.RunCmd(cmd); err != nil {
-		return "", errors.Wrap(err, "running command")
+	opts := &config.SkaffoldOptions{
+		SkipTests: b.skipTests,
 	}
-
-	bazelBin, err := bazel.RunBazelBin(ctx, workspace, a)
-	if err != nil {
-		return "", errors.Wrap(err, "getting path of bazel-bin")
-	}
-
-	tarPath := filepath.Join(bazelBin, bazel.BuildTarPath(a.BuildTarget))
-
-	if b.pushImages {
-		return bazel.PushImage(tarPath, tag)
-	}
-
-	return b.loadImage(ctx, out, tarPath, a, tag)
-}
-
-func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, a *latest.BazelArtifact, tag string) (string, error) {
-	imageTar, err := os.Open(tarPath)
-	if err != nil {
-		return "", errors.Wrap(err, "opening image tarball")
-	}
-	defer imageTar.Close()
-
-	bazelTag := bazel.BuildImageTag(a.BuildTarget)
-	imageID, err := b.localDocker.Load(ctx, out, imageTar, bazelTag)
-	if err != nil {
-		return "", errors.Wrap(err, "loading image into docker daemon")
-	}
-
-	if err := b.localDocker.Tag(ctx, imageID, tag); err != nil {
-		return "", errors.Wrap(err, "tagging the image")
-	}
-
-	return imageID, nil
+	builder.Init(opts, &latest.ExecutionEnvironment{})
+	return builder.BuildArtifact(ctx, out, a, tag)
 }

@@ -19,18 +19,13 @@ package bazel
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
 	plugin "github.com/hashicorp/go-plugin"
-	"github.com/pkg/errors"
 )
 
 // Execute an image build with docker
 func Execute() error {
-	builder, err := NewBuilder()
-	if err != nil {
-		return errors.Wrap(err, "getting bazel builder")
-	}
 	// pluginMap is the map of plugins we can dispense.
 	var pluginMap = map[string]plugin.Plugin{
-		"bazel": &shared.BuilderPlugin{Impl: builder},
+		"bazel": &shared.BuilderPlugin{Impl: NewBuilder()},
 	}
 
 	plugin.Serve(&plugin.ServeConfig{
