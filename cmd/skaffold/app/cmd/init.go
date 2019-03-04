@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -52,6 +53,7 @@ var (
 	cliArtifacts []string
 	skipBuild    bool
 	force        bool
+	analyze      bool
 )
 
 // NewCmdInit describes the CLI command to generate a Skaffold configuration.
@@ -69,6 +71,7 @@ func NewCmdInit(out io.Writer) *cobra.Command {
 	cmd.Flags().BoolVar(&force, "force", false, "Force the generation of the Skaffold config")
 	cmd.Flags().StringVar(&composeFile, "compose-file", "", "Initialize from a docker-compose file")
 	cmd.Flags().StringArrayVarP(&cliArtifacts, "artifact", "a", nil, "'='-delimited dockerfile/image pair to generate build artifact\n(example: --artifact=/web/Dockerfile.web=gcr.io/web-project/image)")
+	cmd.Flags().BoolVar(&analyze, "analyze", false, "Print all discoverable Dockerfiles and images in JSON format to stdout")
 	return cmd
 }
 
@@ -123,6 +126,10 @@ func doInit(out io.Writer) error {
 		} else {
 			logrus.Infof("invalid k8s yaml %s: %s", file, err.Error())
 		}
+	}
+
+	if analyze {
+		return printAnalyzeJSON(out, dockerfiles, images)
 	}
 
 	var pairs []dockerfilePair
@@ -187,6 +194,22 @@ func doInit(out io.Writer) error {
 	tips.PrintForInit(out, opts)
 
 	return nil
+}
+
+func printAnalyzeJSON(out io.Writer, dockerfiles, images []string) error {
+	a := struct {
+		Dockerfiles []string `json:"dockerfiles,omitempty"`
+		Images      []string `json:"images,omitempty"`
+	}{
+		Dockerfiles: dockerfiles,
+		Images:      images,
+	}
+	contents, err := json.Marshal(a)
+	if err != nil {
+		return errors.Wrap(err, "marshalling contents")
+	}
+	_, err = out.Write(contents)
+	return err
 }
 
 func processCliArtifacts(artifacts []string) ([]dockerfilePair, error) {
