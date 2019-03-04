@@ -566,7 +566,9 @@
         {
           "properties": {
             "context": {
-              "type": "string"
+              "type": "string",
+              "description": "overrides the current kubectl context.",
+              "x-intellij-html-description": "overrides the current kubectl context."
             }
           },
           "preferredOrder": [
@@ -577,7 +579,9 @@
         {
           "properties": {
             "context": {
-              "type": "string"
+              "type": "string",
+              "description": "overrides the current kubectl context.",
+              "x-intellij-html-description": "overrides the current kubectl context."
             },
             "helm": {
               "$ref": "#/definitions/HelmDeploy",
@@ -594,7 +598,9 @@
         {
           "properties": {
             "context": {
-              "type": "string"
+              "type": "string",
+              "description": "overrides the current kubectl context.",
+              "x-intellij-html-description": "overrides the current kubectl context."
             },
             "kubectl": {
               "$ref": "#/definitions/KubectlDeploy",
@@ -611,7 +617,9 @@
         {
           "properties": {
             "context": {
-              "type": "string"
+              "type": "string",
+              "description": "overrides the current kubectl context.",
+              "x-intellij-html-description": "overrides the current kubectl context."
             },
             "kustomize": {
               "$ref": "#/definitions/KustomizeDeploy",

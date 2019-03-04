@@ -298,6 +298,7 @@ type TestCase struct {
 
 // DeployConfig contains all the configuration needed by the deploy steps.
 type DeployConfig struct {
+	// KubeContext overrides the current kubectl context.
 	KubeContext string `yaml:"context,omitempty"`
 	DeployType  `yaml:",inline"`
 }
