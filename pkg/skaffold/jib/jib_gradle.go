@@ -46,7 +46,7 @@ func GetDependenciesGradle(ctx context.Context, workspace string, a *latest.JibG
 // All paths are absolute.
 func GetBuildFilesGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) ([]string, error) {
 	cmd := getCommandGradle(ctx, workspace, a)
-	deps, err := getBuildFiles(cmd)
+	deps, err := getBuildFiles(cmd, a.Project)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jibGradle build files")
 	}
@@ -56,7 +56,7 @@ func GetBuildFilesGradle(ctx context.Context, workspace string, a *latest.JibGra
 
 // RefreshDependenciesGradle calls out to Jib to retrieve an updated list of dependencies
 func RefreshDependenciesGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) error {
-	if err := refreshDependencyList(getCommandGradle(ctx, workspace, a)); err != nil {
+	if err := refreshDependencyList(getCommandGradle(ctx, workspace, a), a.Project); err != nil {
 		return errors.Wrapf(err, "refreshing jibGradle dependencies")
 	}
 	return nil

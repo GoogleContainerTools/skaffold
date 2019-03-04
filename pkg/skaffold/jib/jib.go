@@ -141,7 +141,7 @@ func walkFiles(watchedFiles *[]string, ignoredFiles *[]string, callback func(pat
 				logrus.Debugf("could not stat dependency: %s", err)
 				continue // Ignore files that don't exist
 			}
-			return errors.Wrapf(err, "unable to stat file %s", dep)
+			return nil, errors.Wrapf(err, "unable to stat file %s", dep)
 		}
 
 		// Process file
@@ -162,10 +162,10 @@ func walkFiles(watchedFiles *[]string, ignoredFiles *[]string, callback func(pat
 				return callback(path, info)
 			},
 		}); err != nil {
-			return errors.Wrap(err, "filepath walk")
+			return nil, errors.Wrap(err, "filepath walk")
 		}
 	}
-	return nil
+	return filesList, nil
 }
 
 // isIgnored tests a path for whether or not it should be ignored according to a list of ignored files/directories
