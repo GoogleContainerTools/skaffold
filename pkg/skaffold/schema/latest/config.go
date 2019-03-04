@@ -414,6 +414,9 @@ type HelmRelease struct {
 	// SkipBuildDependencies should build dependencies be skipped.
 	SkipBuildDependencies bool `yaml:"skipBuildDependencies,omitempty"`
 
+	// UseHelmSecrets instructs skaffold to use secrets plugin on deployment.
+	UseHelmSecrets bool `yaml:"useHelmSecrets,omitempty"`
+
 	// Overrides are key-value pairs.
 	// If present, Skaffold will build a Helm `values` file that overrides
 	// the original and use it to call Helm CLI (`--f` flag).
