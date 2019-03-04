@@ -45,7 +45,7 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace stri
 		imageID, err = b.localDocker.Build(ctx, out, workspace, a, tag)
 	}
 
-	if b.pushImages {
+	if err == nil && b.pushImages {
 		return b.localDocker.Push(ctx, out, tag)
 	}
 
