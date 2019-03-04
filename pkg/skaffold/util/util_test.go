@@ -235,3 +235,60 @@ func TestCloneThroughJSON(t *testing.T) {
 		})
 	}
 }
+
+func TestIsHiddenDir(t *testing.T) {
+	tests := []struct {
+		name     string
+		filename string
+		expected bool
+	}{
+		{
+			name:     "hidden dir",
+			filename: ".hidden",
+			expected: true,
+		},
+		{
+			name:     "not hidden dir",
+			filename: "not_hidden",
+			expected: false,
+		},
+		{
+			name:     "current dir",
+			filename: ".",
+			expected: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if IsHiddenDir(test.filename) != test.expected {
+				t.Errorf("error want %t,  got %t", test.expected, !test.expected)
+			}
+		})
+	}
+}
+
+func TestIsHiddenFile(t *testing.T) {
+	tests := []struct {
+		name     string
+		filename string
+		expected bool
+	}{
+		{
+			name:     "hidden file name",
+			filename: ".hidden",
+			expected: true,
+		},
+		{
+			name:     "not hidden file",
+			filename: "not_hidden",
+			expected: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if IsHiddenDir(test.filename) != test.expected {
+				t.Errorf("error want %t,  got %t", test.expected, !test.expected)
+			}
+		})
+	}
+}
