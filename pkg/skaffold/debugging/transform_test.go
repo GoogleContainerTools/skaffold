@@ -19,36 +19,9 @@ package debugging
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	v1 "k8s.io/api/core/v1"
 )
-
-func TestFindArtifact(t *testing.T) {
-	buildArtifacts := []build.Artifact{
-		{ImageName: "image1", Tag: "tag1"},
-	}
-	tests := []struct {
-		description string
-		source      string
-		returnNil   bool
-	}{
-		{description: "found",
-			source:    "image1",
-			returnNil: false,
-		},
-		{description: "not found",
-			source:    "image2",
-			returnNil: true,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			result := findArtifact(test.source, buildArtifacts)
-			testutil.CheckDeepEqual(t, test.returnNil, result == nil)
-		})
-	}
-}
 
 func TestAllocatePort(t *testing.T) {
 	// helper function to create a container
