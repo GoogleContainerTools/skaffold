@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -102,4 +103,14 @@ func retrieveImageConfiguration(image string, artifact *build.Artifact) (imageCo
 		arguments:  config.Cmd,
 		labels:     config.Labels,
 	}, nil
+}
+
+// envAsMap turns an array of enviroment "NAME=value" strings into a map
+func envAsMap(env []string) map[string]string {
+	result := make(map[string]string)
+	for _, pair := range env {
+		s := strings.SplitN(pair, "=", 2)
+		result[s[0]] = s[1]
+	}
+	return result
 }

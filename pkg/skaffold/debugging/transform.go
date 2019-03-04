@@ -18,7 +18,6 @@ package debugging
 
 import (
 	"encoding/json"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -178,50 +177,4 @@ func encodeConfigurations(configurations map[string]map[string]interface{}) stri
 		return ""
 	}
 	return string(bytes)
-}
-
-func traverse(m map[interface{}]interface{}, keys ...string) (value interface{}, found bool) {
-	for index, k := range keys {
-		value, found = m[k]
-		if !found {
-			return
-		}
-		if index == len(keys)-1 {
-			return
-		}
-		switch t := value.(type) {
-		case map[interface{}]interface{}:
-			m = t
-		default:
-			break
-		}
-	}
-	return nil, false
-}
-
-// traverse the path, ensuring each point is a map
-func traverseToMap(m map[interface{}]interface{}, keys ...string) map[interface{}]interface{} {
-	var result map[interface{}]interface{}
-	for _, k := range keys {
-		value := m[k]
-		switch t := value.(type) {
-		case map[interface{}]interface{}:
-			result = t
-		default:
-			result = make(map[interface{}]interface{})
-			m[k] = result
-		}
-		m = result
-	}
-	return result
-}
-
-// envAsMap turns an array of enviroment "NAME=value" strings into a map
-func envAsMap(env []string) map[string]string {
-	result := make(map[string]string)
-	for _, pair := range env {
-		s := strings.SplitN(pair, "=", 2)
-		result[s[0]] = s[1]
-	}
-	return result
 }
