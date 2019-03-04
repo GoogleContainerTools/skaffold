@@ -31,7 +31,7 @@ var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 // GetDependenciesMaven finds the source dependencies for the given jib-maven artifact.
 // All paths are absolute.
 func GetDependenciesMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) ([]string, error) {
-	deps, err := getInputFiles(getCommandMaven(ctx, workspace, a))
+	deps, err := getInputFiles(getCommandMaven(ctx, workspace, a), a.Module)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jibMaven dependencies")
 	}
@@ -42,7 +42,7 @@ func GetDependenciesMaven(ctx context.Context, workspace string, a *latest.JibMa
 // GetBuildFilesMaven finds the build files for the given jib-maven artifact.
 // All paths are absolute.
 func GetBuildFilesMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) ([]string, error) {
-	deps, err := getBuildFiles(getCommandMaven(ctx, workspace, a))
+	deps, err := getBuildFiles(getCommandMaven(ctx, workspace, a), a.Module)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jibMaven build files")
 	}
@@ -52,7 +52,7 @@ func GetBuildFilesMaven(ctx context.Context, workspace string, a *latest.JibMave
 
 // RefreshDependenciesMaven calls out to Jib to retrieve an updated list of dependencies
 func RefreshDependenciesMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) error {
-	if err := refreshDependencyList(getCommandMaven(ctx, workspace, a)); err != nil {
+	if err := refreshDependencyList(getCommandMaven(ctx, workspace, a), a.Module); err != nil {
 		return errors.Wrapf(err, "refreshing jibMaven dependencies")
 	}
 	return nil

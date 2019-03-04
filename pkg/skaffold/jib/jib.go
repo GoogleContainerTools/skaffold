@@ -28,35 +28,43 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// filesTemplate contains fields parsed from Jib's JSON output
 type filesTemplate struct {
 	Build  []string
 	Inputs []string
 	Ignore []string
 }
 
-var watchedInputFiles, watchedBuildFiles []string
+// filesLists contains cached build/input dependencies
+type filesLists struct {
+	WatchedBuildFiles []string
+	WatchedInputFiles []string
+}
 
-func getInputFiles(cmd *exec.Cmd) ([]string, error) {
-	if len(watchedInputFiles) == 0 && len(watchedBuildFiles) == 0 {
+// watchedFiles maps from project name to watched files
+var watchedFiles = map[string]filesLists{}
+
+func getInputFiles(cmd *exec.Cmd, projectName string) ([]string, error) {
+	if len(watchedFiles[projectName].WatchedInputFiles) == 0 && len(watchedFiles[projectName].WatchedBuildFiles) == 0 {
 		// Refresh dependency list if empty
-		if err := refreshDependencyList(cmd); err != nil {
+		if err := refreshDependencyList(cmd, projectName); err != nil {
 			return nil, err
 		}
 	}
-	return watchedInputFiles, nil
+	return watchedFiles[projectName].WatchedInputFiles, nil
 }
 
-func getBuildFiles(cmd *exec.Cmd) ([]string, error) {
-	if len(watchedInputFiles) == 0 && len(watchedBuildFiles) == 0 {
+func getBuildFiles(cmd *exec.Cmd, projectName string) ([]string, error) {
+	if len(watchedFiles[projectName].WatchedInputFiles) == 0 && len(watchedFiles[projectName].WatchedBuildFiles) == 0 {
 		// Refresh dependency list if empty
-		if err := refreshDependencyList(cmd); err != nil {
+		if err := refreshDependencyList(cmd, projectName); err != nil {
 			return nil, err
 		}
 	}
-	return watchedBuildFiles, nil
+	return watchedFiles[projectName].WatchedBuildFiles, nil
 }
 
-func refreshDependencyList(cmd *exec.Cmd) error {
+func refreshDependencyList(cmd *exec.Cmd, projectName string) error {
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return err
@@ -72,13 +80,16 @@ func refreshDependencyList(cmd *exec.Cmd) error {
 			}
 
 			// Walk the files in each list and filter out ignores
-			if err := walkFiles(&watchedBuildFiles, &filesOutput.Build, &filesOutput.Ignore); err != nil {
+			files := watchedFiles[projectName]
+			files.WatchedInputFiles, err = walkFiles(&filesOutput.Inputs, &filesOutput.Ignore)
+			if err != nil {
 				return err
 			}
-			if err := walkFiles(&watchedInputFiles, &filesOutput.Inputs, &filesOutput.Ignore); err != nil {
+			files.WatchedBuildFiles, err = walkFiles(&filesOutput.Build, &filesOutput.Ignore)
+			if err != nil {
 				return err
 			}
-
+			watchedFiles[projectName] = files
 			return nil
 		}
 	}
@@ -86,8 +97,8 @@ func refreshDependencyList(cmd *exec.Cmd) error {
 	return errors.New("failed to get Jib dependencies")
 }
 
-func walkFiles(filesList *[]string, filesOutputList *[]string, filesOutputIgnore *[]string) error {
-	*filesList = []string{}
+func walkFiles(filesOutputList *[]string, filesOutputIgnore *[]string) ([]string, error) {
+	filesList := []string{}
 	for _, dep := range *filesOutputList {
 		if util.StrSliceContains(*filesOutputIgnore, dep) {
 			continue
@@ -100,11 +111,11 @@ func walkFiles(filesList *[]string, filesOutputList *[]string, filesOutputIgnore
 				logrus.Debugf("could not stat dependency: %s", err)
 				continue // Ignore files that don't exist
 			}
-			return errors.Wrapf(err, "unable to stat file %s", dep)
+			return nil, errors.Wrapf(err, "unable to stat file %s", dep)
 		}
 
 		if !info.IsDir() {
-			*filesList = append(*filesList, dep)
+			filesList = append(filesList, dep)
 			continue
 		}
 
@@ -114,12 +125,12 @@ func walkFiles(filesList *[]string, filesOutputList *[]string, filesOutputIgnore
 				if util.StrSliceContains(*filesOutputIgnore, path) {
 					return filepath.SkipDir
 				}
-				*filesList = append(*filesList, path)
+				filesList = append(filesList, path)
 				return nil
 			},
 		}); err != nil {
-			return errors.Wrap(err, "filepath walk")
+			return nil, errors.Wrap(err, "filepath walk")
 		}
 	}
-	return nil
+	return filesList, nil
 }
