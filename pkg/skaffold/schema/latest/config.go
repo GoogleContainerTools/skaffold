@@ -294,8 +294,6 @@ type ResourceRequirement struct {
 	Memory string `yaml:"memory,omitempty"`
 }
 
-type TestConfig []*TestCase
-
 // TestCase is a list of structure tests to run on images that Skaffold builds.
 type TestCase struct {
 	// ImageName is the artifact on which to run those tests.
