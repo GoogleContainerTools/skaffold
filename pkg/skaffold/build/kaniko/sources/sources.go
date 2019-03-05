@@ -61,12 +61,12 @@ func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 					Image:           cfg.Image,
 					Args:            args,
 					ImagePullPolicy: v1.PullIfNotPresent,
-					Env: []v1.EnvVar{},
-					VolumeMounts: []v1.VolumeMount{},
+					Env:             []v1.EnvVar{},
+					VolumeMounts:    []v1.VolumeMount{},
 				},
 			},
 			RestartPolicy: v1.RestartPolicyNever,
-			Volumes: []v1.Volume{},
+			Volumes:       []v1.Volume{},
 		},
 	}
 

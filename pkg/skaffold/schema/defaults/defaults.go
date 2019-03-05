@@ -223,7 +223,7 @@ func setDefaultKanikoImage(kaniko *latest.KanikoBuild) error {
 
 func setDefaultKanikoSecret(kaniko *latest.KanikoBuild) error {
 	if kaniko.GoogleCloudConfig == nil {
-		return nil
+		kaniko.GoogleCloudConfig = &latest.GoogleCloudConfig{}
 	}
 
 	kaniko.GoogleCloudConfig.SecretName = valueOrDefault(kaniko.GoogleCloudConfig.SecretName, constants.DefaultKanikoSecretName)

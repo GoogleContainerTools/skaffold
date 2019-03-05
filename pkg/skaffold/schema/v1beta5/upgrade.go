@@ -47,7 +47,7 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	for p, profile := range config.Profiles {
 		if profile.Build.KanikoBuild != nil {
 			newProfiles[p].Build.KanikoBuild.GoogleCloudConfig = &next.GoogleCloudConfig{
-				Path: profile.Build.KanikoBuild.PullSecret,
+				Path:       profile.Build.KanikoBuild.PullSecret,
 				SecretName: profile.Build.KanikoBuild.PullSecretName,
 			}
 		}
@@ -60,7 +60,7 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 
 	if config.Build.KanikoBuild != nil {
 		newBuild.KanikoBuild.GoogleCloudConfig = &next.GoogleCloudConfig{
-			Path: config.Build.KanikoBuild.PullSecret,
+			Path:       config.Build.KanikoBuild.PullSecret,
 			SecretName: config.Build.KanikoBuild.PullSecretName,
 		}
 	}

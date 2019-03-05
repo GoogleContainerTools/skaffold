@@ -259,12 +259,12 @@ func withKanikoBuild(bucket, secretName, namespace, secret string, timeout strin
 				GCSBucket: bucket,
 			},
 			GoogleCloudConfig: &latest.GoogleCloudConfig{
-				Path: secret,
+				Path:       secret,
 				SecretName: secretName,
 			},
-			Namespace:      namespace,
-			Timeout:        timeout,
-			Image:          constants.DefaultKanikoImage,
+			Namespace: namespace,
+			Timeout:   timeout,
+			Image:     constants.DefaultKanikoImage,
 		}}}
 		for _, op := range ops {
 			op(&b)
