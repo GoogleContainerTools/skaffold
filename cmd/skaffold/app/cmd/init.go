@@ -86,10 +86,11 @@ func doInit(out io.Writer) error {
 
 	var potentialConfigs, k8sConfigs, dockerfiles, images []string
 	err := filepath.Walk(rootDir, func(path string, f os.FileInfo, e error) error {
-		if f.IsDir() {
-			return nil
+		if f.IsDir() && util.IsHiddenDir(f.Name()) {
+			logrus.Debugf("skip walking hidden dir %s", f.Name())
+			return filepath.SkipDir
 		}
-		if strings.HasPrefix(path, ".") {
+		if f.IsDir() || util.IsHiddenFile(f.Name()) {
 			return nil
 		}
 		if util.IsSupportedKubernetesFormat(path) {
