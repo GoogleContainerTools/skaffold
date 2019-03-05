@@ -53,7 +53,7 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, workspace stri
 		return b.localDocker.Push(ctx, out, tag)
 	}
 
-	return imageID, err
+	return imageID, nil
 }
 
 func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, tag string) (string, error) {
