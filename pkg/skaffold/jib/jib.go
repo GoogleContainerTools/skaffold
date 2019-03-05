@@ -48,20 +48,26 @@ type filesLists struct {
 var watchedFiles = map[string]filesLists{}
 
 func getDependencies(cmd *exec.Cmd, projectName string) ([]string, error) {
-	watched := watchedFiles[projectName]
-	if len(watched.WatchedInputFiles) == 0 && len(watched.WatchedBuildFiles) == 0 {
+	if len(watchedFiles[projectName].WatchedInputFiles) == 0 && len(watchedFiles[projectName].WatchedBuildFiles) == 0 {
+		// Make sure build file modification time map is setup
+		if watchedFiles[projectName].BuildFileTimes == nil {
+			watched := watchedFiles[projectName]
+			watched.BuildFileTimes = make(map[string]time.Time)
+			watchedFiles[projectName] = watched
+		}
+
 		// Refresh dependency list if empty
 		if err := refreshDependencyList(cmd, projectName); err != nil {
 			return nil, err
 		}
 	} else {
 		// Refresh dependency list if any build definitions have changed
-		for _, buildFile := range watched.WatchedBuildFiles {
+		for _, buildFile := range watchedFiles[projectName].WatchedBuildFiles {
 			info, err := os.Stat(buildFile)
 			if err != nil {
 				return nil, err
 			}
-			if val, ok := watched.BuildFileTimes[buildFile]; !ok || info.ModTime() != val {
+			if val, ok := watchedFiles[projectName].BuildFileTimes[buildFile]; !ok || info.ModTime() != val {
 				if err := refreshDependencyList(cmd, projectName); err != nil {
 					return nil, err
 				}

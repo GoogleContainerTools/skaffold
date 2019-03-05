@@ -68,12 +68,12 @@ func TestGetDependenciesGradle(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOutErr(
-				strings.Join(getCommandGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{}).Args, " "),
+				strings.Join(getCommandGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{Project: "gradle-test"}).Args, " "),
 				test.stdout,
 				test.err,
 			)
 
-			deps, err := GetDependenciesGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{})
+			deps, err := GetDependenciesGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{Project: "gradle-test"})
 			if test.err != nil {
 				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jibGradle dependencies: "+test.err.Error(), err.Error())
 			} else {
