@@ -43,6 +43,7 @@ type FakeAPIClient struct {
 	ErrStream       bool
 
 	nextImageID int
+	Pushed      []string
 }
 
 type errReader struct{}
@@ -121,6 +122,7 @@ func (f *FakeAPIClient) ImagePush(_ context.Context, ref string, _ types.ImagePu
 	}
 
 	digest := fmt.Sprintf("sha256:%x", sha256.New().Sum([]byte(f.TagToImageID[ref])))
+	f.Pushed = append(f.Pushed, digest)
 
 	return f.body(digest), nil
 }
