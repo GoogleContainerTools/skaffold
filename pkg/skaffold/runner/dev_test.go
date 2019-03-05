@@ -329,7 +329,7 @@ func TestDevSync(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			originalWorkingDir := sync.WorkingDir
-			sync.WorkingDir = func(image, tagged string) (string, error) {
+			sync.WorkingDir = func(tagged string) (string, error) {
 				return "/", nil
 			}
 			defer func() {

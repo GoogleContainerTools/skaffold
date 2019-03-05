@@ -15,9 +15,8 @@
 package transport
 
 import (
-	"fmt"
-
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -40,6 +39,8 @@ type bearerTransport struct {
 	// See https://docs.docker.com/registry/spec/auth/token/
 	service string
 	scopes  []string
+	// Scheme we should use, determined by ping response.
+	scheme string
 }
 
 var _ http.RoundTripper = (*bearerTransport)(nil)
@@ -61,6 +62,8 @@ func (bt *bearerTransport) RoundTrip(in *http.Request) (*http.Response, error) {
 			in.Header.Set("Authorization", hdr)
 		}
 		in.Header.Set("User-Agent", transportName)
+
+		in.URL.Scheme = bt.scheme
 		return bt.inner.RoundTrip(in)
 	}
 
@@ -102,6 +105,10 @@ func (bt *bearerTransport) refresh() error {
 		return err
 	}
 	defer resp.Body.Close()
+
+	if err := CheckError(resp, http.StatusOK); err != nil {
+		return err
+	}
 
 	content, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
