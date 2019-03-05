@@ -30,7 +30,11 @@ import (
 )
 
 func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
-	color.Default.Fprintf(out, "Creating kaniko secret [%s]...\n", b.PullSecretName)
+	if b.GoogleCloudConfig == nil {
+		return func() {}, nil
+	}
+
+	color.Default.Fprintf(out, "Creating kaniko secret [%s]...\n", b.GoogleCloudConfig.SecretName)
 
 	client, err := kubernetes.GetClientset()
 	if err != nil {
@@ -39,24 +43,24 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 
 	secrets := client.CoreV1().Secrets(b.Namespace)
 
-	if b.PullSecret == "" {
+	if b.GoogleCloudConfig.Path == "" {
 		logrus.Debug("No pull secret specified. Checking for one in the cluster.")
 
-		if _, err := secrets.Get(b.PullSecretName, metav1.GetOptions{}); err != nil {
+		if _, err := secrets.Get(b.GoogleCloudConfig.SecretName, metav1.GetOptions{}); err != nil {
 			return nil, errors.Wrap(err, "checking for existing kaniko secret")
 		}
 
 		return func() {}, nil
 	}
 
-	secretData, err := ioutil.ReadFile(b.PullSecret)
+	secretData, err := ioutil.ReadFile(b.GoogleCloudConfig.Path)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading pull secret")
 	}
 
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   b.PullSecretName,
+			Name:   b.GoogleCloudConfig.SecretName,
 			Labels: map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
 		},
 		Data: map[string][]byte{
@@ -69,7 +73,7 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 	}
 
 	return func() {
-		if err := secrets.Delete(b.PullSecretName, &metav1.DeleteOptions{}); err != nil {
+		if err := secrets.Delete(b.GoogleCloudConfig.SecretName, &metav1.DeleteOptions{}); err != nil {
 			logrus.Warnf("deleting pull secret")
 		}
 	}, nil

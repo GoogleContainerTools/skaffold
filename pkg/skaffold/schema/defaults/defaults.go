@@ -222,15 +222,19 @@ func setDefaultKanikoImage(kaniko *latest.KanikoBuild) error {
 }
 
 func setDefaultKanikoSecret(kaniko *latest.KanikoBuild) error {
-	kaniko.PullSecretName = valueOrDefault(kaniko.PullSecretName, constants.DefaultKanikoSecretName)
+	if kaniko.GoogleCloudConfig == nil {
+		return nil
+	}
 
-	if kaniko.PullSecret != "" {
-		absPath, err := homedir.Expand(kaniko.PullSecret)
+	kaniko.GoogleCloudConfig.SecretName = valueOrDefault(kaniko.GoogleCloudConfig.SecretName, constants.DefaultKanikoSecretName)
+
+	if kaniko.GoogleCloudConfig.Path != "" {
+		absPath, err := homedir.Expand(kaniko.GoogleCloudConfig.Path)
 		if err != nil {
-			return fmt.Errorf("unable to expand pullSecret %s", kaniko.PullSecret)
+			return fmt.Errorf("unable to expand pullSecret %s", kaniko.GoogleCloudConfig.Path)
 		}
 
-		kaniko.PullSecret = absPath
+		kaniko.GoogleCloudConfig.Path = absPath
 		return nil
 	}
 

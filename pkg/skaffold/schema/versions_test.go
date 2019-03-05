@@ -84,8 +84,9 @@ build:
   kaniko:
     buildContext:
       gcsBucket: demo
-    pullSecret: /secret.json
-    pullSecretName: secret-name
+    googleCloudConfig:
+      path: /secret.json
+      secretName: secret-name
     namespace: nskaniko
     timeout: 120m
     dockerConfig:
@@ -257,9 +258,11 @@ func withKanikoBuild(bucket, secretName, namespace, secret string, timeout strin
 			BuildContext: &latest.KanikoBuildContext{
 				GCSBucket: bucket,
 			},
-			PullSecretName: secretName,
+			GoogleCloudConfig: &latest.GoogleCloudConfig{
+				Path: secret,
+				SecretName: secretName,
+			},
 			Namespace:      namespace,
-			PullSecret:     secret,
 			Timeout:        timeout,
 			Image:          constants.DefaultKanikoImage,
 		}}}

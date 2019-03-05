@@ -61,35 +61,56 @@ func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 					Image:           cfg.Image,
 					Args:            args,
 					ImagePullPolicy: v1.PullIfNotPresent,
-					Env: []v1.EnvVar{{
-						Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-						Value: "/secret/kaniko-secret",
-					}},
-					VolumeMounts: []v1.VolumeMount{
-						{
-							Name:      constants.DefaultKanikoSecretName,
-							MountPath: "/secret",
-						},
-					},
+					Env: []v1.EnvVar{},
+					VolumeMounts: []v1.VolumeMount{},
 				},
 			},
 			RestartPolicy: v1.RestartPolicyNever,
-			Volumes: []v1.Volume{{
-				Name: constants.DefaultKanikoSecretName,
-				VolumeSource: v1.VolumeSource{
-					Secret: &v1.SecretVolumeSource{
-						SecretName: cfg.PullSecretName,
-					},
-				},
-			},
+			Volumes: []v1.Volume{},
+		},
+	}
+
+	if cfg.GoogleCloudConfig == nil {
+		return addGoogleCloudConfig(pod, cfg.GoogleCloudConfig)
+	}
+
+	if cfg.DockerConfig == nil {
+		return addDockerConfig(pod, cfg.DockerConfig)
+	}
+
+	return pod
+}
+
+func addGoogleCloudConfig(pod *v1.Pod, cfg *latest.GoogleCloudConfig) *v1.Pod {
+	volumeMount := v1.VolumeMount{
+		Name:      constants.DefaultKanikoSecretName,
+		MountPath: "/secret",
+	}
+
+	pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, volumeMount)
+
+	volume := v1.Volume{
+		Name: constants.DefaultKanikoSecretName,
+		VolumeSource: v1.VolumeSource{
+			Secret: &v1.SecretVolumeSource{
+				SecretName: cfg.SecretName,
 			},
 		},
 	}
 
-	if cfg.DockerConfig == nil {
-		return pod
+	pod.Spec.Volumes = append(pod.Spec.Volumes, volume)
+
+	env := v1.EnvVar{
+		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+		Value: "/secret/kaniko-secret",
 	}
 
+	pod.Spec.Containers[0].Env = append(pod.Spec.Containers[0].Env, env)
+
+	return pod
+}
+
+func addDockerConfig(pod *v1.Pod, cfg *latest.DockerConfig) *v1.Pod {
 	volumeMount := v1.VolumeMount{
 		Name:      constants.DefaultKanikoDockerConfigSecretName,
 		MountPath: constants.DefaultKanikoDockerConfigPath,
@@ -101,7 +122,7 @@ func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 		Name: constants.DefaultKanikoDockerConfigSecretName,
 		VolumeSource: v1.VolumeSource{
 			Secret: &v1.SecretVolumeSource{
-				SecretName: cfg.DockerConfig.SecretName,
+				SecretName: cfg.SecretName,
 			},
 		},
 	}

@@ -43,10 +43,26 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 			return nil, errors.Wrap(err, "converting new profile")
 		}
 	}
+
+	for p, profile := range config.Profiles {
+		if profile.Build.KanikoBuild != nil {
+			newProfiles[p].Build.KanikoBuild.GoogleCloudConfig = &next.GoogleCloudConfig{
+				Path: profile.Build.KanikoBuild.PullSecret,
+				SecretName: profile.Build.KanikoBuild.PullSecretName,
+			}
+		}
+	}
 	// convert Build (should be the same)
 	var newBuild next.BuildConfig
 	if err := pkgutil.CloneThroughJSON(config.Build, &newBuild); err != nil {
 		return nil, errors.Wrap(err, "converting new build")
+	}
+
+	if config.Build.KanikoBuild != nil {
+		newBuild.KanikoBuild.GoogleCloudConfig = &next.GoogleCloudConfig{
+			Path: config.Build.KanikoBuild.PullSecret,
+			SecretName: config.Build.KanikoBuild.PullSecretName,
+		}
 	}
 
 	// convert Test (should be the same)

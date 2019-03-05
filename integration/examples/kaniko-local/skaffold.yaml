@@ -6,7 +6,8 @@ build:
   kaniko:
     buildContext: 
       localDir: {}
-    pullSecretName: e2esecret
+    googleCloudConfig:
+      secretName: e2esecret
     namespace: default
     cache: {}
     flags: 

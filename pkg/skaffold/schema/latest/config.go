@@ -246,15 +246,6 @@ type KanikoBuild struct {
 	// See [Kaniko Additional Flags](https://github.com/GoogleContainerTools/kaniko#additional-flags).
 	AdditionalFlags []string `yaml:"flags,omitempty"`
 
-	// PullSecret is the path to the secret key file.
-	// See [Kaniko Documentation](https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster).
-	PullSecret string `yaml:"pullSecret,omitempty"`
-
-	// PullSecretName is the name of the Kubernetes secret for pulling the files
-	// from the build context and pushing the final image.
-	// Defaults to `kaniko-secret`.
-	PullSecretName string `yaml:"pullSecretName,omitempty"`
-
 	// Namespace is the Kubernetes namespace.
 	// Defaults to current namespace in Kubernetes configuration.
 	Namespace string `yaml:"namespace,omitempty"`
@@ -270,6 +261,21 @@ type KanikoBuild struct {
 	// DockerConfig describes how to mount the local Docker configuration into the
 	// Kaniko pod.
 	DockerConfig *DockerConfig `yaml:"dockerConfig,omitempty"`
+
+	// GoogleCloudConfig describes how to mount the GCR configuration into the Kaniko pod.
+	GoogleCloudConfig *GoogleCloudConfig `yaml:"googleCloudConfig,omitempty"`
+}
+
+// GoogleCloudConfig contains information about the GCR configuration to mount.
+type GoogleCloudConfig struct {
+	// Path is the path to the secret key file.
+	// See [Kaniko Documentation](https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster).
+	Path string `yaml:"path,omitempty"`
+
+	// SecretName is the name of the Kubernetes secret for pulling the files
+	// from the build context and pushing the final image.
+	// Defaults to `kaniko-secret`.
+	SecretName string `yaml:"secretName,omitempty"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.
