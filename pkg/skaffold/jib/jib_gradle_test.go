@@ -53,14 +53,14 @@ func TestGetDependenciesGradle(t *testing.T) {
 		err         error
 	}{
 		{
-			description: "success",
-			stdout:      fmt.Sprintf("%s\n%s\n\n\n", dep1, dep2),
-			expected:    []string{dep1, dep2},
-		},
-		{
 			description: "failure",
 			stdout:      "",
 			err:         errors.New("error"),
+		},
+		{
+			description: "success",
+			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\"],\"ignore\":[]}", dep1, dep2),
+			expected:    []string{dep1, dep2},
 		},
 	}
 
@@ -77,7 +77,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 			if test.err != nil {
 				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jibGradle dependencies: "+test.err.Error(), err.Error())
 			} else {
-				testutil.CheckDeepEqual(t, []string{dep1, dep2}, deps)
+				testutil.CheckDeepEqual(t, test.expected, deps)
 			}
 		})
 	}

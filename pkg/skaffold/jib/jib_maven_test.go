@@ -53,14 +53,14 @@ func TestGetDependenciesMaven(t *testing.T) {
 		err         error
 	}{
 		{
-			description: "success",
-			stdout:      fmt.Sprintf("%s\n%s\n\n\n", dep1, dep2),
-			expected:    []string{dep1, dep2},
-		},
-		{
 			description: "failure",
 			stdout:      "",
 			err:         errors.New("error"),
+		},
+		{
+			description: "success",
+			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\"],\"ignore\":[]}", dep1, dep2),
+			expected:    []string{dep1, dep2},
 		},
 	}
 

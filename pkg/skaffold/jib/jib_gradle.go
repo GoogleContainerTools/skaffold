@@ -33,32 +33,12 @@ var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"
 // All paths are absolute.
 func GetDependenciesGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) ([]string, error) {
 	cmd := getCommandGradle(ctx, workspace, a)
-	deps, err := getInputFiles(cmd, a.Project)
+	deps, err := getDependencies(cmd, a.Project)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jibGradle dependencies")
 	}
 	logrus.Debugf("Found dependencies for jibGradle artifact: %v", deps)
 	return deps, nil
-}
-
-// GetBuildFilesGradle finds the build configuration for the given jib-gradle artifact.
-// All paths are absolute.
-func GetBuildFilesGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) ([]string, error) {
-	cmd := getCommandGradle(ctx, workspace, a)
-	deps, err := getBuildFiles(cmd, a.Project)
-	if err != nil {
-		return nil, errors.Wrapf(err, "getting jibGradle build files")
-	}
-	logrus.Debugf("Found build files for jibGradle artifact: %v", deps)
-	return deps, nil
-}
-
-// RefreshDependenciesGradle calls out to Jib to retrieve an updated list of dependencies
-func RefreshDependenciesGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) error {
-	if err := refreshDependencyList(getCommandGradle(ctx, workspace, a), a.Project); err != nil {
-		return errors.Wrapf(err, "refreshing jibGradle dependencies")
-	}
-	return nil
 }
 
 func getCommandGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) *exec.Cmd {

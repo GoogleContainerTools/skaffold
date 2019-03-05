@@ -4,6 +4,7 @@ integration/examples/bazel/bazel-*
 integration/examples/test-plugin/local/bazel/bazel-*
 *.new
 .idea/
+.vscode/
 docs/.firebase
 docs/firebase-debug*
 docs/public

@@ -21,6 +21,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/karrick/godirwalk"
@@ -39,29 +41,37 @@ type filesTemplate struct {
 type filesLists struct {
 	WatchedBuildFiles []string
 	WatchedInputFiles []string
+	BuildFileTimes    map[string]time.Time
 }
 
 // watchedFiles maps from project name to watched files
 var watchedFiles = map[string]filesLists{}
 
-func getInputFiles(cmd *exec.Cmd, projectName string) ([]string, error) {
-	if len(watchedFiles[projectName].WatchedInputFiles) == 0 && len(watchedFiles[projectName].WatchedBuildFiles) == 0 {
+func getDependencies(cmd *exec.Cmd, projectName string) ([]string, error) {
+	watched := watchedFiles[projectName]
+	if len(watched.WatchedInputFiles) == 0 && len(watched.WatchedBuildFiles) == 0 {
 		// Refresh dependency list if empty
 		if err := refreshDependencyList(cmd, projectName); err != nil {
 			return nil, err
 		}
+	} else {
+		// Refresh dependency list if any build definitions have changed
+		for _, buildFile := range watched.WatchedBuildFiles {
+			info, err := os.Stat(buildFile)
+			if err != nil {
+				return nil, err
+			}
+			if val, ok := watched.BuildFileTimes[buildFile]; !ok || info.ModTime() != val {
+				if err := refreshDependencyList(cmd, projectName); err != nil {
+					return nil, err
+				}
+			}
+		}
 	}
-	return watchedFiles[projectName].WatchedInputFiles, nil
-}
 
-func getBuildFiles(cmd *exec.Cmd, projectName string) ([]string, error) {
-	if len(watchedFiles[projectName].WatchedInputFiles) == 0 && len(watchedFiles[projectName].WatchedBuildFiles) == 0 {
-		// Refresh dependency list if empty
-		if err := refreshDependencyList(cmd, projectName); err != nil {
-			return nil, err
-		}
-	}
-	return watchedFiles[projectName].WatchedBuildFiles, nil
+	files := append(watchedFiles[projectName].WatchedBuildFiles, watchedFiles[projectName].WatchedInputFiles...)
+	sort.Strings(files)
+	return files, nil
 }
 
 func refreshDependencyList(cmd *exec.Cmd, projectName string) error {
@@ -81,11 +91,11 @@ func refreshDependencyList(cmd *exec.Cmd, projectName string) error {
 
 			// Walk the files in each list and filter out ignores
 			files := watchedFiles[projectName]
-			files.WatchedInputFiles, err = walkFiles(&filesOutput.Inputs, &filesOutput.Ignore)
+			files.WatchedInputFiles, err = walkFiles(&files, &filesOutput.Inputs, &filesOutput.Ignore, false)
 			if err != nil {
 				return err
 			}
-			files.WatchedBuildFiles, err = walkFiles(&filesOutput.Build, &filesOutput.Ignore)
+			files.WatchedBuildFiles, err = walkFiles(&files, &filesOutput.Build, &filesOutput.Ignore, true)
 			if err != nil {
 				return err
 			}
@@ -97,7 +107,7 @@ func refreshDependencyList(cmd *exec.Cmd, projectName string) error {
 	return errors.New("failed to get Jib dependencies")
 }
 
-func walkFiles(filesOutputList *[]string, filesOutputIgnore *[]string) ([]string, error) {
+func walkFiles(files *filesLists, filesOutputList *[]string, filesOutputIgnore *[]string, saveModTime bool) ([]string, error) {
 	filesList := []string{}
 	for _, dep := range *filesOutputList {
 		if util.StrSliceContains(*filesOutputIgnore, dep) {
@@ -116,6 +126,9 @@ func walkFiles(filesOutputList *[]string, filesOutputIgnore *[]string) ([]string
 
 		if !info.IsDir() {
 			filesList = append(filesList, dep)
+			if saveModTime {
+				files.BuildFileTimes[dep] = info.ModTime()
+			}
 			continue
 		}
 
@@ -126,6 +139,9 @@ func walkFiles(filesOutputList *[]string, filesOutputIgnore *[]string) ([]string
 					return filepath.SkipDir
 				}
 				filesList = append(filesList, path)
+				if saveModTime {
+					files.BuildFileTimes[path] = info.ModTime()
+				}
 				return nil
 			},
 		}); err != nil {

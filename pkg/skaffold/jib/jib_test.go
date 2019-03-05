@@ -44,39 +44,39 @@ func TestRefreshDependencyList(t *testing.T) {
 
 	var tests = []struct {
 		stdout       string
-		expectedDeps map[string]filesLists
+		expectedDeps []string
 	}{
 		{
 			stdout:       "BEGIN JIB JSON\n{\"build\":[],\"inputs\":[],\"ignore\":[]}",
-			expectedDeps: map[string]filesLists{"test": filesLists{[]string{}, []string{}}},
+			expectedDeps: []string{},
 		},
 		{
 			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\"],\"ignore\":[]}\n", dep1, dep2),
-			expectedDeps: map[string]filesLists{"test": filesLists{[]string{}, []string{dep1, dep2}}},
+			expectedDeps: []string{dep1, dep2},
 		},
 		{
 			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\"],\"ignore\":[]}\n", dep3),
-			expectedDeps: map[string]filesLists{"test": filesLists{[]string{}, []string{dep3, dep3FileA, dep3Sub, dep3SubPath, dep3SubPathFileB}}},
+			expectedDeps: []string{dep3, dep3FileA, dep3Sub, dep3SubPath, dep3SubPathFileB},
 		},
 		{
 			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\",\"%s\"],\"ignore\":[]}\n", dep1, dep2, dep3),
-			expectedDeps: map[string]filesLists{"test": filesLists{[]string{}, []string{dep1, dep2, dep3, dep3FileA, dep3Sub, dep3SubPath, dep3SubPathFileB}}},
+			expectedDeps: []string{dep1, dep2, dep3, dep3FileA, dep3Sub, dep3SubPath, dep3SubPathFileB},
 		},
 		{
 			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\",\"nonexistent\",\"%s\"],\"ignore\":[]}\n", dep1, dep2, dep3),
-			expectedDeps: map[string]filesLists{"test": filesLists{[]string{}, []string{dep1, dep2, dep3, dep3FileA, dep3Sub, dep3SubPath, dep3SubPathFileB}}},
+			expectedDeps: []string{dep1, dep2, dep3, dep3FileA, dep3Sub, dep3SubPath, dep3SubPathFileB},
 		},
 		{
 			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\"],\"ignore\":[\"%s\"]}\n", dep1, dep2, dep2),
-			expectedDeps: map[string]filesLists{"test": filesLists{[]string{}, []string{dep1}}},
+			expectedDeps: []string{dep1},
 		},
 		{
 			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\"],\"ignore\":[\"%s\",\"%s\"]}\n", dep1, dep3, dep1, dep3),
-			expectedDeps: map[string]filesLists{"test": filesLists{[]string{}, []string{}}},
+			expectedDeps: []string{},
 		},
 		{
 			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\",\"%s\"],\"ignore\":[\"%s\"]}\n", dep1, dep2, dep3, dep3SubPath),
-			expectedDeps: map[string]filesLists{"test": filesLists{[]string{}, []string{dep1, dep2, dep3, dep3FileA, dep3Sub}}},
+			expectedDeps: []string{dep1, dep2, dep3, dep3FileA, dep3Sub},
 		},
 	}
 
@@ -90,7 +90,7 @@ func TestRefreshDependencyList(t *testing.T) {
 
 			err := refreshDependencyList(&exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()}, "test")
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedDeps, watchedFiles)
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedDeps, watchedFiles["test"].WatchedInputFiles)
 		})
 	}
 }
