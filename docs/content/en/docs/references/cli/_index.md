@@ -335,6 +335,7 @@ Usage:
   skaffold init [flags]
 
 Flags:
+      --analyze                Print all discoverable Dockerfiles and images in JSON format to stdout
   -a, --artifact stringArray   '='-delimited dockerfile/image pair to generate build artifact
                                (example: --artifact=/web/Dockerfile.web=gcr.io/web-project/image)
       --compose-file string    Initialize from a docker-compose file
@@ -350,6 +351,7 @@ Global Flags:
 ```
 Env vars:
 
+* `SKAFFOLD_ANALYZE` (same as --analyze)
 * `SKAFFOLD_ARTIFACT` (same as --artifact)
 * `SKAFFOLD_COMPOSE_FILE` (same as --compose-file)
 * `SKAFFOLD_FILENAME` (same as --filename)
