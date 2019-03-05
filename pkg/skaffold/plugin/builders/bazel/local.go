@@ -83,6 +83,11 @@ func (b *Builder) local(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	return b.buildArtifacts(ctx, out, tags, artifacts)
 }
 
+func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
+	// TODO(nkubala): implement
+	return nil
+}
+
 func (b *Builder) buildArtifacts(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	if b.LocalCluster {
 		color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.KubeContext)

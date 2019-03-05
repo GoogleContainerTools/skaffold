@@ -59,17 +59,17 @@ func dev(out io.Writer, ui bool) error {
 		catchCtrlC(cancel)
 	}
 
-	prune := func() {}
-	if !opts.NoPrune {
-		defer func() {
-			prune()
-		}()
-	}
-
 	cleanup := func() {}
 	if opts.Cleanup {
 		defer func() {
 			cleanup()
+		}()
+	}
+
+	prune := func() {}
+	if opts.Prune {
+		defer func() {
+			prune()
 		}()
 	}
 

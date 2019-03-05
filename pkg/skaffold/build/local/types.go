@@ -44,8 +44,8 @@ type Builder struct {
 }
 
 // NewBuilder returns an new instance of a local Builder.
-func NewBuilder(cfg *latest.LocalBuild, kubeContext string, noPrune bool, skipTests bool) (*Builder, error) {
-	api, err := docker.NewAPIClient(!noPrune)
+func NewBuilder(cfg *latest.LocalBuild, kubeContext string, prune bool, skipTests bool) (*Builder, error) {
+	localDocker, err := docker.NewAPIClient(prune)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
@@ -70,7 +70,7 @@ func NewBuilder(cfg *latest.LocalBuild, kubeContext string, noPrune bool, skipTe
 		localCluster: localCluster,
 		pushImages:   pushImages,
 		skipTests:    skipTests,
-		prune:        !noPrune,
+		prune:        prune,
 	}, nil
 }
 
@@ -91,7 +91,7 @@ func (b *Builder) Labels() map[string]string {
 // Prune uses the docker API client to remove all images built with Skaffold
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
 	for _, id := range b.builtImages {
-		resp, err := b.api.ImageRemove(ctx, id, types.ImageRemoveOptions{
+		resp, err := b.localDocker.ImageRemove(ctx, id, types.ImageRemoveOptions{
 			Force:         true,
 			PruneChildren: true,
 		})

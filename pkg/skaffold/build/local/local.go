@@ -53,12 +53,12 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 	}
 
 	if b.pushImages {
-		digest := digestOrImageID
-		imageID, err := b.getImageIDForDigest(ctx, digest)
+		imageID, err := b.getImageIDForTag(ctx, tag)
 		if err != nil {
 			logrus.Warnf("unable to inspect image: built images may not be cleaned up correctly by skaffold")
 		}
 		b.builtImages = append(b.builtImages, imageID)
+		digest := digestOrImageID
 		return tag + "@" + digest, nil
 	}
 
@@ -132,8 +132,8 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 	return util.AbsolutePaths(a.Workspace, paths), nil
 }
 
-func (b *Builder) getImageIDForDigest(ctx context.Context, digest string) (string, error) {
-	insp, _, err := b.api.ImageInspectWithRaw(ctx, digest)
+func (b *Builder) getImageIDForTag(ctx context.Context, tag string) (string, error) {
+	insp, _, err := b.localDocker.ImageInspectWithRaw(ctx, tag)
 	if err != nil {
 		return "", errors.Wrap(err, "inspecting image")
 	}

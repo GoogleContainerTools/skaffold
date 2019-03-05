@@ -112,7 +112,12 @@ func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.
 			return nil, err
 		}
 	}
-	return gcb.NewBuilder(g, b.opts.SkipTests).Build(ctx, out, tags, artifacts)
+	b.builder = gcb.NewBuilder(g, b.opts.SkipTests)
+	return b.builder.Build(ctx, out, tags, artifacts)
+}
+
+func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
+	return b.builder.Prune(ctx, out)
 }
 
 func setArtifact(artifact *latest.Artifact) error {

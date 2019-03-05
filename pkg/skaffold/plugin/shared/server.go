@@ -47,7 +47,7 @@ func (b *BuilderRPC) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnv
 	b.client.Call("Plugin.Init", args, &resp)
 }
 
-func (b *BuilderRPC) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+func (b *BuilderRPC) DependenciesForArtifact(_ context.Context, artifact *latest.Artifact) ([]string, error) {
 	var resp []string
 	if err := convertPropertiesToBytes([]*latest.Artifact{artifact}); err != nil {
 		return nil, errors.Wrapf(err, "converting properties to bytes")
@@ -70,7 +70,7 @@ func (b *BuilderRPC) Labels() map[string]string {
 	return resp
 }
 
-func (b *BuilderRPC) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (b *BuilderRPC) Build(_ context.Context, _ io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	var resp []build.Artifact
 	if err := convertPropertiesToBytes(artifacts); err != nil {
 		return nil, errors.Wrapf(err, "converting properties to bytes")
@@ -84,6 +84,14 @@ func (b *BuilderRPC) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		return nil, err
 	}
 	return resp, nil
+}
+
+func (b *BuilderRPC) Prune(_ context.Context, _ io.Writer) error {
+	var resp error
+	if err := b.client.Call("Plugin.Prune", new(interface{}), &resp); err != nil {
+		return err
+	}
+	return resp
 }
 
 func convertPropertiesToBytes(artifacts []*latest.Artifact) error {

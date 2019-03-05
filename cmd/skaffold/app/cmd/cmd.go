@@ -50,6 +50,8 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	}
 
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		// only prune if flag is set, AND we're not caching
+		opts.Prune = !(opts.NoPrune || opts.CacheArtifacts)
 		if err := SetUpLogs(err, v); err != nil {
 			return err
 		}

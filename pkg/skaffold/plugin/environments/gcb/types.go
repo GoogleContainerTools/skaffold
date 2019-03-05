@@ -106,5 +106,5 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 }
 
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
-	return nil
+	return nil // noop
 }
