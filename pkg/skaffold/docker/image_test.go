@@ -277,7 +277,7 @@ func TestFindTaggedImageByDigest(t *testing.T) {
 				apiClient: api,
 			}
 
-			actual, err := localDocker.FindTaggedImageByDigest(context.Background(), test.digest)
+			actual, err := localDocker.FindTaggedImage(context.Background(), "", test.digest)
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
 		})
 	}
@@ -381,7 +381,7 @@ func TestRepoDigest(t *testing.T) {
 		})
 	}
 }
-func TestFindImageByID(t *testing.T) {
+func TestFindTaggedImageByID(t *testing.T) {
 	tests := []struct {
 		name           string
 		id             string
@@ -444,7 +444,7 @@ func TestFindImageByID(t *testing.T) {
 				apiClient: api,
 			}
 
-			actual, err := localDocker.FindImageByID(context.Background(), test.id)
+			actual, err := localDocker.FindTaggedImage(context.Background(), test.id, "")
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
 		})
 	}

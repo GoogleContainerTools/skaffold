@@ -236,21 +236,12 @@ func (c *Cache) retrieveCachedArtifactDetails(ctx context.Context, a *latest.Art
 }
 
 func (c *Cache) retrievePrebuiltImage(ctx context.Context, details ImageDetails) (string, error) {
-	// first, search for an image with the same image ID
-	img, err := c.client.FindImageByID(ctx, details.ID)
+	img, err := c.client.FindTaggedImage(ctx, details.ID, details.Digest)
 	if err != nil {
-		logrus.Debugf("error getting tagged image with id %s, checking digest: %v", details.ID, err)
-	}
-	if err == nil && img != "" {
-		return img, nil
-	}
-	// else, search for an image with the same digest
-	img, err = c.client.FindTaggedImageByDigest(ctx, details.Digest)
-	if err != nil {
-		return "", errors.Wrapf(err, "getting image from digest %s", details.Digest)
+		return "", errors.Wrap(err, "unable to find tagged image")
 	}
 	if img == "" {
-		return "", errors.New("no prebuilt image")
+		return img, errors.New("no prebuilt image")
 	}
 	return img, nil
 }
