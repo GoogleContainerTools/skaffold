@@ -139,7 +139,7 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 		artifact, err := c.resolveCachedArtifact(ctx, out, a)
 		if err != nil {
 			logrus.Debugf("error retrieving cached artifact for %s: %v\n", a.ImageName, err)
-			color.Red.Fprintf(out, "Unable to retrieve %s from cache; this image will be rebuilt.", a.ImageName)
+			color.Red.Fprintf(out, "Unable to retrieve %s from cache; this image will be rebuilt.\n", a.ImageName)
 			needToBuild = append(needToBuild, a)
 			continue
 		}
