@@ -108,11 +108,15 @@ func (b *Builder) BuildArtifact(ctx context.Context, out io.Writer, a *latest.Ar
 		imageID, err = b.LocalDocker.Build(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, tag)
 	}
 
+	if err != nil {
+		return "", err
+	}
+
 	if b.PushImages {
 		return b.LocalDocker.Push(ctx, out, tag)
 	}
 
-	return imageID, err
+	return imageID, nil
 }
 
 func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, tag string) (string, error) {

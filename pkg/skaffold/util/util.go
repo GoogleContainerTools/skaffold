@@ -38,6 +38,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	hiddenPrefix string = "."
+)
+
 func RandomID() string {
 	b := make([]byte, 16)
 	_, err := rand.Read(b)
@@ -292,4 +296,23 @@ func AbsolutePaths(workspace string, paths []string) []string {
 		p = append(p, path)
 	}
 	return p
+}
+
+// IsHiddenDir returns if a directory is hidden.
+func IsHiddenDir(filename string) bool {
+	// Return false for current dir
+	if filename == hiddenPrefix {
+		return false
+	}
+	return hasHiddenPrefix(filename)
+}
+
+// IsHiddenFile returns if a file is hidden.
+// File is hidden if it starts with prefix "."
+func IsHiddenFile(filename string) bool {
+	return hasHiddenPrefix(filename)
+}
+
+func hasHiddenPrefix(s string) bool {
+	return strings.HasPrefix(s, hiddenPrefix)
 }

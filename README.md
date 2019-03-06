@@ -31,8 +31,9 @@ provides building blocks and describe customizations for a CI/CD pipeline.
   * **minimal pipeline** - Skaffold provides an opinionated, minimal pipeline to keep things simple  
 
 ## Install
+Installation methods can be found in the [Getting Started Guide](https://skaffold.dev/docs/getting-started/#installing-skaffold).
 
-See [Github Releases](https://github.com/GoogleContainerTools/skaffold/releases)
+See [Github Releases](https://github.com/GoogleContainerTools/skaffold/releases) for more information.
 
 ## Demo 
 

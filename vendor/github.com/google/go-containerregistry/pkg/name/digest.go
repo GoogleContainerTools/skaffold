@@ -83,6 +83,11 @@ func NewDigest(name string, strict Strictness) (Digest, error) {
 		}
 	}
 
+	tag, err := NewTag(base, strict)
+	if err == nil {
+		base = tag.Repository.Name()
+	}
+
 	repo, err := NewRepository(base, strict)
 	if err != nil {
 		return Digest{}, err
