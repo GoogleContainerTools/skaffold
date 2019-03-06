@@ -21,13 +21,13 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net"
 	"os/exec"
 	"strconv"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -45,9 +45,6 @@ type PortForwarder struct {
 
 	// forwardedPods is a map of portForwardEntry.key() (string) -> portForwardEntry
 	forwardedPods map[string]*portForwardEntry
-
-	// forwardedPorts is a map of local port (int32) -> portForwardEntry key (string)
-	forwardedPorts map[int32]string
 }
 
 type portForwardEntry struct {
@@ -71,8 +68,8 @@ type kubectlForwarder struct{}
 
 var (
 	// For testing
-	retrieveAvailablePort = getAvailablePort
-	isPortAvailable       = portAvailable
+	retrieveAvailablePort = util.GetAvailablePort
+	isPortAvailable       = util.IsPortAvailable
 )
 
 // Forward port-forwards a pod using kubectl port-forward
@@ -124,12 +121,11 @@ func (*kubectlForwarder) Terminate(p *portForwardEntry) {
 // NewPortForwarder returns a struct that tracks and port-forwards pods as they are created and modified
 func NewPortForwarder(out io.Writer, podSelector PodSelector, namespaces []string) *PortForwarder {
 	return &PortForwarder{
-		Forwarder:      &kubectlForwarder{},
-		output:         out,
-		podSelector:    podSelector,
-		namespaces:     namespaces,
-		forwardedPods:  make(map[string]*portForwardEntry),
-		forwardedPorts: make(map[int32]string),
+		Forwarder:     &kubectlForwarder{},
+		output:        out,
+		podSelector:   podSelector,
+		namespaces:    namespaces,
+		forwardedPods: make(map[string]*portForwardEntry),
 	}
 }
 
@@ -231,22 +227,9 @@ func (p *PortForwarder) getCurrentEntry(pod *v1.Pod, c v1.Container, port v1.Con
 		entry.localPort = oldEntry.localPort
 		return entry, nil
 	}
-	// If another container isn't using this port...
-	if _, exists := p.forwardedPorts[port.ContainerPort]; !exists {
-		// ...Then make sure the port is available
-		if available, err := isPortAvailable(port.ContainerPort, p.forwardedPorts); available && err == nil {
-			entry.localPort = port.ContainerPort
-			p.forwardedPorts[entry.localPort] = entry.key()
-			return entry, nil
-		}
-	}
-	// Else, determine a new local port
-	localPort, err := retrieveAvailablePort(p.forwardedPorts)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting random available port")
-	}
-	entry.localPort = localPort
-	p.forwardedPorts[localPort] = entry.key()
+
+	// retrieve an open port on the host
+	entry.localPort = int32(retrieveAvailablePort(int(port.ContainerPort)))
 	return entry, nil
 }
 
@@ -260,42 +243,11 @@ func (p *PortForwarder) forward(ctx context.Context, entry *portForwardEntry) er
 
 	color.Default.Fprintln(p.output, fmt.Sprintf("Port Forwarding %s/%s %d -> %d", entry.podName, entry.containerName, entry.port, entry.localPort))
 	p.forwardedPods[entry.key()] = entry
-	p.forwardedPorts[entry.localPort] = entry.key()
 
 	if err := p.Forward(ctx, entry); err != nil {
 		return errors.Wrap(err, "port forwarding failed")
 	}
 	return nil
-}
-
-// From https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt,
-// ports 4503-4533 are unassigned user ports; first check if any of these are available
-// If not, return a random port, which hopefully won't collide with any future containers
-func getAvailablePort(forwardedPorts map[int32]string) (int32, error) {
-	for i := 4503; i <= 4533; i++ {
-		ok, err := isPortAvailable(int32(i), forwardedPorts)
-		if ok {
-			return int32(i), err
-		}
-	}
-
-	// get random port
-	l, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return -1, err
-	}
-	return int32(l.Addr().(*net.TCPAddr).Port), l.Close()
-}
-
-func portAvailable(p int32, forwardedPorts map[int32]string) (bool, error) {
-	if _, ok := forwardedPorts[p]; ok {
-		return false, nil
-	}
-	l, err := net.Listen("tcp", fmt.Sprintf(":%d", p))
-	if l != nil {
-		defer l.Close()
-	}
-	return err == nil, nil
 }
 
 // Key is an identifier for the lock on a port during the skaffold dev cycle.
