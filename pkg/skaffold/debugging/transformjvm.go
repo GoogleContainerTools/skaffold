@@ -21,12 +21,12 @@ import (
 	"strconv"
 	"strings"
 
-	v1 "k8s.io/api/core/v1"
 	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 )
 
-type jdwpTransformer struct {}
- 
+type jdwpTransformer struct{}
+
 func init() {
 	containerTransforms = append(containerTransforms, jdwpTransformer{})
 }
@@ -53,12 +53,12 @@ func (t jdwpTransformer) IsApplicable(config imageConfiguration) bool {
 // captures the useful jdwp options (see `java -agentlib:jdwp=help`)
 type jdwpSpec struct {
 	transport string
-	quiet     bool
-	suspend   bool
-	server    bool
 	// split address into host/port
-	host string
-	port uint16
+	host    string
+	port    uint16
+	quiet   bool
+	suspend bool
+	server  bool
 }
 
 // Apply configures a container definition for JVM debugging.
@@ -131,19 +131,19 @@ func extractJdwpArg(spec string) *jdwpSpec {
 func (spec jdwpSpec) String() string {
 	result := "transport=" + spec.transport
 	if spec.quiet {
-		result = result + ",quiet=y"
+		result += ",quiet=y"
 	}
 	if spec.server {
-		result = result + ",server=y"
+		result += ",server=y"
 	}
 	if !spec.suspend {
-		result = result + ",suspend=n"
+		result += ",suspend=n"
 	}
 	if spec.port > 0 {
 		if len(spec.host) > 0 {
-			result = result + ",address=" + spec.host + ":" + strconv.FormatUint(uint64(spec.port), 10)
+			result += ",address=" + spec.host + ":" + strconv.FormatUint(uint64(spec.port), 10)
 		} else {
-			result = result + ",address=" + strconv.FormatUint(uint64(spec.port), 10)
+			result += ",address=" + strconv.FormatUint(uint64(spec.port), 10)
 		}
 	}
 	return result

@@ -62,4 +62,3 @@ func TestParseReference(t *testing.T) {
 	}
 
 }
-

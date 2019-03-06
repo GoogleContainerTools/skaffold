@@ -20,9 +20,9 @@ import (
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -187,7 +187,7 @@ func TestJdwpSpecString(t *testing.T) {
 }
 
 func TestTransformManifestJVM(t *testing.T) {
-	int32p := func(x int32) *int32 { return &x } 
+	int32p := func(x int32) *int32 { return &x }
 	tests := []struct {
 		description string
 		in          runtime.Object
@@ -265,7 +265,7 @@ func TestTransformManifestJVM(t *testing.T) {
 								Env:     []v1.EnvVar{v1.EnvVar{Name: "JAVA_TOOL_OPTIONS", Value: "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y"}},
 								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "jdwp", ContainerPort: 5005}},
 							},
-				}}}}},
+						}}}}},
 		},
 		{
 			"ReplicaSet with Java container",
@@ -297,7 +297,7 @@ func TestTransformManifestJVM(t *testing.T) {
 								Env:     []v1.EnvVar{v1.EnvVar{Name: "JAVA_TOOL_OPTIONS", Value: "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y"}},
 								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "jdwp", ContainerPort: 5005}},
 							},
-				}}}}},
+						}}}}},
 		},
 		{
 			"StatefulSet with Java container",
@@ -329,7 +329,7 @@ func TestTransformManifestJVM(t *testing.T) {
 								Env:     []v1.EnvVar{v1.EnvVar{Name: "JAVA_TOOL_OPTIONS", Value: "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y"}},
 								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "jdwp", ContainerPort: 5005}},
 							},
-				}}}}},
+						}}}}},
 		},
 		{
 			"DaemonSet with Java container",
@@ -359,7 +359,7 @@ func TestTransformManifestJVM(t *testing.T) {
 								Env:     []v1.EnvVar{v1.EnvVar{Name: "JAVA_TOOL_OPTIONS", Value: "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y"}},
 								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "jdwp", ContainerPort: 5005}},
 							},
-				}}}}},
+						}}}}},
 		},
 		{
 			"Job with Java container",
@@ -389,7 +389,7 @@ func TestTransformManifestJVM(t *testing.T) {
 								Env:     []v1.EnvVar{v1.EnvVar{Name: "JAVA_TOOL_OPTIONS", Value: "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y"}},
 								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "jdwp", ContainerPort: 5005}},
 							},
-				}}}}},
+						}}}}},
 		},
 		{
 			"ReplicationController with Java container",
@@ -421,7 +421,7 @@ func TestTransformManifestJVM(t *testing.T) {
 								Env:     []v1.EnvVar{v1.EnvVar{Name: "JAVA_TOOL_OPTIONS", Value: "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y"}},
 								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "jdwp", ContainerPort: 5005}},
 							},
-				}}}}},
+						}}}}},
 		},
 		{
 			"PodList with Java and non-Java container",
@@ -470,7 +470,7 @@ func TestTransformManifestJVM(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			value := test.in.DeepCopyObject()
-			
+
 			retriever := func(image string) (imageConfiguration, error) {
 				return imageConfiguration{}, nil
 			}
@@ -480,4 +480,3 @@ func TestTransformManifestJVM(t *testing.T) {
 		})
 	}
 }
-

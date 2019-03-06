@@ -35,7 +35,7 @@ import (
 
 var (
 	decodeFromYaml = scheme.Codecs.UniversalDeserializer().Decode
-	encodeAsYaml = func(o runtime.Object) ([]byte, error) {
+	encodeAsYaml   = func(o runtime.Object) ([]byte, error) {
 		s := serializer.NewYAMLSerializer(serializer.DefaultMetaFactory, scheme.Scheme, scheme.Scheme)
 		var b bytes.Buffer
 		w := bufio.NewWriter(&b)
@@ -46,6 +46,7 @@ var (
 		return b.Bytes(), nil
 	}
 )
+
 // ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.
 func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact) (kubectl.ManifestList, error) {
 	var updated kubectl.ManifestList
@@ -107,7 +108,7 @@ func retrieveImageConfiguration(image string, artifact *build.Artifact) (imageCo
 	}, nil
 }
 
-// envAsMap turns an array of enviroment "NAME=value" strings into a map
+// envAsMap turns an array of environment "NAME=value" strings into a map
 func envAsMap(env []string) map[string]string {
 	result := make(map[string]string)
 	for _, pair := range env {

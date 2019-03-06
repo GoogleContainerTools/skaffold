@@ -37,20 +37,20 @@ type inspectSpec struct {
 	brk  bool
 }
 
+// isLaunchingNode determines if the arguments seems to be invoking node
+func isLaunchingNode(args []string) bool {
+	return args[0] == "node" || strings.HasSuffix(args[0], "/node") ||
+		args[0] == "nodemon" || strings.HasSuffix(args[0], "/nodemon")
+}
+
 func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
 	if _, found := config.env["NODE_VERSION"]; found {
 		return true
 	}
 	if len(config.entrypoint) > 0 {
-		if config.entrypoint[0] == "node" || strings.HasSuffix(config.entrypoint[0], "/node") ||
-			config.entrypoint[0] == "nodemon" || strings.HasSuffix(config.entrypoint[0], "/nodemon") {
-			return true
-		}
+		return isLaunchingNode(config.entrypoint)
 	} else if len(config.arguments) > 0 {
-		if config.arguments[0] == "node" || strings.HasSuffix(config.arguments[0], "/node") ||
-			config.arguments[0] == "nodemon" || strings.HasSuffix(config.arguments[0], "/nodemon") {
-			return true
-		}
+		return isLaunchingNode(config.arguments)
 	}
 	return false
 }
@@ -67,18 +67,21 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 	if spec == nil {
 		// most examples use 9229
 		spec = &inspectSpec{port: portAlloc(9229)}
-		if len(config.entrypoint) > 0 && (config.entrypoint[0] == "node" || strings.HasSuffix(config.entrypoint[0], "/node") ||
-			config.entrypoint[0] == "nodemon" || strings.HasSuffix(config.entrypoint[0], "/nodemon")) {
-			container.Command = append(config.entrypoint, "")
+		switch {
+		case len(config.entrypoint) > 0 && isLaunchingNode(config.entrypoint):
+			container.Command = config.entrypoint
+			container.Command = append(container.Command, "")
 			copy(container.Command[2:], container.Command[1:])
 			container.Command[1] = spec.String()
-		} else if len(config.entrypoint) == 0 && len(config.arguments) > 0 && (config.arguments[0] == "node" || strings.HasSuffix(config.arguments[0], "/node") ||
-			config.arguments[0] == "nodemon" || strings.HasSuffix(config.arguments[0], "/nodemon")) {
-			container.Args = append(config.arguments, "")
+
+		case len(config.entrypoint) == 0 && len(config.arguments) > 0 && isLaunchingNode(config.arguments):
+			container.Args = config.arguments
+			container.Args = append(container.Args, "")
 			copy(container.Args[2:], container.Args[1:])
 			container.Args[1] = spec.String()
-		} else {
-			logrus.Warn("Skipping as does not appear to invoke node")
+
+		default:
+			logrus.Warnf("Skipping [%s] as does not appear to invoke node", container.Name)
 			return nil
 		}
 	}
@@ -161,4 +164,3 @@ func (spec inspectSpec) String() string {
 	}
 	return s
 }
-
