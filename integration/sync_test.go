@@ -33,6 +33,8 @@ func TestDevSync(t *testing.T) {
 	ns, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
+	RunSkaffold(t, "build", "examples/test-file-sync", ns.Name, "", nil)
+
 	cancel := make(chan bool)
 	go RunSkaffoldNoFail(cancel, "dev", "examples/test-file-sync", ns.Name, "", nil)
 	defer func() { cancel <- true }()

@@ -34,6 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/environments/gcb"
@@ -41,6 +42,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 )
 
@@ -53,12 +55,14 @@ type SkaffoldRunner struct {
 	sync.Syncer
 	watch.Watcher
 
-	opts        *config.SkaffoldOptions
-	labellers   []deploy.Labeller
-	builds      []build.Artifact
-	hasDeployed bool
-	imageList   *kubernetes.ImageList
-	namespaces  []string
+	opts              *config.SkaffoldOptions
+	labellers         []deploy.Labeller
+	builds            []build.Artifact
+	hasDeployed       bool
+	needsPush         bool
+	imageList         *kubernetes.ImageList
+	namespaces        []string
+	RPCServerShutdown func() error
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldPipeline
@@ -101,7 +105,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 
 	labellers := []deploy.Labeller{opts, builder, deployer, tagger}
 
-	builder, tester, deployer = WithTimings(builder, tester, deployer)
+	builder, tester, deployer = WithTimings(builder, tester, deployer, opts.CacheArtifacts)
 	if opts.Notification {
 		deployer = WithNotification(deployer)
 	}
@@ -111,17 +115,26 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		return nil, errors.Wrap(err, "creating watch trigger")
 	}
 
+	shutdown, err := event.InitializeState(&cfg.Build, &cfg.Deploy, opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "initializing skaffold event handler")
+	}
+
+	event.LogSkaffoldMetadata(version.Get())
+
 	return &SkaffoldRunner{
-		Builder:    builder,
-		Tester:     tester,
-		Deployer:   deployer,
-		Tagger:     tagger,
-		Syncer:     kubectl.NewSyncer(namespaces),
-		Watcher:    watch.NewWatcher(trigger),
-		opts:       opts,
-		labellers:  labellers,
-		imageList:  kubernetes.NewImageList(),
-		namespaces: namespaces,
+		Builder:           builder,
+		Tester:            tester,
+		Deployer:          deployer,
+		Tagger:            tagger,
+		Syncer:            kubectl.NewSyncer(namespaces),
+		Watcher:           watch.NewWatcher(trigger),
+		opts:              opts,
+		labellers:         labellers,
+		imageList:         kubernetes.NewImageList(),
+		namespaces:        namespaces,
+		needsPush:         needsPush(cfg.Build),
+		RPCServerShutdown: shutdown,
 	}, nil
 }
 
@@ -149,6 +162,16 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string, opts *config.Skaffo
 	default:
 		return nil, fmt.Errorf("unknown builder for config %+v", cfg)
 	}
+}
+
+func needsPush(cfg latest.BuildConfig) bool {
+	if cfg.LocalBuild == nil {
+		return false
+	}
+	if cfg.LocalBuild.Push == nil {
+		return false
+	}
+	return *cfg.LocalBuild.Push
 }
 
 func buildWithPlugin(artifacts []*latest.Artifact) bool {
@@ -295,11 +318,17 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 		return nil, errors.Wrap(err, "generating tag")
 	}
 
-	bRes, err := r.Build(ctx, out, tags, artifacts)
+	artifactCache := build.NewCache(r.Builder, r.opts, r.needsPush)
+	artifactsToBuild, res := artifactCache.RetrieveCachedArtifacts(ctx, out, artifacts)
+	bRes, err := r.Build(ctx, out, tags, artifactsToBuild)
 	if err != nil {
 		return nil, errors.Wrap(err, "build failed")
 	}
-
+	artifactCache.Retag(ctx, out, artifactsToBuild, bRes)
+	bRes = append(bRes, res...)
+	if err := artifactCache.CacheArtifacts(ctx, artifacts, bRes); err != nil {
+		logrus.Warnf("error caching artifacts: %v", err)
+	}
 	if !r.opts.SkipTests {
 		if err = r.Test(ctx, out, bRes); err != nil {
 			return nil, errors.Wrap(err, "test failed")

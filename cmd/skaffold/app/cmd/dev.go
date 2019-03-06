@@ -47,6 +47,7 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 }
 
 func dev(out io.Writer, ui bool) error {
+	opts.EnableRPC = true
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	if !ui {
@@ -88,6 +89,7 @@ func dev(out io.Writer, ui bool) error {
 			if err != nil {
 				return errors.Wrap(err, "creating runner")
 			}
+			defer r.RPCServerShutdown()
 
 			err = r.Dev(ctx, output, config.Build.Artifacts)
 			if r.HasDeployed() {

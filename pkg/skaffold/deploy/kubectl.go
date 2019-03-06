@@ -24,6 +24,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -75,9 +77,24 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	if err := k.kubectl.CheckVersion(ctx); err != nil {
 		color.Default.Fprintln(out, err)
 	}
+	event.Handle(&proto.Event{
+		EventType: &proto.Event_DeployEvent{
+			DeployEvent: &proto.DeployEvent{
+				Status: event.InProgress,
+			},
+		},
+	})
 
 	manifests, err := k.readManifests(ctx)
 	if err != nil {
+		event.Handle(&proto.Event{
+			EventType: &proto.Event_DeployEvent{
+				DeployEvent: &proto.DeployEvent{
+					Status: event.Failed,
+					Err:    err.Error(),
+				},
+			},
+		})
 		return errors.Wrap(err, "reading manifests")
 	}
 
@@ -87,11 +104,27 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 
 	manifests, err = manifests.ReplaceImages(builds, k.defaultRepo)
 	if err != nil {
+		event.Handle(&proto.Event{
+			EventType: &proto.Event_DeployEvent{
+				DeployEvent: &proto.DeployEvent{
+					Status: event.Failed,
+					Err:    err.Error(),
+				},
+			},
+		})
 		return errors.Wrap(err, "replacing images in manifests")
 	}
 
 	manifests, err = manifests.SetLabels(merge(labellers...))
 	if err != nil {
+		event.Handle(&proto.Event{
+			EventType: &proto.Event_DeployEvent{
+				DeployEvent: &proto.DeployEvent{
+					Status: event.Failed,
+					Err:    err.Error(),
+				},
+			},
+		})
 		return errors.Wrap(err, "setting labels in manifests")
 	}
 
@@ -102,7 +135,26 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		}
 	}
 
-	return k.kubectl.Apply(ctx, out, manifests)
+	err = k.kubectl.Apply(ctx, out, manifests)
+	if err != nil {
+		event.Handle(&proto.Event{
+			EventType: &proto.Event_DeployEvent{
+				DeployEvent: &proto.DeployEvent{
+					Status: event.Failed,
+					Err:    err.Error(),
+				},
+			},
+		})
+	}
+
+	event.Handle(&proto.Event{
+		EventType: &proto.Event_DeployEvent{
+			DeployEvent: &proto.DeployEvent{
+				Status: event.Complete,
+			},
+		},
+	})
+	return err
 }
 
 // Cleanup deletes what was deployed by calling Deploy.

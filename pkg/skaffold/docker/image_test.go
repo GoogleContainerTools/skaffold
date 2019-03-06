@@ -18,6 +18,7 @@ package docker
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -25,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/docker/docker/api/types"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -152,7 +154,7 @@ func TestImageID(t *testing.T) {
 		{
 			description: "not found",
 			ref:         "somethingelse",
-			expected:    "",
+			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
@@ -216,6 +218,234 @@ func TestGetBuildArgs(t *testing.T) {
 			if diff := cmp.Diff(result, tt.want); diff != "" {
 				t.Errorf("%T differ (-got, +want): %s", tt.want, diff)
 			}
+		})
+	}
+}
+
+var (
+	digest    = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+	digestOne = "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+	image     = fmt.Sprintf("image@%s", digest)
+	imageOne  = fmt.Sprintf("image1@%s", digestOne)
+)
+
+func TestFindTaggedImageByDigest(t *testing.T) {
+	tests := []struct {
+		name           string
+		digest         string
+		imageSummaries []types.ImageSummary
+		expected       string
+	}{
+		{
+			name:   "one image id exists",
+			digest: digest,
+			imageSummaries: []types.ImageSummary{
+				{
+					RepoTags:    []string{"image:mytag"},
+					RepoDigests: []string{image},
+				},
+				{
+					RepoTags:    []string{"image1:latest"},
+					RepoDigests: []string{imageOne},
+				},
+			},
+			expected: "image:mytag",
+		},
+		{
+			name:   "no image id exists",
+			digest: "dne",
+			imageSummaries: []types.ImageSummary{
+				{
+					RepoTags:    []string{"image:mytag"},
+					RepoDigests: []string{image},
+				},
+				{
+					RepoTags:    []string{"image:mytag"},
+					RepoDigests: []string{image},
+				},
+			},
+			expected: "",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			api := &testutil.FakeAPIClient{
+				ImageSummaries: test.imageSummaries,
+			}
+
+			localDocker := &localDaemon{
+				apiClient: api,
+			}
+
+			actual, err := localDocker.FindTaggedImageByDigest(context.Background(), test.digest)
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
+		})
+	}
+}
+
+func TestImageExists(t *testing.T) {
+	client, _ := NewAPIClient()
+	t.Log(client.ImageExists(context.Background(), "somethingranodm"))
+	tests := []struct {
+		name            string
+		tagToImageID    map[string]string
+		image           string
+		errImageInspect bool
+		expected        bool
+	}{
+		{
+			name:         "image exists",
+			image:        "image:tag",
+			tagToImageID: map[string]string{"image:tag": "imageID"},
+			expected:     true,
+		}, {
+			name:            "image does not exist",
+			image:           "dne",
+			errImageInspect: true,
+			tagToImageID:    map[string]string{"image:tag": "imageID"},
+		}, {
+			name:            "error getting image",
+			tagToImageID:    map[string]string{"image:tag": "imageID"},
+			errImageInspect: true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			api := &testutil.FakeAPIClient{
+				ErrImageInspect: test.errImageInspect,
+				TagToImageID:    test.tagToImageID,
+			}
+
+			localDocker := &localDaemon{
+				apiClient: api,
+			}
+
+			actual := localDocker.ImageExists(context.Background(), test.image)
+			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expected, actual)
+		})
+	}
+}
+
+func TestRepoDigest(t *testing.T) {
+	tests := []struct {
+		name            string
+		image           string
+		tagToImageID    map[string]string
+		repoDigests     []string
+		errImageInspect bool
+		shouldErr       bool
+		expected        string
+	}{
+		{
+			name:         "repo digest exists",
+			image:        "image:tag",
+			tagToImageID: map[string]string{"image:tag": "image", "image1:tag": "image1"},
+			repoDigests:  []string{"repoDigest", "repoDigest1"},
+			expected:     "repoDigest",
+		},
+		{
+			name:         "repo digest does not exist",
+			image:        "image",
+			tagToImageID: map[string]string{},
+			repoDigests:  []string{},
+			shouldErr:    true,
+		},
+		{
+			name:            "err getting repo digest",
+			image:           "image:tag",
+			errImageInspect: true,
+			shouldErr:       true,
+			tagToImageID:    map[string]string{"image:tag": "image", "image1:tag": "image1"},
+			repoDigests:     []string{"repoDigest", "repoDigest1"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			api := &testutil.FakeAPIClient{
+				ErrImageInspect: test.errImageInspect,
+				TagToImageID:    test.tagToImageID,
+				RepoDigests:     test.repoDigests,
+			}
+
+			localDocker := &localDaemon{
+				apiClient: api,
+			}
+
+			actual, err := localDocker.RepoDigest(context.Background(), test.image)
+			testutil.CheckError(t, test.shouldErr, err)
+			if test.shouldErr {
+				return
+			}
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
+		})
+	}
+}
+func TestFindImageByID(t *testing.T) {
+	tests := []struct {
+		name           string
+		id             string
+		imageSummaries []types.ImageSummary
+		expected       string
+	}{
+		{
+			name: "one image id exists",
+			id:   "imageid",
+			imageSummaries: []types.ImageSummary{
+				{
+					RepoTags: []string{"image1", "image2"},
+					ID:       "something",
+				},
+				{
+					RepoTags: []string{"image3"},
+					ID:       "imageid",
+				},
+			},
+			expected: "image3",
+		},
+		{
+			name: "multiple image ids exist",
+			id:   "imageid",
+			imageSummaries: []types.ImageSummary{
+				{
+					RepoTags: []string{"image1", "image2"},
+					ID:       "something",
+				},
+				{
+					RepoTags: []string{"image3", "image4"},
+					ID:       "imageid",
+				},
+			},
+			expected: "image3",
+		},
+		{
+			name: "no image id exists",
+			id:   "imageid",
+			imageSummaries: []types.ImageSummary{
+				{
+					RepoTags: []string{"image1", "image2"},
+					ID:       "something",
+				},
+				{
+					RepoTags: []string{"image3"},
+					ID:       "somethingelse",
+				},
+			},
+			expected: "",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			api := &testutil.FakeAPIClient{
+				ImageSummaries: test.imageSummaries,
+			}
+
+			localDocker := &localDaemon{
+				apiClient: api,
+			}
+
+			actual, err := localDocker.FindImageByID(context.Background(), test.id)
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
 		})
 	}
 }

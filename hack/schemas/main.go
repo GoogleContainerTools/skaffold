@@ -34,67 +34,40 @@ import (
 	blackfriday "gopkg.in/russross/blackfriday.v2"
 )
 
-const defPrefix = "#/definitions/"
+const (
+	version7  = "http://json-schema-org/draft-07/schema#"
+	defPrefix = "#/definitions/"
+)
+
+var (
+	regexpDefaults = regexp.MustCompile("(.*)Defaults to `(.*)`")
+	regexpExample  = regexp.MustCompile("(.*)For example: `(.*)`")
+	pTags          = regexp.MustCompile("(<p>)|(</p>)")
+)
+
+type schemaGenerator struct {
+	strict bool
+}
 
 type Schema struct {
 	*Definition
-	Definitions *Definitions `json:"definitions,omitempty"`
-}
-
-type Definitions struct {
-	keys   []string
-	values map[string]*Definition
-}
-
-func (d *Definitions) Add(key string, value *Definition) {
-	d.keys = append(d.keys, key)
-	if d.values == nil {
-		d.values = make(map[string]*Definition)
-	}
-	d.values[key] = value
-}
-
-func (d *Definitions) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-
-	buf.WriteString("{")
-	for i, k := range d.keys {
-		if i != 0 {
-			buf.WriteString(",")
-		}
-		// marshal key
-		key, err := json.Marshal(k)
-		if err != nil {
-			return nil, err
-		}
-		buf.Write(key)
-		buf.WriteString(":")
-
-		// marshal value
-		var val bytes.Buffer
-		encoder := json.NewEncoder(&val)
-		encoder.SetEscapeHTML(false)
-		if err := encoder.Encode(d.values[k]); err != nil {
-			return nil, err
-		}
-		buf.Write(val.Bytes())
-	}
-	buf.WriteString("}")
-
-	return buf.Bytes(), nil
+	Version     string                 `json:"$schema,omitempty"`
+	Definitions map[string]*Definition `json:"definitions,omitempty"`
 }
 
 type Definition struct {
-	Ref                  string        `json:"$ref,omitempty"`
-	Items                *Definition   `json:"items,omitempty"`
-	Required             []string      `json:"required,omitempty"`
-	Properties           *Definitions  `json:"properties,omitempty"`
-	AdditionalProperties interface{}   `json:"additionalProperties,omitempty"`
-	Type                 string        `json:"type,omitempty"`
-	AnyOf                []*Definition `json:"anyOf,omitempty"`
-	Description          string        `json:"description,omitempty"`
-	Default              interface{}   `json:"default,omitempty"`
-	Examples             []string      `json:"examples,omitempty"`
+	Ref                  string                 `json:"$ref,omitempty"`
+	Items                *Definition            `json:"items,omitempty"`
+	Required             []string               `json:"required,omitempty"`
+	Properties           map[string]*Definition `json:"properties,omitempty"`
+	PreferredOrder       []string               `json:"preferredOrder,omitempty"`
+	AdditionalProperties interface{}            `json:"additionalProperties,omitempty"`
+	Type                 string                 `json:"type,omitempty"`
+	AnyOf                []*Definition          `json:"anyOf,omitempty"`
+	Description          string                 `json:"description,omitempty"`
+	HTMLDescription      string                 `json:"x-intellij-html-description,omitempty"`
+	Default              interface{}            `json:"default,omitempty"`
+	Examples             []string               `json:"examples,omitempty"`
 }
 
 func main() {
@@ -108,20 +81,27 @@ func generateSchemas(root string, dryRun bool) (bool, error) {
 
 	for i, version := range schema.SchemaVersions {
 		apiVersion := strings.TrimPrefix(version.APIVersion, "skaffold/")
+
 		folder := apiVersion
+		strict := false
 		if i == len(schema.SchemaVersions)-1 {
 			folder = "latest"
+			strict = true
 		}
 
 		input := fmt.Sprintf("%s/pkg/skaffold/schema/%s/config.go", root, folder)
-		buf, err := generateSchema(input)
+		output := fmt.Sprintf("%s/docs/content/en/schemas/%s.json", root, apiVersion)
+
+		generator := schemaGenerator{
+			strict: strict,
+		}
+
+		buf, err := generator.Apply(input)
 		if err != nil {
 			return false, errors.Wrapf(err, "unable to generate schema for version %s", version.APIVersion)
 		}
 
-		output := fmt.Sprintf("%s/docs/content/en/schemas/%s.json", root, apiVersion)
 		var current []byte
-
 		if _, err := os.Stat(output); err == nil {
 			var err error
 			current, err = ioutil.ReadFile(output)
@@ -165,7 +145,7 @@ func setTypeOrRef(def *Definition, typeName string) {
 	}
 }
 
-func newDefinition(name string, t ast.Expr, comment string) *Definition {
+func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string) *Definition {
 	def := &Definition{}
 
 	switch tt := t.(type) {
@@ -192,7 +172,7 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 
 	case *ast.ArrayType:
 		def.Type = "array"
-		def.Items = newDefinition("", tt.Elt, "")
+		def.Items = g.newDefinition("", tt.Elt, "")
 		if def.Items.Ref == "" {
 			def.Default = "[]"
 		}
@@ -200,7 +180,7 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 	case *ast.MapType:
 		def.Type = "object"
 		def.Default = "{}"
-		def.AdditionalProperties = newDefinition("", tt.Value, "")
+		def.AdditionalProperties = g.newDefinition("", tt.Value, "")
 
 	case *ast.StructType:
 		for _, field := range tt.Fields.List {
@@ -213,7 +193,7 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 				continue
 			}
 
-			if yamlName == "" {
+			if yamlName == "" || yamlName == "-" {
 				continue
 			}
 
@@ -222,53 +202,64 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 			}
 
 			if def.Properties == nil {
-				def.Properties = &Definitions{}
+				def.Properties = make(map[string]*Definition)
 			}
 
-			def.Properties.Add(yamlName, newDefinition(field.Names[0].Name, field.Type, field.Doc.Text()))
+			def.PreferredOrder = append(def.PreferredOrder, yamlName)
+			def.Properties[yamlName] = g.newDefinition(field.Names[0].Name, field.Type, field.Doc.Text())
 			def.AdditionalProperties = false
+		}
+	}
+
+	if g.strict && name != "" {
+		if !strings.HasPrefix(comment, name+" ") {
+			panic(fmt.Sprintf("comment should start with field name on field %s", name))
 		}
 	}
 
 	description := strings.TrimSpace(strings.Replace(comment, "\n", " ", -1))
 
 	// Extract default value
-	if m := regexp.MustCompile("(.*)Defaults to `(.*)`").FindStringSubmatch(description); m != nil {
+	if m := regexpDefaults.FindStringSubmatch(description); m != nil {
 		description = strings.TrimSpace(m[1])
 		def.Default = m[2]
 	}
 
 	// Extract example
-	if m := regexp.MustCompile("(.*)For example: `(.*)`").FindStringSubmatch(description); m != nil {
+	if m := regexpExample.FindStringSubmatch(description); m != nil {
 		description = strings.TrimSpace(m[1])
 		def.Examples = []string{m[2]}
 	}
 
 	// Remove type prefix
-	description = strings.TrimPrefix(description, name+" is the ")
-	description = strings.TrimPrefix(description, name+" is ")
-	description = strings.TrimPrefix(description, name+" are the ")
-	description = strings.TrimPrefix(description, name+" are ")
-	description = strings.TrimPrefix(description, name+" lists ")
-	description = strings.TrimPrefix(description, name+" ")
+	description = regexp.MustCompile("^"+name+" (\\*.*\\* )?((is (the )?)|(are (the )?)|(lists ))?").ReplaceAllString(description, "$1")
+
+	if g.strict && name != "" {
+		if description == "" {
+			panic(fmt.Sprintf("no description on field %s", name))
+		}
+		if !strings.HasSuffix(description, ".") {
+			panic(fmt.Sprintf("description should end with a dot on field %s", name))
+		}
+	}
+	def.Description = description
 
 	// Convert to HTML
 	html := string(blackfriday.Run([]byte(description), blackfriday.WithNoExtensions()))
-	html = strings.Replace(html, "<p>", "", -1)
-	html = strings.Replace(html, "</p>", "", -1)
-	def.Description = strings.TrimSpace(html)
+	def.HTMLDescription = strings.TrimSpace(pTags.ReplaceAllString(html, ""))
 
 	return def
 }
 
-func generateSchema(inputPath string) ([]byte, error) {
+func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 	fset := token.NewFileSet()
 	node, err := parser.ParseFile(fset, inputPath, nil, parser.ParseComments)
 	if err != nil {
 		return nil, err
 	}
 
-	definitions := &Definitions{}
+	var preferredOrder []string
+	definitions := make(map[string]*Definition)
 
 	for _, i := range node.Decls {
 		declaration, ok := i.(*ast.GenDecl)
@@ -283,33 +274,59 @@ func generateSchema(inputPath string) ([]byte, error) {
 			}
 
 			name := typeSpec.Name.Name
-			definitions.Add(name, newDefinition(name, typeSpec.Type, declaration.Doc.Text()))
+			preferredOrder = append(preferredOrder, name)
+			definitions[name] = g.newDefinition(name, typeSpec.Type, declaration.Doc.Text())
 		}
 	}
 
 	// Inline anyOfs
-	for _, v := range definitions.values {
+	for _, k := range preferredOrder {
+		def := definitions[k]
+		if len(def.AnyOf) == 0 {
+			continue
+		}
+
 		var options []*Definition
+		options = append(options, &Definition{
+			Properties:           def.Properties,
+			PreferredOrder:       def.PreferredOrder,
+			AdditionalProperties: false,
+		})
 
-		for _, anyOf := range v.AnyOf {
+		for _, anyOf := range def.AnyOf {
 			ref := strings.TrimPrefix(anyOf.Ref, defPrefix)
-			referenced := definitions.values[ref]
+			referenced := definitions[ref]
 
-			for _, key := range referenced.Properties.keys {
-				choice := &Definitions{}
-				choice.Add(key, referenced.Properties.values[key])
+			for _, key := range referenced.PreferredOrder {
+				var preferredOrder []string
+				choice := make(map[string]*Definition)
+
+				if len(def.Properties) > 0 {
+					for _, pkey := range def.PreferredOrder {
+						preferredOrder = append(preferredOrder, pkey)
+						choice[pkey] = def.Properties[pkey]
+					}
+				}
+
+				preferredOrder = append(preferredOrder, key)
+				choice[key] = referenced.Properties[key]
 
 				options = append(options, &Definition{
-					Properties: choice,
+					Properties:           choice,
+					PreferredOrder:       preferredOrder,
+					AdditionalProperties: false,
 				})
 			}
 		}
 
-		v.AnyOf = options
-		v.AdditionalProperties = false
+		def.Properties = nil
+		def.PreferredOrder = nil
+		def.AdditionalProperties = nil
+		def.AnyOf = options
 	}
 
 	schema := Schema{
+		Version: version7,
 		Definition: &Definition{
 			Type: "object",
 			AnyOf: []*Definition{{

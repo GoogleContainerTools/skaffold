@@ -34,16 +34,16 @@ var (
 	gkeClusterName = flag.String("gke-cluster-name", "integration-tests", "name of the integration test cluster")
 	gcpProject     = flag.String("gcp-project", "k8s-skaffold", "the gcp project where the integration test cluster lives")
 	remote         = flag.Bool("remote", false, "if true, run tests on a remote GKE cluster")
-
-	// Client kubernetes.Interface
 )
 
 func TestMain(m *testing.M) {
 	flag.Parse()
 	if *remote {
 		cmd := exec.Command("gcloud", "container", "clusters", "get-credentials", *gkeClusterName, "--zone", *gkeZone, "--project", *gcpProject)
-		if err := util.RunCmd(cmd); err != nil {
-			logrus.Fatalf("Error authenticating to GKE cluster stdout: %v", err)
+		logrus.Infoln(cmd)
+
+		if out, err := util.RunCmdOut(cmd); err != nil {
+			logrus.Fatalf("Error authenticating to GKE cluster: %v, stdout: %v", err, out)
 		}
 	}
 

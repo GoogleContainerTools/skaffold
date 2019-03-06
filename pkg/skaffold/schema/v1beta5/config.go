@@ -44,7 +44,7 @@ type SkaffoldPipeline struct {
 	// Deploy describes how images are deployed.
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
 
-	// Profiles (beta) can override be used to `build`, `test` or `deploy` configuration.
+	// Profiles *beta* can override be used to `build`, `test` or `deploy` configuration.
 	Profiles []Profile `yaml:"profiles,omitempty"`
 }
 
@@ -57,7 +57,7 @@ type BuildConfig struct {
 	// Artifacts lists the images you're going to be building.
 	Artifacts []*Artifact `yaml:"artifacts,omitempty"`
 
-	// TagPolicy (beta) determines how images are tagged.
+	// TagPolicy *beta* determines how images are tagged.
 	// A few strategies are provided here, although you most likely won't need to care!
 	// If not specified, it defaults to `gitCommit: {}`.
 	TagPolicy TagPolicy `yaml:"tagPolicy,omitempty"`
@@ -94,26 +94,26 @@ type BuilderPlugin struct {
 
 // TagPolicy contains all the configuration for the tagging step.
 type TagPolicy struct {
-	// GitTagger (beta) tags images with the git tag or commit of the artifact's workspace.
+	// GitTagger *beta* tags images with the git tag or commit of the artifact's workspace.
 	GitTagger *GitTagger `yaml:"gitCommit,omitempty" yamltags:"oneOf=tag"`
 
-	// ShaTagger (beta) tags images with their sha256 digest.
+	// ShaTagger *beta* tags images with their sha256 digest.
 	ShaTagger *ShaTagger `yaml:"sha256,omitempty" yamltags:"oneOf=tag"`
 
-	// EnvTemplateTagger (beta) tags images with a configurable template string.
+	// EnvTemplateTagger *beta* tags images with a configurable template string.
 	EnvTemplateTagger *EnvTemplateTagger `yaml:"envTemplate,omitempty" yamltags:"oneOf=tag"`
 
-	// DateTimeTagger (beta) tags images with the build timestamp.
+	// DateTimeTagger *beta* tags images with the build timestamp.
 	DateTimeTagger *DateTimeTagger `yaml:"dateTime,omitempty" yamltags:"oneOf=tag"`
 }
 
-// ShaTagger (beta) tags images with their sha256 digest.
+// ShaTagger *beta* tags images with their sha256 digest.
 type ShaTagger struct{}
 
-// GitTagger (beta) tags images with the git tag or commit of the artifact's workspace.
+// GitTagger *beta* tags images with the git tag or commit of the artifact's workspace.
 type GitTagger struct{}
 
-// EnvTemplateTagger (beta) tags images with a configurable template string.
+// EnvTemplateTagger *beta* tags images with a configurable template string.
 type EnvTemplateTagger struct {
 	// Template used to produce the image name and tag.
 	// See golang [text/template](https://golang.org/pkg/text/template/).
@@ -124,7 +124,7 @@ type EnvTemplateTagger struct {
 	Template string `yaml:"template,omitempty" yamltags:"required"`
 }
 
-// DateTimeTagger (beta) tags images with the build timestamp.
+// DateTimeTagger *beta* tags images with the build timestamp.
 type DateTimeTagger struct {
 	// Format formats the date and time.
 	// See [#Time.Format](https://golang.org/pkg/time/#Time.Format).
@@ -140,20 +140,20 @@ type DateTimeTagger struct {
 // BuildType contains the specific implementation and parameters needed
 // for the build step. Only one field should be populated.
 type BuildType struct {
-	// LocalBuild (beta) describes how to do a build on the local docker daemon
+	// LocalBuild *beta* describes how to do a build on the local docker daemon
 	// and optionally push to a repository.
 	LocalBuild *LocalBuild `yaml:"local,omitempty" yamltags:"oneOf=build"`
 
-	// GoogleCloudBuild (beta) describes how to do a remote build on
+	// GoogleCloudBuild *beta* describes how to do a remote build on
 	// [Google Cloud Build](https://cloud.google.com/cloud-build/).
 	GoogleCloudBuild *GoogleCloudBuild `yaml:"googleCloudBuild,omitempty" yamltags:"oneOf=build"`
 
-	// KanikoBuild (beta) describes how to do an on-cluster build using
+	// KanikoBuild *beta* describes how to do an on-cluster build using
 	// [Kaniko](https://github.com/GoogleContainerTools/kaniko).
 	KanikoBuild *KanikoBuild `yaml:"kaniko,omitempty" yamltags:"oneOf=build"`
 }
 
-// LocalBuild (beta) describes how to do a build on the local docker daemon
+// LocalBuild *beta* describes how to do a build on the local docker daemon
 // and optionally push to a repository.
 type LocalBuild struct {
 	// Push should images be pushed to a registry.
@@ -168,7 +168,7 @@ type LocalBuild struct {
 	UseBuildkit bool `yaml:"useBuildkit,omitempty"`
 }
 
-// GoogleCloudBuild (beta) describes how to do a remote build on
+// GoogleCloudBuild *beta* describes how to do a remote build on
 // [Google Cloud Build](https://cloud.google.com/cloud-build/docs/).
 // Docker and Jib artifacts can be built on Cloud Build. The `projectId` needs
 // to be provided and the currently logged in user should be given permissions to trigger
@@ -230,7 +230,7 @@ type KanikoCache struct {
 	Repo string `yaml:"repo,omitempty"`
 }
 
-// KanikoBuild (beta) describes how to do an on-cluster build using
+// KanikoBuild *beta* describes how to do an on-cluster build using
 // [Kaniko](https://github.com/GoogleContainerTools/kaniko).
 type KanikoBuild struct {
 	// BuildContext defines where Kaniko gets the sources from.
@@ -299,18 +299,18 @@ type DeployConfig struct {
 // DeployType contains the specific implementation and parameters needed
 // for the deploy step. Only one field should be populated.
 type DeployType struct {
-	// HelmDeploy (beta) uses the `helm` CLI to apply the charts to the cluster.
+	// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 	HelmDeploy *HelmDeploy `yaml:"helm,omitempty" yamltags:"oneOf=deploy"`
 
-	// KubectlDeploy (beta) uses a client side `kubectl apply` to deploy manifests.
+	// KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 	// You'll need a `kubectl` CLI version installed that's compatible with your cluster.
 	KubectlDeploy *KubectlDeploy `yaml:"kubectl,omitempty" yamltags:"oneOf=deploy"`
 
-	// KustomizeDeploy (beta) uses the `kustomize` CLI to "patch" a deployment for a target environment.
+	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
 	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty" yamltags:"oneOf=deploy"`
 }
 
-// KubectlDeploy (beta) uses a client side `kubectl apply` to deploy manifests.
+// KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 // You'll need a `kubectl` CLI version installed that's compatible with your cluster.
 type KubectlDeploy struct {
 	// Manifests lists the Kubernetes yaml or json manifests.
@@ -338,13 +338,13 @@ type KubectlFlags struct {
 	Delete []string `yaml:"delete,omitempty"`
 }
 
-// HelmDeploy (beta) uses the `helm` CLI to apply the charts to the cluster.
+// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 type HelmDeploy struct {
 	// Releases is a list of Helm releases.
 	Releases []HelmRelease `yaml:"releases,omitempty" yamltags:"required"`
 }
 
-// KustomizeDeploy (beta) uses the `kustomize` CLI to "patch" a deployment for a target environment.
+// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
 type KustomizeDeploy struct {
 	// KustomizePath is the path to Kustomization files.
 	// Defaults to `.`.
@@ -449,7 +449,7 @@ type Artifact struct {
 	// Defaults to `.`.
 	Workspace string `yaml:"context,omitempty"`
 
-	// Sync (alpha) lists local files that can be synced to remote pods instead
+	// Sync *alpha* lists local files that can be synced to remote pods instead
 	// of triggering an image build when modified.
 	// This is a mapping of local files to sync to remote folders.
 	// For example: `{"*.py": ".", "css/**/*.css": "app/css"}`.
@@ -461,7 +461,7 @@ type Artifact struct {
 	BuilderPlugin *BuilderPlugin `yaml:"plugin,omitempty"`
 }
 
-// Profile (beta) profiles are used to override any `build`, `test` or `deploy` configuration.
+// Profile *beta* profiles are used to override any `build`, `test` or `deploy` configuration.
 type Profile struct {
 	// Name is a unique profile name.
 	// For example: `profile-prod`.
@@ -519,23 +519,23 @@ type Activation struct {
 }
 
 type ArtifactType struct {
-	// DockerArtifact (beta) describes an artifact built from a Dockerfile.
+	// DockerArtifact *beta* describes an artifact built from a Dockerfile.
 	DockerArtifact *DockerArtifact `yaml:"docker,omitempty" yamltags:"oneOf=artifact"`
 
-	// BazelArtifact (beta) requires bazel CLI to be installed and the sources to
+	// BazelArtifact *beta* requires bazel CLI to be installed and the sources to
 	// contain [Bazel](https://bazel.build/) configuration files.
 	BazelArtifact *BazelArtifact `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
 
-	// JibMavenArtifact (alpha) builds images using the
+	// JibMavenArtifact *alpha* builds images using the
 	// [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).
 	JibMavenArtifact *JibMavenArtifact `yaml:"jibMaven,omitempty" yamltags:"oneOf=artifact"`
 
-	// JibGradleArtifact (alpha) builds images using the
+	// JibGradleArtifact *alpha* builds images using the
 	// [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).
 	JibGradleArtifact *JibGradleArtifact `yaml:"jibGradle,omitempty" yamltags:"oneOf=artifact"`
 }
 
-// DockerArtifact (beta) describes an artifact built from a Dockerfile,
+// DockerArtifact *beta* describes an artifact built from a Dockerfile,
 // usually using `docker build`.
 type DockerArtifact struct {
 	// DockerfilePath locates the Dockerfile relative to workspace.
@@ -554,7 +554,7 @@ type DockerArtifact struct {
 	CacheFrom []string `yaml:"cacheFrom,omitempty"`
 }
 
-// BazelArtifact (beta) describes an artifact built with [Bazel](https://bazel.build/).
+// BazelArtifact *beta* describes an artifact built with [Bazel](https://bazel.build/).
 type BazelArtifact struct {
 	// BuildTarget is the `bazel build` target to run.
 	// For example: `//:skaffold_example.tar`.
@@ -565,7 +565,7 @@ type BazelArtifact struct {
 	BuildArgs []string `yaml:"args,omitempty"`
 }
 
-// JibMavenArtifact (alpha) builds images using the
+// JibMavenArtifact *alpha* builds images using the
 // [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).
 type JibMavenArtifact struct {
 	// Module selects which Maven module to build, for a multi module project.
@@ -579,7 +579,7 @@ type JibMavenArtifact struct {
 	Flags []string `yaml:"args,omitempty"`
 }
 
-// JibGradleArtifact (alpha) builds images using the
+// JibGradleArtifact *alpha* builds images using the
 // [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).
 type JibGradleArtifact struct {
 	// Project selects which Gradle project to build.
