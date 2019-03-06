@@ -26,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// MavenCommand stores Maven executable and wrapper name
 var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 
 // GetDependenciesMaven finds the source dependencies for the given jib-maven artifact.

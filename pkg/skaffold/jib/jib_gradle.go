@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// GradleCommand stores Gradle executable and wrapper name
 var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"}
 
 // GetDependenciesGradle finds the source dependencies for the given jib-gradle artifact.

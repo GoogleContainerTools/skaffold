@@ -97,11 +97,11 @@ func refreshDependencyList(cmd *exec.Cmd, projectName string) error {
 
 			// Walk the files in each list and filter out ignores
 			files := watchedFiles[projectName]
-			files.WatchedInputFiles, err = walkFiles(&files, &filesOutput, false)
+			files.WatchedInputFiles, err = files.walkFiles(&filesOutput, false)
 			if err != nil {
 				return err
 			}
-			files.WatchedBuildFiles, err = walkFiles(&files, &filesOutput, true)
+			files.WatchedBuildFiles, err = files.walkFiles(&filesOutput, true)
 			if err != nil {
 				return err
 			}
@@ -110,10 +110,10 @@ func refreshDependencyList(cmd *exec.Cmd, projectName string) error {
 		}
 	}
 
-	return errors.New("failed to get Jib dependencies")
+	return errors.New("failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.0.2+)")
 }
 
-func walkFiles(files *filesLists, jibOutput *filesTemplate, isBuildFile bool) ([]string, error) {
+func (f *filesLists) walkFiles(jibOutput *filesTemplate, isBuildFile bool) ([]string, error) {
 	filesList := []string{}
 	filesOutputList := jibOutput.Inputs
 	if isBuildFile {
@@ -138,7 +138,7 @@ func walkFiles(files *filesLists, jibOutput *filesTemplate, isBuildFile bool) ([
 		if !info.IsDir() {
 			filesList = append(filesList, dep)
 			if isBuildFile {
-				files.BuildFileTimes[dep] = info.ModTime()
+				f.BuildFileTimes[dep] = info.ModTime()
 			}
 			continue
 		}
@@ -151,7 +151,7 @@ func walkFiles(files *filesLists, jibOutput *filesTemplate, isBuildFile bool) ([
 				}
 				filesList = append(filesList, path)
 				if isBuildFile {
-					files.BuildFileTimes[path] = info.ModTime()
+					f.BuildFileTimes[path] = info.ModTime()
 				}
 				return nil
 			},
