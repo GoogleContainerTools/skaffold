@@ -22,16 +22,16 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/bmatcuk/doublestar"
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
+	"github.com/bmatcuk/doublestar"
+	registry_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -90,11 +90,20 @@ func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact) (*Item
 }
 
 func retrieveWorkingDir(tagged string) (string, error) {
-	cf, err := docker.RetrieveRemoteConfig(tagged)
-	if err != nil {
-		return "", errors.Wrap(err, "retrieving remote config")
+	var cf *registry_v1.ConfigFile
+	var err error
 
+	localDocker, err := docker.NewAPIClient()
+	if err != nil {
+		// No local Docker is available
+		cf, err = docker.RetrieveRemoteConfig(tagged)
+	} else {
+		cf, err = localDocker.ConfigFile(context.Background(), tagged)
 	}
+	if err != nil {
+		return "", errors.Wrap(err, "retrieving image config")
+	}
+
 	if cf.Config.WorkingDir == "" {
 		return "/", nil
 	}
