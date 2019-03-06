@@ -18,6 +18,7 @@ package build
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -31,6 +32,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
 	yaml "gopkg.in/yaml.v2"
+)
+
+var (
+	digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
 )
 
 var defaultArtifactCache = ArtifactCache{"hash": ImageDetails{
@@ -315,16 +320,16 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			api: testutil.FakeAPIClient{
 				ImageSummaries: []types.ImageSummary{
 					{
-						RepoDigests: []string{"digest"},
+						RepoDigests: []string{fmt.Sprintf("image@%s", digest)},
 						RepoTags:    []string{"anotherimage:hash"},
 					},
 				},
 			},
 			cache: &Cache{
 				useCache:      true,
-				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: "digest"}},
+				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
 			},
-			digest: "digest",
+			digest: digest,
 			expected: &cachedArtifactDetails{
 				needsRetag:    true,
 				needsPush:     true,
@@ -340,16 +345,16 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			api: testutil.FakeAPIClient{
 				ImageSummaries: []types.ImageSummary{
 					{
-						RepoDigests: []string{"digest"},
+						RepoDigests: []string{fmt.Sprintf("image@%s", digest)},
 						RepoTags:    []string{"anotherimage:hash"},
 					},
 				},
 			},
 			cache: &Cache{
 				useCache:      true,
-				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: "digest"}},
+				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
 			},
-			digest: "digest",
+			digest: digest,
 			expected: &cachedArtifactDetails{
 				needsRetag:    true,
 				prebuiltImage: "anotherimage:hash",
@@ -364,7 +369,7 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			api: testutil.FakeAPIClient{
 				ImageSummaries: []types.ImageSummary{
 					{
-						RepoDigests: []string{"digest"},
+						RepoDigests: []string{fmt.Sprintf("image@%s", digest)},
 						RepoTags:    []string{"anotherimage:hash"},
 					},
 				},
@@ -372,9 +377,9 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			cache: &Cache{
 				useCache:      true,
 				needsPush:     true,
-				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: "digest"}},
+				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
 			},
-			digest: "digest",
+			digest: digest,
 			expected: &cachedArtifactDetails{
 				needsRetag:    true,
 				needsPush:     true,

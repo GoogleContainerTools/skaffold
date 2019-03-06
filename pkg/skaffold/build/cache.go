@@ -145,7 +145,7 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 		artifact, err := c.resolveCachedArtifact(ctx, out, a)
 		if err != nil {
 			logrus.Debugf("error retrieving cached artifact for %s: %v\n", a.ImageName, err)
-			color.Red.Fprintf(out, "Unable to retrieve %s from cache; this image will be rebuilt.", a.ImageName)
+			color.Red.Fprintf(out, "Unable to retrieve %s from cache; this image will be rebuilt.\n", a.ImageName)
 			needToBuild = append(needToBuild, a)
 			continue
 		}
@@ -242,21 +242,12 @@ func (c *Cache) retrieveCachedArtifactDetails(ctx context.Context, a *latest.Art
 }
 
 func (c *Cache) retrievePrebuiltImage(ctx context.Context, details ImageDetails) (string, error) {
-	// first, search for an image with the same image ID
-	img, err := c.client.FindImageByID(ctx, details.ID)
+	img, err := c.client.FindTaggedImage(ctx, details.ID, details.Digest)
 	if err != nil {
-		logrus.Debugf("error getting tagged image with id %s, checking digest: %v", details.ID, err)
-	}
-	if err == nil && img != "" {
-		return img, nil
-	}
-	// else, search for an image with the same digest
-	img, err = c.client.FindTaggedImageByDigest(ctx, details.Digest)
-	if err != nil {
-		return "", errors.Wrapf(err, "getting image from digest %s", details.Digest)
+		return "", errors.Wrap(err, "unable to find tagged image")
 	}
 	if img == "" {
-		return "", errors.New("no prebuilt image")
+		return img, errors.New("no prebuilt image")
 	}
 	return img, nil
 }
