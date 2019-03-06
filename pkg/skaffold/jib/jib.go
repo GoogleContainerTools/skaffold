@@ -124,7 +124,7 @@ func refreshDependencyList(cmd *exec.Cmd, projectName string) error {
 		}
 	}
 
-	return errors.New("failed to get Jib dependencies")
+	return errors.New("failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.0.2+)")
 }
 
 // walkFiles walks through a list of files and directories and performs a callback on each of the files
