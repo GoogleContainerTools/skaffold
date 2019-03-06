@@ -71,6 +71,8 @@ const (
 	SkaffoldPluginValue     = "1337"
 	SkaffoldPluginName      = "SKAFFOLD_PLUGIN_NAME"
 	DockerBuilderPluginName = "docker"
+
+	DefaultRPCPort = ":50051"
 )
 
 var (

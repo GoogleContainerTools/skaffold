@@ -18,8 +18,13 @@ package event
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 	"net"
+	"strconv"
+	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 
 	empty "github.com/golang/protobuf/ptypes/empty"
@@ -66,10 +71,12 @@ func newStatusServer(port string) (func() error, error) {
 	if port == "" {
 		return func() error { return nil }, nil
 	}
+	port = getAvailablePort(port)
 	l, err := net.Listen("tcp", port)
 	if err != nil {
 		return func() error { return nil }, errors.Wrap(err, "creating listener")
 	}
+	logrus.Infof("starting gRPC server on port %s", port)
 
 	s := grpc.NewServer()
 	proto.RegisterSkaffoldServiceServer(s, &server{})
@@ -83,4 +90,38 @@ func newStatusServer(port string) (func() error, error) {
 		s.Stop()
 		return l.Close()
 	}, nil
+}
+
+// getOpenPort tests the provided port for availability,
+// and if it's already in use, finds another open port.
+func getAvailablePort(port string) string {
+	ln, err := net.Listen("tcp", port)
+	if err != nil {
+		// if user provided non-default port, warn them that it is unavailable
+		if port != constants.DefaultRPCPort {
+			logrus.Warnf("provided port %s unavailable: finding another available port", port)
+		}
+	} else {
+		ln.Close()
+		return port
+	}
+	for {
+		var portNum int
+		logrus.Debugf("port %s already in use: attempting to find an available one", port)
+		port = strings.Replace(port, ":", "", -1)
+		portNum, err = strconv.Atoi(port)
+		if err == nil {
+			portNum++
+		}
+		if err != nil || portNum > 65535 {
+			portNum = rand.Intn(64511) + 1024 // range [1024, 65535]
+		}
+		port = fmt.Sprintf(":%d", portNum)
+		ln, err := net.Listen("tcp", port)
+		if err == nil {
+			ln.Close()
+			logrus.Debugf("found open port: %s", port)
+			return port
+		}
+	}
 }
