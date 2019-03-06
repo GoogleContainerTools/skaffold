@@ -33,13 +33,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 )
 
-// ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.
-func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact) (kubectl.ManifestList, error) {
-	var updated kubectl.ManifestList
-	decode := scheme.Codecs.UniversalDeserializer().Decode
-
-	s := serializer.NewYAMLSerializer(serializer.DefaultMetaFactory, scheme.Scheme, scheme.Scheme)
-	encode := func(o runtime.Object) ([]byte, error) {
+var (
+	decodeFromYaml = scheme.Codecs.UniversalDeserializer().Decode
+	encodeAsYaml = func(o runtime.Object) ([]byte, error) {
+		s := serializer.NewYAMLSerializer(serializer.DefaultMetaFactory, scheme.Scheme, scheme.Scheme)
 		var b bytes.Buffer
 		w := bufio.NewWriter(&b)
 		if err := s.Encode(o, w); err != nil {
@@ -48,6 +45,11 @@ func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact) (
 		w.Flush()
 		return b.Bytes(), nil
 	}
+)
+// ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.
+func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact) (kubectl.ManifestList, error) {
+	var updated kubectl.ManifestList
+
 	retriever := func(image string) (imageConfiguration, error) {
 		if artifact := findArtifact(image, builds); artifact != nil {
 			return retrieveImageConfiguration(image, artifact)
@@ -56,13 +58,13 @@ func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact) (
 	}
 
 	for _, manifest := range l {
-		obj, _, err := decode(manifest, nil, nil)
+		obj, _, err := decodeFromYaml(manifest, nil, nil)
 		if err != nil {
 			return nil, errors.Wrap(err, "reading kubernetes YAML")
 		}
 
 		if transformManifest(obj, retriever) {
-			manifest, err = encode(obj)
+			manifest, err = encodeAsYaml(obj)
 			if err != nil {
 				return nil, errors.Wrap(err, "marshalling yaml")
 			}

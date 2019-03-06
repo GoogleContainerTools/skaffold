@@ -21,6 +21,10 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/google/go-cmp/cmp"
+
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestFindArtifact(t *testing.T) {
@@ -69,3 +73,28 @@ func TestEnvAsMap(t *testing.T) {
 	}
 }
 
+func TestPodEncodeDecode(t *testing.T) {
+	pod := &v1.Pod{
+		TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
+		ObjectMeta: metav1.ObjectMeta{Name: "podname"},
+		Spec:       v1.PodSpec{Containers: []v1.Container{v1.Container{Name: "name1", Image: "image1"}}}}
+	b, err := encodeAsYaml(pod)
+	if err != nil {
+		t.Errorf("encodeAsYaml() failed: %v", err)
+		return
+	}
+	o, _, err := decodeFromYaml(b, nil, nil)
+	if err != nil {
+		t.Errorf("decodeFromYaml() failed: %v", err)
+		return
+	}
+	switch o := o.(type) {
+	case *v1.Pod:
+		testutil.CheckEqual(t, cmp.Options{}, "podname", o.ObjectMeta.Name)
+		testutil.CheckEqual(t, cmp.Options{}, 1, len(o.Spec.Containers))
+		testutil.CheckEqual(t, cmp.Options{}, "name1", o.Spec.Containers[0].Name)
+		testutil.CheckEqual(t, cmp.Options{}, "image1", o.Spec.Containers[0].Image)
+	default:
+		t.Errorf("decodeFromYaml() failed: expected *v1.Pod but got %T", o)
+	}
+}

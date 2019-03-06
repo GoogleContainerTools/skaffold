@@ -58,18 +58,31 @@ var containerTransforms []containerTransformer
 // transformManifest attempts to configure a manifest for debugging.
 // Returns true if changed, false otherwise.
 func transformManifest(obj runtime.Object, retrieveImageConfiguration configurationRetriever) bool {
+	one := int32(1)
 	switch o := obj.(type) {
 	case *v1.Pod:
 		return transformPodSpec(&o.ObjectMeta, &o.Spec, retrieveImageConfiguration)
 	case *v1.ReplicationController:
+		if o.Spec.Replicas != nil {
+			o.Spec.Replicas = &one
+		}
 		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration)
 	case *appsv1.Deployment:
+		if o.Spec.Replicas != nil {
+			o.Spec.Replicas = &one
+		}
 		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration)
 	case *appsv1.DaemonSet:
 		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration)
 	case *appsv1.ReplicaSet:
+		if o.Spec.Replicas != nil {
+			o.Spec.Replicas = &one
+		}
 		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration)
 	case *appsv1.StatefulSet:
+		if o.Spec.Replicas != nil {
+			o.Spec.Replicas = &one
+		}
 		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration)
 	case *batchv1.Job:
 		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration)

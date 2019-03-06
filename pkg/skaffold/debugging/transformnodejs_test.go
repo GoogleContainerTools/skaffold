@@ -19,12 +19,15 @@ package debugging
 import (
 	"testing"
 
+	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-cmp/cmp"
 )
-
 
 func TestExtractInspectArg(t *testing.T) {
 	tests := []struct {
@@ -161,12 +164,12 @@ func TestNodeTransformerApply(t *testing.T) {
 			},
 		},
 		{
-			description: "command not entrypoint",
+			description:   "command not entrypoint",
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{arguments: []string{"node"}},
 			result: v1.Container{
-				Args: []string{"node", "--inspect=9229"},
-				Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+				Args:  []string{"node", "--inspect=9229"},
+				Ports: []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
 			},
 		},
 	}
@@ -177,6 +180,251 @@ func TestNodeTransformerApply(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			nodeTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
 			testutil.CheckDeepEqual(t, test.result, test.containerSpec)
+		})
+	}
+}
+
+func TestTransformManifestNodeJS(t *testing.T) {
+	int32p := func(x int32) *int32 { return &x }
+	tests := []struct {
+		description string
+		in          runtime.Object
+		transformed bool
+		out         runtime.Object
+	}{
+		{
+			"Pod with no transformable container",
+			&v1.Pod{
+				Spec: v1.PodSpec{Containers: []v1.Container{
+					v1.Container{
+						Name:    "test",
+						Command: []string{"echo", "Hello World"},
+					},
+				}}},
+			false,
+			&v1.Pod{
+				Spec: v1.PodSpec{Containers: []v1.Container{
+					v1.Container{
+						Name:    "test",
+						Command: []string{"echo", "Hello World"},
+					},
+				}}},
+		},
+		{
+			"Pod with NodeJS container",
+			&v1.Pod{
+				Spec: v1.PodSpec{Containers: []v1.Container{
+					v1.Container{
+						Name:    "test",
+						Command: []string{"node", "foo.js"},
+					},
+				}}},
+			true,
+			&v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"devtools":9229,"runtime":"nodejs"}}`},
+				},
+				Spec: v1.PodSpec{Containers: []v1.Container{
+					v1.Container{
+						Name:    "test",
+						Command: []string{"node", "--inspect=9229", "foo.js"},
+						Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+					},
+				}}},
+		},
+		{
+			"Deployment with NodeJS container",
+			&appsv1.Deployment{
+				Spec: appsv1.DeploymentSpec{
+					Replicas: int32p(2),
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "test",
+								Command: []string{"node", "foo.js"},
+							},
+						}}}}},
+			true,
+			&appsv1.Deployment{
+				//ObjectMeta: metav1.ObjectMeta{
+				//	Labels: map[string]string{"debug.cloud.google.com/enabled": `yes`},
+				//},
+				Spec: appsv1.DeploymentSpec{
+					Replicas: int32p(1),
+					Template: v1.PodTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"devtools":9229,"runtime":"nodejs"}}`},
+						},
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "test",
+								Command: []string{"node", "--inspect=9229", "foo.js"},
+								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+							},
+						}}}}},
+		},
+		{
+			"ReplicaSet with NodeJS container",
+			&appsv1.ReplicaSet{
+				Spec: appsv1.ReplicaSetSpec{
+					Replicas: int32p(2),
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "test",
+								Command: []string{"node", "foo.js"},
+							},
+						}}}}},
+			true,
+			&appsv1.ReplicaSet{
+				//ObjectMeta: metav1.ObjectMeta{
+				//	Labels: map[string]string{"debug.cloud.google.com/enabled": `yes`},
+				//},
+				Spec: appsv1.ReplicaSetSpec{
+					Replicas: int32p(1),
+					Template: v1.PodTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"devtools":9229,"runtime":"nodejs"}}`},
+						},
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "test",
+								Command: []string{"node", "--inspect=9229", "foo.js"},
+								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+							},
+						}}}}},
+		},
+		{
+			"StatefulSet with NodeJS container",
+			&appsv1.StatefulSet{
+				Spec: appsv1.StatefulSetSpec{
+					Replicas: int32p(2),
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "test",
+								Command: []string{"node", "foo.js"},
+							},
+						}}}}},
+			true,
+			&appsv1.StatefulSet{
+				//ObjectMeta: metav1.ObjectMeta{
+				//	Labels: map[string]string{"debug.cloud.google.com/enabled": `yes`},
+				//},
+				Spec: appsv1.StatefulSetSpec{
+					Replicas: int32p(1),
+					Template: v1.PodTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"devtools":9229,"runtime":"nodejs"}}`},
+						},
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "test",
+								Command: []string{"node", "--inspect=9229", "foo.js"},
+								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+							},
+						}}}}},
+		},
+		{
+			"DaemonSet with NodeJS container",
+			&appsv1.DaemonSet{
+				Spec: appsv1.DaemonSetSpec{
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "test",
+								Command: []string{"node", "foo.js"},
+							},
+						}}}}},
+			true,
+			&appsv1.DaemonSet{
+				//ObjectMeta: metav1.ObjectMeta{
+				//	Labels: map[string]string{"debug.cloud.google.com/enabled": `yes`},
+				//},
+				Spec: appsv1.DaemonSetSpec{
+					Template: v1.PodTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"devtools":9229,"runtime":"nodejs"}}`},
+						},
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "test",
+								Command: []string{"node", "--inspect=9229", "foo.js"},
+								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+							},
+						}}}}},
+		},
+		{
+			"Job with NodeJS container",
+			&batchv1.Job{
+				Spec: batchv1.JobSpec{
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "test",
+								Command: []string{"node", "foo.js"},
+							},
+						}}}}},
+			true,
+			&batchv1.Job{
+				//ObjectMeta: metav1.ObjectMeta{
+				//	Labels: map[string]string{"debug.cloud.google.com/enabled": `yes`},
+				//},
+				Spec: batchv1.JobSpec{
+					Template: v1.PodTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"devtools":9229,"runtime":"nodejs"}}`},
+						},
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "test",
+								Command: []string{"node", "--inspect=9229", "foo.js"},
+								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+							},
+						}}}}},
+		},
+		{
+			"ReplicationController with NodeJS container",
+			&v1.ReplicationController{
+				Spec: v1.ReplicationControllerSpec{
+					Replicas: int32p(2),
+					Template: &v1.PodTemplateSpec{
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "test",
+								Command: []string{"node", "foo.js"},
+							},
+						}}}}},
+			true,
+			&v1.ReplicationController{
+				//ObjectMeta: metav1.ObjectMeta{
+				//	Labels: map[string]string{"debug.cloud.google.com/enabled": `yes`},
+				//},
+				Spec: v1.ReplicationControllerSpec{
+					Replicas: int32p(1),
+					Template: &v1.PodTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"devtools":9229,"runtime":"nodejs"}}`},
+						},
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "test",
+								Command: []string{"node", "--inspect=9229", "foo.js"},
+								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+							},
+						}}}}},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			value := test.in.DeepCopyObject()
+
+			retriever := func(image string) (imageConfiguration, error) {
+				return imageConfiguration{}, nil
+			}
+			result := transformManifest(value, retriever)
+			testutil.CheckDeepEqual(t, test.transformed, result)
+			testutil.CheckDeepEqual(t, test.out, value)
 		})
 	}
 }
