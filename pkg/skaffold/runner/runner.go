@@ -65,7 +65,6 @@ type SkaffoldRunner struct {
 	imageList         *kubernetes.ImageList
 	namespaces        []string
 	RPCServerShutdown func() error
-	hasBuilt          bool
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldPipeline

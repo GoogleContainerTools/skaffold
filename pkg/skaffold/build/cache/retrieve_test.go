@@ -130,7 +130,7 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 				hashForArtifact = originalHash
 			}()
 
-			test.cache.client = docker.NewLocalDaemon(&test.api, nil)
+			test.cache.client = docker.NewLocalDaemon(&test.api, nil, false)
 
 			actualArtifacts, actualBuildResults, err := test.cache.RetrieveCachedArtifacts(context.Background(), os.Stdout, test.artifacts)
 			sort.Sort(&artifactSorter{artifacts: actualArtifacts})

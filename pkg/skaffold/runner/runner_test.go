@@ -60,6 +60,7 @@ func (t *TestBench) Labels() map[string]string                        { return m
 func (t *TestBench) TestDependencies() ([]string, error)              { return nil, nil }
 func (t *TestBench) Dependencies() ([]string, error)                  { return nil, nil }
 func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error { return nil }
+func (t *TestBench) Prune(ctx context.Context, out io.Writer) error   { return nil }
 func (t *TestBench) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 	return nil, nil
 }
@@ -96,6 +97,8 @@ func (t *TestBench) Sync(ctx context.Context, item *sync.Item) error {
 	if len(t.syncErrors) > 0 {
 		err := t.syncErrors[0]
 		t.syncErrors = t.syncErrors[1:]
+		if err != nil {
+			return err
 		}
 	}
 
