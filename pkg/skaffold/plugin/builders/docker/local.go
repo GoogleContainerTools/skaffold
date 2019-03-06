@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"strings"
 
+	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -32,6 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 func (b *Builder) local(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
@@ -53,6 +55,18 @@ func (b *Builder) local(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 		return nil, errors.Wrap(err, "getting docker client")
 	}
 	b.LocalDocker = localDocker
+	localCluster, err := configutil.GetLocalCluster()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting localCluster")
+	}
+	var pushImages bool
+	if b.LocalBuild.Push == nil {
+		pushImages = !localCluster
+		logrus.Debugf("push value not present, defaulting to %t because localCluster is %t", pushImages, localCluster)
+	} else {
+		pushImages = *b.LocalBuild.Push
+	}
+	b.PushImages = pushImages
 	for _, a := range artifacts {
 		if err := setArtifact(a); err != nil {
 			return nil, err

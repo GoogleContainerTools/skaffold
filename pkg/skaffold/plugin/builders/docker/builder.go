@@ -53,10 +53,13 @@ func NewBuilder() *Builder {
 
 // Init stores skaffold options and the execution environment
 func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
-	if err := event.SetupRPCClient(opts); err != nil {
-		logrus.Warn("error establishing gRPC connection to skaffold process; events will not be handled correctly")
-		logrus.Warn(err.Error())
+	if opts.EnableRPC {
+		if err := event.SetupRPCClient(opts); err != nil {
+			logrus.Warn("error establishing gRPC connection to skaffold process; events will not be handled correctly")
+			logrus.Warn(err.Error())
+		}
 	}
+
 	b.opts = opts
 	b.env = env
 }
