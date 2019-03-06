@@ -27,6 +27,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	skafconfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -42,6 +43,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
+)
+
+var (
+	// For testing
+	hashFunction = cacheHasher
 )
 
 // ImageDetails holds the Digest and ID of an image
@@ -357,10 +363,10 @@ func getHashForArtifact(ctx context.Context, builder Builder, a *latest.Artifact
 	if err != nil {
 		return "", errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
 	}
-	hasher := cacheHasher()
+	sort.Strings(deps)
 	var hashes []string
 	for _, d := range deps {
-		h, err := hasher(d)
+		h, err := hashFunction(d)
 		if err != nil {
 			return "", errors.Wrapf(err, "getting hash for %s", d)
 		}
@@ -374,25 +380,23 @@ func getHashForArtifact(ctx context.Context, builder Builder, a *latest.Artifact
 }
 
 // cacheHasher takes hashes the contents and name of a file
-func cacheHasher() func(string) (string, error) {
-	hasher := func(p string) (string, error) {
-		h := md5.New()
-		fi, err := os.Lstat(p)
+func cacheHasher(p string) (string, error) {
+	h := md5.New()
+	fi, err := os.Lstat(p)
+	if err != nil {
+		return "", err
+	}
+	h.Write([]byte(fi.Mode().String()))
+	h.Write([]byte(fi.Name()))
+	if fi.Mode().IsRegular() {
+		f, err := os.Open(p)
 		if err != nil {
 			return "", err
 		}
-		h.Write([]byte(fi.Mode().String()))
-		if fi.Mode().IsRegular() {
-			f, err := os.Open(p)
-			if err != nil {
-				return "", err
-			}
-			defer f.Close()
-			if _, err := io.Copy(h, f); err != nil {
-				return "", err
-			}
+		defer f.Close()
+		if _, err := io.Copy(h, f); err != nil {
+			return "", err
 		}
-		return hex.EncodeToString(h.Sum(nil)), nil
 	}
-	return hasher
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
