@@ -83,7 +83,7 @@ func getDependencies(cmd *exec.Cmd, projectName string) ([]string, error) {
 func refreshDependencyList(cmd *exec.Cmd, projectName string) error {
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.0.2+)")
 	}
 
 	lines := util.NonEmptyLines(stdout)
@@ -110,7 +110,7 @@ func refreshDependencyList(cmd *exec.Cmd, projectName string) error {
 		}
 	}
 
-	return errors.New("failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.0.2+)")
+	return errors.New("failed to get Jib dependencies")
 }
 
 func (f *filesLists) walkFiles(jibOutput *filesTemplate, isBuildFile bool) ([]string, error) {
