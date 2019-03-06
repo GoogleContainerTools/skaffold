@@ -149,18 +149,18 @@ func TestNodeTransformerApply(t *testing.T) {
 			configuration: imageConfiguration{entrypoint: []string{"node"}},
 			result: v1.Container{
 				Command: []string{"node", "--inspect=9229"},
-				Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+				Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
 		},
 		{
 			description: "existing port",
 			containerSpec: v1.Container{
-				Ports: []v1.ContainerPort{v1.ContainerPort{Name: "http-server", ContainerPort: 8080}},
+				Ports: []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}},
 			},
 			configuration: imageConfiguration{entrypoint: []string{"node"}},
 			result: v1.Container{
 				Command: []string{"node", "--inspect=9229"},
-				Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "http-server", ContainerPort: 8080}, v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+				Ports:   []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}, {Name: "devtools", ContainerPort: 9229}},
 			},
 		},
 		{
@@ -169,7 +169,7 @@ func TestNodeTransformerApply(t *testing.T) {
 			configuration: imageConfiguration{arguments: []string{"node"}},
 			result: v1.Container{
 				Args:  []string{"node", "--inspect=9229"},
-				Ports: []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+				Ports: []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
 		},
 	}
@@ -196,7 +196,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 			"Pod with no transformable container",
 			&v1.Pod{
 				Spec: v1.PodSpec{Containers: []v1.Container{
-					v1.Container{
+					{
 						Name:    "test",
 						Command: []string{"echo", "Hello World"},
 					},
@@ -204,7 +204,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 			false,
 			&v1.Pod{
 				Spec: v1.PodSpec{Containers: []v1.Container{
-					v1.Container{
+					{
 						Name:    "test",
 						Command: []string{"echo", "Hello World"},
 					},
@@ -214,7 +214,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 			"Pod with NodeJS container",
 			&v1.Pod{
 				Spec: v1.PodSpec{Containers: []v1.Container{
-					v1.Container{
+					{
 						Name:    "test",
 						Command: []string{"node", "foo.js"},
 					},
@@ -225,10 +225,10 @@ func TestTransformManifestNodeJS(t *testing.T) {
 					Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"devtools":9229,"runtime":"nodejs"}}`},
 				},
 				Spec: v1.PodSpec{Containers: []v1.Container{
-					v1.Container{
+					{
 						Name:    "test",
 						Command: []string{"node", "--inspect=9229", "foo.js"},
-						Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+						Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 					},
 				}}},
 		},
@@ -239,7 +239,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 					Replicas: int32p(2),
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{Containers: []v1.Container{
-							v1.Container{
+							{
 								Name:    "test",
 								Command: []string{"node", "foo.js"},
 							},
@@ -256,10 +256,10 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"devtools":9229,"runtime":"nodejs"}}`},
 						},
 						Spec: v1.PodSpec{Containers: []v1.Container{
-							v1.Container{
+							{
 								Name:    "test",
 								Command: []string{"node", "--inspect=9229", "foo.js"},
-								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+								Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 							},
 						}}}}},
 		},
@@ -270,7 +270,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 					Replicas: int32p(2),
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{Containers: []v1.Container{
-							v1.Container{
+							{
 								Name:    "test",
 								Command: []string{"node", "foo.js"},
 							},
@@ -287,10 +287,10 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"devtools":9229,"runtime":"nodejs"}}`},
 						},
 						Spec: v1.PodSpec{Containers: []v1.Container{
-							v1.Container{
+							{
 								Name:    "test",
 								Command: []string{"node", "--inspect=9229", "foo.js"},
-								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+								Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 							},
 						}}}}},
 		},
@@ -301,7 +301,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 					Replicas: int32p(2),
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{Containers: []v1.Container{
-							v1.Container{
+							{
 								Name:    "test",
 								Command: []string{"node", "foo.js"},
 							},
@@ -318,10 +318,10 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"devtools":9229,"runtime":"nodejs"}}`},
 						},
 						Spec: v1.PodSpec{Containers: []v1.Container{
-							v1.Container{
+							{
 								Name:    "test",
 								Command: []string{"node", "--inspect=9229", "foo.js"},
-								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+								Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 							},
 						}}}}},
 		},
@@ -331,7 +331,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 				Spec: appsv1.DaemonSetSpec{
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{Containers: []v1.Container{
-							v1.Container{
+							{
 								Name:    "test",
 								Command: []string{"node", "foo.js"},
 							},
@@ -347,10 +347,10 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"devtools":9229,"runtime":"nodejs"}}`},
 						},
 						Spec: v1.PodSpec{Containers: []v1.Container{
-							v1.Container{
+							{
 								Name:    "test",
 								Command: []string{"node", "--inspect=9229", "foo.js"},
-								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+								Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 							},
 						}}}}},
 		},
@@ -360,7 +360,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 				Spec: batchv1.JobSpec{
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{Containers: []v1.Container{
-							v1.Container{
+							{
 								Name:    "test",
 								Command: []string{"node", "foo.js"},
 							},
@@ -376,10 +376,10 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"devtools":9229,"runtime":"nodejs"}}`},
 						},
 						Spec: v1.PodSpec{Containers: []v1.Container{
-							v1.Container{
+							{
 								Name:    "test",
 								Command: []string{"node", "--inspect=9229", "foo.js"},
-								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+								Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 							},
 						}}}}},
 		},
@@ -390,7 +390,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 					Replicas: int32p(2),
 					Template: &v1.PodTemplateSpec{
 						Spec: v1.PodSpec{Containers: []v1.Container{
-							v1.Container{
+							{
 								Name:    "test",
 								Command: []string{"node", "foo.js"},
 							},
@@ -407,10 +407,10 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"devtools":9229,"runtime":"nodejs"}}`},
 						},
 						Spec: v1.PodSpec{Containers: []v1.Container{
-							v1.Container{
+							{
 								Name:    "test",
 								Command: []string{"node", "--inspect=9229", "foo.js"},
-								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+								Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 							},
 						}}}}},
 		},
@@ -418,16 +418,16 @@ func TestTransformManifestNodeJS(t *testing.T) {
 			"PodList with Java and non-Java container",
 			&v1.PodList{
 				Items: []v1.Pod{
-					v1.Pod{
+					{
 						Spec: v1.PodSpec{Containers: []v1.Container{
-							v1.Container{
+							{
 								Name:    "echo",
 								Command: []string{"echo", "Hello World"},
 							},
 						}}},
-					v1.Pod{
+					{
 						Spec: v1.PodSpec{Containers: []v1.Container{
-							v1.Container{
+							{
 								Name:    "test",
 								Command: []string{"node", "foo.js"},
 							},
@@ -436,22 +436,22 @@ func TestTransformManifestNodeJS(t *testing.T) {
 			true,
 			&v1.PodList{
 				Items: []v1.Pod{
-					v1.Pod{
+					{
 						Spec: v1.PodSpec{Containers: []v1.Container{
-							v1.Container{
+							{
 								Name:    "echo",
 								Command: []string{"echo", "Hello World"},
 							},
 						}}},
-					v1.Pod{
+					{
 						ObjectMeta: metav1.ObjectMeta{
 							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"devtools":9229,"runtime":"nodejs"}}`},
 						},
 						Spec: v1.PodSpec{Containers: []v1.Container{
-							v1.Container{
+							{
 								Name:    "test",
 								Command: []string{"node", "--inspect=9229", "foo.js"},
-								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+								Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 							},
 						}}},
 				}},

@@ -77,7 +77,7 @@ func TestPodEncodeDecode(t *testing.T) {
 	pod := &v1.Pod{
 		TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
 		ObjectMeta: metav1.ObjectMeta{Name: "podname"},
-		Spec:       v1.PodSpec{Containers: []v1.Container{v1.Container{Name: "name1", Image: "image1"}}}}
+		Spec:       v1.PodSpec{Containers: []v1.Container{{Name: "name1", Image: "image1"}}}}
 	b, err := encodeAsYaml(pod)
 	if err != nil {
 		t.Errorf("encodeAsYaml() failed: %v", err)
