@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestRefreshDependencyList(t *testing.T) {
+func TestGetDependencies(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
@@ -51,7 +51,7 @@ func TestRefreshDependencyList(t *testing.T) {
 			expectedDeps: []string{},
 		},
 		{
-			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\"],\"ignore\":[]}\n", dep1, dep2),
+			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\"],\"ignore\":[]}\n", dep1, dep2),
 			expectedDeps: []string{dep1, dep2},
 		},
 		{
@@ -71,26 +71,29 @@ func TestRefreshDependencyList(t *testing.T) {
 			expectedDeps: []string{dep1},
 		},
 		{
-			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\"],\"ignore\":[\"%s\",\"%s\"]}\n", dep1, dep3, dep1, dep3),
+			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\"],\"ignore\":[\"%s\",\"%s\"]}\n", dep1, dep3, dep1, dep3),
 			expectedDeps: []string{},
 		},
 		{
-			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\",\"%s\"],\"ignore\":[\"%s\"]}\n", dep1, dep2, dep3, dep3SubPath),
+			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\",\"%s\",\"%s\"],\"inputs\":[],\"ignore\":[\"%s\"]}\n", dep1, dep2, dep3, dep3SubPath),
 			expectedDeps: []string{dep1, dep2, dep3, dep3FileA, dep3Sub},
 		},
 	}
 
 	for _, test := range tests {
-		t.Run("refreshDependencyList", func(t *testing.T) {
+		// Reset map between each test to ensure stdout is read each time
+		watchedFiles = map[string]filesLists{}
+
+		t.Run("getDependencies", func(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
 				"ignored",
 				test.stdout,
 			)
 
-			err := refreshDependencyList(&exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()}, "test")
+			results, err := getDependencies(&exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()}, "test")
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedDeps, watchedFiles["test"].WatchedInputFiles)
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedDeps, results)
 		})
 	}
 }

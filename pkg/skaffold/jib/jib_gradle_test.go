@@ -19,9 +19,11 @@ package jib
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -38,9 +40,11 @@ func TestGetDependenciesGradle(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
+	tmpDir.Write("build", "")
 	tmpDir.Write("dep1", "")
 	tmpDir.Write("dep2", "")
 
+	build := tmpDir.Path("build")
 	dep1 := tmpDir.Path("dep1")
 	dep2 := tmpDir.Path("dep2")
 
@@ -49,18 +53,34 @@ func TestGetDependenciesGradle(t *testing.T) {
 	var tests = []struct {
 		description string
 		stdout      string
+		modTime     time.Time
 		expected    []string
 		err         error
 	}{
 		{
 			description: "failure",
 			stdout:      "",
+			modTime:     time.Unix(0, 0),
 			err:         errors.New("error"),
 		},
 		{
 			description: "success",
-			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\"],\"ignore\":[]}", dep1, dep2),
-			expected:    []string{dep1, dep2},
+			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\"],\"ignore\":[]}", build, dep1),
+			modTime:     time.Unix(0, 0),
+			expected:    []string{build, dep1},
+		},
+		{
+			// Expected output differs from stdout since build file hasn't change, thus gradle command won't run
+			description: "success",
+			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\", \"%s\"],\"ignore\":[]}", build, dep1, dep2),
+			modTime:     time.Unix(0, 0),
+			expected:    []string{build, dep1},
+		},
+		{
+			description: "success",
+			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\", \"%s\"],\"ignore\":[]}", build, dep1, dep2),
+			modTime:     time.Unix(10000, 0),
+			expected:    []string{build, dep1, dep2},
 		},
 	}
 
@@ -72,6 +92,9 @@ func TestGetDependenciesGradle(t *testing.T) {
 				test.stdout,
 				test.err,
 			)
+
+			// Change build file mod time
+			os.Chtimes(build, test.modTime, test.modTime)
 
 			deps, err := GetDependenciesGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{Project: "gradle-test"})
 			if test.err != nil {

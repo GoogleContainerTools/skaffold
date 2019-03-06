@@ -97,11 +97,11 @@ func refreshDependencyList(cmd *exec.Cmd, projectName string) error {
 
 			// Walk the files in each list and filter out ignores
 			files := watchedFiles[projectName]
-			files.WatchedInputFiles, err = walkFiles(&files, &filesOutput.Inputs, &filesOutput.Ignore, false)
+			files.WatchedInputFiles, err = walkFiles(&files, &filesOutput, false)
 			if err != nil {
 				return err
 			}
-			files.WatchedBuildFiles, err = walkFiles(&files, &filesOutput.Build, &filesOutput.Ignore, true)
+			files.WatchedBuildFiles, err = walkFiles(&files, &filesOutput, true)
 			if err != nil {
 				return err
 			}
@@ -113,10 +113,15 @@ func refreshDependencyList(cmd *exec.Cmd, projectName string) error {
 	return errors.New("failed to get Jib dependencies")
 }
 
-func walkFiles(files *filesLists, filesOutputList *[]string, filesOutputIgnore *[]string, saveModTime bool) ([]string, error) {
+func walkFiles(files *filesLists, jibOutput *filesTemplate, isBuildFile bool) ([]string, error) {
 	filesList := []string{}
-	for _, dep := range *filesOutputList {
-		if util.StrSliceContains(*filesOutputIgnore, dep) {
+	filesOutputList := jibOutput.Inputs
+	if isBuildFile {
+		filesOutputList = jibOutput.Build
+	}
+
+	for _, dep := range filesOutputList {
+		if util.StrSliceContains(jibOutput.Ignore, dep) {
 			continue
 		}
 
@@ -132,7 +137,7 @@ func walkFiles(files *filesLists, filesOutputList *[]string, filesOutputIgnore *
 
 		if !info.IsDir() {
 			filesList = append(filesList, dep)
-			if saveModTime {
+			if isBuildFile {
 				files.BuildFileTimes[dep] = info.ModTime()
 			}
 			continue
@@ -141,11 +146,11 @@ func walkFiles(files *filesLists, filesOutputList *[]string, filesOutputIgnore *
 		if err = godirwalk.Walk(dep, &godirwalk.Options{
 			Unsorted: true,
 			Callback: func(path string, _ *godirwalk.Dirent) error {
-				if util.StrSliceContains(*filesOutputIgnore, path) {
+				if util.StrSliceContains(jibOutput.Ignore, path) {
 					return filepath.SkipDir
 				}
 				filesList = append(filesList, path)
-				if saveModTime {
+				if isBuildFile {
 					files.BuildFileTimes[path] = info.ModTime()
 				}
 				return nil
