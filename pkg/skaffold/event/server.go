@@ -18,9 +18,12 @@ package event
 
 import (
 	"context"
+	"fmt"
 	"net"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 
 	empty "github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
@@ -62,14 +65,19 @@ func (s *server) Handle(ctx context.Context, event *proto.Event) (*empty.Empty, 
 }
 
 // newStatusServer creates the grpc server for serving the state and event log.
-func newStatusServer(port string) (func() error, error) {
-	if port == "" {
+func newStatusServer(originalPort int) (func() error, error) {
+	if originalPort == -1 {
 		return func() error { return nil }, nil
 	}
-	l, err := net.Listen("tcp", port)
+	port := util.GetAvailablePort(originalPort)
+	if port != originalPort && originalPort != constants.DefaultRPCPort {
+		logrus.Warnf("provided port %d already in use: using %d instead", originalPort, port)
+	}
+	l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		return func() error { return nil }, errors.Wrap(err, "creating listener")
 	}
+	logrus.Infof("starting gRPC server on port %d", port)
 
 	s := grpc.NewServer()
 	proto.RegisterSkaffoldServiceServer(s, &server{})
