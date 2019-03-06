@@ -97,7 +97,6 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifac
 			continue
 		}
 
-		// Watch input files
 		if err := r.Watcher.Register(
 			func() ([]string, error) { return r.Builder.DependenciesForArtifact(ctx, artifact) },
 			func(e watch.Events) { changed.AddDirtyArtifact(artifact, e) },
