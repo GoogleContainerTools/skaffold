@@ -423,6 +423,49 @@ func TestTransformManifestJVM(t *testing.T) {
 							},
 				}}}}},
 		},
+		{
+			"PodList with Java and non-Java container",
+			&v1.PodList{
+				Items: []v1.Pod{
+					v1.Pod{
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "echo",
+								Command: []string{"echo", "Hello World"},
+							},
+						}}},
+					v1.Pod{
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "test",
+								Command: []string{"java", "-jar", "foo.jar"},
+							},
+						}}},
+				}},
+			true,
+			&v1.PodList{
+				Items: []v1.Pod{
+					v1.Pod{
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "echo",
+								Command: []string{"echo", "Hello World"},
+							},
+						}}},
+					v1.Pod{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"jdwp":5005,"runtime":"jvm"}}`},
+						},
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "test",
+								Command: []string{"java", "-jar", "foo.jar"},
+								Env:     []v1.EnvVar{v1.EnvVar{Name: "JAVA_TOOL_OPTIONS", Value: "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y"}},
+								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "jdwp", ContainerPort: 5005}},
+							},
+						}}},
+				}},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {

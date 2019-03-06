@@ -414,6 +414,48 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							},
 						}}}}},
 		},
+		{
+			"PodList with Java and non-Java container",
+			&v1.PodList{
+				Items: []v1.Pod{
+					v1.Pod{
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "echo",
+								Command: []string{"echo", "Hello World"},
+							},
+						}}},
+					v1.Pod{
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "test",
+								Command: []string{"node", "foo.js"},
+							},
+						}}},
+				}},
+			true,
+			&v1.PodList{
+				Items: []v1.Pod{
+					v1.Pod{
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "echo",
+								Command: []string{"echo", "Hello World"},
+							},
+						}}},
+					v1.Pod{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"devtools":9229,"runtime":"nodejs"}}`},
+						},
+						Spec: v1.PodSpec{Containers: []v1.Container{
+							v1.Container{
+								Name:    "test",
+								Command: []string{"node", "--inspect=9229", "foo.js"},
+								Ports:   []v1.ContainerPort{v1.ContainerPort{Name: "devtools", ContainerPort: 9229}},
+							},
+						}}},
+				}},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {

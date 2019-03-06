@@ -62,6 +62,14 @@ func transformManifest(obj runtime.Object, retrieveImageConfiguration configurat
 	switch o := obj.(type) {
 	case *v1.Pod:
 		return transformPodSpec(&o.ObjectMeta, &o.Spec, retrieveImageConfiguration)
+	case *v1.PodList:
+		changed := false
+		for i := range o.Items {
+			if transformPodSpec(&o.Items[i].ObjectMeta, &o.Items[i].Spec, retrieveImageConfiguration) {
+				changed = true
+			}
+		}
+		return changed
 	case *v1.ReplicationController:
 		if o.Spec.Replicas != nil {
 			o.Spec.Replicas = &one
