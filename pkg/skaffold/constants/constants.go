@@ -45,7 +45,7 @@ const (
 
 	DefaultKustomizationPath = "."
 
-	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.8.0@sha256:32ed8afc3c808d7159a7c1789d46c2abe95c1cb5b7afdd6867e360f0ed952c13"
+	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.9.0@sha256:d9fe474f80b73808dc12b54f45f5fc90f7856d9fc699d4a5e79d968a1aef1a72"
 	DefaultKanikoSecretName             = "kaniko-secret"
 	DefaultKanikoTimeout                = "20m"
 	DefaultKanikoContainerName          = "kaniko"
