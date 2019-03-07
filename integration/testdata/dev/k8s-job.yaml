@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-dev
+spec:
+  selector:
+    matchLabels:
+      app: test-dev
+  template:
+    metadata:
+      labels:
+        app: test-dev
+    spec:
+      containers:
+      - name: test-dev
+        image: gcr.io/k8s-skaffold/test-dev
