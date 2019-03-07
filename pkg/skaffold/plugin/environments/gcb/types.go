@@ -78,7 +78,7 @@ func (b *Builder) Labels() map[string]string {
 	}
 }
 
-// DependenciesForArtifact returns the Dockerfile dependencies for this gcb artifact
+// DependenciesForArtifact returns the dependencies for this artifact
 func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
 	var paths []string
 	var err error
