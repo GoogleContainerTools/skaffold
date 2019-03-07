@@ -211,7 +211,10 @@ type GoogleCloudBuild struct {
 }
 
 // LocalDir configures how Kaniko mounts sources directly via an `emptyDir` volume.
-type LocalDir struct{}
+type LocalDir struct {
+	// InitImage is the image used to run init container which mounts kaniko context.
+	InitImage string `yaml:"initImage,omitempty"`
+}
 
 // KanikoBuildContext contains the different fields available to specify
 // a Kaniko build context.

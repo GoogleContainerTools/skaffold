@@ -1424,6 +1424,17 @@
       "x-intellij-html-description": "<em>beta</em> describes how to do a build on the local docker daemon and optionally push to a repository."
     },
     "LocalDir": {
+      "properties": {
+        "initImage": {
+          "type": "string",
+          "description": "image used to run init container which mounts kaniko context.",
+          "x-intellij-html-description": "image used to run init container which mounts kaniko context."
+        }
+      },
+      "preferredOrder": [
+        "initImage"
+      ],
+      "additionalProperties": false,
       "description": "configures how Kaniko mounts sources directly via an `emptyDir` volume.",
       "x-intellij-html-description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume."
     },
