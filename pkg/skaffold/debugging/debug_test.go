@@ -90,10 +90,10 @@ func TestPodEncodeDecode(t *testing.T) {
 	}
 	switch o := o.(type) {
 	case *v1.Pod:
-		testutil.CheckEqual(t, cmp.Options{}, "podname", o.ObjectMeta.Name)
-		testutil.CheckEqual(t, cmp.Options{}, 1, len(o.Spec.Containers))
-		testutil.CheckEqual(t, cmp.Options{}, "name1", o.Spec.Containers[0].Name)
-		testutil.CheckEqual(t, cmp.Options{}, "image1", o.Spec.Containers[0].Image)
+		testutil.CheckDeepEqualWithOptions(t, cmp.Options{}, "podname", o.ObjectMeta.Name)
+		testutil.CheckDeepEqualWithOptions(t, cmp.Options{}, 1, len(o.Spec.Containers))
+		testutil.CheckDeepEqualWithOptions(t, cmp.Options{}, "name1", o.Spec.Containers[0].Name)
+		testutil.CheckDeepEqualWithOptions(t, cmp.Options{}, "image1", o.Spec.Containers[0].Image)
 	default:
 		t.Errorf("decodeFromYaml() failed: expected *v1.Pod but got %T", o)
 	}

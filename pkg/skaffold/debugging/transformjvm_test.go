@@ -156,9 +156,9 @@ func TestParseJdwpSpec(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.in, func(t *testing.T) {
-			testutil.CheckEqual(t, cmp.Options{cmp.AllowUnexported(jdwpSpec{})}, test.result, *parseJdwpSpec(test.in))
-			testutil.CheckEqual(t, cmp.Options{cmp.AllowUnexported(jdwpSpec{})}, test.result, *extractJdwpArg("-agentlib:jdwp=" + test.in))
-			testutil.CheckEqual(t, cmp.Options{cmp.AllowUnexported(jdwpSpec{})}, test.result, *extractJdwpArg("-Xrunjdwp:" + test.in))
+			testutil.CheckDeepEqualWithOptions(t, cmp.Options{cmp.AllowUnexported(jdwpSpec{})}, test.result, *parseJdwpSpec(test.in))
+			testutil.CheckDeepEqualWithOptions(t, cmp.Options{cmp.AllowUnexported(jdwpSpec{})}, test.result, *extractJdwpArg("-agentlib:jdwp=" + test.in))
+			testutil.CheckDeepEqualWithOptions(t, cmp.Options{cmp.AllowUnexported(jdwpSpec{})}, test.result, *extractJdwpArg("-Xrunjdwp:" + test.in))
 		})
 	}
 }

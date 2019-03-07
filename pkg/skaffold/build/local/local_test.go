@@ -243,7 +243,7 @@ func TestLocalRun(t *testing.T) {
 			}
 			ignoreConfigField := cmp.Options{cmp.FilterPath(filter, cmp.Ignore())}
 
-			testutil.CheckEqual(t, ignoreConfigField, test.expected, res)
+			testutil.CheckDeepEqualWithOptions(t, ignoreConfigField, test.expected, res)
 			testutil.CheckDeepEqual(t, test.expectedWarnings, fakeWarner.Warnings)
 			testutil.CheckDeepEqual(t, test.expectedPushed, test.api.Pushed)
 		})
