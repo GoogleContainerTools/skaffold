@@ -1,4 +1,4 @@
-FROM golang:1.9.4-alpine3.7
+FROM golang:1.10.1-alpine3.7
 
 WORKDIR /go/src/github.com/GoogleContainerTools/skaffold/examples/getting-started
 CMD ["./app"]

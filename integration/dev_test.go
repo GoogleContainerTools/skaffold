@@ -1,5 +1,3 @@
-// +build integration
-
 /*
 Copyright 2019 The Skaffold Authors
 
@@ -29,38 +27,44 @@ import (
 )
 
 func TestDev(t *testing.T) {
-	ns, deleteNs := SetupNamespace(t)
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
+	defer Run(t, "testdata/dev", "rm", "foo")
+
+	// Run skaffold build first to fail quickly on a build failure
+	RunSkaffold(t, "build", "testdata/dev", "", "", nil)
+
+	ns, client, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	Run(t, "examples/test-dev-job", "touch", "foo")
-	defer Run(t, "examples/test-dev-job", "rm", "foo")
-
 	cancel := make(chan bool)
-	go RunSkaffoldNoFail(cancel, "dev", "examples/test-dev-job", ns.Name, "", nil)
+	go RunSkaffoldNoFail(cancel, "dev", "testdata/dev", ns.Name, "", nil)
 	defer func() { cancel <- true }()
 
-	jobName := "test-dev-job"
-	if err := kubernetesutil.WaitForJobToStabilize(context.Background(), Client, ns.Name, jobName, 10*time.Minute); err != nil {
-		t.Fatalf("Timed out waiting for job to stabilize")
+	deployName := "test-dev"
+	if err := kubernetesutil.WaitForDeploymentToStabilize(context.Background(), client, ns.Name, deployName, 10*time.Minute); err != nil {
+		t.Fatalf("Timed out waiting for deployment to stabilize")
 	}
 
-	job, err := Client.BatchV1().Jobs(ns.Name).Get(jobName, meta_v1.GetOptions{})
+	dep, err := client.AppsV1().Deployments(ns.Name).Get(deployName, meta_v1.GetOptions{})
 	if err != nil {
-		t.Fatalf("Could not find job: %s %s", ns.Name, jobName)
+		t.Fatalf("Could not find dep: %s %s", ns.Name, deployName)
 	}
 
-	time.Sleep(5 * time.Second)
+	// Make a change to foo so that dev is forced to delete the Deployment and redeploy
+	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
-	// Make a change to foo so that dev is forced to delete the job and redeploy
-	Run(t, "examples/test-dev-job", "sh", "-c", "echo bar > foo")
-
-	// Make sure the UID of the old Job and the UID of the new Job is different
+	// Make sure the old Deployment and the new Deployment are different
 	err = wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
-		newJob, err := Client.BatchV1().Jobs(ns.Name).Get(job.Name, meta_v1.GetOptions{})
+		newDep, err := client.AppsV1().Deployments(ns.Name).Get(deployName, meta_v1.GetOptions{})
 		if err != nil {
 			return false, nil
 		}
-		return job.GetUID() != newJob.GetUID(), nil
+
+		return dep.GetGeneration() != newDep.GetGeneration(), nil
 	})
 	if err != nil {
 		t.Fatalf("redeploy failed: %v", err)

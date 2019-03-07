@@ -14,18 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta5
+package v1beta6
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta6"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta6"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v1beta5 to v1beta6
+// Config changes from v1beta6 to v1beta7
 // 1. Additions:
 // 2. No removals
 // 3. No updates
@@ -50,7 +50,7 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	}
 
 	// convert Test (should be the same)
-	var newTest []*v1beta6.TestCase
+	var newTest []*latest.TestCase
 	if err := pkgutil.CloneThroughJSON(config.Test, &newTest); err != nil {
 		return nil, errors.Wrap(err, "converting new test")
 	}

@@ -1,5 +1,3 @@
-// +build integration
-
 /*
 Copyright 2019 The Skaffold Authors
 
@@ -20,6 +18,7 @@ package integration
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -27,6 +26,10 @@ import (
 )
 
 func TestRun(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
 	tests := []struct {
 		description string
 		dir         string
@@ -95,38 +98,38 @@ func TestRun(t *testing.T) {
 			remoteOnly:  true,
 		}, {
 			description: "docker plugin in gcb exec environment",
-			dir:         "examples/test-plugin/gcb",
+			dir:         "testdata/plugin/gcb",
 			deployments: []string{"leeroy-app", "leeroy-web"},
 		}, {
 			description: "bazel plugin in local exec environment",
-			dir:         "examples/test-plugin/local/bazel",
+			dir:         "testdata/plugin/local/bazel",
 			pods:        []string{"bazel"},
 		}, {
 			description: "docker plugin in local exec environment",
-			dir:         "examples/test-plugin/local/docker",
+			dir:         "testdata/plugin/local/docker",
 			deployments: []string{"leeroy-app", "leeroy-web"},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			if !*remote && test.remoteOnly {
+			if test.remoteOnly && os.Getenv("REMOTE_INTEGRATION") != "true" {
 				t.Skip("skipping remote only test")
 			}
 
-			ns, deleteNs := SetupNamespace(t)
+			ns, client, deleteNs := SetupNamespace(t)
 			defer deleteNs()
 
 			RunSkaffold(t, "run", test.dir, ns.Name, test.filename, test.env)
 
 			for _, p := range test.pods {
-				if err := kubernetesutil.WaitForPodReady(context.Background(), Client.CoreV1().Pods(ns.Name), p); err != nil {
+				if err := kubernetesutil.WaitForPodReady(context.Background(), client.CoreV1().Pods(ns.Name), p); err != nil {
 					t.Fatalf("Timed out waiting for pod ready")
 				}
 			}
 
 			for _, d := range test.deployments {
-				if err := kubernetesutil.WaitForDeploymentToStabilize(context.Background(), Client, ns.Name, d, 10*time.Minute); err != nil {
+				if err := kubernetesutil.WaitForDeploymentToStabilize(context.Background(), client, ns.Name, d, 10*time.Minute); err != nil {
 					t.Fatalf("Timed out waiting for deployment to stabilize")
 				}
 			}

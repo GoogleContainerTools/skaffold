@@ -14,14 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v1beta6
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	yamlpatch "github.com/krishicks/yaml-patch"
 )
 
-const Version string = "skaffold/v1beta7"
+const Version string = "skaffold/v1beta6"
 
 // NewSkaffoldPipeline creates a SkaffoldPipeline
 func NewSkaffoldPipeline() util.VersionedConfig {
@@ -211,10 +211,7 @@ type GoogleCloudBuild struct {
 }
 
 // LocalDir configures how Kaniko mounts sources directly via an `emptyDir` volume.
-type LocalDir struct {
-	// InitImage is the image used to run init container which mounts kaniko context.
-	InitImage string `yaml:"initImage,omitempty"`
-}
+type LocalDir struct{}
 
 // KanikoBuildContext contains the different fields available to specify
 // a Kaniko build context.
