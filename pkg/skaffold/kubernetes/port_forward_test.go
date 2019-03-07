@@ -23,6 +23,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,33 +47,33 @@ func (f *testForwarder) Terminate(pfe *portForwardEntry) {
 	delete(f.forwardedPorts, pfe.port)
 }
 
-func mockRetrieveAvailablePort(taken map[int32]struct{}, availablePorts []int32) func(map[int32]string) (int32, error) {
+func mockRetrieveAvailablePort(taken map[int]struct{}, availablePorts []int) func(int) int {
 	// Return first available port in ports that isn't taken
-	return func(forwardedPorts map[int32]string) (int32, error) {
+	return func(int) int {
 		for _, p := range availablePorts {
 			if _, ok := taken[p]; ok {
 				continue
 			}
 			taken[p] = struct{}{}
-			return p, nil
+			return p
 		}
-		return -1, nil
+		return -1
 	}
 }
 
-func mockIsPortAvailable(taken map[int32]struct{}, availablePorts []int32) func(int32, map[int32]string) (bool, error) {
+func mockIsPortAvailable(taken map[int]struct{}, availablePorts []int) func(int) bool {
 	// Return true if p is in availablePorts and is not in taken
-	return func(p int32, forwardedPorts map[int32]string) (bool, error) {
+	return func(p int) bool {
 		if _, ok := taken[p]; ok {
-			return false, nil
+			return false
 		}
 		for _, port := range availablePorts {
 			if p == port {
 				taken[p] = struct{}{}
-				return true, nil
+				return true
 			}
 		}
-		return false, nil
+		return false
 	}
 }
 
@@ -91,7 +92,7 @@ func TestPortForwardPod(t *testing.T) {
 		forwarder       *testForwarder
 		expectedPorts   map[int32]bool
 		expectedEntries map[string]*portForwardEntry
-		availablePorts  []int32
+		availablePorts  []int
 		shouldErr       bool
 	}{
 		{
@@ -99,7 +100,7 @@ func TestPortForwardPod(t *testing.T) {
 			expectedPorts: map[int32]bool{
 				8080: true,
 			},
-			availablePorts: []int32{8080},
+			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-8080": {
 					resourceVersion: 1,
@@ -144,7 +145,7 @@ func TestPortForwardPod(t *testing.T) {
 					localPort:       9000,
 				},
 			},
-			availablePorts: []int32{9000},
+			availablePorts: []int{9000},
 			pods: []*v1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -171,7 +172,7 @@ func TestPortForwardPod(t *testing.T) {
 			expectedPorts:   map[int32]bool{},
 			shouldErr:       true,
 			expectedEntries: map[string]*portForwardEntry{},
-			availablePorts:  []int32{8080},
+			availablePorts:  []int{8080},
 			pods: []*v1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -200,7 +201,7 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			forwarder:      newTestForwarder(fmt.Errorf("")),
 			shouldErr:      true,
-			availablePorts: []int32{8080},
+			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-8080": {
 					resourceVersion: 1,
@@ -237,7 +238,7 @@ func TestPortForwardPod(t *testing.T) {
 				8080:  true,
 				50051: true,
 			},
-			availablePorts: []int32{8080, 50051},
+			availablePorts: []int{8080, 50051},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-8080": {
 					resourceVersion: 1,
@@ -299,7 +300,7 @@ func TestPortForwardPod(t *testing.T) {
 				8080: true,
 				9000: true,
 			},
-			availablePorts: []int32{8080, 9000},
+			availablePorts: []int{8080, 9000},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-8080": {
 					resourceVersion: 1,
@@ -360,7 +361,7 @@ func TestPortForwardPod(t *testing.T) {
 			expectedPorts: map[int32]bool{
 				8080: true,
 			},
-			availablePorts: []int32{8080},
+			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-8080": {
 					resourceVersion: 2,
@@ -414,8 +415,8 @@ func TestPortForwardPod(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 
-			taken := map[int32]struct{}{}
-			originalGetAvailablePort := getAvailablePort
+			taken := map[int]struct{}{}
+			originalGetAvailablePort := util.GetAvailablePort
 			retrieveAvailablePort = mockRetrieveAvailablePort(taken, test.availablePorts)
 			defer func() {
 				retrieveAvailablePort = originalGetAvailablePort
