@@ -137,8 +137,10 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 	if !c.useCache {
 		return artifacts, nil
 	}
+
 	start := time.Now()
 	color.Default.Fprintln(out, "Checking cache...")
+
 	var needToBuild []*latest.Artifact
 	var built []Artifact
 	for _, a := range artifacts {
@@ -155,6 +157,7 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 		}
 		built = append(built, *artifact)
 	}
+
 	color.Default.Fprintln(out, "Cache check complete in", time.Since(start))
 	return needToBuild, built
 }
@@ -164,23 +167,34 @@ func (c *Cache) resolveCachedArtifact(ctx context.Context, out io.Writer, a *lat
 	if err != nil {
 		return nil, errors.Wrap(err, "getting cached artifact details")
 	}
+
+	color.Default.Fprintf(out, " - %s: ", a.ImageName)
+
 	if details.needsRebuild {
+		color.Red.Fprintln(out, "Not found. Rebuilding")
 		return nil, nil
 	}
-	color.Default.Fprintf(out, "Found %s in cache, resolving...\n", a.ImageName)
+
+	color.Green.Fprint(out, "Found")
 	if details.needsRetag {
-		color.Green.Fprintf(out, "Retagging image...\n")
+		color.Green.Fprint(out, ". Retagging")
+	}
+	if details.needsPush {
+		color.Green.Fprint(out, ". Pushing")
+	}
+	color.Default.Fprintln(out)
+
+	if details.needsRetag {
 		if err := c.client.Tag(ctx, details.prebuiltImage, details.hashTag); err != nil {
 			return nil, errors.Wrap(err, "retagging image")
 		}
 	}
 	if details.needsPush {
-		color.Green.Fprintf(out, "Pushing %s...\n", a.ImageName)
 		if _, err := c.client.Push(ctx, out, details.hashTag); err != nil {
 			return nil, errors.Wrap(err, "pushing image")
 		}
 	}
-	color.Default.Fprintf(out, "Resolved %s, skipping rebuild.\n", details.hashTag)
+
 	return &Artifact{
 		ImageName: a.ImageName,
 		Tag:       details.hashTag,
