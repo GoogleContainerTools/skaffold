@@ -115,7 +115,8 @@ func refreshDependencyList(cmd *exec.Cmd, projectName string) error {
 		if lines[i] == "BEGIN JIB JSON" {
 			// Found Jib JSON header, next line is the JSON
 			files := watchedFiles[projectName]
-			if err := json.Unmarshal([]byte(lines[i+1]), &files.FilesTemplate); err != nil {
+			line := strings.Replace(lines[i+1], "\\", "\\\\", -1)
+			if err := json.Unmarshal([]byte(line), &files.FilesTemplate); err != nil {
 				return err
 			}
 			watchedFiles[projectName] = files
