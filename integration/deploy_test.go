@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -33,7 +34,7 @@ func TestDeploy(t *testing.T) {
 	ns, client, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	RunSkaffold(t, "deploy", "examples/kustomize", ns.Name, "", nil, "--images", "index.docker.io/library/busybox:1")
+	skaffold.Deploy("--images", "index.docker.io/library/busybox:1").InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
 
 	depName := "kustomize-test"
 	if err := kubernetesutil.WaitForDeploymentToStabilize(context.Background(), client, ns.Name, depName, 10*time.Minute); err != nil {
@@ -49,5 +50,5 @@ func TestDeploy(t *testing.T) {
 		t.Fatalf("Wrong image name in kustomized deployment: %s", dep.Spec.Template.Spec.Containers[0].Image)
 	}
 
-	RunSkaffold(t, "delete", "examples/kustomize", ns.Name, "", nil)
+	skaffold.Delete().InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
 }

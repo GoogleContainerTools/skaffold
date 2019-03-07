@@ -19,11 +19,10 @@ package integration
 import (
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 )
 
 func TestInit(t *testing.T) {
@@ -31,14 +30,12 @@ func TestInit(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	type testCase struct {
+	tests := []struct {
 		name             string
 		dir              string
 		args             []string
 		skipSkaffoldYaml bool
-	}
-
-	tests := []testCase{
+	}{
 		{
 			name: "getting-started",
 			dir:  "../examples/getting-started",
@@ -61,6 +58,9 @@ func TestInit(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			ns, _, deleteNs := SetupNamespace(t)
+			defer deleteNs()
+
 			if !test.skipSkaffoldYaml {
 				oldYamlPath := filepath.Join(test.dir, "skaffold.yaml")
 				oldYaml, err := removeOldSkaffoldYaml(oldYamlPath)
@@ -71,27 +71,15 @@ func TestInit(t *testing.T) {
 			}
 
 			generatedYaml := "skaffold.yaml.out"
-			defer func() {
-				err := os.Remove(filepath.Join(test.dir, generatedYaml))
-				if err != nil {
-					t.Errorf("error removing generated skaffold yaml: %v", err)
-				}
-			}()
-			initArgs := []string{"init", "--force", "-f", generatedYaml}
-			initArgs = append(initArgs, test.args...)
-			initCmd := exec.Command("skaffold", initArgs...)
-			initCmd.Dir = test.dir
 
-			out, err := util.RunCmdOut(initCmd)
-			if err != nil {
-				t.Fatalf("running init: %v, output: %s", err, out)
-			}
+			initArgs := append([]string{"--force"}, test.args...)
+			skaffold.Init(initArgs...).InDir(test.dir).WithConfig(generatedYaml).RunOrFail(t)
 
-			runCmd := exec.Command("skaffold", "run", "-f", generatedYaml)
-			runCmd.Dir = test.dir
-			out, err = util.RunCmdOut(runCmd)
+			skaffold.Run().InDir(test.dir).WithConfig(generatedYaml).InNs(ns.Name).RunOrFail(t)
+
+			err := os.Remove(filepath.Join(test.dir, generatedYaml))
 			if err != nil {
-				t.Fatalf("running skaffold on generated yaml: %v, output: %s", err, out)
+				t.Errorf("error removing generated skaffold yaml: %v", err)
 			}
 		})
 	}

@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -35,14 +36,13 @@ func TestDev(t *testing.T) {
 	defer Run(t, "testdata/dev", "rm", "foo")
 
 	// Run skaffold build first to fail quickly on a build failure
-	RunSkaffold(t, "build", "testdata/dev", "", "", nil)
+	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
 
 	ns, client, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	cancel := make(chan bool)
-	go RunSkaffoldNoFail(cancel, "dev", "testdata/dev", ns.Name, "", nil)
-	defer func() { cancel <- true }()
+	stop := skaffold.Dev().InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+	defer stop()
 
 	deployName := "test-dev"
 	if err := kubernetesutil.WaitForDeploymentToStabilize(context.Background(), client, ns.Name, deployName, 10*time.Minute); err != nil {
@@ -51,7 +51,7 @@ func TestDev(t *testing.T) {
 
 	dep, err := client.AppsV1().Deployments(ns.Name).Get(deployName, meta_v1.GetOptions{})
 	if err != nil {
-		t.Fatalf("Could not find dep: %s %s", ns.Name, deployName)
+		t.Fatalf("Could not find deployment: %s %s", ns.Name, deployName)
 	}
 
 	// Make a change to foo so that dev is forced to delete the Deployment and redeploy

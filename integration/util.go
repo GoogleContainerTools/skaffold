@@ -18,65 +18,28 @@ package integration
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"testing"
 
 	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-func RunSkaffold(t *testing.T, command, dir, namespace, filename string, env []string, additionalArgs ...string) {
-	if err := RunSkaffoldNoFail(make(chan bool), command, dir, namespace, filename, env, additionalArgs...); err != nil {
-		t.Fatalf("skaffold delete: %v", err)
-	}
-}
-
-func RunSkaffoldNoFail(cancel chan bool, command, dir, namespace, filename string, env []string, additionalArgs ...string) error {
-	args := []string{command, "--namespace", namespace}
-	if filename != "" {
-		args = append(args, "-f", filename)
-	}
-	args = append(args, additionalArgs...)
-
-	cmd := exec.Command("skaffold", args...)
-	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), env...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-
-	cmd.Start()
-
-	result := make(chan error)
-	go func() {
-		err := cmd.Wait()
-		result <- err
-	}()
-
-	select {
-	case err := <-result:
-		return err
-	case <-cancel:
-		return cmd.Process.Kill()
-	}
-}
-
 func Run(t *testing.T, dir, command string, args ...string) {
 	cmd := exec.Command(command, args...)
 	cmd.Dir = dir
-	if output, err := util.RunCmdOut(cmd); err != nil {
+	if output, err := cmd.Output(); err != nil {
 		t.Fatalf("running command [%s %v]: %s %v", command, args, output, err)
 	}
 }
 
+// SetupNamespace creates a Kubernetes namespace to run a test.
 func SetupNamespace(t *testing.T) (*v1.Namespace, kubernetes.Interface, func()) {
 	client, err := kubernetesutil.GetClientset()
 	if err != nil {
-		logrus.Fatalf("Test setup error: getting kubernetes client: %s", err)
+		t.Fatalf("Test setup error: getting kubernetes client: %s", err)
 	}
 
 	ns, err := client.CoreV1().Namespaces().Create(&v1.Namespace{

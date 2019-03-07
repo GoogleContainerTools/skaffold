@@ -18,11 +18,11 @@ package integration
 
 import (
 	"fmt"
-	"os/exec"
 	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
+	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	yaml "gopkg.in/yaml.v2"
@@ -49,20 +49,19 @@ func TestListConfig(t *testing.T) {
 	cfg, teardown := testutil.TempFile(t, "config", c)
 	defer teardown()
 
-	type testListCase struct {
+	var tests = []struct {
 		description    string
-		kubectx        string
+		args           []string
 		expectedOutput []string
-	}
-
-	var tests = []testListCase{
+	}{
 		{
 			description:    "list for test-context",
-			kubectx:        "test-context",
+			args:           []string{"-k", "test-context"},
 			expectedOutput: []string{"default-repo: context-local-repository"},
 		},
 		{
 			description: "list all",
+			args:        []string{"--all"},
 			expectedOutput: []string{
 				"global:",
 				"default-repo: global-repository",
@@ -74,17 +73,9 @@ func TestListConfig(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			args := []string{"config", "list", "-c", cfg}
-			if test.kubectx != "" {
-				args = append(args, "-k", test.kubectx)
-			} else {
-				args = append(args, "--all")
-			}
-			cmd := exec.Command("skaffold", args...)
-			rawOut, err := util.RunCmdOut(cmd)
-			if err != nil {
-				t.Error(err)
-			}
+			args := append([]string{"list", "-c", cfg}, test.args...)
+			rawOut := skaffold.Config(args...).RunOrFail(t)
+
 			out := string(rawOut)
 			for _, output := range test.expectedOutput {
 				if !strings.Contains(out, output) {
@@ -116,25 +107,29 @@ func TestSetConfig(t *testing.T) {
 	cfg, teardown := testutil.TempFile(t, "config", c)
 	defer teardown()
 
-	type testSetCase struct {
+	var tests = []struct {
 		description string
-		kubectx     string
+		setArgs     []string
+		listArgs    []string
 		key         string
 		shouldErr   bool
-	}
-
-	var tests = []testSetCase{
+	}{
 		{
 			description: "set default-repo for context",
-			kubectx:     "test-context",
+			setArgs:     []string{"-k", "test-context"},
+			listArgs:    []string{"-k", "test-context"},
 			key:         "default-repo",
 		},
 		{
 			description: "set global default-repo",
+			setArgs:     []string{"--global"},
+			listArgs:    []string{"--all"},
 			key:         "default-repo",
 		},
 		{
 			description: "fail to set unrecognized value",
+			setArgs:     []string{"--global"},
+			listArgs:    []string{"--all"},
 			key:         "doubt-this-will-ever-be-a-config-value",
 			shouldErr:   true,
 		},
@@ -143,33 +138,19 @@ func TestSetConfig(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			value := util.RandomID()
-			args := []string{"config", "set", test.key, value}
-			args = append(args, "-c", cfg)
-			if test.kubectx != "" {
-				args = append(args, "-k", test.kubectx)
-			} else {
-				args = append(args, "--global")
-			}
-			cmd := exec.Command("skaffold", args...)
-			if err := util.RunCmd(cmd); err != nil {
+
+			args := append([]string{"set", test.key, value, "-c", cfg}, test.setArgs...)
+			_, err := skaffold.Config(args...).Run(t)
+			if err != nil {
 				if test.shouldErr {
 					return
 				}
 				t.Error(err)
 			}
 
-			listArgs := []string{"config", "list", "-c", cfg}
-			if test.kubectx != "" {
-				listArgs = append(listArgs, "-k", test.kubectx)
-			} else {
-				listArgs = append(listArgs, "--all")
-			}
-			listCmd := exec.Command("skaffold", listArgs...)
-			out, err := util.RunCmdOut(listCmd)
-			if err != nil {
-				t.Error(err)
-			}
-			t.Log(string(out))
+			args = append([]string{"list", "-c", cfg}, test.listArgs...)
+			out := skaffold.Config(args...).RunOrFail(t)
+
 			if !strings.Contains(string(out), fmt.Sprintf("%s: %s", test.key, value)) {
 				t.Errorf("value %s not set correctly", test.key)
 			}
