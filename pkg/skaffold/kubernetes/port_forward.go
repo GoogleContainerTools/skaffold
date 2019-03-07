@@ -196,11 +196,7 @@ func (p *PortForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
 	for _, c := range pod.Spec.Containers {
 		for _, port := range c.Ports {
 			// get current entry for this container
-			entry, err := p.getCurrentEntry(pod, c, port, resourceVersion)
-			if err != nil {
-				color.Red.Fprintf(p.output, "Unable to get port for %s, skipping port-forward: %v", c.Name, err)
-				continue
-			}
+			entry := p.getCurrentEntry(pod, c, port, resourceVersion)
 			if entry.port != entry.localPort {
 				color.Yellow.Fprintf(p.output, "Forwarding container %s to local port %d.\n", c.Name, entry.localPort)
 			}
@@ -212,7 +208,7 @@ func (p *PortForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
 	return nil
 }
 
-func (p *PortForwarder) getCurrentEntry(pod *v1.Pod, c v1.Container, port v1.ContainerPort, resourceVersion int) (*portForwardEntry, error) {
+func (p *PortForwarder) getCurrentEntry(pod *v1.Pod, c v1.Container, port v1.ContainerPort, resourceVersion int) *portForwardEntry {
 	// determine if we have seen this before
 	entry := &portForwardEntry{
 		resourceVersion: resourceVersion,
@@ -225,12 +221,12 @@ func (p *PortForwarder) getCurrentEntry(pod *v1.Pod, c v1.Container, port v1.Con
 	oldEntry, ok := p.forwardedPods[entry.key()]
 	if ok {
 		entry.localPort = oldEntry.localPort
-		return entry, nil
+		return entry
 	}
 
 	// retrieve an open port on the host
 	entry.localPort = int32(retrieveAvailablePort(int(port.ContainerPort)))
-	return entry, nil
+	return entry
 }
 
 func (p *PortForwarder) forward(ctx context.Context, entry *portForwardEntry) error {

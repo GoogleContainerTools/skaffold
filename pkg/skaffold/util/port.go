@@ -35,11 +35,11 @@ func GetAvailablePort(port int) int {
 	}
 
 	// try the next 10 ports after the provided one
-	for port := 0; port < 10; port++ {
+	for port = 0; port < 10; port++ {
 		if IsPortAvailable(port) {
 			logrus.Debugf("found open port: %d", port)
+			return port
 		}
-		return port
 	}
 
 	for port = 4503; port <= 4533; port++ {
