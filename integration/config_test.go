@@ -1,5 +1,3 @@
-// +build integration
-
 /*
 Copyright 2019 The Skaffold Authors
 
@@ -24,14 +22,17 @@ import (
 	"strings"
 	"testing"
 
-	yaml "gopkg.in/yaml.v2"
-
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	yaml "gopkg.in/yaml.v2"
 )
 
 func TestListConfig(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
 	baseConfig := &config.Config{
 		Global: &config.ContextConfig{
 			DefaultRepo: "global-repository",
@@ -95,6 +96,10 @@ func TestListConfig(t *testing.T) {
 }
 
 func TestSetConfig(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
 	baseConfig := &config.Config{
 		Global: &config.ContextConfig{
 			DefaultRepo: "global-repository",

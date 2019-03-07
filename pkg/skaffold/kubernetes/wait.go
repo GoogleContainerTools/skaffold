@@ -167,17 +167,3 @@ func WaitForDeploymentToStabilize(ctx context.Context, c kubernetes.Interface, n
 	})
 	return err
 }
-
-// WaitForJobToStabilize waits till the Job has at least one active pod
-func WaitForJobToStabilize(ctx context.Context, c kubernetes.Interface, ns, name string, timeout time.Duration) error {
-	ctx, cancelTimeout := context.WithTimeout(ctx, timeout)
-	defer cancelTimeout()
-
-	return wait.PollImmediateUntil(time.Millisecond*500, func() (bool, error) {
-		job, err := c.BatchV1().Jobs(ns).Get(name, meta_v1.GetOptions{})
-		if err != nil {
-			return false, nil
-		}
-		return job.Status.Active > 0, nil
-	}, ctx.Done())
-}
