@@ -39,7 +39,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/docker/docker/api/types"
 	"github.com/google/go-containerregistry/pkg/name"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
@@ -79,7 +78,7 @@ var (
 	hashForArtifact = getHashForArtifact
 	localCluster    = config.GetLocalCluster
 	remoteDigest    = docker.RemoteDigest
-	newDockerCilent = docker.NewAPIClient
+	newDockerClient = docker.NewAPIClient
 	noCache         = &Cache{}
 )
 
@@ -98,7 +97,7 @@ func NewCache(ctx context.Context, builder Builder, opts *skafconfig.SkaffoldOpt
 		logrus.Warnf("Error retrieving artifact cache, not using skaffold cache: %v", err)
 		return noCache
 	}
-	client, err := newDockerCilent()
+	client, err := newDockerClient(opts.Prune)
 	if err != nil {
 		logrus.Warnf("Error retrieving local daemon client, not using skaffold cache: %v", err)
 		return noCache

@@ -320,11 +320,6 @@ func (l *localDaemon) ImageInspectWithRaw(ctx context.Context, image string) (ty
 
 func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error) {
 	return l.apiClient.ImageRemove(ctx, image, opts)
-} 
-
-func getDigest(img string) string {
-	ref, _ := name.NewDigest(img, name.WeakValidation)
-	return ref.DigestStr()
 }
 
 // GetBuildArgs gives the build args flags for docker build.
