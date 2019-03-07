@@ -18,6 +18,7 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -50,7 +51,7 @@ func TestEventLog(t *testing.T) {
 	defer deleteNs()
 
 	cancel := make(chan bool)
-	addr := ":12345"
+	addr := "12345"
 	go RunSkaffoldNoFail(cancel, "dev", "testdata/dev", ns.Name, "", nil, "--rpc-port", addr)
 	defer func() { cancel <- true }()
 
@@ -60,7 +61,7 @@ func TestEventLog(t *testing.T) {
 	var client proto.SkaffoldServiceClient
 	attempts := 0
 	for {
-		conn, err = grpc.Dial(addr, grpc.WithInsecure())
+		conn, err = grpc.Dial(fmt.Sprintf(":%s", addr), grpc.WithInsecure())
 		if err != nil {
 			t.Logf("unable to establish skaffold grpc connection: retrying...")
 			attempts++
@@ -147,7 +148,7 @@ func TestGetState(t *testing.T) {
 
 	// start a skaffold dev loop on an example
 	cancel := make(chan bool)
-	addr := ":12345"
+	addr := "12345"
 	go RunSkaffoldNoFail(cancel, "dev", "testdata/dev", ns.Name, "", nil, "--rpc-port", addr)
 	defer func() { cancel <- true }()
 
@@ -157,7 +158,7 @@ func TestGetState(t *testing.T) {
 	var client proto.SkaffoldServiceClient
 	attempts := 0
 	for {
-		conn, err = grpc.Dial(addr, grpc.WithInsecure())
+		conn, err = grpc.Dial(fmt.Sprintf(":%s", addr), grpc.WithInsecure())
 		if err != nil {
 			t.Logf("unable to establish skaffold grpc connection: retrying...")
 			attempts++
