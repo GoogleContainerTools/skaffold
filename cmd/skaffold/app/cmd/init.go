@@ -43,8 +43,8 @@ func NewCmdInit(out io.Writer) *cobra.Command {
 				CliArtifacts: cliArtifacts,
 				SkipBuild:    skipBuild,
 				Force:        force,
-				Analyze: analyze
-				SkaffoldOpts: opts,
+				Analyze:      analyze,
+				Opts:         opts,
 			}
 			return initializer.DoInit(out, c)
 		},

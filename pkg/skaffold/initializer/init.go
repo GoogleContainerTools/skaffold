@@ -60,7 +60,7 @@ type Config struct {
 	CliArtifacts []string
 	SkipBuild    bool
 	Force        bool
-	Opts         config.SkaffoldOptions
+	Opts         *config.SkaffoldOptions
 	Analyze      bool
 }
 
@@ -80,10 +80,11 @@ func DoInit(out io.Writer, c Config) error {
 	var potentialConfigs, dockerfiles []string
 
 	err := filepath.Walk(rootDir, func(path string, f os.FileInfo, e error) error {
-		if f.IsDir() {
-			return nil
+		if f.IsDir() && util.IsHiddenDir(f.Name()) {
+			logrus.Debugf("skip walking hidden dir %s", f.Name())
+			return filepath.SkipDir
 		}
-		if strings.HasPrefix(path, ".") {
+		if f.IsDir() || util.IsHiddenFile(f.Name()) {
 			return nil
 		}
 		if IsSkaffoldConfig(path) {
@@ -168,7 +169,7 @@ func DoInit(out io.Writer, c Config) error {
 	}
 
 	fmt.Fprintf(out, "Configuration %s was written\n", c.Opts.ConfigurationFile)
-	tips.PrintForInit(out, &c.Opts)
+	tips.PrintForInit(out, c.Opts)
 
 	return nil
 }

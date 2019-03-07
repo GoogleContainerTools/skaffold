@@ -35,7 +35,7 @@ spec:
   - name: getting-started
     image: gcr.io/k8s-skaffold/skaffold-example
 `)
-	filename := createTempFileWithContents(t, "", "deployment.yaml", content)
+	filename := testutil.CreateTempFileWithContents(t, "", "deployment.yaml", content)
 	defer os.Remove(filename) // clean up
 
 	expectedConfig := latest.DeployConfig{
@@ -90,24 +90,9 @@ kind: Pod`),
 	defer os.Remove(tmpDir) // clean up
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			tmpFile := createTempFileWithContents(t, tmpDir, "deployment.yaml", test.contents)
+			tmpFile := testutil.CreateTempFileWithContents(t, tmpDir, "deployment.yaml", test.contents)
 			images, err := parseImagesFromKubernetesYaml(tmpFile)
 			testutil.CheckErrorAndDeepEqual(t, test.err, err, test.images, images)
 		})
 	}
-}
-
-func createTempFileWithContents(t *testing.T, dir string, name string, content []byte) string {
-	t.Helper()
-	tmpfile, err := ioutil.TempFile(dir, name)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := tmpfile.Write(content); err != nil {
-		t.Fatal(err)
-	}
-	if err := tmpfile.Close(); err != nil {
-		t.Fatal(err)
-	}
-	return tmpfile.Name()
 }
