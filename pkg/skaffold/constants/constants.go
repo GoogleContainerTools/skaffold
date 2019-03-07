@@ -59,7 +59,7 @@ const (
 	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
 
 	DefaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
-	DefaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn"
+	DefaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn@sha256:0ec283f2ee1ab1d2ac779dcbb24bddaa46275aec7088cc10f2926b4ea0fcac9b"
 	DefaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
 
 	DefaultSkaffoldDir = ".skaffold"

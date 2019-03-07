@@ -34,6 +34,7 @@ func TestRun(t *testing.T) {
 		description string
 		dir         string
 		filename    string
+		profile     string
 		args        []string
 		deployments []string
 		pods        []string
@@ -108,6 +109,11 @@ func TestRun(t *testing.T) {
 			description: "docker plugin in local exec environment",
 			dir:         "testdata/plugin/local/docker",
 			deployments: []string{"leeroy-app", "leeroy-web"},
+		}, {
+			description: "jib in googlecloudbuild",
+			dir:         "examples/jib",
+			deployments: []string{"web"},
+			profile:     "gcb",
 		},
 	}
 
@@ -120,7 +126,11 @@ func TestRun(t *testing.T) {
 			ns, client, deleteNs := SetupNamespace(t)
 			defer deleteNs()
 
-			RunSkaffold(t, "run", test.dir, ns.Name, test.filename, test.env)
+			var args []string
+			if test.profile != "" {
+				args = []string{"-p", test.profile}
+			}
+			RunSkaffold(t, "run", test.dir, ns.Name, test.filename, test.env, args...)
 
 			for _, p := range test.pods {
 				if err := kubernetesutil.WaitForPodReady(context.Background(), client.CoreV1().Pods(ns.Name), p); err != nil {
