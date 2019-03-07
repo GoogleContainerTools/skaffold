@@ -180,7 +180,7 @@ func (c *Cache) resolveCachedArtifact(ctx context.Context, out io.Writer, a *lat
 		color.Green.Fprint(out, ". Retagging")
 	}
 	if details.needsPush {
-		color.Green.Fprint(out, ". Pushing")
+		color.Green.Fprint(out, ". Pushing.")
 	}
 	color.Default.Fprintln(out)
 
