@@ -604,6 +604,19 @@
             "kustomize"
           ],
           "additionalProperties": false
+        },
+        {
+          "properties": {
+            "mortar": {
+              "$ref": "#/definitions/MortarDeploy",
+              "description": "uses the `mortar` tool to deploy manifests. You'll need a `mortar` CLI version installed.",
+              "x-intellij-html-description": "uses the <code>mortar</code> tool to deploy manifests. You'll need a <code>mortar</code> CLI version installed."
+            }
+          },
+          "preferredOrder": [
+            "mortar"
+          ],
+          "additionalProperties": false
         }
       ],
       "description": "contains all the configuration needed by the deploy steps.",
@@ -625,12 +638,18 @@
           "$ref": "#/definitions/KustomizeDeploy",
           "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
           "x-intellij-html-description": "<em>beta</em> uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment."
+        },
+        "mortar": {
+          "$ref": "#/definitions/MortarDeploy",
+          "description": "uses the `mortar` tool to deploy manifests. You'll need a `mortar` CLI version installed.",
+          "x-intellij-html-description": "uses the <code>mortar</code> tool to deploy manifests. You'll need a <code>mortar</code> CLI version installed."
         }
       },
       "preferredOrder": [
         "helm",
         "kubectl",
-        "kustomize"
+        "kustomize",
+        "mortar"
       ],
       "additionalProperties": false,
       "description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated.",
@@ -1426,6 +1445,33 @@
     "LocalDir": {
       "description": "configures how Kaniko mounts sources directly via an `emptyDir` volume.",
       "x-intellij-html-description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume."
+    },
+    "MortarDeploy": {
+      "properties": {
+        "config": {
+          "type": "string",
+          "description": "for the mortar shot, see mortar docs for details. Optional.",
+          "x-intellij-html-description": "for the mortar shot, see mortar docs for details. Optional."
+        },
+        "name": {
+          "type": "string",
+          "description": "of the mortar shot.",
+          "x-intellij-html-description": "of the mortar shot."
+        },
+        "src": {
+          "type": "string",
+          "description": "directory for shot manifests.",
+          "x-intellij-html-description": "directory for shot manifests."
+        }
+      },
+      "preferredOrder": [
+        "name",
+        "src",
+        "config"
+      ],
+      "additionalProperties": false,
+      "description": "contains the configuration needed for deploying with mortar.",
+      "x-intellij-html-description": "contains the configuration needed for deploying with mortar."
     },
     "Profile": {
       "required": [

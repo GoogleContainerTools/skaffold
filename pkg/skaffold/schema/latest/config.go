@@ -310,7 +310,9 @@ type DeployType struct {
 
 	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
 	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty" yamltags:"oneOf=deploy"`
-	MortarDeploy    *MortarDeploy    `yaml:"mortar,omitempty" yamltags:"oneOf=deploy"`
+	// MortarDeploy uses the `mortar` tool to deploy manifests.
+	// You'll need a `mortar` CLI version installed.
+	MortarDeploy *MortarDeploy `yaml:"mortar,omitempty" yamltags:"oneOf=deploy"`
 }
 
 // KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
@@ -460,10 +462,13 @@ type HelmFQNConfig struct {
 type HelmConventionConfig struct {
 }
 
-// MortarDeploy contains the configuration needed for deploying with mortar
+// MortarDeploy contains the configuration needed for deploying with mortar.
 type MortarDeploy struct {
-	Name   string `yaml:"name,omitempty"`
+	// Name of the mortar shot.
+	Name string `yaml:"name,omitempty"`
+	// Source directory for shot manifests.
 	Source string `yaml:"src,omitempty"`
+	// Config for the mortar shot, see mortar docs for details. Optional.
 	Config string `yaml:"config,omitempty"`
 }
 
