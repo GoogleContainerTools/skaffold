@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 )
 
 // IsSupportedKubernetesFormat is for determining if a file under a glob pattern
@@ -30,6 +31,14 @@ func IsSupportedKubernetesFormat(n string) bool {
 		if strings.HasSuffix(n, s) {
 			return true
 		}
+	}
+	return false
+}
+
+// IsSkaffoldConfig is for determining if a file is skaffold config file.
+func IsSkaffoldConfig(file string) bool {
+	if config, err := schema.ParseConfig(file, false); err == nil && config != nil {
+		return true
 	}
 	return false
 }

@@ -18,6 +18,7 @@ package initializer
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -49,6 +50,8 @@ const NoDockerfile = "None (image not built from these sources)"
 type Initializer interface {
 	// GenerateDeployConfig generates Deploy Config for skaffold configuration.
 	GenerateDeployConfig() latest.DeployConfig
+	// GetImages fetches all the images defined in the manifest files.
+	GetImages() []string
 }
 
 // Config defines the Initializer Config for Init API of skaffold.
@@ -58,9 +61,11 @@ type Config struct {
 	SkipBuild    bool
 	Force        bool
 	Opts         config.SkaffoldOptions
+	Analyze      bool
 }
 
-func doInit(out io.Writer, c Config) error {
+// DoInit executes the `skaffold init` flow.
+func DoInit(out io.Writer, c Config) error {
 	rootDir := "."
 
 	if c.ComposeFile != "" {
@@ -81,12 +86,15 @@ func doInit(out io.Writer, c Config) error {
 		if strings.HasPrefix(path, ".") {
 			return nil
 		}
-
-		if IsSupportedKubernetesFormat(path) {
+		if IsSkaffoldConfig(path) {
+			if !c.Force {
+				return fmt.Errorf("pre-existing %s found", path)
+			}
+			logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", path)
+		} else if IsSupportedKubernetesFormat(path) {
 			potentialConfigs = append(potentialConfigs, path)
-		}
-		// try and parse dockerfile
-		if docker.ValidateDockerfile(path) {
+		} else if docker.ValidateDockerfile(path) {
+			// try and parse dockerfile
 			logrus.Infof("existing dockerfile found: %s", path)
 			dockerfiles = append(dockerfiles, path)
 		}
@@ -97,11 +105,14 @@ func doInit(out io.Writer, c Config) error {
 		return err
 	}
 
-	k, err := kubectl.New(potentialConfigs, c.Force)
+	k, err := kubectl.New(potentialConfigs)
 	if err != nil {
 		return err
 	}
-
+	images := k.GetImages()
+	if c.Analyze {
+		return printAnalyzeJSON(out, dockerfiles, images)
+	}
 	var pairs []dockerfilePair
 	// conditionally generate build artifacts
 	if !c.SkipBuild {
@@ -115,7 +126,7 @@ func doInit(out io.Writer, c Config) error {
 				return errors.Wrap(err, "processing cli artifacts")
 			}
 		} else {
-			pairs = resolveDockerfileImages(dockerfiles, k.Images())
+			pairs = resolveDockerfileImages(dockerfiles, images)
 		}
 	}
 
@@ -271,6 +282,22 @@ func generateSkaffoldPipeline(k Initializer, dockerfilePairs []dockerfilePair) (
 	}
 
 	return pipelineStr, nil
+}
+
+func printAnalyzeJSON(out io.Writer, dockerfiles, images []string) error {
+	a := struct {
+		Dockerfiles []string `json:"dockerfiles,omitempty"`
+		Images      []string `json:"images,omitempty"`
+	}{
+		Dockerfiles: dockerfiles,
+		Images:      images,
+	}
+	contents, err := json.Marshal(a)
+	if err != nil {
+		return errors.Wrap(err, "marshalling contents")
+	}
+	_, err = out.Write(contents)
+	return err
 }
 
 type dockerfilePair struct {

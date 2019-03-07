@@ -43,9 +43,10 @@ func NewCmdInit(out io.Writer) *cobra.Command {
 				CliArtifacts: cliArtifacts,
 				SkipBuild:    skipBuild,
 				Force:        force,
+				Analyze: analyze
 				SkaffoldOpts: opts,
 			}
-			return initializer.doInit(out, c)
+			return initializer.DoInit(out, c)
 		},
 	}
 	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")

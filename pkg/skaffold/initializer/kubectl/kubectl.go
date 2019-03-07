@@ -18,11 +18,9 @@ package kubectl
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"os"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -37,22 +35,15 @@ var ValidSuffixes = []string{".yml", ".yaml", ".json"}
 
 // Kubectl holds parameters to run kubectl.
 type Kubectl struct {
-	Configs []string
-	Images  []string
+	configs []string
+	images  []string
 }
 
 //New returns a Kubectl skaffold generator.
-func New(potentialConfigs []string, force bool) (*Kubectl, error) {
+func New(potentialConfigs []string) (*Kubectl, error) {
 	var k8sConfigs, images []string
 	for _, file := range potentialConfigs {
-		if !force {
-			config, err := schema.ParseConfig(file, false)
-			if err == nil && config != nil {
-				return nil, fmt.Errorf("pre-existing %s found", file)
-			}
-		}
-		logrus.Debugf("%s is not a valid skaffold configuration: continuing", file)
-		imgs, err := parseKubernetesYaml(file)
+		imgs, err := parseImagesFromKubernetesYaml(file)
 		if err == nil {
 			logrus.Infof("found valid k8s yaml: %s", file)
 			k8sConfigs = append(k8sConfigs, file)
@@ -65,8 +56,8 @@ func New(potentialConfigs []string, force bool) (*Kubectl, error) {
 		return nil, errors.New("one or more valid kubernetes manifests is required to run skaffold")
 	}
 	return &Kubectl{
-		Configs: k8sConfigs,
-		Images:  images,
+		configs: k8sConfigs,
+		images:  images,
 	}, nil
 }
 
@@ -76,16 +67,22 @@ func (k *Kubectl) GenerateDeployConfig() latest.DeployConfig {
 	return latest.DeployConfig{
 		DeployType: latest.DeployType{
 			KubectlDeploy: &latest.KubectlDeploy{
-				Manifests: k.Configs,
+				Manifests: k.configs,
 			},
 		},
 	}
 }
 
-// parseKubernetesYaml attempts to parse k8s objects from a yaml file
+// GetImages implements the Initializer interface and lists all the
+// images present in the k8 manifest files.
+func (k *Kubectl) GetImages() []string {
+	return k.images
+}
+
+// parseImagesFromKubernetesYaml attempts to parse k8s objects from a yaml file
 // if successful, it will return the images referenced in the k8s config
 // so they can be built by the generated skaffold yaml
-func parseKubernetesYaml(filepath string) ([]string, error) {
+func parseImagesFromKubernetesYaml(filepath string) ([]string, error) {
 	f, err := os.Open(filepath)
 	if err != nil {
 		return nil, errors.Wrap(err, "opening config file")
