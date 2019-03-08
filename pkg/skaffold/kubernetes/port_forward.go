@@ -82,7 +82,7 @@ func (*kubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntr
 	pfe.cancel = cancel
 
 
-	if address != nil {
+	if address != ""  {
 		cmd := exec.CommandContext(ctx, "kubectl", "port-forward", "--address", address, pfe.podName, fmt.Sprintf("%d:%d", pfe.localPort, pfe.port), "--namespace", pfe.namespace)
 	} else {
 		cmd := exec.CommandContext(ctx, "kubectl", "port-forward", pfe.podName, fmt.Sprintf("%d:%d", pfe.localPort, pfe.port), "--namespace", pfe.namespace)
