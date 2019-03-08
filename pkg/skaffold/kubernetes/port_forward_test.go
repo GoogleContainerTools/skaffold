@@ -36,7 +36,7 @@ type testForwarder struct {
 	forwardErr error
 }
 
-func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) error {
+func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry, address string) error {
 	f.forwardedEntries[pfe.key()] = pfe
 	f.forwardedPorts[pfe.localPort] = true
 	return f.forwardErr
