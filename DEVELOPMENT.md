@@ -3,6 +3,27 @@
 This doc explains the development workflow so you can get started
 [contributing](CONTRIBUTING.md) to Skaffold!
 
+
+## Requirements
+
+You must install these tools:
+
+1. [`go`](https://golang.org/doc/install): The language skaffold is
+   built in
+1. [`git`](https://help.github.com/articles/set-up-git/): For source control
+1. [`dep`](https://github.com/golang/dep): For managing external Go
+   dependencies. - Please Install dep v0.5.0 or greater.
+1. [`make`](https://www.gnu.org/software/make/): For building skaffold.
+1. [`golangci-lint`](https://github.com/golangci/golangci-lint): You can use the
+   helper [script](./hack/install_golint.sh) to get golangci-lint.
+
+  ```shell
+    ./hack/install_golint.sh
+  ```
+
+1. [`gocritic`](https://github.com/go-critic/go-critic): Go source code linter
+   providing advanced checks currently missing from other linters.
+
 ## Getting started
 
 First you will need to setup your GitHub account and create a fork:
@@ -96,6 +117,16 @@ make test
 
 _These tests will not run correctly unless you have [checked out your fork into your `$GOPATH`](#checkout-your-fork)._
 
+In case you see go-critic tool error,
+
+```shell
+make test
+RUN hack/linter.sh
+ERRO Running error: no such linter "gocritic"
+```
+
+re-run the `hack/install_golint.sh` script to upgrade `golangci-lint`.
+
 ### Integration tests
 
 The integration tests live in [`integration`](./integration) and run the [`examples`](./examples)
@@ -111,9 +142,9 @@ for submitted PRs._
 
 ## Building skaffold docs
 
-The latest version of the skaffold site is based on the Hugo theme of the github.com/google/docsy template.  
+The latest version of the skaffold site is based on the Hugo theme of the github.com/google/docsy template.
 
-### Testing docs locally 
+### Testing docs locally
 
 Before [creating a PR](#creating-a-pr) with doc changes, we recommend that you locally verify the
 generated docs with:
@@ -127,41 +158,41 @@ which at release time will be published with the latest release to https://skaff
 
 ### Previewing the docs on the PR
 
-Mark your PR with `docs-modifications` label. Our PR review process will answer in comments in ~5 minutes with the URL of your preview and will remove the label. 
+Mark your PR with `docs-modifications` label. Our PR review process will answer in comments in ~5 minutes with the URL of your preview and will remove the label.
 
-## Testing the Skaffold binary release process  
+## Testing the Skaffold binary release process
 
-Skaffold release process works with Google Cloud Build within our own project `k8s-skaffold` and the skaffold release bucket, `gs://skaffold`. 
+Skaffold release process works with Google Cloud Build within our own project `k8s-skaffold` and the skaffold release bucket, `gs://skaffold`.
 
-In order to be able to iterate/fix the release process you can pass in your own project and bucket as parameters to the build. 
+In order to be able to iterate/fix the release process you can pass in your own project and bucket as parameters to the build.
 
-We continuously release **builds** under `gs://skaffold/builds`. This is done by triggering `cloudbuild.yaml` on every push to master. 
+We continuously release **builds** under `gs://skaffold/builds`. This is done by triggering `cloudbuild.yaml` on every push to master.
 
-To run a build on your own project: 
+To run a build on your own project:
 
 ```
 gcloud builds submit --config deploy/cloudbuild.yaml --substitutions=_RELEASE_BUCKET=<personal-bucket>,COMMIT_SHA=$(git rev-parse HEAD) --project <personalproject>
-```  
+```
 
 We **release** stable versions under `gs://skaffold/releases`. This is done by triggering `cloudbuild-release.yaml` on every new tag in our Github repo.
 
 To test a release on your own project:
-                                                          
+
 ```
 gcloud builds submit --config deploy/cloudbuild-release.yaml --substitutions=_RELEASE_BUCKET=<personal-bucket>,TAG_NAME=testrelease_v1234 --project <personalproject>
-```                                                      
+```
 
-Note: if gcloud submit fails with something similar to the error message below, run `dep ensure && dep prune` to remove the broken symlinks   
+Note: if gcloud submit fails with something similar to the error message below, run `dep ensure && dep prune` to remove the broken symlinks
 ```
 ERROR: gcloud crashed (OSError): [Errno 2] No such file or directory: './vendor/github.com/karrick/godirwalk/testdata/symlinks/file-symlink'
 
 ```
 
-To just run a release without Google Cloud Build only using your local Docker daemon, you can run: 
+To just run a release without Google Cloud Build only using your local Docker daemon, you can run:
 
 ```
 make -j release GCP_PROJECT=<personalproject> RELEASE_BUCKET=<personal-bucket>
-``` 
+```
 
 ## Creating a PR
 
