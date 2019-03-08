@@ -32,7 +32,8 @@ import (
 
 var (
 	// For testing
-	hashForArtifact = getHashForArtifact
+	hashForArtifact   = getHashForArtifact
+	imgExistsRemotely = imageExistsRemotely
 )
 
 // ImageDetails holds the Digest and ID of an image
@@ -110,6 +111,12 @@ func (c *Cache) resolveCachedArtifact(ctx context.Context, out io.Writer, a *lat
 	}, nil
 }
 
+type artifactDetails struct {
+	existsRemotely bool
+	existsLocally  bool
+	prebuiltImage  string
+}
+
 type cachedArtifactDetails struct {
 	needsRebuild  bool
 	needsRetag    bool
@@ -124,7 +131,6 @@ func (c *Cache) retrieveCachedArtifactDetails(ctx context.Context, a *latest.Art
 		return nil, errors.Wrapf(err, "getting hash for artifact %s", a.ImageName)
 	}
 	a.WorkspaceHash = hash
-	localCluster, _ := localCluster()
 	imageDetails, cacheHit := c.artifactCache[hash]
 	if !cacheHit {
 		return &cachedArtifactDetails{
@@ -132,19 +138,34 @@ func (c *Cache) retrieveCachedArtifactDetails(ctx context.Context, a *latest.Art
 		}, nil
 	}
 	hashTag := fmt.Sprintf("%s:%s", a.ImageName, hash)
-
-	// Check if we are using a local cluster
-	var existsRemotely bool
-	if !localCluster {
-		// Check if tagged image exists remotely with the same digest
-		existsRemotely = imageExistsRemotely(hashTag, imageDetails.Digest)
+	ad, err := c.artifactDetails(ctx, a, imageDetails, hashTag)
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting artifact details for %s", a.ImageName)
 	}
+	return &cachedArtifactDetails{
+		needsRebuild:  needsRebuild(ad, c.localCluster, c.needsPush),
+		needsRetag:    needsRetag(ad),
+		needsPush:     needsPush(ad, c.localCluster, c.needsPush),
+		prebuiltImage: ad.prebuiltImage,
+		hashTag:       hashTag,
+	}, nil
+}
 
-	// See if this image exists in the local daemon
-	if c.client.ImageExists(ctx, hashTag) {
-		return &cachedArtifactDetails{
-			needsPush: (!existsRemotely && !localCluster) || (localCluster && c.needsPush),
-			hashTag:   hashTag,
+func (c *Cache) artifactDetails(ctx context.Context, a *latest.Artifact, imageDetails ImageDetails, tag string) (*artifactDetails, error) {
+	// Check if tagged image exists remotely with the same digest
+	existsRemotely := imgExistsRemotely(tag, imageDetails.Digest)
+	existsLocally := false
+	if c.client != nil {
+		// See if this image exists in the local daemon
+		if c.client.ImageExists(ctx, tag) {
+			existsLocally = true
+		}
+	}
+	if existsLocally {
+		return &artifactDetails{
+			existsLocally:  existsLocally,
+			existsRemotely: existsRemotely,
+			prebuiltImage:  tag,
 		}, nil
 	}
 	// Check for a local image with the same digest as the image we want to build
@@ -152,16 +173,44 @@ func (c *Cache) retrieveCachedArtifactDetails(ctx context.Context, a *latest.Art
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting prebuilt image")
 	}
-	if prebuiltImage == "" {
-		return nil, errors.New("no tagged prebuilt image")
-	}
-
-	return &cachedArtifactDetails{
-		needsRetag:    true,
-		needsPush:     !localCluster || c.needsPush,
-		prebuiltImage: prebuiltImage,
-		hashTag:       hashTag,
+	return &artifactDetails{
+		existsRemotely: existsRemotely,
+		existsLocally:  existsLocally,
+		prebuiltImage:  prebuiltImage,
 	}, nil
+}
+
+func needsRebuild(d *artifactDetails, localCluster, push bool) bool {
+	// If using local cluster, rebuild if all of the following are true:
+	//   1. does not exist locally
+	//   2. can't retag a prebuilt image
+	if localCluster {
+		return !d.existsLocally && d.prebuiltImage == ""
+	}
+	// If using remote cluster, only rebuild image if all of the following are true:
+	//  1. does not exist locally
+	//  2. does not exist remotely
+	//  3. can't retag a prebuilt image
+	return !d.existsLocally && !d.existsRemotely && d.prebuiltImage == ""
+}
+
+func needsPush(d *artifactDetails, localCluster, push bool) bool {
+	// If using local cluster...
+	if localCluster {
+		// ...  only push if specified and image does not exist remotely
+		return push && !d.existsRemotely
+	}
+	// If using remote cluster, push if image does not exist remotely
+	return !d.existsRemotely
+}
+
+func needsRetag(d *artifactDetails) bool {
+	// Don't need a retag if image already exists locally
+	if d.existsLocally {
+		return false
+	}
+	// If a prebuilt image is found locally, retag the image
+	return d.prebuiltImage != ""
 }
 
 func (c *Cache) retrievePrebuiltImage(details ImageDetails) (string, error) {

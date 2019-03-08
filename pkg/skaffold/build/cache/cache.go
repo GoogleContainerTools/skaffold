@@ -52,6 +52,7 @@ type Cache struct {
 	cacheFile     string
 	useCache      bool
 	needsPush     bool
+	localCluster  bool
 }
 
 var (
@@ -86,6 +87,10 @@ func NewCache(ctx context.Context, builder build.Builder, opts *skafconfig.Skaff
 	if err != nil {
 		logrus.Warn("Unable to get list of images from local docker daemon, won't be checked for cache.")
 	}
+	lc, err := localCluster()
+	if err != nil {
+		logrus.Warn("Unable to determine if using a local cluster, cache may not work.")
+	}
 	return &Cache{
 		artifactCache: cache,
 		cacheFile:     cf,
@@ -94,6 +99,7 @@ func NewCache(ctx context.Context, builder build.Builder, opts *skafconfig.Skaff
 		builder:       builder,
 		needsPush:     needsPush,
 		imageList:     imageList,
+		localCluster:  lc,
 	}
 }
 
@@ -131,7 +137,6 @@ func (c *Cache) Retag(ctx context.Context, out io.Writer, artifactsToBuild []*la
 	for _, t := range buildArtifacts {
 		tags[t.ImageName] = t.Tag
 	}
-	local, _ := localCluster()
 	color.Default.Fprintln(out, "Retagging cached images...")
 	for _, artifact := range artifactsToBuild {
 		hashTag := fmt.Sprintf("%s:%s", artifact.ImageName, artifact.WorkspaceHash)
@@ -140,7 +145,7 @@ func (c *Cache) Retag(ctx context.Context, out io.Writer, artifactsToBuild []*la
 			logrus.Warnf("error retagging %s as %s, caching for this image may not work: %v", tags[artifact.ImageName], hashTag, err)
 			continue
 		}
-		if local {
+		if c.localCluster {
 			continue
 		}
 		// Push the retagged image
