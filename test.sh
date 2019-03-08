@@ -19,11 +19,16 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 RESET='\033[0m'
+LOGFILE=`mktemp`
 
 echo "Running go tests..."
-go test -cover -short -v -timeout 60s ./... | sed ''/PASS/s//$(printf "${GREEN}PASS${RESET}")/'' | sed ''/FAIL/s//$(printf "${RED}FAIL${RESET}")/''
+go test -cover -short -v -timeout 60s ./... 2>&1 | tee ${LOGFILE}  | sed ''/PASS/s//$(printf "${GREEN}PASS${RESET}")/'' | sed ''/FAIL/s//$(printf "${RED}FAIL${RESET}")/''
 GO_TEST_EXIT_CODE=${PIPESTATUS[0]}
 if [[ $GO_TEST_EXIT_CODE -ne 0 ]]; then
+    echo "*****"
+    echo "***** 'go test' failed (log file: ${LOGFILE}) *****"
+    echo "*****"
+    grep "FAIL" ${LOGFILE} -C 2  | sed ''/PASS/s//$(printf "${GREEN}PASS${RESET}")/'' | sed ''/FAIL/s//$(printf "${RED}FAIL${RESET}")/''
     exit $GO_TEST_EXIT_CODE
 fi
 
