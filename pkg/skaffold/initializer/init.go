@@ -60,8 +60,8 @@ type Config struct {
 	CliArtifacts []string
 	SkipBuild    bool
 	Force        bool
-	Opts         *config.SkaffoldOptions
 	Analyze      bool
+	Opts         *config.SkaffoldOptions
 }
 
 // DoInit executes the `skaffold init` flow.
@@ -92,10 +92,14 @@ func DoInit(out io.Writer, c Config) error {
 				return fmt.Errorf("pre-existing %s found", path)
 			}
 			logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", path)
-		} else if IsSupportedKubernetesFormat(path) {
+			return nil
+		}
+		if IsSupportedKubernetesFormat(path) {
 			potentialConfigs = append(potentialConfigs, path)
-		} else if docker.ValidateDockerfile(path) {
-			// try and parse dockerfile
+			return nil
+		}
+		// try and parse dockerfile
+		if docker.ValidateDockerfile(path) {
 			logrus.Infof("existing dockerfile found: %s", path)
 			dockerfiles = append(dockerfiles, path)
 		}
