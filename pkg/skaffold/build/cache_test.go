@@ -35,7 +35,10 @@ import (
 )
 
 var (
-	digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+	digest    = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+	digestOne = "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+	image     = fmt.Sprintf("image@%s", digest)
+	imageOne  = fmt.Sprintf("image1@%s", digestOne)
 )
 
 var defaultArtifactCache = ArtifactCache{"hash": ImageDetails{
@@ -50,16 +53,14 @@ func mockHashForArtifact(hashes map[string]string) func(context.Context, Builder
 }
 
 func Test_NewCache(t *testing.T) {
-	client, err := docker.NewAPIClient()
-	if err != nil {
-		t.Fatalf("error gettting docker api client: %v", err)
-	}
 	tests := []struct {
 		updateCacheFile   bool
 		needsPush         bool
+		updateClient      bool
 		name              string
 		opts              *config.SkaffoldOptions
 		expectedCache     *Cache
+		api               *testutil.FakeAPIClient
 		cacheFileContents interface{}
 	}{
 		{
@@ -69,10 +70,22 @@ func Test_NewCache(t *testing.T) {
 			opts: &config.SkaffoldOptions{
 				CacheArtifacts: true,
 			},
+			updateClient: true,
+			api: &testutil.FakeAPIClient{
+				ImageSummaries: []types.ImageSummary{
+					{
+						ID: "image",
+					},
+				},
+			},
 			expectedCache: &Cache{
 				artifactCache: defaultArtifactCache,
 				useCache:      true,
-				client:        client,
+				imageList: []types.ImageSummary{
+					{
+						ID: "image",
+					},
+				},
 			},
 		},
 		{
@@ -80,19 +93,21 @@ func Test_NewCache(t *testing.T) {
 			cacheFileContents: defaultArtifactCache,
 			needsPush:         true,
 			updateCacheFile:   true,
+			updateClient:      true,
 			opts: &config.SkaffoldOptions{
 				CacheArtifacts: true,
 			},
+			api: &testutil.FakeAPIClient{},
 			expectedCache: &Cache{
 				artifactCache: defaultArtifactCache,
 				useCache:      true,
-				client:        client,
 				needsPush:     true,
 			},
 		},
 		{
 			name:              "valid cache file exists, but useCache is false",
 			cacheFileContents: defaultArtifactCache,
+			api:               &testutil.FakeAPIClient{},
 			opts:              &config.SkaffoldOptions{},
 			expectedCache:     &Cache{},
 		},
@@ -111,12 +126,24 @@ func Test_NewCache(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 
 			cacheFile := createTempCacheFile(t, test.cacheFileContents)
-
 			if test.updateCacheFile {
 				test.expectedCache.cacheFile = cacheFile
 			}
 			test.opts.CacheFile = cacheFile
-			actualCache := NewCache(nil, test.opts, test.needsPush)
+
+			originalDockerClient := newDockerCilent
+			newDockerCilent = func() (docker.LocalDaemon, error) {
+				return docker.NewLocalDaemon(test.api, nil), nil
+			}
+			defer func() {
+				newDockerCilent = originalDockerClient
+			}()
+
+			if test.updateClient {
+				test.expectedCache.client = docker.NewLocalDaemon(test.api, nil)
+			}
+
+			actualCache := NewCache(context.Background(), nil, test.opts, test.needsPush)
 
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
 			if !reflect.DeepEqual(test.expectedCache, actualCache) {
@@ -317,17 +344,15 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			name:     "image in cache, prebuilt image exists, remote cluster",
 			artifact: &latest.Artifact{ImageName: "image"},
 			hashes:   map[string]string{"image": "hash"},
-			api: testutil.FakeAPIClient{
-				ImageSummaries: []types.ImageSummary{
+			cache: &Cache{
+				useCache:      true,
+				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
+				imageList: []types.ImageSummary{
 					{
 						RepoDigests: []string{fmt.Sprintf("image@%s", digest)},
 						RepoTags:    []string{"anotherimage:hash"},
 					},
 				},
-			},
-			cache: &Cache{
-				useCache:      true,
-				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
 			},
 			digest: digest,
 			expected: &cachedArtifactDetails{
@@ -342,17 +367,15 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			artifact:     &latest.Artifact{ImageName: "image"},
 			hashes:       map[string]string{"image": "hash"},
 			localCluster: true,
-			api: testutil.FakeAPIClient{
-				ImageSummaries: []types.ImageSummary{
+			cache: &Cache{
+				useCache:      true,
+				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
+				imageList: []types.ImageSummary{
 					{
 						RepoDigests: []string{fmt.Sprintf("image@%s", digest)},
 						RepoTags:    []string{"anotherimage:hash"},
 					},
 				},
-			},
-			cache: &Cache{
-				useCache:      true,
-				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
 			},
 			digest: digest,
 			expected: &cachedArtifactDetails{
@@ -366,18 +389,16 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			artifact:     &latest.Artifact{ImageName: "image"},
 			hashes:       map[string]string{"image": "hash"},
 			localCluster: true,
-			api: testutil.FakeAPIClient{
-				ImageSummaries: []types.ImageSummary{
+			cache: &Cache{
+				useCache:      true,
+				needsPush:     true,
+				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
+				imageList: []types.ImageSummary{
 					{
 						RepoDigests: []string{fmt.Sprintf("image@%s", digest)},
 						RepoTags:    []string{"anotherimage:hash"},
 					},
 				},
-			},
-			cache: &Cache{
-				useCache:      true,
-				needsPush:     true,
-				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
 			},
 			digest: digest,
 			expected: &cachedArtifactDetails{
@@ -549,6 +570,120 @@ func TestCacheHasher(t *testing.T) {
 			if !test.differentHash && oldHash != newHash {
 				t.Fatalf("expected hashes to be the same but they were different:\n oldHash: %s\n newHash: %s", oldHash, newHash)
 			}
+		})
+	}
+}
+
+func TestRetrievePrebuiltImage(t *testing.T) {
+	tests := []struct {
+		name         string
+		cache        *Cache
+		imageDetails ImageDetails
+		shouldErr    bool
+		expected     string
+	}{
+		{
+			name: "one image id exists",
+			cache: &Cache{
+				imageList: []types.ImageSummary{
+					{
+						RepoTags:    []string{"image:mytag"},
+						RepoDigests: []string{image},
+					},
+					{
+						RepoTags:    []string{"image1:latest"},
+						RepoDigests: []string{imageOne},
+					},
+				},
+			},
+			imageDetails: ImageDetails{
+				Digest: digest,
+			},
+			expected: "image:mytag",
+		},
+		{
+			name: "no image id exists",
+			cache: &Cache{
+				imageList: []types.ImageSummary{
+					{
+						RepoTags:    []string{"image:mytag"},
+						RepoDigests: []string{image},
+					},
+					{
+						RepoTags:    []string{"image:mytag"},
+						RepoDigests: []string{image},
+					},
+				},
+			},
+			shouldErr: true,
+			imageDetails: ImageDetails{
+				Digest: "dne",
+			},
+			expected: "",
+		},
+		{
+			name: "one image id exists",
+			cache: &Cache{
+				imageList: []types.ImageSummary{
+					{
+						RepoTags: []string{"image1", "image2"},
+						ID:       "something",
+					},
+					{
+						RepoTags: []string{"image3"},
+						ID:       "imageid",
+					},
+				},
+			},
+			imageDetails: ImageDetails{
+				ID: "imageid",
+			},
+			expected: "image3",
+		},
+		{
+			name: "multiple image ids exist",
+			cache: &Cache{
+				imageList: []types.ImageSummary{
+					{
+						RepoTags: []string{"image1", "image2"},
+						ID:       "something",
+					},
+					{
+						RepoTags: []string{"image3", "image4"},
+						ID:       "imageid",
+					},
+				},
+			},
+			imageDetails: ImageDetails{
+				ID: "imageid",
+			},
+			expected: "image3",
+		},
+		{
+			name: "no image id exists",
+			cache: &Cache{
+				imageList: []types.ImageSummary{
+					{
+						RepoTags: []string{"image1", "image2"},
+						ID:       "something",
+					},
+					{
+						RepoTags: []string{"image3"},
+						ID:       "somethingelse",
+					},
+				},
+			},
+			imageDetails: ImageDetails{
+				ID: "imageid",
+			},
+			shouldErr: true,
+			expected:  "",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual, err := test.cache.retrievePrebuiltImage(test.imageDetails)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
 		})
 	}
 }
