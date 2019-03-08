@@ -52,7 +52,7 @@ type portForwardEntry struct {
 	podName         string
 	namespace       string
 	containerName   string
-	address			string
+	address         string
 	port            int32
 	localPort       int32
 
@@ -83,7 +83,7 @@ func (*kubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntr
 
 	// Lets create the kubectl port-forward command
 	args := []string{"port-forward"}
-	if address != ""  {
+	if address != "" {
 		args = append(args, "--address", address)
 	}
 	args = append(args, pfe.podName, fmt.Sprintf("%d:%d", pfe.localPort, pfe.port), "--namespace", pfe.namespace)
