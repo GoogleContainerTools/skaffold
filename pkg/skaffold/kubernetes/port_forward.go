@@ -52,6 +52,7 @@ type portForwardEntry struct {
 	podName         string
 	namespace       string
 	containerName   string
+	address			string
 	port            int32
 	localPort       int32
 
@@ -60,7 +61,7 @@ type portForwardEntry struct {
 
 // Forwarder is an interface that can modify and manage port-forward processes
 type Forwarder interface {
-	Forward(context.Context, *portForwardEntry) error
+	Forward(context.Context, *portForwardEntry, string) error
 	Terminate(*portForwardEntry)
 }
 
@@ -74,13 +75,19 @@ var (
 
 // Forward port-forwards a pod using kubectl port-forward
 // It returns an error only if the process fails or was terminated by a signal other than SIGTERM
-func (*kubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntry) error {
+func (*kubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntry, address string) error {
 	logrus.Debugf("Port forwarding %s", pfe)
 
 	ctx, cancel := context.WithCancel(parentCtx)
 	pfe.cancel = cancel
 
-	cmd := exec.CommandContext(ctx, "kubectl", "port-forward", pfe.podName, fmt.Sprintf("%d:%d", pfe.localPort, pfe.port), "--namespace", pfe.namespace)
+
+	if address != nil {
+		cmd := exec.CommandContext(ctx, "kubectl", "port-forward", "--address", address, pfe.podName, fmt.Sprintf("%d:%d", pfe.localPort, pfe.port), "--namespace", pfe.namespace)
+	} else {
+		cmd := exec.CommandContext(ctx, "kubectl", "port-forward", pfe.podName, fmt.Sprintf("%d:%d", pfe.localPort, pfe.port), "--namespace", pfe.namespace)
+
+	}
 	buf := &bytes.Buffer{}
 	cmd.Stdout = buf
 	cmd.Stderr = buf
@@ -89,7 +96,7 @@ func (*kubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntr
 		if errors.Cause(err) == context.Canceled {
 			return nil
 		}
-		return errors.Wrapf(err, "port forwarding pod: %s/%s, port: %d to local port: %d, err: %s", pfe.namespace, pfe.podName, pfe.port, pfe.localPort, buf.String())
+		return errors.Wrapf(err, "port forwarding pod: %s/%s, port: %d to local port: %d, address:%s, err: %s", pfe.namespace, pfe.podName, pfe.port, pfe.localPort, address, buf.String())
 	}
 
 	event.Handle(&proto.Event{
@@ -138,7 +145,7 @@ func (p *PortForwarder) Stop() {
 
 // Start begins a pod watcher that port forwards any pods involving containers with exposed ports.
 // TODO(r2d4): merge this event loop with pod watcher from log writer
-func (p *PortForwarder) Start(ctx context.Context) error {
+func (p *PortForwarder) Start(ctx context.Context, address string) error {
 	aggregate := make(chan watch.Event)
 	stopWatchers, err := AggregatePodWatcher(p.namespaces, aggregate)
 	if err != nil {
@@ -176,7 +183,7 @@ func (p *PortForwarder) Start(ctx context.Context) error {
 				// At this point, we know the event's type is "ADDED" or "MODIFIED".
 				// We must take both types into account as it is possible for the pod to have become ready for port-forwarding before we established the watch.
 				if p.podSelector.Select(pod) && pod.Status.Phase == v1.PodRunning && pod.DeletionTimestamp == nil {
-					if err := p.portForwardPod(ctx, pod); err != nil {
+					if err := p.portForwardPod(ctx, pod, address); err != nil {
 						logrus.Warnf("port forwarding pod failed: %s", err)
 					}
 				}
@@ -187,7 +194,7 @@ func (p *PortForwarder) Start(ctx context.Context) error {
 	return nil
 }
 
-func (p *PortForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
+func (p *PortForwarder) portForwardPod(ctx context.Context, pod *v1.Pod, address string) error {
 	resourceVersion, err := strconv.Atoi(pod.ResourceVersion)
 	if err != nil {
 		return errors.Wrap(err, "converting resource version to integer")
@@ -200,7 +207,7 @@ func (p *PortForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
 			if entry.port != entry.localPort {
 				color.Yellow.Fprintf(p.output, "Forwarding container %s to local port %d.\n", c.Name, entry.localPort)
 			}
-			if err := p.forward(ctx, entry); err != nil {
+			if err := p.forward(ctx, entry, address); err != nil {
 				return errors.Wrap(err, "failed to forward port")
 			}
 		}
@@ -229,7 +236,7 @@ func (p *PortForwarder) getCurrentEntry(pod *v1.Pod, c v1.Container, port v1.Con
 	return entry
 }
 
-func (p *PortForwarder) forward(ctx context.Context, entry *portForwardEntry) error {
+func (p *PortForwarder) forward(ctx context.Context, entry *portForwardEntry, address string) error {
 	if prevEntry, ok := p.forwardedPods[entry.key()]; ok {
 		// Check if this is a new generation of pod
 		if entry.resourceVersion > prevEntry.resourceVersion {
@@ -237,10 +244,10 @@ func (p *PortForwarder) forward(ctx context.Context, entry *portForwardEntry) er
 		}
 	}
 
-	color.Default.Fprintln(p.output, fmt.Sprintf("Port Forwarding %s/%s %d -> %d", entry.podName, entry.containerName, entry.port, entry.localPort))
+	color.Default.Fprintln(p.output, fmt.Sprintf("Port Forwarding %s/%s %s:%d -> %d", entry.podName, entry.containerName, address, entry.port, entry.localPort))
 	p.forwardedPods[entry.key()] = entry
 
-	if err := p.Forward(ctx, entry); err != nil {
+	if err := p.Forward(ctx, entry, address); err != nil {
 		return errors.Wrap(err, "port forwarding failed")
 	}
 	return nil

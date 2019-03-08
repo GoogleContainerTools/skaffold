@@ -142,7 +142,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifac
 	}
 
 	if r.opts.PortForward {
-		if err := portForwarder.Start(ctx); err != nil {
+		if err := portForwarder.Start(ctx, r.opts.PortForwardAddress); err != nil {
 			return errors.Wrap(err, "starting port-forwarder")
 		}
 	}

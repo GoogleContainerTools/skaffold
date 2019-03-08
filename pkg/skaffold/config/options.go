@@ -36,6 +36,7 @@ type SkaffoldOptions struct {
 	Tail              bool
 	TailDev           bool
 	PortForward       bool
+	PortForwardAddress string
 	SkipTests         bool
 	CacheArtifacts    bool
 	ExperimentalGUI   bool

@@ -48,6 +48,7 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 	cmd.Flags().StringArrayVarP(&opts.TargetImages, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")
 	cmd.Flags().IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes")
 	cmd.Flags().BoolVar(&opts.PortForward, "port-forward", true, "Port-forward exposed container ports within pods")
+	cmd.Flags().StringVar(&opts.PortForwardAddress, "port-forward-address", nil, "Port-forward address to use, this is passed on 'kubectl port-forward --address'")
 	cmd.Flags().StringArrayVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels")
 	cmd.Flags().BoolVar(&opts.ExperimentalGUI, "experimental-gui", false, "Experimental Graphical User Interface")
 
