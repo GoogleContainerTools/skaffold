@@ -81,13 +81,15 @@ func (*kubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntr
 	ctx, cancel := context.WithCancel(parentCtx)
 	pfe.cancel = cancel
 
-
+	// Lets create the kubectl port-forward command
+	args := []string{"port-forward"}
 	if address != ""  {
-		cmd := exec.CommandContext(ctx, "kubectl", "port-forward", "--address", address, pfe.podName, fmt.Sprintf("%d:%d", pfe.localPort, pfe.port), "--namespace", pfe.namespace)
-	} else {
-		cmd := exec.CommandContext(ctx, "kubectl", "port-forward", pfe.podName, fmt.Sprintf("%d:%d", pfe.localPort, pfe.port), "--namespace", pfe.namespace)
-
+		args = append(args, "--address", address)
 	}
+	args = append(args, pfe.podName, fmt.Sprintf("%d:%d", pfe.localPort, pfe.port), "--namespace", pfe.namespace)
+
+	cmd := exec.CommandContext(ctx, "kubectl", args...)
+
 	buf := &bytes.Buffer{}
 	cmd.Stdout = buf
 	cmd.Stderr = buf

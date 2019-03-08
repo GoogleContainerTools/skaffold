@@ -88,6 +88,7 @@ func newTestForwarder(forwardErr error) *testForwarder {
 func TestPortForwardPod(t *testing.T) {
 	var tests = []struct {
 		description     string
+		address			string
 		pods            []*v1.Pod
 		forwarder       *testForwarder
 		expectedPorts   map[int32]bool
@@ -110,6 +111,7 @@ func TestPortForwardPod(t *testing.T) {
 					localPort:       8080,
 				},
 			},
+			address: "",
 			pods: []*v1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -146,6 +148,7 @@ func TestPortForwardPod(t *testing.T) {
 				},
 			},
 			availablePorts: []int{9000},
+			address: "",
 			pods: []*v1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -173,6 +176,7 @@ func TestPortForwardPod(t *testing.T) {
 			shouldErr:       true,
 			expectedEntries: map[string]*portForwardEntry{},
 			availablePorts:  []int{8080},
+			address: "",
 			pods: []*v1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -211,6 +215,7 @@ func TestPortForwardPod(t *testing.T) {
 					localPort:       8080,
 				},
 			},
+			address: "",
 			pods: []*v1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -255,6 +260,7 @@ func TestPortForwardPod(t *testing.T) {
 					localPort:       50051,
 				},
 			},
+			address: "",
 			pods: []*v1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -317,6 +323,7 @@ func TestPortForwardPod(t *testing.T) {
 					localPort:       9000,
 				},
 			},
+			address: "0.0.0.0",
 			pods: []*v1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -371,6 +378,7 @@ func TestPortForwardPod(t *testing.T) {
 					localPort:       8080,
 				},
 			},
+			address: "",
 			pods: []*v1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -435,7 +443,7 @@ func TestPortForwardPod(t *testing.T) {
 			p.Forwarder = test.forwarder
 
 			for _, pod := range test.pods {
-				err := p.portForwardPod(context.Background(), pod)
+				err := p.portForwardPod(context.Background(), pod, test.address)
 				testutil.CheckError(t, test.shouldErr, err)
 			}
 
