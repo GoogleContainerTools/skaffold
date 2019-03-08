@@ -51,7 +51,7 @@ type SkaffoldOptions struct {
 	DefaultRepo       string
 	PreBuiltImages    []string
 	Command           string
-	RPCPort           string
+	RPCPort           int
 }
 
 // Labels returns a map of labels to be applied to all deployed

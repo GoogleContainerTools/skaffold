@@ -31,6 +31,7 @@ import (
 	"time"
 
 	skafconfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/docker/docker/api/types"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -64,6 +65,7 @@ type Cache struct {
 	artifactCache ArtifactCache
 	client        docker.LocalDaemon
 	builder       Builder
+	imageList     []types.ImageSummary
 	cacheFile     string
 	useCache      bool
 	needsPush     bool
@@ -74,11 +76,12 @@ var (
 	hashForArtifact = getHashForArtifact
 	localCluster    = config.GetLocalCluster
 	remoteDigest    = docker.RemoteDigest
+	newDockerCilent = docker.NewAPIClient
 	noCache         = &Cache{}
 )
 
 // NewCache returns the current state of the cache
-func NewCache(builder Builder, opts *skafconfig.SkaffoldOptions, needsPush bool) *Cache {
+func NewCache(ctx context.Context, builder Builder, opts *skafconfig.SkaffoldOptions, needsPush bool) *Cache {
 	if !opts.CacheArtifacts {
 		return noCache
 	}
@@ -92,9 +95,13 @@ func NewCache(builder Builder, opts *skafconfig.SkaffoldOptions, needsPush bool)
 		logrus.Warnf("Error retrieving artifact cache, not using skaffold cache: %v", err)
 		return noCache
 	}
-	client, err := docker.NewAPIClient()
+	client, err := newDockerCilent()
 	if err != nil {
 		logrus.Warnf("Error retrieving local daemon client; local daemon will not be used as a cache: %v", err)
+	}
+	imageList, err := client.ImageList(ctx, types.ImageListOptions{})
+	if err != nil {
+		logrus.Warn("Unable to get list of images from local docker daemon, won't be checked for cache.")
 	}
 	return &Cache{
 		artifactCache: cache,
@@ -103,6 +110,7 @@ func NewCache(builder Builder, opts *skafconfig.SkaffoldOptions, needsPush bool)
 		client:        client,
 		builder:       builder,
 		needsPush:     needsPush,
+		imageList:     imageList,
 	}
 }
 
@@ -170,7 +178,7 @@ func (c *Cache) resolveCachedArtifact(ctx context.Context, out io.Writer, a *lat
 	color.Default.Fprintf(out, " - %s: ", a.ImageName)
 
 	if details.needsRebuild {
-		color.Red.Fprintln(out, "Not found. Rebuilding")
+		color.Red.Fprintln(out, "Not found. Rebuilding.")
 		return nil, nil
 	}
 
@@ -179,7 +187,7 @@ func (c *Cache) resolveCachedArtifact(ctx context.Context, out io.Writer, a *lat
 		color.Green.Fprint(out, ". Retagging")
 	}
 	if details.needsPush {
-		color.Green.Fprint(out, ". Pushing")
+		color.Green.Fprint(out, ". Pushing.")
 	}
 	color.Default.Fprintln(out)
 
@@ -230,21 +238,21 @@ func (c *Cache) retrieveCachedArtifactDetails(ctx context.Context, a *latest.Art
 		existsRemotely = imageExistsRemotely(hashTag, imageDetails.Digest)
 	}
 
-	if c.client == nil && existsRemotely {
+	if existsRemotely {
 		return &cachedArtifactDetails{
 			hashTag: hashTag,
 		}, nil
 	}
 
 	// See if this image exists in the local daemon
-	if c.client.ImageExists(ctx, hashTag) {
+	if c.client != nil && c.client.ImageExists(ctx, hashTag) {
 		return &cachedArtifactDetails{
 			needsPush: (!existsRemotely && !localCluster) || (localCluster && c.needsPush),
 			hashTag:   hashTag,
 		}, nil
 	}
 	// Check for a local image with the same digest as the image we want to build
-	prebuiltImage, err := c.retrievePrebuiltImage(ctx, imageDetails)
+	prebuiltImage, err := c.retrievePrebuiltImage(imageDetails)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting prebuilt image")
 	}
@@ -260,15 +268,32 @@ func (c *Cache) retrieveCachedArtifactDetails(ctx context.Context, a *latest.Art
 	}, nil
 }
 
-func (c *Cache) retrievePrebuiltImage(ctx context.Context, details ImageDetails) (string, error) {
-	img, err := c.client.FindTaggedImage(ctx, details.ID, details.Digest)
-	if err != nil {
-		return "", errors.Wrap(err, "unable to find tagged image")
+func (c *Cache) retrievePrebuiltImage(details ImageDetails) (string, error) {
+	for _, r := range c.imageList {
+		if r.ID == details.ID && details.ID != "" {
+			if len(r.RepoTags) == 0 {
+				return "", nil
+			}
+			return r.RepoTags[0], nil
+		}
+		if details.Digest == "" {
+			continue
+		}
+		for _, d := range r.RepoDigests {
+			if getDigest(d) == details.Digest {
+				// Return a tagged version of this image, since we can't retag an image in the image@sha256: format
+				if len(r.RepoTags) > 0 {
+					return r.RepoTags[0], nil
+				}
+			}
+		}
 	}
-	if img == "" {
-		return img, errors.New("no prebuilt image")
-	}
-	return img, nil
+	return "", errors.New("no prebuilt image")
+}
+
+func getDigest(img string) string {
+	ref, _ := name.NewDigest(img, name.WeakValidation)
+	return ref.DigestStr()
 }
 
 func imageExistsRemotely(image, digest string) bool {
