@@ -34,7 +34,7 @@ func NewCmdDebug(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "debug",
 		Short: "Runs a pipeline file in debug mode",
-		Long:  "Similar to `dev`, but runs the pipeline for debugging.",
+		Long:  "Similar to `dev`, but configures the pipeline for debugging.",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return debug(out)
