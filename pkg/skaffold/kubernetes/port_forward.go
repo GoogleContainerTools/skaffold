@@ -52,7 +52,6 @@ type portForwardEntry struct {
 	podName         string
 	namespace       string
 	containerName   string
-	address         string
 	port            int32
 	localPort       int32
 

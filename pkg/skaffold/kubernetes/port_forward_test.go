@@ -88,7 +88,7 @@ func newTestForwarder(forwardErr error) *testForwarder {
 func TestPortForwardPod(t *testing.T) {
 	var tests = []struct {
 		description     string
-		address			string
+		address         string
 		pods            []*v1.Pod
 		forwarder       *testForwarder
 		expectedPorts   map[int32]bool
@@ -148,7 +148,7 @@ func TestPortForwardPod(t *testing.T) {
 				},
 			},
 			availablePorts: []int{9000},
-			address: "",
+			address:        "",
 			pods: []*v1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -176,7 +176,7 @@ func TestPortForwardPod(t *testing.T) {
 			shouldErr:       true,
 			expectedEntries: map[string]*portForwardEntry{},
 			availablePorts:  []int{8080},
-			address: "",
+			address:         "",
 			pods: []*v1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
