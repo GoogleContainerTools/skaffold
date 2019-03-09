@@ -20,8 +20,11 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -33,6 +36,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+)
+
+const (
+	hiddenPrefix string = "."
 )
 
 func RandomID() string {
@@ -256,6 +263,16 @@ func NonEmptyLines(input []byte) []string {
 	return result
 }
 
+// SHA256 returns the shasum of the contents of r
+func SHA256(r io.Reader) (string, error) {
+	hasher := sha256.New()
+	_, err := io.Copy(hasher, r)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hasher.Sum(make([]byte, 0, hasher.Size()))), nil
+}
+
 // CloneThroughJSON marshals the old interface into the new one
 func CloneThroughJSON(old interface{}, new interface{}) error {
 	o, err := json.Marshal(old)
@@ -279,4 +296,23 @@ func AbsolutePaths(workspace string, paths []string) []string {
 		p = append(p, path)
 	}
 	return p
+}
+
+// IsHiddenDir returns if a directory is hidden.
+func IsHiddenDir(filename string) bool {
+	// Return false for current dir
+	if filename == hiddenPrefix {
+		return false
+	}
+	return hasHiddenPrefix(filename)
+}
+
+// IsHiddenFile returns if a file is hidden.
+// File is hidden if it starts with prefix "."
+func IsHiddenFile(filename string) bool {
+	return hasHiddenPrefix(filename)
+}
+
+func hasHiddenPrefix(s string) bool {
+	return strings.HasPrefix(s, hiddenPrefix)
 }

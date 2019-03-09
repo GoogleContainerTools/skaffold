@@ -19,9 +19,9 @@ package v1beta4
 import (
 	"encoding/json"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta5"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta5"
 	"github.com/pkg/errors"
 )
 
@@ -51,7 +51,7 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	}
 
 	// convert Test (should be the same)
-	var newTest []*latest.TestCase
+	var newTest []*v1beta5.TestCase
 	if err := convert(config.Test, &newTest); err != nil {
 		return nil, errors.Wrap(err, "converting new test")
 	}

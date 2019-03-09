@@ -48,6 +48,9 @@ type LocalDaemon interface {
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
 	Tag(ctx context.Context, image, ref string) error
 	ImageID(ctx context.Context, ref string) (string, error)
+	RepoDigest(ctx context.Context, ref string) (string, error)
+	ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error)
+	ImageExists(ctx context.Context, ref string) bool
 }
 
 type localDaemon struct {
@@ -105,7 +108,7 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 			return nil, err
 		}
 	} else {
-		cfg, err = retrieveRemoteConfig(image)
+		cfg, err = RetrieveRemoteConfig(image)
 		if err != nil {
 			return nil, errors.Wrap(err, "getting remote config")
 		}
@@ -282,6 +285,28 @@ func (l *localDaemon) ImageID(ctx context.Context, ref string) (string, error) {
 	}
 
 	return image.ID, nil
+}
+
+// ImageList returns a list of all images in the local daemon
+func (l *localDaemon) ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error) {
+	return l.apiClient.ImageList(ctx, options)
+}
+
+// RepoDigest returns a repo digest for the given ref
+func (l *localDaemon) RepoDigest(ctx context.Context, ref string) (string, error) {
+	image, _, err := l.apiClient.ImageInspectWithRaw(ctx, ref)
+	if err != nil {
+		return "", errors.Wrap(err, "inspecting image")
+	}
+	if len(image.RepoDigests) == 0 {
+		return "", nil
+	}
+	return image.RepoDigests[0], nil
+}
+
+func (l *localDaemon) ImageExists(ctx context.Context, ref string) bool {
+	_, _, err := l.apiClient.ImageInspectWithRaw(ctx, ref)
+	return err == nil
 }
 
 // GetBuildArgs gives the build args flags for docker build.

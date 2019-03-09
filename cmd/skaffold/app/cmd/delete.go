@@ -48,6 +48,7 @@ func delete(out io.Writer) error {
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}
+	defer runner.RPCServerShutdown()
 
 	return runner.Cleanup(ctx, out)
 }

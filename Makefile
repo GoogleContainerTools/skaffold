@@ -85,12 +85,18 @@ install: $(GO_FILES) $(BUILD_DIR)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go install -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -tags $(GO_BUILD_TAGS) $(BUILD_PACKAGE)
 
 .PHONY: integration
-integration: install $(BUILD_DIR)/$(PROJECT)
-	go test -v -tags integration $(REPOPATH)/integration -timeout 10m --remote=$(REMOTE_INTEGRATION)
+integration: install
+ifeq ($(REMOTE_INTEGRATION),true)
+	gcloud container clusters get-credentials \
+		$(GKE_CLUSTER_NAME) \
+		--zone $(GKE_ZONE) \
+		--project $(GCP_PROJECT)
+endif
+	REMOTE_INTEGRATION=$(REMOTE_INTEGRATION) go test -v $(REPOPATH)/integration -timeout 10m
 
 .PHONY: coverage
 coverage: $(BUILD_DIR)
-	go test -coverprofile=$(BUILD_DIR)/coverage.txt -covermode=atomic ./...
+	go test -short -coverprofile=$(BUILD_DIR)/coverage.txt -covermode=atomic ./...
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
@@ -152,6 +158,9 @@ integration-in-docker:
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		-v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
 		-e REMOTE_INTEGRATION=true \
+		-e GCP_PROJECT=$(GCP_PROJECT) \
+		-e GKE_CLUSTER_NAME=$(GKE_CLUSTER_NAME) \
+		-e GKE_ZONE=$(GKE_ZONE) \
 		-e DOCKER_CONFIG=/root/.docker \
 		-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
 		gcr.io/$(GCP_PROJECT)/skaffold-integration

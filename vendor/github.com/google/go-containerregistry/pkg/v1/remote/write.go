@@ -25,12 +25,19 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/partial"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/google/go-containerregistry/pkg/v1/stream"
+	"github.com/google/go-containerregistry/pkg/v1/types"
 	"golang.org/x/sync/errgroup"
 )
+
+type manifest interface {
+	RawManifest() ([]byte, error)
+	MediaType() (types.MediaType, error)
+	Digest() (v1.Hash, error)
+}
 
 // Write pushes the provided img to the specified image reference.
 func Write(ref name.Reference, img v1.Image, auth authn.Authenticator, t http.RoundTripper) error {
@@ -47,7 +54,6 @@ func Write(ref name.Reference, img v1.Image, auth authn.Authenticator, t http.Ro
 	w := writer{
 		ref:    ref,
 		client: &http.Client{Transport: tr},
-		img:    img,
 	}
 
 	// Upload individual layers in goroutines and collect any errors.
@@ -58,30 +64,46 @@ func Write(ref name.Reference, img v1.Image, auth authn.Authenticator, t http.Ro
 			return w.uploadOne(l)
 		})
 	}
-	if err := g.Wait(); err != nil {
-		return err
-	}
 
-	// Now that all the layers are uploaded, upload the config file blob.
-	// This must be done last because some layers may have been streamed.
-	l, err := partial.ConfigLayer(img)
-	if err != nil {
+	if l, err := partial.ConfigLayer(img); err == stream.ErrNotComputed {
+		// We can't read the ConfigLayer, because of streaming layers, since the
+		// config hasn't been calculated yet.
+		if err := g.Wait(); err != nil {
+			return err
+		}
+
+		// Now that all the layers are uploaded, upload the config file blob.
+		l, err := partial.ConfigLayer(img)
+		if err != nil {
+			return err
+		}
+		if err := w.uploadOne(l); err != nil {
+			return err
+		}
+	} else if err != nil {
+		// This is an actual error, not a streaming error, just return it.
 		return err
-	}
-	if err := w.uploadOne(l); err != nil {
-		return err
+	} else {
+		// We *can* read the ConfigLayer, so upload it concurrently with the layers.
+		g.Go(func() error {
+			return w.uploadOne(l)
+		})
+
+		// Wait for the layers + config.
+		if err := g.Wait(); err != nil {
+			return err
+		}
 	}
 
 	// With all of the constituent elements uploaded, upload the manifest
 	// to commit the image.
-	return w.commitImage()
+	return w.commitImage(img)
 }
 
 // writer writes the elements of an image to a remote image reference.
 type writer struct {
 	ref    name.Reference
 	client *http.Client
-	img    v1.Image
 }
 
 // url returns a url.Url for the specified path in the context of this remote image reference.
@@ -109,11 +131,11 @@ func (w *writer) nextLocation(resp *http.Response) (string, error) {
 	return resp.Request.URL.ResolveReference(u).String(), nil
 }
 
-// checkExisting checks if a blob exists already in the repository by making a
+// checkExistingBlob checks if a blob exists already in the repository by making a
 // HEAD request to the blob store API.  GCR performs an existence check on the
 // initiation if "mount" is specified, even if no "from" sources are specified.
 // However, this is not broadly applicable to all registries, e.g. ECR.
-func (w *writer) checkExisting(h v1.Hash) (bool, error) {
+func (w *writer) checkExistingBlob(h v1.Hash) (bool, error) {
 	u := w.url(fmt.Sprintf("/v2/%s/blobs/%s", w.ref.Context().RepositoryStr(), h.String()))
 
 	resp, err := w.client.Head(u.String())
@@ -122,7 +144,31 @@ func (w *writer) checkExisting(h v1.Hash) (bool, error) {
 	}
 	defer resp.Body.Close()
 
-	if err := CheckError(resp, http.StatusOK, http.StatusNotFound); err != nil {
+	if err := transport.CheckError(resp, http.StatusOK, http.StatusNotFound); err != nil {
+		return false, err
+	}
+
+	return resp.StatusCode == http.StatusOK, nil
+}
+
+// checkExistingManifest checks if a manifest exists already in the repository
+// by making a HEAD request to the manifest API.
+func (w *writer) checkExistingManifest(h v1.Hash, mt types.MediaType) (bool, error) {
+	u := w.url(fmt.Sprintf("/v2/%s/manifests/%s", w.ref.Context().RepositoryStr(), h.String()))
+
+	req, err := http.NewRequest(http.MethodHead, u.String(), nil)
+	if err != nil {
+		return false, err
+	}
+	req.Header.Set("Accept", string(mt))
+
+	resp, err := w.client.Do(req)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	if err := transport.CheckError(resp, http.StatusOK, http.StatusNotFound); err != nil {
 		return false, err
 	}
 
@@ -153,7 +199,7 @@ func (w *writer) initiateUpload(from, mount string) (location string, mounted bo
 	}
 	defer resp.Body.Close()
 
-	if err := CheckError(resp, http.StatusCreated, http.StatusAccepted); err != nil {
+	if err := transport.CheckError(resp, http.StatusCreated, http.StatusAccepted); err != nil {
 		return "", false, err
 	}
 
@@ -188,7 +234,7 @@ func (w *writer) streamBlob(blob io.ReadCloser, streamLocation string) (commitLo
 	}
 	defer resp.Body.Close()
 
-	if err := CheckError(resp, http.StatusNoContent, http.StatusAccepted, http.StatusCreated); err != nil {
+	if err := transport.CheckError(resp, http.StatusNoContent, http.StatusAccepted, http.StatusCreated); err != nil {
 		return "", err
 	}
 
@@ -219,7 +265,7 @@ func (w *writer) commitBlob(location, digest string) error {
 	}
 	defer resp.Body.Close()
 
-	return CheckError(resp, http.StatusCreated)
+	return transport.CheckError(resp, http.StatusCreated)
 }
 
 // uploadOne performs a complete upload of a single layer.
@@ -237,7 +283,7 @@ func (w *writer) uploadOne(l v1.Layer) error {
 		}
 		digest = h.String()
 
-		existing, err := w.checkExisting(h)
+		existing, err := w.checkExistingBlob(h)
 		if err != nil {
 			return err
 		}
@@ -289,12 +335,12 @@ func (w *writer) uploadOne(l v1.Layer) error {
 }
 
 // commitImage does a PUT of the image's manifest.
-func (w *writer) commitImage() error {
-	raw, err := w.img.RawManifest()
+func (w *writer) commitImage(man manifest) error {
+	raw, err := man.RawManifest()
 	if err != nil {
 		return err
 	}
-	mt, err := w.img.MediaType()
+	mt, err := man.MediaType()
 	if err != nil {
 		return err
 	}
@@ -314,11 +360,11 @@ func (w *writer) commitImage() error {
 	}
 	defer resp.Body.Close()
 
-	if err := CheckError(resp, http.StatusOK, http.StatusCreated, http.StatusAccepted); err != nil {
+	if err := transport.CheckError(resp, http.StatusOK, http.StatusCreated, http.StatusAccepted); err != nil {
 		return err
 	}
 
-	digest, err := w.img.Digest()
+	digest, err := man.Digest()
 	if err != nil {
 		return err
 	}
@@ -352,4 +398,61 @@ func scopesForUploadingImage(ref name.Reference, layers []v1.Layer) []string {
 	return scopes
 }
 
-// TODO(mattmoor): WriteIndex
+// WriteIndex pushes the provided ImageIndex to the specified image reference.
+// WriteIndex will attempt to push all of the referenced manifests before
+// attempting to push the ImageIndex, to retain referential integrity.
+func WriteIndex(ref name.Reference, ii v1.ImageIndex, auth authn.Authenticator, t http.RoundTripper) error {
+	index, err := ii.IndexManifest()
+	if err != nil {
+		return err
+	}
+
+	scopes := []string{ref.Scope(transport.PushScope)}
+	tr, err := transport.New(ref.Context().Registry, auth, t, scopes)
+	if err != nil {
+		return err
+	}
+	w := writer{
+		ref:    ref,
+		client: &http.Client{Transport: tr},
+	}
+
+	for _, desc := range index.Manifests {
+		ref, err := name.ParseReference(fmt.Sprintf("%s@%s", ref.Context(), desc.Digest), name.StrictValidation)
+		if err != nil {
+			return err
+		}
+		exists, err := w.checkExistingManifest(desc.Digest, desc.MediaType)
+		if err != nil {
+			return err
+		}
+		if exists {
+			log.Printf("existing manifest: %v", desc.Digest)
+			continue
+		}
+
+		switch desc.MediaType {
+		case types.OCIImageIndex, types.DockerManifestList:
+			ii, err := ii.ImageIndex(desc.Digest)
+			if err != nil {
+				return err
+			}
+
+			if err := WriteIndex(ref, ii, auth, t); err != nil {
+				return err
+			}
+		case types.OCIManifestSchema1, types.DockerManifestSchema2:
+			img, err := ii.Image(desc.Digest)
+			if err != nil {
+				return err
+			}
+			if err := Write(ref, img, auth, t); err != nil {
+				return err
+			}
+		}
+	}
+
+	// With all of the constituent elements uploaded, upload the manifest
+	// to commit the image.
+	return w.commitImage(ii)
+}

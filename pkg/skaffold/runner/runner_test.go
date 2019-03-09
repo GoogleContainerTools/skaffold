@@ -173,6 +173,7 @@ func TestNewForConfig(t *testing.T) {
 		description      string
 		pipeline         *latest.SkaffoldPipeline
 		shouldErr        bool
+		cacheArtifacts   bool
 		expectedBuilder  build.Builder
 		expectedTester   test.Tester
 		expectedDeployer deploy.Deployer
@@ -249,6 +250,26 @@ func TestNewForConfig(t *testing.T) {
 			},
 			shouldErr: true,
 		},
+		{
+			description: "no artifacts, cache",
+			pipeline: &latest.SkaffoldPipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
+					},
+				},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
+					},
+				},
+			},
+			expectedBuilder:  &local.Builder{},
+			expectedTester:   &test.FullTester{},
+			expectedDeployer: &deploy.KubectlDeployer{},
+			cacheArtifacts:   true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
@@ -258,7 +279,7 @@ func TestNewForConfig(t *testing.T) {
 
 			testutil.CheckError(t, test.shouldErr, err)
 			if cfg != nil {
-				b, _t, d := WithTimings(test.expectedBuilder, test.expectedTester, test.expectedDeployer)
+				b, _t, d := WithTimings(test.expectedBuilder, test.expectedTester, test.expectedDeployer, test.cacheArtifacts)
 
 				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, b, cfg.Builder)
 				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, _t, cfg.Tester)

@@ -1,5 +1,3 @@
-// +build integration
-
 /*
 Copyright 2019 The Skaffold Authors
 
@@ -27,21 +25,25 @@ import (
 )
 
 func TestFix(t *testing.T) {
-	ns, deleteNs := SetupNamespace(t)
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
 	fixCmd := exec.Command("skaffold", "fix", "-f", "skaffold.yaml")
 	fixCmd.Dir = "testdata/fix"
 	out, err := util.RunCmdOut(fixCmd)
 	if err != nil {
-		t.Fatalf("testing error: %v", err)
+		t.Fatalf("skaffold fix: %v", err)
 	}
 
 	runCmd := exec.Command("skaffold", "run", "--namespace", ns.Name, "-f", "-")
 	runCmd.Dir = "testdata/fix"
 	runCmd.Stdin = bytes.NewReader(out)
 
-	if err := util.RunCmd(runCmd); err != nil {
-		t.Fatalf("testing error: %v", err)
+	if out, err := util.RunCmdOut(runCmd); err != nil {
+		t.Fatalf("skaffold run: %v, %s", err, out)
 	}
 }

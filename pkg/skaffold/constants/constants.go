@@ -45,7 +45,7 @@ const (
 
 	DefaultKustomizationPath = "."
 
-	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.8.0@sha256:32ed8afc3c808d7159a7c1789d46c2abe95c1cb5b7afdd6867e360f0ed952c13"
+	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.9.0@sha256:d9fe474f80b73808dc12b54f45f5fc90f7856d9fc699d4a5e79d968a1aef1a72"
 	DefaultKanikoSecretName             = "kaniko-secret"
 	DefaultKanikoTimeout                = "20m"
 	DefaultKanikoContainerName          = "kaniko"
@@ -59,9 +59,11 @@ const (
 	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
 
 	DefaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
-	DefaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn"
+	DefaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn@sha256:0ec283f2ee1ab1d2ac779dcbb24bddaa46275aec7088cc10f2926b4ea0fcac9b"
 	DefaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
 
+	DefaultSkaffoldDir = ".skaffold"
+	DefaultCacheFile   = "cache"
 	// A regex matching valid repository names (https://github.com/docker/distribution/blob/master/reference/reference.go)
 	RepositoryComponentRegex string = `^[a-z\d]+(?:(?:[_.]|__|-+)[a-z\d]+)*$`
 
@@ -69,6 +71,8 @@ const (
 	SkaffoldPluginValue     = "1337"
 	SkaffoldPluginName      = "SKAFFOLD_PLUGIN_NAME"
 	DockerBuilderPluginName = "docker"
+
+	DefaultRPCPort = 50051
 )
 
 var (

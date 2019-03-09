@@ -241,7 +241,7 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 		b := latest.BuildConfig{BuildType: latest.BuildType{GoogleCloudBuild: &latest.GoogleCloudBuild{
 			ProjectID:   id,
 			DockerImage: "gcr.io/cloud-builders/docker",
-			MavenImage:  "gcr.io/cloud-builders/mvn",
+			MavenImage:  "gcr.io/cloud-builders/mvn@sha256:0ec283f2ee1ab1d2ac779dcbb24bddaa46275aec7088cc10f2926b4ea0fcac9b",
 			GradleImage: "gcr.io/cloud-builders/gradle",
 		}}}
 		for _, op := range ops {
@@ -347,6 +347,19 @@ func withProfiles(profiles ...latest.Profile) func(*latest.SkaffoldPipeline) {
 	}
 }
 
+func withTests(testCases ...*latest.TestCase) func(*latest.SkaffoldPipeline) {
+	return func(cfg *latest.SkaffoldPipeline) {
+		cfg.Test = testCases
+	}
+}
+
+func withExecutionEnvironment(name latest.ExecEnvironment) func(*latest.BuildConfig) {
+	return func(cfg *latest.BuildConfig) {
+		cfg.ExecutionEnvironment = &latest.ExecutionEnvironment{
+			Name: name,
+		}
+	}
+}
 func TestUpgradeToNextVersion(t *testing.T) {
 	for i, schemaVersion := range SchemaVersions[0 : len(SchemaVersions)-2] {
 		from := schemaVersion

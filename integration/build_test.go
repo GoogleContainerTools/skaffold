@@ -1,5 +1,3 @@
-// +build integration
-
 /*
 Copyright 2019 The Skaffold Authors
 
@@ -26,6 +24,10 @@ import (
 )
 
 func TestBuild(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
 	tests := []struct {
 		description string
 		dir         string

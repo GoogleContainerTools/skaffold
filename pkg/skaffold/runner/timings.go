@@ -32,11 +32,12 @@ import (
 )
 
 // WithTimings creates a deployer that logs the duration of each phase.
-func WithTimings(b build.Builder, t test.Tester, d deploy.Deployer) (build.Builder, test.Tester, deploy.Deployer) {
+func WithTimings(b build.Builder, t test.Tester, d deploy.Deployer, cacheArtifacts bool) (build.Builder, test.Tester, deploy.Deployer) {
 	w := withTimings{
-		Builder:  b,
-		Tester:   t,
-		Deployer: d,
+		Builder:        b,
+		Tester:         t,
+		Deployer:       d,
+		cacheArtifacts: cacheArtifacts,
 	}
 
 	return w, w, w
@@ -46,6 +47,7 @@ type withTimings struct {
 	build.Builder
 	test.Tester
 	deploy.Deployer
+	cacheArtifacts bool
 }
 
 func (w withTimings) Labels() map[string]string {
@@ -53,6 +55,9 @@ func (w withTimings) Labels() map[string]string {
 }
 
 func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	if len(artifacts) == 0 && w.cacheArtifacts {
+		return nil, nil
+	}
 	start := time.Now()
 	color.Default.Fprintln(out, "Starting build...")
 

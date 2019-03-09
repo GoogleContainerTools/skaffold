@@ -37,10 +37,13 @@ type SkaffoldOptions struct {
 	TailDev           bool
 	PortForward       bool
 	SkipTests         bool
+	CacheArtifacts    bool
 	ExperimentalGUI   bool
+	EnableRPC         bool
 	Profiles          []string
 	CustomTag         string
 	Namespace         string
+	CacheFile         string
 	TargetImages      []string
 	Trigger           string
 	CustomLabels      []string
@@ -48,6 +51,7 @@ type SkaffoldOptions struct {
 	DefaultRepo       string
 	PreBuiltImages    []string
 	Command           string
+	RPCPort           int
 }
 
 // Labels returns a map of labels to be applied to all deployed

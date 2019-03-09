@@ -61,7 +61,8 @@ func RemoteDigest(identifier string) (string, error) {
 	return h.String(), nil
 }
 
-func retrieveRemoteConfig(identifier string) (*v1.ConfigFile, error) {
+// RetrieveRemoteConfig retrieves the remote config file for an image
+func RetrieveRemoteConfig(identifier string) (*v1.ConfigFile, error) {
 	img, err := remoteImage(identifier)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting image")

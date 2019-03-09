@@ -73,7 +73,11 @@ func GunzipReadCloser(r io.ReadCloser) (io.ReadCloser, error) {
 // IsGzipped detects whether the input stream is compressed.
 func IsGzipped(r io.Reader) (bool, error) {
 	magicHeader := make([]byte, 2)
-	if _, err := r.Read(magicHeader); err != nil {
+	n, err := r.Read(magicHeader)
+	if n == 0 && err == io.EOF {
+		return false, nil
+	}
+	if err != nil {
 		return false, err
 	}
 	return bytes.Equal(magicHeader, gzipMagicHeader), nil

@@ -65,6 +65,7 @@ func runBuild(out io.Writer) error {
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}
+	defer runner.RPCServerShutdown()
 
 	buildOut := out
 	if quietFlag {
@@ -83,9 +84,12 @@ func runBuild(out io.Writer) error {
 		return err
 	}
 
-	cmdOut := BuildOutput{Builds: bRes}
-	if err := buildFormatFlag.Template().Execute(out, cmdOut); err != nil {
-		return errors.Wrap(err, "executing template")
+	if quietFlag {
+		cmdOut := BuildOutput{Builds: bRes}
+		if err := buildFormatFlag.Template().Execute(out, cmdOut); err != nil {
+			return errors.Wrap(err, "executing template")
+		}
 	}
+
 	return nil
 }
