@@ -112,7 +112,7 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, opt
 
 func SetupRPCClient(opts *config.SkaffoldOptions) error {
 	pluginMode = true
-	conn, err := grpc.Dial(opts.RPCPort, grpc.WithInsecure())
+	conn, err := grpc.Dial(fmt.Sprintf(":%d", opts.RPCPort), grpc.WithInsecure())
 	if err != nil {
 		return errors.Wrap(err, "opening gRPC connection to remote skaffold process")
 	}

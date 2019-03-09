@@ -1,5 +1,3 @@
-// +build integration
-
 /*
 Copyright 2019 The Skaffold Authors
 
@@ -30,22 +28,26 @@ import (
 )
 
 func TestDevSync(t *testing.T) {
-	ns, deleteNs := SetupNamespace(t)
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	ns, client, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	RunSkaffold(t, "build", "examples/test-file-sync", ns.Name, "", nil)
+	RunSkaffold(t, "build", "testdata/file-sync", ns.Name, "", nil)
 
 	cancel := make(chan bool)
-	go RunSkaffoldNoFail(cancel, "dev", "examples/test-file-sync", ns.Name, "", nil)
+	go RunSkaffoldNoFail(cancel, "dev", "testdata/file-sync", ns.Name, "", nil)
 	defer func() { cancel <- true }()
 
-	if err := kubernetesutil.WaitForPodReady(context.Background(), Client.CoreV1().Pods(ns.Name), "test-file-sync"); err != nil {
+	if err := kubernetesutil.WaitForPodReady(context.Background(), client.CoreV1().Pods(ns.Name), "test-file-sync"); err != nil {
 		t.Fatalf("Timed out waiting for pod ready")
 	}
 
-	Run(t, "examples/test-file-sync", "mkdir", "-p", "test")
-	Run(t, "examples/test-file-sync", "touch", "test/foobar")
-	defer Run(t, "examples/test-file-sync", "rm", "-rf", "test")
+	Run(t, "testdata/file-sync", "mkdir", "-p", "test")
+	Run(t, "testdata/file-sync", "touch", "test/foobar")
+	defer Run(t, "testdata/file-sync", "rm", "-rf", "test")
 
 	err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 		cmd := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "ls", "/test")

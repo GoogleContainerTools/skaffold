@@ -17,9 +17,9 @@ limitations under the License.
 package v1beta5
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta6"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta6"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
@@ -66,7 +66,7 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	}
 
 	// convert Test (should be the same)
-	var newTest []*latest.TestCase
+	var newTest []*v1beta6.TestCase
 	if err := pkgutil.CloneThroughJSON(config.Test, &newTest); err != nil {
 		return nil, errors.Wrap(err, "converting new test")
 	}

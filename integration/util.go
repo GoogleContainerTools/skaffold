@@ -17,17 +17,18 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"testing"
 
+	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
-
-var Client kubernetes.Interface
 
 func RunSkaffold(t *testing.T, command, dir, namespace, filename string, env []string, additionalArgs ...string) {
 	if err := RunSkaffoldNoFail(make(chan bool), command, dir, namespace, filename, env, additionalArgs...); err != nil {
@@ -72,8 +73,13 @@ func Run(t *testing.T, dir, command string, args ...string) {
 	}
 }
 
-func SetupNamespace(t *testing.T) (*v1.Namespace, func()) {
-	ns, err := Client.CoreV1().Namespaces().Create(&v1.Namespace{
+func SetupNamespace(t *testing.T) (*v1.Namespace, kubernetes.Interface, func()) {
+	client, err := kubernetesutil.GetClientset()
+	if err != nil {
+		logrus.Fatalf("Test setup error: getting kubernetes client: %s", err)
+	}
+
+	ns, err := client.CoreV1().Namespaces().Create(&v1.Namespace{
 		ObjectMeta: meta_v1.ObjectMeta{
 			GenerateName: "skaffold",
 		},
@@ -82,7 +88,9 @@ func SetupNamespace(t *testing.T) (*v1.Namespace, func()) {
 		t.Fatalf("creating namespace: %s", err)
 	}
 
-	return ns, func() {
-		Client.CoreV1().Namespaces().Delete(ns.Name, &meta_v1.DeleteOptions{})
+	fmt.Println("Namespace:", ns.Name)
+
+	return ns, client, func() {
+		client.CoreV1().Namespaces().Delete(ns.Name, &meta_v1.DeleteOptions{})
 	}
 }

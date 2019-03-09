@@ -50,6 +50,7 @@ func Set(c *latest.SkaffoldPipeline) error {
 	if err := withKanikoConfig(c,
 		setDefaultKanikoTimeout,
 		setDefaultKanikoImage,
+		setDefaultKanikoInitImage,
 		setDefaultKanikoNamespace,
 		setDefaultKanikoSecret,
 		setDefaultKanikoBuildContext,
@@ -213,6 +214,14 @@ func setDefaultKanikoNamespace(kaniko *latest.KanikoBuild) error {
 
 func setDefaultKanikoTimeout(kaniko *latest.KanikoBuild) error {
 	kaniko.Timeout = valueOrDefault(kaniko.Timeout, constants.DefaultKanikoTimeout)
+	return nil
+}
+
+func setDefaultKanikoInitImage(kaniko *latest.KanikoBuild) error {
+	if kaniko.BuildContext != nil && kaniko.BuildContext.LocalDir != nil {
+		localDir := kaniko.BuildContext.LocalDir
+		localDir.InitImage = valueOrDefault(localDir.InitImage, constants.DefaultBusyboxImage)
+	}
 	return nil
 }
 
