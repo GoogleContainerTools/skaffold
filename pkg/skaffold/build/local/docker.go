@@ -31,6 +31,7 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Arti
 	builder.LocalDocker = b.localDocker
 	builder.KubeContext = b.kubeContext
 	builder.PushImages = b.pushImages
+	builder.PluginMode = false
 
 	opts := &config.SkaffoldOptions{
 		SkipTests: b.skipTests,

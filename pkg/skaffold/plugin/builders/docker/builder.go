@@ -43,17 +43,21 @@ type Builder struct {
 	LocalDocker  docker.LocalDaemon
 	LocalCluster bool
 	PushImages   bool
-	KubeContext  string
+	// TODO: remove once old docker build functionality is removed (priyawadhwa@)
+	PluginMode  bool
+	KubeContext string
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Docker.
 func NewBuilder() *Builder {
-	return &Builder{}
+	return &Builder{
+		PluginMode: true,
+	}
 }
 
 // Init stores skaffold options and the execution environment
 func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
-	if opts.EnableRPC {
+	if b.PluginMode {
 		if err := event.SetupRPCClient(opts); err != nil {
 			logrus.Warn("error establishing gRPC connection to skaffold process; events will not be handled correctly")
 			logrus.Warn(err.Error())
