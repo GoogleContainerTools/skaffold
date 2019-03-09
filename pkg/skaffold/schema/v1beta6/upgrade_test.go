@@ -77,7 +77,8 @@ profiles:
       kaniko:
         buildContext: 
           gcsBucket: skaffold-kaniko
-        pullSecretName: e2esecret
+        googleCloudConfig:
+          secretName: e2esecret
         namespace: default
         cache: {}
       artifacts:

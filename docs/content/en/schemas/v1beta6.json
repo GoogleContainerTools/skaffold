@@ -812,28 +812,6 @@
       "description": "*beta* describes how to do a remote build on [Google Cloud Build](https://cloud.google.com/cloud-build/docs/). Docker and Jib artifacts can be built on Cloud Build. The `projectId` needs to be provided and the currently logged in user should be given permissions to trigger new builds.",
       "x-intellij-html-description": "<em>beta</em> describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/docs/\">Google Cloud Build</a>. Docker and Jib artifacts can be built on Cloud Build. The <code>projectId</code> needs to be provided and the currently logged in user should be given permissions to trigger new builds."
     },
-    "GoogleCloudConfig": {
-      "properties": {
-        "path": {
-          "type": "string",
-          "description": "path to the secret key file. See [Kaniko Documentation](https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster).",
-          "x-intellij-html-description": "path to the secret key file. See <a href=\"https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster\">Kaniko Documentation</a>."
-        },
-        "secretName": {
-          "type": "string",
-          "description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image.",
-          "x-intellij-html-description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image.",
-          "default": "kaniko-secret"
-        }
-      },
-      "preferredOrder": [
-        "path",
-        "secretName"
-      ],
-      "additionalProperties": false,
-      "description": "contains information about the GCR configuration to mount.",
-      "x-intellij-html-description": "contains information about the GCR configuration to mount."
-    },
     "HelmConventionConfig": {
       "description": "image config in the syntax of image.repository and image.tag.",
       "x-intellij-html-description": "image config in the syntax of image.repository and image.tag."
@@ -1242,11 +1220,6 @@
           "x-intellij-html-description": "additional flags to be passed to Kaniko command line. See <a href=\"https://github.com/GoogleContainerTools/kaniko#additional-flags\">Kaniko Additional Flags</a>.",
           "default": "[]"
         },
-        "googleCloudConfig": {
-          "$ref": "#/definitions/GoogleCloudConfig",
-          "description": "describes how to mount the GCR configuration into the Kaniko pod.",
-          "x-intellij-html-description": "describes how to mount the GCR configuration into the Kaniko pod."
-        },
         "image": {
           "type": "string",
           "description": "Docker image used by the Kaniko pod. Defaults to the latest released version of `gcr.io/kaniko-project/executor`.",
@@ -1256,6 +1229,17 @@
           "type": "string",
           "description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration.",
           "x-intellij-html-description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration."
+        },
+        "pullSecret": {
+          "type": "string",
+          "description": "path to the secret key file. See [Kaniko Documentation](https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster).",
+          "x-intellij-html-description": "path to the secret key file. See <a href=\"https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster\">Kaniko Documentation</a>."
+        },
+        "pullSecretName": {
+          "type": "string",
+          "description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image.",
+          "x-intellij-html-description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image.",
+          "default": "kaniko-secret"
         },
         "timeout": {
           "type": "string",
@@ -1267,11 +1251,12 @@
         "buildContext",
         "cache",
         "flags",
+        "pullSecret",
+        "pullSecretName",
         "namespace",
         "timeout",
         "image",
-        "dockerConfig",
-        "googleCloudConfig"
+        "dockerConfig"
       ],
       "additionalProperties": false,
       "description": "*beta* describes how to do an on-cluster build using [Kaniko](https://github.com/GoogleContainerTools/kaniko).",
