@@ -472,11 +472,7 @@
         "namespace": {
           "type": "string"
         },
-        "overrides": {
-          "additionalProperties": {},
-          "type": "object",
-          "default": "{}"
-        },
+        "overrides": {},
         "packaged": {
           "$ref": "#/definitions/HelmPackaged"
         },
