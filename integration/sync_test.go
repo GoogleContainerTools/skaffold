@@ -17,13 +17,12 @@ limitations under the License.
 package integration
 
 import (
-	"context"
 	"os/exec"
 	"testing"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -40,9 +39,7 @@ func TestDevSync(t *testing.T) {
 	stop := skaffold.Dev().InDir("testdata/file-sync").InNs(ns.Name).RunBackground(t)
 	defer stop()
 
-	if err := kubernetesutil.WaitForPodReady(context.Background(), client.CoreV1().Pods(ns.Name), "test-file-sync"); err != nil {
-		t.Fatalf("Timed out waiting for pod ready")
-	}
+	client.WaitForPodsReady("test-file-sync")
 
 	Run(t, "testdata/file-sync", "mkdir", "-p", "test")
 	Run(t, "testdata/file-sync", "touch", "test/foobar")
@@ -52,7 +49,5 @@ func TestDevSync(t *testing.T) {
 		_, err := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "ls", "/test").Output()
 		return err == nil, nil
 	})
-	if err != nil {
-		t.Fatalf("checking if /test dir exists in container: %v", err)
-	}
+	testutil.CheckError(t, false, err)
 }

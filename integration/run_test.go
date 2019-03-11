@@ -17,13 +17,10 @@ limitations under the License.
 package integration
 
 import (
-	"context"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 )
 
 func TestRun(t *testing.T) {
@@ -128,17 +125,8 @@ func TestRun(t *testing.T) {
 
 			skaffold.Run().WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 
-			for _, p := range test.pods {
-				if err := kubernetesutil.WaitForPodReady(context.Background(), client.CoreV1().Pods(ns.Name), p); err != nil {
-					t.Fatalf("Timed out waiting for pod ready")
-				}
-			}
-
-			for _, d := range test.deployments {
-				if err := kubernetesutil.WaitForDeploymentToStabilize(context.Background(), client, ns.Name, d, 10*time.Minute); err != nil {
-					t.Fatalf("Timed out waiting for deployment to stabilize")
-				}
-			}
+			client.WaitForPodsReady(test.pods...)
+			client.WaitForDeploymentsToStabilize(test.deployments...)
 
 			skaffold.Delete().WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 		})
