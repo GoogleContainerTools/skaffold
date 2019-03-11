@@ -1,0 +1,7 @@
+version: '3'
+services:
+  compose:
+    build: .
+    image: "gcr.io/k8s-skaffold/compose"
+    ports:
+     - "5000:5000"

@@ -17,13 +17,12 @@ limitations under the License.
 package integration
 
 import (
-	"context"
 	"os/exec"
 	"testing"
 	"time"
 
-	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -35,26 +34,20 @@ func TestDevSync(t *testing.T) {
 	ns, client, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	RunSkaffold(t, "build", "testdata/file-sync", ns.Name, "", nil)
+	skaffold.Build().InDir("testdata/file-sync").InNs(ns.Name).RunOrFail(t)
 
-	cancel := make(chan bool)
-	go RunSkaffoldNoFail(cancel, "dev", "testdata/file-sync", ns.Name, "", nil)
-	defer func() { cancel <- true }()
+	stop := skaffold.Dev().InDir("testdata/file-sync").InNs(ns.Name).RunBackground(t)
+	defer stop()
 
-	if err := kubernetesutil.WaitForPodReady(context.Background(), client.CoreV1().Pods(ns.Name), "test-file-sync"); err != nil {
-		t.Fatalf("Timed out waiting for pod ready")
-	}
+	client.WaitForPodsReady("test-file-sync")
 
 	Run(t, "testdata/file-sync", "mkdir", "-p", "test")
 	Run(t, "testdata/file-sync", "touch", "test/foobar")
 	defer Run(t, "testdata/file-sync", "rm", "-rf", "test")
 
 	err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
-		cmd := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "ls", "/test")
-		_, err := util.RunCmdOut(cmd)
+		_, err := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "ls", "/test").Output()
 		return err == nil, nil
 	})
-	if err != nil {
-		t.Fatalf("checking if /test dir exists in container: %v", err)
-	}
+	testutil.CheckError(t, false, err)
 }

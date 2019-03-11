@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -44,16 +45,15 @@ func TestEventLog(t *testing.T) {
 	defer Run(t, "testdata/dev", "rm", "foo")
 
 	// Run skaffold build first to fail quickly on a build failure
-	RunSkaffold(t, "build", "testdata/dev", "", "", nil)
+	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
 
 	// start a skaffold dev loop on an example
 	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	cancel := make(chan bool)
 	addr := "12345"
-	go RunSkaffoldNoFail(cancel, "dev", "testdata/dev", ns.Name, "", nil, "--rpc-port", addr)
-	defer func() { cancel <- true }()
+	stop := skaffold.Dev("--rpc-port", addr).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+	defer stop()
 
 	// start a grpc client and make sure we can connect properly
 	var conn *grpc.ClientConn
@@ -105,6 +105,7 @@ func TestEventLog(t *testing.T) {
 		if err != nil {
 			t.Errorf("error receiving entry from stream: %s", err)
 		}
+
 		if entry != nil {
 			logEntries = append(logEntries, entry)
 			entriesReceived++
@@ -140,17 +141,16 @@ func TestGetState(t *testing.T) {
 	defer Run(t, "testdata/dev", "rm", "foo")
 
 	// Run skaffold build first to fail quickly on a build failure
-	RunSkaffold(t, "build", "testdata/dev", "", "", nil)
+	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
 
 	// start a skaffold dev loop on an example
 	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
 	// start a skaffold dev loop on an example
-	cancel := make(chan bool)
 	addr := "12345"
-	go RunSkaffoldNoFail(cancel, "dev", "testdata/dev", ns.Name, "", nil, "--rpc-port", addr)
-	defer func() { cancel <- true }()
+	stop := skaffold.Dev("--rpc-port", addr).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+	defer stop()
 
 	// start a grpc client and make sure we can connect properly
 	var conn *grpc.ClientConn
