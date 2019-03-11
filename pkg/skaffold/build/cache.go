@@ -97,8 +97,7 @@ func NewCache(ctx context.Context, builder Builder, opts *skafconfig.SkaffoldOpt
 	}
 	client, err := newDockerCilent()
 	if err != nil {
-		logrus.Warnf("Error retrieving local daemon client, not using skaffold cache: %v", err)
-		return noCache
+		logrus.Warnf("Error retrieving local daemon client; local daemon will not be used as a cache: %v", err)
 	}
 	imageList, err := client.ImageList(ctx, types.ImageListOptions{})
 	if err != nil {
@@ -230,7 +229,7 @@ func (c *Cache) retrieveCachedArtifactDetails(ctx context.Context, a *latest.Art
 			needsRebuild: true,
 		}, nil
 	}
-	hashTag := fmt.Sprintf("%s:%s", a.ImageName, hash)
+	hashTag := HashTag(a)
 
 	// Check if we are using a local cluster
 	var existsRemotely bool
@@ -239,8 +238,14 @@ func (c *Cache) retrieveCachedArtifactDetails(ctx context.Context, a *latest.Art
 		existsRemotely = imageExistsRemotely(hashTag, imageDetails.Digest)
 	}
 
+	if existsRemotely {
+		return &cachedArtifactDetails{
+			hashTag: hashTag,
+		}, nil
+	}
+
 	// See if this image exists in the local daemon
-	if c.client.ImageExists(ctx, hashTag) {
+	if c.client != nil && c.client.ImageExists(ctx, hashTag) {
 		return &cachedArtifactDetails{
 			needsPush: (!existsRemotely && !localCluster) || (localCluster && c.needsPush),
 			hashTag:   hashTag,
@@ -325,9 +330,12 @@ func (c *Cache) CacheArtifacts(ctx context.Context, artifacts []*latest.Artifact
 		if digest == "" {
 			logrus.Debugf("couldn't get image digest for %s, will try to cache just image id (expected with a local cluster)", tags[a.ImageName])
 		}
-		id, err := c.client.ImageID(ctx, tags[a.ImageName])
-		if err != nil {
-			logrus.Debugf("couldn't get image id for %s", tags[a.ImageName])
+		var id string
+		if c.client != nil {
+			id, err = c.client.ImageID(ctx, tags[a.ImageName])
+			if err != nil {
+				logrus.Debugf("couldn't get image id for %s", tags[a.ImageName])
+			}
 		}
 		if id == "" && digest == "" {
 			logrus.Debugf("both image id and digest are empty for %s, skipping caching", tags[a.ImageName])
@@ -343,7 +351,7 @@ func (c *Cache) CacheArtifacts(ctx context.Context, artifacts []*latest.Artifact
 
 // Retag retags newly built images in the format [imageName:workspaceHash] and pushes them if using a remote cluster
 func (c *Cache) Retag(ctx context.Context, out io.Writer, artifactsToBuild []*latest.Artifact, buildArtifacts []Artifact) {
-	if !c.useCache || len(artifactsToBuild) == 0 {
+	if !c.useCache || len(artifactsToBuild) == 0 || c.client == nil {
 		return
 	}
 	tags := map[string]string{}
@@ -369,8 +377,12 @@ func (c *Cache) Retag(ctx context.Context, out io.Writer, artifactsToBuild []*la
 	}
 }
 
-// Check local daemon for img digest
+// Check local daemon for img digest, check remote digest if that doesn't work
 func (c *Cache) retrieveImageDigest(ctx context.Context, img string) (string, error) {
+	if c.client == nil {
+		// Check for remote digest
+		return docker.RemoteDigest(img)
+	}
 	repoDigest, err := c.client.RepoDigest(ctx, img)
 	if err != nil {
 		return docker.RemoteDigest(img)
@@ -429,4 +441,8 @@ func cacheHasher(p string) (string, error) {
 		}
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func HashTag(a *latest.Artifact) string {
+	return fmt.Sprintf("%s:%s", a.ImageName, a.WorkspaceHash)
 }
