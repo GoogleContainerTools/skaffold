@@ -85,6 +85,7 @@ func Test_NewCache(t *testing.T) {
 						ID: "image",
 					},
 				},
+				insecureRegistries: emptyMap,
 			},
 		},
 		{
@@ -98,9 +99,10 @@ func Test_NewCache(t *testing.T) {
 			},
 			api: &testutil.FakeAPIClient{},
 			expectedCache: &Cache{
-				artifactCache: defaultArtifactCache,
-				useCache:      true,
-				needsPush:     true,
+				artifactCache:      defaultArtifactCache,
+				useCache:           true,
+				needsPush:          true,
+				insecureRegistries: emptyMap,
 			},
 		},
 		{
@@ -132,19 +134,19 @@ func Test_NewCache(t *testing.T) {
 			}
 			test.opts.CacheFile = cacheFile
 
-			originalDockerClient := newDockerCilent
-			newDockerCilent = func() (docker.LocalDaemon, error) {
-				return docker.NewLocalDaemon(test.api, nil), nil
+			originalDockerClient := newDockerClient
+			newDockerClient = func(map[string]bool) (docker.LocalDaemon, error) {
+				return docker.NewLocalDaemon(test.api, nil, emptyMap), nil
 			}
 			defer func() {
-				newDockerCilent = originalDockerClient
+				newDockerClient = originalDockerClient
 			}()
 
 			if test.updateClient {
-				test.expectedCache.client = docker.NewLocalDaemon(test.api, nil)
+				test.expectedCache.client = docker.NewLocalDaemon(test.api, nil, emptyMap)
 			}
 
-			actualCache := NewCache(context.Background(), nil, test.opts, test.needsPush)
+			actualCache := NewCache(context.Background(), nil, test.opts, test.needsPush, emptyMap)
 
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
 			if !reflect.DeepEqual(test.expectedCache, actualCache) {

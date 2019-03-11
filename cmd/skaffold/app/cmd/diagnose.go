@@ -60,7 +60,7 @@ func doDiagnose(out io.Writer) error {
 	fmt.Fprintln(out, "Configuration version:", config.APIVersion)
 	fmt.Fprintln(out, "Number of artifacts:", len(config.Build.Artifacts))
 
-	if err := diagnoseArtifacts(out, runner.Builder, config.Build.Artifacts); err != nil {
+	if err := diagnoseArtifacts(out, runner.Builder, config.Build.Artifacts, runner.InsecureRegistries); err != nil {
 		return errors.Wrap(err, "running diagnostic on artifacts")
 	}
 
@@ -74,14 +74,14 @@ func doDiagnose(out io.Writer) error {
 	return nil
 }
 
-func diagnoseArtifacts(out io.Writer, builder build.Builder, artifacts []*latest.Artifact) error {
+func diagnoseArtifacts(out io.Writer, builder build.Builder, artifacts []*latest.Artifact, insecureRegistries map[string]bool) error {
 	ctx := context.Background()
 
 	for _, artifact := range artifacts {
 		color.Default.Fprintf(out, "\n%s: %s\n", typeOfArtifact(artifact), artifact.ImageName)
 
 		if artifact.DockerArtifact != nil {
-			size, err := sizeOfDockerContext(ctx, artifact)
+			size, err := sizeOfDockerContext(ctx, artifact, insecureRegistries)
 			if err != nil {
 				return errors.Wrap(err, "computing the size of the Docker context")
 			}
@@ -132,10 +132,10 @@ func timeToComputeMTimes(deps []string) (time.Duration, error) {
 	return time.Since(start), nil
 }
 
-func sizeOfDockerContext(ctx context.Context, a *latest.Artifact) (int64, error) {
+func sizeOfDockerContext(ctx context.Context, a *latest.Artifact, insecureRegistries map[string]bool) (int64, error) {
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, a.Workspace, a.DockerArtifact)
+		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, a.Workspace, a.DockerArtifact, insecureRegistries)
 		if err != nil {
 			buildCtxWriter.CloseWithError(errors.Wrap(err, "creating docker context"))
 			return

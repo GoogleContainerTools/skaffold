@@ -37,12 +37,13 @@ type BuilderRPC struct {
 	client *rpc.Client
 }
 
-func (b *BuilderRPC) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
+func (b *BuilderRPC) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment, insecureRegistries map[string]bool) {
 	// We don't expect a response, so we can just use interface{}
 	var resp interface{}
 	args := InitArgs{
-		Opts: opts,
-		Env:  env,
+		Opts:               opts,
+		Env:                env,
+		InsecureRegistries: insecureRegistries,
 	}
 	b.client.Call("Plugin.Init", args, &resp)
 }
@@ -108,7 +109,7 @@ type BuilderRPCServer struct {
 }
 
 func (s *BuilderRPCServer) Init(args InitArgs, resp *interface{}) error {
-	s.Impl.Init(args.Opts, args.Env)
+	s.Impl.Init(args.Opts, args.Env, args.InsecureRegistries)
 	return nil
 }
 
@@ -142,8 +143,9 @@ type DependencyArgs struct {
 
 // InitArgs are args passed via rpc to the builder plugin on Init()
 type InitArgs struct {
-	Opts *config.SkaffoldOptions
-	Env  *latest.ExecutionEnvironment
+	Opts               *config.SkaffoldOptions
+	Env                *latest.ExecutionEnvironment
+	InsecureRegistries map[string]bool
 }
 
 // BuildArgs are the args passed via rpc to the builder plugin on Build()

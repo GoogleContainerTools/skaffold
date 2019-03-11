@@ -41,7 +41,7 @@ var (
 )
 
 // NewPluginBuilder initializes and returns all required plugin builders
-func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions) (shared.PluginBuilder, error) {
+func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions, insecureRegistries map[string]bool) (shared.PluginBuilder, error) {
 	// We're a host. Start by launching the plugin process.
 	logrus.SetOutput(os.Stdout)
 
@@ -91,7 +91,7 @@ func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions) (sh
 	b := &Builder{
 		Builders: builders,
 	}
-	b.Init(opts, cfg.ExecutionEnvironment)
+	b.Init(opts, cfg.ExecutionEnvironment, insecureRegistries)
 	return b, nil
 }
 
@@ -99,9 +99,9 @@ type Builder struct {
 	Builders map[string]shared.PluginBuilder
 }
 
-func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
+func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment, insecureRegistries map[string]bool) {
 	for _, builder := range b.Builders {
-		builder.Init(opts, env)
+		builder.Init(opts, env, insecureRegistries)
 	}
 }
 

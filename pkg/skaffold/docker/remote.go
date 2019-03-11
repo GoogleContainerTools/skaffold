@@ -17,8 +17,6 @@ limitations under the License.
 package docker
 
 import (
-	"net/http"
-
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -27,28 +25,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func AddTag(src, target string) error {
-	logrus.Debugf("attempting to add tag %s to src %s", target, src)
-	img, err := remoteImage(src)
-	if err != nil {
-		return errors.Wrap(err, "getting image")
-	}
-
-	targetRef, err := name.ParseReference(target, name.WeakValidation)
-	if err != nil {
-		return errors.Wrap(err, "getting target reference")
-	}
-
-	auth, err := authn.DefaultKeychain.Resolve(targetRef.Context().Registry)
-	if err != nil {
-		return err
-	}
-
-	return remote.Write(targetRef, img, auth, http.DefaultTransport)
-}
-
-func RemoteDigest(identifier string) (string, error) {
-	img, err := remoteImage(identifier)
+func RemoteDigest(identifier string, insecureRegistries map[string]bool) (string, error) {
+	img, err := remoteImage(identifier, insecureRegistries)
 	if err != nil {
 		return "", errors.Wrap(err, "getting image")
 	}
@@ -62,8 +40,8 @@ func RemoteDigest(identifier string) (string, error) {
 }
 
 // RetrieveRemoteConfig retrieves the remote config file for an image
-func RetrieveRemoteConfig(identifier string) (*v1.ConfigFile, error) {
-	img, err := remoteImage(identifier)
+func RetrieveRemoteConfig(identifier string, insecureRegistries map[string]bool) (*v1.ConfigFile, error) {
+	img, err := remoteImage(identifier, insecureRegistries)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting image")
 	}
@@ -71,13 +49,21 @@ func RetrieveRemoteConfig(identifier string) (*v1.ConfigFile, error) {
 	return img.ConfigFile()
 }
 
-func remoteImage(identifier string) (v1.Image, error) {
+func remoteImage(identifier string, insecureRegistries map[string]bool) (v1.Image, error) {
 	ref, err := name.ParseReference(identifier, name.WeakValidation)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing initial ref")
 	}
 
-	auth, err := authn.DefaultKeychain.Resolve(ref.Context().Registry)
+	reg := ref.Context().Registry
+	if _, ok := insecureRegistries[reg.Name()]; ok {
+		reg, err = name.NewInsecureRegistry(reg.Name(), name.StrictValidation)
+		if err != nil {
+			logrus.Warnf("error getting insecure registry: %s\nremote references may not be retrieved", err.Error())
+		}
+	}
+
+	auth, err := authn.DefaultKeychain.Resolve(reg)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting default keychain auth")
 	}

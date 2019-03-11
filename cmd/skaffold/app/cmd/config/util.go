@@ -33,6 +33,10 @@ import (
 const defaultConfigDir = ".skaffold"
 const defaultConfigFile = "config"
 
+var cachedLocalCluster *bool
+var cachedDefaultRepo *string
+var cachedInsecureRegistries *[]string
+
 func resolveKubectlContext() {
 	if kubecontext != "" {
 		return
@@ -146,14 +150,20 @@ func getOrCreateConfigForKubectx() (*ContextConfig, error) {
 }
 
 func GetDefaultRepo(cliValue string) (string, error) {
+	if cachedDefaultRepo != nil {
+		return *cachedDefaultRepo, nil
+	}
 	// CLI flag takes precedence. If no default-repo specified from a flag,
 	// retrieve the value from the global config.
 	if cliValue != "" {
+		cachedDefaultRepo = &cliValue
 		return cliValue, nil
 	}
 	cfg, err := GetConfigForKubectx()
 	if err != nil {
-		return "", errors.Wrap(err, "retrieving global config")
+		empty := ""
+		cachedDefaultRepo = &empty
+		return empty, errors.Wrap(err, "retrieving global config")
 	}
 	var defaultRepo string
 	if cfg != nil {
@@ -164,20 +174,26 @@ func GetDefaultRepo(cliValue string) (string, error) {
 		// retrieve the global config and use this value as a fallback
 		cfg, err := GetGlobalConfig()
 		if err != nil {
+			empty := ""
+			cachedDefaultRepo = &empty
 			return "", errors.Wrap(err, "retrieving global config")
 		}
 		if cfg != nil {
 			defaultRepo = cfg.DefaultRepo
 		}
 	}
-
+	cachedDefaultRepo = &defaultRepo
 	return defaultRepo, nil
 }
 
 func GetLocalCluster() (bool, error) {
+	if cachedLocalCluster != nil {
+		return *cachedLocalCluster, nil
+	}
 	cfg, err := GetConfigForKubectx()
 	localCluster := isDefaultLocal(kubecontext)
 	if err != nil {
+		cachedLocalCluster = &localCluster
 		return localCluster, errors.Wrap(err, "retrieving global config")
 	}
 
@@ -189,6 +205,7 @@ func GetLocalCluster() (bool, error) {
 		// if no value is set for this cluster, fall back to the global setting
 		globalCfg, err := GetGlobalConfig()
 		if err != nil {
+			cachedLocalCluster = &localCluster
 			return localCluster, errors.Wrap(err, "retrieving global config")
 		}
 		if globalCfg != nil && globalCfg.LocalCluster != nil {
@@ -196,7 +213,39 @@ func GetLocalCluster() (bool, error) {
 		}
 	}
 
+	cachedLocalCluster = &localCluster
 	return localCluster, nil
+}
+
+func GetInsecureRegistries() ([]string, error) {
+	if cachedInsecureRegistries != nil {
+		return *cachedInsecureRegistries, nil
+	}
+	cfg, err := GetConfigForKubectx()
+	registries := []string{}
+	if err != nil {
+		cachedInsecureRegistries = &registries
+		return registries, errors.Wrap(err, "retrieving global config")
+	}
+
+	if cfg != nil {
+		if cfg.InsecureRegistries != nil {
+			registries = cfg.InsecureRegistries
+		}
+	} else {
+		// if no value is set for this cluster, fall back to the global setting
+		globalCfg, err := GetGlobalConfig()
+		if err != nil {
+			cachedInsecureRegistries = &registries
+			return registries, errors.Wrap(err, "retrieving global config")
+		}
+		if globalCfg != nil && globalCfg.InsecureRegistries != nil {
+			registries = globalCfg.InsecureRegistries
+		}
+	}
+
+	cachedInsecureRegistries = &registries
+	return registries, nil
 }
 
 func isDefaultLocal(kubeContext string) bool {
