@@ -21,6 +21,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 )
 
@@ -153,7 +154,7 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	args = append(args, b.args...)
 
 	cmd := exec.CommandContext(ctx, "skaffold", args...)
-	cmd.Env = append(os.Environ(), b.env...)
+	cmd.Env = append(removeSkaffoldEnvVariables(os.Environ()), b.env...)
 	if b.stdin != nil {
 		cmd.Stdin = bytes.NewReader(b.stdin)
 	}
@@ -162,4 +163,19 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	}
 
 	return cmd
+}
+
+// removeSkaffoldEnvVariables makes sure Skaffold runs without
+// any env variable that might change its behaviour, such as
+// enabling caching.
+func removeSkaffoldEnvVariables(env []string) []string {
+	var clean []string
+
+	for _, value := range env {
+		if !strings.HasPrefix(value, "SKAFFOLD_") {
+			clean = append(clean, value)
+		}
+	}
+
+	return clean
 }
