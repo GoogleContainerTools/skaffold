@@ -48,7 +48,7 @@ func TestGetDependencies(t *testing.T) {
 	}{
 		{
 			stdout:       "BEGIN JIB JSON\n{\"build\":[],\"inputs\":[],\"ignore\":[]}",
-			expectedDeps: []string{},
+			expectedDeps: nil,
 		},
 		{
 			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\"],\"ignore\":[]}\n", dep1, dep2),
@@ -72,7 +72,7 @@ func TestGetDependencies(t *testing.T) {
 		},
 		{
 			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\"],\"ignore\":[\"%s\",\"%s\"]}\n", dep1, dep3, dep1, dep3),
-			expectedDeps: []string{},
+			expectedDeps: nil,
 		},
 		{
 			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\",\"%s\",\"%s\"],\"inputs\":[],\"ignore\":[\"%s\"]}\n", dep1, dep2, dep3, dep3SubPath),

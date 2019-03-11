@@ -98,7 +98,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 
 			deps, err := GetDependenciesGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{Project: "gradle-test"})
 			if test.err != nil {
-				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jibGradle dependencies: failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.0.2+): "+test.err.Error(), err.Error())
+				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jibGradle dependencies: initial Jib dependency refresh failed: failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.0.2+): "+test.err.Error(), err.Error())
 			} else {
 				testutil.CheckDeepEqual(t, test.expected, deps)
 			}

@@ -31,9 +31,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// filesTemplate contains fields parsed from Jib's JSON output
-type filesTemplate struct {
-	// Build lists paths to build definitions that trigger a call out to Jib to refresh the filesTemplate, as well as a rebuild, upon changing
+// pathMap contains fields parsed from Jib's JSON output
+type pathMap struct {
+	// Build lists paths to build definitions that trigger a call out to Jib to refresh the pathMap, as well as a rebuild, upon changing
 	Build []string
 
 	// Inputs lists paths to build dependencies that trigger a rebuild upon changing
@@ -45,8 +45,8 @@ type filesTemplate struct {
 
 // filesLists contains cached build/input dependencies
 type filesLists struct {
-	// FilesTemplate saves the most recent output of the Jib Skaffold files task/goal
-	FilesTemplate filesTemplate
+	// PathMap saves the most recent output of the Jib Skaffold files task/goal
+	PathMap pathMap
 
 	// BuildFileTimes keeps track of the last modification time of each build file
 	BuildFileTimes map[string]time.Time
@@ -57,8 +57,8 @@ var watchedFiles = map[string]filesLists{}
 
 // getDependencies returns a list of files to watch for changes to rebuild
 func getDependencies(cmd *exec.Cmd, projectName string) ([]string, error) {
-	dependencyList := []string{}
-	template := watchedFiles[projectName].FilesTemplate
+	var dependencyList []string
+	template := watchedFiles[projectName].PathMap
 	if len(template.Inputs) == 0 && len(template.Build) == 0 {
 		// Make sure build file modification time map is setup
 		if watchedFiles[projectName].BuildFileTimes == nil {
@@ -69,7 +69,7 @@ func getDependencies(cmd *exec.Cmd, projectName string) ([]string, error) {
 
 		// Refresh dependency list if empty
 		if err := refreshDependencyList(cmd, projectName); err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "initial Jib dependency refresh failed")
 		}
 	} else {
 		// Walk build files to check for changes
@@ -79,24 +79,24 @@ func getDependencies(cmd *exec.Cmd, projectName string) ([]string, error) {
 			}
 			return nil
 		}); err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to walk Jib build files for changes")
 		}
 	}
 
 	// Walk updated files to build dependency list
 	watched := watchedFiles[projectName]
-	if err := walkFiles(&watched.FilesTemplate.Inputs, &watched.FilesTemplate.Ignore, func(path string, info os.FileInfo) error {
+	if err := walkFiles(&watched.PathMap.Inputs, &watched.PathMap.Ignore, func(path string, info os.FileInfo) error {
 		dependencyList = append(dependencyList, path)
 		return nil
 	}); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to walk Jib input files to build dependency list")
 	}
-	if err := walkFiles(&watched.FilesTemplate.Build, &watched.FilesTemplate.Ignore, func(path string, info os.FileInfo) error {
+	if err := walkFiles(&watched.PathMap.Build, &watched.PathMap.Ignore, func(path string, info os.FileInfo) error {
 		dependencyList = append(dependencyList, path)
 		watched.BuildFileTimes[path] = info.ModTime()
 		return nil
 	}); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to walk Jib build files to build dependency list")
 	}
 
 	sort.Strings(dependencyList)
@@ -116,7 +116,7 @@ func refreshDependencyList(cmd *exec.Cmd, projectName string) error {
 			// Found Jib JSON header, next line is the JSON
 			files := watchedFiles[projectName]
 			line := strings.Replace(lines[i+1], "\\", "\\\\", -1)
-			if err := json.Unmarshal([]byte(line), &files.FilesTemplate); err != nil {
+			if err := json.Unmarshal([]byte(line), &files.PathMap); err != nil {
 				return err
 			}
 			watchedFiles[projectName] = files
