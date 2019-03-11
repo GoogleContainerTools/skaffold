@@ -31,6 +31,7 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, a *latest.Artif
 	builder.LocalDocker = b.localDocker
 	builder.KubeContext = b.kubeContext
 	builder.PushImages = b.pushImages
+	builder.PluginMode = false
 
 	opts := &config.SkaffoldOptions{
 		SkipTests: b.skipTests,

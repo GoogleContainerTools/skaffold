@@ -41,21 +41,24 @@ type Builder struct {
 	LocalDocker  docker.LocalDaemon
 	LocalCluster bool
 	PushImages   bool
+	PluginMode   bool
 	KubeContext  string
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Bazel.
 func NewBuilder() *Builder {
 	return &Builder{
-		PushImages: true,
+		PluginMode: true,
 	}
 }
 
 // Init stores skaffold options and the execution environment
 func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
-	if err := event.SetupRPCClient(opts); err != nil {
-		logrus.Warn("error establishing gRPC connection to skaffold process; events will not be handled correctly")
-		logrus.Warn(err.Error())
+	if b.PluginMode {
+		if err := event.SetupRPCClient(opts); err != nil {
+			logrus.Warn("error establishing gRPC connection to skaffold process; events will not be handled correctly")
+			logrus.Warn(err.Error())
+		}
 	}
 	b.opts = opts
 	b.env = env
