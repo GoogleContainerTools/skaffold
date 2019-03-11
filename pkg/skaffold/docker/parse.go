@@ -41,6 +41,24 @@ type from struct {
 	as    string
 }
 
+type destinationsBySourcePath map[string][]string
+
+func newdestinationsBySourcePath() destinationsBySourcePath {
+	return destinationsBySourcePath(make(map[string][]string))
+}
+
+func (d destinationsBySourcePath) put(sourcePath, dest string) {
+	if entry, ok := d[sourcePath]; ok {
+		d[sourcePath] = append(entry, dest)
+	} else {
+		d[sourcePath] = []string{dest}
+	}
+}
+
+func (d destinationsBySourcePath) toMap() map[string][]string {
+	return d
+}
+
 // RetrieveImage is overridden for unit testing
 var RetrieveImage = retrieveImage
 
@@ -162,20 +180,20 @@ func onbuildInstructions(nodes []*parser.Node) ([]*parser.Node, error) {
 	return obRes.AST.Children, nil
 }
 
-func copiedFiles(nodes []*parser.Node) ([][]string, error) {
-	var copied [][]string
+func copiedFiles(nodes []*parser.Node) (map[string][]string, error) {
+	copied := make(map[string][]string)
 
 	envs := make([]string, 0)
 	for _, node := range nodes {
 		switch node.Value {
 		case command.Add, command.Copy:
-			files, err := processCopy(node, envs)
+			dest, files, err := processCopy(node, envs)
 			if err != nil {
 				return nil, err
 			}
 
 			if len(files) > 0 {
-				copied = append(copied, files)
+				copied[dest] = files
 			}
 		case command.Env:
 			// one env command may define multiple variables
@@ -188,7 +206,7 @@ func copiedFiles(nodes []*parser.Node) ([][]string, error) {
 	return copied, nil
 }
 
-func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*string) ([]string, error) {
+func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*string) (map[string][]string, error) {
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "opening dockerfile: %s", absDockerfilePath)
@@ -217,15 +235,15 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 	return expandPaths(workspace, copied)
 }
 
-func expandPaths(workspace string, copied [][]string) ([]string, error) {
-	expandedPaths := make(map[string]bool)
-	for _, files := range copied {
+func expandPaths(workspace string, copied map[string][]string) (map[string][]string, error) {
+	destsBySourcePath := newdestinationsBySourcePath()
+	for dest, files := range copied {
 		matchesOne := false
 
 		for _, p := range files {
 			path := filepath.Join(workspace, p)
 			if _, err := os.Stat(path); err == nil {
-				expandedPaths[p] = true
+				destsBySourcePath.put(p, dest)
 				matchesOne = true
 				continue
 			}
@@ -244,7 +262,7 @@ func expandPaths(workspace string, copied [][]string) ([]string, error) {
 					return nil, fmt.Errorf("getting relative path of %s", f)
 				}
 
-				expandedPaths[rel] = true
+				destsBySourcePath.put(rel, dest)
 			}
 			matchesOne = true
 		}
@@ -254,13 +272,9 @@ func expandPaths(workspace string, copied [][]string) ([]string, error) {
 		}
 	}
 
-	var deps []string
-	for dep := range expandedPaths {
-		deps = append(deps, dep)
-	}
-	logrus.Debugf("Found dependencies for dockerfile: %v", deps)
+	logrus.Debugf("Found dependencies for dockerfile: %v", destsBySourcePath.toMap())
 
-	return deps, nil
+	return destsBySourcePath.toMap(), nil
 }
 
 // NormalizeDockerfilePath returns the absolute path to the dockerfile.
@@ -277,6 +291,7 @@ func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 
 // GetDependencies finds the sources dependencies for the given docker artifact.
 // All paths are relative to the workspace.
+// todo(corneliusweig) should return map[string][]string
 func GetDependencies(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string) ([]string, error) {
 	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
 	if err != nil {
@@ -311,7 +326,7 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 
 	// Walk the workspace
 	files := make(map[string]bool)
-	for _, dep := range deps {
+	for dep, _ := range deps {
 		dep = filepath.Clean(dep)
 		absDep := filepath.Join(workspace, dep)
 
@@ -392,23 +407,22 @@ func retrieveImage(image string) (*v1.ConfigFile, error) {
 	return localDaemon.ConfigFile(context.Background(), image)
 }
 
-func processCopy(value *parser.Node, envs []string) ([]string, error) {
-	var copied []string
-
+func processCopy(value *parser.Node, envs []string) (destination string, copied []string, err error) {
 	slex := shell.NewLex('\\')
 	for {
 		// Skip last node, since it is the destination, and stop if we arrive at a comment
 		if value.Next.Next == nil || strings.HasPrefix(value.Next.Next.Value, "#") {
+			destination = value.Next.Value
 			break
 		}
 		src, err := slex.ProcessWord(value.Next.Value, envs)
 		if err != nil {
-			return nil, errors.Wrap(err, "processing word")
+			return "", nil, errors.Wrap(err, "processing word")
 		}
 		// If the --from flag is provided, we are dealing with a multi-stage dockerfile
 		// Adding a dependency from a different stage does not imply a source dependency
 		if hasMultiStageFlag(value.Flags) {
-			return nil, nil
+			return "", nil, nil
 		}
 		if !strings.HasPrefix(src, "http://") && !strings.HasPrefix(src, "https://") {
 			copied = append(copied, src)
@@ -419,7 +433,7 @@ func processCopy(value *parser.Node, envs []string) ([]string, error) {
 		value = value.Next
 	}
 
-	return copied, nil
+	return
 }
 
 func hasMultiStageFlag(flags []string) bool {
