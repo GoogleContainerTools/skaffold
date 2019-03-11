@@ -39,6 +39,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // local sets any necessary defaults and then builds artifacts with bazel locally
@@ -66,9 +67,14 @@ func (b *Builder) local(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 		l = &latest.LocalBuild{}
 	}
 	b.LocalBuild = l
-	if l.Push != nil {
-		b.PushImages = *l.Push
+	var pushImages bool
+	if b.LocalBuild.Push == nil {
+		pushImages = !localCluster
+		logrus.Debugf("push value not present, defaulting to %t because localCluster is %t", pushImages, localCluster)
+	} else {
+		pushImages = *b.LocalBuild.Push
 	}
+	b.PushImages = pushImages
 	for _, a := range artifacts {
 		if err := setArtifact(a); err != nil {
 			return nil, errors.Wrapf(err, "setting artifact %s", a.ImageName)
