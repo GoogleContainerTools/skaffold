@@ -110,10 +110,15 @@ func refreshDependencyList(cmd *exec.Cmd, projectName string) error {
 		return errors.Wrap(err, "failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.0.2+)")
 	}
 
+	// Search for Jib's output JSON. Jib's Maven/Gradle output takes the following form:
+	// ...
+	// BEGIN JIB JSON
+	// {"build":["/paths","/to","/buildFiles"],"inputs":["/paths","/to","/inputs"],"ignore":["/paths","/to","/ignore"]}
+	// ...
+	// To parse the output, search for "BEGIN JIB JSON", then unmarshal the next line into the pathMap struct.
 	lines := util.NonEmptyLines(stdout)
 	for i := range lines {
 		if lines[i] == "BEGIN JIB JSON" {
-			// Found Jib JSON header, next line is the JSON
 			files := watchedFiles[projectName]
 			line := strings.Replace(lines[i+1], "\\", "\\\\", -1)
 			if err := json.Unmarshal([]byte(line), &files.PathMap); err != nil {
