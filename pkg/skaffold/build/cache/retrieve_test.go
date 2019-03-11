@@ -198,8 +198,9 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 		{
 			name: "image in cache, prebuilt image exists, remote cluster",
 			targetImageExistsRemotely: true,
-			artifact:                  &latest.Artifact{ImageName: "image"},
-			hashes:                    map[string]string{"image": "hash"},
+			api:      &testutil.FakeAPIClient{},
+			artifact: &latest.Artifact{ImageName: "image"},
+			hashes:   map[string]string{"image": "hash"},
 			cache: &Cache{
 				useCache:      true,
 				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
@@ -221,6 +222,7 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			name:     "image in cache, prebuilt image exists, local cluster",
 			artifact: &latest.Artifact{ImageName: "image"},
 			hashes:   map[string]string{"image": "hash"},
+			api:      &testutil.FakeAPIClient{},
 			cache: &Cache{
 				useCache:      true,
 				localCluster:  true,
@@ -242,8 +244,9 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 		{
 			name: "push specified, local cluster, image exists remotely",
 			targetImageExistsRemotely: true,
-			artifact:                  &latest.Artifact{ImageName: "image"},
-			hashes:                    map[string]string{"image": "hash"},
+			api:      &testutil.FakeAPIClient{},
+			artifact: &latest.Artifact{ImageName: "image"},
+			hashes:   map[string]string{"image": "hash"},
 			cache: &Cache{
 				useCache:      true,
 				needsPush:     true,
@@ -427,6 +430,7 @@ func TestRetrievePrebuiltImage(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			test.cache.client = docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil)
 			actual, err := test.cache.retrievePrebuiltImage(test.imageDetails)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
 		})
