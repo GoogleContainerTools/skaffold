@@ -131,7 +131,7 @@ func (c *Cache) retrieveCachedArtifactDetails(ctx context.Context, a *latest.Art
 			needsRebuild: true,
 		}, nil
 	}
-	hashTag := fmt.Sprintf("%s:%s", a.ImageName, hash)
+	hashTag := HashTag(a)
 	il, err := c.imageLocation(ctx, imageDetails, hashTag)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting artifact details for %s", a.ImageName)
@@ -215,6 +215,9 @@ func needsRetag(d *imageLocation) bool {
 }
 
 func (c *Cache) retrievePrebuiltImage(details ImageDetails) (string, error) {
+	if c.client == nil {
+		return "", nil
+	}
 	for _, r := range c.imageList {
 		if r.ID == details.ID && details.ID != "" {
 			if len(r.RepoTags) == 0 {
@@ -253,4 +256,8 @@ func imageExistsRemotely(image, digest string) bool {
 		return false
 	}
 	return d == digest
+}
+
+func HashTag(a *latest.Artifact) string {
+	return fmt.Sprintf("%s:%s", a.ImageName, a.WorkspaceHash)
 }

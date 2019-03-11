@@ -17,12 +17,11 @@ limitations under the License.
 package integration
 
 import (
-	"context"
 	"testing"
 	"time"
 
-	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -35,38 +34,23 @@ func TestDev(t *testing.T) {
 	defer Run(t, "testdata/dev", "rm", "foo")
 
 	// Run skaffold build first to fail quickly on a build failure
-	RunSkaffold(t, "build", "testdata/dev", "", "", nil)
+	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
 
 	ns, client, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	cancel := make(chan bool)
-	go RunSkaffoldNoFail(cancel, "dev", "testdata/dev", ns.Name, "", nil)
-	defer func() { cancel <- true }()
+	stop := skaffold.Dev().InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+	defer stop()
 
-	deployName := "test-dev"
-	if err := kubernetesutil.WaitForDeploymentToStabilize(context.Background(), client, ns.Name, deployName, 10*time.Minute); err != nil {
-		t.Fatalf("Timed out waiting for deployment to stabilize")
-	}
-
-	dep, err := client.AppsV1().Deployments(ns.Name).Get(deployName, meta_v1.GetOptions{})
-	if err != nil {
-		t.Fatalf("Could not find dep: %s %s", ns.Name, deployName)
-	}
+	dep := client.GetDeployment("test-dev")
 
 	// Make a change to foo so that dev is forced to delete the Deployment and redeploy
 	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
 	// Make sure the old Deployment and the new Deployment are different
-	err = wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
-		newDep, err := client.AppsV1().Deployments(ns.Name).Get(deployName, meta_v1.GetOptions{})
-		if err != nil {
-			return false, nil
-		}
-
+	err := wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
+		newDep := client.GetDeployment("test-dev")
 		return dep.GetGeneration() != newDep.GetGeneration(), nil
 	})
-	if err != nil {
-		t.Fatalf("redeploy failed: %v", err)
-	}
+	testutil.CheckError(t, false, err)
 }

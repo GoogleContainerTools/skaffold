@@ -80,9 +80,12 @@ func (c *Cache) CacheArtifacts(ctx context.Context, artifacts []*latest.Artifact
 		if digest == "" {
 			logrus.Debugf("couldn't get image digest for %s, will try to cache just image id (expected with a local cluster)", tags[a.ImageName])
 		}
-		id, err := c.client.ImageID(ctx, tags[a.ImageName])
-		if err != nil {
-			logrus.Debugf("couldn't get image id for %s", tags[a.ImageName])
+		var id string
+		if c.client != nil {
+			id, err = c.client.ImageID(ctx, tags[a.ImageName])
+			if err != nil {
+				logrus.Debugf("couldn't get image id for %s", tags[a.ImageName])
+			}
 		}
 		if id == "" && digest == "" {
 			logrus.Debugf("both image id and digest are empty for %s, skipping caching", tags[a.ImageName])
@@ -98,6 +101,10 @@ func (c *Cache) CacheArtifacts(ctx context.Context, artifacts []*latest.Artifact
 
 // Check local daemon for img digest
 func (c *Cache) retrieveImageDigest(ctx context.Context, img string) (string, error) {
+	if c.client == nil {
+		// Check for remote digest
+		return docker.RemoteDigest(img)
+	}
 	repoDigest, err := c.client.RepoDigest(ctx, img)
 	if err != nil {
 		return docker.RemoteDigest(img)

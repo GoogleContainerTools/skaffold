@@ -23,10 +23,19 @@ import (
 	"net/http/httptest"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 )
+
+func CheckContains(t *testing.T, expected, actual string) {
+	t.Helper()
+	if !strings.Contains(actual, expected) {
+		t.Errorf("expected output %s not found in output: %s", expected, actual)
+		return
+	}
+}
 
 func CheckDeepEqual(t *testing.T, expected, actual interface{}) {
 	t.Helper()

@@ -75,13 +75,16 @@ func NewCache(ctx context.Context, builder build.Builder, opts *skafconfig.Skaff
 	}
 	client, err := newDockerCilent()
 	if err != nil {
-		logrus.Warnf("Error retrieving local daemon client, not using skaffold cache: %v", err)
-		return noCache
+		logrus.Warnf("Error retrieving local daemon client; local daemon will not be used as a cache: %v", err)
 	}
-	imageList, err := client.ImageList(ctx, types.ImageListOptions{})
-	if err != nil {
-		logrus.Warn("Unable to get list of images from local docker daemon, won't be checked for cache.")
+	var imageList []types.ImageSummary
+	if client != nil {
+		imageList, err = client.ImageList(ctx, types.ImageListOptions{})
+		if err != nil {
+			logrus.Warn("Unable to get list of images from local docker daemon, won't be checked for cache.")
+		}
 	}
+
 	lc, err := localCluster()
 	if err != nil {
 		logrus.Warn("Unable to determine if using a local cluster, cache may not work.")
