@@ -246,11 +246,10 @@ func NewCmdCompletion(out io.Writer) *cobra.Command {
 	return completionCmd
 }
 
-func runCompletionZsh(out io.Writer) error {
+func runCompletionZsh(out io.Writer) {
 	io.WriteString(out, zshInitialization)
 	buf := new(bytes.Buffer)
 	rootCmd.GenBashCompletion(buf)
 	out.Write(buf.Bytes())
 	io.WriteString(out, zshTail)
-	return nil
 }

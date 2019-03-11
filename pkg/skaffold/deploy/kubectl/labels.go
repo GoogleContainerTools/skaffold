@@ -46,7 +46,7 @@ func newLabelsSetter(labels map[string]string) *labelsSetter {
 }
 
 func (r *labelsSetter) Matches(key string) bool {
-	return "metadata" == key
+	return key == "metadata"
 }
 
 func (r *labelsSetter) NewValue(old interface{}) (bool, interface{}) {
