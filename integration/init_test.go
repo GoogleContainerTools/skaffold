@@ -17,9 +17,6 @@ limitations under the License.
 package integration
 
 import (
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -31,28 +28,26 @@ func TestInit(t *testing.T) {
 	}
 
 	tests := []struct {
-		name             string
-		dir              string
-		args             []string
-		skipSkaffoldYaml bool
+		name string
+		dir  string
+		args []string
 	}{
 		{
 			name: "getting-started",
-			dir:  "../examples/getting-started",
+			dir:  "testdata/init/hello",
 		},
 		{
 			name: "microservices",
-			dir:  "../examples/microservices",
+			dir:  "testdata/init/microservices",
 			args: []string{
 				"-a", "leeroy-app/Dockerfile=gcr.io/k8s-skaffold/leeroy-app",
 				"-a", "leeroy-web/Dockerfile=gcr.io/k8s-skaffold/leeroy-web",
 			},
 		},
 		{
-			name:             "compose",
-			dir:              "../examples/compose",
-			args:             []string{"--compose-file", "docker-compose.yaml"},
-			skipSkaffoldYaml: true,
+			name: "compose",
+			dir:  "testdata/init/compose",
+			args: []string{"--compose-file", "docker-compose.yaml"},
 		},
 	}
 
@@ -61,48 +56,10 @@ func TestInit(t *testing.T) {
 			ns, _, deleteNs := SetupNamespace(t)
 			defer deleteNs()
 
-			if !test.skipSkaffoldYaml {
-				oldYamlPath := filepath.Join(test.dir, "skaffold.yaml")
-				oldYaml, err := removeOldSkaffoldYaml(oldYamlPath)
-				if err != nil {
-					t.Fatalf("removing original skaffold.yaml: %s", err)
-				}
-				defer restoreOldSkaffoldYaml(oldYaml, oldYamlPath)
-			}
-
-			generatedYaml := "skaffold.yaml.out"
-
 			initArgs := append([]string{"--force"}, test.args...)
-			skaffold.Init(initArgs...).InDir(test.dir).WithConfig(generatedYaml).RunOrFail(t)
+			skaffold.Init(initArgs...).InDir(test.dir).WithConfig("skaffold.yaml.out").RunOrFail(t)
 
-			skaffold.Run().InDir(test.dir).WithConfig(generatedYaml).InNs(ns.Name).RunOrFail(t)
-
-			err := os.Remove(filepath.Join(test.dir, generatedYaml))
-			if err != nil {
-				t.Errorf("error removing generated skaffold yaml: %v", err)
-			}
+			skaffold.Run().InDir(test.dir).WithConfig("skaffold.yaml.out").InNs(ns.Name).RunOrFail(t)
 		})
 	}
-}
-
-func removeOldSkaffoldYaml(path string) ([]byte, error) {
-	skaffoldYaml, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	if err = os.Remove(path); err != nil {
-		return nil, err
-	}
-	return skaffoldYaml, nil
-}
-
-func restoreOldSkaffoldYaml(contents []byte, path string) error {
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	if _, err := f.Write(contents); err != nil {
-		return err
-	}
-	return nil
 }
