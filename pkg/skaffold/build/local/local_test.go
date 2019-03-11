@@ -234,7 +234,7 @@ func TestLocalRun(t *testing.T) {
 			})
 			l := Builder{
 				cfg:         &latest.LocalBuild{},
-				localDocker: docker.NewLocalDaemon(&test.api, nil, false),
+				localDocker: docker.NewLocalDaemon(&test.api, nil, false, map[string]bool{}),
 				pushImages:  test.pushImages,
 			}
 

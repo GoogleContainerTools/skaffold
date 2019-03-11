@@ -40,16 +40,17 @@ type ArtifactCache map[string]ImageDetails
 
 // Cache holds any data necessary for accessing the cache
 type Cache struct {
-	artifactCache  ArtifactCache
-	client         docker.LocalDaemon
-	builder        build.Builder
-	imageList      []types.ImageSummary
-	cacheFile      string
-	useCache       bool
-	isLocalBuilder bool
-	pushImages     bool
-	localCluster   bool
-	prune          bool
+	artifactCache      ArtifactCache
+	client             docker.LocalDaemon
+	builder            build.Builder
+	imageList          []types.ImageSummary
+	cacheFile          string
+	insecureRegistries map[string]bool
+	useCache           bool
+	isLocalBuilder     bool
+	pushImages         bool
+	localCluster       bool
+	prune              bool
 }
 
 var (
@@ -58,10 +59,11 @@ var (
 	remoteDigest    = docker.RemoteDigest
 	newDockerClient = docker.NewAPIClient
 	noCache         = &Cache{}
+	emptyMap        = map[string]bool{}
 )
 
 // NewCache returns the current state of the cache
-func NewCache(builder build.Builder, opts *skafconfig.SkaffoldOptions, cfg latest.BuildConfig) *Cache {
+func NewCache(builder build.Builder, opts *skafconfig.SkaffoldOptions, cfg latest.BuildConfig, insecureRegistries map[string]bool) *Cache {
 	if !opts.CacheArtifacts {
 		return noCache
 	}
@@ -75,7 +77,7 @@ func NewCache(builder build.Builder, opts *skafconfig.SkaffoldOptions, cfg lates
 		logrus.Warnf("Error retrieving artifact cache, not using skaffold cache: %v", err)
 		return noCache
 	}
-	client, err := newDockerClient(opts.Prune())
+	client, err := newDockerClient(opts.Prune(), insecureRegistries)
 	if err != nil {
 		logrus.Warnf("Error retrieving local daemon client; local daemon will not be used as a cache: %v", err)
 	}
@@ -93,16 +95,17 @@ func NewCache(builder build.Builder, opts *skafconfig.SkaffoldOptions, cfg lates
 	}
 	pushImages := cfg.LocalBuild != nil && cfg.LocalBuild.Push != nil && *cfg.LocalBuild.Push
 	return &Cache{
-		artifactCache:  cache,
-		cacheFile:      cf,
-		useCache:       opts.CacheArtifacts,
-		client:         client,
-		builder:        builder,
-		pushImages:     pushImages,
-		isLocalBuilder: cfg.LocalBuild != nil,
-		imageList:      imageList,
-		localCluster:   lc,
-		prune:          opts.Prune(),
+		artifactCache:      cache,
+		cacheFile:          cf,
+		useCache:           opts.CacheArtifacts,
+		client:             client,
+		builder:            builder,
+		pushImages:         pushImages,
+		isLocalBuilder:     cfg.LocalBuild != nil,
+		imageList:          imageList,
+		localCluster:       lc,
+		prune:              opts.Prune(),
+		insecureRegistries: insecureRegistries,
 	}
 }
 

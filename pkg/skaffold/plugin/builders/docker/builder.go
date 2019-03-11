@@ -50,6 +50,7 @@ type Builder struct {
 	PluginMode  bool
 	KubeContext string
 	builtImages []string
+	insecureRegistries map[string]bool
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Docker.
@@ -70,6 +71,7 @@ func (b *Builder) Init(ctx *runcontext.RunContext) error {
 	}
 	b.opts = ctx.Opts
 	b.env = ctx.Cfg.Build.ExecutionEnvironment
+	b.insecureRegistries = ctx.InsecureRegistries
 	logrus.Debugf("initialized plugin with %+v", ctx)
 	return nil
 }
@@ -86,7 +88,7 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.
 	if err := setArtifact(artifact); err != nil {
 		return nil, err
 	}
-	paths, err := docker.GetDependencies(ctx, artifact.Workspace, artifact.DockerArtifact.DockerfilePath, artifact.DockerArtifact.BuildArgs)
+	paths, err := docker.GetDependencies(ctx, artifact.Workspace, artifact.DockerArtifact.DockerfilePath, artifact.DockerArtifact.BuildArgs, b.insecureRegistries)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting dependencies for %s", artifact.ImageName)
 	}
@@ -131,6 +133,7 @@ func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.
 			return nil, err
 		}
 	}
+<<<<<<< HEAD
 	runCtx := &runcontext.RunContext{
 		Opts: b.opts,
 		Cfg: &latest.Pipeline{
@@ -142,6 +145,9 @@ func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.
 		},
 	}
 	return gcb.NewBuilder(runCtx).Build(ctx, out, tags, artifacts)
+=======
+	return gcb.NewBuilder(g, b.opts.SkipTests, b.insecureRegistries).Build(ctx, out, tags, artifacts)
+>>>>>>> Add support for pushing/pulling to insecure registries
 }
 
 func setArtifact(artifact *latest.Artifact) error {

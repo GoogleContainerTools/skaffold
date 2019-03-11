@@ -71,7 +71,8 @@ func checkTag(name string) error {
 }
 
 // NewTag returns a new Tag representing the given name, according to the given strictness.
-func NewTag(name string, strict Strictness) (Tag, error) {
+func NewTag(name string, opts ...Option) (Tag, error) {
+	opt := makeOptions(opts...)
 	base := name
 	tag := ""
 
@@ -87,13 +88,13 @@ func NewTag(name string, strict Strictness) (Tag, error) {
 	// even when not being strict.
 	// If we are being strict, we want to validate the tag regardless in case
 	// it's empty.
-	if tag != "" || strict == StrictValidation {
+	if tag != "" || opt.strict {
 		if err := checkTag(tag); err != nil {
 			return Tag{}, err
 		}
 	}
 
-	repo, err := NewRepository(base, strict)
+	repo, err := NewRepository(base, opts...)
 	if err != nil {
 		return Tag{}, err
 	}

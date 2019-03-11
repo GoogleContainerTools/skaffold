@@ -34,13 +34,14 @@ import (
 type Builder struct {
 	cfg *latest.LocalBuild
 
-	localDocker  docker.LocalDaemon
-	localCluster bool
-	pushImages   bool
-	prune        bool
-	skipTests    bool
-	kubeContext  string
-	builtImages  []string
+	localDocker        docker.LocalDaemon
+	localCluster       bool
+	pushImages         bool
+	prune              bool
+	skipTests          bool
+	kubeContext        string
+	builtImages        []string
+	insecureRegistries map[string]string
 }
 
 // NewBuilder returns an new instance of a local Builder.
@@ -64,13 +65,14 @@ func NewBuilder(ctx *runcontext.RunContext) (*Builder, error) {
 	}
 
 	return &Builder{
-		cfg:          ctx.Cfg.Build.LocalBuild,
-		kubeContext:  ctx.KubeContext,
-		localDocker:  localDocker,
-		localCluster: localCluster,
-		pushImages:   pushImages,
-		skipTests:    ctx.Opts.SkipTests,
-		prune:        ctx.Opts.Prune(),
+		cfg:                ctx.Cfg.Build.LocalBuild,
+		kubeContext:        ctx.KubeContext,
+		localDocker:        localDocker,
+		localCluster:       localCluster,
+		pushImages:         pushImages,
+		skipTests:          ctx.Opts.SkipTests,
+		prune:              ctx.Opts.Prune(),
+		insecureRegistries: ctx.InsecureRegistries,
 	}, nil
 }
 

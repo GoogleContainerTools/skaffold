@@ -325,13 +325,14 @@
   version = "v0.2.0"
 
 [[projects]]
-  digest = "1:f25f0ba1157af718c239c7ea37fae2d5d1b929f9227c56d410ebc6ac8c957a6d"
+  digest = "1:0b516206c255951d752ad60a7a75a5835ad24bc1e3e91230d19523c472002564"
   name = "github.com/google/go-containerregistry"
   packages = [
     "pkg/authn",
     "pkg/name",
     "pkg/v1",
     "pkg/v1/partial",
+    "pkg/v1/random",
     "pkg/v1/remote",
     "pkg/v1/remote/transport",
     "pkg/v1/stream",
@@ -340,7 +341,7 @@
     "pkg/v1/v1util",
   ]
   pruneopts = "NUT"
-  revision = "16d6587b5a87052c861b30443f31c588a319e8d4"
+  revision = "7df26a6795af089f2cac25d48650d07960b2b33d"
 
 [[projects]]
   digest = "1:f4f203acd8b11b8747bdcd91696a01dbc95ccb9e2ca2db6abf81c3a4f5e950ce"
@@ -1334,6 +1335,7 @@
     "github.com/docker/docker/registry",
     "github.com/docker/go-connections/tlsconfig",
     "github.com/golang/glog",
+    "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/ptypes",
     "github.com/golang/protobuf/ptypes/empty",
@@ -1342,11 +1344,13 @@
     "github.com/google/go-containerregistry/pkg/authn",
     "github.com/google/go-containerregistry/pkg/name",
     "github.com/google/go-containerregistry/pkg/v1",
+    "github.com/google/go-containerregistry/pkg/v1/random",
     "github.com/google/go-containerregistry/pkg/v1/remote",
     "github.com/google/go-containerregistry/pkg/v1/tarball",
     "github.com/google/go-github/github",
     "github.com/grpc-ecosystem/grpc-gateway/runtime",
     "github.com/grpc-ecosystem/grpc-gateway/utilities",
+    "github.com/hashicorp/go-hclog",
     "github.com/hashicorp/go-plugin",
     "github.com/karrick/godirwalk",
     "github.com/krishicks/yaml-patch",
