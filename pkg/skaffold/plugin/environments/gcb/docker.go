@@ -24,7 +24,7 @@ import (
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 )
 
-func (b *Builder) dockerBuildSteps(artifact *latest.DockerArtifact, tag string) []*cloudbuild.BuildStep {
+func (b *Builder) dockerBuildSteps(artifact *latest.DockerArtifact, tags []string) []*cloudbuild.BuildStep {
 	var steps []*cloudbuild.BuildStep
 
 	for _, cacheFrom := range artifact.CacheFrom {
@@ -35,7 +35,11 @@ func (b *Builder) dockerBuildSteps(artifact *latest.DockerArtifact, tag string) 
 		})
 	}
 
-	args := append([]string{"build", "--tag", tag, "-f", artifact.DockerfilePath})
+	args := []string{"build"}
+	for _, t := range tags {
+		args = append(args, []string{"--tag", t}...)
+	}
+	args = append(args, []string{"-f", artifact.DockerfilePath}...)
 	args = append(args, docker.GetBuildArgs(artifact)...)
 	args = append(args, ".")
 

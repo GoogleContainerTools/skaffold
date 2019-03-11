@@ -1,5 +1,3 @@
-// +build integration
-
 /*
 Copyright 2019 The Skaffold Authors
 
@@ -19,50 +17,40 @@ limitations under the License.
 package integration
 
 import (
-	"context"
 	"testing"
 	"time"
 
-	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func TestDev(t *testing.T) {
-	ns, deleteNs := SetupNamespace(t)
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
+	defer Run(t, "testdata/dev", "rm", "foo")
+
+	// Run skaffold build first to fail quickly on a build failure
+	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
+
+	ns, client, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	Run(t, "examples/test-dev-job", "touch", "foo")
-	defer Run(t, "examples/test-dev-job", "rm", "foo")
+	stop := skaffold.Dev().InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+	defer stop()
 
-	cancel := make(chan bool)
-	go RunSkaffoldNoFail(cancel, "dev", "examples/test-dev-job", ns.Name, "", nil)
-	defer func() { cancel <- true }()
+	dep := client.GetDeployment("test-dev")
 
-	jobName := "test-dev-job"
-	if err := kubernetesutil.WaitForJobToStabilize(context.Background(), Client, ns.Name, jobName, 10*time.Minute); err != nil {
-		t.Fatalf("Timed out waiting for job to stabilize")
-	}
+	// Make a change to foo so that dev is forced to delete the Deployment and redeploy
+	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
-	job, err := Client.BatchV1().Jobs(ns.Name).Get(jobName, meta_v1.GetOptions{})
-	if err != nil {
-		t.Fatalf("Could not find job: %s %s", ns.Name, jobName)
-	}
-
-	time.Sleep(5 * time.Second)
-
-	// Make a change to foo so that dev is forced to delete the job and redeploy
-	Run(t, "examples/test-dev-job", "sh", "-c", "echo bar > foo")
-
-	// Make sure the UID of the old Job and the UID of the new Job is different
-	err = wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
-		newJob, err := Client.BatchV1().Jobs(ns.Name).Get(job.Name, meta_v1.GetOptions{})
-		if err != nil {
-			return false, nil
-		}
-		return job.GetUID() != newJob.GetUID(), nil
+	// Make sure the old Deployment and the new Deployment are different
+	err := wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
+		newDep := client.GetDeployment("test-dev")
+		return dep.GetGeneration() != newDep.GetGeneration(), nil
 	})
-	if err != nil {
-		t.Fatalf("redeploy failed: %v", err)
-	}
+	testutil.CheckError(t, false, err)
 }

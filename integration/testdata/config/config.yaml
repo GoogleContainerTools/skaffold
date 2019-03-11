@@ -1,0 +1,5 @@
+global:
+  default-repo: global-repository
+kubeContexts:
+- kube-context: test-context
+  default-repo: context-local-repository

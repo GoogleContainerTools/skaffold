@@ -1,5 +1,3 @@
-// +build integration
-
 /*
 Copyright 2019 The Skaffold Authors
 
@@ -19,29 +17,20 @@ limitations under the License.
 package integration
 
 import (
-	"bytes"
-	"os/exec"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 )
 
 func TestFix(t *testing.T) {
-	ns, deleteNs := SetupNamespace(t)
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	fixCmd := exec.Command("skaffold", "fix", "-f", "skaffold.yaml")
-	fixCmd.Dir = "testdata/fix"
-	out, err := util.RunCmdOut(fixCmd)
-	if err != nil {
-		t.Fatalf("testing error: %v", err)
-	}
+	out := skaffold.Fix().WithConfig("skaffold.yaml").InDir("testdata/fix").RunOrFail(t)
 
-	runCmd := exec.Command("skaffold", "run", "--namespace", ns.Name, "-f", "-")
-	runCmd.Dir = "testdata/fix"
-	runCmd.Stdin = bytes.NewReader(out)
-
-	if err := util.RunCmd(runCmd); err != nil {
-		t.Fatalf("testing error: %v", err)
-	}
+	skaffold.Run().WithConfig("-").InDir("testdata/fix").InNs(ns.Name).WithStdin(out).RunOrFail(t)
 }

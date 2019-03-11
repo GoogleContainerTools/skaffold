@@ -86,15 +86,17 @@ install: $(GO_FILES) $(BUILD_DIR)
 
 .PHONY: integration
 integration: install
-	go test -v -tags integration $(REPOPATH)/integration -timeout 10m \
-		--remote=$(REMOTE_INTEGRATION) \
-		--gcp-project=$(GCP_PROJECT) \
-		--gke-cluster-name=$(GKE_CLUSTER_NAME) \
-		--gke-zone=$(GKE_ZONE)
+ifeq ($(REMOTE_INTEGRATION),true)
+	gcloud container clusters get-credentials \
+		$(GKE_CLUSTER_NAME) \
+		--zone $(GKE_ZONE) \
+		--project $(GCP_PROJECT)
+endif
+	REMOTE_INTEGRATION=$(REMOTE_INTEGRATION) go test -v $(REPOPATH)/integration -timeout 10m
 
 .PHONY: coverage
 coverage: $(BUILD_DIR)
-	go test -coverprofile=$(BUILD_DIR)/coverage.txt -covermode=atomic ./...
+	go test -short -coverprofile=$(BUILD_DIR)/coverage.txt -covermode=atomic ./...
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION

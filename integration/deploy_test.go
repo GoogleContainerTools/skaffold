@@ -1,5 +1,3 @@
-// +build integration
-
 /*
 Copyright 2019 The Skaffold Authors
 
@@ -19,35 +17,24 @@ limitations under the License.
 package integration
 
 import (
-	"context"
-	"time"
-
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"testing"
 
-	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestDeploy(t *testing.T) {
-	ns, deleteNs := SetupNamespace(t)
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	ns, client, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	RunSkaffold(t, "deploy", "examples/kustomize", ns.Name, "", nil, "--images", "index.docker.io/library/busybox:1")
+	skaffold.Deploy("--images", "index.docker.io/library/busybox:1").InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
 
-	depName := "kustomize-test"
-	if err := kubernetesutil.WaitForDeploymentToStabilize(context.Background(), Client, ns.Name, depName, 10*time.Minute); err != nil {
-		t.Fatalf("Timed out waiting for deployment to stabilize")
-	}
+	dep := client.GetDeployment("kustomize-test")
+	testutil.CheckDeepEqual(t, "index.docker.io/library/busybox:1", dep.Spec.Template.Spec.Containers[0].Image)
 
-	dep, err := Client.AppsV1().Deployments(ns.Name).Get(depName, meta_v1.GetOptions{})
-	if err != nil {
-		t.Fatalf("Could not find deployment: %s %s", ns.Name, depName)
-	}
-
-	if dep.Spec.Template.Spec.Containers[0].Image != "index.docker.io/library/busybox:1" {
-		t.Fatalf("Wrong image name in kustomized deployment: %s", dep.Spec.Template.Spec.Containers[0].Image)
-	}
-
-	RunSkaffold(t, "delete", "examples/kustomize", ns.Name, "", nil)
+	skaffold.Delete().InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
 }

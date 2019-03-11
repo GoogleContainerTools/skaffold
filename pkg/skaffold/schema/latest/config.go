@@ -21,7 +21,7 @@ import (
 	yamlpatch "github.com/krishicks/yaml-patch"
 )
 
-const Version string = "skaffold/v1beta6"
+const Version string = "skaffold/v1beta7"
 
 // NewSkaffoldPipeline creates a SkaffoldPipeline
 func NewSkaffoldPipeline() util.VersionedConfig {
@@ -211,7 +211,10 @@ type GoogleCloudBuild struct {
 }
 
 // LocalDir configures how Kaniko mounts sources directly via an `emptyDir` volume.
-type LocalDir struct{}
+type LocalDir struct {
+	// InitImage is the image used to run init container which mounts kaniko context.
+	InitImage string `yaml:"initImage,omitempty"`
+}
 
 // KanikoBuildContext contains the different fields available to specify
 // a Kaniko build context.
@@ -413,6 +416,9 @@ type HelmRelease struct {
 
 	// SkipBuildDependencies should build dependencies be skipped.
 	SkipBuildDependencies bool `yaml:"skipBuildDependencies,omitempty"`
+
+	// UseHelmSecrets instructs skaffold to use secrets plugin on deployment.
+	UseHelmSecrets bool `yaml:"useHelmSecrets,omitempty"`
 
 	// Overrides are key-value pairs.
 	// If present, Skaffold will build a Helm `values` file that overrides

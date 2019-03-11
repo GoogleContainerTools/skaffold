@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 
@@ -59,4 +60,41 @@ deploy:
 	buf, err := generateSkaffoldPipeline(k8sConfigs, dockerfilePairs)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expectedYaml, string(buf))
+}
+
+func TestPrintAnalyzeJSON(t *testing.T) {
+	tests := []struct {
+		name        string
+		dockerfiles []string
+		images      []string
+		expected    string
+	}{
+		{
+			name:        "dockerfile and image",
+			dockerfiles: []string{"Dockerfile", "Dockerfile_2"},
+			images:      []string{"image1", "image2"},
+			expected:    "{\"dockerfiles\":[\"Dockerfile\",\"Dockerfile_2\"],\"images\":[\"image1\",\"image2\"]}",
+		},
+		{
+			name:     "no dockerfile",
+			images:   []string{"image1", "image2"},
+			expected: "{\"images\":[\"image1\",\"image2\"]}",
+		},
+		{
+			name:        "no images",
+			dockerfiles: []string{"Dockerfile", "Dockerfile_2"},
+			expected:    "{\"dockerfiles\":[\"Dockerfile\",\"Dockerfile_2\"]}",
+		},
+		{
+			name:     "no dockerfiles or images",
+			expected: "{}",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			out := bytes.NewBuffer([]byte{})
+			err := printAnalyzeJSON(out, test.dockerfiles, test.images)
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, out.String())
+		})
+	}
 }

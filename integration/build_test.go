@@ -1,5 +1,3 @@
-// +build integration
-
 /*
 Copyright 2019 The Skaffold Authors
 
@@ -19,13 +17,16 @@ limitations under the License.
 package integration
 
 import (
-	"os/exec"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 )
 
 func TestBuild(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
 	tests := []struct {
 		description string
 		dir         string
@@ -55,13 +56,7 @@ func TestBuild(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			buildCmd := exec.Command("skaffold", append([]string{"build"}, test.args...)...)
-			buildCmd.Dir = test.dir
-
-			out, err := util.RunCmdOut(buildCmd)
-			if err != nil {
-				t.Fatalf("testing error: %v, %s", err, out)
-			}
+			skaffold.Build(test.args...).InDir(test.dir).RunOrFail(t)
 		})
 	}
 }
