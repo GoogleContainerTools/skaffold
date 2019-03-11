@@ -95,6 +95,11 @@ func (h *TempDir) Write(file, content string) *TempDir {
 	return h.failIfErr(ioutil.WriteFile(h.Path(file), []byte(content), os.ModePerm))
 }
 
+// Rename renames a file from oldname to newname
+func (h *TempDir) Rename(oldName, newName string) *TempDir {
+	return h.failIfErr(os.Rename(h.Path(oldName), h.Path(newName)))
+}
+
 // List lists all the files in the temp directory.
 func (h *TempDir) List() ([]string, error) {
 	var files []string

@@ -100,7 +100,7 @@ func TestApplyProfiles(t *testing.T) {
 							GoogleCloudBuild: &latest.GoogleCloudBuild{
 								ProjectID:   "my-project",
 								DockerImage: "gcr.io/cloud-builders/docker",
-								MavenImage:  "gcr.io/cloud-builders/mvn",
+								MavenImage:  "gcr.io/cloud-builders/mvn@sha256:0ec283f2ee1ab1d2ac779dcbb24bddaa46275aec7088cc10f2926b4ea0fcac9b",
 								GradleImage: "gcr.io/cloud-builders/gradle",
 							},
 						},

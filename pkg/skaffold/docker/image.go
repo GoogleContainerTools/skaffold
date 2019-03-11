@@ -31,7 +31,6 @@ import (
 	"github.com/docker/docker/pkg/progress"
 	"github.com/docker/docker/pkg/streamformatter"
 	"github.com/docker/docker/pkg/term"
-	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -50,8 +49,7 @@ type LocalDaemon interface {
 	Tag(ctx context.Context, image, ref string) error
 	ImageID(ctx context.Context, ref string) (string, error)
 	RepoDigest(ctx context.Context, ref string) (string, error)
-	FindTaggedImageByDigest(ctx context.Context, id string) (string, error)
-	FindImageByID(ctx context.Context, id string) (string, error)
+	ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error)
 	ImageExists(ctx context.Context, ref string) bool
 }
 
@@ -289,21 +287,9 @@ func (l *localDaemon) ImageID(ctx context.Context, ref string) (string, error) {
 	return image.ID, nil
 }
 
-// FindImageByID returns the name of an image with the given id
-func (l *localDaemon) FindImageByID(ctx context.Context, id string) (string, error) {
-	resp, err := l.apiClient.ImageList(ctx, types.ImageListOptions{})
-	if err != nil {
-		return "", errors.Wrap(err, "listing images")
-	}
-	for _, r := range resp {
-		if r.ID == id {
-			if len(r.RepoTags) == 0 {
-				return "", nil
-			}
-			return r.RepoTags[0], nil
-		}
-	}
-	return "", nil
+// ImageList returns a list of all images in the local daemon
+func (l *localDaemon) ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error) {
+	return l.apiClient.ImageList(ctx, options)
 }
 
 // RepoDigest returns a repo digest for the given ref
@@ -321,30 +307,6 @@ func (l *localDaemon) RepoDigest(ctx context.Context, ref string) (string, error
 func (l *localDaemon) ImageExists(ctx context.Context, ref string) bool {
 	_, _, err := l.apiClient.ImageInspectWithRaw(ctx, ref)
 	return err == nil
-}
-
-// FindTaggedImageByDigest returns the name of a tagged image with the given digest, if one exists
-func (l *localDaemon) FindTaggedImageByDigest(ctx context.Context, digest string) (string, error) {
-	resp, err := l.apiClient.ImageList(ctx, types.ImageListOptions{})
-	if err != nil {
-		return "", errors.Wrap(err, "listing images")
-	}
-	for _, r := range resp {
-		for _, d := range r.RepoDigests {
-			if getDigest(d) == digest {
-				// Return a tagged version of this image, since we can't retag an image in the image@sha256: format
-				if len(r.RepoTags) > 0 {
-					return r.RepoTags[0], nil
-				}
-			}
-		}
-	}
-	return "", nil
-}
-
-func getDigest(img string) string {
-	ref, _ := name.NewDigest(img, name.WeakValidation)
-	return ref.DigestStr()
 }
 
 // GetBuildArgs gives the build args flags for docker build.

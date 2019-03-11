@@ -1,5 +1,3 @@
-// +build integration
-
 /*
 Copyright 2019 The Skaffold Authors
 
@@ -20,6 +18,7 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -27,31 +26,34 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/golang/protobuf/ptypes/empty"
-
 	"google.golang.org/grpc"
 )
 
 var (
-	retries       = 10
-	maxErrors     = 5
+	retries       = 20
 	numLogEntries = 5
 	waitTime      = 1 * time.Second
 )
 
 func TestEventLog(t *testing.T) {
-	addr := ":12345"
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
+	defer Run(t, "testdata/dev", "rm", "foo")
+
+	// Run skaffold build first to fail quickly on a build failure
+	RunSkaffold(t, "build", "testdata/dev", "", "", nil)
+
 	// start a skaffold dev loop on an example
-	ns, deleteNs := SetupNamespace(t)
+	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	Run(t, "examples/test-dev-job", "touch", "foo")
-	defer Run(t, "examples/test-dev-job", "rm", "foo")
-
 	cancel := make(chan bool)
-	go RunSkaffoldNoFail(cancel, "dev", "examples/test-dev-job", ns.Name, "", nil, "--rpc-port", addr)
+	addr := "12345"
+	go RunSkaffoldNoFail(cancel, "dev", "testdata/dev", ns.Name, "", nil, "--rpc-port", addr)
 	defer func() { cancel <- true }()
-
-	time.Sleep(5 * time.Second) // give skaffold time to start up
 
 	// start a grpc client and make sure we can connect properly
 	var conn *grpc.ClientConn
@@ -59,31 +61,35 @@ func TestEventLog(t *testing.T) {
 	var client proto.SkaffoldServiceClient
 	attempts := 0
 	for {
-		conn, err = grpc.Dial(addr, grpc.WithInsecure())
+		conn, err = grpc.Dial(fmt.Sprintf(":%s", addr), grpc.WithInsecure())
 		if err != nil {
 			t.Logf("unable to establish skaffold grpc connection: retrying...")
+			attempts++
+			if attempts == retries {
+				t.Fatalf("error establishing skaffold grpc connection")
+			}
+
 			time.Sleep(waitTime)
-			attempts = attempts + 1
-		} else {
-			defer conn.Close()
-			client = proto.NewSkaffoldServiceClient(conn)
-			break
+			continue
 		}
-		if attempts == retries {
-			t.Fatalf("error establishing skaffold grpc connection")
-		}
+		defer conn.Close()
+
+		client = proto.NewSkaffoldServiceClient(conn)
+		break
 	}
 
 	ctx, ctxCancel := context.WithCancel(context.Background())
 	defer ctxCancel()
-	var stream proto.SkaffoldService_EventLogClient
 
+	var stream proto.SkaffoldService_EventLogClient
+	attempts = 0
 	for {
 		stream, err = client.EventLog(ctx)
 		if err == nil {
 			break
-		} else if retries < retries {
-			retries = retries + 1
+		}
+		if attempts < retries {
+			attempts++
 			t.Logf("waiting for connection...")
 			time.Sleep(3 * time.Second)
 			continue
@@ -92,7 +98,7 @@ func TestEventLog(t *testing.T) {
 	}
 
 	// read a preset number of entries from the event log
-	logEntries := make([]*proto.LogEntry, 0)
+	var logEntries []*proto.LogEntry
 	entriesReceived := 0
 	for {
 		entry, err := stream.Recv()
@@ -101,7 +107,7 @@ func TestEventLog(t *testing.T) {
 		}
 		if entry != nil {
 			logEntries = append(logEntries, entry)
-			entriesReceived = entriesReceived + 1
+			entriesReceived++
 		}
 		if entriesReceived == numLogEntries {
 			break
@@ -111,11 +117,11 @@ func TestEventLog(t *testing.T) {
 	for _, entry := range logEntries {
 		switch entry.Event.GetEventType().(type) {
 		case *proto.Event_MetaEvent:
-			metaEntries = metaEntries + 1
+			metaEntries++
 		case *proto.Event_BuildEvent:
-			buildEntries = buildEntries + 1
+			buildEntries++
 		case *proto.Event_DeployEvent:
-			deployEntries = deployEntries + 1
+			deployEntries++
 		default:
 		}
 	}
@@ -126,19 +132,25 @@ func TestEventLog(t *testing.T) {
 }
 
 func TestGetState(t *testing.T) {
-	addr := ":12345"
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
+	defer Run(t, "testdata/dev", "rm", "foo")
+
+	// Run skaffold build first to fail quickly on a build failure
+	RunSkaffold(t, "build", "testdata/dev", "", "", nil)
+
 	// start a skaffold dev loop on an example
-	ns, deleteNs := SetupNamespace(t)
+	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	Run(t, "examples/test-dev-job", "touch", "foo")
-	defer Run(t, "examples/test-dev-job", "rm", "foo")
-
+	// start a skaffold dev loop on an example
 	cancel := make(chan bool)
-	go RunSkaffoldNoFail(cancel, "dev", "examples/test-dev-job", ns.Name, "", nil, "--rpc-port", addr)
+	addr := "12345"
+	go RunSkaffoldNoFail(cancel, "dev", "testdata/dev", ns.Name, "", nil, "--rpc-port", addr)
 	defer func() { cancel <- true }()
-
-	time.Sleep(5 * time.Second) // give skaffold time to start up
 
 	// start a grpc client and make sure we can connect properly
 	var conn *grpc.ClientConn
@@ -146,29 +158,43 @@ func TestGetState(t *testing.T) {
 	var client proto.SkaffoldServiceClient
 	attempts := 0
 	for {
-		conn, err = grpc.Dial(addr, grpc.WithInsecure())
+		conn, err = grpc.Dial(fmt.Sprintf(":%s", addr), grpc.WithInsecure())
 		if err != nil {
 			t.Logf("unable to establish skaffold grpc connection: retrying...")
+			attempts++
+			if attempts == retries {
+				t.Fatalf("error establishing skaffold grpc connection")
+			}
+
 			time.Sleep(waitTime)
-			attempts = attempts + 1
-		} else {
-			defer conn.Close()
-			client = proto.NewSkaffoldServiceClient(conn)
-			break
+			continue
 		}
-		if attempts == retries {
-			t.Fatalf("error establishing skaffold grpc connection")
-		}
+		defer conn.Close()
+
+		client = proto.NewSkaffoldServiceClient(conn)
+		break
 	}
 
 	ctx, ctxCancel := context.WithCancel(context.Background())
 	defer ctxCancel()
 
 	// retrieve the state and make sure everything looks correct
-	r, err := client.GetState(ctx, &empty.Empty{})
-	if err != nil {
-		t.Fatalf("error retrieving state: %v", err)
+	var r *proto.State
+	attempts = 0
+	for {
+		r, err = client.GetState(ctx, &empty.Empty{})
+		if err == nil {
+			break
+		}
+		if attempts < retries {
+			attempts++
+			t.Logf("waiting for connection...")
+			time.Sleep(3 * time.Second)
+			continue
+		}
+		t.Fatalf("error retrieving state: %v\n", err)
 	}
+
 	for _, v := range r.BuildState.Artifacts {
 		testutil.CheckDeepEqual(t, event.Complete, v)
 	}

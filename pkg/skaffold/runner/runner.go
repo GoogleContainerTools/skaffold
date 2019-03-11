@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -293,21 +294,26 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*la
 
 // imageTags generates tags for a list of artifacts
 func (r *SkaffoldRunner) imageTags(out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
+	start := time.Now()
+	color.Default.Fprintln(out, "Generating tags...")
+
 	tags := make(tag.ImageTags, len(artifacts))
 
 	for _, artifact := range artifacts {
 		imageName := artifact.ImageName
-		color.Default.Fprintf(out, "Generating Tag for [%s]...\n", imageName)
+		color.Default.Fprintf(out, " - %s -> ", imageName)
 
 		tag, err := r.Tagger.GenerateFullyQualifiedImageName(artifact.Workspace, imageName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "generating tag for %s", imageName)
 		}
 
-		logrus.Debugf("Tag for %s: %s\n", imageName, tag)
+		fmt.Fprintln(out, tag)
+
 		tags[imageName] = tag
 	}
 
+	color.Default.Fprintln(out, "Tags generated in", time.Since(start))
 	return tags, nil
 }
 
@@ -318,7 +324,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 		return nil, errors.Wrap(err, "generating tag")
 	}
 
-	artifactCache := build.NewCache(r.Builder, r.opts, r.needsPush)
+	artifactCache := build.NewCache(ctx, r.Builder, r.opts, r.needsPush)
 	artifactsToBuild, res := artifactCache.RetrieveCachedArtifacts(ctx, out, artifacts)
 	bRes, err := r.Build(ctx, out, tags, artifactsToBuild)
 	if err != nil {
