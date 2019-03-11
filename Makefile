@@ -33,7 +33,6 @@ BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
 VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
 COMMIT = $(shell git rev-parse HEAD)
-BASE_URL ?= https://skaffold.dev
 VERSION ?= $(shell git describe --always --tags --dirty)
 
 GO_GCFLAGS := "all=-trimpath=${PWD}"
@@ -179,29 +178,13 @@ submit-release-trigger:
 
 #utilities for skaffold site - not used anywhere else
 
-.PHONY: docs-controller-image
-docs-controller-image:
-	docker build -t gcr.io/$(GCP_PROJECT)/docs-controller -f deploy/webhook/Dockerfile .
-
-
 .PHONY: preview-docs
-preview-docs: start-docs-preview clean-docs-preview
-
-.PHONY: docs-preview-image
-docs-preview-image:
-	docker build -t skaffold-docs-previewer -f deploy/webhook/Dockerfile --target runtime_deps .
-
-.PHONY: start-docs-preview
-start-docs-preview:	docs-preview-image
-	docker run --rm -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/preview.sh
+preview-docs:
+	./deploy/docs/local-preview.sh hugo serve -D --bind=0.0.0.0
 
 .PHONY: build-docs-preview
-build-docs-preview:	docs-preview-image
-	docker run --rm -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/build.sh
-
-.PHONY: clean-docs-preview
-clean-docs-preview: docs-preview-image
-	docker run --rm -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/clean.sh
+build-docs-preview:
+	./deploy/docs/local-preview.sh hugo --baseURL=https://skaffold.dev
 
 # schema generation
 
