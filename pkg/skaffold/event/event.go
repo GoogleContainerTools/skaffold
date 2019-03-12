@@ -73,15 +73,19 @@ func (ev *eventHandler) logEvent(entry proto.LogEntry) {
 }
 
 func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error {
+	c := make(chan proto.LogEntry)
+
 	ev.logLock.Lock()
+
 	for _, entry := range ev.eventLog {
 		if err := callback(&entry); err != nil {
 			return err
 		}
 	}
-	ev.logLock.Unlock()
-	c := make(chan proto.LogEntry)
 	ev.RegisterListener(c)
+
+	ev.logLock.Unlock()
+
 	var entry proto.LogEntry
 	for {
 		entry = <-c
