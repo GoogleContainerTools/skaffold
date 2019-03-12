@@ -377,6 +377,14 @@ func TestGetDependencies(t *testing.T) {
 			fetched:     []string{"golang:onbuild"},
 		},
 		{
+			description: "onbuild with dockerignore",
+			dockerfile:  onbuild,
+			workspace:   ".",
+			ignore:      "bar\ndocker/*",
+			expected:    []string{".dot", "Dockerfile", "file", "server.go", "test.conf", "worker.go"},
+			fetched:     []string{"golang:onbuild"},
+		},
+		{
 			description: "onbuild error",
 			dockerfile:  onbuildError,
 			workspace:   ".",
