@@ -76,16 +76,15 @@ func getDependencies(cmd *exec.Cmd, projectName string) ([]string, error) {
 		if err := refreshDependencyList(&files, cmd); err != nil {
 			return nil, errors.Wrap(err, "initial Jib dependency refresh failed")
 		}
-	} else {
+
+	} else if err := walkFiles(&template.Build, &template.Ignore, func(path string, info os.FileInfo) error {
 		// Walk build files to check for changes
-		if err := walkFiles(&template.Build, &template.Ignore, func(path string, info os.FileInfo) error {
-			if val, ok := files.BuildFileTimes[path]; !ok || info.ModTime() != val {
-				return refreshDependencyList(&files, cmd)
-			}
-			return nil
-		}); err != nil {
-			return nil, errors.Wrap(err, "failed to walk Jib build files for changes")
+		if val, ok := files.BuildFileTimes[path]; !ok || info.ModTime() != val {
+			return refreshDependencyList(&files, cmd)
 		}
+		return nil
+	}); err != nil {
+		return nil, errors.Wrap(err, "failed to walk Jib build files for changes")
 	}
 
 	// Walk updated files to build dependency list
