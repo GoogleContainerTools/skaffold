@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
@@ -69,7 +70,7 @@ func newStatusServer(originalPort int) (func() error, error) {
 	if originalPort == -1 {
 		return func() error { return nil }, nil
 	}
-	port := util.GetAvailablePort(originalPort)
+	port := util.GetAvailablePort(originalPort, &sync.Map{})
 	if port != originalPort && originalPort != constants.DefaultRPCPort {
 		logrus.Warnf("provided port %d already in use: using %d instead", originalPort, port)
 	}

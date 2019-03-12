@@ -23,6 +23,7 @@ import (
 	"io"
 	"os/exec"
 	"strconv"
+	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -45,6 +46,9 @@ type PortForwarder struct {
 
 	// forwardedPods is a map of portForwardEntry.key() (string) -> portForwardEntry
 	forwardedPods map[string]*portForwardEntry
+
+	// forwardedPorts serves as a synchronized set of ports we've forwarded.
+	forwardedPorts *sync.Map
 }
 
 type portForwardEntry struct {
@@ -69,7 +73,6 @@ type kubectlForwarder struct{}
 var (
 	// For testing
 	retrieveAvailablePort = util.GetAvailablePort
-	isPortAvailable       = util.IsPortAvailable
 )
 
 // Forward port-forwards a pod using kubectl port-forward
@@ -121,11 +124,12 @@ func (*kubectlForwarder) Terminate(p *portForwardEntry) {
 // NewPortForwarder returns a struct that tracks and port-forwards pods as they are created and modified
 func NewPortForwarder(out io.Writer, podSelector PodSelector, namespaces []string) *PortForwarder {
 	return &PortForwarder{
-		Forwarder:     &kubectlForwarder{},
-		output:        out,
-		podSelector:   podSelector,
-		namespaces:    namespaces,
-		forwardedPods: make(map[string]*portForwardEntry),
+		Forwarder:      &kubectlForwarder{},
+		output:         out,
+		podSelector:    podSelector,
+		namespaces:     namespaces,
+		forwardedPods:  make(map[string]*portForwardEntry),
+		forwardedPorts: &sync.Map{},
 	}
 }
 
@@ -225,7 +229,7 @@ func (p *PortForwarder) getCurrentEntry(pod *v1.Pod, c v1.Container, port v1.Con
 	}
 
 	// retrieve an open port on the host
-	entry.localPort = int32(retrieveAvailablePort(int(port.ContainerPort)))
+	entry.localPort = int32(retrieveAvailablePort(int(port.ContainerPort), p.forwardedPorts))
 	return entry
 }
 
@@ -248,7 +252,7 @@ func (p *PortForwarder) forward(ctx context.Context, entry *portForwardEntry) er
 
 // Key is an identifier for the lock on a port during the skaffold dev cycle.
 func (p *portForwardEntry) key() string {
-	return fmt.Sprintf("%s-%d", p.containerName, p.port)
+	return fmt.Sprintf("%s-%s-%s-%d", p.containerName, p.podName, p.namespace, p.port)
 }
 
 // String is a utility function that returns the port forward entry as a user-readable string

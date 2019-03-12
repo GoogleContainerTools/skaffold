@@ -19,6 +19,7 @@ package util
 import (
 	"fmt"
 	"net"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 )
@@ -29,21 +30,25 @@ import (
 // If not, return a random port, which hopefully won't collide with any future containers
 
 // See https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt,
-func GetAvailablePort(port int) int {
-	if IsPortAvailable(port) {
+func GetAvailablePort(port int, forwardedPorts *sync.Map) int {
+	if isPortAvailable(port, forwardedPorts) {
+		forwardedPorts.Store(port, true)
 		return port
 	}
 
 	// try the next 10 ports after the provided one
-	for port = 0; port < 10; port++ {
-		if IsPortAvailable(port) {
+	for i := 0; i < 10; i++ {
+		port++
+		if isPortAvailable(port, forwardedPorts) {
 			logrus.Debugf("found open port: %d", port)
+			forwardedPorts.Store(port, true)
 			return port
 		}
 	}
 
 	for port = 4503; port <= 4533; port++ {
-		if IsPortAvailable(port) {
+		if isPortAvailable(port, forwardedPorts) {
+			forwardedPorts.Store(port, true)
 			return port
 		}
 	}
@@ -55,10 +60,15 @@ func GetAvailablePort(port int) int {
 	if err != nil {
 		return -1
 	}
-	return l.Addr().(*net.TCPAddr).Port
+	p := l.Addr().(*net.TCPAddr).Port
+	forwardedPorts.Store(p, true)
+	return p
 }
 
-func IsPortAvailable(p int) bool {
+func isPortAvailable(p int, forwardedPorts *sync.Map) bool {
+	if _, ok := forwardedPorts.Load(p); ok {
+		return false
+	}
 	l, err := net.Listen("tcp", fmt.Sprintf(":%d", p))
 	if l != nil {
 		defer l.Close()
