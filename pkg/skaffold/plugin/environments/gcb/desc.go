@@ -19,6 +19,7 @@ package gcb
 import (
 	"fmt"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -28,7 +29,12 @@ import (
 )
 
 func (b *Builder) buildDescription(artifact *latest.Artifact, tag, bucket, object string) (*cloudbuild.Build, error) {
-	steps, err := b.buildSteps(artifact, tag)
+	tags := []string{tag}
+	if artifact.WorkspaceHash != "" {
+		tags = append(tags, build.HashTag(artifact))
+	}
+
+	steps, err := b.buildSteps(artifact, tags)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +48,7 @@ func (b *Builder) buildDescription(artifact *latest.Artifact, tag, bucket, objec
 			},
 		},
 		Steps:  steps,
-		Images: []string{tag},
+		Images: tags,
 		Options: &cloudbuild.BuildOptions{
 			DiskSizeGb:  b.DiskSizeGb,
 			MachineType: b.MachineType,
@@ -51,28 +57,29 @@ func (b *Builder) buildDescription(artifact *latest.Artifact, tag, bucket, objec
 	}, nil
 }
 
-func (b *Builder) buildSteps(artifact *latest.Artifact, tag string) ([]*cloudbuild.BuildStep, error) {
+func (b *Builder) buildSteps(artifact *latest.Artifact, tags []string) ([]*cloudbuild.BuildStep, error) {
 	switch {
 	case artifact.BuilderPlugin != nil:
-		return b.pluginBuildSteps(artifact, tag)
+		return b.pluginBuildSteps(artifact, tags)
 	case artifact.DockerArtifact != nil:
-		return b.dockerBuildSteps(artifact.DockerArtifact, tag), nil
+		return b.dockerBuildSteps(artifact.DockerArtifact, tags), nil
 
 	case artifact.BazelArtifact != nil:
 		return nil, errors.New("skaffold can't build a bazel artifact with Google Cloud Build")
 
+		// TODO: build multiple tagged images with jib in GCB (priyawadhwa@)
 	case artifact.JibMavenArtifact != nil:
-		return b.jibMavenBuildSteps(artifact.JibMavenArtifact, tag), nil
+		return b.jibMavenBuildSteps(artifact.JibMavenArtifact, tags[0]), nil
 
 	case artifact.JibGradleArtifact != nil:
-		return b.jibGradleBuildSteps(artifact.JibGradleArtifact, tag), nil
+		return b.jibGradleBuildSteps(artifact.JibGradleArtifact, tags[0]), nil
 
 	default:
 		return nil, fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 	}
 }
 
-func (b *Builder) pluginBuildSteps(artifact *latest.Artifact, tag string) ([]*cloudbuild.BuildStep, error) {
+func (b *Builder) pluginBuildSteps(artifact *latest.Artifact, tags []string) ([]*cloudbuild.BuildStep, error) {
 	switch artifact.BuilderPlugin.Name {
 	case constants.DockerBuilderPluginName:
 		var da *latest.DockerArtifact
@@ -83,7 +90,7 @@ func (b *Builder) pluginBuildSteps(artifact *latest.Artifact, tag string) ([]*cl
 			da = &latest.DockerArtifact{}
 		}
 		defaults.SetDefaultDockerArtifact(da)
-		return b.dockerBuildSteps(da, tag), nil
+		return b.dockerBuildSteps(da, tags), nil
 	default:
 		return nil, errors.Errorf("the '%s' builder is not supported", artifact.BuilderPlugin.Name)
 	}
