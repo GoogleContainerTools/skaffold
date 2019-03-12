@@ -25,10 +25,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-
-	"github.com/golang/protobuf/ptypes"
 )
 
 const (
@@ -63,10 +62,33 @@ func (ev *eventHandler) RegisterListener(listener chan proto.LogEntry) {
 }
 
 func (ev *eventHandler) logEvent(entry proto.LogEntry) {
+	ev.logLock.Lock()
+
 	for _, c := range ev.listeners {
 		c <- entry
 	}
 	ev.eventLog = append(ev.eventLog, entry)
+
+	ev.logLock.Unlock()
+}
+
+func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error {
+	ev.logLock.Lock()
+	for _, entry := range ev.eventLog {
+		if err := callback(&entry); err != nil {
+			return err
+		}
+	}
+	ev.logLock.Unlock()
+	c := make(chan proto.LogEntry)
+	ev.RegisterListener(c)
+	var entry proto.LogEntry
+	for {
+		entry = <-c
+		if err := callback(&entry); err != nil {
+			return err
+		}
+	}
 }
 
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
@@ -175,13 +197,10 @@ func handle(event *proto.Event) {
 		return
 	}
 
-	ev.logLock.Lock()
 	ev.logEvent(*logEntry)
-	ev.logLock.Unlock()
 }
 
 func LogSkaffoldMetadata(info *version.Info) {
-	ev.logLock.Lock()
 	ev.logEvent(proto.LogEntry{
 		Timestamp: ptypes.TimestampNow(),
 		Event: &proto.Event{
@@ -192,5 +211,4 @@ func LogSkaffoldMetadata(info *version.Info) {
 			},
 		},
 	})
-	ev.logLock.Unlock()
 }
