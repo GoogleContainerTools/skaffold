@@ -23,10 +23,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 )
 
-// IsSupportedKubernetesFormat is for determining if a file under a glob pattern
+// IsSupportedKubernetesFileExtension is for determining if a file under a glob pattern
 // is deployable file format. It makes no attempt to check whether or not the file
 // is actually deployable or has the correct contents.
-func IsSupportedKubernetesFormat(n string) bool {
+func IsSupportedKubernetesFileExtension(n string) bool {
 	for _, s := range kubectl.ValidSuffixes {
 		if strings.HasSuffix(n, s) {
 			return true

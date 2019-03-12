@@ -23,7 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestIsSupportedKubernetesFormat(t *testing.T) {
+func TestIsSupportedKubernetesFileExtension(t *testing.T) {
 	tests := []struct {
 		name     string
 		filename string
@@ -52,7 +52,7 @@ func TestIsSupportedKubernetesFormat(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if IsSupportedKubernetesFormat(test.filename) != test.expected {
+			if IsSupportedKubernetesFileExtension(test.filename) != test.expected {
 				t.Errorf("expected to see %t for %s, but instead got %t", test.expected,
 					test.filename, !test.expected)
 			}

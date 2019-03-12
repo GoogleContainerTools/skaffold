@@ -94,7 +94,7 @@ func DoInit(out io.Writer, c Config) error {
 			logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", path)
 			return nil
 		}
-		if IsSupportedKubernetesFormat(path) {
+		if IsSupportedKubernetesFileExtension(path) {
 			potentialConfigs = append(potentialConfigs, path)
 			return nil
 		}
