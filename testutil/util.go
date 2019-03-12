@@ -23,21 +23,31 @@ import (
 	"net/http/httptest"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 )
 
-func CheckDeepEqualWithOptions(t *testing.T, options cmp.Options, expected, actual interface{}) {
+func CheckContains(t *testing.T, expected, actual string) {
 	t.Helper()
-	if diff := cmp.Diff(actual, expected, options); diff != "" {
+	if !strings.Contains(actual, expected) {
+		t.Errorf("expected output %s not found in output: %s", expected, actual)
+		return
+	}
+}
+
+func CheckDeepEqual(t *testing.T, expected, actual interface{}) {
+	t.Helper()
+	if diff := cmp.Diff(actual, expected); diff != "" {
 		t.Errorf("%T differ (-got, +want): %s", expected, diff)
 		return
 	}
 }
-func CheckDeepEqual(t *testing.T, expected, actual interface{}) {
+
+func CheckDeepEqualWithOptions(t *testing.T, options cmp.Options, expected, actual interface{}) {
 	t.Helper()
-	if diff := cmp.Diff(actual, expected); diff != "" {
+	if diff := cmp.Diff(actual, expected, options); diff != "" {
 		t.Errorf("%T differ (-got, +want): %s", expected, diff)
 		return
 	}
