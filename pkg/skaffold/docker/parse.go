@@ -115,18 +115,6 @@ func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) {
 	}
 }
 
-func fromInstructions(nodes []*parser.Node) []from {
-	var list []from
-
-	for _, node := range nodes {
-		if node.Value == command.From {
-			list = append(list, fromInstruction(node))
-		}
-	}
-
-	return list
-}
-
 func fromInstruction(node *parser.Node) from {
 	var as string
 	if next := node.Next.Next; next != nil && strings.ToLower(next.Value) == "as" && next.Next != nil {
@@ -139,42 +127,63 @@ func fromInstruction(node *parser.Node) from {
 	}
 }
 
-func onbuildInstructions(nodes []*parser.Node) ([]*parser.Node, error) {
-	var instructions []string
+func expandOnbuildInstructions(nodes []*parser.Node) ([]*parser.Node, error) {
+	onbuildNodesCache := map[string][]*parser.Node{}
+	var expandedNodes []*parser.Node
+	n := 0
+	for m, node := range nodes {
+		if node.Value == command.From {
+			from := fromInstruction(node)
 
-	stages := map[string]bool{}
-	for _, from := range fromInstructions(nodes) {
-		// Stage names are case insensitive
-		stages[strings.ToLower(from.as)] = true
+			// `scratch` is case insensitive
+			if strings.ToLower(from.image) == "scratch" {
+				continue
+			}
 
-		// `scratch` is case insensitive
-		if strings.ToLower(from.image) == "scratch" {
-			continue
-		}
+			// onbuild should immediately follow the from command
+			expandedNodes = append(expandedNodes, nodes[n:m+1]...)
+			n = m + 1
 
-		// Stage names are case insensitive
-		if _, found := stages[strings.ToLower(from.image)]; found {
-			continue
-		}
+			var onbuildNodes []*parser.Node
+			if ons, found := onbuildNodesCache[strings.ToLower(from.image)]; found {
+				onbuildNodes = ons
+			} else if ons, err := parseOnbuild(from.image); err == nil {
+				onbuildNodes = ons
+			} else {
+				return nil, errors.Wrap(err, "parsing ONBUILD instructions")
+			}
 
-		logrus.Debugf("Checking base image %s for ONBUILD triggers.", from.image)
+			// Stage names are case insensitive
+			onbuildNodesCache[strings.ToLower(from.as)] = nodes
+			onbuildNodesCache[strings.ToLower(from.image)] = nodes
 
-		// Image names are case SENSITIVE
-		img, err := RetrieveImage(from.image)
-		if err != nil {
-			logrus.Warnf("Error processing base image (%s) for ONBUILD triggers: %s. Dependencies may be incomplete.", from.image, err)
-			continue
-		}
-
-		if len(img.Config.OnBuild) > 0 {
-			logrus.Debugf("Found ONBUILD triggers %v in image %s", img.Config.OnBuild, from.image)
-			instructions = append(instructions, img.Config.OnBuild...)
+			expandedNodes = append(expandedNodes, onbuildNodes...)
 		}
 	}
+	expandedNodes = append(expandedNodes, nodes[n:]...)
 
-	obRes, err := parser.Parse(strings.NewReader(strings.Join(instructions, "\n")))
+	return expandedNodes, nil
+}
+
+func parseOnbuild(image string) ([]*parser.Node, error) {
+	logrus.Debugf("Checking base image %s for ONBUILD triggers.", image)
+
+	// Image names are case SENSITIVE
+	img, err := RetrieveImage(image)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing ONBUILD instructions")
+		logrus.Warnf("Error processing base image (%s) for ONBUILD triggers: %s. Dependencies may be incomplete.", image, err)
+		return []*parser.Node{}, nil
+	}
+
+	if len(img.Config.OnBuild) == 0 {
+		return []*parser.Node{}, nil
+	}
+
+	logrus.Debugf("Found ONBUILD triggers %v in image %s", img.Config.OnBuild, image)
+
+	obRes, err := parser.Parse(strings.NewReader(strings.Join(img.Config.OnBuild, "\n")))
+	if err != nil {
+		return nil, err
 	}
 
 	return obRes.AST.Children, nil
@@ -222,12 +231,12 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 
 	expandBuildArgs(dockerfileLines, buildArgs)
 
-	instructions, err := onbuildInstructions(dockerfileLines)
+	dockerfileLinesWithOnbuild, err := expandOnbuildInstructions(dockerfileLines)
 	if err != nil {
-		return nil, errors.Wrap(err, "listing ONBUILD instructions")
+		return nil, errors.Wrap(err, "expanding ONBUILD instructions")
 	}
 
-	copied, err := copiedFiles(append(instructions, dockerfileLines...))
+	copied, err := copiedFiles(dockerfileLinesWithOnbuild)
 	if err != nil {
 		return nil, errors.Wrap(err, "listing copied files")
 	}
