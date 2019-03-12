@@ -34,7 +34,8 @@ import (
 type server struct{}
 
 func (s *server) GetState(context.Context, *empty.Empty) (*proto.State, error) {
-	return ev.state, nil
+	state := ev.getState()
+	return &state, nil
 }
 
 func (s *server) EventLog(stream proto.SkaffoldService_EventLogServer) error {

@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestGetLogEvents(t *testing.T) {
@@ -54,4 +55,18 @@ func TestGetLogEvents(t *testing.T) {
 			t.Fatalf("Expected %d events, Got %d (Step: %d)", 2, received, step)
 		}
 	}
+}
+
+func TestGetState(t *testing.T) {
+	ev := &eventHandler{
+		state: emptyState(nil),
+	}
+
+	ev.stateLock.Lock()
+	ev.state.BuildState.Artifacts["img"] = Complete
+	ev.stateLock.Unlock()
+
+	state := ev.getState()
+
+	testutil.CheckDeepEqual(t, Complete, state.BuildState.Artifacts["img"])
 }

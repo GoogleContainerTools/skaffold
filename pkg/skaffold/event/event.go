@@ -18,6 +18,7 @@ package event
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 
@@ -49,7 +50,7 @@ type eventHandler struct {
 	eventLog []proto.LogEntry
 	logLock  sync.Mutex
 
-	state     *proto.State
+	state     proto.State
 	stateLock sync.Mutex
 
 	listeners []chan proto.LogEntry
@@ -57,6 +58,18 @@ type eventHandler struct {
 
 func (ev *eventHandler) RegisterListener(listener chan proto.LogEntry) {
 	ev.listeners = append(ev.listeners, listener)
+}
+
+func (ev *eventHandler) getState() proto.State {
+	ev.stateLock.Lock()
+	// Deep copy
+	buf, _ := json.Marshal(ev.state)
+	ev.stateLock.Unlock()
+
+	var state proto.State
+	json.Unmarshal(buf, &state)
+
+	return state
 }
 
 func (ev *eventHandler) logEvent(entry proto.LogEntry) {
@@ -95,6 +108,25 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error
 	}
 }
 
+func emptyState(build *latest.BuildConfig) proto.State {
+	builds := map[string]string{}
+	if build != nil {
+		for _, a := range build.Artifacts {
+			builds[a.ImageName] = NotStarted
+		}
+	}
+
+	return proto.State{
+		BuildState: &proto.BuildState{
+			Artifacts: builds,
+		},
+		DeployState: &proto.DeployState{
+			Status: NotStarted,
+		},
+		ForwardedPorts: make(map[string]*proto.PortEvent),
+	}
+}
+
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
 // It returns a shutdown callback for tearing down the grpc server, which the runner is responsible for calling.
 // This function can only be called once.
@@ -102,25 +134,8 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, opt
 	var err error
 	serverShutdown := func() error { return nil }
 	once.Do(func() {
-		builds := map[string]string{}
-		deploys := map[string]string{}
-		if build != nil {
-			for _, a := range build.Artifacts {
-				builds[a.ImageName] = NotStarted
-				deploys[a.ImageName] = NotStarted
-			}
-		}
-
 		ev = &eventHandler{
-			state: &proto.State{
-				BuildState: &proto.BuildState{
-					Artifacts: builds,
-				},
-				DeployState: &proto.DeployState{
-					Status: NotStarted,
-				},
-				ForwardedPorts: make(map[string]*proto.PortEvent),
-			},
+			state: emptyState(build),
 		}
 
 		if opts.EnableRPC {
