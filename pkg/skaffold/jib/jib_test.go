@@ -19,6 +19,7 @@ package jib
 import (
 	"fmt"
 	"os/exec"
+	"sync"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -82,7 +83,7 @@ func TestGetDependencies(t *testing.T) {
 
 	for _, test := range tests {
 		// Reset map between each test to ensure stdout is read each time
-		watchedFiles = map[string]filesLists{}
+		watchedFiles = sync.Map{}
 
 		t.Run("getDependencies", func(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)

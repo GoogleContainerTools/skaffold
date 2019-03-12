@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -53,29 +54,33 @@ type filesLists struct {
 }
 
 // watchedFiles maps from project name to watched files
-var watchedFiles = map[string]filesLists{}
+var watchedFiles = sync.Map{}
 
 // getDependencies returns a list of files to watch for changes to rebuild
 func getDependencies(cmd *exec.Cmd, projectName string) ([]string, error) {
 	var dependencyList []string
-	template := watchedFiles[projectName].PathMap
+	f, ok := watchedFiles.Load(projectName)
+	if !ok {
+		f = filesLists{}
+	}
+	files := f.(filesLists)
+
+	template := files.PathMap
 	if len(template.Inputs) == 0 && len(template.Build) == 0 {
 		// Make sure build file modification time map is setup
-		if watchedFiles[projectName].BuildFileTimes == nil {
-			watched := watchedFiles[projectName]
-			watched.BuildFileTimes = make(map[string]time.Time)
-			watchedFiles[projectName] = watched
+		if files.BuildFileTimes == nil {
+			files.BuildFileTimes = make(map[string]time.Time)
 		}
 
 		// Refresh dependency list if empty
-		if err := refreshDependencyList(cmd, projectName); err != nil {
+		if err := refreshDependencyList(&files, cmd); err != nil {
 			return nil, errors.Wrap(err, "initial Jib dependency refresh failed")
 		}
 	} else {
 		// Walk build files to check for changes
 		if err := walkFiles(&template.Build, &template.Ignore, func(path string, info os.FileInfo) error {
-			if val, ok := watchedFiles[projectName].BuildFileTimes[path]; !ok || info.ModTime() != val {
-				return refreshDependencyList(cmd, projectName)
+			if val, ok := files.BuildFileTimes[path]; !ok || info.ModTime() != val {
+				return refreshDependencyList(&files, cmd)
 			}
 			return nil
 		}); err != nil {
@@ -84,27 +89,29 @@ func getDependencies(cmd *exec.Cmd, projectName string) ([]string, error) {
 	}
 
 	// Walk updated files to build dependency list
-	watched := watchedFiles[projectName]
-	if err := walkFiles(&watched.PathMap.Inputs, &watched.PathMap.Ignore, func(path string, info os.FileInfo) error {
+	if err := walkFiles(&files.PathMap.Inputs, &files.PathMap.Ignore, func(path string, info os.FileInfo) error {
 		dependencyList = append(dependencyList, path)
 		return nil
 	}); err != nil {
 		return nil, errors.Wrap(err, "failed to walk Jib input files to build dependency list")
 	}
-	if err := walkFiles(&watched.PathMap.Build, &watched.PathMap.Ignore, func(path string, info os.FileInfo) error {
+	if err := walkFiles(&files.PathMap.Build, &files.PathMap.Ignore, func(path string, info os.FileInfo) error {
 		dependencyList = append(dependencyList, path)
-		watched.BuildFileTimes[path] = info.ModTime()
+		files.BuildFileTimes[path] = info.ModTime()
 		return nil
 	}); err != nil {
 		return nil, errors.Wrap(err, "failed to walk Jib build files to build dependency list")
 	}
 
+	// Store updated files list information
+	watchedFiles.Store(projectName, files)
+
 	sort.Strings(dependencyList)
 	return dependencyList, nil
 }
 
-// refreshDependencyList calls out to Jib to retrieve an up-to-date list of files/directories to watch
-func refreshDependencyList(cmd *exec.Cmd, projectName string) error {
+// refreshDependencyList calls out to Jib to update files.PathMap with the latest list of files/directories to watch.
+func refreshDependencyList(files *filesLists, cmd *exec.Cmd) error {
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return errors.Wrap(err, "failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.0.2+)")
@@ -119,12 +126,10 @@ func refreshDependencyList(cmd *exec.Cmd, projectName string) error {
 	lines := util.NonEmptyLines(stdout)
 	for i := range lines {
 		if lines[i] == "BEGIN JIB JSON" {
-			files := watchedFiles[projectName]
 			line := strings.Replace(lines[i+1], "\\", "\\\\", -1)
 			if err := json.Unmarshal([]byte(line), &files.PathMap); err != nil {
 				return err
 			}
-			watchedFiles[projectName] = files
 			return nil
 		}
 	}
