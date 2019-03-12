@@ -19,7 +19,7 @@ package gcb
 import (
 	"fmt"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -31,7 +31,7 @@ import (
 func (b *Builder) buildDescription(artifact *latest.Artifact, tag, bucket, object string) (*cloudbuild.Build, error) {
 	tags := []string{tag}
 	if artifact.WorkspaceHash != "" {
-		tags = append(tags, build.HashTag(artifact))
+		tags = append(tags, cache.HashTag(artifact))
 	}
 
 	steps, err := b.buildSteps(artifact, tags)
