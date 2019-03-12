@@ -18,6 +18,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -40,7 +41,7 @@ const (
 func main() {
 	//Setup the serve route to receive github events
 	http.HandleFunc("/receive", handleGithubEvent)
-
+	flag.Parse()
 	// Start the server
 	log.Println("Listening...")
 	log.Fatal(http.ListenAndServe(port, nil))
@@ -62,6 +63,7 @@ func handleGithubEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 func handlePullRequestEvent(event *github.PullRequestEvent) error {
+	log.Printf("handling pull request event: %+v", event)
 	// Cleanup any deployments if PR was merged or closed
 	if event.GetAction() == constants.ClosedAction {
 		return kubernetes.CleanupDeployment(event)
