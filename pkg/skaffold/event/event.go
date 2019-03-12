@@ -45,16 +45,14 @@ var (
 	cli proto.SkaffoldServiceClient // for plugin RPC connections
 )
 
-type eventLog []proto.LogEntry
-
 type eventHandler struct {
-	eventLog
+	eventLog []proto.LogEntry
+	logLock  sync.Mutex
+
+	state     *proto.State
+	stateLock sync.Mutex
 
 	listeners []chan proto.LogEntry
-	state     *proto.State
-
-	logLock   *sync.Mutex
-	stateLock *sync.Mutex
 }
 
 func (ev *eventHandler) RegisterListener(listener chan proto.LogEntry) {
@@ -86,9 +84,8 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error
 
 	ev.logLock.Unlock()
 
-	var entry proto.LogEntry
 	for {
-		entry = <-c
+		entry := <-c
 		if err := callback(&entry); err != nil {
 			return err
 		}
@@ -110,21 +107,19 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, opt
 				deploys[a.ImageName] = NotStarted
 			}
 		}
-		state := &proto.State{
-			BuildState: &proto.BuildState{
-				Artifacts: builds,
-			},
-			DeployState: &proto.DeployState{
-				Status: NotStarted,
-			},
-			ForwardedPorts: make(map[string]*proto.PortEvent),
-		}
+
 		ev = &eventHandler{
-			eventLog:  eventLog{},
-			state:     state,
-			logLock:   &sync.Mutex{},
-			stateLock: &sync.Mutex{},
+			state: &proto.State{
+				BuildState: &proto.BuildState{
+					Artifacts: builds,
+				},
+				DeployState: &proto.DeployState{
+					Status: NotStarted,
+				},
+				ForwardedPorts: make(map[string]*proto.PortEvent),
+			},
 		}
+
 		if opts.EnableRPC {
 			serverShutdown, err = newStatusServer(opts.RPCPort)
 			if err != nil {
