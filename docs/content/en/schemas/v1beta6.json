@@ -1042,12 +1042,6 @@
           "x-intellij-html-description": "should build dependencies be skipped.",
           "default": "false"
         },
-        "useHelmSecrets": {
-          "type": "boolean",
-          "description": "instructs skaffold to use secrets plugin on deployment.",
-          "x-intellij-html-description": "instructs skaffold to use secrets plugin on deployment.",
-          "default": "false"
-        },
         "values": {
           "additionalProperties": {
             "type": "string"
@@ -1090,7 +1084,6 @@
         "wait",
         "recreatePods",
         "skipBuildDependencies",
-        "useHelmSecrets",
         "overrides",
         "packaged",
         "imageStrategy"
