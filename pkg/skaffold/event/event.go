@@ -75,14 +75,17 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error
 
 	ev.logLock.Lock()
 
-	for _, entry := range ev.eventLog {
+	oldEvents := make([]proto.LogEntry, len(ev.eventLog))
+	copy(oldEvents, ev.eventLog)
+	ev.RegisterListener(c)
+
+	ev.logLock.Unlock()
+
+	for _, entry := range oldEvents {
 		if err := callback(&entry); err != nil {
 			return err
 		}
 	}
-	ev.RegisterListener(c)
-
-	ev.logLock.Unlock()
 
 	for {
 		entry := <-c
