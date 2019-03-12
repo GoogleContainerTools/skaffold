@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -59,7 +59,7 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 	args = append(args, docker.GetBuildArgs(artifact.DockerArtifact)...)
 
 	if artifact.WorkspaceHash != "" {
-		hashTag := build.HashTag(artifact)
+		hashTag := cache.HashTag(artifact)
 		args = append(args, []string{"--destination", hashTag}...)
 	}
 

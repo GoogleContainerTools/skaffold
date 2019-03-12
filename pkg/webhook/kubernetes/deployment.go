@@ -133,8 +133,8 @@ func WaitForDeploymentToStabilize(d *appsv1.Deployment, ip string) error {
 	}
 	// wait up to five minutes for the URL to return a valid endpoint
 	url := BaseURL(ip)
-	log.Printf("Waiting up to 5 minutes for %s to return an OK response...", url)
-	return wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
+	log.Printf("Waiting up to 2 minutes for %s to return an OK response...", url)
+	return wait.PollImmediate(5*time.Second, 2*time.Minute, func() (bool, error) {
 		resp, err := http.Get(url)
 		if err != nil {
 			return false, nil

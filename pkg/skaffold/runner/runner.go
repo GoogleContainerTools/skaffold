@@ -28,6 +28,7 @@ import (
 
 	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/plugin"
@@ -324,7 +325,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 		return nil, errors.Wrap(err, "generating tag")
 	}
 
-	artifactCache := build.NewCache(ctx, r.Builder, r.opts, r.needsPush)
+	artifactCache := cache.NewCache(ctx, r.Builder, r.opts, r.needsPush)
 	artifactsToBuild, res := artifactCache.RetrieveCachedArtifacts(ctx, out, artifacts)
 	bRes, err := r.Build(ctx, out, tags, artifactsToBuild)
 	if err != nil {
