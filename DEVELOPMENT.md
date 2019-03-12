@@ -17,9 +17,9 @@ You must install these tools:
 1. [`golangci-lint`](https://github.com/golangci/golangci-lint): You can use the
    helper [script](./hack/install_golint.sh) to get golangci-lint.
 
-  ```shell
+    ```shell
     ./hack/install_golint.sh
-  ```
+    ```
 
 1. [`gocritic`](https://github.com/go-critic/go-critic): Go source code linter
    providing advanced checks currently missing from other linters.
