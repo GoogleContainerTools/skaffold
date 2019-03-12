@@ -19,7 +19,6 @@ package build
 import (
 	"context"
 	"io"
-	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -63,7 +62,7 @@ type ConfigurationRetriever func(ctx context.Context) (config.Config, error)
 func RegistryConfigurationRetriever(image string) ConfigurationRetriever {
 	return func(ctx context.Context) (config.Config, error) {
 		logrus.Debugf("Retrieving image configuration for %v", image)
-		ref, err := parseReference(image)
+		ref, err := name.ParseReference(image, name.WeakValidation)
 		if err != nil {
 			logrus.Debugf("Error parsing image %v: %v", image, err)
 			return config.Config{}, errors.Wrapf(err, "parsing image %q", image)
@@ -87,21 +86,6 @@ func RegistryConfigurationRetriever(image string) ConfigurationRetriever {
 		}
 		return manifest.Config, nil
 	}
-}
-
-func parseReference(image string) (name.Reference, error) {
-	ref, err := name.ParseReference(image, name.WeakValidation)
-	if err == nil {
-		return ref, nil
-	}
-	if parts := strings.Split(image, "@"); len(parts) == 2 {
-		// workaround https://github.com/google/go-containerregistry/issues/351 and strip tag
-		if tagged, err := name.NewTag(parts[0], name.WeakValidation); err == nil {
-			image = tagged.Repository.Name() + "@" + parts[1]
-			return name.ParseReference(image, name.WeakValidation)
-		}
-	}
-	return nil, err
 }
 
 // DockerConfigurationRetriever returns a function to retrieve an image configuration from a local docker daemon
