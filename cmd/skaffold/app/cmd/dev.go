@@ -43,6 +43,9 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 	}
 	AddRunDevFlags(cmd)
 	AddDevDebugFlags(cmd)
+	cmd.Flags().StringVar(&opts.Trigger, "trigger", "polling", "How are changes detected? (polling, manual or notify)")
+	cmd.Flags().StringArrayVarP(&opts.TargetImages, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")
+	cmd.Flags().IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes")
 	return cmd
 }
 
