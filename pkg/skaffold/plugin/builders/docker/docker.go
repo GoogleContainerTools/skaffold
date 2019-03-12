@@ -17,7 +17,6 @@ limitations under the License.
 package docker
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
 	plugin "github.com/hashicorp/go-plugin"
 )
@@ -26,7 +25,7 @@ import (
 func Execute() error {
 	// pluginMap is the map of plugins we can dispense.
 	var pluginMap = map[string]plugin.Plugin{
-		"docker": &shared.BuilderPlugin{Impl: docker.NewBuilder()},
+		"docker": &shared.BuilderPlugin{Impl: NewBuilder()},
 	}
 
 	plugin.Serve(&plugin.ServeConfig{
