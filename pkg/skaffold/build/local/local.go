@@ -53,11 +53,17 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 	}
 
 	if b.pushImages {
-		imageID, err := b.getImageIDForTag(ctx, tag)
-		if err != nil {
-			logrus.Warnf("unable to inspect image: built images may not be cleaned up correctly by skaffold")
+		// only track images for pruning when building with docker
+		// if we're pushing a bazel image, it was built directly to the registry
+		if artifact.DockerArtifact != nil {
+			imageID, err := b.getImageIDForTag(ctx, tag)
+			if err != nil {
+				logrus.Warnf("unable to inspect image: built images may not be cleaned up correctly by skaffold")
+			}
+			if imageID != "" {
+				b.builtImages = append(b.builtImages, imageID)
+			}
 		}
-		b.builtImages = append(b.builtImages, imageID)
 		digest := digestOrImageID
 		return tag + "@" + digest, nil
 	}

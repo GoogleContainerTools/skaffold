@@ -190,6 +190,7 @@ func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, 
 		return "", errors.Wrap(err, "tagging the image")
 	}
 
+	b.builtImages = append(b.builtImages, imageID)
 	return imageID, nil
 }
 
