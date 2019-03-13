@@ -19,51 +19,23 @@ package local
 import (
 	"context"
 	"io"
-	"os"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
-func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibGradleArtifact, tag string) (string, error) {
-	if b.pushImages {
-		return b.buildJibGradleToRegistry(ctx, out, workspace, artifact, tag)
+func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
+	builder := jib.NewGradleBuilder()
+	builder.LocalBuild = b.cfg
+	builder.LocalDocker = b.localDocker
+	builder.KubeContext = b.kubeContext
+	builder.PushImages = b.pushImages
+	builder.PluginMode = false
+
+	opts := &config.SkaffoldOptions{
+		SkipTests: b.skipTests,
 	}
-	return b.buildJibGradleToDocker(ctx, out, workspace, artifact, tag)
-}
-
-func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibGradleArtifact, tag string) (string, error) {
-	args := jib.GenerateGradleArgs("jibDockerBuild", tag, artifact, b.skipTests)
-	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
-		return "", err
-	}
-
-	return b.localDocker.ImageID(ctx, tag)
-}
-
-func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibGradleArtifact, tag string) (string, error) {
-	args := jib.GenerateGradleArgs("jib", tag, artifact, b.skipTests)
-	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
-		return "", err
-	}
-
-	return docker.RemoteDigest(tag)
-}
-
-func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {
-	cmd := jib.GradleCommand.CreateCommand(ctx, workspace, args)
-	cmd.Env = append(os.Environ(), b.localDocker.ExtraEnv()...)
-	cmd.Stdout = out
-	cmd.Stderr = out
-
-	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
-	if err := util.RunCmd(cmd); err != nil {
-		return errors.Wrap(err, "gradle build failed")
-	}
-
-	return nil
+	builder.Init(opts, &latest.ExecutionEnvironment{})
+	return builder.BuildArtifact(ctx, out, a, tag)
 }

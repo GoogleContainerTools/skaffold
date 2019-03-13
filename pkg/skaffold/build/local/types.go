@@ -39,7 +39,7 @@ type Builder struct {
 	kubeContext  string
 }
 
-// NewBuilder returns an new instance of a local Builder.
+// NewBuilder returns a new instance of a local Builder.
 func NewBuilder(cfg *latest.LocalBuild, kubeContext string, skipTests bool) (*Builder, error) {
 	localDocker, err := docker.NewAPIClient()
 	if err != nil {

@@ -30,6 +30,8 @@ var Handshake = plugin.HandshakeConfig{
 
 // PluginMap is a map of all accepted plugins
 var PluginMap = map[string]plugin.Plugin{
-	"docker": &BuilderPlugin{},
-	"bazel":  &BuilderPlugin{},
+	"docker":    &BuilderPlugin{},
+	"bazel":     &BuilderPlugin{},
+	"jibGradle": &BuilderPlugin{},
+	"jibMaven":  &BuilderPlugin{},
 }

@@ -14,18 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package bazel
+package jib
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
-	plugin "github.com/hashicorp/go-plugin"
+	"github.com/hashicorp/go-plugin"
 )
 
-// Execute an image build with bazel
+// Execute an image build with Jib
 func Execute() error {
 	// pluginMap is the map of plugins we can dispense.
 	var pluginMap = map[string]plugin.Plugin{
-		"bazel": &shared.BuilderPlugin{Impl: NewBuilder()},
+		"jibGradle": &shared.BuilderPlugin{Impl: NewGradleBuilder()},
+		"jibMaven":  &shared.BuilderPlugin{Impl: NewMavenBuilder()},
 	}
 
 	plugin.Serve(&plugin.ServeConfig{

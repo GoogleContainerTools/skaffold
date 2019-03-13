@@ -24,14 +24,17 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/jib"
 	hashiplugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
 )
 
 // SkaffoldCorePluginExecutionMap maps the core plugin name to the execution function
 var SkaffoldCorePluginExecutionMap = map[string]func() error{
-	"docker": docker.Execute,
-	"bazel":  bazel.Execute,
+	"docker":    docker.Execute,
+	"bazel":     bazel.Execute,
+	"jibGradle": jib.Execute,
+	"jibMaven":  jib.Execute,
 }
 
 // ShouldExecuteCorePlugin returns true if env variables for plugins are set properly
