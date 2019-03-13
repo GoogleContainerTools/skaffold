@@ -134,12 +134,12 @@ func Test_NewCache(t *testing.T) {
 			}
 			test.opts.CacheFile = cacheFile
 
-			originalDockerClient := newDockerCilent
-			newDockerCilent = func() (docker.LocalDaemon, error) {
+			originalDockerClient := newDockerClient
+			newDockerClient = func() (docker.LocalDaemon, error) {
 				return docker.NewLocalDaemon(test.api, nil), nil
 			}
 			defer func() {
-				newDockerCilent = originalDockerClient
+				newDockerClient = originalDockerClient
 			}()
 
 			if test.updateClient {
