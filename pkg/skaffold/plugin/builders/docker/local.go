@@ -18,7 +18,6 @@ package docker
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -34,7 +33,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 
-	"github.com/docker/docker/api/types"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -80,24 +78,7 @@ func (b *Builder) local(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 }
 
 func (b *Builder) prune(ctx context.Context, out io.Writer) error {
-	for _, id := range b.builtImages {
-		resp, err := b.LocalDocker.ImageRemove(ctx, id, types.ImageRemoveOptions{
-			Force:         true,
-			PruneChildren: true,
-		})
-		if err != nil {
-			return errors.Wrap(err, "pruning images")
-		}
-		for _, r := range resp {
-			if r.Deleted != "" {
-				out.Write([]byte(fmt.Sprintf("deleted image %s\n", r.Deleted)))
-			}
-			if r.Untagged != "" {
-				out.Write([]byte(fmt.Sprintf("untagged image %s\n", r.Untagged)))
-			}
-		}
-	}
-	return nil
+	return docker.Prune(ctx, out, b.builtImages, b.LocalDocker)
 }
 
 func (b *Builder) buildArtifacts(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
