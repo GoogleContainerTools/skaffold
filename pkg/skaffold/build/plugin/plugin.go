@@ -137,8 +137,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	return builtArtifacts, nil
 }
 
-func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
-	// Group artifacts by builder
+func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
 	for name, builder := range b.Builders {
 		if name != artifact.BuilderPlugin.Name {
 			continue

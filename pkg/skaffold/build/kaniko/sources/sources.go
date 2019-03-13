@@ -28,7 +28,7 @@ import (
 
 // BuildContextSource is the generic type for the different build context sources the kaniko builder can use
 type BuildContextSource interface {
-	Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string, dependencies []string) (string, error)
+	Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string, dependencies map[string][]string) (string, error)
 	Pod(args []string) *v1.Pod
 	ModifyPod(ctx context.Context, p *v1.Pod) error
 	Cleanup(ctx context.Context) error

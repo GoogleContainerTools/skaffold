@@ -77,7 +77,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 			if test.err != nil {
 				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jibGradle dependencies: "+test.err.Error(), err.Error())
 			} else {
-				testutil.CheckDeepEqual(t, []string{dep1, dep2}, deps)
+				testutil.CheckDeepEqual(t, map[string][]string{dep1: {""}, dep2: {""}}, deps)
 			}
 		})
 	}

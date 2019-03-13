@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"sort"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -118,8 +119,16 @@ func diagnoseArtifacts(out io.Writer, builder build.Builder, artifacts []*latest
 
 func timeToListDependencies(ctx context.Context, builder build.Builder, a *latest.Artifact) (time.Duration, []string, error) {
 	start := time.Now()
-	paths, err := builder.DependenciesForArtifact(ctx, a)
-	return time.Since(start), paths, err
+	dependencies, err := builder.DependenciesForArtifact(ctx, a)
+	duration := time.Since(start)
+
+	paths := make([]string, 0, len(dependencies))
+	for path := range dependencies {
+		paths = append(paths, path)
+	}
+	sort.Strings(paths)
+
+	return duration, paths, err
 }
 
 func timeToComputeMTimes(deps []string) (time.Duration, error) {

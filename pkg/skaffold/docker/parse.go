@@ -22,7 +22,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -205,11 +204,11 @@ func copiedFiles(nodes []*parser.Node) (map[string][]string, error) {
 	for _, node := range nodes {
 		switch node.Value {
 		case command.From:
-			if wd, err := WorkingDir(node.Next.Value); err != nil {
+			wd, err := WorkingDir(node.Next.Value)
+			if err != nil {
 				return nil, err
-			} else {
-				workdir = wd
 			}
+			workdir = wd
 		case command.Workdir:
 			value, err := slex.ProcessWord(node.Next.Value, envs)
 			if err != nil {
@@ -321,8 +320,7 @@ func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 
 // GetDependencies finds the sources dependencies for the given docker artifact.
 // All paths are relative to the workspace.
-// todo(corneliusweig) should return map[string][]string
-func GetDependencies(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string) ([]string, error) {
+func GetDependencies(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string) (map[string][]string, error) {
 	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "normalizing dockerfile path")
@@ -356,7 +354,7 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 
 	// Walk the workspace
 	files := make(map[string]bool)
-	for dep, _ := range deps {
+	for dep := range deps {
 		dep = filepath.Clean(dep)
 		absDep := filepath.Join(workspace, dep)
 
@@ -419,11 +417,11 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 	// Ignore .dockerignore
 	delete(files, ".dockerignore")
 
-	var dependencies []string
+	dependencies := map[string][]string{}
+	defaultDst := []string{""}
 	for file := range files {
-		dependencies = append(dependencies, file)
+		dependencies[file] = defaultDst
 	}
-	sort.Strings(dependencies)
 
 	return dependencies, nil
 }

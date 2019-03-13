@@ -32,7 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 // Builder builds artifacts with Docker.
@@ -75,8 +75,7 @@ func (b *Builder) Labels() map[string]string {
 	}
 }
 
-// DependenciesForArtifact returns the dependencies for this docker artifact
-func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
 	if err := setArtifact(artifact); err != nil {
 		return nil, err
 	}

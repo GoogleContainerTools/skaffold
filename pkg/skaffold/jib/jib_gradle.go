@@ -31,9 +31,8 @@ var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"
 
 // GetDependenciesGradle finds the source dependencies for the given jib-gradle artifact.
 // All paths are absolute.
-func GetDependenciesGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) ([]string, error) {
-	cmd := getCommandGradle(ctx, workspace, a)
-	deps, err := getDependencies(cmd)
+func GetDependenciesGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) (map[string][]string, error) {
+	deps, err := getDependencies(getCommandGradle(ctx, workspace, a))
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jibGradle dependencies")
 	}

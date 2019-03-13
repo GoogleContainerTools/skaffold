@@ -19,7 +19,6 @@ package jib
 import (
 	"os"
 	"os/exec"
-	"sort"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/karrick/godirwalk"
@@ -27,7 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func getDependencies(cmd *exec.Cmd) ([]string, error) {
+func getDependencies(cmd *exec.Cmd) (map[string][]string, error) {
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, err
@@ -41,7 +40,8 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 	// Parses stdout for the dependencies, one per line
 	lines := util.NonEmptyLines(stdout)
 
-	var deps []string
+	noDst := []string{""}
+	deps := map[string][]string{}
 	for _, dep := range lines {
 		// Resolves directories recursively.
 		info, err := os.Stat(dep)
@@ -60,14 +60,14 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 		}
 
 		if !info.IsDir() {
-			deps = append(deps, dep)
+			deps[dep] = noDst
 			continue
 		}
 
 		if err = godirwalk.Walk(dep, &godirwalk.Options{
 			Unsorted: true,
 			Callback: func(path string, _ *godirwalk.Dirent) error {
-				deps = append(deps, path)
+				deps[path] = noDst
 				return nil
 			},
 		}); err != nil {
@@ -75,6 +75,5 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 		}
 	}
 
-	sort.Strings(deps)
 	return deps, nil
 }

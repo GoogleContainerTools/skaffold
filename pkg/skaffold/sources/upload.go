@@ -27,7 +27,7 @@ import (
 )
 
 // TarGz creates a .tgz archive of the artifact's sources.
-func TarGz(ctx context.Context, w io.Writer, a *latest.Artifact, dependencies []string) error {
+func TarGz(ctx context.Context, w io.Writer, a *latest.Artifact, dependencies map[string][]string) error {
 	if err := util.CreateTarGz(w, a.Workspace, dependencies); err != nil {
 		return errors.Wrap(err, "creating tar gz")
 	}
@@ -36,7 +36,7 @@ func TarGz(ctx context.Context, w io.Writer, a *latest.Artifact, dependencies []
 }
 
 // UploadToGCS uploads the artifact's sources to a GCS bucket.
-func UploadToGCS(ctx context.Context, a *latest.Artifact, bucket, objectName string, dependencies []string) error {
+func UploadToGCS(ctx context.Context, a *latest.Artifact, bucket, objectName string, dependencies map[string][]string) error {
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
 		return errors.Wrap(err, "creating GCS client")

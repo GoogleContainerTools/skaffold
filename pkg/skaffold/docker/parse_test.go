@@ -20,11 +20,12 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1"
 )
 
 const copyServerGo = `
@@ -216,6 +217,21 @@ func (f *fakeImageFetcher) fetch(image string) (*v1.ConfigFile, error) {
 	}
 
 	return nil, fmt.Errorf("no image found for %s", image)
+}
+
+func getDependencies(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string) ([]string, error) {
+	dependencies, err := GetDependencies(ctx, workspace, dockerfilePath, buildArgs)
+	if err != nil {
+		return nil, err
+	}
+
+	paths := make([]string, 0, len(dependencies))
+	for p := range dependencies {
+		paths = append(paths, p)
+	}
+	sort.Strings(paths)
+
+	return paths, nil
 }
 
 func TestGetDependencies(t *testing.T) {
@@ -525,7 +541,7 @@ func TestGetDependencies(t *testing.T) {
 			}
 
 			workspace := tmpDir.Path(test.workspace)
-			deps, err := GetDependencies(context.Background(), workspace, "Dockerfile", test.buildArgs)
+			deps, err := getDependencies(context.Background(), workspace, "Dockerfile", test.buildArgs)
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
 			testutil.CheckDeepEqual(t, test.fetched, imageFetcher.fetched)

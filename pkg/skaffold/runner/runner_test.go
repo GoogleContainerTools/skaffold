@@ -60,7 +60,7 @@ func (t *TestBench) Labels() map[string]string                        { return m
 func (t *TestBench) TestDependencies() ([]string, error)              { return nil, nil }
 func (t *TestBench) Dependencies() ([]string, error)                  { return nil, nil }
 func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error { return nil }
-func (t *TestBench) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+func (t *TestBench) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
 	return nil, nil
 }
 

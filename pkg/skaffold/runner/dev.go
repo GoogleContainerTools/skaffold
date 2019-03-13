@@ -18,6 +18,7 @@ package runner
 
 import (
 	"context"
+	"sort"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -98,7 +99,20 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifac
 		}
 
 		if err := r.Watcher.Register(
-			func() ([]string, error) { return r.Builder.DependenciesForArtifact(ctx, artifact) },
+			func() ([]string, error) {
+				dependencies, err := r.Builder.DependenciesForArtifact(ctx, artifact)
+				if err != nil {
+					return nil, err
+				}
+
+				deps := make([]string, 0, len(dependencies))
+				for p := range dependencies {
+					deps = append(deps, p)
+				}
+				sort.Strings(deps)
+
+				return deps, nil
+			},
 			func(e watch.Events) { changed.AddDirtyArtifact(artifact, e) },
 		); err != nil {
 			return errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)

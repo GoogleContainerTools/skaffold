@@ -27,14 +27,14 @@ import (
 )
 
 func CreateDockerTarContext(ctx context.Context, w io.Writer, workspace string, a *latest.DockerArtifact) error {
-	paths, err := GetDependencies(ctx, workspace, a.DockerfilePath, a.BuildArgs)
+	dependencies, err := GetDependencies(ctx, workspace, a.DockerfilePath, a.BuildArgs)
 	if err != nil {
 		return errors.Wrap(err, "getting relative tar paths")
 	}
 
-	var p []string
-	for _, path := range paths {
-		p = append(p, filepath.Join(workspace, path))
+	p := map[string][]string{}
+	for path, dsts := range dependencies {
+		p[filepath.Join(workspace, path)] = dsts
 	}
 
 	if err := util.CreateTar(w, workspace, p); err != nil {

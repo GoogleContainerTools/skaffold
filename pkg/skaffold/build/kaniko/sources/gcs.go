@@ -37,7 +37,7 @@ type GCSBucket struct {
 }
 
 // Setup uploads the context to the provided GCS bucket
-func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string, dependencies []string) (string, error) {
+func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string, dependencies map[string][]string) (string, error) {
 	bucket := g.artifact.BuildContext.GCSBucket
 	if bucket == "" {
 		guessedProjectID, err := gcp.ExtractProjectID(artifact.ImageName)

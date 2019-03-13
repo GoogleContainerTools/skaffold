@@ -84,6 +84,6 @@ func (b *prebuiltImagesBuilder) Build(ctx context.Context, out io.Writer, _ tag.
 }
 
 // DependenciesForArtifact returns nil since a prebuilt image should have no dependencies
-func (b *prebuiltImagesBuilder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+func (b *prebuiltImagesBuilder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
 	return nil, nil
 }

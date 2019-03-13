@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 // Builder builds artifacts with Bazel.
@@ -71,15 +71,14 @@ func (b *Builder) Labels() map[string]string {
 	}
 }
 
-// DependenciesForArtifact returns the dependencies for this bazel artifact
-func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
 	if err := setArtifact(artifact); err != nil {
 		return nil, err
 	}
 	if artifact.BazelArtifact == nil {
 		return nil, errors.New("bazel artifact is nil")
 	}
-	paths, err := GetDependencies(ctx, artifact.Workspace, artifact.BazelArtifact)
+	paths, err := GetDependencyMap(ctx, artifact.Workspace, artifact.BazelArtifact)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting bazel dependencies")
 	}

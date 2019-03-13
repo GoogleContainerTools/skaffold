@@ -47,8 +47,8 @@ func (b *BuilderRPC) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnv
 	b.client.Call("Plugin.Init", args, &resp)
 }
 
-func (b *BuilderRPC) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
-	var resp []string
+func (b *BuilderRPC) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
+	var resp map[string][]string
 	if err := convertPropertiesToBytes([]*latest.Artifact{artifact}); err != nil {
 		return nil, errors.Wrapf(err, "converting properties to bytes")
 	}
@@ -126,10 +126,10 @@ func (s *BuilderRPCServer) Build(b BuildArgs, resp *[]build.Artifact) error {
 	return nil
 }
 
-func (s *BuilderRPCServer) DependenciesForArtifact(d DependencyArgs, resp *[]string) error {
+func (s *BuilderRPCServer) DependenciesForArtifact(d DependencyArgs, resp *map[string][]string) error {
 	dependencies, err := s.Impl.DependenciesForArtifact(context.Background(), d.Artifact)
 	if err != nil {
-		return errors.Wrapf(err, "getting dependencies for %s", d.Artifact.ImageName)
+		return errors.Wrapf(err, "getting dependency map for %s", d.Artifact.ImageName)
 	}
 	*resp = dependencies
 	return nil

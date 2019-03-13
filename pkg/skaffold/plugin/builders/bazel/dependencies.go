@@ -80,6 +80,21 @@ func GetDependencies(ctx context.Context, workspace string, a *latest.BazelArtif
 	return deps, nil
 }
 
+func GetDependencyMap(ctx context.Context, workspace string, a *latest.BazelArtifact) (map[string][]string, error) {
+	deps, err := GetDependencies(ctx, workspace, a)
+	if err != nil {
+		return nil, err
+	}
+
+	dependencies := map[string][]string{}
+	noDst := make([]string, 0)
+	for _, p := range deps {
+		dependencies[p] = noDst
+	}
+
+	return dependencies, nil
+}
+
 func depToPath(dep string) string {
 	return strings.TrimPrefix(strings.Replace(strings.TrimPrefix(dep, "//"), ":", "/", 1), "/")
 }

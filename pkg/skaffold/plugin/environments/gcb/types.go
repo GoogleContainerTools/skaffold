@@ -79,8 +79,8 @@ func (b *Builder) Labels() map[string]string {
 }
 
 // DependenciesForArtifact returns the dependencies for this artifact
-func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
-	var paths []string
+func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) (map[string][]string, error) {
+	var paths map[string][]string
 	var err error
 	if a.DockerArtifact != nil {
 		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs)

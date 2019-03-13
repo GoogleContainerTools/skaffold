@@ -49,13 +49,13 @@ func TestGetDependenciesMaven(t *testing.T) {
 	var tests = []struct {
 		description string
 		stdout      string
-		expected    []string
+		expected    map[string][]string
 		err         error
 	}{
 		{
 			description: "success",
 			stdout:      fmt.Sprintf("%s\n%s\n\n\n", dep1, dep2),
-			expected:    []string{dep1, dep2},
+			expected:    map[string][]string{dep1: {""}, dep2: {""}},
 		},
 		{
 			description: "failure",

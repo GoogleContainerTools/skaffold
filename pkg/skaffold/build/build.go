@@ -39,5 +39,5 @@ type Builder interface {
 
 	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]Artifact, error)
 
-	DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error)
+	DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error)
 }

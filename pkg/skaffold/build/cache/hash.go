@@ -38,11 +38,17 @@ var (
 )
 
 func getHashForArtifact(ctx context.Context, builder build.Builder, a *latest.Artifact) (string, error) {
-	deps, err := builder.DependenciesForArtifact(ctx, a)
+	dependencies, err := builder.DependenciesForArtifact(ctx, a)
 	if err != nil {
 		return "", errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
 	}
+
+	deps := make([]string, 0, len(dependencies))
+	for path := range dependencies {
+		deps = append(deps, path)
+	}
 	sort.Strings(deps)
+
 	var hashes []string
 	for _, d := range deps {
 		h, err := hashFunction(d)

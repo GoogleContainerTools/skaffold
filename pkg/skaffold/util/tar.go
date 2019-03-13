@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// TODO(corneliusweig) This should be unused when auto-sync is done
 func CreateMappedTar(w io.Writer, root string, pathMap map[string]string) error {
 	tw := tar.NewWriter(w)
 	defer tw.Close()
@@ -40,20 +41,22 @@ func CreateMappedTar(w io.Writer, root string, pathMap map[string]string) error 
 	return nil
 }
 
-func CreateTar(w io.Writer, root string, paths []string) error {
+func CreateTar(w io.Writer, root string, paths map[string][]string) error {
 	tw := tar.NewWriter(w)
 	defer tw.Close()
 
-	for _, path := range paths {
-		if err := addFileToTar(root, path, "", tw); err != nil {
-			return err
+	for path, dsts := range paths {
+		for _, dst := range dsts {
+			if err := addFileToTar(root, path, dst, tw); err != nil {
+				return err
+			}
 		}
 	}
 
 	return nil
 }
 
-func CreateTarGz(w io.Writer, root string, paths []string) error {
+func CreateTarGz(w io.Writer, root string, paths map[string][]string) error {
 	gw := gzip.NewWriter(w)
 	defer gw.Close()
 	return CreateTar(gw, root, paths)

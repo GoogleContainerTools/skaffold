@@ -37,8 +37,13 @@ func (m *mockBuilder) Build(ctx context.Context, out io.Writer, tags tag.ImageTa
 	return nil, nil
 }
 
-func (m *mockBuilder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
-	return m.dependencies, nil
+func (m *mockBuilder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
+	noDst := []string{""}
+	dependencies := map[string][]string{}
+	for _, path := range m.dependencies {
+		dependencies[path] = noDst
+	}
+	return dependencies, nil
 }
 
 var mockCacheHasher = func(s string) (string, error) {

@@ -89,9 +89,9 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 	}
 }
 
-func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
+func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) (map[string][]string, error) {
 	var (
-		paths []string
+		paths map[string][]string
 		err   error
 	)
 
@@ -100,7 +100,7 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs)
 
 	case a.BazelArtifact != nil:
-		paths, err = bazel.GetDependencies(ctx, a.Workspace, a.BazelArtifact)
+		paths, err = bazel.GetDependencyMap(ctx, a.Workspace, a.BazelArtifact)
 
 	case a.JibMavenArtifact != nil:
 		paths, err = jib.GetDependenciesMaven(ctx, a.Workspace, a.JibMavenArtifact)
