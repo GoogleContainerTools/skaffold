@@ -19,6 +19,7 @@ package skaffold
 import (
 	"bytes"
 	"context"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -113,12 +114,25 @@ func (b *RunBuilder) WithEnv(env []string) *RunBuilder {
 // This also returns a teardown function that stops skaffold.
 func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
 	t.Helper()
+
 	ctx, cancel := context.WithCancel(context.Background())
-
 	cmd := b.cmd(ctx)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 
+	// If the test is killed by a timeout, go test will wait for
+	// os.Stderr and os.Stdout to close as a result.
+	//
+	// However, the `cmd` will stil run in the background
+	// and hold those descriptors open.
+	// As a result, go test will hang forever.
+	//
+	// Avoid that by wrapping stderr and stdout, breaking the short
+	// circuit and forcing cmd.Run to use another pipe and goroutine
+	// to pass along stderr and stdout.
+	// See https://github.com/golang/go/issues/23019
+	cmd.Stdout = struct{ io.Writer }{os.Stdout}
+	cmd.Stderr = struct{ io.Writer }{os.Stderr}
+
+	start := time.Now()
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("skaffold %s: %v", b.command, err)
 	}
