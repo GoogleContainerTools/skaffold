@@ -194,6 +194,11 @@ func withKanikoConfig(c *latest.SkaffoldPipeline, operations ...func(kaniko *lat
 				return err
 			}
 		}
+		for _, a := range c.Build.Artifacts {
+			setDefaultKanikoArtifact(a)
+			setDefaultKanikoDockerfilePath(a)
+			setDefaultKanikoArtifactBuildContext(kaniko, a)
+		}
 	}
 
 	return nil
@@ -210,6 +215,28 @@ func setDefaultKanikoNamespace(kaniko *latest.KanikoBuild) error {
 	}
 
 	return nil
+}
+
+func setDefaultKanikoArtifact(artifact *latest.Artifact) {
+	if artifact.KanikoArtifact == nil {
+		artifact.KanikoArtifact = &latest.KanikoArtifact{}
+	}
+}
+
+func setDefaultKanikoDockerfilePath(artifact *latest.Artifact) {
+	artifact.KanikoArtifact.DockerfilePath = valueOrDefault(artifact.KanikoArtifact.DockerfilePath, constants.DefaultDockerfilePath)
+}
+
+func setDefaultKanikoArtifactBuildContext(kaniko *latest.KanikoBuild, artifact *latest.Artifact) {
+	if artifact.KanikoArtifact.BuildContext == nil {
+		if kaniko.BuildContext != nil {
+			artifact.KanikoArtifact.BuildContext = kaniko.BuildContext
+			return
+		}
+		artifact.KanikoArtifact.BuildContext = &latest.KanikoBuildContext{
+			LocalDir: &latest.LocalDir{},
+		}
+	}
 }
 
 func setDefaultKanikoTimeout(kaniko *latest.KanikoBuild) error {

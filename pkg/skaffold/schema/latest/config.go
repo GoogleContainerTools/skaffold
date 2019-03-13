@@ -564,6 +564,31 @@ type ArtifactType struct {
 	// JibGradleArtifact *alpha* builds images using the
 	// [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).
 	JibGradleArtifact *JibGradleArtifact `yaml:"jibGradle,omitempty" yamltags:"oneOf=artifact"`
+
+	// KanikoArtifact *alpha* builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko)
+	KanikoArtifact *KanikoArtifact `yaml:"kaniko,omitempty" yamltags:"oneOf=artifact"`
+}
+
+// KanikoArtifact *alpha* describes an artifact built from a Dockerfile,
+// with kaniko
+type KanikoArtifact struct {
+	// DockerfilePath locates the Dockerfile relative to workspace.
+	// Defaults to `Dockerfile`.
+	DockerfilePath string `yaml:"dockerfile,omitempty"`
+
+	// Target is the Dockerfile target name to build.
+	Target string `yaml:"target,omitempty"`
+
+	// BuildArgs are arguments passed to the docker build.
+	// For example: `{"key1": "value1", "key2": "value2"}`.
+	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
+
+	// BuildContext is where the build context for this artifact resides
+	BuildContext *KanikoBuildContext `yaml:"buildContext,omitempty"`
+
+	// Cache configures Kaniko caching. If a cache is specified, Kaniko will
+	// use a remote cache which will speed up builds.
+	Cache *KanikoCache `yaml:"cache,omitempty"`
 }
 
 // DockerArtifact *beta* describes an artifact built from a Dockerfile,

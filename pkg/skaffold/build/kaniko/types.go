@@ -56,7 +56,7 @@ func (b *Builder) Labels() map[string]string {
 
 // DependenciesForArtifact returns the Dockerfile dependencies for this kaniko artifact
 func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
-	paths, err := docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact)
+	paths, err := docker.GetDependencies(ctx, a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
 	}
