@@ -18,12 +18,12 @@ package integration
 
 import (
 	"context"
-	"fmt"
 	"os/exec"
 	"testing"
 	"time"
 
 	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/sirupsen/logrus"
 	apps_v1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,7 +54,7 @@ func SetupNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient, func()) {
 		t.Fatalf("creating namespace: %s", err)
 	}
 
-	fmt.Println("Namespace:", ns.Name)
+	logrus.Infoln("Namespace:", ns.Name)
 
 	nsClient := &NSKubernetesClient{
 		t:      t,

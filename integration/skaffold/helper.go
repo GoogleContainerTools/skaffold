@@ -23,6 +23,9 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 // RunBuilder is used to build a command line to run `skaffold`.
@@ -120,6 +123,11 @@ func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
 		t.Fatalf("skaffold %s: %v", b.command, err)
 	}
 
+	go func() {
+		cmd.Wait()
+		logrus.Infoln("Ran in", time.Since(start))
+	}()
+
 	return func() {
 		cancel()
 		cmd.Wait()
@@ -129,7 +137,15 @@ func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
 // Run runs the skaffold command and returns its output.
 func (b *RunBuilder) Run(t *testing.T) ([]byte, error) {
 	t.Helper()
-	return b.cmd(context.Background()).Output()
+
+	cmd := b.cmd(context.Background())
+	logrus.Infoln(cmd.Args)
+
+	start := time.Now()
+	out, err := cmd.Output()
+	logrus.Infoln("Ran in", time.Since(start))
+
+	return out, err
 }
 
 // RunOrFail runs the skaffold command and fails the test
