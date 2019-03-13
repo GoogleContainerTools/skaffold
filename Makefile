@@ -149,7 +149,9 @@ clean:
 
 .PHONY: integration-in-docker
 integration-in-docker:
+	-docker pull gcr.io/$(GCP_PROJECT)/skaffold-builder
 	docker build \
+		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		-f deploy/skaffold/Dockerfile \
 		--target integration \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-integration .
