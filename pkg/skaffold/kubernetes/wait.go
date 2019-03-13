@@ -53,35 +53,6 @@ func WaitForPodScheduled(ctx context.Context, pods corev1.PodInterface, podName 
 	}, ctx.Done())
 }
 
-func WaitForPodReady(ctx context.Context, pods corev1.PodInterface, podName string) error {
-	if err := WaitForPodScheduled(ctx, pods, podName); err != nil {
-		return err
-	}
-
-	logrus.Infof("Waiting for %s to be ready", podName)
-
-	ctx, cancelTimeout := context.WithTimeout(ctx, 10*time.Minute)
-	defer cancelTimeout()
-
-	return wait.PollImmediateUntil(time.Millisecond*500, func() (bool, error) {
-		pod, err := pods.Get(podName, meta_v1.GetOptions{
-			IncludeUninitialized: true,
-		})
-		if err != nil {
-			return false, fmt.Errorf("not found: %s", podName)
-		}
-		switch pod.Status.Phase {
-		case v1.PodRunning:
-			return true, nil
-		case v1.PodSucceeded, v1.PodFailed:
-			return false, fmt.Errorf("pod already in terminal phase: %s", pod.Status.Phase)
-		case v1.PodUnknown, v1.PodPending:
-			return false, nil
-		}
-		return false, fmt.Errorf("unknown phase: %s", pod.Status.Phase)
-	}, ctx.Done())
-}
-
 func WaitForPodComplete(ctx context.Context, pods corev1.PodInterface, podName string, timeout time.Duration) error {
 	logrus.Infof("Waiting for %s to be ready", podName)
 

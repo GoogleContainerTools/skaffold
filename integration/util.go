@@ -24,7 +24,7 @@ import (
 
 	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/sirupsen/logrus"
-	apps_v1 "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -76,24 +76,47 @@ type NSKubernetesClient struct {
 
 // WaitForPodsReady waits for a list of pods to become ready.
 func (k *NSKubernetesClient) WaitForPodsReady(podNames ...string) {
-	for _, podName := range podNames {
-		if err := kubernetesutil.WaitForPodReady(context.Background(), k.client.CoreV1().Pods(k.ns), podName); err != nil {
-			k.t.Fatalf("Timed out waiting for pod %s ready in namespace %s", podName, k.ns)
-		}
+	if len(podNames) == 0 {
+		return
 	}
-}
 
-// WaitForDeploymentsToStabilize waits for a list of deployments to become stable.
-func (k *NSKubernetesClient) WaitForDeploymentsToStabilize(depNames ...string) {
-	for _, depName := range depNames {
-		if err := kubernetesutil.WaitForDeploymentToStabilize(context.Background(), k.client, k.ns, depName, 10*time.Minute); err != nil {
-			k.t.Fatalf("Timed out waiting for deployment %s to stabilize in namespace %s", depName, k.ns)
+	ctx, cancelTimeout := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancelTimeout()
+
+	w, err := k.client.CoreV1().Pods(k.ns).Watch(meta_v1.ListOptions{})
+	if err != nil {
+		k.t.Fatalf("Unable to watch pods: %v", err)
+	}
+	defer w.Stop()
+
+	phases := map[string]v1.PodPhase{}
+
+	for {
+	waitLoop:
+		select {
+		case <-ctx.Done():
+			k.t.Fatalf("Timed out waiting for pods %v ready in namespace %s", podNames, k.ns)
+
+		case event := <-w.ResultChan():
+			pod := event.Object.(*v1.Pod)
+			logrus.Infoln("Pod", pod.Name, "is", pod.Status.Phase)
+
+			phases[pod.Name] = pod.Status.Phase
+
+			for _, podName := range podNames {
+				if phases[podName] != v1.PodRunning {
+					break waitLoop
+				}
+			}
+
+			logrus.Infoln("Pods", podNames, "ready")
+			return
 		}
 	}
 }
 
 // GetDeployment gets a deployment by name.
-func (k *NSKubernetesClient) GetDeployment(depName string) *apps_v1.Deployment {
+func (k *NSKubernetesClient) GetDeployment(depName string) *appsv1.Deployment {
 	k.WaitForDeploymentsToStabilize(depName)
 
 	dep, err := k.client.AppsV1().Deployments(k.ns).Get(depName, meta_v1.GetOptions{})
@@ -101,4 +124,49 @@ func (k *NSKubernetesClient) GetDeployment(depName string) *apps_v1.Deployment {
 		k.t.Fatalf("Could not find deployment: %s in namespace %s", depName, k.ns)
 	}
 	return dep
+}
+
+// WaitForDeploymentsToStabilize waits for a list of deployments to become stable.
+func (k *NSKubernetesClient) WaitForDeploymentsToStabilize(depNames ...string) {
+	if len(depNames) == 0 {
+		return
+	}
+
+	ctx, cancelTimeout := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancelTimeout()
+
+	w, err := k.client.AppsV1().Deployments(k.ns).Watch(meta_v1.ListOptions{})
+	if err != nil {
+		k.t.Fatalf("Unable to watch deployments: %v", err)
+	}
+	defer w.Stop()
+
+	deployments := map[string]*appsv1.Deployment{}
+
+	for {
+	waitLoop:
+		select {
+		case <-ctx.Done():
+			k.t.Fatalf("Timed out waiting for deployments %v to stabilize in namespace %s", depNames, k.ns)
+
+		case event := <-w.ResultChan():
+			dp := event.Object.(*appsv1.Deployment)
+			logrus.Infof("Deployment %s: Generation %d/%d, Replicas %d/%d", dp.Name, dp.Status.ObservedGeneration, dp.Generation, dp.Status.Replicas, *(dp.Spec.Replicas))
+
+			deployments[dp.Name] = dp
+
+			for _, depName := range depNames {
+				if d, present := deployments[depName]; !present || !isStable(d) {
+					break waitLoop
+				}
+			}
+
+			logrus.Infoln("Deployments", depNames, "are stable")
+			return
+		}
+	}
+}
+
+func isStable(dp *appsv1.Deployment) bool {
+	return dp.Generation <= dp.Status.ObservedGeneration && *(dp.Spec.Replicas) == dp.Status.Replicas
 }
