@@ -500,6 +500,13 @@ func TestGetDependencies(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			tmpDir, cleanup := testutil.NewTempDir(t)
 			defer cleanup()
+			originalWorkingDir := WorkingDir
+			WorkingDir = func(tagged string) (string, error) {
+				return "/", nil
+			}
+			defer func() {
+				WorkingDir = originalWorkingDir
+			}()
 
 			imageFetcher := fakeImageFetcher{}
 			RetrieveImage = imageFetcher.fetch

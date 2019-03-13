@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -27,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/fileutils"
+	registry_v1 "github.com/google/go-containerregistry/pkg/v1"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/karrick/godirwalk"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
@@ -59,8 +61,13 @@ func (d destinationsBySourcePath) toMap() map[string][]string {
 	return d
 }
 
-// RetrieveImage is overridden for unit testing
-var RetrieveImage = retrieveImage
+var (
+	// WorkingDir is overridden for unit testing
+	WorkingDir = retrieveWorkingDir
+
+	// RetrieveImage is overridden for unit testing
+	RetrieveImage = retrieveImage
+)
 
 func ValidateDockerfile(path string) bool {
 	f, err := os.Open(path)
@@ -190,13 +197,27 @@ func parseOnbuild(image string) ([]*parser.Node, error) {
 }
 
 func copiedFiles(nodes []*parser.Node) (map[string][]string, error) {
+	slex := shell.NewLex('\\')
 	copied := make(map[string][]string)
 
+	var workdir string
 	envs := make([]string, 0)
 	for _, node := range nodes {
 		switch node.Value {
+		case command.From:
+			if wd, err := WorkingDir(node.Next.Value); err != nil {
+				return nil, err
+			} else {
+				workdir = wd
+			}
+		case command.Workdir:
+			value, err := slex.ProcessWord(node.Next.Value, envs)
+			if err != nil {
+				return nil, errors.Wrap(err, "processing word")
+			}
+			workdir = changeWorkingDir(workdir, value)
 		case command.Add, command.Copy:
-			dest, files, err := processCopy(node, envs)
+			dest, files, err := processCopy(node, envs, workdir)
 			if err != nil {
 				return nil, err
 			}
@@ -416,12 +437,12 @@ func retrieveImage(image string) (*v1.ConfigFile, error) {
 	return localDaemon.ConfigFile(context.Background(), image)
 }
 
-func processCopy(value *parser.Node, envs []string) (destination string, copied []string, err error) {
+func processCopy(value *parser.Node, envs []string, workdir string) (destination string, copied []string, err error) {
 	slex := shell.NewLex('\\')
 	for {
 		// Skip last node, since it is the destination, and stop if we arrive at a comment
 		if value.Next.Next == nil || strings.HasPrefix(value.Next.Next.Value, "#") {
-			destination = value.Next.Value
+			destination = changeWorkingDir(workdir, value.Next.Value)
 			break
 		}
 		src, err := slex.ProcessWord(value.Next.Value, envs)
@@ -452,4 +473,32 @@ func hasMultiStageFlag(flags []string) bool {
 		}
 	}
 	return false
+}
+
+func retrieveWorkingDir(tagged string) (string, error) {
+	var cf *registry_v1.ConfigFile
+	var err error
+
+	localDocker, err := NewAPIClient()
+	if err != nil {
+		// No local Docker is available
+		cf, err = RetrieveRemoteConfig(tagged)
+	} else {
+		cf, err = localDocker.ConfigFile(context.Background(), tagged)
+	}
+	if err != nil {
+		return "", errors.Wrap(err, "retrieving image config")
+	}
+
+	if cf.Config.WorkingDir == "" {
+		return "/", nil
+	}
+	return cf.Config.WorkingDir, nil
+}
+
+func changeWorkingDir(cur, to string) string {
+	if path.IsAbs(to) {
+		return path.Clean(to)
+	}
+	return path.Clean(path.Join(to, cur))
 }
