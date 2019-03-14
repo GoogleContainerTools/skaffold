@@ -50,7 +50,7 @@ func ResolveKubectlContext(schemaContext string) {
 
 	context, err := context.CurrentContext()
 	if err != nil {
-		logrus.Warn(errors.Wrapf(err, "retrieving current kubectl context"))
+		logrus.Warn(errors.Wrap(err, "retrieving current kubectl context"))
 	}
 
 	if context == "" {
