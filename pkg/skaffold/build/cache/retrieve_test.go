@@ -111,9 +111,10 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 
 			test.cache.client = docker.NewLocalDaemon(&test.api, nil)
 
-			actualArtifacts, actualBuildResults := test.cache.RetrieveCachedArtifacts(context.Background(), os.Stdout, test.artifacts)
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedArtifacts, actualArtifacts)
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedBuildResults, actualBuildResults)
+			actualArtifacts, actualBuildResults, err := test.cache.RetrieveCachedArtifacts(context.Background(), os.Stdout, test.artifacts)
+
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedArtifacts, actualArtifacts)
+			testutil.CheckDeepEqual(t, test.expectedBuildResults, actualBuildResults)
 		})
 	}
 }

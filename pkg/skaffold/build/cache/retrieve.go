@@ -43,9 +43,9 @@ type ImageDetails struct {
 }
 
 // RetrieveCachedArtifacts checks to see if artifacts are cached, and returns tags for cached images, otherwise a list of images to be built
-func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]*latest.Artifact, []build.Artifact) {
+func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]*latest.Artifact, []build.Artifact, error) {
 	if !c.useCache {
-		return artifacts, nil
+		return artifacts, nil, nil
 	}
 
 	start := time.Now()
@@ -54,22 +54,27 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 	var needToBuild []*latest.Artifact
 	var built []build.Artifact
 	for _, a := range artifacts {
-		artifact, err := c.resolveCachedArtifact(ctx, out, a)
-		if err != nil {
-			logrus.Debugf("error retrieving cached artifact for %s: %v\n", a.ImageName, err)
-			color.Red.Fprintf(out, "Unable to retrieve %s from cache; this image will be rebuilt.\n", a.ImageName)
-			needToBuild = append(needToBuild, a)
-			continue
+		select {
+		case <-ctx.Done():
+			return nil, nil, context.Canceled
+		default:
+			artifact, err := c.resolveCachedArtifact(ctx, out, a)
+			if err != nil {
+				logrus.Debugf("error retrieving cached artifact for %s: %v\n", a.ImageName, err)
+				color.Red.Fprintf(out, "Unable to retrieve %s from cache; this image will be rebuilt.\n", a.ImageName)
+				needToBuild = append(needToBuild, a)
+				continue
+			}
+			if artifact == nil {
+				needToBuild = append(needToBuild, a)
+				continue
+			}
+			built = append(built, *artifact)
 		}
-		if artifact == nil {
-			needToBuild = append(needToBuild, a)
-			continue
-		}
-		built = append(built, *artifact)
 	}
 
 	color.Default.Fprintln(out, "Cache check complete in", time.Since(start))
-	return needToBuild, built
+	return needToBuild, built, nil
 }
 
 func (c *Cache) resolveCachedArtifact(ctx context.Context, out io.Writer, a *latest.Artifact) (*build.Artifact, error) {
