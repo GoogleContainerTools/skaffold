@@ -126,7 +126,7 @@ func setGradleArtifact(artifact *latest.Artifact) error {
 		return errors.Wrap(err, "unmarshalling Jib Gradle artifact")
 	}
 	if a == nil {
-		return errors.New("artifact is nil")
+		a = &latest.JibGradleArtifact{}
 	}
 	artifact.ArtifactType.JibGradleArtifact = a
 	return nil

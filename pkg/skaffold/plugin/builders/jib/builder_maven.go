@@ -126,7 +126,7 @@ func setMavenArtifact(artifact *latest.Artifact) error {
 		return errors.Wrap(err, "unmarshalling Jib Maven artifact")
 	}
 	if a == nil {
-		return errors.New("artifact is nil")
+		a = &latest.JibMavenArtifact{}
 	}
 	artifact.ArtifactType.JibMavenArtifact = a
 	return nil
