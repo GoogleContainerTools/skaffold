@@ -18,6 +18,7 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 	"testing"
 	"time"
@@ -95,6 +96,7 @@ func (k *NSKubernetesClient) WaitForPodsReady(podNames ...string) {
 	waitLoop:
 		select {
 		case <-ctx.Done():
+			k.debug("pods")
 			k.t.Fatalf("Timed out waiting for pods %v ready in namespace %s", podNames, k.ns)
 
 		case event := <-w.ResultChan():
@@ -147,6 +149,8 @@ func (k *NSKubernetesClient) WaitForDeploymentsToStabilize(depNames ...string) {
 	waitLoop:
 		select {
 		case <-ctx.Done():
+			k.debug("deployments.apps")
+			k.debug("pods")
 			k.t.Fatalf("Timed out waiting for deployments %v to stabilize in namespace %s", depNames, k.ns)
 
 		case event := <-w.ResultChan():
@@ -165,6 +169,16 @@ func (k *NSKubernetesClient) WaitForDeploymentsToStabilize(depNames ...string) {
 			return
 		}
 	}
+}
+
+// debug is used to print all the details about pods or deployments
+func (k *NSKubernetesClient) debug(entities string) {
+	cmd := exec.Command("kubectl", "-n", k.ns, "get", entities, "-oyaml")
+	out, _ := cmd.CombinedOutput()
+
+	logrus.Warnln(cmd.Args)
+	// Use fmt.Println, not logrus, for prettier output
+	fmt.Println(string(out))
 }
 
 func isStable(dp *appsv1.Deployment) bool {
