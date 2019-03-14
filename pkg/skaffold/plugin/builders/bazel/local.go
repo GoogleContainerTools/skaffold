@@ -90,14 +90,15 @@ func (b *Builder) buildArtifacts(ctx context.Context, out io.Writer, tags tag.Im
 	return build.InSequence(ctx, out, tags, artifacts, b.runBuild)
 }
 
-func (b *Builder) runBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+func (b *Builder) runBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, build.ConfigurationRetriever, error) {
 	digestOrImageID, err := b.BuildArtifact(ctx, out, artifact, tag)
 	if err != nil {
-		return "", errors.Wrap(err, "build artifact")
+		return "", nil, errors.Wrap(err, "build artifact")
 	}
 	if b.PushImages {
 		digest := digestOrImageID
-		return tag + "@" + digest, nil
+		image := tag + "@" + digest
+		return image, build.RegistryConfigurationRetriever(image), nil	
 	}
 
 	// k8s doesn't recognize the imageID or any combination of the image name
@@ -107,10 +108,10 @@ func (b *Builder) runBuild(ctx context.Context, out io.Writer, artifact *latest.
 	imageID := digestOrImageID
 	uniqueTag := artifact.ImageName + ":" + strings.TrimPrefix(imageID, "sha256:")
 	if err := b.LocalDocker.Tag(ctx, imageID, uniqueTag); err != nil {
-		return "", err
+		return "", nil, err
 	}
 
-	return uniqueTag, nil
+	return uniqueTag, build.DockerConfigurationRetriever(b.LocalDocker, uniqueTag), nil
 }
 
 // BuildArtifact builds the bazel artifact
