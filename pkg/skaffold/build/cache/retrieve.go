@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sync"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -53,25 +54,41 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 
 	var needToBuild []*latest.Artifact
 	var built []build.Artifact
+
+	var wg sync.WaitGroup
+	wg.Add(len(artifacts))
+
+	var canceled bool
+
 	for _, a := range artifacts {
-		select {
-		case <-ctx.Done():
-			return nil, nil, context.Canceled
-		default:
-			artifact, err := c.resolveCachedArtifact(ctx, out, a)
-			if err != nil {
-				logrus.Debugf("error retrieving cached artifact for %s: %v\n", a.ImageName, err)
-				color.Red.Fprintf(out, "Unable to retrieve %s from cache; this image will be rebuilt.\n", a.ImageName)
-				needToBuild = append(needToBuild, a)
-				continue
+		a := a
+		go func() {
+			select {
+			case <-ctx.Done():
+				canceled = true
+			default:
+				defer wg.Done()
+				artifact, err := c.resolveCachedArtifact(ctx, out, a)
+				if err != nil {
+					logrus.Debugf("error retrieving cached artifact for %s: %v\n", a.ImageName, err)
+					color.Red.Fprintf(out, "Unable to retrieve %s from cache; this image will be rebuilt.\n", a.ImageName)
+					needToBuild = append(needToBuild, a)
+					return
+				}
+				if artifact == nil {
+					needToBuild = append(needToBuild, a)
+					return
+				}
+				built = append(built, *artifact)
 			}
-			if artifact == nil {
-				needToBuild = append(needToBuild, a)
-				continue
-			}
-			built = append(built, *artifact)
-		}
+		}()
 	}
+
+	if canceled {
+		return nil, nil, context.Canceled
+	}
+
+	wg.Wait()
 
 	color.Default.Fprintln(out, "Cache check complete in", time.Since(start))
 	return needToBuild, built, nil
