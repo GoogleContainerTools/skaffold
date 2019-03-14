@@ -36,7 +36,7 @@ const defaultConfigFile = "config"
 // ResolveKubectlContext sets up the actual kube-context to be used. The order
 // of precedence is:
 // 1) command line
-// 2) skaffold.yml
+// 2) skaffold.yaml
 // 3) current context from kube-config
 func ResolveKubectlContext(schemaContext string) {
 	if kubecontext != "" {
