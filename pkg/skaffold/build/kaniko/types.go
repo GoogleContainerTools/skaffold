@@ -29,21 +29,21 @@ import (
 
 // Builder builds docker artifacts on Kubernetes, using Kaniko.
 type Builder struct {
-	*latest.KanikoBuild
+	*latest.ClusterDetails
 
 	timeout time.Duration
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Kaniko.
-func NewBuilder(cfg *latest.KanikoBuild) (*Builder, error) {
-	timeout, err := time.ParseDuration(cfg.Timeout)
+func NewBuilder(clusterDetails *latest.ClusterDetails) (*Builder, error) {
+	timeout, err := time.ParseDuration(clusterDetails.Timeout)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing timeout")
 	}
 
 	return &Builder{
-		KanikoBuild: cfg,
-		timeout:     timeout,
+		ClusterDetails: clusterDetails,
+		timeout:        timeout,
 	}, nil
 }
 

@@ -35,30 +35,32 @@ type BuildContextSource interface {
 }
 
 // Retrieve returns the correct build context based on the config
-func Retrieve(cfg *latest.KanikoBuild) BuildContextSource {
-	if cfg.BuildContext.LocalDir != nil {
+func Retrieve(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoArtifact) BuildContextSource {
+	if artifact.BuildContext.LocalDir != nil {
 		return &LocalDir{
-			cfg: cfg,
+			clusterDetails: clusterDetails,
+			artifact:       artifact,
 		}
 	}
 
 	return &GCSBucket{
-		cfg: cfg,
+		clusterDetails: clusterDetails,
+		artifact:       artifact,
 	}
 }
 
-func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
+func podTemplate(clusterDetails *latest.ClusterDetails, image string, args []string) *v1.Pod {
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kaniko-",
 			Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
-			Namespace:    cfg.Namespace,
+			Namespace:    clusterDetails.Namespace,
 		},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				{
 					Name:            constants.DefaultKanikoContainerName,
-					Image:           cfg.Image,
+					Image:           image,
 					Args:            args,
 					ImagePullPolicy: v1.PullIfNotPresent,
 					Env: []v1.EnvVar{{
@@ -78,7 +80,7 @@ func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 				Name: constants.DefaultKanikoSecretName,
 				VolumeSource: v1.VolumeSource{
 					Secret: &v1.SecretVolumeSource{
-						SecretName: cfg.PullSecretName,
+						SecretName: clusterDetails.PullSecretName,
 					},
 				},
 			},
@@ -86,7 +88,7 @@ func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 		},
 	}
 
-	if cfg.DockerConfig == nil {
+	if clusterDetails.DockerConfig == nil {
 		return pod
 	}
 
@@ -101,7 +103,7 @@ func podTemplate(cfg *latest.KanikoBuild, args []string) *v1.Pod {
 		Name: constants.DefaultKanikoDockerConfigSecretName,
 		VolumeSource: v1.VolumeSource{
 			Secret: &v1.SecretVolumeSource{
-				SecretName: cfg.DockerConfig.SecretName,
+				SecretName: clusterDetails.DockerConfig.SecretName,
 			},
 		},
 	}

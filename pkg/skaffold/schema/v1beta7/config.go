@@ -1,12 +1,9 @@
 /*
 Copyright 2019 The Skaffold Authors
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,14 +11,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v1beta7
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	yamlpatch "github.com/krishicks/yaml-patch"
 )
 
-const Version string = "skaffold/v1beta8"
+const Version string = "skaffold/v1beta7"
 
 // NewSkaffoldPipeline creates a SkaffoldPipeline
 func NewSkaffoldPipeline() util.VersionedConfig {
@@ -150,8 +147,9 @@ type BuildType struct {
 	// [Google Cloud Build](https://cloud.google.com/cloud-build/).
 	GoogleCloudBuild *GoogleCloudBuild `yaml:"googleCloudBuild,omitempty" yamltags:"oneOf=build"`
 
-	// Cluster *beta* describes how to do an on-cluster build.
-	Cluster *ClusterDetails `yaml:"cluster,omitempty" yamltags:"oneOf=build"`
+	// KanikoBuild *beta* describes how to do an on-cluster build using
+	// [Kaniko](https://github.com/GoogleContainerTools/kaniko).
+	KanikoBuild *KanikoBuild `yaml:"kaniko,omitempty" yamltags:"oneOf=build"`
 }
 
 // LocalBuild *beta* describes how to do a build on the local docker daemon
@@ -234,9 +232,22 @@ type KanikoCache struct {
 	Repo string `yaml:"repo,omitempty"`
 }
 
-// ClusterDetails *beta* describes how to do an on-cluster build.
-type ClusterDetails struct {
+// KanikoBuild *beta* describes how to do an on-cluster build using
+// [Kaniko](https://github.com/GoogleContainerTools/kaniko).
+type KanikoBuild struct {
+	// BuildContext defines where Kaniko gets the sources from.
+	BuildContext *KanikoBuildContext `yaml:"buildContext,omitempty"`
+
+	// Cache configures Kaniko caching. If a cache is specified, Kaniko will
+	// use a remote cache which will speed up builds.
+	Cache *KanikoCache `yaml:"cache,omitempty"`
+
+	// AdditionalFlags are additional flags to be passed to Kaniko command line.
+	// See [Kaniko Additional Flags](https://github.com/GoogleContainerTools/kaniko#additional-flags).
+	AdditionalFlags []string `yaml:"flags,omitempty"`
+
 	// PullSecret is the path to the secret key file.
+	// See [Kaniko Documentation](https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster).
 	PullSecret string `yaml:"pullSecret,omitempty"`
 
 	// PullSecretName is the name of the Kubernetes secret for pulling the files
@@ -252,7 +263,12 @@ type ClusterDetails struct {
 	// Defaults to 20 minutes (`20m`).
 	Timeout string `yaml:"timeout,omitempty"`
 
-	// DockerConfig describes how to mount the local Docker configuration into a pod.
+	// Image is the Docker image used by the Kaniko pod.
+	// Defaults to the latest released version of `gcr.io/kaniko-project/executor`.
+	Image string `yaml:"image,omitempty"`
+
+	// DockerConfig describes how to mount the local Docker configuration into the
+	// Kaniko pod.
 	DockerConfig *DockerConfig `yaml:"dockerConfig,omitempty"`
 }
 
@@ -545,39 +561,6 @@ type ArtifactType struct {
 	// JibGradleArtifact *alpha* builds images using the
 	// [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).
 	JibGradleArtifact *JibGradleArtifact `yaml:"jibGradle,omitempty" yamltags:"oneOf=artifact"`
-
-	// KanikoArtifact *alpha* builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko).
-	KanikoArtifact *KanikoArtifact `yaml:"kaniko,omitempty" yamltags:"oneOf=artifact"`
-}
-
-// KanikoArtifact *alpha* describes an artifact built from a Dockerfile,
-// with kaniko.
-type KanikoArtifact struct {
-	// AdditionalFlags are additional flags to be passed to Kaniko command line.
-	// See [Kaniko Additional Flags](https://github.com/GoogleContainerTools/kaniko#additional-flags).
-	AdditionalFlags []string `yaml:"flags,omitempty"`
-
-	// DockerfilePath locates the Dockerfile relative to workspace.
-	// Defaults to `Dockerfile`.
-	DockerfilePath string `yaml:"dockerfile,omitempty"`
-
-	// Target is the Dockerfile target name to build.
-	Target string `yaml:"target,omitempty"`
-
-	// BuildArgs are arguments passed to the docker build.
-	// For example: `{"key1": "value1", "key2": "value2"}`.
-	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
-
-	// BuildContext is where the build context for this artifact resides.
-	BuildContext *KanikoBuildContext `yaml:"buildContext,omitempty"`
-
-	// Image is the Docker image used by the Kaniko pod.
-	// Defaults to the latest released version of `gcr.io/kaniko-project/executor`.
-	Image string `yaml:"image,omitempty"`
-
-	// Cache configures Kaniko caching. If a cache is specified, Kaniko will
-	// use a remote cache which will speed up builds.
-	Cache *KanikoCache `yaml:"cache,omitempty"`
 }
 
 // DockerArtifact *beta* describes an artifact built from a Dockerfile,

@@ -47,14 +47,21 @@ func Set(c *latest.SkaffoldPipeline) error {
 		return err
 	}
 
-	if err := withKanikoConfig(c,
-		setDefaultKanikoTimeout,
-		setDefaultKanikoImage,
-		setDefaultKanikoInitImage,
-		setDefaultKanikoNamespace,
-		setDefaultKanikoSecret,
-		setDefaultKanikoBuildContext,
-		setDefaultDockerConfigSecret,
+	if c.Build.Cluster != nil {
+		// All artifacts should be built with kaniko
+		for _, a := range c.Build.Artifacts {
+			setDefaultKanikoArtifact(a)
+			setDefaultKanikoArtifactImage(a)
+			setDefaultKanikoArtifactBuildContext(a)
+			setDefaultKanikoDockerfilePath(a)
+		}
+	}
+
+	if err := withClusterConfig(c,
+		setDefaultClusterNamespace,
+		setDefaultClusterTimeout,
+		setDefaultClusterSecret,
+		setDefaultClusterDockerConfigSecret,
 	); err != nil {
 		return err
 	}
@@ -187,31 +194,63 @@ func setDefaultWorkspace(a *latest.Artifact) {
 	a.Workspace = valueOrDefault(a.Workspace, ".")
 }
 
-func withKanikoConfig(c *latest.SkaffoldPipeline, operations ...func(kaniko *latest.KanikoBuild) error) error {
-	if kaniko := c.Build.KanikoBuild; kaniko != nil {
-		for _, operation := range operations {
-			if err := operation(kaniko); err != nil {
-				return err
-			}
-		}
-		for _, a := range c.Build.Artifacts {
-			setDefaultKanikoArtifact(a)
-			setDefaultKanikoDockerfilePath(a)
-			setDefaultKanikoArtifactBuildContext(kaniko, a)
+func withClusterConfig(c *latest.SkaffoldPipeline, opts ...func(cluster *latest.ClusterDetails) error) error {
+	clusterDetails := c.Build.BuildType.Cluster
+	if clusterDetails == nil {
+		return nil
+	}
+	for _, o := range opts {
+		if err := o(clusterDetails); err != nil {
+			return err
 		}
 	}
-
 	return nil
 }
 
-func setDefaultKanikoNamespace(kaniko *latest.KanikoBuild) error {
-	if kaniko.Namespace == "" {
+func setDefaultClusterNamespace(cluster *latest.ClusterDetails) error {
+	if cluster.Namespace == "" {
 		ns, err := currentNamespace()
 		if err != nil {
 			return errors.Wrap(err, "getting current namespace")
 		}
+		cluster.Namespace = ns
+	}
+	return nil
+}
 
-		kaniko.Namespace = ns
+func setDefaultClusterTimeout(cluster *latest.ClusterDetails) error {
+	cluster.Timeout = valueOrDefault(cluster.Timeout, constants.DefaultKanikoTimeout)
+	return nil
+}
+
+func setDefaultClusterSecret(cluster *latest.ClusterDetails) error {
+	cluster.PullSecretName = valueOrDefault(cluster.PullSecretName, constants.DefaultKanikoSecretName)
+	if cluster.PullSecret != "" {
+		absPath, err := homedir.Expand(cluster.PullSecret)
+		if err != nil {
+			return fmt.Errorf("unable to expand pullSecret %s", cluster.PullSecret)
+		}
+		cluster.PullSecret = absPath
+		return nil
+	}
+	return nil
+}
+
+func setDefaultClusterDockerConfigSecret(cluster *latest.ClusterDetails) error {
+	if cluster.DockerConfig == nil {
+		return nil
+	}
+
+	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName)
+
+	if cluster.DockerConfig.Path != "" {
+		absPath, err := homedir.Expand(cluster.DockerConfig.Path)
+		if err != nil {
+			return fmt.Errorf("unable to expand dockerConfig.path %s", cluster.DockerConfig.Path)
+		}
+
+		cluster.DockerConfig.Path = absPath
+		return nil
 	}
 
 	return nil
@@ -227,78 +266,21 @@ func setDefaultKanikoDockerfilePath(artifact *latest.Artifact) {
 	artifact.KanikoArtifact.DockerfilePath = valueOrDefault(artifact.KanikoArtifact.DockerfilePath, constants.DefaultDockerfilePath)
 }
 
-func setDefaultKanikoArtifactBuildContext(kaniko *latest.KanikoBuild, artifact *latest.Artifact) {
+func setDefaultKanikoArtifactBuildContext(artifact *latest.Artifact) {
 	if artifact.KanikoArtifact.BuildContext == nil {
-		if kaniko.BuildContext != nil {
-			artifact.KanikoArtifact.BuildContext = kaniko.BuildContext
-			return
-		}
 		artifact.KanikoArtifact.BuildContext = &latest.KanikoBuildContext{
 			LocalDir: &latest.LocalDir{},
 		}
 	}
-}
-
-func setDefaultKanikoTimeout(kaniko *latest.KanikoBuild) error {
-	kaniko.Timeout = valueOrDefault(kaniko.Timeout, constants.DefaultKanikoTimeout)
-	return nil
-}
-
-func setDefaultKanikoInitImage(kaniko *latest.KanikoBuild) error {
-	if kaniko.BuildContext != nil && kaniko.BuildContext.LocalDir != nil {
-		localDir := kaniko.BuildContext.LocalDir
+	localDir := artifact.KanikoArtifact.BuildContext.LocalDir
+	if localDir != nil {
 		localDir.InitImage = valueOrDefault(localDir.InitImage, constants.DefaultBusyboxImage)
 	}
-	return nil
 }
 
-func setDefaultKanikoImage(kaniko *latest.KanikoBuild) error {
-	kaniko.Image = valueOrDefault(kaniko.Image, constants.DefaultKanikoImage)
-	return nil
-}
-
-func setDefaultKanikoSecret(kaniko *latest.KanikoBuild) error {
-	kaniko.PullSecretName = valueOrDefault(kaniko.PullSecretName, constants.DefaultKanikoSecretName)
-
-	if kaniko.PullSecret != "" {
-		absPath, err := homedir.Expand(kaniko.PullSecret)
-		if err != nil {
-			return fmt.Errorf("unable to expand pullSecret %s", kaniko.PullSecret)
-		}
-
-		kaniko.PullSecret = absPath
-		return nil
-	}
-
-	return nil
-}
-
-func setDefaultDockerConfigSecret(kaniko *latest.KanikoBuild) error {
-	if kaniko.DockerConfig == nil {
-		return nil
-	}
-
-	kaniko.DockerConfig.SecretName = valueOrDefault(kaniko.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName)
-
-	if kaniko.DockerConfig.Path != "" {
-		absPath, err := homedir.Expand(kaniko.DockerConfig.Path)
-		if err != nil {
-			return fmt.Errorf("unable to expand dockerConfig.path %s", kaniko.DockerConfig.Path)
-		}
-
-		kaniko.DockerConfig.Path = absPath
-		return nil
-	}
-
-	return nil
-}
-
-func setDefaultKanikoBuildContext(kaniko *latest.KanikoBuild) error {
-	if kaniko.BuildContext == nil {
-		kaniko.BuildContext = &latest.KanikoBuildContext{
-			LocalDir: &latest.LocalDir{},
-		}
-	}
+func setDefaultKanikoArtifactImage(artifact *latest.Artifact) error {
+	kanikoArtifact := artifact.KanikoArtifact
+	artifact.KanikoArtifact.Image = valueOrDefault(kanikoArtifact.Image, constants.DefaultKanikoImage)
 	return nil
 }
 

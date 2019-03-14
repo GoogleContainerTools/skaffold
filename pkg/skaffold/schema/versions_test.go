@@ -75,15 +75,23 @@ deploy:
 `
 	minimalKanikoConfig = `
 build:
-  kaniko:
-    buildContext:
-      gcsBucket: demo
+  artifacts:
+  - image: image1
+    context: ./examples/app1
+    kaniko:
+      buildContext:
+        gcsBucket: demo
+  cluster: {}
 `
 	completeKanikoConfig = `
 build:
-  kaniko:
-    buildContext:
-      gcsBucket: demo
+  artifacts:
+  - image: image1
+    context: ./examples/app1
+    kaniko:
+      buildContext:
+        localDir: {}
+  cluster:
     pullSecret: /secret.json
     pullSecretName: secret-name
     namespace: nskaniko
@@ -159,8 +167,9 @@ func TestParseConfig(t *testing.T) {
 			description: "Minimal Kaniko config",
 			config:      minimalKanikoConfig,
 			expected: config(
-				withKanikoBuild("demo", "kaniko-secret", "default", "", "20m",
+				withClusterBuild("demo", "kaniko-secret", "default", "", "20m",
 					withGitTagger(),
+					withKanikoArtifact("image1", "./examples/app1", "Dockerfile", "demo"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
 			),
@@ -170,9 +179,10 @@ func TestParseConfig(t *testing.T) {
 			description: "Complete Kaniko config",
 			config:      completeKanikoConfig,
 			expected: config(
-				withKanikoBuild("demo", "secret-name", "nskaniko", "/secret.json", "120m",
+				withClusterBuild("demo", "secret-name", "nskaniko", "/secret.json", "120m",
 					withGitTagger(),
 					withDockerConfig("config-name", "/kaniko/.docker"),
+					withKanikoArtifact("image1", "./examples/app1", "Dockerfile", ""),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
 			),
@@ -251,17 +261,13 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 	}
 }
 
-func withKanikoBuild(bucket, secretName, namespace, secret string, timeout string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldPipeline) {
+func withClusterBuild(bucket, secretName, namespace, secret string, timeout string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldPipeline) {
 	return func(cfg *latest.SkaffoldPipeline) {
-		b := latest.BuildConfig{BuildType: latest.BuildType{KanikoBuild: &latest.KanikoBuild{
-			BuildContext: &latest.KanikoBuildContext{
-				GCSBucket: bucket,
-			},
+		b := latest.BuildConfig{BuildType: latest.BuildType{Cluster: &latest.ClusterDetails{
 			PullSecretName: secretName,
 			Namespace:      namespace,
 			PullSecret:     secret,
 			Timeout:        timeout,
-			Image:          constants.DefaultKanikoImage,
 		}}}
 		for _, op := range ops {
 			op(&b)
@@ -272,7 +278,7 @@ func withKanikoBuild(bucket, secretName, namespace, secret string, timeout strin
 
 func withDockerConfig(secretName string, path string) func(*latest.BuildConfig) {
 	return func(cfg *latest.BuildConfig) {
-		cfg.KanikoBuild.DockerConfig = &latest.DockerConfig{
+		cfg.Cluster.DockerConfig = &latest.DockerConfig{
 			SecretName: secretName,
 			Path:       path,
 		}
@@ -323,6 +329,31 @@ func withBazelArtifact(image, workspace, target string) func(*latest.BuildConfig
 			ArtifactType: latest.ArtifactType{
 				BazelArtifact: &latest.BazelArtifact{
 					BuildTarget: target,
+				},
+			},
+		})
+	}
+}
+
+func withKanikoArtifact(image, workspace, dockerfile, bucket string) func(*latest.BuildConfig) {
+	return func(cfg *latest.BuildConfig) {
+		bc := &latest.KanikoBuildContext{}
+		if bucket == "" {
+			bc.LocalDir = &latest.LocalDir{
+				InitImage: constants.DefaultBusyboxImage,
+			}
+		} else {
+			bc.GCSBucket = bucket
+		}
+
+		cfg.Artifacts = append(cfg.Artifacts, &latest.Artifact{
+			ImageName: image,
+			Workspace: workspace,
+			ArtifactType: latest.ArtifactType{
+				KanikoArtifact: &latest.KanikoArtifact{
+					DockerfilePath: dockerfile,
+					BuildContext:   bc,
+					Image:          constants.DefaultKanikoImage,
 				},
 			},
 		})
