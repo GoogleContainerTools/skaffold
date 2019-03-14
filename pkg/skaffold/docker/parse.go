@@ -44,20 +44,30 @@ type from struct {
 
 type destinationsBySourcePath map[string][]string
 
-func newdestinationsBySourcePath() destinationsBySourcePath {
-	return destinationsBySourcePath(make(map[string][]string))
-}
-
-func (d destinationsBySourcePath) put(sourcePath, dest string) {
-	if entry, ok := d[sourcePath]; ok {
-		d[sourcePath] = append(entry, dest)
-	} else {
-		d[sourcePath] = []string{dest}
-	}
+func fromMap(in map[string][]string) destinationsBySourcePath {
+	return destinationsBySourcePath(in)
 }
 
 func (d destinationsBySourcePath) toMap() map[string][]string {
 	return d
+}
+
+func newDestinationsBySourcePath() destinationsBySourcePath {
+	return fromMap(make(map[string][]string))
+}
+
+func (d destinationsBySourcePath) depDst(sourcePath, dst string) {
+	if dsts, ok := d[sourcePath]; ok {
+		d[sourcePath] = append(dsts, dst)
+	} else {
+		d[sourcePath] = []string{dst}
+	}
+}
+
+func (d destinationsBySourcePath) dep(sourcePath string) {
+	if _, ok := d[sourcePath]; !ok {
+		d[sourcePath] = nil
+	}
 }
 
 var (
@@ -265,14 +275,14 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 }
 
 func expandPaths(workspace string, copied map[string][]string) (map[string][]string, error) {
-	destsBySourcePath := newdestinationsBySourcePath()
+	destsBySourcePath := newDestinationsBySourcePath()
 	for dest, files := range copied {
 		matchesOne := false
 
 		for _, p := range files {
 			path := filepath.Join(workspace, p)
 			if _, err := os.Stat(path); err == nil {
-				destsBySourcePath.put(p, dest)
+				destsBySourcePath.depDst(p, dest)
 				matchesOne = true
 				continue
 			}
@@ -291,7 +301,7 @@ func expandPaths(workspace string, copied map[string][]string) (map[string][]str
 					return nil, fmt.Errorf("getting relative path of %s", f)
 				}
 
-				destsBySourcePath.put(rel, dest)
+				destsBySourcePath.depDst(rel, dest)
 			}
 			matchesOne = true
 		}
@@ -407,13 +417,6 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 		}
 	}
 
-	// Always add dockerfile even if it's .dockerignored. The daemon will need it anyways.
-	if !filepath.IsAbs(dockerfilePath) {
-		files[dockerfilePath] = true
-	} else {
-		files[absDockerfilePath] = true
-	}
-
 	// Ignore .dockerignore
 	delete(files, ".dockerignore")
 
@@ -421,6 +424,13 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 	defaultDst := []string{""}
 	for file := range files {
 		dependencies[file] = defaultDst
+	}
+
+	// Always add dockerfile even if it's .dockerignored. The daemon will need it anyways.
+	if !filepath.IsAbs(dockerfilePath) {
+		fromMap(dependencies).dep(dockerfilePath)
+	} else {
+		fromMap(dependencies).dep(absDockerfilePath)
 	}
 
 	return dependencies, nil

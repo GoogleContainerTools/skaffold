@@ -24,7 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 const copyServerGo = `
@@ -235,21 +235,21 @@ func TestGetDependencies(t *testing.T) {
 			description: "copy dependency",
 			dockerfile:  copyServerGo,
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": {""}, "server.go": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "server.go": {""}},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "add dependency",
 			dockerfile:  addNginx,
 			workspace:   "docker",
-			expected:    map[string][]string{"Dockerfile": {""}, "nginx.conf": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "nginx.conf": {""}},
 			fetched:     []string{"nginx"},
 		},
 		{
 			description: "wildcards",
 			dockerfile:  wildcards,
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": {""}, "server.go": {""}, "worker.go": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "server.go": {""}, "worker.go": {""}},
 			fetched:     []string{"nginx"},
 		},
 		{
@@ -263,7 +263,7 @@ func TestGetDependencies(t *testing.T) {
 			description: "one wilcard matches none",
 			dockerfile:  oneWilcardMatchesNone,
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": {""}, "server.go": {""}, "worker.go": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "server.go": {""}, "worker.go": {""}},
 			fetched:     []string{"nginx"},
 		},
 		{
@@ -275,42 +275,42 @@ func TestGetDependencies(t *testing.T) {
 			// https://github.com/GoogleContainerTools/skaffold/issues/158
 			description: "no dependencies on remote files",
 			dockerfile:  remoteFileAdd,
-			expected:    map[string][]string{"Dockerfile": {""}},
+			expected:    map[string][]string{"Dockerfile": nil},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "multistage dockerfile",
 			dockerfile:  multiStageDockerfile,
 			workspace:   "",
-			expected:    map[string][]string{"Dockerfile": {""}, "worker.go": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "worker.go": {""}},
 			fetched:     []string{"golang:1.9.2", "gcr.io/distroless/base"},
 		},
 		{
 			description: "copy twice",
 			dockerfile:  multiCopy,
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": {""}, "test.conf": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "test.conf": {""}},
 			fetched:     []string{"nginx"},
 		},
 		{
 			description: "env test",
 			dockerfile:  envTest,
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": {""}, "bar": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "bar": {""}},
 			fetched:     []string{"busybox"},
 		},
 		{
 			description: "multiple env test",
 			dockerfile:  multiEnvTest,
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": {""}, filepath.Join("docker", "nginx.conf"): {""}},
+			expected:    map[string][]string{"Dockerfile": nil, filepath.Join("docker", "nginx.conf"): {""}},
 			fetched:     []string{"busybox"},
 		},
 		{
 			description: "multi file copy",
 			dockerfile:  multiFileCopy,
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": {""}, "file": {""}, "server.go": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "file": {""}, "server.go": {""}},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
@@ -326,7 +326,7 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  copyServerGo,
 			ignore:      "Dockerfile",
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": {""}, "server.go": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "server.go": {""}},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
@@ -387,7 +387,7 @@ func TestGetDependencies(t *testing.T) {
 			description: "onbuild error",
 			dockerfile:  onbuildError,
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": {""}, "file": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "file": {""}},
 			fetched:     []string{"noimage:latest"},
 		},
 		{
@@ -395,7 +395,7 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  copyServerGoBuildArg,
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": util.StringPtr("server.go")},
-			expected:    map[string][]string{"Dockerfile": {""}, "server.go": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "server.go": {""}},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
@@ -403,7 +403,7 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  copyWorkerGoBuildArgSamePrefix,
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO2": util.StringPtr("worker.go")},
-			expected:    map[string][]string{"Dockerfile": {""}, "worker.go": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "worker.go": {""}},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
@@ -411,7 +411,7 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  copyServerGoBuildArgCurlyBraces,
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": util.StringPtr("server.go")},
-			expected:    map[string][]string{"Dockerfile": {""}, "server.go": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "server.go": {""}},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
@@ -419,28 +419,28 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  copyServerGoBuildArgExtraWhitespace,
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": util.StringPtr("server.go")},
-			expected:    map[string][]string{"Dockerfile": {""}, "server.go": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "server.go": {""}},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "build args with default value",
 			dockerfile:  copyServerGoBuildArgDefaultValue,
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": {""}, "server.go": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "server.go": {""}},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "build args with redefined default value",
 			dockerfile:  copyWorkerGoBuildArgRedefinedDefaultValue,
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": {""}, "worker.go": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "worker.go": {""}},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "build args all defined a the top",
 			dockerfile:  copyServerGoBuildArgsAtTheTop,
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": {""}, "server.go": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "server.go": {""}},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
@@ -448,7 +448,7 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  copyServerGoBuildArgDefaultValue,
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": util.StringPtr("worker.go")},
-			expected:    map[string][]string{"Dockerfile": {""}, "worker.go": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "worker.go": {""}},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
@@ -456,42 +456,42 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  copyServerGoBuildArgDefaultValue,
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": nil},
-			expected:    map[string][]string{"Dockerfile": {""}, "server.go": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "server.go": {""}},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "from base stage",
 			dockerfile:  fromStage,
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": {""}},
+			expected:    map[string][]string{"Dockerfile": nil},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "from base stage, ignoring case",
 			dockerfile:  fromStageIgnoreCase,
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": {""}},
+			expected:    map[string][]string{"Dockerfile": nil},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "from scratch",
 			dockerfile:  fromScratch,
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": {""}, "file": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "file": {""}},
 			fetched:     nil,
 		},
 		{
 			description: "from scratch, ignoring case",
 			dockerfile:  fromScratchUppercase,
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": {""}, "file": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "file": {""}},
 			fetched:     nil,
 		},
 		{
 			description: "case sensitive",
 			dockerfile:  fromImageCaseSensitive,
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": {""}, "file": {""}},
+			expected:    map[string][]string{"Dockerfile": nil, "file": {""}},
 			fetched:     []string{"jboss/wildfly:14.0.1.Final"},
 		},
 	}
