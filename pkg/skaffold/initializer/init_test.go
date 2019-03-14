@@ -14,53 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package initializer
 
 import (
 	"bytes"
-	"fmt"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
-
-func TestGenerateEmptySkaffoldPipeline(t *testing.T) {
-	expectedYaml := fmt.Sprintf(`apiVersion: %s
-kind: Config
-deploy:
-  kubectl: {}
-`, latest.Version)
-
-	buf, err := generateSkaffoldPipeline(nil, nil)
-
-	testutil.CheckErrorAndDeepEqual(t, false, err, expectedYaml, string(buf))
-}
-
-func TestGenerateSkaffoldPipeline(t *testing.T) {
-	expectedYaml := fmt.Sprintf(`apiVersion: %s
-kind: Config
-build:
-  artifacts:
-  - image: docker/image
-    docker:
-      dockerfile: dockerfile.test
-deploy:
-  kubectl:
-    manifests:
-    - k8s/deployment.yaml
-`, latest.Version)
-
-	k8sConfigs := []string{"k8s/deployment.yaml"}
-	dockerfilePairs := []dockerfilePair{{
-		Dockerfile: "dockerfile.test",
-		ImageName:  "docker/image",
-	}}
-
-	buf, err := generateSkaffoldPipeline(k8sConfigs, dockerfilePairs)
-
-	testutil.CheckErrorAndDeepEqual(t, false, err, expectedYaml, string(buf))
-}
 
 func TestPrintAnalyzeJSON(t *testing.T) {
 	tests := []struct {

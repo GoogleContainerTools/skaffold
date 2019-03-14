@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
 	yaml "gopkg.in/yaml.v2"
+	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 var (
@@ -122,6 +123,8 @@ func Test_NewCache(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
+			defer restore()
 
 			cacheFile := createTempCacheFile(t, test.cacheFileContents)
 			if test.updateCacheFile {

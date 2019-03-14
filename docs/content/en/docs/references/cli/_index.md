@@ -60,7 +60,7 @@ Builds the artifacts
 
 ```
 Usage:
-  skaffold build [flags]
+  skaffold build
 
 Flags:
   -b, --build-image stringArray      Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts
@@ -84,29 +84,14 @@ Global Flags:
 
 
 ```
-Env vars:
 
-* `SKAFFOLD_BUILD_IMAGE` (same as --build-image)
-* `SKAFFOLD_CACHE_ARTIFACTS` (same as --cache-artifacts)
-* `SKAFFOLD_CACHE_FILE` (same as --cache-file)
-* `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
-* `SKAFFOLD_ENABLE_RPC` (same as --enable-rpc)
-* `SKAFFOLD_FILENAME` (same as --filename)
-* `SKAFFOLD_NAMESPACE` (same as --namespace)
-* `SKAFFOLD_OUTPUT` (same as --output)
-* `SKAFFOLD_PROFILE` (same as --profile)
-* `SKAFFOLD_QUIET` (same as --quiet)
-* `SKAFFOLD_RPC_PORT` (same as --rpc-port)
-* `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
-* `SKAFFOLD_TOOT` (same as --toot)
-
-### skaffold completion
+### skaffold completion SHELL
 
 Output shell completion for the given shell (bash or zsh)
 
 ```
 Usage:
-  skaffold completion SHELL [flags]
+  skaffold completion SHELL
 
 Global Flags:
       --color int          Specify the default output color in ANSI escape codes (default 34)
@@ -114,8 +99,6 @@ Global Flags:
 
 
 ```
-Env vars:
-
 
 ### skaffold config
 
@@ -138,8 +121,66 @@ Use "skaffold config [command] --help" for more information about a command.
 
 
 ```
-Env vars:
 
+### skaffold config list
+
+List all values set in the global Skaffold config
+
+```
+Usage:
+  skaffold config list
+
+Flags:
+  -a, --all                   Show values for all kubecontexts
+  -c, --config string         Path to Skaffold config
+  -k, --kube-context string   Kubectl context to set values against
+
+Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+
+
+```
+
+### skaffold config set
+
+Set a value in the global Skaffold config
+
+```
+Usage:
+  skaffold config set
+
+Flags:
+  -c, --config string         Path to Skaffold config
+  -g, --global                Set value for global config
+  -k, --kube-context string   Kubectl context to set values against
+
+Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+
+
+```
+
+### skaffold config unset
+
+Unset a value in the global Skaffold config
+
+```
+Usage:
+  skaffold config unset
+
+Flags:
+  -c, --config string         Path to Skaffold config
+  -g, --global                Set value for global config
+  -k, --kube-context string   Kubectl context to set values against
+
+Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+
+
+```
 
 ### skaffold debug
 
@@ -196,7 +237,7 @@ Delete the deployed resources
 
 ```
 Usage:
-  skaffold delete [flags]
+  skaffold delete
 
 Flags:
       --cache-artifacts           Set to true to enable caching of artifacts.
@@ -216,18 +257,6 @@ Global Flags:
 
 
 ```
-Env vars:
-
-* `SKAFFOLD_CACHE_ARTIFACTS` (same as --cache-artifacts)
-* `SKAFFOLD_CACHE_FILE` (same as --cache-file)
-* `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
-* `SKAFFOLD_ENABLE_RPC` (same as --enable-rpc)
-* `SKAFFOLD_FILENAME` (same as --filename)
-* `SKAFFOLD_NAMESPACE` (same as --namespace)
-* `SKAFFOLD_PROFILE` (same as --profile)
-* `SKAFFOLD_RPC_PORT` (same as --rpc-port)
-* `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
-* `SKAFFOLD_TOOT` (same as --toot)
 
 ### skaffold deploy
 
@@ -235,7 +264,7 @@ Deploys the artifacts
 
 ```
 Usage:
-  skaffold deploy [flags]
+  skaffold deploy
 
 Flags:
       --cache-artifacts           Set to true to enable caching of artifacts.
@@ -258,21 +287,6 @@ Global Flags:
 
 
 ```
-Env vars:
-
-* `SKAFFOLD_CACHE_ARTIFACTS` (same as --cache-artifacts)
-* `SKAFFOLD_CACHE_FILE` (same as --cache-file)
-* `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
-* `SKAFFOLD_ENABLE_RPC` (same as --enable-rpc)
-* `SKAFFOLD_FILENAME` (same as --filename)
-* `SKAFFOLD_IMAGES` (same as --images)
-* `SKAFFOLD_LABEL` (same as --label)
-* `SKAFFOLD_NAMESPACE` (same as --namespace)
-* `SKAFFOLD_PROFILE` (same as --profile)
-* `SKAFFOLD_RPC_PORT` (same as --rpc-port)
-* `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
-* `SKAFFOLD_TAIL` (same as --tail)
-* `SKAFFOLD_TOOT` (same as --toot)
 
 ### skaffold dev
 
@@ -280,7 +294,7 @@ Runs a pipeline file in development mode
 
 ```
 Usage:
-  skaffold dev [flags]
+  skaffold dev
 
 Flags:
       --cache-artifacts           Set to true to enable caching of artifacts.
@@ -308,26 +322,6 @@ Global Flags:
 
 
 ```
-Env vars:
-
-* `SKAFFOLD_CACHE_ARTIFACTS` (same as --cache-artifacts)
-* `SKAFFOLD_CACHE_FILE` (same as --cache-file)
-* `SKAFFOLD_CLEANUP` (same as --cleanup)
-* `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
-* `SKAFFOLD_ENABLE_RPC` (same as --enable-rpc)
-* `SKAFFOLD_EXPERIMENTAL_GUI` (same as --experimental-gui)
-* `SKAFFOLD_FILENAME` (same as --filename)
-* `SKAFFOLD_LABEL` (same as --label)
-* `SKAFFOLD_NAMESPACE` (same as --namespace)
-* `SKAFFOLD_PORT_FORWARD` (same as --port-forward)
-* `SKAFFOLD_PROFILE` (same as --profile)
-* `SKAFFOLD_RPC_PORT` (same as --rpc-port)
-* `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
-* `SKAFFOLD_TAIL` (same as --tail)
-* `SKAFFOLD_TOOT` (same as --toot)
-* `SKAFFOLD_TRIGGER` (same as --trigger)
-* `SKAFFOLD_WATCH_IMAGE` (same as --watch-image)
-* `SKAFFOLD_WATCH_POLL_INTERVAL` (same as --watch-poll-interval)
 
 ### skaffold diagnose
 
@@ -335,7 +329,7 @@ Run a diagnostic on Skaffold
 
 ```
 Usage:
-  skaffold diagnose [flags]
+  skaffold diagnose
 
 Flags:
   -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
@@ -347,10 +341,6 @@ Global Flags:
 
 
 ```
-Env vars:
-
-* `SKAFFOLD_FILENAME` (same as --filename)
-* `SKAFFOLD_PROFILE` (same as --profile)
 
 ### skaffold fix
 
@@ -358,7 +348,7 @@ Converts old Skaffold config to newest schema version
 
 ```
 Usage:
-  skaffold fix [flags]
+  skaffold fix
 
 Flags:
   -f, --filename string   Filename or URL to the pipeline file (default "skaffold.yaml")
@@ -370,10 +360,6 @@ Global Flags:
 
 
 ```
-Env vars:
-
-* `SKAFFOLD_FILENAME` (same as --filename)
-* `SKAFFOLD_OVERWRITE` (same as --overwrite)
 
 ### skaffold init
 
@@ -381,7 +367,7 @@ Automatically generate Skaffold configuration for deploying an application
 
 ```
 Usage:
-  skaffold init [flags]
+  skaffold init
 
 Flags:
       --analyze                Print all discoverable Dockerfiles and images in JSON format to stdout
@@ -398,14 +384,6 @@ Global Flags:
 
 
 ```
-Env vars:
-
-* `SKAFFOLD_ANALYZE` (same as --analyze)
-* `SKAFFOLD_ARTIFACT` (same as --artifact)
-* `SKAFFOLD_COMPOSE_FILE` (same as --compose-file)
-* `SKAFFOLD_FILENAME` (same as --filename)
-* `SKAFFOLD_FORCE` (same as --force)
-* `SKAFFOLD_SKIP_BUILD` (same as --skip-build)
 
 ### skaffold run
 
@@ -413,7 +391,7 @@ Runs a pipeline file
 
 ```
 Usage:
-  skaffold run [flags]
+  skaffold run
 
 Flags:
       --cache-artifacts           Set to true to enable caching of artifacts.
@@ -436,21 +414,6 @@ Global Flags:
 
 
 ```
-Env vars:
-
-* `SKAFFOLD_CACHE_ARTIFACTS` (same as --cache-artifacts)
-* `SKAFFOLD_CACHE_FILE` (same as --cache-file)
-* `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
-* `SKAFFOLD_ENABLE_RPC` (same as --enable-rpc)
-* `SKAFFOLD_FILENAME` (same as --filename)
-* `SKAFFOLD_LABEL` (same as --label)
-* `SKAFFOLD_NAMESPACE` (same as --namespace)
-* `SKAFFOLD_PROFILE` (same as --profile)
-* `SKAFFOLD_RPC_PORT` (same as --rpc-port)
-* `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
-* `SKAFFOLD_TAG` (same as --tag)
-* `SKAFFOLD_TAIL` (same as --tail)
-* `SKAFFOLD_TOOT` (same as --toot)
 
 ### skaffold version
 
@@ -458,7 +421,7 @@ Print the version information
 
 ```
 Usage:
-  skaffold version [flags]
+  skaffold version
 
 Flags:
   -o, --output *flags.TemplateFlag   Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/pkg/skaffold/version#Info (default {{.Version}}
@@ -470,6 +433,3 @@ Global Flags:
 
 
 ```
-Env vars:
-
-* `SKAFFOLD_OUTPUT` (same as --output)

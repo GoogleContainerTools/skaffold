@@ -22,12 +22,12 @@ import (
 	"io"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -77,7 +77,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 		return b.buildDocker(ctx, out, artifact, tag)
 
 	case artifact.BazelArtifact != nil:
-		return b.buildBazel(ctx, out, artifact.Workspace, artifact.BazelArtifact, tag)
+		return b.buildBazel(ctx, out, artifact, tag)
 
 	case artifact.JibMavenArtifact != nil:
 		return b.buildJibMaven(ctx, out, artifact.Workspace, artifact.JibMavenArtifact, tag)
