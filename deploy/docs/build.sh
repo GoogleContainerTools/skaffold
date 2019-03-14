@@ -19,7 +19,7 @@ set -exu
 readonly BASE_URL=${1}
 
 cd docs
-mkdir themes
+mkdir -p themes
 ln -s /app/docs/themes/docsy ./themes/docsy
 ln -s /app/docs/node_modules ./node_modules
 hugo --baseURL=${BASE_URL}
