@@ -33,6 +33,29 @@ COPY server.go .
 CMD server.go
 `
 
+const copySubdirectory = `
+FROM ubuntu:14.04
+COPY docker .
+`
+
+const copyWorkdir = `
+FROM ubuntu:14.04
+WORKDIR /app
+COPY server.go .
+`
+
+const copyWorkdirAbsDest = `
+FROM ubuntu:14.04
+WORKDIR /app
+COPY server.go /bar
+`
+
+const copyWorkdirAbsDestDir = `
+FROM ubuntu:14.04
+WORKDIR /app
+COPY server.go /bar/
+`
+
 const addNginx = `
 FROM nginx
 ADD nginx.conf /etc/nginx
@@ -51,9 +74,20 @@ FROM nginx
 ADD *.go /tmp/
 `
 
+const wildcardsWorkdir = `
+FROM nginx
+WORKDIR /app/
+ADD *.go ./
+`
+
 const wildcardsMatchesNone = `
 FROM nginx
 ADD *.none /tmp/
+`
+
+const wildcardsMatchesDirectory = `
+FROM nginx
+ADD * /tmp/
 `
 
 const oneWilcardMatchesNone = `
@@ -75,8 +109,14 @@ COPY --from=0 /go/src/github.com/r2d4/leeroy ./
 const envTest = `
 FROM busybox
 ENV foo bar
-WORKDIR ${foo}   # WORKDIR /bar
 COPY $foo /quux # COPY bar /quux
+`
+
+const envWorkdirTest = `
+FROM busybox
+ENV foo bar
+WORKDIR ${foo}   # WORKDIR /bar
+COPY server.go .
 `
 
 const multiEnvTest = `
@@ -91,6 +131,7 @@ FROM nginx
 ADD . /etc/
 COPY ./file /etc/file
 `
+
 const multiFileCopy = `
 FROM ubuntu:14.04
 COPY server.go file ./
@@ -246,10 +287,45 @@ func TestGetDependencies(t *testing.T) {
 			fetched:     []string{"nginx"},
 		},
 		{
+			description: "copy subdirectory",
+			dockerfile:  copySubdirectory,
+			workspace:   ".",
+			expected:    map[string][]string{"Dockerfile": nil, filepath.Join("docker", "nginx.conf"): {"/nginx.conf"}, filepath.Join("docker", "bar"): {"/bar"}},
+			fetched:     []string{"ubuntu:14.04"},
+		},
+		{
+			description: "copy file after workdir",
+			dockerfile:  copyWorkdir,
+			workspace:   ".",
+			expected:    map[string][]string{"Dockerfile": nil, "server.go": {"/app/server.go"}},
+			fetched:     []string{"ubuntu:14.04"},
+		},
+		{
+			description: "copy file with absolute dest after workdir",
+			dockerfile:  copyWorkdirAbsDest,
+			workspace:   ".",
+			expected:    map[string][]string{"Dockerfile": nil, "server.go": {"/bar"}},
+			fetched:     []string{"ubuntu:14.04"},
+		},
+		{
+			description: "copy file with absolute dest dir after workdir",
+			dockerfile:  copyWorkdirAbsDestDir,
+			workspace:   ".",
+			expected:    map[string][]string{"Dockerfile": nil, "server.go": {"/bar/server.go"}},
+			fetched:     []string{"ubuntu:14.04"},
+		},
+		{
 			description: "wildcards",
 			dockerfile:  wildcards,
 			workspace:   ".",
 			expected:    map[string][]string{"Dockerfile": nil, "server.go": {"/tmp/server.go"}, "worker.go": {"/tmp/server.go"}},
+			fetched:     []string{"nginx"},
+		},
+		{
+			description: "wildcards after workdir",
+			dockerfile:  wildcardsWorkdir,
+			workspace:   ".",
+			expected:    map[string][]string{"Dockerfile": nil, "server.go": {"/app/server.go"}, "worker.go": {"/app/server.go"}},
 			fetched:     []string{"nginx"},
 		},
 		{
@@ -264,6 +340,13 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  oneWilcardMatchesNone,
 			workspace:   ".",
 			expected:    map[string][]string{"Dockerfile": nil, "server.go": {"/tmp/server.go"}, "worker.go": {"/tmp/server.go"}},
+			fetched:     []string{"nginx"},
+		},
+		{
+			description: "wilcard matches directory, flattens contents",
+			dockerfile:  wildcardsMatchesDirectory,
+			workspace:   ".",
+			expected:    map[string][]string{".dot": {"/.dot"}, "Dockerfile": {"/Dockerfile"}, "bar": {"/bar"}, filepath.Join("docker", "bar"): {"/bar"}, filepath.Join("docker", "nginx.conf"): {"/nginx.conf"}, "file": {"/file"}, "server.go": {"/server.go"}, "test.conf": {"/test.conf"}, "worker.go": {""}},
 			fetched:     []string{"nginx"},
 		},
 		{
@@ -297,6 +380,13 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  envTest,
 			workspace:   ".",
 			expected:    map[string][]string{"Dockerfile": nil, "bar": {"/quux"}},
+			fetched:     []string{"busybox"},
+		},
+		{
+			description: "workdir depends on env",
+			dockerfile:  envWorkdirTest,
+			workspace:   ".",
+			expected:    map[string][]string{"Dockerfile": nil, "server.go": {"/bar/server.go"}},
 			fetched:     []string{"busybox"},
 		},
 		{
