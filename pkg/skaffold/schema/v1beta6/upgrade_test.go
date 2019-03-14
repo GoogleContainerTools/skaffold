@@ -19,7 +19,7 @@ package v1beta6
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta7"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -74,14 +74,15 @@ deploy:
 profiles:
   - name: test profile
     build:
-      kaniko:
-        buildContext: 
-          gcsBucket: skaffold-kaniko
-        pullSecretName: e2esecret
-        namespace: default
-        cache: {}
       artifacts:
       - image: gcr.io/k8s-skaffold/skaffold-example
+        kaniko:
+          buildContext:
+            gcsBucket: skaffold-kaniko
+          cache: {}
+      cluster:
+        pullSecretName: e2esecret
+        namespace: default
     test:
      - image: gcr.io/k8s-skaffold/skaffold-example
        structureTests:
@@ -94,6 +95,53 @@ profiles:
 	verifyUpgrade(t, yaml, expected)
 }
 
+func TestUpgradeKaniko(t *testing.T) {
+	yaml := `apiVersion: skaffold/v1beta6
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/skaffold-example
+  kaniko:
+    buildContext:
+      gcsBucket: my-bucket
+    cache:
+      repo: gcr.io/some-repo
+    pullSecretName: e2esecret
+    namespace: default
+test:
+  - image: gcr.io/k8s-skaffold/skaffold-example
+    structureTests:
+     - ./test/*
+deploy:
+  kubectl:
+    manifests:
+    - k8s-*
+`
+	expected := `apiVersion: skaffold/v1beta7
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/skaffold-example
+    kaniko:
+      buildContext:
+        gcsBucket: my-bucket
+      cache:
+        repo: gcr.io/some-repo
+  cluster:
+    pullSecretName: e2esecret
+    namespace: default
+test:
+  - image: gcr.io/k8s-skaffold/skaffold-example
+    structureTests:
+     - ./test/*
+deploy:
+  kubectl:
+    manifests:
+    - k8s-*
+`
+	verifyUpgrade(t, yaml, expected)
+}
+
 func verifyUpgrade(t *testing.T, input, output string) {
 	pipeline := NewSkaffoldPipeline()
 	err := yaml.UnmarshalStrict([]byte(input), pipeline)
@@ -102,7 +150,7 @@ func verifyUpgrade(t *testing.T, input, output string) {
 	upgraded, err := pipeline.Upgrade()
 	testutil.CheckError(t, false, err)
 
-	expected := next.NewSkaffoldPipeline()
+	expected := latest.NewSkaffoldPipeline()
 	err = yaml.UnmarshalStrict([]byte(output), expected)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, upgraded)
