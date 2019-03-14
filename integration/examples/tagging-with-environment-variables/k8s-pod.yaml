@@ -6,4 +6,3 @@ spec:
   containers:
   - name: getting-started
     image: gcr.io/k8s-skaffold/skaffold-example
-    imagePullPolicy: IfNotPresent
