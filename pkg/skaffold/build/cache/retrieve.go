@@ -63,11 +63,11 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 	for _, a := range artifacts {
 		a := a
 		go func() {
+			defer wg.Done()
 			select {
 			case <-ctx.Done():
 				canceled = true
 			default:
-				defer wg.Done()
 				artifact, err := c.resolveCachedArtifact(ctx, out, a)
 				if err != nil {
 					logrus.Debugf("error retrieving cached artifact for %s: %v\n", a.ImageName, err)
@@ -83,12 +83,10 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 			}
 		}()
 	}
-
+	wg.Wait()
 	if canceled {
 		return nil, nil, context.Canceled
 	}
-
-	wg.Wait()
 
 	color.Default.Fprintln(out, "Cache check complete in", time.Since(start))
 	return needToBuild, built, nil
