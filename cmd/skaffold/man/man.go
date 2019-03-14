@@ -21,12 +21,14 @@ import (
 	"os"
 	"text/template"
 
+	"github.com/spf13/cobra"
+
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
 	"github.com/spf13/pflag"
 )
 
 const manTemplate = `
-### skaffold {{.Name}}
+### {{.UseLine}}
 
 {{.Short}}
 
@@ -39,18 +41,30 @@ const manTemplate = `
 func main() {
 	command := cmd.NewSkaffoldCommand(os.Stdout, os.Stderr)
 	for _, command := range command.Commands() {
-		tmpl, err := template.New("test").Parse(manTemplate)
-		if err != nil {
-			panic(err)
-		}
-		err = tmpl.Execute(os.Stdout, command)
-		if err != nil {
-			panic(err)
-		}
+		printCommand(command)
+	}
+}
+
+func printCommand(command *cobra.Command) {
+	command.DisableFlagsInUseLine = true
+	tmpl, err := template.New("test").Parse(manTemplate)
+	if err != nil {
+		panic(err)
+	}
+	err = tmpl.Execute(os.Stdout, command)
+	if err != nil {
+		panic(err)
+	}
+	if len(command.Flags().Args()) > 0 {
 		fmt.Println("Env vars:")
 		fmt.Println("")
 		command.LocalFlags().VisitAll(func(flag *pflag.Flag) {
 			fmt.Printf("* `%s` (same as --%s)\n", cmd.FlagToEnvVarName(flag), flag.Name)
 		})
+	}
+	if command.HasSubCommands() {
+		for _, subCommand := range command.Commands() {
+			printCommand(subCommand)
+		}
 	}
 }
