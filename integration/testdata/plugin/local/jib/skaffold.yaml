@@ -1,0 +1,8 @@
+apiVersion: skaffold/v1beta7
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/sk8-skaffold/skaffold-jib
+    context: .
+    plugin:
+      name: jibMaven
