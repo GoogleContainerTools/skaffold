@@ -98,7 +98,7 @@ func (b *Builder) runBuild(ctx context.Context, out io.Writer, artifact *latest.
 	if b.PushImages {
 		digest := digestOrImageID
 		image := tag + "@" + digest
-		return image, build.RegistryConfigurationRetriever(image), nil	
+		return image, build.RegistryConfigurationRetriever(image), nil
 	}
 
 	// k8s doesn't recognize the imageID or any combination of the image name
