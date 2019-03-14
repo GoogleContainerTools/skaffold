@@ -48,17 +48,17 @@ CMD nginx
 
 const wildcards = `
 FROM nginx
-ADD *.go /tmp
+ADD *.go /tmp/
 `
 
 const wildcardsMatchesNone = `
 FROM nginx
-ADD *.none /tmp
+ADD *.none /tmp/
 `
 
 const oneWilcardMatchesNone = `
 FROM nginx
-ADD *.go *.none /tmp
+ADD *.go *.none /tmp/
 `
 
 const multiStageDockerfile = `
@@ -69,7 +69,7 @@ RUN go build -o worker .
 
 FROM gcr.io/distroless/base
 WORKDIR /root/
-COPY --from=0 /go/src/github.com/r2d4/leeroy .
+COPY --from=0 /go/src/github.com/r2d4/leeroy ./
 `
 
 const envTest = `
@@ -93,7 +93,7 @@ COPY ./file /etc/file
 `
 const multiFileCopy = `
 FROM ubuntu:14.04
-COPY server.go file .
+COPY server.go file ./
 `
 
 const remoteFileAdd = `
@@ -107,7 +107,7 @@ ADD nginx.conf /etc/nginx
 COPY . /files
 `
 
-// This has an ONBUILD instruction of "COPY . /go/src/app"
+// This has an ONBUILD instruction of "COPY . /onbuild"
 const onbuild = `
 FROM golang:onbuild
 `
@@ -209,7 +209,7 @@ func (f *fakeImageFetcher) fetch(image string, _ map[string]bool) (*v1.ConfigFil
 		return &v1.ConfigFile{
 			Config: v1.Config{
 				OnBuild: []string{
-					"COPY . /go/src/app",
+					"COPY . /onbuild",
 				},
 			},
 		}, nil
