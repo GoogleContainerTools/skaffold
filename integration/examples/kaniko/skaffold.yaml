@@ -1,4 +1,4 @@
-apiVersion: skaffold/v1beta7
+apiVersion: skaffold/v1beta8
 kind: Config
 build:
   artifacts:
@@ -6,7 +6,7 @@ build:
       kaniko:
         buildContext:
           gcsBucket: skaffold-kaniko
-          cache: {}
+        cache: {}
   cluster:
     pullSecretName: e2esecret
     namespace: default

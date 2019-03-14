@@ -90,6 +90,11 @@ func TestRun(t *testing.T) {
 			pods:        []string{"getting-started-kaniko"},
 			remoteOnly:  true,
 		}, {
+			description: "kaniko microservices",
+			dir:         "testdata/kaniko-microservices",
+			deployments: []string{"leeroy-app", "leeroy-web"},
+			remoteOnly:  true,
+		}, {
 			description: "helm",
 			dir:         "examples/helm-deployment",
 			deployments: []string{"skaffold-helm"},

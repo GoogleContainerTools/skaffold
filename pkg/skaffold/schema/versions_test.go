@@ -167,7 +167,7 @@ func TestParseConfig(t *testing.T) {
 			description: "Minimal Kaniko config",
 			config:      minimalKanikoConfig,
 			expected: config(
-				withClusterBuild("demo", "kaniko-secret", "default", "", "20m",
+				withClusterBuild("kaniko-secret", "default", "", "20m",
 					withGitTagger(),
 					withKanikoArtifact("image1", "./examples/app1", "Dockerfile", "demo"),
 				),
@@ -179,7 +179,7 @@ func TestParseConfig(t *testing.T) {
 			description: "Complete Kaniko config",
 			config:      completeKanikoConfig,
 			expected: config(
-				withClusterBuild("demo", "secret-name", "nskaniko", "/secret.json", "120m",
+				withClusterBuild("secret-name", "nskaniko", "/secret.json", "120m",
 					withGitTagger(),
 					withDockerConfig("config-name", "/kaniko/.docker"),
 					withKanikoArtifact("image1", "./examples/app1", "Dockerfile", ""),
@@ -261,7 +261,7 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 	}
 }
 
-func withClusterBuild(bucket, secretName, namespace, secret string, timeout string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldPipeline) {
+func withClusterBuild(secretName, namespace, secret string, timeout string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldPipeline) {
 	return func(cfg *latest.SkaffoldPipeline) {
 		b := latest.BuildConfig{BuildType: latest.BuildType{Cluster: &latest.ClusterDetails{
 			PullSecretName: secretName,

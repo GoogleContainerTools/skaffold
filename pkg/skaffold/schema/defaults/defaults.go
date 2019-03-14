@@ -278,10 +278,9 @@ func setDefaultKanikoArtifactBuildContext(artifact *latest.Artifact) {
 	}
 }
 
-func setDefaultKanikoArtifactImage(artifact *latest.Artifact) error {
+func setDefaultKanikoArtifactImage(artifact *latest.Artifact) {
 	kanikoArtifact := artifact.KanikoArtifact
 	artifact.KanikoArtifact.Image = valueOrDefault(kanikoArtifact.Image, constants.DefaultKanikoImage)
-	return nil
 }
 
 func valueOrDefault(v, def string) string {
