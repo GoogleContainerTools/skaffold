@@ -1,0 +1,24 @@
+plugins {
+  id 'java'
+  id 'org.springframework.boot' version '2.1.3.RELEASE'
+  id 'io.spring.dependency-management' version '1.0.7.RELEASE'
+  id 'com.google.cloud.tools.jib' version '1.0.2'
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  compile('org.springframework.boot:spring-boot-starter-web')
+}
+
+jib.container.jvmFlags = [
+    '-Djava.security.egd=file:/dev/./urandom',
+    // specific to Java 8 containers
+    '-XX:+UnlockExperimentalVMOptions',
+    '-XX:+UseCGroupMemoryLimitForHeap',
+]

@@ -1,0 +1,16 @@
+apiVersion: skaffold/v1beta7
+kind: Config
+
+profiles:
+  - name: gradle-test
+    build:
+      artifacts:
+      - image: gcr.io/k8s-skaffold/skaffold-jib
+        plugin:
+          name: jibGradle
+  - name: maven-test
+    build:
+      artifacts:
+      - image: gcr.io/k8s-skaffold/skaffold-jib
+        plugin:
+          name: jibMaven
