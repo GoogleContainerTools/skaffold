@@ -223,7 +223,11 @@ func copiedFiles(nodes []*parser.Node) (map[cDest][]string, error) {
 			}
 
 			if len(files) > 0 {
-				copied[dest] = files
+				if otherFiles, ok := copied[dest]; ok {
+					copied[dest] = append(otherFiles, files...)
+				} else {
+					copied[dest] = files
+				}
 			}
 		case command.Env:
 			// one env command may define multiple variables
@@ -505,6 +509,7 @@ func retrieveWorkingDir(tagged string) (string, error) {
 	}
 
 	if cf.Config.WorkingDir == "" {
+		logrus.Debugf("Using default workdir '/' for %s", tagged)
 		return "/", nil
 	}
 	return cf.Config.WorkingDir, nil

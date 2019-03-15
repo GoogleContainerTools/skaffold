@@ -51,6 +51,12 @@ WORKDIR /app
 COPY server.go /bar
 `
 
+const copySameDest = `
+FROM ubuntu:14.04
+COPY server.go .
+COPY test.conf .
+`
+
 const copyWorkdirAbsDestDir = `
 FROM ubuntu:14.04
 WORKDIR /app
@@ -306,6 +312,13 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  copyWorkdirAbsDest,
 			workspace:   ".",
 			expected:    map[string][]string{"Dockerfile": nil, "server.go": {"/bar"}},
+			fetched:     []string{"ubuntu:14.04"},
+		},
+		{
+			description: "two copy commands with same destination",
+			dockerfile:  copySameDest,
+			workspace:   ".",
+			expected:    map[string][]string{"Dockerfile": nil, "server.go": {"/server.go"}, "test.conf": {"/test.conf"}},
 			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
