@@ -290,6 +290,9 @@ func generateSkaffoldPipeline(k Initializer, dockerfilePairs []dockerfilePair) (
 }
 
 func printAnalyzeJSON(out io.Writer, dockerfiles, images []string) error {
+	if len(dockerfiles) == 0 {
+		return errors.New("one or more valid Dockerfiles must be present to run skaffold; please provide at least one Dockerfile and try again")
+	}
 	a := struct {
 		Dockerfiles []string `json:"dockerfiles,omitempty"`
 		Images      []string `json:"images,omitempty"`
