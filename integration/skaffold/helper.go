@@ -198,7 +198,6 @@ func (b *RunBuilder) RunOrFailStdOutOnly(t *testing.T) []byte {
 	return out
 }
 
-
 func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	args := []string{b.command}
 	if b.ns != "" {
