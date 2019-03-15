@@ -32,9 +32,10 @@ func CreateDockerTarContext(ctx context.Context, w io.Writer, workspace string, 
 		return errors.Wrap(err, "getting relative tar paths")
 	}
 
+	defaultDst := []string{""}
 	p := map[string][]string{}
-	for path, dsts := range dependencies {
-		p[filepath.Join(workspace, path)] = dsts
+	for path := range dependencies {
+		p[filepath.Join(workspace, path)] = defaultDst
 	}
 
 	if err := util.CreateTar(w, workspace, p); err != nil {
