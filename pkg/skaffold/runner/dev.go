@@ -99,20 +99,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifac
 		}
 
 		if err := r.Watcher.Register(
-			func() ([]string, error) {
-				dependencies, err := r.Builder.DependenciesForArtifact(ctx, artifact)
-				if err != nil {
-					return nil, err
-				}
-
-				deps := make([]string, 0, len(dependencies))
-				for p := range dependencies {
-					deps = append(deps, p)
-				}
-				sort.Strings(deps)
-
-				return deps, nil
-			},
+			func() ([]string, error) { return onlyHostPaths(r.Builder.DependenciesForArtifact(ctx, artifact)) },
 			func(e watch.Events) { changed.AddDirtyArtifact(artifact, e) },
 		); err != nil {
 			return errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
@@ -162,4 +149,18 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifac
 	}
 
 	return r.Watcher.Run(ctx, output.Main, onChange)
+}
+
+func onlyHostPaths(dependencies map[string][]string, err error) ([]string, error) {
+	if err != nil {
+		return nil, err
+	}
+
+	deps := make([]string, 0, len(dependencies))
+	for p := range dependencies {
+		deps = append(deps, p)
+	}
+	sort.Strings(deps)
+
+	return deps, nil
 }
