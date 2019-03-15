@@ -108,8 +108,14 @@ func TestRun(t *testing.T) {
 			dir:         "testdata/plugin/local/docker",
 			deployments: []string{"leeroy-app", "leeroy-web"},
 		}, {
+			description: "jib Gradle plugin in local exec environment",
+			dir:         "testdata/plugin/local/jib",
+			args:        []string{"-p", "gradle-test"},
+			deployments: []string{"web"},
+		}, {
 			description: "jib Maven plugin in local exec environment",
-			dir:         "testdata/plugin/local/jib-maven",
+			dir:         "testdata/plugin/local/jib",
+			args:        []string{"-p", "maven-test"},
 			deployments: []string{"web"},
 		}, {
 			description: "jib in googlecloudbuild",
