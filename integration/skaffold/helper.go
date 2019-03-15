@@ -148,8 +148,22 @@ func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
 	}
 }
 
-// Run runs the skaffold command and returns its output.
+// Run runs the skaffold command and returns its std output and std err combined.
 func (b *RunBuilder) Run(t *testing.T) ([]byte, error) {
+	t.Helper()
+
+	cmd := b.cmd(context.Background())
+	logrus.Infoln(cmd.Args)
+
+	start := time.Now()
+	out, err := cmd.CombinedOutput()
+	logrus.Infoln("Ran in", time.Since(start))
+
+	return out, err
+}
+
+// Run runs the skaffold command and returns its std output.
+func (b *RunBuilder) RunStdOutOnly(t *testing.T) ([]byte, error) {
 	t.Helper()
 
 	cmd := b.cmd(context.Background())
@@ -163,10 +177,21 @@ func (b *RunBuilder) Run(t *testing.T) ([]byte, error) {
 }
 
 // RunOrFail runs the skaffold command and fails the test
-// if the command returns an error.
+// if the command returns an error. It returns the combined standard output and standard error.
 func (b *RunBuilder) RunOrFail(t *testing.T) []byte {
 	t.Helper()
 	out, err := b.Run(t)
+	if err != nil {
+		t.Fatalf("skaffold %s: %v, %s", b.command, err, out)
+	}
+	return out
+}
+
+// RunOrFailStdOutOnly runs the skaffold command and fails the test
+// if the command returns an error. It only returns the standard output.
+func (b *RunBuilder) RunOrFailStdOutOnly(t *testing.T) []byte {
+	t.Helper()
+	out, err := b.RunStdOutOnly(t)
 	if err != nil {
 		t.Fatalf("skaffold %s: %v, %s", b.command, err, out)
 	}
