@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -115,7 +116,7 @@ COPY $foo /quux # COPY bar /quux
 const envWorkdirTest = `
 FROM busybox
 ENV foo bar
-WORKDIR ${foo}   # WORKDIR /bar
+WORKDIR ${foo}
 COPY server.go .
 `
 
@@ -318,14 +319,14 @@ func TestGetDependencies(t *testing.T) {
 			description: "wildcards",
 			dockerfile:  wildcards,
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": nil, "server.go": {"/tmp/server.go"}, "worker.go": {"/tmp/server.go"}},
+			expected:    map[string][]string{"Dockerfile": nil, "server.go": {"/tmp/server.go"}, "worker.go": {"/tmp/worker.go"}},
 			fetched:     []string{"nginx"},
 		},
 		{
 			description: "wildcards after workdir",
 			dockerfile:  wildcardsWorkdir,
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": nil, "server.go": {"/app/server.go"}, "worker.go": {"/app/server.go"}},
+			expected:    map[string][]string{"Dockerfile": nil, "server.go": {"/app/server.go"}, "worker.go": {"/app/worker.go"}},
 			fetched:     []string{"nginx"},
 		},
 		{
@@ -339,14 +340,14 @@ func TestGetDependencies(t *testing.T) {
 			description: "one wilcard matches none",
 			dockerfile:  oneWilcardMatchesNone,
 			workspace:   ".",
-			expected:    map[string][]string{"Dockerfile": nil, "server.go": {"/tmp/server.go"}, "worker.go": {"/tmp/server.go"}},
+			expected:    map[string][]string{"Dockerfile": nil, "server.go": {"/tmp/server.go"}, "worker.go": {"/tmp/worker.go"}},
 			fetched:     []string{"nginx"},
 		},
 		{
 			description: "wilcard matches directory, flattens contents",
 			dockerfile:  wildcardsMatchesDirectory,
 			workspace:   ".",
-			expected:    map[string][]string{".dot": {"/.dot"}, "Dockerfile": {"/Dockerfile"}, "bar": {"/bar"}, filepath.Join("docker", "bar"): {"/bar"}, filepath.Join("docker", "nginx.conf"): {"/nginx.conf"}, "file": {"/file"}, "server.go": {"/server.go"}, "test.conf": {"/test.conf"}, "worker.go": {""}},
+			expected:    map[string][]string{".dot": {"/tmp/.dot"}, "Dockerfile": {"/tmp/Dockerfile"}, "bar": {"/tmp/bar"}, filepath.Join("docker", "bar"): {"/tmp/bar"}, filepath.Join("docker", "nginx.conf"): {"/tmp/nginx.conf"}, "file": {"/tmp/file"}, "server.go": {"/tmp/server.go"}, "test.conf": {"/tmp/test.conf"}, "worker.go": {"/tmp/worker.go"}},
 			fetched:     []string{"nginx"},
 		},
 		{
@@ -365,8 +366,9 @@ func TestGetDependencies(t *testing.T) {
 			description: "multistage dockerfile",
 			dockerfile:  multiStageDockerfile,
 			workspace:   "",
-			expected:    map[string][]string{"Dockerfile": nil, "worker.go": {"/root/worker.go"}},
-			fetched:     []string{"golang:1.9.2", "gcr.io/distroless/base"},
+			// TODO(corneliusweig) destinations are not resolved across stages in multistage dockerfiles. Is there a use-case for that?
+			expected: map[string][]string{"Dockerfile": nil, "worker.go": {"/go/src/github.com/r2d4/leeroy/worker.go"}},
+			fetched:  []string{"golang:1.9.2", "gcr.io/distroless/base"},
 		},
 		{
 			description: "copy twice",
@@ -408,7 +410,7 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  copyDirectory,
 			ignore:      "bar\ndocker/*",
 			workspace:   ".",
-			expected:    map[string][]string{".dot": {"/etc/.dot"}, "Dockerfile": {"/etc/Dockerfile"}, "file": {"/etc/file"}, "server.go": {"/etc/server.go"}, "test.conf": {"/etc/test.conf"}, "worker.go": {"/etc/worker.go"}},
+			expected:    map[string][]string{".dot": {"/etc/.dot"}, "Dockerfile": {"/etc/Dockerfile"}, "file": {"/etc/file", "/etc/file"}, "server.go": {"/etc/server.go"}, "test.conf": {"/etc/test.conf"}, "worker.go": {"/etc/worker.go"}},
 			fetched:     []string{"nginx"},
 		},
 		{
@@ -431,7 +433,7 @@ func TestGetDependencies(t *testing.T) {
 			description: "ignore none",
 			dockerfile:  copyAll,
 			workspace:   ".",
-			expected:    map[string][]string{".dot": {"/.dot"}, "Dockerfile": {"/Dockerfile"}, "bar": {"/bar"}, filepath.Join("docker", "bar"): {"/docker/bar"}, filepath.Join("docker", "nginx.conf"): {"/docker/nginx.conf"}, "file": {"/file"}, "server.go": {"/server.go"}, "test.conf": {"/test.conf"}, "worker.go": {""}},
+			expected:    map[string][]string{".dot": {"/.dot"}, "Dockerfile": {"/Dockerfile"}, "bar": {"/bar"}, filepath.Join("docker", "bar"): {"/docker/bar"}, filepath.Join("docker", "nginx.conf"): {"/docker/nginx.conf"}, "file": {"/file"}, "server.go": {"/server.go"}, "test.conf": {"/test.conf"}, "worker.go": {"/worker.go"}},
 			fetched:     []string{"nginx"},
 		},
 		{
@@ -439,7 +441,7 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  copyAll,
 			workspace:   ".",
 			ignore:      ".*",
-			expected:    map[string][]string{"Dockerfile": {"/Dockerfile"}, "bar": {"/bar"}, filepath.Join("docker", "bar"): {"/docker/bar"}, filepath.Join("docker", "nginx.conf"): {"/docker/nginx.conf"}, "file": {"/file"}, "server.go": {"/server.go"}, "test.conf": {"/test.conf"}, "worker.go": {""}},
+			expected:    map[string][]string{"Dockerfile": {"/Dockerfile"}, "bar": {"/bar"}, filepath.Join("docker", "bar"): {"/docker/bar"}, filepath.Join("docker", "nginx.conf"): {"/docker/nginx.conf"}, "file": {"/file"}, "server.go": {"/server.go"}, "test.conf": {"/test.conf"}, "worker.go": {"/worker.go"}},
 			fetched:     []string{"nginx"},
 		},
 		{
@@ -447,7 +449,7 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  copyAll,
 			workspace:   ".",
 			ignore:      "/.*",
-			expected:    map[string][]string{"Dockerfile": {"/Dockerfile"}, "bar": {"/bar"}, filepath.Join("docker", "bar"): {"/docker/bar"}, filepath.Join("docker", "nginx.conf"): {"/docker/nginx.conf"}, "file": {"/file"}, "server.go": {"/server.go"}, "test.conf": {"/test.conf"}, "worker.go": {""}},
+			expected:    map[string][]string{"Dockerfile": {"/Dockerfile"}, "bar": {"/bar"}, filepath.Join("docker", "bar"): {"/docker/bar"}, filepath.Join("docker", "nginx.conf"): {"/docker/nginx.conf"}, "file": {"/file"}, "server.go": {"/server.go"}, "test.conf": {"/test.conf"}, "worker.go": {"/worker.go"}},
 			fetched:     []string{"nginx"},
 		},
 		{
@@ -616,6 +618,11 @@ func TestGetDependencies(t *testing.T) {
 
 			workspace := tmpDir.Path(test.workspace)
 			deps, err := GetDependencies(context.Background(), workspace, "Dockerfile", test.buildArgs)
+
+			// destinations are not sorted, but for the test assertion they must be
+			for _, dsts := range deps {
+				sort.Strings(dsts)
+			}
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
 			testutil.CheckDeepEqual(t, test.fetched, imageFetcher.fetched)

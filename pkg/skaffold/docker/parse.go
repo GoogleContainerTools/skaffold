@@ -42,33 +42,24 @@ type from struct {
 	as    string
 }
 
-type destinationsBySourcePath map[string][]string
+const (
+	// cDestDir is the code for a regular file
+	cDestDir = iota
+	// cDestFile is the code for a directory
+	cDestFile = iota
+)
 
-func fromMap(in map[string][]string) destinationsBySourcePath {
-	return destinationsBySourcePath(in)
+// cDest records a destination location in the container with the information if it is a directory or a regular file
+type cDest struct {
+	destType int
+	path     string
 }
 
-func (d destinationsBySourcePath) toMap() map[string][]string {
-	return d
-}
+// cDestByHostPath is a helper type to track container destinations by host-path
+type cDestByHostPath map[string][]cDest
 
-func newDestinationsBySourcePath() destinationsBySourcePath {
-	return fromMap(make(map[string][]string))
-}
-
-func (d destinationsBySourcePath) depDst(sourcePath, dst string) {
-	if dsts, ok := d[sourcePath]; ok {
-		d[sourcePath] = append(dsts, dst)
-	} else {
-		d[sourcePath] = []string{dst}
-	}
-}
-
-func (d destinationsBySourcePath) dep(sourcePath string) {
-	if _, ok := d[sourcePath]; !ok {
-		d[sourcePath] = nil
-	}
-}
+// cDestByHostPath is a helper type to track container destination paths by host-path
+type cPathByHostPath map[string][]string
 
 var (
 	// WorkingDir is overridden for unit testing
@@ -205,11 +196,11 @@ func parseOnbuild(image string) ([]*parser.Node, error) {
 	return obRes.AST.Children, nil
 }
 
-func copiedFiles(nodes []*parser.Node) (map[string][]string, error) {
+func copiedFiles(nodes []*parser.Node) (map[cDest][]string, error) {
 	slex := shell.NewLex('\\')
-	copied := make(map[string][]string)
+	copied := make(map[cDest][]string)
 
-	var workdir string
+	workdir := "/"
 	envs := make([]string, 0)
 	for _, node := range nodes {
 		switch node.Value {
@@ -224,7 +215,7 @@ func copiedFiles(nodes []*parser.Node) (map[string][]string, error) {
 			if err != nil {
 				return nil, errors.Wrap(err, "processing word")
 			}
-			workdir = changeWorkingDir(workdir, value)
+			workdir = resolveDir(workdir, value)
 		case command.Add, command.Copy:
 			dest, files, err := processCopy(node, envs, workdir)
 			if err != nil {
@@ -245,7 +236,7 @@ func copiedFiles(nodes []*parser.Node) (map[string][]string, error) {
 	return copied, nil
 }
 
-func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*string) (map[string][]string, error) {
+func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*string) (cDestByHostPath, error) {
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "opening dockerfile: %s", absDockerfilePath)
@@ -274,8 +265,8 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 	return expandPaths(workspace, copied)
 }
 
-func expandPaths(workspace string, copied map[string][]string) (map[string][]string, error) {
-	destsBySourcePath := newDestinationsBySourcePath()
+func expandPaths(workspace string, copied map[cDest][]string) (cDestByHostPath, error) {
+	destsBySourcePath := newCdestByHostPath()
 	for dest, files := range copied {
 		matchesOne := false
 
@@ -311,9 +302,9 @@ func expandPaths(workspace string, copied map[string][]string) (map[string][]str
 		}
 	}
 
-	logrus.Debugf("Found dependencies for dockerfile: %v", destsBySourcePath.toMap())
+	logrus.Debugf("Found dependencies for dockerfile: %v", destsBySourcePath)
 
-	return destsBySourcePath.toMap(), nil
+	return destsBySourcePath, nil
 }
 
 // NormalizeDockerfilePath returns the absolute path to the dockerfile.
@@ -330,6 +321,7 @@ func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 
 // GetDependencies finds the sources dependencies for the given docker artifact.
 // All paths are relative to the workspace.
+// TODO(corneliusweig) destinations are not resolved across stages in multistage dockerfiles. Is there a use-case for that?
 func GetDependencies(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string) (map[string][]string, error) {
 	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
 	if err != nil {
@@ -363,8 +355,8 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 	}
 
 	// Walk the workspace
-	files := make(map[string]bool)
-	for dep := range deps {
+	dependencies := newCPathByHostPath()
+	for dep, dsts := range deps {
 		dep = filepath.Clean(dep)
 		absDep := filepath.Join(workspace, dep)
 
@@ -397,7 +389,13 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 							return filepath.SkipDir
 						}
 					} else if !ignored {
-						files[relPath] = true
+						relBase, err := filepath.Rel(absDep, fpath)
+						if err != nil {
+							return err
+						}
+						for _, dst := range dsts {
+							dependencies.depDst(relPath, path.Join(dst.path, filepath.ToSlash(relBase)))
+						}
 					}
 
 					return nil
@@ -406,31 +404,31 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 				return nil, errors.Wrapf(err, "walking folder %s", absDep)
 			}
 		case mode.IsRegular():
-			ignored, err := pExclude.Matches(dep)
-			if err != nil {
+			if ignored, err := pExclude.Matches(dep); err != nil {
 				return nil, err
+			} else if ignored {
+				continue
 			}
 
-			if !ignored {
-				files[dep] = true
+			base := filepath.Base(dep)
+			for _, dst := range dsts {
+				if dst.destType == cDestDir {
+					dependencies.depDst(dep, path.Join(dst.path, base))
+				} else {
+					dependencies.depDst(dep, dst.path)
+				}
 			}
 		}
 	}
 
 	// Ignore .dockerignore
-	delete(files, ".dockerignore")
-
-	dependencies := map[string][]string{}
-	defaultDst := []string{""}
-	for file := range files {
-		dependencies[file] = defaultDst
-	}
+	delete(dependencies, ".dockerignore")
 
 	// Always add dockerfile even if it's .dockerignored. The daemon will need it anyways.
 	if !filepath.IsAbs(dockerfilePath) {
-		fromMap(dependencies).dep(dockerfilePath)
+		dependencies.dep(dockerfilePath)
 	} else {
-		fromMap(dependencies).dep(absDockerfilePath)
+		dependencies.dep(absDockerfilePath)
 	}
 
 	return dependencies, nil
@@ -445,22 +443,30 @@ func retrieveImage(image string) (*v1.ConfigFile, error) {
 	return localDaemon.ConfigFile(context.Background(), image)
 }
 
-func processCopy(value *parser.Node, envs []string, workdir string) (destination string, copied []string, err error) {
+func processCopy(value *parser.Node, envs []string, workdir string) (destination cDest, copied []string, err error) {
 	slex := shell.NewLex('\\')
-	for {
+	for i := 0; ; i++ {
 		// Skip last node, since it is the destination, and stop if we arrive at a comment
+		v := value.Next.Value
 		if value.Next.Next == nil || strings.HasPrefix(value.Next.Next.Value, "#") {
-			destination = changeWorkingDir(workdir, value.Next.Value)
+			var destType int
+			// COPY or ADD with multiple files must have a directory destination
+			if i > 1 || strings.HasSuffix(v, "/") || path.Base(v) == "." || path.Base(v) == ".." {
+				destType = cDestDir
+			} else {
+				destType = cDestFile
+			}
+			destination = cDest{destType, resolveDir(workdir, v)}
 			break
 		}
-		src, err := slex.ProcessWord(value.Next.Value, envs)
+		src, err := slex.ProcessWord(v, envs)
 		if err != nil {
-			return "", nil, errors.Wrap(err, "processing word")
+			return cDest{}, nil, errors.Wrap(err, "processing word")
 		}
 		// If the --from flag is provided, we are dealing with a multi-stage dockerfile
 		// Adding a dependency from a different stage does not imply a source dependency
 		if hasMultiStageFlag(value.Flags) {
-			return "", nil, nil
+			return cDest{}, nil, nil
 		}
 		if !strings.HasPrefix(src, "http://") && !strings.HasPrefix(src, "https://") {
 			copied = append(copied, src)
@@ -504,9 +510,32 @@ func retrieveWorkingDir(tagged string) (string, error) {
 	return cf.Config.WorkingDir, nil
 }
 
-func changeWorkingDir(cur, to string) string {
+func resolveDir(cur, to string) string {
 	if path.IsAbs(to) {
 		return path.Clean(to)
 	}
-	return path.Clean(path.Join(to, cur))
+	return path.Clean(path.Join(cur, to))
+}
+
+func newCdestByHostPath() cDestByHostPath { return cDestByHostPath(make(map[string][]cDest)) }
+func (d cDestByHostPath) depDst(hostPath string, dst cDest) {
+	if dsts, ok := d[hostPath]; ok {
+		d[hostPath] = append(dsts, dst)
+	} else {
+		d[hostPath] = []cDest{dst}
+	}
+}
+
+func newCPathByHostPath() cPathByHostPath { return cPathByHostPath(make(map[string][]string)) }
+func (d cPathByHostPath) depDst(hostPath string, dst string) {
+	if dsts, ok := d[hostPath]; ok {
+		d[hostPath] = append(dsts, dst)
+	} else {
+		d[hostPath] = []string{dst}
+	}
+}
+func (d cPathByHostPath) dep(sourcePath string) {
+	if _, ok := d[sourcePath]; !ok {
+		d[sourcePath] = nil
+	}
 }
