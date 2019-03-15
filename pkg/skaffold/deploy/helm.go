@@ -236,7 +236,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	if ns != "" {
 		args = append(args, "--namespace", ns)
 	}
-	if len(r.Overrides) != 0 {
+	if len(r.Overrides.Values) != 0 {
 		overrides, err := yaml.Marshal(r.Overrides)
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot marshal overrides to create overrides values.yaml")
