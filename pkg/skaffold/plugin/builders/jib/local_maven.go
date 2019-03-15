@@ -106,7 +106,7 @@ func (b *MavenBuilder) runBuild(ctx context.Context, out io.Writer, artifact *la
 	return uniqueTag, nil
 }
 
-// BuildArtifact builds the bazel artifact
+// BuildArtifact builds the Jib artifact
 func (b *MavenBuilder) BuildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	return b.buildJibMaven(ctx, out, artifact.Workspace, artifact.JibMavenArtifact, tag)
 }

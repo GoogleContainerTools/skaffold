@@ -69,7 +69,7 @@ func (b *GradleBuilder) local(ctx context.Context, out io.Writer, tags tag.Image
 	}
 	b.PushImages = pushImages
 	for _, a := range artifacts {
-		if err := setMavenArtifact(a); err != nil {
+		if err := setGradleArtifact(a); err != nil {
 			return nil, errors.Wrapf(err, "setting artifact %s", a.ImageName)
 		}
 	}

@@ -110,7 +110,7 @@ func (b *GradleBuilder) googleCloudBuild(ctx context.Context, out io.Writer, tag
 	}
 	defaults.SetDefaultCloudBuildDockerImage(g)
 	for _, a := range artifacts {
-		if err := setMavenArtifact(a); err != nil {
+		if err := setGradleArtifact(a); err != nil {
 			return nil, err
 		}
 	}
