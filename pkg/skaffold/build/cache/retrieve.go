@@ -52,41 +52,42 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 	start := time.Now()
 	color.Default.Fprintln(out, "Checking cache...")
 
-	var needToBuild []*latest.Artifact
-	var built []build.Artifact
+	var (
+		needToBuild []*latest.Artifact
+		built       []build.Artifact
 
-	var wg sync.WaitGroup
+		wg   sync.WaitGroup
+		lock sync.Mutex
+	)
+
 	wg.Add(len(artifacts))
-
-	var canceled bool
 
 	for _, a := range artifacts {
 		a := a
 		go func() {
 			defer wg.Done()
-			select {
-			case <-ctx.Done():
-				canceled = true
-			default:
-				artifact, err := c.resolveCachedArtifact(ctx, out, a)
-				if err != nil {
-					logrus.Debugf("error retrieving cached artifact for %s: %v\n", a.ImageName, err)
-					color.Red.Fprintf(out, "Unable to retrieve %s from cache; this image will be rebuilt.\n", a.ImageName)
-					needToBuild = append(needToBuild, a)
-					return
-				}
-				if artifact == nil {
-					needToBuild = append(needToBuild, a)
-					return
-				}
-				built = append(built, *artifact)
+
+			artifact, err := c.resolveCachedArtifact(ctx, out, a)
+
+			lock.Lock()
+			defer lock.Unlock()
+
+			if err != nil {
+				logrus.Debugf("error retrieving cached artifact for %s: %v\n", a.ImageName, err)
+				color.Red.Fprintf(out, "Unable to retrieve %s from cache; this image will be rebuilt.\n", a.ImageName)
+
+				needToBuild = append(needToBuild, a)
+				return
 			}
+			if artifact == nil {
+				needToBuild = append(needToBuild, a)
+				return
+			}
+
+			built = append(built, *artifact)
 		}()
 	}
 	wg.Wait()
-	if canceled {
-		return nil, nil, context.Canceled
-	}
 
 	color.Default.Fprintln(out, "Cache check complete in", time.Since(start))
 	return needToBuild, built, nil
