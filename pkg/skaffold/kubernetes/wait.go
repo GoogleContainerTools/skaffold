@@ -18,6 +18,7 @@ package kubernetes
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -29,44 +30,71 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
+// WatchUntil reads items from the watch until the provided condition succeeds or the context is cancelled.
+func watchUntil(ctx context.Context, w watch.Interface, condition func(event *watch.Event) (bool, error)) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.New("context closed while waiting for condition")
+		case event := <-w.ResultChan():
+			done, err := condition(&event)
+			if err != nil {
+				return fmt.Errorf("condition error: %s", err)
+			}
+			if done == true {
+				return nil
+			}
+		}
+	}
+}
+
+// WaitForPodScheduled waits until the Pod is scheduled.
 func WaitForPodScheduled(ctx context.Context, pods corev1.PodInterface, podName string) error {
 	logrus.Infof("Waiting for %s to be scheduled", podName)
+
+	w, err := pods.Watch(meta_v1.ListOptions{
+		IncludeUninitialized: true,
+	})
+	if err != nil {
+		return err
+	}
+	defer w.Stop()
 
 	ctx, cancelTimeout := context.WithTimeout(ctx, 30*time.Second)
 	defer cancelTimeout()
 
-	return wait.PollImmediateUntil(time.Millisecond*500, func() (bool, error) {
-		_, err := pods.Get(podName, meta_v1.GetOptions{
-			IncludeUninitialized: true,
-		})
-		if err != nil {
-			logrus.Infof("Getting pod %s", err)
-			return false, nil
-		}
-		return true, nil
-	}, ctx.Done())
+	return watchUntil(ctx, w, func(event *watch.Event) (bool, error) {
+		pod := event.Object.(*v1.Pod)
+		return pod.Name == podName, nil
+	})
 }
 
+// WaitForPodComplete waits until the Pod status is complete.
 func WaitForPodComplete(ctx context.Context, pods corev1.PodInterface, podName string, timeout time.Duration) error {
 	logrus.Infof("Waiting for %s to be ready", podName)
+
+	w, err := pods.Watch(meta_v1.ListOptions{
+		IncludeUninitialized: true,
+	})
+	if err != nil {
+		return err
+	}
+	defer w.Stop()
 
 	ctx, cancelTimeout := context.WithTimeout(ctx, timeout)
 	defer cancelTimeout()
 
-	return wait.PollImmediateUntil(time.Millisecond*500, func() (bool, error) {
-		pod, err := pods.Get(podName, meta_v1.GetOptions{
-			IncludeUninitialized: true,
-		})
-		if err != nil {
-			logrus.Infof("Getting pod %s", err)
+	return watchUntil(ctx, w, func(event *watch.Event) (bool, error) {
+		pod := event.Object.(*v1.Pod)
+		if pod.Name != podName {
 			return false, nil
 		}
+
 		switch pod.Status.Phase {
 		case v1.PodSucceeded:
 			return true, nil
@@ -78,49 +106,58 @@ func WaitForPodComplete(ctx context.Context, pods corev1.PodInterface, podName s
 			return false, nil
 		}
 		return false, fmt.Errorf("unknown phase: %s", pod.Status.Phase)
-	}, ctx.Done())
+	})
 }
 
 // WaitForPodInitialized waits until init containers have started running
 func WaitForPodInitialized(ctx context.Context, pods corev1.PodInterface, podName string) error {
-	if err := WaitForPodScheduled(ctx, pods, podName); err != nil {
+	logrus.Infof("Waiting for %s to be initialized", podName)
+
+	w, err := pods.Watch(meta_v1.ListOptions{
+		IncludeUninitialized: true,
+	})
+	if err != nil {
 		return err
 	}
-
-	logrus.Infof("Waiting for %s to be initialized", podName)
+	defer w.Stop()
 
 	ctx, cancelTimeout := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancelTimeout()
 
-	return wait.PollImmediateUntil(time.Millisecond*500, func() (bool, error) {
-		pod, err := pods.Get(podName, meta_v1.GetOptions{
-			IncludeUninitialized: true,
-		})
-		if err != nil {
-			return false, fmt.Errorf("not found: %s", podName)
+	return watchUntil(ctx, w, func(event *watch.Event) (bool, error) {
+		pod := event.Object.(*v1.Pod)
+		if pod.Name != podName {
+			return false, nil
 		}
+
 		for _, ic := range pod.Status.InitContainerStatuses {
 			if ic.State.Running != nil {
 				return true, nil
 			}
 		}
 		return false, nil
-	}, ctx.Done())
+	})
 }
 
-// WaitForDeploymentToStabilize waits till the Deployment has a matching generation/replica count between spec and status.
-// TODO: handle ctx.Done()
+// WaitForDeploymentToStabilize waits until the Deployment has a matching generation/replica count between spec and status.
 func WaitForDeploymentToStabilize(ctx context.Context, c kubernetes.Interface, ns, name string, timeout time.Duration) error {
-	options := meta_v1.ListOptions{FieldSelector: fields.Set{
+	logrus.Infof("Waiting for %s to stabilize", name)
+
+	fields := fields.Set{
 		"metadata.name":      name,
 		"metadata.namespace": ns,
-	}.AsSelector().String()}
-	w, err := c.AppsV1().Deployments(ns).Watch(options)
+	}
+	w, err := c.AppsV1().Deployments(ns).Watch(meta_v1.ListOptions{
+		FieldSelector: fields.AsSelector().String(),
+	})
 	if err != nil {
 		return err
 	}
 
-	_, err = watch.Until(timeout, w, func(event watch.Event) (bool, error) {
+	ctx, cancelTimeout := context.WithTimeout(ctx, timeout)
+	defer cancelTimeout()
+
+	return watchUntil(ctx, w, func(event *watch.Event) (bool, error) {
 		if event.Type == watch.Deleted {
 			return false, apierrs.NewNotFound(schema.GroupResource{Resource: "deployments"}, "")
 		}
@@ -136,5 +173,4 @@ func WaitForDeploymentToStabilize(ctx context.Context, c kubernetes.Interface, n
 		}
 		return false, nil
 	})
-	return err
 }
