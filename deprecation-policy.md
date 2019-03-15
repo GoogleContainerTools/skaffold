@@ -23,7 +23,7 @@ b.) release notes
 c.) command help 
 d.) logs
 e.) https://skaffold.dev/docs/references/yaml/ 
-f.) this doc
+f.) [deprecation policy](/deprecation-policy.md)
 
 
 2. if applicable, [from the kubernetes policy](https://kubernetes.io/docs/reference/using-api/deprecation-policy/#deprecating-a-flag-or-cli): 

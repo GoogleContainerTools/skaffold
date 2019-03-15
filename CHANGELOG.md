@@ -11,7 +11,7 @@ This flag will be removed earliest 06/15/2019.
 New features: 
 
 * Config upgrade: handle helm overrides [#1646](https://github.com/GoogleContainerTools/skaffold/pull/1646)
-* make initContainer in localDir type of kaniko build param [#1727](https://github.com/GoogleContainerTools/skaffold/pull/1727)
+* Enable custom InitContainer image in LocalDir build of kaniko [#1727](https://github.com/GoogleContainerTools/skaffold/pull/1727)
 * Add --analyze flag to skaffold init [#1725](https://github.com/GoogleContainerTools/skaffold/pull/1725)
 
 Fixes: 
