@@ -60,7 +60,7 @@ func Set(c *latest.SkaffoldPipeline) error {
 	if err := withClusterConfig(c,
 		setDefaultClusterNamespace,
 		setDefaultClusterTimeout,
-		setDefaultClusterSecret,
+		setDefaultClusterPullSecret,
 		setDefaultClusterDockerConfigSecret,
 	); err != nil {
 		return err
@@ -223,7 +223,7 @@ func setDefaultClusterTimeout(cluster *latest.ClusterDetails) error {
 	return nil
 }
 
-func setDefaultClusterSecret(cluster *latest.ClusterDetails) error {
+func setDefaultClusterPullSecret(cluster *latest.ClusterDetails) error {
 	cluster.PullSecretName = valueOrDefault(cluster.PullSecretName, constants.DefaultKanikoSecretName)
 	if cluster.PullSecret != "" {
 		absPath, err := homedir.Expand(cluster.PullSecret)

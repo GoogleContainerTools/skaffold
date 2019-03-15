@@ -55,7 +55,10 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 		"-v", logLevel().String()}
 
 	// TODO: remove since AdditionalFlags will be deprecated (priyawadhwa@)
-	args = append(args, kanikoArtifact.AdditionalFlags...)
+	if kanikoArtifact.AdditionalFlags != nil {
+		logrus.Warn("The additionalFlags field in kaniko is deprecated, please consult the current schema at skaffold.dev to update your skaffold.yaml.")
+		args = append(args, kanikoArtifact.AdditionalFlags...)
+	}
 	args = appendBuildArgsIfExists(args, kanikoArtifact.BuildArgs)
 	args = appendTargetIfExists(args, kanikoArtifact.Target)
 	args = appendCacheIfExists(args, kanikoArtifact.Cache)
