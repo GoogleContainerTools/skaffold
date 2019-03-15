@@ -23,22 +23,14 @@ import (
 	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
-	"github.com/bmatcuk/doublestar"
-	registry_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
-
-var (
-	// WorkingDir is here for testing
-	WorkingDir = retrieveWorkingDir
 )
 
 type Syncer interface {
@@ -47,11 +39,13 @@ type Syncer interface {
 
 type Item struct {
 	Image  string
-	Copy   map[string]string
-	Delete map[string]string
+	Copy   map[string][]string
+	Delete map[string][]string
 }
 
-func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact) (*Item, error) {
+type DependencyResolver func() (map[string][]string, error)
+
+func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact, deps DependencyResolver) (*Item, error) {
 	// If there are no changes, short circuit and don't sync anything
 	if !e.HasChanged() || len(a.Sync) == 0 {
 		return nil, nil
@@ -62,20 +56,13 @@ func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact) (*Item
 		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
 	}
 
-	wd, err := WorkingDir(tag)
+	dependencies, err := deps()
 	if err != nil {
-		return nil, errors.Wrapf(err, "retrieving working dir for %s", tag)
+		return nil, errors.Wrapf(err, "resolving dependencies for %s", tag)
 	}
 
-	toCopy, err := intersect(a.Workspace, a.Sync, append(e.Added, e.Modified...), wd)
-	if err != nil {
-		return nil, errors.Wrap(err, "intersecting sync map and added, modified files")
-	}
-
-	toDelete, err := intersect(a.Workspace, a.Sync, e.Deleted, wd)
-	if err != nil {
-		return nil, errors.Wrap(err, "intersecting sync map and deleted files")
-	}
+	toCopy := intersect(a.Workspace, dependencies, append(e.Added, e.Modified...))
+	toDelete := intersect(a.Workspace, dependencies, e.Deleted)
 
 	// Something went wrong, don't sync, rebuild.
 	if toCopy == nil || toDelete == nil {
@@ -89,27 +76,6 @@ func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact) (*Item
 	}, nil
 }
 
-func retrieveWorkingDir(tagged string) (string, error) {
-	var cf *registry_v1.ConfigFile
-	var err error
-
-	localDocker, err := docker.NewAPIClient()
-	if err != nil {
-		// No local Docker is available
-		cf, err = docker.RetrieveRemoteConfig(tagged)
-	} else {
-		cf, err = localDocker.ConfigFile(context.Background(), tagged)
-	}
-	if err != nil {
-		return "", errors.Wrap(err, "retrieving image config")
-	}
-
-	if cf.Config.WorkingDir == "" {
-		return "/", nil
-	}
-	return cf.Config.WorkingDir, nil
-}
-
 func latestTag(image string, builds []build.Artifact) string {
 	for _, build := range builds {
 		if build.ImageName == image {
@@ -119,42 +85,28 @@ func latestTag(image string, builds []build.Artifact) string {
 	return ""
 }
 
-func intersect(context string, syncMap map[string]string, files []string, workingDir string) (map[string]string, error) {
-	ret := map[string]string{}
-
+func intersect(context string, deps map[string][]string, files []string) map[string][]string {
+	ret := map[string][]string{}
 	for _, f := range files {
-		relPath, err := filepath.Rel(context, f)
-		if err != nil {
-			return nil, errors.Wrapf(err, "changed file %s can't be found relative to context %s", f, context)
-		}
 		var matches bool
-		for p, dst := range syncMap {
-			match, err := doublestar.PathMatch(filepath.FromSlash(p), relPath)
-			if err != nil {
-				return nil, errors.Wrapf(err, "pattern error for %s", relPath)
-			}
-			if match {
-				if filepath.IsAbs(dst) {
-					dst = filepath.ToSlash(filepath.Join(dst, filepath.Base(relPath)))
-				} else {
-					dst = filepath.ToSlash(filepath.Join(workingDir, dst, filepath.Base(relPath)))
-				}
+		for p, dsts := range deps {
+			if p == f {
 				// Every file must match at least one sync pattern, if not we'll have to
 				// skip the entire sync
 				matches = true
-				ret[f] = dst
+				ret[f] = dsts
 			}
 		}
 		if !matches {
+			relPath, _ := filepath.Rel(context, f)
 			logrus.Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
-			return nil, nil
+			return nil
 		}
-
 	}
-	return ret, nil
+	return ret
 }
 
-func Perform(ctx context.Context, image string, files map[string]string, cmdFn func(context.Context, v1.Pod, v1.Container, map[string]string) *exec.Cmd, namespaces []string) error {
+func Perform(ctx context.Context, image string, files map[string][]string, cmdFn func(context.Context, v1.Pod, v1.Container, map[string][]string) *exec.Cmd, namespaces []string) error {
 	if len(files) == 0 {
 		return nil
 	}

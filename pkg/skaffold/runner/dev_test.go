@@ -25,7 +25,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -298,7 +297,9 @@ func TestDevSync(t *testing.T) {
 	}{
 		{
 			description: "sync",
-			testBench:   &TestBench{},
+			testBench: &TestBench{
+				dependencies: map[string][]string{"file1": {}},
+			},
 			watchEvents: []watch.Events{
 				{Modified: []string{"file1"}},
 			},
@@ -315,7 +316,9 @@ func TestDevSync(t *testing.T) {
 		},
 		{
 			description: "sync twice",
-			testBench:   &TestBench{},
+			testBench: &TestBench{
+				dependencies: map[string][]string{"file1": {}},
+			},
 			watchEvents: []watch.Events{
 				{Modified: []string{"file1"}},
 				{Modified: []string{"file1"}},
@@ -338,13 +341,6 @@ func TestDevSync(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			originalWorkingDir := sync.WorkingDir
-			sync.WorkingDir = func(tagged string) (string, error) {
-				return "/", nil
-			}
-			defer func() {
-				sync.WorkingDir = originalWorkingDir
-			}()
 			runner := createRunner(t, test.testBench)
 			runner.Watcher = &TestWatcher{
 				events:    test.watchEvents,

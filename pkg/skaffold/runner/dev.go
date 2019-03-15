@@ -51,7 +51,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifac
 		logger.Mute()
 
 		for _, a := range changed.dirtyArtifacts {
-			s, err := sync.NewItem(a.artifact, a.events, r.builds)
+			depsResolver := func() (map[string][]string, error) { return r.Builder.DependenciesForArtifact(ctx, a.artifact) }
+			s, err := sync.NewItem(a.artifact, a.events, r.builds, depsResolver)
 			if err != nil {
 				return errors.Wrap(err, "sync")
 			}

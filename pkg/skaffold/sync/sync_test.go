@@ -38,13 +38,14 @@ import (
 
 func TestNewSyncItem(t *testing.T) {
 	var tests = []struct {
-		description string
-		artifact    *latest.Artifact
-		evt         watch.Events
-		builds      []build.Artifact
-		shouldErr   bool
-		expected    *Item
-		workingDir  string
+		description  string
+		artifact     *latest.Artifact
+		evt          watch.Events
+		builds       []build.Artifact
+		dependencies map[string][]string
+		shouldErr    bool
+		expected     *Item
+		workingDir   string
 	}{
 		{
 			description: "match copy",
@@ -54,6 +55,9 @@ func TestNewSyncItem(t *testing.T) {
 					"*.html": ".",
 				},
 				Workspace: ".",
+			},
+			dependencies: map[string][]string{
+				"index.html": {"index.html"},
 			},
 			builds: []build.Artifact{
 				{
@@ -66,10 +70,10 @@ func TestNewSyncItem(t *testing.T) {
 			},
 			expected: &Item{
 				Image: "test:123",
-				Copy: map[string]string{
-					"index.html": "index.html",
+				Copy: map[string][]string{
+					"index.html": {"index.html"},
 				},
-				Delete: map[string]string{},
+				Delete: map[string][]string{},
 			},
 		},
 		{
@@ -80,6 +84,9 @@ func TestNewSyncItem(t *testing.T) {
 					"*.html": ".",
 				},
 				Workspace: ".",
+			},
+			dependencies: map[string][]string{
+				"index.html": {"index.html"},
 			},
 			builds: []build.Artifact{
 				{
@@ -103,63 +110,10 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: "node",
 			},
-			builds: []build.Artifact{
-				{
-					ImageName: "test",
-					Tag:       "test:123",
-				},
-			},
-			evt: watch.Events{
-				Added:    []string{filepath.Join("node", "index.html")},
-				Modified: []string{filepath.Join("node", "server.js")},
-				Deleted:  []string{filepath.Join("node", "package.json")},
-			},
-			expected: &Item{
-				Image: "test:123",
-				Copy: map[string]string{
-					filepath.Join("node", "server.js"):  "server.js",
-					filepath.Join("node", "index.html"): "index.html",
-				},
-				Delete: map[string]string{
-					filepath.Join("node", "package.json"): "package.json",
-				},
-			},
-		},
-		{
-			description: "recursive glob patterns",
-			artifact: &latest.Artifact{
-				ImageName: "test",
-				Sync: map[string]string{
-					"src/**/*.js": "src/",
-				},
-				Workspace: "node",
-			},
-			builds: []build.Artifact{
-				{
-					ImageName: "test",
-					Tag:       "test:123",
-				},
-			},
-			evt: watch.Events{
-				Modified: []string{filepath.Join("node", "src/app/server/server.js")},
-			},
-			workingDir: "/",
-			expected: &Item{
-				Image: "test:123",
-				Copy: map[string]string{
-					filepath.Join("node", "src/app/server/server.js"): "/src/server.js",
-				},
-				Delete: map[string]string{},
-			},
-		},
-		{
-			description: "sync all",
-			artifact: &latest.Artifact{
-				ImageName: "test",
-				Sync: map[string]string{
-					"*": ".",
-				},
-				Workspace: "node",
+			dependencies: map[string][]string{
+				filepath.Join("node", "index.html"):   {"app/index.html"},
+				filepath.Join("node", "server.js"):    {"app/server.js"},
+				filepath.Join("node", "package.json"): {"package.json"},
 			},
 			builds: []build.Artifact{
 				{
@@ -174,12 +128,12 @@ func TestNewSyncItem(t *testing.T) {
 			},
 			expected: &Item{
 				Image: "test:123",
-				Copy: map[string]string{
-					filepath.Join("node", "server.js"):  "server.js",
-					filepath.Join("node", "index.html"): "index.html",
+				Copy: map[string][]string{
+					filepath.Join("node", "server.js"):  {"app/server.js"},
+					filepath.Join("node", "index.html"): {"app/index.html"},
 				},
-				Delete: map[string]string{
-					filepath.Join("node", "package.json"): "package.json",
+				Delete: map[string][]string{
+					filepath.Join("node", "package.json"): {"package.json"},
 				},
 			},
 		},
@@ -190,6 +144,9 @@ func TestNewSyncItem(t *testing.T) {
 					"*.html": ".",
 				},
 				Workspace: ".",
+			},
+			dependencies: map[string][]string{
+				"index.html": {"index.html"},
 			},
 			evt: watch.Events{
 				Added:   []string{"main.go"},
@@ -209,6 +166,9 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
+			dependencies: map[string][]string{
+				"index.html": {"index.html"},
+			},
 			evt: watch.Events{
 				Added:   []string{"index.html"},
 				Deleted: []string{"some/other/file"},
@@ -220,20 +180,6 @@ func TestNewSyncItem(t *testing.T) {
 			},
 		},
 		{
-			description: "err bad pattern",
-			artifact: &latest.Artifact{
-				Sync: map[string]string{
-					"[*.html": "*",
-				},
-				Workspace: ".",
-			},
-			evt: watch.Events{
-				Added:   []string{"index.html"},
-				Deleted: []string{"some/other/file"},
-			},
-			shouldErr: true,
-		},
-		{
 			description: "no change no sync",
 			artifact: &latest.Artifact{
 				Sync: map[string]string{
@@ -241,52 +187,22 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
+			dependencies: map[string][]string{
+				"index.html": {"index.html"},
+			},
 			builds: []build.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
 				},
-			},
-		},
-		{
-			description: "slashes in glob pattern",
-			artifact: &latest.Artifact{
-				ImageName: "test",
-				Sync: map[string]string{
-					"**/**/*.js": ".",
-				},
-				Workspace: ".",
-			},
-			workingDir: "/some/dir",
-			builds: []build.Artifact{
-				{
-					ImageName: "test",
-					Tag:       "test:123",
-				},
-			},
-			evt: watch.Events{
-				Added: []string{filepath.Join("dir1", "dir2/node.js")},
-			},
-			expected: &Item{
-				Image: "test:123",
-				Copy: map[string]string{
-					filepath.Join("dir1", "dir2/node.js"): "/some/dir/node.js",
-				},
-				Delete: map[string]string{},
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			originalWorkingDir := WorkingDir
-			WorkingDir = func(tagged string) (string, error) {
-				return test.workingDir, nil
-			}
-			defer func() {
-				WorkingDir = originalWorkingDir
-			}()
-			actual, err := NewItem(test.artifact, test.evt, test.builds)
+			deps := func() (map[string][]string, error) { return test.dependencies, nil }
+			actual, err := NewItem(test.artifact, test.evt, test.builds, deps)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
 		})
 	}
@@ -296,54 +212,51 @@ func TestNewSyncItem(t *testing.T) {
 func TestIntersect(t *testing.T) {
 	var tests = []struct {
 		description  string
-		syncPatterns map[string]string
+		dependencies map[string][]string
 		files        []string
-		context      string
-		workingDir   string
-		expected     map[string]string
-		shouldErr    bool
+		expected     map[string][]string
 	}{
 		{
 			description: "nil sync patterns doesn't sync",
-			expected:    map[string]string{},
+			expected:    map[string][]string{},
 		},
 		{
-			description: "copy nested file to correct destination",
+			description: "intersect with multiple destinations",
 			files:       []string{filepath.Join("static", "index.html"), filepath.Join("static", "test.html")},
-			syncPatterns: map[string]string{
-				filepath.Join("static", "*.html"): "/html",
+			dependencies: map[string][]string{
+				filepath.Join("static", "index.html"): {"/index.html"},
+				filepath.Join("static", "test.html"):  {"/html/test.html", "/www/test.html"},
 			},
-			expected: map[string]string{
-				filepath.Join("static", "index.html"): "/html/index.html",
-				filepath.Join("static", "test.html"):  "/html/test.html",
-			},
-		},
-		{
-			description: "file not in . copies to correct destination",
-			files:       []string{filepath.Join("node", "server.js")},
-			context:     "node",
-			syncPatterns: map[string]string{
-				"*.js": "/",
-			},
-			expected: map[string]string{
-				filepath.Join("node", "server.js"): "/server.js",
+			expected: map[string][]string{
+				filepath.Join("static", "index.html"): {"/index.html"},
+				filepath.Join("static", "test.html"):  {"/html/test.html", "/www/test.html"},
 			},
 		},
 		{
-			description: "file change not relative to context throws error",
+			description: "additional dependencies specified",
+			files:       []string{filepath.Join("static", "index.html")},
+			dependencies: map[string][]string{
+				filepath.Join("static", "index.html"): {"/index.html"},
+				filepath.Join("static", "other.html"): {"/html/other.html"},
+			},
+			expected: map[string][]string{
+				filepath.Join("static", "index.html"): {"/index.html"},
+			},
+		},
+		{
+			description: "unmatched file aborts discards intersection",
 			files:       []string{filepath.Join("node", "server.js"), filepath.Join("/", "something", "test.js")},
-			context:     "node",
-			syncPatterns: map[string]string{
-				"*.js": "/",
+			dependencies: map[string][]string{
+				filepath.Join("node", "index.html"): {"/index.html"},
 			},
-			shouldErr: true,
+			expected: nil,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			actual, err := intersect(test.context, test.syncPatterns, test.files, test.workingDir)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
+			actual := intersect("/", test.dependencies, test.files)
+			testutil.CheckDeepEqual(t, test.expected, actual)
 		})
 	}
 }
@@ -365,9 +278,11 @@ func (t *TestCmdRecorder) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	return nil, t.RunCmd(cmd)
 }
 
-func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files map[string]string) *exec.Cmd {
-	for src, dst := range files {
-		return exec.CommandContext(ctx, "copy", src, dst)
+func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files map[string][]string) *exec.Cmd {
+	for src, dsts := range files {
+		for _, dst := range dsts {
+			return exec.CommandContext(ctx, "copy", src, dst)
+		}
 	}
 	return nil
 }
@@ -394,8 +309,8 @@ func TestPerform(t *testing.T) {
 	var tests = []struct {
 		description string
 		image       string
-		files       map[string]string
-		cmdFn       func(context.Context, v1.Pod, v1.Container, map[string]string) *exec.Cmd
+		files       map[string][]string
+		cmdFn       func(context.Context, v1.Pod, v1.Container, map[string][]string) *exec.Cmd
 		cmdErr      error
 		clientErr   error
 		expected    []string
@@ -404,14 +319,14 @@ func TestPerform(t *testing.T) {
 		{
 			description: "no error",
 			image:       "gcr.io/k8s-skaffold:123",
-			files:       map[string]string{"test.go": "/test.go"},
+			files:       map[string][]string{"test.go": {"/test.go"}},
 			cmdFn:       fakeCmd,
 			expected:    []string{"copy test.go /test.go"},
 		},
 		{
 			description: "cmd error",
 			image:       "gcr.io/k8s-skaffold:123",
-			files:       map[string]string{"test.go": "/test.go"},
+			files:       map[string][]string{"test.go": {"/test.go"}},
 			cmdFn:       fakeCmd,
 			cmdErr:      fmt.Errorf(""),
 			shouldErr:   true,
@@ -419,7 +334,7 @@ func TestPerform(t *testing.T) {
 		{
 			description: "client error",
 			image:       "gcr.io/k8s-skaffold:123",
-			files:       map[string]string{"test.go": "/test.go"},
+			files:       map[string][]string{"test.go": {"/test.go"}},
 			cmdFn:       fakeCmd,
 			clientErr:   fmt.Errorf(""),
 			shouldErr:   true,
