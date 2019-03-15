@@ -98,6 +98,7 @@ func TestRun(t *testing.T) {
 			description: "docker plugin in gcb exec environment",
 			dir:         "testdata/plugin/gcb",
 			deployments: []string{"leeroy-app", "leeroy-web"},
+			remoteOnly:  true,
 		}, {
 			description: "bazel plugin in local exec environment",
 			dir:         "testdata/plugin/local/bazel",
@@ -115,6 +116,7 @@ func TestRun(t *testing.T) {
 			dir:         "examples/jib",
 			args:        []string{"-p", "gcb"},
 			deployments: []string{"web"},
+			remoteOnly:  true,
 		},
 	}
 

@@ -77,7 +77,7 @@ $(BUILD_DIR):
 cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform).sha256)
 
 .PHONY: test
-test:
+test: $(BUILD_DIR)
 	@ ./test.sh
 
 .PHONY: install
@@ -93,10 +93,6 @@ ifeq ($(REMOTE_INTEGRATION),true)
 		--project $(GCP_PROJECT)
 endif
 	REMOTE_INTEGRATION=$(REMOTE_INTEGRATION) go test -v $(REPOPATH)/integration -timeout 10m
-
-.PHONY: coverage
-coverage: $(BUILD_DIR)
-	go test -short -coverprofile=$(BUILD_DIR)/coverage.txt -covermode=atomic ./...
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
@@ -149,7 +145,9 @@ clean:
 
 .PHONY: integration-in-docker
 integration-in-docker:
+	-docker pull gcr.io/$(GCP_PROJECT)/skaffold-builder
 	docker build \
+		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		-f deploy/skaffold/Dockerfile \
 		--target integration \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-integration .
