@@ -59,6 +59,10 @@ func Set(c *latest.SkaffoldPipeline) error {
 		return err
 	}
 
+	for _, a := range c.Build.Artifacts {
+		setDefaultWorkspace(a)
+	}
+
 	if pluginsDefined(c) {
 		return nil
 	}
@@ -66,7 +70,6 @@ func Set(c *latest.SkaffoldPipeline) error {
 	for _, a := range c.Build.Artifacts {
 		defaultToDockerArtifact(a)
 		setDefaultDockerfile(a)
-		setDefaultWorkspace(a)
 	}
 
 	return nil
