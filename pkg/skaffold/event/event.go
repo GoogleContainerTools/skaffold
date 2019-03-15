@@ -53,11 +53,13 @@ type eventHandler struct {
 	state     proto.State
 	stateLock sync.Mutex
 
-	listeners []chan proto.LogEntry
+	listeners []listener
 }
 
-func (ev *eventHandler) RegisterListener(listener chan proto.LogEntry) {
-	ev.listeners = append(ev.listeners, listener)
+type listener struct {
+	callback func(*proto.LogEntry) error
+	errors   chan error
+	closed   bool
 }
 
 func (ev *eventHandler) getState() proto.State {
@@ -75,8 +77,15 @@ func (ev *eventHandler) getState() proto.State {
 func (ev *eventHandler) logEvent(entry proto.LogEntry) {
 	ev.logLock.Lock()
 
-	for _, c := range ev.listeners {
-		c <- entry
+	for _, listener := range ev.listeners {
+		if listener.closed {
+			continue
+		}
+
+		if err := listener.callback(&entry); err != nil {
+			listener.errors <- err
+			listener.closed = true
+		}
 	}
 	ev.eventLog = append(ev.eventLog, entry)
 
@@ -84,28 +93,27 @@ func (ev *eventHandler) logEvent(entry proto.LogEntry) {
 }
 
 func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error {
-	c := make(chan proto.LogEntry)
+	listener := listener{
+		callback: callback,
+		errors:   make(chan error),
+	}
 
 	ev.logLock.Lock()
 
 	oldEvents := make([]proto.LogEntry, len(ev.eventLog))
 	copy(oldEvents, ev.eventLog)
-	ev.RegisterListener(c)
+	ev.listeners = append(ev.listeners, listener)
 
 	ev.logLock.Unlock()
 
 	for i := range oldEvents {
 		if err := callback(&oldEvents[i]); err != nil {
+			// listener should maybe be closed
 			return err
 		}
 	}
 
-	for {
-		entry := <-c
-		if err := callback(&entry); err != nil {
-			return err
-		}
-	}
+	return <-listener.errors
 }
 
 func emptyState(build *latest.BuildConfig) proto.State {

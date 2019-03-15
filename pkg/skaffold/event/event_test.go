@@ -26,32 +26,26 @@ import (
 )
 
 func TestGetLogEvents(t *testing.T) {
-	for step := 0; step < 100000; step++ {
+	for step := 0; step < 10000; step++ {
 		ev := &eventHandler{}
 
-		ev.logEvent(proto.LogEntry{Entry: "OLD1"})
-
-		var done int32
+		ev.logEvent(proto.LogEntry{Entry: "OLD"})
 		go func() {
 			ev.logEvent(proto.LogEntry{Entry: "FRESH"})
-
-			for atomic.LoadInt32(&done) == 0 {
-				ev.logEvent(proto.LogEntry{Entry: "POISON PILL"})
-			}
+			ev.logEvent(proto.LogEntry{Entry: "POISON PILL"})
 		}()
 
-		received := 0
+		var received int32
 		ev.forEachEvent(func(e *proto.LogEntry) error {
 			if e.Entry == "POISON PILL" {
 				return errors.New("Done")
 			}
 
-			received++
+			atomic.AddInt32(&received, 1)
 			return nil
 		})
-		atomic.StoreInt32(&done, int32(1))
 
-		if received != 2 {
+		if atomic.LoadInt32(&received) != 2 {
 			t.Fatalf("Expected %d events, Got %d (Step: %d)", 2, received, step)
 		}
 	}
