@@ -156,7 +156,7 @@ func (b *RunBuilder) Run(t *testing.T) ([]byte, error) {
 	logrus.Infoln(cmd.Args)
 
 	start := time.Now()
-	out, err := cmd.Output()
+	out, err := cmd.CombinedOutput()
 	logrus.Infoln("Ran in", time.Since(start))
 
 	return out, err
