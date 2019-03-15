@@ -83,7 +83,7 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 	var paths []string
 	var err error
 	if a.DockerArtifact != nil {
-		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact)
+		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs)
 		if err != nil {
 			return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
 		}

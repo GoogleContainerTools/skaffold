@@ -157,9 +157,9 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string, opts *config.Skaffo
 		logrus.Debugln("Using builder: google cloud")
 		return gcb.NewBuilder(cfg.GoogleCloudBuild, opts.SkipTests), nil
 
-	case cfg.KanikoBuild != nil:
+	case cfg.Cluster != nil:
 		logrus.Debugln("Using builder: kaniko")
-		return kaniko.NewBuilder(cfg.KanikoBuild)
+		return kaniko.NewBuilder(cfg.Cluster)
 
 	default:
 		return nil, fmt.Errorf("unknown builder for config %+v", cfg)

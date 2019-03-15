@@ -80,7 +80,7 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.
 	if err := setArtifact(artifact); err != nil {
 		return nil, err
 	}
-	paths, err := docker.GetDependencies(ctx, artifact.Workspace, artifact.DockerArtifact)
+	paths, err := docker.GetDependencies(ctx, artifact.Workspace, artifact.DockerArtifact.DockerfilePath, artifact.DockerArtifact.BuildArgs)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting dependencies for %s", artifact.ImageName)
 	}
