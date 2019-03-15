@@ -221,8 +221,6 @@ func TestGetBuildArgs(t *testing.T) {
 }
 
 func TestImageExists(t *testing.T) {
-	client, _ := NewAPIClient()
-	t.Log(client.ImageExists(context.Background(), "somethingranodm"))
 	tests := []struct {
 		name            string
 		tagToImageID    map[string]string
