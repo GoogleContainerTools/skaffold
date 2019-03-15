@@ -6,8 +6,7 @@ build:
   artifacts:
   - image: gcr.io/k8s-skaffold/test-file-sync
     context: .
-    sync:
-      '**/foo*' : /test
+    sync: true
 deploy:
  kubectl:
    manifests:

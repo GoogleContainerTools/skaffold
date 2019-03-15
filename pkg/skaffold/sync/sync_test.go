@@ -51,9 +51,7 @@ func TestNewSyncItem(t *testing.T) {
 			description: "match copy",
 			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: map[string]string{
-					"*.html": ".",
-				},
+				Sync:      true,
 				Workspace: ".",
 			},
 			dependencies: map[string][]string{
@@ -77,12 +75,31 @@ func TestNewSyncItem(t *testing.T) {
 			},
 		},
 		{
+			description: "no sync when disabled",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync:      false, // !
+				Workspace: ".",
+			},
+			dependencies: map[string][]string{
+				"index.html": {"index.html"},
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: watch.Events{
+				Added: []string{"index.html"},
+			},
+			expected: nil,
+		},
+		{
 			description: "no tag for image",
 			artifact: &latest.Artifact{
 				ImageName: "notbuildyet",
-				Sync: map[string]string{
-					"*.html": ".",
-				},
+				Sync:      true,
 				Workspace: ".",
 			},
 			dependencies: map[string][]string{
@@ -103,11 +120,7 @@ func TestNewSyncItem(t *testing.T) {
 			description: "multiple sync patterns",
 			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: map[string]string{
-					"*.js":   ".",
-					"*.html": ".",
-					"*.json": ".",
-				},
+				Sync:      true,
 				Workspace: "node",
 			},
 			dependencies: map[string][]string{
@@ -140,9 +153,7 @@ func TestNewSyncItem(t *testing.T) {
 		{
 			description: "not copy syncable",
 			artifact: &latest.Artifact{
-				Sync: map[string]string{
-					"*.html": ".",
-				},
+				Sync:      true,
 				Workspace: ".",
 			},
 			dependencies: map[string][]string{
@@ -161,9 +172,7 @@ func TestNewSyncItem(t *testing.T) {
 		{
 			description: "not delete syncable",
 			artifact: &latest.Artifact{
-				Sync: map[string]string{
-					"*.html": "/static",
-				},
+				Sync:      true,
 				Workspace: ".",
 			},
 			dependencies: map[string][]string{
@@ -182,9 +191,7 @@ func TestNewSyncItem(t *testing.T) {
 		{
 			description: "no change no sync",
 			artifact: &latest.Artifact{
-				Sync: map[string]string{
-					"*.html": "*",
-				},
+				Sync:      true,
 				Workspace: ".",
 			},
 			dependencies: map[string][]string{

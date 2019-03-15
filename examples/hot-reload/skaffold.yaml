@@ -4,12 +4,10 @@ build:
   artifacts:
   - image: gcr.io/k8s-skaffold/node-example
     context: node
-    sync:
-      '**/*.js': .
+    sync: true
   - image: gcr.io/k8s-skaffold/python-reload
     context: python
-    sync:
-      '**/*.py': .
+    sync: true
 deploy:
   kubectl:
     manifests:

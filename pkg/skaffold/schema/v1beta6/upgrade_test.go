@@ -142,6 +142,37 @@ deploy:
 	verifyUpgrade(t, yaml, expected)
 }
 
+func TestUpgradeSync(t *testing.T) {
+	yaml := `
+apiVersion: skaffold/v1beta6
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/node-example
+    sync:
+      '*.js': .
+  - image: nginx
+deploy:
+  kubectl:
+    manifests:
+    - "backend/k8s/**"
+`
+	expected := `
+apiVersion: skaffold/v1beta7
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/node-example
+    sync: true
+  - image: nginx
+deploy:
+  kubectl:
+    manifests:
+    - "backend/k8s/**"
+`
+	verifyUpgrade(t, yaml, expected)
+}
+
 func verifyUpgrade(t *testing.T, input, output string) {
 	pipeline := NewSkaffoldPipeline()
 	err := yaml.UnmarshalStrict([]byte(input), pipeline)

@@ -293,7 +293,7 @@ func AbsolutePaths(workspace string, dependencies map[string][]string) map[strin
 		if !filepath.IsAbs(path) {
 			path = filepath.Join(workspace, path)
 		}
-        p[path] = dests
+		p[path] = dests
 	}
 	return p
 }

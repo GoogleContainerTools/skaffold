@@ -47,7 +47,7 @@ type DependencyResolver func() (map[string][]string, error)
 
 func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact, deps DependencyResolver) (*Item, error) {
 	// If there are no changes, short circuit and don't sync anything
-	if !e.HasChanged() || len(a.Sync) == 0 {
+	if !e.HasChanged() || !a.Sync {
 		return nil, nil
 	}
 

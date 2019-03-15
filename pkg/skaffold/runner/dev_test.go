@@ -350,9 +350,7 @@ func TestDevSync(t *testing.T) {
 			err := runner.Dev(context.Background(), discardOutput(), []*latest.Artifact{
 				{
 					ImageName: "img1",
-					Sync: map[string]string{
-						"file1": "file1",
-					},
+					Sync:      true,
 				},
 				{
 					ImageName: "img2",

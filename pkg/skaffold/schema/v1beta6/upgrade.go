@@ -50,13 +50,23 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 		}
 	}
 
-	// convert Kaniko if needed
+	// convert Sync and clear the input because it thrashes the cloning
+	shouldSync := make([]bool, 0, len(config.Build.Artifacts))
+	for _, a := range config.Build.Artifacts {
+		shouldSync = append(shouldSync, len(a.Sync) > 0)
+		a.Sync = nil
+	}
 	var newBuild next.BuildConfig
 	if err := pkgutil.CloneThroughJSON(config.Build, &newBuild); err != nil {
 		return nil, errors.Wrap(err, "converting new build")
 	}
+	// convert Kaniko if needed
 	if err := upgradeKanikoBuild(config.Build, &newBuild); err != nil {
 		return nil, errors.Wrap(err, "upgrading kaniko build")
+	}
+	// set Sync in newBuild
+	for i, a := range newBuild.Artifacts {
+		a.Sync = shouldSync[i]
 	}
 
 	// convert Test (should be the same)

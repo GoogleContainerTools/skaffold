@@ -70,16 +70,10 @@
               "x-intellij-html-description": "plugin used to build this artifact."
             },
             "sync": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "type": "object",
-              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "default": "{}",
-              "examples": [
-                "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
-              ]
+              "type": "boolean",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified.",
+              "default": "false"
             }
           },
           "preferredOrder": [
@@ -117,16 +111,10 @@
               "x-intellij-html-description": "plugin used to build this artifact."
             },
             "sync": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "type": "object",
-              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "default": "{}",
-              "examples": [
-                "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
-              ]
+              "type": "boolean",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified.",
+              "default": "false"
             }
           },
           "preferredOrder": [
@@ -165,16 +153,10 @@
               "x-intellij-html-description": "plugin used to build this artifact."
             },
             "sync": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "type": "object",
-              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "default": "{}",
-              "examples": [
-                "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
-              ]
+              "type": "boolean",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified.",
+              "default": "false"
             }
           },
           "preferredOrder": [
@@ -213,16 +195,10 @@
               "x-intellij-html-description": "plugin used to build this artifact."
             },
             "sync": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "type": "object",
-              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "default": "{}",
-              "examples": [
-                "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
-              ]
+              "type": "boolean",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified.",
+              "default": "false"
             }
           },
           "preferredOrder": [
@@ -261,16 +237,10 @@
               "x-intellij-html-description": "plugin used to build this artifact."
             },
             "sync": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "type": "object",
-              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "default": "{}",
-              "examples": [
-                "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
-              ]
+              "type": "boolean",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified.",
+              "default": "false"
             }
           },
           "preferredOrder": [
@@ -309,16 +279,10 @@
               "x-intellij-html-description": "plugin used to build this artifact."
             },
             "sync": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "type": "object",
-              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "default": "{}",
-              "examples": [
-                "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
-              ]
+              "type": "boolean",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified.",
+              "default": "false"
             }
           },
           "preferredOrder": [

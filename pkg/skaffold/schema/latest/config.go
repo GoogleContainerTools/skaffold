@@ -459,9 +459,7 @@ type Artifact struct {
 
 	// Sync *alpha* lists local files synced to pods instead
 	// of triggering an image build when modified.
-	// This is a mapping of local files to sync to remote folders.
-	// For example: `{"*.py": ".", "css/**/*.css": "app/css"}`.
-	Sync map[string]string `yaml:"sync,omitempty"`
+	Sync bool `yaml:"sync,omitempty"`
 
 	// ArtifactType describes how to build an artifact.
 	ArtifactType `yaml:",inline"`
