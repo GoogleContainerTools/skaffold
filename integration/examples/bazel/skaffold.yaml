@@ -3,6 +3,5 @@ kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-bazel
-    context: .
     bazel:
       target: //:skaffold_example.tar

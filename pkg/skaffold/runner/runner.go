@@ -294,24 +294,29 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*la
 }
 
 // imageTags generates tags for a list of artifacts
-func (r *SkaffoldRunner) imageTags(out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
+func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
 	start := time.Now()
 	color.Default.Fprintln(out, "Generating tags...")
 
 	tags := make(tag.ImageTags, len(artifacts))
 
 	for _, artifact := range artifacts {
-		imageName := artifact.ImageName
-		color.Default.Fprintf(out, " - %s -> ", imageName)
+		select {
+		case <-ctx.Done():
+			return nil, context.Canceled
+		default:
+			imageName := artifact.ImageName
+			color.Default.Fprintf(out, " - %s -> ", imageName)
 
-		tag, err := r.Tagger.GenerateFullyQualifiedImageName(artifact.Workspace, imageName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "generating tag for %s", imageName)
+			tag, err := r.Tagger.GenerateFullyQualifiedImageName(artifact.Workspace, imageName)
+			if err != nil {
+				return nil, errors.Wrapf(err, "generating tag for %s", imageName)
+			}
+
+			fmt.Fprintln(out, tag)
+
+			tags[imageName] = tag
 		}
-
-		fmt.Fprintln(out, tag)
-
-		tags[imageName] = tag
 	}
 
 	color.Default.Fprintln(out, "Tags generated in", time.Since(start))
@@ -320,13 +325,17 @@ func (r *SkaffoldRunner) imageTags(out io.Writer, artifacts []*latest.Artifact) 
 
 // BuildAndTest builds artifacts and runs tests on built artifacts
 func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	tags, err := r.imageTags(out, artifacts)
+	tags, err := r.imageTags(ctx, out, artifacts)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating tag")
 	}
 
 	artifactCache := cache.NewCache(ctx, r.Builder, r.opts, r.needsPush)
-	artifactsToBuild, res := artifactCache.RetrieveCachedArtifacts(ctx, out, artifacts)
+	artifactsToBuild, res, err := artifactCache.RetrieveCachedArtifacts(ctx, out, artifacts)
+	if err != nil {
+		return nil, errors.Wrap(err, "retrieving cached artifacts")
+	}
+
 	bRes, err := r.Build(ctx, out, tags, artifactsToBuild)
 	if err != nil {
 		return nil, errors.Wrap(err, "build failed")

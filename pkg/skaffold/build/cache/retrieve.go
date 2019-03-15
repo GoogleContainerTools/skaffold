@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sync"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -43,33 +44,53 @@ type ImageDetails struct {
 }
 
 // RetrieveCachedArtifacts checks to see if artifacts are cached, and returns tags for cached images, otherwise a list of images to be built
-func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]*latest.Artifact, []build.Artifact) {
+func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]*latest.Artifact, []build.Artifact, error) {
 	if !c.useCache {
-		return artifacts, nil
+		return artifacts, nil, nil
 	}
 
 	start := time.Now()
 	color.Default.Fprintln(out, "Checking cache...")
 
-	var needToBuild []*latest.Artifact
-	var built []build.Artifact
+	var (
+		needToBuild []*latest.Artifact
+		built       []build.Artifact
+
+		wg   sync.WaitGroup
+		lock sync.Mutex
+	)
+
+	wg.Add(len(artifacts))
+
 	for _, a := range artifacts {
-		artifact, err := c.resolveCachedArtifact(ctx, out, a)
-		if err != nil {
-			logrus.Debugf("error retrieving cached artifact for %s: %v\n", a.ImageName, err)
-			color.Red.Fprintf(out, "Unable to retrieve %s from cache; this image will be rebuilt.\n", a.ImageName)
-			needToBuild = append(needToBuild, a)
-			continue
-		}
-		if artifact == nil {
-			needToBuild = append(needToBuild, a)
-			continue
-		}
-		built = append(built, *artifact)
+		a := a
+		go func() {
+			defer wg.Done()
+
+			artifact, err := c.resolveCachedArtifact(ctx, out, a)
+
+			lock.Lock()
+			defer lock.Unlock()
+
+			if err != nil {
+				logrus.Debugf("error retrieving cached artifact for %s: %v\n", a.ImageName, err)
+				color.Red.Fprintf(out, "Unable to retrieve %s from cache; this image will be rebuilt.\n", a.ImageName)
+
+				needToBuild = append(needToBuild, a)
+				return
+			}
+			if artifact == nil {
+				needToBuild = append(needToBuild, a)
+				return
+			}
+
+			built = append(built, *artifact)
+		}()
 	}
+	wg.Wait()
 
 	color.Default.Fprintln(out, "Cache check complete in", time.Since(start))
-	return needToBuild, built
+	return needToBuild, built, nil
 }
 
 func (c *Cache) resolveCachedArtifact(ctx context.Context, out io.Writer, a *latest.Artifact) (*build.Artifact, error) {
