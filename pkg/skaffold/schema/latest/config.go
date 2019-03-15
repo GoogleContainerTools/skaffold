@@ -555,6 +555,7 @@ type ArtifactType struct {
 type KanikoArtifact struct {
 	// AdditionalFlags are additional flags to be passed to Kaniko command line.
 	// See [Kaniko Additional Flags](https://github.com/GoogleContainerTools/kaniko#additional-flags).
+	// Deprecated - please use `buildArgs` instead.
 	AdditionalFlags []string `yaml:"flags,omitempty"`
 
 	// DockerfilePath locates the Dockerfile relative to workspace.
