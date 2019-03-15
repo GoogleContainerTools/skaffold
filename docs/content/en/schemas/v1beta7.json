@@ -1095,11 +1095,8 @@
           "x-intellij-html-description": "Kubernetes namespace."
         },
         "overrides": {
-          "additionalProperties": {},
-          "type": "object",
           "description": "key-value pairs. If present, Skaffold will build a Helm `values` file that overrides the original and use it to call Helm CLI (`--f` flag).",
-          "x-intellij-html-description": "key-value pairs. If present, Skaffold will build a Helm <code>values</code> file that overrides the original and use it to call Helm CLI (<code>--f</code> flag).",
-          "default": "{}"
+          "x-intellij-html-description": "key-value pairs. If present, Skaffold will build a Helm <code>values</code> file that overrides the original and use it to call Helm CLI (<code>--f</code> flag)."
         },
         "packaged": {
           "$ref": "#/definitions/HelmPackaged",
