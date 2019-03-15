@@ -14,7 +14,7 @@ This functionality is in an alpha state and may change without warning.
 ## Debugging with Skaffold
 
 `skaffold debug` acts like `skaffold dev`, but it configures containers in pods
- for debugging. as required for each container's runtime technology.
+ for debugging as required for each container's runtime technology.
 The associated debugging ports are exposed and labelled and port-forwarded to the
 local machine.  Helper metadata is also added to allow IDEs to detect the debugging
 configuration parameters.
