@@ -34,5 +34,8 @@ func TestDetDefaults(t *testing.T) {
 
 	err := Set(pipeline)
 
+	for _, a := range pipeline.Build.Artifacts {
+		testutil.CheckDeepEqual(t, ".", a.Workspace)
+	}
 	testutil.CheckError(t, false, err)
 }
