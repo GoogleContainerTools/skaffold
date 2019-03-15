@@ -92,7 +92,7 @@ Commands and their flags are subject to the deprecation policy based on the foll
 ## Current deprecation notices 
 
 
-03/15/2019: With release v0.25.0 we mark for deprecation the `additionalFlags` field in kaniko, instead the `buildArgs` field should be used.
+03/15/2019: With release v0.25.0 we mark for deprecation the `flags` field in kaniko (`KanikoArtifact.AdditionalFlags`) , instead Kaniko's additional flags will now be represented as unique fields under `kaniko` per artifact (`KanikoArtifact` type).
 This flag will will be removed earliest 06/15/2019. 
 
 02/15/2019: With  release v0.23.0 we mark for deprecation the following env variables in the `envTemplate` tagger:
