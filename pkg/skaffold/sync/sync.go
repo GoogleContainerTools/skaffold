@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -128,21 +129,43 @@ func intersect(context string, syncMap map[string]string, files []string, workin
 			return nil, errors.Wrapf(err, "changed file %s can't be found relative to context %s", f, context)
 		}
 		var matches bool
-		for p, dst := range syncMap {
-			match, err := doublestar.PathMatch(filepath.FromSlash(p), relPath)
-			if err != nil {
-				return nil, errors.Wrapf(err, "pattern error for %s", relPath)
-			}
-			if match {
-				if filepath.IsAbs(dst) {
-					dst = filepath.ToSlash(filepath.Join(dst, filepath.Base(relPath)))
-				} else {
-					dst = filepath.ToSlash(filepath.Join(workingDir, dst, filepath.Base(relPath)))
+		// Prioritize '***' sync map rules, for backward compatibility.
+		for _, doTripleStar := range []bool{true, false} {
+			for p, dst := range syncMap {
+				// Replace triple-star with double-star to make a pattern.
+				pat := strings.Replace(p, "***", "**", -1)
+				isTripleStar := len(pat) != len(p)
+				if isTripleStar != doTripleStar {
+					// Wait until the right phase.
+					continue
 				}
-				// Every file must match at least one sync pattern, if not we'll have to
-				// skip the entire sync
-				matches = true
-				ret[f] = dst
+				match, err := doublestar.PathMatch(filepath.FromSlash(pat), relPath)
+				if err != nil {
+					return nil, errors.Wrapf(err, "pattern error for %s", relPath)
+				}
+				if match {
+					var subPath string
+					if isTripleStar {
+						// Map the paths as a tree from the prefix.
+						subtreePrefix := strings.Split(p, "***")[0]
+						subPath = strings.TrimPrefix(relPath, subtreePrefix)
+					} else {
+						// Collapse the paths.
+						subPath = filepath.Base(relPath)
+					}
+					if filepath.IsAbs(dst) {
+						dst = filepath.ToSlash(filepath.Join(dst, subPath))
+					} else {
+						dst = filepath.ToSlash(filepath.Join(workingDir, dst, subPath))
+					}
+					// Every file must match at least one sync pattern, if not we'll have to
+					// skip the entire sync
+					matches = true
+					if _, ok := ret[f]; !ok {
+						// Don't overwrite existing returns.
+						ret[f] = dst
+					}
+				}
 			}
 		}
 		if !matches {

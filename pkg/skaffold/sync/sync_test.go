@@ -275,6 +275,61 @@ func TestNewSyncItem(t *testing.T) {
 				Delete: map[string]string{},
 			},
 		},
+		{
+			description: "triple-stars mean subtrees",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: map[string]string{
+					"dir1/***/*.js": ".",
+				},
+				Workspace: ".",
+			},
+			workingDir: "/some/dir",
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: watch.Events{
+				Added: []string{filepath.Join("dir1", "dir2/node.js")},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string]string{
+					filepath.Join("dir1", "dir2/node.js"): "/some/dir/dir2/node.js",
+				},
+				Delete: map[string]string{},
+			},
+		},
+		{
+			description: "triple-stars take precedence",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: map[string]string{
+					"dir1/***/*.js":   ".",
+					"dir1/**/**/*.js": ".",
+				},
+				Workspace: ".",
+			},
+			workingDir: "/some/dir",
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: watch.Events{
+				Added: []string{filepath.Join("dir1", "dir2/node.js")},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string]string{
+					filepath.Join("dir1", "dir2/node.js"): "/some/dir/dir2/node.js",
+				},
+				Delete: map[string]string{},
+			},
+		},
 	}
 
 	for _, test := range tests {
