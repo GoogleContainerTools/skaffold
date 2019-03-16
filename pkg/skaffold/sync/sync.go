@@ -148,7 +148,7 @@ func intersect(context string, syncMap map[string]string, files []string, workin
 					if isTripleStar {
 						// Map the paths as a tree from the prefix.
 						subtreePrefix := strings.Split(p, "***")[0]
-						subPath = strings.TrimPrefix(relPath, subtreePrefix)
+						subPath = strings.TrimPrefix(relPath, filepath.FromSlash(subtreePrefix))
 					} else {
 						// Collapse the paths.
 						subPath = filepath.Base(relPath)
