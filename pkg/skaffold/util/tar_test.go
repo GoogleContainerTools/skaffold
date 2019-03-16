@@ -120,7 +120,7 @@ func TestCreateTarWithAbsolutePaths(t *testing.T) {
 	paths := map[string][]string{}
 	for path, content := range files {
 		tmpDir.Write(path, content)
-		paths[path] = []string{""}
+		paths[tmpDir.Path(path)] = []string{""}
 	}
 
 	reset := testutil.Chdir(t, tmpDir.Root())
