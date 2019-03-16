@@ -69,6 +69,7 @@ func TestLocalRun(t *testing.T) {
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
 				Tag:       "gcr.io/test/image:1",
+				Location:  build.ToLocalDocker,
 			}},
 		},
 		{
@@ -99,6 +100,7 @@ func TestLocalRun(t *testing.T) {
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
 				Tag:       "gcr.io/test/image:tag@sha256:7368613235363a31e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+				Location:  build.ToRemoteRegistry,
 			}},
 			expectedPushed: []string{"sha256:7368613235363a31e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
 		},
@@ -156,6 +158,7 @@ func TestLocalRun(t *testing.T) {
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
 				Tag:       "gcr.io/test/image:1",
+				Location:  build.ToLocalDocker,
 			}},
 		},
 		{
@@ -175,6 +178,7 @@ func TestLocalRun(t *testing.T) {
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
 				Tag:       "gcr.io/test/image:1",
+				Location:  build.ToLocalDocker,
 			}},
 		},
 		{
@@ -195,6 +199,7 @@ func TestLocalRun(t *testing.T) {
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
 				Tag:       "gcr.io/test/image:1",
+				Location:  build.ToLocalDocker,
 			}},
 			expectedWarnings: []string{"Cache-From image couldn't be pulled: pull1\n"},
 		},

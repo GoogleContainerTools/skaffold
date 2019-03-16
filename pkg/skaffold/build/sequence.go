@@ -49,7 +49,7 @@ func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 			return nil, fmt.Errorf("unable to find tag for image %s", artifact.ImageName)
 		}
 
-		finalTag, retriever, err := buildArtifact(ctx, out, artifact, tag)
+		build, err := buildArtifact(ctx, out, artifact, tag)
 		if err != nil {
 			event.Handle(&proto.Event{
 				EventType: &proto.Event_BuildEvent{
@@ -71,11 +71,7 @@ func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 			},
 		})
 
-		builds = append(builds, Artifact{
-			ImageName: artifact.ImageName,
-			Tag:       finalTag,
-			Config:    retriever,
-		})
+		builds = append(builds, *build)
 	}
 
 	return builds, nil

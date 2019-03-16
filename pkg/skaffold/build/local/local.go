@@ -46,16 +46,16 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	return build.InSequence(ctx, out, tags, artifacts, b.buildArtifact)
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, build.ConfigurationRetriever, error) {
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (*build.Artifact, error) {
 	digestOrImageID, err := b.runBuildForArtifact(ctx, out, artifact, tag)
 	if err != nil {
-		return "", nil, errors.Wrap(err, "build artifact")
+		return nil, errors.Wrap(err, "build artifact")
 	}
 
 	if b.pushImages {
 		digest := digestOrImageID
 		image := tag + "@" + digest
-		return image, build.RegistryConfigurationRetriever(image), nil
+		return &build.Artifact{ImageName: artifact.ImageName, Tag: image, Location: build.ToRemoteRegistry}, nil
 	}
 
 	// k8s doesn't recognize the imageID or any combination of the image name
@@ -65,10 +65,10 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 	imageID := digestOrImageID
 	uniqueTag := artifact.ImageName + ":" + strings.TrimPrefix(imageID, "sha256:")
 	if err := b.localDocker.Tag(ctx, imageID, uniqueTag); err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
-	return uniqueTag, build.DockerConfigurationRetriever(b.localDocker, uniqueTag), nil
+	return &build.Artifact{ImageName: artifact.ImageName, Tag: uniqueTag, Location: build.ToLocalDocker}, nil
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {

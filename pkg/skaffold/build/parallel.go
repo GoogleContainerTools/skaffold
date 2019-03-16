@@ -32,7 +32,7 @@ import (
 
 const bufferedLinesPerArtifact = 10000
 
-type artifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, ConfigurationRetriever, error)
+type artifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (*Artifact, error)
 
 // InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
 func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
@@ -44,8 +44,7 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	defer cancel()
 
 	n := len(artifacts)
-	finalTags := make([]string, n)
-	retrievers := make([]ConfigurationRetriever, n)
+	built := make([]Artifact, n)
 	errs := make([]error, n)
 	outputs := make([]chan []byte, n)
 
@@ -90,7 +89,8 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 					},
 				})
 			} else {
-				finalTags[i], retrievers[i], errs[i] = buildArtifact(ctx, cw, artifacts[i], tag)
+				var result *Artifact
+				result, errs[i] = buildArtifact(ctx, cw, artifacts[i], tag)
 				if errs[i] != nil {
 					event.Handle(&proto.Event{
 						EventType: &proto.Event_BuildEvent{
@@ -101,6 +101,8 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 							},
 						},
 					})
+				} else {
+					built[i] = *result
 				}
 			}
 			event.Handle(&proto.Event{
@@ -124,8 +126,6 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	}
 
 	// Print logs and collect results in order.
-	var built []Artifact
-
 	for i, artifact := range artifacts {
 		for line := range outputs[i] {
 			out.Write(line)
@@ -135,12 +135,6 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 		if errs[i] != nil {
 			return nil, errors.Wrapf(errs[i], "building [%s]", artifact.ImageName)
 		}
-
-		built = append(built, Artifact{
-			ImageName: artifact.ImageName,
-			Tag:       finalTags[i],
-			Config:    retrievers[i],
-		})
 	}
 
 	return built, nil
