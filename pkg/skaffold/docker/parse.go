@@ -497,6 +497,10 @@ func retrieveWorkingDir(tagged string) (string, error) {
 	var cf *registry_v1.ConfigFile
 	var err error
 
+	if strings.ToLower(tagged) == "scratch" {
+		return "/", nil
+	}
+
 	localDocker, err := NewAPIClient()
 	if err != nil {
 		// No local Docker is available
