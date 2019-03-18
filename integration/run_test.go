@@ -94,11 +94,11 @@ func TestRun(t *testing.T) {
 			dir:         "testdata/kaniko-microservices",
 			deployments: []string{"leeroy-app", "leeroy-web"},
 			remoteOnly:  true,
-		}, {
-			description: "helm",
-			dir:         "examples/helm-deployment",
-			deployments: []string{"skaffold-helm"},
-			remoteOnly:  true,
+			// }, {
+			// 	description: "helm",
+			// 	dir:         "examples/helm-deployment",
+			// 	deployments: []string{"skaffold-helm"},
+			// 	remoteOnly:  true,
 		}, {
 			description: "docker plugin in gcb exec environment",
 			dir:         "testdata/plugin/gcb",
