@@ -30,7 +30,7 @@ func TestFix(t *testing.T) {
 	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	out := skaffold.Fix().WithConfig("skaffold.yaml").InDir("testdata/fix").RunOrFailStdOutOnly(t)
+	out := skaffold.Fix().WithConfig("skaffold.yaml").InDir("testdata/fix").RunOrFailOutput(t)
 
 	skaffold.Run().WithConfig("-").InDir("testdata/fix").InNs(ns.Name).WithStdin(out).RunOrFail(t)
 }

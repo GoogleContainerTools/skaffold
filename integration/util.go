@@ -81,6 +81,8 @@ func (k *NSKubernetesClient) WaitForPodsReady(podNames ...string) {
 		return
 	}
 
+	logrus.Infoln("Waiting for pods", podNames, "to be ready")
+
 	ctx, cancelTimeout := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancelTimeout()
 
@@ -133,6 +135,8 @@ func (k *NSKubernetesClient) WaitForDeploymentsToStabilize(depNames ...string) {
 	if len(depNames) == 0 {
 		return
 	}
+
+	logrus.Infoln("Waiting for deployments", depNames, "to stabilize")
 
 	ctx, cancelTimeout := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancelTimeout()

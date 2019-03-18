@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -117,20 +118,7 @@ func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cmd := b.cmd(ctx)
-
-	// If the test is killed by a timeout, go test will wait for
-	// os.Stderr and os.Stdout to close as a result.
-	//
-	// However, the `cmd` will stil run in the background
-	// and hold those descriptors open.
-	// As a result, go test will hang forever.
-	//
-	// Avoid that by wrapping stderr and stdout, breaking the short
-	// circuit and forcing cmd.Run to use another pipe and goroutine
-	// to pass along stderr and stdout.
-	// See https://github.com/golang/go/issues/23019
-	cmd.Stdout = struct{ io.Writer }{os.Stdout}
-	cmd.Stderr = struct{ io.Writer }{os.Stderr}
+	logrus.Infoln(cmd.Args)
 
 	start := time.Now()
 	if err := cmd.Start(); err != nil {
@@ -148,53 +136,48 @@ func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
 	}
 }
 
-// Run runs the skaffold command and returns its std output and std err combined.
-func (b *RunBuilder) Run(t *testing.T) ([]byte, error) {
+// RunOrFail runs the skaffold command and fails the test
+// if the command returns an error.
+func (b *RunBuilder) RunOrFail(t *testing.T) {
+	t.Helper()
+	if err := b.Run(t); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// Run runs the skaffold command.
+func (b *RunBuilder) Run(t *testing.T) error {
 	t.Helper()
 
 	cmd := b.cmd(context.Background())
 	logrus.Infoln(cmd.Args)
 
 	start := time.Now()
-	out, err := cmd.CombinedOutput()
-	logrus.Infoln("Ran in", time.Since(start))
+	if err := cmd.Run(); err != nil {
+		return errors.Wrapf(err, "skaffold %s", b.command)
+	}
 
-	return out, err
+	logrus.Infoln("Ran in", time.Since(start))
+	return nil
 }
 
-// Run runs the skaffold command and returns its std output.
-func (b *RunBuilder) RunStdOutOnly(t *testing.T) ([]byte, error) {
+// RunOrFailOutput runs the skaffold command and fails the test
+// if the command returns an error.
+// It only returns the standard output.
+func (b *RunBuilder) RunOrFailOutput(t *testing.T) []byte {
 	t.Helper()
 
 	cmd := b.cmd(context.Background())
+	cmd.Stdout, cmd.Stderr = nil, nil
 	logrus.Infoln(cmd.Args)
 
 	start := time.Now()
 	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("skaffold %s: %v, %s", b.command, err, out)
+	}
+
 	logrus.Infoln("Ran in", time.Since(start))
-
-	return out, err
-}
-
-// RunOrFail runs the skaffold command and fails the test
-// if the command returns an error. It returns the combined standard output and standard error.
-func (b *RunBuilder) RunOrFail(t *testing.T) []byte {
-	t.Helper()
-	out, err := b.Run(t)
-	if err != nil {
-		t.Fatalf("skaffold %s: %v, %s", b.command, err, out)
-	}
-	return out
-}
-
-// RunOrFailStdOutOnly runs the skaffold command and fails the test
-// if the command returns an error. It only returns the standard output.
-func (b *RunBuilder) RunOrFailStdOutOnly(t *testing.T) []byte {
-	t.Helper()
-	out, err := b.RunStdOutOnly(t)
-	if err != nil {
-		t.Fatalf("skaffold %s: %v, %s", b.command, err, out)
-	}
 	return out
 }
 
@@ -217,6 +200,20 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 		cmd.Dir = b.dir
 	}
 
+	// If the test is killed by a timeout, go test will wait for
+	// os.Stderr and os.Stdout to close as a result.
+	//
+	// However, the `cmd` will stil run in the background
+	// and hold those descriptors open.
+	// As a result, go test will hang forever.
+	//
+	// Avoid that by wrapping stderr and stdout, breaking the short
+	// circuit and forcing cmd.Run to use another pipe and goroutine
+	// to pass along stderr and stdout.
+	// See https://github.com/golang/go/issues/23019
+	cmd.Stdout = struct{ io.Writer }{os.Stdout}
+	cmd.Stderr = struct{ io.Writer }{os.Stderr}
+
 	return cmd
 }
 
@@ -232,5 +229,6 @@ func removeSkaffoldEnvVariables(env []string) []string {
 		}
 	}
 
-	return clean
+	// Disable update check
+	return append(clean, "SKAFFOLD_UPDATE_CHECK=false")
 }
