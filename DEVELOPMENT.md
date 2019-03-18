@@ -133,7 +133,7 @@ The integration tests live in [`integration`](./integration) and run the [`examp
 as tests. They can be run with:
 
 ```shell
-make integration-test
+make integration
 ```
 
 _These tests require push access to a project in GCP, and so can only be run
