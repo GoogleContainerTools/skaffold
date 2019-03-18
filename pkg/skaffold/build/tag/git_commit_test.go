@@ -78,8 +78,8 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description:  "ignore tag when dirty",
-			expectedName: "test:eefe1b9-dirty",
+			description:  "dirty tag",
+			expectedName: "test:v1-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -101,8 +101,8 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description:  "don't use tag if not exact match",
-			expectedName: "test:3cec6b9",
+			description:  "tag plus one commit",
+			expectedName: "test:v1-1-g3cec6b9",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -186,7 +186,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description:  "updated artifact in dirty repo",
-			expectedName: "test:0c60cb8-dirty",
+			expectedName: "test:v1-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					mkdir("artifact1").write("artifact1/source.go", []byte("code")).
