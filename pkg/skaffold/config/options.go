@@ -52,6 +52,7 @@ type SkaffoldOptions struct {
 	PreBuiltImages    []string
 	Command           string
 	RPCPort           int
+	RPCHTTPPort       int
 }
 
 // Labels returns a map of labels to be applied to all deployed

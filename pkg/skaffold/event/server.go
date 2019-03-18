@@ -20,15 +20,19 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	empty "github.com/golang/protobuf/ptypes/empty"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+
+	gw "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 )
 
 type server struct{}
@@ -50,14 +54,45 @@ func (s *server) Handle(ctx context.Context, event *proto.Event) (*empty.Empty, 
 }
 
 // newStatusServer creates the grpc server for serving the state and event log.
-func newStatusServer(originalPort int) (func() error, error) {
-	if originalPort == -1 {
+func newStatusServer(originalRPCPort, originalHTTPPort int) (func() error, error) {
+	if originalRPCPort == -1 {
 		return func() error { return nil }, nil
 	}
-	port := util.GetAvailablePort(originalPort, &sync.Map{})
-	if port != originalPort && originalPort != constants.DefaultRPCPort {
-		logrus.Warnf("provided port %d already in use: using %d instead", originalPort, port)
+	rpcPort := util.GetAvailablePort(originalRPCPort, &sync.Map{})
+	if rpcPort != originalRPCPort && originalRPCPort != constants.DefaultRPCPort {
+		logrus.Warnf("provided port %d already in use: using %d instead", originalRPCPort, rpcPort)
 	}
+	grpcCallback, err := newGRPCServer(rpcPort)
+	if err != nil {
+		return grpcCallback, errors.Wrap(err, "starting gRPC server")
+	}
+	m := &sync.Map{}
+	m.Store(rpcPort, true)
+	httpPort := util.GetAvailablePort(originalHTTPPort, m)
+	if httpPort != originalHTTPPort && originalHTTPPort != constants.DefaultRPCHTTPPort {
+		logrus.Warnf("provided port %d already in use: using %d instead", originalHTTPPort, httpPort)
+	}
+
+	httpCallback, err := newHTTPServer(httpPort, rpcPort)
+	callback := func() error {
+		httpErr := httpCallback()
+		grpcErr := grpcCallback()
+		errStr := ""
+		if grpcErr != nil {
+			errStr += fmt.Sprintf("grpc callback error: %s\n", grpcErr.Error())
+		}
+		if httpErr != nil {
+			errStr += fmt.Sprintf("http callback error: %s\n", httpErr.Error())
+		}
+		return errors.New(errStr)
+	}
+	if err != nil {
+		return callback, errors.Wrap(err, "starting HTTP server")
+	}
+	return callback, nil
+}
+
+func newGRPCServer(port int) (func() error, error) {
 	l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		return func() error { return nil }, errors.Wrap(err, "creating listener")
@@ -74,6 +109,27 @@ func newStatusServer(originalPort int) (func() error, error) {
 	}()
 	return func() error {
 		s.Stop()
+		return l.Close()
+	}, nil
+}
+
+func newHTTPServer(port, proxyPort int) (func() error, error) {
+	mux := runtime.NewServeMux()
+	opts := []grpc.DialOption{grpc.WithInsecure()}
+	err := gw.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf(":%d", proxyPort), opts)
+	if err != nil {
+		return func() error { return nil }, err
+	}
+
+	l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		return func() error { return nil }, errors.Wrap(err, "creating listener")
+	}
+	logrus.Infof("starting gRPC HTTP server on port %d", port)
+
+	go http.Serve(l, mux)
+
+	return func() error {
 		return l.Close()
 	}, nil
 }

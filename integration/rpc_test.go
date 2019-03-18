@@ -18,7 +18,10 @@ package integration
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"testing"
 	"time"
 
@@ -148,8 +151,9 @@ func TestGetState(t *testing.T) {
 	defer deleteNs()
 
 	// start a skaffold dev loop on an example
-	addr := "12345"
-	stop := skaffold.Dev("--rpc-port", addr).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+	rpcAddr := "12345"
+	httpAddr := "23456"
+	stop := skaffold.Dev("--rpc-port", rpcAddr, "--rpc-http-port", httpAddr).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 	defer stop()
 
 	// start a grpc client and make sure we can connect properly
@@ -158,7 +162,7 @@ func TestGetState(t *testing.T) {
 	var client proto.SkaffoldServiceClient
 	attempts := 0
 	for {
-		conn, err = grpc.Dial(fmt.Sprintf(":%s", addr), grpc.WithInsecure())
+		conn, err = grpc.Dial(fmt.Sprintf(":%s", rpcAddr), grpc.WithInsecure())
 		if err != nil {
 			t.Logf("unable to establish skaffold grpc connection: retrying...")
 			attempts++
@@ -179,10 +183,10 @@ func TestGetState(t *testing.T) {
 	defer ctxCancel()
 
 	// retrieve the state and make sure everything looks correct
-	var r *proto.State
+	var grpcState *proto.State
 	attempts = 0
 	for {
-		r, err = client.GetState(ctx, &empty.Empty{})
+		grpcState, err = client.GetState(ctx, &empty.Empty{})
 		if err == nil {
 			break
 		}
@@ -195,8 +199,23 @@ func TestGetState(t *testing.T) {
 		t.Fatalf("error retrieving state: %v\n", err)
 	}
 
-	for _, v := range r.BuildState.Artifacts {
+	// retrieve the state via HTTP as well, and verify the result is the same
+	httpResponse, err := http.Get(fmt.Sprintf("http://localhost:%s/v1/state", httpAddr))
+	if err != nil {
+		t.Errorf("error connecting to gRPC REST API: %s", err.Error())
+	}
+	b, err := ioutil.ReadAll(httpResponse.Body)
+	if err != nil {
+		t.Errorf("error reading body from http response: %s", err.Error())
+	}
+	var httpState proto.State
+	if err := json.Unmarshal(b, &httpState); err != nil {
+		t.Errorf("error converting http response to proto: %s", err.Error())
+	}
+	testutil.CheckDeepEqual(t, grpcState, &httpState)
+
+	for _, v := range grpcState.BuildState.Artifacts {
 		testutil.CheckDeepEqual(t, event.Complete, v)
 	}
-	testutil.CheckDeepEqual(t, event.Complete, r.DeployState.Status)
+	testutil.CheckDeepEqual(t, event.Complete, grpcState.DeployState.Status)
 }
