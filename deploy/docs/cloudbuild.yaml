@@ -17,9 +17,9 @@ steps:
   - 'gcr.io/$PROJECT_ID/docs-controller:latest'
   - '--cache-from'
   - 'gcr.io/$PROJECT_ID/docs-controller:latest'
-  - '-f'
-  - 'deploy/webhook/Dockerfile'
-  - '.'
+  - '--target'
+  - 'runtime_deps'
+  - 'deploy/webhook'
 
 - name: gcr.io/$PROJECT_ID/docs-controller:latest
   env:

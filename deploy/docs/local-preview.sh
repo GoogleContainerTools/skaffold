@@ -14,13 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-readonly REPO_DIR=$(pwd)
+set -e
 
-pushd ${REPO_DIR}/docs
+readonly CURRENT_DIR=$(pwd)
+readonly DOCS_DIR="${CURRENT_DIR}/docs"
 
-rm -rf public resources node_modules package-lock.json &&  \
-git submodule deinit -f . && \
-rm -rf themes/docsy/* && \
-rm -rf ${REPO_DIR}/.git/modules/docsy
+MOUNTS="-v ${CURRENT_DIR}/.git:/app/.git:ro"
+MOUNTS="${MOUNTS} -v ${DOCS_DIR}/config.toml:/app/docs/config.toml:ro"
 
-popd
+for dir in $(find ${DOCS_DIR} -type dir -mindepth 1 -maxdepth 1 | grep -v themes | grep -v public | grep -v resources | grep -v node_modules); do
+    MOUNTS="${MOUNTS} -v $dir:/app/docs/$(basename $dir):ro"
+done
+
+docker build -t skaffold-docs-previewer --target runtime_deps deploy/webhook
+docker run --rm -ti -p 1313:1313 ${MOUNTS} skaffold-docs-previewer $@

@@ -39,6 +39,14 @@ RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - &&  \
                        # required for releasing the docs
                        firebase-tools
 
+WORKDIR /app/docs/themes/docsy
+RUN git clone https://github.com/google/docsy.git . \
+    && git reset --hard a7141a2eac26cb598b707cab87d224f9105c315d \
+    && git submodule update --init --recursive
+
+WORKDIR /app/docs
+RUN npm i -D autoprefixer
+
 FROM golang:1.10 as webhook
 WORKDIR $GOPATH/src/github.com/GoogleContainerTools/skaffold
 COPY . .
