@@ -229,5 +229,6 @@ func removeSkaffoldEnvVariables(env []string) []string {
 		}
 	}
 
-	return clean
+	// Disable update check
+	return append(clean, "SKAFFOLD_UPDATE_CHECK=false")
 }
