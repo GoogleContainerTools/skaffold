@@ -28,6 +28,7 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 		name        string
 		dockerfiles []string
 		images      []string
+		skipBuild   bool
 		shouldErr   bool
 		expected    string
 	}{
@@ -37,6 +38,11 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 			images:      []string{"image1", "image2"},
 			expected:    "{\"dockerfiles\":[\"Dockerfile\",\"Dockerfile_2\"],\"images\":[\"image1\",\"image2\"]}",
 		},
+		{
+			name:      "no dockerfile, skip build",
+			images:    []string{"image1", "image2"},
+			skipBuild: true,
+			expected:  "{\"images\":[\"image1\",\"image2\"]}"},
 		{
 			name:      "no dockerfile",
 			images:    []string{"image1", "image2"},
@@ -50,7 +56,7 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			out := bytes.NewBuffer([]byte{})
-			err := printAnalyzeJSON(out, test.dockerfiles, test.images)
+			err := printAnalyzeJSON(out, test.skipBuild, test.dockerfiles, test.images)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, out.String())
 		})
 	}

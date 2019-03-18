@@ -116,13 +116,13 @@ func DoInit(out io.Writer, c Config) error {
 	}
 	images := k.GetImages()
 	if c.Analyze {
-		return printAnalyzeJSON(out, dockerfiles, images)
+		return printAnalyzeJSON(out, c.SkipBuild, dockerfiles, images)
 	}
 	var pairs []dockerfilePair
 	// conditionally generate build artifacts
 	if !c.SkipBuild {
 		if len(dockerfiles) == 0 {
-			return errors.New("one or more valid Dockerfiles must be present to run skaffold; please provide at least one Dockerfile and try again")
+			return errors.New("one or more valid Dockerfiles must be present to build images with skaffold; please provide at least one Dockerfile and try again or run `skaffold init --skip-build`")
 		}
 
 		if c.CliArtifacts != nil {
@@ -289,9 +289,9 @@ func generateSkaffoldPipeline(k Initializer, dockerfilePairs []dockerfilePair) (
 	return pipelineStr, nil
 }
 
-func printAnalyzeJSON(out io.Writer, dockerfiles, images []string) error {
-	if len(dockerfiles) == 0 {
-		return errors.New("one or more valid Dockerfiles must be present to run skaffold; please provide at least one Dockerfile and try again")
+func printAnalyzeJSON(out io.Writer, skipBuild bool, dockerfiles, images []string) error {
+	if !skipBuild && len(dockerfiles) == 0 {
+		return errors.New("one or more valid Dockerfiles must be present to build images with skaffold; please provide at least one Dockerfile and try again or run `skaffold init --skip-build`")
 	}
 	a := struct {
 		Dockerfiles []string `json:"dockerfiles,omitempty"`
