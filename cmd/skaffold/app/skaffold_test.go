@@ -18,13 +18,14 @@ package app
 
 import (
 	"bytes"
+	"io/ioutil"
 	"os"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestMain(t *testing.T) {
+func TestMainHelp(t *testing.T) {
 	var (
 		output    bytes.Buffer
 		errOutput bytes.Buffer
@@ -38,4 +39,13 @@ func TestMain(t *testing.T) {
 	testutil.CheckError(t, false, err)
 	testutil.CheckContains(t, "Available Commands", output.String())
 	testutil.CheckDeepEqual(t, "", errOutput.String())
+}
+
+func TestMainUnknownCommand(t *testing.T) {
+	defer func(args []string) { os.Args = args }(os.Args)
+	os.Args = []string{"skaffold", "unknown"}
+
+	err := Run(ioutil.Discard, ioutil.Discard)
+
+	testutil.CheckError(t, true, err)
 }
