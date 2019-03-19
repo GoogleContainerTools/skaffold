@@ -7,7 +7,9 @@ build:
   - image: gcr.io/k8s-skaffold/test-file-sync
     context: .
     sync:
-      '**/foo*' : /test
+    - from: '**/foo*'
+      to: /test
+      flatten: true
 deploy:
  kubectl:
    manifests:

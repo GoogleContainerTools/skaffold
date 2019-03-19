@@ -5,11 +5,15 @@ build:
   - image: gcr.io/k8s-skaffold/node-example
     context: node
     sync:
-      '**/*.js': .
+    - from: '**/*.js'
+      to: .
+      flatten: true
   - image: gcr.io/k8s-skaffold/python-reload
     context: python
     sync:
-      '**/*.py': .
+    - from: '**/*.py'
+      to: .
+      flatten: true
 deploy:
   kubectl:
     manifests:

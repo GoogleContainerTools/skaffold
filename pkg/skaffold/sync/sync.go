@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -48,8 +49,8 @@ type Syncer interface {
 
 type Item struct {
 	Image  string
-	Copy   map[string]string
-	Delete map[string]string
+	Copy   map[string][]string
+	Delete map[string][]string
 }
 
 func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
@@ -63,17 +64,17 @@ func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact, insecu
 		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
 	}
 
-	wd, err := WorkingDir(tag, insecureRegistries)
+	containerWd, err := WorkingDir(tag, insecureRegistries)
 	if err != nil {
 		return nil, errors.Wrapf(err, "retrieving working dir for %s", tag)
 	}
 
-	toCopy, err := intersect(a.Workspace, a.Sync, append(e.Added, e.Modified...), wd)
+	toCopy, err := intersect(a.Workspace, containerWd, a.Sync, append(e.Added, e.Modified...))
 	if err != nil {
 		return nil, errors.Wrap(err, "intersecting sync map and added, modified files")
 	}
 
-	toDelete, err := intersect(a.Workspace, a.Sync, e.Deleted, wd)
+	toDelete, err := intersect(a.Workspace, containerWd, a.Sync, e.Deleted)
 	if err != nil {
 		return nil, errors.Wrap(err, "intersecting sync map and deleted files")
 	}
@@ -120,109 +121,61 @@ func latestTag(image string, builds []build.Artifact) string {
 	return ""
 }
 
-// Note that we always use Unix-style paths in our destination.
-func slashJoin(pfx, sfx string) string {
-	if pfx == "." || pfx == "" {
-		return sfx
-	}
-	elems := []string{
-		strings.TrimSuffix(pfx, "/"),
-		sfx,
-	}
-	return strings.Join(elems, "/")
-}
-
-func intersect(context string, syncMap map[string]string, files []string, workingDir string) (map[string]string, error) {
-	ret := map[string]string{}
-
-	tripleStarSyncMap, otherSyncMap := segregateSyncMaps(syncMap)
+func intersect(contextWd, containerWd string, syncRules []*latest.SyncRule, files []string) (map[string][]string, error) {
+	ret := make(map[string][]string)
 	for _, f := range files {
-		relPath, err := filepath.Rel(context, f)
+		relPath, err := filepath.Rel(contextWd, f)
 		if err != nil {
-			return nil, errors.Wrapf(err, "changed file %s can't be found relative to context %s", f, context)
+			return nil, errors.Wrapf(err, "changed file %s can't be found relative to context %s", f, contextWd)
 		}
 
-		var match bool
-
-		// First try all tripleStarSyncMaps.
-		match, dst, err := matchTripleStarSyncMap(tripleStarSyncMap, relPath)
+		dsts, err := matchSyncRules(syncRules, relPath, containerWd)
 		if err != nil {
 			return nil, err
 		}
 
-		if !match {
-			// Try matching the other rules.
-			match, dst, err = matchOtherSyncMap(otherSyncMap, relPath)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		if !match {
+		if len(dsts) == 0 {
 			logrus.Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
 			return nil, nil
 		}
 
-		// Convert relative destinations to absolute via the workingDir.
-		if dst[0] != '/' {
-			dst = slashJoin(workingDir, dst)
-		}
-
-		// Record the final destination.
-		ret[f] = dst
+		ret[f] = dsts
 	}
-
 	return ret, nil
 }
 
-func segregateSyncMaps(syncMap map[string]string) (tripleStarPattern, doubleStarPattern map[string]string) {
-	tripleStarPattern = make(map[string]string)
-	doubleStarPattern = make(map[string]string)
-	for p, dst := range syncMap {
-		if strings.Contains(p, "***") {
-			tripleStarPattern[p] = dst
-		} else {
-			doubleStarPattern[p] = dst
-		}
-	}
-	return
-}
-
-func matchTripleStarSyncMap(syncMap map[string]string, relPath string) (bool, string, error) {
-	for p, dst := range syncMap {
-		pat := strings.Replace(p, "***", "**", -1)
-		match, err := doublestar.PathMatch(filepath.FromSlash(pat), relPath)
+func matchSyncRules(syncRules []*latest.SyncRule, relPath, containerWd string) ([]string, error) {
+	dsts := make([]string, 0, 1)
+	for _, r := range syncRules {
+		matches, err := doublestar.PathMatch(filepath.FromSlash(r.From), relPath)
 		if err != nil {
-			return false, "", errors.Wrapf(err, "pattern error for %s", relPath)
+			return nil, errors.Wrapf(err, "pattern error for %s", relPath)
 		}
 
-		if match {
-			// Map the paths as a tree from the prefix.
-			subtreePrefix := strings.Split(p, "***")[0]
-			subPath := strings.TrimPrefix(filepath.ToSlash(relPath), subtreePrefix)
-			return true, slashJoin(dst, subPath), nil
-		}
-	}
-	return false, "", nil
-}
-
-func matchOtherSyncMap(syncMap map[string]string, relPath string) (bool, string, error) {
-	for p, dst := range syncMap {
-		match, err := doublestar.PathMatch(filepath.FromSlash(p), relPath)
-		if err != nil {
-			return false, "", errors.Wrapf(err, "pattern error for %s", relPath)
+		if !matches {
+			continue
 		}
 
-		if match {
+		wd := ""
+		if !path.IsAbs(r.To) {
+			// Convert relative destinations to absolute via the working dir in the container.
+			wd = containerWd
+		}
+
+		if r.Flatten {
 			// Collapse the paths.
 			subPath := filepath.Base(relPath)
-			return true, slashJoin(dst, filepath.ToSlash(subPath)), nil
+			dsts = append(dsts, path.Join(wd, r.To, filepath.ToSlash(subPath)))
+		} else {
+			// Map the paths as a tree from the prefix.
+			subPath := strings.TrimPrefix(filepath.ToSlash(relPath), r.Strip)
+			dsts = append(dsts, path.Join(wd, r.To, subPath))
 		}
 	}
-	return false, "", nil
+	return dsts, nil
 }
 
-func Perform(ctx context.Context, image string, files map[string]string, cmdFn func(context.Context, v1.Pod, v1.Container, map[string]string) []*exec.Cmd, namespaces []string) error {
+func Perform(ctx context.Context, image string, files map[string][]string, cmdFn func(context.Context, v1.Pod, v1.Container, map[string][]string) []*exec.Cmd, namespaces []string) error {
 	if len(files) == 0 {
 		return nil
 	}
