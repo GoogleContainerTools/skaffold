@@ -123,58 +123,93 @@ func latestTag(image string, builds []build.Artifact) string {
 func intersect(context string, syncMap map[string]string, files []string, workingDir string) (map[string]string, error) {
 	ret := map[string]string{}
 
+	tripleStarSyncMap, otherSyncMap := segregateSyncMaps(syncMap)
 	for _, f := range files {
 		relPath, err := filepath.Rel(context, f)
 		if err != nil {
 			return nil, errors.Wrapf(err, "changed file %s can't be found relative to context %s", f, context)
 		}
-		var matches bool
-		// Prioritize '***' sync map rules, for backward compatibility.
-		for _, doTripleStar := range []bool{true, false} {
-			for p, dst := range syncMap {
-				// Replace triple-star with double-star to make a pattern.
-				pat := strings.Replace(p, "***", "**", -1)
-				isTripleStar := len(pat) != len(p)
-				if isTripleStar != doTripleStar {
-					// Wait until the right phase.
-					continue
-				}
-				match, err := doublestar.PathMatch(filepath.FromSlash(pat), relPath)
-				if err != nil {
-					return nil, errors.Wrapf(err, "pattern error for %s", relPath)
-				}
-				if match {
-					var subPath string
-					if isTripleStar {
-						// Map the paths as a tree from the prefix.
-						subtreePrefix := strings.Split(p, "***")[0]
-						subPath = strings.TrimPrefix(relPath, filepath.FromSlash(subtreePrefix))
-					} else {
-						// Collapse the paths.
-						subPath = filepath.Base(relPath)
-					}
-					if filepath.IsAbs(dst) {
-						dst = filepath.ToSlash(filepath.Join(dst, subPath))
-					} else {
-						dst = filepath.ToSlash(filepath.Join(workingDir, dst, subPath))
-					}
-					// Every file must match at least one sync pattern, if not we'll have to
-					// skip the entire sync
-					matches = true
-					if _, ok := ret[f]; !ok {
-						// Don't overwrite existing returns.
-						ret[f] = dst
-					}
-				}
+
+		var match bool
+
+		// First try all tripleStarSyncMaps.
+		match, dst, err := matchTripleStarSyncMap(tripleStarSyncMap, relPath)
+		if err != nil {
+			return nil, err
+		}
+
+		if !match {
+			// Try matching the other rules.
+			match, dst, err = matchOtherSyncMap(otherSyncMap, relPath)
+			if err != nil {
+				return nil, err
 			}
 		}
-		if !matches {
+
+		if !match {
 			logrus.Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
 			return nil, nil
 		}
 
+		// Convert relative destinations to absolute via the workingDir.
+		if filepath.IsAbs(dst) {
+			dst = filepath.ToSlash(dst)
+		} else {
+			dst = filepath.ToSlash(filepath.Join(workingDir, dst))
+		}
+
+		// Record the final destination.
+		ret[f] = dst
 	}
+
 	return ret, nil
+}
+
+func segregateSyncMaps(syncMap map[string]string) (tripleStarPattern, doubleStarPattern map[string]string) {
+	tripleStarPattern = make(map[string]string)
+	doubleStarPattern = make(map[string]string)
+	for p, dst := range syncMap {
+		if strings.Contains(p, "***") {
+			tripleStarPattern[p] = dst
+		} else {
+			doubleStarPattern[p] = dst
+		}
+	}
+	return
+}
+
+func matchTripleStarSyncMap(syncMap map[string]string, relPath string) (bool, string, error) {
+	for p, dst := range syncMap {
+		pat := strings.Replace(p, "***", "**", -1)
+		match, err := doublestar.PathMatch(filepath.FromSlash(pat), relPath)
+		if err != nil {
+			return false, "", errors.Wrapf(err, "pattern error for %s", relPath)
+		}
+
+		if match {
+			// Map the paths as a tree from the prefix.
+			subtreePrefix := strings.Split(p, "***")[0]
+			subPath := strings.TrimPrefix(relPath, filepath.FromSlash(subtreePrefix))
+			return true, filepath.Join(dst, subPath), nil
+		}
+	}
+	return false, "", nil
+}
+
+func matchOtherSyncMap(syncMap map[string]string, relPath string) (bool, string, error) {
+	for p, dst := range syncMap {
+		match, err := doublestar.PathMatch(filepath.FromSlash(p), relPath)
+		if err != nil {
+			return false, "", errors.Wrapf(err, "pattern error for %s", relPath)
+		}
+
+		if match {
+			// Collapse the paths.
+			subPath := filepath.Base(relPath)
+			return true, filepath.Join(dst, subPath), nil
+		}
+	}
+	return false, "", nil
 }
 
 func Perform(ctx context.Context, image string, files map[string]string, cmdFn func(context.Context, v1.Pod, v1.Container, map[string]string) []*exec.Cmd, namespaces []string) error {
