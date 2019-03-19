@@ -129,7 +129,5 @@ func newHTTPServer(port, proxyPort int) (func() error, error) {
 
 	go http.Serve(l, mux)
 
-	return func() error {
-		return l.Close()
-	}, nil
+	return l.Close, nil
 }
