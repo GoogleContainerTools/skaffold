@@ -46,7 +46,7 @@ func watchUntil(ctx context.Context, w watch.Interface, condition func(event *wa
 			if err != nil {
 				return fmt.Errorf("condition error: %s", err)
 			}
-			if done == true {
+			if done {
 				return nil
 			}
 		}
@@ -61,7 +61,7 @@ func WaitForPodScheduled(ctx context.Context, pods corev1.PodInterface, podName 
 		IncludeUninitialized: true,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("initializing pod watcher: %s", err)
 	}
 	defer w.Stop()
 
@@ -76,13 +76,13 @@ func WaitForPodScheduled(ctx context.Context, pods corev1.PodInterface, podName 
 
 // WaitForPodComplete waits until the Pod status is complete.
 func WaitForPodComplete(ctx context.Context, pods corev1.PodInterface, podName string, timeout time.Duration) error {
-	logrus.Infof("Waiting for %s to be ready", podName)
+	logrus.Infof("Waiting for %s to be complete", podName)
 
 	w, err := pods.Watch(meta_v1.ListOptions{
 		IncludeUninitialized: true,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("initializing pod watcher: %s", err)
 	}
 	defer w.Stop()
 
@@ -117,7 +117,7 @@ func WaitForPodInitialized(ctx context.Context, pods corev1.PodInterface, podNam
 		IncludeUninitialized: true,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("initializing pod watcher: %s", err)
 	}
 	defer w.Stop()
 
@@ -151,7 +151,7 @@ func WaitForDeploymentToStabilize(ctx context.Context, c kubernetes.Interface, n
 		FieldSelector: fields.AsSelector().String(),
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("initializing deployment watcher: %s", err)
 	}
 
 	ctx, cancelTimeout := context.WithTimeout(ctx, timeout)
