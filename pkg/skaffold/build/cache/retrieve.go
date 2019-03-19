@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"sync"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -43,6 +42,11 @@ type ImageDetails struct {
 	ID     string `yaml:"id,omitempty"`
 }
 
+type detailsErr struct {
+	details *cachedArtifactDetails
+	err     error
+}
+
 // RetrieveCachedArtifacts checks to see if artifacts are cached, and returns tags for cached images, otherwise a list of images to be built
 func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]*latest.Artifact, []build.Artifact, error) {
 	if !c.useCache {
@@ -52,83 +56,68 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 	start := time.Now()
 	color.Default.Fprintln(out, "Checking cache...")
 
-	var needToBuild []*latest.Artifact
-	var built []build.Artifact
+	detailsErrs := make([]chan detailsErr, len(artifacts))
 
-	var wg sync.WaitGroup
-	wg.Add(len(artifacts))
+	for i := range artifacts {
+		detailsErrs[i] = make(chan detailsErr, 1)
 
-	var canceled bool
-
-	for _, a := range artifacts {
-		a := a
+		i := i
 		go func() {
-			defer wg.Done()
-			select {
-			case <-ctx.Done():
-				canceled = true
-			default:
-				artifact, err := c.resolveCachedArtifact(ctx, out, a)
-				if err != nil {
-					logrus.Debugf("error retrieving cached artifact for %s: %v\n", a.ImageName, err)
-					color.Red.Fprintf(out, "Unable to retrieve %s from cache; this image will be rebuilt.\n", a.ImageName)
-					needToBuild = append(needToBuild, a)
-					return
-				}
-				if artifact == nil {
-					needToBuild = append(needToBuild, a)
-					return
-				}
-				built = append(built, *artifact)
-			}
+			details, err := c.retrieveCachedArtifactDetails(ctx, artifacts[i])
+			detailsErrs[i] <- detailsErr{details: details, err: err}
 		}()
 	}
-	wg.Wait()
-	if canceled {
-		return nil, nil, context.Canceled
+
+	var (
+		needToBuild []*latest.Artifact
+		built       []build.Artifact
+	)
+
+	for i, artifact := range artifacts {
+		color.Default.Fprintf(out, " - %s: ", artifact.ImageName)
+
+		select {
+		case <-ctx.Done():
+			return nil, nil, context.Canceled
+
+		case d := <-detailsErrs[i]:
+			details := d.details
+			err := d.err
+			if err != nil || details.needsRebuild {
+				color.Red.Fprintln(out, "Not found. Rebuilding.")
+				needToBuild = append(needToBuild, artifact)
+				continue
+			}
+
+			color.Green.Fprint(out, "Found")
+			if details.needsRetag {
+				color.Green.Fprint(out, ". Retagging")
+			}
+			if details.needsPush {
+				color.Green.Fprint(out, ". Pushing.")
+			}
+			color.Default.Fprintln(out)
+
+			if details.needsRetag {
+				if err := c.client.Tag(ctx, details.prebuiltImage, details.hashTag); err != nil {
+					return nil, nil, errors.Wrap(err, "retagging image")
+				}
+			}
+			if details.needsPush {
+				if _, err := c.client.Push(ctx, out, details.hashTag); err != nil {
+					return nil, nil, errors.Wrap(err, "pushing image")
+				}
+			}
+
+			built = append(built, build.Artifact{
+				ImageName: artifact.ImageName,
+				Tag:       details.hashTag,
+			})
+		}
 	}
 
 	color.Default.Fprintln(out, "Cache check complete in", time.Since(start))
 	return needToBuild, built, nil
-}
-
-func (c *Cache) resolveCachedArtifact(ctx context.Context, out io.Writer, a *latest.Artifact) (*build.Artifact, error) {
-	details, err := c.retrieveCachedArtifactDetails(ctx, a)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting cached artifact details")
-	}
-
-	color.Default.Fprintf(out, " - %s: ", a.ImageName)
-
-	if details.needsRebuild {
-		color.Red.Fprintln(out, "Not found. Rebuilding.")
-		return nil, nil
-	}
-
-	color.Green.Fprint(out, "Found")
-	if details.needsRetag {
-		color.Green.Fprint(out, ". Retagging")
-	}
-	if details.needsPush {
-		color.Green.Fprint(out, ". Pushing.")
-	}
-	color.Default.Fprintln(out)
-
-	if details.needsRetag {
-		if err := c.client.Tag(ctx, details.prebuiltImage, details.hashTag); err != nil {
-			return nil, errors.Wrap(err, "retagging image")
-		}
-	}
-	if details.needsPush {
-		if _, err := c.client.Push(ctx, out, details.hashTag); err != nil {
-			return nil, errors.Wrap(err, "pushing image")
-		}
-	}
-
-	return &build.Artifact{
-		ImageName: a.ImageName,
-		Tag:       details.hashTag,
-	}, nil
 }
 
 type cachedArtifactDetails struct {

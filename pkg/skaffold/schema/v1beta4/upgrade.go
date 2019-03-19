@@ -17,62 +17,25 @@ limitations under the License.
 package v1beta4
 
 import (
-	"encoding/json"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta5"
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta5"
-	"github.com/pkg/errors"
+	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v1beta4 to v1beta5
 // 1. Additions:
+// executionEnvironment
+// artifact builder plugin
+// jibMaven flags
+// jibGradle flags
 // 2. No removals
 // 3. No updates
 func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
-	// convert Deploy (should be the same)
-	var newDeploy next.DeployConfig
-	if err := convert(config.Deploy, &newDeploy); err != nil {
-		return nil, errors.Wrap(err, "converting deploy config")
-	}
+	var newConfig next.SkaffoldPipeline
 
-	// convert Profiles (should be the same)
-	var newProfiles []next.Profile
-	if config.Profiles != nil {
-		if err := convert(config.Profiles, &newProfiles); err != nil {
-			return nil, errors.Wrap(err, "converting new profile")
-		}
-	}
-	// convert Build (should be the same)
-	var newBuild next.BuildConfig
-	if err := convert(config.Build, &newBuild); err != nil {
-		return nil, errors.Wrap(err, "converting new build")
-	}
+	err := pkgutil.CloneThroughJSON(config, &newConfig)
+	newConfig.APIVersion = next.Version
 
-	// convert Test (should be the same)
-	var newTest []*v1beta5.TestCase
-	if err := convert(config.Test, &newTest); err != nil {
-		return nil, errors.Wrap(err, "converting new test")
-	}
-
-	return &next.SkaffoldPipeline{
-		APIVersion: next.Version,
-		Kind:       config.Kind,
-		Build:      newBuild,
-		Test:       newTest,
-		Deploy:     newDeploy,
-		Profiles:   newProfiles,
-	}, nil
-}
-
-func convert(old interface{}, new interface{}) error {
-	o, err := json.Marshal(old)
-	if err != nil {
-		return errors.Wrap(err, "marshalling old")
-	}
-	if err := json.Unmarshal(o, &new); err != nil {
-		return errors.Wrap(err, "unmarshalling new")
-	}
-	return nil
+	return &newConfig, err
 }

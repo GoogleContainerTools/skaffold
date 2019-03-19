@@ -20,9 +20,11 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -57,6 +59,11 @@ type BuildOutput struct {
 }
 
 func runBuild(out io.Writer) error {
+	start := time.Now()
+	defer func() {
+		color.Default.Fprintln(out, "Complete in", time.Since(start))
+	}()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	catchCtrlC(cancel)

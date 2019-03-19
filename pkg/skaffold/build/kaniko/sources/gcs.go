@@ -31,13 +31,14 @@ import (
 )
 
 type GCSBucket struct {
-	cfg     *latest.KanikoBuild
-	tarName string
+	artifact       *latest.KanikoArtifact
+	clusterDetails *latest.ClusterDetails
+	tarName        string
 }
 
 // Setup uploads the context to the provided GCS bucket
 func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string, dependencies []string) (string, error) {
-	bucket := g.cfg.BuildContext.GCSBucket
+	bucket := g.artifact.BuildContext.GCSBucket
 	if bucket == "" {
 		guessedProjectID, err := gcp.ExtractProjectID(artifact.ImageName)
 		if err != nil {
@@ -54,13 +55,13 @@ func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.A
 		return "", errors.Wrap(err, "uploading sources to GCS")
 	}
 
-	context := fmt.Sprintf("gs://%s/%s", g.cfg.BuildContext.GCSBucket, g.tarName)
+	context := fmt.Sprintf("gs://%s/%s", g.artifact.BuildContext.GCSBucket, g.tarName)
 	return context, nil
 }
 
 // Pod returns the pod template for this builder
 func (g *GCSBucket) Pod(args []string) *v1.Pod {
-	return podTemplate(g.cfg, args)
+	return podTemplate(g.clusterDetails, g.artifact.Image, args)
 }
 
 // ModifyPod does nothing here, since we just need to let kaniko run to completion
@@ -76,5 +77,5 @@ func (g *GCSBucket) Cleanup(ctx context.Context) error {
 	}
 	defer c.Close()
 
-	return c.Bucket(g.cfg.BuildContext.GCSBucket).Object(g.tarName).Delete(ctx)
+	return c.Bucket(g.artifact.BuildContext.GCSBucket).Object(g.tarName).Delete(ctx)
 }
