@@ -14,24 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package app
 
 import (
-	"context"
+	"bytes"
 	"os"
+	"testing"
 
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func main() {
-	if err := app.Run(os.Stdout, os.Stderr); err != nil {
-		if errors.Cause(err) == context.Canceled {
-			logrus.Debugln(errors.Wrap(err, "ignore error since context is cancelled"))
-		} else {
-			logrus.Fatal(err)
-		}
-	}
+func TestMain(t *testing.T) {
+	var (
+		output    bytes.Buffer
+		errOutput bytes.Buffer
+	)
+
+	defer func(args []string) { os.Args = args }(os.Args)
+	os.Args = []string{"skaffold", "help"}
+
+	err := Run(&output, &errOutput)
+
+	testutil.CheckError(t, false, err)
+	testutil.CheckContains(t, "Available Commands", output.String())
+	testutil.CheckDeepEqual(t, "", errOutput.String())
 }

@@ -17,17 +17,17 @@ limitations under the License.
 package app
 
 import (
-	"os"
+	"io"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/plugin"
 )
 
-func Run() error {
+func Run(out, err io.Writer) error {
 	if plugin.ShouldExecuteCorePlugin() {
 		return plugin.Execute()
 	}
 
-	c := cmd.NewSkaffoldCommand(os.Stdout, os.Stderr)
+	c := cmd.NewSkaffoldCommand(out, err)
 	return c.Execute()
 }
