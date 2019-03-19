@@ -120,6 +120,18 @@ func latestTag(image string, builds []build.Artifact) string {
 	return ""
 }
 
+// Note that we always use Unix-style paths in our destination.
+func slashJoin(pfx, sfx string) string {
+	if pfx == "." || pfx == "" {
+		return sfx
+	}
+	elems := []string{
+		strings.TrimSuffix(pfx, "/"),
+		sfx,
+	}
+	return strings.Join(elems, "/")
+}
+
 func intersect(context string, syncMap map[string]string, files []string, workingDir string) (map[string]string, error) {
 	ret := map[string]string{}
 
@@ -152,11 +164,8 @@ func intersect(context string, syncMap map[string]string, files []string, workin
 		}
 
 		// Convert relative destinations to absolute via the workingDir.
-		// Note that we always use Unix-style paths in our destination.
-		if dst[0] == '/' {
-			dst = filepath.ToSlash(dst)
-		} else {
-			dst = filepath.ToSlash(filepath.Join(workingDir, dst))
+		if dst[0] != '/' {
+			dst = slashJoin(workingDir, dst)
 		}
 
 		// Record the final destination.
@@ -190,8 +199,8 @@ func matchTripleStarSyncMap(syncMap map[string]string, relPath string) (bool, st
 		if match {
 			// Map the paths as a tree from the prefix.
 			subtreePrefix := strings.Split(p, "***")[0]
-			subPath := strings.TrimPrefix(relPath, filepath.FromSlash(subtreePrefix))
-			return true, filepath.Join(dst, subPath), nil
+			subPath := strings.TrimPrefix(filepath.ToSlash(relPath), subtreePrefix)
+			return true, slashJoin(dst, subPath), nil
 		}
 	}
 	return false, "", nil
@@ -207,7 +216,7 @@ func matchOtherSyncMap(syncMap map[string]string, relPath string) (bool, string,
 		if match {
 			// Collapse the paths.
 			subPath := filepath.Base(relPath)
-			return true, filepath.Join(dst, subPath), nil
+			return true, slashJoin(dst, filepath.ToSlash(subPath)), nil
 		}
 	}
 	return false, "", nil
