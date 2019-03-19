@@ -26,8 +26,11 @@ import (
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v1beta6 to v1beta7
 // 1. Additions:
+// localdir/initImage
+// helm useHelmSecrets
 // 2. No removals
 // 3. No updates
+// kaniko becomes cluster
 func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
