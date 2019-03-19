@@ -77,7 +77,7 @@ func TestWalk(t *testing.T) {
 		err                 bool
 	}{
 		{
-			name: "shd return correct k8 configs and dockerfiles",
+			name: "should return correct k8 configs and dockerfiles",
 			filesWithContents: map[string][]byte{
 				"config/test.yaml":  emptyFile,
 				"k8pod.yml":         emptyFile,
@@ -97,7 +97,7 @@ func TestWalk(t *testing.T) {
 			err: false,
 		},
 		{
-			name: "shd skip hidden dir",
+			name: "should skip hidden dir",
 			filesWithContents: map[string][]byte{
 				".hidden/test.yaml":  emptyFile,
 				"k8pod.yml":          emptyFile,
@@ -115,7 +115,7 @@ func TestWalk(t *testing.T) {
 			err: false,
 		},
 		{
-			name: "shd not error when skaffold.config present and force = true",
+			name: "should not error when skaffold.config present and force = true",
 			filesWithContents: map[string][]byte{
 				"skaffold.yaml": []byte(`apiVersion: skaffold/v1beta6
 kind: Config
@@ -139,7 +139,7 @@ deploy:
 			err: false,
 		},
 		{
-			name: "shd  error when skaffold.config present and force = false",
+			name: "should  error when skaffold.config present and force = false",
 			filesWithContents: map[string][]byte{
 				"config/test.yaml":  emptyFile,
 				"k8pod.yml":         emptyFile,
