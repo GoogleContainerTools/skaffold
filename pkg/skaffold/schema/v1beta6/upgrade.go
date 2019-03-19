@@ -29,7 +29,7 @@ import (
 // localdir/initImage
 // helm useHelmSecrets
 // 2. No removals
-// 3. No updates
+// 3. Updates:
 // kaniko becomes cluster
 func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
