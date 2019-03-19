@@ -201,6 +201,10 @@ func (k *KustomizeDeployer) readManifests(ctx context.Context) (kubectl.Manifest
 		return nil, errors.Wrap(err, "kustomize build")
 	}
 
+	if len(out) == 0 {
+		return nil, nil
+	}
+
 	var manifests kubectl.ManifestList
 	manifests.Append(out)
 	return manifests, nil
