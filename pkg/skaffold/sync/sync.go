@@ -152,7 +152,8 @@ func intersect(context string, syncMap map[string]string, files []string, workin
 		}
 
 		// Convert relative destinations to absolute via the workingDir.
-		if filepath.IsAbs(dst) {
+		// Note that we always use Unix-style paths in our destination.
+		if dst[0] == '/' {
 			dst = filepath.ToSlash(dst)
 		} else {
 			dst = filepath.ToSlash(filepath.Join(workingDir, dst))
