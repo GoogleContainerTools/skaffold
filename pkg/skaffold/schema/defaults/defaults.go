@@ -39,13 +39,11 @@ func Set(c *latest.SkaffoldPipeline) error {
 	setDefaultKustomizePath(c)
 	setDefaultKubectlManifests(c)
 
-	if err := withCloudBuildConfig(c,
+	withCloudBuildConfig(c,
 		SetDefaultCloudBuildDockerImage,
 		setDefaultCloudBuildMavenImage,
 		setDefaultCloudBuildGradleImage,
-	); err != nil {
-		return err
-	}
+	)
 
 	if c.Build.Cluster != nil {
 		// All artifacts should be built with kaniko
@@ -123,32 +121,25 @@ func defaultToKubectlDeploy(c *latest.SkaffoldPipeline) {
 	c.Deploy.DeployType.KubectlDeploy = &latest.KubectlDeploy{}
 }
 
-func withCloudBuildConfig(c *latest.SkaffoldPipeline, operations ...func(kaniko *latest.GoogleCloudBuild) error) error {
+func withCloudBuildConfig(c *latest.SkaffoldPipeline, operations ...func(kaniko *latest.GoogleCloudBuild)) {
 	if gcb := c.Build.GoogleCloudBuild; gcb != nil {
 		for _, operation := range operations {
-			if err := operation(gcb); err != nil {
-				return err
-			}
+			operation(gcb)
 		}
 	}
-
-	return nil
 }
 
 // SetDefaultCloudBuildDockerImage sets the default cloud build image if it doesn't exist
-func SetDefaultCloudBuildDockerImage(gcb *latest.GoogleCloudBuild) error {
+func SetDefaultCloudBuildDockerImage(gcb *latest.GoogleCloudBuild) {
 	gcb.DockerImage = valueOrDefault(gcb.DockerImage, constants.DefaultCloudBuildDockerImage)
-	return nil
 }
 
-func setDefaultCloudBuildMavenImage(gcb *latest.GoogleCloudBuild) error {
+func setDefaultCloudBuildMavenImage(gcb *latest.GoogleCloudBuild) {
 	gcb.MavenImage = valueOrDefault(gcb.MavenImage, constants.DefaultCloudBuildMavenImage)
-	return nil
 }
 
-func setDefaultCloudBuildGradleImage(gcb *latest.GoogleCloudBuild) error {
+func setDefaultCloudBuildGradleImage(gcb *latest.GoogleCloudBuild) {
 	gcb.GradleImage = valueOrDefault(gcb.GradleImage, constants.DefaultCloudBuildGradleImage)
-	return nil
 }
 
 func setDefaultTagger(c *latest.SkaffoldPipeline) {
