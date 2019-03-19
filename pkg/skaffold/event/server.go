@@ -34,17 +34,17 @@ import (
 type server struct{}
 
 func (s *server) GetState(context.Context, *empty.Empty) (*proto.State, error) {
-	state := ev.getState()
+	state := handler.getState()
 	return &state, nil
 }
 
 func (s *server) EventLog(stream proto.SkaffoldService_EventLogServer) error {
-	return ev.forEachEvent(stream.Send)
+	return handler.forEachEvent(stream.Send)
 }
 
 func (s *server) Handle(ctx context.Context, event *proto.Event) (*empty.Empty, error) {
 	if event != nil {
-		handle(event)
+		handler.handle(event)
 	}
 	return &empty.Empty{}, nil
 }

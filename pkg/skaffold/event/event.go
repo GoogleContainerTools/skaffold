@@ -39,7 +39,7 @@ const (
 )
 
 var (
-	ev         *eventHandler
+	handler    *eventHandler
 	once       sync.Once
 	pluginMode bool
 
@@ -142,7 +142,7 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, opt
 	var err error
 	serverShutdown := func() error { return nil }
 	once.Do(func() {
-		ev = &eventHandler{
+		handler = &eventHandler{
 			state: emptyState(build),
 		}
 
@@ -167,15 +167,89 @@ func SetupRPCClient(opts *config.SkaffoldOptions) error {
 	return nil
 }
 
-func Handle(event *proto.Event) {
+// DeployInProgress notifies that a deployment has been started.
+func DeployInProgress() {
+	handler.handleDeployEvent(&proto.DeployEvent{Status: InProgress})
+}
+
+// DeployFailed notifies that a deployment has failed.
+func DeployFailed(err error) {
+	handler.handleDeployEvent(&proto.DeployEvent{Status: Failed, Err: err.Error()})
+}
+
+// DeployComplete notifies that a deployment has completed.
+func DeployComplete() {
+	handler.handleDeployEvent(&proto.DeployEvent{Status: Complete})
+}
+
+// BuildInProgress notifies that a build has been started.
+func BuildInProgress(imageName string) {
+	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: InProgress})
+}
+
+// BuildFailed notifies that a build has failed.
+func BuildFailed(imageName string, err error) {
+	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Failed, Err: err.Error()})
+}
+
+// BuildComplete notifies that a build has completed.
+func BuildComplete(imageName string) {
+	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Complete})
+}
+
+// PortForwarded notifies that a remote port has been forwarded locally.
+func PortForwarded(localPort, remotePort int32, podName, containerName, namespace string) {
+	handler.doHandle(&proto.Event{
+		EventType: &proto.Event_PortEvent{
+			PortEvent: &proto.PortEvent{
+				LocalPort:     localPort,
+				RemotePort:    remotePort,
+				PodName:       podName,
+				ContainerName: containerName,
+				Namespace:     namespace,
+			},
+		},
+	})
+}
+
+func (ev *eventHandler) handleDeployEvent(e *proto.DeployEvent) {
+	ev.doHandle(&proto.Event{
+		EventType: &proto.Event_DeployEvent{
+			DeployEvent: e,
+		},
+	})
+}
+
+func (ev *eventHandler) handleBuildEvent(e *proto.BuildEvent) {
+	ev.doHandle(&proto.Event{
+		EventType: &proto.Event_BuildEvent{
+			BuildEvent: e,
+		},
+	})
+}
+
+func (ev *eventHandler) doHandle(event *proto.Event) {
 	if pluginMode {
 		go cli.Handle(context.Background(), event)
 	} else {
-		go handle(event)
+		go ev.handle(event)
 	}
 }
 
-func handle(event *proto.Event) {
+func LogSkaffoldMetadata(info *version.Info) {
+	handler.logEvent(proto.LogEntry{
+		Timestamp: ptypes.TimestampNow(),
+		Event: &proto.Event{
+			EventType: &proto.Event_MetaEvent{
+				MetaEvent: &proto.MetaEvent{
+					Entry: fmt.Sprintf("Starting Skaffold: %+v", info),
+				},
+			},
+		},
+	})
+}
+
+func (ev *eventHandler) handle(event *proto.Event) {
 	logEntry := &proto.LogEntry{
 		Timestamp: ptypes.TimestampNow(),
 		Event:     event,
@@ -223,17 +297,4 @@ func handle(event *proto.Event) {
 	}
 
 	ev.logEvent(*logEntry)
-}
-
-func LogSkaffoldMetadata(info *version.Info) {
-	ev.logEvent(proto.LogEntry{
-		Timestamp: ptypes.TimestampNow(),
-		Event: &proto.Event{
-			EventType: &proto.Event_MetaEvent{
-				MetaEvent: &proto.MetaEvent{
-					Entry: fmt.Sprintf("Starting Skaffold: %+v", info),
-				},
-			},
-		},
-	})
 }
