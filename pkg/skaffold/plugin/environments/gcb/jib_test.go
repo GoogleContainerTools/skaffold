@@ -33,7 +33,11 @@ func TestJibMavenBuildSteps(t *testing.T) {
 		{true, []string{"--non-recursive", "-DskipTests=true", "prepare-package", "jib:dockerBuild", "-Dimage=img"}},
 	}
 	for _, tt := range testCases {
-		artifact := &latest.JibMavenArtifact{}
+		artifact := &latest.Artifact{
+			ArtifactType: latest.ArtifactType{
+				JibMavenArtifact: &latest.JibMavenArtifact{},
+			},
+		}
 
 		builder := Builder{
 			GoogleCloudBuild: &latest.GoogleCloudBuild{
@@ -41,7 +45,9 @@ func TestJibMavenBuildSteps(t *testing.T) {
 			},
 			skipTests: tt.skipTests,
 		}
-		steps := builder.jibMavenBuildSteps(artifact, "img")
+
+		steps, err := builder.buildSteps(artifact, []string{"img"})
+		testutil.CheckError(t, false, err)
 
 		expected := []*cloudbuild.BuildStep{{
 			Name: "maven:3.6.0",
@@ -61,7 +67,11 @@ func TestJibGradleBuildSteps(t *testing.T) {
 		{true, []string{":jibDockerBuild", "--image=img", "-x", "test"}},
 	}
 	for _, tt := range testCases {
-		artifact := &latest.JibGradleArtifact{}
+		artifact := &latest.Artifact{
+			ArtifactType: latest.ArtifactType{
+				JibGradleArtifact: &latest.JibGradleArtifact{},
+			},
+		}
 
 		builder := Builder{
 			GoogleCloudBuild: &latest.GoogleCloudBuild{
@@ -69,7 +79,9 @@ func TestJibGradleBuildSteps(t *testing.T) {
 			},
 			skipTests: tt.skipTests,
 		}
-		steps := builder.jibGradleBuildSteps(artifact, "img")
+
+		steps, err := builder.buildSteps(artifact, []string{"img"})
+		testutil.CheckError(t, false, err)
 
 		expected := []*cloudbuild.BuildStep{{
 			Name: "gradle:5.1.1",
