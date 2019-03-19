@@ -20,8 +20,10 @@ import (
 	"errors"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -63,4 +65,120 @@ func TestGetState(t *testing.T) {
 	state := ev.getState()
 
 	testutil.CheckDeepEqual(t, Complete, state.BuildState.Artifacts["img"])
+}
+
+func TestDeployInProgress(t *testing.T) {
+	defer func() { handler = nil }()
+
+	handler = &eventHandler{
+		state: emptyState(nil),
+	}
+
+	wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
+	DeployInProgress()
+	wait(t, func() bool { return handler.getState().DeployState.Status == InProgress })
+}
+
+func TestDeployFailed(t *testing.T) {
+	defer func() { handler = nil }()
+
+	handler = &eventHandler{
+		state: emptyState(nil),
+	}
+
+	wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
+	DeployFailed(errors.New("BUG"))
+	wait(t, func() bool { return handler.getState().DeployState.Status == Failed })
+}
+
+func TestDeployComplete(t *testing.T) {
+	defer func() { handler = nil }()
+
+	handler = &eventHandler{
+		state: emptyState(nil),
+	}
+
+	wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
+	DeployComplete()
+	wait(t, func() bool { return handler.getState().DeployState.Status == Complete })
+}
+
+func TestBuildInProgress(t *testing.T) {
+	defer func() { handler = nil }()
+
+	handler = &eventHandler{
+		state: emptyState(&latest.BuildConfig{
+			Artifacts: []*latest.Artifact{{
+				ImageName: "img",
+			}},
+		}),
+	}
+
+	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == NotStarted })
+	BuildInProgress("img")
+	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == InProgress })
+}
+
+func TestBuildFailed(t *testing.T) {
+	defer func() { handler = nil }()
+
+	handler = &eventHandler{
+		state: emptyState(&latest.BuildConfig{
+			Artifacts: []*latest.Artifact{{
+				ImageName: "img",
+			}},
+		}),
+	}
+
+	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == NotStarted })
+	BuildFailed("img", errors.New("BUG"))
+	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == Failed })
+}
+
+func TestBuildComplete(t *testing.T) {
+	defer func() { handler = nil }()
+
+	handler = &eventHandler{
+		state: emptyState(&latest.BuildConfig{
+			Artifacts: []*latest.Artifact{{
+				ImageName: "img",
+			}},
+		}),
+	}
+
+	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == NotStarted })
+	BuildComplete("img")
+	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == Complete })
+}
+
+func TestPortForwarded(t *testing.T) {
+	defer func() { handler = nil }()
+
+	handler = &eventHandler{
+		state: emptyState(nil),
+	}
+
+	wait(t, func() bool { return handler.getState().ForwardedPorts["container"] == nil })
+	PortForwarded(8080, 8888, "pod", "container", "ns")
+	wait(t, func() bool { return handler.getState().ForwardedPorts["container"] != nil })
+}
+
+func wait(t *testing.T, condition func() bool) {
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+
+	timeout := time.NewTimer(5 * time.Second)
+	defer timeout.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			if condition() {
+				return
+			}
+
+		case <-timeout.C:
+			t.Fatal("Timed out waiting")
+		}
+	}
 }
