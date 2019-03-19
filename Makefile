@@ -91,7 +91,7 @@ ifeq ($(REMOTE_INTEGRATION),true)
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-	REMOTE_INTEGRATION=$(REMOTE_INTEGRATION) go test -v $(REPOPATH)/integration -timeout 10m
+	REMOTE_INTEGRATION=$(REMOTE_INTEGRATION) go test -v $(REPOPATH)/integration -timeout 15m
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
