@@ -1,8 +1,12 @@
 # Title
 
 * Author(s): \<your name\>
-* Design Shepherd: As mentioned in the document here.
+* Design Shepherd: \<skaffold-core-team-member\>
+
+    If you are already working with someone mention their name.
+    If not, please leave this empty, it will be assigned to a core team member.
 * Date: \<date\>
+* Status: [Draft/Reviewed/Complete]
 
 ## Background
 
@@ -13,7 +17,8 @@ Please provide an rationale covering following points:
 
 1. Why is this required?
 2. If its re-design, What are cons with current implementation?
-3. Are there any another work-around and if yes, why not keep using it.
+3. Is there any another work-around and if yes, why not keep using it.
+4. Mention related issues, if there are any.****
 
 Here is an example snippet for a new feature:
 
@@ -43,8 +48,10 @@ Please describe your solution. Please list any:
 
 For a new config change, please mention:
 
-* If its a backward compatible config change
-* If its a backward compatible config change, is there a migration path?
+* If its a backward compatible config change ?
+* If the answer to above question is yes, what would be the deprecation policy?
+  See [deprecation-policy](./../../deprecation-policy.md#how-do-we-deprecate-things)
+  requirements.
 
 ### Open Issues/Question
 
@@ -68,15 +75,9 @@ ___
 2. Add inference logic for docker and examples.
 3. Support both `infer` and user defined map with precedence rules implemented.
 4. Finally, support builder plugins to add sync patterns.
-___
-
-For re-factor proposal identify smaller changes like:
-___
-
-1. Add new package skeleton. and any new objects with no functionality.
-2. Move code from old place to newly added objects.
 
 ___
+
 
 ## Integration test plan
 

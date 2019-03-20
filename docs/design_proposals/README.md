@@ -13,7 +13,7 @@ For any new feature, config or big changes, please add a design proposal documen
 as described in [Design Proposal Template](./design-proposal-template.md).
 
 Once you create a PR with the proposal, someone from the core team will be
-assigned as a design sheppard. The role of the design sheppard will be to make
+assigned as a design shepherd. The role of the design shepherd will be to make
 sure,
 
 1. The feature/change is within Skaffold Philosophy and not a one off
@@ -22,6 +22,6 @@ sure,
 3. When changing any existing feature, the implementation plan adheres to
    [skaffold deprecation policy](./../../deprecation-policy.md)
 
-Once the proposals in a reasonale shape, we can discuss it in Skaffold bi-weekly
+Once the proposal is in a reasonale shape, we can discuss it in Skaffold bi-weekly
 meeting to address any open concerns, and reach to a decision i.e. accept or
 punt.
