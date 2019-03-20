@@ -93,9 +93,7 @@ var testDeploySkipBuildDependenciesConfig = &latest.HelmDeploy{
 			Values: map[string]string{
 				"image": "skaffold-helm",
 			},
-			Overrides: map[string]interface{}{
-				"foo": "bar",
-			},
+			Overrides: schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
 			SetValues: map[string]string{
 				"some.key": "somevalue",
 			},

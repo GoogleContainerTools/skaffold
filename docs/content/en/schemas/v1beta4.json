@@ -638,6 +638,10 @@
           "type": "object",
           "default": "{}"
         },
+        "skipBuildDependencies": {
+          "type": "boolean",
+          "default": "false"
+        },
         "values": {
           "additionalProperties": {
             "type": "string"
@@ -671,6 +675,7 @@
         "setValueTemplates",
         "wait",
         "recreatePods",
+        "skipBuildDependencies",
         "overrides",
         "packaged",
         "imageStrategy"
