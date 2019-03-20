@@ -32,7 +32,7 @@ import (
 
 var (
 	quietFlag       bool
-	buildFormatFlag = flags.NewTemplateFlag("{{range .Builds}}{{.ImageName}} -> {{.Tag}}\n{{end}}", BuildOutput{})
+	buildFormatFlag = flags.NewTemplateFlag("{{.}}", BuildOutput{})
 )
 
 // For testing
@@ -76,8 +76,8 @@ func runBuild(out io.Writer) error {
 		buildOut = ioutil.Discard
 	}
 
-	bRes, err := createRunnerAndBuildFunc(buildOut)
-
+	bRes, cleanUp, err := createRunnerAndBuildFunc(buildOut)
+	defer cleanUp()
 	if err != nil {
 		return err
 	}
@@ -92,9 +92,8 @@ func runBuild(out io.Writer) error {
 	return nil
 }
 
-func createRunnerAndBuild(buildOut io.Writer) ([]build.Artifact, error) {
+func createRunnerAndBuild(buildOut io.Writer) ([]build.Artifact, func(), error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	catchCtrlC(cancel)
 
 	runner, config, err := newRunner(opts)
@@ -105,8 +104,13 @@ func createRunnerAndBuild(buildOut io.Writer) ([]build.Artifact, error) {
 		}
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "creating runner")
+		return nil, func() { cancel() }, errors.Wrap(err, "creating runner")
 	}
-	defer runner.RPCServerShutdown()
-	return runner.BuildAndTest(ctx, buildOut, targetArtifacts)
+
+	cleanUp := func() {
+		cancel()
+		runner.RPCServerShutdown()
+	}
+	a, err := runner.BuildAndTest(ctx, buildOut, targetArtifacts)
+	return a, cleanUp, err
 }

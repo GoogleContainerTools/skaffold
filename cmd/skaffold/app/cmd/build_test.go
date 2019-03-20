@@ -29,32 +29,34 @@ import (
 )
 
 func TestQuietFlag(t *testing.T) {
-	mockCreateRunner := func(buildOut io.Writer) ([]build.Artifact, error) {
+	mockCreateRunner := func(buildOut io.Writer) ([]build.Artifact, func(), error) {
 		return []build.Artifact{{
 			ImageName: "gcr.io/skaffold/example",
 			Tag:       "test",
-		}}, nil
+		}}, func() {}, nil
 	}
 
 	orginalCreateRunner := createRunnerAndBuildFunc
-	defer func(c func(buildOut io.Writer) ([]build.Artifact, error)) { createRunnerAndBuildFunc = c }(orginalCreateRunner)
+	defer func(c func(buildOut io.Writer) ([]build.Artifact, func(), error)) {
+		createRunnerAndBuildFunc = c
+	}(orginalCreateRunner)
 	var tests = []struct {
 		name           string
 		template       string
 		expectedOutput []byte
-		mock           func(io.Writer) ([]build.Artifact, error)
+		mock           func(io.Writer) ([]build.Artifact, func(), error)
 		shdErr         bool
 	}{
 		{
 			name:           "quiet flag print build images with no template",
-			expectedOutput: []byte("gcr.io/skaffold/example -> test\n"),
+			expectedOutput: []byte("{[{gcr.io/skaffold/example test}]}"),
 			shdErr:         false,
 			mock:           mockCreateRunner,
 		},
 		{
 			name:           "quiet flag print build images applies pattern specified in template ",
-			template:       "{{.}}",
-			expectedOutput: []byte("{[{gcr.io/skaffold/example test}]}"),
+			template:       "{{range .Builds}}{{.ImageName}} -> {{.Tag}}\n{{end}}",
+			expectedOutput: []byte("gcr.io/skaffold/example -> test\n"),
 			shdErr:         false,
 			mock:           mockCreateRunner,
 		},
@@ -82,22 +84,24 @@ func TestQuietFlag(t *testing.T) {
 }
 
 func TestRunBuild(t *testing.T) {
-	mockCreateRunner := func(buildOut io.Writer) ([]build.Artifact, error) {
+	mockCreateRunner := func(buildOut io.Writer) ([]build.Artifact, func(), error) {
 		return []build.Artifact{{
 			ImageName: "gcr.io/skaffold/example",
 			Tag:       "test",
-		}}, nil
+		}}, func() {}, nil
 	}
-	errRunner := func(buildOut io.Writer) ([]build.Artifact, error) {
-		return nil, errors.New("some error")
+	errRunner := func(buildOut io.Writer) ([]build.Artifact, func(), error) {
+		return nil, func() {}, errors.New("some error")
 	}
 
 	orginalCreateRunner := createRunnerAndBuildFunc
-	defer func(c func(buildOut io.Writer) ([]build.Artifact, error)) { createRunnerAndBuildFunc = c }(orginalCreateRunner)
+	defer func(c func(buildOut io.Writer) ([]build.Artifact, func(), error)) {
+		createRunnerAndBuildFunc = c
+	}(orginalCreateRunner)
 
 	var tests = []struct {
 		name   string
-		mock   func(io.Writer) ([]build.Artifact, error)
+		mock   func(io.Writer) ([]build.Artifact, func(), error)
 		shdErr bool
 	}{
 		{
