@@ -147,7 +147,7 @@ func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, opt
 		}
 
 		if opts.EnableRPC {
-			serverShutdown, err = newStatusServer(opts.RPCPort)
+			serverShutdown, err = newStatusServer(opts.RPCPort, opts.RPCHTTPPort)
 			if err != nil {
 				err = errors.Wrap(err, "creating status server")
 				return
