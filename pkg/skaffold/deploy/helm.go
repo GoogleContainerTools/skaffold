@@ -95,13 +95,24 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 	var deps []string
 	for _, release := range h.Releases {
 		deps = append(deps, release.ValuesFiles...)
+		chartDepsDir := filepath.Join(release.ChartPath, "charts")
 		err := filepath.Walk(release.ChartPath, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return errors.Wrapf(err, "failure accessing path '%s'", path)
 			}
+
 			if !info.IsDir() {
-				deps = append(deps, path)
+				if !strings.HasPrefix(path, chartDepsDir) {
+					// We can always add a dependency if it is not contained in our chartDepsDir.
+					deps = append(deps, path)
+				} else if release.SkipBuildDependencies {
+					// However, if the file is in  our chartDepsDir, we can only include the file
+					// if we are not running the helm dep build phase, as that modifies files inside
+					// the chartDepsDir and results in an infinite build loop.
+					deps = append(deps, path)
+				}
 			}
+
 			return nil
 		})
 		if err != nil {
