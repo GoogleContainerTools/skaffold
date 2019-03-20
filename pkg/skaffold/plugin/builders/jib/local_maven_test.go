@@ -22,12 +22,23 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/pkg/errors"
 )
 
+func NewTestMavenBuilder() *MavenBuilder {
+	localDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{
+		TagToImageID: map[string]string{
+			"my-tag": "image id from my-tag",
+		}}, nil)
+	return &MavenBuilder{
+		LocalDocker: localDaemon,
+		opts:        &config.SkaffoldOptions{},
+	}
+}
 func TestMavenVerifyJibPackageGoal(t *testing.T) {
 	var testCases = []struct {
 		requiredGoal string
@@ -62,10 +73,7 @@ func TestRunMavenCommand(t *testing.T) {
 	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRun("mvn foo bar")
 	util.SkipWrapperCheck = true
 
-	b := &MavenBuilder{
-		LocalDocker: &mockLocalDaemon{},
-		opts:        &config.SkaffoldOptions{},
-	}
+	b := NewTestMavenBuilder()
 	err := b.runMavenCommand(context.Background(), &bytes.Buffer{}, ".", []string{"foo", "bar"})
 
 	testutil.CheckError(t, false, err)
@@ -78,11 +86,8 @@ func TestBuildJibMavenToDocker(t *testing.T) {
 		"mvn --foo --bar --non-recursive prepare-package jib:dockerBuild -Dimage=my-tag")
 	util.SkipWrapperCheck = true
 
-	b := &MavenBuilder{
-		LocalDocker: &mockLocalDaemon{},
-		opts:        &config.SkaffoldOptions{},
-	}
-	a := &latest.JibMavenArtifact{Module: "", Flags: []string{"--foo", "--bar"}}
+	b := NewTestMavenBuilder()
+	a := &latest.JibMavenArtifact{Flags: []string{"--foo", "--bar"}}
 	imageID, err := b.buildJibMavenToDocker(context.Background(), &bytes.Buffer{}, ".", a, "my-tag")
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, "image id from my-tag", imageID)
@@ -97,11 +102,8 @@ func TestBuildJibMavenToRegsitry(t *testing.T) {
 	)
 	util.SkipWrapperCheck = true
 
-	b := &MavenBuilder{
-		LocalDocker: &mockLocalDaemon{},
-		opts:        &config.SkaffoldOptions{},
-	}
-	a := &latest.JibMavenArtifact{Module: "", Flags: []string{"--foo", "--bar"}}
+	b := NewTestMavenBuilder()
+	a := &latest.JibMavenArtifact{Flags: []string{"--foo", "--bar"}}
 	imageID, err := b.buildJibMavenToRegistry(context.Background(), &bytes.Buffer{}, ".", a, "my-tag")
 
 	testutil.CheckErrorAndDeepEqual(t, true, err, "", imageID)

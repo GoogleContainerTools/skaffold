@@ -19,71 +19,25 @@ package jib
 import (
 	"bytes"
 	"context"
-	"io"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/docker/docker/api/types"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 )
 
-type mockLocalDaemon struct {
-}
-
-func (d *mockLocalDaemon) Close() error {
-	return nil
-}
-
-func (d *mockLocalDaemon) ExtraEnv() []string {
-	return nil
-}
-
-func (d *mockLocalDaemon) ServerVersion(ctx context.Context) (types.Version, error) {
-	return types.Version{}, nil
-}
-
-func (d *mockLocalDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error) {
-	return nil, nil
-}
-
-func (d *mockLocalDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string) (string, error) {
-	return "", nil
-}
-
-func (d *mockLocalDaemon) Push(ctx context.Context, out io.Writer, ref string) (string, error) {
-	return "", nil
-}
-
-func (d *mockLocalDaemon) Pull(ctx context.Context, out io.Writer, ref string) error {
-	return nil
-}
-
-func (d *mockLocalDaemon) Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error) {
-	return "", nil
-}
-
-func (d *mockLocalDaemon) Tag(ctx context.Context, image, ref string) error {
-	return nil
-}
-
-func (d *mockLocalDaemon) ImageID(ctx context.Context, ref string) (string, error) {
-	return "image id from " + ref, nil
-}
-
-func (d *mockLocalDaemon) RepoDigest(ctx context.Context, ref string) (string, error) {
-	return "", nil
-}
-
-func (d *mockLocalDaemon) ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error) {
-	return nil, nil
-}
-
-func (d *mockLocalDaemon) ImageExists(ctx context.Context, ref string) bool {
-	return false
+func NewTestGradleBuilder() *GradleBuilder {
+	localDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{
+		TagToImageID: map[string]string{
+			"my-tag": "image id from my-tag",
+		}}, nil)
+	return &GradleBuilder{
+		LocalDocker: localDaemon,
+		opts:        &config.SkaffoldOptions{},
+	}
 }
 
 func TestRunGradleCommand(t *testing.T) {
@@ -92,10 +46,7 @@ func TestRunGradleCommand(t *testing.T) {
 	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRun("gradle foo bar")
 	util.SkipWrapperCheck = true
 
-	b := &GradleBuilder{
-		LocalDocker: &mockLocalDaemon{},
-		opts:        &config.SkaffoldOptions{},
-	}
+	b := NewTestGradleBuilder()
 	err := b.runGradleCommand(context.Background(), &bytes.Buffer{}, ".", []string{"foo", "bar"})
 
 	testutil.CheckError(t, false, err)
@@ -108,10 +59,7 @@ func TestBuildJibGradleToDocker(t *testing.T) {
 		"gradle :proj:jibDockerBuild --image=my-tag --foo --bar")
 	util.SkipWrapperCheck = true
 
-	b := &GradleBuilder{
-		LocalDocker: &mockLocalDaemon{},
-		opts:        &config.SkaffoldOptions{},
-	}
+	b := NewTestGradleBuilder()
 	a := &latest.JibGradleArtifact{Project: "proj", Flags: []string{"--foo", "--bar"}}
 	imageID, err := b.buildJibGradleToDocker(context.Background(), &bytes.Buffer{}, ".", a, "my-tag")
 
@@ -127,10 +75,7 @@ func TestBuildJibGradleToRegsitry(t *testing.T) {
 	)
 	util.SkipWrapperCheck = true
 
-	b := &GradleBuilder{
-		LocalDocker: &mockLocalDaemon{},
-		opts:        &config.SkaffoldOptions{},
-	}
+	b := NewTestGradleBuilder()
 	a := &latest.JibGradleArtifact{Project: "proj", Flags: []string{"--foo", "--bar"}}
 
 	imageID, err := b.buildJibGradleToRegistry(
