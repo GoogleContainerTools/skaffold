@@ -38,6 +38,10 @@ func TestCheckVersion(t *testing.T) {
 			command:     testutil.NewFakeCmd(t).WithRunOut("kubectl version --client -ojson", `{"clientVersion":{"major":"1","minor":"12"}}`),
 		},
 		{
+			description: "1.12+ is valid",
+			command:     testutil.NewFakeCmd(t).WithRunOut("kubectl version --client -ojson", `{"clientVersion":{"major":"1","minor":"12+"}}`),
+		},
+		{
 			description: "1.11 is too old",
 			command:     testutil.NewFakeCmd(t).WithRunOut("kubectl version --client -ojson", `{"clientVersion":{"major":"1","minor":"11"}}`),
 			shouldErr:   true,
