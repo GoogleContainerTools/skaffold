@@ -102,10 +102,8 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 			}
 
 			if !info.IsDir() {
-				if !strings.HasPrefix(path, chartDepsDir) {
+				if !strings.HasPrefix(path, chartDepsDir) || release.SkipBuildDependencies {
 					// We can always add a dependency if it is not contained in our chartDepsDir.
-					deps = append(deps, path)
-				} else if release.SkipBuildDependencies {
 					// However, if the file is in  our chartDepsDir, we can only include the file
 					// if we are not running the helm dep build phase, as that modifies files inside
 					// the chartDepsDir and results in an infinite build loop.
