@@ -69,9 +69,11 @@ func TestQuietFlag(t *testing.T) {
 
 	for _, test := range tests {
 		quietFlag = true
+		defer func() { quietFlag = false }()
 		if test.template != "" {
 			buildFormatFlag = flags.NewTemplateFlag(test.template, BuildOutput{})
 		}
+		defer func() { buildFormatFlag = nil }()
 		createRunnerAndBuildFunc = test.mock
 		var output bytes.Buffer
 		err := runBuild(&output)
