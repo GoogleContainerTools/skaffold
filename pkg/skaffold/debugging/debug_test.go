@@ -21,7 +21,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/google/go-cmp/cmp"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -90,10 +89,10 @@ func TestPodEncodeDecode(t *testing.T) {
 	}
 	switch o := o.(type) {
 	case *v1.Pod:
-		testutil.CheckDeepEqualWithOptions(t, cmp.Options{}, "podname", o.ObjectMeta.Name)
-		testutil.CheckDeepEqualWithOptions(t, cmp.Options{}, 1, len(o.Spec.Containers))
-		testutil.CheckDeepEqualWithOptions(t, cmp.Options{}, "name1", o.Spec.Containers[0].Name)
-		testutil.CheckDeepEqualWithOptions(t, cmp.Options{}, "image1", o.Spec.Containers[0].Image)
+		testutil.CheckDeepEqual(t, "podname", o.ObjectMeta.Name)
+		testutil.CheckDeepEqual(t, 1, len(o.Spec.Containers))
+		testutil.CheckDeepEqual(t, "name1", o.Spec.Containers[0].Name)
+		testutil.CheckDeepEqual(t, "image1", o.Spec.Containers[0].Image)
 	default:
 		t.Errorf("decodeFromYaml() failed: expected *v1.Pod but got %T", o)
 	}
