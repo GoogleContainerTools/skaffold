@@ -129,7 +129,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 	return false
 }
 
-// allocatePort walkas the podSpec's containers looking for an available port that is as close to desiredPort as possible
+// allocatePort walks the podSpec's containers looking for an available port that is as close to desiredPort as possible
 // We deal with wrapping and avoid allocating ports < 1024
 func allocatePort(podSpec *v1.PodSpec, desiredPort int32) int32 {
 	var maxPort int32 = 65535 // ports are normally [1-65535]

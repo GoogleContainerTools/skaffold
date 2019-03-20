@@ -54,7 +54,6 @@ var (
 
 // ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.
 func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact) (kubectl.ManifestList, error) {
-	var updated kubectl.ManifestList
 
 	retriever := func(image string) (imageConfiguration, error) {
 		if artifact := findArtifact(image, builds); artifact != nil {
@@ -62,7 +61,11 @@ func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact) (
 		}
 		return imageConfiguration{}, errors.Errorf("no build artifact for [%q]", image)
 	}
+	return applyDebuggingTransforms(l, retriever)
+}
 
+func applyDebuggingTransforms(l kubectl.ManifestList, retriever configurationRetriever) (kubectl.ManifestList, error) {
+	var updated kubectl.ManifestList
 	for _, manifest := range l {
 		obj, _, err := decodeFromYaml(manifest, nil, nil)
 		if err != nil {

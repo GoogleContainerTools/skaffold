@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 
 	v1 "k8s.io/api/core/v1"
@@ -95,5 +96,394 @@ func TestPodEncodeDecode(t *testing.T) {
 		testutil.CheckDeepEqual(t, "image1", o.Spec.Containers[0].Image)
 	default:
 		t.Errorf("decodeFromYaml() failed: expected *v1.Pod but got %T", o)
+	}
+}
+
+// testTransformer is a simple transformer that applies to everything
+type testTransformer struct{}
+
+func (t testTransformer) IsApplicable(config imageConfiguration) bool {
+	return true
+}
+
+func (t testTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
+	port := portAlloc(9999)
+	container.Ports = append(container.Ports, v1.ContainerPort{Name: "test", ContainerPort: port})
+
+	testEnv := v1.EnvVar{Name: "KEY", Value: "value"}
+	container.Env = append(container.Env, testEnv)
+
+	return map[string]interface{}{"key": "value"}
+}
+
+func TestApplyDebuggingTransforms(t *testing.T) {
+	defer func(c []containerTransformer) { containerTransforms = c }(containerTransforms)
+	containerTransforms = append(containerTransforms, testTransformer{})
+
+	tests := []struct {
+		description string
+		shouldError bool
+		in          string
+		out         string
+	}{
+		{
+			"Pod", false,
+			`apiVersion: v1
+kind: Pod
+metadata:
+  name: pod
+spec:
+  containers:
+  - image: gcr.io/k8s-debug/debug-example:latest
+    name: example
+`,
+			`apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+  creationTimestamp: null
+  name: pod
+spec:
+  containers:
+  - env:
+    - name: KEY
+      value: value
+    image: gcr.io/k8s-debug/debug-example:latest
+    name: example
+    ports:
+    - containerPort: 9999
+      name: test
+    resources: {}
+status: {}`,
+		},
+		{
+			"Deployment", false,
+			`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: debug-app
+  template:
+    metadata:
+      labels:
+        app: debug-app
+      name: debug-pod
+    spec:
+      containers:
+      - image: gcr.io/k8s-debug/debug-example:latest
+        name: example
+`,
+			`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  name: my-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: debug-app
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+      creationTimestamp: null
+      labels:
+        app: debug-app
+      name: debug-pod
+    spec:
+      containers:
+      - env:
+        - name: KEY
+          value: value
+        image: gcr.io/k8s-debug/debug-example:latest
+        name: example
+        ports:
+        - containerPort: 9999
+          name: test
+        resources: {}
+status: {}`,
+		},
+		{
+			"ReplicaSet", false,
+			`apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: my-replicaset
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: debug-app
+  template:
+    metadata:
+      labels:
+        app: debug-app
+      name: debug-pod
+    spec:
+      containers:
+      - image: gcr.io/k8s-debug/debug-example:latest
+        name: example
+`,
+			`apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  creationTimestamp: null
+  name: my-replicaset
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: debug-app
+  template:
+    metadata:
+      annotations:
+        debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+      creationTimestamp: null
+      labels:
+        app: debug-app
+      name: debug-pod
+    spec:
+      containers:
+      - env:
+        - name: KEY
+          value: value
+        image: gcr.io/k8s-debug/debug-example:latest
+        name: example
+        ports:
+        - containerPort: 9999
+          name: test
+        resources: {}
+status:
+  replicas: 0`,
+		},
+		{
+			"StatefulSet", false,
+			`apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: my-statefulset
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: debug-app
+  serviceName: service
+  template:
+    metadata:
+      labels:
+        app: debug-app
+      name: debug-pod
+    spec:
+      containers:
+      - image: gcr.io/k8s-debug/debug-example:latest
+        name: example
+`,
+			`apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  creationTimestamp: null
+  name: my-statefulset
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: debug-app
+  serviceName: service
+  template:
+    metadata:
+      annotations:
+        debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+      creationTimestamp: null
+      labels:
+        app: debug-app
+      name: debug-pod
+    spec:
+      containers:
+      - env:
+        - name: KEY
+          value: value
+        image: gcr.io/k8s-debug/debug-example:latest
+        name: example
+        ports:
+        - containerPort: 9999
+          name: test
+        resources: {}
+  updateStrategy: {}
+status:
+  replicas: 0`,
+		},
+		{
+			"DaemonSet", false,
+			`apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: my-daemonset
+spec:
+  selector:
+    matchLabels:
+      app: debug-app
+  template:
+    metadata:
+      labels:
+        app: debug-app
+      name: debug-pod
+    spec:
+      containers:
+      - image: gcr.io/k8s-debug/debug-example:latest
+        name: example
+`,
+			`apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  creationTimestamp: null
+  name: my-daemonset
+spec:
+  selector:
+    matchLabels:
+      app: debug-app
+  template:
+    metadata:
+      annotations:
+        debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+      creationTimestamp: null
+      labels:
+        app: debug-app
+      name: debug-pod
+    spec:
+      containers:
+      - env:
+        - name: KEY
+          value: value
+        image: gcr.io/k8s-debug/debug-example:latest
+        name: example
+        ports:
+        - containerPort: 9999
+          name: test
+        resources: {}
+  updateStrategy: {}
+status:
+  currentNumberScheduled: 0
+  desiredNumberScheduled: 0
+  numberMisscheduled: 0
+  numberReady: 0`,
+		},
+		{
+			"Job", false,
+			`apiVersion: batch/v1
+kind: Job
+metadata:
+  name: my-job
+spec:
+  selector:
+    matchLabels:
+      app: debug-app
+  template:
+    metadata:
+      labels:
+        app: debug-app
+      name: debug-pod
+    spec:
+      containers:
+      - image: gcr.io/k8s-debug/debug-example:latest
+        name: example
+`,
+			`apiVersion: batch/v1
+kind: Job
+metadata:
+  creationTimestamp: null
+  name: my-job
+spec:
+  selector:
+    matchLabels:
+      app: debug-app
+  template:
+    metadata:
+      annotations:
+        debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+      creationTimestamp: null
+      labels:
+        app: debug-app
+      name: debug-pod
+    spec:
+      containers:
+      - env:
+        - name: KEY
+          value: value
+        image: gcr.io/k8s-debug/debug-example:latest
+        name: example
+        ports:
+        - containerPort: 9999
+          name: test
+        resources: {}
+status: {}`,
+		},
+		{
+			"ReplicationController", false,
+			`apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: my-rc
+spec:
+  replicas: 10
+  selector:
+    app: debug-app
+  template:
+    metadata:
+      name: debug-pod
+      labels:
+        app: debug-app
+    spec:
+      containers:
+      - image: gcr.io/k8s-debug/debug-example:latest
+        name: example
+`,
+			`apiVersion: v1
+kind: ReplicationController
+metadata:
+  creationTimestamp: null
+  name: my-rc
+spec:
+  replicas: 1
+  selector:
+    app: debug-app
+  template:
+    metadata:
+      annotations:
+        debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+      creationTimestamp: null
+      labels:
+        app: debug-app
+      name: debug-pod
+    spec:
+      containers:
+      - env:
+        - name: KEY
+          value: value
+        image: gcr.io/k8s-debug/debug-example:latest
+        name: example
+        ports:
+        - containerPort: 9999
+          name: test
+        resources: {}
+status:
+  replicas: 0`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			retriever := func(image string) (imageConfiguration, error) {
+				return imageConfiguration{}, nil
+			}
+			result, error := applyDebuggingTransforms(kubectl.ManifestList{[]byte(test.in)}, retriever)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldError, error, test.out, result.String())
+		})
 	}
 }

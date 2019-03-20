@@ -40,7 +40,7 @@ func (t jdwpTransformer) IsApplicable(config imageConfiguration) bool {
 	}
 	if len(config.entrypoint) > 0 {
 		return config.entrypoint[0] == "java" || strings.HasSuffix(config.entrypoint[0], "/java")
-	} 
+	}
 	if len(config.arguments) > 0 {
 		return config.arguments[0] == "java" || strings.HasSuffix(config.arguments[0], "/java")
 	}
@@ -119,7 +119,7 @@ func retrieveJdwpSpec(config imageConfiguration) *jdwpSpec {
 func extractJdwpArg(spec string) *jdwpSpec {
 	if strings.Index(spec, "-agentlib:jdwp=") == 0 {
 		return parseJdwpSpec(spec[15:])
-	} 
+	}
 	if strings.Index(spec, "-Xrunjdwp:") == 0 {
 		return parseJdwpSpec(spec[10:])
 	}
@@ -139,9 +139,9 @@ func (spec jdwpSpec) String() string {
 	}
 	if spec.port > 0 {
 		if len(spec.host) > 0 {
-			result = append(result, "address=" + spec.host + ":" + strconv.FormatUint(uint64(spec.port), 10))
+			result = append(result, "address="+spec.host+":"+strconv.FormatUint(uint64(spec.port), 10))
 		} else {
-			result = append(result, "address=" + strconv.FormatUint(uint64(spec.port), 10))
+			result = append(result, "address="+strconv.FormatUint(uint64(spec.port), 10))
 		}
 	}
 	return strings.Join(result, ",")
