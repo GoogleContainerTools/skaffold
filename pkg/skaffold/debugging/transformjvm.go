@@ -39,13 +39,10 @@ func (t jdwpTransformer) IsApplicable(config imageConfiguration) bool {
 		return true
 	}
 	if len(config.entrypoint) > 0 {
-		if config.entrypoint[0] == "java" || strings.HasSuffix(config.entrypoint[0], "/java") {
-			return true
-		}
-	} else if len(config.arguments) > 0 {
-		if config.arguments[0] == "java" || strings.HasSuffix(config.arguments[0], "/java") {
-			return true
-		}
+		return config.entrypoint[0] == "java" || strings.HasSuffix(config.entrypoint[0], "/java")
+	} 
+	if len(config.arguments) > 0 {
+		return config.arguments[0] == "java" || strings.HasSuffix(config.arguments[0], "/java")
 	}
 	return false
 }
@@ -53,7 +50,7 @@ func (t jdwpTransformer) IsApplicable(config imageConfiguration) bool {
 // captures the useful jdwp options (see `java -agentlib:jdwp=help`)
 type jdwpSpec struct {
 	transport string
-	// split address into host/port
+	// `address` portion is split into host/port
 	host    string
 	port    uint16
 	quiet   bool
@@ -122,31 +119,32 @@ func retrieveJdwpSpec(config imageConfiguration) *jdwpSpec {
 func extractJdwpArg(spec string) *jdwpSpec {
 	if strings.Index(spec, "-agentlib:jdwp=") == 0 {
 		return parseJdwpSpec(spec[15:])
-	} else if strings.Index(spec, "-Xrunjdwp:") == 0 {
+	} 
+	if strings.Index(spec, "-Xrunjdwp:") == 0 {
 		return parseJdwpSpec(spec[10:])
 	}
 	return nil
 }
 
 func (spec jdwpSpec) String() string {
-	result := "transport=" + spec.transport
+	result := []string{"transport=" + spec.transport}
 	if spec.quiet {
-		result += ",quiet=y"
+		result = append(result, "quiet=y")
 	}
 	if spec.server {
-		result += ",server=y"
+		result = append(result, "server=y")
 	}
 	if !spec.suspend {
-		result += ",suspend=n"
+		result = append(result, "suspend=n")
 	}
 	if spec.port > 0 {
 		if len(spec.host) > 0 {
-			result += ",address=" + spec.host + ":" + strconv.FormatUint(uint64(spec.port), 10)
+			result = append(result, "address=" + spec.host + ":" + strconv.FormatUint(uint64(spec.port), 10))
 		} else {
-			result += ",address=" + strconv.FormatUint(uint64(spec.port), 10)
+			result = append(result, "address=" + strconv.FormatUint(uint64(spec.port), 10))
 		}
 	}
-	return result
+	return strings.Join(result, ",")
 }
 
 // parseJdwpSpec parses a JDWP spec string as passed to `-agentlib:jdwp=` or `-Xrunjdwp:`
