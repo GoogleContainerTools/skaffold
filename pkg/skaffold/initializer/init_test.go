@@ -18,9 +18,7 @@ package initializer
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -67,18 +65,18 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 }
 
 func TestWalk(t *testing.T) {
-	emptyFile := []byte("")
+	emptyFile := ""
 	tests := []struct {
 		name                string
-		filesWithContents   map[string][]byte
+		filesWithContents   map[string]string
 		expectedConfigs     []string
 		expectedDockerfiles []string
 		force               bool
-		err                 bool
+		shouldErr           bool
 	}{
 		{
 			name: "should return correct k8 configs and dockerfiles",
-			filesWithContents: map[string][]byte{
+			filesWithContents: map[string]string{
 				"config/test.yaml":  emptyFile,
 				"k8pod.yml":         emptyFile,
 				"README":            emptyFile,
@@ -94,11 +92,11 @@ func TestWalk(t *testing.T) {
 				"Dockerfile",
 				"deploy/Dockerfile",
 			},
-			err: false,
+			shouldErr: false,
 		},
 		{
 			name: "should skip hidden dir",
-			filesWithContents: map[string][]byte{
+			filesWithContents: map[string]string{
 				".hidden/test.yaml":  emptyFile,
 				"k8pod.yml":          emptyFile,
 				"README":             emptyFile,
@@ -112,15 +110,15 @@ func TestWalk(t *testing.T) {
 			expectedDockerfiles: []string{
 				"Dockerfile",
 			},
-			err: false,
+			shouldErr: false,
 		},
 		{
 			name: "should not error when skaffold.config present and force = true",
-			filesWithContents: map[string][]byte{
-				"skaffold.yaml": []byte(`apiVersion: skaffold/v1beta6
+			filesWithContents: map[string]string{
+				"skaffold.yaml": `apiVersion: skaffold/v1beta6
 kind: Config
 deploy:
-  kustomize: {}`),
+  kustomize: {}`,
 				"config/test.yaml":  emptyFile,
 				"k8pod.yml":         emptyFile,
 				"README":            emptyFile,
@@ -136,39 +134,38 @@ deploy:
 				"Dockerfile",
 				"deploy/Dockerfile",
 			},
-			err: false,
+			shouldErr: false,
 		},
 		{
 			name: "should  error when skaffold.config present and force = false",
-			filesWithContents: map[string][]byte{
+			filesWithContents: map[string]string{
 				"config/test.yaml":  emptyFile,
 				"k8pod.yml":         emptyFile,
 				"README":            emptyFile,
 				"deploy/Dockerfile": emptyFile,
 				"Dockerfile":        emptyFile,
-				"skaffold.yaml": []byte(`apiVersion: skaffold/v1beta6
+				"skaffold.yaml": `apiVersion: skaffold/v1beta6
 kind: Config
 deploy:
-  kustomize: {}`),
+  kustomize: {}`,
 			},
 			force:               false,
 			expectedConfigs:     nil,
 			expectedDockerfiles: nil,
-			err:                 true,
+			shouldErr:           true,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			rootDir, err := ioutil.TempDir("", "test")
-			if err != nil {
-				t.Fatal(err)
-			}
-			createDirStructure(t, rootDir, test.filesWithContents)
+			testDir, deleteFunc := testutil.NewTempDir(t)
+			rootDir := testDir.Root()
+			deleteFunc()
+			writeAllFiles(testDir, test.filesWithContents)
 			potentialConfigs, dockerfiles, err := walk(rootDir, test.force, testValidDocker)
-			testutil.CheckErrorAndDeepEqual(t, test.err, err,
-				convertToAbsPath(rootDir, test.expectedConfigs), potentialConfigs)
-			testutil.CheckErrorAndDeepEqual(t, test.err, err,
-				convertToAbsPath(rootDir, test.expectedDockerfiles), dockerfiles)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err,
+				testDir.Paths(test.expectedConfigs), potentialConfigs)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err,
+				testDir.Paths(test.expectedDockerfiles), dockerfiles)
 			os.Remove(rootDir)
 		})
 	}
@@ -178,33 +175,8 @@ func testValidDocker(path string) bool {
 	return strings.HasSuffix(path, "Dockerfile")
 }
 
-func createDirStructure(t *testing.T, dir string, filesWithContents map[string][]byte) {
-	t.Helper()
-	for file, content := range filesWithContents {
-		// Create Directory path if it does not exist.
-		absPath := filepath.Join(dir, filepath.Dir(file))
-		if _, err := os.Stat(absPath); err != nil {
-			if err := os.MkdirAll(absPath, os.ModePerm); err != nil {
-				t.Fatal(err)
-			}
-		}
-		// Create filepath with contents
-		f, err := os.Create(filepath.Join(dir, file))
-		if err != nil {
-			t.Fatal(err)
-		}
-		f.Write(content)
-		f.Close()
+func writeAllFiles(tmpDir *testutil.TempDir, filesWithContents map[string]string) {
+	for file, contents := range filesWithContents {
+		tmpDir.Write(file, contents)
 	}
-}
-
-func convertToAbsPath(dir string, files []string) []string {
-	if files == nil {
-		return files
-	}
-	absPaths := make([]string, len(files))
-	for i, file := range files {
-		absPaths[i] = filepath.Join(dir, file)
-	}
-	return absPaths
 }
