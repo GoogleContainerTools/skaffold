@@ -39,6 +39,8 @@ var (
 	retries       = 20
 	numLogEntries = 5
 	waitTime      = 1 * time.Second
+	rpcAddr       = "12345"
+	httpAddr      = "23456"
 )
 
 func TestEventLogRPC(t *testing.T) {
@@ -46,8 +48,7 @@ func TestEventLogRPC(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	addr := "12345"
-	teardown := setupSkaffoldWithArgs(t, "--rpc-port", addr)
+	teardown := setupSkaffoldWithArgs(t, "--rpc-port", rpcAddr)
 	defer teardown()
 
 	// start a grpc client and make sure we can connect properly
@@ -56,7 +57,7 @@ func TestEventLogRPC(t *testing.T) {
 	var client proto.SkaffoldServiceClient
 	attempts := 0
 	for {
-		conn, err = grpc.Dial(fmt.Sprintf(":%s", addr), grpc.WithInsecure())
+		conn, err = grpc.Dial(fmt.Sprintf(":%s", rpcAddr), grpc.WithInsecure())
 		if err != nil {
 			t.Logf("unable to establish skaffold grpc connection: retrying...")
 			attempts++
@@ -131,12 +132,11 @@ func TestEventLogHTTP(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
-	port := "23456"
-	teardown := setupSkaffoldWithArgs(t, "--rpc-http-port", port)
+	teardown := setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr)
 	defer teardown()
 	time.Sleep(500 * time.Millisecond) // give skaffold time to process all events
 
-	httpResponse, err := http.Get(fmt.Sprintf("http://localhost:%s/v1/event_log", port))
+	httpResponse, err := http.Get(fmt.Sprintf("http://localhost:%s/v1/event_log", httpAddr))
 	if err != nil {
 		t.Fatalf("error connecting to gRPC REST API: %s", err.Error())
 	}
@@ -197,7 +197,6 @@ func TestGetStateRPC(t *testing.T) {
 	}
 
 	// start a skaffold dev loop on an example
-	rpcAddr := "12345"
 	teardown := setupSkaffoldWithArgs(t, "--rpc-port", rpcAddr)
 	defer teardown()
 

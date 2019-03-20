@@ -20,14 +20,12 @@ import (
 	"fmt"
 	"net"
 	"testing"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	"google.golang.org/grpc"
 )
 
 var (
-	waitTime = 1 * time.Second
 	rpcAddr  = 12345
 	httpAddr = 23456
 )
