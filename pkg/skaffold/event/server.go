@@ -20,46 +20,31 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-
 	empty "github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-
 	"google.golang.org/grpc"
 )
 
 type server struct{}
 
 func (s *server) GetState(context.Context, *empty.Empty) (*proto.State, error) {
-	return ev.state, nil
+	state := handler.getState()
+	return &state, nil
 }
 
 func (s *server) EventLog(stream proto.SkaffoldService_EventLogServer) error {
-	ev.logLock.Lock()
-	for _, entry := range ev.eventLog {
-		if err := stream.Send(&entry); err != nil {
-			return err
-		}
-	}
-	ev.logLock.Unlock()
-	c := make(chan proto.LogEntry)
-	ev.RegisterListener(c)
-	var entry proto.LogEntry
-	for {
-		entry = <-c
-		if err := stream.Send(&entry); err != nil {
-			return err
-		}
-	}
+	return handler.forEachEvent(stream.Send)
 }
 
 func (s *server) Handle(ctx context.Context, event *proto.Event) (*empty.Empty, error) {
 	if event != nil {
-		handle(event)
+		handler.handle(event)
 	}
 	return &empty.Empty{}, nil
 }
@@ -69,7 +54,7 @@ func newStatusServer(originalPort int) (func() error, error) {
 	if originalPort == -1 {
 		return func() error { return nil }, nil
 	}
-	port := util.GetAvailablePort(originalPort)
+	port := util.GetAvailablePort(originalPort, &sync.Map{})
 	if port != originalPort && originalPort != constants.DefaultRPCPort {
 		logrus.Warnf("provided port %d already in use: using %d instead", originalPort, port)
 	}

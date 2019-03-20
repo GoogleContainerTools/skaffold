@@ -57,7 +57,7 @@ func (g *Client) CommentOnPR(pr *github.PullRequestEvent, message string) error 
 		Body: &message,
 	}
 
-	log.Printf("Creating comment on PR %d", pr.PullRequest.GetNumber())
+	log.Printf("Creating comment on PR %d: %s", pr.PullRequest.GetNumber(), message)
 	_, _, err := g.Client.Issues.CreateComment(g.ctx, constants.GithubOwner, constants.GithubRepo, pr.PullRequest.GetNumber(), comment)
 	if err != nil {
 		return errors.Wrap(err, "creating github comment")

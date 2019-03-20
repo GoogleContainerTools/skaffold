@@ -290,6 +290,9 @@ func TestNewForConfig(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
+	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
+	defer restore()
+
 	var tests = []struct {
 		description     string
 		testBench       *TestBench

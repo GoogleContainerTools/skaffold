@@ -17,12 +17,10 @@ limitations under the License.
 package integration
 
 import (
-	"context"
 	"os"
 	"testing"
-	"time"
 
-	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 )
 
 func TestRun(t *testing.T) {
@@ -34,7 +32,6 @@ func TestRun(t *testing.T) {
 		description string
 		dir         string
 		filename    string
-		profile     string
 		args        []string
 		deployments []string
 		pods        []string
@@ -93,14 +90,20 @@ func TestRun(t *testing.T) {
 			pods:        []string{"getting-started-kaniko"},
 			remoteOnly:  true,
 		}, {
-			description: "helm",
-			dir:         "examples/helm-deployment",
-			deployments: []string{"skaffold-helm"},
+			description: "kaniko microservices",
+			dir:         "testdata/kaniko-microservices",
+			deployments: []string{"leeroy-app", "leeroy-web"},
 			remoteOnly:  true,
+			// }, {
+			// 	description: "helm",
+			// 	dir:         "examples/helm-deployment",
+			// 	deployments: []string{"skaffold-helm"},
+			// 	remoteOnly:  true,
 		}, {
 			description: "docker plugin in gcb exec environment",
 			dir:         "testdata/plugin/gcb",
 			deployments: []string{"leeroy-app", "leeroy-web"},
+			remoteOnly:  true,
 		}, {
 			description: "bazel plugin in local exec environment",
 			dir:         "testdata/plugin/local/bazel",
@@ -111,9 +114,10 @@ func TestRun(t *testing.T) {
 			deployments: []string{"leeroy-app", "leeroy-web"},
 		}, {
 			description: "jib in googlecloudbuild",
-			dir:         "examples/jib",
+			dir:         "testdata/jib",
+			args:        []string{"-p", "gcb"},
 			deployments: []string{"web"},
-			profile:     "gcb",
+			remoteOnly:  true,
 		},
 	}
 
@@ -126,25 +130,12 @@ func TestRun(t *testing.T) {
 			ns, client, deleteNs := SetupNamespace(t)
 			defer deleteNs()
 
-			var args []string
-			if test.profile != "" {
-				args = []string{"-p", test.profile}
-			}
-			RunSkaffold(t, "run", test.dir, ns.Name, test.filename, test.env, args...)
+			skaffold.Run().WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 
-			for _, p := range test.pods {
-				if err := kubernetesutil.WaitForPodReady(context.Background(), client.CoreV1().Pods(ns.Name), p); err != nil {
-					t.Fatalf("Timed out waiting for pod ready")
-				}
-			}
+			client.WaitForPodsReady(test.pods...)
+			client.WaitForDeploymentsToStabilize(test.deployments...)
 
-			for _, d := range test.deployments {
-				if err := kubernetesutil.WaitForDeploymentToStabilize(context.Background(), client, ns.Name, d, 10*time.Minute); err != nil {
-					t.Fatalf("Timed out waiting for deployment to stabilize")
-				}
-			}
-
-			RunSkaffold(t, "delete", test.dir, ns.Name, test.filename, test.env)
+			skaffold.Delete().WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 		})
 	}
 }

@@ -28,6 +28,7 @@ import (
 
 	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/plugin"
@@ -156,9 +157,9 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string, opts *config.Skaffo
 		logrus.Debugln("Using builder: google cloud")
 		return gcb.NewBuilder(cfg.GoogleCloudBuild, opts.SkipTests), nil
 
-	case cfg.KanikoBuild != nil:
+	case cfg.Cluster != nil:
 		logrus.Debugln("Using builder: kaniko")
-		return kaniko.NewBuilder(cfg.KanikoBuild)
+		return kaniko.NewBuilder(cfg.Cluster)
 
 	default:
 		return nil, fmt.Errorf("unknown builder for config %+v", cfg)
@@ -292,40 +293,68 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*la
 	return nil
 }
 
+type tagErr struct {
+	tag string
+	err error
+}
+
 // imageTags generates tags for a list of artifacts
-func (r *SkaffoldRunner) imageTags(out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
+func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
 	start := time.Now()
 	color.Default.Fprintln(out, "Generating tags...")
 
-	tags := make(tag.ImageTags, len(artifacts))
+	tagErrs := make([]chan tagErr, len(artifacts))
 
-	for _, artifact := range artifacts {
+	for i := range artifacts {
+		tagErrs[i] = make(chan tagErr, 1)
+
+		i := i
+		go func() {
+			tag, err := r.Tagger.GenerateFullyQualifiedImageName(artifacts[i].Workspace, artifacts[i].ImageName)
+			tagErrs[i] <- tagErr{tag: tag, err: err}
+		}()
+	}
+
+	imageTags := make(tag.ImageTags, len(artifacts))
+
+	for i, artifact := range artifacts {
 		imageName := artifact.ImageName
 		color.Default.Fprintf(out, " - %s -> ", imageName)
 
-		tag, err := r.Tagger.GenerateFullyQualifiedImageName(artifact.Workspace, imageName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "generating tag for %s", imageName)
+		select {
+		case <-ctx.Done():
+			return nil, context.Canceled
+
+		case t := <-tagErrs[i]:
+			tag := t.tag
+			err := t.err
+			if err != nil {
+				return nil, errors.Wrapf(err, "generating tag for %s", imageName)
+			}
+
+			fmt.Fprintln(out, tag)
+
+			imageTags[imageName] = tag
 		}
-
-		fmt.Fprintln(out, tag)
-
-		tags[imageName] = tag
 	}
 
 	color.Default.Fprintln(out, "Tags generated in", time.Since(start))
-	return tags, nil
+	return imageTags, nil
 }
 
 // BuildAndTest builds artifacts and runs tests on built artifacts
 func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	tags, err := r.imageTags(out, artifacts)
+	tags, err := r.imageTags(ctx, out, artifacts)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating tag")
 	}
 
-	artifactCache := build.NewCache(ctx, r.Builder, r.opts, r.needsPush)
-	artifactsToBuild, res := artifactCache.RetrieveCachedArtifacts(ctx, out, artifacts)
+	artifactCache := cache.NewCache(ctx, r.Builder, r.opts, r.needsPush)
+	artifactsToBuild, res, err := artifactCache.RetrieveCachedArtifacts(ctx, out, artifacts)
+	if err != nil {
+		return nil, errors.Wrap(err, "retrieving cached artifacts")
+	}
+
 	bRes, err := r.Build(ctx, out, tags, artifactsToBuild)
 	if err != nil {
 		return nil, errors.Wrap(err, "build failed")

@@ -218,39 +218,44 @@ _complete skaffold 2>/dev/null
 `
 )
 
-var completionCmd = &cobra.Command{
-	Use: "completion SHELL",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("requires 1 arg, found %d", len(args))
-		}
-		return cobra.OnlyValidArgs(cmd, args)
-	},
-	ValidArgs: []string{"bash", "zsh"},
-	Short:     "Output shell completion for the given shell (bash or zsh)",
-	Long:      longDescription,
-	Run:       completion,
-}
-
-func completion(_cmd *cobra.Command, args []string) {
+func completion(cmd *cobra.Command, args []string) {
 	switch args[0] {
 	case "bash":
-		rootCmd.GenBashCompletion(os.Stdout)
+		rootCmd(cmd).GenBashCompletion(os.Stdout)
 	case "zsh":
-		runCompletionZsh(os.Stdout)
+		runCompletionZsh(cmd, os.Stdout)
 	}
 }
 
 // NewCmdCompletion returns the cobra command that outputs shell completion code
 func NewCmdCompletion(out io.Writer) *cobra.Command {
-	return completionCmd
+	return &cobra.Command{
+		Use: "completion SHELL",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return fmt.Errorf("requires 1 arg, found %d", len(args))
+			}
+			return cobra.OnlyValidArgs(cmd, args)
+		},
+		ValidArgs: []string{"bash", "zsh"},
+		Short:     "Output shell completion for the given shell (bash or zsh)",
+		Long:      longDescription,
+		Run:       completion,
+	}
 }
 
-func runCompletionZsh(out io.Writer) error {
+func runCompletionZsh(cmd *cobra.Command, out io.Writer) {
 	io.WriteString(out, zshInitialization)
 	buf := new(bytes.Buffer)
-	rootCmd.GenBashCompletion(buf)
+	rootCmd(cmd).GenBashCompletion(buf)
 	out.Write(buf.Bytes())
 	io.WriteString(out, zshTail)
-	return nil
+}
+
+func rootCmd(cmd *cobra.Command) *cobra.Command {
+	parent := cmd
+	for parent.HasParent() {
+		parent = parent.Parent()
+	}
+	return parent
 }

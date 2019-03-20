@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 type NoopWatcher struct{}
@@ -92,6 +93,9 @@ func discardOutput() *config.Output {
 }
 
 func TestDevFailFirstCycle(t *testing.T) {
+	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
+	defer restore()
+
 	var tests = []struct {
 		description     string
 		testBench       *TestBench
@@ -148,6 +152,9 @@ func TestDevFailFirstCycle(t *testing.T) {
 }
 
 func TestDev(t *testing.T) {
+	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
+	defer restore()
+
 	var tests = []struct {
 		description     string
 		testBench       *TestBench
@@ -280,6 +287,9 @@ func TestDev(t *testing.T) {
 }
 
 func TestDevSync(t *testing.T) {
+	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
+	defer restore()
+
 	var tests = []struct {
 		description     string
 		testBench       *TestBench

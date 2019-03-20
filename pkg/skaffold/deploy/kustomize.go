@@ -30,7 +30,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -95,14 +94,7 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 
 	manifests, err := k.readManifests(ctx)
 	if err != nil {
-		event.Handle(&proto.Event{
-			EventType: &proto.Event_DeployEvent{
-				DeployEvent: &proto.DeployEvent{
-					Status: event.Failed,
-					Err:    err.Error(),
-				},
-			},
-		})
+		event.DeployFailed(err)
 		return errors.Wrap(err, "reading manifests")
 	}
 
@@ -110,58 +102,26 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 		return nil
 	}
 
-	event.Handle(&proto.Event{
-		EventType: &proto.Event_DeployEvent{
-			DeployEvent: &proto.DeployEvent{
-				Status: event.InProgress,
-			},
-		},
-	})
+	event.DeployInProgress()
+
 	manifests, err = manifests.ReplaceImages(builds, k.defaultRepo)
 	if err != nil {
-		event.Handle(&proto.Event{
-			EventType: &proto.Event_DeployEvent{
-				DeployEvent: &proto.DeployEvent{
-					Status: event.Failed,
-					Err:    err.Error(),
-				},
-			},
-		})
+		event.DeployFailed(err)
 		return errors.Wrap(err, "replacing images in manifests")
 	}
 
 	manifests, err = manifests.SetLabels(merge(labellers...))
 	if err != nil {
-		event.Handle(&proto.Event{
-			EventType: &proto.Event_DeployEvent{
-				DeployEvent: &proto.DeployEvent{
-					Status: event.Failed,
-					Err:    err.Error(),
-				},
-			},
-		})
+		event.DeployFailed(err)
 		return errors.Wrap(err, "setting labels in manifests")
 	}
 
 	err = k.kubectl.Apply(ctx, out, manifests)
 	if err != nil {
-		event.Handle(&proto.Event{
-			EventType: &proto.Event_DeployEvent{
-				DeployEvent: &proto.DeployEvent{
-					Status: event.Failed,
-					Err:    err.Error(),
-				},
-			},
-		})
+		event.DeployFailed(err)
 	}
 
-	event.Handle(&proto.Event{
-		EventType: &proto.Event_DeployEvent{
-			DeployEvent: &proto.DeployEvent{
-				Status: event.Complete,
-			},
-		},
-	})
+	event.DeployComplete()
 	return nil
 }
 
@@ -239,6 +199,10 @@ func (k *KustomizeDeployer) readManifests(ctx context.Context) (kubectl.Manifest
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "kustomize build")
+	}
+
+	if len(out) == 0 {
+		return nil, nil
 	}
 
 	var manifests kubectl.ManifestList

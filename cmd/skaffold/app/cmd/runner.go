@@ -57,9 +57,7 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 		return nil, nil, errors.Wrap(err, "getting default repo")
 	}
 
-	if err = applyDefaultRepoSubstitution(config, defaultRepo); err != nil {
-		return nil, nil, errors.Wrap(err, "substituting default repos")
-	}
+	applyDefaultRepoSubstitution(config, defaultRepo)
 
 	runner, err := runner.NewForConfig(opts, config)
 	if err != nil {
@@ -69,10 +67,10 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 	return runner, config, nil
 }
 
-func applyDefaultRepoSubstitution(config *latest.SkaffoldPipeline, defaultRepo string) error {
+func applyDefaultRepoSubstitution(config *latest.SkaffoldPipeline, defaultRepo string) {
 	if defaultRepo == "" {
 		// noop
-		return nil
+		return
 	}
 	for _, artifact := range config.Build.Artifacts {
 		artifact.ImageName = util.SubstituteDefaultRepoIntoImage(defaultRepo, artifact.ImageName)
@@ -80,5 +78,4 @@ func applyDefaultRepoSubstitution(config *latest.SkaffoldPipeline, defaultRepo s
 	for _, testCase := range config.Test {
 		testCase.ImageName = util.SubstituteDefaultRepoIntoImage(defaultRepo, testCase.ImageName)
 	}
-	return nil
 }

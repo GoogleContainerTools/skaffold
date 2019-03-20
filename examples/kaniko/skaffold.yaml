@@ -1,14 +1,15 @@
-apiVersion: skaffold/v1beta6
+apiVersion: skaffold/v1beta7
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-example
-  kaniko:
-    buildContext: 
-      gcsBucket: skaffold-kaniko
+    - image: gcr.io/k8s-skaffold/skaffold-example
+      kaniko:
+        buildContext:
+          gcsBucket: skaffold-kaniko
+        cache: {}
+  cluster:
     pullSecretName: e2esecret
     namespace: default
-    cache: {}
 deploy:
   kubectl:
     manifests:

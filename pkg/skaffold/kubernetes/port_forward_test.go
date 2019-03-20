@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"reflect"
+	"sync"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -47,9 +48,9 @@ func (f *testForwarder) Terminate(pfe *portForwardEntry) {
 	delete(f.forwardedPorts, pfe.port)
 }
 
-func mockRetrieveAvailablePort(taken map[int]struct{}, availablePorts []int) func(int) int {
+func mockRetrieveAvailablePort(taken map[int]struct{}, availablePorts []int) func(int, *sync.Map) int {
 	// Return first available port in ports that isn't taken
-	return func(int) int {
+	return func(int, *sync.Map) int {
 		for _, p := range availablePorts {
 			if _, ok := taken[p]; ok {
 				continue
@@ -58,22 +59,6 @@ func mockRetrieveAvailablePort(taken map[int]struct{}, availablePorts []int) fun
 			return p
 		}
 		return -1
-	}
-}
-
-func mockIsPortAvailable(taken map[int]struct{}, availablePorts []int) func(int) bool {
-	// Return true if p is in availablePorts and is not in taken
-	return func(p int) bool {
-		if _, ok := taken[p]; ok {
-			return false
-		}
-		for _, port := range availablePorts {
-			if p == port {
-				taken[p] = struct{}{}
-				return true
-			}
-		}
-		return false
 	}
 }
 
@@ -102,10 +87,11 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-8080": {
+				"containername-podname-namespace-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
+					namespace:       "namespace",
 					port:            8080,
 					localPort:       8080,
 				},
@@ -115,6 +101,7 @@ func TestPortForwardPod(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "podname",
 						ResourceVersion: "1",
+						Namespace:       "namespace",
 					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
@@ -137,10 +124,11 @@ func TestPortForwardPod(t *testing.T) {
 				9000: true,
 			},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-8080": {
+				"containername-podname-namespace-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
+					namespace:       "namespace",
 					port:            8080,
 					localPort:       9000,
 				},
@@ -151,6 +139,7 @@ func TestPortForwardPod(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "podname",
 						ResourceVersion: "1",
+						Namespace:       "namespace",
 					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
@@ -178,6 +167,7 @@ func TestPortForwardPod(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "podname",
 						ResourceVersion: "10000000000a",
+						Namespace:       "namespace",
 					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
@@ -203,10 +193,11 @@ func TestPortForwardPod(t *testing.T) {
 			shouldErr:      true,
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-8080": {
+				"containername-podname-namespace-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
+					namespace:       "namespace",
 					port:            8080,
 					localPort:       8080,
 				},
@@ -216,6 +207,7 @@ func TestPortForwardPod(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "podname",
 						ResourceVersion: "1",
+						Namespace:       "namespace",
 					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
@@ -240,17 +232,19 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int{8080, 50051},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-8080": {
+				"containername-podname-namespace-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
+					namespace:       "namespace",
 					port:            8080,
 					localPort:       8080,
 				},
-				"containername2-50051": {
+				"containername2-podname2-namespace2-50051": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
+					namespace:       "namespace2",
 					port:            50051,
 					localPort:       50051,
 				},
@@ -260,6 +254,7 @@ func TestPortForwardPod(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "podname",
 						ResourceVersion: "1",
+						Namespace:       "namespace",
 					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
@@ -278,6 +273,7 @@ func TestPortForwardPod(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "podname2",
 						ResourceVersion: "1",
+						Namespace:       "namespace2",
 					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
@@ -302,17 +298,19 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int{8080, 9000},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-8080": {
+				"containername-podname-namespace-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
+					namespace:       "namespace",
 					port:            8080,
 					localPort:       8080,
 				},
-				"containername2-8080": {
+				"containername2-podname2-namespace2-8080": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
+					namespace:       "namespace2",
 					port:            8080,
 					localPort:       9000,
 				},
@@ -322,6 +320,7 @@ func TestPortForwardPod(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "podname",
 						ResourceVersion: "1",
+						Namespace:       "namespace",
 					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
@@ -340,6 +339,7 @@ func TestPortForwardPod(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "podname2",
 						ResourceVersion: "1",
+						Namespace:       "namespace2",
 					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
@@ -363,10 +363,11 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-8080": {
+				"containername-podname-namespace-8080": {
 					resourceVersion: 2,
 					podName:         "podname",
 					containerName:   "containername",
+					namespace:       "namespace",
 					port:            8080,
 					localPort:       8080,
 				},
@@ -376,6 +377,7 @@ func TestPortForwardPod(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "podname",
 						ResourceVersion: "1",
+						Namespace:       "namespace",
 					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
@@ -394,6 +396,7 @@ func TestPortForwardPod(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "podname",
 						ResourceVersion: "2",
+						Namespace:       "namespace",
 					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
@@ -420,12 +423,6 @@ func TestPortForwardPod(t *testing.T) {
 			retrieveAvailablePort = mockRetrieveAvailablePort(taken, test.availablePorts)
 			defer func() {
 				retrieveAvailablePort = originalGetAvailablePort
-			}()
-
-			originalIsPortAvailable := isPortAvailable
-			isPortAvailable = mockIsPortAvailable(taken, test.availablePorts)
-			defer func() {
-				isPortAvailable = originalIsPortAvailable
 			}()
 
 			p := NewPortForwarder(ioutil.Discard, NewImageList(), []string{""})
