@@ -23,8 +23,8 @@ import (
 	"strconv"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 const unknown = "unknown"
@@ -72,9 +72,9 @@ func (c *CLI) Version(ctx context.Context) ClientVersion {
 
 		buf, err := c.getVersion(ctx)
 		if err != nil {
-			logrus.Warnln("unable to get kubectl client version", err)
+			warnings.Printf("unable to get kubectl client version: %v", err)
 		} else if err := json.Unmarshal(buf, &version); err != nil {
-			logrus.Warnln("unable to parse client version", err)
+			warnings.Printf("unable to parse client version: %v", err)
 		}
 
 		c.version = version.Client
