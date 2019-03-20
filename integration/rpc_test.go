@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strings"
 	"testing"
@@ -39,8 +40,6 @@ var (
 	retries       = 20
 	numLogEntries = 5
 	waitTime      = 1 * time.Second
-	rpcAddr       = "12345"
-	httpAddr      = "23456"
 )
 
 func TestEventLogRPC(t *testing.T) {
@@ -48,6 +47,7 @@ func TestEventLogRPC(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
+	rpcAddr := randomPort()
 	teardown := setupSkaffoldWithArgs(t, "--rpc-port", rpcAddr)
 	defer teardown()
 
@@ -132,6 +132,8 @@ func TestEventLogHTTP(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
+
+	httpAddr := randomPort()
 	teardown := setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr)
 	defer teardown()
 	time.Sleep(500 * time.Millisecond) // give skaffold time to process all events
@@ -196,6 +198,7 @@ func TestGetStateRPC(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
+	rpcAddr := randomPort()
 	// start a skaffold dev loop on an example
 	teardown := setupSkaffoldWithArgs(t, "--rpc-port", rpcAddr)
 	defer teardown()
@@ -253,14 +256,16 @@ func TestGetStateHTTP(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
-	port := "12345"
-	teardown := setupSkaffoldWithArgs(t, "--rpc-http-port", port)
+
+	httpAddr := randomPort()
+	teardown := setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr)
 	defer teardown()
+	time.Sleep(3 * time.Second) // give skaffold time to process all events
 
 	// retrieve the state via HTTP as well, and verify the result is the same
-	httpResponse, err := http.Get(fmt.Sprintf("http://localhost:%s/v1/state", port))
+	httpResponse, err := http.Get(fmt.Sprintf("http://localhost:%s/v1/state", httpAddr))
 	if err != nil {
-		t.Errorf("error connecting to gRPC REST API: %s", err.Error())
+		t.Fatalf("error connecting to gRPC REST API: %s", err.Error())
 	}
 	b, err := ioutil.ReadAll(httpResponse.Body)
 	if err != nil {
@@ -292,4 +297,8 @@ func setupSkaffoldWithArgs(t *testing.T, args ...string) func() {
 		deleteNs()
 		Run(t, "testdata/dev", "rm", "foo")
 	}
+}
+
+func randomPort() string {
+	return fmt.Sprintf("%d", rand.Intn(65535))
 }
