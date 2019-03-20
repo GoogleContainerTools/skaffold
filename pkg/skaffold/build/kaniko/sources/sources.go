@@ -75,7 +75,7 @@ func podTemplate(clusterDetails *latest.ClusterDetails, image string, args []str
 							MountPath: "/secret",
 						},
 					},
-					Resources: resourceRequirements(cfg.Resources),
+					Resources: resourceRequirements(clusterDetails.Resources),
 				},
 			},
 			RestartPolicy: v1.RestartPolicyNever,
