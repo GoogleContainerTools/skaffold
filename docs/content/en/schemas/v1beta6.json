@@ -1238,11 +1238,6 @@
           "x-intellij-html-description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image.",
           "default": "kaniko-secret"
         },
-        "resources": {
-          "$ref": "#/definitions/ResourceRequirements",
-          "description": "define the resource requirements for the kaniko pod.",
-          "x-intellij-html-description": "define the resource requirements for the kaniko pod."
-        },
         "timeout": {
           "type": "string",
           "description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (`20m`).",
@@ -1258,8 +1253,7 @@
         "namespace",
         "timeout",
         "image",
-        "dockerConfig",
-        "resources"
+        "dockerConfig"
       ],
       "additionalProperties": false,
       "description": "*beta* describes how to do an on-cluster build using [Kaniko](https://github.com/GoogleContainerTools/kaniko).",
@@ -1489,54 +1483,6 @@
       "additionalProperties": false,
       "description": "*beta* profiles are used to override any `build`, `test` or `deploy` configuration.",
       "x-intellij-html-description": "<em>beta</em> profiles are used to override any <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
-    },
-    "ResourceRequirement": {
-      "properties": {
-        "cpu": {
-          "type": "string",
-          "description": "the number cores to be used.",
-          "x-intellij-html-description": "the number cores to be used.",
-          "examples": [
-            "2`, `2.0` or `200m"
-          ]
-        },
-        "memory": {
-          "type": "string",
-          "description": "the amount of memory to allocate to the pod.",
-          "x-intellij-html-description": "the amount of memory to allocate to the pod.",
-          "examples": [
-            "1Gi` or `1000Mi"
-          ]
-        }
-      },
-      "preferredOrder": [
-        "cpu",
-        "memory"
-      ],
-      "additionalProperties": false,
-      "description": "stores the CPU/Memory requirements for the pod.",
-      "x-intellij-html-description": "stores the CPU/Memory requirements for the pod."
-    },
-    "ResourceRequirements": {
-      "properties": {
-        "limits": {
-          "$ref": "#/definitions/ResourceRequirement",
-          "description": "resource limits for the Kaniko pod. [More on limits](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container).",
-          "x-intellij-html-description": "resource limits for the Kaniko pod. <a href=\"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container\">More on limits</a>."
-        },
-        "requests": {
-          "$ref": "#/definitions/ResourceRequirement",
-          "description": "resource requests for the Kaniko pod. [More on requests](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container).",
-          "x-intellij-html-description": "resource requests for the Kaniko pod. <a href=\"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container\">More on requests</a>."
-        }
-      },
-      "preferredOrder": [
-        "requests",
-        "limits"
-      ],
-      "additionalProperties": false,
-      "description": "describes the resource requirements for the kaniko pod.",
-      "x-intellij-html-description": "describes the resource requirements for the kaniko pod."
     },
     "ShaTagger": {
       "description": "*beta* tags images with their sha256 digest.",

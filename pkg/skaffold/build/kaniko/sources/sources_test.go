@@ -31,13 +31,14 @@ import (
 func TestPodTemplate(t *testing.T) {
 	tests := []struct {
 		name     string
-		initial  *latest.KanikoBuild
+		initial  *latest.ClusterDetails
+		image    string
 		args     []string
 		expected *v1.Pod
 	}{
 		{
 			name:    "basic pod",
-			initial: &latest.KanikoBuild{},
+			initial: &latest.ClusterDetails{},
 			expected: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "kaniko-",
@@ -77,7 +78,7 @@ func TestPodTemplate(t *testing.T) {
 		},
 		{
 			name: "with docker config",
-			initial: &latest.KanikoBuild{
+			initial: &latest.ClusterDetails{
 				DockerConfig: &latest.DockerConfig{
 					SecretName: "docker-cfg",
 					Path:       "/kaniko/.docker",
@@ -133,7 +134,7 @@ func TestPodTemplate(t *testing.T) {
 		},
 		{
 			name: "with resource constraints",
-			initial: &latest.KanikoBuild{
+			initial: &latest.ClusterDetails{
 				Resources: &latest.ResourceRequirements{
 					Requests: &latest.ResourceRequirement{
 						CPU:    "0.5",
@@ -195,7 +196,7 @@ func TestPodTemplate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actual := podTemplate(test.initial, test.args)
+			actual := podTemplate(test.initial, test.image, test.args)
 			testutil.CheckDeepEqual(t, test.expected, actual, opt)
 		})
 	}
