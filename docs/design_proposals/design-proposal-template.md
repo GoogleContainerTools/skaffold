@@ -18,7 +18,7 @@ Please provide an rationale covering following points:
 1. Why is this required?
 2. If its re-design, What are cons with current implementation?
 3. Is there any another work-around and if yes, why not keep using it.
-4. Mention related issues, if there are any.****
+4. Mention related issues, if there are any.
 
 Here is an example snippet for a new feature:
 
