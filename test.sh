@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2018 The Skaffold Authors
+# Copyright 2019 The Skaffold Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ GREEN='\033[0;32m'
 RESET='\033[0m'
 
 echo "Running go tests..."
-go test -cover -v -timeout 60s `go list ./... | grep -v vendor` | sed ''/PASS/s//$(printf "${GREEN}PASS${RESET}")/'' | sed ''/FAIL/s//$(printf "${RED}FAIL${RESET}")/''
+go test -count=1 -race -cover -short -timeout 60s -coverprofile=out/coverage.txt -covermode=atomic ./... | grep -v 'no test files' | sed ''/PASS/s//$(printf "${GREEN}PASS${RESET}")/'' | sed ''/FAIL/s//$(printf "${RED}FAIL${RESET}")/''
 GO_TEST_EXIT_CODE=${PIPESTATUS[0]}
 if [[ $GO_TEST_EXIT_CODE -ne 0 ]]; then
     exit $GO_TEST_EXIT_CODE
@@ -33,6 +33,7 @@ scripts=(
     "hack/gofmt.sh"
     "hack/linter.sh"
     "hack/dep.sh"
+    "hack/check-samples.sh"
     "hack/check-docs.sh"
 )
 fail=0

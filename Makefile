@@ -1,4 +1,4 @@
-# Copyright 2018 The Skaffold Authors
+# Copyright 2019 The Skaffold Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
 VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
 COMMIT = $(shell git rev-parse HEAD)
-BASE_URL ?= https://skaffold.dev
 VERSION ?= $(shell git describe --always --tags --dirty)
 
 GO_GCFLAGS := "all=-trimpath=${PWD}"
@@ -48,6 +47,7 @@ GO_LDFLAGS += -X $(VERSION_PACKAGE).gitTreeState=$(if $(shell git status --porce
 GO_LDFLAGS +="
 
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+GO_BUILD_TAGS := "kqueue"
 
 DOCSY_COMMIT:=a7141a2eac26cb598b707cab87d224f9105c315d
 
@@ -55,7 +55,7 @@ $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
 
 $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
-	GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=1 go build -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
+	GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -tags $(GO_BUILD_TAGS) -o $@ $(BUILD_PACKAGE)
 
 %.sha256: %
 	shasum -a 256 $< > $@
@@ -76,20 +76,22 @@ $(BUILD_DIR):
 cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform).sha256)
 
 .PHONY: test
-test:
+test: $(BUILD_DIR)
 	@ ./test.sh
 
 .PHONY: install
 install: $(GO_FILES) $(BUILD_DIR)
-	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go install -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) $(BUILD_PACKAGE)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go install -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -tags $(GO_BUILD_TAGS) $(BUILD_PACKAGE)
 
 .PHONY: integration
-integration: install $(BUILD_DIR)/$(PROJECT)
-	go test -v -tags integration $(REPOPATH)/integration -timeout 10m --remote=$(REMOTE_INTEGRATION)
-
-.PHONY: coverage
-coverage: $(BUILD_DIR)
-	go test -coverprofile=$(BUILD_DIR)/coverage.txt -covermode=atomic ./...
+integration: install
+ifeq ($(REMOTE_INTEGRATION),true)
+	gcloud container clusters get-credentials \
+		$(GKE_CLUSTER_NAME) \
+		--zone $(GKE_ZONE) \
+		--project $(GCP_PROJECT)
+endif
+	REMOTE_INTEGRATION=$(REMOTE_INTEGRATION) go test -v $(REPOPATH)/integration -timeout 15m
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
@@ -109,7 +111,7 @@ release-in-docker:
     		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
     		--target builder \
     		.
-	docker run \
+	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder make -j release VERSION=$(VERSION) RELEASE_BUCKET=$(RELEASE_BUCKET) GCP_PROJECT=$(GCP_PROJECT)
@@ -131,7 +133,7 @@ release-build-in-docker:
     		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
     		--target builder \
     		.
-	docker run \
+	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder make -j release-build RELEASE_BUCKET=$(RELEASE_BUCKET) GCP_PROJECT=$(GCP_PROJECT)
@@ -142,15 +144,20 @@ clean:
 
 .PHONY: integration-in-docker
 integration-in-docker:
+	-docker pull gcr.io/$(GCP_PROJECT)/skaffold-builder
 	docker build \
+		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		-f deploy/skaffold/Dockerfile \
 		--target integration \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-integration .
-	docker run \
+	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		-v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
 		-e REMOTE_INTEGRATION=true \
+		-e GCP_PROJECT=$(GCP_PROJECT) \
+		-e GKE_CLUSTER_NAME=$(GKE_CLUSTER_NAME) \
+		-e GKE_ZONE=$(GKE_ZONE) \
 		-e DOCKER_CONFIG=/root/.docker \
 		-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
 		gcr.io/$(GCP_PROJECT)/skaffold-integration
@@ -169,26 +176,16 @@ submit-release-trigger:
 
 #utilities for skaffold site - not used anywhere else
 
-.PHONY: docs-controller-image
-docs-controller-image: 
-	docker build -t gcr.io/$(GCP_PROJECT)/docs-controller -f deploy/webhook/Dockerfile .
-
-
 .PHONY: preview-docs
-preview-docs: start-docs-preview clean-docs-preview
-
-.PHONY: docs-preview-image
-docs-preview-image:
-	docker build -t skaffold-docs-previewer -f deploy/webhook/Dockerfile --target runtime_deps .
-
-.PHONY: start-docs-preview
-start-docs-preview:	docs-preview-image
-	docker run -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/preview.sh
+preview-docs:
+	./deploy/docs/local-preview.sh hugo serve -D --bind=0.0.0.0
 
 .PHONY: build-docs-preview
-build-docs-preview:	docs-preview-image
-	docker run -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/build.sh
+build-docs-preview:
+	./deploy/docs/local-preview.sh hugo --baseURL=https://skaffold.dev
 
-.PHONY: clean-docs-preview
-clean-docs-preview: docs-preview-image
-	docker run -ti -v $(PWD):/app --workdir /app/ -p 1313:1313 skaffold-docs-previewer bash -xc deploy/docs/clean.sh
+# schema generation
+
+.PHONY: generate-schemas
+generate-schemas:
+	go run hack/schemas/main.go

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -205,6 +206,89 @@ func TestNonEmptyLines(t *testing.T) {
 		t.Run(tt.in, func(t *testing.T) {
 			result := NonEmptyLines([]byte(tt.in))
 			testutil.CheckDeepEqual(t, tt.out, result)
+		})
+	}
+}
+
+func TestCloneThroughJSON(t *testing.T) {
+	tests := []struct {
+		name     string
+		old      interface{}
+		new      interface{}
+		expected interface{}
+	}{
+		{
+			name: "google cloud build",
+			old: map[string]string{
+				"projectId": "unit-test",
+			},
+			new: &latest.GoogleCloudBuild{},
+			expected: &latest.GoogleCloudBuild{
+				ProjectID: "unit-test",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := CloneThroughJSON(test.old, test.new)
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, test.new)
+		})
+	}
+}
+
+func TestIsHiddenDir(t *testing.T) {
+	tests := []struct {
+		name     string
+		filename string
+		expected bool
+	}{
+		{
+			name:     "hidden dir",
+			filename: ".hidden",
+			expected: true,
+		},
+		{
+			name:     "not hidden dir",
+			filename: "not_hidden",
+			expected: false,
+		},
+		{
+			name:     "current dir",
+			filename: ".",
+			expected: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if IsHiddenDir(test.filename) != test.expected {
+				t.Errorf("error want %t,  got %t", test.expected, !test.expected)
+			}
+		})
+	}
+}
+
+func TestIsHiddenFile(t *testing.T) {
+	tests := []struct {
+		name     string
+		filename string
+		expected bool
+	}{
+		{
+			name:     "hidden file name",
+			filename: ".hidden",
+			expected: true,
+		},
+		{
+			name:     "not hidden file",
+			filename: "not_hidden",
+			expected: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if IsHiddenDir(test.filename) != test.expected {
+				t.Errorf("error want %t,  got %t", test.expected, !test.expected)
+			}
 		})
 	}
 }

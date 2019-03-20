@@ -1,7 +1,7 @@
 // +build !windows
 
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description:  "dirty",
-			expectedName: "test:eefe1b9-dirty-abababa",
+			expectedName: "test:eefe1b9-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -78,8 +78,8 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description:  "ignore tag when dirty",
-			expectedName: "test:eefe1b9-dirty-abababa",
+			description:  "dirty tag",
+			expectedName: "test:v1-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -91,7 +91,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description:  "untracked",
-			expectedName: "test:eefe1b9-dirty-abababa",
+			expectedName: "test:eefe1b9-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -101,8 +101,8 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description:  "don't use tag if not exact match",
-			expectedName: "test:3cec6b9",
+			description:  "tag plus one commit",
+			expectedName: "test:v1-1-g3cec6b9",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -116,7 +116,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description:  "deleted file",
-			expectedName: "test:279d53f-dirty-abababa",
+			expectedName: "test:279d53f-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source1.go", []byte("code1")).
@@ -128,7 +128,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description:  "rename",
-			expectedName: "test:eefe1b9-dirty-abababa",
+			expectedName: "test:eefe1b9-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -186,7 +186,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description:  "updated artifact in dirty repo",
-			expectedName: "test:0c60cb8-dirty-abababa",
+			expectedName: "test:v1-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					mkdir("artifact1").write("artifact1/source.go", []byte("code")).
@@ -199,14 +199,14 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 		{
 			description:  "non git repo",
-			expectedName: "test:dirty-abababa",
+			expectedName: "test:dirty",
 			createGitRepo: func(dir string) {
 				ioutil.WriteFile(filepath.Join(dir, "source.go"), []byte("code"), os.ModePerm)
 			},
 		},
 		{
 			description:  "git repo with no commit",
-			expectedName: "test:dirty-abababa",
+			expectedName: "test:dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir)
 			},
@@ -223,10 +223,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 
 			c := &GitCommit{}
 
-			name, err := c.GenerateFullyQualifiedImageName(workspace, Options{
-				ImageName: "test",
-				Digest:    "sha256:ababababababababababa",
-			})
+			name, err := c.GenerateFullyQualifiedImageName(workspace, "test")
 
 			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.expectedName, name)
 		})

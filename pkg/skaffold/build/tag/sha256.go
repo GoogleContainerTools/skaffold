@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,10 +17,8 @@ limitations under the License.
 package tag
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
 // ChecksumTagger tags an image by the sha256 of the image tarball
@@ -33,13 +31,17 @@ func (c *ChecksumTagger) Labels() map[string]string {
 	}
 }
 
-// GenerateFullyQualifiedImageName tags an image with the supplied image name and the sha256 checksum of the image
-func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir string, opts Options) (string, error) {
-	digest := opts.Digest
-	sha256 := strings.TrimPrefix(opts.Digest, "sha256:")
-	if sha256 == digest {
-		return "", fmt.Errorf("digest wrong format: %s, expected sha256:<checksum>", digest)
+func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
+	parsed, err := docker.ParseReference(imageName)
+	if err != nil {
+		return "", err
 	}
 
-	return fmt.Sprintf("%s:%s", opts.ImageName, sha256), nil
+	if parsed.Tag == "" {
+		// No supplied tag, so use "latest".
+		return imageName + ":latest", nil
+	}
+
+	// They already have a tag.
+	return imageName, nil
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ func (b *prebuiltImagesBuilder) Labels() map[string]string {
 	}
 }
 
-func (b *prebuiltImagesBuilder) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]Artifact, error) {
+func (b *prebuiltImagesBuilder) Build(ctx context.Context, out io.Writer, _ tag.ImageTags, artifacts []*latest.Artifact) ([]Artifact, error) {
 	tags := make(map[string]string)
 
 	for _, tag := range b.images {
@@ -81,4 +81,9 @@ func (b *prebuiltImagesBuilder) Build(ctx context.Context, out io.Writer, tagger
 	}
 
 	return builds, nil
+}
+
+// DependenciesForArtifact returns nil since a prebuilt image should have no dependencies
+func (b *prebuiltImagesBuilder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+	return nil, nil
 }

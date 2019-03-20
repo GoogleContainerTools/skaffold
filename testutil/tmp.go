@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -93,6 +93,11 @@ func (h *TempDir) Mkdir(dir string) *TempDir {
 func (h *TempDir) Write(file, content string) *TempDir {
 	h.failIfErr(os.MkdirAll(filepath.Dir(h.Path(file)), os.ModePerm))
 	return h.failIfErr(ioutil.WriteFile(h.Path(file), []byte(content), os.ModePerm))
+}
+
+// Rename renames a file from oldname to newname
+func (h *TempDir) Rename(oldName, newName string) *TempDir {
+	return h.failIfErr(os.Rename(h.Path(oldName), h.Path(newName)))
 }
 
 // List lists all the files in the temp directory.

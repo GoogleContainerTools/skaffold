@@ -236,6 +236,25 @@
   version = "v1.12.0"
 
 [[projects]]
+  digest = "1:053c8b82c44fc384cca33724d4359235fa98e0cb8b135c392d8e14f396a2a7e8"
+  name = "github.com/gdamore/encoding"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "6289cdc94c00ac4aa177771c5fce7af2f96b626d"
+  version = "v1.0.0"
+
+[[projects]]
+  digest = "1:09b6d7ce76747ac52e2122e15eff2965e47f537f9ddf5e62acc2d79007ce9e07"
+  name = "github.com/gdamore/tcell"
+  packages = [
+    ".",
+    "terminfo",
+  ]
+  pruneopts = "NUT"
+  revision = "aaadc574a6ed8dc3abe56036ca130dcee1ee6b6e"
+  version = "v1.1.1"
+
+[[projects]]
   digest = "1:81466b4218bf6adddac2572a30ac733a9255919bc2f470b4827a317bd4ee1756"
   name = "github.com/ghodss/yaml"
   packages = ["."]
@@ -263,7 +282,8 @@
   revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
 
 [[projects]]
-  digest = "1:5ae5b54d7cd695bafa92bf426b7c3d046f907260ec0fcb4fe5c368d937597c00"
+  branch = "master"
+  digest = "1:a5ba19196481d82d7f016c9280a7f3f7e3b6897a18a16be1425aba48cd395d97"
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
@@ -271,11 +291,11 @@
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
+    "ptypes/empty",
     "ptypes/timestamp",
   ]
   pruneopts = "NUT"
-  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
-  version = "v1.2.0"
+  revision = "347cf4a86c1cb8d262994d8ef5924d4576c5b331"
 
 [[projects]]
   branch = "master"
@@ -299,8 +319,7 @@
   version = "v0.2.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:900b120797732528f188d4cb7485d0a33f40e2867fa7f9086494966ea2203bac"
+  digest = "1:f25f0ba1157af718c239c7ea37fae2d5d1b929f9227c56d410ebc6ac8c957a6d"
   name = "github.com/google/go-containerregistry"
   packages = [
     "pkg/authn",
@@ -310,11 +329,12 @@
     "pkg/v1/remote",
     "pkg/v1/remote/transport",
     "pkg/v1/stream",
+    "pkg/v1/tarball",
     "pkg/v1/types",
     "pkg/v1/v1util",
   ]
   pruneopts = "NUT"
-  revision = "63fc47df3f2d99a254e8bea78182bb59b3a6ff69"
+  revision = "16d6587b5a87052c861b30443f31c588a319e8d4"
 
 [[projects]]
   digest = "1:f4f203acd8b11b8747bdcd91696a01dbc95ccb9e2ca2db6abf81c3a4f5e950ce"
@@ -404,6 +424,33 @@
   revision = "c63ab54fda8f77302f8d414e19933f2b6026a089"
 
 [[projects]]
+  branch = "master"
+  digest = "1:26159b03ea04b155cb70d071c32bf599f0519548f8724be87df85fe8fd0a33a3"
+  name = "github.com/hashicorp/go-hclog"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "4783caec6f2e5cdd47fab8b2bb47ce2ce5c546b7"
+
+[[projects]]
+  branch = "master"
+  digest = "1:8c38df748ea4cf82f8a5185eb3e6292a1047b76c90c8c8e8b924451e043ba7e4"
+  name = "github.com/hashicorp/go-plugin"
+  packages = [
+    ".",
+    "internal/proto",
+  ]
+  pruneopts = "NUT"
+  revision = "362c99b11937c6a84686ee5726a8170e921ab406"
+
+[[projects]]
+  branch = "master"
+  digest = "1:8deb0c5545c824dfeb0ac77ab8eb67a3d541eab76df5c85ce93064ef02d44cd0"
+  name = "github.com/hashicorp/yamux"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "2f1d1f20f75d5404f53b9edf6b53ed5505508675"
+
+[[projects]]
   digest = "1:9a52adf44086cead3b384e5d0dbf7a1c1cce65e67552ee3383a8561c42a18cd3"
   name = "github.com/imdario/mergo"
   packages = ["."]
@@ -460,6 +507,22 @@
   version = "v1.0.1"
 
 [[projects]]
+  digest = "1:27885e80e300ed44b6ccaa01b4db40e155e374ed12410ac1aa8f1fe4cc69b2bf"
+  name = "github.com/krishicks/yaml-patch"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "83cc9ac50becbbfafb86a89167f3bc5372e8e530"
+  version = "v0.0.10"
+
+[[projects]]
+  digest = "1:ed9924c64c12bb89cc6fe944985904f9c572a4ce38d9ad132716ef8c68237237"
+  name = "github.com/lucasb-eyer/go-colorful"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "345fbb3dbcdb252d9985ee899a84963c0fa24c82"
+  version = "v1.0"
+
+[[projects]]
   digest = "1:08c231ec84231a7e23d67e4b58f975e1423695a32467a362ee55a803f9de8061"
   name = "github.com/mattn/go-colorable"
   packages = ["."]
@@ -473,6 +536,14 @@
   packages = ["."]
   pruneopts = "NUT"
   revision = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c"
+  version = "v0.0.4"
+
+[[projects]]
+  digest = "1:70ef8268170621826f8c111ac1674afe75136f526f449453b4a6631c6dba1946"
+  name = "github.com/mattn/go-runewidth"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "3ee7d812e62a0804a7d0a324e0249ca2db3476d3"
   version = "v0.0.4"
 
 [[projects]]
@@ -497,6 +568,14 @@
   packages = ["."]
   pruneopts = "NUT"
   revision = "ae18d6b8b3205b561c79e8e5f69bff09736185f4"
+  version = "v1.0.0"
+
+[[projects]]
+  digest = "1:18b773b92ac82a451c1276bd2776c1e55ce057ee202691ab33c8d6690efcc048"
+  name = "github.com/mitchellh/go-testing-interface"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "6d0b8010fcc857872e42fc6c931227569016843c"
   version = "v1.0.0"
 
 [[projects]]
@@ -526,6 +605,14 @@
   pruneopts = "NUT"
   revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
   version = "1.0.1"
+
+[[projects]]
+  digest = "1:3b517122f3aad1ecce45a630ea912b3092b4729f25532a911d0cb2935a1f9352"
+  name = "github.com/oklog/run"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "4dadeb3030eda0273a12382bb2348ffc7c9d1a39"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:e0cc8395ea893c898ff5eb0850f4d9851c1f57c78c232304a026379a47a552d0"
@@ -632,6 +719,14 @@
   revision = "619930b0b4713cc1280189bf0a4c54b3fb506f60"
 
 [[projects]]
+  branch = "master"
+  digest = "1:d8cda3d9486dbc1ed442e36b9cbe69df4500af24f33fca217998e198d22b5bd7"
+  name = "github.com/rivo/tview"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "84fdb36408f35b8998d48d323f55f40b7f14a19b"
+
+[[projects]]
   digest = "1:b0e0e2abf5c70fd0f7f6c053c6c99c6960149146e40d5c7547cacc176e5d9973"
   name = "github.com/rjeczalik/notify"
   packages = ["."]
@@ -645,6 +740,14 @@
   packages = ["diffmatchpatch"]
   pruneopts = "NUT"
   revision = "1744e2970ca51c86172c8190fadad617561ed6e7"
+  version = "v1.0.0"
+
+[[projects]]
+  digest = "1:debf1a119378d059b68925f1796851b6855bfc2f55419a50d634ecce3eabd8e8"
+  name = "github.com/shurcooL/sanitized_anchor_name"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "7bfe4c7ecddb3666a94b053b422cdd8f5aaa3615"
   version = "v1.0.0"
 
 [[projects]]
@@ -771,11 +874,13 @@
   revision = "4ed8d59d0b35e1e29334a206d1b3f38b1e5dfb31"
 
 [[projects]]
-  digest = "1:e7071ed636b5422cc51c0e3a6cebc229d6c9fffc528814b519a980641422d619"
+  digest = "1:abee7d95958e649b0319b44f4964e55db9fa4098cef5b27e829143421e9a2376"
   name = "golang.org/x/text"
   packages = [
     "collate",
     "collate/build",
+    "encoding",
+    "encoding/internal/identifier",
     "internal/colltab",
     "internal/gen",
     "internal/tag",
@@ -851,7 +956,7 @@
   revision = "31ac5d88444a9e7ad18077db9a165d793ad06a2e"
 
 [[projects]]
-  digest = "1:2f91d3e11b666570f8c923912f1cc8cf2f0c6b7371b2687ee67a8f73f08c6272"
+  digest = "1:f112c6f3e9bbd16eb113db8f37adb6bd10270142079d00c7ac625534cbb16475"
   name = "google.golang.org/grpc"
   packages = [
     ".",
@@ -864,6 +969,8 @@
     "encoding",
     "encoding/proto",
     "grpclog",
+    "health",
+    "health/grpc_health_v1",
     "internal",
     "internal/backoff",
     "internal/channelz",
@@ -903,6 +1010,14 @@
   pruneopts = "NUT"
   revision = "d2d2541c53f18d2a059457998ce2876cc8e67cbf"
   version = "v0.9.1"
+
+[[projects]]
+  digest = "1:926cba3a3c1cddfcfad996917e5d72fb4726536dbdc7264fa936e8c99890e558"
+  name = "gopkg.in/russross/blackfriday.v2"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "d3b5b032dc8e8927d31a5071b56e14c89f045135"
+  version = "v2.0.1"
 
 [[projects]]
   digest = "1:1cf1388ec8c73b7ecc711d9f279ab631ea0a6964d1ccc32809a6be90c33fa2a0"
@@ -1199,19 +1314,26 @@
     "github.com/docker/docker/registry",
     "github.com/docker/go-connections/tlsconfig",
     "github.com/golang/glog",
+    "github.com/golang/protobuf/proto",
+    "github.com/golang/protobuf/ptypes",
+    "github.com/golang/protobuf/ptypes/empty",
+    "github.com/golang/protobuf/ptypes/timestamp",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-containerregistry/pkg/authn",
     "github.com/google/go-containerregistry/pkg/name",
     "github.com/google/go-containerregistry/pkg/v1",
     "github.com/google/go-containerregistry/pkg/v1/remote",
-    "github.com/google/go-containerregistry/pkg/v1/remote/transport",
+    "github.com/google/go-containerregistry/pkg/v1/tarball",
     "github.com/google/go-github/github",
+    "github.com/hashicorp/go-plugin",
     "github.com/karrick/godirwalk",
+    "github.com/krishicks/yaml-patch",
     "github.com/mitchellh/go-homedir",
     "github.com/moby/buildkit/frontend/dockerfile/command",
     "github.com/moby/buildkit/frontend/dockerfile/parser",
     "github.com/moby/buildkit/frontend/dockerfile/shell",
     "github.com/pkg/errors",
+    "github.com/rivo/tview",
     "github.com/rjeczalik/notify",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
@@ -1219,17 +1341,17 @@
     "golang.org/x/crypto/ssh/terminal",
     "golang.org/x/oauth2",
     "golang.org/x/oauth2/google",
-    "golang.org/x/sync/errgroup",
     "google.golang.org/api/cloudbuild/v1",
     "google.golang.org/api/googleapi",
     "google.golang.org/api/iterator",
+    "google.golang.org/grpc",
     "gopkg.in/AlecAivazis/survey.v1",
+    "gopkg.in/russross/blackfriday.v2",
     "gopkg.in/src-d/go-git.v4",
     "gopkg.in/src-d/go-git.v4/plumbing",
     "gopkg.in/src-d/go-git.v4/plumbing/object",
     "gopkg.in/yaml.v2",
     "k8s.io/api/apps/v1",
-    "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/api/meta",

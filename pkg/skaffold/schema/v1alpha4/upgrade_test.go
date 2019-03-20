@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -80,10 +80,10 @@ profiles:
         manifests:
         - k8s-*
 `
-	verityUpgrade(t, yaml, expected)
+	verifyUpgrade(t, yaml, expected)
 }
 
-func verityUpgrade(t *testing.T, input, output string) {
+func verifyUpgrade(t *testing.T, input, output string) {
 	pipeline := NewSkaffoldPipeline()
 	err := yaml.UnmarshalStrict([]byte(input), pipeline)
 	testutil.CheckErrorAndDeepEqual(t, false, err, Version, pipeline.GetVersion())

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -44,11 +44,11 @@ func NewTrigger(opts *config.SkaffoldOptions) (Trigger, error) {
 	switch strings.ToLower(opts.Trigger) {
 	case "polling":
 		return &pollTrigger{
-			interval: time.Duration(opts.WatchPollInterval) * time.Millisecond,
+			Interval: time.Duration(opts.WatchPollInterval) * time.Millisecond,
 		}, nil
 	case "notify":
 		return &fsNotifyTrigger{
-			interval: time.Duration(opts.WatchPollInterval) * time.Millisecond,
+			Interval: time.Duration(opts.WatchPollInterval) * time.Millisecond,
 		}, nil
 	case "manual":
 		return &manualTrigger{}, nil
@@ -59,7 +59,7 @@ func NewTrigger(opts *config.SkaffoldOptions) (Trigger, error) {
 
 // pollTrigger watches for changes on a given interval of time.
 type pollTrigger struct {
-	interval time.Duration
+	Interval time.Duration
 }
 
 // Debounce tells the watcher to debounce rapid sequence of changes.
@@ -68,14 +68,14 @@ func (t *pollTrigger) Debounce() bool {
 }
 
 func (t *pollTrigger) WatchForChanges(out io.Writer) {
-	color.Yellow.Fprintf(out, "Watching for changes every %v...\n", t.interval)
+	color.Yellow.Fprintf(out, "Watching for changes every %v...\n", t.Interval)
 }
 
 // Start starts a timer.
 func (t *pollTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	trigger := make(chan bool)
 
-	ticker := time.NewTicker(t.interval)
+	ticker := time.NewTicker(t.Interval)
 	go func() {
 		for {
 			select {
@@ -133,7 +133,7 @@ func (t *manualTrigger) Start(ctx context.Context) (<-chan bool, error) {
 
 // notifyTrigger watches for changes with fsnotify
 type fsNotifyTrigger struct {
-	interval time.Duration
+	Interval time.Duration
 }
 
 // Debounce tells the watcher to not debounce rapid sequence of changes.
@@ -167,7 +167,7 @@ func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 
 				// Wait t.interval before triggering.
 				// This way, rapid stream of events will be grouped.
-				timer.Reset(t.interval)
+				timer.Reset(t.Interval)
 			case <-timer.C:
 				trigger <- true
 			case <-ctx.Done():

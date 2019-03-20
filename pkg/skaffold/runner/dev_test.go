@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,9 +23,12 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 type NoopWatcher struct{}
@@ -82,7 +85,17 @@ func (t *TestWatcher) Run(ctx context.Context, out io.Writer, onChange func() er
 	return nil
 }
 
+func discardOutput() *config.Output {
+	return &config.Output{
+		Main: ioutil.Discard,
+		Logs: ioutil.Discard,
+	}
+}
+
 func TestDevFailFirstCycle(t *testing.T) {
+	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
+	defer restore()
+
 	var tests = []struct {
 		description     string
 		testBench       *TestBench
@@ -129,7 +142,7 @@ func TestDevFailFirstCycle(t *testing.T) {
 			runner := createRunner(t, test.testBench)
 			runner.Watcher = test.watcher
 
-			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{{
+			err := runner.Dev(context.Background(), discardOutput(), []*latest.Artifact{{
 				ImageName: "img",
 			}})
 
@@ -139,6 +152,9 @@ func TestDevFailFirstCycle(t *testing.T) {
 }
 
 func TestDev(t *testing.T) {
+	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
+	defer restore()
+
 	var tests = []struct {
 		description     string
 		testBench       *TestBench
@@ -260,7 +276,7 @@ func TestDev(t *testing.T) {
 				testBench: test.testBench,
 			}
 
-			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{
+			err := runner.Dev(context.Background(), discardOutput(), []*latest.Artifact{
 				{ImageName: "img1"},
 				{ImageName: "img2"},
 			})
@@ -271,6 +287,9 @@ func TestDev(t *testing.T) {
 }
 
 func TestDevSync(t *testing.T) {
+	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
+	defer restore()
+
 	var tests = []struct {
 		description     string
 		testBench       *TestBench
@@ -319,13 +338,20 @@ func TestDevSync(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			originalWorkingDir := sync.WorkingDir
+			sync.WorkingDir = func(tagged string) (string, error) {
+				return "/", nil
+			}
+			defer func() {
+				sync.WorkingDir = originalWorkingDir
+			}()
 			runner := createRunner(t, test.testBench)
 			runner.Watcher = &TestWatcher{
 				events:    test.watchEvents,
 				testBench: test.testBench,
 			}
 
-			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{
+			err := runner.Dev(context.Background(), discardOutput(), []*latest.Artifact{
 				{
 					ImageName: "img1",
 					Sync: map[string]string{

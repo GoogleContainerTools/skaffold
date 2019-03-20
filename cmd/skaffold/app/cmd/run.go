@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ func NewCmdRun(out io.Writer) *cobra.Command {
 		Short: "Runs a pipeline file",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			opts.Command = "run"
 			err := run(out)
 			if err == nil {
 				tips.PrintForRun(out, opts)
@@ -55,6 +56,8 @@ func run(out io.Writer) error {
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}
+	defer runner.RPCServerShutdown()
 
-	return runner.Run(ctx, out, config.Build.Artifacts)
+	err = runner.Run(ctx, out, config.Build.Artifacts)
+	return err
 }

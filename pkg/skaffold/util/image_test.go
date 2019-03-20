@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -63,6 +63,12 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 			image:         "gcr.io/herewehaveanincrediblylongregistryname/herewealsohaveanabnormallylongimagename/doubtyouveseenanimagethislong/butyouneverknowdoyouimeanpeopledosomecrazystuffoutthere/goodluckpushingthistoanyregistrymyfriend",
 			defaultRepo:   "aws_account_id.dkr.ecr.region.amazonaws.com",
 			expectedImage: "aws_account_id.dkr.ecr.region.amazonaws.com/gcr_io_herewehaveanincrediblylongregistryname_herewealsohaveanabnormallylongimagename_doubtyouveseenanimagethislong_butyouneverknowdoyouimeanpeopledosomecrazystuffoutthere_goodluckpushingthistoanyregistrymyfrien",
+		},
+		{
+			name:          "normal GCR concatenation with numbers and other characters",
+			image:         "gcr.io/k8s-skaffold/skaffold-example",
+			defaultRepo:   "gcr.io/k8s-skaffold",
+			expectedImage: "gcr.io/k8s-skaffold/skaffold-example",
 		},
 	}
 

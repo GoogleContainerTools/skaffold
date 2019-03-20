@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -37,5 +37,7 @@ type Artifact struct {
 type Builder interface {
 	Labels() map[string]string
 
-	Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]Artifact, error)
+	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]Artifact, error)
+
+	DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error)
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ func TestNewSyncItem(t *testing.T) {
 		builds      []build.Artifact
 		shouldErr   bool
 		expected    *Item
+		workingDir  string
 	}{
 		{
 			description: "match copy",
@@ -142,10 +143,11 @@ func TestNewSyncItem(t *testing.T) {
 			evt: watch.Events{
 				Modified: []string{filepath.Join("node", "src/app/server/server.js")},
 			},
+			workingDir: "/",
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string]string{
-					filepath.Join("node", "src/app/server/server.js"): "src/app/server/server.js",
+					filepath.Join("node", "src/app/server/server.js"): "/src/server.js",
 				},
 				Delete: map[string]string{},
 			},
@@ -193,6 +195,11 @@ func TestNewSyncItem(t *testing.T) {
 				Added:   []string{"main.go"},
 				Deleted: []string{"index.html"},
 			},
+			builds: []build.Artifact{
+				{
+					Tag: "placeholder",
+				},
+			},
 		},
 		{
 			description: "not delete syncable",
@@ -205,6 +212,11 @@ func TestNewSyncItem(t *testing.T) {
 			evt: watch.Events{
 				Added:   []string{"index.html"},
 				Deleted: []string{"some/other/file"},
+			},
+			builds: []build.Artifact{
+				{
+					Tag: "placeholder",
+				},
 			},
 		},
 		{
@@ -245,6 +257,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
+			workingDir: "/some/dir",
 			builds: []build.Artifact{
 				{
 					ImageName: "test",
@@ -257,7 +270,94 @@ func TestNewSyncItem(t *testing.T) {
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string]string{
-					filepath.Join("dir1", "dir2/node.js"): "dir1/dir2/node.js",
+					filepath.Join("dir1", "dir2/node.js"): "/some/dir/node.js",
+				},
+				Delete: map[string]string{},
+			},
+		},
+		{
+			description: "triple-stars mean subtrees",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: map[string]string{
+					"dir1/***/*.js": ".",
+				},
+				Workspace: ".",
+			},
+			workingDir: "/some/dir",
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: watch.Events{
+				Added: []string{filepath.Join("dir1", "dir2/node.js")},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string]string{
+					filepath.Join("dir1", "dir2/node.js"): "/some/dir/dir2/node.js",
+				},
+				Delete: map[string]string{},
+			},
+		},
+		{
+			description: "triple-stars take precedence",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: map[string]string{
+					"dir1/***/*.js":   ".",
+					"dir1/**/**/*.js": ".",
+				},
+				Workspace: ".",
+			},
+			workingDir: "/some/dir",
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: watch.Events{
+				Added: []string{filepath.Join("dir1", "dir2/node.js")},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string]string{
+					filepath.Join("dir1", "dir2/node.js"): "/some/dir/dir2/node.js",
+				},
+				Delete: map[string]string{},
+			},
+		},
+		{
+			description: "stars work with absolute paths",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: map[string]string{
+					"dir1a/***/*.js": "/tstar",
+					"dir1b/**/*.js":  "/dstar",
+				},
+				Workspace: ".",
+			},
+			workingDir: "/some/dir",
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: watch.Events{
+				Added: []string{
+					filepath.Join("dir1a", "dir2/dir3/node.js"),
+					filepath.Join("dir1b", "dir2/dir3/node.js"),
+				},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string]string{
+					filepath.Join("dir1a", "dir2/dir3/node.js"): "/tstar/dir2/dir3/node.js",
+					filepath.Join("dir1b", "dir2/dir3/node.js"): "/dstar/node.js",
 				},
 				Delete: map[string]string{},
 			},
@@ -266,6 +366,13 @@ func TestNewSyncItem(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			originalWorkingDir := WorkingDir
+			WorkingDir = func(tagged string) (string, error) {
+				return test.workingDir, nil
+			}
+			defer func() {
+				WorkingDir = originalWorkingDir
+			}()
 			actual, err := NewItem(test.artifact, test.evt, test.builds)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
 		})
@@ -279,6 +386,7 @@ func TestIntersect(t *testing.T) {
 		syncPatterns map[string]string
 		files        []string
 		context      string
+		workingDir   string
 		expected     map[string]string
 		shouldErr    bool
 	}{
@@ -321,7 +429,7 @@ func TestIntersect(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			actual, err := intersect(test.context, test.syncPatterns, test.files)
+			actual, err := intersect(test.context, test.syncPatterns, test.files, test.workingDir)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
 		})
 	}
@@ -344,8 +452,14 @@ func (t *TestCmdRecorder) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	return nil, t.RunCmd(cmd)
 }
 
-func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, src, dst string) []*exec.Cmd {
-	return []*exec.Cmd{exec.CommandContext(ctx, "copy", src, dst)}
+func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files map[string]string) []*exec.Cmd {
+	cmds := make([]*exec.Cmd, len(files))
+	i := 0
+	for src, dst := range files {
+		cmds[i] = exec.CommandContext(ctx, "copy", src, dst)
+		i++
+	}
+	return cmds
 }
 
 var pod = &v1.Pod{
@@ -371,7 +485,7 @@ func TestPerform(t *testing.T) {
 		description string
 		image       string
 		files       map[string]string
-		cmdFn       func(context.Context, v1.Pod, v1.Container, string, string) []*exec.Cmd
+		cmdFn       func(context.Context, v1.Pod, v1.Container, map[string]string) []*exec.Cmd
 		cmdErr      error
 		clientErr   error
 		expected    []string
@@ -422,7 +536,7 @@ func TestPerform(t *testing.T) {
 
 			util.DefaultExecCommand = cmdRecord
 
-			err := Perform(context.Background(), test.image, test.files, test.cmdFn)
+			err := Perform(context.Background(), test.image, test.files, test.cmdFn, []string{""})
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cmdRecord.cmds)
 		})

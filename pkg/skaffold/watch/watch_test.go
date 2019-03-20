@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ func TestWatch(t *testing.T) {
 
 			// Watch folder
 			watcher := NewWatcher(&pollTrigger{
-				interval: 10 * time.Millisecond,
+				Interval: 10 * time.Millisecond,
 			})
 			err := watcher.Register(folder.List, folderChanged.call)
 			testutil.CheckError(t, false, err)

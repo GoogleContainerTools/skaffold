@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,8 +28,11 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/sirupsen/logrus"
@@ -57,9 +60,7 @@ var testDeployConfig = &latest.HelmDeploy{
 			Values: map[string]string{
 				"image": "skaffold-helm",
 			},
-			Overrides: map[string]interface{}{
-				"foo": "bar",
-			},
+			Overrides: schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
 			SetValues: map[string]string{
 				"some.key": "somevalue",
 			},
@@ -75,9 +76,7 @@ var testDeployRecreatePodsConfig = &latest.HelmDeploy{
 			Values: map[string]string{
 				"image": "skaffold-helm",
 			},
-			Overrides: map[string]interface{}{
-				"foo": "bar",
-			},
+			Overrides: schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
 			SetValues: map[string]string{
 				"some.key": "somevalue",
 			},
@@ -113,9 +112,7 @@ var testDeployHelmStyleConfig = &latest.HelmDeploy{
 			Values: map[string]string{
 				"image": "skaffold-helm",
 			},
-			Overrides: map[string]interface{}{
-				"foo": "bar",
-			},
+			Overrides: schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
 			SetValues: map[string]string{
 				"some.key": "somevalue",
 			},
@@ -164,12 +161,30 @@ var testDeployWithTemplatedName = &latest.HelmDeploy{
 			Values: map[string]string{
 				"image.tag": "skaffold-helm",
 			},
-			Overrides: map[string]interface{}{
-				"foo": "bar",
-			},
+			Overrides: schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
 			SetValues: map[string]string{
 				"some.key": "somevalue",
 			},
+		},
+	},
+}
+
+var testDeploySkipBuildDependencies = &latest.HelmDeploy{
+	Releases: []latest.HelmRelease{
+		{
+			Name:                  "skaffold-helm",
+			ChartPath:             "stable/chartmuseum",
+			SkipBuildDependencies: true,
+		},
+	},
+}
+
+var testDeployRemoteChart = &latest.HelmDeploy{
+	Releases: []latest.HelmRelease{
+		{
+			Name:                  "skaffold-helm-remote",
+			ChartPath:             "stable/chartmuseum",
+			SkipBuildDependencies: false,
 		},
 	},
 }
@@ -294,6 +309,22 @@ func TestHelmDeploy(t *testing.T) {
 			shouldErr:   true,
 		},
 		{
+			description: "deploy success remote chart with skipBuildDependencies",
+			cmd:         &MockHelm{t: t},
+			deployer:    NewHelmDeployer(testDeploySkipBuildDependencies, testKubeContext, testNamespace, ""),
+			builds:      testBuilds,
+		},
+		{
+			description: "deploy error remote chart without skipBuildDependencies",
+			cmd: &MockHelm{
+				t:         t,
+				depResult: fmt.Errorf("unexpected error"),
+			},
+			deployer:  NewHelmDeployer(testDeployRemoteChart, testKubeContext, testNamespace, ""),
+			builds:    testBuilds,
+			shouldErr: true,
+		},
+		{
 			description: "get failure should install not upgrade",
 			cmd: &MockHelm{
 				t:         t,
@@ -405,10 +436,16 @@ func TestHelmDeploy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
+			cfg := &latest.DeployConfig{
+				DeployType: latest.DeployType{
+					HelmDeploy: tt.deployer.HelmDeploy,
+				},
+			}
+			event.InitializeState(nil, cfg, &config.SkaffoldOptions{})
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = tt.cmd
 
-			_, err := tt.deployer.Deploy(context.Background(), ioutil.Discard, tt.builds)
+			err := tt.deployer.Deploy(context.Background(), ioutil.Discard, tt.builds, nil)
 
 			testutil.CheckError(t, tt.shouldErr, err)
 		})
@@ -560,7 +597,7 @@ func TestHelmDependencies(t *testing.T) {
 						ChartPath:   folder.Root(),
 						ValuesFiles: tt.valuesFiles,
 						Values:      map[string]string{"image": "skaffold-helm"},
-						Overrides:   map[string]interface{}{"foo": "bar"},
+						Overrides:   schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
 						SetValues:   map[string]string{"some.key": "somevalue"},
 					},
 				},

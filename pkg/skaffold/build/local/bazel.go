@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,91 +18,24 @@ package local
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
 )
 
-func (b *Builder) buildBazel(ctx context.Context, out io.Writer, workspace string, a *latest.BazelArtifact) (string, error) {
-	args := []string{"build"}
-	args = append(args, a.BuildArgs...)
-	args = append(args, a.BuildTarget)
+func (b *Builder) buildBazel(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
+	builder := bazel.NewBuilder()
+	builder.LocalBuild = b.cfg
+	builder.LocalDocker = b.localDocker
+	builder.KubeContext = b.kubeContext
+	builder.PushImages = b.pushImages
+	builder.PluginMode = false
 
-	cmd := exec.CommandContext(ctx, "bazel", args...)
-	cmd.Dir = workspace
-	cmd.Stdout = out
-	cmd.Stderr = out
-	if err := util.RunCmd(cmd); err != nil {
-		return "", errors.Wrap(err, "running command")
+	opts := &config.SkaffoldOptions{
+		SkipTests: b.skipTests,
 	}
-
-	bazelBin, err := bazelBin(ctx, workspace)
-	if err != nil {
-		return "", errors.Wrap(err, "getting path of bazel-bin")
-	}
-
-	tarPath := buildTarPath(a.BuildTarget)
-	imageTar, err := os.Open(filepath.Join(bazelBin, tarPath))
-	if err != nil {
-		return "", errors.Wrap(err, "opening image tarball")
-	}
-	defer imageTar.Close()
-
-	ref := buildImageTag(a.BuildTarget)
-
-	imageID, err := b.localDocker.Load(ctx, out, imageTar, ref)
-	if err != nil {
-		return "", errors.Wrap(err, "loading image into docker daemon")
-	}
-
-	return imageID, nil
-}
-
-func bazelBin(ctx context.Context, workspace string) (string, error) {
-	cmd := exec.CommandContext(ctx, "bazel", "info", "bazel-bin")
-	cmd.Dir = workspace
-
-	buf, err := util.RunCmdOut(cmd)
-	if err != nil {
-		return "", err
-	}
-
-	return strings.TrimSpace(string(buf)), nil
-}
-
-func trimTarget(buildTarget string) string {
-	//TODO(r2d4): strip off leading //:, bad
-	trimmedTarget := strings.TrimPrefix(buildTarget, "//")
-	// Useful if root target "//:target"
-	trimmedTarget = strings.TrimPrefix(trimmedTarget, ":")
-
-	return trimmedTarget
-}
-
-func buildTarPath(buildTarget string) string {
-	tarPath := trimTarget(buildTarget)
-	tarPath = strings.Replace(tarPath, ":", string(os.PathSeparator), 1)
-
-	return tarPath
-}
-
-func buildImageTag(buildTarget string) string {
-	imageTag := trimTarget(buildTarget)
-	imageTag = strings.TrimPrefix(imageTag, ":")
-
-	//TODO(r2d4): strip off trailing .tar, even worse
-	imageTag = strings.TrimSuffix(imageTag, ".tar")
-
-	if strings.Contains(imageTag, ":") {
-		return fmt.Sprintf("bazel/%s", imageTag)
-	}
-
-	return fmt.Sprintf("bazel:%s", imageTag)
+	builder.Init(opts, &latest.ExecutionEnvironment{})
+	return builder.BuildArtifact(ctx, out, a, tag)
 }

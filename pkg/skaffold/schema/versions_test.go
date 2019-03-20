@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -75,19 +75,30 @@ deploy:
 `
 	minimalKanikoConfig = `
 build:
-  kaniko:
-    buildContext:
-      gcsBucket: demo
+  artifacts:
+  - image: image1
+    context: ./examples/app1
+    kaniko:
+      buildContext:
+        gcsBucket: demo
+  cluster: {}
 `
 	completeKanikoConfig = `
 build:
-  kaniko:
-    buildContext:
-      gcsBucket: demo
+  artifacts:
+  - image: image1
+    context: ./examples/app1
+    kaniko:
+      buildContext:
+        localDir: {}
+  cluster:
     pullSecret: /secret.json
     pullSecretName: secret-name
     namespace: nskaniko
     timeout: 120m
+    dockerConfig:
+      secretName: config-name
+      path: /kaniko/.docker
 `
 	badConfig = "bad config"
 )
@@ -156,8 +167,9 @@ func TestParseConfig(t *testing.T) {
 			description: "Minimal Kaniko config",
 			config:      minimalKanikoConfig,
 			expected: config(
-				withKanikoBuild("demo", "kaniko-secret", "default", "", "20m",
+				withClusterBuild("kaniko-secret", "default", "", "20m",
 					withGitTagger(),
+					withKanikoArtifact("image1", "./examples/app1", "Dockerfile", "demo"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
 			),
@@ -167,8 +179,10 @@ func TestParseConfig(t *testing.T) {
 			description: "Complete Kaniko config",
 			config:      completeKanikoConfig,
 			expected: config(
-				withKanikoBuild("demo", "secret-name", "nskaniko", "/secret.json", "120m",
+				withClusterBuild("secret-name", "nskaniko", "/secret.json", "120m",
 					withGitTagger(),
+					withDockerConfig("config-name", "/kaniko/.docker"),
+					withKanikoArtifact("image1", "./examples/app1", "Dockerfile", ""),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
 			),
@@ -237,6 +251,8 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 		b := latest.BuildConfig{BuildType: latest.BuildType{GoogleCloudBuild: &latest.GoogleCloudBuild{
 			ProjectID:   id,
 			DockerImage: "gcr.io/cloud-builders/docker",
+			MavenImage:  "gcr.io/cloud-builders/mvn@sha256:0ec283f2ee1ab1d2ac779dcbb24bddaa46275aec7088cc10f2926b4ea0fcac9b",
+			GradleImage: "gcr.io/cloud-builders/gradle",
 		}}}
 		for _, op := range ops {
 			op(&b)
@@ -245,22 +261,27 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 	}
 }
 
-func withKanikoBuild(bucket, secretName, namespace, secret string, timeout string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldPipeline) {
+func withClusterBuild(secretName, namespace, secret string, timeout string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldPipeline) {
 	return func(cfg *latest.SkaffoldPipeline) {
-		b := latest.BuildConfig{BuildType: latest.BuildType{KanikoBuild: &latest.KanikoBuild{
-			BuildContext: &latest.KanikoBuildContext{
-				GCSBucket: bucket,
-			},
+		b := latest.BuildConfig{BuildType: latest.BuildType{Cluster: &latest.ClusterDetails{
 			PullSecretName: secretName,
 			Namespace:      namespace,
 			PullSecret:     secret,
 			Timeout:        timeout,
-			Image:          constants.DefaultKanikoImage,
 		}}}
 		for _, op := range ops {
 			op(&b)
 		}
 		cfg.Build = b
+	}
+}
+
+func withDockerConfig(secretName string, path string) func(*latest.BuildConfig) {
+	return func(cfg *latest.BuildConfig) {
+		cfg.Cluster.DockerConfig = &latest.DockerConfig{
+			SecretName: secretName,
+			Path:       path,
+		}
 	}
 }
 
@@ -314,6 +335,31 @@ func withBazelArtifact(image, workspace, target string) func(*latest.BuildConfig
 	}
 }
 
+func withKanikoArtifact(image, workspace, dockerfile, bucket string) func(*latest.BuildConfig) {
+	return func(cfg *latest.BuildConfig) {
+		bc := &latest.KanikoBuildContext{}
+		if bucket == "" {
+			bc.LocalDir = &latest.LocalDir{
+				InitImage: constants.DefaultBusyboxImage,
+			}
+		} else {
+			bc.GCSBucket = bucket
+		}
+
+		cfg.Artifacts = append(cfg.Artifacts, &latest.Artifact{
+			ImageName: image,
+			Workspace: workspace,
+			ArtifactType: latest.ArtifactType{
+				KanikoArtifact: &latest.KanikoArtifact{
+					DockerfilePath: dockerfile,
+					BuildContext:   bc,
+					Image:          constants.DefaultKanikoImage,
+				},
+			},
+		})
+	}
+}
+
 func withTagPolicy(tagPolicy latest.TagPolicy) func(*latest.BuildConfig) {
 	return func(cfg *latest.BuildConfig) { cfg.TagPolicy = tagPolicy }
 }
@@ -332,23 +378,36 @@ func withProfiles(profiles ...latest.Profile) func(*latest.SkaffoldPipeline) {
 	}
 }
 
+func withTests(testCases ...*latest.TestCase) func(*latest.SkaffoldPipeline) {
+	return func(cfg *latest.SkaffoldPipeline) {
+		cfg.Test = testCases
+	}
+}
+
+func withExecutionEnvironment(name latest.ExecEnvironment) func(*latest.BuildConfig) {
+	return func(cfg *latest.BuildConfig) {
+		cfg.ExecutionEnvironment = &latest.ExecutionEnvironment{
+			Name: name,
+		}
+	}
+}
 func TestUpgradeToNextVersion(t *testing.T) {
-	for i, schemaVersion := range schemaVersions[0 : len(schemaVersions)-2] {
+	for i, schemaVersion := range SchemaVersions[0 : len(SchemaVersions)-2] {
 		from := schemaVersion
-		to := schemaVersions[i+1]
-		description := fmt.Sprintf("Upgrade from %s to %s", from.apiVersion, to.apiVersion)
+		to := SchemaVersions[i+1]
+		description := fmt.Sprintf("Upgrade from %s to %s", from.APIVersion, to.APIVersion)
 
 		t.Run(description, func(t *testing.T) {
-			factory, _ := schemaVersions.Find(from.apiVersion)
+			factory, _ := SchemaVersions.Find(from.APIVersion)
 			newer, err := factory().Upgrade()
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, to.apiVersion, newer.GetVersion())
+			testutil.CheckErrorAndDeepEqual(t, false, err, to.APIVersion, newer.GetVersion())
 		})
 	}
 }
 
 func TestCantUpgradeFromLatestVersion(t *testing.T) {
-	factory, present := schemaVersions.Find(latest.Version)
+	factory, present := SchemaVersions.Find(latest.Version)
 	testutil.CheckDeepEqual(t, true, present)
 
 	_, err := factory().Upgrade()

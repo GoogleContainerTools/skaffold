@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,11 +32,12 @@ import (
 )
 
 // WithTimings creates a deployer that logs the duration of each phase.
-func WithTimings(b build.Builder, t test.Tester, d deploy.Deployer) (build.Builder, test.Tester, deploy.Deployer) {
+func WithTimings(b build.Builder, t test.Tester, d deploy.Deployer, cacheArtifacts bool) (build.Builder, test.Tester, deploy.Deployer) {
 	w := withTimings{
-		Builder:  b,
-		Tester:   t,
-		Deployer: d,
+		Builder:        b,
+		Tester:         t,
+		Deployer:       d,
+		cacheArtifacts: cacheArtifacts,
 	}
 
 	return w, w, w
@@ -46,17 +47,21 @@ type withTimings struct {
 	build.Builder
 	test.Tester
 	deploy.Deployer
+	cacheArtifacts bool
 }
 
 func (w withTimings) Labels() map[string]string {
 	return labels.Merge(w.Builder.Labels(), w.Deployer.Labels())
 }
 
-func (w withTimings) Build(ctx context.Context, out io.Writer, tagger tag.Tagger, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	if len(artifacts) == 0 && w.cacheArtifacts {
+		return nil, nil
+	}
 	start := time.Now()
 	color.Default.Fprintln(out, "Starting build...")
 
-	bRes, err := w.Builder.Build(ctx, out, tagger, artifacts)
+	bRes, err := w.Builder.Build(ctx, out, tags, artifacts)
 	if err != nil {
 		return nil, err
 	}
@@ -78,17 +83,16 @@ func (w withTimings) Test(ctx context.Context, out io.Writer, builds []build.Art
 	return nil
 }
 
-func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]deploy.Artifact, error) {
+func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []deploy.Labeller) error {
 	start := time.Now()
 	color.Default.Fprintln(out, "Starting deploy...")
 
-	dRes, err := w.Deployer.Deploy(ctx, out, builds)
-	if err != nil {
-		return nil, err
+	if err := w.Deployer.Deploy(ctx, out, builds, labellers); err != nil {
+		return err
 	}
 
 	color.Default.Fprintln(out, "Deploy complete in", time.Since(start))
-	return dRes, nil
+	return nil
 }
 
 func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {

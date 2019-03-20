@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,62 +20,26 @@ import (
 	"context"
 	"io"
 	"path/filepath"
-	"strings"
 
-	cstorage "cloud.google.com/go/storage"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
-// NormalizeDockerfilePath returns the absolute path to the dockerfile.
-func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
-	if filepath.IsAbs(dockerfile) {
-		return dockerfile, nil
-	}
-
-	if !strings.HasPrefix(dockerfile, context) {
-		dockerfile = filepath.Join(context, dockerfile)
-	}
-	return filepath.Abs(dockerfile)
-}
-
 func CreateDockerTarContext(ctx context.Context, w io.Writer, workspace string, a *latest.DockerArtifact) error {
-	paths, err := GetDependencies(ctx, workspace, a)
+	paths, err := GetDependencies(ctx, workspace, a.DockerfilePath, a.BuildArgs)
 	if err != nil {
 		return errors.Wrap(err, "getting relative tar paths")
 	}
 
-	if err := util.CreateTar(w, workspace, paths); err != nil {
+	var p []string
+	for _, path := range paths {
+		p = append(p, filepath.Join(workspace, path))
+	}
+
+	if err := util.CreateTar(w, workspace, p); err != nil {
 		return errors.Wrap(err, "creating tar gz")
 	}
 
 	return nil
-}
-
-func CreateDockerTarGzContext(ctx context.Context, w io.Writer, workspace string, a *latest.DockerArtifact) error {
-	paths, err := GetDependencies(ctx, workspace, a)
-	if err != nil {
-		return errors.Wrap(err, "getting relative tar paths")
-	}
-
-	if err := util.CreateTarGz(w, workspace, paths); err != nil {
-		return errors.Wrap(err, "creating tar gz")
-	}
-
-	return nil
-}
-
-func UploadContextToGCS(ctx context.Context, workspace string, a *latest.DockerArtifact, bucket, objectName string) error {
-	c, err := cstorage.NewClient(ctx)
-	if err != nil {
-		return errors.Wrap(err, "creating GCS client")
-	}
-	defer c.Close()
-
-	w := c.Bucket(bucket).Object(objectName).NewWriter(ctx)
-	if err := CreateDockerTarGzContext(ctx, w, workspace, a); err != nil {
-		return errors.Wrap(err, "uploading targz to google storage")
-	}
-	return w.Close()
 }

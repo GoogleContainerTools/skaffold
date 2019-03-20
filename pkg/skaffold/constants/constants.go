@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"runtime"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/sirupsen/logrus"
 )
 
@@ -30,9 +31,6 @@ const (
 	// DefaultDockerfilePath is the dockerfile path is given relative to the
 	// context directory
 	DefaultDockerfilePath = "Dockerfile"
-
-	DefaultDevTagStrategy = TagStrategySha256
-	DefaultRunTagStrategy = TagStrategyGitCommit
 
 	// TagStrategySha256 uses the checksum of the built artifact as the tag
 	TagStrategySha256    = "sha256"
@@ -47,21 +45,39 @@ const (
 
 	DefaultKustomizationPath = "."
 
-	DefaultKanikoImage             = "gcr.io/kaniko-project/executor:v0.7.0@sha256:0b4e0812aa17c54a9b8d8c8d7cb35559a892a341650acf7cb428c3e8cb4a3919"
-	DefaultKanikoSecretName        = "kaniko-secret"
-	DefaultKanikoTimeout           = "20m"
-	DefaultKanikoContainerName     = "kaniko"
-	DefaultKanikoEmptyDirName      = "kaniko-emptydir"
-	DefaultKanikoEmptyDirMountPath = "/kaniko/buildcontext"
+	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.9.0@sha256:d9fe474f80b73808dc12b54f45f5fc90f7856d9fc699d4a5e79d968a1aef1a72"
+	DefaultKanikoSecretName             = "kaniko-secret"
+	DefaultKanikoTimeout                = "20m"
+	DefaultKanikoContainerName          = "kaniko"
+	DefaultKanikoEmptyDirName           = "kaniko-emptydir"
+	DefaultKanikoEmptyDirMountPath      = "/kaniko/buildcontext"
+	DefaultKanikoDockerConfigSecretName = "docker-cfg"
+	DefaultKanikoDockerConfigPath       = "/kaniko/.docker"
 
 	DefaultBusyboxImage = "busybox"
 
 	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
 
 	DefaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
+	DefaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn@sha256:0ec283f2ee1ab1d2ac779dcbb24bddaa46275aec7088cc10f2926b4ea0fcac9b"
+	DefaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
 
+	DefaultSkaffoldDir = ".skaffold"
+	DefaultCacheFile   = "cache"
 	// A regex matching valid repository names (https://github.com/docker/distribution/blob/master/reference/reference.go)
 	RepositoryComponentRegex string = `^[a-z\d]+(?:(?:[_.]|__|-+)[a-z\d]+)*$`
+
+	SkaffoldPluginKey       = "SKAFFOLD_PLUGIN_KEY"
+	SkaffoldPluginValue     = "1337"
+	SkaffoldPluginName      = "SKAFFOLD_PLUGIN_NAME"
+	DockerBuilderPluginName = "docker"
+
+	DefaultRPCPort = 50051
+)
+
+var (
+	GoogleCloudBuild latest.ExecEnvironment = "googleCloudBuild"
+	Local            latest.ExecEnvironment = "local"
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}

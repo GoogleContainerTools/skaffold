@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,12 +17,12 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
@@ -34,30 +34,40 @@ import (
 )
 
 var (
-	opts      = &config.SkaffoldOptions{}
-	v         string
-	overwrite bool
-
-	updateMsg = make(chan string)
+	opts         = &config.SkaffoldOptions{}
+	v            string
+	defaultColor int
+	overwrite    bool
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "skaffold",
-	Short: "A tool that facilitates continuous development for Kubernetes applications.",
-}
-
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
+	updateMsg := make(chan string)
+
+	rootCmd := &cobra.Command{
+		Use:           "skaffold",
+		Short:         "A tool that facilitates continuous development for Kubernetes applications.",
+		SilenceErrors: true,
+	}
+
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if err := SetUpLogs(err, v); err != nil {
 			return err
 		}
+
 		rootCmd.SilenceUsage = true
 		logrus.Infof("Skaffold %+v", version.Get())
-		go func() {
-			if err := updateCheck(updateMsg); err != nil {
-				logrus.Infof("update check failed: %s", err)
-			}
-		}()
+		color.OverwriteDefault(color.Color(defaultColor))
+
+		if quietFlag {
+			logrus.Debugf("Update check is disabled because of quiet mode")
+		} else {
+			go func() {
+				if err := updateCheck(updateMsg); err != nil {
+					logrus.Infof("update check failed: %s", err)
+				}
+			}()
+		}
+
 		return nil
 	}
 
@@ -69,7 +79,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 		}
 	}
 
-	rootCmd.SilenceErrors = true
+	rootCmd.SetOutput(out)
 	rootCmd.AddCommand(NewCmdCompletion(out))
 	rootCmd.AddCommand(NewCmdVersion(out))
 	rootCmd.AddCommand(NewCmdRun(out))
@@ -83,6 +93,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdDiagnose(out))
 
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
+	rootCmd.PersistentFlags().IntVar(&defaultColor, "color", int(color.Default), "Specify the default output color in ANSI escape codes")
 
 	setFlagsFromEnvVariables(rootCmd.Commands())
 
@@ -90,24 +101,16 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 }
 
 func updateCheck(ch chan string) error {
-	if quietFlag {
-		logrus.Debugf("Update check is disabled because of quiet mode")
-		return nil
-	}
 	if !update.IsUpdateCheckEnabled() {
 		logrus.Debugf("Update check not enabled, skipping.")
 		return nil
 	}
-	current, err := version.ParseVersion(version.Get().Version)
+	latest, current, err := update.GetLatestAndCurrentVersion()
 	if err != nil {
-		return errors.Wrap(err, "parsing current semver, skipping update check")
-	}
-	latest, err := update.GetLatestVersion(context.Background())
-	if err != nil {
-		return errors.Wrap(err, "getting latest version")
+		return errors.Wrap(err, "get latest and current Skaffold version")
 	}
 	if latest.GT(current) {
-		ch <- fmt.Sprintf("There is a new version (%s) of skaffold available. Download it at %s\n", latest, constants.LatestDownloadURL)
+		ch <- fmt.Sprintf("There is a new version (%s) of Skaffold available. Download it at %s\n", latest, constants.LatestDownloadURL)
 	}
 	return nil
 }
@@ -142,12 +145,16 @@ func AddRunDeployFlags(cmd *cobra.Command) {
 }
 
 func AddRunDevFlags(cmd *cobra.Command) {
+	cmd.Flags().BoolVar(&opts.EnableRPC, "enable-rpc", false, "Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)")
+	cmd.Flags().IntVar(&opts.RPCPort, "rpc-port", constants.DefaultRPCPort, "tcp port to expose event API")
 	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
 	cmd.Flags().StringArrayVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
 	cmd.Flags().StringVarP(&opts.Namespace, "namespace", "n", "", "Run deployments in the specified namespace")
 	cmd.Flags().StringVarP(&opts.DefaultRepo, "default-repo", "d", "", "Default repository value (overrides global config)")
 	cmd.Flags().BoolVar(&opts.SkipTests, "skip-tests", false, "Whether to skip the tests after building")
+	cmd.Flags().BoolVar(&opts.CacheArtifacts, "cache-artifacts", false, "Set to true to enable caching of artifacts.")
+	cmd.Flags().StringVarP(&opts.CacheFile, "cache-file", "", "", "Specify the location of the cache file (default $HOME/.skaffold/cache)")
 }
 
 func SetUpLogs(out io.Writer, level string) error {

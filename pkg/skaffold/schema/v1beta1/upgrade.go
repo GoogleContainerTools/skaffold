@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,12 +17,9 @@ limitations under the License.
 package v1beta1
 
 import (
-	"encoding/json"
-
-	"github.com/pkg/errors"
-
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta2"
+	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
@@ -32,48 +29,10 @@ import (
 // 2. No removals
 // 3. No updates
 func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
-	// convert Deploy (should be the same)
-	var newDeploy next.DeployConfig
-	if err := convert(config.Deploy, &newDeploy); err != nil {
-		return nil, errors.Wrap(err, "converting deploy config")
-	}
+	var newConfig next.SkaffoldPipeline
 
-	// convert Profiles (should be the same)
-	var newProfiles []next.Profile
-	if config.Profiles != nil {
-		if err := convert(config.Profiles, &newProfiles); err != nil {
-			return nil, errors.Wrap(err, "converting new profile")
-		}
-	}
-	// convert Build (should be the same)
-	var newBuild next.BuildConfig
-	if err := convert(config.Build, &newBuild); err != nil {
-		return nil, errors.Wrap(err, "converting new build")
-	}
+	err := pkgutil.CloneThroughJSON(config, &newConfig)
+	newConfig.APIVersion = next.Version
 
-	// convert Test (should be the same)
-	var newTest next.TestConfig
-	if err := convert(config.Test, &newTest); err != nil {
-		return nil, errors.Wrap(err, "converting new test")
-	}
-
-	return &next.SkaffoldPipeline{
-		APIVersion: next.Version,
-		Kind:       config.Kind,
-		Build:      newBuild,
-		Test:       newTest,
-		Deploy:     newDeploy,
-		Profiles:   newProfiles,
-	}, nil
-}
-
-func convert(old interface{}, new interface{}) error {
-	o, err := json.Marshal(old)
-	if err != nil {
-		return errors.Wrap(err, "marshalling old")
-	}
-	if err := json.Unmarshal(o, &new); err != nil {
-		return errors.Wrap(err, "unmarshalling new")
-	}
-	return nil
+	return &newConfig, err
 }

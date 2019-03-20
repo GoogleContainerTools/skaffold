@@ -1,0 +1,11 @@
+apiVersion: skaffold/v1beta7
+kind: Config
+build:
+  artifacts:
+    - image: gcr.io/k8s-skaffold/skaffold-example-sub
+      context: sub
+      kaniko:
+        buildContext:
+          localDir: {}
+  cluster:
+    pullSecretName: e2esecret

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -39,25 +39,38 @@ import (
 // LocalDaemon talks to a local Docker API.
 type LocalDaemon interface {
 	Close() error
+	ExtraEnv() []string
 	ServerVersion(ctx context.Context) (types.Version, error)
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
 	Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string) (string, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
+	Pull(ctx context.Context, out io.Writer, ref string) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
 	Tag(ctx context.Context, image, ref string) error
 	ImageID(ctx context.Context, ref string) (string, error)
+	RepoDigest(ctx context.Context, ref string) (string, error)
+	ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error)
+	ImageExists(ctx context.Context, ref string) bool
 }
 
 type localDaemon struct {
 	apiClient  client.CommonAPIClient
+	extraEnv   []string
 	imageCache sync.Map
 }
 
 // NewLocalDaemon creates a new LocalDaemon.
-func NewLocalDaemon(apiClient client.CommonAPIClient) LocalDaemon {
+func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string) LocalDaemon {
 	return &localDaemon{
 		apiClient: apiClient,
+		extraEnv:  extraEnv,
 	}
+}
+
+// ExtraEnv returns the env variables needed to point at this local Docker
+// eg. minikube. This has be set in addition to the current environment.
+func (l *localDaemon) ExtraEnv() []string {
+	return l.extraEnv
 }
 
 // PushResult gives the information on an image that has been pushed.
@@ -95,7 +108,7 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 			return nil, err
 		}
 	} else {
-		cfg, err = retrieveRemoteConfig(image)
+		cfg, err = RetrieveRemoteConfig(image)
 		if err != nil {
 			return nil, errors.Wrap(err, "getting remote config")
 		}
@@ -222,6 +235,24 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 	return digest, nil
 }
 
+// Pull pulls an image reference from a registry.
+func (l *localDaemon) Pull(ctx context.Context, out io.Writer, ref string) error {
+	registryAuth, err := l.encodedRegistryAuth(ctx, DefaultAuthHelper, ref)
+	if err != nil {
+		return errors.Wrapf(err, "getting auth config for %s", ref)
+	}
+
+	rc, err := l.apiClient.ImagePull(ctx, ref, types.ImagePullOptions{
+		RegistryAuth: registryAuth,
+	})
+	if err != nil {
+		return errors.Wrap(err, "pulling image from repository")
+	}
+	defer rc.Close()
+
+	return streamDockerMessages(out, rc, nil)
+}
+
 // Load loads an image from a tar file. Returns the imageID for the loaded image.
 func (l *localDaemon) Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error) {
 	resp, err := l.apiClient.ImageLoad(ctx, input, false)
@@ -254,6 +285,28 @@ func (l *localDaemon) ImageID(ctx context.Context, ref string) (string, error) {
 	}
 
 	return image.ID, nil
+}
+
+// ImageList returns a list of all images in the local daemon
+func (l *localDaemon) ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error) {
+	return l.apiClient.ImageList(ctx, options)
+}
+
+// RepoDigest returns a repo digest for the given ref
+func (l *localDaemon) RepoDigest(ctx context.Context, ref string) (string, error) {
+	image, _, err := l.apiClient.ImageInspectWithRaw(ctx, ref)
+	if err != nil {
+		return "", errors.Wrap(err, "inspecting image")
+	}
+	if len(image.RepoDigests) == 0 {
+		return "", nil
+	}
+	return image.RepoDigests[0], nil
+}
+
+func (l *localDaemon) ImageExists(ctx context.Context, ref string) bool {
+	_, _, err := l.apiClient.ImageInspectWithRaw(ctx, ref)
+	return err == nil
 }
 
 // GetBuildArgs gives the build args flags for docker build.

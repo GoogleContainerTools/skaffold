@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ limitations under the License.
 package update
 
 import (
-	"context"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -43,23 +42,29 @@ func IsUpdateCheckEnabled() bool {
 	return v == "" || strings.ToLower(v) == "true"
 }
 
-// GetLatestVersion uses a VERSION file stored on GCS to determine the latest released version of skaffold
-func GetLatestVersion(ctx context.Context) (semver.Version, error) {
+// GetLatestAndCurrentVersion uses a VERSION file stored on GCS to determine the latest released version
+// and returns it with the current version of Skaffold
+func GetLatestAndCurrentVersion() (semver.Version, semver.Version, error) {
+	none := semver.Version{}
 	resp, err := http.Get(latestVersionURL)
 	if err != nil {
-		return semver.Version{}, errors.Wrap(err, "getting latest version info from GCS")
+		return none, none, errors.Wrap(err, "getting latest version info from GCS")
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return semver.Version{}, errors.Wrapf(err, "http %d, error: %s", resp.StatusCode, resp.Status)
+		return none, none, errors.Wrapf(err, "http %d, error: %s", resp.StatusCode, resp.Status)
 	}
 	versionBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return semver.Version{}, errors.Wrap(err, "reading version file from GCS")
+		return none, none, errors.Wrap(err, "reading version file from GCS")
 	}
-	v, err := version.ParseVersion(string(versionBytes))
+	latest, err := version.ParseVersion(string(versionBytes))
 	if err != nil {
-		return semver.Version{}, errors.Wrap(err, "parsing latest version from GCS")
+		return none, none, errors.Wrap(err, "parsing latest version from GCS")
 	}
-	return v, nil
+	current, err := version.ParseVersion(version.Get().Version)
+	if err != nil {
+		return none, none, errors.Wrap(err, "parsing current semver, skipping update check")
+	}
+	return latest, current, nil
 }

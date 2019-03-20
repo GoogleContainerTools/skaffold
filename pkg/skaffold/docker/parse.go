@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/fileutils"
@@ -145,7 +144,7 @@ func onbuildInstructions(nodes []*parser.Node) ([]*parser.Node, error) {
 		// Image names are case SENSITIVE
 		img, err := RetrieveImage(from.image)
 		if err != nil {
-			logrus.Warnf("Error processing base image for ONBUILD triggers: %s. Dependencies may be incomplete.", err)
+			logrus.Warnf("Error processing base image (%s) for ONBUILD triggers: %s. Dependencies may be incomplete.", from.image, err)
 			continue
 		}
 
@@ -179,7 +178,10 @@ func copiedFiles(nodes []*parser.Node) ([][]string, error) {
 				copied = append(copied, files)
 			}
 		case command.Env:
-			envs[node.Next.Value] = node.Next.Next.Value
+			// one env command may define multiple variables
+			for node := node.Next; node != nil && node.Next != nil; node = node.Next.Next {
+				envs[node.Value] = node.Next.Value
+			}
 		}
 	}
 
@@ -198,14 +200,16 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 		return nil, errors.Wrap(err, "parsing dockerfile")
 	}
 
-	expandBuildArgs(res.AST.Children, buildArgs)
+	dockerfileLines := res.AST.Children
 
-	instructions, err := onbuildInstructions(res.AST.Children)
+	expandBuildArgs(dockerfileLines, buildArgs)
+
+	instructions, err := onbuildInstructions(dockerfileLines)
 	if err != nil {
 		return nil, errors.Wrap(err, "listing ONBUILD instructions")
 	}
 
-	copied, err := copiedFiles(append(instructions, res.AST.Children...))
+	copied, err := copiedFiles(append(instructions, dockerfileLines...))
 	if err != nil {
 		return nil, errors.Wrap(err, "listing copied files")
 	}
@@ -259,15 +263,27 @@ func expandPaths(workspace string, copied [][]string) ([]string, error) {
 	return deps, nil
 }
 
+// NormalizeDockerfilePath returns the absolute path to the dockerfile.
+func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
+	if filepath.IsAbs(dockerfile) {
+		return dockerfile, nil
+	}
+
+	if !strings.HasPrefix(dockerfile, context) {
+		dockerfile = filepath.Join(context, dockerfile)
+	}
+	return filepath.Abs(dockerfile)
+}
+
 // GetDependencies finds the sources dependencies for the given docker artifact.
 // All paths are relative to the workspace.
-func GetDependencies(ctx context.Context, workspace string, a *latest.DockerArtifact) ([]string, error) {
-	absDockerfilePath, err := NormalizeDockerfilePath(workspace, a.DockerfilePath)
+func GetDependencies(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string) ([]string, error) {
+	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "normalizing dockerfile path")
 	}
 
-	deps, err := readDockerfile(workspace, absDockerfilePath, a.BuildArgs)
+	deps, err := readDockerfile(workspace, absDockerfilePath, buildArgs)
 	if err != nil {
 		return nil, err
 	}
@@ -349,8 +365,8 @@ func GetDependencies(ctx context.Context, workspace string, a *latest.DockerArti
 	}
 
 	// Always add dockerfile even if it's .dockerignored. The daemon will need it anyways.
-	if !filepath.IsAbs(a.DockerfilePath) {
-		files[a.DockerfilePath] = true
+	if !filepath.IsAbs(dockerfilePath) {
+		files[dockerfilePath] = true
 	} else {
 		files[absDockerfilePath] = true
 	}

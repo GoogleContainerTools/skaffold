@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,21 +23,22 @@ import (
 
 	cstorage "cloud.google.com/go/storage"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 )
 
 type GCSBucket struct {
-	cfg     *latest.KanikoBuild
-	tarName string
+	artifact       *latest.KanikoArtifact
+	clusterDetails *latest.ClusterDetails
+	tarName        string
 }
 
 // Setup uploads the context to the provided GCS bucket
-func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string) (string, error) {
-	bucket := g.cfg.BuildContext.GCSBucket
+func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string, dependencies []string) (string, error) {
+	bucket := g.artifact.BuildContext.GCSBucket
 	if bucket == "" {
 		guessedProjectID, err := gcp.ExtractProjectID(artifact.ImageName)
 		if err != nil {
@@ -50,17 +51,17 @@ func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.A
 	color.Default.Fprintln(out, "Uploading sources to", bucket, "GCS bucket")
 
 	g.tarName = fmt.Sprintf("context-%s.tar.gz", initialTag)
-	if err := docker.UploadContextToGCS(ctx, artifact.Workspace, artifact.DockerArtifact, bucket, g.tarName); err != nil {
+	if err := sources.UploadToGCS(ctx, artifact, bucket, g.tarName, dependencies); err != nil {
 		return "", errors.Wrap(err, "uploading sources to GCS")
 	}
 
-	context := fmt.Sprintf("gs://%s/%s", g.cfg.BuildContext.GCSBucket, g.tarName)
+	context := fmt.Sprintf("gs://%s/%s", g.artifact.BuildContext.GCSBucket, g.tarName)
 	return context, nil
 }
 
 // Pod returns the pod template for this builder
 func (g *GCSBucket) Pod(args []string) *v1.Pod {
-	return podTemplate(g.cfg, args)
+	return podTemplate(g.clusterDetails, g.artifact.Image, args)
 }
 
 // ModifyPod does nothing here, since we just need to let kaniko run to completion
@@ -76,5 +77,5 @@ func (g *GCSBucket) Cleanup(ctx context.Context) error {
 	}
 	defer c.Close()
 
-	return c.Bucket(g.cfg.BuildContext.GCSBucket).Object(g.tarName).Delete(ctx)
+	return c.Bucket(g.artifact.BuildContext.GCSBucket).Object(g.tarName).Delete(ctx)
 }

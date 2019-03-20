@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,7 +16,37 @@ limitations under the License.
 
 package util
 
+import (
+	"encoding/json"
+
+	yaml "gopkg.in/yaml.v2"
+)
+
 type VersionedConfig interface {
 	GetVersion() string
 	Upgrade() (VersionedConfig, error)
+}
+
+type HelmOverrides struct {
+	Values map[string]interface{} `yaml:",inline"`
+}
+
+type inlineYaml struct {
+	Yaml string
+}
+
+func (h *HelmOverrides) MarshalJSON() ([]byte, error) {
+	yaml, err := yaml.Marshal(h)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(inlineYaml{string(yaml)})
+}
+
+func (h *HelmOverrides) UnmarshalJSON(text []byte) error {
+	in := inlineYaml{}
+	if err := json.Unmarshal(text, &in); err != nil {
+		return err
+	}
+	return yaml.Unmarshal([]byte(in.Yaml), h)
 }

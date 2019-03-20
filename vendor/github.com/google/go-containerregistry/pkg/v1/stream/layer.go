@@ -22,7 +22,7 @@ import (
 	"hash"
 	"io"
 
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 var (
@@ -35,6 +35,7 @@ var (
 	ErrConsumed = errors.New("stream was already consumed")
 )
 
+// Layer is a streaming implementation of v1.Layer.
 type Layer struct {
 	blob     io.ReadCloser
 	consumed bool
@@ -45,8 +46,10 @@ type Layer struct {
 
 var _ v1.Layer = (*Layer)(nil)
 
+// NewLayer creates a Layer from an io.ReadCloser.
 func NewLayer(rc io.ReadCloser) *Layer { return &Layer{blob: rc} }
 
+// Digest implements v1.Layer.
 func (l *Layer) Digest() (v1.Hash, error) {
 	if l.digest == nil {
 		return v1.Hash{}, ErrNotComputed
@@ -54,6 +57,7 @@ func (l *Layer) Digest() (v1.Hash, error) {
 	return *l.digest, nil
 }
 
+// DiffID implements v1.Layer.
 func (l *Layer) DiffID() (v1.Hash, error) {
 	if l.diffID == nil {
 		return v1.Hash{}, ErrNotComputed
@@ -61,6 +65,7 @@ func (l *Layer) DiffID() (v1.Hash, error) {
 	return *l.diffID, nil
 }
 
+// Size implements v1.Layer.
 func (l *Layer) Size() (int64, error) {
 	if l.size == 0 {
 		return 0, ErrNotComputed
@@ -68,10 +73,12 @@ func (l *Layer) Size() (int64, error) {
 	return l.size, nil
 }
 
+// Uncompressed implements v1.Layer.
 func (l *Layer) Uncompressed() (io.ReadCloser, error) {
 	return nil, errors.New("NYI: stream.Layer.Uncompressed is not implemented")
 }
 
+// Compressed implements v1.Layer.
 func (l *Layer) Compressed() (io.ReadCloser, error) {
 	if l.consumed {
 		return nil, ErrConsumed

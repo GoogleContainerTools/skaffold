@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,14 +19,24 @@ package testutil
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 )
+
+func CheckContains(t *testing.T, expected, actual string) {
+	t.Helper()
+	if !strings.Contains(actual, expected) {
+		t.Errorf("expected output %s not found in output: %s", expected, actual)
+		return
+	}
+}
 
 func CheckDeepEqual(t *testing.T, expected, actual interface{}) {
 	t.Helper()
@@ -70,6 +80,27 @@ func CheckError(t *testing.T, shouldErr bool, err error) {
 	}
 }
 
+// Chdir changes current directory for a test
+func Chdir(t *testing.T, dir string) func() {
+	t.Helper()
+
+	pwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal("unable to get current directory")
+	}
+
+	err = os.Chdir(dir)
+	if err != nil {
+		t.Fatal("unable to change current directory")
+	}
+
+	return func() {
+		if err := os.Chdir(pwd); err != nil {
+			t.Fatal("unable to reset current directory")
+		}
+	}
+}
+
 func checkErr(shouldErr bool, err error) error {
 	if err == nil && shouldErr {
 		return errors.New("expected error, but returned none")
@@ -110,4 +141,21 @@ func ServeFile(t *testing.T, content []byte) (url string, tearDown func()) {
 	}))
 
 	return ts.URL, ts.Close
+}
+
+// CreateTempFileWithContents creates a temporary file in the dir specified or
+// os.TempDir by default with contents mentioned.
+func CreateTempFileWithContents(t *testing.T, dir string, name string, content []byte) string {
+	t.Helper()
+	tmpfile, err := ioutil.TempFile(dir, name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tmpfile.Write(content); err != nil {
+		t.Fatal(err)
+	}
+	if err := tmpfile.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return tmpfile.Name()
 }

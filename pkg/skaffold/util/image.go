@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ const maxLength = 255
 
 const gcr = "gcr.io"
 const escapeChars = "[/._:@]"
-const prefixRegexStr = "gcr.io/[a-zA-Z]+/"
+const prefixRegexStr = "gcr.io/[a-zA-Z0-9-_]+/"
 
 var escapeRegex = regexp.MustCompile(escapeChars)
 var prefixRegex = regexp.MustCompile(prefixRegexStr)

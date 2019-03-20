@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ deploy:
       valuesFiles:
       - values.yaml
 `
-	verityUpgrade(t, yaml, expected)
+	verifyUpgrade(t, yaml, expected)
 }
 
 func TestUpgrade_kanikoWithProfile(t *testing.T) {
@@ -92,10 +92,36 @@ profiles:
         manifests:
         - k8s-*
 `
-	verityUpgrade(t, yaml, expected)
+	verifyUpgrade(t, yaml, expected)
 }
 
-func verityUpgrade(t *testing.T, input, output string) {
+func TestUpgrade_helmReleaseOverrides(t *testing.T) {
+	yaml := `apiVersion: skaffold/v1alpha2
+kind: Config
+deploy:
+  helm:
+    releases:
+    - name: test release
+      overrides:
+        global:
+          localstack:
+            enabled: true
+`
+	expected := `apiVersion: skaffold/v1alpha3
+kind: Config
+deploy:
+  helm:
+    releases:
+    - name: test release
+      overrides:
+        global:
+          localstack:
+            enabled: true
+`
+	verifyUpgrade(t, yaml, expected)
+}
+
+func verifyUpgrade(t *testing.T, input, output string) {
 	pipeline := NewSkaffoldPipeline()
 	err := yaml.UnmarshalStrict([]byte(input), pipeline)
 	testutil.CheckErrorAndDeepEqual(t, false, err, Version, pipeline.GetVersion())

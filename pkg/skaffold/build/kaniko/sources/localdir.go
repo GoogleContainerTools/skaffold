@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,9 +29,9 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -42,12 +42,13 @@ const (
 // LocalDir refers to kaniko using a local directory as a buildcontext
 // skaffold copies the buildcontext into the local directory via kubectl cp
 type LocalDir struct {
-	cfg     *latest.KanikoBuild
-	tarPath string
+	artifact       *latest.KanikoArtifact
+	clusterDetails *latest.ClusterDetails
+	tarPath        string
 }
 
 // Setup for LocalDir creates a tarball of the buildcontext and stores it in /tmp
-func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string) (string, error) {
+func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string, dependencies []string) (string, error) {
 	g.tarPath = filepath.Join(os.TempDir(), fmt.Sprintf("context-%s.tar.gz", initialTag))
 	color.Default.Fprintln(out, "Storing build context at", g.tarPath)
 
@@ -57,7 +58,7 @@ func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Ar
 	}
 	defer f.Close()
 
-	err = docker.CreateDockerTarGzContext(ctx, f, artifact.Workspace, artifact.DockerArtifact)
+	err = sources.TarGz(ctx, f, artifact, dependencies)
 
 	context := fmt.Sprintf("dir://%s", constants.DefaultKanikoEmptyDirMountPath)
 	return context, err
@@ -79,12 +80,12 @@ func (g *LocalDir) Pod(args []string) *v1.Pod {
 	// Generate the init container, which will run until the /tmp/complete file is created
 	ic := v1.Container{
 		Name:         initContainer,
-		Image:        constants.DefaultBusyboxImage,
+		Image:        g.artifact.BuildContext.LocalDir.InitImage,
 		Command:      []string{"sh", "-c", "while [ ! -f /tmp/complete ]; do sleep 1; done"},
 		VolumeMounts: []v1.VolumeMount{vm},
 	}
 
-	p := podTemplate(g.cfg, args)
+	p := podTemplate(g.clusterDetails, g.artifact.Image, args)
 	p.Spec.InitContainers = []v1.Container{ic}
 	p.Spec.Containers[0].VolumeMounts = append(p.Spec.Containers[0].VolumeMounts, vm)
 	p.Spec.Volumes = append(p.Spec.Volumes, v)

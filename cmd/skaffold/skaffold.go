@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -26,7 +27,7 @@ import (
 )
 
 func main() {
-	if err := app.Run(); err != nil {
+	if err := app.Run(os.Stdout, os.Stderr); err != nil {
 		if errors.Cause(err) == context.Canceled {
 			logrus.Debugln(errors.Wrap(err, "ignore error since context is cancelled"))
 		} else {

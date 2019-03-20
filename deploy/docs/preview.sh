@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2018 The Skaffold Authors
+# Copyright 2019 The Skaffold Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,16 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-## This script starts a preview of the Skaffold site assuming it's ran from a
-## cloned skaffold repo with no submodules initialized. The script initializes the git submodules for
-## the site's theme in a standard manner, thus this script can be used locally as well as for the PR review flow.
-set -x
+set -exu
 
-readonly REPO_DIR=$(pwd)
-readonly BASE_URL=${1:-"http://localhost:1313"}
+readonly BASE_URL=${1}
 
-bash ${REPO_DIR}/deploy/docs/build.sh ${BASE_URL}
-
-cd ${REPO_DIR}/docs
-
+cd docs
+mkdir themes
+ln -s /app/docs/themes/docsy ./themes/docsy
+ln -s /app/docs/node_modules ./node_modules
 hugo serve --bind=0.0.0.0 -D --baseURL=${BASE_URL}

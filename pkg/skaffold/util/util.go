@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,7 +20,11 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -34,8 +38,21 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	hiddenPrefix string = "."
+)
+
 func RandomID() string {
 	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("%x", b)
+}
+
+func RandomFourCharacterID() string {
+	b := make([]byte, 2)
 	_, err := rand.Read(b)
 	if err != nil {
 		panic(err)
@@ -83,6 +100,9 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 		files, err := filepath.Glob(path)
 		if err != nil {
 			return nil, errors.Wrap(err, "glob")
+		}
+		if len(files) == 0 {
+			logrus.Warnf("%s did not match any file", p)
 		}
 
 		for _, f := range files {
@@ -241,4 +261,58 @@ func NonEmptyLines(input []byte) []string {
 		}
 	}
 	return result
+}
+
+// SHA256 returns the shasum of the contents of r
+func SHA256(r io.Reader) (string, error) {
+	hasher := sha256.New()
+	_, err := io.Copy(hasher, r)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hasher.Sum(make([]byte, 0, hasher.Size()))), nil
+}
+
+// CloneThroughJSON marshals the old interface into the new one
+func CloneThroughJSON(old interface{}, new interface{}) error {
+	o, err := json.Marshal(old)
+	if err != nil {
+		return errors.Wrap(err, "marshalling old")
+	}
+	if err := json.Unmarshal(o, &new); err != nil {
+		return errors.Wrap(err, "unmarshalling new")
+	}
+	return nil
+}
+
+// AbsolutePaths prepends each path in paths with workspace if the path isn't absolute
+func AbsolutePaths(workspace string, paths []string) []string {
+	var p []string
+	for _, path := range paths {
+		// TODO(dgageot): this is only done for jib builder.
+		if !filepath.IsAbs(path) {
+			path = filepath.Join(workspace, path)
+		}
+		p = append(p, path)
+	}
+	return p
+}
+
+// IsHiddenDir returns if a directory is hidden.
+func IsHiddenDir(filename string) bool {
+	// Return false for current dir
+	if filename == hiddenPrefix {
+		return false
+	}
+	return hasHiddenPrefix(filename)
+}
+
+// IsHiddenFile returns if a file is hidden.
+// File is hidden if it starts with prefix "."
+func IsHiddenFile(filename string) bool {
+	return hasHiddenPrefix(filename)
+}
+
+func hasHiddenPrefix(s string) bool {
+	return strings.HasPrefix(s, hiddenPrefix)
 }

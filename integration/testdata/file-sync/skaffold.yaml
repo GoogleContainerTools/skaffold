@@ -1,0 +1,14 @@
+apiVersion: skaffold/v1beta7
+kind: Config
+build:
+  tagPolicy:
+    gitCommit: {}
+  artifacts:
+  - image: gcr.io/k8s-skaffold/test-file-sync
+    context: .
+    sync:
+      '**/foo*' : /test
+deploy:
+ kubectl:
+   manifests:
+   - pod.yaml

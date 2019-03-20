@@ -1,0 +1,326 @@
+{
+  "type": "object",
+  "anyOf": [
+    {
+      "$ref": "#/definitions/SkaffoldPipeline"
+    }
+  ],
+  "$schema": "http://json-schema-org/draft-07/schema#",
+  "definitions": {
+    "Artifact": {
+      "properties": {
+        "buildArgs": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "default": "{}"
+        },
+        "dockerfilePath": {
+          "type": "string"
+        },
+        "imageName": {
+          "type": "string"
+        },
+        "workspace": {
+          "type": "string"
+        }
+      },
+      "preferredOrder": [
+        "imageName",
+        "dockerfilePath",
+        "workspace",
+        "buildArgs"
+      ],
+      "additionalProperties": false,
+      "description": "represents items that need should be built, along with the context in which they should be built.",
+      "x-intellij-html-description": "represents items that need should be built, along with the context in which they should be built."
+    },
+    "BuildConfig": {
+      "anyOf": [
+        {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "$ref": "#/definitions/Artifact"
+              },
+              "type": "array"
+            },
+            "tagPolicy": {
+              "type": "string"
+            }
+          },
+          "preferredOrder": [
+            "artifacts",
+            "tagPolicy"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "$ref": "#/definitions/Artifact"
+              },
+              "type": "array"
+            },
+            "local": {
+              "$ref": "#/definitions/LocalBuild"
+            },
+            "tagPolicy": {
+              "type": "string"
+            }
+          },
+          "preferredOrder": [
+            "artifacts",
+            "tagPolicy",
+            "local"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "$ref": "#/definitions/Artifact"
+              },
+              "type": "array"
+            },
+            "googleCloudBuild": {
+              "$ref": "#/definitions/GoogleCloudBuild"
+            },
+            "tagPolicy": {
+              "type": "string"
+            }
+          },
+          "preferredOrder": [
+            "artifacts",
+            "tagPolicy",
+            "googleCloudBuild"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "contains all the configuration for the build steps",
+      "x-intellij-html-description": "contains all the configuration for the build steps"
+    },
+    "BuildType": {
+      "properties": {
+        "googleCloudBuild": {
+          "$ref": "#/definitions/GoogleCloudBuild"
+        },
+        "local": {
+          "$ref": "#/definitions/LocalBuild"
+        }
+      },
+      "preferredOrder": [
+        "local",
+        "googleCloudBuild"
+      ],
+      "additionalProperties": false,
+      "description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated.",
+      "x-intellij-html-description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated."
+    },
+    "DeployConfig": {
+      "anyOf": [
+        {
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "preferredOrder": [
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "helm": {
+              "$ref": "#/definitions/HelmDeploy"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "preferredOrder": [
+            "name",
+            "helm"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "kubectl": {
+              "$ref": "#/definitions/KubectlDeploy"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "preferredOrder": [
+            "name",
+            "kubectl"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "contains all the configuration needed by the deploy steps",
+      "x-intellij-html-description": "contains all the configuration needed by the deploy steps"
+    },
+    "DeployType": {
+      "properties": {
+        "helm": {
+          "$ref": "#/definitions/HelmDeploy"
+        },
+        "kubectl": {
+          "$ref": "#/definitions/KubectlDeploy"
+        }
+      },
+      "preferredOrder": [
+        "helm",
+        "kubectl"
+      ],
+      "additionalProperties": false,
+      "description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated.",
+      "x-intellij-html-description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated."
+    },
+    "GoogleCloudBuild": {
+      "properties": {
+        "projectId": {
+          "type": "string"
+        }
+      },
+      "preferredOrder": [
+        "projectId"
+      ],
+      "additionalProperties": false
+    },
+    "HelmDeploy": {
+      "properties": {
+        "releases": {
+          "items": {
+            "$ref": "#/definitions/HelmRelease"
+          },
+          "type": "array"
+        }
+      },
+      "preferredOrder": [
+        "releases"
+      ],
+      "additionalProperties": false
+    },
+    "HelmRelease": {
+      "properties": {
+        "chartPath": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "values": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "default": "{}"
+        },
+        "valuesFilePath": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "preferredOrder": [
+        "name",
+        "chartPath",
+        "valuesFilePath",
+        "values",
+        "namespace",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "KubectlDeploy": {
+      "properties": {
+        "manifests": {
+          "items": {
+            "$ref": "#/definitions/Manifest"
+          },
+          "type": "array"
+        }
+      },
+      "preferredOrder": [
+        "manifests"
+      ],
+      "additionalProperties": false,
+      "description": "contains the configuration needed for deploying with `kubectl apply`",
+      "x-intellij-html-description": "contains the configuration needed for deploying with <code>kubectl apply</code>"
+    },
+    "LocalBuild": {
+      "properties": {
+        "skipPush": {
+          "type": "boolean"
+        }
+      },
+      "preferredOrder": [
+        "skipPush"
+      ],
+      "additionalProperties": false,
+      "description": "contains the fields needed to do a build on the local docker daemon and optionally push to a repository.",
+      "x-intellij-html-description": "contains the fields needed to do a build on the local docker daemon and optionally push to a repository."
+    },
+    "Manifest": {
+      "properties": {
+        "parameters": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "default": "{}"
+        },
+        "paths": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "default": "[]"
+        }
+      },
+      "preferredOrder": [
+        "paths",
+        "parameters"
+      ],
+      "additionalProperties": false
+    },
+    "SkaffoldPipeline": {
+      "properties": {
+        "apiVersion": {
+          "type": "string"
+        },
+        "build": {
+          "$ref": "#/definitions/BuildConfig"
+        },
+        "deploy": {
+          "$ref": "#/definitions/DeployConfig"
+        },
+        "kind": {
+          "type": "string"
+        }
+      },
+      "preferredOrder": [
+        "apiVersion",
+        "kind",
+        "build",
+        "deploy"
+      ],
+      "additionalProperties": false,
+      "description": "top level config object that is parsed from a skaffold.yaml",
+      "x-intellij-html-description": "top level config object that is parsed from a skaffold.yaml"
+    }
+  }
+}

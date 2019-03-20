@@ -1,6 +1,6 @@
 ---
-title: "CLI References"
-linkTitle: "CLI References"
+title: "CLI"
+linkTitle: "CLI"
 weight: 110
 ---
 
@@ -20,7 +20,7 @@ Pipeline building blocks for CI/CD:
 
 Getting started with a new project:
 
-* [skaffold init](#skaffold-init) - to bootstrap skaffold.yaml
+* [skaffold init](#skaffold-init) - to bootstrap Skaffold config
 * [skaffold fix](#skaffold-fix) - to upgrade from
 
 Utilities:
@@ -29,7 +29,7 @@ Utilities:
 * [skaffold version](#skaffold-version) - get Skaffold version
 * [skaffold completion](#skaffold-completion) - setup tab completion for the CLI
 * [skaffold config](#skaffold-config) - manage context specific parameters
-* [skaffold diagnose](#skaffold-diagnose) - diagnostics of skaffold works in your project
+* [skaffold diagnose](#skaffold-diagnose) - diagnostics of Skaffold works in your project
 
 
 ## Global flags
@@ -43,7 +43,7 @@ Utilities:
 
 | Flag | Description |
 |------- |---------------|
-|`SKAFFOLD_UPDATE_CHECK`|Enables checking for latest version of the skaffold binary. By default it's `true`. |
+|`SKAFFOLD_UPDATE_CHECK`|Enables checking for latest version of the Skaffold binary. By default it's `true`. |
 
 
 ## Skaffold commands
@@ -60,73 +60,127 @@ Builds the artifacts
 
 ```
 Usage:
-  skaffold build [flags]
+  skaffold build
 
 Flags:
+  -b, --build-image stringArray      Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts
+      --cache-artifacts              Set to true to enable caching of artifacts.
+      --cache-file string            Specify the location of the cache file (default $HOME/.skaffold/cache)
   -d, --default-repo string          Default repository value (overrides global config)
+      --enable-rpc skaffold dev      Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
   -f, --filename string              Filename or URL to the pipeline file (default "skaffold.yaml")
   -n, --namespace string             Run deployments in the specified namespace
   -o, --output *flags.TemplateFlag   Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd#BuildOutput (default {{range .Builds}}{{.ImageName}} -> {{.Tag}}
                                      {{end}})
   -p, --profile stringArray          Activate profiles by name
   -q, --quiet                        Suppress the build output and print image built on success
+      --rpc-port int                 tcp port to expose event API (default 50051)
       --skip-tests                   Whether to skip the tests after building
       --toot                         Emit a terminal beep after the deploy is complete
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
-Env vars:
 
-* `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
-* `SKAFFOLD_FILENAME` (same as --filename)
-* `SKAFFOLD_NAMESPACE` (same as --namespace)
-* `SKAFFOLD_OUTPUT` (same as --output)
-* `SKAFFOLD_PROFILE` (same as --profile)
-* `SKAFFOLD_QUIET` (same as --quiet)
-* `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
-* `SKAFFOLD_TOOT` (same as --toot)
+### skaffold completion SHELL
 
-### skaffold completion
-
-Output command completion script for the bash shell
+Output shell completion for the given shell (bash or zsh)
 
 ```
 Usage:
-  skaffold completion bash [flags]
+  skaffold completion SHELL
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
-Env vars:
-
 
 ### skaffold config
 
-A set of commands for interacting with the skaffold config.
+A set of commands for interacting with the Skaffold config.
 
 ```
 Usage:
   skaffold config [command]
 
 Available Commands:
-  list        List all values set in the global skaffold config
-  set         Set a value in the global skaffold config
-  unset       Unset a value in the global skaffold config
+  list        List all values set in the global Skaffold config
+  set         Set a value in the global Skaffold config
+  unset       Unset a value in the global Skaffold config
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 Use "skaffold config [command] --help" for more information about a command.
 
 
 ```
-Env vars:
 
+### skaffold config list
+
+List all values set in the global Skaffold config
+
+```
+Usage:
+  skaffold config list
+
+Flags:
+  -a, --all                   Show values for all kubecontexts
+  -c, --config string         Path to Skaffold config
+  -k, --kube-context string   Kubectl context to set values against
+
+Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+
+
+```
+
+### skaffold config set
+
+Set a value in the global Skaffold config
+
+```
+Usage:
+  skaffold config set
+
+Flags:
+  -c, --config string         Path to Skaffold config
+  -g, --global                Set value for global config
+  -k, --kube-context string   Kubectl context to set values against
+
+Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+
+
+```
+
+### skaffold config unset
+
+Unset a value in the global Skaffold config
+
+```
+Usage:
+  skaffold config unset
+
+Flags:
+  -c, --config string         Path to Skaffold config
+  -g, --global                Set value for global config
+  -k, --kube-context string   Kubectl context to set values against
+
+Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+
+
+```
 
 ### skaffold delete
 
@@ -134,29 +188,26 @@ Delete the deployed resources
 
 ```
 Usage:
-  skaffold delete [flags]
+  skaffold delete
 
 Flags:
-  -d, --default-repo string   Default repository value (overrides global config)
-  -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
-  -n, --namespace string      Run deployments in the specified namespace
-  -p, --profile stringArray   Activate profiles by name
-      --skip-tests            Whether to skip the tests after building
-      --toot                  Emit a terminal beep after the deploy is complete
+      --cache-artifacts           Set to true to enable caching of artifacts.
+      --cache-file string         Specify the location of the cache file (default $HOME/.skaffold/cache)
+  -d, --default-repo string       Default repository value (overrides global config)
+      --enable-rpc skaffold dev   Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
+  -f, --filename string           Filename or URL to the pipeline file (default "skaffold.yaml")
+  -n, --namespace string          Run deployments in the specified namespace
+  -p, --profile stringArray       Activate profiles by name
+      --rpc-port int              tcp port to expose event API (default 50051)
+      --skip-tests                Whether to skip the tests after building
+      --toot                      Emit a terminal beep after the deploy is complete
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
-Env vars:
-
-* `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
-* `SKAFFOLD_FILENAME` (same as --filename)
-* `SKAFFOLD_NAMESPACE` (same as --namespace)
-* `SKAFFOLD_PROFILE` (same as --profile)
-* `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
-* `SKAFFOLD_TOOT` (same as --toot)
 
 ### skaffold deploy
 
@@ -164,35 +215,29 @@ Deploys the artifacts
 
 ```
 Usage:
-  skaffold deploy [flags]
+  skaffold deploy
 
 Flags:
-  -d, --default-repo string   Default repository value (overrides global config)
-  -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
-      --images strings        A list of pre-built images to deploy
-  -l, --label stringArray     Add custom labels to deployed objects. Set multiple times for multiple labels.
-  -n, --namespace string      Run deployments in the specified namespace
-  -p, --profile stringArray   Activate profiles by name
-      --skip-tests            Whether to skip the tests after building
-      --tail                  Stream logs from deployed objects
-      --toot                  Emit a terminal beep after the deploy is complete
+      --cache-artifacts           Set to true to enable caching of artifacts.
+      --cache-file string         Specify the location of the cache file (default $HOME/.skaffold/cache)
+  -d, --default-repo string       Default repository value (overrides global config)
+      --enable-rpc skaffold dev   Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
+  -f, --filename string           Filename or URL to the pipeline file (default "skaffold.yaml")
+      --images strings            A list of pre-built images to deploy
+  -l, --label stringArray         Add custom labels to deployed objects. Set multiple times for multiple labels.
+  -n, --namespace string          Run deployments in the specified namespace
+  -p, --profile stringArray       Activate profiles by name
+      --rpc-port int              tcp port to expose event API (default 50051)
+      --skip-tests                Whether to skip the tests after building
+      --tail                      Stream logs from deployed objects
+      --toot                      Emit a terminal beep after the deploy is complete
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
-Env vars:
-
-* `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
-* `SKAFFOLD_FILENAME` (same as --filename)
-* `SKAFFOLD_IMAGES` (same as --images)
-* `SKAFFOLD_LABEL` (same as --label)
-* `SKAFFOLD_NAMESPACE` (same as --namespace)
-* `SKAFFOLD_PROFILE` (same as --profile)
-* `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
-* `SKAFFOLD_TAIL` (same as --tail)
-* `SKAFFOLD_TOOT` (same as --toot)
 
 ### skaffold dev
 
@@ -200,16 +245,21 @@ Runs a pipeline file in development mode
 
 ```
 Usage:
-  skaffold dev [flags]
+  skaffold dev
 
 Flags:
+      --cache-artifacts           Set to true to enable caching of artifacts.
+      --cache-file string         Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup                   Delete deployments after dev mode is interrupted (default true)
   -d, --default-repo string       Default repository value (overrides global config)
+      --enable-rpc skaffold dev   Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
+      --experimental-gui          Experimental Graphical User Interface
   -f, --filename string           Filename or URL to the pipeline file (default "skaffold.yaml")
   -l, --label stringArray         Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace string          Run deployments in the specified namespace
       --port-forward              Port-forward exposed container ports within pods (default true)
   -p, --profile stringArray       Activate profiles by name
+      --rpc-port int              tcp port to expose event API (default 50051)
       --skip-tests                Whether to skip the tests after building
       --tail                      Stream logs from deployed objects (default true)
       --toot                      Emit a terminal beep after the deploy is complete
@@ -218,25 +268,11 @@ Flags:
   -i, --watch-poll-interval int   Interval (in ms) between two checks for file changes (default 1000)
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
-Env vars:
-
-* `SKAFFOLD_CLEANUP` (same as --cleanup)
-* `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
-* `SKAFFOLD_FILENAME` (same as --filename)
-* `SKAFFOLD_LABEL` (same as --label)
-* `SKAFFOLD_NAMESPACE` (same as --namespace)
-* `SKAFFOLD_PORT_FORWARD` (same as --port-forward)
-* `SKAFFOLD_PROFILE` (same as --profile)
-* `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
-* `SKAFFOLD_TAIL` (same as --tail)
-* `SKAFFOLD_TOOT` (same as --toot)
-* `SKAFFOLD_TRIGGER` (same as --trigger)
-* `SKAFFOLD_WATCH_IMAGE` (same as --watch-image)
-* `SKAFFOLD_WATCH_POLL_INTERVAL` (same as --watch-poll-interval)
 
 ### skaffold diagnose
 
@@ -244,70 +280,61 @@ Run a diagnostic on Skaffold
 
 ```
 Usage:
-  skaffold diagnose [flags]
+  skaffold diagnose
 
 Flags:
-  -f, --filename string   Filename or URL to the pipeline file (default "skaffold.yaml")
+  -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
+  -p, --profile stringArray   Activate profiles by name
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
-Env vars:
-
-* `SKAFFOLD_FILENAME` (same as --filename)
 
 ### skaffold fix
 
-Converts old skaffold.yaml to newest schema version
+Converts old Skaffold config to newest schema version
 
 ```
 Usage:
-  skaffold fix [flags]
+  skaffold fix
 
 Flags:
   -f, --filename string   Filename or URL to the pipeline file (default "skaffold.yaml")
       --overwrite         Overwrite original config with fixed config
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
-Env vars:
-
-* `SKAFFOLD_FILENAME` (same as --filename)
-* `SKAFFOLD_OVERWRITE` (same as --overwrite)
 
 ### skaffold init
 
-Automatically generate skaffold configuration for deploying an application
+Automatically generate Skaffold configuration for deploying an application
 
 ```
 Usage:
-  skaffold init [flags]
+  skaffold init
 
 Flags:
+      --analyze                Print all discoverable Dockerfiles and images in JSON format to stdout
   -a, --artifact stringArray   '='-delimited dockerfile/image pair to generate build artifact
                                (example: --artifact=/web/Dockerfile.web=gcr.io/web-project/image)
       --compose-file string    Initialize from a docker-compose file
   -f, --filename string        Filename or URL to the pipeline file (default "skaffold.yaml")
-      --force                  Force the generation of the skaffold config
-      --skip-build             Skip generating build artifacts in skaffold config
+      --force                  Force the generation of the Skaffold config
+      --skip-build             Skip generating build artifacts in Skaffold config
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
-Env vars:
-
-* `SKAFFOLD_ARTIFACT` (same as --artifact)
-* `SKAFFOLD_COMPOSE_FILE` (same as --compose-file)
-* `SKAFFOLD_FILENAME` (same as --filename)
-* `SKAFFOLD_FORCE` (same as --force)
-* `SKAFFOLD_SKIP_BUILD` (same as --skip-build)
 
 ### skaffold run
 
@@ -315,35 +342,29 @@ Runs a pipeline file
 
 ```
 Usage:
-  skaffold run [flags]
+  skaffold run
 
 Flags:
-  -d, --default-repo string   Default repository value (overrides global config)
-  -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
-  -l, --label stringArray     Add custom labels to deployed objects. Set multiple times for multiple labels.
-  -n, --namespace string      Run deployments in the specified namespace
-  -p, --profile stringArray   Activate profiles by name
-      --skip-tests            Whether to skip the tests after building
-  -t, --tag string            The optional custom tag to use for images which overrides the current Tagger configuration
-      --tail                  Stream logs from deployed objects
-      --toot                  Emit a terminal beep after the deploy is complete
+      --cache-artifacts           Set to true to enable caching of artifacts.
+      --cache-file string         Specify the location of the cache file (default $HOME/.skaffold/cache)
+  -d, --default-repo string       Default repository value (overrides global config)
+      --enable-rpc skaffold dev   Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
+  -f, --filename string           Filename or URL to the pipeline file (default "skaffold.yaml")
+  -l, --label stringArray         Add custom labels to deployed objects. Set multiple times for multiple labels.
+  -n, --namespace string          Run deployments in the specified namespace
+  -p, --profile stringArray       Activate profiles by name
+      --rpc-port int              tcp port to expose event API (default 50051)
+      --skip-tests                Whether to skip the tests after building
+  -t, --tag string                The optional custom tag to use for images which overrides the current Tagger configuration
+      --tail                      Stream logs from deployed objects
+      --toot                      Emit a terminal beep after the deploy is complete
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
-Env vars:
-
-* `SKAFFOLD_DEFAULT_REPO` (same as --default-repo)
-* `SKAFFOLD_FILENAME` (same as --filename)
-* `SKAFFOLD_LABEL` (same as --label)
-* `SKAFFOLD_NAMESPACE` (same as --namespace)
-* `SKAFFOLD_PROFILE` (same as --profile)
-* `SKAFFOLD_SKIP_TESTS` (same as --skip-tests)
-* `SKAFFOLD_TAG` (same as --tag)
-* `SKAFFOLD_TAIL` (same as --tail)
-* `SKAFFOLD_TOOT` (same as --toot)
 
 ### skaffold version
 
@@ -351,17 +372,15 @@ Print the version information
 
 ```
 Usage:
-  skaffold version [flags]
+  skaffold version
 
 Flags:
   -o, --output *flags.TemplateFlag   Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/pkg/skaffold/version#Info (default {{.Version}}
                                      )
 
 Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
   -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
 
 
 ```
-Env vars:
-
-* `SKAFFOLD_OUTPUT` (same as --output)

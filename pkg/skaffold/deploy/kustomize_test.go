@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,10 +17,117 @@ limitations under the License.
 package deploy
 
 import (
+	"context"
+	"io/ioutil"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/pkg/errors"
 )
+
+func TestKustomizeDeploy(t *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+
+	var tests = []struct {
+		description string
+		cfg         *latest.KustomizeDeploy
+		builds      []build.Artifact
+		command     util.Command
+		shouldErr   bool
+	}{
+		{
+			description: "no manifest",
+			cfg: &latest.KustomizeDeploy{
+				KustomizePath: tmpDir.Root(),
+			},
+			command: testutil.NewFakeCmd(t).
+				WithRunOut("kubectl version --client -ojson", kubectlVersion).
+				WithRunOut("kustomize build "+tmpDir.Root(), ""),
+		},
+		{
+			description: "deploy success",
+			cfg: &latest.KustomizeDeploy{
+				KustomizePath: tmpDir.Root(),
+			},
+			command: testutil.NewFakeCmd(t).
+				WithRunOut("kubectl version --client -ojson", kubectlVersion).
+				WithRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
+				WithRun("kubectl --context kubecontext --namespace testNamespace apply --force -f -"),
+			builds: []build.Artifact{{
+				ImageName: "leeroy-web",
+				Tag:       "leeroy-web:123",
+			}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+			util.DefaultExecCommand = test.command
+
+			k := NewKustomizeDeployer(test.cfg, testKubeContext, testNamespace, "")
+			err := k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
+
+			testutil.CheckError(t, test.shouldErr, err)
+		})
+	}
+}
+
+func TestKustomizeCleanup(t *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+
+	var tests = []struct {
+		description string
+		cfg         *latest.KustomizeDeploy
+		command     util.Command
+		shouldErr   bool
+	}{
+		{
+			description: "cleanup success",
+			cfg: &latest.KustomizeDeploy{
+				KustomizePath: tmpDir.Root(),
+			},
+			command: testutil.NewFakeCmd(t).
+				WithRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
+				WithRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -"),
+		},
+		{
+			description: "cleanup error",
+			cfg: &latest.KustomizeDeploy{
+				KustomizePath: tmpDir.Root(),
+			},
+			command: testutil.NewFakeCmd(t).
+				WithRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
+				WithRunErr("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -", errors.New("BUG")),
+			shouldErr: true,
+		},
+		{
+			description: "fail to read manifests",
+			cfg: &latest.KustomizeDeploy{
+				KustomizePath: tmpDir.Root(),
+			},
+			command:   testutil.NewFakeCmd(t).WithRunOutErr("kustomize build "+tmpDir.Root(), ``, errors.New("BUG")),
+			shouldErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+			util.DefaultExecCommand = test.command
+
+			k := NewKustomizeDeployer(test.cfg, testKubeContext, testNamespace, "")
+			err := k.Cleanup(context.Background(), ioutil.Discard)
+
+			testutil.CheckError(t, test.shouldErr, err)
+		})
+	}
+}
 
 func TestDependenciesForKustomization(t *testing.T) {
 	tests := []struct {
@@ -59,6 +166,13 @@ func TestDependenciesForKustomization(t *testing.T) {
 			expected: []string{"kustomization.yaml", "app1.properties", "app2.properties", "app3.properties"},
 		},
 		{
+			description: "secretGenerator",
+			yaml: `secretGenerator:
+- files: [secret1.file]
+- files: [secret2.file, secret3.file]`,
+			expected: []string{"kustomization.yaml", "secret1.file", "secret2.file", "secret3.file"},
+		},
+		{
 			description: "unknown base",
 			yaml:        `bases: [other]`,
 			shouldErr:   true,
@@ -72,7 +186,8 @@ func TestDependenciesForKustomization(t *testing.T) {
 
 			tmp.Write("kustomization.yaml", test.yaml)
 
-			deps, err := dependenciesForKustomization(tmp.Root())
+			k := NewKustomizeDeployer(&latest.KustomizeDeploy{KustomizePath: tmp.Root()}, "", "", "")
+			deps, err := k.Dependencies()
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, joinPaths(tmp.Root(), test.expected), deps)
 		})

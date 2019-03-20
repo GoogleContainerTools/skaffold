@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ func NewCmdDelete(out io.Writer) *cobra.Command {
 		Short: "Delete the deployed resources",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			opts.Command = "delete"
 			return delete(out)
 		},
 	}
@@ -47,6 +48,7 @@ func delete(out io.Writer) error {
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}
+	defer runner.RPCServerShutdown()
 
 	return runner.Cleanup(ctx, out)
 }
