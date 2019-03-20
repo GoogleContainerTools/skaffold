@@ -77,8 +77,9 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 				var result *Artifact
 				result, errs[i] = buildArtifact(ctx, cw, artifacts[i], tag)
 				if errs[i] != nil {
-					built[i] = *result
 					event.BuildFailed(artifacts[i].ImageName, errs[i])
+				} else {
+					built[i] = *result
 				}
 			}
 
