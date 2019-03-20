@@ -1,3 +1,0 @@
-dependencies:
-  - name: subchart
-    condition: subchart.enabled
