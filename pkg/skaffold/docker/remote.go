@@ -25,6 +25,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var (
+	// for testing
+	getInsecureRegistryImpl = getInsecureRegistry
+	getRemoteImageImpl      = getRemoteImage
+)
+
 func RemoteDigest(identifier string, insecureRegistries map[string]bool) (string, error) {
 	img, err := remoteImage(identifier, insecureRegistries)
 	if err != nil {
@@ -57,12 +63,20 @@ func remoteImage(identifier string, insecureRegistries map[string]bool) (v1.Imag
 
 	reg := ref.Context().Registry
 	if _, ok := insecureRegistries[reg.Name()]; ok {
-		reg, err = name.NewInsecureRegistry(reg.Name(), name.StrictValidation)
+		reg, err = getInsecureRegistryImpl(reg.Name())
 		if err != nil {
 			logrus.Warnf("error getting insecure registry: %s\nremote references may not be retrieved", err.Error())
 		}
 	}
 
+	return getRemoteImageImpl(ref, reg)
+}
+
+func getInsecureRegistry(regName string) (name.Registry, error) {
+	return name.NewInsecureRegistry(regName, name.StrictValidation)
+}
+
+func getRemoteImage(ref name.Reference, reg name.Registry) (v1.Image, error) {
 	auth, err := authn.DefaultKeychain.Resolve(reg)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting default keychain auth")

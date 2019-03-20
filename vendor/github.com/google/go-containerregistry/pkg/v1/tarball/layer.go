@@ -15,6 +15,7 @@
 package tarball
 
 import (
+	"bytes"
 	"compress/gzip"
 	"io"
 	"io/ioutil"
@@ -101,6 +102,18 @@ func LayerFromOpener(opener Opener) (v1.Layer, error) {
 		compressed: compressed,
 		opener:     opener,
 	}, nil
+}
+
+// LayerFromReader returns a v1.Layer given a io.Reader.
+func LayerFromReader(reader io.Reader) (v1.Layer, error) {
+	// Buffering due to Opener requiring multiple calls.
+	a, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+	return LayerFromOpener(func() (io.ReadCloser, error) {
+		return ioutil.NopCloser(bytes.NewReader(a)), nil
+	})
 }
 
 func computeDigest(opener Opener, compressed bool) (v1.Hash, int64, error) {
