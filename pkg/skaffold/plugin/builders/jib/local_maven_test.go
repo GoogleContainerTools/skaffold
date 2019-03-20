@@ -39,6 +39,7 @@ func NewTestMavenBuilder() *MavenBuilder {
 		opts:        &config.SkaffoldOptions{},
 	}
 }
+
 func TestMavenVerifyJibPackageGoal(t *testing.T) {
 	var testCases = []struct {
 		requiredGoal string
