@@ -21,7 +21,7 @@ GREEN='\033[0;32m'
 RESET='\033[0m'
 
 echo "Running go tests..."
-go test -count=1 -race -cover -short -timeout 60s -coverprofile=out/coverage.txt -covermode=atomic ./... | grep -v 'no test files' | sed ''/PASS/s//$(printf "${GREEN}PASS${RESET}")/'' | sed ''/FAIL/s//$(printf "${RED}FAIL${RESET}")/''
+go test -count=1 -race -cover -short -timeout=60s -coverprofile=out/coverage.txt -coverpkg=./... -covermode=atomic ./... | grep -v 'no test files' | sed ''/PASS/s//$(printf "${GREEN}PASS${RESET}")/'' | sed ''/FAIL/s//$(printf "${RED}FAIL${RESET}")/''
 GO_TEST_EXIT_CODE=${PIPESTATUS[0]}
 if [[ $GO_TEST_EXIT_CODE -ne 0 ]]; then
     exit $GO_TEST_EXIT_CODE
