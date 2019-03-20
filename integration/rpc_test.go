@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -29,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 )
@@ -39,24 +41,14 @@ var (
 	waitTime      = 1 * time.Second
 )
 
-func TestEventLog(t *testing.T) {
+func TestEventLogRPC(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
 
-	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
-	defer Run(t, "testdata/dev", "rm", "foo")
-
-	// Run skaffold build first to fail quickly on a build failure
-	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
-
-	// start a skaffold dev loop on an example
-	ns, _, deleteNs := SetupNamespace(t)
-	defer deleteNs()
-
 	addr := "12345"
-	stop := skaffold.Dev("--rpc-port", addr).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
-	defer stop()
+	teardown := setupSkaffoldWithArgs(t, "--rpc-port", addr)
+	defer teardown()
 
 	// start a grpc client and make sure we can connect properly
 	var conn *grpc.ClientConn
@@ -135,26 +127,79 @@ func TestEventLog(t *testing.T) {
 	testutil.CheckDeepEqual(t, 2, buildEntries)
 }
 
-func TestGetState(t *testing.T) {
+func TestEventLogHTTP(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	port := "23456"
+	teardown := setupSkaffoldWithArgs(t, "--rpc-http-port", port)
+	defer teardown()
+	time.Sleep(500 * time.Millisecond) // give skaffold time to process all events
+
+	httpResponse, err := http.Get(fmt.Sprintf("http://localhost:%s/v1/event_log", port))
+	if err != nil {
+		t.Fatalf("error connecting to gRPC REST API: %s", err.Error())
+	}
+	numEntries := 0
+	var logEntries []proto.LogEntry
+	for {
+		e := make([]byte, 1024)
+		l, err := httpResponse.Body.Read(e)
+		if err != nil {
+			t.Errorf("error reading body from http response: %s", err.Error())
+		}
+		e = e[0:l] // remove empty bytes from slice
+
+		// sometimes reads can encompass multiple log entries, since Read() doesn't count newlines as EOF.
+		readEntries := strings.Split(string(e), "\n")
+		for _, entryStr := range readEntries {
+			if entryStr == "" {
+				continue
+			}
+			var entry proto.LogEntry
+			// the HTTP wrapper sticks the proto messages into a map of "result" -> message.
+			// attempting to JSON unmarshal drops necessary proto information, so we just manually
+			// strip the string off the response and unmarshal directly to the proto message
+			entryStr = strings.Replace(entryStr, "{\"result\":", "", 1)
+			entryStr = entryStr[:len(entryStr)-1]
+			if err := jsonpb.UnmarshalString(entryStr, &entry); err != nil {
+				t.Errorf("error converting http response to proto: %s", err.Error())
+			}
+			numEntries++
+			logEntries = append(logEntries, entry)
+		}
+		if numEntries >= numLogEntries {
+			break
+		}
+	}
+
+	metaEntries, buildEntries, deployEntries := 0, 0, 0
+	for _, entry := range logEntries {
+		switch entry.Event.GetEventType().(type) {
+		case *proto.Event_MetaEvent:
+			metaEntries++
+		case *proto.Event_BuildEvent:
+			buildEntries++
+		case *proto.Event_DeployEvent:
+			deployEntries++
+		default:
+		}
+	}
+	// make sure we have exactly 1 meta entry, 2 deploy entries and 2 build entries
+	testutil.CheckDeepEqual(t, 1, metaEntries)
+	testutil.CheckDeepEqual(t, 2, deployEntries)
+	testutil.CheckDeepEqual(t, 2, buildEntries)
+}
+
+func TestGetStateRPC(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
 
-	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
-	defer Run(t, "testdata/dev", "rm", "foo")
-
-	// Run skaffold build first to fail quickly on a build failure
-	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
-
-	// start a skaffold dev loop on an example
-	ns, _, deleteNs := SetupNamespace(t)
-	defer deleteNs()
-
 	// start a skaffold dev loop on an example
 	rpcAddr := "12345"
-	httpAddr := "23456"
-	stop := skaffold.Dev("--rpc-port", rpcAddr, "--rpc-http-port", httpAddr).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
-	defer stop()
+	teardown := setupSkaffoldWithArgs(t, "--rpc-port", rpcAddr)
+	defer teardown()
 
 	// start a grpc client and make sure we can connect properly
 	var conn *grpc.ClientConn
@@ -199,8 +244,22 @@ func TestGetState(t *testing.T) {
 		t.Fatalf("error retrieving state: %v\n", err)
 	}
 
+	for _, v := range grpcState.BuildState.Artifacts {
+		testutil.CheckDeepEqual(t, event.Complete, v)
+	}
+	testutil.CheckDeepEqual(t, event.Complete, grpcState.DeployState.Status)
+}
+
+func TestGetStateHTTP(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	port := "12345"
+	teardown := setupSkaffoldWithArgs(t, "--rpc-http-port", port)
+	defer teardown()
+
 	// retrieve the state via HTTP as well, and verify the result is the same
-	httpResponse, err := http.Get(fmt.Sprintf("http://localhost:%s/v1/state", httpAddr))
+	httpResponse, err := http.Get(fmt.Sprintf("http://localhost:%s/v1/state", port))
 	if err != nil {
 		t.Errorf("error connecting to gRPC REST API: %s", err.Error())
 	}
@@ -212,10 +271,26 @@ func TestGetState(t *testing.T) {
 	if err := json.Unmarshal(b, &httpState); err != nil {
 		t.Errorf("error converting http response to proto: %s", err.Error())
 	}
-	testutil.CheckDeepEqual(t, grpcState, &httpState)
-
-	for _, v := range grpcState.BuildState.Artifacts {
+	for _, v := range httpState.BuildState.Artifacts {
 		testutil.CheckDeepEqual(t, event.Complete, v)
 	}
-	testutil.CheckDeepEqual(t, event.Complete, grpcState.DeployState.Status)
+	testutil.CheckDeepEqual(t, event.Complete, httpState.DeployState.Status)
+}
+
+func setupSkaffoldWithArgs(t *testing.T, args ...string) func() {
+	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
+
+	// Run skaffold build first to fail quickly on a build failure
+	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
+
+	// start a skaffold dev loop on an example
+	ns, _, deleteNs := SetupNamespace(t)
+
+	stop := skaffold.Dev(args...).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+
+	return func() {
+		stop()
+		deleteNs()
+		Run(t, "testdata/dev", "rm", "foo")
+	}
 }
