@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -119,39 +120,106 @@ func latestTag(image string, builds []build.Artifact) string {
 	return ""
 }
 
+// Note that we always use Unix-style paths in our destination.
+func slashJoin(pfx, sfx string) string {
+	if pfx == "." || pfx == "" {
+		return sfx
+	}
+	elems := []string{
+		strings.TrimSuffix(pfx, "/"),
+		sfx,
+	}
+	return strings.Join(elems, "/")
+}
+
 func intersect(context string, syncMap map[string]string, files []string, workingDir string) (map[string]string, error) {
 	ret := map[string]string{}
 
+	tripleStarSyncMap, otherSyncMap := segregateSyncMaps(syncMap)
 	for _, f := range files {
 		relPath, err := filepath.Rel(context, f)
 		if err != nil {
 			return nil, errors.Wrapf(err, "changed file %s can't be found relative to context %s", f, context)
 		}
-		var matches bool
-		for p, dst := range syncMap {
-			match, err := doublestar.PathMatch(filepath.FromSlash(p), relPath)
+
+		var match bool
+
+		// First try all tripleStarSyncMaps.
+		match, dst, err := matchTripleStarSyncMap(tripleStarSyncMap, relPath)
+		if err != nil {
+			return nil, err
+		}
+
+		if !match {
+			// Try matching the other rules.
+			match, dst, err = matchOtherSyncMap(otherSyncMap, relPath)
 			if err != nil {
-				return nil, errors.Wrapf(err, "pattern error for %s", relPath)
-			}
-			if match {
-				if filepath.IsAbs(dst) {
-					dst = filepath.ToSlash(filepath.Join(dst, filepath.Base(relPath)))
-				} else {
-					dst = filepath.ToSlash(filepath.Join(workingDir, dst, filepath.Base(relPath)))
-				}
-				// Every file must match at least one sync pattern, if not we'll have to
-				// skip the entire sync
-				matches = true
-				ret[f] = dst
+				return nil, err
 			}
 		}
-		if !matches {
+
+		if !match {
 			logrus.Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
 			return nil, nil
 		}
 
+		// Convert relative destinations to absolute via the workingDir.
+		if dst[0] != '/' {
+			dst = slashJoin(workingDir, dst)
+		}
+
+		// Record the final destination.
+		ret[f] = dst
 	}
+
 	return ret, nil
+}
+
+func segregateSyncMaps(syncMap map[string]string) (tripleStarPattern, doubleStarPattern map[string]string) {
+	tripleStarPattern = make(map[string]string)
+	doubleStarPattern = make(map[string]string)
+	for p, dst := range syncMap {
+		if strings.Contains(p, "***") {
+			tripleStarPattern[p] = dst
+		} else {
+			doubleStarPattern[p] = dst
+		}
+	}
+	return
+}
+
+func matchTripleStarSyncMap(syncMap map[string]string, relPath string) (bool, string, error) {
+	for p, dst := range syncMap {
+		pat := strings.Replace(p, "***", "**", -1)
+		match, err := doublestar.PathMatch(filepath.FromSlash(pat), relPath)
+		if err != nil {
+			return false, "", errors.Wrapf(err, "pattern error for %s", relPath)
+		}
+
+		if match {
+			// Map the paths as a tree from the prefix.
+			subtreePrefix := strings.Split(p, "***")[0]
+			subPath := strings.TrimPrefix(filepath.ToSlash(relPath), subtreePrefix)
+			return true, slashJoin(dst, subPath), nil
+		}
+	}
+	return false, "", nil
+}
+
+func matchOtherSyncMap(syncMap map[string]string, relPath string) (bool, string, error) {
+	for p, dst := range syncMap {
+		match, err := doublestar.PathMatch(filepath.FromSlash(p), relPath)
+		if err != nil {
+			return false, "", errors.Wrapf(err, "pattern error for %s", relPath)
+		}
+
+		if match {
+			// Collapse the paths.
+			subPath := filepath.Base(relPath)
+			return true, slashJoin(dst, filepath.ToSlash(subPath)), nil
+		}
+	}
+	return false, "", nil
 }
 
 func Perform(ctx context.Context, image string, files map[string]string, cmdFn func(context.Context, v1.Pod, v1.Container, map[string]string) []*exec.Cmd, namespaces []string) error {

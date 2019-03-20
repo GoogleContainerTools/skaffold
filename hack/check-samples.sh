@@ -14,13 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-readonly REPO_DIR=$(pwd)
+set -e -o pipefail
 
-pushd ${REPO_DIR}/docs
+EXAMPLES=$(find examples -type d -mindepth 1 -maxdepth 1 -not -empty -exec basename {} \; | sort)
+INTEGRATION_EXAMPLES=$(find integration/examples -type d -mindepth 1 -maxdepth 1 -not -empty -exec basename {} \; | sort)
 
-rm -rf public resources node_modules package-lock.json &&  \
-git submodule deinit -f . && \
-rm -rf themes/docsy/* && \
-rm -rf ${REPO_DIR}/.git/modules/docsy
+if [[ "${EXAMPLES}" != "${INTEGRATION_EXAMPLES}" ]]; then
+  echo "Every code sample that is in ./examples should also be in ./integration/examples"
+  exit 1
+fi
 
-popd

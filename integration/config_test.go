@@ -28,7 +28,7 @@ func TestConfigListForContext(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	out := skaffold.Config("list", "-c", "testdata/config/config.yaml", "-k", "test-context").RunOrFail(t)
+	out := skaffold.Config("list", "-c", "testdata/config/config.yaml", "-k", "test-context").RunOrFailOutput(t)
 
 	testutil.CheckContains(t, "default-repo: context-local-repository", string(out))
 }
@@ -38,7 +38,7 @@ func TestConfigListForAll(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	out := skaffold.Config("list", "-c", "testdata/config/config.yaml", "--all").RunOrFail(t)
+	out := skaffold.Config("list", "-c", "testdata/config/config.yaml", "--all").RunOrFailOutput(t)
 
 	for _, output := range []string{
 		"global:",
@@ -55,7 +55,7 @@ func TestFailToSetUnrecognizedValue(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	_, err := skaffold.Config("set", "doubt-this-will-ever-be-a-config-key", "VALUE", "-c", "testdata/config/config.yaml", "--global").Run(t)
+	err := skaffold.Config("set", "doubt-this-will-ever-be-a-config-key", "VALUE", "-c", "testdata/config/config.yaml", "--global").Run(t)
 
 	testutil.CheckError(t, true, err)
 }
@@ -69,7 +69,7 @@ func TestSetDefaultRepoForContext(t *testing.T) {
 	defer delete()
 
 	skaffold.Config("set", "default-repo", "REPO1", "-c", file, "-k", "test-context").RunOrFail(t)
-	out := skaffold.Config("list", "-c", file, "-k", "test-context").RunOrFail(t)
+	out := skaffold.Config("list", "-c", file, "-k", "test-context").RunOrFailOutput(t)
 
 	testutil.CheckContains(t, "default-repo: REPO1", string(out))
 }
@@ -83,7 +83,7 @@ func TestSetGlobalDefaultRepo(t *testing.T) {
 	defer delete()
 
 	skaffold.Config("set", "default-repo", "REPO2", "-c", file, "--global").RunOrFail(t)
-	out := skaffold.Config("list", "-c", file, "--all").RunOrFail(t)
+	out := skaffold.Config("list", "-c", file, "--all").RunOrFailOutput(t)
 
 	testutil.CheckContains(t, "default-repo: REPO2", string(out))
 }

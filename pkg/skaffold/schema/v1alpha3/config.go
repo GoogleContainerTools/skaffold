@@ -154,19 +154,19 @@ type KustomizeDeploy struct {
 }
 
 type HelmRelease struct {
-	Name              string                 `yaml:"name"`
-	ChartPath         string                 `yaml:"chartPath"`
-	ValuesFiles       []string               `yaml:"valuesFiles"`
-	Values            map[string]string      `yaml:"values,omitempty"`
-	Namespace         string                 `yaml:"namespace"`
-	Version           string                 `yaml:"version"`
-	SetValues         map[string]string      `yaml:"setValues"`
-	SetValueTemplates map[string]string      `yaml:"setValueTemplates"`
-	Wait              bool                   `yaml:"wait"`
-	RecreatePods      bool                   `yaml:"recreatePods"`
-	Overrides         map[string]interface{} `yaml:"overrides"`
-	Packaged          *HelmPackaged          `yaml:"packaged"`
-	ImageStrategy     HelmImageStrategy      `yaml:"imageStrategy"`
+	Name              string             `yaml:"name"`
+	ChartPath         string             `yaml:"chartPath"`
+	ValuesFiles       []string           `yaml:"valuesFiles"`
+	Values            map[string]string  `yaml:"values,omitempty"`
+	Namespace         string             `yaml:"namespace"`
+	Version           string             `yaml:"version"`
+	SetValues         map[string]string  `yaml:"setValues"`
+	SetValueTemplates map[string]string  `yaml:"setValueTemplates"`
+	Wait              bool               `yaml:"wait"`
+	RecreatePods      bool               `yaml:"recreatePods"`
+	Overrides         util.HelmOverrides `yaml:"overrides"`
+	Packaged          *HelmPackaged      `yaml:"packaged"`
+	ImageStrategy     HelmImageStrategy  `yaml:"imageStrategy"`
 }
 
 // HelmPackaged represents parameters for packaging helm chart.

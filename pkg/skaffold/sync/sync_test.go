@@ -275,6 +275,93 @@ func TestNewSyncItem(t *testing.T) {
 				Delete: map[string]string{},
 			},
 		},
+		{
+			description: "triple-stars mean subtrees",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: map[string]string{
+					"dir1/***/*.js": ".",
+				},
+				Workspace: ".",
+			},
+			workingDir: "/some/dir",
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: watch.Events{
+				Added: []string{filepath.Join("dir1", "dir2/node.js")},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string]string{
+					filepath.Join("dir1", "dir2/node.js"): "/some/dir/dir2/node.js",
+				},
+				Delete: map[string]string{},
+			},
+		},
+		{
+			description: "triple-stars take precedence",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: map[string]string{
+					"dir1/***/*.js":   ".",
+					"dir1/**/**/*.js": ".",
+				},
+				Workspace: ".",
+			},
+			workingDir: "/some/dir",
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: watch.Events{
+				Added: []string{filepath.Join("dir1", "dir2/node.js")},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string]string{
+					filepath.Join("dir1", "dir2/node.js"): "/some/dir/dir2/node.js",
+				},
+				Delete: map[string]string{},
+			},
+		},
+		{
+			description: "stars work with absolute paths",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: map[string]string{
+					"dir1a/***/*.js": "/tstar",
+					"dir1b/**/*.js":  "/dstar",
+				},
+				Workspace: ".",
+			},
+			workingDir: "/some/dir",
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: watch.Events{
+				Added: []string{
+					filepath.Join("dir1a", "dir2/dir3/node.js"),
+					filepath.Join("dir1b", "dir2/dir3/node.js"),
+				},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string]string{
+					filepath.Join("dir1a", "dir2/dir3/node.js"): "/tstar/dir2/dir3/node.js",
+					filepath.Join("dir1b", "dir2/dir3/node.js"): "/dstar/node.js",
+				},
+				Delete: map[string]string{},
+			},
+		},
 	}
 
 	for _, test := range tests {

@@ -98,7 +98,7 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 
 	switch {
 	case a.DockerArtifact != nil:
-		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact)
+		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs)
 
 	case a.BazelArtifact != nil:
 		paths, err = bazel.GetDependencies(ctx, a.Workspace, a.BazelArtifact)

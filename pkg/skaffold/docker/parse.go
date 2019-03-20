@@ -24,7 +24,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/fileutils"
@@ -278,13 +277,13 @@ func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 
 // GetDependencies finds the sources dependencies for the given docker artifact.
 // All paths are relative to the workspace.
-func GetDependencies(ctx context.Context, workspace string, a *latest.DockerArtifact) ([]string, error) {
-	absDockerfilePath, err := NormalizeDockerfilePath(workspace, a.DockerfilePath)
+func GetDependencies(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string) ([]string, error) {
+	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "normalizing dockerfile path")
 	}
 
-	deps, err := readDockerfile(workspace, absDockerfilePath, a.BuildArgs)
+	deps, err := readDockerfile(workspace, absDockerfilePath, buildArgs)
 	if err != nil {
 		return nil, err
 	}
@@ -366,8 +365,8 @@ func GetDependencies(ctx context.Context, workspace string, a *latest.DockerArti
 	}
 
 	// Always add dockerfile even if it's .dockerignored. The daemon will need it anyways.
-	if !filepath.IsAbs(a.DockerfilePath) {
-		files[a.DockerfilePath] = true
+	if !filepath.IsAbs(dockerfilePath) {
+		files[dockerfilePath] = true
 	} else {
 		files[absDockerfilePath] = true
 	}

@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -511,10 +510,7 @@ func TestGetDependencies(t *testing.T) {
 			}
 
 			workspace := tmpDir.Path(test.workspace)
-			deps, err := GetDependencies(context.Background(), workspace, &latest.DockerArtifact{
-				DockerfilePath: "Dockerfile",
-				BuildArgs:      test.buildArgs,
-			})
+			deps, err := GetDependencies(context.Background(), workspace, "Dockerfile", test.buildArgs)
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
 			testutil.CheckDeepEqual(t, test.fetched, imageFetcher.fetched)
