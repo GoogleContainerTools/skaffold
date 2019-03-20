@@ -185,7 +185,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	// Dependency builds should be skipped when trying to install a chart
 	// with local dependencies in the chart folder, e.g. the istio helm chart.
 	// This decision is left to the user.
-	if !r.SkipDependencyBuild {
+	if !r.SkipBuildDependencies {
 		// First build dependencies.
 		logrus.Infof("Building helm dependencies...")
 		if err := h.helm(ctx, out, "dep", "build", r.ChartPath); err != nil {

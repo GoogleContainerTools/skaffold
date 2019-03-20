@@ -1036,7 +1036,7 @@
           "x-intellij-html-description": "key-value pairs. If present, Skaffold will send <code>--set</code> flag to Helm CLI and append all pairs after the flag.",
           "default": "{}"
         },
-        "skipDependencyBuild": {
+        "skipBuildDependencies": {
           "type": "boolean",
           "description": "should build dependencies be skipped.",
           "x-intellij-html-description": "should build dependencies be skipped.",
@@ -1083,7 +1083,7 @@
         "setValueTemplates",
         "wait",
         "recreatePods",
-        "skipDependencyBuild",
+        "skipBuildDependencies",
         "overrides",
         "packaged",
         "imageStrategy"

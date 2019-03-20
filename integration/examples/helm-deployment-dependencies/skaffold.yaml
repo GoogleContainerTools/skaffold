@@ -13,7 +13,7 @@ deploy:
       #wait: true
       #valuesFiles:
       #- helm-skaffold-values.yaml
-      skipDependencyBuild: true # Skip helm dep build
+      skipBuildDependencies: true # Skip helm dep build
       values:
         image: gcr.io/k8s-skaffold/skaffold-helm
         "skaffold-helm-subchart.image": gcr.io/k8s-skaffold/skaffold-helm

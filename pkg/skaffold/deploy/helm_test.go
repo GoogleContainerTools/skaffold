@@ -88,7 +88,7 @@ var testDeployRecreatePodsConfig = &latest.HelmDeploy{
 	},
 }
 
-var testDeploySkipDependencyBuildConfig = &latest.HelmDeploy{
+var testDeploySkipBuildDependenciesConfig = &latest.HelmDeploy{
 	Releases: []latest.HelmRelease{
 		{
 			Name:      "skaffold-helm",
@@ -102,7 +102,7 @@ var testDeploySkipDependencyBuildConfig = &latest.HelmDeploy{
 			SetValues: map[string]string{
 				"some.key": "somevalue",
 			},
-			SkipDependencyBuild: true,
+			SkipBuildDependencies: true,
 		},
 	},
 }
@@ -176,12 +176,12 @@ var testDeployWithTemplatedName = &latest.HelmDeploy{
 	},
 }
 
-var testDeploySkipDependencyBuild = &latest.HelmDeploy{
+var testDeploySkipBuildDependencies = &latest.HelmDeploy{
 	Releases: []latest.HelmRelease{
 		{
-			Name:                "skaffold-helm",
-			ChartPath:           "stable/chartmuseum",
-			SkipDependencyBuild: true,
+			Name:                  "skaffold-helm",
+			ChartPath:             "stable/chartmuseum",
+			SkipBuildDependencies: true,
 		},
 	},
 }
@@ -189,9 +189,9 @@ var testDeploySkipDependencyBuild = &latest.HelmDeploy{
 var testDeployRemoteChart = &latest.HelmDeploy{
 	Releases: []latest.HelmRelease{
 		{
-			Name:                "skaffold-helm-remote",
-			ChartPath:           "stable/chartmuseum",
-			SkipDependencyBuild: false,
+			Name:                  "skaffold-helm-remote",
+			ChartPath:             "stable/chartmuseum",
+			SkipBuildDependencies: false,
 		},
 	},
 }
@@ -303,9 +303,9 @@ func TestHelmDeploy(t *testing.T) {
 			builds:      testBuilds,
 		},
 		{
-			description: "deploy success with skipDependencyBuild",
+			description: "deploy success with skipBuildDependencies",
 			cmd:         &MockHelm{t: t},
-			deployer:    NewHelmDeployer(testDeploySkipDependencyBuildConfig, testKubeContext, testNamespace, ""),
+			deployer:    NewHelmDeployer(testDeploySkipBuildDependenciesConfig, testKubeContext, testNamespace, ""),
 			builds:      testBuilds,
 		},
 		{
@@ -316,13 +316,13 @@ func TestHelmDeploy(t *testing.T) {
 			shouldErr:   true,
 		},
 		{
-			description: "deploy success remote chart with skipDependencyBuild",
+			description: "deploy success remote chart with skipBuildDependencies",
 			cmd:         &MockHelm{t: t},
-			deployer:    NewHelmDeployer(testDeploySkipDependencyBuild, testKubeContext, testNamespace, ""),
+			deployer:    NewHelmDeployer(testDeploySkipBuildDependencies, testKubeContext, testNamespace, ""),
 			builds:      testBuilds,
 		},
 		{
-			description: "deploy error remote chart without skipDependencyBuild",
+			description: "deploy error remote chart without skipBuildDependencies",
 			cmd: &MockHelm{
 				t:         t,
 				depResult: fmt.Errorf("unexpected error"),
