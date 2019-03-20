@@ -21,7 +21,7 @@ GREEN='\033[0;32m'
 RESET='\033[0m'
 
 echo "Running go tests..."
-go test -count=1 -race -cover -short -timeout=60s -coverprofile=out/coverage.txt -covermode=atomic ./... | awk -v FAIL="${RED}FAIL${RESET}" '! /no test files/ { gsub("FAIL", FAIL, $0); print $0 }'
+go test -count=1 -race -cover -short -timeout=60s -coverprofile=out/coverage.txt ./... | awk -v FAIL="${RED}FAIL${RESET}" '! /no test files/ { gsub("FAIL", FAIL, $0); print $0 }'
 
 GO_TEST_EXIT_CODE=${PIPESTATUS[0]}
 if [[ $GO_TEST_EXIT_CODE -ne 0 ]]; then
