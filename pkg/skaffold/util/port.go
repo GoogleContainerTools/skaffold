@@ -54,12 +54,15 @@ func GetAvailablePort(port int, forwardedPorts *sync.Map) int {
 	}
 
 	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if l != nil {
-		l.Close()
-	}
 	if err != nil {
 		return -1
 	}
+
+	l.Close()
+	// Here, we introduce a race condition by closing before we
+	// update the `forwardedPorts` map.
+	// Another go routine could try the same port and succeed.
+
 	p := l.Addr().(*net.TCPAddr).Port
 	forwardedPorts.Store(p, true)
 	return p
@@ -69,9 +72,16 @@ func isPortAvailable(p int, forwardedPorts *sync.Map) bool {
 	if _, ok := forwardedPorts.Load(p); ok {
 		return false
 	}
+
 	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", p))
-	if l != nil {
-		defer l.Close()
+	if err != nil {
+		return false
 	}
-	return err == nil
+
+	l.Close()
+	// Here, we introduce a race condition by closing before we
+	// update the `forwardedPorts` map.
+	// Another go routine could try the same port and succeed.
+
+	return true
 }
