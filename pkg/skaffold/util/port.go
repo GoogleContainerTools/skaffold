@@ -31,24 +31,21 @@ import (
 
 // See https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt,
 func GetAvailablePort(port int, forwardedPorts *sync.Map) int {
-	if isPortAvailable(port, forwardedPorts) {
-		forwardedPorts.Store(port, true)
+	if getPortIfAvailable(port, forwardedPorts) {
 		return port
 	}
 
 	// try the next 10 ports after the provided one
 	for i := 0; i < 10; i++ {
 		port++
-		if isPortAvailable(port, forwardedPorts) {
+		if getPortIfAvailable(port, forwardedPorts) {
 			logrus.Debugf("found open port: %d", port)
-			forwardedPorts.Store(port, true)
 			return port
 		}
 	}
 
 	for port = 4503; port <= 4533; port++ {
-		if isPortAvailable(port, forwardedPorts) {
-			forwardedPorts.Store(port, true)
+		if getPortIfAvailable(port, forwardedPorts) {
 			return port
 		}
 	}
@@ -58,18 +55,16 @@ func GetAvailablePort(port int, forwardedPorts *sync.Map) int {
 		return -1
 	}
 
-	l.Close()
-	// Here, we introduce a race condition by closing before we
-	// update the `forwardedPorts` map.
-	// Another go routine could try the same port and succeed.
-
 	p := l.Addr().(*net.TCPAddr).Port
+
 	forwardedPorts.Store(p, true)
+	l.Close()
 	return p
 }
 
-func isPortAvailable(p int, forwardedPorts *sync.Map) bool {
-	if _, ok := forwardedPorts.Load(p); ok {
+func getPortIfAvailable(p int, forwardedPorts *sync.Map) bool {
+	alreadyUsed, loaded := forwardedPorts.LoadOrStore(p, true)
+	if loaded && alreadyUsed.(bool) {
 		return false
 	}
 
@@ -79,9 +74,5 @@ func isPortAvailable(p int, forwardedPorts *sync.Map) bool {
 	}
 
 	l.Close()
-	// Here, we introduce a race condition by closing before we
-	// update the `forwardedPorts` map.
-	// Another go routine could try the same port and succeed.
-
 	return true
 }
