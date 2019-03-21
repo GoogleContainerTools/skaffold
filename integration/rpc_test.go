@@ -37,9 +37,10 @@ import (
 )
 
 var (
-	retries       = 20
-	numLogEntries = 5
-	waitTime      = 1 * time.Second
+	connectionRetries = 20
+	stateRetries      = 5
+	numLogEntries     = 5
+	waitTime          = 1 * time.Second
 )
 
 func TestEventLogRPC(t *testing.T) {
@@ -61,7 +62,7 @@ func TestEventLogRPC(t *testing.T) {
 		if err != nil {
 			t.Logf("unable to establish skaffold grpc connection: retrying...")
 			attempts++
-			if attempts == retries {
+			if attempts == connectionRetries {
 				t.Fatalf("error establishing skaffold grpc connection")
 			}
 
@@ -84,7 +85,7 @@ func TestEventLogRPC(t *testing.T) {
 		if err == nil {
 			break
 		}
-		if attempts < retries {
+		if attempts < connectionRetries {
 			attempts++
 			t.Logf("waiting for connection...")
 			time.Sleep(3 * time.Second)
@@ -213,7 +214,7 @@ func TestGetStateRPC(t *testing.T) {
 		if err != nil {
 			t.Logf("unable to establish skaffold grpc connection: retrying...")
 			attempts++
-			if attempts == retries {
+			if attempts == connectionRetries {
 				t.Fatalf("error establishing skaffold grpc connection")
 			}
 
@@ -229,15 +230,46 @@ func TestGetStateRPC(t *testing.T) {
 	ctx, ctxCancel := context.WithCancel(context.Background())
 	defer ctxCancel()
 
-	// retrieve the state and make sure everything looks correct
-	var grpcState *proto.State
+	// try a few times and wait around until we see the build is complete, or fail.
 	attempts = 0
+outerLoop:
+	for {
+		grpcState := retrieveRPCState(ctx, t, client)
+		if attempts == stateRetries {
+			// fail condition has been reached: abbreviated way of
+			// only logging the artifacts that didn't reach completion.
+			for _, v := range grpcState.BuildState.Artifacts {
+				testutil.CheckDeepEqual(t, event.Complete, v)
+			}
+			testutil.CheckDeepEqual(t, event.Complete, grpcState.DeployState.Status)
+			break
+		}
+		for _, v := range grpcState.BuildState.Artifacts {
+			if v != event.Complete {
+				time.Sleep(500 * time.Millisecond)
+				attempts++
+				continue outerLoop
+			}
+		}
+		if grpcState.DeployState.Status != event.Complete {
+			time.Sleep(500 * time.Millisecond)
+			attempts++
+			continue outerLoop
+		}
+		break
+	}
+}
+
+func retrieveRPCState(ctx context.Context, t *testing.T, client proto.SkaffoldServiceClient) *proto.State {
+	var grpcState *proto.State
+	var err error
+	attempts := 0
 	for {
 		grpcState, err = client.GetState(ctx, &empty.Empty{})
 		if err == nil {
 			break
 		}
-		if attempts < retries {
+		if attempts < connectionRetries {
 			attempts++
 			t.Logf("waiting for connection...")
 			time.Sleep(3 * time.Second)
@@ -245,11 +277,25 @@ func TestGetStateRPC(t *testing.T) {
 		}
 		t.Fatalf("error retrieving state: %v\n", err)
 	}
+	return grpcState
+}
 
-	for _, v := range grpcState.BuildState.Artifacts {
-		testutil.CheckDeepEqual(t, event.Complete, v)
+func retrieveHTTPState(t *testing.T, httpAddr string) proto.State {
+	var httpState proto.State
+
+	// retrieve the state via HTTP as well, and verify the result is the same
+	httpResponse, err := http.Get(fmt.Sprintf("http://localhost:%s/v1/state", httpAddr))
+	if err != nil {
+		t.Fatalf("error connecting to gRPC REST API: %s", err.Error())
 	}
-	testutil.CheckDeepEqual(t, event.Complete, grpcState.DeployState.Status)
+	b, err := ioutil.ReadAll(httpResponse.Body)
+	if err != nil {
+		t.Errorf("error reading body from http response: %s", err.Error())
+	}
+	if err := json.Unmarshal(b, &httpState); err != nil {
+		t.Errorf("error converting http response to proto: %s", err.Error())
+	}
+	return httpState
 }
 
 func TestGetStateHTTP(t *testing.T) {
@@ -262,23 +308,31 @@ func TestGetStateHTTP(t *testing.T) {
 	defer teardown()
 	time.Sleep(3 * time.Second) // give skaffold time to process all events
 
-	// retrieve the state via HTTP as well, and verify the result is the same
-	httpResponse, err := http.Get(fmt.Sprintf("http://localhost:%s/v1/state", httpAddr))
-	if err != nil {
-		t.Fatalf("error connecting to gRPC REST API: %s", err.Error())
+	attempts := 0
+outerLoop:
+	for {
+		httpState := retrieveHTTPState(t, httpAddr)
+		if attempts == stateRetries {
+			for _, v := range httpState.BuildState.Artifacts {
+				testutil.CheckDeepEqual(t, event.Complete, v)
+			}
+			testutil.CheckDeepEqual(t, event.Complete, httpState.DeployState.Status)
+			break
+		}
+		for _, v := range httpState.BuildState.Artifacts {
+			if v != event.Complete {
+				time.Sleep(1 * time.Second)
+				attempts++
+				continue outerLoop
+			}
+		}
+		if httpState.DeployState.Status != event.Complete {
+			time.Sleep(1 * time.Second)
+			attempts++
+			continue outerLoop
+		}
+		break
 	}
-	b, err := ioutil.ReadAll(httpResponse.Body)
-	if err != nil {
-		t.Errorf("error reading body from http response: %s", err.Error())
-	}
-	var httpState proto.State
-	if err := json.Unmarshal(b, &httpState); err != nil {
-		t.Errorf("error converting http response to proto: %s", err.Error())
-	}
-	for _, v := range httpState.BuildState.Artifacts {
-		testutil.CheckDeepEqual(t, event.Complete, v)
-	}
-	testutil.CheckDeepEqual(t, event.Complete, httpState.DeployState.Status)
 }
 
 func setupSkaffoldWithArgs(t *testing.T, args ...string) func() {
