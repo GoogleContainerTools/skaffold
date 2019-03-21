@@ -18,19 +18,26 @@ package docker
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
-	plugin "github.com/hashicorp/go-plugin"
+	"github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-plugin"
 )
 
 // Execute an image build with docker
-func Execute() error {
-	// pluginMap is the map of plugins we can dispense.
-	var pluginMap = map[string]plugin.Plugin{
-		"docker": &shared.BuilderPlugin{Impl: NewBuilder()},
-	}
+func Execute(pluginLogLevel hclog.Level) func() error {
+	return func() error {
+		// pluginMap is the map of plugins we can dispense.
+		var pluginMap = map[string]plugin.Plugin{
+			"docker": &shared.BuilderPlugin{Impl: NewBuilder()},
+		}
 
-	plugin.Serve(&plugin.ServeConfig{
-		HandshakeConfig: shared.Handshake,
-		Plugins:         pluginMap,
-	})
-	return nil
+		plugin.Serve(&plugin.ServeConfig{
+			Logger: hclog.New(&hclog.LoggerOptions{
+				Level: pluginLogLevel,
+			}),
+			HandshakeConfig: shared.Handshake,
+			Plugins:         pluginMap,
+		})
+
+		return nil
+	}
 }
