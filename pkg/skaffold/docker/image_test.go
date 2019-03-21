@@ -26,9 +26,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-containerregistry/pkg/name"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/random"
 )
 
 func TestMain(m *testing.M) {
@@ -316,73 +313,6 @@ func TestRepoDigest(t *testing.T) {
 				return
 			}
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
-		})
-	}
-}
-
-func TestInsecureRegistry(t *testing.T) {
-	called := false // variable to make sure we've called our getInsecureRegistry function
-	getInsecureRegistryImpl = func(reg string) (name.Registry, error) {
-		called = true
-		return name.Registry{}, nil
-	}
-	getRemoteImageImpl = func(ref name.Reference, reg name.Registry) (v1.Image, error) {
-		return random.Image(0, 0)
-	}
-
-	tests := []struct {
-		name               string
-		image              string
-		insecureRegistries map[string]bool
-		insecure           bool
-		shouldErr          bool
-	}{
-		{
-			name:               "secure image",
-			image:              "gcr.io/secure/image",
-			insecureRegistries: map[string]bool{},
-		},
-		{
-			name:  "insecure image",
-			image: "my.insecure.registry/image",
-			insecureRegistries: map[string]bool{
-				"my.insecure.registry": true,
-			},
-			insecure: true,
-		},
-		{
-			name:      "insecure image not provided by user",
-			image:     "my.insecure.registry/image",
-			insecure:  true,
-			shouldErr: true,
-		},
-		{
-			name:  "secure image provided in insecure registries list",
-			image: "gcr.io/secure/image",
-			insecureRegistries: map[string]bool{
-				"gcr.io": true,
-			},
-			shouldErr: true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			_, err := remoteImage(test.image, test.insecureRegistries)
-			if err != nil {
-				t.Errorf("error calling remoteImage: %s", err.Error())
-			}
-			if test.insecure && !called { // error condition
-				if !test.shouldErr {
-					t.Errorf("getInsecureRegistry not called for insecure registry")
-				}
-			}
-			if !test.insecure && called { // error condition
-				if !test.shouldErr {
-					t.Errorf("getInsecureRegistry called for secure registry")
-				}
-			}
-			called = false
 		})
 	}
 }

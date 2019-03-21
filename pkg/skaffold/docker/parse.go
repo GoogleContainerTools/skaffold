@@ -100,7 +100,7 @@ func fromInstruction(node *parser.Node) from {
 	}
 }
 
-func onbuildInstructions(nodes []*parser.Node, insecureRegistries map[string]bool) ([]*parser.Node, error) {
+func onbuildInstructions(nodes []*parser.Node) ([]*parser.Node, error) {
 	var instructions []string
 
 	stages := map[string]bool{}
@@ -121,7 +121,7 @@ func onbuildInstructions(nodes []*parser.Node, insecureRegistries map[string]boo
 		logrus.Debugf("Checking base image %s for ONBUILD triggers.", from.image)
 
 		// Image names are case SENSITIVE
-		img, err := RetrieveImage(from.image, insecureRegistries)
+		img, err := RetrieveImage(from.image)
 		if err != nil {
 			logrus.Warnf("Error processing base image (%s) for ONBUILD triggers: %s. Dependencies may be incomplete.", from.image, err)
 			continue
@@ -167,7 +167,7 @@ func copiedFiles(nodes []*parser.Node) ([][]string, error) {
 	return copied, nil
 }
 
-func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]string, error) {
+func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*string) ([]string, error) {
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "opening dockerfile: %s", absDockerfilePath)
@@ -183,7 +183,7 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 
 	expandBuildArgs(dockerfileLines, buildArgs)
 
-	instructions, err := onbuildInstructions(dockerfileLines, insecureRegistries)
+	instructions, err := onbuildInstructions(dockerfileLines)
 	if err != nil {
 		return nil, errors.Wrap(err, "listing ONBUILD instructions")
 	}
@@ -256,13 +256,13 @@ func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 
 // GetDependencies finds the sources dependencies for the given docker artifact.
 // All paths are relative to the workspace.
-func GetDependencies(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]string, error) {
+func GetDependencies(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string) ([]string, error) {
 	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "normalizing dockerfile path")
 	}
 
-	deps, err := readDockerfile(workspace, absDockerfilePath, buildArgs, insecureRegistries)
+	deps, err := readDockerfile(workspace, absDockerfilePath, buildArgs)
 	if err != nil {
 		return nil, err
 	}
@@ -362,8 +362,8 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 	return dependencies, nil
 }
 
-func retrieveImage(image string, insecureRegistries map[string]bool) (*v1.ConfigFile, error) {
-	localDaemon, err := NewAPIClient(insecureRegistries) // Cached after first call
+func retrieveImage(image string) (*v1.ConfigFile, error) {
+	localDaemon, err := NewAPIClient() // Cached after first call
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}

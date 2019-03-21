@@ -32,17 +32,16 @@ import (
 type Builder struct {
 	cfg *latest.LocalBuild
 
-	localDocker        docker.LocalDaemon
-	localCluster       bool
-	pushImages         bool
-	skipTests          bool
-	kubeContext        string
-	insecureRegistries map[string]bool
+	localDocker  docker.LocalDaemon
+	localCluster bool
+	pushImages   bool
+	skipTests    bool
+	kubeContext  string
 }
 
 // NewBuilder returns an new instance of a local Builder.
-func NewBuilder(cfg *latest.LocalBuild, kubeContext string, skipTests bool, insecureRegistries map[string]bool) (*Builder, error) {
-	localDocker, err := docker.NewAPIClient(insecureRegistries)
+func NewBuilder(cfg *latest.LocalBuild, kubeContext string, skipTests bool) (*Builder, error) {
+	localDocker, err := docker.NewAPIClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
@@ -61,13 +60,12 @@ func NewBuilder(cfg *latest.LocalBuild, kubeContext string, skipTests bool, inse
 	}
 
 	return &Builder{
-		cfg:                cfg,
-		kubeContext:        kubeContext,
-		localDocker:        localDocker,
-		localCluster:       localCluster,
-		pushImages:         pushImages,
-		skipTests:          skipTests,
-		insecureRegistries: insecureRegistries,
+		cfg:          cfg,
+		kubeContext:  kubeContext,
+		localDocker:  localDocker,
+		localCluster: localCluster,
+		pushImages:   pushImages,
+		skipTests:    skipTests,
 	}, nil
 }
 

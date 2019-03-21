@@ -52,7 +52,7 @@ type Item struct {
 	Delete map[string]string
 }
 
-func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
+func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact) (*Item, error) {
 	// If there are no changes, short circuit and don't sync anything
 	if !e.HasChanged() || len(a.Sync) == 0 {
 		return nil, nil
@@ -63,7 +63,7 @@ func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact, insecu
 		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
 	}
 
-	wd, err := WorkingDir(tag, insecureRegistries)
+	wd, err := WorkingDir(tag)
 	if err != nil {
 		return nil, errors.Wrapf(err, "retrieving working dir for %s", tag)
 	}
@@ -90,14 +90,14 @@ func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact, insecu
 	}, nil
 }
 
-func retrieveWorkingDir(tagged string, insecureRegistries map[string]bool) (string, error) {
+func retrieveWorkingDir(tagged string) (string, error) {
 	var cf *registry_v1.ConfigFile
 	var err error
 
-	localDocker, err := docker.NewAPIClient(insecureRegistries)
+	localDocker, err := docker.NewAPIClient()
 	if err != nil {
 		// No local Docker is available
-		cf, err = docker.RetrieveRemoteConfig(tagged, insecureRegistries)
+		cf, err = docker.RetrieveRemoteConfig(tagged)
 	} else {
 		cf, err = localDocker.ConfigFile(context.Background(), tagged)
 	}

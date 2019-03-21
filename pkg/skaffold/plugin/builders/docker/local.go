@@ -50,7 +50,7 @@ func (b *Builder) local(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 		return nil, errors.Wrap(err, "getting current cluster context")
 	}
 	b.KubeContext = kubeContext
-	localDocker, err := docker.NewAPIClient(b.insecureRegistries)
+	localDocker, err := docker.NewAPIClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
