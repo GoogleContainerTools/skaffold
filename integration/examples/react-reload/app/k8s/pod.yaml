@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: react
+spec:
+  containers:
+  - name: react
+    image: gcr.io/k8s-skaffold/react-reload
+    ports:
+    - containerPort: 8080
