@@ -18,7 +18,6 @@ package initializer
 
 import (
 	"bytes"
-	"os"
 	"strings"
 	"testing"
 
@@ -27,7 +26,7 @@ import (
 
 func TestPrintAnalyzeJSON(t *testing.T) {
 	tests := []struct {
-		name        string
+		description string
 		dockerfiles []string
 		images      []string
 		skipBuild   bool
@@ -35,28 +34,28 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 		expected    string
 	}{
 		{
-			name:        "dockerfile and image",
+			description: "dockerfile and image",
 			dockerfiles: []string{"Dockerfile", "Dockerfile_2"},
 			images:      []string{"image1", "image2"},
 			expected:    "{\"dockerfiles\":[\"Dockerfile\",\"Dockerfile_2\"],\"images\":[\"image1\",\"image2\"]}",
 		},
 		{
-			name:      "no dockerfile, skip build",
-			images:    []string{"image1", "image2"},
-			skipBuild: true,
-			expected:  "{\"images\":[\"image1\",\"image2\"]}"},
+			description: "no dockerfile, skip build",
+			images:      []string{"image1", "image2"},
+			skipBuild:   true,
+			expected:    "{\"images\":[\"image1\",\"image2\"]}"},
 		{
-			name:      "no dockerfile",
-			images:    []string{"image1", "image2"},
-			shouldErr: true,
+			description: "no dockerfile",
+			images:      []string{"image1", "image2"},
+			shouldErr:   true,
 		},
 		{
-			name:      "no dockerfiles or images",
-			shouldErr: true,
+			description: "no dockerfiles or images",
+			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		t.Run(test.description, func(t *testing.T) {
 			out := bytes.NewBuffer([]byte{})
 			err := printAnalyzeJSON(out, test.skipBuild, test.dockerfiles, test.images)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, out.String())
@@ -67,7 +66,7 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 func TestWalk(t *testing.T) {
 	emptyFile := ""
 	tests := []struct {
-		name                string
+		description         string
 		filesWithContents   map[string]string
 		expectedConfigs     []string
 		expectedDockerfiles []string
@@ -75,7 +74,7 @@ func TestWalk(t *testing.T) {
 		shouldErr           bool
 	}{
 		{
-			name: "should return correct k8 configs and dockerfiles",
+			description: "should return correct k8 configs and dockerfiles",
 			filesWithContents: map[string]string{
 				"config/test.yaml":  emptyFile,
 				"k8pod.yml":         emptyFile,
@@ -95,7 +94,7 @@ func TestWalk(t *testing.T) {
 			shouldErr: false,
 		},
 		{
-			name: "should skip hidden dir",
+			description: "should skip hidden dir",
 			filesWithContents: map[string]string{
 				".hidden/test.yaml":  emptyFile,
 				"k8pod.yml":          emptyFile,
@@ -113,7 +112,7 @@ func TestWalk(t *testing.T) {
 			shouldErr: false,
 		},
 		{
-			name: "should not error when skaffold.config present and force = true",
+			description: "should not error when skaffold.config present and force = true",
 			filesWithContents: map[string]string{
 				"skaffold.yaml": `apiVersion: skaffold/v1beta6
 kind: Config
@@ -137,7 +136,7 @@ deploy:
 			shouldErr: false,
 		},
 		{
-			name: "should  error when skaffold.config present and force = false",
+			description: "should  error when skaffold.config present and force = false",
 			filesWithContents: map[string]string{
 				"config/test.yaml":  emptyFile,
 				"k8pod.yml":         emptyFile,
@@ -156,17 +155,16 @@ deploy:
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			testDir, deleteFunc := testutil.NewTempDir(t)
+		t.Run(test.description, func(t *testing.T) {
+			testDir, cleanUp := testutil.NewTempDir(t)
+			defer cleanUp()
 			rootDir := testDir.Root()
-			deleteFunc()
 			writeAllFiles(testDir, test.filesWithContents)
 			potentialConfigs, dockerfiles, err := walk(rootDir, test.force, testValidDocker)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err,
 				testDir.Paths(test.expectedConfigs), potentialConfigs)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err,
 				testDir.Paths(test.expectedDockerfiles), dockerfiles)
-			os.Remove(rootDir)
 		})
 	}
 }
