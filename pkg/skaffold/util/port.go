@@ -53,7 +53,7 @@ func GetAvailablePort(port int, forwardedPorts *sync.Map) int {
 		}
 	}
 
-	l, err := net.Listen("tcp", ":0")
+	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if l != nil {
 		l.Close()
 	}
@@ -69,7 +69,7 @@ func isPortAvailable(p int, forwardedPorts *sync.Map) bool {
 	if _, ok := forwardedPorts.Load(p); ok {
 		return false
 	}
-	l, err := net.Listen("tcp", fmt.Sprintf(":%d", p))
+	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", p))
 	if l != nil {
 		defer l.Close()
 	}

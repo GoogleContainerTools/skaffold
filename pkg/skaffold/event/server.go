@@ -93,7 +93,7 @@ func newStatusServer(originalRPCPort, originalHTTPPort int) (func() error, error
 }
 
 func newGRPCServer(port int) (func() error, error) {
-	l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
 	if err != nil {
 		return func() error { return nil }, errors.Wrap(err, "creating listener")
 	}
@@ -116,12 +116,12 @@ func newGRPCServer(port int) (func() error, error) {
 func newHTTPServer(port, proxyPort int) (func() error, error) {
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithInsecure()}
-	err := gw.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf(":%d", proxyPort), opts)
+	err := gw.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("127.0.0.1:%d", proxyPort), opts)
 	if err != nil {
 		return func() error { return nil }, err
 	}
 
-	l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
 	if err != nil {
 		return func() error { return nil }, errors.Wrap(err, "creating listener")
 	}
