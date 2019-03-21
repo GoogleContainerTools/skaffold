@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -29,96 +30,98 @@ import (
 )
 
 func TestQuietFlag(t *testing.T) {
-	mockCreateRunner := func(buildOut io.Writer) ([]build.Artifact, func(), error) {
+	mockCreateRunner := func(c context.Context, buildOut io.Writer) ([]build.Artifact, error) {
 		return []build.Artifact{{
 			ImageName: "gcr.io/skaffold/example",
 			Tag:       "test",
-		}}, func() {}, nil
+		}}, nil
 	}
 
 	orginalCreateRunner := createRunnerAndBuildFunc
-	defer func(c func(buildOut io.Writer) ([]build.Artifact, func(), error)) {
-		createRunnerAndBuildFunc = c
+	defer func(f func(c context.Context, buildOut io.Writer) ([]build.Artifact, error)) {
+		createRunnerAndBuildFunc = f
 	}(orginalCreateRunner)
 	var tests = []struct {
-		name           string
+		description    string
 		template       string
 		expectedOutput []byte
-		mock           func(io.Writer) ([]build.Artifact, func(), error)
-		shdErr         bool
+		mock           func(context.Context, io.Writer) ([]build.Artifact, error)
+		shouldErr      bool
 	}{
 		{
-			name:           "quiet flag print build images with no template",
+			description:    "quiet flag print build images with no template",
 			expectedOutput: []byte("{[{gcr.io/skaffold/example test}]}"),
-			shdErr:         false,
+			shouldErr:      false,
 			mock:           mockCreateRunner,
 		},
 		{
-			name:           "quiet flag print build images applies pattern specified in template ",
+			description:    "quiet flag print build images applies pattern specified in template ",
 			template:       "{{range .Builds}}{{.ImageName}} -> {{.Tag}}\n{{end}}",
 			expectedOutput: []byte("gcr.io/skaffold/example -> test\n"),
-			shdErr:         false,
+			shouldErr:      false,
 			mock:           mockCreateRunner,
 		},
 		{
-			name:           "build errors out when incorrect template specified",
+			description:    "build errors out when incorrect template specified",
 			template:       "{{.Incorrect}}",
 			expectedOutput: nil,
-			shdErr:         true,
+			shouldErr:      true,
 			mock:           mockCreateRunner,
 		},
 	}
 
 	for _, test := range tests {
-		quietFlag = true
-		defer func() { quietFlag = false }()
-		if test.template != "" {
-			buildFormatFlag = flags.NewTemplateFlag(test.template, BuildOutput{})
-		}
-		defer func() { buildFormatFlag = nil }()
-		createRunnerAndBuildFunc = test.mock
-		var output bytes.Buffer
-		err := runBuild(&output)
-		testutil.CheckErrorAndDeepEqual(t, test.shdErr, err, string(test.expectedOutput), output.String())
+		t.Run(test.description, func(t *testing.T) {
+			quietFlag = true
+			defer func() { quietFlag = false }()
+			if test.template != "" {
+				buildFormatFlag = flags.NewTemplateFlag(test.template, BuildOutput{})
+			}
+			defer func() { buildFormatFlag = nil }()
+			createRunnerAndBuildFunc = test.mock
+			var output bytes.Buffer
+			err := runBuild(&output)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, string(test.expectedOutput), output.String())
+		})
 	}
 }
 
 func TestRunBuild(t *testing.T) {
-	mockCreateRunner := func(buildOut io.Writer) ([]build.Artifact, func(), error) {
+	errRunner := func(c context.Context, buildOut io.Writer) ([]build.Artifact, error) {
+		return nil, errors.New("some error")
+	}
+	mockCreateRunner := func(c context.Context, buildOut io.Writer) ([]build.Artifact, error) {
 		return []build.Artifact{{
 			ImageName: "gcr.io/skaffold/example",
 			Tag:       "test",
-		}}, func() {}, nil
+		}}, nil
 	}
-	errRunner := func(buildOut io.Writer) ([]build.Artifact, func(), error) {
-		return nil, func() {}, errors.New("some error")
-	}
-
 	orginalCreateRunner := createRunnerAndBuildFunc
-	defer func(c func(buildOut io.Writer) ([]build.Artifact, func(), error)) {
-		createRunnerAndBuildFunc = c
+	defer func(f func(c context.Context, buildOut io.Writer) ([]build.Artifact, error)) {
+		createRunnerAndBuildFunc = f
 	}(orginalCreateRunner)
 
 	var tests = []struct {
-		name   string
-		mock   func(io.Writer) ([]build.Artifact, func(), error)
-		shdErr bool
+		description string
+		mock        func(context.Context, io.Writer) ([]build.Artifact, error)
+		shouldErr   bool
 	}{
 		{
-			name:   "buod should return successfully when runner is successful.",
-			shdErr: false,
-			mock:   mockCreateRunner,
+			description: "build should return successfully when runner is successful.",
+			shouldErr:   false,
+			mock:        mockCreateRunner,
 		},
 		{
-			name:   "build errors out when there was runner error.",
-			shdErr: true,
-			mock:   errRunner,
+			description: "build errors out when there was runner error.",
+			shouldErr:   true,
+			mock:        errRunner,
 		},
 	}
 	for _, test := range tests {
-		createRunnerAndBuildFunc = test.mock
-		err := runBuild(ioutil.Discard)
-		testutil.CheckError(t, test.shdErr, err)
+		t.Run(test.description, func(t *testing.T) {
+			createRunnerAndBuildFunc = test.mock
+			err := runBuild(ioutil.Discard)
+			testutil.CheckError(t, test.shouldErr, err)
+		})
 	}
-
 }

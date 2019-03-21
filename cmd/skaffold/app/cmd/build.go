@@ -71,13 +71,17 @@ func runBuild(out io.Writer) error {
 		}
 	}()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	catchCtrlC(cancel)
+
 	buildOut := out
 	if quietFlag {
 		buildOut = ioutil.Discard
 	}
 
-	bRes, cleanUp, err := createRunnerAndBuildFunc(buildOut)
-	defer cleanUp()
+	bRes, err := createRunnerAndBuildFunc(ctx, buildOut)
+
 	if err != nil {
 		return err
 	}
@@ -92,10 +96,7 @@ func runBuild(out io.Writer) error {
 	return nil
 }
 
-func createRunnerAndBuild(buildOut io.Writer) ([]build.Artifact, func(), error) {
-	ctx, cancel := context.WithCancel(context.Background())
-	catchCtrlC(cancel)
-
+func createRunnerAndBuild(ctx context.Context, buildOut io.Writer) ([]build.Artifact, error) {
 	runner, config, err := newRunner(opts)
 	var targetArtifacts []*latest.Artifact
 	for _, artifact := range config.Build.Artifacts {
@@ -104,13 +105,8 @@ func createRunnerAndBuild(buildOut io.Writer) ([]build.Artifact, func(), error) 
 		}
 	}
 	if err != nil {
-		return nil, func() { cancel() }, errors.Wrap(err, "creating runner")
+		return nil, errors.Wrap(err, "creating runner")
 	}
-
-	cleanUp := func() {
-		cancel()
-		runner.RPCServerShutdown()
-	}
-	a, err := runner.BuildAndTest(ctx, buildOut, targetArtifacts)
-	return a, cleanUp, err
+	defer runner.RPCServerShutdown()
+	return runner.BuildAndTest(ctx, buildOut, targetArtifacts)
 }
