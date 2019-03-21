@@ -125,6 +125,7 @@ func refreshDependencyList(files *filesLists, cmd *exec.Cmd) error {
 	lines := util.NonEmptyLines(stdout)
 	for i := range lines {
 		if lines[i] == "BEGIN JIB JSON" {
+			// Escape '\' for Windows paths in JSON string
 			line := strings.Replace(lines[i+1], "\\", "\\\\", -1)
 			if err := json.Unmarshal([]byte(line), &files.PathMap); err != nil {
 				return err
