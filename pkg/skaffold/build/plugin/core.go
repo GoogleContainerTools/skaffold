@@ -17,6 +17,7 @@ limitations under the License.
 package plugin
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/hashicorp/go-hclog"
@@ -24,7 +25,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/docker"
-	"github.com/pkg/errors"
 )
 
 //TODO(this should be rather wired through an env var from the skaffold process)
@@ -32,36 +32,24 @@ const DefaultPluginLogLevel = hclog.Info
 
 // SkaffoldCorePluginExecutionMap maps the core plugin name to the execution function
 var SkaffoldCorePluginExecutionMap = map[string]func() error{
-	"docker": docker.Execute,
-	"bazel":  bazel.Execute,
+	"docker": docker.Execute(DefaultPluginLogLevel),
+	"bazel":  bazel.Execute(DefaultPluginLogLevel),
 }
 
-// ShouldExecuteCorePlugin returns true if env variables for plugins are set properly
+// GetCorePluginFromEnv returns the core plugin name if env variables for plugins are set properly
 // and the plugin passed in is a core plugin
-func ShouldExecuteCorePlugin() bool {
+func GetCorePluginFromEnv() (string, error) {
 	if os.Getenv(constants.SkaffoldPluginKey) != constants.SkaffoldPluginValue {
-		return false
+		return "", nil
 	}
 	plugin := os.Getenv(constants.SkaffoldPluginName)
-	_, ok := SkaffoldCorePluginExecutionMap[plugin]
-	return ok
+	if _, ok := SkaffoldCorePluginExecutionMap[plugin]; ok {
+		return plugin, nil
+	}
+	return "", fmt.Errorf("no core plugin found with name %s", plugin)
 }
 
-// Execute executes a plugin, assumes ShouldExecuteCorePlugin has already been called
-func Execute() error {
-	plugin := os.Getenv(constants.SkaffoldPluginName)
-
-	errCh := make(chan error, 1)
-
-	go func() {
-		errCh <- SkaffoldCorePluginExecutionMap[plugin]()
-	}()
-
-	err := <-errCh
-
-	if err != nil {
-		return errors.Wrap(err, "executing plugin")
-	}
-
-	return nil
+// Execute executes a plugin - does not validate
+func Execute(plugin string) error {
+	return SkaffoldCorePluginExecutionMap[plugin]()
 }

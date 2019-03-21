@@ -17,25 +17,27 @@ limitations under the License.
 package docker
 
 import (
-	pkgplugin "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/plugin"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
 	"github.com/hashicorp/go-hclog"
-	plugin "github.com/hashicorp/go-plugin"
+	"github.com/hashicorp/go-plugin"
 )
 
 // Execute an image build with docker
-func Execute() error {
-	// pluginMap is the map of plugins we can dispense.
-	var pluginMap = map[string]plugin.Plugin{
-		"docker": &shared.BuilderPlugin{Impl: NewBuilder()},
-	}
+func Execute(pluginLogLevel hclog.Level) func() error {
+	return func() error {
+		// pluginMap is the map of plugins we can dispense.
+		var pluginMap = map[string]plugin.Plugin{
+			"docker": &shared.BuilderPlugin{Impl: NewBuilder()},
+		}
 
-	plugin.Serve(&plugin.ServeConfig{
-		Logger: hclog.New(&hclog.LoggerOptions{
-			Level: pkgplugin.DefaultPluginLogLevel,
-		}),
-		HandshakeConfig: shared.Handshake,
-		Plugins:         pluginMap,
-	})
-	return nil
+		plugin.Serve(&plugin.ServeConfig{
+			Logger: hclog.New(&hclog.LoggerOptions{
+				Level: pluginLogLevel,
+			}),
+			HandshakeConfig: shared.Handshake,
+			Plugins:         pluginMap,
+		})
+
+		return nil
+	}
 }
