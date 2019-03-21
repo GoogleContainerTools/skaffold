@@ -177,6 +177,19 @@ func TestSetAndUnsetConfig(t *testing.T) {
 				ContextConfigs: []*ContextConfig{},
 			},
 		},
+		{
+			name:  "set insecure registries",
+			key:   "insecure-registries",
+			value: "my.insecure.registry",
+			expectedSetCfg: &Config{
+				ContextConfigs: []*ContextConfig{
+					{
+						Kubecontext:        dummyContext,
+						InsecureRegistries: []string{"my.insecure.registry"},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {
