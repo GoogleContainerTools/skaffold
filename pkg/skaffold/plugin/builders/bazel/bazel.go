@@ -17,8 +17,10 @@ limitations under the License.
 package bazel
 
 import (
+	pkgplugin "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/plugin"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
-	plugin "github.com/hashicorp/go-plugin"
+	"github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-plugin"
 )
 
 // Execute an image build with docker
@@ -29,6 +31,9 @@ func Execute() error {
 	}
 
 	plugin.Serve(&plugin.ServeConfig{
+		Logger: hclog.New(&hclog.LoggerOptions{
+			Level: pkgplugin.DefaultPluginLogLevel,
+		}),
 		HandshakeConfig: shared.Handshake,
 		Plugins:         pluginMap,
 	})

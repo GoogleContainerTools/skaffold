@@ -17,7 +17,9 @@ limitations under the License.
 package docker
 
 import (
+	pkgplugin "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/plugin"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
+	"github.com/hashicorp/go-hclog"
 	plugin "github.com/hashicorp/go-plugin"
 )
 
@@ -29,6 +31,9 @@ func Execute() error {
 	}
 
 	plugin.Serve(&plugin.ServeConfig{
+		Logger: hclog.New(&hclog.LoggerOptions{
+			Level: pkgplugin.DefaultPluginLogLevel,
+		}),
 		HandshakeConfig: shared.Handshake,
 		Plugins:         pluginMap,
 	})

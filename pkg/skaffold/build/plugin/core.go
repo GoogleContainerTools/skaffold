@@ -18,15 +18,17 @@ package plugin
 
 import (
 	"os"
-	"os/signal"
-	"syscall"
+
+	"github.com/hashicorp/go-hclog"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/docker"
-	hashiplugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
 )
+
+//TODO(this should be rather wired through an env var from the skaffold process)
+const DefaultPluginLogLevel = hclog.Info
 
 // SkaffoldCorePluginExecutionMap maps the core plugin name to the execution function
 var SkaffoldCorePluginExecutionMap = map[string]func() error{
@@ -45,12 +47,8 @@ func ShouldExecuteCorePlugin() bool {
 	return ok
 }
 
-var cancelError error
-
 // Execute executes a plugin, assumes ShouldExecuteCorePlugin has already been called
 func Execute() error {
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	plugin := os.Getenv(constants.SkaffoldPluginName)
 
 	errCh := make(chan error, 1)
@@ -59,18 +57,9 @@ func Execute() error {
 		errCh <- SkaffoldCorePluginExecutionMap[plugin]()
 	}()
 
-	go func() {
-		<-sigs
-		errCh <- cancelError
-	}()
-
 	err := <-errCh
 
-	if err == cancelError {
-		hashiplugin.CleanupClients()
-	}
 	if err != nil {
-		hashiplugin.CleanupClients()
 		return errors.Wrap(err, "executing plugin")
 	}
 
