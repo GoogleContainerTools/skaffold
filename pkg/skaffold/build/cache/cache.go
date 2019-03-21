@@ -40,26 +40,28 @@ type ArtifactCache map[string]ImageDetails
 
 // Cache holds any data necessary for accessing the cache
 type Cache struct {
-	artifactCache ArtifactCache
-	client        docker.LocalDaemon
-	builder       build.Builder
-	imageList     []types.ImageSummary
-	cacheFile     string
-	useCache      bool
-	needsPush     bool
-	localCluster  bool
+	artifactCache      ArtifactCache
+	client             docker.LocalDaemon
+	builder            build.Builder
+	imageList          []types.ImageSummary
+	insecureRegistries map[string]bool
+	cacheFile          string
+	useCache           bool
+	needsPush          bool
+	localCluster       bool
 }
 
 var (
 	// For testing
 	localCluster    = config.GetLocalCluster
 	remoteDigest    = docker.RemoteDigest
-	newDockerCilent = docker.NewAPIClient
+	newDockerClient = docker.NewAPIClient
 	noCache         = &Cache{}
+	emptyMap        = map[string]bool{}
 )
 
 // NewCache returns the current state of the cache
-func NewCache(ctx context.Context, builder build.Builder, opts *skafconfig.SkaffoldOptions, needsPush bool) *Cache {
+func NewCache(ctx context.Context, builder build.Builder, opts *skafconfig.SkaffoldOptions, needsPush bool, insecureRegistries map[string]bool) *Cache {
 	if !opts.CacheArtifacts {
 		return noCache
 	}
@@ -73,7 +75,7 @@ func NewCache(ctx context.Context, builder build.Builder, opts *skafconfig.Skaff
 		logrus.Warnf("Error retrieving artifact cache, not using skaffold cache: %v", err)
 		return noCache
 	}
-	client, err := newDockerCilent()
+	client, err := newDockerClient(insecureRegistries)
 	if err != nil {
 		logrus.Warnf("Error retrieving local daemon client; local daemon will not be used as a cache: %v", err)
 	}
@@ -90,14 +92,15 @@ func NewCache(ctx context.Context, builder build.Builder, opts *skafconfig.Skaff
 		logrus.Warn("Unable to determine if using a local cluster, cache may not work.")
 	}
 	return &Cache{
-		artifactCache: cache,
-		cacheFile:     cf,
-		useCache:      opts.CacheArtifacts,
-		client:        client,
-		builder:       builder,
-		needsPush:     needsPush,
-		imageList:     imageList,
-		localCluster:  lc,
+		artifactCache:      cache,
+		cacheFile:          cf,
+		useCache:           opts.CacheArtifacts,
+		client:             client,
+		builder:            builder,
+		needsPush:          needsPush,
+		imageList:          imageList,
+		localCluster:       lc,
+		insecureRegistries: insecureRegistries,
 	}
 }
 

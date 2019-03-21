@@ -38,11 +38,12 @@ type Builder struct {
 	opts *config.SkaffoldOptions
 	env  *latest.ExecutionEnvironment
 	*latest.LocalBuild
-	LocalDocker  docker.LocalDaemon
-	LocalCluster bool
-	PushImages   bool
-	PluginMode   bool
-	KubeContext  string
+	LocalDocker        docker.LocalDaemon
+	LocalCluster       bool
+	PushImages         bool
+	PluginMode         bool
+	KubeContext        string
+	insecureRegistries map[string]bool
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Bazel.
@@ -53,7 +54,7 @@ func NewBuilder() *Builder {
 }
 
 // Init stores skaffold options and the execution environment
-func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
+func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment, insecureRegistries map[string]bool) {
 	if b.PluginMode {
 		if err := event.SetupRPCClient(opts); err != nil {
 			logrus.Warn("error establishing gRPC connection to skaffold process; events will not be handled correctly")
@@ -62,6 +63,7 @@ func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnviro
 	}
 	b.opts = opts
 	b.env = env
+	b.insecureRegistries = insecureRegistries
 }
 
 // Labels are labels specific to Bazel.

@@ -59,7 +59,7 @@ func setConfigValue(name string, value string) error {
 	}
 
 	field := reflect.Indirect(reflect.ValueOf(cfg)).FieldByName(fieldName)
-	val, err := parseAsType(value, field.Type())
+	val, err := parseAsType(value, field)
 	if err != nil {
 		return fmt.Errorf("%s is not a valid value for field %s", value, name)
 	}
@@ -83,10 +83,16 @@ func getFieldName(cfg *ContextConfig, name string) string {
 	return fieldName
 }
 
-func parseAsType(value string, fieldType reflect.Type) (reflect.Value, error) {
+func parseAsType(value string, field reflect.Value) (reflect.Value, error) {
+	fieldType := field.Type()
 	switch fieldType.String() {
 	case "string":
 		return reflect.ValueOf(value), nil
+	case "[]string":
+		if value == "" {
+			return reflect.Zero(fieldType), nil
+		}
+		return reflect.Append(field, reflect.ValueOf(value)), nil
 	case "*bool":
 		if value == "" {
 			return reflect.Zero(fieldType), nil

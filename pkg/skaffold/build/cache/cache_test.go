@@ -53,14 +53,15 @@ func mockHashForArtifact(hashes map[string]string) func(context.Context, build.B
 
 func Test_NewCache(t *testing.T) {
 	tests := []struct {
-		updateCacheFile   bool
-		needsPush         bool
-		updateClient      bool
-		name              string
-		opts              *config.SkaffoldOptions
-		expectedCache     *Cache
-		api               *testutil.FakeAPIClient
-		cacheFileContents interface{}
+		updateCacheFile    bool
+		needsPush          bool
+		updateClient       bool
+		name               string
+		opts               *config.SkaffoldOptions
+		expectedCache      *Cache
+		api                *testutil.FakeAPIClient
+		cacheFileContents  interface{}
+		insecureRegistries map[string]bool
 	}{
 		{
 			name:              "get a valid cache from file",
@@ -77,6 +78,10 @@ func Test_NewCache(t *testing.T) {
 					},
 				},
 			},
+			insecureRegistries: map[string]bool{
+				"foo": true,
+				"bar": true,
+			},
 			expectedCache: &Cache{
 				artifactCache: defaultArtifactCache,
 				useCache:      true,
@@ -84,6 +89,10 @@ func Test_NewCache(t *testing.T) {
 					{
 						ID: "image",
 					},
+				},
+				insecureRegistries: map[string]bool{
+					"foo": true,
+					"bar": true,
 				},
 			},
 		},
@@ -96,11 +105,13 @@ func Test_NewCache(t *testing.T) {
 			opts: &config.SkaffoldOptions{
 				CacheArtifacts: true,
 			},
-			api: &testutil.FakeAPIClient{},
+			api:                &testutil.FakeAPIClient{},
+			insecureRegistries: emptyMap,
 			expectedCache: &Cache{
-				artifactCache: defaultArtifactCache,
-				useCache:      true,
-				needsPush:     true,
+				artifactCache:      defaultArtifactCache,
+				useCache:           true,
+				needsPush:          true,
+				insecureRegistries: emptyMap,
 			},
 		},
 		{
@@ -132,19 +143,19 @@ func Test_NewCache(t *testing.T) {
 			}
 			test.opts.CacheFile = cacheFile
 
-			originalDockerClient := newDockerCilent
-			newDockerCilent = func() (docker.LocalDaemon, error) {
-				return docker.NewLocalDaemon(test.api, nil), nil
+			originalDockerClient := newDockerClient
+			newDockerClient = func(map[string]bool) (docker.LocalDaemon, error) {
+				return docker.NewLocalDaemon(test.api, nil, test.insecureRegistries), nil
 			}
 			defer func() {
-				newDockerCilent = originalDockerClient
+				newDockerClient = originalDockerClient
 			}()
 
 			if test.updateClient {
-				test.expectedCache.client = docker.NewLocalDaemon(test.api, nil)
+				test.expectedCache.client = docker.NewLocalDaemon(test.api, nil, test.insecureRegistries)
 			}
 
-			actualCache := NewCache(context.Background(), nil, test.opts, test.needsPush)
+			actualCache := NewCache(context.Background(), nil, test.opts, test.needsPush, test.insecureRegistries)
 
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
 			if !reflect.DeepEqual(test.expectedCache, actualCache) {

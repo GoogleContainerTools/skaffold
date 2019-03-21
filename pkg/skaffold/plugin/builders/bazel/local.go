@@ -54,7 +54,7 @@ func (b *Builder) local(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 		return nil, errors.Wrap(err, "getting current cluster context")
 	}
 	b.KubeContext = kubeContext
-	localDocker, err := docker.NewAPIClient()
+	localDocker, err := docker.NewAPIClient(b.insecureRegistries)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
@@ -138,14 +138,14 @@ func (b *Builder) BuildArtifact(ctx context.Context, out io.Writer, artifact *la
 	tarPath := filepath.Join(bazelBin, buildTarPath(a.BuildTarget))
 
 	if b.PushImages {
-		return PushImage(tarPath, tag)
+		return PushImage(tarPath, tag, b.insecureRegistries)
 	}
 
 	return b.loadImage(ctx, out, tarPath, a, tag)
 }
 
 // PushImage pushes the tarball image created by bazel
-func PushImage(tarPath, tag string) (string, error) {
+func PushImage(tarPath, tag string, insecureRegistries map[string]bool) (string, error) {
 	t, err := name.NewTag(tag, name.WeakValidation)
 	if err != nil {
 		return "", errors.Wrapf(err, "parsing tag %q", tag)
@@ -165,7 +165,7 @@ func PushImage(tarPath, tag string) (string, error) {
 		return "", errors.Wrapf(err, "writing image %q", t)
 	}
 
-	return docker.RemoteDigest(tag)
+	return docker.RemoteDigest(tag, insecureRegistries)
 }
 
 func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, a *latest.BazelArtifact, tag string) (string, error) {
