@@ -178,14 +178,22 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			},
 		},
 		{
-			name:  "set insecure registries",
-			key:   "insecure-registries",
-			value: "my.insecure.registry",
+			name:        "set insecure registries",
+			key:         "insecure-registries",
+			value:       "my.insecure.registry",
+			kubecontext: "this_is_a_context",
 			expectedSetCfg: &Config{
 				ContextConfigs: []*ContextConfig{
 					{
-						Kubecontext:        dummyContext,
+						Kubecontext:        "this_is_a_context",
 						InsecureRegistries: []string{"my.insecure.registry"},
+					},
+				},
+			},
+			expectedUnsetCfg: &Config{
+				ContextConfigs: []*ContextConfig{
+					{
+						Kubecontext: "this_is_a_context",
 					},
 				},
 			},
