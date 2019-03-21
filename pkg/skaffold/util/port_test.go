@@ -20,17 +20,38 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"sync/atomic"
 	"testing"
 )
 
 func TestGetAvailablePort(t *testing.T) {
-	var ports sync.Map
+	N := 100
 
-	port := GetAvailablePort(4503, &ports)
+	var (
+		ports  sync.Map
+		errors int32
+		wg     sync.WaitGroup
+	)
+	wg.Add(N)
 
-	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
-	if err != nil {
-		t.Fatalf("Unable to listen on port that is supposed to be available: %d", port)
+	for i := 0; i < N; i++ {
+		go func() {
+			port := GetAvailablePort(4503, &ports)
+
+			l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+			if err != nil {
+				atomic.AddInt32(&errors, 1)
+			} else {
+				l.Close()
+			}
+
+			wg.Done()
+		}()
 	}
-	l.Close()
+
+	wg.Wait()
+
+	if atomic.LoadInt32(&errors) > 0 {
+		t.Fatalf("A port that was available couldn't be used %d times", errors)
+	}
 }
