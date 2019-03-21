@@ -203,6 +203,7 @@ Flags:
   -n, --namespace string          Run deployments in the specified namespace
       --port-forward              Port-forward exposed container ports within pods (default true)
   -p, --profile stringArray       Activate profiles by name
+      --rpc-http-port int         tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int              tcp port to expose event API (default 50051)
       --skip-tests                Whether to skip the tests after building
       --tail                      Stream logs from deployed objects (default true)
