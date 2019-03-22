@@ -77,7 +77,7 @@ cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(pla
 
 .PHONY: test
 test: $(BUILD_DIR)
-	 go test -v github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch
+	@ ./test.sh
 
 .PHONY: install
 install: $(GO_FILES) $(BUILD_DIR)

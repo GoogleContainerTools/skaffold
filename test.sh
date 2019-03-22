@@ -27,28 +27,28 @@ GO_TEST_EXIT_CODE=${PIPESTATUS[0]}
 if [[ $GO_TEST_EXIT_CODE -ne 0 ]]; then
     exit $GO_TEST_EXIT_CODE
 fi
-
-echo "Running validation scripts..."
-scripts=(
-    "hack/boilerplate.sh"
-    "hack/gofmt.sh"
-    "hack/linter.sh"
-    "hack/dep.sh"
-    "hack/check-samples.sh"
-    "hack/check-docs.sh"
-)
-fail=0
-for s in "${scripts[@]}"; do
-    echo "RUN ${s}"
-    set +e
-    ./$s
-    result=$?
-    set -e
-    if [[ $result  -eq 1 ]]; then
-        echo -e "${RED}FAILED${RESET} ${s}"
-        fail=1
-    else
-        echo -e "${GREEN}PASSED${RESET} ${s}"
-    fi
-done
-exit $fail
+#
+#echo "Running validation scripts..."
+#scripts=(
+#    "hack/boilerplate.sh"
+#    "hack/gofmt.sh"
+#    "hack/linter.sh"
+#    "hack/dep.sh"
+#    "hack/check-samples.sh"
+#    "hack/check-docs.sh"
+#)
+#fail=0
+#for s in "${scripts[@]}"; do
+#    echo "RUN ${s}"
+#    set +e
+#    ./$s
+#    result=$?
+#    set -e
+#    if [[ $result  -eq 1 ]]; then
+#        echo -e "${RED}FAILED${RESET} ${s}"
+#        fail=1
+#    else
+#        echo -e "${GREEN}PASSED${RESET} ${s}"
+#    fi
+#done
+#exit $fail
