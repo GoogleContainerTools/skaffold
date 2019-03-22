@@ -24,7 +24,7 @@ touch stats.txt
 
 for i in `seq 10`; do
     echo $i ;
-    go test -count=1 -race -cover -short -timeout=60s -coverprofile=out/coverage.txt -coverpkg="./pkg/skaffold/watch"  github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch ;
+    go test -count=1 -race -cover -short -timeout=60s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." ./...;
     echo $? >> stats.txt
 done
 
