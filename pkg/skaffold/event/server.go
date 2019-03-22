@@ -25,14 +25,13 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
+	gw "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	empty "github.com/golang/protobuf/ptypes/empty"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-
-	gw "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 )
 
 type server struct{}
@@ -93,7 +92,7 @@ func newStatusServer(originalRPCPort, originalHTTPPort int) (func() error, error
 }
 
 func newGRPCServer(port int) (func() error, error) {
-	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, port))
 	if err != nil {
 		return func() error { return nil }, errors.Wrap(err, "creating listener")
 	}
@@ -116,12 +115,12 @@ func newGRPCServer(port int) (func() error, error) {
 func newHTTPServer(port, proxyPort int) (func() error, error) {
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithInsecure()}
-	err := gw.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("127.0.0.1:%d", proxyPort), opts)
+	err := gw.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("%s:%d", util.Loopback, proxyPort), opts)
 	if err != nil {
 		return func() error { return nil }, err
 	}
 
-	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, port))
 	if err != nil {
 		return func() error { return nil }, errors.Wrap(err, "creating listener")
 	}

@@ -38,7 +38,7 @@ func TestGetAvailablePort(t *testing.T) {
 		go func() {
 			port := GetAvailablePort(4503, &ports)
 
-			l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+			l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", Loopback, port))
 			if err != nil {
 				atomic.AddInt32(&errors, 1)
 			} else {

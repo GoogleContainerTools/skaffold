@@ -24,6 +24,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Loopback network address. Skaffold should not bind to 0.0.0.0
+// unless we really want to expose something to the network.
+const Loopback = "127.0.0.1"
+
 // First, check if the provided port is available. If so, use it.
 // If not, check if any of the next 10 subsequent ports are available.
 // If not, check if any of ports 4503-4533 are available.
@@ -50,7 +54,7 @@ func GetAvailablePort(port int, forwardedPorts *sync.Map) int {
 		}
 	}
 
-	l, err := net.Listen("tcp", "127.0.0.1:0")
+	l, err := net.Listen("tcp", fmt.Sprintf("%s:0", Loopback))
 	if err != nil {
 		return -1
 	}
@@ -68,7 +72,7 @@ func getPortIfAvailable(p int, forwardedPorts *sync.Map) bool {
 		return false
 	}
 
-	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", p))
+	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", Loopback, p))
 	if err != nil {
 		return false
 	}
