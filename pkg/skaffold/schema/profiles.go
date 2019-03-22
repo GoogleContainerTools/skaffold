@@ -156,12 +156,18 @@ func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) error
 			op = "replace"
 		}
 
-		patches = append(patches, yamlpatch.Operation{
+		patch := yamlpatch.Operation{
 			Op:    yamlpatch.Op(op),
 			Path:  yamlpatch.OpPath(patch.Path),
 			From:  yamlpatch.OpPath(patch.From),
 			Value: patch.Value,
-		})
+		}
+
+		if !tryPatch(patch, buf) {
+			return fmt.Errorf("invalid path: %s", patch.Path)
+		}
+
+		patches = append(patches, patch)
 	}
 
 	buf, err = yamlpatch.Patch(patches).Apply(buf)
@@ -170,6 +176,20 @@ func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) error
 	}
 
 	return yaml.Unmarshal(buf, config)
+}
+
+// tryPatch is here to verify patches one by one before we
+// apply them because yamlpatch.Patch is known to panic when a path
+// is not valid.
+func tryPatch(patch yamlpatch.Operation, buf []byte) (valid bool) {
+	defer func() {
+		if errPanic := recover(); errPanic != nil {
+			valid = false
+		}
+	}()
+
+	_, err := yamlpatch.Patch([]yamlpatch.Operation{patch}).Apply(buf)
+	return err == nil
 }
 
 func profilesByName(profiles []latest.Profile) map[string]latest.Profile {
