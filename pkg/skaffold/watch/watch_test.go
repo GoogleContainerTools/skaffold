@@ -64,7 +64,7 @@ func TestWatch(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			t.Logf("number of go routines: %d", runtime.NumGoroutine())
+			t.Logf("starting...: %s number of go routines: %d", test.description, runtime.NumGoroutine())
 			folder, cleanup := testutil.NewTempDir(t)
 			defer cleanup()
 
@@ -92,7 +92,9 @@ func TestWatch(t *testing.T) {
 			test.update(folder)
 
 			// Wait for the callbacks
+			t.Logf("%s - waiting for folders to change...", test.description)
 			folderChanged.wait()
+			t.Logf("%s - waiting for something to change...", test.description)
 			somethingChanged.wait()
 			cancel()
 			stopped.Wait() // Make sure the watcher is stopped before deleting the tmp folder

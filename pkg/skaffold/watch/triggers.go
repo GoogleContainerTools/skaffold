@@ -26,6 +26,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/rjeczalik/notify"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	//"github.com/rjeczalik/notify"
@@ -149,13 +151,13 @@ func (t *fsNotifyTrigger) WatchForChanges(out io.Writer) {
 // Start Listening for file system changes
 func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	// TODO(@dgageot): If file changes happen too quickly, events might be lost
-	//c := make(chan notify.EventInfo, 100)
-	//
-	//// Watch current directory recursively
-	//if err := notify.Watch("./...", c, notify.All); err != nil {
-	//	return nil, err
-	//}
-	c := make(chan bool, 100)
+	c := make(chan notify.EventInfo, 100)
+
+	// Watch current directory recursively
+	if err := notify.Watch("./...", c, notify.All); err != nil {
+		return nil, err
+	}
+
 	trigger := make(chan bool)
 	go func() {
 		timer := time.NewTimer(1<<63 - 1) // Forever
