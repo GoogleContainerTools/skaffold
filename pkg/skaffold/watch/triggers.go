@@ -151,10 +151,10 @@ func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	// TODO(@dgageot): If file changes happen too quickly, events might be lost
 	c := make(chan notify.EventInfo, 100)
 
-	// Watch current directory recursively
-	if err := notify.Watch("./...", c, notify.All); err != nil {
-		return nil, err
-	}
+	//// Watch current directory recursively
+	//if err := notify.Watch("./...", c, notify.All); err != nil {
+	//	return nil, err
+	//}
 
 	trigger := make(chan bool)
 	go func() {
