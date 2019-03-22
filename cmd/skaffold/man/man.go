@@ -18,53 +18,50 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
-	"text/template"
-
-	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-const manTemplate = `
-### {{.UseLine}}
-
-{{.Short}}
-
-` + "```" +
-	`
-{{.UsageString}}
-
-` + "```\n"
-
 func main() {
-	command := cmd.NewSkaffoldCommand(os.Stdout, os.Stderr)
-	for _, command := range command.Commands() {
-		printCommand(command)
+	if err := printMan(os.Stdout, os.Stderr); err != nil {
+		panic(err)
 	}
 }
 
-func printCommand(command *cobra.Command) {
-	command.DisableFlagsInUseLine = true
-	tmpl, err := template.New("test").Parse(manTemplate)
-	if err != nil {
-		panic(err)
-	}
-	err = tmpl.Execute(os.Stdout, command)
-	if err != nil {
-		panic(err)
-	}
-	if len(command.Flags().Args()) > 0 {
-		fmt.Println("Env vars:")
-		fmt.Println("")
-		command.LocalFlags().VisitAll(func(flag *pflag.Flag) {
-			fmt.Printf("* `%s` (same as --%s)\n", cmd.FlagToEnvVarName(flag), flag.Name)
-		})
-	}
-	if command.HasSubCommands() {
-		for _, subCommand := range command.Commands() {
-			printCommand(subCommand)
+func printMan(stdout, stderr io.Writer) error {
+	command := cmd.NewSkaffoldCommand(stdout, stderr)
+
+	return printSubCommands(stdout, command)
+}
+
+func printSubCommands(out io.Writer, command *cobra.Command) error {
+	for _, subCommand := range command.Commands() {
+		if err := printCommand(out, subCommand); err != nil {
+			return err
 		}
 	}
+
+	return nil
+}
+
+func printCommand(out io.Writer, command *cobra.Command) error {
+	command.DisableFlagsInUseLine = true
+
+	fmt.Fprintf(out, "\n### %s\n", command.UseLine())
+	fmt.Fprintf(out, "\n%s\n", command.Short)
+	fmt.Fprintf(out, "\n```\n%s\n\n```\n", command.UsageString())
+
+	if command.HasLocalFlags() {
+		fmt.Fprint(out, "Env vars:\n\n")
+
+		command.LocalFlags().VisitAll(func(flag *pflag.Flag) {
+			fmt.Fprintf(out, "* `%s` (same as `--%s`)\n", cmd.FlagToEnvVarName(flag), flag.Name)
+		})
+	}
+
+	return printSubCommands(out, command)
 }

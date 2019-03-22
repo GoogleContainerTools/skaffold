@@ -85,6 +85,22 @@ Global Flags:
 
 
 ```
+Env vars:
+
+* `SKAFFOLD_BUILD_IMAGE` (same as `--build-image`)
+* `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
+* `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
+* `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
+* `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
+* `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_OUTPUT` (same as `--output`)
+* `SKAFFOLD_PROFILE` (same as `--profile`)
+* `SKAFFOLD_QUIET` (same as `--quiet`)
+* `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
+* `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
+* `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
+* `SKAFFOLD_TOOT` (same as `--toot`)
 
 ### skaffold completion SHELL
 
@@ -142,6 +158,11 @@ Global Flags:
 
 
 ```
+Env vars:
+
+* `SKAFFOLD_ALL` (same as `--all`)
+* `SKAFFOLD_CONFIG` (same as `--config`)
+* `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
 
 ### skaffold config set
 
@@ -162,6 +183,11 @@ Global Flags:
 
 
 ```
+Env vars:
+
+* `SKAFFOLD_CONFIG` (same as `--config`)
+* `SKAFFOLD_GLOBAL` (same as `--global`)
+* `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
 
 ### skaffold config unset
 
@@ -182,6 +208,11 @@ Global Flags:
 
 
 ```
+Env vars:
+
+* `SKAFFOLD_CONFIG` (same as `--config`)
+* `SKAFFOLD_GLOBAL` (same as `--global`)
+* `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
 
 ### skaffold delete
 
@@ -210,6 +241,19 @@ Global Flags:
 
 
 ```
+Env vars:
+
+* `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
+* `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
+* `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
+* `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
+* `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_PROFILE` (same as `--profile`)
+* `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
+* `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
+* `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
+* `SKAFFOLD_TOOT` (same as `--toot`)
 
 ### skaffold deploy
 
@@ -241,6 +285,22 @@ Global Flags:
 
 
 ```
+Env vars:
+
+* `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
+* `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
+* `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
+* `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
+* `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_IMAGES` (same as `--images`)
+* `SKAFFOLD_LABEL` (same as `--label`)
+* `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_PROFILE` (same as `--profile`)
+* `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
+* `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
+* `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
+* `SKAFFOLD_TAIL` (same as `--tail`)
+* `SKAFFOLD_TOOT` (same as `--toot`)
 
 ### skaffold dev
 
@@ -277,6 +337,27 @@ Global Flags:
 
 
 ```
+Env vars:
+
+* `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
+* `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
+* `SKAFFOLD_CLEANUP` (same as `--cleanup`)
+* `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
+* `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
+* `SKAFFOLD_EXPERIMENTAL_GUI` (same as `--experimental-gui`)
+* `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_LABEL` (same as `--label`)
+* `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
+* `SKAFFOLD_PROFILE` (same as `--profile`)
+* `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
+* `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
+* `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
+* `SKAFFOLD_TAIL` (same as `--tail`)
+* `SKAFFOLD_TOOT` (same as `--toot`)
+* `SKAFFOLD_TRIGGER` (same as `--trigger`)
+* `SKAFFOLD_WATCH_IMAGE` (same as `--watch-image`)
+* `SKAFFOLD_WATCH_POLL_INTERVAL` (same as `--watch-poll-interval`)
 
 ### skaffold diagnose
 
@@ -296,6 +377,10 @@ Global Flags:
 
 
 ```
+Env vars:
+
+* `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_PROFILE` (same as `--profile`)
 
 ### skaffold fix
 
@@ -315,6 +400,10 @@ Global Flags:
 
 
 ```
+Env vars:
+
+* `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_OVERWRITE` (same as `--overwrite`)
 
 ### skaffold init
 
@@ -339,6 +428,14 @@ Global Flags:
 
 
 ```
+Env vars:
+
+* `SKAFFOLD_ANALYZE` (same as `--analyze`)
+* `SKAFFOLD_ARTIFACT` (same as `--artifact`)
+* `SKAFFOLD_COMPOSE_FILE` (same as `--compose-file`)
+* `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_FORCE` (same as `--force`)
+* `SKAFFOLD_SKIP_BUILD` (same as `--skip-build`)
 
 ### skaffold run
 
@@ -370,6 +467,22 @@ Global Flags:
 
 
 ```
+Env vars:
+
+* `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
+* `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
+* `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
+* `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
+* `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_LABEL` (same as `--label`)
+* `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_PROFILE` (same as `--profile`)
+* `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
+* `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
+* `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
+* `SKAFFOLD_TAG` (same as `--tag`)
+* `SKAFFOLD_TAIL` (same as `--tail`)
+* `SKAFFOLD_TOOT` (same as `--toot`)
 
 ### skaffold version
 
@@ -389,3 +502,6 @@ Global Flags:
 
 
 ```
+Env vars:
+
+* `SKAFFOLD_OUTPUT` (same as `--output`)
