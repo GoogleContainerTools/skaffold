@@ -21,6 +21,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/hashicorp/go-plugin"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
@@ -97,7 +99,6 @@ func dev(out io.Writer, ui bool) error {
 			if err != nil {
 				return errors.Wrap(err, "creating runner")
 			}
-			defer r.RPCServerShutdown()
 
 			err = r.Dev(ctx, output, config.Build.Artifacts)
 			if r.HasDeployed() {
@@ -109,9 +110,13 @@ func dev(out io.Writer, ui bool) error {
 			}
 			if err != nil {
 				if errors.Cause(err) != runner.ErrorConfigurationChanged {
+					plugin.CleanupClients()
+					r.RPCServerShutdown()
 					return err
 				}
 			}
+			plugin.CleanupClients()
+			r.RPCServerShutdown()
 		}
 	}
 }

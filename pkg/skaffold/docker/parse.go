@@ -44,27 +44,6 @@ type from struct {
 // RetrieveImage is overridden for unit testing
 var RetrieveImage = retrieveImage
 
-func ValidateDockerfile(path string) bool {
-	f, err := os.Open(path)
-	if err != nil {
-		logrus.Warnf("opening file %s: %s", path, err.Error())
-		return false
-	}
-	res, err := parser.Parse(f)
-	if err != nil || res == nil || len(res.AST.Children) == 0 {
-		return false
-	}
-	// validate each node contains valid dockerfile directive
-	for _, child := range res.AST.Children {
-		_, ok := command.Commands[child.Value]
-		if !ok {
-			return false
-		}
-	}
-
-	return true
-}
-
 func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) {
 	for i, node := range nodes {
 		if node.Value != command.Arg {

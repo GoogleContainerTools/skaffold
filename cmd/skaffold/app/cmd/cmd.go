@@ -38,29 +38,36 @@ var (
 	v            string
 	defaultColor int
 	overwrite    bool
-
-	updateMsg = make(chan string)
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "skaffold",
-	Short: "A tool that facilitates continuous development for Kubernetes applications.",
-}
-
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
+	updateMsg := make(chan string)
+
+	rootCmd := &cobra.Command{
+		Use:           "skaffold",
+		Short:         "A tool that facilitates continuous development for Kubernetes applications.",
+		SilenceErrors: true,
+	}
+
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if err := SetUpLogs(err, v); err != nil {
 			return err
 		}
+
 		rootCmd.SilenceUsage = true
 		logrus.Infof("Skaffold %+v", version.Get())
-		go func() {
-			if err := updateCheck(updateMsg); err != nil {
-				logrus.Infof("update check failed: %s", err)
-			}
-		}()
-
 		color.OverwriteDefault(color.Color(defaultColor))
+
+		if quietFlag {
+			logrus.Debugf("Update check is disabled because of quiet mode")
+		} else {
+			go func() {
+				if err := updateCheck(updateMsg); err != nil {
+					logrus.Infof("update check failed: %s", err)
+				}
+			}()
+		}
+
 		return nil
 	}
 
@@ -72,7 +79,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 		}
 	}
 
-	rootCmd.SilenceErrors = true
+	rootCmd.SetOutput(out)
 	rootCmd.AddCommand(NewCmdCompletion(out))
 	rootCmd.AddCommand(NewCmdVersion(out))
 	rootCmd.AddCommand(NewCmdRun(out))
@@ -94,10 +101,6 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 }
 
 func updateCheck(ch chan string) error {
-	if quietFlag {
-		logrus.Debugf("Update check is disabled because of quiet mode")
-		return nil
-	}
 	if !update.IsUpdateCheckEnabled() {
 		logrus.Debugf("Update check not enabled, skipping.")
 		return nil
@@ -144,6 +147,7 @@ func AddRunDeployFlags(cmd *cobra.Command) {
 func AddRunDevFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.EnableRPC, "enable-rpc", false, "Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)")
 	cmd.Flags().IntVar(&opts.RPCPort, "rpc-port", constants.DefaultRPCPort, "tcp port to expose event API")
+	cmd.Flags().IntVar(&opts.RPCHTTPPort, "rpc-http-port", constants.DefaultRPCHTTPPort, "tcp port to expose event REST API over HTTP")
 	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
 	cmd.Flags().StringArrayVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")

@@ -283,16 +283,22 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a5ba19196481d82d7f016c9280a7f3f7e3b6897a18a16be1425aba48cd395d97"
+  digest = "1:a83557b9a7d0db638c77d143d867642b5c3fafb3cf29a9437d4e2460c06fa033"
   name = "github.com/golang/protobuf"
   packages = [
+    "jsonpb",
     "proto",
     "protoc-gen-go/descriptor",
+    "protoc-gen-go/generator",
+    "protoc-gen-go/generator/internal/remap",
+    "protoc-gen-go/plugin",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
     "ptypes/empty",
+    "ptypes/struct",
     "ptypes/timestamp",
+    "ptypes/wrappers",
   ]
   pruneopts = "NUT"
   revision = "347cf4a86c1cb8d262994d8ef5924d4576c5b331"
@@ -422,6 +428,18 @@
   ]
   pruneopts = "NUT"
   revision = "c63ab54fda8f77302f8d414e19933f2b6026a089"
+
+[[projects]]
+  digest = "1:c9898be5ce1ec9e8c04a85d9b83c18835c9571e36e39b989c9d3c110ad7d1817"
+  name = "github.com/grpc-ecosystem/grpc-gateway"
+  packages = [
+    "internal",
+    "runtime",
+    "utilities",
+  ]
+  pruneopts = "NUT"
+  revision = "20f268a412e5b342ebfb1a0eef7c3b7bd6c260ea"
+  version = "v1.8.5"
 
 [[projects]]
   branch = "master"
@@ -945,12 +963,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:19d24f6da9de18caafbf2ecf3b6cc31c75047ef5d9738ef491fb86ef54841090"
+  digest = "1:cc7b1ecebae61c15ac42f4c09bc389792427637b121cfe3a21660f2d346e38af"
   name = "google.golang.org/genproto"
   packages = [
     "googleapis/api/annotations",
+    "googleapis/api/httpbody",
     "googleapis/iam/v1",
     "googleapis/rpc/status",
+    "protobuf/field_mask",
   ]
   pruneopts = "NUT"
   revision = "31ac5d88444a9e7ad18077db9a165d793ad06a2e"
@@ -1325,6 +1345,8 @@
     "github.com/google/go-containerregistry/pkg/v1/remote",
     "github.com/google/go-containerregistry/pkg/v1/tarball",
     "github.com/google/go-github/github",
+    "github.com/grpc-ecosystem/grpc-gateway/runtime",
+    "github.com/grpc-ecosystem/grpc-gateway/utilities",
     "github.com/hashicorp/go-plugin",
     "github.com/karrick/godirwalk",
     "github.com/krishicks/yaml-patch",
@@ -1344,7 +1366,11 @@
     "google.golang.org/api/cloudbuild/v1",
     "google.golang.org/api/googleapi",
     "google.golang.org/api/iterator",
+    "google.golang.org/genproto/googleapis/api/annotations",
     "google.golang.org/grpc",
+    "google.golang.org/grpc/codes",
+    "google.golang.org/grpc/grpclog",
+    "google.golang.org/grpc/status",
     "gopkg.in/AlecAivazis/survey.v1",
     "gopkg.in/russross/blackfriday.v2",
     "gopkg.in/src-d/go-git.v4",

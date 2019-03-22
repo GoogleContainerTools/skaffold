@@ -1,6 +1,7 @@
 syntax = "proto3";
 package proto;
 
+import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
 
@@ -63,6 +64,7 @@ message PortEvent {
   string podName = 3;
   string containerName = 4;
   string namespace = 5;
+  string portName = 6;
 }
 
 message LogEntry {
@@ -72,7 +74,22 @@ message LogEntry {
 }
 
 service SkaffoldService {
-  rpc GetState(google.protobuf.Empty) returns (State);
-  rpc EventLog(stream LogEntry) returns (stream LogEntry);
-  rpc Handle(Event) returns (google.protobuf.Empty);
+  rpc GetState(google.protobuf.Empty) returns (State) {
+    option (google.api.http) = {
+      get: "/v1/state"
+    };
+  }
+
+  rpc EventLog(stream LogEntry) returns (stream LogEntry) {
+    option (google.api.http) = {
+      get: "/v1/events"
+    };
+  }
+
+  rpc Handle(Event) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/events/handle"
+      body: "*"
+    };
+  }
 }

@@ -74,6 +74,7 @@ Flags:
                                      {{end}})
   -p, --profile stringArray          Activate profiles by name
   -q, --quiet                        Suppress the build output and print image built on success
+      --rpc-http-port int            tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                 tcp port to expose event API (default 50051)
       --skip-tests                   Whether to skip the tests after building
       --toot                         Emit a terminal beep after the deploy is complete
@@ -198,6 +199,7 @@ Flags:
   -f, --filename string           Filename or URL to the pipeline file (default "skaffold.yaml")
   -n, --namespace string          Run deployments in the specified namespace
   -p, --profile stringArray       Activate profiles by name
+      --rpc-http-port int         tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int              tcp port to expose event API (default 50051)
       --skip-tests                Whether to skip the tests after building
       --toot                      Emit a terminal beep after the deploy is complete
@@ -227,6 +229,7 @@ Flags:
   -l, --label stringArray         Add custom labels to deployed objects. Set multiple times for multiple labels.
   -n, --namespace string          Run deployments in the specified namespace
   -p, --profile stringArray       Activate profiles by name
+      --rpc-http-port int         tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int              tcp port to expose event API (default 50051)
       --skip-tests                Whether to skip the tests after building
       --tail                      Stream logs from deployed objects
@@ -259,6 +262,7 @@ Flags:
   -n, --namespace string          Run deployments in the specified namespace
       --port-forward              Port-forward exposed container ports within pods (default true)
   -p, --profile stringArray       Activate profiles by name
+      --rpc-http-port int         tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int              tcp port to expose event API (default 50051)
       --skip-tests                Whether to skip the tests after building
       --tail                      Stream logs from deployed objects (default true)
@@ -353,6 +357,7 @@ Flags:
   -l, --label stringArray         Add custom labels to deployed objects. Set multiple times for multiple labels.
   -n, --namespace string          Run deployments in the specified namespace
   -p, --profile stringArray       Activate profiles by name
+      --rpc-http-port int         tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int              tcp port to expose event API (default 50051)
       --skip-tests                Whether to skip the tests after building
   -t, --tag string                The optional custom tag to use for images which overrides the current Tagger configuration
