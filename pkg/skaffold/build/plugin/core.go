@@ -33,10 +33,10 @@ const DefaultPluginLogLevel = hclog.Info
 
 // SkaffoldCorePluginExecutionMap maps the core plugin name to the execution function
 var SkaffoldCorePluginExecutionMap = map[string]func() error{
-	"docker": docker.Execute(DefaultPluginLogLevel),
-	"bazel":  bazel.Execute(DefaultPluginLogLevel),
-  "jibGradle": jib.Execute(DefaultPluginLogLevel),
-  "jibMaven":  jib.Execute(DefaultPluginLogLevel),
+	"docker":    docker.Execute(DefaultPluginLogLevel),
+	"bazel":     bazel.Execute(DefaultPluginLogLevel),
+	"jibGradle": jib.Execute(DefaultPluginLogLevel),
+	"jibMaven":  jib.Execute(DefaultPluginLogLevel),
 }
 
 // GetCorePluginFromEnv returns the core plugin name if env variables for plugins are set properly

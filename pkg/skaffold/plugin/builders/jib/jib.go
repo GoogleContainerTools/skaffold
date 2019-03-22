@@ -18,20 +18,27 @@ package jib
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 )
 
 // Execute an image build with Jib
-func Execute() error {
-	// pluginMap is the map of plugins we can dispense.
-	var pluginMap = map[string]plugin.Plugin{
-		"jibGradle": &shared.BuilderPlugin{Impl: NewGradleBuilder()},
-		"jibMaven":  &shared.BuilderPlugin{Impl: NewMavenBuilder()},
-	}
+func Execute(pluginLogLevel hclog.Level) func() error {
+	return func() error {
+		// pluginMap is the map of plugins we can dispense.
+		var pluginMap = map[string]plugin.Plugin{
+			"jibGradle": &shared.BuilderPlugin{Impl: NewGradleBuilder()},
+			"jibMaven":  &shared.BuilderPlugin{Impl: NewMavenBuilder()},
+		}
 
-	plugin.Serve(&plugin.ServeConfig{
-		HandshakeConfig: shared.Handshake,
-		Plugins:         pluginMap,
-	})
-	return nil
+		plugin.Serve(&plugin.ServeConfig{
+			Logger: hclog.New(&hclog.LoggerOptions{
+				Level: pluginLogLevel,
+			}),
+			HandshakeConfig: shared.Handshake,
+			Plugins:         pluginMap,
+		})
+
+		return nil
+	}
 }
