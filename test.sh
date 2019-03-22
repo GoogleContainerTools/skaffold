@@ -20,9 +20,15 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 RESET='\033[0m'
 
-for i in `seq 100`; do
-    echo $i ; go test -count=1 -race -cover -short -timeout=60s -coverprofile=out/coverage.txt -coverpkg="./pkg/skaffold/watch"  github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch ;
+touch stats.txt
+
+for i in `seq 10`; do
+    echo $i ;
+    go test -count=1 -race -cover -short -timeout=60s -coverprofile=out/coverage.txt -coverpkg="./pkg/skaffold/watch"  github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch ;
+    echo $? >> stats.txt
 done
+
+sort -n stats.txt | uniq -c
 
 
 #echo "Running go tests..."
