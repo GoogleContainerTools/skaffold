@@ -21,7 +21,7 @@ GREEN='\033[0;32m'
 RESET='\033[0m'
 
 for i in `seq 100`; do
-    echo $i ; go test -count=1 github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch ;
+    echo $i ; go test -v -count=1 github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch ;
 done
 
 
