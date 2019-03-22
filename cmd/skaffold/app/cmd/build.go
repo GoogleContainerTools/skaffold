@@ -98,15 +98,15 @@ func runBuild(out io.Writer) error {
 
 func createRunnerAndBuild(ctx context.Context, buildOut io.Writer) ([]build.Artifact, error) {
 	runner, config, err := newRunner(opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating runner")
+	}
+	defer runner.RPCServerShutdown()
 	var targetArtifacts []*latest.Artifact
 	for _, artifact := range config.Build.Artifacts {
 		if runner.IsTargetImage(artifact) {
 			targetArtifacts = append(targetArtifacts, artifact)
 		}
 	}
-	if err != nil {
-		return nil, errors.Wrap(err, "creating runner")
-	}
-	defer runner.RPCServerShutdown()
 	return runner.BuildAndTest(ctx, buildOut, targetArtifacts)
 }
