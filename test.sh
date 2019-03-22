@@ -20,13 +20,18 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 RESET='\033[0m'
 
-echo "Running go tests..."
-go test -count=1 -race -cover -short -timeout=60s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." ./... | awk -v FAIL="${RED}FAIL${RESET}" '! /no test files/ { gsub("FAIL", FAIL, $0); print $0 }'
+for i in `seq 100`; do
+    echo $i ; go test -count=1 github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch ;
+done
 
-GO_TEST_EXIT_CODE=${PIPESTATUS[0]}
-if [[ $GO_TEST_EXIT_CODE -ne 0 ]]; then
-    exit $GO_TEST_EXIT_CODE
-fi
+
+#echo "Running go tests..."
+#go test -count=1 -race -cover -short -timeout=60s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." ./... | awk -v FAIL="${RED}FAIL${RESET}" '! /no test files/ { gsub("FAIL", FAIL, $0); print $0 }'
+#
+#GO_TEST_EXIT_CODE=${PIPESTATUS[0]}
+#if [[ $GO_TEST_EXIT_CODE -ne 0 ]]; then
+#    exit $GO_TEST_EXIT_CODE
+#fi
 #
 #echo "Running validation scripts..."
 #scripts=(
