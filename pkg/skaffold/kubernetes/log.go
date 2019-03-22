@@ -104,7 +104,7 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 					continue
 				}
 
-				for _, container := range pod.Status.ContainerStatuses {
+				for _, container := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
 					if container.ContainerID == "" {
 						if container.State.Waiting != nil && container.State.Waiting.Message != "" {
 							color.Red.Fprintln(a.output, container.State.Waiting.Message)
