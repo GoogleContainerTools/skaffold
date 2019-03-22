@@ -27,7 +27,6 @@ import (
 )
 
 func TestWatch(t *testing.T) {
-	t.SkipNow()
 	var tests = []struct {
 		description string
 		setup       func(folder *testutil.TempDir)
