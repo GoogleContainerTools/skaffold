@@ -19,6 +19,7 @@ package watch
 import (
 	"context"
 	"io/ioutil"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -63,6 +64,7 @@ func TestWatch(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			t.Logf("number of go routines: %d", runtime.NumGoroutine())
 			folder, cleanup := testutil.NewTempDir(t)
 			defer cleanup()
 
