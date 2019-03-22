@@ -45,7 +45,10 @@ func (s *RPCServer) Serve(lis net.Listener) {
 	for {
 		conn, err := lis.Accept()
 		if err != nil {
-			log.Printf("[ERR] plugin: plugin server: %s", err)
+			//vendor-patch: removing unneccessary noise
+			//this happens currently when the Client is closed gracefully
+
+			//log.Printf("[ERR] plugin: plugin server: %s", err)
 			return
 		}
 

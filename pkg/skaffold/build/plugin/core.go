@@ -18,22 +18,21 @@ package plugin
 
 import (
 	"fmt"
-	"os"
-
+	"github.com/GoogleContainerTools/skaffold/integration/examples/bazel/bazel-bazel/external/go_sdk/src/strconv"
 	"github.com/hashicorp/go-hclog"
+	"os"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/docker"
 )
 
-//TODO(this should be rather wired through an env var from the skaffold process)
 const DefaultPluginLogLevel = hclog.Info
 
 // SkaffoldCorePluginExecutionMap maps the core plugin name to the execution function
-var SkaffoldCorePluginExecutionMap = map[string]func() error{
-	"docker": docker.Execute(DefaultPluginLogLevel),
-	"bazel":  bazel.Execute(DefaultPluginLogLevel),
+var SkaffoldCorePluginExecutionMap = map[string]func(level hclog.Level) error{
+	"docker": docker.Execute,
+	"bazel":  bazel.Execute,
 }
 
 // GetCorePluginFromEnv returns the core plugin name if env variables for plugins are set properly
@@ -51,5 +50,14 @@ func GetCorePluginFromEnv() (string, error) {
 
 // Execute executes a plugin - does not validate
 func Execute(plugin string) error {
-	return SkaffoldCorePluginExecutionMap[plugin]()
+	return SkaffoldCorePluginExecutionMap[plugin](logLevel())
+}
+
+func logLevel() hclog.Level {
+	logLevel := DefaultPluginLogLevel
+	level, err := strconv.Atoi(os.Getenv(constants.SkaffoldPluginLogLevel))
+	if err == nil {
+		logLevel = hclog.Level(level)
+	}
+	return logLevel
 }

@@ -23,8 +23,7 @@ import (
 )
 
 // Execute an image build with docker
-func Execute(pluginLogLevel hclog.Level) func() error {
-	return func() error {
+func Execute(pluginLogLevel hclog.Level) error {
 		// pluginMap is the map of plugins we can dispense.
 		var pluginMap = map[string]plugin.Plugin{
 			"bazel": &shared.BuilderPlugin{Impl: NewBuilder()},
@@ -39,5 +38,4 @@ func Execute(pluginLogLevel hclog.Level) func() error {
 		})
 
 		return nil
-	}
 }

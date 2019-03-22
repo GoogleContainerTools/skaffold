@@ -60,42 +60,41 @@ func newStatusServer(originalRPCPort, originalHTTPPort int) (func() error, error
 	}
 	rpcPort := util.GetAvailablePort(originalRPCPort, &sync.Map{})
 	if rpcPort != originalRPCPort && originalRPCPort != constants.DefaultRPCPort {
-		logrus.Warnf("provided port %d already in use: using %d instead", originalRPCPort, rpcPort)
+		logrus.Warnf("provided port %d already in use for gRPC Events API endpoint: using %d instead", originalRPCPort, rpcPort)
 	}
-	grpcCallback, err := newGRPCServer(rpcPort)
+
+	grpcShutdown, err := newGRPCServer(rpcPort)
 	if err != nil {
-		return grpcCallback, errors.Wrap(err, "starting gRPC server")
+		return nil, errors.Wrap(err, "starting gRPC server")
 	}
+
 	m := &sync.Map{}
 	m.Store(rpcPort, true)
 	httpPort := util.GetAvailablePort(originalHTTPPort, m)
 	if httpPort != originalHTTPPort && originalHTTPPort != constants.DefaultRPCHTTPPort {
-		logrus.Warnf("provided port %d already in use: using %d instead", originalHTTPPort, httpPort)
+		logrus.Warnf("provided port %d already in use for HTTP Events API endpoint: using %d instead", originalHTTPPort, httpPort)
 	}
 
-	httpCallback, err := newHTTPServer(httpPort, rpcPort)
-	callback := func() error {
-		httpErr := httpCallback()
-		grpcErr := grpcCallback()
-		errStr := ""
-		if grpcErr != nil {
-			errStr += fmt.Sprintf("grpc callback error: %s\n", grpcErr.Error())
-		}
-		if httpErr != nil {
-			errStr += fmt.Sprintf("http callback error: %s\n", httpErr.Error())
-		}
-		return errors.New(errStr)
-	}
+	httpShutdown, err := newHTTPServer(httpPort, rpcPort)
 	if err != nil {
-		return callback, errors.Wrap(err, "starting HTTP server")
+		return nil, errors.Wrap(err, "starting HTTP server")
 	}
-	return callback, nil
+
+	shutdown := func() error {
+		grpcShutdown()
+		if err := httpShutdown(); err != nil {
+			return errors.Wrap(err, "http shutdown")
+		}
+		return nil
+	}
+
+	return shutdown, nil
 }
 
-func newGRPCServer(port int) (func() error, error) {
+func newGRPCServer(port int) (func(), error) {
 	l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
-		return func() error { return nil }, errors.Wrap(err, "creating listener")
+		return nil, errors.Wrap(err, "creating listener")
 	}
 	logrus.Infof("starting gRPC server on port %d", port)
 
@@ -107,9 +106,9 @@ func newGRPCServer(port int) (func() error, error) {
 			logrus.Errorf("failed to start grpc server: %s", err)
 		}
 	}()
-	return func() error {
+
+	return func() {
 		s.Stop()
-		return l.Close()
 	}, nil
 }
 
@@ -126,8 +125,18 @@ func newHTTPServer(port, proxyPort int) (func() error, error) {
 		return func() error { return nil }, errors.Wrap(err, "creating listener")
 	}
 	logrus.Infof("starting gRPC HTTP server on port %d", port)
+	s := http.Server{Handler: mux}
 
-	go http.Serve(l, mux)
+	go func() {
+		if err := s.Serve(l); err != nil && err != http.ErrServerClosed {
+			logrus.Errorf("failed to start http server %s", err)
+		}
+	}()
 
-	return l.Close, nil
+	return func() error{
+		if err := s.Shutdown(context.Background()); err != nil {
+			return errors.Wrap(err, "shutting down http server")
+		}
+		return nil
+	}, nil
 }

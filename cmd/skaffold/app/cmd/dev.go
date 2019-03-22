@@ -18,10 +18,9 @@ package cmd
 
 import (
 	"context"
+	"github.com/hashicorp/go-plugin"
 	"io"
 	"strings"
-
-	"github.com/hashicorp/go-plugin"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -95,28 +94,36 @@ func dev(out io.Writer, ui bool) error {
 		case <-ctx.Done():
 			return nil
 		default:
-			r, config, err := newRunner(opts)
-			if err != nil {
-				return errors.Wrap(err, "creating runner")
-			}
+			if err := func() error {
+				r, config, err := newRunner(opts)
+				if err != nil {
+					return errors.Wrap(err, "creating runner")
+				}
 
-			err = r.Dev(ctx, output, config.Build.Artifacts)
-			if r.HasDeployed() {
-				cleanup = func() {
-					if err := r.Cleanup(context.Background(), out); err != nil {
-						logrus.Warnln("cleanup:", err)
+				err = r.Dev(ctx, output, config.Build.Artifacts)
+
+				defer func() {
+					if err := r.RPCServerShutdown(); err != nil {
+						logrus.Error(err)
+					}
+				}()
+				defer plugin.CleanupClients()
+				if r.HasDeployed() {
+					cleanup = func() {
+						if err := r.Cleanup(context.Background(), out); err != nil {
+							logrus.Warnln("cleanup:", err)
+						}
 					}
 				}
-			}
-			if err != nil {
-				if errors.Cause(err) != runner.ErrorConfigurationChanged {
-					plugin.CleanupClients()
-					r.RPCServerShutdown()
-					return err
+				if err != nil {
+					if errors.Cause(err) != runner.ErrorConfigurationChanged {
+						return err
+					}
 				}
+				return nil
+			}(); err != nil {
+				return err
 			}
-			plugin.CleanupClients()
-			r.RPCServerShutdown()
 		}
 	}
 }

@@ -70,6 +70,7 @@ const (
 	SkaffoldPluginKey       = "SKAFFOLD_PLUGIN_KEY"
 	SkaffoldPluginValue     = "1337"
 	SkaffoldPluginName      = "SKAFFOLD_PLUGIN_NAME"
+	SkaffoldPluginLogLevel  = "SKAFFOLD_PLUGIN_LOGLEVEL"
 	DockerBuilderPluginName = "docker"
 
 	DefaultRPCPort     = 50051

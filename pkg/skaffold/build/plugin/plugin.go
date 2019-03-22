@@ -19,6 +19,7 @@ package plugin
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/go-hclog"
 	"io"
 	"os"
 	"os/exec"
@@ -40,11 +41,17 @@ var (
 	randomID = util.RandomFourCharacterID
 )
 
+var logrusToHclog = map[logrus.Level]hclog.Level{
+	logrus.DebugLevel: hclog.Debug,
+	logrus.InfoLevel:  hclog.Info,
+	logrus.ErrorLevel: hclog.Error,
+}
+
 // NewPluginBuilder initializes and returns all required plugin builders
 func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions) (shared.PluginBuilder, error) {
 	// We're a host. Start by launching the plugin process.
 	logrus.SetOutput(os.Stdout)
-
+	hclogLevel := logrusToHclog[logrus.GetLevel()]
 	builders := map[string]shared.PluginBuilder{}
 
 	for _, a := range cfg.Artifacts {
@@ -59,11 +66,18 @@ func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions) (sh
 				return nil, errors.Wrap(err, "getting executable path")
 			}
 			cmd = exec.Command(executable)
-			cmd.Env = append(os.Environ(), []string{fmt.Sprintf("%s=%s", constants.SkaffoldPluginKey, constants.SkaffoldPluginValue),
-				fmt.Sprintf("%s=%s", constants.SkaffoldPluginName, p)}...)
+			cmd.Env = append(os.Environ(), []string{
+				fmt.Sprintf("%s=%s", constants.SkaffoldPluginKey, constants.SkaffoldPluginValue),
+				fmt.Sprintf("%s=%s", constants.SkaffoldPluginName, p),
+				fmt.Sprintf("%s=%d", constants.SkaffoldPluginLogLevel, hclogLevel),
+			}...)
 		}
 
+
 		client := plugin.NewClient(&plugin.ClientConfig{
+			Logger: hclog.New(&hclog.LoggerOptions{
+				Level: hclogLevel,
+			}),
 			Stderr:          os.Stderr,
 			SyncStderr:      os.Stderr,
 			SyncStdout:      os.Stdout,
@@ -72,6 +86,8 @@ func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions) (sh
 			Plugins:         shared.PluginMap,
 			Cmd:             cmd,
 		})
+
+		plugin.CleanupClients()
 
 		// Connect via RPC
 		rpcClient, err := client.Client()
