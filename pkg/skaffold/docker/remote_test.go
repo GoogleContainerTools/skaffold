@@ -28,7 +28,7 @@ func TestRemoteDigest(t *testing.T) {
 	}
 
 	for _, ref := range validReferences {
-		_, err := RemoteDigest(ref, map[string]bool{})
+		_, err := RemoteDigest(ref)
 
 		// Ignore networking errors
 		if err != nil && strings.Contains(err.Error(), "could not parse") {

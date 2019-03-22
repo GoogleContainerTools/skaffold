@@ -57,15 +57,14 @@ type SkaffoldRunner struct {
 	sync.Syncer
 	watch.Watcher
 
-	opts               *config.SkaffoldOptions
-	labellers          []deploy.Labeller
-	builds             []build.Artifact
-	hasDeployed        bool
-	needsPush          bool
-	imageList          *kubernetes.ImageList
-	namespaces         []string
-	InsecureRegistries map[string]bool
-	RPCServerShutdown  func() error
+	opts              *config.SkaffoldOptions
+	labellers         []deploy.Labeller
+	builds            []build.Artifact
+	hasDeployed       bool
+	needsPush         bool
+	imageList         *kubernetes.ImageList
+	namespaces        []string
+	RPCServerShutdown func() error
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldPipeline
@@ -91,19 +90,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		return nil, errors.Wrap(err, "parsing tag config")
 	}
 
-	// combine all provided lists of insecure registries into a map
-	cfgRegistries, err := configutil.GetInsecureRegistries()
-	if err != nil {
-		logrus.Warnf("error retrieving insecure registries from global config: push/pull issues may exist...")
-	}
-	regList := append(opts.InsecureRegistries, cfg.Build.InsecureRegistries...)
-	regList = append(regList, cfgRegistries...)
-	insecureRegistries := make(map[string]bool, len(regList))
-	for _, r := range regList {
-		insecureRegistries[r] = true
-	}
-
-	builder, err := getBuilder(&cfg.Build, kubeContext, opts, insecureRegistries)
+	builder, err := getBuilder(&cfg.Build, kubeContext, opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing build config")
 	}
@@ -138,43 +125,41 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 	event.LogSkaffoldMetadata(version.Get())
 
 	return &SkaffoldRunner{
-		Builder:            builder,
-		Tester:             tester,
-		Deployer:           deployer,
-		Tagger:             tagger,
-		Syncer:             kubectl.NewSyncer(namespaces),
-		Watcher:            watch.NewWatcher(trigger),
-		opts:               opts,
-		labellers:          labellers,
-		imageList:          kubernetes.NewImageList(),
-		namespaces:         namespaces,
-		needsPush:          needsPush(cfg.Build),
-		RPCServerShutdown:  shutdown,
-		InsecureRegistries: insecureRegistries,
+		Builder:           builder,
+		Tester:            tester,
+		Deployer:          deployer,
+		Tagger:            tagger,
+		Syncer:            kubectl.NewSyncer(namespaces),
+		Watcher:           watch.NewWatcher(trigger),
+		opts:              opts,
+		labellers:         labellers,
+		imageList:         kubernetes.NewImageList(),
+		namespaces:        namespaces,
+		needsPush:         needsPush(cfg.Build),
+		RPCServerShutdown: shutdown,
 	}, nil
 }
 
-func getBuilder(cfg *latest.BuildConfig, kubeContext string, opts *config.SkaffoldOptions, insecureRegistries map[string]bool) (build.Builder, error) {
+func getBuilder(cfg *latest.BuildConfig, kubeContext string, opts *config.SkaffoldOptions) (build.Builder, error) {
 	switch {
 	case buildWithPlugin(cfg.Artifacts):
 		logrus.Debugln("Using builder plugins")
-		return plugin.NewPluginBuilder(cfg, opts, insecureRegistries)
-
+		return plugin.NewPluginBuilder(cfg, opts)
 	case len(opts.PreBuiltImages) > 0:
 		logrus.Debugln("Using pre-built images")
 		return build.NewPreBuiltImagesBuilder(opts.PreBuiltImages), nil
 
 	case cfg.LocalBuild != nil:
 		logrus.Debugln("Using builder: local")
-		return local.NewBuilder(cfg.LocalBuild, kubeContext, opts.SkipTests, insecureRegistries)
+		return local.NewBuilder(cfg.LocalBuild, kubeContext, opts.SkipTests)
 
 	case cfg.GoogleCloudBuild != nil:
 		logrus.Debugln("Using builder: google cloud")
-		return gcb.NewBuilder(cfg.GoogleCloudBuild, opts.SkipTests, insecureRegistries), nil
+		return gcb.NewBuilder(cfg.GoogleCloudBuild, opts.SkipTests), nil
 
 	case cfg.Cluster != nil:
 		logrus.Debugln("Using builder: kaniko")
-		return kaniko.NewBuilder(cfg.Cluster, insecureRegistries)
+		return kaniko.NewBuilder(cfg.Cluster)
 
 	default:
 		return nil, fmt.Errorf("unknown builder for config %+v", cfg)
@@ -364,7 +349,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 		return nil, errors.Wrap(err, "generating tag")
 	}
 
-	artifactCache := cache.NewCache(ctx, r.Builder, r.opts, r.needsPush, r.InsecureRegistries)
+	artifactCache := cache.NewCache(ctx, r.Builder, r.opts, r.needsPush)
 	artifactsToBuild, res, err := artifactCache.RetrieveCachedArtifacts(ctx, out, artifacts)
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving cached artifacts")

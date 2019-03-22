@@ -60,16 +60,14 @@ const (
 // Builder builds artifacts with Google Cloud Build.
 type Builder struct {
 	*latest.GoogleCloudBuild
-	skipTests          bool
-	insecureRegistries map[string]bool
+	skipTests bool
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
-func NewBuilder(cfg *latest.GoogleCloudBuild, skipTests bool, insecureRegistries map[string]bool) *Builder {
+func NewBuilder(cfg *latest.GoogleCloudBuild, skipTests bool) *Builder {
 	return &Builder{
-		GoogleCloudBuild:   cfg,
-		skipTests:          skipTests,
-		insecureRegistries: insecureRegistries,
+		GoogleCloudBuild: cfg,
+		skipTests:        skipTests,
 	}
 }
 
@@ -85,7 +83,7 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 	var paths []string
 	var err error
 	if a.DockerArtifact != nil {
-		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, b.insecureRegistries)
+		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs)
 		if err != nil {
 			return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
 		}

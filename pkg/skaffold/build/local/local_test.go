@@ -228,7 +228,7 @@ func TestLocalRun(t *testing.T) {
 			event.InitializeState(cfg, nil, &config.SkaffoldOptions{})
 			l := Builder{
 				cfg:         &latest.LocalBuild{},
-				localDocker: docker.NewLocalDaemon(&test.api, nil, map[string]bool{}),
+				localDocker: docker.NewLocalDaemon(&test.api, nil),
 				pushImages:  test.pushImages,
 			}
 

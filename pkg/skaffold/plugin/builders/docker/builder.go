@@ -44,9 +44,8 @@ type Builder struct {
 	LocalCluster bool
 	PushImages   bool
 	// TODO: remove once old docker build functionality is removed (priyawadhwa@)
-	PluginMode         bool
-	KubeContext        string
-	insecureRegistries map[string]bool
+	PluginMode  bool
+	KubeContext string
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Docker.
@@ -57,7 +56,7 @@ func NewBuilder() *Builder {
 }
 
 // Init stores skaffold options and the execution environment
-func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment, insecureRegistries map[string]bool) {
+func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
 	if b.PluginMode {
 		if err := event.SetupRPCClient(opts); err != nil {
 			logrus.Warn("error establishing gRPC connection to skaffold process; events will not be handled correctly")
@@ -67,7 +66,6 @@ func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnviro
 
 	b.opts = opts
 	b.env = env
-	b.insecureRegistries = insecureRegistries
 }
 
 // Labels are labels specific to Docker.
@@ -82,7 +80,7 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.
 	if err := setArtifact(artifact); err != nil {
 		return nil, err
 	}
-	paths, err := docker.GetDependencies(ctx, artifact.Workspace, artifact.DockerArtifact.DockerfilePath, artifact.DockerArtifact.BuildArgs, b.insecureRegistries)
+	paths, err := docker.GetDependencies(ctx, artifact.Workspace, artifact.DockerArtifact.DockerfilePath, artifact.DockerArtifact.BuildArgs)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting dependencies for %s", artifact.ImageName)
 	}
@@ -114,7 +112,7 @@ func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.
 			return nil, err
 		}
 	}
-	return gcb.NewBuilder(g, b.opts.SkipTests, b.insecureRegistries).Build(ctx, out, tags, artifacts)
+	return gcb.NewBuilder(g, b.opts.SkipTests).Build(ctx, out, tags, artifacts)
 }
 
 func setArtifact(artifact *latest.Artifact) error {

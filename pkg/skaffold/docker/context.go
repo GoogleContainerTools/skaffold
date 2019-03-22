@@ -26,8 +26,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func CreateDockerTarContext(ctx context.Context, w io.Writer, workspace string, a *latest.DockerArtifact, insecureRegistries map[string]bool) error {
-	paths, err := GetDependencies(ctx, workspace, a.DockerfilePath, a.BuildArgs, insecureRegistries)
+func CreateDockerTarContext(ctx context.Context, w io.Writer, workspace string, a *latest.DockerArtifact) error {
+	paths, err := GetDependencies(ctx, workspace, a.DockerfilePath, a.BuildArgs)
 	if err != nil {
 		return errors.Wrap(err, "getting relative tar paths")
 	}

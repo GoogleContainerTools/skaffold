@@ -30,30 +30,29 @@ type Output struct {
 // SkaffoldOptions are options that are set by command line arguments not included
 // in the config file itself
 type SkaffoldOptions struct {
-	ConfigurationFile  string
-	Cleanup            bool
-	Notification       bool
-	Tail               bool
-	TailDev            bool
-	PortForward        bool
-	SkipTests          bool
-	CacheArtifacts     bool
-	ExperimentalGUI    bool
-	EnableRPC          bool
-	WatchPollInterval  int
-	RPCPort            int
-	RPCHTTPPort        int
-	CustomTag          string
-	Namespace          string
-	CacheFile          string
-	Trigger            string
-	DefaultRepo        string
-	Command            string
-	Profiles           []string
-	InsecureRegistries []string
-	PreBuiltImages     []string
-	TargetImages       []string
-	CustomLabels       []string
+	ConfigurationFile string
+	Cleanup           bool
+	Notification      bool
+	Tail              bool
+	TailDev           bool
+	PortForward       bool
+	SkipTests         bool
+	CacheArtifacts    bool
+	ExperimentalGUI   bool
+	EnableRPC         bool
+	Profiles          []string
+	CustomTag         string
+	Namespace         string
+	CacheFile         string
+	TargetImages      []string
+	Trigger           string
+	CustomLabels      []string
+	WatchPollInterval int
+	DefaultRepo       string
+	PreBuiltImages    []string
+	Command           string
+	RPCPort           int
+	RPCHTTPPort       int
 }
 
 // Labels returns a map of labels to be applied to all deployed

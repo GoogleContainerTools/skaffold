@@ -36,6 +36,6 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Arti
 	opts := &config.SkaffoldOptions{
 		SkipTests: b.skipTests,
 	}
-	builder.Init(opts, &latest.ExecutionEnvironment{}, b.insecureRegistries)
+	builder.Init(opts, &latest.ExecutionEnvironment{})
 	return builder.BuildArtifact(ctx, out, a, tag)
 }

@@ -163,7 +163,7 @@ type imageLocation struct {
 
 func (c *Cache) imageLocation(ctx context.Context, imageDetails ImageDetails, tag string) (*imageLocation, error) {
 	// Check if tagged image exists remotely with the same digest
-	existsRemotely := imgExistsRemotely(tag, imageDetails.Digest, c.insecureRegistries)
+	existsRemotely := imgExistsRemotely(tag, imageDetails.Digest)
 	existsLocally := false
 	if c.client != nil {
 		// See if this image exists in the local daemon
@@ -254,12 +254,12 @@ func getDigest(img string) string {
 	return ref.DigestStr()
 }
 
-func imageExistsRemotely(image, digest string, insecureRegistries map[string]bool) bool {
+func imageExistsRemotely(image, digest string) bool {
 	if digest == "" {
 		logrus.Debugf("Checking if %s exists remotely, but digest is empty", image)
 		return false
 	}
-	d, err := remoteDigest(image, insecureRegistries)
+	d, err := remoteDigest(image)
 	if err != nil {
 		logrus.Debugf("Checking if %s exists remotely, can't get digest: %v", image, err)
 		return false

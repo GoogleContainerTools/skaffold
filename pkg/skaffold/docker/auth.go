@@ -93,8 +93,9 @@ func (l *localDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelpe
 		return "", err
 	}
 
-	configKey := repoInfo.Index.Name
-	if repoInfo.Index.Official {
+	index := repoInfo.Index
+	configKey := index.Name
+	if index.Official {
 		configKey = l.officialRegistry(ctx)
 	}
 

@@ -9,7 +9,7 @@
 
 [[constraint]]
   name = "github.com/google/go-containerregistry"
-  revision = "8d4083db9aa0d2fae6588c1acdbe6a1f5db461e3"
+  revision = "16d6587b5a87052c861b30443f31c588a319e8d4"
 
 [[constraint]]
   name = "github.com/sirupsen/logrus"

@@ -23,6 +23,6 @@ import (
 )
 
 type PluginBuilder interface {
-	Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment, insecureRegistries map[string]bool)
+	Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment)
 	build.Builder
 }

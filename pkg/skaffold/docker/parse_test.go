@@ -199,7 +199,7 @@ type fakeImageFetcher struct {
 	fetched []string
 }
 
-func (f *fakeImageFetcher) fetch(image string, _ map[string]bool) (*v1.ConfigFile, error) {
+func (f *fakeImageFetcher) fetch(image string) (*v1.ConfigFile, error) {
 	f.fetched = append(f.fetched, image)
 
 	switch image {
@@ -510,7 +510,7 @@ func TestGetDependencies(t *testing.T) {
 			}
 
 			workspace := tmpDir.Path(test.workspace)
-			deps, err := GetDependencies(context.Background(), workspace, "Dockerfile", test.buildArgs, map[string]bool{})
+			deps, err := GetDependencies(context.Background(), workspace, "Dockerfile", test.buildArgs)
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
 			testutil.CheckDeepEqual(t, test.fetched, imageFetcher.fetched)
