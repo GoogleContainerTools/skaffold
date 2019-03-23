@@ -97,7 +97,9 @@ func TestWatch(t *testing.T) {
 			t.Logf("%s - waiting for something to change...", test.description)
 			somethingChanged.wait()
 			cancel()
+			t.Logf("%s - waiting for watcher to shutdown...", test.description)
 			stopped.Wait() // Make sure the watcher is stopped before deleting the tmp folder
+			t.Logf("%s - watcher shutdown", test.description)
 		})
 	}
 }
