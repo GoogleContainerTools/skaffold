@@ -24,6 +24,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Loopback network address. Skaffold should not bind to 0.0.0.0
+// unless we really want to expose something to the network.
+const Loopback = "127.0.0.1"
+
 // First, check if the provided port is available. If so, use it.
 // If not, check if any of the next 10 subsequent ports are available.
 // If not, check if any of ports 4503-4533 are available.
@@ -31,47 +35,48 @@ import (
 
 // See https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt,
 func GetAvailablePort(port int, forwardedPorts *sync.Map) int {
-	if isPortAvailable(port, forwardedPorts) {
-		forwardedPorts.Store(port, true)
+	if getPortIfAvailable(port, forwardedPorts) {
 		return port
 	}
 
 	// try the next 10 ports after the provided one
 	for i := 0; i < 10; i++ {
 		port++
-		if isPortAvailable(port, forwardedPorts) {
+		if getPortIfAvailable(port, forwardedPorts) {
 			logrus.Debugf("found open port: %d", port)
-			forwardedPorts.Store(port, true)
 			return port
 		}
 	}
 
 	for port = 4503; port <= 4533; port++ {
-		if isPortAvailable(port, forwardedPorts) {
-			forwardedPorts.Store(port, true)
+		if getPortIfAvailable(port, forwardedPorts) {
 			return port
 		}
 	}
 
-	l, err := net.Listen("tcp", ":0")
-	if l != nil {
-		l.Close()
-	}
+	l, err := net.Listen("tcp", fmt.Sprintf("%s:0", Loopback))
 	if err != nil {
 		return -1
 	}
+
 	p := l.Addr().(*net.TCPAddr).Port
+
 	forwardedPorts.Store(p, true)
+	l.Close()
 	return p
 }
 
-func isPortAvailable(p int, forwardedPorts *sync.Map) bool {
-	if _, ok := forwardedPorts.Load(p); ok {
+func getPortIfAvailable(p int, forwardedPorts *sync.Map) bool {
+	alreadyUsed, loaded := forwardedPorts.LoadOrStore(p, true)
+	if loaded && alreadyUsed.(bool) {
 		return false
 	}
-	l, err := net.Listen("tcp", fmt.Sprintf(":%d", p))
-	if l != nil {
-		defer l.Close()
+
+	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", Loopback, p))
+	if err != nil {
+		return false
 	}
-	return err == nil
+
+	l.Close()
+	return true
 }
