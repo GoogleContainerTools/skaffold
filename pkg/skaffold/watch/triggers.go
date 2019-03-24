@@ -173,6 +173,7 @@ func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 				trigger <- true
 			case <-ctx.Done():
 				timer.Stop()
+				return
 			}
 		}
 	}()
