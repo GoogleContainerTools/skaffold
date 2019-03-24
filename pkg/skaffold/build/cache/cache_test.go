@@ -54,7 +54,7 @@ func mockHashForArtifact(hashes map[string]string) func(context.Context, build.B
 func Test_NewCache(t *testing.T) {
 	tests := []struct {
 		updateCacheFile   bool
-		needsPush         bool
+		pushImages        bool
 		updateClient      bool
 		name              string
 		opts              *config.SkaffoldOptions
@@ -85,12 +85,13 @@ func Test_NewCache(t *testing.T) {
 						ID: "image",
 					},
 				},
+				localBuilder: true,
 			},
 		},
 		{
 			name:              "needs push",
 			cacheFileContents: defaultArtifactCache,
-			needsPush:         true,
+			pushImages:        true,
 			updateCacheFile:   true,
 			updateClient:      true,
 			opts: &config.SkaffoldOptions{
@@ -100,7 +101,8 @@ func Test_NewCache(t *testing.T) {
 			expectedCache: &Cache{
 				artifactCache: defaultArtifactCache,
 				useCache:      true,
-				needsPush:     true,
+				localBuilder:  true,
+				pushImages:    true,
 			},
 		},
 		{
@@ -144,7 +146,13 @@ func Test_NewCache(t *testing.T) {
 				test.expectedCache.client = docker.NewLocalDaemon(test.api, nil)
 			}
 
-			actualCache := NewCache(context.Background(), nil, test.opts, test.needsPush)
+			actualCache := NewCache(nil, test.opts, latest.BuildConfig{
+				BuildType: latest.BuildType{
+					LocalBuild: &latest.LocalBuild{
+						Push: &test.pushImages,
+					},
+				},
+			})
 
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
 			if !reflect.DeepEqual(test.expectedCache, actualCache) {

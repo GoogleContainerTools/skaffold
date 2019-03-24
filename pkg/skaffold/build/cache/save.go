@@ -37,6 +37,10 @@ func (c *Cache) Retag(ctx context.Context, out io.Writer, artifactsToBuild []*la
 	if !c.useCache || len(artifactsToBuild) == 0 {
 		return
 	}
+	// Built images remotely, nothing to retag
+	if !c.localBuilder {
+		return
+	}
 	tags := map[string]string{}
 	for _, t := range buildArtifacts {
 		tags[t.ImageName] = t.Tag

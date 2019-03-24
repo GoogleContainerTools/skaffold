@@ -21,14 +21,14 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	skafconfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/docker/docker/api/types"
-
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/docker/docker/api/types"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -46,7 +46,8 @@ type Cache struct {
 	imageList     []types.ImageSummary
 	cacheFile     string
 	useCache      bool
-	needsPush     bool
+	localBuilder  bool
+	pushImages    bool
 	localCluster  bool
 }
 
@@ -59,7 +60,7 @@ var (
 )
 
 // NewCache returns the current state of the cache
-func NewCache(ctx context.Context, builder build.Builder, opts *skafconfig.SkaffoldOptions, needsPush bool) *Cache {
+func NewCache(builder build.Builder, opts *skafconfig.SkaffoldOptions, cfg latest.BuildConfig) *Cache {
 	if !opts.CacheArtifacts {
 		return noCache
 	}
@@ -79,7 +80,7 @@ func NewCache(ctx context.Context, builder build.Builder, opts *skafconfig.Skaff
 	}
 	var imageList []types.ImageSummary
 	if client != nil {
-		imageList, err = client.ImageList(ctx, types.ImageListOptions{})
+		imageList, err = client.ImageList(context.Background(), types.ImageListOptions{})
 		if err != nil {
 			logrus.Warn("Unable to get list of images from local docker daemon, won't be checked for cache.")
 		}
@@ -95,10 +96,21 @@ func NewCache(ctx context.Context, builder build.Builder, opts *skafconfig.Skaff
 		useCache:      opts.CacheArtifacts,
 		client:        client,
 		builder:       builder,
-		needsPush:     needsPush,
+		pushImages:    pushImages(cfg),
+		localBuilder:  cfg.LocalBuild != nil,
 		imageList:     imageList,
 		localCluster:  lc,
 	}
+}
+
+func pushImages(cfg latest.BuildConfig) bool {
+	if cfg.LocalBuild == nil {
+		return false
+	}
+	if cfg.LocalBuild.Push == nil {
+		return false
+	}
+	return *cfg.LocalBuild.Push
 }
 
 // resolveCacheFile makes sure that either a passed in cache file or the default cache file exists

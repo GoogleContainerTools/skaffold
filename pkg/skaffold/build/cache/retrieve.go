@@ -148,7 +148,7 @@ func (c *Cache) retrieveCachedArtifactDetails(ctx context.Context, a *latest.Art
 	return &cachedArtifactDetails{
 		needsRebuild:  needsRebuild(il, c.localCluster),
 		needsRetag:    needsRetag(il),
-		needsPush:     needsPush(il, c.localCluster, c.needsPush),
+		needsPush:     needsPush(il, c.localCluster, c.pushImages),
 		prebuiltImage: il.prebuiltImage,
 		hashTag:       hashTag,
 	}, nil
