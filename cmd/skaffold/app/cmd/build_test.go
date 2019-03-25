@@ -30,17 +30,17 @@ import (
 )
 
 func TestQuietFlag(t *testing.T) {
-	mockCreateRunner := func(c context.Context, buildOut io.Writer) ([]build.Artifact, error) {
+	mockCreateRunner := func(context.Context, io.Writer) ([]build.Artifact, error) {
 		return []build.Artifact{{
 			ImageName: "gcr.io/skaffold/example",
 			Tag:       "test",
 		}}, nil
 	}
 
-	orginalCreateRunner := createRunnerAndBuildFunc
-	defer func(f func(c context.Context, buildOut io.Writer) ([]build.Artifact, error)) {
+	defer func(f func(context.Context, io.Writer) ([]build.Artifact, error)) {
 		createRunnerAndBuildFunc = f
-	}(orginalCreateRunner)
+	}(createRunnerAndBuildFunc)
+
 	var tests = []struct {
 		description    string
 		template       string
@@ -87,19 +87,18 @@ func TestQuietFlag(t *testing.T) {
 }
 
 func TestRunBuild(t *testing.T) {
-	errRunner := func(c context.Context, buildOut io.Writer) ([]build.Artifact, error) {
+	errRunner := func(context.Context, io.Writer) ([]build.Artifact, error) {
 		return nil, errors.New("some error")
 	}
-	mockCreateRunner := func(c context.Context, buildOut io.Writer) ([]build.Artifact, error) {
+	mockCreateRunner := func(context.Context, io.Writer) ([]build.Artifact, error) {
 		return []build.Artifact{{
 			ImageName: "gcr.io/skaffold/example",
 			Tag:       "test",
 		}}, nil
 	}
-	orginalCreateRunner := createRunnerAndBuildFunc
-	defer func(f func(c context.Context, buildOut io.Writer) ([]build.Artifact, error)) {
+	defer func(f func(context.Context, io.Writer) ([]build.Artifact, error)) {
 		createRunnerAndBuildFunc = f
-	}(orginalCreateRunner)
+	}(createRunnerAndBuildFunc)
 
 	var tests = []struct {
 		description string
