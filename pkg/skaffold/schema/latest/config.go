@@ -276,10 +276,10 @@ type DockerConfig struct {
 
 // ResourceRequirements describes the resource requirements for the kaniko pod.
 type ResourceRequirements struct {
-	// Requests resource requests for the Kaniko pod. [More on requests](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container).
+	// Requests [resource requests](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container) for the Kaniko pod.
 	Requests *ResourceRequirement `yaml:"requests,omitempty"`
 
-	// Limits resource limits for the Kaniko pod. [More on limits](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container).
+	// Limits [resource limits](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container) for the Kaniko pod.
 	Limits *ResourceRequirement `yaml:"limits,omitempty"`
 }
 
