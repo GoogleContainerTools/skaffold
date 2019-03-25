@@ -170,7 +170,7 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			},
 		},
 		{
-			name: "image in cache and exists remotely, remote cluster",
+			name:                      "image in cache and exists remotely, remote cluster",
 			targetImageExistsRemotely: true,
 			artifact:                  &latest.Artifact{ImageName: "image"},
 			hashes:                    map[string]string{"image": "hash"},
@@ -218,11 +218,11 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			},
 		},
 		{
-			name: "image in cache, prebuilt image exists, remote cluster",
+			name:                      "image in cache, prebuilt image exists, remote cluster",
 			targetImageExistsRemotely: true,
-			api:      &testutil.FakeAPIClient{},
-			artifact: &latest.Artifact{ImageName: "image"},
-			hashes:   map[string]string{"image": "hash"},
+			api:                       &testutil.FakeAPIClient{},
+			artifact:                  &latest.Artifact{ImageName: "image"},
+			hashes:                    map[string]string{"image": "hash"},
 			cache: &Cache{
 				useCache:      true,
 				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
@@ -264,11 +264,11 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			},
 		},
 		{
-			name: "push specified, local cluster, image exists remotely",
+			name:                      "push specified, local cluster, image exists remotely",
 			targetImageExistsRemotely: true,
-			api:      &testutil.FakeAPIClient{},
-			artifact: &latest.Artifact{ImageName: "image"},
-			hashes:   map[string]string{"image": "hash"},
+			api:                       &testutil.FakeAPIClient{},
+			artifact:                  &latest.Artifact{ImageName: "image"},
+			hashes:                    map[string]string{"image": "hash"},
 			cache: &Cache{
 				useCache:      true,
 				pushImages:    true,
@@ -289,9 +289,9 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			},
 		},
 		{
-			name:     "no local daemon, image exists remotely",
-			artifact: &latest.Artifact{ImageName: "image"},
-			hashes:   map[string]string{"image": "hash"},
+			name:                      "no local daemon, image exists remotely",
+			artifact:                  &latest.Artifact{ImageName: "image"},
+			hashes:                    map[string]string{"image": "hash"},
 			targetImageExistsRemotely: true,
 			cache: &Cache{
 				useCache:      true,
