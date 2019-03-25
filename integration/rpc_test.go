@@ -232,31 +232,22 @@ func TestGetStateRPC(t *testing.T) {
 
 	// try a few times and wait around until we see the build is complete, or fail.
 	attempts = 0
-outerLoop:
-	for {
-		grpcState := retrieveRPCState(ctx, t, client)
-		if attempts == stateRetries {
-			// fail condition has been reached: abbreviated way of
-			// only logging the artifacts that didn't reach completion.
-			for _, v := range grpcState.BuildState.Artifacts {
-				testutil.CheckDeepEqual(t, event.Complete, v)
-			}
-			testutil.CheckDeepEqual(t, event.Complete, grpcState.DeployState.Status)
+	success := false
+	var grpcState *proto.State
+	for i := 0; i < stateRetries; i++ {
+		grpcState = retrieveRPCState(ctx, t, client)
+		if checkState(*grpcState) {
+			success = true
 			break
 		}
+		time.Sleep(1 * time.Second)
+	}
+	if !success {
+		// max attempts exceeded, log errors
 		for _, v := range grpcState.BuildState.Artifacts {
-			if v != event.Complete {
-				time.Sleep(500 * time.Millisecond)
-				attempts++
-				continue outerLoop
-			}
+			testutil.CheckDeepEqual(t, event.Complete, v)
 		}
-		if grpcState.DeployState.Status != event.Complete {
-			time.Sleep(500 * time.Millisecond)
-			attempts++
-			continue outerLoop
-		}
-		break
+		testutil.CheckDeepEqual(t, event.Complete, grpcState.DeployState.Status)
 	}
 }
 
@@ -308,30 +299,22 @@ func TestGetStateHTTP(t *testing.T) {
 	defer teardown()
 	time.Sleep(3 * time.Second) // give skaffold time to process all events
 
-	attempts := 0
-outerLoop:
-	for {
-		httpState := retrieveHTTPState(t, httpAddr)
-		if attempts == stateRetries {
-			for _, v := range httpState.BuildState.Artifacts {
-				testutil.CheckDeepEqual(t, event.Complete, v)
-			}
-			testutil.CheckDeepEqual(t, event.Complete, httpState.DeployState.Status)
+	success := false
+	var httpState proto.State
+	for i := 0; i < stateRetries; i++ {
+		httpState = retrieveHTTPState(t, httpAddr)
+		if checkState(httpState) {
+			success = true
 			break
 		}
+		time.Sleep(1 * time.Second)
+	}
+	if !success {
+		// max attempts exceeded, log errors
 		for _, v := range httpState.BuildState.Artifacts {
-			if v != event.Complete {
-				time.Sleep(1 * time.Second)
-				attempts++
-				continue outerLoop
-			}
+			testutil.CheckDeepEqual(t, event.Complete, v)
 		}
-		if httpState.DeployState.Status != event.Complete {
-			time.Sleep(1 * time.Second)
-			attempts++
-			continue outerLoop
-		}
-		break
+		testutil.CheckDeepEqual(t, event.Complete, httpState.DeployState.Status)
 	}
 }
 
@@ -355,4 +338,13 @@ func setupSkaffoldWithArgs(t *testing.T, args ...string) func() {
 
 func randomPort() string {
 	return fmt.Sprintf("%d", rand.Intn(65535))
+}
+
+func checkState(state proto.State) bool {
+	for _, a := range state.BuildState.Artifacts {
+		if a != event.Complete {
+			return false
+		}
+	}
+	return state.DeployState.Status == event.Complete
 }
