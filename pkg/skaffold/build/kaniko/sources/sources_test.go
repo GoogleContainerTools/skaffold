@@ -30,15 +30,15 @@ import (
 
 func TestPodTemplate(t *testing.T) {
 	tests := []struct {
-		name     string
-		initial  *latest.ClusterDetails
-		image    string
-		args     []string
-		expected *v1.Pod
+		description string
+		initial     *latest.ClusterDetails
+		image       string
+		args        []string
+		expected    *v1.Pod
 	}{
 		{
-			name:    "basic pod",
-			initial: &latest.ClusterDetails{},
+			description: "basic pod",
+			initial:     &latest.ClusterDetails{},
 			expected: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "kaniko-",
@@ -77,7 +77,7 @@ func TestPodTemplate(t *testing.T) {
 			},
 		},
 		{
-			name: "with docker config",
+			description: "with docker config",
 			initial: &latest.ClusterDetails{
 				DockerConfig: &latest.DockerConfig{
 					SecretName: "docker-cfg",
@@ -133,7 +133,7 @@ func TestPodTemplate(t *testing.T) {
 			},
 		},
 		{
-			name: "with resource constraints",
+			description: "with resource constraints",
 			initial: &latest.ClusterDetails{
 				Resources: &latest.ResourceRequirements{
 					Requests: &latest.ResourceRequirement{
@@ -195,7 +195,7 @@ func TestPodTemplate(t *testing.T) {
 	})
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		t.Run(test.description, func(t *testing.T) {
 			actual := podTemplate(test.initial, test.image, test.args)
 			testutil.CheckDeepEqual(t, test.expected, actual, opt)
 		})
@@ -203,15 +203,14 @@ func TestPodTemplate(t *testing.T) {
 }
 
 func createResourceRequirements(cpuLimit resource.Quantity, memoryLimit resource.Quantity, cpuRequest resource.Quantity, memoryRequest resource.Quantity) v1.ResourceRequirements {
-	req := v1.ResourceRequirements{}
-	req.Limits = v1.ResourceList{}
-	req.Limits[v1.ResourceCPU] = cpuLimit
-	req.Limits[v1.ResourceMemory] = memoryLimit
-
-	req.Requests = v1.ResourceList{}
-	req.Requests[v1.ResourceCPU] = cpuRequest
-	req.Requests[v1.ResourceMemory] = memoryRequest
-
-	return req
-
+	return v1.ResourceRequirements{
+		Limits: v1.ResourceList{
+			v1.ResourceCPU:    cpuLimit,
+			v1.ResourceMemory: memoryLimit,
+		},
+		Requests: v1.ResourceList{
+			v1.ResourceCPU:    cpuRequest,
+			v1.ResourceMemory: memoryRequest,
+		},
+	}
 }
