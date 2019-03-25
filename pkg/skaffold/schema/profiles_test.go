@@ -70,6 +70,34 @@ profiles:
 	testutil.CheckDeepEqual(t, "Dockerfile.second", pipeline.Build.Artifacts[1].DockerArtifact.DockerfilePath)
 }
 
+func TestApplyInvalidPatch(t *testing.T) {
+	config := `build:
+  artifacts:
+  - image: example
+profiles:
+- name: patches
+  patches:
+  - path: /build/artifacts/0/image/
+    value: replacement
+`
+
+	tmp, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+
+	yaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, config)
+	tmp.Write("skaffold.yaml", yaml)
+
+	parsed, err := ParseConfig(tmp.Path("skaffold.yaml"), false)
+	testutil.CheckError(t, false, err)
+
+	pipeline := parsed.(*latest.SkaffoldPipeline)
+	err = ApplyProfiles(pipeline, &cfg.SkaffoldOptions{
+		Profiles: []string{"patches"},
+	})
+
+	testutil.CheckErrorAndDeepEqual(t, true, err, "appying profile patches: invalid path: /build/artifacts/0/image/", err.Error())
+}
+
 func TestApplyProfiles(t *testing.T) {
 	tests := []struct {
 		description string

@@ -198,7 +198,7 @@ func BuildComplete(imageName string) {
 }
 
 // PortForwarded notifies that a remote port has been forwarded locally.
-func PortForwarded(localPort, remotePort int32, podName, containerName, namespace string) {
+func PortForwarded(localPort, remotePort int32, podName, containerName, namespace string, portName string) {
 	handler.doHandle(&proto.Event{
 		EventType: &proto.Event_PortEvent{
 			PortEvent: &proto.PortEvent{
@@ -207,6 +207,7 @@ func PortForwarded(localPort, remotePort int32, podName, containerName, namespac
 				PodName:       podName,
 				ContainerName: containerName,
 				Namespace:     namespace,
+				PortName:      portName,
 			},
 		},
 	})

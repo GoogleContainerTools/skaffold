@@ -14,23 +14,44 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package app
+package util
 
 import (
-	"io"
-
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/plugin"
+	"fmt"
+	"net"
+	"sync"
+	"sync/atomic"
+	"testing"
 )
 
-func Run(out, stderr io.Writer) error {
-	corePlugin, err := plugin.GetCorePluginFromEnv()
-	if err != nil {
-		return err
+func TestGetAvailablePort(t *testing.T) {
+	N := 100
+
+	var (
+		ports  sync.Map
+		errors int32
+		wg     sync.WaitGroup
+	)
+	wg.Add(N)
+
+	for i := 0; i < N; i++ {
+		go func() {
+			port := GetAvailablePort(4503, &ports)
+
+			l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", Loopback, port))
+			if err != nil {
+				atomic.AddInt32(&errors, 1)
+			} else {
+				l.Close()
+			}
+
+			wg.Done()
+		}()
 	}
-	if corePlugin != "" {
-		return plugin.Execute(corePlugin)
+
+	wg.Wait()
+
+	if atomic.LoadInt32(&errors) > 0 {
+		t.Fatalf("A port that was available couldn't be used %d times", errors)
 	}
-	c := cmd.NewSkaffoldCommand(out, stderr)
-	return c.Execute()
 }

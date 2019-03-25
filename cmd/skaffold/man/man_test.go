@@ -14,23 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package app
+package main
 
 import (
-	"io"
+	"bytes"
+	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/plugin"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func Run(out, stderr io.Writer) error {
-	corePlugin, err := plugin.GetCorePluginFromEnv()
-	if err != nil {
-		return err
-	}
-	if corePlugin != "" {
-		return plugin.Execute(corePlugin)
-	}
-	c := cmd.NewSkaffoldCommand(out, stderr)
-	return c.Execute()
+func TestPrintMan(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	err := printMan(&stdout, &stderr)
+
+	testutil.CheckError(t, false, err)
+	testutil.CheckContains(t, "skaffold build", stdout.String())
+	testutil.CheckContains(t, "skaffold run", stdout.String())
+	testutil.CheckContains(t, "skaffold dev", stdout.String())
+	testutil.CheckContains(t, "Env vars", stdout.String())
+	testutil.CheckDeepEqual(t, "", stderr.String())
 }

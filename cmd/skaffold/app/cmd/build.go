@@ -22,6 +22,8 @@ import (
 	"io/ioutil"
 	"time"
 
+	"github.com/hashicorp/go-plugin"
+
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -66,6 +68,7 @@ func runBuild(out io.Writer) error {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	defer plugin.CleanupClients()
 	catchCtrlC(cancel)
 
 	runner, config, err := newRunner(opts)

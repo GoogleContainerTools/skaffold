@@ -87,11 +87,12 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-podname-namespace-8080": {
+				"containername-podname-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
 					namespace:       "namespace",
+					portName:        "portname",
 					port:            8080,
 					localPort:       8080,
 				},
@@ -110,6 +111,7 @@ func TestPortForwardPod(t *testing.T) {
 								Ports: []v1.ContainerPort{
 									{
 										ContainerPort: 8080,
+										Name:          "portname",
 									},
 								},
 							},
@@ -124,11 +126,12 @@ func TestPortForwardPod(t *testing.T) {
 				9000: true,
 			},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-podname-namespace-8080": {
+				"containername-podname-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
 					namespace:       "namespace",
+					portName:        "portname",
 					port:            8080,
 					localPort:       9000,
 				},
@@ -148,6 +151,7 @@ func TestPortForwardPod(t *testing.T) {
 								Ports: []v1.ContainerPort{
 									{
 										ContainerPort: 8080,
+										Name:          "portname",
 									},
 								},
 							},
@@ -176,6 +180,7 @@ func TestPortForwardPod(t *testing.T) {
 								Ports: []v1.ContainerPort{
 									{
 										ContainerPort: 8080,
+										Name:          "portname",
 									},
 								},
 							},
@@ -193,11 +198,12 @@ func TestPortForwardPod(t *testing.T) {
 			shouldErr:      true,
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-podname-namespace-8080": {
+				"containername-podname-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
 					namespace:       "namespace",
+					portName:        "portname",
 					port:            8080,
 					localPort:       8080,
 				},
@@ -216,6 +222,7 @@ func TestPortForwardPod(t *testing.T) {
 								Ports: []v1.ContainerPort{
 									{
 										ContainerPort: 8080,
+										Name:          "portname",
 									},
 								},
 							},
@@ -232,19 +239,21 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int{8080, 50051},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-podname-namespace-8080": {
+				"containername-podname-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
 					namespace:       "namespace",
+					portName:        "portname",
 					port:            8080,
 					localPort:       8080,
 				},
-				"containername2-podname2-namespace2-50051": {
+				"containername2-podname2-namespace2-portname2-50051": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
 					namespace:       "namespace2",
+					portName:        "portname2",
 					port:            50051,
 					localPort:       50051,
 				},
@@ -263,6 +272,7 @@ func TestPortForwardPod(t *testing.T) {
 								Ports: []v1.ContainerPort{
 									{
 										ContainerPort: 8080,
+										Name:          "portname",
 									},
 								},
 							},
@@ -282,6 +292,7 @@ func TestPortForwardPod(t *testing.T) {
 								Ports: []v1.ContainerPort{
 									{
 										ContainerPort: 50051,
+										Name:          "portname2",
 									},
 								},
 							},
@@ -298,19 +309,21 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int{8080, 9000},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-podname-namespace-8080": {
+				"containername-podname-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
 					namespace:       "namespace",
+					portName:        "portname",
 					port:            8080,
 					localPort:       8080,
 				},
-				"containername2-podname2-namespace2-8080": {
+				"containername2-podname2-namespace2-portname2-8080": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
 					namespace:       "namespace2",
+					portName:        "portname2",
 					port:            8080,
 					localPort:       9000,
 				},
@@ -329,6 +342,7 @@ func TestPortForwardPod(t *testing.T) {
 								Ports: []v1.ContainerPort{
 									{
 										ContainerPort: 8080,
+										Name:          "portname",
 									},
 								},
 							},
@@ -348,6 +362,7 @@ func TestPortForwardPod(t *testing.T) {
 								Ports: []v1.ContainerPort{
 									{
 										ContainerPort: 8080,
+										Name:          "portname2",
 									},
 								},
 							},
@@ -363,11 +378,12 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-podname-namespace-8080": {
+				"containername-podname-namespace-portname-8080": {
 					resourceVersion: 2,
 					podName:         "podname",
 					containerName:   "containername",
 					namespace:       "namespace",
+					portName:        "portname",
 					port:            8080,
 					localPort:       8080,
 				},
@@ -386,6 +402,7 @@ func TestPortForwardPod(t *testing.T) {
 								Ports: []v1.ContainerPort{
 									{
 										ContainerPort: 8080,
+										Name:          "portname",
 									},
 								},
 							},
@@ -405,6 +422,7 @@ func TestPortForwardPod(t *testing.T) {
 								Ports: []v1.ContainerPort{
 									{
 										ContainerPort: 8080,
+										Name:          "portname",
 									},
 								},
 							},
