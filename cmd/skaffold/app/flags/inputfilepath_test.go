@@ -41,24 +41,27 @@ func TestInputFileFlagSet(t *testing.T) {
 
 	var tests = []struct {
 		description string
-		filename    string
+		setValue    string
 		shouldErr   bool
 	}{
 		{
-			description: "should not error when file is present",
-			filename:    dir.Path(filename),
+			description: "set should not error when file is present and new flag set",
+			setValue:    dir.Path(filename),
 		},
 		{
-			description: "should error when file is present",
-			filename:    "does_not_exist.in",
+			description: "set should error when file is not present with original flag value",
+			setValue:    "does_not_exist.in",
 			shouldErr:   true,
 		},
 	}
 
 	for _, test := range tests {
 		flag := NewInputFilepath("")
-		err := flag.Set(test.filename)
-		expectedFlag := NewInputFilepath(test.filename)
+		err := flag.Set(test.setValue)
+		expectedFlag := flag
+		if !test.shouldErr {
+			expectedFlag = NewInputFilepath(test.setValue)
+		}
 		testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, expectedFlag.String(), flag.String())
 	}
 }
