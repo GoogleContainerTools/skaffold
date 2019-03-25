@@ -10,14 +10,14 @@
 
 ## Background
 
-In this section, please mention and describe the new feature, re-design
-or re-factor.
+In this section, please mention and describe the new feature, redesign
+or refactor.
 
-Please provide an rationale covering following points:
+Please provide a brief explanation for the following questions:
 
 1. Why is this required?
-2. If its re-design, What are cons with current implementation?
-3. Is there any another work-around and if yes, why not keep using it.
+2. If this is a redesign, what are the drawbacks of the current implementation?
+3. Is there any another work-around, and if so, what are its drawbacks?
 4. Mention related issues, if there are any.
 
 Here is an example snippet for a new feature:
@@ -48,10 +48,9 @@ Please describe your solution. Please list any:
 
 For a new config change, please mention:
 
-* If its a backward compatible config change ?
-* If the answer to above question is yes, what would be the deprecation policy?
-  See [deprecation-policy](./../../deprecation-policy.md#how-do-we-deprecate-things)
-  requirements.
+* Is it backwards compatible? If not, what is the deprecation policy?
+  Refer to the [deprecation policy requirements.](./../../deprecation-policy.md#how-do-we-deprecate-things)
+  for details)
 
 ### Open Issues/Question
 
@@ -63,12 +62,11 @@ Resolution: Please list the resolution if resolved during the design process or
 specify __Not Yet Resolved__
 
 ## Implementation plan
-We have identified, huge PRs go unnoticed for a long time. Small incremental
-changes get reviewed faster and also easier for reviewers.
+As a team, we've noticed that larger PRs can go unreviewed for long periods of
+time. Small incremental changes get reviewed faster and also easier for reviewers.
 
 For a design feature, list a summary of tasks breakdown for e.g.:
-For the example desing proposal to infer artifact sync, some of the smaller task
-could be:
+For the example artifact sync proposal, some of the smaller tasks could be:
 ___
 
 1. Add new config key `infer` to `artifact.sync` and test schema validation.
@@ -81,4 +79,4 @@ ___
 
 ## Integration test plan
 
-Please describe what new test cases are you going to consider.
+Please describe what new test cases you are going to consider.

@@ -1,27 +1,27 @@
-# Design Proposals process
+# Design Proposal Process
 
 Hello Contributors!
 
 This document describes the process for proposing a new feature or making any
 big code changes to `skaffold`.
 
-Having a proposal, will likely reduce the back and forth between the contributor
-and the core team. It also makes sure, each new feature or a big change has a
-design review.
+Submitting a proposal before a pull request, will likely reduce the back and
+forth between the contributor and the core team. A proposal also ensures, each
+new feature or a big change has a design review.
 
 For any new feature, config or big changes, please add a design proposal document
 as described in [Design Proposal Template](./design-proposal-template.md).
 
 Once you create a PR with the proposal, someone from the core team will be
 assigned as a design shepherd. The role of the design shepherd will be to make
-sure,
+sure:
 
-1. The feature/change is within Skaffold Philosophy and not a one off
-   solution for a specific use case.
+1. The feature/change is within the Skaffold roadmap and the team's general
+   philosophy for the tool and not a one off solution for a specific use case.
 2. The feature/change scope is well defined.
 3. When changing any existing feature, the implementation plan adheres to
    [skaffold deprecation policy](./../../deprecation-policy.md)
 
-Once the proposal is in a reasonale shape, we can discuss it in Skaffold bi-weekly
-meeting to address any open concerns, and reach to a decision i.e. accept or
-punt.
+Once the proposal has been approved, we can move discussions to our bi-weekly
+meetings to address any open concerns,and to reach a final decision on whether
+or not to accept the feature or change.
