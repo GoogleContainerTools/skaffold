@@ -246,6 +246,24 @@ Global Flags:
 
 
 ```
+Env vars:
+
+* `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
+* `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
+* `SKAFFOLD_CLEANUP` (same as `--cleanup`)
+* `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
+* `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
+* `SKAFFOLD_EXPERIMENTAL_GUI` (same as `--experimental-gui`)
+* `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_LABEL` (same as `--label`)
+* `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
+* `SKAFFOLD_PROFILE` (same as `--profile`)
+* `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
+* `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
+* `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
+* `SKAFFOLD_TAIL` (same as `--tail`)
+* `SKAFFOLD_TOOT` (same as `--toot`)
 
 ### skaffold delete
 
