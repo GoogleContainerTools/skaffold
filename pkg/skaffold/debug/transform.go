@@ -134,8 +134,8 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 func allocatePort(podSpec *v1.PodSpec, desiredPort int32) int32 {
 	var maxPort int32 = 65535 // ports are normally [1-65535]
 	if desiredPort < 1024 || desiredPort > maxPort {
-       desiredPort = 1024 // skip reserved ports
-    }
+		desiredPort = 1024 // skip reserved ports
+	}
 	// We assume ports are rather sparsely allocated, so even if desiredPort
 	// is allocated, desiredPort+1 or desiredPort+2 are likely to be free
 	for port := desiredPort; port < maxPort; port++ {
@@ -151,7 +151,7 @@ func allocatePort(podSpec *v1.PodSpec, desiredPort int32) int32 {
 	panic("cannot find available port") // exceedingly unlikely
 }
 
-// isPortAvailable returns true if none of the pod's containers specify the given port. 
+// isPortAvailable returns true if none of the pod's containers specify the given port.
 func isPortAvailable(podSpec *v1.PodSpec, port int32) bool {
 	for _, container := range podSpec.Containers {
 		for _, portSpec := range container.Ports {

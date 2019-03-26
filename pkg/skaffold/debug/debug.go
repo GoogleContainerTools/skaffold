@@ -103,14 +103,14 @@ func retrieveImageConfiguration(ctx context.Context, artifact *build.Artifact) (
 	if err != nil {
 		return imageConfiguration{}, errors.Wrap(err, "could not connect to local docker daemon")
 	}
-	
+
 	// the apiClient will go to the remote registry if local docker daemon is not available
 	manifest, err := apiClient.ConfigFile(ctx, artifact.Tag)
 	if err != nil {
 		logrus.Debugf("Error retrieving image manifest for %v: %v", artifact.Tag, err)
 		return imageConfiguration{}, errors.Wrapf(err, "retrieving image config for %q", artifact.Tag)
 	}
-	
+
 	config := manifest.Config
 	logrus.Debugf("Retrieved local image configuration for %v: %v", artifact.Tag, config)
 	return imageConfiguration{
