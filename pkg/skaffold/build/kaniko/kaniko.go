@@ -45,12 +45,11 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifactWithKaniko)
 }
 
-func (b *Builder) buildArtifactWithKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (*build.Artifact, error) {
+func (b *Builder) buildArtifactWithKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	digest, err := b.run(ctx, out, artifact, tag)
 	if err != nil {
-		return nil, errors.Wrapf(err, "kaniko build for [%s]", artifact.ImageName)
+		return "", errors.Wrapf(err, "kaniko build for [%s]", artifact.ImageName)
 	}
 
-	image := tag + "@" + digest
-	return &build.Artifact{ImageName: artifact.ImageName, Tag: image, Location: build.ToRemoteRegistry}, nil
+	return tag + "@" + digest, nil
 }

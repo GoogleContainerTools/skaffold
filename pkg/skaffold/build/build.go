@@ -24,19 +24,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-// Location describes the location to which a container image was built
-type ImageLocation int
-
-const (
-	ToLocalDocker ImageLocation = iota
-	ToRemoteRegistry
-)
-
 // Artifact is the result corresponding to each successful build.
 type Artifact struct {
 	ImageName string
 	Tag       string
-	Location  ImageLocation
 }
 
 // Builder is an interface to the Build API of Skaffold.
