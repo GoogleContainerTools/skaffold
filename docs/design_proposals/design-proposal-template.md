@@ -33,9 +33,9 @@ sync:
 ```
 
 This is error prone and unnecessarily hard to use, because the destination is
-already contained in the Dockerfile for docker build. (see #1166, #1581).
+already contained in the Dockerfile for docker build (see #1166, #1581).
 In addition, the syncing needs to handle special cases for globbing and often
-requires a long list of sync patterns (#1807)
+requires a long list of sync patterns (#1807).
 ___
 
 ## Design
@@ -50,7 +50,7 @@ For a new config change, please mention:
 
 * Is it backwards compatible? If not, what is the deprecation policy?
   Refer to the [deprecation policy requirements.](./../../deprecation-policy.md#how-do-we-deprecate-things)
-  for details)
+  for details.
 
 ### Open Issues/Question
 
@@ -63,7 +63,8 @@ specify __Not Yet Resolved__
 
 ## Implementation plan
 As a team, we've noticed that larger PRs can go unreviewed for long periods of
-time. Small incremental changes get reviewed faster and also easier for reviewers.
+time. Small incremental changes get reviewed faster and are also easier for
+reviewers.
 
 For a design feature, list a summary of tasks breakdown for e.g.:
 For the example artifact sync proposal, some of the smaller tasks could be:

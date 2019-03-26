@@ -5,7 +5,7 @@ Hello Contributors!
 This document describes the process for proposing a new feature or making any
 big code changes to `skaffold`.
 
-Submitting a proposal before a pull request, will likely reduce the back and
+Submitting a proposal before a pull request will likely reduce the back and
 forth between the contributor and the core team. A proposal also ensures, each
 new feature or a big change has a design review.
 
@@ -20,7 +20,7 @@ sure:
    philosophy for the tool and not a one off solution for a specific use case.
 2. The feature/change scope is well defined.
 3. When changing any existing feature, the implementation plan adheres to
-   [skaffold deprecation policy](./../../deprecation-policy.md)
+   [skaffold deprecation policy](./../../deprecation-policy.md).
 
 Once the proposal has been approved, we can move discussions to our bi-weekly
 meetings to address any open concerns,and to reach a final decision on whether
