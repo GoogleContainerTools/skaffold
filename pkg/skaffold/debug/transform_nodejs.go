@@ -30,7 +30,7 @@ func init() {
 	containerTransforms = append(containerTransforms, nodeTransformer{})
 }
 
-// captures the useful nodejs devtools options
+// inspectSpec captures the useful nodejs devtools options
 type inspectSpec struct {
 	host string
 	port int32
