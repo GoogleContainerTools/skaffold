@@ -350,7 +350,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	if err != nil {
 		return nil, errors.Wrap(err, "build failed")
 	}
-	r.cache.Retag(ctx, out, artifactsToBuild, bRes)
+	r.cache.RetagLocalImages(ctx, out, artifactsToBuild, bRes)
 	bRes = append(bRes, res...)
 	if err := r.cache.CacheArtifacts(ctx, artifacts, bRes); err != nil {
 		logrus.Warnf("error caching artifacts: %v", err)

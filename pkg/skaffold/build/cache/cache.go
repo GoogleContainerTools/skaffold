@@ -40,15 +40,15 @@ type ArtifactCache map[string]ImageDetails
 
 // Cache holds any data necessary for accessing the cache
 type Cache struct {
-	artifactCache ArtifactCache
-	client        docker.LocalDaemon
-	builder       build.Builder
-	imageList     []types.ImageSummary
-	cacheFile     string
-	useCache      bool
-	localBuilder  bool
-	pushImages    bool
-	localCluster  bool
+	artifactCache  ArtifactCache
+	client         docker.LocalDaemon
+	builder        build.Builder
+	imageList      []types.ImageSummary
+	cacheFile      string
+	useCache       bool
+	isLocalBuilder bool
+	pushImages     bool
+	localCluster   bool
 }
 
 var (
@@ -90,27 +90,18 @@ func NewCache(builder build.Builder, opts *skafconfig.SkaffoldOptions, cfg lates
 	if err != nil {
 		logrus.Warn("Unable to determine if using a local cluster, cache may not work.")
 	}
+	pushImages := cfg.LocalBuild != nil && cfg.LocalBuild.Push != nil && *cfg.LocalBuild.Push
 	return &Cache{
-		artifactCache: cache,
-		cacheFile:     cf,
-		useCache:      opts.CacheArtifacts,
-		client:        client,
-		builder:       builder,
-		pushImages:    pushImages(cfg),
-		localBuilder:  cfg.LocalBuild != nil,
-		imageList:     imageList,
-		localCluster:  lc,
+		artifactCache:  cache,
+		cacheFile:      cf,
+		useCache:       opts.CacheArtifacts,
+		client:         client,
+		builder:        builder,
+		pushImages:     pushImages,
+		isLocalBuilder: cfg.LocalBuild != nil,
+		imageList:      imageList,
+		localCluster:   lc,
 	}
-}
-
-func pushImages(cfg latest.BuildConfig) bool {
-	if cfg.LocalBuild == nil {
-		return false
-	}
-	if cfg.LocalBuild.Push == nil {
-		return false
-	}
-	return *cfg.LocalBuild.Push
 }
 
 // resolveCacheFile makes sure that either a passed in cache file or the default cache file exists

@@ -85,7 +85,7 @@ func Test_NewCache(t *testing.T) {
 						ID: "image",
 					},
 				},
-				localBuilder: true,
+				isLocalBuilder: true,
 			},
 		},
 		{
@@ -99,10 +99,10 @@ func Test_NewCache(t *testing.T) {
 			},
 			api: &testutil.FakeAPIClient{},
 			expectedCache: &Cache{
-				artifactCache: defaultArtifactCache,
-				useCache:      true,
-				localBuilder:  true,
-				pushImages:    true,
+				artifactCache:  defaultArtifactCache,
+				useCache:       true,
+				isLocalBuilder: true,
+				pushImages:     true,
 			},
 		},
 		{
