@@ -35,7 +35,6 @@ scripts=(
     "hack/linter.sh"
     "hack/dep.sh"
     "hack/check-samples.sh"
-    "hack/check-docs.sh"
 )
 fail=0
 for s in "${scripts[@]}"; do

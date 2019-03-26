@@ -19,6 +19,7 @@ before_script:
 script:
   - make out/skaffold
   - make test
+  - make check-docs
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

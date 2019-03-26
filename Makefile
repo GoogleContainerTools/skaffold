@@ -189,3 +189,7 @@ build-docs-preview:
 .PHONY: generate-schemas
 generate-schemas:
 	go run hack/schemas/main.go
+
+.PHONY: check-docs
+check-docs: $(BUILD_DIR)
+	@ ./hack/check-docs.sh
