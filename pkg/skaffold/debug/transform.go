@@ -129,37 +129,38 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 	return false
 }
 
-// allocatePort walks the podSpec's containers looking for an available port that is as close to desiredPort as possible
+// allocatePort walks the podSpec's containers looking for an available port that is close to desiredPort.
 // We deal with wrapping and avoid allocating ports < 1024
 func allocatePort(podSpec *v1.PodSpec, desiredPort int32) int32 {
 	var maxPort int32 = 65535 // ports are normally [1-65535]
-	// Theoretically the port-space could be full, but that seems unlikely
-	for {
-		if desiredPort < 1024 || desiredPort > maxPort {
-			desiredPort = 1024 // skip reserved ports
+	if desiredPort < 1024 || desiredPort > maxPort {
+       desiredPort = 1024 // skip reserved ports
+    }
+	// We assume ports are rather sparsely allocated, so even if desiredPort
+	// is allocated, desiredPort+1 or desiredPort+2 are likely to be free
+	for port := desiredPort; port < maxPort; port++ {
+		if isPortAvailable(podSpec, port) {
+			return port
 		}
-		windowSize := maxPort - desiredPort + 1
-		// check pod containers for the next 20 ports
-		if windowSize > 20 {
-			windowSize = 20
-		}
-		var allocated = make([]bool, windowSize)
-		for _, container := range podSpec.Containers {
-			for _, portSpec := range container.Ports {
-				if portSpec.ContainerPort >= desiredPort && portSpec.ContainerPort-desiredPort < windowSize {
-					allocated[portSpec.ContainerPort-desiredPort] = true
-				}
-			}
-		}
-		for i := range allocated {
-			if !allocated[i] {
-				return desiredPort + int32(i)
-			}
-		}
-		// on to the next window
-		desiredPort += windowSize
 	}
-	// NOTREACHED
+	for port := desiredPort; port > 1024; port-- {
+		if isPortAvailable(podSpec, port) {
+			return port
+		}
+	}
+	panic("cannot find available port") // exceedingly unlikely
+}
+
+// isPortAvailable returns true if none of the pod's containers specify the given port. 
+func isPortAvailable(podSpec *v1.PodSpec, port int32) bool {
+	for _, container := range podSpec.Containers {
+		for _, portSpec := range container.Ports {
+			if portSpec.ContainerPort == port {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // transformContainer rewrites the container definition to enable debugging.

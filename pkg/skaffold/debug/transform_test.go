@@ -67,33 +67,30 @@ func TestAllocatePort(t *testing.T) {
 			result:      1024,
 		},
 		{
-			description: "wraps too large",
-			pod:         v1.PodSpec{},
-			desiredPort: 65536,
-			result:      1024,
-		},
-		{
 			description: "skips negative",
 			pod:         v1.PodSpec{},
 			desiredPort: -1,
 			result:      1024,
 		},
 		{
-			description: "wraps at 65535",
+			description: "wraps at maxPort",
+			pod:         v1.PodSpec{},
+			desiredPort: 65536,
+			result:      1024,
+		},
+		{
+			description: "wraps beyond maxPort",
+			pod:         v1.PodSpec{},
+			desiredPort: 65537,
+			result:      1024,
+		},
+		{
+			description: "looks backwards at 65535",
 			pod: v1.PodSpec{Containers: []v1.Container{
 				containerWithPorts(65535),
 			}},
 			desiredPort: 65535,
-			result:      1024,
-		},
-		{
-			description: "wraps and skips",
-			pod: v1.PodSpec{Containers: []v1.Container{
-				containerWithPorts(1025, 65535),
-				containerWithPorts(65534, 1024),
-			}},
-			desiredPort: 65534,
-			result:      1026,
+			result:      65534,
 		},
 	}
 
