@@ -37,7 +37,7 @@ import (
 )
 
 var (
-	connectionRetries = 20
+	connectionRetries = 2
 	stateRetries      = 5
 	numLogEntries     = 5
 	waitTime          = 1 * time.Second
