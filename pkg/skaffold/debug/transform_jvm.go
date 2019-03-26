@@ -31,6 +31,11 @@ func init() {
 	containerTransforms = append(containerTransforms, jdwpTransformer{})
 }
 
+const (
+	// no standard port for JDWP; most examples use 5005 or 8000
+	defaultJdwpPort = 5005
+)
+
 func (t jdwpTransformer) IsApplicable(config imageConfiguration) bool {
 	if _, found := config.env["JAVA_TOOL_OPTIONS"]; found {
 		return true
@@ -70,8 +75,7 @@ func (t jdwpTransformer) Apply(container *v1.Container, config imageConfiguratio
 	if spec != nil {
 		port = int32(spec.port)
 	} else {
-		// no standard port for JDWP; most examples use 5005 or 8000
-		port = portAlloc(5005)
+		port = portAlloc(defaultJdwpPort)
 
 		javaToolOptions := v1.EnvVar{
 			Name:  "JAVA_TOOL_OPTIONS",

@@ -30,6 +30,11 @@ func init() {
 	containerTransforms = append(containerTransforms, nodeTransformer{})
 }
 
+const (
+	// most examples use 9229
+	defaultDevtoolsPort = 9229
+)
+
 // inspectSpec captures the useful nodejs devtools options
 type inspectSpec struct {
 	host string
@@ -65,8 +70,7 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 	// todo: find existing containerPort "devtools" and use port. But what if it conflicts with command-line spec?
 
 	if spec == nil {
-		// most examples use 9229
-		spec = &inspectSpec{port: portAlloc(9229)}
+		spec = &inspectSpec{port: portAlloc(defaultDevtoolsPort)}
 		switch {
 		case len(config.entrypoint) > 0 && isLaunchingNode(config.entrypoint):
 			container.Command = config.entrypoint
