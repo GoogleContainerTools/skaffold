@@ -17,7 +17,7 @@ Please provide a brief explanation for the following questions:
 
 1. Why is this required?
 2. If this is a redesign, what are the drawbacks of the current implementation?
-3. Is there any another work-around, and if so, what are its drawbacks?
+3. Is there any another workaround, and if so, what are its drawbacks?
 4. Mention related issues, if there are any.
 
 Here is an example snippet for a new feature:
