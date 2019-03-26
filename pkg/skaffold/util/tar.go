@@ -93,6 +93,16 @@ func addFileToTar(root string, src string, dst string, tw *tar.Writer) error {
 		return err
 	}
 	switch mode := fi.Mode(); {
+	case mode.IsDir():
+		tarHeader, err := tar.FileInfoHeader(fi, tarPath)
+		if err != nil {
+			return err
+		}
+		tarHeader.Name = tarPath
+
+		if err := tw.WriteHeader(tarHeader); err != nil {
+			return err
+		}
 	case mode.IsRegular():
 		tarHeader, err := tar.FileInfoHeader(fi, tarPath)
 		if err != nil {
@@ -103,6 +113,7 @@ func addFileToTar(root string, src string, dst string, tw *tar.Writer) error {
 		if err := tw.WriteHeader(tarHeader); err != nil {
 			return err
 		}
+
 		f, err := os.Open(absPath)
 		if err != nil {
 			return err
