@@ -70,10 +70,9 @@ Flags:
       --enable-rpc skaffold dev      Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
   -f, --filename string              Filename or URL to the pipeline file (default "skaffold.yaml")
   -n, --namespace string             Run deployments in the specified namespace
-  -o, --output *flags.TemplateFlag   Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd#BuildOutput (default {{range .Builds}}{{.ImageName}} -> {{.Tag}}
-                                     {{end}})
+  -o, --output *flags.TemplateFlag   Used in conjuction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd#BuildOutput (default {{.}})
   -p, --profile stringArray          Activate profiles by name
-  -q, --quiet                        Suppress the build output and print image built on success
+  -q, --quiet                        Suppress the build output and print image built on success. See --output to format output. 
       --rpc-http-port int            tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                 tcp port to expose event API (default 50051)
       --skip-tests                   Whether to skip the tests after building
