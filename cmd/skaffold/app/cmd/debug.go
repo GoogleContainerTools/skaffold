@@ -42,7 +42,7 @@ func NewCmdDebug(out io.Writer) *cobra.Command {
 
 func debug(out io.Writer) error {
 	// HACK: disable watcher to prevent redeploying changed containers during debugging
-	// TODO: avoid redeploys of debuggable artifacts, but still enable file-sync
+	// TODO: enable file-sync but avoid redeploys of artifacts being debugged
 	if len(opts.TargetImages) == 0 {
 		opts.TargetImages = []string{"none"}
 	}
