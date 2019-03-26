@@ -24,18 +24,21 @@ import (
 // InputFilepath type makes sure the file exists.
 type InputFilepath struct {
 	filepathFlag
+	usage string
 }
 
-func NewInputFilepath(value string) *InputFilepath {
+func NewInputFilepath(value string, usage string) *InputFilepath {
 	return &InputFilepath{
-		filepathFlag{
+		filepathFlag: filepathFlag{
 			path:        value,
 			shouldExist: true,
-		}}
+		},
+		usage: usage,
+	}
 }
 
 func (f *InputFilepath) Usage() string {
-	return "Path to an input file."
+	return f.usage
 }
 
 func (f *InputFilepath) Type() string {

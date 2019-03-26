@@ -24,20 +24,24 @@ import (
 // OutputFilepath currently does not provide any validation.
 type OutputFilepath struct {
 	filepathFlag
+	usage string
 }
 
-func NewOutputFilepath(value string) *OutputFilepath {
-	return &OutputFilepath{filepathFlag{
-		path: value,
-	}}
+func NewOutputFilepath(value string, usage string) *OutputFilepath {
+	return &OutputFilepath{
+		filepathFlag: filepathFlag{
+			path: value,
+		},
+		usage: usage,
+	}
+}
+
+func (f *OutputFilepath) Usage() string {
+	return f.usage
 }
 
 func (f *OutputFilepath) Type() string {
 	return fmt.Sprintf("%T", f)
-}
-
-func (f *OutputFilepath) Usage() string {
-	return "Path to an output filepath."
 }
 
 func (f *OutputFilepath) Set(value string) error {

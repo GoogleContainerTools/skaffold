@@ -21,17 +21,20 @@ import (
 )
 
 func TestNewOutputFilepathType(t *testing.T) {
-	flag := NewOutputFilepath("test.out")
-	expectedFlag := OutputFilepath{filepathFlag{
-		path: "test.out",
-	}}
+	flag := NewOutputFilepath("test.out", "test output file")
+	expectedFlag := OutputFilepath{
+		filepathFlag: filepathFlag{
+			path: "test.out",
+		},
+		usage: "test output file",
+	}
 	if *flag != expectedFlag {
 		t.Errorf("expected %s, actual %s", &expectedFlag, flag)
 	}
 }
 
 func TestOutputFileFlagSet(t *testing.T) {
-	flag := NewOutputFilepath("")
+	flag := NewOutputFilepath("", "")
 	if err := flag.Set("test.out"); err != nil {
 		t.Errorf("Error setting flag value: %s", err)
 	}

@@ -23,11 +23,14 @@ import (
 )
 
 func TestNewInputFile(t *testing.T) {
-	flag := NewInputFilepath("test.in")
-	expectedFlag := InputFilepath{filepathFlag{
-		path:        "test.in",
-		shouldExist: true,
-	}}
+	flag := NewInputFilepath("test.in", "test input file")
+	expectedFlag := InputFilepath{
+		filepathFlag: filepathFlag{
+			path:        "test.in",
+			shouldExist: true,
+		},
+		usage: "test input file",
+	}
 	if *flag != expectedFlag {
 		t.Errorf("expected %s, actual %s", &expectedFlag, flag)
 	}
@@ -56,18 +59,18 @@ func TestInputFileFlagSet(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		flag := NewInputFilepath("")
+		flag := NewInputFilepath("", "")
 		err := flag.Set(test.setValue)
 		expectedFlag := flag
 		if !test.shouldErr {
-			expectedFlag = NewInputFilepath(test.setValue)
+			expectedFlag = NewInputFilepath(test.setValue, "")
 		}
 		testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, expectedFlag.String(), flag.String())
 	}
 }
 
 func TestInputFilepathType(t *testing.T) {
-	flag := NewInputFilepath("test.in")
+	flag := NewInputFilepath("test.in", "")
 	expectedFlagType := "*flags.InputFilepath"
 	if flag.Type() != expectedFlagType {
 		t.Errorf("Flag returned wrong type. Expected %s, Actual %s", expectedFlagType, flag.Type())

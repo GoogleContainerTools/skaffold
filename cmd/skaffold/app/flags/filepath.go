@@ -26,12 +26,12 @@ type filepathFlag struct {
 }
 
 func (f *filepathFlag) SetIfValid(value string) error {
-	copy := *f
-	copy.path = value
-	if err := copy.isValid(); err != nil {
+	clone := *f
+	clone.path = value
+	if err := clone.isValid(); err != nil {
 		return err
 	}
-	*f = copy
+	*f = clone
 	return nil
 }
 
