@@ -54,10 +54,12 @@ var (
 
 // ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.
 func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact) (kubectl.ManifestList, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	retriever := func(image string) (imageConfiguration, error) {
 		if artifact := findArtifact(image, builds); artifact != nil {
-			return retrieveImageConfiguration(image, artifact)
+			return retrieveImageConfiguration(ctx, artifact)
 		}
 		return imageConfiguration{}, errors.Errorf("no build artifact for [%q]", image)
 	}
@@ -100,19 +102,16 @@ func findArtifact(image string, builds []build.Artifact) *build.Artifact {
 
 // retrieveImageConfiguration retrieves the image container configuration for
 // the given build artifact
-func retrieveImageConfiguration(image string, artifact *build.Artifact) (imageConfiguration, error) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+func retrieveImageConfiguration(ctx context.Context, artifact *build.Artifact) (imageConfiguration, error) {
 	var config config.Config
 	var err error
-	if artifact.Location == build.ToLocalDocker {
-		config, err = retrieveDockerConfiguration(ctx, artifact.Tag)
-	} else {
-		config, err = retrieveRegistryConfiguration(artifact.Tag)
+	config, err = retrieveDockerConfiguration(ctx, artifact.Tag)
+	if err != nil {
+		config, err = retrieveRegistryConfiguration(ctx, artifact.Tag)
 	}
 	if err != nil {
-		return imageConfiguration{}, errors.Wrapf(err, "unable to retrieve image configuration [%q]", image)
+		logrus.Debugf("failed to retrieve image config from registry: %v", err)
+		return imageConfiguration{}, errors.Wrapf(err, "unable to retrieve image configuration [%q]", artifact.ImageName)
 	}
 
 	return imageConfiguration{
@@ -134,7 +133,7 @@ func envAsMap(env []string) map[string]string {
 }
 
 // retrieveRegistryConfiguration retrieves an image configuration from a registry
-func retrieveRegistryConfiguration(image string) (config.Config, error) {
+func retrieveRegistryConfiguration(_ context.Context, image string) (config.Config, error) {
 	logrus.Debugf("Retrieving image configuration for %v", image)
 	ref, err := name.ParseReference(image, name.WeakValidation)
 	if err != nil {
@@ -158,6 +157,7 @@ func retrieveRegistryConfiguration(image string) (config.Config, error) {
 		logrus.Debugf("Error retrieving remote image manifest %v: %v", image, err)
 		return config.Config{}, errors.Wrapf(err, "retrieving image config for %q", ref)
 	}
+	logrus.Debugf("Retrieved remote image configuration for %v: %v", image, manifest.Config)
 	return manifest.Config, nil
 }
 
