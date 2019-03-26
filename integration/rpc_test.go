@@ -88,7 +88,7 @@ func TestEventLogRPC(t *testing.T) {
 		if attempts < connectionRetries {
 			attempts++
 			t.Logf("waiting for connection...")
-			time.Sleep(3 * time.Second)
+			time.Sleep(waitTime)
 			continue
 		}
 		t.Fatalf("error retrieving event log: %v\n", err)
@@ -231,7 +231,6 @@ func TestGetStateRPC(t *testing.T) {
 	defer ctxCancel()
 
 	// try a few times and wait around until we see the build is complete, or fail.
-	attempts = 0
 	success := false
 	var grpcState *proto.State
 	for i := 0; i < stateRetries; i++ {
@@ -240,7 +239,7 @@ func TestGetStateRPC(t *testing.T) {
 			success = true
 			break
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(waitTime)
 	}
 	if !success {
 		// max attempts exceeded, log errors
@@ -263,7 +262,7 @@ func retrieveRPCState(ctx context.Context, t *testing.T, client proto.SkaffoldSe
 		if attempts < connectionRetries {
 			attempts++
 			t.Logf("waiting for connection...")
-			time.Sleep(3 * time.Second)
+			time.Sleep(waitTime)
 			continue
 		}
 		t.Fatalf("error retrieving state: %v\n", err)
@@ -307,7 +306,7 @@ func TestGetStateHTTP(t *testing.T) {
 			success = true
 			break
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(waitTime)
 	}
 	if !success {
 		// max attempts exceeded, log errors
