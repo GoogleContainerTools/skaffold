@@ -36,13 +36,15 @@ func TestFindArtifact(t *testing.T) {
 		source      string
 		returnNil   bool
 	}{
-		{description: "found",
-			source:    "image1",
-			returnNil: false,
+		{
+			description: "found",
+			source:      "image1",
+			returnNil:   false,
 		},
-		{description: "not found",
-			source:    "image2",
-			returnNil: true,
+		{
+			description: "not found",
+			source:      "image2",
+			returnNil:   true,
 		},
 	}
 	for _, test := range tests {
