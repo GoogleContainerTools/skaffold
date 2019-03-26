@@ -17,9 +17,9 @@
 cp docs/content/en/docs/references/cli/index_header docs/content/en/docs/references/cli/_index.md
 go run cmd/skaffold/man/man.go >> docs/content/en/docs/references/cli/_index.md
 
-readonly DOCS_CHANGES=`git diff --name-status master | grep "docs/" | wc -l`
+readonly CLI_CHANGES=`git status -s | grep "docs/" | wc -l`
 
-if [ $DOCS_CHANGES -gt 0 ]; then
-  echo "There are $DOCS_CHANGES changes in docs, testing site generation..."
-  make build-docs-preview
+if [ $CLI_CHANGES -gt 0 ]; then
+  echo "You have skaffold command changes; CLI reference docs should have just been generated. Make sure to commit the results!"
+  exit 1
 fi
