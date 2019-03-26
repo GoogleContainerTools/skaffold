@@ -36,11 +36,13 @@ representations are untouched.
 
 `skaffold debug` has some limitations:
 
+  - Only the `kubectl` deployer is supported at the moment: the Helm and Kustomize
+    deployers are not yet available.
   - Only JVM and NodeJS applications are supported:
       - JVM applications are configured using the `JAVA_TOOL_OPTIONS` environment variable
         which causes extra debugging output on launch.
       - NodeJS applications must be launched using `node` or `nodemon`
-  - File watching is disabled for all artifacts, irregardless of whether
+  - File watching is disabled for all artifacts, regardless of whether
     the artifact could be configured for debugging.
   
  Support for additional language runtimes will be forthcoming.
