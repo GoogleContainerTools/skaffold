@@ -32,10 +32,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/google/go-containerregistry/pkg/name"
-	config "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/remote"
 )
 
 var (
@@ -103,17 +99,20 @@ func findArtifact(image string, builds []build.Artifact) *build.Artifact {
 // retrieveImageConfiguration retrieves the image container configuration for
 // the given build artifact
 func retrieveImageConfiguration(ctx context.Context, artifact *build.Artifact) (imageConfiguration, error) {
-	var config config.Config
-	var err error
-	config, err = retrieveDockerConfiguration(ctx, artifact.Tag)
+	apiClient, err := docker.NewAPIClient()
 	if err != nil {
-		config, err = retrieveRegistryConfiguration(ctx, artifact.Tag)
+		return imageConfiguration{}, errors.Wrap(err, "could not connect to local docker daemon")
 	}
+	
+	// the apiClient will go to the remote registry if local docker daemon is not available
+	manifest, err := apiClient.ConfigFile(ctx, artifact.Tag)
 	if err != nil {
-		logrus.Debugf("failed to retrieve image config from registry: %v", err)
-		return imageConfiguration{}, errors.Wrapf(err, "unable to retrieve image configuration [%q]", artifact.ImageName)
+		logrus.Debugf("Error retrieving image manifest for %v: %v", artifact.Tag, err)
+		return imageConfiguration{}, errors.Wrapf(err, "retrieving image config for %q", artifact.Tag)
 	}
-
+	
+	config := manifest.Config
+	logrus.Debugf("Retrieved local image configuration for %v: %v", artifact.Tag, config)
 	return imageConfiguration{
 		env:        envAsMap(config.Env),
 		entrypoint: config.Entrypoint,
@@ -130,48 +129,4 @@ func envAsMap(env []string) map[string]string {
 		result[s[0]] = s[1]
 	}
 	return result
-}
-
-// retrieveRegistryConfiguration retrieves an image configuration from a registry
-func retrieveRegistryConfiguration(_ context.Context, image string) (config.Config, error) {
-	logrus.Debugf("Retrieving image configuration for %v", image)
-	ref, err := name.ParseReference(image, name.WeakValidation)
-	if err != nil {
-		logrus.Debugf("Error parsing image %v: %v", image, err)
-		return config.Config{}, errors.Wrapf(err, "parsing image %q", image)
-	}
-
-	auth, err := authn.DefaultKeychain.Resolve(ref.Context().Registry)
-	if err != nil {
-		return config.Config{}, errors.Wrap(err, "getting default keychain auth")
-	}
-
-	remoteImage, err := remote.Image(ref, remote.WithAuth(auth))
-	if err != nil {
-		logrus.Debugf("Error retrieving remote image details %v: %v", image, err)
-		return config.Config{}, errors.Wrapf(err, "retrieving image %q", ref)
-	}
-
-	manifest, err := remoteImage.ConfigFile()
-	if err != nil {
-		logrus.Debugf("Error retrieving remote image manifest %v: %v", image, err)
-		return config.Config{}, errors.Wrapf(err, "retrieving image config for %q", ref)
-	}
-	logrus.Debugf("Retrieved remote image configuration for %v: %v", image, manifest.Config)
-	return manifest.Config, nil
-}
-
-// retrieveDockerConfiguration retrieves an image configuration from a local docker daemon
-func retrieveDockerConfiguration(ctx context.Context, image string) (config.Config, error) {
-	localDocker, err := docker.NewAPIClient()
-	if err != nil {
-		return config.Config{}, errors.Wrap(err, "could not connect to local docker daemon")
-	}
-	manifest, err := localDocker.ConfigFile(ctx, image)
-	if err != nil {
-		logrus.Debugf("Error retrieving local image manifest for %v: %v", image, err)
-		return config.Config{}, errors.Wrapf(err, "retrieving image config for %q", image)
-	}
-	logrus.Debugf("Retrieved local image configuration for %v: %v", image, manifest.Config)
-	return manifest.Config, nil
 }
