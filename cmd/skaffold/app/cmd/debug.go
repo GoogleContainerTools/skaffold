@@ -19,7 +19,7 @@ package cmd
 import (
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debugging"
+	debugging "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/spf13/cobra"
 )
