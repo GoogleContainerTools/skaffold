@@ -44,16 +44,16 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 
 	config := parsed.(*latest.SkaffoldPipeline)
 
-	if err := validation.ValidateSchema(config); err != nil {
-		return nil, nil, errors.Wrap(err, "invalid skaffold config")
-	}
-
 	if err = schema.ApplyProfiles(config, opts); err != nil {
 		return nil, nil, errors.Wrap(err, "applying profiles")
 	}
 
 	if err := defaults.Set(config); err != nil {
 		return nil, nil, errors.Wrap(err, "setting default values")
+	}
+
+	if err := validation.ValidateSchema(config); err != nil {
+		return nil, nil, errors.Wrap(err, "invalid skaffold config")
 	}
 
 	defaultRepo, err := configutil.GetDefaultRepo(opts.DefaultRepo)
