@@ -24,7 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	plugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
@@ -37,14 +37,10 @@ type BuilderRPC struct {
 	client *rpc.Client
 }
 
-func (b *BuilderRPC) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
+func (b *BuilderRPC) Init(ctx *runcontext.RunContext) {
 	// We don't expect a response, so we can just use interface{}
 	var resp interface{}
-	args := InitArgs{
-		Opts: opts,
-		Env:  env,
-	}
-	b.client.Call("Plugin.Init", args, &resp)
+	b.client.Call("Plugin.Init", ctx, &resp)
 }
 
 func (b *BuilderRPC) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
@@ -107,8 +103,8 @@ type BuilderRPCServer struct {
 	Impl PluginBuilder
 }
 
-func (s *BuilderRPCServer) Init(args InitArgs, resp *interface{}) error {
-	s.Impl.Init(args.Opts, args.Env)
+func (s *BuilderRPCServer) Init(ctx *runcontext.RunContext, resp *interface{}) error {
+	s.Impl.Init(ctx)
 	return nil
 }
 
@@ -138,12 +134,6 @@ func (s *BuilderRPCServer) DependenciesForArtifact(d DependencyArgs, resp *[]str
 // DependencyArgs are args passed via rpc to the build plugin on DependencyForArtifact()
 type DependencyArgs struct {
 	*latest.Artifact
-}
-
-// InitArgs are args passed via rpc to the builder plugin on Init()
-type InitArgs struct {
-	Opts *config.SkaffoldOptions
-	Env  *latest.ExecutionEnvironment
 }
 
 // BuildArgs are the args passed via rpc to the builder plugin on Build()

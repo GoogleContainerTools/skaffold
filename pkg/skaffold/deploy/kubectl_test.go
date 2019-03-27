@@ -23,6 +23,8 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -141,7 +143,21 @@ func TestKubectlDeploy(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = test.command
 
-			k := NewKubectlDeployer(tmpDir.Root(), test.cfg, testKubeContext, testNamespace, "")
+			k := NewKubectlDeployer(&runcontext.RunContext{
+				WorkingDir: tmpDir.Root(),
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							KubectlDeploy: test.cfg,
+						},
+					},
+				},
+				Kubecontext: testKubeContext,
+				Opts: &config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			})
+
 			err := k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
 
 			testutil.CheckError(t, test.shouldErr, err)
@@ -201,7 +217,20 @@ func TestKubectlCleanup(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = test.command
 
-			k := NewKubectlDeployer(tmpDir.Root(), test.cfg, testKubeContext, testNamespace, "")
+			k := NewKubectlDeployer(&runcontext.RunContext{
+				WorkingDir: tmpDir.Root(),
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							KubectlDeploy: test.cfg,
+						},
+					},
+				},
+				Kubecontext: testKubeContext,
+				Opts: &config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			})
 			err := k.Cleanup(context.Background(), ioutil.Discard)
 
 			testutil.CheckError(t, test.shouldErr, err)
@@ -256,7 +285,20 @@ spec:
 	cfg := &latest.KubectlDeploy{
 		Manifests: []string{"*.yaml"},
 	}
-	deployer := NewKubectlDeployer(tmpDir.Root(), cfg, testKubeContext, testNamespace, "")
+	deployer := NewKubectlDeployer(&runcontext.RunContext{
+		WorkingDir: tmpDir.Root(),
+		Cfg: &latest.SkaffoldPipeline{
+			Deploy: latest.DeployConfig{
+				DeployType: latest.DeployType{
+					KubectlDeploy: cfg,
+				},
+			},
+		},
+		Kubecontext: testKubeContext,
+		Opts: &config.SkaffoldOptions{
+			Namespace: testNamespace,
+		},
+	})
 	labellers := []Labeller{deployer}
 
 	// Deploy one manifest

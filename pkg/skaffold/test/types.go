@@ -42,6 +42,7 @@ type Tester interface {
 // FullTester should always be the ONLY implementation of the Tester interface;
 // newly added testing implementations should implement the Runner interface.
 type FullTester struct {
+	blacklist  map[string]bool // a list of images that should not be tested
 	testCases  []*latest.TestCase
 	workingDir string
 }

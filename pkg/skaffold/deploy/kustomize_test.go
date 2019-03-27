@@ -22,6 +22,8 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -69,7 +71,20 @@ func TestKustomizeDeploy(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = test.command
 
-			k := NewKustomizeDeployer(test.cfg, testKubeContext, testNamespace, "")
+			k := NewKustomizeDeployer(&runcontext.RunContext{
+				WorkingDir: tmpDir.Root(),
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							KustomizeDeploy: test.cfg,
+						},
+					},
+				},
+				Kubecontext: testKubeContext,
+				Opts: &config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			})
 			err := k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
 
 			testutil.CheckError(t, test.shouldErr, err)
@@ -121,7 +136,20 @@ func TestKustomizeCleanup(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = test.command
 
-			k := NewKustomizeDeployer(test.cfg, testKubeContext, testNamespace, "")
+			k := NewKustomizeDeployer(&runcontext.RunContext{
+				WorkingDir: tmpDir.Root(),
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							KustomizeDeploy: test.cfg,
+						},
+					},
+				},
+				Kubecontext: testKubeContext,
+				Opts: &config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			})
 			err := k.Cleanup(context.Background(), ioutil.Discard)
 
 			testutil.CheckError(t, test.shouldErr, err)
@@ -186,7 +214,19 @@ func TestDependenciesForKustomization(t *testing.T) {
 
 			tmp.Write("kustomization.yaml", test.yaml)
 
-			k := NewKustomizeDeployer(&latest.KustomizeDeploy{KustomizePath: tmp.Root()}, "", "", "")
+			k := NewKustomizeDeployer(&runcontext.RunContext{
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							KustomizeDeploy: &latest.KustomizeDeploy{
+								KustomizePath: tmp.Root(),
+							},
+						},
+					},
+				},
+				Kubecontext: testKubeContext,
+				Opts:        &config.SkaffoldOptions{},
+			})
 			deps, err := k.Dependencies()
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, joinPaths(tmp.Root(), test.expected), deps)

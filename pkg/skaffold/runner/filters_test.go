@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -60,8 +61,10 @@ func TestIsTargetImage(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			runner := &SkaffoldRunner{
-				opts: &config.SkaffoldOptions{
-					TargetImages: test.targetImages,
+				runCtx: &runcontext.RunContext{
+					Opts: &config.SkaffoldOptions{
+						TargetImages: test.targetImages,
+					},
 				},
 			}
 

@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -35,14 +36,14 @@ type Builder struct {
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Kaniko.
-func NewBuilder(clusterDetails *latest.ClusterDetails) (*Builder, error) {
-	timeout, err := time.ParseDuration(clusterDetails.Timeout)
+func NewBuilder(ctx *runcontext.RunContext) (*Builder, error) {
+	timeout, err := time.ParseDuration(ctx.Cfg.Build.Cluster.Timeout)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing timeout")
 	}
 
 	return &Builder{
-		ClusterDetails: clusterDetails,
+		ClusterDetails: ctx.Cfg.Build.Cluster,
 		timeout:        timeout,
 	}, nil
 }

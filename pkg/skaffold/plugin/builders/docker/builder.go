@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/environments/gcb"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -56,16 +57,15 @@ func NewBuilder() *Builder {
 }
 
 // Init stores skaffold options and the execution environment
-func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
+func (b *Builder) Init(ctx *runcontext.RunContext) {
 	if b.PluginMode {
-		if err := event.SetupRPCClient(opts); err != nil {
+		if err := event.SetupRPCClient(ctx.Opts); err != nil {
 			logrus.Warn("error establishing gRPC connection to skaffold process; events will not be handled correctly")
 			logrus.Warn(err.Error())
 		}
 	}
-
-	b.opts = opts
-	b.env = env
+	b.opts = ctx.Opts
+	b.env = ctx.Cfg.Build.ExecutionEnvironment
 }
 
 // Labels are labels specific to Docker.
@@ -112,7 +112,17 @@ func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.
 			return nil, err
 		}
 	}
-	return gcb.NewBuilder(g, b.opts.SkipTests).Build(ctx, out, tags, artifacts)
+	runCtx := &runcontext.RunContext{
+		Opts: b.opts,
+		Cfg: &latest.SkaffoldPipeline{
+			Build: latest.BuildConfig{
+				BuildType: latest.BuildType{
+					GoogleCloudBuild: g,
+				},
+			},
+		},
+	}
+	return gcb.NewBuilder(runCtx).Build(ctx, out, tags, artifacts)
 }
 
 func setArtifact(artifact *latest.Artifact) error {

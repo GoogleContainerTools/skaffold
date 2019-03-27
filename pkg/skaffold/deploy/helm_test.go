@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -277,40 +278,100 @@ func TestHelmDeploy(t *testing.T) {
 	var tests = []struct {
 		description string
 		cmd         util.Command
-		deployer    *HelmDeployer
+		runContext  *runcontext.RunContext
 		builds      []build.Artifact
 		shouldErr   bool
 	}{
 		{
 			description: "deploy success",
 			cmd:         &MockHelm{t: t},
-			deployer:    NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace, ""),
-			builds:      testBuilds,
+			runContext: &runcontext.RunContext{
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							HelmDeploy: testDeployConfig,
+						},
+					},
+				},
+				Kubecontext: testKubeContext,
+				Opts: &config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			},
+			builds: testBuilds,
 		},
 		{
 			description: "deploy success with recreatePods",
 			cmd:         &MockHelm{t: t},
-			deployer:    NewHelmDeployer(testDeployRecreatePodsConfig, testKubeContext, testNamespace, ""),
-			builds:      testBuilds,
+			runContext: &runcontext.RunContext{
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							HelmDeploy: testDeployRecreatePodsConfig,
+						},
+					},
+				},
+				Kubecontext: testKubeContext,
+				Opts: &config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			},
+			builds: testBuilds,
 		},
 		{
 			description: "deploy success with skipBuildDependencies",
 			cmd:         &MockHelm{t: t},
-			deployer:    NewHelmDeployer(testDeploySkipBuildDependenciesConfig, testKubeContext, testNamespace, ""),
-			builds:      testBuilds,
+			runContext: &runcontext.RunContext{
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							HelmDeploy: testDeploySkipBuildDependenciesConfig,
+						},
+					},
+				},
+				Kubecontext: testKubeContext,
+				Opts: &config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			},
+			builds: testBuilds,
 		},
 		{
 			description: "deploy error unmatched parameter",
 			cmd:         &MockHelm{t: t},
-			deployer:    NewHelmDeployer(testDeployConfigParameterUnmatched, testKubeContext, testNamespace, ""),
-			builds:      testBuilds,
-			shouldErr:   true,
+			runContext: &runcontext.RunContext{
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							HelmDeploy: testDeployConfigParameterUnmatched,
+						},
+					},
+				},
+				Kubecontext: testKubeContext,
+				Opts: &config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			},
+			builds:    testBuilds,
+			shouldErr: true,
 		},
 		{
 			description: "deploy success remote chart with skipBuildDependencies",
 			cmd:         &MockHelm{t: t},
-			deployer:    NewHelmDeployer(testDeploySkipBuildDependencies, testKubeContext, testNamespace, ""),
-			builds:      testBuilds,
+			runContext: &runcontext.RunContext{
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							HelmDeploy: testDeploySkipBuildDependencies,
+						},
+					},
+				},
+				Kubecontext: testKubeContext,
+				Opts: &config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			},
+			builds: testBuilds,
 		},
 		{
 			description: "deploy error remote chart without skipBuildDependencies",
@@ -318,7 +379,19 @@ func TestHelmDeploy(t *testing.T) {
 				t:         t,
 				depResult: fmt.Errorf("unexpected error"),
 			},
-			deployer:  NewHelmDeployer(testDeployRemoteChart, testKubeContext, testNamespace, ""),
+			runContext: &runcontext.RunContext{
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							HelmDeploy: testDeployRemoteChart,
+						},
+					},
+				},
+				Kubecontext: testKubeContext,
+				Opts: &config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			},
 			builds:    testBuilds,
 			shouldErr: true,
 		},
@@ -338,8 +411,20 @@ func TestHelmDeploy(t *testing.T) {
 				},
 				upgradeResult: fmt.Errorf("should not have called upgrade"),
 			},
-			deployer: NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace, ""),
-			builds:   testBuilds,
+			runContext: &runcontext.RunContext{
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							HelmDeploy: testDeployConfig,
+						},
+					},
+				},
+				Kubecontext: testKubeContext,
+				Opts: &config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			},
+			builds: testBuilds,
 		},
 		{
 			description: "get failure should install not upgrade with helm image strategy",
@@ -362,8 +447,20 @@ func TestHelmDeploy(t *testing.T) {
 				},
 				upgradeResult: fmt.Errorf("should not have called upgrade"),
 			},
-			deployer: NewHelmDeployer(testDeployHelmStyleConfig, testKubeContext, testNamespace, ""),
-			builds:   testBuilds,
+			runContext: &runcontext.RunContext{
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							HelmDeploy: testDeployHelmStyleConfig,
+						},
+					},
+				},
+				Kubecontext: testKubeContext,
+				Opts: &config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			},
+			builds: testBuilds,
 		},
 		{
 			description: "get success should upgrade not install",
@@ -371,8 +468,20 @@ func TestHelmDeploy(t *testing.T) {
 				t:             t,
 				installResult: fmt.Errorf("should not have called install"),
 			},
-			deployer: NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace, ""),
-			builds:   testBuilds,
+			runContext: &runcontext.RunContext{
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							HelmDeploy: testDeployConfig,
+						},
+					},
+				},
+				Kubecontext: testKubeContext,
+				Opts: &config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			},
+			builds: testBuilds,
 		},
 		{
 			description: "deploy error",
@@ -381,8 +490,20 @@ func TestHelmDeploy(t *testing.T) {
 				upgradeResult: fmt.Errorf("unexpected error"),
 			},
 			shouldErr: true,
-			deployer:  NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace, ""),
-			builds:    testBuilds,
+			runContext: &runcontext.RunContext{
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							HelmDeploy: testDeployConfig,
+						},
+					},
+				},
+				Kubecontext: testKubeContext,
+				Opts: &config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			},
+			builds: testBuilds,
 		},
 		{
 			description: "dep build error",
@@ -391,8 +512,20 @@ func TestHelmDeploy(t *testing.T) {
 				depResult: fmt.Errorf("unexpected error"),
 			},
 			shouldErr: true,
-			deployer:  NewHelmDeployer(testDeployConfig, testKubeContext, testNamespace, ""),
-			builds:    testBuilds,
+			runContext: &runcontext.RunContext{
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							HelmDeploy: testDeployConfig,
+						},
+					},
+				},
+				Kubecontext: testKubeContext,
+				Opts: &config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			},
+			builds: testBuilds,
 		},
 		{
 			description: "should package chart and deploy",
@@ -401,12 +534,19 @@ func TestHelmDeploy(t *testing.T) {
 				packageOut: bytes.NewBufferString("Packaged to " + os.TempDir() + "foo-0.1.2.tgz"),
 			},
 			shouldErr: false,
-			deployer: NewHelmDeployer(
-				testDeployFooWithPackaged,
-				testKubeContext,
-				testNamespace,
-				"",
-			),
+			runContext: &runcontext.RunContext{
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							HelmDeploy: testDeployFooWithPackaged,
+						},
+					},
+				},
+				Kubecontext: testKubeContext,
+				Opts: &config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			},
 			builds: testBuildsFoo,
 		},
 		{
@@ -416,34 +556,48 @@ func TestHelmDeploy(t *testing.T) {
 				packageResult: fmt.Errorf("packaging failed"),
 			},
 			shouldErr: true,
-			deployer: NewHelmDeployer(
-				testDeployFooWithPackaged,
-				testKubeContext,
-				testNamespace,
-				"",
-			),
+			runContext: &runcontext.RunContext{
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							HelmDeploy: testDeployFooWithPackaged,
+						},
+					},
+				},
+				Kubecontext: testKubeContext,
+				Opts: &config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			},
 			builds: testBuildsFoo,
 		},
 		{
 			description: "deploy and get templated release name",
 			cmd:         &MockHelm{t: t},
-			deployer:    NewHelmDeployer(testDeployWithTemplatedName, testKubeContext, testNamespace, ""),
-			builds:      testBuilds,
+			runContext: &runcontext.RunContext{
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							HelmDeploy: testDeployWithTemplatedName,
+						},
+					},
+				},
+				Kubecontext: testKubeContext,
+				Opts: &config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			},
+			builds: testBuilds,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
-			cfg := &latest.DeployConfig{
-				DeployType: latest.DeployType{
-					HelmDeploy: tt.deployer.HelmDeploy,
-				},
-			}
-			event.InitializeState(nil, cfg, &config.SkaffoldOptions{})
+			event.InitializeState(tt.runContext)
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = tt.cmd
 
-			err := tt.deployer.Deploy(context.Background(), ioutil.Discard, tt.builds, nil)
+			err := NewHelmDeployer(tt.runContext).Deploy(context.Background(), ioutil.Discard, tt.builds, nil)
 
 			testutil.CheckError(t, tt.shouldErr, err)
 		})
@@ -588,18 +742,30 @@ func TestHelmDependencies(t *testing.T) {
 				folder.Write(file, "")
 			}
 
-			deployer := NewHelmDeployer(&latest.HelmDeploy{
-				Releases: []latest.HelmRelease{
-					{
-						Name:        "skaffold-helm",
-						ChartPath:   folder.Root(),
-						ValuesFiles: tt.valuesFiles,
-						Values:      map[string]string{"image": "skaffold-helm"},
-						Overrides:   schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
-						SetValues:   map[string]string{"some.key": "somevalue"},
+			deployer := NewHelmDeployer(&runcontext.RunContext{
+				Cfg: &latest.SkaffoldPipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							HelmDeploy: &latest.HelmDeploy{
+								Releases: []latest.HelmRelease{
+									{
+										Name:        "skaffold-helm",
+										ChartPath:   folder.Root(),
+										ValuesFiles: tt.valuesFiles,
+										Values:      map[string]string{"image": "skaffold-helm"},
+										Overrides:   schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
+										SetValues:   map[string]string{"some.key": "somevalue"},
+									},
+								},
+							},
+						},
 					},
 				},
-			}, testKubeContext, testNamespace, "")
+				Kubecontext: testKubeContext,
+				Opts: &config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			})
 
 			deps, err := deployer.Dependencies()
 
