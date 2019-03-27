@@ -1,3 +1,74 @@
+
+# v0.26.0 Release - 3/27/2019
+
+
+New features: 
+
+* Add debugging support for Skaffold: `skaffold debug` [#1702](https://github.com/GoogleContainerTools/skaffold/pull/1702)
+* Add portName to the PortEvent payload of the event api [#1855](https://github.com/GoogleContainerTools/skaffold/pull/1855)
+* Add HTTP reverse proxy for gRPC server to expose REST API for event server [#1825](https://github.com/GoogleContainerTools/skaffold/pull/1825)
+* Preserve sync subtree for '***'. [#1813](https://github.com/GoogleContainerTools/skaffold/pull/1813)
+* Error if no Dockerfiles are found for skaffold init --analyze  [#1810](https://github.com/GoogleContainerTools/skaffold/pull/1810)
+
+Fixes: 
+
+* Fix unnecessary warning in caching [#1873](https://github.com/GoogleContainerTools/skaffold/pull/1873)
+* Add folders to tarballs [#1878](https://github.com/GoogleContainerTools/skaffold/pull/1878)
+* Fix go routine leak [#1874](https://github.com/GoogleContainerTools/skaffold/pull/1874)
+* Fix skaffold build templating output and add tests [#1841](https://github.com/GoogleContainerTools/skaffold/pull/1841)
+* Don't expose ports to the outside and fix a race condition [#1850](https://github.com/GoogleContainerTools/skaffold/pull/1850)
+* removing goroutine leak [#1871](https://github.com/GoogleContainerTools/skaffold/pull/1871)
+* Verify patches and fail with a proper error message [#1864](https://github.com/GoogleContainerTools/skaffold/pull/1864)
+* Support 1.11+ as a kubectl version [#1843](https://github.com/GoogleContainerTools/skaffold/pull/1843)
+
+Updates & refactorings:
+
+* Add integration testing and example for skipBuildDependencies option [#1368](https://github.com/GoogleContainerTools/skaffold/pull/1368)
+* Improve Doc’s Dockerfile [#1875](https://github.com/GoogleContainerTools/skaffold/pull/1875)
+* Add tests for skaffold init walk flow. [#1809](https://github.com/GoogleContainerTools/skaffold/pull/1809)
+* Refactor Wait Utils Into Watchers [#1811](https://github.com/GoogleContainerTools/skaffold/pull/1811)
+* Enhance hack/check-samples script [#1858](https://github.com/GoogleContainerTools/skaffold/pull/1858)
+* removing unnecessary exit from plugin processes [#1848](https://github.com/GoogleContainerTools/skaffold/pull/1848)
+* Improve test coverage [#1840](https://github.com/GoogleContainerTools/skaffold/pull/1840)
+* Fix warning with `find` on TravisCI [#1846](https://github.com/GoogleContainerTools/skaffold/pull/1846)
+* Basic unit test to go through all the cobra related code [#1835](https://github.com/GoogleContainerTools/skaffold/pull/1835)
+* Compute tags in parallel [#1820](https://github.com/GoogleContainerTools/skaffold/pull/1820)
+* Increase integration tests timeout to 15minutes [#1834](https://github.com/GoogleContainerTools/skaffold/pull/1834)
+* Faster git tagger [#1817](https://github.com/GoogleContainerTools/skaffold/pull/1817)
+* Add unit tests for kustomize [#1828](https://github.com/GoogleContainerTools/skaffold/pull/1828)
+* Improve test coverage [#1827](https://github.com/GoogleContainerTools/skaffold/pull/1827)
+* Remove duplication in eventing [#1829](https://github.com/GoogleContainerTools/skaffold/pull/1829)
+* Simplify upgrade code [#1830](https://github.com/GoogleContainerTools/skaffold/pull/1830)
+* Check that samples are both in ./examples and ./integration/examples [#1832](https://github.com/GoogleContainerTools/skaffold/pull/1832)
+* Add total time for `skaffold build` [#1818](https://github.com/GoogleContainerTools/skaffold/pull/1818)
+* Check cached artifacts in parallel [#1821](https://github.com/GoogleContainerTools/skaffold/pull/1821)
+* Debug integration tests [#1816](https://github.com/GoogleContainerTools/skaffold/pull/1816)
+* Faster doc preview [#1773](https://github.com/GoogleContainerTools/skaffold/pull/1773)
+
+Docs updates: 
+
+* Improve manual installation instruction for windows [#1883](https://github.com/GoogleContainerTools/skaffold/pull/1883)
+* more docs for profiles [#1882](https://github.com/GoogleContainerTools/skaffold/pull/1882)
+* Add missing env variables in CLI reference doc [#1863](https://github.com/GoogleContainerTools/skaffold/pull/1863)
+* Add React example app featuring hot module reload [#1826](https://github.com/GoogleContainerTools/skaffold/pull/1826)
+* fix Markdown rendering deprecation-policy.md [#1845](https://github.com/GoogleContainerTools/skaffold/pull/1845)
+* Fix Safari issue on skaffold.dev yaml reference [#1831](https://github.com/GoogleContainerTools/skaffold/pull/1831)
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Balint Pato
+- Brian de Alwis
+- Cornelius Weig
+- David Gageot
+- Etan Shaul
+- g-harel
+- Michael FIG
+- Nick Kubala
+- peter
+- Priya Wadhwa
+- Tejal Desai
+
 # v0.25.0 Release - 3/15/2019
 
 *Note*: This release comes with a new config version `v1beta7`.
