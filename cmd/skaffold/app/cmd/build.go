@@ -55,7 +55,7 @@ func NewCmdBuild(out io.Writer) *cobra.Command {
 	}
 	AddRunDevFlags(cmd)
 	cmd.Flags().StringArrayVarP(&opts.TargetImages, "build-image", "b", nil, "Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts")
-	cmd.Flags().BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output. ")
+	cmd.Flags().BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output.")
 	cmd.Flags().VarP(buildFormatFlag, "output", "o", "Used in conjuction with --quiet flag. "+buildFormatFlag.Usage())
 	return cmd
 }
