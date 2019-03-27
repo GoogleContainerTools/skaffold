@@ -33,8 +33,12 @@ import (
 )
 
 // Retag retags newly built images in the format [imageName:workspaceHash] and pushes them if using a remote cluster
-func (c *Cache) Retag(ctx context.Context, out io.Writer, artifactsToBuild []*latest.Artifact, buildArtifacts []build.Artifact) {
+func (c *Cache) RetagLocalImages(ctx context.Context, out io.Writer, artifactsToBuild []*latest.Artifact, buildArtifacts []build.Artifact) {
 	if !c.useCache || len(artifactsToBuild) == 0 {
+		return
+	}
+	// Built images remotely, nothing to retag
+	if !c.isLocalBuilder {
 		return
 	}
 	tags := map[string]string{}

@@ -57,11 +57,11 @@ type SkaffoldRunner struct {
 	sync.Syncer
 	watch.Watcher
 
+	cache             *cache.Cache
 	opts              *config.SkaffoldOptions
 	labellers         []deploy.Labeller
 	builds            []build.Artifact
 	hasDeployed       bool
-	needsPush         bool
 	imageList         *kubernetes.ImageList
 	namespaces        []string
 	RPCServerShutdown func() error
@@ -94,6 +94,8 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing build config")
 	}
+
+	artifactCache := cache.NewCache(builder, opts, cfg.Build)
 
 	tester, err := getTester(cfg.Test, opts)
 	if err != nil {
@@ -135,7 +137,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		labellers:         labellers,
 		imageList:         kubernetes.NewImageList(),
 		namespaces:        namespaces,
-		needsPush:         needsPush(cfg.Build),
+		cache:             artifactCache,
 		RPCServerShutdown: shutdown,
 	}, nil
 }
@@ -164,16 +166,6 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string, opts *config.Skaffo
 	default:
 		return nil, fmt.Errorf("unknown builder for config %+v", cfg)
 	}
-}
-
-func needsPush(cfg latest.BuildConfig) bool {
-	if cfg.LocalBuild == nil {
-		return false
-	}
-	if cfg.LocalBuild.Push == nil {
-		return false
-	}
-	return *cfg.LocalBuild.Push
 }
 
 func buildWithPlugin(artifacts []*latest.Artifact) bool {
@@ -349,8 +341,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 		return nil, errors.Wrap(err, "generating tag")
 	}
 
-	artifactCache := cache.NewCache(ctx, r.Builder, r.opts, r.needsPush)
-	artifactsToBuild, res, err := artifactCache.RetrieveCachedArtifacts(ctx, out, artifacts)
+	artifactsToBuild, res, err := r.cache.RetrieveCachedArtifacts(ctx, out, artifacts)
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving cached artifacts")
 	}
@@ -359,9 +350,9 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	if err != nil {
 		return nil, errors.Wrap(err, "build failed")
 	}
-	artifactCache.Retag(ctx, out, artifactsToBuild, bRes)
+	r.cache.RetagLocalImages(ctx, out, artifactsToBuild, bRes)
 	bRes = append(bRes, res...)
-	if err := artifactCache.CacheArtifacts(ctx, artifacts, bRes); err != nil {
+	if err := r.cache.CacheArtifacts(ctx, artifacts, bRes); err != nil {
 		logrus.Warnf("error caching artifacts: %v", err)
 	}
 	if !r.opts.SkipTests {

@@ -5,19 +5,19 @@ weight: 90
 ---
 
 Skaffold config allows for certain fields to have values injected that are either environment variables or calculated by Skaffold.
-For example: 
+For example:
 
 {{% readfile file="samples/templating/env.yaml" %}}
 
 Suppose the value of the `FOO` environment variable is `v1`, the image built
 will be `gcr.io/k8s-skaffold/example:v1`.
 
-List of fields that support templating: 
+List of fields that support templating:
 
 * `build.tagPolicy.envTemplate.template` (see [envTemplate tagger](/docs/how-tos/taggers/##envtemplate-using-values-of-environment-variables-as-tags))
 * `deploy.helm.releases.setValueTemplates` (see [Deploying with helm](/docs/how-tos/deployers/#deploying-with-helm))
 
-List of variables that are available for templating: 
+List of variables that are available for templating:
 
-* all environment variables passed to the Skaffold process at startup 
+* all environment variables passed to the Skaffold process at startup
 * `IMAGE_NAME` - the artifacts' image name - the [image name rewriting](/docs/concepts/#image-repository-handling) acts after the template is calculated

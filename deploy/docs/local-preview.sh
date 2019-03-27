@@ -22,7 +22,7 @@ readonly DOCS_DIR="${CURRENT_DIR}/docs"
 MOUNTS="-v ${CURRENT_DIR}/.git:/app/.git:ro"
 MOUNTS="${MOUNTS} -v ${DOCS_DIR}/config.toml:/app/docs/config.toml:ro"
 
-for dir in $(find ${DOCS_DIR} -type dir -mindepth 1 -maxdepth 1 | grep -v themes | grep -v public | grep -v resources | grep -v node_modules); do
+for dir in $(find ${DOCS_DIR} -mindepth 1 -maxdepth 1 -type d | grep -v themes | grep -v public | grep -v resources | grep -v node_modules); do
     MOUNTS="${MOUNTS} -v $dir:/app/docs/$(basename $dir):ro"
 done
 

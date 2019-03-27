@@ -60,11 +60,11 @@ Skaffold allows you to skip stages. If, for example, you run Kubernetes
 locally with [Minikube](https://kubernetes.io/docs/setup/minikube/), Skaffold
 will not push artifacts to a remote repository.
 
-## Image repository handling 
+## Image repository handling
 
 Skaffold allows for automatically rewriting image names to your repository.
-This way you can grab a Skaffold project and just `skaffold run` it to deploy to your cluster.  
-The way to achieve this is the `default-repo` functionality: 
+This way you can grab a Skaffold project and just `skaffold run` it to deploy to your cluster.
+The way to achieve this is the `default-repo` functionality:
 
 1. Via `default-repo` flag
 
@@ -75,25 +75,25 @@ The way to achieve this is the `default-repo` functionality:
 1. Via `SKAFFOLD_DEFAULT_REPO` environment variable
 
     ```bash
-    SKAFFOLD_DEFAULT_REPO=<myrepo> skaffold dev  
+    SKAFFOLD_DEFAULT_REPO=<myrepo> skaffold dev
     ```
 
-1. Via Skaffold's global config           
+1. Via Skaffold's global config
 
     ```bash
     skaffold config set default-repo <myrepo>
     ```
 
-If Skaffold doesn't find `default-repo`, there is no automated image name rewriting. 
+If Skaffold doesn't find `default-repo`, there is no automated image name rewriting.
 
-The image name rewriting strategies are designed to be *conflict-free*: 
+The image name rewriting strategies are designed to be *conflict-free*:
 the full image name is rewritten on top of the default-repo so similar image names don't collide in the base namespace (e.g.: repo1/example and repo2/example would collide in the target_namespace/example without this)
 
-Automated image name rewriting strategies are determined based on the default-repo and the original image repository: 
+Automated image name rewriting strategies are determined based on the default-repo and the original image repository:
 
 * default-repo does not begin with gcr.io
   * **strategy**: 		escape & concat & truncate to 256
-  
+
     ```
      original image: 	gcr.io/k8s-skaffold/skaffold-example1
      default-repo:      aws_account_id.dkr.ecr.region.amazonaws.com
@@ -103,21 +103,21 @@ Automated image name rewriting strategies are determined based on the default-re
 * default-repo begins with "gcr.io" (special case - as GCR allows for infinite deep image repo names)
   * **strategy**: concat unless prefix matches
   * **example1**: prefix doesn't match:
-    
+
     ```
       original image: 	gcr.io/k8s-skaffold/skaffold-example1
       default-repo: 	gcr.io/myproject/myimage
       rewritten image:  gcr.io/myproject/myimage/gcr.io/k8s-skaffold/skaffold-example1
     ```
   * **example2**: prefix matches:
-    
+
     ```
       original image: 	gcr.io/k8s-skaffold/skaffold-example1
       default-repo: 	gcr.io/k8s-skaffold
       rewritten image:  gcr.io/k8s-skaffold/skaffold-example1	
     ```
   * **example3**: shared prefix:
-    
+
     ```
       original image: 	gcr.io/k8s-skaffold/skaffold-example1
       default-repo: 	gcr.io/k8s-skaffold/myimage
@@ -135,20 +135,20 @@ provides built-in support for the following tools:
 
 * **Build**
   * Dockerfile locally, in-cluster with kaniko or using Google Cloud Build
-  * Bazel locally 
+  * Bazel locally
   * Jib Maven and Jib Gradle locally or using Google Cloud Build
 * **Test**
   * [container-structure-test](https://github.com/GoogleContainerTools/container-structure-test)
 * **Tag**
-  * Git tagger 
+  * Git tagger
   * Sha256 tagger
-  * Env Template tagger 
+  * Env Template tagger
   * DateTime tagger
 * **Deploy**
   * Kubernetes Command-Line Interface (`kubectl`)
   * [Helm](https://helm.sh/)
   * [kustomize](https://github.com/kubernetes-sigs/kustomize)
- 
+
 And you can combine the tools as you see fit in Skaffold. For experimental
 projects, you may want to use local Docker daemon for building artifacts, and
 deploy them to a Minikube local Kubernetes cluster with `kubectl`:

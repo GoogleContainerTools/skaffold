@@ -34,7 +34,12 @@ import (
 
 var (
 	quietFlag       bool
-	buildFormatFlag = flags.NewTemplateFlag("{{range .Builds}}{{.ImageName}} -> {{.Tag}}\n{{end}}", BuildOutput{})
+	buildFormatFlag = flags.NewTemplateFlag("{{.}}", BuildOutput{})
+)
+
+// For testing
+var (
+	createRunnerAndBuildFunc = createRunnerAndBuild
 )
 
 // NewCmdBuild describes the CLI command to build artifacts.
@@ -50,8 +55,8 @@ func NewCmdBuild(out io.Writer) *cobra.Command {
 	}
 	AddRunDevFlags(cmd)
 	cmd.Flags().StringArrayVarP(&opts.TargetImages, "build-image", "b", nil, "Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts")
-	cmd.Flags().BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success")
-	cmd.Flags().VarP(buildFormatFlag, "output", "o", buildFormatFlag.Usage())
+	cmd.Flags().BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output.")
+	cmd.Flags().VarP(buildFormatFlag, "output", "o", "Used in conjuction with --quiet flag. "+buildFormatFlag.Usage())
 	return cmd
 }
 
@@ -63,7 +68,9 @@ type BuildOutput struct {
 func runBuild(out io.Writer) error {
 	start := time.Now()
 	defer func() {
-		color.Default.Fprintln(out, "Complete in", time.Since(start))
+		if !quietFlag {
+			color.Default.Fprintln(out, "Complete in", time.Since(start))
+		}
 	}()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -71,25 +78,13 @@ func runBuild(out io.Writer) error {
 	defer plugin.CleanupClients()
 	catchCtrlC(cancel)
 
-	runner, config, err := newRunner(opts)
-	if err != nil {
-		return errors.Wrap(err, "creating runner")
-	}
-	defer runner.RPCServerShutdown()
-
 	buildOut := out
 	if quietFlag {
 		buildOut = ioutil.Discard
 	}
 
-	var targetArtifacts []*latest.Artifact
-	for _, artifact := range config.Build.Artifacts {
-		if runner.IsTargetImage(artifact) {
-			targetArtifacts = append(targetArtifacts, artifact)
-		}
-	}
+	bRes, err := createRunnerAndBuildFunc(ctx, buildOut)
 
-	bRes, err := runner.BuildAndTest(ctx, buildOut, targetArtifacts)
 	if err != nil {
 		return err
 	}
@@ -102,4 +97,19 @@ func runBuild(out io.Writer) error {
 	}
 
 	return nil
+}
+
+func createRunnerAndBuild(ctx context.Context, buildOut io.Writer) ([]build.Artifact, error) {
+	runner, config, err := newRunner(opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating runner")
+	}
+	defer runner.RPCServerShutdown()
+	var targetArtifacts []*latest.Artifact
+	for _, artifact := range config.Build.Artifacts {
+		if runner.IsTargetImage(artifact) {
+			targetArtifacts = append(targetArtifacts, artifact)
+		}
+	}
+	return runner.BuildAndTest(ctx, buildOut, targetArtifacts)
 }

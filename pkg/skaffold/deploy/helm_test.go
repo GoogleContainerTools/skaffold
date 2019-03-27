@@ -85,6 +85,23 @@ var testDeployRecreatePodsConfig = &latest.HelmDeploy{
 	},
 }
 
+var testDeploySkipBuildDependenciesConfig = &latest.HelmDeploy{
+	Releases: []latest.HelmRelease{
+		{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Values: map[string]string{
+				"image": "skaffold-helm",
+			},
+			Overrides: schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
+			SetValues: map[string]string{
+				"some.key": "somevalue",
+			},
+			SkipBuildDependencies: true,
+		},
+	},
+}
+
 var testDeployHelmStyleConfig = &latest.HelmDeploy{
 	Releases: []latest.HelmRelease{
 		{
@@ -274,6 +291,12 @@ func TestHelmDeploy(t *testing.T) {
 			description: "deploy success with recreatePods",
 			cmd:         &MockHelm{t: t},
 			deployer:    NewHelmDeployer(testDeployRecreatePodsConfig, testKubeContext, testNamespace, ""),
+			builds:      testBuilds,
+		},
+		{
+			description: "deploy success with skipBuildDependencies",
+			cmd:         &MockHelm{t: t},
+			deployer:    NewHelmDeployer(testDeploySkipBuildDependenciesConfig, testKubeContext, testNamespace, ""),
 			builds:      testBuilds,
 		},
 		{

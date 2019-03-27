@@ -21,7 +21,7 @@ import (
 	yamlpatch "github.com/krishicks/yaml-patch"
 )
 
-const Version string = "skaffold/v1beta7"
+const Version string = "skaffold/v1beta8"
 
 // NewSkaffoldPipeline creates a SkaffoldPipeline
 func NewSkaffoldPipeline() util.VersionedConfig {
@@ -492,6 +492,8 @@ type Profile struct {
 	Patches []JSONPatch `yaml:"patches,omitempty"`
 
 	// Activation criteria by which a profile can be auto-activated.
+	// The profile is auto-activated if any one of the activations are triggered.
+	// An activation is triggered if all of the criteria (env, kubeContext, command) are triggered.
 	Activation []Activation `yaml:"activation,omitempty"`
 }
 
