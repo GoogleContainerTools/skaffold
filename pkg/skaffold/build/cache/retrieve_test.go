@@ -271,7 +271,7 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			hashes:                    map[string]string{"image": "hash"},
 			cache: &Cache{
 				useCache:      true,
-				needsPush:     true,
+				pushImages:    true,
 				localCluster:  true,
 				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
 				imageList: []types.ImageSummary{
@@ -295,7 +295,7 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			targetImageExistsRemotely: true,
 			cache: &Cache{
 				useCache:      true,
-				needsPush:     true,
+				pushImages:    true,
 				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
 			},
 			digest: digest,
