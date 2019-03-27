@@ -27,6 +27,7 @@ type VersionedConfig interface {
 	Upgrade() (VersionedConfig, error)
 }
 
+// HelmOverrides is a helper struct to aid with json serialization of map[string]interface{}
 type HelmOverrides struct {
 	Values map[string]interface{} `yaml:",inline"`
 }
