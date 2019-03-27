@@ -28,7 +28,7 @@ to tag artifacts.
 
 The `gitCommit` tagger will look at the Git workspace that contains
 the artifact's `context` directory and tag according to those rules:
- 
+
  + If the workspace is on a Git tag, that tag is used to tag images
  + If the workspace is on a Git commit, the short commit is used
  + It the workspace has uncommited changes, a `-dirty` suffix is appended to the image tag
@@ -76,7 +76,7 @@ variables in the system for the variable `FOO`, and use its value to tag the
 image.
 
 {{< alert >}}
-<b>Note</b><br> 
+<b>Note</b><br>
 
 <code>IMAGE_NAME</code> is a built-in variable whose value is the <code>imageName</code> field in
 the <code>artifacts</code> part of the <code>build</code> section.

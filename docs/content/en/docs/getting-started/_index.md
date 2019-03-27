@@ -42,13 +42,13 @@ Docker with Google Container Registry, see <a href=https://cloud.google.com/cont
 
 {{% tabs %}}
 {{% tab "LINUX" %}}
-### Stable binary 
-For the latest **stable** release download and place it in your `PATH`: 
+### Stable binary
+For the latest **stable** release download and place it in your `PATH`:
 
-https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 
+https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
 
-Run these commands to download and place the binary in your /usr/local/bin folder: 
- 
+Run these commands to download and place the binary in your /usr/local/bin folder:
+
 ```bash
 curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
 chmod +x skaffold
@@ -57,7 +57,7 @@ sudo mv skaffold /usr/local/bin
 
 ### Latest bleeding edge binary
 
-For the latest **bleeding edge** build, download and place it in your `PATH`: 
+For the latest **bleeding edge** build, download and place it in your `PATH`:
 
 https://storage.googleapis.com/skaffold/builds/latest/skaffold-linux-amd64
 
@@ -80,12 +80,12 @@ brew install skaffold
 ```
 
 ### Stable binary
-For the latest **stable** release download and place it in your `PATH`: 
+For the latest **stable** release download and place it in your `PATH`:
 
-https://storage.googleapis.com/skaffold/releases/latest/skaffold-darwin-amd64 
+https://storage.googleapis.com/skaffold/releases/latest/skaffold-darwin-amd64
 
-Run these commands to download and place the binary in your /usr/local/bin folder: 
- 
+Run these commands to download and place the binary in your /usr/local/bin folder:
+
 ```bash
 curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-darwin-amd64
 chmod +x skaffold
@@ -94,7 +94,7 @@ sudo mv skaffold /usr/local/bin
 
 ### Bleeding edge binary
 
-For the latest **bleeding edge** build, download and place it in your `PATH`: 
+For the latest **bleeding edge** build, download and place it in your `PATH`:
 
 https://storage.googleapis.com/skaffold/builds/latest/skaffold-darwin-amd64
 
@@ -109,7 +109,7 @@ sudo mv skaffold /usr/local/bin
 
 {{% tab "WINDOWS" %}}
 
-### Chocolatey 
+### Chocolatey
 
 ```bash
 choco install skaffold
@@ -119,7 +119,7 @@ choco install skaffold
 
 For the latest **stable** release download and place it in your `PATH` as `skaffold.exe`:
 
-https://storage.googleapis.com/skaffold/releases/latest/skaffold-windows-amd64.exe 
+https://storage.googleapis.com/skaffold/releases/latest/skaffold-windows-amd64.exe
 
 For the latest **bleeding edge** build, download and place it in your `PATH` as `skaffold.exe`:
 
@@ -144,8 +144,8 @@ https://storage.googleapis.com/skaffold/builds/latest/skaffold-windows-amd64.exe
 
 ## `skaffold dev`: Build and deploy your app every time your code changes
 
-Run `skaffold dev --default-repo <myrepo>` to build and deploy your app continuously. 
-The `--default-repo` functionality enables pushing images to your own repository instead of the default `gcr.io/k8s-skaffold` repo. 
+Run `skaffold dev --default-repo <myrepo>` to build and deploy your app continuously.
+The `--default-repo` functionality enables pushing images to your own repository instead of the default `gcr.io/k8s-skaffold` repo.
 You should see some outputs similar to the following entries:
 
 ```
@@ -192,7 +192,7 @@ workflow, which, in this example, is
 For skaffold dev, if `imagePullPolicy` is set to `Always` in your Kubernetes manifest, it will expect the image to exist in a remote registry.
 {{< /alert >}}
 
-Let's re-trigger the workflow just by a single code change! 
+Let's re-trigger the workflow just by a single code change!
 Update `main.go` as follows:
 
 ```go
@@ -231,7 +231,7 @@ Skaffold will perform the workflow described in `skaffold.yaml` exactly once.
 For more in-depth topics of Skaffold, explore [Skaffold Concepts: Configuration](/docs/concepts/#configuration),
 [Skaffold Concepts: Workflow](/docs/concepts/#workflow), and [Skaffold Concepts: Architecture](/docs/concepts/#architecture).
 
-To learn more about how Skaffold builds, tags, and deploys your app, see the How-to Guides on 
+To learn more about how Skaffold builds, tags, and deploys your app, see the How-to Guides on
 using [Builders](/docs/how-tos/builders), [Taggers](/docs/how-tos/taggers), and [Deployers](/docs/how-tos/deployers).
 
 [Skaffold Tutorials](/docs/tutorials) details some of the common use cases of Skaffold.
