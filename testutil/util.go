@@ -46,6 +46,14 @@ func CheckDeepEqual(t *testing.T, expected, actual interface{}) {
 	}
 }
 
+func CheckDeepEqualWithOptions(t *testing.T, options cmp.Options, expected, actual interface{}) {
+	t.Helper()
+	if diff := cmp.Diff(actual, expected, options); diff != "" {
+		t.Errorf("%T differ (-got, +want): %s", expected, diff)
+		return
+	}
+}
+
 func CheckErrorAndDeepEqual(t *testing.T, shouldErr bool, err error, expected, actual interface{}) {
 	t.Helper()
 	if err := checkErr(shouldErr, err); err != nil {

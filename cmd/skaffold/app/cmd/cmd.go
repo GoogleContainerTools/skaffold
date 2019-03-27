@@ -84,6 +84,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdVersion(out))
 	rootCmd.AddCommand(NewCmdRun(out))
 	rootCmd.AddCommand(NewCmdDev(out))
+	rootCmd.AddCommand(NewCmdDebug(out))
 	rootCmd.AddCommand(NewCmdBuild(out))
 	rootCmd.AddCommand(NewCmdDeploy(out))
 	rootCmd.AddCommand(NewCmdDelete(out))
@@ -156,6 +157,14 @@ func AddRunDevFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.SkipTests, "skip-tests", false, "Whether to skip the tests after building")
 	cmd.Flags().BoolVar(&opts.CacheArtifacts, "cache-artifacts", false, "Set to true to enable caching of artifacts.")
 	cmd.Flags().StringVarP(&opts.CacheFile, "cache-file", "", "", "Specify the location of the cache file (default $HOME/.skaffold/cache)")
+}
+
+func AddDevDebugFlags(cmd *cobra.Command) {
+	cmd.Flags().BoolVar(&opts.TailDev, "tail", true, "Stream logs from deployed objects")
+	cmd.Flags().BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
+	cmd.Flags().BoolVar(&opts.PortForward, "port-forward", true, "Port-forward exposed container ports within pods")
+	cmd.Flags().StringArrayVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels")
+	cmd.Flags().BoolVar(&opts.ExperimentalGUI, "experimental-gui", false, "Experimental Graphical User Interface")
 }
 
 func SetUpLogs(out io.Writer, level string) error {
