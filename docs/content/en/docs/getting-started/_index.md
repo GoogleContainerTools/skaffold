@@ -117,13 +117,13 @@ choco install skaffold
 
 ### Stable binary
 
-For the latest **stable** release download and place it in your `PATH`: 
+For the latest **stable** release download and place it in your `PATH` as `skaffold.exe`:
 
 https://storage.googleapis.com/skaffold/releases/latest/skaffold-windows-amd64.exe 
 
-For the latest **bleeding edge** build, download and place it in your `PATH`: 
+For the latest **bleeding edge** build, download and place it in your `PATH` as `skaffold.exe`:
 
-https://storage.googleapis.com/skaffold/builds/latest/skaffold-windows-amd64.exe 
+https://storage.googleapis.com/skaffold/builds/latest/skaffold-windows-amd64.exe
 
 {{% /tab %}}
 {{% /tabs %}}
