@@ -18,8 +18,10 @@ package util
 
 import (
 	"encoding/json"
+	"reflect"
+	"strings"
 
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 type VersionedConfig interface {
@@ -50,4 +52,16 @@ func (h *HelmOverrides) UnmarshalJSON(text []byte) error {
 		return err
 	}
 	return yaml.Unmarshal([]byte(in.Yaml), h)
+}
+
+// IsOneOfField checks if a field is tagged with oneOf
+func IsOneOfField(field reflect.StructField) bool {
+	for _, tag := range strings.Split(field.Tag.Get("yamltags"), ",") {
+		tagParts := strings.Split(tag, "=")
+
+		if tagParts[0] == "oneOf" {
+			return true
+		}
+	}
+	return false
 }

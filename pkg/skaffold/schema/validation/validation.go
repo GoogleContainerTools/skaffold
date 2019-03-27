@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/sirupsen/logrus"
 )
 
@@ -49,11 +50,11 @@ func validateOneOf(config interface{}) []error {
 		var errs []error
 
 		// fields marked with oneOf should only be set once
-		if t.NumField() > 1 && isOneOf(t.Field(0)) {
+		if t.NumField() > 1 && util.IsOneOfField(t.Field(0)) {
 			var given []string
 			for i := 0; i < t.NumField(); i++ {
 				zero := reflect.Zero(v.Field(i).Type())
-				if isOneOf(t.Field(i)) && v.Field(i).Interface() != zero.Interface() {
+				if util.IsOneOfField(t.Field(i)) && v.Field(i).Interface() != zero.Interface() {
 					given = append(given, yamlName(t.Field(i)))
 				}
 			}
@@ -96,18 +97,6 @@ func validateOneOf(config interface{}) []error {
 		// other values are fine
 		return nil
 	}
-}
-
-// isOneOf checks if a field is tagged with oneOf
-func isOneOf(field reflect.StructField) bool {
-	for _, tag := range strings.Split(field.Tag.Get("yamltags"), ",") {
-		tagParts := strings.Split(tag, "=")
-
-		if tagParts[0] == "oneOf" {
-			return true
-		}
-	}
-	return false
 }
 
 // yamlName retrieves the field name in the yaml
