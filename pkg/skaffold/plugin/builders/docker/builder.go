@@ -57,15 +57,18 @@ func NewBuilder() *Builder {
 }
 
 // Init stores skaffold options and the execution environment
-func (b *Builder) Init(ctx *runcontext.RunContext) {
+func (b *Builder) Init(ctx *runcontext.RunContext) error {
 	if b.PluginMode {
 		if err := event.SetupRPCClient(ctx.Opts); err != nil {
 			logrus.Warn("error establishing gRPC connection to skaffold process; events will not be handled correctly")
 			logrus.Warn(err.Error())
+			return err
 		}
 	}
 	b.opts = ctx.Opts
 	b.env = ctx.Cfg.Build.ExecutionEnvironment
+	logrus.Debug("initialized plugin with %+v", ctx)
+	return nil
 }
 
 // Labels are labels specific to Docker.

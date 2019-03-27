@@ -73,12 +73,14 @@ func NewPluginBuilder(ctx *runctx.RunContext) (shared.PluginBuilder, error) {
 			Cmd:             cmd,
 		})
 
+		logrus.Debugf("Starting plugin with command: %+v", cmd)
+
 		// Connect via RPC
 		rpcClient, err := client.Client()
 		if err != nil {
 			return nil, errors.Wrap(err, "connecting via rpc")
 		}
-
+		logrus.Debugf("plugin started.")
 		// Request the plugin
 		raw, err := rpcClient.Dispense(p)
 		if err != nil {
@@ -91,18 +93,23 @@ func NewPluginBuilder(ctx *runctx.RunContext) (shared.PluginBuilder, error) {
 	b := &Builder{
 		Builders: builders,
 	}
-	b.Init(ctx)
-	return b, nil
+
+	logrus.Debugf("Calling Init() for all plugins.")
+
+	return b, b.Init(ctx)
 }
 
 type Builder struct {
 	Builders map[string]shared.PluginBuilder
 }
 
-func (b *Builder) Init(ctx *runctx.RunContext) {
+func (b *Builder) Init(ctx *runctx.RunContext) error {
 	for _, builder := range b.Builders {
-		builder.Init(ctx)
+		if err := builder.Init(ctx); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // Labels are labels applied to deployed resources.

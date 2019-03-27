@@ -42,7 +42,7 @@ func (b *mockBuilder) Labels() map[string]string {
 	return b.labels
 }
 
-func (b *mockBuilder) Init(ctx *runcontext.RunContext) {}
+func (b *mockBuilder) Init(ctx *runcontext.RunContext) error { return nil }
 
 func (b *mockBuilder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 	return nil, nil

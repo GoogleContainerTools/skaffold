@@ -37,10 +37,10 @@ type BuilderRPC struct {
 	client *rpc.Client
 }
 
-func (b *BuilderRPC) Init(ctx *runcontext.RunContext) {
+func (b *BuilderRPC) Init(ctx *runcontext.RunContext) error {
 	// We don't expect a response, so we can just use interface{}
 	var resp interface{}
-	b.client.Call("Plugin.Init", ctx, &resp)
+	return b.client.Call("Plugin.Init", ctx, &resp)
 }
 
 func (b *BuilderRPC) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {

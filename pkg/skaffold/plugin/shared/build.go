@@ -22,6 +22,6 @@ import (
 )
 
 type PluginBuilder interface {
-	Init(ctx *runcontext.RunContext)
+	Init(ctx *runcontext.RunContext) error
 	build.Builder
 }
