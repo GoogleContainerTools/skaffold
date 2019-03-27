@@ -19,6 +19,7 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"io"
 	"sort"
 
@@ -110,6 +111,9 @@ func appendCacheIfExists(args []string, cache *latest.KanikoCache) []string {
 	args = append(args, "--cache=true")
 	if cache.Repo != "" {
 		args = append(args, fmt.Sprintf("--cache-repo=%s", cache.Repo))
+	}
+	if cache.HostPath != "" {
+		args = append(args, fmt.Sprintf("--cache-dir=%s", constants.DefaultKanikoDockerConfigPath))
 	}
 	return args
 }

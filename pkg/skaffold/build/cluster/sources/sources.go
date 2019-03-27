@@ -51,7 +51,7 @@ func Retrieve(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoArti
 	}
 }
 
-func podTemplate(clusterDetails *latest.ClusterDetails, image string, args []string) *v1.Pod {
+func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoArtifact, args []string) *v1.Pod {
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kaniko-",
@@ -62,7 +62,7 @@ func podTemplate(clusterDetails *latest.ClusterDetails, image string, args []str
 			Containers: []v1.Container{
 				{
 					Name:            constants.DefaultKanikoContainerName,
-					Image:           image,
+					Image:           artifact.Image,
 					Args:            args,
 					ImagePullPolicy: v1.PullIfNotPresent,
 					Env: []v1.EnvVar{{
@@ -89,6 +89,25 @@ func podTemplate(clusterDetails *latest.ClusterDetails, image string, args []str
 			},
 			},
 		},
+	}
+
+	if artifact.Cache.HostPath != "" {
+		volumeMount := v1.VolumeMount{
+			Name:      constants.DefaultKanikoCacheDirName,
+			MountPath: constants.DefaultKanikoCacheDirMountPath,
+		}
+
+		pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, volumeMount)
+
+		volume := v1.Volume{
+			Name: constants.DefaultKanikoCacheDirName,
+			VolumeSource: v1.VolumeSource{
+				HostPath: &v1.HostPathVolumeSource{
+					Path: artifact.Cache.HostPath,
+				},
+			},
+		}
+		pod.Spec.Volumes = append(pod.Spec.Volumes, volume)
 	}
 
 	if clusterDetails.DockerConfig == nil {
