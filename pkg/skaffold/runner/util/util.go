@@ -18,7 +18,6 @@ package util
 
 import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
 
@@ -48,14 +47,4 @@ func GetAllPodNamespaces(configNamespace string) ([]string, error) {
 		namespaces = append(namespaces, ns)
 	}
 	return namespaces, nil
-}
-
-func NeedsPush(cfg latest.BuildConfig) bool {
-	if cfg.LocalBuild == nil {
-		return false
-	}
-	if cfg.LocalBuild.Push == nil {
-		return false
-	}
-	return *cfg.LocalBuild.Push
 }
