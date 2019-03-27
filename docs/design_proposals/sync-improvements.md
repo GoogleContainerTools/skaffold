@@ -212,6 +212,21 @@ For example, should `strip` and `flatten` in the same rule always be an error?
 My intuition would say, that `strip+flatten` is the same as `flatten`, but this should to be discussed.
 
 Resolution: __Not Yet Resolved__
+
+**\<Do we need an `excludes` rule?\>**
+The current config only suggests additive rules. For some applications it might be easier to also remove matched host paths from the syncable set. For example:
+```yaml
+sync:
+# include all files below src...
+- from: 'src/**/*'
+  to: app/
+# ...but do not consider js files for sync
+- from: 'src/**/*.js'
+  exclude: true
+```
+Also see #1766.
+
+Resolution: __Not Yet Resolved__
    
    
 #### Migration plan
