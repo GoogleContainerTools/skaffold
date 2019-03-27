@@ -95,8 +95,11 @@ func NewPluginBuilder(ctx *runctx.RunContext) (shared.PluginBuilder, error) {
 	}
 
 	logrus.Debugf("Calling Init() for all plugins.")
-
-	return b, b.Init(ctx)
+	if err := b.Init(ctx); err != nil {
+		plugin.CleanupClients()
+		return nil, err
+	}
+	return b, nil
 }
 
 type Builder struct {
