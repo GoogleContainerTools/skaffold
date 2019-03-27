@@ -72,7 +72,7 @@ func NewKustomizeDeployer(ctx *runcontext.RunContext) *KustomizeDeployer {
 		KustomizeDeploy: ctx.Cfg.Deploy.KustomizeDeploy,
 		kubectl: kubectl.CLI{
 			Namespace:   ctx.Opts.Namespace,
-			KubeContext: ctx.Kubecontext,
+			KubeContext: ctx.KubeContext,
 			Flags:       ctx.Cfg.Deploy.KustomizeDeploy.Flags,
 		},
 		defaultRepo: ctx.DefaultRepo,

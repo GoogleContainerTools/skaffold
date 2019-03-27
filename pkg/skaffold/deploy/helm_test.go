@@ -293,7 +293,7 @@ func TestHelmDeploy(t *testing.T) {
 						},
 					},
 				},
-				Kubecontext: testKubeContext,
+				KubeContext: testKubeContext,
 				Opts: &config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
@@ -311,7 +311,7 @@ func TestHelmDeploy(t *testing.T) {
 						},
 					},
 				},
-				Kubecontext: testKubeContext,
+				KubeContext: testKubeContext,
 				Opts: &config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
@@ -329,7 +329,7 @@ func TestHelmDeploy(t *testing.T) {
 						},
 					},
 				},
-				Kubecontext: testKubeContext,
+				KubeContext: testKubeContext,
 				Opts: &config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
@@ -347,7 +347,7 @@ func TestHelmDeploy(t *testing.T) {
 						},
 					},
 				},
-				Kubecontext: testKubeContext,
+				KubeContext: testKubeContext,
 				Opts: &config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
@@ -366,7 +366,7 @@ func TestHelmDeploy(t *testing.T) {
 						},
 					},
 				},
-				Kubecontext: testKubeContext,
+				KubeContext: testKubeContext,
 				Opts: &config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
@@ -387,7 +387,7 @@ func TestHelmDeploy(t *testing.T) {
 						},
 					},
 				},
-				Kubecontext: testKubeContext,
+				KubeContext: testKubeContext,
 				Opts: &config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
@@ -419,7 +419,7 @@ func TestHelmDeploy(t *testing.T) {
 						},
 					},
 				},
-				Kubecontext: testKubeContext,
+				KubeContext: testKubeContext,
 				Opts: &config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
@@ -455,7 +455,7 @@ func TestHelmDeploy(t *testing.T) {
 						},
 					},
 				},
-				Kubecontext: testKubeContext,
+				KubeContext: testKubeContext,
 				Opts: &config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
@@ -476,7 +476,7 @@ func TestHelmDeploy(t *testing.T) {
 						},
 					},
 				},
-				Kubecontext: testKubeContext,
+				KubeContext: testKubeContext,
 				Opts: &config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
@@ -498,7 +498,7 @@ func TestHelmDeploy(t *testing.T) {
 						},
 					},
 				},
-				Kubecontext: testKubeContext,
+				KubeContext: testKubeContext,
 				Opts: &config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
@@ -520,7 +520,7 @@ func TestHelmDeploy(t *testing.T) {
 						},
 					},
 				},
-				Kubecontext: testKubeContext,
+				KubeContext: testKubeContext,
 				Opts: &config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
@@ -542,7 +542,7 @@ func TestHelmDeploy(t *testing.T) {
 						},
 					},
 				},
-				Kubecontext: testKubeContext,
+				KubeContext: testKubeContext,
 				Opts: &config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
@@ -564,7 +564,7 @@ func TestHelmDeploy(t *testing.T) {
 						},
 					},
 				},
-				Kubecontext: testKubeContext,
+				KubeContext: testKubeContext,
 				Opts: &config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
@@ -582,7 +582,7 @@ func TestHelmDeploy(t *testing.T) {
 						},
 					},
 				},
-				Kubecontext: testKubeContext,
+				KubeContext: testKubeContext,
 				Opts: &config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
@@ -761,7 +761,7 @@ func TestHelmDependencies(t *testing.T) {
 						},
 					},
 				},
-				Kubecontext: testKubeContext,
+				KubeContext: testKubeContext,
 				Opts: &config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},

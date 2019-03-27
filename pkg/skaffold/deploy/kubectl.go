@@ -49,7 +49,7 @@ func NewKubectlDeployer(ctx *runcontext.RunContext) *KubectlDeployer {
 		workingDir:    ctx.WorkingDir,
 		kubectl: kubectl.CLI{
 			Namespace:   ctx.Opts.Namespace,
-			KubeContext: ctx.Kubecontext,
+			KubeContext: ctx.KubeContext,
 			Flags:       ctx.Cfg.Deploy.KubectlDeploy.Flags,
 		},
 		defaultRepo: ctx.DefaultRepo,

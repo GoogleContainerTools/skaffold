@@ -62,7 +62,7 @@ func NewBuilder(ctx *runcontext.RunContext) (*Builder, error) {
 
 	return &Builder{
 		cfg:          ctx.Cfg.Build.LocalBuild,
-		kubeContext:  ctx.Kubecontext,
+		kubeContext:  ctx.KubeContext,
 		localDocker:  localDocker,
 		localCluster: localCluster,
 		pushImages:   pushImages,

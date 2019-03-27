@@ -80,7 +80,7 @@ func TestKustomizeDeploy(t *testing.T) {
 						},
 					},
 				},
-				Kubecontext: testKubeContext,
+				KubeContext: testKubeContext,
 				Opts: &config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
@@ -145,7 +145,7 @@ func TestKustomizeCleanup(t *testing.T) {
 						},
 					},
 				},
-				Kubecontext: testKubeContext,
+				KubeContext: testKubeContext,
 				Opts: &config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
@@ -224,7 +224,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 						},
 					},
 				},
-				Kubecontext: testKubeContext,
+				KubeContext: testKubeContext,
 				Opts:        &config.SkaffoldOptions{},
 			})
 			deps, err := k.Dependencies()

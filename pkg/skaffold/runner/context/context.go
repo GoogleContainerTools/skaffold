@@ -33,10 +33,13 @@ type RunContext struct {
 	Opts *config.SkaffoldOptions
 	Cfg  *latest.SkaffoldPipeline
 
-	Plugin      bool // true if at least one artifact has `PluginMode: true`
+	// Plugin is true if at least one artifact is built by a plugin
+	// this is temporary - will go away as soon as all the builders are plugins
+	Plugin bool
+
 	NeedsPush   bool
 	DefaultRepo string
-	Kubecontext string
+	KubeContext string
 	WorkingDir  string
 	Namespaces  []string
 }
@@ -77,7 +80,7 @@ func GetRunContext(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (
 		NeedsPush:   util.NeedsPush(cfg.Build),
 		WorkingDir:  cwd,
 		DefaultRepo: defaultRepo,
-		Kubecontext: kubeContext,
+		KubeContext: kubeContext,
 		Namespaces:  namespaces,
 	}, nil
 }

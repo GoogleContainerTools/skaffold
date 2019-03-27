@@ -55,7 +55,7 @@ type HelmDeployer struct {
 func NewHelmDeployer(ctx *runcontext.RunContext) *HelmDeployer {
 	return &HelmDeployer{
 		HelmDeploy:  ctx.Cfg.Deploy.HelmDeploy,
-		kubeContext: ctx.Kubecontext,
+		kubeContext: ctx.KubeContext,
 		namespace:   ctx.Opts.Namespace,
 		defaultRepo: ctx.DefaultRepo,
 	}
