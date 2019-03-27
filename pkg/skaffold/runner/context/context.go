@@ -22,7 +22,6 @@ import (
 	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/util"
 	runnerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
@@ -37,7 +36,6 @@ type RunContext struct {
 	// this is temporary - will go away as soon as all the builders are plugins
 	Plugin bool
 
-	NeedsPush   bool
 	DefaultRepo string
 	KubeContext string
 	WorkingDir  string
@@ -77,7 +75,6 @@ func GetRunContext(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (
 		Opts:        opts,
 		Cfg:         cfg,
 		Plugin:      plugin,
-		NeedsPush:   util.NeedsPush(cfg.Build),
 		WorkingDir:  cwd,
 		DefaultRepo: defaultRepo,
 		KubeContext: kubeContext,
