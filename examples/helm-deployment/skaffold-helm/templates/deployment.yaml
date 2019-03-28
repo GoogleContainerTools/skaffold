@@ -19,8 +19,8 @@ spec:
         - name: {{ .Chart.Name }}
           image: {{ .Values.image }}
           imagePullPolicy: {{ .Values.pullPolicy }}
-          command: ["/bin/bash", "-c", "--" ]
-          args: ["while true; do sleep 30; done;"]
+          ports:
+            - containerPort: {{ .Values.service.internalPort }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}
     {{- if .Values.nodeSelector }}
