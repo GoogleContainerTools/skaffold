@@ -61,6 +61,14 @@ func (k *KubectlDeployer) Labels() map[string]string {
 	}
 }
 
+// Transforms are applied to manifests
+var manifestTransforms []func(kubectl.ManifestList, []build.Artifact) (kubectl.ManifestList, error)
+
+// AddManifestTransform adds a transform to be applied when deploying.
+func AddManifestTransform(newTransform func(kubectl.ManifestList, []build.Artifact) (kubectl.ManifestList, error)) {
+	manifestTransforms = append(manifestTransforms, newTransform)
+}
+
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) error {
@@ -91,6 +99,13 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	if err != nil {
 		event.DeployFailed(err)
 		return errors.Wrap(err, "setting labels in manifests")
+	}
+
+	for _, transform := range manifestTransforms {
+		manifests, err = transform(manifests, builds)
+		if err != nil {
+			return errors.Wrap(err, "debug transform of manifests")
+		}
 	}
 
 	err = k.kubectl.Apply(ctx, out, manifests)

@@ -108,6 +108,37 @@ func TestCreateTarSubDirectory(t *testing.T) {
 	testutil.CheckErrorAndDeepEqual(t, false, err, files, tarFiles)
 }
 
+func TestCreateTarEmptyFolder(t *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+
+	tmpDir.Mkdir("empty")
+
+	reset := testutil.Chdir(t, tmpDir.Root())
+	defer reset()
+
+	var b bytes.Buffer
+	err := CreateTar(&b, ".", []string{"empty"})
+	testutil.CheckError(t, false, err)
+
+	// Make sure the contents match.
+	var tarFolders []string
+	tr := tar.NewReader(&b)
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		testutil.CheckError(t, false, err)
+
+		if hdr.FileInfo().IsDir() {
+			tarFolders = append(tarFolders, hdr.Name)
+		}
+	}
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, []string{"empty"}, tarFolders)
+}
+
 func TestCreateTarWithAbsolutePaths(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
