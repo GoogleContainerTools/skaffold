@@ -17,8 +17,9 @@ limitations under the License.
 package v1beta6
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta7"
 	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta7"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"gopkg.in/yaml.v2"
