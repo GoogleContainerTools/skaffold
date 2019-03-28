@@ -14,18 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta6
+package v1beta7
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta7"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 func TestUpgrade(t *testing.T) {
-	yaml := `apiVersion: skaffold/v1beta6
+	yaml := `apiVersion: skaffold/v1beta7
 kind: Config
 build:
   artifacts:
@@ -41,14 +41,15 @@ deploy:
 profiles:
   - name: test profile
     build:
-      kaniko:
-        buildContext: 
-          gcsBucket: skaffold-kaniko
-        pullSecretName: e2esecret
-        namespace: default
-        cache: {}
       artifacts:
       - image: gcr.io/k8s-skaffold/skaffold-example
+        kaniko:
+          buildContext:
+            gcsBucket: skaffold-kaniko
+          cache: {}
+      cluster:
+        pullSecretName: e2esecret
+        namespace: default
     test:
      - image: gcr.io/k8s-skaffold/skaffold-example
        structureTests:
@@ -58,7 +59,7 @@ profiles:
         manifests:
         - k8s-*
 `
-	expected := `apiVersion: skaffold/v1beta7
+	expected := `apiVersion: skaffold/v1beta8
 kind: Config
 build:
   artifacts:
@@ -95,53 +96,6 @@ profiles:
 	verifyUpgrade(t, yaml, expected)
 }
 
-func TestUpgradeKaniko(t *testing.T) {
-	yaml := `apiVersion: skaffold/v1beta6
-kind: Config
-build:
-  artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-example
-  kaniko:
-    buildContext:
-      gcsBucket: my-bucket
-    cache:
-      repo: gcr.io/some-repo
-    pullSecretName: e2esecret
-    namespace: default
-test:
-  - image: gcr.io/k8s-skaffold/skaffold-example
-    structureTests:
-     - ./test/*
-deploy:
-  kubectl:
-    manifests:
-    - k8s-*
-`
-	expected := `apiVersion: skaffold/v1beta7
-kind: Config
-build:
-  artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-example
-    kaniko:
-      buildContext:
-        gcsBucket: my-bucket
-      cache:
-        repo: gcr.io/some-repo
-  cluster:
-    pullSecretName: e2esecret
-    namespace: default
-test:
-  - image: gcr.io/k8s-skaffold/skaffold-example
-    structureTests:
-     - ./test/*
-deploy:
-  kubectl:
-    manifests:
-    - k8s-*
-`
-	verifyUpgrade(t, yaml, expected)
-}
-
 func verifyUpgrade(t *testing.T, input, output string) {
 	pipeline := NewSkaffoldPipeline()
 	err := yaml.UnmarshalStrict([]byte(input), pipeline)
@@ -150,7 +104,7 @@ func verifyUpgrade(t *testing.T, input, output string) {
 	upgraded, err := pipeline.Upgrade()
 	testutil.CheckError(t, false, err)
 
-	expected := v1beta7.NewSkaffoldPipeline()
+	expected := latest.NewSkaffoldPipeline()
 	err = yaml.UnmarshalStrict([]byte(output), expected)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, upgraded)
