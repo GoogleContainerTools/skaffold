@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "skaffold-helm.name" . }}
+  labels:
+    app: {{ template "skaffold-helm.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+  # language=css
+  style.css: |-
+    h1 {
+      color: #2222aa;
+      text-align: center;
+      margin-top: 40vh;
+      font-size: 120pt;
+    }
+
+  # language=html
+  index.html: |-
+    <html lang="en">
+    <head>
+        <title>Skaffold Helm</title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+      <h1>Hello from main chart!</h1>
+    </body>
+    </html>
