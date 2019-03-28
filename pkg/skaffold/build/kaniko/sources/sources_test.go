@@ -197,7 +197,7 @@ func TestPodTemplate(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			actual := podTemplate(test.initial, test.image, test.args)
-			testutil.CheckDeepEqualWithOptions(t, opt, test.expected, actual)
+			testutil.CheckDeepEqualWithOptions(t, []cmp.Option{opt}, test.expected, actual)
 		})
 	}
 }
