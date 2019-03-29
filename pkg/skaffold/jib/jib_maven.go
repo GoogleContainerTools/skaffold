@@ -68,7 +68,9 @@ func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact
 }
 
 func mavenArgs(a *latest.JibMavenArtifact) []string {
-	var args []string
+	// disable jib's rich progress footer; we could use --batch-mode
+	// but it also disables colour which can be helpful
+	args := []string{"-Djib.console=plain"}
 
 	args = append(args, a.Flags...)
 

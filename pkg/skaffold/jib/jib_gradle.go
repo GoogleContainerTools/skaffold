@@ -42,13 +42,13 @@ func GetDependenciesGradle(ctx context.Context, workspace string, a *latest.JibG
 }
 
 func getCommandGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) *exec.Cmd {
-	args := []string{gradleCommand(a, "_jibSkaffoldFiles"), "-q"}
+	args := append(gradleCommand(a, "_jibSkaffoldFiles"), "-q")
 	return GradleCommand.CreateCommand(ctx, workspace, args)
 }
 
 // GenerateGradleArgs generates the arguments to Gradle for building the project as an image.
 func GenerateGradleArgs(task string, imageName string, a *latest.JibGradleArtifact, skipTests bool) []string {
-	args := []string{gradleCommand(a, task), "--image=" + imageName}
+	args := append(gradleCommand(a, task), "--image="+imageName)
 	if skipTests {
 		args = append(args, "-x", "test")
 	}
@@ -56,11 +56,14 @@ func GenerateGradleArgs(task string, imageName string, a *latest.JibGradleArtifa
 	return args
 }
 
-func gradleCommand(a *latest.JibGradleArtifact, task string) string {
+func gradleCommand(a *latest.JibGradleArtifact, task string) []string {
+	// disable jib's rich progress footer; we could use `--console=plain`
+	// but it also disables colour which can be helpful
+	args := []string{"-Djib.console=plain"}
 	if a.Project == "" {
-		return ":" + task
+		return append(args, ":"+task)
 	}
 
 	// multi-module
-	return fmt.Sprintf(":%s:%s", a.Project, task)
+	return append(args, fmt.Sprintf(":%s:%s", a.Project, task))
 }

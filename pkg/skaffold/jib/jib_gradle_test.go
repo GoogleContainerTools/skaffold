@@ -97,7 +97,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{},
 			filesInWorkspace:  []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{":_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{"-Djib.console=plain", ":_jibSkaffoldFiles", "-q"})
 			},
 		},
 		{
@@ -105,7 +105,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{Project: "project"},
 			filesInWorkspace:  []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{":project:_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{"-Djib.console=plain", ":project:_jibSkaffoldFiles", "-q"})
 			},
 		},
 		{
@@ -113,7 +113,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{},
 			filesInWorkspace:  []string{"gradlew", "gradlew.cmd"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{":_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{"-Djib.console=plain", ":_jibSkaffoldFiles", "-q"})
 			},
 		},
 		{
@@ -121,7 +121,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{Project: "project"},
 			filesInWorkspace:  []string{"gradlew", "gradlew.cmd"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{":project:_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{"-Djib.console=plain", ":project:_jibSkaffoldFiles", "-q"})
 			},
 		},
 	}
@@ -150,11 +150,11 @@ func TestGenerateGradleArgs(t *testing.T) {
 		skipTests bool
 		out       []string
 	}{
-		{latest.JibGradleArtifact{}, false, []string{":task", "--image=image"}},
-		{latest.JibGradleArtifact{Flags: []string{"-extra", "args"}}, false, []string{":task", "--image=image", "-extra", "args"}},
-		{latest.JibGradleArtifact{}, true, []string{":task", "--image=image", "-x", "test"}},
-		{latest.JibGradleArtifact{Project: "project"}, false, []string{":project:task", "--image=image"}},
-		{latest.JibGradleArtifact{Project: "project"}, true, []string{":project:task", "--image=image", "-x", "test"}},
+		{latest.JibGradleArtifact{}, false, []string{"-Djib.console=plain", ":task", "--image=image"}},
+		{latest.JibGradleArtifact{Flags: []string{"-extra", "args"}}, false, []string{"-Djib.console=plain", ":task", "--image=image", "-extra", "args"}},
+		{latest.JibGradleArtifact{}, true, []string{"-Djib.console=plain", ":task", "--image=image", "-x", "test"}},
+		{latest.JibGradleArtifact{Project: "project"}, false, []string{"-Djib.console=plain", ":project:task", "--image=image"}},
+		{latest.JibGradleArtifact{Project: "project"}, true, []string{"-Djib.console=plain", ":project:task", "--image=image", "-x", "test"}},
 	}
 
 	for _, tt := range testCases {
