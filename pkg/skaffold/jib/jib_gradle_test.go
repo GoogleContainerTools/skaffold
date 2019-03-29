@@ -97,7 +97,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{},
 			filesInWorkspace:  []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{"-Djib.console=plain", ":_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{":_jibSkaffoldFiles", "-q"})
 			},
 		},
 		{
@@ -105,7 +105,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{Project: "project"},
 			filesInWorkspace:  []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{"-Djib.console=plain", ":project:_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{":project:_jibSkaffoldFiles", "-q"})
 			},
 		},
 		{
@@ -113,7 +113,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{},
 			filesInWorkspace:  []string{"gradlew", "gradlew.cmd"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{"-Djib.console=plain", ":_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{":_jibSkaffoldFiles", "-q"})
 			},
 		},
 		{
@@ -121,7 +121,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{Project: "project"},
 			filesInWorkspace:  []string{"gradlew", "gradlew.cmd"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{"-Djib.console=plain", ":project:_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{":project:_jibSkaffoldFiles", "-q"})
 			},
 		},
 	}

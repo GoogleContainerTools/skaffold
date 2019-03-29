@@ -48,7 +48,10 @@ func getCommandMaven(ctx context.Context, workspace string, a *latest.JibMavenAr
 
 // GenerateMavenArgs generates the arguments to Maven for building the project as an image.
 func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact, skipTests bool) []string {
-	args := mavenArgs(a)
+	// disable jib's rich progress footer on builds; we could use --batch-mode
+	// but it also disables colour which can be helpful
+	args := []string{"-Djib.console=plain"}
+	args = append(args, mavenArgs(a)...)
 
 	if skipTests {
 		args = append(args, "-DskipTests=true")
@@ -68,9 +71,7 @@ func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact
 }
 
 func mavenArgs(a *latest.JibMavenArtifact) []string {
-	// disable jib's rich progress footer; we could use --batch-mode
-	// but it also disables colour which can be helpful
-	args := []string{"-Djib.console=plain"}
+	var args []string
 
 	args = append(args, a.Flags...)
 
