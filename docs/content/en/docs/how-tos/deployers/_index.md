@@ -7,24 +7,24 @@ weight: 30
 This page discusses how to set up Skaffold to use the tool of your choice
 to deploy your app to a Kubernetes cluster.
 
-When Skaffold deploys an application the following steps happen: 
+When Skaffold deploys an application the following steps happen:
 
-* the Skaffold deployer _renders_ the final kubernetes manifests: Skaffold replaces the image names in the kubernetes manifests with the final tagged image names. 
-Also, in case of the more complicated deployers the rendering step involves expanding templates (in case of helm) or calculating overlays (in case of kustomize). 
+* the Skaffold deployer _renders_ the final kubernetes manifests: Skaffold replaces the image names in the kubernetes manifests with the final tagged image names.
+Also, in case of the more complicated deployers the rendering step involves expanding templates (in case of helm) or calculating overlays (in case of kustomize).
 * the Skaffold deployer _deploys_ the final kubernetes manifests to the cluster
 
 ### Supported deployers
 
 Skaffold supports the following tools for deploying applications:
 
-* [`kubectl`](#deploying-with-kubectl) 
-* [helm](#deploying-with-helm) 
+* [`kubectl`](#deploying-with-kubectl)
+* [helm](#deploying-with-helm)
 * [kustomize](#deploying-with-kustomize)
 
 The `deploy` section in the Skaffold configuration file, `skaffold.yaml`,
 controls how Skaffold builds artifacts. To use a specific tool for deploying
 artifacts, add the value representing the tool and options for using the tool
-to the `deploy` section. 
+to the `deploy` section.
 
 For a detailed discussion on Skaffold configuration, see
 [Skaffold Concepts](/docs/concepts/#configuration) and

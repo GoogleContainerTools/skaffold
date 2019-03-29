@@ -1,4 +1,4 @@
-<!-- 
+<!--
   Issues without logs and details are more complicated to fix.
   Please help us by filling the template below!
 -->

@@ -32,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/sirupsen/logrus"
@@ -59,9 +60,7 @@ var testDeployConfig = &latest.HelmDeploy{
 			Values: map[string]string{
 				"image": "skaffold-helm",
 			},
-			Overrides: map[string]interface{}{
-				"foo": "bar",
-			},
+			Overrides: schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
 			SetValues: map[string]string{
 				"some.key": "somevalue",
 			},
@@ -77,13 +76,28 @@ var testDeployRecreatePodsConfig = &latest.HelmDeploy{
 			Values: map[string]string{
 				"image": "skaffold-helm",
 			},
-			Overrides: map[string]interface{}{
-				"foo": "bar",
-			},
+			Overrides: schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
 			SetValues: map[string]string{
 				"some.key": "somevalue",
 			},
 			RecreatePods: true,
+		},
+	},
+}
+
+var testDeploySkipBuildDependenciesConfig = &latest.HelmDeploy{
+	Releases: []latest.HelmRelease{
+		{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Values: map[string]string{
+				"image": "skaffold-helm",
+			},
+			Overrides: schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
+			SetValues: map[string]string{
+				"some.key": "somevalue",
+			},
+			SkipBuildDependencies: true,
 		},
 	},
 }
@@ -96,9 +110,7 @@ var testDeployHelmStyleConfig = &latest.HelmDeploy{
 			Values: map[string]string{
 				"image": "skaffold-helm",
 			},
-			Overrides: map[string]interface{}{
-				"foo": "bar",
-			},
+			Overrides: schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
 			SetValues: map[string]string{
 				"some.key": "somevalue",
 			},
@@ -147,9 +159,7 @@ var testDeployWithTemplatedName = &latest.HelmDeploy{
 			Values: map[string]string{
 				"image.tag": "skaffold-helm",
 			},
-			Overrides: map[string]interface{}{
-				"foo": "bar",
-			},
+			Overrides: schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
 			SetValues: map[string]string{
 				"some.key": "somevalue",
 			},
@@ -281,6 +291,12 @@ func TestHelmDeploy(t *testing.T) {
 			description: "deploy success with recreatePods",
 			cmd:         &MockHelm{t: t},
 			deployer:    NewHelmDeployer(testDeployRecreatePodsConfig, testKubeContext, testNamespace, ""),
+			builds:      testBuilds,
+		},
+		{
+			description: "deploy success with skipBuildDependencies",
+			cmd:         &MockHelm{t: t},
+			deployer:    NewHelmDeployer(testDeploySkipBuildDependenciesConfig, testKubeContext, testNamespace, ""),
 			builds:      testBuilds,
 		},
 		{
@@ -579,7 +595,7 @@ func TestHelmDependencies(t *testing.T) {
 						ChartPath:   folder.Root(),
 						ValuesFiles: tt.valuesFiles,
 						Values:      map[string]string{"image": "skaffold-helm"},
-						Overrides:   map[string]interface{}{"foo": "bar"},
+						Overrides:   schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
 						SetValues:   map[string]string{"some.key": "somevalue"},
 					},
 				},

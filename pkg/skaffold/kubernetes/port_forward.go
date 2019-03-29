@@ -27,7 +27,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -56,6 +55,7 @@ type portForwardEntry struct {
 	podName         string
 	namespace       string
 	containerName   string
+	portName        string
 	port            int32
 	localPort       int32
 
@@ -95,17 +95,7 @@ func (*kubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntr
 		return errors.Wrapf(err, "port forwarding pod: %s/%s, port: %d to local port: %d, err: %s", pfe.namespace, pfe.podName, pfe.port, pfe.localPort, buf.String())
 	}
 
-	event.Handle(&proto.Event{
-		EventType: &proto.Event_PortEvent{
-			PortEvent: &proto.PortEvent{
-				LocalPort:     pfe.localPort,
-				RemotePort:    pfe.port,
-				PodName:       pfe.podName,
-				ContainerName: pfe.containerName,
-				Namespace:     pfe.namespace,
-			},
-		},
-	})
+	event.PortForwarded(pfe.localPort, pfe.port, pfe.podName, pfe.containerName, pfe.namespace, pfe.portName)
 
 	go cmd.Wait()
 
@@ -219,6 +209,7 @@ func (p *PortForwarder) getCurrentEntry(pod *v1.Pod, c v1.Container, port v1.Con
 		podName:         pod.Name,
 		namespace:       pod.Namespace,
 		containerName:   c.Name,
+		portName:        port.Name,
 		port:            port.ContainerPort,
 	}
 	// If we have, return the current entry
@@ -252,10 +243,10 @@ func (p *PortForwarder) forward(ctx context.Context, entry *portForwardEntry) er
 
 // Key is an identifier for the lock on a port during the skaffold dev cycle.
 func (p *portForwardEntry) key() string {
-	return fmt.Sprintf("%s-%s-%s-%d", p.containerName, p.podName, p.namespace, p.port)
+	return fmt.Sprintf("%s-%s-%s-%s-%d", p.containerName, p.podName, p.namespace, p.portName, p.port)
 }
 
 // String is a utility function that returns the port forward entry as a user-readable string
 func (p *portForwardEntry) String() string {
-	return fmt.Sprintf("%s/%s:%d", p.podName, p.containerName, p.port)
+	return fmt.Sprintf("%s/%s/%s:%d", p.podName, p.containerName, p.portName, p.port)
 }

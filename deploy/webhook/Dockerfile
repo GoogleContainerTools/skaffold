@@ -12,34 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Download Docsy theme for Hugo
+FROM alpine:3.9 as download-docsy
+ENV DOCSY_VERSION a7141a2eac26cb598b707cab87d224f9105c315d
+ENV DOCSY_URL https://github.com/google/docsy.git
+RUN apk add --no-cache git
+WORKDIR /docsy
+RUN git clone "${DOCSY_URL}" . && \
+    git reset --hard "${DOCSY_VERSION}" && \
+    git submodule update --init --recursive && \
+    rm -rf .git
 
-FROM gcr.io/gcp-runtimes/ubuntu_16_0_4 as runtime_deps
+# Download Hugo
+FROM alpine:3.9 as download-hugo
+ENV HUGO_VERSION 0.54.0
+ENV HUGO_URL https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_Linux-64bit.tar.gz
+RUN wget -O- "${HUGO_URL}" | tar xz
 
+# Download kubectl
+FROM alpine:3.9 as download-kubectl
 ENV KUBECTL_VERSION v1.12.0
-RUN curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl  && \
-    chmod +x /usr/local/bin/kubectl
+ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl
+RUN wget -O kubectl "${KUBECTL_URL}"
+RUN chmod +x kubectl
 
-ENV HUGO_VERSION=0.54.0
-RUN curl -LO https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_Linux-64bit.tar.gz && \
-    tar -xzf hugo_extended_${HUGO_VERSION}_Linux-64bit.tar.gz && \
-    mv hugo /usr/local/bin/hugo
+FROM node:10.15.3-stretch as runtime_deps
+RUN npm install -g firebase-tools postcss-cli
+WORKDIR /app/docs
+RUN npm install autoprefixer
+COPY --from=download-docsy /docsy ./themes/docsy
+COPY --from=download-hugo /hugo /usr/local/bin/
+COPY --from=download-kubectl /kubectl /usr/local/bin/
 
-    # required for nodejs
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - &&  \
-    apt-get update && \
-    # latest git is required for hugo and submodule management
-    apt-get install -y software-properties-common && \
-    add-apt-repository -y ppa:git-core/ppa && \
-    apt-get update && \
-    apt-get install -y git \
-                       # required for hugo, firebase
-                       nodejs && \
-                       # required for hugo
-    npm install -g     postcss-cli \
-                       # required for releasing the docs
-                       firebase-tools
-
-FROM golang:1.10 as webhook
+FROM golang:1.11 as webhook
 WORKDIR $GOPATH/src/github.com/GoogleContainerTools/skaffold
 COPY . .
 RUN go build -o /webhook webhook/webhook.go

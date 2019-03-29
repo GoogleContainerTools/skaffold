@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Copyright 2019 The Skaffold Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +25,7 @@ go run ${DIR}/release_notes/listpullreqs.go
 rm -rf ${EXAMPLES_DIR} && rm -rf ${INTEGRATION_EXAMPLES_DIR}/bazel/bazel-* && cp -r ${INTEGRATION_EXAMPLES_DIR} ${EXAMPLES_DIR} && rm -rf ${EXAMPLES_DIR}/test-*
 
 echo
-echo "Huge thanks goes out to all of our contributors for this release: "
+echo "Huge thanks goes out to all of our contributors for this release:"
 echo
 git log "$(git describe  --abbrev=0)".. --format="%aN" --reverse | sort | uniq | awk '{printf "- %s\n", $0 }'
 echo

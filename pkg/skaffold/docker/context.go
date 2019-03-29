@@ -27,7 +27,7 @@ import (
 )
 
 func CreateDockerTarContext(ctx context.Context, w io.Writer, workspace string, a *latest.DockerArtifact) error {
-	paths, err := GetDependencies(ctx, workspace, a)
+	paths, err := GetDependencies(ctx, workspace, a.DockerfilePath, a.BuildArgs)
 	if err != nil {
 		return errors.Wrap(err, "getting relative tar paths")
 	}

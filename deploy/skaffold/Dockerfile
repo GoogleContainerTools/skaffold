@@ -85,7 +85,7 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
   apt-get -y install docker-ce=17.12.0~ce-0~ubuntu && \
   rm -rf /var/lib/apt/lists/*
 
-COPY --from=golang:1.10 /usr/local/go /usr/local/go
+COPY --from=golang:1.11 /usr/local/go /usr/local/go
 ENV PATH /usr/local/go/bin:/go/bin:$PATH
 ENV GOPATH /go/
 

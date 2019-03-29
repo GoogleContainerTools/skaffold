@@ -34,7 +34,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -70,40 +69,25 @@ func (h *HelmDeployer) Labels() map[string]string {
 func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) error {
 	var dRes []Artifact
 
-	labels := merge(labellers...)
-	event.Handle(&proto.Event{
-		EventType: &proto.Event_DeployEvent{
-			DeployEvent: &proto.DeployEvent{
-				Status: event.InProgress,
-			},
-		},
-	})
+	event.DeployInProgress()
 
 	for _, r := range h.Releases {
 		results, err := h.deployRelease(ctx, out, r, builds)
 		if err != nil {
 			releaseName, _ := evaluateReleaseName(r.Name)
-			event.Handle(&proto.Event{
-				EventType: &proto.Event_DeployEvent{
-					DeployEvent: &proto.DeployEvent{
-						Status: event.Failed,
-						Err:    err.Error(),
-					},
-				},
-			})
+
+			event.DeployFailed(err)
 			return errors.Wrapf(err, "deploying %s", releaseName)
 		}
 
 		dRes = append(dRes, results...)
 	}
-	event.Handle(&proto.Event{
-		EventType: &proto.Event_DeployEvent{
-			DeployEvent: &proto.DeployEvent{
-				Status: event.Complete,
-			},
-		},
-	})
+
+	event.DeployComplete()
+
+	labels := merge(labellers...)
 	labelDeployResults(labels, dRes)
+
 	return nil
 }
 
@@ -187,6 +171,9 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		}
 	}
 
+	// Dependency builds should be skipped when trying to install a chart
+	// with local dependencies in the chart folder, e.g. the istio helm chart.
+	// This decision is left to the user.
 	if !r.SkipBuildDependencies {
 		// First build dependencies.
 		logrus.Infof("Building helm dependencies...")
@@ -236,7 +223,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	if ns != "" {
 		args = append(args, "--namespace", ns)
 	}
-	if len(r.Overrides) != 0 {
+	if len(r.Overrides.Values) != 0 {
 		overrides, err := yaml.Marshal(r.Overrides)
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot marshal overrides to create overrides values.yaml")

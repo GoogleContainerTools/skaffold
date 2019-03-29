@@ -1,8 +1,8 @@
 clone_folder: c:\gopath\src\github.com\GoogleContainerTools\skaffold
-stack: go 1.10
+stack: go 1.11
 environment:
   GOPATH: c:\gopath
 build_script:
   - go build -o out/skaffold.exe cmd/skaffold/skaffold.go
 test_script:
-  - go test -short -v -timeout 60s ./...
+  - go test -short -timeout 60s ./...

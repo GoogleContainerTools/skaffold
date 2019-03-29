@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -29,6 +30,26 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
 )
+
+// artifactSorter joins a By function and a slice of Planets to be sorted.
+type artifactSorter struct {
+	artifacts []*latest.Artifact
+}
+
+// Len is part of sort.Interface.
+func (s *artifactSorter) Len() int {
+	return len(s.artifacts)
+}
+
+// Swap is part of sort.Interface.
+func (s *artifactSorter) Swap(i, j int) {
+	s.artifacts[i], s.artifacts[j] = s.artifacts[j], s.artifacts[i]
+}
+
+// Less is part of sort.Interface. It is implemented by calling the "by" closure in the sorter.
+func (s *artifactSorter) Less(i, j int) bool {
+	return s.artifacts[i].ImageName < s.artifacts[j].ImageName
+}
 
 func Test_RetrieveCachedArtifacts(t *testing.T) {
 	tests := []struct {
@@ -111,9 +132,10 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 
 			test.cache.client = docker.NewLocalDaemon(&test.api, nil)
 
-			actualArtifacts, actualBuildResults := test.cache.RetrieveCachedArtifacts(context.Background(), os.Stdout, test.artifacts)
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedArtifacts, actualArtifacts)
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedBuildResults, actualBuildResults)
+			actualArtifacts, actualBuildResults, err := test.cache.RetrieveCachedArtifacts(context.Background(), os.Stdout, test.artifacts)
+			sort.Sort(&artifactSorter{artifacts: actualArtifacts})
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedArtifacts, actualArtifacts)
+			testutil.CheckDeepEqual(t, test.expectedBuildResults, actualBuildResults)
 		})
 	}
 }
@@ -249,7 +271,7 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			hashes:                    map[string]string{"image": "hash"},
 			cache: &Cache{
 				useCache:      true,
-				needsPush:     true,
+				pushImages:    true,
 				localCluster:  true,
 				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
 				imageList: []types.ImageSummary{
@@ -273,7 +295,7 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			targetImageExistsRemotely: true,
 			cache: &Cache{
 				useCache:      true,
-				needsPush:     true,
+				pushImages:    true,
 				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
 			},
 			digest: digest,

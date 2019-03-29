@@ -59,6 +59,7 @@ func (b *Builder) local(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	if err != nil {
 		return nil, errors.Wrap(err, "getting localCluster")
 	}
+	b.LocalCluster = localCluster
 	var pushImages bool
 	if b.LocalBuild.Push == nil {
 		pushImages = !localCluster

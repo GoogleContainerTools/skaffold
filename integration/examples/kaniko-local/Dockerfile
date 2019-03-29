@@ -1,6 +1,7 @@
-FROM gcr.io/google-appengine/golang
-
-WORKDIR /go/src/github.com/GoogleCloudPlatform/skaffold
-CMD ["./app"]
+FROM golang:1.10.1-alpine3.7 as builder
 COPY main.go .
-RUN go build -o app main.go
+RUN go build -o /app main.go
+
+FROM alpine:3.7  
+CMD ["./app"]
+COPY --from=builder /app .

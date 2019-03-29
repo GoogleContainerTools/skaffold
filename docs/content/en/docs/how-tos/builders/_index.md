@@ -29,7 +29,7 @@ For a detailed discussion on Skaffold configuration, see
 
 If you have [Docker Desktop](https://www.docker.com/products/docker-desktop)
 installed, Skaffold can be configured to build artifacts with the local
-Docker daemon. 
+Docker daemon.
 
 By default, Skaffold connects to the local Docker daemon using
 [Docker Engine APIs](https://docs.docker.com/develop/sdk/). Skaffold can, however,
@@ -50,7 +50,7 @@ of `skaffold.yaml`. The following options can optionally be configured:
 ### Example
 
 The following `build` section instructs Skaffold to build a
-Docker image `gcr.io/k8s-skaffold/example` with the local Docker daemon: 
+Docker image `gcr.io/k8s-skaffold/example` with the local Docker daemon:
 
 {{% readfile file="samples/builders/local.yaml" %}}
 
@@ -62,7 +62,7 @@ Which is equivalent to:
 
 [Google Cloud Build](https://cloud.google.com/cloud-build/) is a
 [Google Cloud Platform](https://cloud.google.com) service that executes
-your builds using Google infrastructure. To get started with Google 
+your builds using Google infrastructure. To get started with Google
 Build, see [Cloud Build Quickstart](https://cloud.google.com/cloud-build/docs/quickstart-docker).
 
 Skaffold can automatically connect to Cloud Build, and run your builds
@@ -80,11 +80,11 @@ section of `skaffold.yaml`. The following options can optionally be configured:
 ### Example
 
 The following `build` section, instructs Skaffold to build a
-Docker image `gcr.io/k8s-skaffold/example` with Google Cloud Build: 
+Docker image `gcr.io/k8s-skaffold/example` with Google Cloud Build:
 
 {{% readfile file="samples/builders/gcb.yaml" %}}
 
-## Dockerfile in-cluster with Kaniko  
+## Dockerfile in-cluster with Kaniko
 
 [Kaniko](https://github.com/GoogleContainerTools/kaniko) is a Google-developed
 open-source tool for building images from a Dockerfile inside a container or
@@ -108,14 +108,14 @@ The `buildContext` can be either:
 ### Example
 
 The following `build` section, instructs Skaffold to build a
-Docker image `gcr.io/k8s-skaffold/example` with Kaniko: 
+Docker image `gcr.io/k8s-skaffold/example` with Kaniko:
 
 {{% readfile file="samples/builders/kaniko.yaml" %}}
 
-## Jib Maven and Gradle locally 
+## Jib Maven and Gradle locally
 
 [Jib](https://github.com/GoogleContainerTools/jib#jib) is a set of plugins for
-[Maven](https://github.com/GoogleContainerTools/jib/blob/master/jib-maven-plugin) and 
+[Maven](https://github.com/GoogleContainerTools/jib/blob/master/jib-maven-plugin) and
 [Gradle](https://github.com/GoogleContainerTools/jib/blob/master/jib-gradle-plugin)
 for building optimized Docker and OCI images for Java applications
 without a Docker daemon.
@@ -160,7 +160,7 @@ specifying either the module's `:artifactId`, `groupId:artifactId`, or the relat
 to the module _within the project_. Each artifact's `context` field
 should point to the root project location.
 
-Building multi-module projects with Skaffold-Jib has one additional requirement: 
+Building multi-module projects with Skaffold-Jib has one additional requirement:
 a Jib goal must be explicitly bound to the `package` phase for each specific
 module that produces a container image.
 
@@ -171,14 +171,14 @@ Skaffold artifact. For each artifact, add a `jibGradle` field with a `project` f
 containing the sub-project's name (the directory, by default). Each artifact's `context` field
 should point to the root project location.
 
-## Jib Maven and Gradle remotely with Google Cloud Build 
+## Jib Maven and Gradle remotely with Google Cloud Build
 
-{{% todo 1299 %}} 
+{{% todo 1299 %}}
 
 ## Bazel locally
 
 [Bazel](https://bazel.build/) is a fast, scalable, multi-language, and
-extensible build system. 
+extensible build system.
 
 Skaffold can help build artifacts using Bazel; after Bazel finishes building
 container images, they will be loaded into the local Docker daemon.

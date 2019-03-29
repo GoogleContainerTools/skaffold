@@ -19,10 +19,15 @@ package skaffold
 import (
 	"bytes"
 	"context"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // RunBuilder is used to build a command line to run `skaffold`.
@@ -110,15 +115,20 @@ func (b *RunBuilder) WithEnv(env []string) *RunBuilder {
 // This also returns a teardown function that stops skaffold.
 func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
 	t.Helper()
+
 	ctx, cancel := context.WithCancel(context.Background())
-
 	cmd := b.cmd(ctx)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	logrus.Infoln(cmd.Args)
 
+	start := time.Now()
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("skaffold %s: %v", b.command, err)
 	}
+
+	go func() {
+		cmd.Wait()
+		logrus.Infoln("Ran in", time.Since(start))
+	}()
 
 	return func() {
 		cancel()
@@ -126,20 +136,48 @@ func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
 	}
 }
 
-// Run runs the skaffold command and returns its output.
-func (b *RunBuilder) Run(t *testing.T) ([]byte, error) {
-	t.Helper()
-	return b.cmd(context.Background()).Output()
-}
-
 // RunOrFail runs the skaffold command and fails the test
 // if the command returns an error.
-func (b *RunBuilder) RunOrFail(t *testing.T) []byte {
+func (b *RunBuilder) RunOrFail(t *testing.T) {
 	t.Helper()
-	out, err := b.Run(t)
+	if err := b.Run(t); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// Run runs the skaffold command.
+func (b *RunBuilder) Run(t *testing.T) error {
+	t.Helper()
+
+	cmd := b.cmd(context.Background())
+	logrus.Infoln(cmd.Args)
+
+	start := time.Now()
+	if err := cmd.Run(); err != nil {
+		return errors.Wrapf(err, "skaffold %s", b.command)
+	}
+
+	logrus.Infoln("Ran in", time.Since(start))
+	return nil
+}
+
+// RunOrFailOutput runs the skaffold command and fails the test
+// if the command returns an error.
+// It only returns the standard output.
+func (b *RunBuilder) RunOrFailOutput(t *testing.T) []byte {
+	t.Helper()
+
+	cmd := b.cmd(context.Background())
+	cmd.Stdout, cmd.Stderr = nil, nil
+	logrus.Infoln(cmd.Args)
+
+	start := time.Now()
+	out, err := cmd.Output()
 	if err != nil {
 		t.Fatalf("skaffold %s: %v, %s", b.command, err, out)
 	}
+
+	logrus.Infoln("Ran in", time.Since(start))
 	return out
 }
 
@@ -162,6 +200,20 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 		cmd.Dir = b.dir
 	}
 
+	// If the test is killed by a timeout, go test will wait for
+	// os.Stderr and os.Stdout to close as a result.
+	//
+	// However, the `cmd` will stil run in the background
+	// and hold those descriptors open.
+	// As a result, go test will hang forever.
+	//
+	// Avoid that by wrapping stderr and stdout, breaking the short
+	// circuit and forcing cmd.Run to use another pipe and goroutine
+	// to pass along stderr and stdout.
+	// See https://github.com/golang/go/issues/23019
+	cmd.Stdout = struct{ io.Writer }{os.Stdout}
+	cmd.Stderr = struct{ io.Writer }{os.Stderr}
+
 	return cmd
 }
 
@@ -177,5 +229,6 @@ func removeSkaffoldEnvVariables(env []string) []string {
 		}
 	}
 
-	return clean
+	// Disable update check
+	return append(clean, "SKAFFOLD_UPDATE_CHECK=false")
 }

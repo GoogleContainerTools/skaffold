@@ -57,11 +57,11 @@ type SkaffoldRunner struct {
 	sync.Syncer
 	watch.Watcher
 
+	cache             *cache.Cache
 	opts              *config.SkaffoldOptions
 	labellers         []deploy.Labeller
 	builds            []build.Artifact
 	hasDeployed       bool
-	needsPush         bool
 	imageList         *kubernetes.ImageList
 	namespaces        []string
 	RPCServerShutdown func() error
@@ -94,6 +94,8 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing build config")
 	}
+
+	artifactCache := cache.NewCache(builder, opts, cfg.Build)
 
 	tester, err := getTester(cfg.Test, opts)
 	if err != nil {
@@ -135,7 +137,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*
 		labellers:         labellers,
 		imageList:         kubernetes.NewImageList(),
 		namespaces:        namespaces,
-		needsPush:         needsPush(cfg.Build),
+		cache:             artifactCache,
 		RPCServerShutdown: shutdown,
 	}, nil
 }
@@ -157,23 +159,13 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string, opts *config.Skaffo
 		logrus.Debugln("Using builder: google cloud")
 		return gcb.NewBuilder(cfg.GoogleCloudBuild, opts.SkipTests), nil
 
-	case cfg.KanikoBuild != nil:
+	case cfg.Cluster != nil:
 		logrus.Debugln("Using builder: kaniko")
-		return kaniko.NewBuilder(cfg.KanikoBuild)
+		return kaniko.NewBuilder(cfg.Cluster)
 
 	default:
 		return nil, fmt.Errorf("unknown builder for config %+v", cfg)
 	}
-}
-
-func needsPush(cfg latest.BuildConfig) bool {
-	if cfg.LocalBuild == nil {
-		return false
-	}
-	if cfg.LocalBuild.Push == nil {
-		return false
-	}
-	return *cfg.LocalBuild.Push
 }
 
 func buildWithPlugin(artifacts []*latest.Artifact) bool {
@@ -293,47 +285,74 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*la
 	return nil
 }
 
+type tagErr struct {
+	tag string
+	err error
+}
+
 // imageTags generates tags for a list of artifacts
-func (r *SkaffoldRunner) imageTags(out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
+func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
 	start := time.Now()
 	color.Default.Fprintln(out, "Generating tags...")
 
-	tags := make(tag.ImageTags, len(artifacts))
+	tagErrs := make([]chan tagErr, len(artifacts))
 
-	for _, artifact := range artifacts {
+	for i := range artifacts {
+		tagErrs[i] = make(chan tagErr, 1)
+
+		i := i
+		go func() {
+			tag, err := r.Tagger.GenerateFullyQualifiedImageName(artifacts[i].Workspace, artifacts[i].ImageName)
+			tagErrs[i] <- tagErr{tag: tag, err: err}
+		}()
+	}
+
+	imageTags := make(tag.ImageTags, len(artifacts))
+
+	for i, artifact := range artifacts {
 		imageName := artifact.ImageName
 		color.Default.Fprintf(out, " - %s -> ", imageName)
 
-		tag, err := r.Tagger.GenerateFullyQualifiedImageName(artifact.Workspace, imageName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "generating tag for %s", imageName)
+		select {
+		case <-ctx.Done():
+			return nil, context.Canceled
+
+		case t := <-tagErrs[i]:
+			tag := t.tag
+			err := t.err
+			if err != nil {
+				return nil, errors.Wrapf(err, "generating tag for %s", imageName)
+			}
+
+			fmt.Fprintln(out, tag)
+
+			imageTags[imageName] = tag
 		}
-
-		fmt.Fprintln(out, tag)
-
-		tags[imageName] = tag
 	}
 
 	color.Default.Fprintln(out, "Tags generated in", time.Since(start))
-	return tags, nil
+	return imageTags, nil
 }
 
 // BuildAndTest builds artifacts and runs tests on built artifacts
 func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	tags, err := r.imageTags(out, artifacts)
+	tags, err := r.imageTags(ctx, out, artifacts)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating tag")
 	}
 
-	artifactCache := cache.NewCache(ctx, r.Builder, r.opts, r.needsPush)
-	artifactsToBuild, res := artifactCache.RetrieveCachedArtifacts(ctx, out, artifacts)
+	artifactsToBuild, res, err := r.cache.RetrieveCachedArtifacts(ctx, out, artifacts)
+	if err != nil {
+		return nil, errors.Wrap(err, "retrieving cached artifacts")
+	}
+
 	bRes, err := r.Build(ctx, out, tags, artifactsToBuild)
 	if err != nil {
 		return nil, errors.Wrap(err, "build failed")
 	}
-	artifactCache.Retag(ctx, out, artifactsToBuild, bRes)
+	r.cache.RetagLocalImages(ctx, out, artifactsToBuild, bRes)
 	bRes = append(bRes, res...)
-	if err := artifactCache.CacheArtifacts(ctx, artifacts, bRes); err != nil {
+	if err := r.cache.CacheArtifacts(ctx, artifacts, bRes); err != nil {
 		logrus.Warnf("error caching artifacts: %v", err)
 	}
 	if !r.opts.SkipTests {

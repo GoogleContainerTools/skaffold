@@ -39,7 +39,7 @@ func (c *GitCommit) Labels() map[string]string {
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the git commit.
 func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, imageName string) (string, error) {
-	hash, err := runGit(workingDir, "rev-parse", "--short", "HEAD")
+	ref, err := runGit(workingDir, "describe", "--tags", "--always")
 	if err != nil {
 		logrus.Warnln("Unable to find git commit:", err)
 		return fmt.Sprintf("%s:dirty", imageName), nil
@@ -51,16 +51,10 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, imageName
 	}
 
 	if len(changes) > 0 {
-		return fmt.Sprintf("%s:%s-dirty", imageName, hash), nil
+		return fmt.Sprintf("%s:%s-dirty", imageName, ref), nil
 	}
 
-	// Ignore error. It means there's no tag.
-	tag, _ := runGit(workingDir, "describe", "--tags", "--exact-match")
-	if len(tag) > 0 {
-		return fmt.Sprintf("%s:%s", imageName, tag), nil
-	}
-
-	return fmt.Sprintf("%s:%s", imageName, hash), nil
+	return fmt.Sprintf("%s:%s", imageName, ref), nil
 }
 
 func runGit(workingDir string, arg ...string) (string, error) {

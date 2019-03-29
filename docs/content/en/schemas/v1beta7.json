@@ -281,6 +281,54 @@
             "jibGradle"
           ],
           "additionalProperties": false
+        },
+        {
+          "properties": {
+            "context": {
+              "type": "string",
+              "description": "directory containing the artifact's sources.",
+              "x-intellij-html-description": "directory containing the artifact's sources.",
+              "default": "."
+            },
+            "image": {
+              "type": "string",
+              "description": "name of the image to be built.",
+              "x-intellij-html-description": "name of the image to be built.",
+              "examples": [
+                "gcr.io/k8s-skaffold/example"
+              ]
+            },
+            "kaniko": {
+              "$ref": "#/definitions/KanikoArtifact",
+              "description": "*alpha* builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko).",
+              "x-intellij-html-description": "<em>alpha</em> builds images using <a href=\"https://github.com/GoogleContainerTools/kaniko\">kaniko</a>."
+            },
+            "plugin": {
+              "$ref": "#/definitions/BuilderPlugin",
+              "description": "plugin used to build this artifact.",
+              "x-intellij-html-description": "plugin used to build this artifact."
+            },
+            "sync": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
+              "default": "{}",
+              "examples": [
+                "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
+              ]
+            }
+          },
+          "preferredOrder": [
+            "image",
+            "context",
+            "sync",
+            "plugin",
+            "kaniko"
+          ],
+          "additionalProperties": false
         }
       ],
       "description": "items that need to be built, along with the context in which they should be built.",
@@ -307,13 +355,19 @@
           "$ref": "#/definitions/JibMavenArtifact",
           "description": "*alpha* builds images using the [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).",
           "x-intellij-html-description": "<em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin\">Jib plugin for Maven</a>."
+        },
+        "kaniko": {
+          "$ref": "#/definitions/KanikoArtifact",
+          "description": "*alpha* builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko).",
+          "x-intellij-html-description": "<em>alpha</em> builds images using <a href=\"https://github.com/GoogleContainerTools/kaniko\">kaniko</a>."
         }
       },
       "preferredOrder": [
         "docker",
         "bazel",
         "jibMaven",
-        "jibGradle"
+        "jibGradle",
+        "kaniko"
       ],
       "additionalProperties": false,
       "description": "describes how to build an artifact.",
@@ -461,15 +515,15 @@
               "description": "the images you're going to be building.",
               "x-intellij-html-description": "the images you're going to be building."
             },
+            "cluster": {
+              "$ref": "#/definitions/ClusterDetails",
+              "description": "*beta* describes how to do an on-cluster build.",
+              "x-intellij-html-description": "<em>beta</em> describes how to do an on-cluster build."
+            },
             "executionEnvironment": {
               "$ref": "#/definitions/ExecutionEnvironment",
               "description": "environment in which the build should run. Possible values: googleCloudBuild.",
               "x-intellij-html-description": "environment in which the build should run. Possible values: googleCloudBuild."
-            },
-            "kaniko": {
-              "$ref": "#/definitions/KanikoBuild",
-              "description": "*beta* describes how to do an on-cluster build using [Kaniko](https://github.com/GoogleContainerTools/kaniko).",
-              "x-intellij-html-description": "<em>beta</em> describes how to do an on-cluster build using <a href=\"https://github.com/GoogleContainerTools/kaniko\">Kaniko</a>."
             },
             "tagPolicy": {
               "$ref": "#/definitions/TagPolicy",
@@ -481,7 +535,7 @@
             "artifacts",
             "tagPolicy",
             "executionEnvironment",
-            "kaniko"
+            "cluster"
           ],
           "additionalProperties": false
         }
@@ -491,15 +545,15 @@
     },
     "BuildType": {
       "properties": {
+        "cluster": {
+          "$ref": "#/definitions/ClusterDetails",
+          "description": "*beta* describes how to do an on-cluster build.",
+          "x-intellij-html-description": "<em>beta</em> describes how to do an on-cluster build."
+        },
         "googleCloudBuild": {
           "$ref": "#/definitions/GoogleCloudBuild",
           "description": "*beta* describes how to do a remote build on [Google Cloud Build](https://cloud.google.com/cloud-build/).",
           "x-intellij-html-description": "<em>beta</em> describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/\">Google Cloud Build</a>."
-        },
-        "kaniko": {
-          "$ref": "#/definitions/KanikoBuild",
-          "description": "*beta* describes how to do an on-cluster build using [Kaniko](https://github.com/GoogleContainerTools/kaniko).",
-          "x-intellij-html-description": "<em>beta</em> describes how to do an on-cluster build using <a href=\"https://github.com/GoogleContainerTools/kaniko\">Kaniko</a>."
         },
         "local": {
           "$ref": "#/definitions/LocalBuild",
@@ -510,7 +564,7 @@
       "preferredOrder": [
         "local",
         "googleCloudBuild",
-        "kaniko"
+        "cluster"
       ],
       "additionalProperties": false,
       "description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated.",
@@ -538,6 +592,46 @@
       "additionalProperties": false,
       "description": "contains all fields necessary for specifying a build plugin.",
       "x-intellij-html-description": "contains all fields necessary for specifying a build plugin."
+    },
+    "ClusterDetails": {
+      "properties": {
+        "dockerConfig": {
+          "$ref": "#/definitions/DockerConfig",
+          "description": "describes how to mount the local Docker configuration into a pod.",
+          "x-intellij-html-description": "describes how to mount the local Docker configuration into a pod."
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration.",
+          "x-intellij-html-description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration."
+        },
+        "pullSecret": {
+          "type": "string",
+          "description": "path to the secret key file.",
+          "x-intellij-html-description": "path to the secret key file."
+        },
+        "pullSecretName": {
+          "type": "string",
+          "description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image.",
+          "x-intellij-html-description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image.",
+          "default": "kaniko-secret"
+        },
+        "timeout": {
+          "type": "string",
+          "description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (`20m`).",
+          "x-intellij-html-description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (<code>20m</code>)."
+        }
+      },
+      "preferredOrder": [
+        "pullSecret",
+        "pullSecretName",
+        "namespace",
+        "timeout",
+        "dockerConfig"
+      ],
+      "additionalProperties": false,
+      "description": "*beta* describes how to do an on-cluster build.",
+      "x-intellij-html-description": "<em>beta</em> describes how to do an on-cluster build."
     },
     "DateTimeTagger": {
       "properties": {
@@ -1001,11 +1095,8 @@
           "x-intellij-html-description": "Kubernetes namespace."
         },
         "overrides": {
-          "additionalProperties": {},
-          "type": "object",
           "description": "key-value pairs. If present, Skaffold will build a Helm `values` file that overrides the original and use it to call Helm CLI (`--f` flag).",
-          "x-intellij-html-description": "key-value pairs. If present, Skaffold will build a Helm <code>values</code> file that overrides the original and use it to call Helm CLI (<code>--f</code> flag).",
-          "default": "{}"
+          "x-intellij-html-description": "key-value pairs. If present, Skaffold will build a Helm <code>values</code> file that overrides the original and use it to call Helm CLI (<code>--f</code> flag)."
         },
         "packaged": {
           "$ref": "#/definitions/HelmPackaged",
@@ -1201,30 +1292,43 @@
       "description": "*alpha* builds images using the [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).",
       "x-intellij-html-description": "<em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin\">Jib plugin for Maven</a>."
     },
-    "KanikoBuild": {
+    "KanikoArtifact": {
       "properties": {
+        "buildArgs": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "arguments passed to the docker build.",
+          "x-intellij-html-description": "arguments passed to the docker build.",
+          "default": "{}",
+          "examples": [
+            "{\"key1\": \"value1\", \"key2\": \"value2\"}"
+          ]
+        },
         "buildContext": {
           "$ref": "#/definitions/KanikoBuildContext",
-          "description": "defines where Kaniko gets the sources from.",
-          "x-intellij-html-description": "defines where Kaniko gets the sources from."
+          "description": "where the build context for this artifact resides.",
+          "x-intellij-html-description": "where the build context for this artifact resides."
         },
         "cache": {
           "$ref": "#/definitions/KanikoCache",
           "description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds.",
           "x-intellij-html-description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds."
         },
-        "dockerConfig": {
-          "$ref": "#/definitions/DockerConfig",
-          "description": "describes how to mount the local Docker configuration into the Kaniko pod.",
-          "x-intellij-html-description": "describes how to mount the local Docker configuration into the Kaniko pod."
+        "dockerfile": {
+          "type": "string",
+          "description": "locates the Dockerfile relative to workspace.",
+          "x-intellij-html-description": "locates the Dockerfile relative to workspace.",
+          "default": "Dockerfile"
         },
         "flags": {
           "items": {
             "type": "string"
           },
           "type": "array",
-          "description": "additional flags to be passed to Kaniko command line. See [Kaniko Additional Flags](https://github.com/GoogleContainerTools/kaniko#additional-flags).",
-          "x-intellij-html-description": "additional flags to be passed to Kaniko command line. See <a href=\"https://github.com/GoogleContainerTools/kaniko#additional-flags\">Kaniko Additional Flags</a>.",
+          "description": "additional flags to be passed to Kaniko command line. See [Kaniko Additional Flags](https://github.com/GoogleContainerTools/kaniko#additional-flags). Deprecated - instead the named, unique fields should be used, e.g. `buildArgs`, `cache`, `target`.",
+          "x-intellij-html-description": "additional flags to be passed to Kaniko command line. See <a href=\"https://github.com/GoogleContainerTools/kaniko#additional-flags\">Kaniko Additional Flags</a>. Deprecated - instead the named, unique fields should be used, e.g. <code>buildArgs</code>, <code>cache</code>, <code>target</code>.",
           "default": "[]"
         },
         "image": {
@@ -1232,42 +1336,24 @@
           "description": "Docker image used by the Kaniko pod. Defaults to the latest released version of `gcr.io/kaniko-project/executor`.",
           "x-intellij-html-description": "Docker image used by the Kaniko pod. Defaults to the latest released version of <code>gcr.io/kaniko-project/executor</code>."
         },
-        "namespace": {
+        "target": {
           "type": "string",
-          "description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration.",
-          "x-intellij-html-description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration."
-        },
-        "pullSecret": {
-          "type": "string",
-          "description": "path to the secret key file. See [Kaniko Documentation](https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster).",
-          "x-intellij-html-description": "path to the secret key file. See <a href=\"https://github.com/GoogleContainerTools/kaniko#running-kaniko-in-a-kubernetes-cluster\">Kaniko Documentation</a>."
-        },
-        "pullSecretName": {
-          "type": "string",
-          "description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image.",
-          "x-intellij-html-description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image.",
-          "default": "kaniko-secret"
-        },
-        "timeout": {
-          "type": "string",
-          "description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (`20m`).",
-          "x-intellij-html-description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (<code>20m</code>)."
+          "description": "Dockerfile target name to build.",
+          "x-intellij-html-description": "Dockerfile target name to build."
         }
       },
       "preferredOrder": [
-        "buildContext",
-        "cache",
         "flags",
-        "pullSecret",
-        "pullSecretName",
-        "namespace",
-        "timeout",
+        "dockerfile",
+        "target",
+        "buildArgs",
+        "buildContext",
         "image",
-        "dockerConfig"
+        "cache"
       ],
       "additionalProperties": false,
-      "description": "*beta* describes how to do an on-cluster build using [Kaniko](https://github.com/GoogleContainerTools/kaniko).",
-      "x-intellij-html-description": "<em>beta</em> describes how to do an on-cluster build using <a href=\"https://github.com/GoogleContainerTools/kaniko\">Kaniko</a>."
+      "description": "*alpha* describes an artifact built from a Dockerfile, with kaniko.",
+      "x-intellij-html-description": "<em>alpha</em> describes an artifact built from a Dockerfile, with kaniko."
     },
     "KanikoBuildContext": {
       "properties": {
@@ -1455,8 +1541,8 @@
             "$ref": "#/definitions/Activation"
           },
           "type": "array",
-          "description": "criteria by which a profile can be auto-activated.",
-          "x-intellij-html-description": "criteria by which a profile can be auto-activated."
+          "description": "criteria by which a profile can be auto-activated. The profile is auto-activated if any one of the activations are triggered. An activation is triggered if all of the criteria (env, kubeContext, command) are triggered.",
+          "x-intellij-html-description": "criteria by which a profile can be auto-activated. The profile is auto-activated if any one of the activations are triggered. An activation is triggered if all of the criteria (env, kubeContext, command) are triggered."
         },
         "build": {
           "$ref": "#/definitions/BuildConfig",

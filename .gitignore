@@ -1,7 +1,7 @@
 out/
 examples/bazel/bazel-*
 integration/examples/bazel/bazel-*
-integration/examples/test-plugin/local/bazel/bazel-*
+integration/testdata/plugin/local/bazel/bazel-*
 *.new
 .idea/
 .vscode/
@@ -10,5 +10,6 @@ docs/firebase-debug*
 docs/public
 docs/resources
 docs/node_modules
+docs/themes
 docs/package-lock.json
 pkg/skaffold/color/debug.test
