@@ -19,12 +19,12 @@ package cluster
 import (
 	"context"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"io"
 	"sort"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster/sources"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
