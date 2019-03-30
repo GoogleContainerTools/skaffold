@@ -517,3 +517,72 @@ func TestGetDependencies(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeDockerfilePath(t *testing.T) {
+	cwd, _ := filepath.Abs(".")
+	tests := []struct {
+		name           string
+		context        string
+		dockerfilePath string
+		expected       string
+	}{
+		{
+			name:           "absolute dockerfilePath",
+			context:        "irrelevant",
+			dockerfilePath: filepath.Join(cwd, "context", "Dockerfile"),
+			expected:       filepath.Join(cwd, "context", "Dockerfile"),
+		},
+		{
+			name:           "relative dockerfilePath without context prefix",
+			context:        "context",
+			dockerfilePath: "Dockerfile",
+			expected:       filepath.Join(cwd, "context", "Dockerfile"),
+		},
+		{
+			name:           "relative dockerfilePath with context prefix",
+			context:        "context",
+			dockerfilePath: filepath.Join("context", "Dockerfile"),
+			expected:       filepath.Join(cwd, "context", "Dockerfile"),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual, err := NormalizeDockerfilePath(test.context, test.dockerfilePath)
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
+		})
+	}
+}
+
+func TestRelativeDockerfilePath(t *testing.T) {
+	cwd, _ := filepath.Abs(".")
+	tests := []struct {
+		name          string
+		absDockerfile string
+		expected      string
+		shouldErr     bool
+	}{
+		{
+			name:          "inside the context",
+			absDockerfile: filepath.Join(cwd, "Dockerfile"),
+			expected:      "Dockerfile",
+		},
+		{
+			name:          "outside the context",
+			absDockerfile: filepath.Join(cwd, "..", "Dockerfile"),
+			shouldErr:     true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual, err := relativeDockerfilePath(".", test.absDockerfile)
+
+			if test.shouldErr {
+				testutil.CheckError(t, true, err)
+			} else {
+				testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
+			}
+		})
+	}
+}

@@ -243,6 +243,7 @@ func expandPaths(workspace string, copied [][]string) ([]string, error) {
 }
 
 // NormalizeDockerfilePath returns the absolute path to the dockerfile.
+// The input dockerfile may be an absolute path, relative to the Skaffold working directory or relative to the artifact context.
 func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 	if filepath.IsAbs(dockerfile) {
 		return dockerfile, nil
@@ -254,12 +255,31 @@ func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 	return filepath.Abs(dockerfile)
 }
 
+// relativeDockerfilePath returns the relative path of the Dockerfile with respect to the context directory.
+func relativeDockerfilePath(context, absDockerfilePath string) (string, error) {
+	absContext, err := filepath.Abs(context)
+	if err != nil {
+		return "", err
+	}
+
+	relDockerfilePath, err := filepath.Rel(absContext, absDockerfilePath)
+	if strings.HasPrefix(relDockerfilePath, "..") {
+		err = fmt.Errorf("dockerfile %s needs to be located below %s", absDockerfilePath, context)
+	}
+
+	return relDockerfilePath, err
+}
+
 // GetDependencies finds the sources dependencies for the given docker artifact.
 // All paths are relative to the workspace.
 func GetDependencies(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string) ([]string, error) {
 	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "normalizing dockerfile path")
+	}
+	relDockerfilePath, err := relativeDockerfilePath(workspace, absDockerfilePath)
+	if err != nil {
+		return nil, errors.Wrap(err, "relative Dockerfile path")
 	}
 
 	deps, err := readDockerfile(workspace, absDockerfilePath, buildArgs)
@@ -344,11 +364,7 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 	}
 
 	// Always add dockerfile even if it's .dockerignored. The daemon will need it anyways.
-	if !filepath.IsAbs(dockerfilePath) {
-		files[dockerfilePath] = true
-	} else {
-		files[absDockerfilePath] = true
-	}
+	files[relDockerfilePath] = true
 
 	// Ignore .dockerignore
 	delete(files, ".dockerignore")
