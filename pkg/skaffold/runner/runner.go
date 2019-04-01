@@ -61,6 +61,7 @@ type SkaffoldRunner struct {
 	opts              *config.SkaffoldOptions
 	labellers         []deploy.Labeller
 	builds            []build.Artifact
+	hasBuilt          bool
 	hasDeployed       bool
 	imageList         *kubernetes.ImageList
 	namespaces        []string

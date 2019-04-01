@@ -99,7 +99,7 @@ func findArtifact(image string, builds []build.Artifact) *build.Artifact {
 // retrieveImageConfiguration retrieves the image container configuration for
 // the given build artifact
 func retrieveImageConfiguration(ctx context.Context, artifact *build.Artifact) (imageConfiguration, error) {
-	apiClient, err := docker.NewAPIClient()
+	apiClient, err := docker.NewAPIClient(false)
 	if err != nil {
 		return imageConfiguration{}, errors.Wrap(err, "could not connect to local docker daemon")
 	}
