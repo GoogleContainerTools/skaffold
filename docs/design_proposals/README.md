@@ -8,7 +8,7 @@ size.
 
 An example for large impact changes would be:
 
-1. Introduce Templating, or
+1. Introduce templating, or
 2. Arbitrary command execution in certain places
 
 These could be small code changes but large in impact.
