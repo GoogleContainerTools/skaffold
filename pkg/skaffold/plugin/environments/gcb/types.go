@@ -18,6 +18,7 @@ package gcb
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -102,4 +103,8 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 	}
 
 	return util.AbsolutePaths(a.Workspace, paths), nil
+}
+
+func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
+	return nil // noop
 }
