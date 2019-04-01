@@ -51,7 +51,7 @@ func (b *Builder) local(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 		return nil, errors.Wrap(err, "getting current cluster context")
 	}
 	b.KubeContext = kubeContext
-	localDocker, err := docker.NewAPIClient(b.opts.Prune)
+	localDocker, err := docker.NewAPIClient(b.opts.Prune())
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
@@ -153,7 +153,7 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", tag}
 	args = append(args, docker.GetBuildArgs(a)...)
-	if b.opts.Prune {
+	if b.opts.Prune() {
 		args = append(args, "--force-rm")
 	}
 

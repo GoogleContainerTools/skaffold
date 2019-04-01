@@ -67,7 +67,7 @@ func dev(out io.Writer, ui bool) error {
 	}
 
 	prune := func() {}
-	if opts.Prune {
+	if opts.Prune() {
 		defer func() {
 			prune()
 		}()

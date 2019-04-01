@@ -97,7 +97,7 @@ func NewCache(ctx context.Context, builder Builder, opts *skafconfig.SkaffoldOpt
 		logrus.Warnf("Error retrieving artifact cache, not using skaffold cache: %v", err)
 		return noCache
 	}
-	client, err := newDockerClient(opts.Prune)
+	client, err := newDockerClient(opts.Prune())
 	if err != nil {
 		logrus.Warnf("Error retrieving local daemon client, not using skaffold cache: %v", err)
 		return noCache
@@ -114,7 +114,7 @@ func NewCache(ctx context.Context, builder Builder, opts *skafconfig.SkaffoldOpt
 		builder:       builder,
 		needsPush:     needsPush,
 		imageList:     imageList,
-		prune:         opts.Prune,
+		prune:         opts.Prune(),
 	}
 }
 

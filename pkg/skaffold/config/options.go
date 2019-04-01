@@ -41,7 +41,6 @@ type SkaffoldOptions struct {
 	ExperimentalGUI   bool
 	EnableRPC         bool
 	NoPrune           bool
-	Prune             bool // this is a logical combination of NoPrune and CacheArtifacts
 	Profiles          []string
 	CustomTag         string
 	Namespace         string
@@ -83,4 +82,10 @@ func (opts *SkaffoldOptions) Labels() map[string]string {
 		labels[l[0]] = l[1]
 	}
 	return labels
+}
+
+// Prune returns true iff the user did NOT specify the --no-prune flag,
+// and the user did NOT specify the --cache-artifacts flag.
+func (opts *SkaffoldOptions) Prune() bool {
+	return !opts.NoPrune && !opts.CacheArtifacts
 }
