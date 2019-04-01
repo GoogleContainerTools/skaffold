@@ -35,15 +35,19 @@ import (
 // See: https://github.com/src-d/go-git/issues/378
 func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 	tests := []struct {
-		description   string
-		expectedName  string
-		createGitRepo func(string)
-		subDir        string
-		shouldErr     bool
+		description            string
+		variantTags            string
+		variantCommitSha       string
+		variantAbbrevCommitSha string
+		createGitRepo          func(string)
+		subDir                 string
+		shouldErr              bool
 	}{
 		{
-			description:  "success",
-			expectedName: "test:eefe1b9",
+			description:            "clean worktree without tag",
+			variantTags:            "test:eefe1b9",
+			variantCommitSha:       "test:eefe1b9c44eb0aa87199c9a079f2d48d8eb8baed",
+			variantAbbrevCommitSha: "test:eefe1b9",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -52,8 +56,10 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description:  "use tag over commit",
-			expectedName: "test:v2",
+			description:            "clean worktree with tags",
+			variantTags:            "test:v2",
+			variantCommitSha:       "test:aea33bcc86b5af8c8570ff45d8a643202d63c808",
+			variantAbbrevCommitSha: "test:aea33bc",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -67,8 +73,10 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description:  "dirty",
-			expectedName: "test:eefe1b9-dirty",
+			description:            "dirty worktree without tag",
+			variantTags:            "test:eefe1b9-dirty",
+			variantCommitSha:       "test:eefe1b9c44eb0aa87199c9a079f2d48d8eb8baed-dirty",
+			variantAbbrevCommitSha: "test:eefe1b9-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -78,8 +86,10 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description:  "dirty tag",
-			expectedName: "test:v1-dirty",
+			description:            "dirty worktree with tag",
+			variantTags:            "test:v1-dirty",
+			variantCommitSha:       "test:eefe1b9c44eb0aa87199c9a079f2d48d8eb8baed-dirty",
+			variantAbbrevCommitSha: "test:eefe1b9-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -90,8 +100,10 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description:  "untracked",
-			expectedName: "test:eefe1b9-dirty",
+			description:            "untracked",
+			variantTags:            "test:eefe1b9-dirty",
+			variantCommitSha:       "test:eefe1b9c44eb0aa87199c9a079f2d48d8eb8baed-dirty",
+			variantAbbrevCommitSha: "test:eefe1b9-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -101,8 +113,10 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description:  "tag plus one commit",
-			expectedName: "test:v1-1-g3cec6b9",
+			description:            "tag plus one commit",
+			variantTags:            "test:v1-1-g3cec6b9",
+			variantCommitSha:       "test:3cec6b950895704a8a69b610a199b242a3bd370f",
+			variantAbbrevCommitSha: "test:3cec6b9",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -115,8 +129,10 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description:  "deleted file",
-			expectedName: "test:279d53f-dirty",
+			description:            "deleted file",
+			variantTags:            "test:279d53f-dirty",
+			variantCommitSha:       "test:279d53fcc3ae34503aec382a49a41f6db6de9a66-dirty",
+			variantAbbrevCommitSha: "test:279d53f-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source1.go", []byte("code1")).
@@ -127,8 +143,10 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description:  "rename",
-			expectedName: "test:eefe1b9-dirty",
+			description:            "rename",
+			variantTags:            "test:eefe1b9-dirty",
+			variantCommitSha:       "test:eefe1b9c44eb0aa87199c9a079f2d48d8eb8baed-dirty",
+			variantAbbrevCommitSha: "test:eefe1b9-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", []byte("code")).
@@ -138,8 +156,10 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description:  "sub directory",
-			expectedName: "test:a7b32a6",
+			description:            "sub directory",
+			variantTags:            "test:a7b32a6",
+			variantCommitSha:       "test:a7b32a69335a6daa51bd89cc1bf30bd31df228ba",
+			variantAbbrevCommitSha: "test:a7b32a6",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					mkdir("sub/sub").
@@ -148,36 +168,42 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			subDir: "sub/sub",
 		},
 		{
-			description:  "clean artifact1 in tagged repo",
-			expectedName: "test:v1",
+			description:            "clean artifact1 in tagged repo",
+			variantTags:            "test:v1",
+			variantCommitSha:       "test:b610928dc27484cc56990bc77622aab0dbd67131",
+			variantAbbrevCommitSha: "test:b610928",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					mkdir("artifact1").write("artifact1/source.go", []byte("code")).
-					mkdir("artifact2").write("artifact2/source.go", []byte("code")).
+					mkdir("artifact2").write("artifact2/source.go", []byte("other code")).
 					add("artifact1/source.go", "artifact2/source.go").
 					commit("initial").tag("v1")
 			},
-			subDir: "artifact1",
+			subDir: "artifact1/",
 		},
 		{
-			description:  "clean artifact2 in tagged repo",
-			expectedName: "test:v1",
+			description:            "clean artifact2 in tagged repo",
+			variantTags:            "test:v1",
+			variantCommitSha:       "test:b610928dc27484cc56990bc77622aab0dbd67131",
+			variantAbbrevCommitSha: "test:b610928",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					mkdir("artifact1").write("artifact1/source.go", []byte("code")).
-					mkdir("artifact2").write("artifact2/source.go", []byte("code")).
+					mkdir("artifact2").write("artifact2/source.go", []byte("other code")).
 					add("artifact1/source.go", "artifact2/source.go").
 					commit("initial").tag("v1")
 			},
 			subDir: "artifact2",
 		},
 		{
-			description:  "clean artifact in dirty repo",
-			expectedName: "test:v1",
+			description:            "clean artifact in dirty repo",
+			variantTags:            "test:v1",
+			variantCommitSha:       "test:b610928dc27484cc56990bc77622aab0dbd67131",
+			variantAbbrevCommitSha: "test:b610928",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					mkdir("artifact1").write("artifact1/source.go", []byte("code")).
-					mkdir("artifact2").write("artifact2/source.go", []byte("code")).
+					mkdir("artifact2").write("artifact2/source.go", []byte("other code")).
 					add("artifact1/source.go", "artifact2/source.go").
 					commit("initial").tag("v1").
 					write("artifact2/source.go", []byte("updated code"))
@@ -185,12 +211,14 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			subDir: "artifact1",
 		},
 		{
-			description:  "updated artifact in dirty repo",
-			expectedName: "test:v1-dirty",
+			description:            "updated artifact in dirty repo",
+			variantTags:            "test:v1-dirty",
+			variantCommitSha:       "test:b610928dc27484cc56990bc77622aab0dbd67131-dirty",
+			variantAbbrevCommitSha: "test:b610928-dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					mkdir("artifact1").write("artifact1/source.go", []byte("code")).
-					mkdir("artifact2").write("artifact2/source.go", []byte("code")).
+					mkdir("artifact2").write("artifact2/source.go", []byte("other code")).
 					add("artifact1/source.go", "artifact2/source.go").
 					commit("initial").tag("v1").
 					write("artifact2/source.go", []byte("updated code"))
@@ -198,20 +226,50 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			subDir: "artifact2",
 		},
 		{
-			description:  "non git repo",
-			expectedName: "test:dirty",
+			description:            "additional commit in other artifact",
+			variantTags:            "test:0d16f59",
+			variantCommitSha:       "test:0d16f59900bd63dd39425d6085d3f1333b66804f",
+			variantAbbrevCommitSha: "test:0d16f59",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					mkdir("artifact1").write("artifact1/source.go", []byte("code")).
+					mkdir("artifact2").write("artifact2/source.go", []byte("other code")).
+					add("artifact1/source.go", "artifact2/source.go").
+					commit("initial").
+					write("artifact2/source.go", []byte("updated code")).
+					add("artifact2/source.go").
+					commit("update artifact2")
+			},
+			subDir: "artifact1",
+		},
+		{
+			description:            "non git repo",
+			variantTags:            "test:dirty",
+			variantCommitSha:       "test:dirty",
+			variantAbbrevCommitSha: "test:dirty",
 			createGitRepo: func(dir string) {
 				ioutil.WriteFile(filepath.Join(dir, "source.go"), []byte("code"), os.ModePerm)
 			},
 		},
 		{
-			description:  "git repo with no commit",
-			expectedName: "test:dirty",
+			description:            "git repo with no commit",
+			variantTags:            "test:dirty",
+			variantCommitSha:       "test:dirty",
+			variantAbbrevCommitSha: "test:dirty",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir)
 			},
 		},
 	}
+
+	tTags, err := NewGitCommit("Tags")
+	testutil.CheckError(t, false, err)
+
+	tCommit, err := NewGitCommit("CommitSha")
+	testutil.CheckError(t, false, err)
+
+	tAbbrevC, err := NewGitCommit("AbbrevCommitSha")
+	testutil.CheckError(t, false, err)
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
@@ -221,11 +279,14 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			tt.createGitRepo(tmpDir.Root())
 			workspace := tmpDir.Path(tt.subDir)
 
-			c := &GitCommit{}
+			name, err := tTags.GenerateFullyQualifiedImageName(workspace, "test")
+			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.variantTags, name)
 
-			name, err := c.GenerateFullyQualifiedImageName(workspace, "test")
+			name, err = tCommit.GenerateFullyQualifiedImageName(workspace, "test")
+			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.variantCommitSha, name)
 
-			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.expectedName, name)
+			name, err = tAbbrevC.GenerateFullyQualifiedImageName(workspace, "test")
+			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.variantAbbrevCommitSha, name)
 		})
 	}
 }
