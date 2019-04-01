@@ -99,6 +99,8 @@ type GitTagger struct {
 	// `Tags` (default): use git tags or fall back to abbreviated commit hash.
 	// `CommitSha`: use the full git commit sha.
 	// `AbbrevCommitSha`: use the abbreviated git commit sha.
+	// `TreeSha`: use the full tree hash of the artifact workingdir.
+	// `AbbrevTreeSha`: use the abbreviated tree hash of the artifact workingdir.
 	Variant string `yaml:"variant,omitempty"`
 }
 
