@@ -73,7 +73,7 @@ func TestKustomizeDeploy(t *testing.T) {
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
 				WorkingDir: tmpDir.Root(),
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.SkaffoldConfig{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KustomizeDeploy: test.cfg,
@@ -138,7 +138,7 @@ func TestKustomizeCleanup(t *testing.T) {
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
 				WorkingDir: tmpDir.Root(),
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.SkaffoldConfig{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KustomizeDeploy: test.cfg,
@@ -215,7 +215,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 			tmp.Write("kustomization.yaml", test.yaml)
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.SkaffoldConfig{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KustomizeDeploy: &latest.KustomizeDeploy{

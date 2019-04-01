@@ -117,7 +117,7 @@ func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.
 	}
 	runCtx := &runcontext.RunContext{
 		Opts: b.opts,
-		Cfg: &latest.SkaffoldPipeline{
+		Cfg: latest.Pipeline{
 			Build: latest.BuildConfig{
 				BuildType: latest.BuildType{
 					GoogleCloudBuild: g,

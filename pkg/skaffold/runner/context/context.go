@@ -30,7 +30,7 @@ import (
 
 type RunContext struct {
 	Opts *config.SkaffoldOptions
-	Cfg  *latest.SkaffoldPipeline
+	Cfg  latest.Pipeline
 
 	// Plugin is true if at least one artifact is built by a plugin
 	// this is temporary - will go away as soon as all the builders are plugins
@@ -42,7 +42,7 @@ type RunContext struct {
 	Namespaces  []string
 }
 
-func GetRunContext(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*RunContext, error) {
+func GetRunContext(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*RunContext, error) {
 	kubeContext, err := kubectx.CurrentContext()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting current cluster context")
@@ -73,7 +73,7 @@ func GetRunContext(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (
 	}
 	return &RunContext{
 		Opts:        opts,
-		Cfg:         cfg,
+		Cfg:         cfg.Pipeline,
 		Plugin:      plugin,
 		WorkingDir:  cwd,
 		DefaultRepo: defaultRepo,

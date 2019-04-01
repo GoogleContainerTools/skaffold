@@ -286,7 +286,7 @@ func TestHelmDeploy(t *testing.T) {
 			description: "deploy success",
 			cmd:         &MockHelm{t: t},
 			runContext: &runcontext.RunContext{
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.SkaffoldConfig{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							HelmDeploy: testDeployConfig,
@@ -304,7 +304,7 @@ func TestHelmDeploy(t *testing.T) {
 			description: "deploy success with recreatePods",
 			cmd:         &MockHelm{t: t},
 			runContext: &runcontext.RunContext{
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.SkaffoldConfig{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							HelmDeploy: testDeployRecreatePodsConfig,
@@ -322,7 +322,7 @@ func TestHelmDeploy(t *testing.T) {
 			description: "deploy success with skipBuildDependencies",
 			cmd:         &MockHelm{t: t},
 			runContext: &runcontext.RunContext{
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.SkaffoldConfig{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							HelmDeploy: testDeploySkipBuildDependenciesConfig,
@@ -340,7 +340,7 @@ func TestHelmDeploy(t *testing.T) {
 			description: "deploy error unmatched parameter",
 			cmd:         &MockHelm{t: t},
 			runContext: &runcontext.RunContext{
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.SkaffoldConfig{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							HelmDeploy: testDeployConfigParameterUnmatched,
@@ -359,7 +359,7 @@ func TestHelmDeploy(t *testing.T) {
 			description: "deploy success remote chart with skipBuildDependencies",
 			cmd:         &MockHelm{t: t},
 			runContext: &runcontext.RunContext{
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.SkaffoldConfig{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							HelmDeploy: testDeploySkipBuildDependencies,
@@ -380,7 +380,7 @@ func TestHelmDeploy(t *testing.T) {
 				depResult: fmt.Errorf("unexpected error"),
 			},
 			runContext: &runcontext.RunContext{
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.SkaffoldConfig{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							HelmDeploy: testDeployRemoteChart,
@@ -412,7 +412,7 @@ func TestHelmDeploy(t *testing.T) {
 				upgradeResult: fmt.Errorf("should not have called upgrade"),
 			},
 			runContext: &runcontext.RunContext{
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.SkaffoldConfig{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							HelmDeploy: testDeployConfig,
@@ -448,7 +448,7 @@ func TestHelmDeploy(t *testing.T) {
 				upgradeResult: fmt.Errorf("should not have called upgrade"),
 			},
 			runContext: &runcontext.RunContext{
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.SkaffoldConfig{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							HelmDeploy: testDeployHelmStyleConfig,
@@ -469,7 +469,7 @@ func TestHelmDeploy(t *testing.T) {
 				installResult: fmt.Errorf("should not have called install"),
 			},
 			runContext: &runcontext.RunContext{
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.SkaffoldConfig{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							HelmDeploy: testDeployConfig,
@@ -491,7 +491,7 @@ func TestHelmDeploy(t *testing.T) {
 			},
 			shouldErr: true,
 			runContext: &runcontext.RunContext{
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.SkaffoldConfig{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							HelmDeploy: testDeployConfig,
@@ -513,7 +513,7 @@ func TestHelmDeploy(t *testing.T) {
 			},
 			shouldErr: true,
 			runContext: &runcontext.RunContext{
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.SkaffoldConfig{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							HelmDeploy: testDeployConfig,
@@ -535,7 +535,7 @@ func TestHelmDeploy(t *testing.T) {
 			},
 			shouldErr: false,
 			runContext: &runcontext.RunContext{
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.SkaffoldConfig{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							HelmDeploy: testDeployFooWithPackaged,
@@ -557,7 +557,7 @@ func TestHelmDeploy(t *testing.T) {
 			},
 			shouldErr: true,
 			runContext: &runcontext.RunContext{
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.SkaffoldConfig{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							HelmDeploy: testDeployFooWithPackaged,
@@ -575,7 +575,7 @@ func TestHelmDeploy(t *testing.T) {
 			description: "deploy and get templated release name",
 			cmd:         &MockHelm{t: t},
 			runContext: &runcontext.RunContext{
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.SkaffoldConfig{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							HelmDeploy: testDeployWithTemplatedName,
@@ -743,7 +743,7 @@ func TestHelmDependencies(t *testing.T) {
 			}
 
 			deployer := NewHelmDeployer(&runcontext.RunContext{
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.SkaffoldConfig{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							HelmDeploy: &latest.HelmDeploy{
