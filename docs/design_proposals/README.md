@@ -6,9 +6,9 @@ This document describes the process for proposing a new feature or making any
 large code changes to `skaffold`. By large we mean,  large in impact or large in
 size.
 
-An example for large impact changes would be:
+Examples for large impact changes would be:
 
-1. Introduce Templating, or
+1. Introduce templating, or
 2. Arbitrary command execution in certain places
 
 These could be small code changes but large in impact.
