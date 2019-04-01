@@ -23,12 +23,12 @@ import (
 
 const Version string = "skaffold/v1beta7"
 
-// NewSkaffoldPipeline creates a SkaffoldConfig
-func NewSkaffoldPipeline() util.VersionedConfig {
+// NewSkaffoldConfig creates a SkaffoldConfig
+func NewSkaffoldConfig() util.VersionedConfig {
 	return new(SkaffoldConfig)
 }
 
-// SkaffoldConfig describes a Skaffold pipeline configuration file.
+// SkaffoldConfig holds the fields parsed from the Skaffold configuration file (skaffold.yaml)
 type SkaffoldConfig struct {
 	// APIVersion is the version of the configuration.
 	APIVersion string `yaml:"apiVersion"`

@@ -245,7 +245,7 @@ func overlayProfileField(config interface{}, profile interface{}) interface{} {
 	switch v.Kind() {
 	case reflect.Struct:
 		// check the first field of the struct for a oneOf yamltag.
-		if isOneOf(t.Field(0)) {
+		if IsOneOf(t.Field(0)) {
 			return overlayOneOfField(config, profile)
 		}
 		return overlayStructField(config, profile)
@@ -267,7 +267,7 @@ func overlayProfileField(config interface{}, profile interface{}) interface{} {
 	}
 }
 
-func isOneOf(field reflect.StructField) bool {
+func IsOneOf(field reflect.StructField) bool {
 	for _, tag := range strings.Split(field.Tag.Get("yamltags"), ",") {
 		tagParts := strings.Split(tag, "=")
 

@@ -57,7 +57,7 @@ var SchemaVersions = Versions{
 	{v1beta4.Version, v1beta4.NewSkaffoldPipeline},
 	{v1beta5.Version, v1beta5.NewSkaffoldPipeline},
 	{v1beta6.Version, v1beta6.NewSkaffoldPipeline},
-	{latest.Version, latest.NewSkaffoldPipeline},
+	{latest.Version, latest.NewSkaffoldConfig},
 }
 
 type Version struct {
