@@ -60,7 +60,7 @@ var testDeployConfig = &latest.HelmDeploy{
 			Values: map[string]string{
 				"image": "skaffold-helm",
 			},
-			Overrides: schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
+			Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 			SetValues: map[string]string{
 				"some.key": "somevalue",
 			},
@@ -76,7 +76,7 @@ var testDeployRecreatePodsConfig = &latest.HelmDeploy{
 			Values: map[string]string{
 				"image": "skaffold-helm",
 			},
-			Overrides: schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
+			Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 			SetValues: map[string]string{
 				"some.key": "somevalue",
 			},
@@ -93,7 +93,7 @@ var testDeploySkipBuildDependenciesConfig = &latest.HelmDeploy{
 			Values: map[string]string{
 				"image": "skaffold-helm",
 			},
-			Overrides: schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
+			Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 			SetValues: map[string]string{
 				"some.key": "somevalue",
 			},
@@ -110,7 +110,7 @@ var testDeployHelmStyleConfig = &latest.HelmDeploy{
 			Values: map[string]string{
 				"image": "skaffold-helm",
 			},
-			Overrides: schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
+			Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 			SetValues: map[string]string{
 				"some.key": "somevalue",
 			},
@@ -159,7 +159,7 @@ var testDeployWithTemplatedName = &latest.HelmDeploy{
 			Values: map[string]string{
 				"image.tag": "skaffold-helm",
 			},
-			Overrides: schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
+			Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 			SetValues: map[string]string{
 				"some.key": "somevalue",
 			},
@@ -595,7 +595,7 @@ func TestHelmDependencies(t *testing.T) {
 						ChartPath:   folder.Root(),
 						ValuesFiles: tt.valuesFiles,
 						Values:      map[string]string{"image": "skaffold-helm"},
-						Overrides:   schemautil.HelmOverrides{map[string]interface{}{"foo": "bar"}},
+						Overrides:   schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 						SetValues:   map[string]string{"some.key": "somevalue"},
 					},
 				},
