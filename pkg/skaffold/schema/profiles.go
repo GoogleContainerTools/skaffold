@@ -33,7 +33,7 @@ import (
 
 // ApplyProfiles returns configuration modified by the application
 // of a list of profiles.
-func ApplyProfiles(c *latest.SkaffoldConfig, opts *cfg.SkaffoldOptions) error {
+func ApplyProfiles(c *latest.SkaffoldPipeline, opts *cfg.SkaffoldOptions) error {
 	byName := profilesByName(c.Profiles)
 
 	profiles, err := activatedProfiles(c.Profiles, opts)
@@ -126,18 +126,16 @@ func satisfies(expected, actual string) bool {
 	return actual == expected
 }
 
-func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
+func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) error {
 	logrus.Infof("applying profile: %s", profile.Name)
 
 	// this intentionally removes the Profiles field from the returned config
-	*config = latest.SkaffoldConfig{
+	*config = latest.SkaffoldPipeline{
 		APIVersion: config.APIVersion,
 		Kind:       config.Kind,
-		Pipeline: latest.Pipeline{
-			Build:  overlayProfileField(config.Build, profile.Build).(latest.BuildConfig),
-			Deploy: overlayProfileField(config.Deploy, profile.Deploy).(latest.DeployConfig),
-			Test:   overlayProfileField(config.Test, profile.Test).([]*latest.TestCase),
-		},
+		Build:      overlayProfileField(config.Build, profile.Build).(latest.BuildConfig),
+		Deploy:     overlayProfileField(config.Deploy, profile.Deploy).(latest.DeployConfig),
+		Test:       overlayProfileField(config.Test, profile.Test).([]*latest.TestCase),
 	}
 
 	if len(profile.Patches) == 0 {

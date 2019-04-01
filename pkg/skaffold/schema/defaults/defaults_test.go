@@ -26,7 +26,7 @@ import (
 )
 
 func TestSetDefaults(t *testing.T) {
-	pipeline := &latest.SkaffoldConfig{
+	pipeline := &latest.SkaffoldPipeline{
 		Build: latest.BuildConfig{
 			Artifacts: []*latest.Artifact{
 				{
@@ -67,7 +67,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 	})
 	defer restore()
 
-	pipeline := &latest.SkaffoldConfig{
+	pipeline := &latest.SkaffoldPipeline{
 		Build: latest.BuildConfig{
 			Artifacts: []*latest.Artifact{
 				{ImageName: "image"},
@@ -87,7 +87,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 }
 
 func TestSetDefaultsOnCloudBuild(t *testing.T) {
-	pipeline := &latest.SkaffoldConfig{
+	pipeline := &latest.SkaffoldPipeline{
 		Build: latest.BuildConfig{
 			Artifacts: []*latest.Artifact{
 				{ImageName: "image"},
@@ -107,7 +107,7 @@ func TestSetDefaultsOnCloudBuild(t *testing.T) {
 }
 
 func TestSetDefaultsOnPlugin(t *testing.T) {
-	pipeline := &latest.SkaffoldConfig{
+	pipeline := &latest.SkaffoldPipeline{
 		Build: latest.BuildConfig{
 			Artifacts: []*latest.Artifact{
 				{

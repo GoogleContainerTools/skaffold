@@ -59,7 +59,7 @@ profiles:
 	parsed, err := ParseConfig(tmp.Path("skaffold.yaml"), false)
 	testutil.CheckError(t, false, err)
 
-	pipeline := parsed.(*latest.SkaffoldConfig)
+	pipeline := parsed.(*latest.SkaffoldPipeline)
 	err = ApplyProfiles(pipeline, &cfg.SkaffoldOptions{
 		Profiles: []string{"patches"},
 	})
@@ -90,7 +90,7 @@ profiles:
 	parsed, err := ParseConfig(tmp.Path("skaffold.yaml"), false)
 	testutil.CheckError(t, false, err)
 
-	pipeline := parsed.(*latest.SkaffoldConfig)
+	pipeline := parsed.(*latest.SkaffoldPipeline)
 	err = ApplyProfiles(pipeline, &cfg.SkaffoldOptions{
 		Profiles: []string{"patches"},
 	})
@@ -101,9 +101,9 @@ profiles:
 func TestApplyProfiles(t *testing.T) {
 	tests := []struct {
 		description string
-		config      *latest.SkaffoldConfig
+		config      *latest.SkaffoldPipeline
 		profile     string
-		expected    *latest.SkaffoldConfig
+		expected    *latest.SkaffoldPipeline
 		shouldErr   bool
 	}{
 		{

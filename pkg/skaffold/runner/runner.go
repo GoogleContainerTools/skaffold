@@ -64,8 +64,8 @@ type SkaffoldRunner struct {
 	RPCServerShutdown func() error
 }
 
-// NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
-func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*SkaffoldRunner, error) {
+// NewForConfig returns a new SkaffoldRunner for a SkaffoldPipeline
+func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*SkaffoldRunner, error) {
 	runCtx, err := runcontext.GetRunContext(opts, cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting run context")

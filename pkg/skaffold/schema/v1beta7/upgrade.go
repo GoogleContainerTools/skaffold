@@ -56,14 +56,12 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 		return nil, errors.Wrap(err, "converting new test")
 	}
 
-	return &next.SkaffoldConfig{
+	return &next.SkaffoldPipeline{
 		APIVersion: next.Version,
 		Kind:       config.Kind,
-		Pipeline: next.Pipeline{
-			Build:  newBuild,
-			Test:   newTest,
-			Deploy: newDeploy,
-		},
-		Profiles: newProfiles,
+		Build:      newBuild,
+		Test:       newTest,
+		Deploy:     newDeploy,
+		Profiles:   newProfiles,
 	}, nil
 }

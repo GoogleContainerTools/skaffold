@@ -23,12 +23,19 @@ import (
 
 const Version string = "skaffold/v1beta8"
 
-// NewSkaffoldPipeline creates a SkaffoldConfig
+// NewSkaffoldPipeline creates a SkaffoldPipeline
 func NewSkaffoldPipeline() util.VersionedConfig {
-	return new(SkaffoldConfig)
+	return new(SkaffoldPipeline)
 }
 
-type Pipeline struct {
+// SkaffoldPipeline describes a Skaffold pipeline.
+type SkaffoldPipeline struct {
+	// APIVersion is the version of the configuration.
+	APIVersion string `yaml:"apiVersion"`
+
+	// Kind is always `Config`. Defaults to `Config`.
+	Kind string `yaml:"kind"`
+
 	// Build describes how images are built.
 	Build BuildConfig `yaml:"build,omitempty"`
 
@@ -37,23 +44,12 @@ type Pipeline struct {
 
 	// Deploy describes how images are deployed.
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
-}
-
-// SkaffoldConfig describes a Skaffold pipeline.
-type SkaffoldConfig struct {
-	// APIVersion is the version of the configuration.
-	APIVersion string `yaml:"apiVersion"`
-
-	// Kind is always `Config`. Defaults to `Config`.
-	Kind string `yaml:"kind"`
-
-	Pipeline `yaml:",inline"`
 
 	// Profiles *beta* can override be used to `build`, `test` or `deploy` configuration.
 	Profiles []Profile `yaml:"profiles,omitempty"`
 }
 
-func (c *SkaffoldConfig) GetVersion() string {
+func (c *SkaffoldPipeline) GetVersion() string {
 	return c.APIVersion
 }
 
@@ -482,7 +478,14 @@ type Profile struct {
 	// For example: `profile-prod`.
 	Name string `yaml:"name,omitempty" yamltags:"required"`
 
-	Pipeline `yaml:",inline"`
+	// Build replaces the main `build` configuration.
+	Build BuildConfig `yaml:"build,omitempty"`
+
+	// Test replaces the main `test` configuration.
+	Test []*TestCase `yaml:"test,omitempty"`
+
+	// Deploy replaces the main `deploy` configuration.
+	Deploy DeployConfig `yaml:"deploy,omitempty"`
 
 	// Patches lists patches applied to the configuration.
 	// Patches use the JSON patch notation.

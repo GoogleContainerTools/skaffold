@@ -227,7 +227,7 @@ func TestLocalRun(t *testing.T) {
 				},
 			}
 			event.InitializeState(&runcontext.RunContext{
-				Cfg: &latest.SkaffoldConfig{
+				Cfg: &latest.SkaffoldPipeline{
 					Build: cfg,
 				},
 				Opts: &config.SkaffoldOptions{},

@@ -38,7 +38,7 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, a *latest.Artif
 		Opts: &config.SkaffoldOptions{
 			SkipTests: b.skipTests,
 		},
-		Cfg: latest.Pipeline{
+		Cfg: &latest.SkaffoldPipeline{
 			Build: latest.BuildConfig{
 				ExecutionEnvironment: &latest.ExecutionEnvironment{},
 			},

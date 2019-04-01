@@ -38,7 +38,7 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Arti
 		Opts: &config.SkaffoldOptions{
 			SkipTests: b.skipTests,
 		},
-		Cfg: latest.Pipeline{
+		Cfg: &latest.SkaffoldPipeline{
 			Build: latest.BuildConfig{
 				ExecutionEnvironment: &latest.ExecutionEnvironment{},
 			},
