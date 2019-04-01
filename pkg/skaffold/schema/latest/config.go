@@ -70,7 +70,7 @@ type BuildConfig struct {
 
 	// TagPolicy *beta* determines how images are tagged.
 	// A few strategies are provided here, although you most likely won't need to care!
-	// If not specified, it defaults to `gitCommit: {}`.
+	// If not specified, it defaults to `gitCommit: {variant: Tags}`.
 	TagPolicy TagPolicy `yaml:"tagPolicy,omitempty"`
 
 	// ExecutionEnvironment is the environment in which the build
