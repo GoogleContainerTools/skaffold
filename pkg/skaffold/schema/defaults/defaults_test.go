@@ -26,18 +26,20 @@ import (
 )
 
 func TestSetDefaults(t *testing.T) {
-	pipeline := &latest.SkaffoldPipeline{
-		Build: latest.BuildConfig{
-			Artifacts: []*latest.Artifact{
-				{
-					ImageName: "first",
-				},
-				{
-					ImageName: "second",
-					Workspace: "folder",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
-							DockerfilePath: "Dockerfile.second",
+	pipeline := &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{
+				Artifacts: []*latest.Artifact{
+					{
+						ImageName: "first",
+					},
+					{
+						ImageName: "second",
+						Workspace: "folder",
+						ArtifactType: latest.ArtifactType{
+							DockerArtifact: &latest.DockerArtifact{
+								DockerfilePath: "Dockerfile.second",
+							},
 						},
 					},
 				},
@@ -67,13 +69,15 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 	})
 	defer restore()
 
-	pipeline := &latest.SkaffoldPipeline{
-		Build: latest.BuildConfig{
-			Artifacts: []*latest.Artifact{
-				{ImageName: "image"},
-			},
-			BuildType: latest.BuildType{
-				Cluster: &latest.ClusterDetails{},
+	pipeline := &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{
+				Artifacts: []*latest.Artifact{
+					{ImageName: "image"},
+				},
+				BuildType: latest.BuildType{
+					Cluster: &latest.ClusterDetails{},
+				},
 			},
 		},
 	}
@@ -87,13 +91,15 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 }
 
 func TestSetDefaultsOnCloudBuild(t *testing.T) {
-	pipeline := &latest.SkaffoldPipeline{
-		Build: latest.BuildConfig{
-			Artifacts: []*latest.Artifact{
-				{ImageName: "image"},
-			},
-			BuildType: latest.BuildType{
-				GoogleCloudBuild: &latest.GoogleCloudBuild{},
+	pipeline := &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{
+				Artifacts: []*latest.Artifact{
+					{ImageName: "image"},
+				},
+				BuildType: latest.BuildType{
+					GoogleCloudBuild: &latest.GoogleCloudBuild{},
+				},
 			},
 		},
 	}
@@ -107,12 +113,14 @@ func TestSetDefaultsOnCloudBuild(t *testing.T) {
 }
 
 func TestSetDefaultsOnPlugin(t *testing.T) {
-	pipeline := &latest.SkaffoldPipeline{
-		Build: latest.BuildConfig{
-			Artifacts: []*latest.Artifact{
-				{
-					ImageName:     "image",
-					BuilderPlugin: &latest.BuilderPlugin{},
+	pipeline := &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{
+				Artifacts: []*latest.Artifact{
+					{
+						ImageName:     "image",
+						BuilderPlugin: &latest.BuilderPlugin{},
+					},
 				},
 			},
 		},

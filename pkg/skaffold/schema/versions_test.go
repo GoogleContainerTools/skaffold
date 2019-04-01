@@ -217,7 +217,7 @@ func TestParseConfig(t *testing.T) {
 
 			cfg, err := ParseConfig(tmp.Path("skaffold.yaml"), true)
 			if cfg != nil {
-				config := cfg.(*latest.SkaffoldPipeline)
+				config := cfg.(*latest.SkaffoldConfig)
 				if err := defaults.Set(config); err != nil {
 					t.Fatal("unable to set default values")
 				}
@@ -228,16 +228,16 @@ func TestParseConfig(t *testing.T) {
 	}
 }
 
-func config(ops ...func(*latest.SkaffoldPipeline)) *latest.SkaffoldPipeline {
-	cfg := &latest.SkaffoldPipeline{APIVersion: latest.Version, Kind: "Config"}
+func config(ops ...func(*latest.SkaffoldConfig)) *latest.SkaffoldConfig {
+	cfg := &latest.SkaffoldConfig{APIVersion: latest.Version, Kind: "Config"}
 	for _, op := range ops {
 		op(cfg)
 	}
 	return cfg
 }
 
-func withLocalBuild(ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldPipeline) {
-	return func(cfg *latest.SkaffoldPipeline) {
+func withLocalBuild(ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
 		b := latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{}}}
 		for _, op := range ops {
 			op(&b)
@@ -246,8 +246,8 @@ func withLocalBuild(ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldPipel
 	}
 }
 
-func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldPipeline) {
-	return func(cfg *latest.SkaffoldPipeline) {
+func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
 		b := latest.BuildConfig{BuildType: latest.BuildType{GoogleCloudBuild: &latest.GoogleCloudBuild{
 			ProjectID:   id,
 			DockerImage: "gcr.io/cloud-builders/docker",
@@ -261,8 +261,8 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 	}
 }
 
-func withClusterBuild(secretName, namespace, secret string, timeout string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldPipeline) {
-	return func(cfg *latest.SkaffoldPipeline) {
+func withClusterBuild(secretName, namespace, secret string, timeout string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
 		b := latest.BuildConfig{BuildType: latest.BuildType{Cluster: &latest.ClusterDetails{
 			PullSecretName: secretName,
 			Namespace:      namespace,
@@ -285,8 +285,8 @@ func withDockerConfig(secretName string, path string) func(*latest.BuildConfig) 
 	}
 }
 
-func withKubectlDeploy(manifests ...string) func(*latest.SkaffoldPipeline) {
-	return func(cfg *latest.SkaffoldPipeline) {
+func withKubectlDeploy(manifests ...string) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
 		cfg.Deploy = latest.DeployConfig{
 			DeployType: latest.DeployType{
 				KubectlDeploy: &latest.KubectlDeploy{
@@ -297,8 +297,8 @@ func withKubectlDeploy(manifests ...string) func(*latest.SkaffoldPipeline) {
 	}
 }
 
-func withHelmDeploy() func(*latest.SkaffoldPipeline) {
-	return func(cfg *latest.SkaffoldPipeline) {
+func withHelmDeploy() func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
 		cfg.Deploy = latest.DeployConfig{
 			DeployType: latest.DeployType{
 				HelmDeploy: &latest.HelmDeploy{},
@@ -372,14 +372,14 @@ func withShaTagger() func(*latest.BuildConfig) {
 	return withTagPolicy(latest.TagPolicy{ShaTagger: &latest.ShaTagger{}})
 }
 
-func withProfiles(profiles ...latest.Profile) func(*latest.SkaffoldPipeline) {
-	return func(cfg *latest.SkaffoldPipeline) {
+func withProfiles(profiles ...latest.Profile) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
 		cfg.Profiles = profiles
 	}
 }
 
-func withTests(testCases ...*latest.TestCase) func(*latest.SkaffoldPipeline) {
-	return func(cfg *latest.SkaffoldPipeline) {
+func withTests(testCases ...*latest.TestCase) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
 		cfg.Test = testCases
 	}
 }

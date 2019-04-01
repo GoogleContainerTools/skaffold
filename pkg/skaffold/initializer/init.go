@@ -242,7 +242,7 @@ func generateSkaffoldPipeline(k Initializer, dockerfilePairs []dockerfilePair) (
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	logrus.Info("generating skaffold config")
 
-	pipeline := &latest.SkaffoldPipeline{
+	pipeline := &latest.SkaffoldConfig{
 		APIVersion: latest.Version,
 		Kind:       "Config",
 	}

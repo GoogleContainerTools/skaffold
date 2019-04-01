@@ -1531,77 +1531,8 @@
       "description": "configures how Kaniko mounts sources directly via an `emptyDir` volume.",
       "x-intellij-html-description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume."
     },
-    "Profile": {
-      "required": [
-        "name"
-      ],
+    "Pipeline": {
       "properties": {
-        "activation": {
-          "items": {
-            "$ref": "#/definitions/Activation"
-          },
-          "type": "array",
-          "description": "criteria by which a profile can be auto-activated. The profile is auto-activated if any one of the activations are triggered. An activation is triggered if all of the criteria (env, kubeContext, command) are triggered.",
-          "x-intellij-html-description": "criteria by which a profile can be auto-activated. The profile is auto-activated if any one of the activations are triggered. An activation is triggered if all of the criteria (env, kubeContext, command) are triggered."
-        },
-        "build": {
-          "$ref": "#/definitions/BuildConfig",
-          "description": "replaces the main `build` configuration.",
-          "x-intellij-html-description": "replaces the main <code>build</code> configuration."
-        },
-        "deploy": {
-          "$ref": "#/definitions/DeployConfig",
-          "description": "replaces the main `deploy` configuration.",
-          "x-intellij-html-description": "replaces the main <code>deploy</code> configuration."
-        },
-        "name": {
-          "type": "string",
-          "description": "a unique profile name.",
-          "x-intellij-html-description": "a unique profile name.",
-          "examples": [
-            "profile-prod"
-          ]
-        },
-        "patches": {
-          "items": {
-            "$ref": "#/definitions/JSONPatch"
-          },
-          "type": "array",
-          "description": "patches applied to the configuration. Patches use the JSON patch notation.",
-          "x-intellij-html-description": "patches applied to the configuration. Patches use the JSON patch notation."
-        },
-        "test": {
-          "items": {
-            "$ref": "#/definitions/TestCase"
-          },
-          "type": "array",
-          "description": "replaces the main `test` configuration.",
-          "x-intellij-html-description": "replaces the main <code>test</code> configuration."
-        }
-      },
-      "preferredOrder": [
-        "name",
-        "build",
-        "test",
-        "deploy",
-        "patches",
-        "activation"
-      ],
-      "additionalProperties": false,
-      "description": "*beta* profiles are used to override any `build`, `test` or `deploy` configuration.",
-      "x-intellij-html-description": "<em>beta</em> profiles are used to override any <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
-    },
-    "ShaTagger": {
-      "description": "*beta* tags images with their sha256 digest.",
-      "x-intellij-html-description": "<em>beta</em> tags images with their sha256 digest."
-    },
-    "SkaffoldPipeline": {
-      "properties": {
-        "apiVersion": {
-          "type": "string",
-          "description": "version of the configuration.",
-          "x-intellij-html-description": "version of the configuration."
-        },
         "build": {
           "$ref": "#/definitions/BuildConfig",
           "description": "describes how images are built.",
@@ -1611,20 +1542,6 @@
           "$ref": "#/definitions/DeployConfig",
           "description": "describes how images are deployed.",
           "x-intellij-html-description": "describes how images are deployed."
-        },
-        "kind": {
-          "type": "string",
-          "description": "always `Config`.",
-          "x-intellij-html-description": "always <code>Config</code>.",
-          "default": "Config"
-        },
-        "profiles": {
-          "items": {
-            "$ref": "#/definitions/Profile"
-          },
-          "type": "array",
-          "description": "*beta* can override be used to `build`, `test` or `deploy` configuration.",
-          "x-intellij-html-description": "<em>beta</em> can override be used to <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
         },
         "test": {
           "items": {
@@ -1636,16 +1553,326 @@
         }
       },
       "preferredOrder": [
-        "apiVersion",
-        "kind",
         "build",
         "test",
-        "deploy",
-        "profiles"
+        "deploy"
       ],
       "additionalProperties": false,
       "description": "describes a Skaffold pipeline.",
       "x-intellij-html-description": "describes a Skaffold pipeline."
+    },
+    "Profile": {
+      "required": [
+        "name"
+      ],
+      "anyOf": [
+        {
+          "properties": {
+            "activation": {
+              "items": {
+                "$ref": "#/definitions/Activation"
+              },
+              "type": "array",
+              "description": "criteria by which a profile can be auto-activated. The profile is auto-activated if any one of the activations are triggered. An activation is triggered if all of the criteria (env, kubeContext, command) are triggered.",
+              "x-intellij-html-description": "criteria by which a profile can be auto-activated. The profile is auto-activated if any one of the activations are triggered. An activation is triggered if all of the criteria (env, kubeContext, command) are triggered."
+            },
+            "name": {
+              "type": "string",
+              "description": "a unique profile name.",
+              "x-intellij-html-description": "a unique profile name.",
+              "examples": [
+                "profile-prod"
+              ]
+            },
+            "patches": {
+              "items": {
+                "$ref": "#/definitions/JSONPatch"
+              },
+              "type": "array",
+              "description": "patches applied to the configuration. Patches use the JSON patch notation.",
+              "x-intellij-html-description": "patches applied to the configuration. Patches use the JSON patch notation."
+            }
+          },
+          "preferredOrder": [
+            "name",
+            "patches",
+            "activation"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "activation": {
+              "items": {
+                "$ref": "#/definitions/Activation"
+              },
+              "type": "array",
+              "description": "criteria by which a profile can be auto-activated. The profile is auto-activated if any one of the activations are triggered. An activation is triggered if all of the criteria (env, kubeContext, command) are triggered.",
+              "x-intellij-html-description": "criteria by which a profile can be auto-activated. The profile is auto-activated if any one of the activations are triggered. An activation is triggered if all of the criteria (env, kubeContext, command) are triggered."
+            },
+            "build": {
+              "$ref": "#/definitions/BuildConfig",
+              "description": "describes how images are built.",
+              "x-intellij-html-description": "describes how images are built."
+            },
+            "name": {
+              "type": "string",
+              "description": "a unique profile name.",
+              "x-intellij-html-description": "a unique profile name.",
+              "examples": [
+                "profile-prod"
+              ]
+            },
+            "patches": {
+              "items": {
+                "$ref": "#/definitions/JSONPatch"
+              },
+              "type": "array",
+              "description": "patches applied to the configuration. Patches use the JSON patch notation.",
+              "x-intellij-html-description": "patches applied to the configuration. Patches use the JSON patch notation."
+            }
+          },
+          "preferredOrder": [
+            "name",
+            "patches",
+            "activation",
+            "build"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "activation": {
+              "items": {
+                "$ref": "#/definitions/Activation"
+              },
+              "type": "array",
+              "description": "criteria by which a profile can be auto-activated. The profile is auto-activated if any one of the activations are triggered. An activation is triggered if all of the criteria (env, kubeContext, command) are triggered.",
+              "x-intellij-html-description": "criteria by which a profile can be auto-activated. The profile is auto-activated if any one of the activations are triggered. An activation is triggered if all of the criteria (env, kubeContext, command) are triggered."
+            },
+            "name": {
+              "type": "string",
+              "description": "a unique profile name.",
+              "x-intellij-html-description": "a unique profile name.",
+              "examples": [
+                "profile-prod"
+              ]
+            },
+            "patches": {
+              "items": {
+                "$ref": "#/definitions/JSONPatch"
+              },
+              "type": "array",
+              "description": "patches applied to the configuration. Patches use the JSON patch notation.",
+              "x-intellij-html-description": "patches applied to the configuration. Patches use the JSON patch notation."
+            },
+            "test": {
+              "items": {
+                "$ref": "#/definitions/TestCase"
+              },
+              "type": "array",
+              "description": "describes how images are tested.",
+              "x-intellij-html-description": "describes how images are tested."
+            }
+          },
+          "preferredOrder": [
+            "name",
+            "patches",
+            "activation",
+            "test"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "activation": {
+              "items": {
+                "$ref": "#/definitions/Activation"
+              },
+              "type": "array",
+              "description": "criteria by which a profile can be auto-activated. The profile is auto-activated if any one of the activations are triggered. An activation is triggered if all of the criteria (env, kubeContext, command) are triggered.",
+              "x-intellij-html-description": "criteria by which a profile can be auto-activated. The profile is auto-activated if any one of the activations are triggered. An activation is triggered if all of the criteria (env, kubeContext, command) are triggered."
+            },
+            "deploy": {
+              "$ref": "#/definitions/DeployConfig",
+              "description": "describes how images are deployed.",
+              "x-intellij-html-description": "describes how images are deployed."
+            },
+            "name": {
+              "type": "string",
+              "description": "a unique profile name.",
+              "x-intellij-html-description": "a unique profile name.",
+              "examples": [
+                "profile-prod"
+              ]
+            },
+            "patches": {
+              "items": {
+                "$ref": "#/definitions/JSONPatch"
+              },
+              "type": "array",
+              "description": "patches applied to the configuration. Patches use the JSON patch notation.",
+              "x-intellij-html-description": "patches applied to the configuration. Patches use the JSON patch notation."
+            }
+          },
+          "preferredOrder": [
+            "name",
+            "patches",
+            "activation",
+            "deploy"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "*beta* profiles are used to override any `build`, `test` or `deploy` configuration.",
+      "x-intellij-html-description": "<em>beta</em> profiles are used to override any <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
+    },
+    "ShaTagger": {
+      "description": "*beta* tags images with their sha256 digest.",
+      "x-intellij-html-description": "<em>beta</em> tags images with their sha256 digest."
+    },
+    "SkaffoldConfig": {
+      "anyOf": [
+        {
+          "properties": {
+            "apiVersion": {
+              "type": "string",
+              "description": "version of the configuration.",
+              "x-intellij-html-description": "version of the configuration."
+            },
+            "kind": {
+              "type": "string",
+              "description": "always `Config`.",
+              "x-intellij-html-description": "always <code>Config</code>.",
+              "default": "Config"
+            },
+            "profiles": {
+              "items": {
+                "$ref": "#/definitions/Profile"
+              },
+              "type": "array",
+              "description": "*beta* can override be used to `build`, `test` or `deploy` configuration.",
+              "x-intellij-html-description": "<em>beta</em> can override be used to <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
+            }
+          },
+          "preferredOrder": [
+            "apiVersion",
+            "kind",
+            "profiles"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "apiVersion": {
+              "type": "string",
+              "description": "version of the configuration.",
+              "x-intellij-html-description": "version of the configuration."
+            },
+            "build": {
+              "$ref": "#/definitions/BuildConfig",
+              "description": "describes how images are built.",
+              "x-intellij-html-description": "describes how images are built."
+            },
+            "kind": {
+              "type": "string",
+              "description": "always `Config`.",
+              "x-intellij-html-description": "always <code>Config</code>.",
+              "default": "Config"
+            },
+            "profiles": {
+              "items": {
+                "$ref": "#/definitions/Profile"
+              },
+              "type": "array",
+              "description": "*beta* can override be used to `build`, `test` or `deploy` configuration.",
+              "x-intellij-html-description": "<em>beta</em> can override be used to <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
+            }
+          },
+          "preferredOrder": [
+            "apiVersion",
+            "kind",
+            "profiles",
+            "build"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "apiVersion": {
+              "type": "string",
+              "description": "version of the configuration.",
+              "x-intellij-html-description": "version of the configuration."
+            },
+            "kind": {
+              "type": "string",
+              "description": "always `Config`.",
+              "x-intellij-html-description": "always <code>Config</code>.",
+              "default": "Config"
+            },
+            "profiles": {
+              "items": {
+                "$ref": "#/definitions/Profile"
+              },
+              "type": "array",
+              "description": "*beta* can override be used to `build`, `test` or `deploy` configuration.",
+              "x-intellij-html-description": "<em>beta</em> can override be used to <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
+            },
+            "test": {
+              "items": {
+                "$ref": "#/definitions/TestCase"
+              },
+              "type": "array",
+              "description": "describes how images are tested.",
+              "x-intellij-html-description": "describes how images are tested."
+            }
+          },
+          "preferredOrder": [
+            "apiVersion",
+            "kind",
+            "profiles",
+            "test"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "apiVersion": {
+              "type": "string",
+              "description": "version of the configuration.",
+              "x-intellij-html-description": "version of the configuration."
+            },
+            "deploy": {
+              "$ref": "#/definitions/DeployConfig",
+              "description": "describes how images are deployed.",
+              "x-intellij-html-description": "describes how images are deployed."
+            },
+            "kind": {
+              "type": "string",
+              "description": "always `Config`.",
+              "x-intellij-html-description": "always <code>Config</code>.",
+              "default": "Config"
+            },
+            "profiles": {
+              "items": {
+                "$ref": "#/definitions/Profile"
+              },
+              "type": "array",
+              "description": "*beta* can override be used to `build`, `test` or `deploy` configuration.",
+              "x-intellij-html-description": "<em>beta</em> can override be used to <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
+            }
+          },
+          "preferredOrder": [
+            "apiVersion",
+            "kind",
+            "profiles",
+            "deploy"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "describes a Skaffold pipeline configuration file.",
+      "x-intellij-html-description": "describes a Skaffold pipeline configuration file."
     },
     "TagPolicy": {
       "properties": {
