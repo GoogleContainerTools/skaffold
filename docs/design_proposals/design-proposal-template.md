@@ -6,7 +6,20 @@
     If you are already working with someone mention their name.
     If not, please leave this empty, it will be assigned to a core team member.
 * Date: \<date\>
-* Status: [Draft/Reviewed/Complete]
+* Status: [Reviewed/Cancelled/Under implementation/Complete]
+
+Here is a brief explanation of the Statuses
+
+1. Reviewed: The proposal PR has been accepted, merged and ready for
+   implementation.
+2. Under implementation: An accepted proposal is being implemented by actual work.
+   Note: The design might change in this phase based on issues during
+   implementation.
+3. Cancelled: During or before implementation the proposal was cancelled.
+   It could be due to:
+   * other features added which made the current design proposal obsolete.
+   * No longer a priority.
+4. Complete: This feature/change is implemented.
 
 ## Background
 
