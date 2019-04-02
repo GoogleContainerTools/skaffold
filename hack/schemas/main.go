@@ -357,7 +357,7 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 		Definition: &Definition{
 			Type: "object",
 			AnyOf: []*Definition{{
-				Ref: defPrefix + "SkaffoldPipeline",
+				Ref: defPrefix + preferredOrder[0],
 			}},
 		},
 		Definitions: definitions,

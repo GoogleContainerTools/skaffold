@@ -11,7 +11,7 @@ var version;
   const table = document.getElementById("table");
 
   render(html`
-    ${template(json.definitions, undefined, '#/definitions/SkaffoldPipeline', 0)}
+    ${template(json.definitions, undefined, json.anyOf[0].$ref, 0)}
   `, table);
 })();
 
@@ -20,6 +20,7 @@ function* template(definitions, parentDefinition, ref, ident) {
   const allProperties = [];
   const seen = {};
 
+  console.log(name)
   const properties = definitions[name].properties;
   for (const key of (definitions[name].preferredOrder || [])) {
     allProperties.push([key, properties[key]]);

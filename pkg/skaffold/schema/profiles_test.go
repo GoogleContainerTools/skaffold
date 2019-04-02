@@ -95,7 +95,7 @@ profiles:
 		Profiles: []string{"patches"},
 	})
 
-	testutil.CheckErrorAndDeepEqual(t, true, err, "appying profile patches: invalid path: /build/artifacts/0/image/", err.Error())
+	testutil.CheckErrorAndDeepEqual(t, true, err, "applying profile patches: invalid path: /build/artifacts/0/image/", err.Error())
 }
 
 func TestApplyProfiles(t *testing.T) {
