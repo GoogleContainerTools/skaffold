@@ -267,4 +267,3 @@ func overlayProfileField(config interface{}, profile interface{}) interface{} {
 		return config
 	}
 }
-
