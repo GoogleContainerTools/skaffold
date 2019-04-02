@@ -35,10 +35,10 @@ var ErrorConfigurationChanged = errors.New("configuration changed")
 // Dev watches for changes and runs the skaffold build and deploy
 // config until interrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
-	logger := r.newLogger(out, artifacts)
+	logger := r.newLogger(out)
 	defer logger.Stop()
 
-	portForwarder := kubernetes.NewPortForwarder(out, r.imageList, r.runCtx.Namespaces)
+	portForwarder := kubernetes.NewPortForwarder(out, r.podSelector, r.runCtx.Namespaces)
 	defer portForwarder.Stop()
 
 	// Create watcher and register artifacts to build current state of files.

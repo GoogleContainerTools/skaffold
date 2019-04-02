@@ -53,12 +53,12 @@ type LogAggregator struct {
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
-func NewLogAggregator(out io.Writer, baseImageNames []string, podSelector PodSelector, namespaces []string) *LogAggregator {
+func NewLogAggregator(out io.Writer, podSelector PodSelector, namespaces []string) *LogAggregator {
 	return &LogAggregator{
 		output:      out,
 		podSelector: podSelector,
 		namespaces:  namespaces,
-		colorPicker: NewColorPicker(baseImageNames),
+		colorPicker: NewColorPicker(),
 		trackedContainers: trackedContainers{
 			ids: map[string]bool{},
 		},
@@ -103,6 +103,8 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 				if !a.podSelector.Select(pod) {
 					continue
 				}
+
+				a.colorPicker.Register(pod)
 
 				for _, container := range pod.Status.ContainerStatuses {
 					if container.ContainerID == "" {
@@ -246,43 +248,13 @@ type PodSelector interface {
 	Select(pod *v1.Pod) bool
 }
 
-// ImageList implements PodSelector based on a list of images names.
-type ImageList struct {
-	sync.RWMutex
-	names map[string]bool
-}
+// TailLabelSelector implements PodSelector based on the `tail` label.
+type TailLabelSelector struct{}
 
-// NewImageList creates a new ImageList.
-func NewImageList() *ImageList {
-	return &ImageList{
-		names: make(map[string]bool),
+// TailLabelSelector returns true, if the pod has label `tail=true`.
+func (l *TailLabelSelector) Select(pod *v1.Pod) bool {
+	if v, present := pod.Labels["tail"]; present {
+		return v == "true"
 	}
-}
-
-// Add adds an image to the list.
-func (l *ImageList) Add(image string) {
-	l.Lock()
-	l.names[image] = true
-	l.Unlock()
-}
-
-// Remove removes an image from the list.
-func (l *ImageList) Remove(image string) {
-	l.Lock()
-	delete(l.names, image)
-	l.Unlock()
-}
-
-// Select returns true if one of the pod's images is in the list.
-func (l *ImageList) Select(pod *v1.Pod) bool {
-	l.RLock()
-	defer l.RUnlock()
-
-	for _, container := range pod.Spec.Containers {
-		if l.names[container.Image] {
-			return true
-		}
-	}
-
 	return false
 }

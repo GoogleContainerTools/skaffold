@@ -61,7 +61,7 @@ type SkaffoldRunner struct {
 	builds            []build.Artifact
 	hasBuilt          bool
 	hasDeployed       bool
-	imageList         *kubernetes.ImageList
+	podSelector       kubernetes.PodSelector
 	RPCServerShutdown func() error
 }
 
@@ -120,7 +120,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		Syncer:            kubectl.NewSyncer(runCtx.Namespaces),
 		Watcher:           watch.NewWatcher(trigger),
 		labellers:         labellers,
-		imageList:         kubernetes.NewImageList(),
+		podSelector:       &kubernetes.TailLabelSelector{},
 		cache:             artifactCache,
 		runCtx:            runCtx,
 		RPCServerShutdown: shutdown,
@@ -198,13 +198,8 @@ func getTagger(t latest.TagPolicy, customTag string) (tag.Tagger, error) {
 	}
 }
 
-func (r *SkaffoldRunner) newLogger(out io.Writer, artifacts []*latest.Artifact) *kubernetes.LogAggregator {
-	var imageNames []string
-	for _, artifact := range artifacts {
-		imageNames = append(imageNames, artifact.ImageName)
-	}
-
-	return kubernetes.NewLogAggregator(out, imageNames, r.imageList, r.runCtx.Namespaces)
+func (r *SkaffoldRunner) newLogger(out io.Writer) *kubernetes.LogAggregator {
+	return kubernetes.NewLogAggregator(out, r.podSelector, r.runCtx.Namespaces)
 }
 
 // HasDeployed returns true if this runner has deployed something.
@@ -221,11 +216,6 @@ func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, art
 	bRes, err := r.BuildAndTest(ctx, out, artifacts)
 	if err != nil {
 		return err
-	}
-
-	// Update which images are logged.
-	for _, build := range bRes {
-		r.imageList.Add(build.Tag)
 	}
 
 	// Make sure all artifacts are redeployed. Not only those that were just built.
@@ -245,7 +235,7 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	if r.runCtx.Opts.Tail {
-		logger := r.newLogger(out, artifacts)
+		logger := r.newLogger(out)
 		if err := logger.Start(ctx); err != nil {
 			return errors.Wrap(err, "starting logger")
 		}
@@ -341,14 +331,11 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	return err
 }
 
+// todo(corneliusweig) function unused?
 // TailLogs prints the logs for deployed artifacts.
 func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, artifacts []*latest.Artifact, bRes []build.Artifact) error {
 	if !r.runCtx.Opts.Tail {
 		return nil
-	}
-
-	for _, b := range bRes {
-		r.imageList.Add(b.Tag)
 	}
 
 	logger := r.newLogger(out, artifacts)

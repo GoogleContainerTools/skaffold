@@ -21,6 +21,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestColorPicker(t *testing.T) {
@@ -30,46 +31,43 @@ func TestColorPicker(t *testing.T) {
 		expectedColor color.Color
 	}{
 		{
-			description:   "not found",
-			pod:           &v1.Pod{},
+			description: "not found",
+			pod: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "unknown",
+				},
+			},
 			expectedColor: color.None,
 		},
 		{
 			description: "found",
 			pod: &v1.Pod{
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						{Image: "image"},
-					},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "pod",
 				},
 			},
 			expectedColor: colorCodes[0],
 		},
 		{
-			description: "ignore tag",
+			description: "second pod",
 			pod: &v1.Pod{
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						{Image: "image:tag"},
-					},
-				},
-			},
-			expectedColor: colorCodes[0],
-		},
-		{
-			description: "second image",
-			pod: &v1.Pod{
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						{Image: "second:tag"},
-					},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "second",
 				},
 			},
 			expectedColor: colorCodes[1],
 		},
 	}
 
-	picker := NewColorPicker([]string{"image", "second"})
+	picker := NewColorPicker()
+	// register "second" twice and still expect colorCodes[1]
+	for _, v := range []string{"pod", "second", "second"} {
+		picker.Register(&v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: v,
+			},
+		})
+	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {

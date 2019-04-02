@@ -17,7 +17,7 @@ limitations under the License.
 package kubernetes
 
 import (
-	"strings"
+	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	v1 "k8s.io/api/core/v1"
@@ -42,46 +42,51 @@ var colorCodes = []color.Color{
 // from each pod.
 type ColorPicker interface {
 	Pick(pod *v1.Pod) color.Color
+	Register(pod *v1.Pod)
 }
 
 type colorPicker struct {
-	imageColors map[string]color.Color
+	sync.RWMutex
+	podColors map[string]color.Color
 }
 
-// NewColorPicker creates a new ColorPicker. For each artifact, a color will be selected
-// sequentially from `colorCodes`. If all colors are used, the first color will be used
-// again. The formatter for the associated color will then be returned by `Pick` each
-// time it is called for the artifact and can be used to write to out in that color.
-func NewColorPicker(baseImageNames []string) ColorPicker {
-	imageColors := make(map[string]color.Color)
-
-	for i, baseImageName := range baseImageNames {
-		imageColors[baseImageName] = colorCodes[i%len(colorCodes)]
-	}
-
-	return &colorPicker{
-		imageColors: imageColors,
-	}
+// NewColorPicker creates a new ColorPicker. The formatter for the associated color will
+// then be returned by `Pick` each time it is called for the pod and can be used to write
+// to out in that color.
+func NewColorPicker() ColorPicker {
+	return &colorPicker{podColors: make(map[string]color.Color)}
 }
 
-// Pick will return the color that was associated with pod when `NewColorPicker` was called.
+// Pick will return the color that was associated with pod when `Register` was called.
 // If no color was associated with the pod, the none color will be returned, which will
 // write with no formatting.
 func (p *colorPicker) Pick(pod *v1.Pod) color.Color {
-	for _, container := range pod.Spec.Containers {
-		if c, present := p.imageColors[stripTag(container.Image)]; present {
-			return c
-		}
+	p.RLock()
+	c, present := p.podColors[pod.GetName()]
+	p.RUnlock()
+
+	if present {
+		return c
 	}
 
 	// If no mapping is found, don't add any color formatting
 	return color.None
 }
 
-func stripTag(image string) string {
-	if !strings.Contains(image, ":") {
-		return image
+// Register associates a color with the given pod by its name. For each registered pod,
+// a color will be selected sequentially from `colorCodes`. If all colors are used,
+// the first color will be used again.
+func (p *colorPicker) Register(pod *v1.Pod) {
+	// assume that pods are already registered most of the time
+	p.RLock()
+	_, ok := p.podColors[pod.GetName()]
+	p.RUnlock()
+
+	if ok {
+		return
 	}
 
-	return strings.SplitN(image, ":", 2)[0]
+	p.Lock()
+	p.podColors[pod.GetName()] = colorCodes[len(p.podColors)%len(colorCodes)]
+	p.Unlock()
 }

@@ -443,7 +443,7 @@ func TestPortForwardPod(t *testing.T) {
 				retrieveAvailablePort = originalGetAvailablePort
 			}()
 
-			p := NewPortForwarder(ioutil.Discard, NewImageList(), []string{""})
+			p := NewPortForwarder(ioutil.Discard, &TailLabelSelector{}, []string{""})
 			if test.forwarder == nil {
 				test.forwarder = newTestForwarder(nil)
 			}
