@@ -19,6 +19,8 @@ package yamltags
 import (
 	"reflect"
 	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 type otherstruct struct {
@@ -216,4 +218,14 @@ func TestOneOf(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIsZeroValue(t *testing.T) {
+	testutil.CheckDeepEqual(t, true, isZeroValue(reflect.ValueOf(0)))
+	testutil.CheckDeepEqual(t, true, isZeroValue(reflect.ValueOf(nil)))
+	var zeroMap map[string]string
+	testutil.CheckDeepEqual(t, true, isZeroValue(reflect.ValueOf(zeroMap)))
+
+	nonZeroMap := make(map[string]string)
+	testutil.CheckDeepEqual(t, false, isZeroValue(reflect.ValueOf(nonZeroMap)))
 }

@@ -183,8 +183,8 @@ type HelmImageStrategy struct {
 }
 
 type HelmImageConfig struct {
-	HelmFQNConfig        *HelmFQNConfig        `yaml:"fqn"`
-	HelmConventionConfig *HelmConventionConfig `yaml:"helm"`
+	HelmFQNConfig        *HelmFQNConfig        `yaml:"fqn" yamltags:"oneOf=helmImageStrategy"`
+	HelmConventionConfig *HelmConventionConfig `yaml:"helm" yamltags:"oneOf=helmImageStrategy"`
 }
 
 // HelmFQNConfig represents image config to use the FullyQualifiedImageName as param to set
