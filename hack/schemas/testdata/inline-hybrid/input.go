@@ -34,12 +34,12 @@ type InlineOneOfStruct struct {
 	Field2 string `yaml:"f2"`
 }
 
-//InlineOneOfStruct is embedded inline into TestStruct
+//InlineOneOfStructAnyOf is embedded inline into TestStruct
 type InlineOneOfStructAnyOf struct {
 
-	//Field1 should be the first choice
+	//Choice1 should be the first choice
 	Choice1 string `yaml:"choice1" yamltags:"oneOf=fooBar"`
 
-	//Field2 should be the second choice
+	//Choice2 should be the second choice
 	Choice2 string `yaml:"choice2" yamltags:"oneOf=fooBar"`
 }

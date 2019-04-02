@@ -22,6 +22,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -64,7 +66,10 @@ func TestGenerators(t *testing.T) {
 				testutil.CheckError(t, false, err)
 			}
 
-			testutil.CheckDeepEqual(t, string(expected), string(actual))
+			if diff := cmp.Diff(string(actual), string(expected)); diff != "" {
+				t.Errorf("%T differ (-got, +want): %s\n actual:\n%s", string(expected), diff, string(actual))
+				return
+			}
 		})
 	}
 }

@@ -32,13 +32,13 @@
       "properties": {
         "choice1": {
           "type": "string",
-          "description": "Field1 should be the first choice",
-          "x-intellij-html-description": "Field1 should be the first choice"
+          "description": "should be the first choice",
+          "x-intellij-html-description": "should be the first choice"
         },
         "choice2": {
           "type": "string",
-          "description": "Field2 should be the second choice",
-          "x-intellij-html-description": "Field2 should be the second choice"
+          "description": "should be the second choice",
+          "x-intellij-html-description": "should be the second choice"
         }
       },
       "preferredOrder": [
@@ -46,8 +46,8 @@
         "choice2"
       ],
       "additionalProperties": false,
-      "description": "InlineOneOfStruct is embedded inline into TestStruct",
-      "x-intellij-html-description": "InlineOneOfStruct is embedded inline into TestStruct"
+      "description": "embedded inline into TestStruct",
+      "x-intellij-html-description": "embedded inline into TestStruct"
     },
     "TestStruct": {
       "required": [
@@ -83,8 +83,8 @@
           "properties": {
             "choice1": {
               "type": "string",
-              "description": "Field1 should be the first choice",
-              "x-intellij-html-description": "Field1 should be the first choice"
+              "description": "should be the first choice",
+              "x-intellij-html-description": "should be the first choice"
             },
             "f1": {
               "type": "string",
@@ -114,8 +114,8 @@
           "properties": {
             "choice2": {
               "type": "string",
-              "description": "Field2 should be the second choice",
-              "x-intellij-html-description": "Field2 should be the second choice"
+              "description": "should be the second choice",
+              "x-intellij-html-description": "should be the second choice"
             },
             "f1": {
               "type": "string",
