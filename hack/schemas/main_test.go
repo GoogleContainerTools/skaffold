@@ -63,7 +63,7 @@ func TestGenerators(t *testing.T) {
 				testutil.CheckError(t, false, err)
 			}
 
-			testutil.CheckMultilineDeepEqual(t, string(expected), string(actual))
+			testutil.CheckDeepEqual(t, string(expected), string(actual))
 		})
 	}
 }

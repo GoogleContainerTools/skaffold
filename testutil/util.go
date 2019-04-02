@@ -46,15 +46,6 @@ func CheckDeepEqual(t *testing.T, expected, actual interface{}) {
 	}
 }
 
-func CheckMultilineDeepEqual(t *testing.T, expected, actual string) {
-	t.Helper()
-
-	if diff := cmp.Diff(actual, expected); diff != "" {
-		t.Errorf("%T differ (-want, +got): \n%s, expected: \n %s actual: \n%s", expected, diff, expected, actual)
-		return
-	}
-}
-
 func CheckDeepEqualWithOptions(t *testing.T, options cmp.Options, expected, actual interface{}) {
 	t.Helper()
 	if diff := cmp.Diff(actual, expected, options); diff != "" {
