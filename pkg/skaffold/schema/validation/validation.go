@@ -27,7 +27,7 @@ import (
 )
 
 // ValidateSchema checks if the Skaffold pipeline is valid and returns all encountered errors as a concatenated string
-func ValidateSchema(config *latest.SkaffoldPipeline) error {
+func ValidateSchema(config *latest.SkaffoldConfig) error {
 	errs := validateOneOf(config)
 	if errs == nil {
 		return nil

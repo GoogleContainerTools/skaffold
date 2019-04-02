@@ -28,7 +28,7 @@ func NewSkaffoldConfig() util.VersionedConfig {
 	return new(SkaffoldConfig)
 }
 
-// SkaffoldConfig holds the fields parsed from the Skaffold configuration file (skaffold.yaml)
+// SkaffoldConfig holds the fields parsed from the Skaffold configuration file (skaffold.yaml).
 type SkaffoldConfig struct {
 	// APIVersion is the version of the configuration.
 	APIVersion string `yaml:"apiVersion"`
@@ -36,7 +36,7 @@ type SkaffoldConfig struct {
 	// Kind is always `Config`. Defaults to `Config`.
 	Kind string `yaml:"kind"`
 
-	// Pipeline defines the Build/Test/Deploy phases
+	// Pipeline defines the Build/Test/Deploy phases.
 	Pipeline `yaml:",inline"`
 
 	// Profiles *beta* can override be used to `build`, `test` or `deploy` configuration.
@@ -484,7 +484,7 @@ type Profile struct {
 	// For example: `profile-prod`.
 	Name string `yaml:"name,omitempty" yamltags:"required"`
 
-	// Pipeline contains the definitions to replace the default pipeline with
+	// Pipeline contains the definitions to replace the default skaffold pipeline.
 	Pipeline `yaml:",inline"`
 
 	// Patches lists patches applied to the configuration.
