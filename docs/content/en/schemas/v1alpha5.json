@@ -550,17 +550,32 @@
       "additionalProperties": false
     },
     "HelmImageStrategy": {
-      "properties": {
-        "fqn": {
-          "$ref": "#/definitions/HelmFQNConfig"
+      "anyOf": [
+        {
+          "additionalProperties": false
         },
-        "helm": {
-          "$ref": "#/definitions/HelmConventionConfig"
+        {
+          "properties": {
+            "fqn": {
+              "$ref": "#/definitions/HelmFQNConfig"
+            }
+          },
+          "preferredOrder": [
+            "fqn"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "helm": {
+              "$ref": "#/definitions/HelmConventionConfig"
+            }
+          },
+          "preferredOrder": [
+            "helm"
+          ],
+          "additionalProperties": false
         }
-      },
-      "preferredOrder": [
-        "fqn",
-        "helm"
       ]
     },
     "HelmPackaged": {
