@@ -48,7 +48,7 @@ func ApplyProfiles(c *latest.SkaffoldConfig, opts *cfg.SkaffoldOptions) error {
 		}
 
 		if err := applyProfile(c, profile); err != nil {
-			return errors.Wrapf(err, "appying profile %s", name)
+			return errors.Wrapf(err, "applying profile %s", name)
 		}
 	}
 
