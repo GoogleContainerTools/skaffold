@@ -151,10 +151,10 @@ func createRunner(t *testing.T, testBench *TestBench) *SkaffoldRunner {
 		Trigger: "polling",
 	}
 
-	pipeline := &latest.SkaffoldConfig{}
-	defaults.Set(pipeline)
+	cfg := &latest.SkaffoldConfig{}
+	defaults.Set(cfg)
 
-	runner, err := NewForConfig(opts, pipeline)
+	runner, err := NewForConfig(opts, cfg)
 
 	testutil.CheckError(t, false, err)
 
@@ -172,7 +172,7 @@ func TestNewForConfig(t *testing.T) {
 
 	var tests = []struct {
 		description      string
-		pipeline         *latest.SkaffoldConfig
+		config           *latest.SkaffoldConfig
 		shouldErr        bool
 		cacheArtifacts   bool
 		expectedBuilder  build.Builder
@@ -181,7 +181,7 @@ func TestNewForConfig(t *testing.T) {
 	}{
 		{
 			description: "local builder config",
-			pipeline: &latest.SkaffoldConfig{
+			config: &latest.SkaffoldConfig{
 				Pipeline: latest.Pipeline{
 					Build: latest.BuildConfig{
 						TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
@@ -202,7 +202,7 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "bad tagger config",
-			pipeline: &latest.SkaffoldConfig{
+			config: &latest.SkaffoldConfig{
 				Pipeline: latest.Pipeline{
 					Build: latest.BuildConfig{
 						TagPolicy: latest.TagPolicy{},
@@ -221,7 +221,7 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "unknown builder",
-			pipeline: &latest.SkaffoldConfig{
+			config: &latest.SkaffoldConfig{
 				Pipeline: latest.Pipeline{
 					Build: latest.BuildConfig{},
 				},
@@ -233,7 +233,7 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "unknown tagger",
-			pipeline: &latest.SkaffoldConfig{
+			config: &latest.SkaffoldConfig{
 				Pipeline: latest.Pipeline{
 					Build: latest.BuildConfig{
 						TagPolicy: latest.TagPolicy{},
@@ -249,7 +249,7 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "unknown deployer",
-			pipeline: &latest.SkaffoldConfig{
+			config: &latest.SkaffoldConfig{
 				Pipeline: latest.Pipeline{
 					Build: latest.BuildConfig{
 						TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
@@ -263,7 +263,7 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "no artifacts, cache",
-			pipeline: &latest.SkaffoldConfig{
+			config: &latest.SkaffoldConfig{
 				Pipeline: latest.Pipeline{
 					Build: latest.BuildConfig{
 						TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
@@ -288,7 +288,7 @@ func TestNewForConfig(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			cfg, err := NewForConfig(&config.SkaffoldOptions{
 				Trigger: "polling",
-			}, test.pipeline)
+			}, test.config)
 
 			testutil.CheckError(t, test.shouldErr, err)
 			if cfg != nil {

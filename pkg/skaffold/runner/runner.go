@@ -48,7 +48,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 )
 
-// SkaffoldRunner is responsible for running the skaffold build and deploy pipeline.
+// SkaffoldRunner is responsible for running the skaffold build and deploy config.
 type SkaffoldRunner struct {
 	build.Builder
 	deploy.Deployer

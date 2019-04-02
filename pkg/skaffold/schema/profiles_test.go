@@ -59,15 +59,15 @@ profiles:
 	parsed, err := ParseConfig(tmp.Path("skaffold.yaml"), false)
 	testutil.CheckError(t, false, err)
 
-	pipeline := parsed.(*latest.SkaffoldConfig)
-	err = ApplyProfiles(pipeline, &cfg.SkaffoldOptions{
+	skaffoldConfig := parsed.(*latest.SkaffoldConfig)
+	err = ApplyProfiles(skaffoldConfig, &cfg.SkaffoldOptions{
 		Profiles: []string{"patches"},
 	})
 	testutil.CheckError(t, false, err)
 
-	testutil.CheckDeepEqual(t, "replacement", pipeline.Build.Artifacts[0].ImageName)
-	testutil.CheckDeepEqual(t, "Dockerfile.DEV", pipeline.Build.Artifacts[0].DockerArtifact.DockerfilePath)
-	testutil.CheckDeepEqual(t, "Dockerfile.second", pipeline.Build.Artifacts[1].DockerArtifact.DockerfilePath)
+	testutil.CheckDeepEqual(t, "replacement", skaffoldConfig.Build.Artifacts[0].ImageName)
+	testutil.CheckDeepEqual(t, "Dockerfile.DEV", skaffoldConfig.Build.Artifacts[0].DockerArtifact.DockerfilePath)
+	testutil.CheckDeepEqual(t, "Dockerfile.second", skaffoldConfig.Build.Artifacts[1].DockerArtifact.DockerfilePath)
 }
 
 func TestApplyInvalidPatch(t *testing.T) {
@@ -90,8 +90,8 @@ profiles:
 	parsed, err := ParseConfig(tmp.Path("skaffold.yaml"), false)
 	testutil.CheckError(t, false, err)
 
-	pipeline := parsed.(*latest.SkaffoldConfig)
-	err = ApplyProfiles(pipeline, &cfg.SkaffoldOptions{
+	skaffoldConfig := parsed.(*latest.SkaffoldConfig)
+	err = ApplyProfiles(skaffoldConfig, &cfg.SkaffoldOptions{
 		Profiles: []string{"patches"},
 	})
 

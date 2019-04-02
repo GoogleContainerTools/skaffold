@@ -242,18 +242,18 @@ func generateSkaffoldPipeline(k Initializer, dockerfilePairs []dockerfilePair) (
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	logrus.Info("generating skaffold config")
 
-	pipeline := &latest.SkaffoldConfig{
+	cfg := &latest.SkaffoldConfig{
 		APIVersion: latest.Version,
 		Kind:       "Config",
 	}
-	if err := defaults.Set(pipeline); err != nil {
+	if err := defaults.Set(cfg); err != nil {
 		return nil, errors.Wrap(err, "generating default pipeline")
 	}
 
-	pipeline.Build = processBuildArtifacts(dockerfilePairs)
-	pipeline.Deploy = k.GenerateDeployConfig()
+	cfg.Build = processBuildArtifacts(dockerfilePairs)
+	cfg.Deploy = k.GenerateDeployConfig()
 
-	pipelineStr, err := yaml.Marshal(pipeline)
+	pipelineStr, err := yaml.Marshal(cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "marshaling generated pipeline")
 	}
