@@ -330,19 +330,3 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	r.hasDeployed = true
 	return err
 }
-
-// todo(corneliusweig) function unused?
-// TailLogs prints the logs for deployed artifacts.
-func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, artifacts []*latest.Artifact, bRes []build.Artifact) error {
-	if !r.runCtx.Opts.Tail {
-		return nil
-	}
-
-	logger := r.newLogger(out, artifacts)
-	if err := logger.Start(ctx); err != nil {
-		return errors.Wrap(err, "starting logger")
-	}
-
-	<-ctx.Done()
-	return nil
-}
