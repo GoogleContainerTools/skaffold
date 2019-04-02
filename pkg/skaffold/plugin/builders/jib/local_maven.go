@@ -47,7 +47,7 @@ func (b *MavenBuilder) local(ctx context.Context, out io.Writer, tags tag.ImageT
 		return nil, errors.Wrap(err, "getting current cluster context")
 	}
 	b.KubeContext = kubeContext
-	localDocker, err := docker.NewAPIClient()
+	localDocker, err := docker.NewAPIClient(b.opts.Prune())
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
@@ -76,6 +76,10 @@ func (b *MavenBuilder) local(ctx context.Context, out io.Writer, tags tag.ImageT
 	return b.buildArtifacts(ctx, out, tags, artifacts)
 }
 
+func (b *MavenBuilder) prune(ctx context.Context, out io.Writer) error {
+	return docker.Prune(ctx, out, b.builtImages, b.LocalDocker)
+}
+
 func (b *MavenBuilder) buildArtifacts(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	if b.LocalCluster {
 		color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.KubeContext)
@@ -98,6 +102,7 @@ func (b *MavenBuilder) runBuild(ctx context.Context, out io.Writer, artifact *la
 	// So, the solution we chose is to create a tag, just for Skaffold, from
 	// the imageID, and use that in the manifests.
 	imageID := digestOrImageID
+	b.builtImages = append(b.builtImages, imageID)
 	uniqueTag := artifact.ImageName + ":" + strings.TrimPrefix(imageID, "sha256:")
 	if err := b.LocalDocker.Tag(ctx, imageID, uniqueTag); err != nil {
 		return "", err

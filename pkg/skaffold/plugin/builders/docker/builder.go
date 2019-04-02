@@ -46,6 +46,7 @@ type Builder struct {
 	// TODO: remove once old docker build functionality is removed (priyawadhwa@)
 	PluginMode  bool
 	KubeContext string
+	builtImages []string
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Docker.
@@ -97,6 +98,17 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 		return b.local(ctx, out, tags, artifacts)
 	default:
 		return nil, errors.Errorf("%s is not a supported environment for builder docker", b.env.Name)
+	}
+}
+
+func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
+	switch b.env.Name {
+	case constants.GoogleCloudBuild:
+		return nil // noop
+	case constants.Local:
+		return b.prune(ctx, out)
+	default:
+		return errors.Errorf("%s is not a supported environment for builder docker", b.env.Name)
 	}
 }
 

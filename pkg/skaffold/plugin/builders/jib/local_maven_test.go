@@ -33,7 +33,7 @@ func NewTestMavenBuilder() *MavenBuilder {
 	localDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{
 		TagToImageID: map[string]string{
 			"my-tag": "image id from my-tag",
-		}}, nil)
+		}}, nil, true)
 	return &MavenBuilder{
 		LocalDocker: localDaemon,
 		opts:        &config.SkaffoldOptions{},
@@ -84,7 +84,7 @@ func TestBuildJibMavenToDocker(t *testing.T) {
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 	defer func(previous bool) { util.SkipWrapperCheck = previous }(util.SkipWrapperCheck)
 	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRun(
-		"mvn --foo --bar --non-recursive prepare-package jib:dockerBuild -Dimage=my-tag")
+		"mvn -Djib.console=plain --foo --bar --non-recursive prepare-package jib:dockerBuild -Dimage=my-tag")
 	util.SkipWrapperCheck = true
 
 	b := NewTestMavenBuilder()
@@ -98,7 +98,7 @@ func TestBuildJibMavenToRegsitry(t *testing.T) {
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 	defer func(previous bool) { util.SkipWrapperCheck = previous }(util.SkipWrapperCheck)
 	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunErr(
-		"mvn --foo --bar --non-recursive prepare-package jib:build -Dimage=my-tag",
+		"mvn -Djib.console=plain --foo --bar --non-recursive prepare-package jib:build -Dimage=my-tag",
 		errors.New("fake error"),
 	)
 	util.SkipWrapperCheck = true

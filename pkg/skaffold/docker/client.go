@@ -47,7 +47,7 @@ var (
 )
 
 // NewAPIClient guesses the docker client to use based on current kubernetes context.
-func NewAPIClient() (LocalDaemon, error) {
+func NewAPIClient(forceRemove bool) (LocalDaemon, error) {
 	dockerAPIClientOnce.Do(func() {
 		kubeContext, err := kubectx.CurrentContext()
 		if err != nil {
@@ -56,7 +56,7 @@ func NewAPIClient() (LocalDaemon, error) {
 		}
 
 		env, apiClient, err := newAPIClient(kubeContext)
-		dockerAPIClient = NewLocalDaemon(apiClient, env)
+		dockerAPIClient = NewLocalDaemon(apiClient, env, forceRemove)
 		dockerAPIClientErr = err
 	})
 

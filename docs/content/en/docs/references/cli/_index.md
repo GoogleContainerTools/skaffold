@@ -70,6 +70,7 @@ Flags:
       --enable-rpc skaffold dev      Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
   -f, --filename string              Filename or URL to the pipeline file (default "skaffold.yaml")
   -n, --namespace string             Run deployments in the specified namespace
+      --no-prune                     Skip removing images and containers built by Skaffold
   -o, --output *flags.TemplateFlag   Used in conjuction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd#BuildOutput (default {{.}})
   -p, --profile stringArray          Activate profiles by name
   -q, --quiet                        Suppress the build output and print image built on success. See --output to format output.
@@ -93,6 +94,7 @@ Env vars:
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
 * `SKAFFOLD_OUTPUT` (same as `--output`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_QUIET` (same as `--quiet`)
@@ -231,6 +233,7 @@ Flags:
   -f, --filename string           Filename or URL to the pipeline file (default "skaffold.yaml")
   -l, --label stringArray         Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace string          Run deployments in the specified namespace
+      --no-prune                  Skip removing images and containers built by Skaffold
       --port-forward              Port-forward exposed container ports within pods (default true)
   -p, --profile stringArray       Activate profiles by name
       --rpc-http-port int         tcp port to expose event REST API over HTTP (default 50052)
@@ -256,6 +259,7 @@ Env vars:
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
@@ -279,6 +283,7 @@ Flags:
       --enable-rpc skaffold dev   Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
   -f, --filename string           Filename or URL to the pipeline file (default "skaffold.yaml")
   -n, --namespace string          Run deployments in the specified namespace
+      --no-prune                  Skip removing images and containers built by Skaffold
   -p, --profile stringArray       Activate profiles by name
       --rpc-http-port int         tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int              tcp port to expose event API (default 50051)
@@ -299,6 +304,7 @@ Env vars:
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
@@ -322,6 +328,7 @@ Flags:
       --images strings            A list of pre-built images to deploy
   -l, --label stringArray         Add custom labels to deployed objects. Set multiple times for multiple labels.
   -n, --namespace string          Run deployments in the specified namespace
+      --no-prune                  Skip removing images and containers built by Skaffold
   -p, --profile stringArray       Activate profiles by name
       --rpc-http-port int         tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int              tcp port to expose event API (default 50051)
@@ -345,6 +352,7 @@ Env vars:
 * `SKAFFOLD_IMAGES` (same as `--images`)
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
@@ -370,6 +378,7 @@ Flags:
   -f, --filename string           Filename or URL to the pipeline file (default "skaffold.yaml")
   -l, --label stringArray         Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace string          Run deployments in the specified namespace
+      --no-prune                  Skip removing images and containers built by Skaffold
       --port-forward              Port-forward exposed container ports within pods (default true)
   -p, --profile stringArray       Activate profiles by name
       --rpc-http-port int         tcp port to expose event REST API over HTTP (default 50052)
@@ -398,6 +407,7 @@ Env vars:
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
@@ -503,6 +513,7 @@ Flags:
   -f, --filename string           Filename or URL to the pipeline file (default "skaffold.yaml")
   -l, --label stringArray         Add custom labels to deployed objects. Set multiple times for multiple labels.
   -n, --namespace string          Run deployments in the specified namespace
+      --no-prune                  Skip removing images and containers built by Skaffold
   -p, --profile stringArray       Activate profiles by name
       --rpc-http-port int         tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int              tcp port to expose event API (default 50051)
@@ -526,6 +537,7 @@ Env vars:
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)

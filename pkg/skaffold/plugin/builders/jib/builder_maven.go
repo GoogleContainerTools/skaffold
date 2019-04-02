@@ -46,6 +46,7 @@ type MavenBuilder struct {
 	PushImages   bool
 	PluginMode   bool
 	KubeContext  string
+	builtImages  []string
 }
 
 // NewMavenBuilder creates a new Builder that builds artifacts with Jib.
@@ -99,6 +100,17 @@ func (b *MavenBuilder) Build(ctx context.Context, out io.Writer, tags tag.ImageT
 		return b.googleCloudBuild(ctx, out, tags, artifacts)
 	default:
 		return nil, errors.Errorf("%s is not a supported environment for builder Jib", b.env.Name)
+	}
+}
+
+func (b *MavenBuilder) Prune(ctx context.Context, out io.Writer) error {
+	switch b.env.Name {
+	case constants.GoogleCloudBuild:
+		return nil // noop
+	case constants.Local:
+		return b.prune(ctx, out)
+	default:
+		return errors.Errorf("%s is not a supported environment for builder Jib", b.env.Name)
 	}
 }
 

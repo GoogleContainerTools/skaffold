@@ -33,7 +33,7 @@ func NewTestGradleBuilder() *GradleBuilder {
 	localDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{
 		TagToImageID: map[string]string{
 			"my-tag": "image id from my-tag",
-		}}, nil)
+		}}, nil, true)
 	return &GradleBuilder{
 		LocalDocker: localDaemon,
 		opts:        &config.SkaffoldOptions{},
@@ -56,7 +56,7 @@ func TestBuildJibGradleToDocker(t *testing.T) {
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 	defer func(previous bool) { util.SkipWrapperCheck = previous }(util.SkipWrapperCheck)
 	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRun(
-		"gradle :proj:jibDockerBuild --image=my-tag --foo --bar")
+		"gradle -Djib.console=plain :proj:jibDockerBuild --image=my-tag --foo --bar")
 	util.SkipWrapperCheck = true
 
 	b := NewTestGradleBuilder()
@@ -70,7 +70,7 @@ func TestBuildJibGradleToRegsitry(t *testing.T) {
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 	defer func(previous bool) { util.SkipWrapperCheck = previous }(util.SkipWrapperCheck)
 	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunErr(
-		"gradle :proj:jib --image=my-tag --foo --bar",
+		"gradle -Djib.console=plain :proj:jib --image=my-tag --foo --bar",
 		errors.New("fake error"),
 	)
 	util.SkipWrapperCheck = true

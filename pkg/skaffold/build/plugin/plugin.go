@@ -148,6 +148,15 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.
 	return nil, errors.New("couldn't find plugin builder to get dependencies for artifact")
 }
 
+func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
+	for name, builder := range b.Builders {
+		if err := builder.Prune(ctx, out); err != nil {
+			return errors.Wrapf(err, "pruning images for builder %s", name)
+		}
+	}
+	return nil
+}
+
 func retrieveArtifactsByPlugin(artifacts []*latest.Artifact) map[string][]*latest.Artifact {
 	m := map[string][]*latest.Artifact{}
 	for _, a := range artifacts {
