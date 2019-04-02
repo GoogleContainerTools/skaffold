@@ -54,7 +54,7 @@ func (b *Builder) local(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 		return nil, errors.Wrap(err, "getting current cluster context")
 	}
 	b.KubeContext = kubeContext
-	localDocker, err := docker.NewAPIClient()
+	localDocker, err := docker.NewAPIClient(b.opts.Prune())
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
@@ -81,6 +81,11 @@ func (b *Builder) local(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 		}
 	}
 	return b.buildArtifacts(ctx, out, tags, artifacts)
+}
+
+func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
+	// TODO(nkubala): implement
+	return nil
 }
 
 func (b *Builder) buildArtifacts(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
@@ -185,6 +190,7 @@ func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, 
 		return "", errors.Wrap(err, "tagging the image")
 	}
 
+	b.builtImages = append(b.builtImages, imageID)
 	return imageID, nil
 }
 

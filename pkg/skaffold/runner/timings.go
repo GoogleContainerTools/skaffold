@@ -107,3 +107,16 @@ func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {
 	color.Default.Fprintln(out, "Cleanup complete in", time.Since(start))
 	return nil
 }
+
+func (w withTimings) Prune(ctx context.Context, out io.Writer) error {
+	start := time.Now()
+	color.Default.Fprintln(out, "Pruning images...")
+
+	err := w.Builder.Prune(ctx, out)
+	if err != nil {
+		return err
+	}
+
+	color.Default.Fprintln(out, "Image prune complete in", time.Since(start))
+	return nil
+}

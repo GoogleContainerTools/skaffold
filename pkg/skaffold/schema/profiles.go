@@ -25,6 +25,7 @@ import (
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	yamlpatch "github.com/krishicks/yaml-patch"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -245,7 +246,7 @@ func overlayProfileField(config interface{}, profile interface{}) interface{} {
 	switch v.Kind() {
 	case reflect.Struct:
 		// check the first field of the struct for a oneOf yamltag.
-		if IsOneOf(t.Field(0)) {
+		if util.IsOneOfField(t.Field(0)) {
 			return overlayOneOfField(config, profile)
 		}
 		return overlayStructField(config, profile)
@@ -267,13 +268,3 @@ func overlayProfileField(config interface{}, profile interface{}) interface{} {
 	}
 }
 
-func IsOneOf(field reflect.StructField) bool {
-	for _, tag := range strings.Split(field.Tag.Get("yamltags"), ",") {
-		tagParts := strings.Split(tag, "=")
-
-		if tagParts[0] == "oneOf" {
-			return true
-		}
-	}
-	return false
-}

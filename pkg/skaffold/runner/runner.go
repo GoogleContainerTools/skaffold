@@ -61,6 +61,7 @@ type SkaffoldRunner struct {
 	opts              *config.SkaffoldOptions
 	labellers         []deploy.Labeller
 	builds            []build.Artifact
+	hasBuilt          bool
 	hasDeployed       bool
 	imageList         *kubernetes.ImageList
 	namespaces        []string
@@ -153,7 +154,7 @@ func getBuilder(cfg *latest.BuildConfig, kubeContext string, opts *config.Skaffo
 
 	case cfg.LocalBuild != nil:
 		logrus.Debugln("Using builder: local")
-		return local.NewBuilder(cfg.LocalBuild, kubeContext, opts.SkipTests)
+		return local.NewBuilder(cfg.LocalBuild, kubeContext, opts.Prune(), opts.SkipTests)
 
 	case cfg.GoogleCloudBuild != nil:
 		logrus.Debugln("Using builder: google cloud")
@@ -245,6 +246,11 @@ func (r *SkaffoldRunner) newLogger(out io.Writer, artifacts []*latest.Artifact) 
 // HasDeployed returns true if this runner has deployed something.
 func (r *SkaffoldRunner) HasDeployed() bool {
 	return r.hasDeployed
+}
+
+// HasBuilt returns true if this runner has built something.
+func (r *SkaffoldRunner) HasBuilt() bool {
+	return r.hasBuilt
 }
 
 func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
@@ -340,6 +346,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	if err != nil {
 		return nil, errors.Wrap(err, "generating tag")
 	}
+	r.hasBuilt = true
 
 	artifactsToBuild, res, err := r.cache.RetrieveCachedArtifacts(ctx, out, artifacts)
 	if err != nil {

@@ -436,10 +436,10 @@ type HelmImageStrategy struct {
 // HelmImageConfig describes an image configuration.
 type HelmImageConfig struct {
 	// HelmFQNConfig is the image configuration uses the syntax `IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG`.
-	HelmFQNConfig *HelmFQNConfig `yaml:"fqn,omitempty"`
+	HelmFQNConfig *HelmFQNConfig `yaml:"fqn,omitempty" yamltags:"oneOf=helmImageStrategy"`
 
 	// HelmConventionConfig is the image configuration uses the syntax `IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG`.
-	HelmConventionConfig *HelmConventionConfig `yaml:"helm,omitempty"`
+	HelmConventionConfig *HelmConventionConfig `yaml:"helm,omitempty" yamltags:"oneOf=helmImageStrategy"`
 }
 
 // HelmFQNConfig is the image config to use the FullyQualifiedImageName as param to set.
