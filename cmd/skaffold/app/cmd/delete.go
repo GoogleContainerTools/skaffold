@@ -50,5 +50,5 @@ func delete(out io.Writer) error {
 	}
 	defer runner.RPCServerShutdown()
 
-	return runner.Cleanup(ctx, out)
+	return runner.Deployer.Cleanup(ctx, out)
 }

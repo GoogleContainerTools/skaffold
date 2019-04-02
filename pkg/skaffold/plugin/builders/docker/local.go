@@ -32,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -50,7 +51,7 @@ func (b *Builder) local(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 		return nil, errors.Wrap(err, "getting current cluster context")
 	}
 	b.KubeContext = kubeContext
-	localDocker, err := docker.NewAPIClient()
+	localDocker, err := docker.NewAPIClient(b.opts.Prune())
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
@@ -76,6 +77,10 @@ func (b *Builder) local(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	return b.buildArtifacts(ctx, out, tags, artifacts)
 }
 
+func (b *Builder) prune(ctx context.Context, out io.Writer) error {
+	return docker.Prune(ctx, out, b.builtImages, b.LocalDocker)
+}
+
 func (b *Builder) buildArtifacts(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	if b.LocalCluster {
 		color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.KubeContext)
@@ -89,6 +94,11 @@ func (b *Builder) runBuild(ctx context.Context, out io.Writer, artifact *latest.
 		return "", errors.Wrap(err, "build artifact")
 	}
 	if b.PushImages {
+		imageID, err := b.getImageIDForTag(ctx, tag)
+		if err != nil {
+			logrus.Warnf("unable to inspect image: built images may not be cleaned up correctly by skaffold")
+		}
+		b.builtImages = append(b.builtImages, imageID)
 		digest := digestOrImageID
 		return tag + "@" + digest, nil
 	}
@@ -98,6 +108,7 @@ func (b *Builder) runBuild(ctx context.Context, out io.Writer, artifact *latest.
 	// So, the solution we chose is to create a tag, just for Skaffold, from
 	// the imageID, and use that in the manifests.
 	imageID := digestOrImageID
+	b.builtImages = append(b.builtImages, imageID)
 	uniqueTag := artifact.ImageName + ":" + strings.TrimPrefix(imageID, "sha256:")
 	if err := b.LocalDocker.Tag(ctx, imageID, uniqueTag); err != nil {
 		return "", err
@@ -142,6 +153,9 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", tag}
 	args = append(args, docker.GetBuildArgs(a)...)
+	if b.opts.Prune() {
+		args = append(args, "--force-rm")
+	}
 
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	if b.LocalBuild.UseBuildkit {
@@ -178,4 +192,12 @@ func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *lat
 	}
 
 	return nil
+}
+
+func (b *Builder) getImageIDForTag(ctx context.Context, tag string) (string, error) {
+	insp, _, err := b.LocalDocker.ImageInspectWithRaw(ctx, tag)
+	if err != nil {
+		return "", errors.Wrap(err, "inspecting image")
+	}
+	return insp.ID, nil
 }

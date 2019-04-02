@@ -48,22 +48,26 @@ type LocalDaemon interface {
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
 	Tag(ctx context.Context, image, ref string) error
 	ImageID(ctx context.Context, ref string) (string, error)
+	ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error)
+	ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error)
 	RepoDigest(ctx context.Context, ref string) (string, error)
 	ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error)
 	ImageExists(ctx context.Context, ref string) bool
 }
 
 type localDaemon struct {
-	apiClient  client.CommonAPIClient
-	extraEnv   []string
-	imageCache sync.Map
+	forceRemove bool
+	apiClient   client.CommonAPIClient
+	extraEnv    []string
+	imageCache  sync.Map
 }
 
 // NewLocalDaemon creates a new LocalDaemon.
-func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string) LocalDaemon {
+func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string, forceRemove bool) LocalDaemon {
 	return &localDaemon{
-		apiClient: apiClient,
-		extraEnv:  extraEnv,
+		apiClient:   apiClient,
+		extraEnv:    extraEnv,
+		forceRemove: forceRemove,
 	}
 }
 
@@ -147,6 +151,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 		CacheFrom:   a.CacheFrom,
 		AuthConfigs: authConfigs,
 		Target:      a.Target,
+		ForceRemove: l.forceRemove,
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "docker build")
@@ -307,6 +312,14 @@ func (l *localDaemon) RepoDigest(ctx context.Context, ref string) (string, error
 func (l *localDaemon) ImageExists(ctx context.Context, ref string) bool {
 	_, _, err := l.apiClient.ImageInspectWithRaw(ctx, ref)
 	return err == nil
+}
+
+func (l *localDaemon) ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error) {
+	return l.apiClient.ImageInspectWithRaw(ctx, image)
+}
+
+func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error) {
+	return l.apiClient.ImageRemove(ctx, image, opts)
 }
 
 // GetBuildArgs gives the build args flags for docker build.

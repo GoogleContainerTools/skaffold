@@ -48,6 +48,10 @@ func (b *mockBuilder) DependenciesForArtifact(ctx context.Context, artifact *lat
 	return nil, nil
 }
 
+func (b *mockBuilder) Prune(ctx context.Context, out io.Writer) error {
+	return nil
+}
+
 func TestPluginBuilderLabels(t *testing.T) {
 	tests := []struct {
 		name     string

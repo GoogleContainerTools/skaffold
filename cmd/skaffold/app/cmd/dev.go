@@ -66,6 +66,13 @@ func dev(out io.Writer, ui bool) error {
 		}()
 	}
 
+	prune := func() {}
+	if opts.Prune() {
+		defer func() {
+			prune()
+		}()
+	}
+
 	var (
 		app    *tview.Application
 		output *config.Output
@@ -99,7 +106,14 @@ func dev(out io.Writer, ui bool) error {
 			if r.HasDeployed() {
 				cleanup = func() {
 					if err := r.Cleanup(context.Background(), out); err != nil {
-						logrus.Warnln("cleanup:", err)
+						logrus.Warnln("deployer cleanup:", err)
+					}
+				}
+			}
+			if r.HasBuilt() {
+				prune = func() {
+					if err := r.Prune(context.Background(), out); err != nil {
+						logrus.Warnln("builder cleanup:", err)
 					}
 				}
 			}

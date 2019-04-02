@@ -41,6 +41,10 @@ func (m *mockBuilder) DependenciesForArtifact(ctx context.Context, artifact *lat
 	return m.dependencies, nil
 }
 
+func (m *mockBuilder) Prune(ctx context.Context, out io.Writer) error {
+	return nil
+}
+
 var mockCacheHasher = func(s string) (string, error) {
 	return s, nil
 }

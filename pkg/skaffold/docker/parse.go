@@ -363,7 +363,7 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 }
 
 func retrieveImage(image string) (*v1.ConfigFile, error) {
-	localDaemon, err := NewAPIClient() // Cached after first call
+	localDaemon, err := NewAPIClient(false) // Cached after first call
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
