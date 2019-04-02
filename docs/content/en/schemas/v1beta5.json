@@ -868,36 +868,21 @@
       "additionalProperties": false
     },
     "HelmImageStrategy": {
-      "anyOf": [
-        {
-          "additionalProperties": false
+      "properties": {
+        "fqn": {
+          "$ref": "#/definitions/HelmFQNConfig",
+          "description": "image configuration uses the syntax `IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG`.",
+          "x-intellij-html-description": "image configuration uses the syntax <code>IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG</code>."
         },
-        {
-          "properties": {
-            "fqn": {
-              "$ref": "#/definitions/HelmFQNConfig",
-              "description": "image configuration uses the syntax `IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG`.",
-              "x-intellij-html-description": "image configuration uses the syntax <code>IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG</code>."
-            }
-          },
-          "preferredOrder": [
-            "fqn"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "properties": {
-            "helm": {
-              "$ref": "#/definitions/HelmConventionConfig",
-              "description": "image configuration uses the syntax `IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG`.",
-              "x-intellij-html-description": "image configuration uses the syntax <code>IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG</code>."
-            }
-          },
-          "preferredOrder": [
-            "helm"
-          ],
-          "additionalProperties": false
+        "helm": {
+          "$ref": "#/definitions/HelmConventionConfig",
+          "description": "image configuration uses the syntax `IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG`.",
+          "x-intellij-html-description": "image configuration uses the syntax <code>IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG</code>."
         }
+      },
+      "preferredOrder": [
+        "fqn",
+        "helm"
       ],
       "description": "adds image configurations to the Helm `values` file.",
       "x-intellij-html-description": "adds image configurations to the Helm <code>values</code> file."

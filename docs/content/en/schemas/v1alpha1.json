@@ -37,70 +37,30 @@
       "x-intellij-html-description": "represents items that need should be built, along with the context in which they should be built."
     },
     "BuildConfig": {
-      "anyOf": [
-        {
-          "properties": {
-            "artifacts": {
-              "items": {
-                "$ref": "#/definitions/Artifact"
-              },
-              "type": "array"
-            },
-            "tagPolicy": {
-              "type": "string"
-            }
+      "properties": {
+        "artifacts": {
+          "items": {
+            "$ref": "#/definitions/Artifact"
           },
-          "preferredOrder": [
-            "artifacts",
-            "tagPolicy"
-          ],
-          "additionalProperties": false
+          "type": "array"
         },
-        {
-          "properties": {
-            "artifacts": {
-              "items": {
-                "$ref": "#/definitions/Artifact"
-              },
-              "type": "array"
-            },
-            "local": {
-              "$ref": "#/definitions/LocalBuild"
-            },
-            "tagPolicy": {
-              "type": "string"
-            }
-          },
-          "preferredOrder": [
-            "artifacts",
-            "tagPolicy",
-            "local"
-          ],
-          "additionalProperties": false
+        "googleCloudBuild": {
+          "$ref": "#/definitions/GoogleCloudBuild"
         },
-        {
-          "properties": {
-            "artifacts": {
-              "items": {
-                "$ref": "#/definitions/Artifact"
-              },
-              "type": "array"
-            },
-            "googleCloudBuild": {
-              "$ref": "#/definitions/GoogleCloudBuild"
-            },
-            "tagPolicy": {
-              "type": "string"
-            }
-          },
-          "preferredOrder": [
-            "artifacts",
-            "tagPolicy",
-            "googleCloudBuild"
-          ],
-          "additionalProperties": false
+        "local": {
+          "$ref": "#/definitions/LocalBuild"
+        },
+        "tagPolicy": {
+          "type": "string"
         }
+      },
+      "preferredOrder": [
+        "artifacts",
+        "tagPolicy",
+        "local",
+        "googleCloudBuild"
       ],
+      "additionalProperties": false,
       "description": "contains all the configuration for the build steps",
       "x-intellij-html-description": "contains all the configuration for the build steps"
     },
@@ -122,49 +82,23 @@
       "x-intellij-html-description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated."
     },
     "DeployConfig": {
-      "anyOf": [
-        {
-          "properties": {
-            "name": {
-              "type": "string"
-            }
-          },
-          "preferredOrder": [
-            "name"
-          ],
-          "additionalProperties": false
+      "properties": {
+        "helm": {
+          "$ref": "#/definitions/HelmDeploy"
         },
-        {
-          "properties": {
-            "helm": {
-              "$ref": "#/definitions/HelmDeploy"
-            },
-            "name": {
-              "type": "string"
-            }
-          },
-          "preferredOrder": [
-            "name",
-            "helm"
-          ],
-          "additionalProperties": false
+        "kubectl": {
+          "$ref": "#/definitions/KubectlDeploy"
         },
-        {
-          "properties": {
-            "kubectl": {
-              "$ref": "#/definitions/KubectlDeploy"
-            },
-            "name": {
-              "type": "string"
-            }
-          },
-          "preferredOrder": [
-            "name",
-            "kubectl"
-          ],
-          "additionalProperties": false
+        "name": {
+          "type": "string"
         }
+      },
+      "preferredOrder": [
+        "name",
+        "helm",
+        "kubectl"
       ],
+      "additionalProperties": false,
       "description": "contains all the configuration needed by the deploy steps",
       "x-intellij-html-description": "contains all the configuration needed by the deploy steps"
     },

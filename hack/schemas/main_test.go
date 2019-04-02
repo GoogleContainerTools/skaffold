@@ -17,7 +17,12 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
 	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestSchemas(t *testing.T) {
@@ -28,5 +33,37 @@ func TestSchemas(t *testing.T) {
 
 	if !same {
 		t.Fatal("json schema files are not up to date. Please run `make generate-schemas` and commit the changes.")
+	}
+}
+
+func TestGenerators(t *testing.T) {
+	tcs := []struct {
+		name string
+	}{
+		{name: "inline"},
+		{name: "inline-anyof"},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			input := fmt.Sprintf("./testdata/%s/input.go", tc.name)
+			expectedOutput := fmt.Sprintf("./testdata/%s/output.json", tc.name)
+
+			generator := schemaGenerator{
+				strict: false,
+			}
+
+			actual, err := generator.Apply(input)
+			testutil.CheckError(t, false, err)
+
+			var expected []byte
+			if _, err := os.Stat(expectedOutput); err == nil {
+				var err error
+				expected, err = ioutil.ReadFile(expectedOutput)
+				testutil.CheckError(t, false, err)
+			}
+
+			testutil.CheckMultilineDeepEqual(t, string(expected), string(actual))
+		})
 	}
 }
