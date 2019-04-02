@@ -289,41 +289,33 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 		}
 	}
 
-	// Inline anyOfs
 	for _, k := range preferredOrder {
 		def := definitions[k]
 		if len(def.inlines) == 0 {
 			continue
 		}
 
-		//merge if not anyof
-
 		var options []*Definition
-		options = append(options, &Definition{
-			Properties:           def.Properties,
-			PreferredOrder:       def.PreferredOrder,
-			AdditionalProperties: false,
-		})
 
 		for _, inlineStruct := range def.inlines {
 
 			ref := strings.TrimPrefix(inlineStruct.Ref, defPrefix)
-			referenced := definitions[ref]
+			inlineStructRef := definitions[ref]
 
-			//if not anyof, continue
-			if !isOneOf(referenced) {
+			//if not anyof, merge & continue
+			if !isOneOf(inlineStructRef) {
 				if def.Properties == nil {
 					def.Properties = make(map[string]*Definition)
 				}
-				for k, v := range referenced.Properties {
+				for k, v := range inlineStructRef.Properties {
 					def.Properties[k] = v
 				}
-				def.PreferredOrder = append(def.PreferredOrder, referenced.PreferredOrder...)
-				def.Required = append(def.Required, referenced.Required...)
+				def.PreferredOrder = append(def.PreferredOrder, inlineStructRef.PreferredOrder...)
+				def.Required = append(def.Required, inlineStructRef.Required...)
 				continue
 			}
 
-			for _, key := range referenced.PreferredOrder {
+			for _, key := range inlineStructRef.PreferredOrder {
 				var preferredOrder []string
 				choice := make(map[string]*Definition)
 
@@ -335,7 +327,7 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 				}
 
 				preferredOrder = append(preferredOrder, key)
-				choice[key] = referenced.Properties[key]
+				choice[key] = inlineStructRef.Properties[key]
 
 				options = append(options, &Definition{
 					Properties:           choice,
@@ -345,9 +337,15 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 			}
 		}
 
-		if len(options) == 1 {
+		if len(options) == 0 {
 			continue
 		}
+
+		options = append([]*Definition{{
+			Properties:           def.Properties,
+			PreferredOrder:       def.PreferredOrder,
+			AdditionalProperties: false,
+		}}, options...)
 
 		def.Properties = nil
 		def.PreferredOrder = nil

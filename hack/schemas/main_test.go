@@ -42,6 +42,7 @@ func TestGenerators(t *testing.T) {
 	}{
 		{name: "inline"},
 		{name: "inline-anyof"},
+		{name: "inline-hybrid"},
 	}
 
 	for _, tc := range tcs {
