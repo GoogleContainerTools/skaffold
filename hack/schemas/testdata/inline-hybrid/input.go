@@ -38,8 +38,8 @@ type InlineOneOfStruct struct {
 type InlineOneOfStructAnyOf struct {
 
 	//Field1 should be the first choice
-	Choice1 string `yaml:"choice1" yamltags:"oneOf=tag"`
+	Choice1 string `yaml:"choice1" yamltags:"oneOf=fooBar"`
 
 	//Field2 should be the second choice
-	Choice2 string `yaml:"choice2" yamltags:"oneOf=tag"`
+	Choice2 string `yaml:"choice2" yamltags:"oneOf=fooBar"`
 }
