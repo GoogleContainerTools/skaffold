@@ -298,14 +298,13 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 		var options []*Definition
 
 		for _, inlineStruct := range def.inlines {
-
 			ref := strings.TrimPrefix(inlineStruct.Ref, defPrefix)
 			inlineStructRef := definitions[ref]
 
-			//if not anyof, merge & continue
+			// if not anyof, merge & continue
 			if !isOneOf(inlineStructRef) {
 				if def.Properties == nil {
-					def.Properties = make(map[string]*Definition)
+					def.Properties = make(map[string]*Definition, len(inlineStructRef.Properties))
 				}
 				for k, v := range inlineStructRef.Properties {
 					def.Properties[k] = v
