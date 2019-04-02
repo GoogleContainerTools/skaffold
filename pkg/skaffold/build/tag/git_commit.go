@@ -125,6 +125,12 @@ func getGitPathToWorkdir(workingDir string) (string, error) {
 		return "", err
 	}
 
+	// git reports the gitdir with resolved symlinks, so we need to do this too in order for filepath.Rel to work
+	absWorkingDir, err = filepath.EvalSymlinks(absWorkingDir)
+	if err != nil {
+		return "", err
+	}
+
 	gitRoot, err := runGit(workingDir, "rev-parse", "--show-toplevel")
 	if err != nil {
 		return "", err
