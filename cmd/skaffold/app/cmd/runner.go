@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -43,13 +44,16 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 
 	config := parsed.(*latest.SkaffoldPipeline)
 
-	err = schema.ApplyProfiles(config, opts)
-	if err != nil {
+	if err = schema.ApplyProfiles(config, opts); err != nil {
 		return nil, nil, errors.Wrap(err, "applying profiles")
 	}
 
 	if err := defaults.Set(config); err != nil {
 		return nil, nil, errors.Wrap(err, "setting default values")
+	}
+
+	if err := validation.ValidateSchema(config); err != nil {
+		return nil, nil, errors.Wrap(err, "invalid skaffold config")
 	}
 
 	defaultRepo, err := configutil.GetDefaultRepo(opts.DefaultRepo)
