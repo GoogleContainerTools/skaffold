@@ -21,6 +21,6 @@ deploy:
       #overrides:
       # some:
       #   key: someValue
-      #setValues get appended to the helm deploy with --set.  
+      #setValues get appended to the helm deploy with --set.
       #setValues:
         #some.key: someValue
