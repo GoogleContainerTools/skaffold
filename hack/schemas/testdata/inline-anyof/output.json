@@ -2,7 +2,7 @@
   "type": "object",
   "anyOf": [
     {
-      "$ref": "#/definitions/SkaffoldPipeline"
+      "$ref": "#/definitions/TestStruct"
     }
   ],
   "$schema": "http://json-schema-org/draft-07/schema#",

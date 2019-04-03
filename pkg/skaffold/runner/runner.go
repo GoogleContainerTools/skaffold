@@ -48,7 +48,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 )
 
-// SkaffoldRunner is responsible for running the skaffold build and deploy pipeline.
+// SkaffoldRunner is responsible for running the skaffold build and deploy config.
 type SkaffoldRunner struct {
 	build.Builder
 	deploy.Deployer
@@ -68,8 +68,8 @@ type SkaffoldRunner struct {
 	RPCServerShutdown func() error
 }
 
-// NewForConfig returns a new SkaffoldRunner for a SkaffoldPipeline
-func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*SkaffoldRunner, error) {
+// NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
+func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*SkaffoldRunner, error) {
 	kubeContext, err := kubectx.CurrentContext()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting current cluster context")

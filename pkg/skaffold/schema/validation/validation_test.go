@@ -24,27 +24,29 @@ import (
 )
 
 var (
-	cfgWithErrors = &latest.SkaffoldPipeline{
-		Build: latest.BuildConfig{
-			Artifacts: []*latest.Artifact{
-				{
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{},
-						BazelArtifact:  &latest.BazelArtifact{},
+	cfgWithErrors = &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{
+				Artifacts: []*latest.Artifact{
+					{
+						ArtifactType: latest.ArtifactType{
+							DockerArtifact: &latest.DockerArtifact{},
+							BazelArtifact:  &latest.BazelArtifact{},
+						},
 					},
-				},
-				{
-					ArtifactType: latest.ArtifactType{
-						BazelArtifact:  &latest.BazelArtifact{},
-						KanikoArtifact: &latest.KanikoArtifact{},
+					{
+						ArtifactType: latest.ArtifactType{
+							BazelArtifact:  &latest.BazelArtifact{},
+							KanikoArtifact: &latest.KanikoArtifact{},
+						},
 					},
 				},
 			},
-		},
-		Deploy: latest.DeployConfig{
-			DeployType: latest.DeployType{
-				HelmDeploy:    &latest.HelmDeploy{},
-				KubectlDeploy: &latest.KubectlDeploy{},
+			Deploy: latest.DeployConfig{
+				DeployType: latest.DeployType{
+					HelmDeploy:    &latest.HelmDeploy{},
+					KubectlDeploy: &latest.KubectlDeploy{},
+				},
 			},
 		},
 	}
@@ -54,7 +56,7 @@ func TestValidateSchema(t *testing.T) {
 	err := ValidateSchema(cfgWithErrors)
 	testutil.CheckError(t, true, err)
 
-	err = ValidateSchema(&latest.SkaffoldPipeline{})
+	err = ValidateSchema(&latest.SkaffoldConfig{})
 	testutil.CheckError(t, false, err)
 }
 
