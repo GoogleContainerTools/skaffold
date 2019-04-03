@@ -46,7 +46,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 )
 
-// SkaffoldRunner is responsible for running the skaffold build and deploy pipeline.
+// SkaffoldRunner is responsible for running the skaffold build and deploy config.
 type SkaffoldRunner struct {
 	build.Builder
 	deploy.Deployer
@@ -59,14 +59,15 @@ type SkaffoldRunner struct {
 	runCtx            *runcontext.RunContext
 	labellers         []deploy.Labeller
 	builds            []build.Artifact
+	hasBuilt          bool
 	hasDeployed       bool
 	imageList         *kubernetes.ImageList
 	RPCServerShutdown func() error
 }
 
-// NewForConfig returns a new SkaffoldRunner for a SkaffoldPipeline
-func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldPipeline) (*SkaffoldRunner, error) {
-	runCtx, err := runcontext.GetRunContext(opts, cfg)
+// NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
+func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*SkaffoldRunner, error) {
+	runCtx, err := runcontext.GetRunContext(opts, &cfg.Pipeline)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting run context")
 	}
@@ -211,6 +212,11 @@ func (r *SkaffoldRunner) HasDeployed() bool {
 	return r.hasDeployed
 }
 
+// HasBuilt returns true if this runner has built something.
+func (r *SkaffoldRunner) HasBuilt() bool {
+	return r.hasBuilt
+}
+
 func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
 	bRes, err := r.BuildAndTest(ctx, out, artifacts)
 	if err != nil {
@@ -304,6 +310,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	if err != nil {
 		return nil, errors.Wrap(err, "generating tag")
 	}
+	r.hasBuilt = true
 
 	artifactsToBuild, res, err := r.cache.RetrieveCachedArtifacts(ctx, out, artifacts)
 	if err != nil {

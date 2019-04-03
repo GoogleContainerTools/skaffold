@@ -44,6 +44,7 @@ type Builder struct {
 	PushImages   bool
 	PluginMode   bool
 	KubeContext  string
+	builtImages  []string
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Bazel.

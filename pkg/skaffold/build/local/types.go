@@ -19,6 +19,7 @@ package local
 import (
 	"context"
 	"fmt"
+	"io"
 
 	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -36,13 +37,15 @@ type Builder struct {
 	localDocker  docker.LocalDaemon
 	localCluster bool
 	pushImages   bool
+	prune        bool
 	skipTests    bool
 	kubeContext  string
+	builtImages  []string
 }
 
 // NewBuilder returns an new instance of a local Builder.
 func NewBuilder(ctx *runcontext.RunContext) (*Builder, error) {
-	localDocker, err := docker.NewAPIClient()
+	localDocker, err := docker.NewAPIClient(ctx.Opts.Prune())
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
@@ -67,6 +70,7 @@ func NewBuilder(ctx *runcontext.RunContext) (*Builder, error) {
 		localCluster: localCluster,
 		pushImages:   pushImages,
 		skipTests:    ctx.Opts.SkipTests,
+		prune:        ctx.Opts.Prune(),
 	}, nil
 }
 
@@ -82,4 +86,9 @@ func (b *Builder) Labels() map[string]string {
 	}
 
 	return labels
+}
+
+// Prune uses the docker API client to remove all images built with Skaffold
+func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
+	return docker.Prune(ctx, out, b.builtImages, b.localDocker)
 }

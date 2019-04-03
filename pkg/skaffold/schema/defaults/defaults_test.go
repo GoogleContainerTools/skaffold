@@ -26,18 +26,20 @@ import (
 )
 
 func TestSetDefaults(t *testing.T) {
-	pipeline := &latest.SkaffoldPipeline{
-		Build: latest.BuildConfig{
-			Artifacts: []*latest.Artifact{
-				{
-					ImageName: "first",
-				},
-				{
-					ImageName: "second",
-					Workspace: "folder",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
-							DockerfilePath: "Dockerfile.second",
+	cfg := &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{
+				Artifacts: []*latest.Artifact{
+					{
+						ImageName: "first",
+					},
+					{
+						ImageName: "second",
+						Workspace: "folder",
+						ArtifactType: latest.ArtifactType{
+							DockerArtifact: &latest.DockerArtifact{
+								DockerfilePath: "Dockerfile.second",
+							},
 						},
 					},
 				},
@@ -45,17 +47,17 @@ func TestSetDefaults(t *testing.T) {
 		},
 	}
 
-	err := Set(pipeline)
+	err := Set(cfg)
 
 	testutil.CheckError(t, false, err)
 
-	testutil.CheckDeepEqual(t, "first", pipeline.Build.Artifacts[0].ImageName)
-	testutil.CheckDeepEqual(t, ".", pipeline.Build.Artifacts[0].Workspace)
-	testutil.CheckDeepEqual(t, "Dockerfile", pipeline.Build.Artifacts[0].DockerArtifact.DockerfilePath)
+	testutil.CheckDeepEqual(t, "first", cfg.Build.Artifacts[0].ImageName)
+	testutil.CheckDeepEqual(t, ".", cfg.Build.Artifacts[0].Workspace)
+	testutil.CheckDeepEqual(t, "Dockerfile", cfg.Build.Artifacts[0].DockerArtifact.DockerfilePath)
 
-	testutil.CheckDeepEqual(t, "second", pipeline.Build.Artifacts[1].ImageName)
-	testutil.CheckDeepEqual(t, "folder", pipeline.Build.Artifacts[1].Workspace)
-	testutil.CheckDeepEqual(t, "Dockerfile.second", pipeline.Build.Artifacts[1].DockerArtifact.DockerfilePath)
+	testutil.CheckDeepEqual(t, "second", cfg.Build.Artifacts[1].ImageName)
+	testutil.CheckDeepEqual(t, "folder", cfg.Build.Artifacts[1].Workspace)
+	testutil.CheckDeepEqual(t, "Dockerfile.second", cfg.Build.Artifacts[1].DockerArtifact.DockerfilePath)
 }
 
 func TestSetDefaultsOnCluster(t *testing.T) {
@@ -67,62 +69,68 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 	})
 	defer restore()
 
-	pipeline := &latest.SkaffoldPipeline{
-		Build: latest.BuildConfig{
-			Artifacts: []*latest.Artifact{
-				{ImageName: "image"},
-			},
-			BuildType: latest.BuildType{
-				Cluster: &latest.ClusterDetails{},
-			},
-		},
-	}
-
-	err := Set(pipeline)
-
-	testutil.CheckError(t, false, err)
-	testutil.CheckDeepEqual(t, "ns", pipeline.Build.Cluster.Namespace)
-	testutil.CheckDeepEqual(t, constants.DefaultKanikoTimeout, pipeline.Build.Cluster.Timeout)
-	testutil.CheckDeepEqual(t, constants.DefaultKanikoSecretName, pipeline.Build.Cluster.PullSecretName)
-}
-
-func TestSetDefaultsOnCloudBuild(t *testing.T) {
-	pipeline := &latest.SkaffoldPipeline{
-		Build: latest.BuildConfig{
-			Artifacts: []*latest.Artifact{
-				{ImageName: "image"},
-			},
-			BuildType: latest.BuildType{
-				GoogleCloudBuild: &latest.GoogleCloudBuild{},
-			},
-		},
-	}
-
-	err := Set(pipeline)
-
-	testutil.CheckError(t, false, err)
-	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildDockerImage, pipeline.Build.GoogleCloudBuild.DockerImage)
-	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildMavenImage, pipeline.Build.GoogleCloudBuild.MavenImage)
-	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildGradleImage, pipeline.Build.GoogleCloudBuild.GradleImage)
-}
-
-func TestSetDefaultsOnPlugin(t *testing.T) {
-	pipeline := &latest.SkaffoldPipeline{
-		Build: latest.BuildConfig{
-			Artifacts: []*latest.Artifact{
-				{
-					ImageName:     "image",
-					BuilderPlugin: &latest.BuilderPlugin{},
+	cfg := &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{
+				Artifacts: []*latest.Artifact{
+					{ImageName: "image"},
+				},
+				BuildType: latest.BuildType{
+					Cluster: &latest.ClusterDetails{},
 				},
 			},
 		},
 	}
 
-	err := Set(pipeline)
+	err := Set(cfg)
+
+	testutil.CheckError(t, false, err)
+	testutil.CheckDeepEqual(t, "ns", cfg.Build.Cluster.Namespace)
+	testutil.CheckDeepEqual(t, constants.DefaultKanikoTimeout, cfg.Build.Cluster.Timeout)
+	testutil.CheckDeepEqual(t, constants.DefaultKanikoSecretName, cfg.Build.Cluster.PullSecretName)
+}
+
+func TestSetDefaultsOnCloudBuild(t *testing.T) {
+	cfg := &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{
+				Artifacts: []*latest.Artifact{
+					{ImageName: "image"},
+				},
+				BuildType: latest.BuildType{
+					GoogleCloudBuild: &latest.GoogleCloudBuild{},
+				},
+			},
+		},
+	}
+
+	err := Set(cfg)
+
+	testutil.CheckError(t, false, err)
+	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildDockerImage, cfg.Build.GoogleCloudBuild.DockerImage)
+	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildMavenImage, cfg.Build.GoogleCloudBuild.MavenImage)
+	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildGradleImage, cfg.Build.GoogleCloudBuild.GradleImage)
+}
+
+func TestSetDefaultsOnPlugin(t *testing.T) {
+	cfg := &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{
+				Artifacts: []*latest.Artifact{
+					{
+						ImageName:     "image",
+						BuilderPlugin: &latest.BuilderPlugin{},
+					},
+				},
+			},
+		},
+	}
+
+	err := Set(cfg)
 
 	testutil.CheckError(t, false, err)
 	testutil.CheckDeepEqual(t, &latest.ExecutionEnvironment{
 		Name:       constants.Local,
 		Properties: map[string]interface{}{},
-	}, pipeline.Build.ExecutionEnvironment)
+	}, cfg.Build.ExecutionEnvironment)
 }

@@ -3,6 +3,7 @@ examples/bazel/bazel-*
 integration/examples/bazel/bazel-*
 integration/testdata/plugin/local/bazel/bazel-*
 *.new
+*.iml
 .idea/
 docs/.firebase
 docs/firebase-debug*

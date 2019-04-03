@@ -86,7 +86,7 @@ func TestInParallel(t *testing.T) {
 				},
 			}
 			event.InitializeState(&runcontext.RunContext{
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.Pipeline{
 					Build: cfg,
 				},
 				Opts: &config.SkaffoldOptions{},

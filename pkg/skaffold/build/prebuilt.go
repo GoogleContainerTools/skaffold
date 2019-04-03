@@ -40,6 +40,11 @@ type prebuiltImagesBuilder struct {
 	images []string
 }
 
+func (b *prebuiltImagesBuilder) Prune(_ context.Context, _ io.Writer) error {
+	// noop
+	return nil
+}
+
 // Labels are labels applied to deployed resources.
 func (b *prebuiltImagesBuilder) Labels() map[string]string {
 	return map[string]string{

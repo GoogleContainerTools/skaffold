@@ -40,4 +40,7 @@ type Builder interface {
 	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]Artifact, error)
 
 	DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error)
+
+	// Prune removes images built with Skaffold
+	Prune(context.Context, io.Writer) error
 }

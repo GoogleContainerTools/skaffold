@@ -227,14 +227,14 @@ func TestLocalRun(t *testing.T) {
 				},
 			}
 			event.InitializeState(&runcontext.RunContext{
-				Cfg: &latest.SkaffoldPipeline{
+				Cfg: &latest.Pipeline{
 					Build: cfg,
 				},
 				Opts: &config.SkaffoldOptions{},
 			})
 			l := Builder{
 				cfg:         &latest.LocalBuild{},
-				localDocker: docker.NewLocalDaemon(&test.api, nil),
+				localDocker: docker.NewLocalDaemon(&test.api, nil, false),
 				pushImages:  test.pushImages,
 			}
 

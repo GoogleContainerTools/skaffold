@@ -34,7 +34,7 @@ import (
 var ErrorConfigurationChanged = errors.New("configuration changed")
 
 // Dev watches for changes and runs the skaffold build and deploy
-// pipeline until interrupted by the user.
+// config until interrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifacts []*latest.Artifact) error {
 	logger := r.newLogger(output.Logs, artifacts)
 	defer logger.Stop()

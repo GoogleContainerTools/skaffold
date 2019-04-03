@@ -18,7 +18,9 @@ package docker
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"os"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -47,6 +49,7 @@ type Builder struct {
 	// TODO: remove once old docker build functionality is removed (priyawadhwa@)
 	PluginMode  bool
 	KubeContext string
+	builtImages []string
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Docker.
@@ -67,7 +70,7 @@ func (b *Builder) Init(ctx *runcontext.RunContext) error {
 	}
 	b.opts = ctx.Opts
 	b.env = ctx.Cfg.Build.ExecutionEnvironment
-	logrus.Debug("initialized plugin with %+v", ctx)
+	logrus.Debugf("initialized plugin with %+v", ctx)
 	return nil
 }
 
@@ -103,6 +106,19 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	}
 }
 
+func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
+	fmt.Fprintf(os.Stdout, "in builder plugin prune...\n")
+	switch b.env.Name {
+	case constants.GoogleCloudBuild:
+		return nil // noop
+	case constants.Local:
+		return b.prune(ctx, out)
+	default:
+		return errors.Errorf("%s is not a supported environment for builder docker", b.env.Name)
+	}
+	// return b.builder.Prune(ctx, out)
+}
+
 // googleCloudBuild sets any necessary defaults and then builds artifacts with docker in GCB
 func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	var g *latest.GoogleCloudBuild
@@ -117,7 +133,7 @@ func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.
 	}
 	runCtx := &runcontext.RunContext{
 		Opts: b.opts,
-		Cfg: &latest.SkaffoldPipeline{
+		Cfg: &latest.Pipeline{
 			Build: latest.BuildConfig{
 				BuildType: latest.BuildType{
 					GoogleCloudBuild: g,
