@@ -1,7 +1,7 @@
 # Generalizing Container Registry config for Cluster builds
 
-* Author(s): venkatesh
-* Design Shepherd: 
+* Author(s): @venkatk-25
+* Design Shepherd: @balopat
 * Date: 
 * Status: 
 
@@ -56,6 +56,9 @@ type SecretConfig struct {
 	MountPath  string `yaml:"mountPath,omitempty"`
 }
 ```
+
+another option for env is to have( thanks @azaiter):
+env: [v1.EnvVar](https://github.com/GoogleCloudPlatform/freshpod/blob/master/vendor/k8s.io/api/core/v1/types.go#L1693)
 ### How different configurations fit into this scheme:
 #### GCR/GCS
 current scheme:
