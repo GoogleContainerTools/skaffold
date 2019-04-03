@@ -2,7 +2,7 @@
   "type": "object",
   "anyOf": [
     {
-      "$ref": "#/definitions/SkaffoldPipeline"
+      "$ref": "#/definitions/SkaffoldConfig"
     }
   ],
   "$schema": "http://json-schema-org/draft-07/schema#",
@@ -1531,6 +1531,36 @@
       "description": "configures how Kaniko mounts sources directly via an `emptyDir` volume.",
       "x-intellij-html-description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume."
     },
+    "Pipeline": {
+      "properties": {
+        "build": {
+          "$ref": "#/definitions/BuildConfig",
+          "description": "describes how images are built.",
+          "x-intellij-html-description": "describes how images are built."
+        },
+        "deploy": {
+          "$ref": "#/definitions/DeployConfig",
+          "description": "describes how images are deployed.",
+          "x-intellij-html-description": "describes how images are deployed."
+        },
+        "test": {
+          "items": {
+            "$ref": "#/definitions/TestCase"
+          },
+          "type": "array",
+          "description": "describes how images are tested.",
+          "x-intellij-html-description": "describes how images are tested."
+        }
+      },
+      "preferredOrder": [
+        "build",
+        "test",
+        "deploy"
+      ],
+      "additionalProperties": false,
+      "description": "describes a Skaffold pipeline.",
+      "x-intellij-html-description": "describes a Skaffold pipeline."
+    },
     "Profile": {
       "required": [
         "name"
@@ -1546,13 +1576,13 @@
         },
         "build": {
           "$ref": "#/definitions/BuildConfig",
-          "description": "replaces the main `build` configuration.",
-          "x-intellij-html-description": "replaces the main <code>build</code> configuration."
+          "description": "describes how images are built.",
+          "x-intellij-html-description": "describes how images are built."
         },
         "deploy": {
           "$ref": "#/definitions/DeployConfig",
-          "description": "replaces the main `deploy` configuration.",
-          "x-intellij-html-description": "replaces the main <code>deploy</code> configuration."
+          "description": "describes how images are deployed.",
+          "x-intellij-html-description": "describes how images are deployed."
         },
         "name": {
           "type": "string",
@@ -1575,17 +1605,17 @@
             "$ref": "#/definitions/TestCase"
           },
           "type": "array",
-          "description": "replaces the main `test` configuration.",
-          "x-intellij-html-description": "replaces the main <code>test</code> configuration."
+          "description": "describes how images are tested.",
+          "x-intellij-html-description": "describes how images are tested."
         }
       },
       "preferredOrder": [
         "name",
+        "patches",
+        "activation",
         "build",
         "test",
-        "deploy",
-        "patches",
-        "activation"
+        "deploy"
       ],
       "additionalProperties": false,
       "description": "*beta* profiles are used to override any `build`, `test` or `deploy` configuration.",
@@ -1595,7 +1625,7 @@
       "description": "*beta* tags images with their sha256 digest.",
       "x-intellij-html-description": "<em>beta</em> tags images with their sha256 digest."
     },
-    "SkaffoldPipeline": {
+    "SkaffoldConfig": {
       "properties": {
         "apiVersion": {
           "type": "string",
@@ -1638,14 +1668,14 @@
       "preferredOrder": [
         "apiVersion",
         "kind",
+        "profiles",
         "build",
         "test",
-        "deploy",
-        "profiles"
+        "deploy"
       ],
       "additionalProperties": false,
-      "description": "describes a Skaffold pipeline.",
-      "x-intellij-html-description": "describes a Skaffold pipeline."
+      "description": "holds the fields parsed from the Skaffold configuration file (skaffold.yaml).",
+      "x-intellij-html-description": "holds the fields parsed from the Skaffold configuration file (skaffold.yaml)."
     },
     "TagPolicy": {
       "properties": {
