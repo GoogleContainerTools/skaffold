@@ -20,7 +20,6 @@ function* template(definitions, parentDefinition, ref, ident) {
   const allProperties = [];
   const seen = {};
 
-  console.log(name)
   const properties = definitions[name].properties;
   for (const key of (definitions[name].preferredOrder || [])) {
     allProperties.push([key, properties[key]]);
