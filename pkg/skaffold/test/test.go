@@ -19,6 +19,7 @@ package test
 import (
 	"context"
 	"io"
+	"os"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
@@ -33,14 +34,13 @@ import (
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
 func NewTester(ctx *runcontext.RunContext) (Tester, error) {
-	// skip tests for all prebuilt images
-	blacklist := make(map[string]bool, len(ctx.Opts.PreBuiltImages))
-	for _, i := range ctx.Opts.PreBuiltImages {
-		blacklist[i] = true
+	// TODO(nkubala): copied this from runner.getDeployer(), this should be moved somewhere else
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, errors.Wrap(err, "finding current directory")
 	}
 
 	return FullTester{
-		blacklist:  blacklist,
 		testCases:  ctx.Cfg.Test,
 		workingDir: ctx.WorkingDir,
 	}, nil
@@ -70,10 +70,8 @@ func (t FullTester) TestDependencies() ([]string, error) {
 // entrypoint to all individual tests.
 func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
 	for _, test := range t.testCases {
-		if _, ok := t.blacklist[test.ImageName]; !ok {
-			if err := t.runStructureTests(ctx, out, bRes, test); err != nil {
-				return errors.Wrap(err, "running structure tests")
-			}
+		if err := t.runStructureTests(ctx, out, bRes, test); err != nil {
+			return errors.Wrap(err, "running structure tests")
 		}
 	}
 
