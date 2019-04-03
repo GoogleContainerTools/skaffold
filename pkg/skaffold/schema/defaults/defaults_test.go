@@ -128,7 +128,7 @@ func TestSetDefaultsOnPlugin(t *testing.T) {
 
 	err := Set(cfg)
 
-	for _, a := range pipeline.Build.Artifacts {
+	for _, a := range cfg.Pipeline.Build.Artifacts {
 		testutil.CheckDeepEqual(t, ".", a.Workspace)
 	}
 	testutil.CheckError(t, false, err)
