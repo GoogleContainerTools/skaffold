@@ -7,36 +7,6 @@
   ],
   "$schema": "http://json-schema-org/draft-07/schema#",
   "definitions": {
-    "InlineStruct": {
-      "required": [
-        "reqField3"
-      ],
-      "properties": {
-        "field1": {
-          "type": "string",
-          "description": "should be the first field",
-          "x-intellij-html-description": "should be the first field"
-        },
-        "field2": {
-          "type": "string",
-          "description": "should be the second field",
-          "x-intellij-html-description": "should be the second field"
-        },
-        "reqField3": {
-          "type": "string",
-          "description": "Field3 should be the third field and listed in required",
-          "x-intellij-html-description": "Field3 should be the third field and listed in required"
-        }
-      },
-      "preferredOrder": [
-        "field1",
-        "field2",
-        "reqField3"
-      ],
-      "additionalProperties": false,
-      "description": "InlineOneOfStruct is embedded inline into TestStruct",
-      "x-intellij-html-description": "InlineOneOfStruct is embedded inline into TestStruct"
-    },
     "TestStruct": {
       "required": [
         "reqField",

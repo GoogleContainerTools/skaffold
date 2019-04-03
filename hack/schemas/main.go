@@ -289,6 +289,8 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 		}
 	}
 
+	var inlines []string
+
 	for _, k := range preferredOrder {
 		def := definitions[k]
 		if len(def.inlines) == 0 {
@@ -300,6 +302,7 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 		for _, inlineStruct := range def.inlines {
 			ref := strings.TrimPrefix(inlineStruct.Ref, defPrefix)
 			inlineStructRef := definitions[ref]
+			inlines = append(inlines, ref)
 
 			// if not anyof, merge & continue
 			if !isOneOf(inlineStructRef) {
@@ -350,6 +353,10 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 		def.PreferredOrder = nil
 		def.AdditionalProperties = nil
 		def.AnyOf = options
+	}
+
+	for _, ref := range inlines {
+		delete(definitions, ref)
 	}
 
 	schema := Schema{
