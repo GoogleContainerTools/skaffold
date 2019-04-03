@@ -18,11 +18,10 @@ package shared
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 )
 
 type PluginBuilder interface {
-	Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment)
+	Init(ctx *runcontext.RunContext) error
 	build.Builder
 }

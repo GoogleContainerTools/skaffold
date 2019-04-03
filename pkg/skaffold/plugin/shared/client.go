@@ -23,8 +23,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -35,17 +35,13 @@ type BuilderRPC struct {
 	client *rpc.Client
 }
 
-func (b *BuilderRPC) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
+func (b *BuilderRPC) Init(ctx *runcontext.RunContext) error {
 	// We don't expect a response, so we can just use interface{}
 	var resp interface{}
-	args := InitArgs{
-		Opts: opts,
-		Env:  env,
-	}
-	b.client.Call("Plugin.Init", args, &resp)
+	return b.client.Call("Plugin.Init", ctx, &resp)
 }
 
-func (b *BuilderRPC) DependenciesForArtifact(_ context.Context, artifact *latest.Artifact) ([]string, error) {
+func (b *BuilderRPC) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 	var resp []string
 	if err := convertPropertiesToBytes([]*latest.Artifact{artifact}); err != nil {
 		return nil, errors.Wrapf(err, "converting properties to bytes")
@@ -68,7 +64,7 @@ func (b *BuilderRPC) Labels() map[string]string {
 	return resp
 }
 
-func (b *BuilderRPC) Build(_ context.Context, _ io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (b *BuilderRPC) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	var resp []build.Artifact
 	if err := convertPropertiesToBytes(artifacts); err != nil {
 		return nil, errors.Wrapf(err, "converting properties to bytes")

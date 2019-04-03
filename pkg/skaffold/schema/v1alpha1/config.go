@@ -51,8 +51,8 @@ type BuildConfig struct {
 // BuildType contains the specific implementation and parameters needed
 // for the build step. Only one field should be populated.
 type BuildType struct {
-	LocalBuild       *LocalBuild       `yaml:"local,omitempty"`
-	GoogleCloudBuild *GoogleCloudBuild `yaml:"googleCloudBuild,omitempty"`
+	LocalBuild       *LocalBuild       `yaml:"local,omitempty" yamltags:"oneOf=build"`
+	GoogleCloudBuild *GoogleCloudBuild `yaml:"googleCloudBuild,omitempty" yamltags:"oneOf=build"`
 }
 
 // LocalBuild contains the fields needed to do a build on the local docker daemon
@@ -74,8 +74,8 @@ type DeployConfig struct {
 // DeployType contains the specific implementation and parameters needed
 // for the deploy step. Only one field should be populated.
 type DeployType struct {
-	HelmDeploy    *HelmDeploy    `yaml:"helm,omitempty"`
-	KubectlDeploy *KubectlDeploy `yaml:"kubectl,omitempty"`
+	HelmDeploy    *HelmDeploy    `yaml:"helm,omitempty" yamltags:"oneOf=deploy"`
+	KubectlDeploy *KubectlDeploy `yaml:"kubectl,omitempty" yamltags:"oneOf=deploy"`
 }
 
 // KubectlDeploy contains the configuration needed for deploying with `kubectl apply`

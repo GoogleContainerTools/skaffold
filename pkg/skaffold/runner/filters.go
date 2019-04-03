@@ -23,11 +23,11 @@ import (
 )
 
 func (r *SkaffoldRunner) IsTargetImage(artifact *latest.Artifact) bool {
-	if len(r.opts.TargetImages) == 0 {
+	if len(r.runCtx.Opts.TargetImages) == 0 {
 		return true
 	}
 
-	for _, targetImage := range r.opts.TargetImages {
+	for _, targetImage := range r.runCtx.Opts.TargetImages {
 		if strings.Contains(artifact.ImageName, targetImage) {
 			return true
 		}

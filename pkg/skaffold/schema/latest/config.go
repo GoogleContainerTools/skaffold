@@ -21,21 +21,30 @@ import (
 	yamlpatch "github.com/krishicks/yaml-patch"
 )
 
-const Version string = "skaffold/v1beta7"
+const Version string = "skaffold/v1beta8"
 
-// NewSkaffoldPipeline creates a SkaffoldPipeline
-func NewSkaffoldPipeline() util.VersionedConfig {
-	return new(SkaffoldPipeline)
+// NewSkaffoldConfig creates a SkaffoldConfig
+func NewSkaffoldConfig() util.VersionedConfig {
+	return new(SkaffoldConfig)
 }
 
-// SkaffoldPipeline describes a Skaffold pipeline.
-type SkaffoldPipeline struct {
+// SkaffoldConfig holds the fields parsed from the Skaffold configuration file (skaffold.yaml).
+type SkaffoldConfig struct {
 	// APIVersion is the version of the configuration.
 	APIVersion string `yaml:"apiVersion"`
 
 	// Kind is always `Config`. Defaults to `Config`.
 	Kind string `yaml:"kind"`
 
+	// Pipeline defines the Build/Test/Deploy phases.
+	Pipeline `yaml:",inline"`
+
+	// Profiles *beta* can override be used to `build`, `test` or `deploy` configuration.
+	Profiles []Profile `yaml:"profiles,omitempty"`
+}
+
+// Pipeline describes a Skaffold pipeline.
+type Pipeline struct {
 	// Build describes how images are built.
 	Build BuildConfig `yaml:"build,omitempty"`
 
@@ -44,12 +53,9 @@ type SkaffoldPipeline struct {
 
 	// Deploy describes how images are deployed.
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
-
-	// Profiles *beta* can override be used to `build`, `test` or `deploy` configuration.
-	Profiles []Profile `yaml:"profiles,omitempty"`
 }
 
-func (c *SkaffoldPipeline) GetVersion() string {
+func (c *SkaffoldConfig) GetVersion() string {
 	return c.APIVersion
 }
 
@@ -430,10 +436,10 @@ type HelmImageStrategy struct {
 // HelmImageConfig describes an image configuration.
 type HelmImageConfig struct {
 	// HelmFQNConfig is the image configuration uses the syntax `IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG`.
-	HelmFQNConfig *HelmFQNConfig `yaml:"fqn,omitempty"`
+	HelmFQNConfig *HelmFQNConfig `yaml:"fqn,omitempty" yamltags:"oneOf=helmImageStrategy"`
 
 	// HelmConventionConfig is the image configuration uses the syntax `IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG`.
-	HelmConventionConfig *HelmConventionConfig `yaml:"helm,omitempty"`
+	HelmConventionConfig *HelmConventionConfig `yaml:"helm,omitempty" yamltags:"oneOf=helmImageStrategy"`
 }
 
 // HelmFQNConfig is the image config to use the FullyQualifiedImageName as param to set.
@@ -478,14 +484,8 @@ type Profile struct {
 	// For example: `profile-prod`.
 	Name string `yaml:"name,omitempty" yamltags:"required"`
 
-	// Build replaces the main `build` configuration.
-	Build BuildConfig `yaml:"build,omitempty"`
-
-	// Test replaces the main `test` configuration.
-	Test []*TestCase `yaml:"test,omitempty"`
-
-	// Deploy replaces the main `deploy` configuration.
-	Deploy DeployConfig `yaml:"deploy,omitempty"`
+	// Pipeline contains the definitions to replace the default skaffold pipeline.
+	Pipeline `yaml:",inline"`
 
 	// Patches lists patches applied to the configuration.
 	// Patches use the JSON patch notation.

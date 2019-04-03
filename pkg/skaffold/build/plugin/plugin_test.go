@@ -23,8 +23,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -42,7 +42,7 @@ func (b *mockBuilder) Labels() map[string]string {
 	return b.labels
 }
 
-func (b *mockBuilder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {}
+func (b *mockBuilder) Init(ctx *runcontext.RunContext) error { return nil }
 
 func (b *mockBuilder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 	return nil, nil

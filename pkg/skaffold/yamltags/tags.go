@@ -185,6 +185,9 @@ func (oot *OneOfTag) Process(val reflect.Value) error {
 }
 
 func isZeroValue(val reflect.Value) bool {
+	if val.Kind() == reflect.Invalid {
+		return true
+	}
 	zv := reflect.Zero(val.Type()).Interface()
 	return reflect.DeepEqual(zv, val.Interface())
 }

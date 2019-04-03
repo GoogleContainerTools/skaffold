@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/environments/gcb"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -57,15 +58,16 @@ func NewGradleBuilder() *GradleBuilder {
 }
 
 // Init stores skaffold options and the execution environment
-func (b *GradleBuilder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
+func (b *GradleBuilder) Init(ctx *runcontext.RunContext) error {
 	if b.PluginMode {
-		if err := event.SetupRPCClient(opts); err != nil {
+		if err := event.SetupRPCClient(ctx.Opts); err != nil {
 			logrus.Warn("error establishing gRPC connection to skaffold process; events will not be handled correctly")
 			logrus.Warn(err.Error())
 		}
 	}
-	b.opts = opts
-	b.env = env
+	b.opts = ctx.Opts
+	b.env = ctx.Cfg.Build.ExecutionEnvironment
+	return nil
 }
 
 // Labels are labels specific to Jib.
@@ -126,7 +128,17 @@ func (b *GradleBuilder) googleCloudBuild(ctx context.Context, out io.Writer, tag
 			return nil, err
 		}
 	}
-	return gcb.NewBuilder(g, b.opts.SkipTests).Build(ctx, out, tags, artifacts)
+	runCtx := &runcontext.RunContext{
+		Opts: b.opts,
+		Cfg: &latest.Pipeline{
+			Build: latest.BuildConfig{
+				BuildType: latest.BuildType{
+					GoogleCloudBuild: g,
+				},
+			},
+		},
+	}
+	return gcb.NewBuilder(runCtx).Build(ctx, out, tags, artifacts)
 }
 
 func setGradleArtifact(artifact *latest.Artifact) error {

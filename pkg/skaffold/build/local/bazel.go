@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/bazel"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -33,9 +34,15 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, a *latest.Artif
 	builder.PushImages = b.pushImages
 	builder.PluginMode = false
 
-	opts := &config.SkaffoldOptions{
-		SkipTests: b.skipTests,
-	}
-	builder.Init(opts, &latest.ExecutionEnvironment{})
+	builder.Init(&runcontext.RunContext{
+		Opts: &config.SkaffoldOptions{
+			SkipTests: b.skipTests,
+		},
+		Cfg: &latest.Pipeline{
+			Build: latest.BuildConfig{
+				ExecutionEnvironment: &latest.ExecutionEnvironment{},
+			},
+		},
+	})
 	return builder.BuildArtifact(ctx, out, a, tag)
 }

@@ -24,14 +24,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-// newRunner creates a SkaffoldRunner and returns the SkaffoldPipeline associated with it.
-func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.SkaffoldPipeline, error) {
+// newRunner creates a SkaffoldRunner and returns the SkaffoldConfig associated with it.
+func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.SkaffoldConfig, error) {
 	parsed, err := schema.ParseConfig(opts.ConfigurationFile, true)
 	if err != nil {
 		latest, current, versionErr := update.GetLatestAndCurrentVersion()
@@ -41,15 +42,18 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 		return nil, nil, errors.Wrap(err, "parsing skaffold config")
 	}
 
-	config := parsed.(*latest.SkaffoldPipeline)
+	config := parsed.(*latest.SkaffoldConfig)
 
-	err = schema.ApplyProfiles(config, opts)
-	if err != nil {
+	if err = schema.ApplyProfiles(config, opts); err != nil {
 		return nil, nil, errors.Wrap(err, "applying profiles")
 	}
 
 	if err := defaults.Set(config); err != nil {
 		return nil, nil, errors.Wrap(err, "setting default values")
+	}
+
+	if err := validation.ValidateSchema(config); err != nil {
+		return nil, nil, errors.Wrap(err, "invalid skaffold config")
 	}
 
 	defaultRepo, err := configutil.GetDefaultRepo(opts.DefaultRepo)
@@ -67,7 +71,7 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 	return runner, config, nil
 }
 
-func applyDefaultRepoSubstitution(config *latest.SkaffoldPipeline, defaultRepo string) {
+func applyDefaultRepoSubstitution(config *latest.SkaffoldConfig, defaultRepo string) {
 	if defaultRepo == "" {
 		// noop
 		return
