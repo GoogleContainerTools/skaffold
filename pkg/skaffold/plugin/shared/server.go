@@ -23,7 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	plugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
@@ -51,8 +51,8 @@ type BuilderRPCServer struct {
 	Impl PluginBuilder
 }
 
-func (s *BuilderRPCServer) Init(args InitArgs, resp *interface{}) error {
-	s.Impl.Init(args.Opts, args.Env)
+func (s *BuilderRPCServer) Init(ctx *runcontext.RunContext, resp *interface{}) error {
+	s.Impl.Init(ctx)
 	return nil
 }
 
@@ -86,12 +86,6 @@ func (s *BuilderRPCServer) DependenciesForArtifact(d DependencyArgs, resp *[]str
 // DependencyArgs are args passed via rpc to the build plugin on DependencyForArtifact()
 type DependencyArgs struct {
 	*latest.Artifact
-}
-
-// InitArgs are args passed via rpc to the builder plugin on Init()
-type InitArgs struct {
-	Opts *config.SkaffoldOptions
-	Env  *latest.ExecutionEnvironment
 }
 
 // BuildArgs are the args passed via rpc to the builder plugin on Build()

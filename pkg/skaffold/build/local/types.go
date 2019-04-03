@@ -24,6 +24,7 @@ import (
 	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -43,8 +44,8 @@ type Builder struct {
 }
 
 // NewBuilder returns an new instance of a local Builder.
-func NewBuilder(cfg *latest.LocalBuild, kubeContext string, prune bool, skipTests bool) (*Builder, error) {
-	localDocker, err := docker.NewAPIClient(prune)
+func NewBuilder(ctx *runcontext.RunContext) (*Builder, error) {
+	localDocker, err := docker.NewAPIClient(ctx.Opts.Prune())
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
@@ -55,21 +56,21 @@ func NewBuilder(cfg *latest.LocalBuild, kubeContext string, prune bool, skipTest
 	}
 
 	var pushImages bool
-	if cfg.Push == nil {
+	if ctx.Cfg.Build.LocalBuild.Push == nil {
 		pushImages = !localCluster
 		logrus.Debugf("push value not present, defaulting to %t because localCluster is %t", pushImages, localCluster)
 	} else {
-		pushImages = *cfg.Push
+		pushImages = *ctx.Cfg.Build.LocalBuild.Push
 	}
 
 	return &Builder{
-		cfg:          cfg,
-		kubeContext:  kubeContext,
+		cfg:          ctx.Cfg.Build.LocalBuild,
+		kubeContext:  ctx.KubeContext,
 		localDocker:  localDocker,
 		localCluster: localCluster,
 		pushImages:   pushImages,
-		skipTests:    skipTests,
-		prune:        prune,
+		skipTests:    ctx.Opts.SkipTests,
+		prune:        ctx.Opts.Prune(),
 	}, nil
 }
 

@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -79,12 +80,17 @@ func TestInParallel(t *testing.T) {
 				{ImageName: "skaffold/image1"},
 				{ImageName: "skaffold/image2"},
 			}
-			cfg := &latest.BuildConfig{
+			cfg := latest.BuildConfig{
 				BuildType: latest.BuildType{
 					LocalBuild: &latest.LocalBuild{},
 				},
 			}
-			event.InitializeState(cfg, nil, &config.SkaffoldOptions{})
+			event.InitializeState(&runcontext.RunContext{
+				Cfg: &latest.Pipeline{
+					Build: cfg,
+				},
+				Opts: &config.SkaffoldOptions{},
+			})
 
 			got, err := InParallel(context.Background(), out, test.tags, artifacts, test.buildArtifact)
 

@@ -14,14 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package shared
+package build
 
-import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
-)
+func MergeWithPreviousBuilds(builds, previous []Artifact) []Artifact {
+	updatedBuilds := map[string]bool{}
+	for _, build := range builds {
+		updatedBuilds[build.ImageName] = true
+	}
 
-type PluginBuilder interface {
-	Init(ctx *runcontext.RunContext) error
-	build.Builder
+	var merged []Artifact
+	merged = append(merged, builds...)
+
+	for _, b := range previous {
+		if !updatedBuilds[b.ImageName] {
+			merged = append(merged, b)
+		}
+	}
+
+	return merged
 }

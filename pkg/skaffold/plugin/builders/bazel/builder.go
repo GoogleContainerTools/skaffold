@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -54,15 +55,17 @@ func NewBuilder() *Builder {
 }
 
 // Init stores skaffold options and the execution environment
-func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
+func (b *Builder) Init(ctx *runcontext.RunContext) error {
 	if b.PluginMode {
-		if err := event.SetupRPCClient(opts); err != nil {
+		if err := event.SetupRPCClient(ctx.Opts); err != nil {
 			logrus.Warn("error establishing gRPC connection to skaffold process; events will not be handled correctly")
 			logrus.Warn(err.Error())
+			return err
 		}
 	}
-	b.opts = opts
-	b.env = env
+	b.opts = ctx.Opts
+	b.env = ctx.Cfg.Build.ExecutionEnvironment
+	return nil
 }
 
 // Labels are labels specific to Bazel.

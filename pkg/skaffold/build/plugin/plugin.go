@@ -25,9 +25,9 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
+	runctx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	plugin "github.com/hashicorp/go-plugin"
@@ -41,13 +41,13 @@ var (
 )
 
 // NewPluginBuilder initializes and returns all required plugin builders
-func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions) (shared.PluginBuilder, error) {
+func NewPluginBuilder(ctx *runctx.RunContext) (shared.PluginBuilder, error) {
 	// We're a host. Start by launching the plugin process.
 	logrus.SetOutput(os.Stdout)
 
 	builders := map[string]shared.PluginBuilder{}
 
-	for _, a := range cfg.Artifacts {
+	for _, a := range ctx.Cfg.Build.Artifacts {
 		p := a.BuilderPlugin.Name
 		if _, ok := builders[p]; ok {
 			continue
@@ -73,12 +73,14 @@ func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions) (sh
 			Cmd:             cmd,
 		})
 
+		logrus.Debugf("Starting plugin with command: %+v", cmd)
+
 		// Connect via RPC
 		rpcClient, err := client.Client()
 		if err != nil {
 			return nil, errors.Wrap(err, "connecting via rpc")
 		}
-
+		logrus.Debugf("plugin started.")
 		// Request the plugin
 		raw, err := rpcClient.Dispense(p)
 		if err != nil {
@@ -91,7 +93,12 @@ func NewPluginBuilder(cfg *latest.BuildConfig, opts *config.SkaffoldOptions) (sh
 	b := &Builder{
 		Builders: builders,
 	}
-	b.Init(opts, cfg.ExecutionEnvironment)
+
+	logrus.Debugf("Calling Init() for all plugins.")
+	if err := b.Init(ctx); err != nil {
+		plugin.CleanupClients()
+		return nil, err
+	}
 	return b, nil
 }
 
@@ -99,10 +106,13 @@ type Builder struct {
 	Builders map[string]shared.PluginBuilder
 }
 
-func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
+func (b *Builder) Init(ctx *runctx.RunContext) error {
 	for _, builder := range b.Builders {
-		builder.Init(opts, env)
+		if err := builder.Init(ctx); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // Labels are labels applied to deployed resources.
