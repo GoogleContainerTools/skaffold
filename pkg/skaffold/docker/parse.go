@@ -44,6 +44,15 @@ type from struct {
 // RetrieveImage is overridden for unit testing
 var RetrieveImage = retrieveImage
 
+func evaluateBuildArgsValue(nameTemplate string) (string, error) {
+	tmpl, err := util.ParseEnvTemplate(nameTemplate)
+	if err != nil {
+		return "", errors.Wrap(err, "parsing template")
+	}
+
+	return util.ExecuteEnvTemplate(tmpl, nil)
+}
+
 func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) {
 	for i, node := range nodes {
 		if node.Value != command.Arg {
@@ -57,7 +66,7 @@ func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) {
 		// build arg's value
 		var value string
 		if buildArgs[key] != nil {
-			value = *buildArgs[key]
+			value, _ = evaluateBuildArgsValue(*buildArgs[key])
 		} else if len(keyValue) > 1 {
 			value = keyValue[1]
 		}
