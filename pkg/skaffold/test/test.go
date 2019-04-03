@@ -19,7 +19,6 @@ package test
 import (
 	"context"
 	"io"
-	"os"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
@@ -34,12 +33,6 @@ import (
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
 func NewTester(ctx *runcontext.RunContext) (Tester, error) {
-	// TODO(nkubala): copied this from runner.getDeployer(), this should be moved somewhere else
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, errors.Wrap(err, "finding current directory")
-	}
-
 	return FullTester{
 		testCases:  ctx.Cfg.Test,
 		workingDir: ctx.WorkingDir,
