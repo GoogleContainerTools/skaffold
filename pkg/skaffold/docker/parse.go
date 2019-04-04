@@ -53,7 +53,7 @@ func evaluateBuildArgsValue(nameTemplate string) (string, error) {
 	return util.ExecuteEnvTemplate(tmpl, nil)
 }
 
-func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) {
+func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
 	for i, node := range nodes {
 		if node.Value != command.Arg {
 			continue
@@ -65,8 +65,12 @@ func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) {
 
 		// build arg's value
 		var value string
+		var err error
 		if buildArgs[key] != nil {
-			value, _ = evaluateBuildArgsValue(*buildArgs[key])
+			value, err = evaluateBuildArgsValue(*buildArgs[key])
+			if err != nil {
+				return errors.Wrapf(err, "unable to get value for build arg: %s", key)
+			}
 		} else if len(keyValue) > 1 {
 			value = keyValue[1]
 		}
@@ -83,6 +87,7 @@ func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) {
 			}
 		}
 	}
+	return nil
 }
 
 func fromInstructions(nodes []*parser.Node) []from {
@@ -190,7 +195,10 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 
 	dockerfileLines := res.AST.Children
 
-	expandBuildArgs(dockerfileLines, buildArgs)
+	err = expandBuildArgs(dockerfileLines, buildArgs)
+	if err != nil {
+		return nil, errors.Wrap(err, "putting build arguments")
+	}
 
 	instructions, err := onbuildInstructions(dockerfileLines)
 	if err != nil {

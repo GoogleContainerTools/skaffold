@@ -591,7 +591,8 @@ type KanikoArtifact struct {
 	Target string `yaml:"target,omitempty"`
 
 	// BuildArgs are arguments passed to the docker build.
-	// For example: `{"key1": "value1", "key2": "value2"}`.
+	// It also accepts environment variables via the go template syntax.
+	// For example: `{"key1": "value1", "key2": "value2", "key3": "{{.ENV_VARIABLE}}"}`.
 	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 
 	// BuildContext is where the build context for this artifact resides.

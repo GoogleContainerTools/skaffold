@@ -339,7 +339,11 @@ func GetBuildArgs(a *latest.DockerArtifact) []string {
 		if v == nil {
 			args = append(args, k)
 		} else {
-			args = append(args, fmt.Sprintf("%s=%s", k, *v))
+			value, err := evaluateBuildArgsValue(*v)
+			if err != nil {
+				logrus.Errorf("unable to get value for build arg: %s", k)
+			}
+			args = append(args, fmt.Sprintf("%s=%s", k, value))
 		}
 	}
 

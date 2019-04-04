@@ -172,6 +172,7 @@ func TestGetBuildArgs(t *testing.T) {
 	tests := []struct {
 		description string
 		artifact    *latest.DockerArtifact
+		env         []string
 		want        []string
 	}{
 		{
@@ -180,9 +181,11 @@ func TestGetBuildArgs(t *testing.T) {
 				BuildArgs: map[string]*string{
 					"key1": util.StringPtr("value1"),
 					"key2": nil,
+					"key3": util.StringPtr("{{.FOO}}"),
 				},
 			},
-			want: []string{"--build-arg", "key1=value1", "--build-arg", "key2"},
+			env:  []string{"FOO=bar"},
+			want: []string{"--build-arg", "key1=value1", "--build-arg", "key2", "--build-arg", "key3=bar"},
 		},
 		{
 			description: "cache from",
@@ -212,6 +215,9 @@ func TestGetBuildArgs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
+			util.OSEnviron = func() []string {
+				return tt.env
+			}
 			result := GetBuildArgs(tt.artifact)
 			if diff := cmp.Diff(result, tt.want); diff != "" {
 				t.Errorf("%T differ (-got, +want): %s", tt.want, diff)
