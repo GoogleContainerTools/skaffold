@@ -1423,36 +1423,6 @@
       "description": "configures how Kaniko mounts sources directly via an `emptyDir` volume.",
       "x-intellij-html-description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume."
     },
-    "Pipeline": {
-      "properties": {
-        "build": {
-          "$ref": "#/definitions/BuildConfig",
-          "description": "describes how images are built.",
-          "x-intellij-html-description": "describes how images are built."
-        },
-        "deploy": {
-          "$ref": "#/definitions/DeployConfig",
-          "description": "describes how images are deployed.",
-          "x-intellij-html-description": "describes how images are deployed."
-        },
-        "test": {
-          "items": {
-            "$ref": "#/definitions/TestCase"
-          },
-          "type": "array",
-          "description": "describes how images are tested.",
-          "x-intellij-html-description": "describes how images are tested."
-        }
-      },
-      "preferredOrder": [
-        "build",
-        "test",
-        "deploy"
-      ],
-      "additionalProperties": false,
-      "description": "describes a Skaffold pipeline.",
-      "x-intellij-html-description": "describes a Skaffold pipeline."
-    },
     "Profile": {
       "required": [
         "name"
