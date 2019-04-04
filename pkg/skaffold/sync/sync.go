@@ -55,7 +55,7 @@ type Item struct {
 
 func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
 	// If there are no changes, short circuit and don't sync anything
-	if !e.HasChanged() || len(a.Sync) == 0 {
+	if !e.HasChanged() || a.Sync == nil || len(a.Sync.Manual) == 0 {
 		return nil, nil
 	}
 
@@ -69,12 +69,12 @@ func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact, insecu
 		return nil, errors.Wrapf(err, "retrieving working dir for %s", tag)
 	}
 
-	toCopy, err := intersect(a.Workspace, containerWd, a.Sync, append(e.Added, e.Modified...))
+	toCopy, err := intersect(a.Workspace, containerWd, a.Sync.Manual, append(e.Added, e.Modified...))
 	if err != nil {
 		return nil, errors.Wrap(err, "intersecting sync map and added, modified files")
 	}
 
-	toDelete, err := intersect(a.Workspace, containerWd, a.Sync, e.Deleted)
+	toDelete, err := intersect(a.Workspace, containerWd, a.Sync.Manual, e.Deleted)
 	if err != nil {
 		return nil, errors.Wrap(err, "intersecting sync map and deleted files")
 	}
@@ -147,7 +147,7 @@ func intersect(contextWd, containerWd string, syncRules []*latest.SyncRule, file
 func matchSyncRules(syncRules []*latest.SyncRule, relPath, containerWd string) ([]string, error) {
 	dsts := make([]string, 0, 1)
 	for _, r := range syncRules {
-		matches, err := doublestar.PathMatch(filepath.FromSlash(r.From), relPath)
+		matches, err := doublestar.PathMatch(filepath.FromSlash(r.Src), relPath)
 		if err != nil {
 			return nil, errors.Wrapf(err, "pattern error for %s", relPath)
 		}
@@ -157,20 +157,14 @@ func matchSyncRules(syncRules []*latest.SyncRule, relPath, containerWd string) (
 		}
 
 		wd := ""
-		if !path.IsAbs(r.To) {
+		if !path.IsAbs(r.Dest) {
 			// Convert relative destinations to absolute via the working dir in the container.
 			wd = containerWd
 		}
 
-		if r.Flatten {
-			// Collapse the paths.
-			subPath := filepath.Base(relPath)
-			dsts = append(dsts, path.Join(wd, r.To, filepath.ToSlash(subPath)))
-		} else {
-			// Map the paths as a tree from the prefix.
-			subPath := strings.TrimPrefix(filepath.ToSlash(relPath), r.Strip)
-			dsts = append(dsts, path.Join(wd, r.To, subPath))
-		}
+		// Map the paths as a tree from the prefix.
+		subPath := strings.TrimPrefix(filepath.ToSlash(relPath), r.Strip)
+		dsts = append(dsts, path.Join(wd, r.Dest, subPath))
 	}
 	return dsts, nil
 }

@@ -346,7 +346,9 @@ func TestDevSync(t *testing.T) {
 			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{
 				{
 					ImageName: "img1",
-					Sync:      []*latest.SyncRule{{From: "file1", To: "file1"}},
+					Sync: &latest.Sync{
+						Manual: []*latest.SyncRule{{Src: "file1", Dest: "file1"}},
+					},
 				},
 				{
 					ImageName: "img2",

@@ -8,9 +8,9 @@ build:
       buildArgs:
         SCRIPT: "{{.SCRIPT}}"
     sync:
-    - from: '*.js'
-      to: .
-      flatten: true
+      manual:
+      - src: '*.js'
+        dest: .
 deploy:
   kubectl:
     manifests:

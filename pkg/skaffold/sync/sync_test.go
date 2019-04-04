@@ -49,8 +49,8 @@ func TestNewSyncItem(t *testing.T) {
 			description: "match copy",
 			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: []*latest.SyncRule{
-					{From: "*.html", To: "."},
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{{Src: "*.html", Dest: "."}},
 				},
 				Workspace: ".",
 			},
@@ -75,8 +75,8 @@ func TestNewSyncItem(t *testing.T) {
 			description: "no tag for image",
 			artifact: &latest.Artifact{
 				ImageName: "notbuildyet",
-				Sync: []*latest.SyncRule{
-					{From: "*.html", To: "."},
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{{Src: "*.html", Dest: "."}},
 				},
 				Workspace: ".",
 			},
@@ -95,10 +95,12 @@ func TestNewSyncItem(t *testing.T) {
 			description: "multiple sync patterns",
 			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: []*latest.SyncRule{
-					{From: "*.js", To: "."},
-					{From: "*.html", To: "."},
-					{From: "*.json", To: "."},
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "*.js", Dest: "."},
+						{Src: "*.html", Dest: "."},
+						{Src: "*.json", Dest: "."},
+					},
 				},
 				Workspace: "node",
 			},
@@ -128,8 +130,10 @@ func TestNewSyncItem(t *testing.T) {
 			description: "recursive glob patterns",
 			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: []*latest.SyncRule{
-					{From: "src/**/*.js", To: "src/", Flatten: true},
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "src/**/*.js", Dest: "src/", Strip: "src/"},
+					},
 				},
 				Workspace: "node",
 			},
@@ -146,7 +150,7 @@ func TestNewSyncItem(t *testing.T) {
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string][]string{
-					filepath.Join("node", "src/app/server/server.js"): {"/src/server.js"},
+					filepath.Join("node", "src/app/server/server.js"): {"/src/app/server/server.js"},
 				},
 				Delete: map[string][]string{},
 			},
@@ -155,8 +159,10 @@ func TestNewSyncItem(t *testing.T) {
 			description: "sync all",
 			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: []*latest.SyncRule{
-					{From: "*", To: "."},
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "*", Dest: "."},
+					},
 				},
 				Workspace: "node",
 			},
@@ -185,8 +191,10 @@ func TestNewSyncItem(t *testing.T) {
 		{
 			description: "not copy syncable",
 			artifact: &latest.Artifact{
-				Sync: []*latest.SyncRule{
-					{From: "*.html", To: "."},
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "*.html", Dest: "."},
+					},
 				},
 				Workspace: ".",
 			},
@@ -203,8 +211,10 @@ func TestNewSyncItem(t *testing.T) {
 		{
 			description: "not delete syncable",
 			artifact: &latest.Artifact{
-				Sync: []*latest.SyncRule{
-					{From: "*.html", To: "/static"},
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "*.html", Dest: "/static"},
+					},
 				},
 				Workspace: ".",
 			},
@@ -221,8 +231,10 @@ func TestNewSyncItem(t *testing.T) {
 		{
 			description: "err bad pattern",
 			artifact: &latest.Artifact{
-				Sync: []*latest.SyncRule{
-					{From: "[*.html", To: "*"},
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "[*.html", Dest: "*"},
+					},
 				},
 				Workspace: ".",
 			},
@@ -235,8 +247,10 @@ func TestNewSyncItem(t *testing.T) {
 		{
 			description: "no change no sync",
 			artifact: &latest.Artifact{
-				Sync: []*latest.SyncRule{
-					{From: "*.html", To: "*"},
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "*.html", Dest: "*"},
+					},
 				},
 				Workspace: ".",
 			},
@@ -251,12 +265,14 @@ func TestNewSyncItem(t *testing.T) {
 			description: "slashes in glob pattern",
 			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: []*latest.SyncRule{
-					{From: "**/**/*.js", To: ".", Flatten: true},
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "**/**/*.js", Dest: "."},
+					},
 				},
 				Workspace: ".",
 			},
-			workingDir: "/some/dir",
+			workingDir: "/some",
 			builds: []build.Artifact{
 				{
 					ImageName: "test",
@@ -264,22 +280,24 @@ func TestNewSyncItem(t *testing.T) {
 				},
 			},
 			evt: watch.Events{
-				Added: []string{filepath.Join("dir1", "dir2/node.js")},
+				Added: []string{filepath.Join("dir1", "dir2", "node.js")},
 			},
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string][]string{
-					filepath.Join("dir1", "dir2/node.js"): {"/some/dir/node.js"},
+					filepath.Join("dir1", "dir2", "node.js"): {"/some/dir1/dir2/node.js"},
 				},
 				Delete: map[string][]string{},
 			},
 		},
 		{
-			description: "triple-stars mean subtrees",
+			description: "sync subtrees",
 			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: []*latest.SyncRule{
-					{From: "dir1/**/*.js", To: ".", Strip: "dir1/"},
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "dir1/**/*.js", Dest: ".", Strip: "dir1/"},
+					},
 				},
 				Workspace: ".",
 			},
@@ -305,13 +323,15 @@ func TestNewSyncItem(t *testing.T) {
 			description: "multiple matches",
 			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: []*latest.SyncRule{
-					{From: "dir1/**/*.js", To: ".", Strip: "dir1/"},
-					{From: "dir1/**/**/*.js", To: ".", Flatten: true},
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "dir1/**/*.js", Dest: ".", Strip: "dir1/"},
+						{Src: "dir1/**/**/*.js", Dest: "."},
+					},
 				},
 				Workspace: ".",
 			},
-			workingDir: "/some/dir",
+			workingDir: "/some",
 			builds: []build.Artifact{
 				{
 					ImageName: "test",
@@ -319,12 +339,12 @@ func TestNewSyncItem(t *testing.T) {
 				},
 			},
 			evt: watch.Events{
-				Added: []string{filepath.Join("dir1", "dir2/node.js")},
+				Added: []string{filepath.Join("dir1", "dir2", "node.js")},
 			},
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string][]string{
-					filepath.Join("dir1", "dir2/node.js"): {"/some/dir/dir2/node.js", "/some/dir/node.js"},
+					filepath.Join("dir1", "dir2", "node.js"): {"/some/dir2/node.js", "/some/dir1/dir2/node.js"},
 				},
 				Delete: map[string][]string{},
 			},
@@ -333,9 +353,11 @@ func TestNewSyncItem(t *testing.T) {
 			description: "stars work with absolute paths",
 			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: []*latest.SyncRule{
-					{From: "dir1a/**/*.js", To: "/tstar", Strip: "dir1a/"},
-					{From: "dir1b/**/*.js", To: "/dstar", Flatten: true},
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "dir1a/**/*.js", Dest: "/tstar", Strip: "dir1a/"},
+						{Src: "dir1b/**/*.js", Dest: "/dstar"},
+					},
 				},
 				Workspace: ".",
 			},
@@ -348,15 +370,15 @@ func TestNewSyncItem(t *testing.T) {
 			},
 			evt: watch.Events{
 				Added: []string{
-					filepath.Join("dir1a", "dir2/dir3/node.js"),
-					filepath.Join("dir1b", "dir2/dir3/node.js"),
+					filepath.Join("dir1a", "dir2", "dir3", "node.js"),
+					filepath.Join("dir1b", "dir1", "node.js"),
 				},
 			},
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string][]string{
-					filepath.Join("dir1a", "dir2/dir3/node.js"): {"/tstar/dir2/dir3/node.js"},
-					filepath.Join("dir1b", "dir2/dir3/node.js"): {"/dstar/node.js"},
+					filepath.Join("dir1a", "dir2", "dir3", "node.js"): {"/tstar/dir2/dir3/node.js"},
+					filepath.Join("dir1b", "dir1", "node.js"):         {"/dstar/dir1b/dir1/node.js"},
 				},
 				Delete: map[string][]string{},
 			},
@@ -397,7 +419,7 @@ func TestIntersect(t *testing.T) {
 			description: "copy nested file to correct destination",
 			files:       []string{filepath.Join("static", "index.html"), filepath.Join("static", "test.html")},
 			syncRules: []*latest.SyncRule{
-				{From: filepath.Join("static", "*.html"), To: "/html", Flatten: true},
+				{Src: filepath.Join("static", "*.html"), Dest: "/html", Strip: "static/"},
 			},
 			expected: map[string][]string{
 				filepath.Join("static", "index.html"): {"/html/index.html"},
@@ -405,11 +427,21 @@ func TestIntersect(t *testing.T) {
 			},
 		},
 		{
+			description: "double-star matches depth zero",
+			files:       []string{"index.html"},
+			syncRules: []*latest.SyncRule{
+				{Src: filepath.Join("**", "*.html"), Dest: "/html"},
+			},
+			expected: map[string][]string{
+				"index.html": {"/html/index.html"},
+			},
+		},
+		{
 			description: "file not in . copies to correct destination",
 			files:       []string{filepath.Join("node", "server.js")},
 			context:     "node",
 			syncRules: []*latest.SyncRule{
-				{From: "*.js", To: "/", Flatten: true},
+				{Src: "*.js", Dest: "/"},
 			},
 			expected: map[string][]string{
 				filepath.Join("node", "server.js"): {"/server.js"},
@@ -420,7 +452,7 @@ func TestIntersect(t *testing.T) {
 			files:       []string{filepath.Join("node", "server.js"), filepath.Join("/", "something", "test.js")},
 			context:     "node",
 			syncRules: []*latest.SyncRule{
-				{From: "*.js", To: "/", Flatten: true},
+				{Src: "*.js", Dest: "/"},
 			},
 			shouldErr: true,
 		},
