@@ -41,12 +41,12 @@ type Builder struct {
 	skipTests          bool
 	kubeContext        string
 	builtImages        []string
-	insecureRegistries map[string]string
+	insecureRegistries map[string]bool
 }
 
 // NewBuilder returns an new instance of a local Builder.
 func NewBuilder(ctx *runcontext.RunContext) (*Builder, error) {
-	localDocker, err := docker.NewAPIClient(ctx.Opts.Prune())
+	localDocker, err := docker.NewAPIClient(ctx.Opts.Prune(), ctx.InsecureRegistries)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}

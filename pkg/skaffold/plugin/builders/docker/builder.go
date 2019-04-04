@@ -47,9 +47,9 @@ type Builder struct {
 	LocalCluster bool
 	PushImages   bool
 	// TODO: remove once old docker build functionality is removed (priyawadhwa@)
-	PluginMode  bool
-	KubeContext string
-	builtImages []string
+	PluginMode         bool
+	KubeContext        string
+	builtImages        []string
 	insecureRegistries map[string]bool
 }
 
@@ -133,7 +133,6 @@ func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.
 			return nil, err
 		}
 	}
-<<<<<<< HEAD
 	runCtx := &runcontext.RunContext{
 		Opts: b.opts,
 		Cfg: &latest.Pipeline{
@@ -145,9 +144,6 @@ func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.
 		},
 	}
 	return gcb.NewBuilder(runCtx).Build(ctx, out, tags, artifacts)
-=======
-	return gcb.NewBuilder(g, b.opts.SkipTests, b.insecureRegistries).Build(ctx, out, tags, artifacts)
->>>>>>> Add support for pushing/pulling to insecure registries
 }
 
 func setArtifact(artifact *latest.Artifact) error {

@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
@@ -157,13 +158,21 @@ func Test_NewCache(t *testing.T) {
 				test.expectedCache.client = docker.NewLocalDaemon(test.api, nil, false, test.insecureRegistries)
 			}
 
-			actualCache := NewCache(nil, test.opts, latest.BuildConfig{
-				BuildType: latest.BuildType{
-					LocalBuild: &latest.LocalBuild{
-						Push: &test.pushImages,
+			runCtx := &runcontext.RunContext{
+				Opts: test.opts,
+				Cfg: &latest.Pipeline{
+					Build: latest.BuildConfig{
+						BuildType: latest.BuildType{
+							LocalBuild: &latest.LocalBuild{
+								Push: &test.pushImages,
+							},
+						},
 					},
 				},
-			}, test.insecureRegistries)
+				InsecureRegistries: test.insecureRegistries,
+			}
+
+			actualCache := NewCache(nil, runCtx)
 
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
 			if !reflect.DeepEqual(test.expectedCache, actualCache) {

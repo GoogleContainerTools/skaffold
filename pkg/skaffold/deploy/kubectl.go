@@ -36,9 +36,10 @@ import (
 type KubectlDeployer struct {
 	*latest.KubectlDeploy
 
-	workingDir  string
-	kubectl     kubectl.CLI
-	defaultRepo string
+	workingDir         string
+	kubectl            kubectl.CLI
+	defaultRepo        string
+	insecureRegistries map[string]bool
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
@@ -52,7 +53,8 @@ func NewKubectlDeployer(ctx *runcontext.RunContext) *KubectlDeployer {
 			KubeContext: ctx.KubeContext,
 			Flags:       ctx.Cfg.Deploy.KubectlDeploy.Flags,
 		},
-		defaultRepo: ctx.DefaultRepo,
+		defaultRepo:        ctx.DefaultRepo,
+		insecureRegistries: ctx.InsecureRegistries,
 	}
 }
 
@@ -63,10 +65,10 @@ func (k *KubectlDeployer) Labels() map[string]string {
 }
 
 // Transforms are applied to manifests
-var manifestTransforms []func(kubectl.ManifestList, []build.Artifact) (kubectl.ManifestList, error)
+var manifestTransforms []func(kubectl.ManifestList, []build.Artifact, map[string]bool) (kubectl.ManifestList, error)
 
 // AddManifestTransform adds a transform to be applied when deploying.
-func AddManifestTransform(newTransform func(kubectl.ManifestList, []build.Artifact) (kubectl.ManifestList, error)) {
+func AddManifestTransform(newTransform func(kubectl.ManifestList, []build.Artifact, map[string]bool) (kubectl.ManifestList, error)) {
 	manifestTransforms = append(manifestTransforms, newTransform)
 }
 
@@ -103,7 +105,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	}
 
 	for _, transform := range manifestTransforms {
-		manifests, err = transform(manifests, builds)
+		manifests, err = transform(manifests, builds, k.insecureRegistries)
 		if err != nil {
 			return errors.Wrap(err, "debug transform of manifests")
 		}
