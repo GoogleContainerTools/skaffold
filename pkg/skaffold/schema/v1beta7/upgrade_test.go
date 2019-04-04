@@ -96,6 +96,54 @@ profiles:
 	verifyUpgrade(t, yaml, expected)
 }
 
+func TestUpgradeKaniko(t *testing.T) {
+	yaml := `apiVersion: skaffold/v1beta7
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/skaffold-example
+    kaniko:
+      buildContext:
+        gcsBucket: my-bucket
+      cache:
+        repo: gcr.io/some-repo
+  cluster:
+    pullSecretName: e2esecret
+    namespace: default
+test:
+  - image: gcr.io/k8s-skaffold/skaffold-example
+    structureTests:
+     - ./test/*
+deploy:
+  kubectl:
+    manifests:
+    - k8s-*
+`
+	expected := `apiVersion: skaffold/v1beta8
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/skaffold-example
+    kaniko:
+      buildContext:
+        gcsBucket: my-bucket
+      cache:
+        repo: gcr.io/some-repo
+  cluster:
+    pullSecretName: e2esecret
+    namespace: default
+test:
+  - image: gcr.io/k8s-skaffold/skaffold-example
+    structureTests:
+     - ./test/*
+deploy:
+  kubectl:
+    manifests:
+    - k8s-*
+`
+	verifyUpgrade(t, yaml, expected)
+}
+
 func verifyUpgrade(t *testing.T, input, output string) {
 	pipeline := NewSkaffoldPipeline()
 	err := yaml.UnmarshalStrict([]byte(input), pipeline)
@@ -104,7 +152,7 @@ func verifyUpgrade(t *testing.T, input, output string) {
 	upgraded, err := pipeline.Upgrade()
 	testutil.CheckError(t, false, err)
 
-	expected := latest.NewSkaffoldPipeline()
+	expected := latest.NewSkaffoldConfig()
 	err = yaml.UnmarshalStrict([]byte(output), expected)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, upgraded)

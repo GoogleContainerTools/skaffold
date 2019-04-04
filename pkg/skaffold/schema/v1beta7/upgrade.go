@@ -20,6 +20,7 @@ import (
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/pkg/errors"
 )
 
 // Upgrade upgrades a configuration to the next version.
@@ -27,12 +28,43 @@ import (
 // 1. Additions:
 // kaniko/resource requirements
 // 2. No removals
-// 3. No updates
+// 3. Updates:
+// Not yet
 func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
-	var newConfig next.SkaffoldPipeline
+	// convert Deploy (should be the same)
+	var newDeploy next.DeployConfig
+	if err := pkgutil.CloneThroughJSON(config.Deploy, &newDeploy); err != nil {
+		return nil, errors.Wrap(err, "converting deploy config")
+	}
 
-	err := pkgutil.CloneThroughJSON(config, &newConfig)
-	newConfig.APIVersion = next.Version
+	// convert Profiles (should be the same)
+	var newProfiles []next.Profile
+	if config.Profiles != nil {
+		if err := pkgutil.CloneThroughJSON(config.Profiles, &newProfiles); err != nil {
+			return nil, errors.Wrap(err, "converting new profile")
+		}
+	}
 
-	return &newConfig, err
+	// convert Kaniko (should be same)
+	var newBuild next.BuildConfig
+	if err := pkgutil.CloneThroughJSON(config.Build, &newBuild); err != nil {
+		return nil, errors.Wrap(err, "converting new build")
+	}
+
+	// convert Test (should be the same)
+	var newTest []*next.TestCase
+	if err := pkgutil.CloneThroughJSON(config.Test, &newTest); err != nil {
+		return nil, errors.Wrap(err, "converting new test")
+	}
+
+	return &next.SkaffoldConfig{
+		APIVersion: next.Version,
+		Kind:       config.Kind,
+		Pipeline: next.Pipeline{
+			Build:  newBuild,
+			Test:   newTest,
+			Deploy: newDeploy,
+		},
+		Profiles: newProfiles,
+	}, nil
 }

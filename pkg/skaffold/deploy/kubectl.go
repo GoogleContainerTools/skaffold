@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -42,16 +43,16 @@ type KubectlDeployer struct {
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(workingDir string, cfg *latest.KubectlDeploy, kubeContext string, namespace string, defaultRepo string) *KubectlDeployer {
+func NewKubectlDeployer(ctx *runcontext.RunContext) *KubectlDeployer {
 	return &KubectlDeployer{
-		KubectlDeploy: cfg,
-		workingDir:    workingDir,
+		KubectlDeploy: ctx.Cfg.Deploy.KubectlDeploy,
+		workingDir:    ctx.WorkingDir,
 		kubectl: kubectl.CLI{
-			Namespace:   namespace,
-			KubeContext: kubeContext,
-			Flags:       cfg.Flags,
+			Namespace:   ctx.Opts.Namespace,
+			KubeContext: ctx.KubeContext,
+			Flags:       ctx.Cfg.Deploy.KubectlDeploy.Flags,
 		},
-		defaultRepo: defaultRepo,
+		defaultRepo: ctx.DefaultRepo,
 	}
 }
 

@@ -23,6 +23,6 @@ import (
 )
 
 // Upgrade upgrades a configuration to the next version.
-func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
+func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	return nil, errors.New("not implemented yet")
 }

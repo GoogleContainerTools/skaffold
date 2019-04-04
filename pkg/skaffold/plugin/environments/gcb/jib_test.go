@@ -29,8 +29,8 @@ func TestJibMavenBuildSteps(t *testing.T) {
 		skipTests bool
 		args      []string
 	}{
-		{false, []string{"--non-recursive", "prepare-package", "jib:dockerBuild", "-Dimage=img"}},
-		{true, []string{"--non-recursive", "-DskipTests=true", "prepare-package", "jib:dockerBuild", "-Dimage=img"}},
+		{false, []string{"-Djib.console=plain", "--non-recursive", "prepare-package", "jib:dockerBuild", "-Dimage=img"}},
+		{true, []string{"-Djib.console=plain", "--non-recursive", "-DskipTests=true", "prepare-package", "jib:dockerBuild", "-Dimage=img"}},
 	}
 	for _, tt := range testCases {
 		artifact := &latest.Artifact{
@@ -63,8 +63,8 @@ func TestJibGradleBuildSteps(t *testing.T) {
 		skipTests bool
 		args      []string
 	}{
-		{false, []string{":jibDockerBuild", "--image=img"}},
-		{true, []string{":jibDockerBuild", "--image=img", "-x", "test"}},
+		{false, []string{"-Djib.console=plain", ":jibDockerBuild", "--image=img"}},
+		{true, []string{"-Djib.console=plain", ":jibDockerBuild", "--image=img", "-x", "test"}},
 	}
 	for _, tt := range testCases {
 		artifact := &latest.Artifact{

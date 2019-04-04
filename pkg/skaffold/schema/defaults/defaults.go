@@ -27,8 +27,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Set makes sure default values are set on a SkaffoldPipeline.
-func Set(c *latest.SkaffoldPipeline) error {
+// Set makes sure default values are set on a SkaffoldConfig.
+func Set(c *latest.SkaffoldConfig) error {
 	if pluginsDefined(c) {
 		defaultToLocalExecEnvironment(c)
 		defaultToEmptyProperties(c)
@@ -80,7 +80,7 @@ func Set(c *latest.SkaffoldPipeline) error {
 	return nil
 }
 
-func defaultToLocalExecEnvironment(c *latest.SkaffoldPipeline) {
+func defaultToLocalExecEnvironment(c *latest.SkaffoldConfig) {
 	if c.Build.ExecutionEnvironment == nil {
 		c.Build.ExecutionEnvironment = &latest.ExecutionEnvironment{
 			Name: constants.Local,
@@ -88,13 +88,13 @@ func defaultToLocalExecEnvironment(c *latest.SkaffoldPipeline) {
 	}
 }
 
-func defaultToEmptyProperties(c *latest.SkaffoldPipeline) {
+func defaultToEmptyProperties(c *latest.SkaffoldConfig) {
 	if c.Build.ExecutionEnvironment.Properties == nil {
 		c.Build.ExecutionEnvironment.Properties = map[string]interface{}{}
 	}
 }
 
-func pluginsDefined(c *latest.SkaffoldPipeline) bool {
+func pluginsDefined(c *latest.SkaffoldConfig) bool {
 	for _, a := range c.Build.Artifacts {
 		if a.BuilderPlugin != nil {
 			return true
@@ -103,7 +103,7 @@ func pluginsDefined(c *latest.SkaffoldPipeline) bool {
 	return false
 }
 
-func defaultToLocalBuild(c *latest.SkaffoldPipeline) {
+func defaultToLocalBuild(c *latest.SkaffoldConfig) {
 	if c.Build.BuildType != (latest.BuildType{}) {
 		return
 	}
@@ -112,7 +112,7 @@ func defaultToLocalBuild(c *latest.SkaffoldPipeline) {
 	c.Build.BuildType.LocalBuild = &latest.LocalBuild{}
 }
 
-func defaultToKubectlDeploy(c *latest.SkaffoldPipeline) {
+func defaultToKubectlDeploy(c *latest.SkaffoldConfig) {
 	if c.Deploy.DeployType != (latest.DeployType{}) {
 		return
 	}
@@ -121,7 +121,7 @@ func defaultToKubectlDeploy(c *latest.SkaffoldPipeline) {
 	c.Deploy.DeployType.KubectlDeploy = &latest.KubectlDeploy{}
 }
 
-func withCloudBuildConfig(c *latest.SkaffoldPipeline, operations ...func(kaniko *latest.GoogleCloudBuild)) {
+func withCloudBuildConfig(c *latest.SkaffoldConfig, operations ...func(kaniko *latest.GoogleCloudBuild)) {
 	if gcb := c.Build.GoogleCloudBuild; gcb != nil {
 		for _, operation := range operations {
 			operation(gcb)
@@ -142,7 +142,7 @@ func setDefaultCloudBuildGradleImage(gcb *latest.GoogleCloudBuild) {
 	gcb.GradleImage = valueOrDefault(gcb.GradleImage, constants.DefaultCloudBuildGradleImage)
 }
 
-func setDefaultTagger(c *latest.SkaffoldPipeline) {
+func setDefaultTagger(c *latest.SkaffoldConfig) {
 	if c.Build.TagPolicy != (latest.TagPolicy{}) {
 		return
 	}
@@ -150,7 +150,7 @@ func setDefaultTagger(c *latest.SkaffoldPipeline) {
 	c.Build.TagPolicy = latest.TagPolicy{GitTagger: &latest.GitTagger{}}
 }
 
-func setDefaultKustomizePath(c *latest.SkaffoldPipeline) {
+func setDefaultKustomizePath(c *latest.SkaffoldConfig) {
 	kustomize := c.Deploy.KustomizeDeploy
 	if kustomize == nil {
 		return
@@ -159,7 +159,7 @@ func setDefaultKustomizePath(c *latest.SkaffoldPipeline) {
 	kustomize.KustomizePath = valueOrDefault(kustomize.KustomizePath, constants.DefaultKustomizationPath)
 }
 
-func setDefaultKubectlManifests(c *latest.SkaffoldPipeline) {
+func setDefaultKubectlManifests(c *latest.SkaffoldConfig) {
 	if c.Deploy.KubectlDeploy != nil && len(c.Deploy.KubectlDeploy.Manifests) == 0 {
 		c.Deploy.KubectlDeploy.Manifests = constants.DefaultKubectlManifests
 	}
@@ -188,7 +188,7 @@ func setDefaultWorkspace(a *latest.Artifact) {
 	a.Workspace = valueOrDefault(a.Workspace, ".")
 }
 
-func withClusterConfig(c *latest.SkaffoldPipeline, opts ...func(cluster *latest.ClusterDetails) error) error {
+func withClusterConfig(c *latest.SkaffoldConfig, opts ...func(cluster *latest.ClusterDetails) error) error {
 	clusterDetails := c.Build.BuildType.Cluster
 	if clusterDetails == nil {
 		return nil
