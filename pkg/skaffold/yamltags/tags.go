@@ -20,14 +20,17 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 type FieldSet map[string]struct{}
 
-// ProcessStruct validates and processes the provided pointer to a struct.
-func ProcessStruct(s interface{}) error {
-	parentStruct := reflect.ValueOf(s).Elem()
+// ValidateStruct validates and processes the provided pointer to a struct.
+func ValidateStruct(s interface{}) error {
+	parentStruct := reflect.Indirect(reflect.ValueOf(s))
 	t := parentStruct.Type()
+	logrus.Debugf("validating yamltags of struct %s", t.Name())
 
 	// Loop through the fields on the struct, looking for tags.
 	for i := 0; i < t.NumField(); i++ {
@@ -36,12 +39,6 @@ func ProcessStruct(s interface{}) error {
 		field := parentStruct.Type().Field(i)
 		if tags, ok := f.Tag.Lookup("yamltags"); ok {
 			if err := ProcessTags(tags, val, parentStruct, field); err != nil {
-				return err
-			}
-		}
-		// Recurse down the struct
-		if val.Kind() == reflect.Struct {
-			if err := ProcessStruct(val.Addr().Interface()); err != nil {
 				return err
 			}
 		}

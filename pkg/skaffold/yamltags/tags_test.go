@@ -64,7 +64,7 @@ func TestProcessStructRequired(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "missng some",
+			name: "missing some",
 			args: args{
 				s: &required{
 					A: "hey",
@@ -75,21 +75,11 @@ func TestProcessStructRequired(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		{
-			name: "missng nested",
-			args: args{
-				s: &required{
-					A: "hey",
-					B: 3,
-				},
-			},
-			wantErr: true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := ProcessStruct(tt.args.s); (err != nil) != tt.wantErr {
-				t.Errorf("ProcessStruct() error = %v, wantErr %v", err, tt.wantErr)
+			if err := ValidateStruct(tt.args.s); (err != nil) != tt.wantErr {
+				t.Errorf("ValidateStruct() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -157,24 +147,11 @@ func TestOneOf(t *testing.T) {
 				}},
 			wantErr: true,
 		},
-		{
-			name: "different instances may set other fields",
-			args: args{
-				s: []*oneOfStruct{
-					{
-						A: "foo",
-					},
-					{
-						B: "baz",
-					},
-				}},
-			wantErr: false,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := ProcessStruct(tt.args.s); (err != nil) != tt.wantErr {
-				t.Errorf("ProcessStruct() error = %v, wantErr %v", err, tt.wantErr)
+			if err := ValidateStruct(tt.args.s); (err != nil) != tt.wantErr {
+				t.Errorf("ValidateStruct() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

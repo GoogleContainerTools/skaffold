@@ -22,16 +22,17 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/sirupsen/logrus"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
 
 // ValidateSchema checks if the Skaffold pipeline is valid and returns all encountered errors as a concatenated string
 func ValidateSchema(config *latest.SkaffoldConfig) error {
-	errs := validateOneOf(config)
-	if errs == nil {
+	errs := visitStructs(config, yamltags.ValidateStruct)
+
+	if len(errs) == 0 {
 		return nil
 	}
+
 	var messages []string
 	for _, err := range errs {
 		messages = append(messages, err.Error())
@@ -39,34 +40,21 @@ func ValidateSchema(config *latest.SkaffoldConfig) error {
 	return fmt.Errorf(strings.Join(messages, " | "))
 }
 
-// validateOneOf recursively visits all fields in the config and collects errors for oneOf conflicts
-func validateOneOf(config interface{}) []error {
-	v := reflect.ValueOf(config) // the config itself
-	t := reflect.TypeOf(config)  // the type of the config, used for getting struct field types
-	logrus.Debugf("validating oneOf on %s", t.Name())
+// visitStructs recursively visits all fields in the config and collects errors found by the visitor
+func visitStructs(s interface{}, visitor func(interface{}) error) []error {
+	v := reflect.ValueOf(s)
+	t := reflect.TypeOf(s)
 
 	switch v.Kind() {
 	case reflect.Struct:
 		var errs []error
-
-		// fields marked with oneOf should only be set once
-		if t.NumField() > 1 && util.IsOneOfField(t.Field(0)) {
-			var given []string
-			for i := 0; i < t.NumField(); i++ {
-				zero := reflect.Zero(v.Field(i).Type())
-				if util.IsOneOfField(t.Field(i)) && v.Field(i).Interface() != zero.Interface() {
-					given = append(given, yamlName(t.Field(i)))
-				}
-			}
-			if len(given) > 1 {
-				err := fmt.Errorf("only one of %s may be set", given)
-				errs = append(errs, err)
-			}
+		if err := visitor(v.Interface()); err != nil {
+			errs = []error{err}
 		}
 
 		// also check all fields of the current struct
 		for i := 0; i < t.NumField(); i++ {
-			if fieldErrs := validateOneOf(v.Field(i).Interface()); fieldErrs != nil {
+			if fieldErrs := visitStructs(v.Field(i).Interface(), visitor); fieldErrs != nil {
 				errs = append(errs, fieldErrs...)
 			}
 		}
@@ -75,12 +63,9 @@ func validateOneOf(config interface{}) []error {
 
 	case reflect.Slice:
 		// for slices check each element
-		if v.Len() == 0 {
-			return nil
-		}
 		var errs []error
 		for i := 0; i < v.Len(); i++ {
-			if elemErrs := validateOneOf(v.Index(i).Interface()); elemErrs != nil {
+			if elemErrs := visitStructs(v.Index(i).Interface(), visitor); elemErrs != nil {
 				errs = append(errs, elemErrs...)
 			}
 		}
@@ -91,15 +76,10 @@ func validateOneOf(config interface{}) []error {
 		if v.IsNil() {
 			return nil
 		}
-		return validateOneOf(v.Elem().Interface())
+		return visitStructs(v.Elem().Interface(), visitor)
 
 	default:
 		// other values are fine
 		return nil
 	}
-}
-
-// yamlName retrieves the field name in the yaml
-func yamlName(field reflect.StructField) string {
-	return strings.Split(field.Tag.Get("yaml"), ",")[0]
 }
