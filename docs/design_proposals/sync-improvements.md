@@ -16,7 +16,7 @@ sync:
   '*.js': app/
 ```
 
-This is error prone and unnecessarily hard to use, because the destination is
+This is error prone and unnecessarily hard to use because the destination can often be determined by the builder. For example a destination path is
 already contained in the Dockerfile for docker build. (see #1166, #1581).
 In addition, the syncing needs to handle special cases for globbing and often
 requires a long list of sync patterns (#1807).
@@ -26,8 +26,17 @@ This will result in much faster deploy cycles, without users having to bother ab
 
 ## Design
 
+Skaffold sync shall have three different modes:
+
+1. _direct_: the user specifies both the source and destination.
+3. _auto-inferred destination_: the user specifies the syncable files, and Skaffold infers their destination in the container, e.g based on Dockerfile
+2. _smart_: builder recommended sync mapping for files, e.g. jib specifies what to sync and provides both the source and dest of files to sync. The user does not have to specify anything.
+
+The scope of this design proposal is the _direct_ and _inferred_ mode.
+The smart sync mode is out of scope for this document but may be mentioned at times.
+
 ### Goals
-The sync mechanism in skaffold should be able to infer the destination location of local files.
+The sync mechanism in skaffold should be able to infer the destination location of local files, when the user opts-in to do so.
 
 For example: given the following Dockerfile
 
@@ -52,7 +61,9 @@ A fundamental change compared to the current sync mechanism is that one source p
 Builders know where to put static files in the container.
 This information needs to be pulled from the builders and made available in Skaffold.
 Currently, we know how to do this for Docker artifacts (@r2d4 suggested this in #1166).
-Whether jib and bazel builders can provide that information too, is unclear at the moment.
+Jib transforms some input files and includes others as static resources.
+The specific sync maps need to be detailed out but are should be straightforward.
+Whether the bazel builder supports this, is unclear at the moment.
 
 ### Interface changes
 
@@ -71,16 +82,16 @@ There are at least two relevant changes
        DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error)
    }
    ```
-   
+
    So far, `DependenciesForArtifact` returned a list of local paths (relative to the working directory of the artifact) that are input files for the container.
    Now, `DependenciesForArtifact` serves two purposes. As before, the map keys are relative local paths of input files for the container.
    In addition, the map values list all absolute remote destination paths where the input files are placed in the container.
    This has to be a list, because a single input file may be copied to several locations in the container.
-   
+
    Thus, `DependenciesForArtifact` serves two purposes: firstly, it lists all input files to watch for changes.
    Secondly, it provides default sync destinations for changed or deleted files.
    Note that this does not mean, that every file will be sync'ed. If a file is entitled for syncing depends on the user-provided sync rules.
-   
+
    For example, given the above Dockerfile, it will return something like
    ```go
    map[string][]string{
@@ -90,7 +101,7 @@ There are at least two relevant changes
     "nginx.conf": []string{"/var/nginx.conf", "/etc/nginx.conf"},
    }
    ```
-   
+
 2. To support additional sync maps from builders, the builder interface will need an additional method `SyncMap`:
    ```go
    type Builder interface {
@@ -104,13 +115,13 @@ There are at least two relevant changes
        SyncMap() map[string]string
    }
    ```
-   
+
    The new `SyncMap` function shall return pairs of
-   
+
    - **key**: a glob pattern of local files to sync into the container
    - **value**: a destination path in the container
-   
-   By convention, the sync rule from a builder does never flatten directories but does subdir syncing instead (also see open question below).
+
+   By convention, the sync rule from a builder never flattens directories but does subdir syncing instead (also see open question below).
 
 ### Config changes
 
@@ -118,7 +129,7 @@ The `artifact.sync` config needs to support additional requirements:
 
 - Support existing use-cases for backwards compatibility, i.e.
   - Glob patterns on the host path
-  - Transplant a folder structure, or flatten the folder structure
+  - Transplant a folder structure, ~~or flatten the folder structure~~[this behavior was a bug and will be removed]
 - Offer a way to use destination inference.
 - Avoid ambiguity
 
@@ -150,13 +161,13 @@ sync:
 - from: 'src/**/*.js'
   to: app/
   flatten: true  # default to false
-  
-# Existing use-case: Copy all js under 'src' into 'dest', re-creating the directory structure below 'src'  
+
+# Existing use-case: Copy all js under 'src' into 'dest', re-creating the directory structure below 'src'
 # This corresponds to the current `'src/***/*.js': dest/`
 - from: 'src/**/*.js'
   to: dest/
   strip: 'src'   # default to ""
-  
+
 # New use-case: Copy all python files and infer their destination.
 - from: '**/*.py'
   inferTo: true   # <- tbd, default to false
@@ -196,16 +207,15 @@ Open questions about the configuration:
 **\<Is the syntax clear enough?\>**
 Is the syntax clear?
 Is the configuration intuitive to use?
-Is there any ambiguity which needs attention?
 
-Resolution: __Not Yet Resolved__
+Resolution:  YES
 
 **\<Does it improve clarity to have the `inferTo` field?\>**
 A different approach could be to fall back to inference, if the `to` field is left blank.
 This would have the advantage that there needs to be no validation about having `to` and `inferTo` in the same rule, which should cause an error.
 
 Resolution: __Not Yet Resolved__
-   
+
 **\<Error for `strip` and `flatten`\>**
 Given the new sync config, users may try to combine various flags in unintended ways.
 For example, should `strip` and `flatten` in the same rule always be an error?
@@ -226,16 +236,16 @@ sync:
 ```
 Also see #1766.
 
-Resolution: __Not Yet Resolved__
-   
-   
+Resolution: descoped, open separate issue
+
+
 #### Migration plan
 The new configuration supports all existing use-cases and is fully backwards compatible.
 An automatic schema upgrade shall be implemented.
 
 ### Open Issues/Question
 
-**\<Overlapping copies\>** 
+**\<Overlapping copies\>**
 Overlapping copies can be caused by at least two ways:
 
 1. The `COPY/ADD` instructions in the Dockerfile may copy to the same destination. For example:
@@ -251,12 +261,12 @@ Overlapping copies can be caused by at least two ways:
    - from: bar
      to: /baz
    ```
-   
+
 Should such cases be treated as errors, warnings, or not be detected at all?
 
-Resolution: __Not Yet Resolved__
+Resolution: No detection which is the current behavior.
 
-**\<Transitive copies\>** 
+**\<Transitive copies\>**
 Multi-stage Dockerfiles can lead to quite contrived scenarios. For example:
 ```dockerfile
 FROM scratch
@@ -269,8 +279,8 @@ Ideally, the sync destination should be inferred as `foo -> bar`.
 This is quite an edge case and can easily be circumvented.
 However, it is quite complex to implement.
 Should we bother about this special case?
-   
-Resolution: __Not Yet Resolved__
+
+Resolution: not now
 
 **\<Other builders\>**
 We don't know how to obtain a mapping of local paths to remote paths for other builders (jib, bazel).
@@ -280,16 +290,16 @@ Until we can support those builders, we to handle the case when a user tries to 
 - Option 1: bail out with an error
 - Option 2: copy the file into the container with the destination set to the relative path wrt the context directory.
 
-Resolution: __Not Yet Resolved__
+Resolution: Option 1?
 
 **\<Upgrade hint\>**
 The path inference allows to simplify the sync specification considerably.
 Besides, subdirectory syncing makes the sync functionality even feasible for large projects that need to sync many folders into the container.
 Therefore, we could consider to advertise this new functionality when running Skaffold or when an old-style sync map as found.
 
-Resolution: __Not Yet Resolved__
+Resolution: Agree. We should support auto-fixing.
 
-**\<SyncMap signature\>** 
+**\<SyncMap signature\>**
 The new `SyncMap` interface provides some sync rules from the builder.
 However, the suggested signature is `func() map[string]string` with the convention to not flatten directories.
 To be more in line with the other sync functionality, it could also return `[]SyncRule`.
@@ -297,6 +307,7 @@ Although being clearer, this has the downside of introducing a dependency from t
 If going that route, we should probably duplicate this struct in a proper place.
 However, is it necessary at all, or is the current signature good enough?
 
+Resolution: This is an implementation detail.
 
 ## Implementation plan
 
