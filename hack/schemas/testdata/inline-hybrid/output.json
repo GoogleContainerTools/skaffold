@@ -7,48 +7,6 @@
   ],
   "$schema": "http://json-schema-org/draft-07/schema#",
   "definitions": {
-    "InlineOneOfStruct": {
-      "properties": {
-        "f1": {
-          "type": "string",
-          "description": "should be the first choice",
-          "x-intellij-html-description": "should be the first choice"
-        },
-        "f2": {
-          "type": "string",
-          "description": "should be the second choice",
-          "x-intellij-html-description": "should be the second choice"
-        }
-      },
-      "preferredOrder": [
-        "f1",
-        "f2"
-      ],
-      "additionalProperties": false,
-      "description": "embedded inline into TestStruct",
-      "x-intellij-html-description": "embedded inline into TestStruct"
-    },
-    "InlineOneOfStructAnyOf": {
-      "properties": {
-        "choice1": {
-          "type": "string",
-          "description": "should be the first choice",
-          "x-intellij-html-description": "should be the first choice"
-        },
-        "choice2": {
-          "type": "string",
-          "description": "should be the second choice",
-          "x-intellij-html-description": "should be the second choice"
-        }
-      },
-      "preferredOrder": [
-        "choice1",
-        "choice2"
-      ],
-      "additionalProperties": false,
-      "description": "embedded inline into TestStruct",
-      "x-intellij-html-description": "embedded inline into TestStruct"
-    },
     "TestStruct": {
       "required": [
         "reqField"
