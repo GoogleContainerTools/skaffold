@@ -67,61 +67,42 @@ Whether the bazel builder supports this, is unclear at the moment.
 
 ### Interface changes
 
-There are at least two relevant changes
+The builder implementations need to fulfill a new requirement:
+They need to provide a default sync map for changed or deleted files.
+For that, the `Builder` interface (pkg/skaffold/build/build.go) will receive the new method `SyncMap`.
 
-1. When builders are queried for their dependencies, they must provide a list of destinations together with local source paths. The signature of `Builder.GetDependencies` (pkg/skaffold/build/build.go) therefore needs to change to:
-   ```go
-   type Builder interface {
-       Labels() map[string]string
+```go
+type Builder interface {
+   Labels() map[string]string
 
-       Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]Artifact, error)
+   Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]Artifact, error)
 
-       // OLD
-       // DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error)
-       // NEW
-       DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error)
-   }
-   ```
+   DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error)
 
-   So far, `DependenciesForArtifact` returned a list of local paths (relative to the working directory of the artifact) that are input files for the container.
-   Now, `DependenciesForArtifact` serves two purposes. As before, the map keys are relative local paths of input files for the container.
-   In addition, the map values list all absolute remote destination paths where the input files are placed in the container.
-   This has to be a list, because a single input file may be copied to several locations in the container.
+   // ADDED
+   SyncMap() (map[string][]string, error)
+}
+```
 
-   Thus, `DependenciesForArtifact` serves two purposes: firstly, it lists all input files to watch for changes.
-   Secondly, it provides default sync destinations for changed or deleted files.
-   Note that this does not mean, that every file will be sync'ed. If a file is entitled for syncing depends on the user-provided sync rules.
+`SyncMap` returns a map whose keys paths of source files for the container.
+These host paths will be relative to the workingdir of the respective artifact.
+The map values list all absolute remote destination paths where the input files are placed in the container.
+This has to be a list, because a single input file may be copied to several locations in the container.
+Note that this does not mean, that every file will be sync'ed. If a file is entitled for syncing depends on the user-provided sync rules.
 
-   For example, given the above Dockerfile, it will return something like
-   ```go
-   map[string][]string{
-    "static/page1.html": []string{"/var/www/page1.html"},
-    "static/assets/style.css": []string{"/var/www/assets/style.css"},
-    "index.html": []string{"/var/www/index.html"},
-    "nginx.conf": []string{"/var/nginx.conf", "/etc/nginx.conf"},
-   }
-   ```
+For example, given the above Dockerfile, it will return something like
+```go
+map[string][]string{
+  "static/page1.html": []string{"/var/www/page1.html"},
+  "static/assets/style.css": []string{"/var/www/assets/style.css"},
+  "index.html": []string{"/var/www/index.html"},
+  "nginx.conf": []string{"/var/nginx.conf", "/etc/nginx.conf"},
+}
+```
 
-2. To support additional sync maps from builders, the builder interface will need an additional method `SyncMap`:
-   ```go
-   type Builder interface {
-       Labels() map[string]string
+Unsupported builders will return a not-supported error.
 
-       Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]Artifact, error)
-
-       DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error)
-    
-       // ADDED
-       SyncMap() map[string]string
-   }
-   ```
-
-   The new `SyncMap` function shall return pairs of
-
-   - **key**: a glob pattern of local files to sync into the container
-   - **value**: a destination path in the container
-
-   By convention, the sync rule from a builder never flattens directories but does subdir syncing instead (also see open question below).
+**Note**: In the original version of this proposal, the signature of `GetDependencies` was changed. This is no longer the case
 
 ### Config changes
 
