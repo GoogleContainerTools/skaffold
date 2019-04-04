@@ -51,9 +51,9 @@ func TestExtractInspectArg(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.in, func(t *testing.T) {
 			if test.result == nil {
-				testutil.CheckDeepEqualWithOptions(t, nil, test.result, extractInspectArg(test.in))
+				testutil.CheckDeepEqual(t, test.result, extractInspectArg(test.in))
 			} else {
-				testutil.CheckDeepEqualWithOptions(t, cmp.Options{cmp.AllowUnexported(inspectSpec{})}, *test.result, *extractInspectArg(test.in))
+				testutil.CheckDeepEqual(t, *test.result, *extractInspectArg(test.in), cmp.AllowUnexported(inspectSpec{}))
 			}
 		})
 	}

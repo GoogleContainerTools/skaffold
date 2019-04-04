@@ -260,6 +260,9 @@ type ClusterDetails struct {
 
 	// DockerConfig describes how to mount the local Docker configuration into a pod.
 	DockerConfig *DockerConfig `yaml:"dockerConfig,omitempty"`
+
+	// Resources define the resource requirements for the kaniko pod.
+	Resources *ResourceRequirements `yaml:"resources,omitempty"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.
@@ -269,6 +272,26 @@ type DockerConfig struct {
 
 	// SecretName is the Kubernetes secret that will hold the Docker configuration.
 	SecretName string `yaml:"secretName,omitempty"`
+}
+
+// ResourceRequirements describes the resource requirements for the kaniko pod.
+type ResourceRequirements struct {
+	// Requests [resource requests](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container) for the Kaniko pod.
+	Requests *ResourceRequirement `yaml:"requests,omitempty"`
+
+	// Limits [resource limits](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container) for the Kaniko pod.
+	Limits *ResourceRequirement `yaml:"limits,omitempty"`
+}
+
+// ResourceRequirement stores the CPU/Memory requirements for the pod.
+type ResourceRequirement struct {
+	// CPU the number cores to be used.
+	// For example: `2`, `2.0` or `200m`.
+	CPU string `yaml:"cpu,omitempty"`
+
+	// Memory the amount of memory to allocate to the pod.
+	// For example: `1Gi` or `1000Mi`.
+	Memory string `yaml:"memory,omitempty"`
 }
 
 // TestCase is a list of structure tests to run on images that Skaffold builds.

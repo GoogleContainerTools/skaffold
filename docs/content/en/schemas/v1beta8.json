@@ -334,45 +334,6 @@
       "description": "items that need to be built, along with the context in which they should be built.",
       "x-intellij-html-description": "items that need to be built, along with the context in which they should be built."
     },
-    "ArtifactType": {
-      "properties": {
-        "bazel": {
-          "$ref": "#/definitions/BazelArtifact",
-          "description": "*beta* requires bazel CLI to be installed and the sources to contain [Bazel](https://bazel.build/) configuration files.",
-          "x-intellij-html-description": "<em>beta</em> requires bazel CLI to be installed and the sources to contain <a href=\"https://bazel.build/\">Bazel</a> configuration files."
-        },
-        "docker": {
-          "$ref": "#/definitions/DockerArtifact",
-          "description": "*beta* describes an artifact built from a Dockerfile.",
-          "x-intellij-html-description": "<em>beta</em> describes an artifact built from a Dockerfile."
-        },
-        "jibGradle": {
-          "$ref": "#/definitions/JibGradleArtifact",
-          "description": "*alpha* builds images using the [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).",
-          "x-intellij-html-description": "<em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin\">Jib plugin for Gradle</a>."
-        },
-        "jibMaven": {
-          "$ref": "#/definitions/JibMavenArtifact",
-          "description": "*alpha* builds images using the [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).",
-          "x-intellij-html-description": "<em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin\">Jib plugin for Maven</a>."
-        },
-        "kaniko": {
-          "$ref": "#/definitions/KanikoArtifact",
-          "description": "*alpha* builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko).",
-          "x-intellij-html-description": "<em>alpha</em> builds images using <a href=\"https://github.com/GoogleContainerTools/kaniko\">kaniko</a>."
-        }
-      },
-      "preferredOrder": [
-        "docker",
-        "bazel",
-        "jibMaven",
-        "jibGradle",
-        "kaniko"
-      ],
-      "additionalProperties": false,
-      "description": "describes how to build an artifact.",
-      "x-intellij-html-description": "describes how to build an artifact."
-    },
     "BazelArtifact": {
       "required": [
         "target"
@@ -543,33 +504,6 @@
       "description": "contains all the configuration for the build steps.",
       "x-intellij-html-description": "contains all the configuration for the build steps."
     },
-    "BuildType": {
-      "properties": {
-        "cluster": {
-          "$ref": "#/definitions/ClusterDetails",
-          "description": "*beta* describes how to do an on-cluster build.",
-          "x-intellij-html-description": "<em>beta</em> describes how to do an on-cluster build."
-        },
-        "googleCloudBuild": {
-          "$ref": "#/definitions/GoogleCloudBuild",
-          "description": "*beta* describes how to do a remote build on [Google Cloud Build](https://cloud.google.com/cloud-build/).",
-          "x-intellij-html-description": "<em>beta</em> describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/\">Google Cloud Build</a>."
-        },
-        "local": {
-          "$ref": "#/definitions/LocalBuild",
-          "description": "*beta* describes how to do a build on the local docker daemon and optionally push to a repository.",
-          "x-intellij-html-description": "<em>beta</em> describes how to do a build on the local docker daemon and optionally push to a repository."
-        }
-      },
-      "preferredOrder": [
-        "local",
-        "googleCloudBuild",
-        "cluster"
-      ],
-      "additionalProperties": false,
-      "description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated.",
-      "x-intellij-html-description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated."
-    },
     "BuilderPlugin": {
       "properties": {
         "name": {
@@ -616,6 +550,11 @@
           "x-intellij-html-description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image.",
           "default": "kaniko-secret"
         },
+        "resources": {
+          "$ref": "#/definitions/ResourceRequirements",
+          "description": "define the resource requirements for the kaniko pod.",
+          "x-intellij-html-description": "define the resource requirements for the kaniko pod."
+        },
         "timeout": {
           "type": "string",
           "description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (`20m`).",
@@ -627,7 +566,8 @@
         "pullSecretName",
         "namespace",
         "timeout",
-        "dockerConfig"
+        "dockerConfig",
+        "resources"
       ],
       "additionalProperties": false,
       "description": "*beta* describes how to do an on-cluster build.",
@@ -702,33 +642,6 @@
       ],
       "description": "contains all the configuration needed by the deploy steps.",
       "x-intellij-html-description": "contains all the configuration needed by the deploy steps."
-    },
-    "DeployType": {
-      "properties": {
-        "helm": {
-          "$ref": "#/definitions/HelmDeploy",
-          "description": "*beta* uses the `helm` CLI to apply the charts to the cluster.",
-          "x-intellij-html-description": "<em>beta</em> uses the <code>helm</code> CLI to apply the charts to the cluster."
-        },
-        "kubectl": {
-          "$ref": "#/definitions/KubectlDeploy",
-          "description": "*beta* uses a client side `kubectl apply` to deploy manifests. You'll need a `kubectl` CLI version installed that's compatible with your cluster.",
-          "x-intellij-html-description": "<em>beta</em> uses a client side <code>kubectl apply</code> to deploy manifests. You'll need a <code>kubectl</code> CLI version installed that's compatible with your cluster."
-        },
-        "kustomize": {
-          "$ref": "#/definitions/KustomizeDeploy",
-          "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
-          "x-intellij-html-description": "<em>beta</em> uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment."
-        }
-      },
-      "preferredOrder": [
-        "helm",
-        "kubectl",
-        "kustomize"
-      ],
-      "additionalProperties": false,
-      "description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated.",
-      "x-intellij-html-description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated."
     },
     "DockerArtifact": {
       "properties": {
@@ -990,27 +903,6 @@
       "additionalProperties": false,
       "description": "image config to use the FullyQualifiedImageName as param to set.",
       "x-intellij-html-description": "image config to use the FullyQualifiedImageName as param to set."
-    },
-    "HelmImageConfig": {
-      "properties": {
-        "fqn": {
-          "$ref": "#/definitions/HelmFQNConfig",
-          "description": "image configuration uses the syntax `IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG`.",
-          "x-intellij-html-description": "image configuration uses the syntax <code>IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG</code>."
-        },
-        "helm": {
-          "$ref": "#/definitions/HelmConventionConfig",
-          "description": "image configuration uses the syntax `IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG`.",
-          "x-intellij-html-description": "image configuration uses the syntax <code>IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG</code>."
-        }
-      },
-      "preferredOrder": [
-        "fqn",
-        "helm"
-      ],
-      "additionalProperties": false,
-      "description": "describes an image configuration.",
-      "x-intellij-html-description": "describes an image configuration."
     },
     "HelmImageStrategy": {
       "anyOf": [
@@ -1531,36 +1423,6 @@
       "description": "configures how Kaniko mounts sources directly via an `emptyDir` volume.",
       "x-intellij-html-description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume."
     },
-    "Pipeline": {
-      "properties": {
-        "build": {
-          "$ref": "#/definitions/BuildConfig",
-          "description": "describes how images are built.",
-          "x-intellij-html-description": "describes how images are built."
-        },
-        "deploy": {
-          "$ref": "#/definitions/DeployConfig",
-          "description": "describes how images are deployed.",
-          "x-intellij-html-description": "describes how images are deployed."
-        },
-        "test": {
-          "items": {
-            "$ref": "#/definitions/TestCase"
-          },
-          "type": "array",
-          "description": "describes how images are tested.",
-          "x-intellij-html-description": "describes how images are tested."
-        }
-      },
-      "preferredOrder": [
-        "build",
-        "test",
-        "deploy"
-      ],
-      "additionalProperties": false,
-      "description": "describes a Skaffold pipeline.",
-      "x-intellij-html-description": "describes a Skaffold pipeline."
-    },
     "Profile": {
       "required": [
         "name"
@@ -1620,6 +1482,54 @@
       "additionalProperties": false,
       "description": "*beta* profiles are used to override any `build`, `test` or `deploy` configuration.",
       "x-intellij-html-description": "<em>beta</em> profiles are used to override any <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
+    },
+    "ResourceRequirement": {
+      "properties": {
+        "cpu": {
+          "type": "string",
+          "description": "the number cores to be used.",
+          "x-intellij-html-description": "the number cores to be used.",
+          "examples": [
+            "2`, `2.0` or `200m"
+          ]
+        },
+        "memory": {
+          "type": "string",
+          "description": "the amount of memory to allocate to the pod.",
+          "x-intellij-html-description": "the amount of memory to allocate to the pod.",
+          "examples": [
+            "1Gi` or `1000Mi"
+          ]
+        }
+      },
+      "preferredOrder": [
+        "cpu",
+        "memory"
+      ],
+      "additionalProperties": false,
+      "description": "stores the CPU/Memory requirements for the pod.",
+      "x-intellij-html-description": "stores the CPU/Memory requirements for the pod."
+    },
+    "ResourceRequirements": {
+      "properties": {
+        "limits": {
+          "$ref": "#/definitions/ResourceRequirement",
+          "description": "[resource limits](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container) for the Kaniko pod.",
+          "x-intellij-html-description": "<a href=\"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container\">resource limits</a> for the Kaniko pod."
+        },
+        "requests": {
+          "$ref": "#/definitions/ResourceRequirement",
+          "description": "[resource requests](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container) for the Kaniko pod.",
+          "x-intellij-html-description": "<a href=\"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container\">resource requests</a> for the Kaniko pod."
+        }
+      },
+      "preferredOrder": [
+        "requests",
+        "limits"
+      ],
+      "additionalProperties": false,
+      "description": "describes the resource requirements for the kaniko pod.",
+      "x-intellij-html-description": "describes the resource requirements for the kaniko pod."
     },
     "ShaTagger": {
       "description": "*beta* tags images with their sha256 digest.",

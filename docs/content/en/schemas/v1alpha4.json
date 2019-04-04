@@ -144,29 +144,6 @@
       "description": "represents items that need to be built, along with the context in which they should be built.",
       "x-intellij-html-description": "represents items that need to be built, along with the context in which they should be built."
     },
-    "ArtifactType": {
-      "properties": {
-        "bazel": {
-          "$ref": "#/definitions/BazelArtifact"
-        },
-        "docker": {
-          "$ref": "#/definitions/DockerArtifact"
-        },
-        "jibGradle": {
-          "$ref": "#/definitions/JibGradleArtifact"
-        },
-        "jibMaven": {
-          "$ref": "#/definitions/JibMavenArtifact"
-        }
-      },
-      "preferredOrder": [
-        "docker",
-        "bazel",
-        "jibMaven",
-        "jibGradle"
-      ],
-      "additionalProperties": false
-    },
     "BazelArtifact": {
       "properties": {
         "target": {
@@ -270,27 +247,6 @@
       "description": "contains all the configuration for the build steps",
       "x-intellij-html-description": "contains all the configuration for the build steps"
     },
-    "BuildType": {
-      "properties": {
-        "googleCloudBuild": {
-          "$ref": "#/definitions/GoogleCloudBuild"
-        },
-        "kaniko": {
-          "$ref": "#/definitions/KanikoBuild"
-        },
-        "local": {
-          "$ref": "#/definitions/LocalBuild"
-        }
-      },
-      "preferredOrder": [
-        "local",
-        "googleCloudBuild",
-        "kaniko"
-      ],
-      "additionalProperties": false,
-      "description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated.",
-      "x-intellij-html-description": "contains the specific implementation and parameters needed for the build step. Only one field should be populated."
-    },
     "DateTimeTagger": {
       "properties": {
         "format": {
@@ -349,27 +305,6 @@
       ],
       "description": "contains all the configuration needed by the deploy steps",
       "x-intellij-html-description": "contains all the configuration needed by the deploy steps"
-    },
-    "DeployType": {
-      "properties": {
-        "helm": {
-          "$ref": "#/definitions/HelmDeploy"
-        },
-        "kubectl": {
-          "$ref": "#/definitions/KubectlDeploy"
-        },
-        "kustomize": {
-          "$ref": "#/definitions/KustomizeDeploy"
-        }
-      },
-      "preferredOrder": [
-        "helm",
-        "kubectl",
-        "kustomize"
-      ],
-      "additionalProperties": false,
-      "description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated.",
-      "x-intellij-html-description": "contains the specific implementation and parameters needed for the deploy step. Only one field should be populated."
     },
     "DockerArtifact": {
       "properties": {
@@ -482,21 +417,6 @@
       "additionalProperties": false,
       "description": "represents image config to use the FullyQualifiedImageName as param to set",
       "x-intellij-html-description": "represents image config to use the FullyQualifiedImageName as param to set"
-    },
-    "HelmImageConfig": {
-      "properties": {
-        "fqn": {
-          "$ref": "#/definitions/HelmFQNConfig"
-        },
-        "helm": {
-          "$ref": "#/definitions/HelmConventionConfig"
-        }
-      },
-      "preferredOrder": [
-        "fqn",
-        "helm"
-      ],
-      "additionalProperties": false
     },
     "HelmImageStrategy": {
       "anyOf": [
