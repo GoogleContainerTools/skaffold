@@ -43,7 +43,6 @@ type SkaffoldRunner struct {
 	podSelector       kubernetes.PodSelector
 	// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 	
-	namespaces        []string
 	RPCServerShutdown func() error
 }
 ```
