@@ -221,8 +221,10 @@ Resolution: descoped, open separate issue
 
 
 #### Migration plan
-The new configuration supports all existing use-cases and is fully backwards compatible.
 An automatic schema upgrade shall be implemented.
+The former default behavior to flatten directories at the destination will be dropped.
+This is possible, because sync is still an alpha feature.
+Users who are using incompatible sync patterns will receive a warning during upgrade.
 
 ### Open Issues/Question
 
