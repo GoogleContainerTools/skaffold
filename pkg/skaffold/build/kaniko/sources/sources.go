@@ -20,6 +20,8 @@ import (
 	"context"
 	"io"
 
+	"k8s.io/apimachinery/pkg/api/resource"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	v1 "k8s.io/api/core/v1"
@@ -73,6 +75,7 @@ func podTemplate(clusterDetails *latest.ClusterDetails, image string, args []str
 							MountPath: "/secret",
 						},
 					},
+					Resources: resourceRequirements(clusterDetails.Resources),
 				},
 			},
 			RestartPolicy: v1.RestartPolicyNever,
@@ -111,4 +114,34 @@ func podTemplate(clusterDetails *latest.ClusterDetails, image string, args []str
 	pod.Spec.Volumes = append(pod.Spec.Volumes, volume)
 
 	return pod
+}
+
+func resourceRequirements(rr *latest.ResourceRequirements) v1.ResourceRequirements {
+	req := v1.ResourceRequirements{}
+
+	if rr != nil {
+		if rr.Limits != nil {
+			req.Limits = v1.ResourceList{}
+			if rr.Limits.CPU != "" {
+				req.Limits[v1.ResourceCPU] = resource.MustParse(rr.Limits.CPU)
+			}
+
+			if rr.Limits.Memory != "" {
+				req.Limits[v1.ResourceMemory] = resource.MustParse(rr.Limits.Memory)
+			}
+		}
+
+		if rr.Requests != nil {
+			req.Requests = v1.ResourceList{}
+			if rr.Requests.CPU != "" {
+				req.Requests[v1.ResourceCPU] = resource.MustParse(rr.Requests.CPU)
+			}
+			if rr.Requests.Memory != "" {
+				req.Requests[v1.ResourceMemory] = resource.MustParse(rr.Requests.Memory)
+			}
+		}
+	}
+
+	return req
+
 }
