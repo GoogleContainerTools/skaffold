@@ -28,8 +28,7 @@ import (
 // 1. Additions:
 // kaniko/resource requirements
 // 2. No removals
-// 3. Updates:
-// Not yet
+// 3. No updates
 func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
