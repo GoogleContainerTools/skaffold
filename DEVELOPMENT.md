@@ -9,7 +9,7 @@ This doc explains the development workflow so you can get started
 You must install these tools:
 
 1. [`go`](https://golang.org/doc/install): The language skaffold is
-   built in (version >= go 1.11)
+   built in (version >= go 1.12)
 1. [`git`](https://help.github.com/articles/set-up-git/): For source control
 1. [`dep`](https://github.com/golang/dep): For managing external Go
    dependencies. - Please Install dep v0.5.0 or greater.
@@ -89,7 +89,7 @@ To build with your local changes you have two options:
    ```
 
    This will install skaffold via `go install` (note that if you have [manually downloaded
-   and installed skaffold to `/usr/bin/local`](README.md#installation), this is will probably
+   and installed skaffold to `/usr/local/bin`](README.md#install), this is will probably
    take precedence in your path over your `$GOPATH/bin`).
 
    _If you are unsure if you are running a released or locally built version of skaffold, you
