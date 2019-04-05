@@ -152,7 +152,11 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 	}
 
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", tag}
-	args = append(args, docker.GetBuildArgs(a)...)
+	ba, err := docker.GetBuildArgs(a)
+	if err != nil {
+		return "", errors.Wrap(err, "getting docker build args")
+	}
+	args = append(args, ba...)
 	if b.opts.Prune() {
 		args = append(args, "--force-rm")
 	}

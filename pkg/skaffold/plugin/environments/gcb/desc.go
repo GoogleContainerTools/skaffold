@@ -62,7 +62,7 @@ func (b *Builder) buildSteps(artifact *latest.Artifact, tags []string) ([]*cloud
 	case artifact.BuilderPlugin != nil:
 		return b.pluginBuildSteps(artifact, tags)
 	case artifact.DockerArtifact != nil:
-		return b.dockerBuildSteps(artifact.DockerArtifact, tags), nil
+		return b.dockerBuildSteps(artifact.DockerArtifact, tags)
 
 	case artifact.BazelArtifact != nil:
 		return nil, errors.New("skaffold can't build a bazel artifact with Google Cloud Build")
@@ -90,7 +90,7 @@ func (b *Builder) pluginBuildSteps(artifact *latest.Artifact, tags []string) ([]
 			da = &latest.DockerArtifact{}
 		}
 		defaults.SetDefaultDockerArtifact(da)
-		return b.dockerBuildSteps(da, tags), nil
+		return b.dockerBuildSteps(da, tags)
 	default:
 		return nil, errors.Errorf("the '%s' builder is not supported", artifact.BuilderPlugin.Name)
 	}

@@ -82,7 +82,7 @@ func TestPullCacheFrom(t *testing.T) {
 			DockerImage: "docker/docker",
 		},
 	}
-	steps := builder.dockerBuildSteps(artifact, []string{"nginx2"})
+	steps, _ := builder.dockerBuildSteps(artifact, []string{"nginx2"})
 
 	expected := []*cloudbuild.BuildStep{{
 		Name:       "docker/docker",

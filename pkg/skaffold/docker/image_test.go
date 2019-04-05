@@ -218,7 +218,7 @@ func TestGetBuildArgs(t *testing.T) {
 			util.OSEnviron = func() []string {
 				return tt.env
 			}
-			result := GetBuildArgs(tt.artifact)
+			result, _ := GetBuildArgs(tt.artifact)
 			if diff := cmp.Diff(result, tt.want); diff != "" {
 				t.Errorf("%T differ (-got, +want): %s", tt.want, diff)
 			}
