@@ -33,7 +33,7 @@ var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"
 // All paths are absolute.
 func GetDependenciesGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) ([]string, error) {
 	cmd := getCommandGradle(ctx, workspace, a)
-	deps, err := getDependencies(cmd)
+	deps, err := getDependencies(workspace, cmd)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jibGradle dependencies")
 	}

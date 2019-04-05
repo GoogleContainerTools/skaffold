@@ -17,9 +17,12 @@ limitations under the License.
 package jib
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/karrick/godirwalk"
@@ -27,10 +30,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func getDependencies(cmd *exec.Cmd) ([]string, error) {
+func getDependencies(workspace string, cmd *exec.Cmd) ([]string, error) {
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, err
+	}
+
+	// Jib's dependencies are absolute, and usually canonicalized, so must canonicalize the workspace
+	if workspace, err = filepath.Abs(workspace); err != nil {
+		return nil, errors.Wrapf(err, "unable to resolve workspace %s", workspace)
+	}
+	canonicalWorkspace, err := filepath.EvalSymlinks(workspace)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to canonicalize workspace %s", workspace)
 	}
 
 	cmdDirInfo, err := os.Stat(cmd.Dir)
@@ -60,6 +72,10 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 		}
 
 		if !info.IsDir() {
+			// try to relativize the path
+			if relative, err := relativize(dep, workspace, canonicalWorkspace); err == nil {
+				dep = relative
+			}
 			deps = append(deps, dep)
 			continue
 		}
@@ -67,7 +83,13 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 		if err = godirwalk.Walk(dep, &godirwalk.Options{
 			Unsorted: true,
 			Callback: func(path string, _ *godirwalk.Dirent) error {
-				deps = append(deps, path)
+				if info, err := os.Stat(path); err == nil && !info.IsDir() {
+					// try to relativize the path
+					if relative, err := relativize(path, workspace, canonicalWorkspace); err == nil {
+						path = relative
+					}
+					deps = append(deps, path)
+				}
 				return nil
 			},
 		}); err != nil {
@@ -77,4 +99,19 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 
 	sort.Strings(deps)
 	return deps, nil
+}
+
+// relativize tries to make path relative to the root location(s)
+func relativize(path string, roots ...string) (string, error) {
+	if !filepath.IsAbs(path) {
+		return path, nil
+	}
+	dotDotSlash := fmt.Sprintf("..%c", filepath.Separator)
+	for _, root := range roots {
+		// check that the path can be made relative and is contained (since `filepath.Rel("/a", "/b") => "../b"`)
+		if rel, err := filepath.Rel(root, path); err == nil && !strings.HasPrefix(rel, dotDotSlash) {
+			return rel, nil
+		}
+	}
+	return "", errors.New("could not relativize path")
 }
