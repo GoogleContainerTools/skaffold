@@ -17,14 +17,18 @@ limitations under the License.
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/google/go-cmp/cmp"
+	"github.com/xeipuuv/gojsonschema"
 )
 
 func TestSchemas(t *testing.T) {
@@ -72,4 +76,93 @@ func TestGenerators(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateJsonSchemas(t *testing.T) {
+	root := "../.."
+
+	for _, v := range schema.SchemaVersions {
+		apiVersion := strings.TrimPrefix(v.APIVersion, "skaffold/")
+		t.Run(apiVersion, func(t *testing.T) {
+			yamlMapConfig, err := toMapWithYamlKeys(v.Factory())
+			if err != nil {
+				t.Fatalf("cannot convert to config with yaml names")
+			}
+			document := gojsonschema.NewGoLoader(yamlMapConfig)
+
+			rawSchema := loadSchemaForAPIVersion(t, root, apiVersion)
+			jsonSchema := gojsonschema.NewStringLoader(rawSchema)
+
+			result, err := gojsonschema.Validate(jsonSchema, document)
+			if err != nil {
+				t.Fatalf("schema validation failed: %s", err)
+			}
+
+			if !result.Valid() {
+				for _, desc := range result.Errors() {
+					t.Error(desc)
+				}
+			}
+		})
+	}
+}
+
+func loadSchemaForAPIVersion(t *testing.T, root, apiVersion string) string {
+	t.Helper()
+	schemaPath := fmt.Sprintf("%s/docs/content/en/schemas/%s.json", root, apiVersion)
+	if _, err := os.Stat(schemaPath); err == nil {
+		if content, err := ioutil.ReadFile(schemaPath); err != nil {
+			t.Errorf("unable to read existing schema for version %s", apiVersion)
+		} else {
+			return string(content)
+		}
+	} else if os.IsNotExist(err) {
+		t.Skip("could not find schema at", schemaPath)
+	}
+	return ""
+}
+
+// toMapWithYamlKeys converts any given interface which can be yaml-marshalled to
+// a go object of type map[string]interface{}, where the object keys are the yaml names
+func toMapWithYamlKeys(in interface{}) (interface{}, error) {
+	// get yaml with the correct field names
+	yamlBytes, err := yaml.Marshal(in)
+	if err != nil {
+		return nil, err
+	}
+
+	// convert yamlBytes to document of type map[interface{}]interface{}
+	var document interface{}
+	r := bytes.NewReader(yamlBytes)
+	decoder := yaml.NewDecoder(r)
+	err = decoder.Decode(&document)
+	if err != nil {
+		return nil, err
+	}
+
+	// convert document to type map[string]interface{}
+	return fixMapKeys(document), nil
+}
+
+// fixMapKeys converts an object of type map[interface{}]interface{} to map[string]interface{}.
+func fixMapKeys(in interface{}) interface{} {
+	switch val := in.(type) {
+	case map[interface{}]interface{}:
+		out := make(map[string]interface{})
+		for k, v := range val {
+			switch ks := k.(type) {
+			case string:
+				out[ks] = fixMapKeys(v)
+			default:
+				out[fmt.Sprint(k)] = fixMapKeys(v)
+			}
+		}
+		return out
+
+	case []interface{}:
+		for i, v := range val {
+			val[i] = fixMapKeys(v)
+		}
+	}
+	return in
 }

@@ -815,6 +815,29 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:f15121220068fb01e71ad08b0fdbd1bfaa926be774e7634e8e332c82134079b0"
+  name = "github.com/xeipuuv/gojsonpointer"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "4e3ac2762d5f479393488629ee9370b50873b3a6"
+
+[[projects]]
+  branch = "master"
+  digest = "1:131db546a264d76defd7a4ce233796316b2ab856991cb4b7d6ced2a3c7294ad3"
+  name = "github.com/xeipuuv/gojsonreference"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "bd5ef7bd5415a7ac448318e64f11a24cd21e594b"
+
+[[projects]]
+  digest = "1:60e24d485a33cb9bffc041de6a5f1596b8ef8d9a9bb9e9f3834c72fd5a96e76a"
+  name = "github.com/xeipuuv/gojsonschema"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "0c8571ac0ce161a5feb57375a9cdf148c98c0f70"
+
+[[projects]]
+  branch = "master"
   digest = "1:db1ea3e354c74f180589c436e1d37746df14d7033f41790af54d9ea619dd658c"
   name = "golang.org/x/crypto"
   packages = [
@@ -1334,6 +1357,7 @@
     "github.com/docker/docker/registry",
     "github.com/docker/go-connections/tlsconfig",
     "github.com/golang/glog",
+    "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/ptypes",
     "github.com/golang/protobuf/ptypes/empty",
@@ -1347,6 +1371,7 @@
     "github.com/google/go-github/github",
     "github.com/grpc-ecosystem/grpc-gateway/runtime",
     "github.com/grpc-ecosystem/grpc-gateway/utilities",
+    "github.com/hashicorp/go-hclog",
     "github.com/hashicorp/go-plugin",
     "github.com/karrick/godirwalk",
     "github.com/krishicks/yaml-patch",
@@ -1360,6 +1385,7 @@
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
     "github.com/spf13/pflag",
+    "github.com/xeipuuv/gojsonschema",
     "golang.org/x/crypto/ssh/terminal",
     "golang.org/x/oauth2",
     "golang.org/x/oauth2/google",
@@ -1378,14 +1404,17 @@
     "gopkg.in/src-d/go-git.v4/plumbing/object",
     "gopkg.in/yaml.v2",
     "k8s.io/api/apps/v1",
+    "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/api/meta",
+    "k8s.io/apimachinery/pkg/api/resource",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/fields",
     "k8s.io/apimachinery/pkg/labels",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
+    "k8s.io/apimachinery/pkg/runtime/serializer/json",
     "k8s.io/apimachinery/pkg/types",
     "k8s.io/apimachinery/pkg/util/strategicpatch",
     "k8s.io/apimachinery/pkg/util/wait",
