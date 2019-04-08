@@ -36,6 +36,7 @@
                 <artifactId>jib-maven-plugin</artifactId>
                 <version>1.0.2</version>
                 <configuration>
+                    <from><image>openjdk:8</image></from>
                     <container>
                         <jvmFlags>
                             <jvmFlag>-Djava.security.egd=file:/dev/./urandom</jvmFlag>

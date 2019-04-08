@@ -4,6 +4,8 @@ build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-jib
     jibMaven: {}
+    sync:
+      'src/main/resources/**': '/app/resources'
 
 # optional profile to run the jib build on Google Cloud Build
 profiles:
