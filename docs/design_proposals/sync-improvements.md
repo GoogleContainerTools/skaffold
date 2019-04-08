@@ -24,6 +24,28 @@ requires a long list of sync patterns (#1807).
 Furthermore, builders should be able to inform Skaffold about additional sync paths (#1704).
 This will result in much faster deploy cycles, without users having to bother about these optimizations.
 
+#### Problems with existing syntax
+The current `sync` config syntax has the following problems:
+
+- The flattening of the file structure at the destination is surprising. For example:
+  ```yaml
+  sync:
+    'src/**/*.js': dest/
+  ```
+  will put all `.js` files in the `dest` folder.
+- The triple-star syntax is is quite implicit and a surprising extension of the standard globbing syntax. For example:
+  ```yaml
+  sync:
+    'src/b/c/***/*.py': dest/
+  ```
+  will recreate subfolders _below_ `src/b/c` at `dest/` and sync `.py` files.
+  The triple-star therefore triggers two actions which should not depend on each other:
+  - do not flatten the directory structure
+  - strip everything on the source path up to `***`
+- The current syntax does not allow extension to further sync modes unless further magic strings are introduced.
+  
+The syntax should therefore be revised.
+
 ## Design
 
 Skaffold sync shall have three different modes:
@@ -62,7 +84,7 @@ Builders know where to put static files in the container.
 This information needs to be pulled from the builders and made available in Skaffold.
 Currently, we know how to do this for Docker artifacts (@r2d4 suggested this in #1166).
 Jib transforms some input files and includes others as static resources.
-The specific sync maps need to be detailed out but are should be straightforward.
+The specific sync maps need to be detailed out but are straightforward.
 Whether the bazel builder supports this, is unclear at the moment.
 
 ### Interface changes
@@ -84,15 +106,15 @@ type Builder interface {
 }
 ```
 
-`SyncMap` returns a map whose keys paths of source files for the container.
+`SyncMap` returns a map whose keys are paths of source files for the container.
 These host paths will be relative to the workingdir of the respective artifact.
 The map values list all absolute remote destination paths where the input files are placed in the container.
-This has to be a list, because a single input file may be copied to several locations in the container.
-Note that this does not mean, that every file will be sync'ed.
+This must be a list, because a single input file may be copied to several locations in the container.
+Note that this does not mean that every file will be sync'ed.
 The intent to sync a file needs to be explicitly specified by user-provided sync rules (see config changes).
 In the future, some builders may specify default sync rules, but this is out of scope for this document.
 
-For example, given the above Dockerfile, it will return something like
+For example, given the above Dockerfile, `SyncMap` will return something like
 ```go
 map[string][]string{
   "static/page1.html": []string{"/var/www/page1.html"},
@@ -104,8 +126,6 @@ map[string][]string{
 
 Unsupported builders will return a not-supported error.
 
-**Note**: In the original version of this proposal, the signature of `GetDependencies` was changed. This is no longer the case
-
 ### Config changes
 
 The `artifact.sync` config needs to support additional requirements:
@@ -114,28 +134,11 @@ The `artifact.sync` config needs to support additional requirements:
   - Glob patterns on the host path
   - Transplant a folder structure, ~~or flatten the folder structure~~[this behavior was a bug and will be removed]
 - Offer a way to use destination inference.
-- Avoid ambiguity
-
-#### Problems with existing syntax
-- The flattening of the file structure at the destination is surprising. For example:
-  ```yaml
-  sync:
-    'src/**/*.js': dest/
-  ```
-  will put all `.js` files in the `dest` folder.
-- The triple-star syntax is is quite implicit and a surprising extension of the standard globbing syntax. For example:
-  ```yaml
-  sync:
-    'src/b/c/***/*.py': dest/
-  ```
-  will recreate subfolders _below_ `src/b/c` at `dest/` and sync `.py` files.
-  The triple-star therefore triggers two actions which should not depend on each other:
-  - do not flatten the directory structure
-  - strip everything on the source path up to `***`
+- Provide a concise and unambiguous configuration syntax to avoid the problems outlined [above](#Background).
+- Be open for extension, such as the `smart` sync mode.
 
 #### Suggestion
-These above problems can be made less surprising by a more explicit configuration syntax.
-The `artifact.sync` will be upgraded as follows:
+The `artifact.sync` config will be upgraded as follows:
 
 ```yaml
 sync:
@@ -154,7 +157,7 @@ sync:
   smart: {}       # oneOf=sync
 ```
 
-In the `sync` config, _one of_ the modes `manual` or `infer` may be specified, but not both.
+In the `sync` config, exactly one of the modes `manual` or `infer` may be specified, but not both.
 Both `manual` and `infer` contain a list of sync rules.
 When determining the destination for a given file, all sync rules will be considered and not just the first match.
 Thus, a single file may be copied to multiple destinations.
@@ -162,11 +165,11 @@ Thus, a single file may be copied to multiple destinations.
 Error cases:
 - It should be an error to specify `strip` with a prefix which which does not match the static prefix of the `from` field.
   ```yaml
-  - from: 'src/**/*.js'
-    to: dest/
+  - src: 'src/**/*.js'
+    dest: dest/
     strip: src/sub        # ERR
-  - from: 'src/**/*.js'
-    to: dest/
+  - src: 'src/**/*.js'
+    dest: dest/
     strip: app/           # ERR
   ```
 
@@ -196,10 +199,10 @@ The current config only suggests additive rules. For some applications it might 
 ```yaml
 sync:
 # include all files below src...
-- from: 'src/**/*'
-  to: app/
+- src: 'src/**/*'
+  dest: app/
 # ...but do not consider js files for sync
-- from: 'src/**/*.js'
+- src: 'src/**/*.js'
   exclude: true
 ```
 Also see #1766.
@@ -226,10 +229,10 @@ Overlapping copies can be caused by at least two ways:
 2. Two sync rules may copy files to the same destination. For example:
    ```yaml
    sync:
-   - from: foo
-     to: /baz
-   - from: bar
-     to: /baz
+   - src: foo
+     dest: /baz
+   - src: bar
+     dest: /baz
    ```
 
 Should such cases be treated as errors, warnings, or not be detected at all?
@@ -285,7 +288,9 @@ Resolution: This is an implementation detail.
    Should already support multiple destination paths. (#1847)
 2. Add inference logic for docker and examples. (#1812)
 3. Support support sync rules with inference. (former #1812, will become separate PR)
-4. (out of scope) Support smart sync mode by allowing builders to specify default sync rules.
+4. (out of scope) Smart sync mode by allowing builders to specify default sync rules.
+   - Support smart sync for jib.
+   - Possibly support smart sync for Dockerfile when `ADD` or `COPY` are not followed by a `RUN` command.
 5. (future) Add sync map logic for jib and examples.
 6. (future) Add sync map logic for bazel and examples.
 
