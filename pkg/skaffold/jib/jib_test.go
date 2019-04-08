@@ -19,6 +19,7 @@ package jib
 import (
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -68,15 +69,15 @@ func TestGetDependencies(t *testing.T) {
 		},
 		{
 			stdout:       dep3,
-			expectedDeps: []string{"dep3/fileA", "dep3/sub/path/fileB"},
+			expectedDeps: []string{filepath.FromSlash("dep3/fileA"), filepath.FromSlash("dep3/sub/path/fileB")},
 		},
 		{
 			stdout:       fmt.Sprintf("%s\n%s\n%s\n", dep1, dep2, dep3),
-			expectedDeps: []string{"dep1", "dep2", "dep3/fileA", "dep3/sub/path/fileB"},
+			expectedDeps: []string{"dep1", "dep2", filepath.FromSlash("dep3/fileA"), filepath.FromSlash("dep3/sub/path/fileB")},
 		},
 		{
 			stdout:       fmt.Sprintf("%s\nnonexistent\n%s\n%s\n", dep1, dep2, dep3),
-			expectedDeps: []string{"dep1", "dep2", "dep3/fileA", "dep3/sub/path/fileB"},
+			expectedDeps: []string{"dep1", "dep2", filepath.FromSlash("dep3/fileA"), filepath.FromSlash("dep3/sub/path/fileB")},
 		},
 	}
 
