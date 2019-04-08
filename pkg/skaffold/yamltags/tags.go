@@ -19,7 +19,6 @@ package yamltags
 import (
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 )
 
@@ -58,8 +57,6 @@ func ProcessTags(yamltags string, val reflect.Value, parentStruct reflect.Value,
 			yt = &RequiredTag{
 				Field: field,
 			}
-		case "default":
-			yt = &DefaultTag{}
 		case "oneOf":
 			yt = &OneOfTag{
 				Field:  field,
@@ -95,36 +92,6 @@ func (rt *RequiredTag) Process(val reflect.Value) error {
 			return fmt.Errorf("required value not set: %s", strings.Split(tags, ",")[0])
 		}
 		return fmt.Errorf("required value not set: %s", rt.Field.Name)
-	}
-	return nil
-}
-
-type DefaultTag struct {
-	dv string
-}
-
-func (dt *DefaultTag) Load(s []string) error {
-	if len(s) != 2 {
-		return fmt.Errorf("invalid default tag: %v, expected key=value", s)
-	}
-	dt.dv = s[1]
-	return nil
-}
-
-func (dt *DefaultTag) Process(val reflect.Value) error {
-	if !isZeroValue(val) {
-		return nil
-	}
-
-	switch val.Kind() {
-	case reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64:
-		i, err := strconv.ParseInt(dt.dv, 0, 0)
-		if err != nil {
-			return err
-		}
-		val.SetInt(i)
-	case reflect.String:
-		val.SetString(dt.dv)
 	}
 	return nil
 }
