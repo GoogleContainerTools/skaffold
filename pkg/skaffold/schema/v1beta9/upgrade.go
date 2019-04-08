@@ -17,10 +17,17 @@ limitations under the License.
 package v1beta9
 
 import (
+	"strings"
+
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+)
+
+const (
+	incompatibleSyncWarning = `the semantics of the sync rules has changed, the folder structure is not flattened anymore but preserved, the likely impacted patterns in your skaffold yaml are: %s`
 )
 
 // Upgrade upgrades a configuration to the next version.
@@ -28,7 +35,8 @@ import (
 // 1. Additions:
 //    - DockerArtifact.NetworkMode
 // 2. No removals
-// 3. No updates
+// 3. Updates:
+//    - sync map becomes a list of sync rules
 func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
@@ -44,10 +52,19 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 		}
 	}
 
+	newSyncRules := config.convertSyncRules()
 	// convert Build (should be same)
 	var newBuild next.BuildConfig
 	if err := pkgutil.CloneThroughJSON(config.Build, &newBuild); err != nil {
 		return nil, errors.Wrap(err, "converting new build")
+	}
+	// set Sync in newBuild
+	for i, a := range newBuild.Artifacts {
+		if len(newSyncRules[i]) > 0 {
+			a.Sync = &next.Sync{
+				Manual: newSyncRules[i],
+			}
+		}
 	}
 
 	// convert Test (should be the same)
@@ -66,4 +83,41 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 		},
 		Profiles: newProfiles,
 	}, nil
+}
+
+// convertSyncRules converts the old sync map into sync rules.
+// It also prints a warning message when some rules can not be upgraded.
+func (config *SkaffoldConfig) convertSyncRules() [][]*next.SyncRule {
+	var incompatiblePatterns []string
+	newSync := make([][]*next.SyncRule, len(config.Build.Artifacts))
+	for i, a := range config.Build.Artifacts {
+		newRules := make([]*next.SyncRule, 0, len(a.Sync))
+		for src, dest := range a.Sync {
+			var syncRule *next.SyncRule
+			if strings.Contains(src, "***") {
+				syncRule = &next.SyncRule{
+					Src:   strings.Replace(src, "***", "**", -1),
+					Dest:  dest,
+					Strip: strings.Split(src, "***")[0],
+				}
+			} else {
+				// only patterns with '**' are incompatible
+				if strings.Contains(src, "**") {
+					incompatiblePatterns = append(incompatiblePatterns, src)
+				}
+				syncRule = &next.SyncRule{
+					Src:  src,
+					Dest: dest,
+				}
+			}
+			newRules = append(newRules, syncRule)
+		}
+		newSync[i] = newRules
+		// blank input sync because it breaks cloning
+		a.Sync = nil
+	}
+	if len(incompatiblePatterns) > 0 {
+		logrus.Warnf(incompatibleSyncWarning, incompatiblePatterns)
+	}
+	return newSync
 }
