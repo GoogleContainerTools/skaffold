@@ -95,29 +95,3 @@ func TestGetDependencies(t *testing.T) {
 		})
 	}
 }
-
-func TestRelativize(t *testing.T) {
-	var tests = []struct {
-		description string
-		path        string
-		roots       []string
-		shouldErr   bool
-		result      string
-	}{
-		{"relative passthrough 0", "relative", []string{}, false, "relative"},
-		{"relative passthrough 1", "relative", []string{"/a"}, false, "relative"},
-		{"error if abs and no roots", "/abs", []string{}, true, ""},
-		{"error if not relative to roots", "/abs", []string{"/a", "/b", "/c"}, true, ""},
-		{"found in root 0", "/a/z", []string{"/a"}, false, "z"},
-		{"found in root 1", "/b/z", []string{"/a", "/b"}, false, "z"},
-		{"multilevel found", "/b/c/d/z", []string{"/a", "/b"}, false, "c/d/z"},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			rel, err := relativize(test.path, test.roots...)
-
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.result, rel)
-		})
-	}
-}
