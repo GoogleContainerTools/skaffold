@@ -3,7 +3,7 @@
 * Author(s): Cornelius Weig (@corneliusweig)
 * Design Shepherd: Tejal Desai (@tejal29)
 * Date: 03/20/2019
-* Status: Draft
+* Status: Reviewed
 
 ## Background
 
@@ -28,9 +28,9 @@ This will result in much faster deploy cycles, without users having to bother ab
 
 Skaffold sync shall have three different modes:
 
-1. _direct_: the user specifies both the source and destination.
+1. _manual_: the user specifies both the source and destination.
 3. _auto-inferred destination_: the user specifies the syncable files, and Skaffold infers their destination in the container, e.g based on Dockerfile
-2. _smart_: builder recommended sync mapping for files, e.g. jib specifies what to sync and provides both the source and dest of files to sync. The user does not have to specify anything.
+2. _smart_: builder recommended sync rules for files, e.g. jib specifies what to sync and provides both the source and dest of files to sync. The user does not have to specify anything.
 
 The scope of this design proposal is the _direct_ and _inferred_ mode.
 The smart sync mode is out of scope for this document but may be mentioned at times.
@@ -88,7 +88,9 @@ type Builder interface {
 These host paths will be relative to the workingdir of the respective artifact.
 The map values list all absolute remote destination paths where the input files are placed in the container.
 This has to be a list, because a single input file may be copied to several locations in the container.
-Note that this does not mean, that every file will be sync'ed. If a file is entitled for syncing depends on the user-provided sync rules.
+Note that this does not mean, that every file will be sync'ed.
+The intent to sync a file needs to be explicitly specified by user-provided sync rules (see config changes).
+In the future, some builders may specify default sync rules, but this is out of scope for this document.
 
 For example, given the above Dockerfile, it will return something like
 ```go
@@ -133,46 +135,31 @@ The `artifact.sync` config needs to support additional requirements:
 
 #### Suggestion
 These above problems can be made less surprising by a more explicit configuration syntax.
-The `artifact.sync` will be upgraded to a list of *sync rules*.
+The `artifact.sync` will be upgraded as follows:
 
 ```yaml
 sync:
-# Existing use-case: Copy all js files under 'src' flat into 'app'
-# This corresponds to the current `'src/**/*.js': app/`
-- from: 'src/**/*.js'
-  to: app/
-  flatten: true  # default to false
+  # Existing use-case: Copy all js under 'src' into 'dest', re-creating the directory structure below 'src'
+  # This corresponds to the current `'src/***/*.js': app/`
+  manual:         # oneOf=sync
+  - src: 'src/**/*.js' # required
+    dest: app/         # required
+    strip: 'src/'      # optional, default to ""
 
-# Existing use-case: Copy all js under 'src' into 'dest', re-creating the directory structure below 'src'
-# This corresponds to the current `'src/***/*.js': dest/`
-- from: 'src/**/*.js'
-  to: dest/
-  strip: 'src'   # default to ""
-
-# New use-case: Copy all python files and infer their destination.
-- from: '**/*.py'
-  inferTo: true   # <- tbd, default to false
+  # New use-case: Copy all python files and infer their destination.
+  infer:          # oneOf=sync
+  - '**/*.py'
+    
+  # New use-case: smart sync mode for jib (out of scope)
+  smart: {}       # oneOf=sync
 ```
 
-When determining the destination for a given file, all sync rules will be considered.
+In the `sync` config, _one of_ the modes `manual` or `infer` may be specified, but not both.
+Both `manual` and `infer` contain a list of sync rules.
+When determining the destination for a given file, all sync rules will be considered and not just the first match.
 Thus, a single file may be copied to multiple destinations.
 
 Error cases:
-- It should be an error to specify `inferTo=true` together with `to` in the same sync rule.
-  ```yaml
-  - from: '*.js'
-    to: dest/
-    inferTo: true
-  ```
-- It should be an error to specify either of `flatten` or `strip` together with `inferTo`.
-  ```yaml
-  - from: '*.js'
-    inferTo: true
-    flatten: true        # ERR
-  - from: 'src/**/*.js'
-    inferTo: true
-    strip: src/          # ERR
-  ```
 - It should be an error to specify `strip` with a prefix which which does not match the static prefix of the `from` field.
   ```yaml
   - from: 'src/**/*.js'
@@ -195,14 +182,14 @@ Resolution:  YES
 A different approach could be to fall back to inference, if the `to` field is left blank.
 This would have the advantage that there needs to be no validation about having `to` and `inferTo` in the same rule, which should cause an error.
 
-Resolution: __Not Yet Resolved__
+Resolution: Obsolete, the improved version excludes this error case.
 
 **\<Error for `strip` and `flatten`\>**
 Given the new sync config, users may try to combine various flags in unintended ways.
 For example, should `strip` and `flatten` in the same rule always be an error?
 My intuition would say, that `strip+flatten` is the same as `flatten`, but this should to be discussed.
 
-Resolution: __Not Yet Resolved__
+Resolution: Obsolete.
 
 **\<Do we need an `excludes` rule?\>**
 The current config only suggests additive rules. For some applications it might be easier to also remove matched host paths from the syncable set. For example:
@@ -217,12 +204,12 @@ sync:
 ```
 Also see #1766.
 
-Resolution: descoped, open separate issue
+Resolution: Descoped, open separate issue
 
 
 #### Migration plan
 An automatic schema upgrade shall be implemented.
-The former default behavior to flatten directories at the destination will be dropped.
+The former default behavior to flatten directories at the destination will no longer be supported.
 This is possible, because sync is still an alpha feature.
 Users who are using incompatible sync patterns will receive a warning during upgrade.
 
@@ -273,12 +260,12 @@ Until we can support those builders, we to handle the case when a user tries to 
 - Option 1: bail out with an error
 - Option 2: copy the file into the container with the destination set to the relative path wrt the context directory.
 
-Resolution: Option 1?
+Resolution: Option 1, ideally during schema validation.
 
 **\<Upgrade hint\>**
 The path inference allows to simplify the sync specification considerably.
 Besides, subdirectory syncing makes the sync functionality even feasible for large projects that need to sync many folders into the container.
-Therefore, we could consider to advertise this new functionality when running Skaffold or when an old-style sync map as found.
+Therefore, we could consider to advertise this new functionality when running Skaffold or when an old-style sync rule as found.
 
 Resolution: Agree. We should support auto-fixing.
 
@@ -298,16 +285,21 @@ Resolution: This is an implementation detail.
    Should already support multiple destination paths. (#1847)
 2. Add inference logic for docker and examples. (#1812)
 3. Support support sync rules with inference. (former #1812, will become separate PR)
-4. Finally, support builder plugins to add sync patterns.
-5. (future) Add inference logic for jib and examples.
-6. (future) Add inference logic for bazel and examples.
+4. (out of scope) Support smart sync mode by allowing builders to specify default sync rules.
+5. (future) Add sync map logic for jib and examples.
+6. (future) Add sync map logic for bazel and examples.
 
 ## Integration test plan
 
-- **step 3** Change one of the existing sync examples so that it uses inference (e.g. #1826).
+- **implementation step 3** Change one of the existing sync examples so that it uses inference (e.g. #1826).
   The test should change a local source file. Expect that the change will be reflected in the container.
 
-- **step 3** Set up automatic destination syncing and delete a local input file.
+- **implementation step 3** Set up automatic destination syncing and delete a local input file.
   Expect that the input file is also deleted in the container.
 
-- **step 4** Add a test case that that features builder plugin sync patterns.
+- **implementation step 4** Add a test case that that features builder plugin sync patterns.
+
+## Glossary
+
+- _sync map_: specifies a mapping of source files to possibly multiple destinations in the container. It does not specify the intent to sync.
+- _sync rule_: specifies the intent to sync files. For manual sync, it must also specify the destination of sync'ed files.
