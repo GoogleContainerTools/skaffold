@@ -33,7 +33,7 @@ type required struct {
 	C otherstruct
 }
 
-func TestProcessStructRequired(t *testing.T) {
+func TestValidateStructRequired(t *testing.T) {
 	type args struct {
 		s interface{}
 	}
@@ -97,7 +97,7 @@ type nested struct {
 	F string
 }
 
-func TestOneOf(t *testing.T) {
+func TestValidateStructOneOf(t *testing.T) {
 	type args struct {
 		s interface{}
 	}
@@ -155,6 +155,20 @@ func TestOneOf(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateStructInvalid(t *testing.T) {
+	invalidYamlTags := struct {
+		A string `yamltags:"invalidTag"`
+	}{A: "whatever"}
+
+	defer func() {
+		if recover() == nil {
+			t.Errorf("should have panicked")
+		}
+	}()
+
+	_ = ValidateStruct(invalidYamlTags)
 }
 
 func TestIsZeroValue(t *testing.T) {

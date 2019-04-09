@@ -49,7 +49,7 @@ func visitStructs(s interface{}, visitor func(interface{}) error) []error {
 	case reflect.Struct:
 		var errs []error
 		if err := visitor(v.Interface()); err != nil {
-			errs = []error{err}
+			errs = append(errs, err)
 		}
 
 		// also check all fields of the current struct
