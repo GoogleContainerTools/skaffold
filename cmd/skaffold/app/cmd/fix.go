@@ -23,6 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
@@ -56,6 +57,10 @@ func runFix(out io.Writer, configFile string, overwrite bool) error {
 	cfg, err = schema.ParseConfig(configFile, true)
 	if err != nil {
 		return err
+	}
+
+	if err := validation.ValidateSchema(cfg.(*latest.SkaffoldConfig)); err != nil {
+		return errors.Wrap(err, "validating upgraded config")
 	}
 
 	newCfg, err := yaml.Marshal(cfg)
