@@ -48,13 +48,15 @@ type Builder struct {
 	PluginMode  bool
 	KubeContext string
 	builtImages []string
+	runCtx      *runcontext.RunContext
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Docker.
 func NewBuilder() *Builder {
-	return &Builder{
+	builder := &Builder{
 		PluginMode: true,
 	}
+	return builder
 }
 
 // Init stores skaffold options and the execution environment
@@ -66,6 +68,7 @@ func (b *Builder) Init(runCtx *runcontext.RunContext) error {
 			return err
 		}
 	}
+	b.runCtx = runCtx
 	b.opts = runCtx.Opts
 	b.env = runCtx.Cfg.Build.ExecutionEnvironment
 	logrus.Debugf("initialized plugin with %+v", runCtx)
@@ -128,17 +131,7 @@ func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.
 			return nil, err
 		}
 	}
-	runCtx := &runcontext.RunContext{
-		Opts: b.opts,
-		Cfg: &latest.Pipeline{
-			Build: latest.BuildConfig{
-				BuildType: latest.BuildType{
-					GoogleCloudBuild: g,
-				},
-			},
-		},
-	}
-	return gcb.NewBuilder(runCtx).Build(ctx, out, tags, artifacts)
+	return gcb.NewBuilder(b.runCtx).Build(ctx, out, tags, artifacts)
 }
 
 func setArtifact(artifact *latest.Artifact) error {

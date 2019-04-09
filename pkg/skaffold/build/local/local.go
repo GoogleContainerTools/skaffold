@@ -38,7 +38,7 @@ import (
 // its checksum. It streams build progress to the writer argument.
 func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	if b.localCluster {
-		color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext)
+		color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.runCtx.KubeContext)
 	}
 	defer b.localDocker.Close()
 

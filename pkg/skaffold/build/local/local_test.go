@@ -21,6 +21,8 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -225,15 +227,27 @@ func TestLocalRun(t *testing.T) {
 				BuildType: latest.BuildType{
 					LocalBuild: &latest.LocalBuild{},
 				},
+				ExecutionEnvironment: &latest.ExecutionEnvironment{Name: constants.Local},
 			}
-			event.InitializeState(&runcontext.RunContext{
+			runContext := &runcontext.RunContext{
 				Cfg: &latest.Pipeline{
 					Build: cfg,
 				},
 				Opts: &config.SkaffoldOptions{},
-			})
+			}
+			cancel, err := event.InitializeState(runContext)
+			if err != nil {
+				t.Error(err)
+			}
+			defer func() {
+				if err := cancel(); err != nil {
+					t.Error(err)
+				}
+			}()
+
 			l := Builder{
 				cfg:         &latest.LocalBuild{},
+				runCtx:      runContext,
 				localDocker: docker.NewLocalDaemon(&test.api, nil, false),
 				pushImages:  test.pushImages,
 			}

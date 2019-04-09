@@ -37,7 +37,7 @@ func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace s
 }
 
 func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibGradleArtifact, tag string) (string, error) {
-	args := jib.GenerateGradleArgs("jibDockerBuild", tag, artifact, b.skipTests)
+	args := jib.GenerateGradleArgs("jibDockerBuild", tag, artifact, b.runCtx.Opts.SkipTests)
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
@@ -46,7 +46,7 @@ func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, wor
 }
 
 func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibGradleArtifact, tag string) (string, error) {
-	args := jib.GenerateGradleArgs("jib", tag, artifact, b.skipTests)
+	args := jib.GenerateGradleArgs("jib", tag, artifact, b.runCtx.Opts.SkipTests)
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
