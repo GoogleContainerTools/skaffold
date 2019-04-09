@@ -38,7 +38,9 @@ If we can generalize the above points, then any configuration(GCR/ECR/private re
 2. Mount the config in specific location in pod
 3. In some cases set some env variables, for the same.
 
-
+### Related bugs
+1. [Skaffold/Kaniko with ECR](https://github.com/GoogleContainerTools/skaffold/issues/731)
+2. [remove mandate of GCR creds for kaniko build](https://github.com/GoogleContainerTools/skaffold/pull/1728)
 ## Design
 
 The same above can be re-configured in a more generic way as follows:
@@ -75,7 +77,7 @@ build:
     - secretName: e2esecret
       mountPath:  "/secret"
     env:
-       "GOOGLE_APPLICATION_CREDENTIALS" : "/secret/kaniko-secret"
+       "GOOGLE_APPLICATION_CREDENTIALS" : "/secret/e2esecret"
 ```
 #### Private Registry:
 current scheme:
@@ -83,7 +85,7 @@ current scheme:
 build:
   cluster:
     dockerConfig:
-      secretName: e2esecret
+      secretName: docker-secret
 ```
 new scheme:
 ``` yaml
