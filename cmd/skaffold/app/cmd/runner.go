@@ -17,6 +17,8 @@ limitations under the License.
 package cmd
 
 import (
+	"strings"
+
 	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -35,10 +37,13 @@ import (
 func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.SkaffoldConfig, error) {
 	parsed, err := schema.ParseConfig(opts.ConfigurationFile, true)
 	if err != nil {
-		latest, current, versionErr := update.GetLatestAndCurrentVersion()
-		if versionErr == nil && latest.GT(current) {
-			logrus.Warnf("Your Skaffold version might be too old. Download the latest version (%s) at %s\n", latest, constants.LatestDownloadURL)
+		// If the error is NOT that the file doesn't exist, then we warn the user
+		// that maybe they are using an outdated version of Skaffold that's unable to read
+		// the configuration.
+		if !strings.Contains(err.Error(), "no such file or directory") {
+			warnIfUpdateIsAvailable()
 		}
+
 		return nil, nil, errors.Wrap(err, "parsing skaffold config")
 	}
 
@@ -69,6 +74,13 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 	}
 
 	return runner, config, nil
+}
+
+func warnIfUpdateIsAvailable() {
+	latest, current, versionErr := update.GetLatestAndCurrentVersion()
+	if versionErr == nil && latest.GT(current) {
+		logrus.Warnf("Your Skaffold version might be too old. Download the latest version (%s) at %s\n", latest, constants.LatestDownloadURL)
+	}
 }
 
 func applyDefaultRepoSubstitution(config *latest.SkaffoldConfig, defaultRepo string) {
