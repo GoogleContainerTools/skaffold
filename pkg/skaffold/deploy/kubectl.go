@@ -43,16 +43,16 @@ type KubectlDeployer struct {
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(ctx *runcontext.RunContext) *KubectlDeployer {
+func NewKubectlDeployer(runCtx *runcontext.RunContext) *KubectlDeployer {
 	return &KubectlDeployer{
-		KubectlDeploy: ctx.Cfg.Deploy.KubectlDeploy,
-		workingDir:    ctx.WorkingDir,
+		KubectlDeploy: runCtx.Cfg.Deploy.KubectlDeploy,
+		workingDir:    runCtx.WorkingDir,
 		kubectl: kubectl.CLI{
-			Namespace:   ctx.Opts.Namespace,
-			KubeContext: ctx.KubeContext,
-			Flags:       ctx.Cfg.Deploy.KubectlDeploy.Flags,
+			Namespace:   runCtx.Opts.Namespace,
+			KubeContext: runCtx.KubeContext,
+			Flags:       runCtx.Cfg.Deploy.KubectlDeploy.Flags,
 		},
-		defaultRepo: ctx.DefaultRepo,
+		defaultRepo: runCtx.DefaultRepo,
 	}
 }
 

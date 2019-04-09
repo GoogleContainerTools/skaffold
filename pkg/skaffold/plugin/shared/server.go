@@ -51,9 +51,8 @@ type BuilderRPCServer struct {
 	Impl PluginBuilder
 }
 
-func (s *BuilderRPCServer) Init(ctx *runcontext.RunContext, resp *interface{}) error {
-	s.Impl.Init(ctx)
-	return nil
+func (s *BuilderRPCServer) Init(runCtx *runcontext.RunContext, resp *interface{}) error {
+	return s.Impl.Init(runCtx)
 }
 
 func (s *BuilderRPCServer) Labels(_ interface{}, resp *map[string]string) error {

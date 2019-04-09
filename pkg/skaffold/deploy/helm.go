@@ -52,12 +52,12 @@ type HelmDeployer struct {
 
 // NewHelmDeployer returns a new HelmDeployer for a DeployConfig filled
 // with the needed configuration for `helm`
-func NewHelmDeployer(ctx *runcontext.RunContext) *HelmDeployer {
+func NewHelmDeployer(runCtx *runcontext.RunContext) *HelmDeployer {
 	return &HelmDeployer{
-		HelmDeploy:  ctx.Cfg.Deploy.HelmDeploy,
-		kubeContext: ctx.KubeContext,
-		namespace:   ctx.Opts.Namespace,
-		defaultRepo: ctx.DefaultRepo,
+		HelmDeploy:  runCtx.Cfg.Deploy.HelmDeploy,
+		kubeContext: runCtx.KubeContext,
+		namespace:   runCtx.Opts.Namespace,
+		defaultRepo: runCtx.DefaultRepo,
 	}
 }
 
