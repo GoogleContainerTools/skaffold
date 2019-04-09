@@ -61,6 +61,8 @@ func processTags(yamltags string, val reflect.Value, parentStruct reflect.Value,
 				Field:  field,
 				Parent: parentStruct,
 			}
+		default:
+			logrus.Fatalf("unknown yaml tag in %s", yamltags)
 		}
 		if err := yt.Load(tagParts); err != nil {
 			return err
