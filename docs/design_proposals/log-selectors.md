@@ -1,10 +1,7 @@
 # Title
 
 * Author(s): Corneius Weig (@corneliusweig)
-* Design Shepherd: \<skaffold-core-team-member\>
-
-    If you are already working with someone mention their name.
-    If not, please leave this empty, it will be assigned to a core team member.
+* Design Shepherd: Priya Wadhwa (@priyawadhwa)
 * Date: 21/04/2019
 * Status: [Reviewed/Cancelled/Under implementation/Complete]
 
