@@ -30,9 +30,9 @@ import (
 
 // NewPreBuiltImagesBuilder returns an new instance a Builder that assumes images are
 // already built with given fully qualified names.
-func NewPreBuiltImagesBuilder(ctx *runcontext.RunContext) Builder {
+func NewPreBuiltImagesBuilder(runCtx *runcontext.RunContext) Builder {
 	return &prebuiltImagesBuilder{
-		images: ctx.Opts.PreBuiltImages,
+		images: runCtx.Opts.PreBuiltImages,
 	}
 }
 

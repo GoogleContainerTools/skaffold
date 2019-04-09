@@ -127,50 +127,50 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 	}, nil
 }
 
-func getBuilder(ctx *runcontext.RunContext) (build.Builder, error) {
+func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
 	switch {
-	case ctx.Plugin:
+	case runCtx.Plugin:
 		logrus.Debugln("Using builder plugins")
-		return plugin.NewPluginBuilder(ctx)
+		return plugin.NewPluginBuilder(runCtx)
 
-	case len(ctx.Opts.PreBuiltImages) > 0:
+	case len(runCtx.Opts.PreBuiltImages) > 0:
 		logrus.Debugln("Using pre-built images")
-		return build.NewPreBuiltImagesBuilder(ctx), nil
+		return build.NewPreBuiltImagesBuilder(runCtx), nil
 
-	case ctx.Cfg.Build.LocalBuild != nil:
+	case runCtx.Cfg.Build.LocalBuild != nil:
 		logrus.Debugln("Using builder: local")
-		return local.NewBuilder(ctx)
+		return local.NewBuilder(runCtx)
 
-	case ctx.Cfg.Build.GoogleCloudBuild != nil:
+	case runCtx.Cfg.Build.GoogleCloudBuild != nil:
 		logrus.Debugln("Using builder: google cloud")
-		return gcb.NewBuilder(ctx), nil
+		return gcb.NewBuilder(runCtx), nil
 
-	case ctx.Cfg.Build.Cluster != nil:
+	case runCtx.Cfg.Build.Cluster != nil:
 		logrus.Debugln("Using builder: kaniko")
-		return kaniko.NewBuilder(ctx)
+		return kaniko.NewBuilder(runCtx)
 
 	default:
-		return nil, fmt.Errorf("unknown builder for config %+v", ctx.Cfg.Build)
+		return nil, fmt.Errorf("unknown builder for config %+v", runCtx.Cfg.Build)
 	}
 }
 
-func getTester(ctx *runcontext.RunContext) (test.Tester, error) {
-	return test.NewTester(ctx)
+func getTester(runCtx *runcontext.RunContext) (test.Tester, error) {
+	return test.NewTester(runCtx)
 }
 
-func getDeployer(ctx *runcontext.RunContext) (deploy.Deployer, error) {
+func getDeployer(runCtx *runcontext.RunContext) (deploy.Deployer, error) {
 	switch {
-	case ctx.Cfg.Deploy.HelmDeploy != nil:
-		return deploy.NewHelmDeployer(ctx), nil
+	case runCtx.Cfg.Deploy.HelmDeploy != nil:
+		return deploy.NewHelmDeployer(runCtx), nil
 
-	case ctx.Cfg.Deploy.KubectlDeploy != nil:
-		return deploy.NewKubectlDeployer(ctx), nil
+	case runCtx.Cfg.Deploy.KubectlDeploy != nil:
+		return deploy.NewKubectlDeployer(runCtx), nil
 
-	case ctx.Cfg.Deploy.KustomizeDeploy != nil:
-		return deploy.NewKustomizeDeployer(ctx), nil
+	case runCtx.Cfg.Deploy.KustomizeDeploy != nil:
+		return deploy.NewKustomizeDeployer(runCtx), nil
 
 	default:
-		return nil, fmt.Errorf("unknown deployer for config %+v", ctx.Cfg.Deploy)
+		return nil, fmt.Errorf("unknown deployer for config %+v", runCtx.Cfg.Deploy)
 	}
 }
 

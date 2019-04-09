@@ -67,15 +67,15 @@ type KustomizeDeployer struct {
 	defaultRepo string
 }
 
-func NewKustomizeDeployer(ctx *runcontext.RunContext) *KustomizeDeployer {
+func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 	return &KustomizeDeployer{
-		KustomizeDeploy: ctx.Cfg.Deploy.KustomizeDeploy,
+		KustomizeDeploy: runCtx.Cfg.Deploy.KustomizeDeploy,
 		kubectl: kubectl.CLI{
-			Namespace:   ctx.Opts.Namespace,
-			KubeContext: ctx.KubeContext,
-			Flags:       ctx.Cfg.Deploy.KustomizeDeploy.Flags,
+			Namespace:   runCtx.Opts.Namespace,
+			KubeContext: runCtx.KubeContext,
+			Flags:       runCtx.Cfg.Deploy.KustomizeDeploy.Flags,
 		},
-		defaultRepo: ctx.DefaultRepo,
+		defaultRepo: runCtx.DefaultRepo,
 	}
 }
 

@@ -38,14 +38,14 @@ type Builder struct {
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Kaniko.
-func NewBuilder(ctx *runcontext.RunContext) (*Builder, error) {
-	timeout, err := time.ParseDuration(ctx.Cfg.Build.Cluster.Timeout)
+func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
+	timeout, err := time.ParseDuration(runCtx.Cfg.Build.Cluster.Timeout)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing timeout")
 	}
 
 	return &Builder{
-		ClusterDetails: ctx.Cfg.Build.Cluster,
+		ClusterDetails: runCtx.Cfg.Build.Cluster,
 		timeout:        timeout,
 	}, nil
 }

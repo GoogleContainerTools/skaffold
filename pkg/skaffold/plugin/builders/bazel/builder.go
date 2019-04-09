@@ -56,17 +56,17 @@ func NewBuilder() *Builder {
 }
 
 // Init stores skaffold options and the execution environment
-func (b *Builder) Init(ctx *runcontext.RunContext) error {
+func (b *Builder) Init(runCtx *runcontext.RunContext) error {
 	if b.PluginMode {
-		if err := event.SetupRPCClient(ctx.Opts); err != nil {
+		if err := event.SetupRPCClient(runCtx.Opts); err != nil {
 			logrus.Warn("error establishing gRPC connection to skaffold process; events will not be handled correctly")
 			logrus.Warn(err.Error())
 			return err
 		}
 	}
-	b.opts = ctx.Opts
-	b.env = ctx.Cfg.Build.ExecutionEnvironment
-	b.insecureRegistries = ctx.InsecureRegistries
+	b.opts = runCtx.Opts
+	b.env = runCtx.Cfg.Build.ExecutionEnvironment
+	b.insecureRegistries = runCtx.InsecureRegistries
 	return nil
 }
 

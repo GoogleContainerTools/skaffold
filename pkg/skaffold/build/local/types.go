@@ -45,8 +45,8 @@ type Builder struct {
 }
 
 // NewBuilder returns an new instance of a local Builder.
-func NewBuilder(ctx *runcontext.RunContext) (*Builder, error) {
-	localDocker, err := docker.NewAPIClient(ctx.Opts.Prune(), ctx.InsecureRegistries)
+func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
+	localDocker, err := docker.NewAPIClient(runCtx.Opts.Prune(), runCtx.InsecureRegistries)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
@@ -57,22 +57,22 @@ func NewBuilder(ctx *runcontext.RunContext) (*Builder, error) {
 	}
 
 	var pushImages bool
-	if ctx.Cfg.Build.LocalBuild.Push == nil {
+	if runCtx.Cfg.Build.LocalBuild.Push == nil {
 		pushImages = !localCluster
 		logrus.Debugf("push value not present, defaulting to %t because localCluster is %t", pushImages, localCluster)
 	} else {
-		pushImages = *ctx.Cfg.Build.LocalBuild.Push
+		pushImages = *runCtx.Cfg.Build.LocalBuild.Push
 	}
 
 	return &Builder{
-		cfg:                ctx.Cfg.Build.LocalBuild,
-		kubeContext:        ctx.KubeContext,
+		cfg:                runCtx.Cfg.Build.LocalBuild,
+		kubeContext:        runCtx.KubeContext,
 		localDocker:        localDocker,
 		localCluster:       localCluster,
 		pushImages:         pushImages,
-		skipTests:          ctx.Opts.SkipTests,
-		prune:              ctx.Opts.Prune(),
-		insecureRegistries: ctx.InsecureRegistries,
+		skipTests:          runCtx.Opts.SkipTests,
+		prune:              runCtx.Opts.Prune(),
+		insecureRegistries: runCtx.InsecureRegistries,
 	}, nil
 }
 
