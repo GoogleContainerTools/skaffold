@@ -22,6 +22,8 @@ import (
 	"strings"
 )
 
+type FieldSet map[string]struct{}
+
 // ProcessStruct validates and processes the provided pointer to a struct.
 func ProcessStruct(s interface{}) error {
 	parentStruct := reflect.ValueOf(s).Elem()
@@ -96,16 +98,16 @@ func (rt *RequiredTag) Process(val reflect.Value) error {
 	return nil
 }
 
-// A program can have many structs, that each have many oneOfSets
-// each oneOfSet is a map of a set name to the list of fields that belong to that set
-// only one field in that list can have a non-zero value.
+// A program can have many structs, that each have many oneOfSets.
+// Each oneOfSet is a map of a oneOf-set name to the set of fields that belong to that oneOf-set
+// Only one field in that set may have a non-zero value.
 
-var allOneOfs map[string]map[string][]string
+var allOneOfs map[string]map[string]FieldSet
 
-func getOneOfSetsForStruct(structName string) map[string][]string {
+func getOneOfSetsForStruct(structName string) map[string]FieldSet {
 	_, ok := allOneOfs[structName]
 	if !ok {
-		allOneOfs[structName] = map[string][]string{}
+		allOneOfs[structName] = map[string]FieldSet{}
 	}
 	return allOneOfs[structName]
 }
@@ -113,7 +115,7 @@ func getOneOfSetsForStruct(structName string) map[string][]string {
 type OneOfTag struct {
 	Field     reflect.StructField
 	Parent    reflect.Value
-	oneOfSets map[string][]string
+	oneOfSets map[string]FieldSet
 	setName   string
 }
 
@@ -128,7 +130,10 @@ func (oot *OneOfTag) Load(s []string) error {
 	oot.oneOfSets = getOneOfSetsForStruct(structName)
 
 	// Add this field to the oneOfSet
-	oot.oneOfSets[oot.setName] = append(oot.oneOfSets[oot.setName], oot.Field.Name)
+	if _, ok := oot.oneOfSets[oot.setName]; !ok {
+		oot.oneOfSets[oot.setName] = FieldSet{}
+	}
+	oot.oneOfSets[oot.setName][oot.Field.Name] = struct{}{}
 	return nil
 }
 
@@ -139,7 +144,7 @@ func (oot *OneOfTag) Process(val reflect.Value) error {
 
 	// This must exist because process is always called after Load.
 	oneOfSet := oot.oneOfSets[oot.setName]
-	for _, otherField := range oneOfSet {
+	for otherField := range oneOfSet {
 		if otherField == oot.Field.Name {
 			continue
 		}
@@ -160,5 +165,5 @@ func isZeroValue(val reflect.Value) bool {
 }
 
 func init() {
-	allOneOfs = make(map[string]map[string][]string)
+	allOneOfs = make(map[string]map[string]FieldSet)
 }

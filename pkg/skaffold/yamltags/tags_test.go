@@ -157,6 +157,19 @@ func TestOneOf(t *testing.T) {
 				}},
 			wantErr: true,
 		},
+		{
+			name: "different instances may set other fields",
+			args: args{
+				s: []*oneOfStruct{
+					{
+						A: "foo",
+					},
+					{
+						B: "baz",
+					},
+				}},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
