@@ -59,7 +59,7 @@ func runFix(out io.Writer, configFile string, overwrite bool) error {
 		return err
 	}
 
-	if err := validation.ValidateSchema(cfg.(*latest.SkaffoldConfig)); err != nil {
+	if err := validation.Process(cfg.(*latest.SkaffoldConfig)); err != nil {
 		return errors.Wrap(err, "validating upgraded config")
 	}
 

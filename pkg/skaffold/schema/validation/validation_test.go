@@ -81,7 +81,7 @@ func TestValidateSchema(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateSchema(tt.cfg)
+			err := Process(tt.cfg)
 			testutil.CheckError(t, tt.shouldErr, err)
 		})
 	}

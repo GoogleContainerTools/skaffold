@@ -52,7 +52,7 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 		return nil, nil, errors.Wrap(err, "setting default values")
 	}
 
-	if err := validation.ValidateSchema(config); err != nil {
+	if err := validation.Process(config); err != nil {
 		return nil, nil, errors.Wrap(err, "invalid skaffold config")
 	}
 

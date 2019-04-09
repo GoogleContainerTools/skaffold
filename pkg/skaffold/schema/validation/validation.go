@@ -25,8 +25,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
 
-// ValidateSchema checks if the Skaffold pipeline is valid and returns all encountered errors as a concatenated string
-func ValidateSchema(config *latest.SkaffoldConfig) error {
+// Process checks if the Skaffold pipeline is valid and returns all encountered errors as a concatenated string
+func Process(config *latest.SkaffoldConfig) error {
 	errs := visitStructs(config, yamltags.ValidateStruct)
 
 	if len(errs) == 0 {
