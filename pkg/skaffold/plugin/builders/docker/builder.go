@@ -18,9 +18,7 @@ package docker
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"os"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -35,7 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 // Builder builds artifacts with Docker.
@@ -60,17 +58,17 @@ func NewBuilder() *Builder {
 }
 
 // Init stores skaffold options and the execution environment
-func (b *Builder) Init(ctx *runcontext.RunContext) error {
+func (b *Builder) Init(runCtx *runcontext.RunContext) error {
 	if b.PluginMode {
-		if err := event.SetupRPCClient(ctx.Opts); err != nil {
+		if err := event.SetupRPCClient(runCtx.Opts); err != nil {
 			logrus.Warn("error establishing gRPC connection to skaffold process; events will not be handled correctly")
 			logrus.Warn(err.Error())
 			return err
 		}
 	}
-	b.opts = ctx.Opts
-	b.env = ctx.Cfg.Build.ExecutionEnvironment
-	logrus.Debugf("initialized plugin with %+v", ctx)
+	b.opts = runCtx.Opts
+	b.env = runCtx.Cfg.Build.ExecutionEnvironment
+	logrus.Debugf("initialized plugin with %+v", runCtx)
 	return nil
 }
 
@@ -107,7 +105,6 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 }
 
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
-	fmt.Fprintf(os.Stdout, "in builder plugin prune...\n")
 	switch b.env.Name {
 	case constants.GoogleCloudBuild:
 		return nil // noop

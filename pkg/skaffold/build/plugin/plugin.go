@@ -41,13 +41,13 @@ var (
 )
 
 // NewPluginBuilder initializes and returns all required plugin builders
-func NewPluginBuilder(ctx *runctx.RunContext) (shared.PluginBuilder, error) {
+func NewPluginBuilder(runCtx *runctx.RunContext) (shared.PluginBuilder, error) {
 	// We're a host. Start by launching the plugin process.
 	logrus.SetOutput(os.Stdout)
 
 	builders := map[string]shared.PluginBuilder{}
 
-	for _, a := range ctx.Cfg.Build.Artifacts {
+	for _, a := range runCtx.Cfg.Build.Artifacts {
 		p := a.BuilderPlugin.Name
 		if _, ok := builders[p]; ok {
 			continue
@@ -95,7 +95,7 @@ func NewPluginBuilder(ctx *runctx.RunContext) (shared.PluginBuilder, error) {
 	}
 
 	logrus.Debugf("Calling Init() for all plugins.")
-	if err := b.Init(ctx); err != nil {
+	if err := b.Init(runCtx); err != nil {
 		plugin.CleanupClients()
 		return nil, err
 	}
@@ -106,9 +106,9 @@ type Builder struct {
 	Builders map[string]shared.PluginBuilder
 }
 
-func (b *Builder) Init(ctx *runctx.RunContext) error {
+func (b *Builder) Init(runCtx *runctx.RunContext) error {
 	for _, builder := range b.Builders {
-		if err := builder.Init(ctx); err != nil {
+		if err := builder.Init(runCtx); err != nil {
 			return err
 		}
 	}
