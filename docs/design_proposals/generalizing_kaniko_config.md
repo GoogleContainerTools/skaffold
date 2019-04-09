@@ -7,10 +7,10 @@
 
 ## Background
 
-Kaniko supports 2 types of registries GCR and Docker, with former being mandatory always. 
+The Kaniko builder currently supports only two registries: GCR and Docker, with former being mandatory always. 
 The implementation itself is repository specific and not extensible as we need to keep adding more logic for every new type of repository and keep maintaining compatibilty with registries/credhelpers.
 
-The current looks like below( I have kept only required pieces from original code snippet):
+The current looks like below (I have kept only required pieces from original code snippet):
 ``` go
 type ClusterDetails struct {
        // GCR creds
@@ -33,7 +33,7 @@ When we look into how they behave differently, we can observe the differences be
 1. The path where to mount the config varies based on secret
 1. Some of them(like GCR) might require env variables to be set.
 
-If we can generalize the above points, then any configuration(GCR/ER/private registry/S3/GCS, etc..) breaks down to following steps:
+If we can generalize the above points, then any configuration(GCR/ECR/private registry/S3/GCS, etc..) breaks down to following steps:
 1. Create a secret with the configuration
 2. Mount the config in specific location in pod
 3. In some cases set some env variables, for the same.
@@ -95,7 +95,8 @@ build:
 ```
 #### ECR:
 current scheme: None
-new scheme( [pushing-to-amazon-ecr](https://github.com/GoogleContainerTools/kaniko/#pushing-to-amazon-ecr)) :
+
+new scheme ([pushing-to-amazon-ecr](https://github.com/GoogleContainerTools/kaniko/#pushing-to-amazon-ecr)) :
 ``` yaml
 build:
   cluster:
