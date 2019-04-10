@@ -143,7 +143,7 @@ func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
 
 	case runCtx.Cfg.Build.GoogleCloudBuild != nil:
 		logrus.Debugln("Using builder: google cloud")
-		return gcb.NewBuilder(runCtx), nil
+		return gcb.NewDeprecatedBuilder(runCtx), nil
 
 	case runCtx.Cfg.Build.Cluster != nil:
 		logrus.Debugln("Using builder: kaniko")

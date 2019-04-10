@@ -14,6 +14,7 @@ build:
         target: targetStage
   executionEnvironment:
     name: googleCloudBuild
+
 deploy:
   kubectl:
     manifests:

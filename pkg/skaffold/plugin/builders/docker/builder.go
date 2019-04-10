@@ -20,13 +20,13 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/environments/gcb"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/environments/gcb"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -36,43 +36,65 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type local struct {
+	*latest.LocalBuild
+	daemon         docker.LocalDaemon
+	isLocalCluster bool
+	isPush         bool
+}
+
 // Builder builds artifacts with Docker.
 type Builder struct {
-	opts *config.SkaffoldOptions
-	env  *latest.ExecutionEnvironment
-	*latest.LocalBuild
-	LocalDocker  docker.LocalDaemon
-	LocalCluster bool
-	PushImages   bool
+	cfgLocal local
+	gcb      *gcb.Builder
+
+	runCtx *runcontext.RunContext
+
 	// TODO: remove once old docker build functionality is removed (priyawadhwa@)
-	PluginMode  bool
+	pluginMode  bool
 	KubeContext string
 	builtImages []string
-	runCtx      *runcontext.RunContext
+}
+
+// NewDeprecatedBuilder creates a new Builder that builds artifacts with Docker.
+func NewDeprecatedBuilder() *Builder {
+	builder := &Builder{
+		pluginMode: false,
+	}
+	return builder
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Docker.
 func NewBuilder() *Builder {
 	builder := &Builder{
-		PluginMode: true,
+		pluginMode: true,
 	}
 	return builder
 }
 
 // Init stores skaffold options and the execution environment
 func (b *Builder) Init(runCtx *runcontext.RunContext) error {
-	if b.PluginMode {
+	b.runCtx = runCtx
+
+	if b.pluginMode {
 		if err := event.SetupRPCClient(runCtx.Opts); err != nil {
 			logrus.Warn("error establishing gRPC connection to skaffold process; events will not be handled correctly")
 			logrus.Warn(err.Error())
 			return err
 		}
+
+		switch runCtx.Cfg.Build.ExecutionEnvironment.Name {
+		case constants.GoogleCloudBuild:
+			logrus.Debugf("initialized plugin with %+v", runCtx)
+			return b.googleCloudBuildInit(runCtx)
+		case constants.Local:
+			logrus.Debugf("initialized plugin with %+v", runCtx)
+			return b.localInit(runCtx)
+		default:
+			return errors.Errorf("%s is not a supported environment for builder docker", b.runCtx.Cfg.Build.ExecutionEnvironment.Name)
+		}
 	}
-	b.runCtx = runCtx
-	b.opts = runCtx.Opts
-	b.env = runCtx.Cfg.Build.ExecutionEnvironment
-	logrus.Debugf("initialized plugin with %+v", runCtx)
-	return nil
+
 }
 
 // Labels are labels specific to Docker.
@@ -97,41 +119,45 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.
 // Build is responsible for building artifacts in their respective execution environments
 // The builder plugin is also responsible for setting any necessary defaults
 func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	switch b.env.Name {
+	switch b.runCtx.Cfg.Build.ExecutionEnvironment.Name {
 	case constants.GoogleCloudBuild:
 		return b.googleCloudBuild(ctx, out, tags, artifacts)
 	case constants.Local:
-		return b.local(ctx, out, tags, artifacts)
+		return b.localBuild(ctx, out, tags, artifacts)
 	default:
-		return nil, errors.Errorf("%s is not a supported environment for builder docker", b.env.Name)
+		return nil, errors.Errorf("%s is not a supported environment for builder docker", b.runCtx.Cfg.Build.ExecutionEnvironment.Name)
 	}
 }
 
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
-	switch b.env.Name {
+	switch b.runCtx.Cfg.Build.ExecutionEnvironment.Name {
 	case constants.GoogleCloudBuild:
 		return nil // noop
 	case constants.Local:
 		return b.prune(ctx, out)
 	default:
-		return errors.Errorf("%s is not a supported environment for builder docker", b.env.Name)
+		return errors.Errorf("%s is not a supported environment for builder docker", b.runCtx.Cfg.Build.ExecutionEnvironment.Name)
 	}
 	// return b.builder.Prune(ctx, out)
 }
 
 // googleCloudBuild sets any necessary defaults and then builds artifacts with docker in GCB
 func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	var g *latest.GoogleCloudBuild
-	if err := util.CloneThroughJSON(b.env.Properties, &g); err != nil {
-		return nil, errors.Wrap(err, "converting execution environment to googleCloudBuild struct")
-	}
-	defaults.SetDefaultCloudBuildDockerImage(g)
 	for _, a := range artifacts {
 		if err := setArtifact(a); err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "preparing google cloud build")
 		}
 	}
-	return gcb.NewBuilder(b.runCtx).Build(ctx, out, tags, artifacts)
+	return b.gcb.Build(ctx, out, tags, artifacts)
+}
+
+func (b *Builder) googleCloudBuildInit(runContext *runcontext.RunContext) error {
+	builder, err := gcb.NewEnvBuilder(b.runCtx)
+	if err != nil {
+		return errors.Wrap(err, "initializing google cloud builder")
+	}
+	b.gcb = builder
+	return nil
 }
 
 func setArtifact(artifact *latest.Artifact) error {

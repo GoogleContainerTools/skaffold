@@ -223,15 +223,14 @@ func TestLocalRun(t *testing.T) {
 			defer func(w warnings.Warner) { warnings.Printf = w }(warnings.Printf)
 			fakeWarner := &warnings.Collect{}
 			warnings.Printf = fakeWarner.Warnf
-			cfg := latest.BuildConfig{
-				BuildType: latest.BuildType{
-					LocalBuild: &latest.LocalBuild{},
-				},
-				ExecutionEnvironment: &latest.ExecutionEnvironment{Name: constants.Local},
-			}
 			runContext := &runcontext.RunContext{
 				Cfg: &latest.Pipeline{
-					Build: cfg,
+					Build: latest.BuildConfig{
+						BuildType: latest.BuildType{
+							LocalBuild: &latest.LocalBuild{},
+						},
+						ExecutionEnvironment: &latest.ExecutionEnvironment{Name: constants.Local},
+					},
 				},
 				Opts: &config.SkaffoldOptions{},
 			}

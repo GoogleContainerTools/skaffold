@@ -21,6 +21,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
@@ -65,12 +67,25 @@ type Builder struct {
 	skipTests bool
 }
 
-// NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
-func NewBuilder(runCtx *runcontext.RunContext) *Builder {
+// NewDeprecatedBuilder creates a new Builder that builds artifacts with Google Cloud Build.
+func NewDeprecatedBuilder(runCtx *runcontext.RunContext) *Builder {
 	return &Builder{
 		GoogleCloudBuild: runCtx.Cfg.Build.GoogleCloudBuild,
 		skipTests:        runCtx.Opts.SkipTests,
 	}
+}
+
+// NewEnvBuilder creates a new Builder that builds artifacts with Google Cloud Build.
+func NewEnvBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
+	var g *latest.GoogleCloudBuild
+	if err := util.CloneThroughJSON(runCtx.Cfg.Build.ExecutionEnvironment.Properties, &g); err != nil {
+		return nil, errors.Wrap(err, "converting execution environment to googleCloudBuild struct")
+	}
+	defaults.SetDefaultCloudBuildDockerImage(g)
+	return &Builder{
+		GoogleCloudBuild: g,
+		skipTests:        runCtx.Opts.SkipTests,
+	}, nil
 }
 
 // Labels are labels specific to Google Cloud Build.

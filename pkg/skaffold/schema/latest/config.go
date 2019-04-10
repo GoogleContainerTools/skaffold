@@ -70,7 +70,7 @@ type BuildConfig struct {
 	TagPolicy TagPolicy `yaml:"tagPolicy,omitempty"`
 
 	// ExecutionEnvironment is the environment in which the build
-	// should run. Possible values: googleCloudBuild.
+	// should run. Possible values: googleCloudBuild, local.
 	ExecutionEnvironment *ExecutionEnvironment `yaml:"executionEnvironment,omitempty"`
 
 	BuildType `yaml:",inline"`
