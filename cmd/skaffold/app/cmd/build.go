@@ -32,7 +32,7 @@ import (
 
 var (
 	quietFlag       bool
-	buildFormatFlag = flags.NewTemplateFlag("{{.}}", BuildOutput{})
+	buildFormatFlag = flags.NewTemplateFlag("{{.}}", flags.BuildOutput{})
 )
 
 // For testing
@@ -55,11 +55,6 @@ func NewCmdBuild(out io.Writer) *cobra.Command {
 	cmd.Flags().BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output.")
 	cmd.Flags().VarP(buildFormatFlag, "output", "o", "Used in conjuction with --quiet flag. "+buildFormatFlag.Usage())
 	return cmd
-}
-
-// BuildOutput is the output of `skaffold build`.
-type BuildOutput struct {
-	Builds []build.Artifact
 }
 
 func runBuild(out io.Writer) error {
@@ -86,7 +81,7 @@ func runBuild(out io.Writer) error {
 	}
 
 	if quietFlag {
-		cmdOut := BuildOutput{Builds: bRes}
+		cmdOut := flags.BuildOutput{Builds: bRes}
 		if err := buildFormatFlag.Template().Execute(out, cmdOut); err != nil {
 			return errors.Wrap(err, "executing template")
 		}

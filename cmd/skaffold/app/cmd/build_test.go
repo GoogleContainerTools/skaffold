@@ -75,7 +75,7 @@ func TestQuietFlag(t *testing.T) {
 			quietFlag = true
 			defer func() { quietFlag = false }()
 			if test.template != "" {
-				buildFormatFlag = flags.NewTemplateFlag(test.template, BuildOutput{})
+				buildFormatFlag = flags.NewTemplateFlag(test.template, flags.BuildOutput{})
 			}
 			defer func() { buildFormatFlag = nil }()
 			createRunnerAndBuildFunc = test.mock

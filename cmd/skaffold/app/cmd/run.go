@@ -43,6 +43,7 @@ func NewCmdRun(out io.Writer) *cobra.Command {
 	AddRunDeployFlags(cmd)
 
 	cmd.Flags().StringVarP(&opts.CustomTag, "tag", "t", "", "The optional custom tag to use for images which overrides the current Tagger configuration")
+	cmd.Flags().StringSliceVar(&opts.PreBuiltImages, "images", nil, "A list of pre-built images to run")
 	return cmd
 }
 

@@ -17,9 +17,16 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+)
+
+var (
+	buildOutputFile flags.BuildOutputFileFlag
 )
 
 // NewCmdDeploy describes the CLI command to deploy artifacts.
@@ -29,12 +36,30 @@ func NewCmdDeploy(out io.Writer) *cobra.Command {
 		Short: "Deploys the artifacts",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Same actions as `skaffold run`, but with pre-built images.
-			return run(out)
+			opts.Command = "deploy"
+			return runDeploy(out)
 		},
 	}
 	AddRunDevFlags(cmd)
 	AddRunDeployFlags(cmd)
-	cmd.Flags().StringSliceVar(&opts.PreBuiltImages, "images", nil, "A list of pre-built images to deploy")
+	cmd.Flags().VarP(&buildOutputFile, "build-artifacts", "a", "`skaffold build -o {{.}}` output")
 	return cmd
+}
+
+func runDeploy(out io.Writer) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	catchCtrlC(cancel)
+	runner, _, err := newRunner(opts)
+	if err != nil {
+		return errors.Wrap(err, "creating runner")
+	}
+	defer runner.RPCServerShutdown()
+
+	if err := runner.Deploy(ctx, out, buildOutputFile.BuildAritifacts()); err != nil {
+		return err
+	}
+
+	runner.TailLogs(ctx, out, nil, buildOutputFile.BuildAritifacts())
+	return nil
 }
