@@ -39,6 +39,7 @@ var (
 	digestOne = "sha256:1111111111111111111111111111111111111111111111111111111111111111"
 	image     = fmt.Sprintf("image@%s", digest)
 	imageOne  = fmt.Sprintf("image1@%s", digestOne)
+	emptyMap  = map[string]bool{}
 )
 
 var defaultArtifactCache = ArtifactCache{"hash": ImageDetails{

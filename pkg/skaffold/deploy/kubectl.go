@@ -64,11 +64,13 @@ func (k *KubectlDeployer) Labels() map[string]string {
 	}
 }
 
+type ManifestTransform func(l kubectl.ManifestList, builds []build.Artifact, insecureRegistries map[string]bool) (kubectl.ManifestList, error)
+
 // Transforms are applied to manifests
-var manifestTransforms []func(kubectl.ManifestList, []build.Artifact, map[string]bool) (kubectl.ManifestList, error)
+var manifestTransforms []ManifestTransform
 
 // AddManifestTransform adds a transform to be applied when deploying.
-func AddManifestTransform(newTransform func(kubectl.ManifestList, []build.Artifact, map[string]bool) (kubectl.ManifestList, error)) {
+func AddManifestTransform(newTransform ManifestTransform) {
 	manifestTransforms = append(manifestTransforms, newTransform)
 }
 

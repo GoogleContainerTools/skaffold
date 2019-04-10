@@ -58,7 +58,6 @@ var (
 	remoteDigest    = docker.RemoteDigest
 	newDockerClient = docker.NewAPIClient
 	noCache         = &Cache{}
-	emptyMap        = map[string]bool{}
 )
 
 // NewCache returns the current state of the cache
