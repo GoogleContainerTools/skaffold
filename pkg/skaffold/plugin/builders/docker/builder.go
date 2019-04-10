@@ -40,10 +40,14 @@ import (
 type Builder struct {
 	opts *config.SkaffoldOptions
 	env  *latest.ExecutionEnvironment
+
+	gcbEnv *gcb.Builder
+
 	*latest.LocalBuild
 	LocalDocker  docker.LocalDaemon
 	LocalCluster bool
 	PushImages   bool
+
 	// TODO: remove once old docker build functionality is removed (priyawadhwa@)
 	PluginMode         bool
 	KubeContext        string
@@ -60,16 +64,30 @@ func NewBuilder() *Builder {
 
 // Init stores skaffold options and the execution environment
 func (b *Builder) Init(runCtx *runcontext.RunContext) error {
+	b.opts = runCtx.Opts
+	b.env = runCtx.Cfg.Build.ExecutionEnvironment
+	b.insecureRegistries = runCtx.InsecureRegistries
+
 	if b.PluginMode {
 		if err := event.SetupRPCClient(runCtx.Opts); err != nil {
 			logrus.Warn("error establishing gRPC connection to skaffold process; events will not be handled correctly")
 			logrus.Warn(err.Error())
 			return err
 		}
+		switch b.env.Name {
+		case constants.GoogleCloudBuild:
+			gcbEnv, err := gcb.NewBuilderFromPluginConfig(runCtx)
+			if err != nil {
+				return errors.Wrap(err, "initializing GCB builder")
+			}
+			b.gcbEnv = gcbEnv
+		case constants.Local:
+			//pass
+		default:
+			return errors.Errorf("%s is not a supported environment for builder docker", b.env.Name)
+		}
 	}
-	b.opts = runCtx.Opts
-	b.env = runCtx.Cfg.Build.ExecutionEnvironment
-	b.insecureRegistries = runCtx.InsecureRegistries
+
 	logrus.Debugf("initialized plugin with %+v", runCtx)
 	return nil
 }
@@ -120,27 +138,14 @@ func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
 
 // googleCloudBuild sets any necessary defaults and then builds artifacts with docker in GCB
 func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	var g *latest.GoogleCloudBuild
-	if err := util.CloneThroughJSON(b.env.Properties, &g); err != nil {
-		return nil, errors.Wrap(err, "converting execution environment to googleCloudBuild struct")
-	}
-	defaults.SetDefaultCloudBuildDockerImage(g)
+
 	for _, a := range artifacts {
 		if err := setArtifact(a); err != nil {
 			return nil, err
 		}
 	}
-	runCtx := &runcontext.RunContext{
-		Opts: b.opts,
-		Cfg: &latest.Pipeline{
-			Build: latest.BuildConfig{
-				BuildType: latest.BuildType{
-					GoogleCloudBuild: g,
-				},
-			},
-		},
-	}
-	return gcb.NewBuilder(runCtx).Build(ctx, out, tags, artifacts)
+
+	return b.gcbEnv.Build(ctx, out, tags, artifacts)
 }
 
 func setArtifact(artifact *latest.Artifact) error {
