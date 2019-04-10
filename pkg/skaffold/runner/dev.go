@@ -34,12 +34,12 @@ import (
 var ErrorConfigurationChanged = errors.New("configuration changed")
 
 // Dev watches for changes and runs the skaffold build and deploy
-// pipeline until interrupted by the user.
+// config until interrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifacts []*latest.Artifact) error {
 	logger := r.newLogger(output.Logs, artifacts)
 	defer logger.Stop()
 
-	portForwarder := kubernetes.NewPortForwarder(output.Main, r.imageList, r.namespaces)
+	portForwarder := kubernetes.NewPortForwarder(output.Main, r.imageList, r.runCtx.Namespaces)
 	defer portForwarder.Stop()
 
 	// Create watcher and register artifacts to build current state of files.
@@ -50,7 +50,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifac
 		logger.Mute()
 
 		for _, a := range changed.dirtyArtifacts {
-			s, err := sync.NewItem(a.artifact, a.events, r.builds)
+			s, err := sync.NewItem(a.artifact, a.events, r.builds, r.runCtx.InsecureRegistries)
 			if err != nil {
 				return errors.Wrap(err, "sync")
 			}
@@ -123,10 +123,10 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifac
 
 	// Watch Skaffold configuration
 	if err := r.Watcher.Register(
-		func() ([]string, error) { return []string{r.opts.ConfigurationFile}, nil },
+		func() ([]string, error) { return []string{r.runCtx.Opts.ConfigurationFile}, nil },
 		func(watch.Events) { changed.needsReload = true },
 	); err != nil {
-		return errors.Wrapf(err, "watching skaffold configuration %s", r.opts.ConfigurationFile)
+		return errors.Wrapf(err, "watching skaffold configuration %s", r.runCtx.Opts.ConfigurationFile)
 	}
 
 	// First run
@@ -135,13 +135,13 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifac
 	}
 
 	// Start logs
-	if r.opts.TailDev {
+	if r.runCtx.Opts.TailDev {
 		if err := logger.Start(ctx); err != nil {
 			return errors.Wrap(err, "starting logger")
 		}
 	}
 
-	if r.opts.PortForward {
+	if r.runCtx.Opts.PortForward {
 		if err := portForwarder.Start(ctx); err != nil {
 			return errors.Wrap(err, "starting port-forwarder")
 		}

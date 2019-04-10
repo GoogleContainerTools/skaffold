@@ -191,20 +191,6 @@ func FSLayers(i WithManifest) ([]v1.Hash, error) {
 	return fsl, nil
 }
 
-// BlobSet is a helper for implementing v1.Image
-func BlobSet(i WithManifest) (map[v1.Hash]struct{}, error) {
-	m, err := i.Manifest()
-	if err != nil {
-		return nil, err
-	}
-	bs := make(map[v1.Hash]struct{})
-	for _, l := range m.Layers {
-		bs[l.Digest] = struct{}{}
-	}
-	bs[m.Config.Digest] = struct{}{}
-	return bs, nil
-}
-
 // BlobSize is a helper for implementing v1.Image
 func BlobSize(i WithManifest, h v1.Hash) (int64, error) {
 	m, err := i.Manifest()

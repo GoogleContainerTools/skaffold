@@ -1,0 +1,107 @@
+{
+  "type": "object",
+  "anyOf": [
+    {
+      "$ref": "#/definitions/TestStruct"
+    }
+  ],
+  "$schema": "http://json-schema-org/draft-07/schema#",
+  "definitions": {
+    "TestStruct": {
+      "required": [
+        "reqField"
+      ],
+      "anyOf": [
+        {
+          "properties": {
+            "f1": {
+              "type": "string",
+              "description": "should be the first choice",
+              "x-intellij-html-description": "should be the first choice"
+            },
+            "f2": {
+              "type": "string",
+              "description": "should be the second choice",
+              "x-intellij-html-description": "should be the second choice"
+            },
+            "reqField": {
+              "type": "string",
+              "description": "should be required",
+              "x-intellij-html-description": "should be required"
+            }
+          },
+          "preferredOrder": [
+            "reqField",
+            "f1",
+            "f2"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "choice1": {
+              "type": "string",
+              "description": "should be the first choice",
+              "x-intellij-html-description": "should be the first choice"
+            },
+            "f1": {
+              "type": "string",
+              "description": "should be the first choice",
+              "x-intellij-html-description": "should be the first choice"
+            },
+            "f2": {
+              "type": "string",
+              "description": "should be the second choice",
+              "x-intellij-html-description": "should be the second choice"
+            },
+            "reqField": {
+              "type": "string",
+              "description": "should be required",
+              "x-intellij-html-description": "should be required"
+            }
+          },
+          "preferredOrder": [
+            "reqField",
+            "f1",
+            "f2",
+            "choice1"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "choice2": {
+              "type": "string",
+              "description": "should be the second choice",
+              "x-intellij-html-description": "should be the second choice"
+            },
+            "f1": {
+              "type": "string",
+              "description": "should be the first choice",
+              "x-intellij-html-description": "should be the first choice"
+            },
+            "f2": {
+              "type": "string",
+              "description": "should be the second choice",
+              "x-intellij-html-description": "should be the second choice"
+            },
+            "reqField": {
+              "type": "string",
+              "description": "should be required",
+              "x-intellij-html-description": "should be required"
+            }
+          },
+          "preferredOrder": [
+            "reqField",
+            "f1",
+            "f2",
+            "choice2"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "for testing the schema generator.",
+      "x-intellij-html-description": "for testing the schema generator."
+    }
+  }
+}

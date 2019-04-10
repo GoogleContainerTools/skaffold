@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -35,23 +36,25 @@ import (
 type KubectlDeployer struct {
 	*latest.KubectlDeploy
 
-	workingDir  string
-	kubectl     kubectl.CLI
-	defaultRepo string
+	workingDir         string
+	kubectl            kubectl.CLI
+	defaultRepo        string
+	insecureRegistries map[string]bool
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(workingDir string, cfg *latest.KubectlDeploy, kubeContext string, namespace string, defaultRepo string) *KubectlDeployer {
+func NewKubectlDeployer(runCtx *runcontext.RunContext) *KubectlDeployer {
 	return &KubectlDeployer{
-		KubectlDeploy: cfg,
-		workingDir:    workingDir,
+		KubectlDeploy: runCtx.Cfg.Deploy.KubectlDeploy,
+		workingDir:    runCtx.WorkingDir,
 		kubectl: kubectl.CLI{
-			Namespace:   namespace,
-			KubeContext: kubeContext,
-			Flags:       cfg.Flags,
+			Namespace:   runCtx.Opts.Namespace,
+			KubeContext: runCtx.KubeContext,
+			Flags:       runCtx.Cfg.Deploy.KubectlDeploy.Flags,
 		},
-		defaultRepo: defaultRepo,
+		defaultRepo:        runCtx.DefaultRepo,
+		insecureRegistries: runCtx.InsecureRegistries,
 	}
 }
 
@@ -61,11 +64,13 @@ func (k *KubectlDeployer) Labels() map[string]string {
 	}
 }
 
+type ManifestTransform func(l kubectl.ManifestList, builds []build.Artifact, insecureRegistries map[string]bool) (kubectl.ManifestList, error)
+
 // Transforms are applied to manifests
-var manifestTransforms []func(kubectl.ManifestList, []build.Artifact) (kubectl.ManifestList, error)
+var manifestTransforms []ManifestTransform
 
 // AddManifestTransform adds a transform to be applied when deploying.
-func AddManifestTransform(newTransform func(kubectl.ManifestList, []build.Artifact) (kubectl.ManifestList, error)) {
+func AddManifestTransform(newTransform ManifestTransform) {
 	manifestTransforms = append(manifestTransforms, newTransform)
 }
 
@@ -102,7 +107,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	}
 
 	for _, transform := range manifestTransforms {
-		manifests, err = transform(manifests, builds)
+		manifests, err = transform(manifests, builds, k.insecureRegistries)
 		if err != nil {
 			return errors.Wrap(err, "debug transform of manifests")
 		}

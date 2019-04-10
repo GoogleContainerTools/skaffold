@@ -107,11 +107,11 @@ func (c *Cache) CacheArtifacts(ctx context.Context, artifacts []*latest.Artifact
 func (c *Cache) retrieveImageDigest(ctx context.Context, img string) (string, error) {
 	if c.client == nil {
 		// Check for remote digest
-		return docker.RemoteDigest(img)
+		return docker.RemoteDigest(img, c.insecureRegistries)
 	}
 	repoDigest, err := c.client.RepoDigest(ctx, img)
 	if err != nil {
-		return docker.RemoteDigest(img)
+		return docker.RemoteDigest(img, c.insecureRegistries)
 	}
 	ref, err := name.NewDigest(repoDigest, name.WeakValidation)
 	return ref.DigestStr(), err

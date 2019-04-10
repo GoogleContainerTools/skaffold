@@ -21,6 +21,7 @@ import (
 	"errors"
 	"hash"
 	"io"
+	"sync"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
@@ -40,6 +41,7 @@ type Layer struct {
 	blob     io.ReadCloser
 	consumed bool
 
+	mu             sync.Mutex
 	digest, diffID *v1.Hash
 	size           int64
 }
@@ -51,6 +53,8 @@ func NewLayer(rc io.ReadCloser) *Layer { return &Layer{blob: rc} }
 
 // Digest implements v1.Layer.
 func (l *Layer) Digest() (v1.Hash, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	if l.digest == nil {
 		return v1.Hash{}, ErrNotComputed
 	}
@@ -59,6 +63,8 @@ func (l *Layer) Digest() (v1.Hash, error) {
 
 // DiffID implements v1.Layer.
 func (l *Layer) DiffID() (v1.Hash, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	if l.diffID == nil {
 		return v1.Hash{}, ErrNotComputed
 	}
@@ -67,6 +73,8 @@ func (l *Layer) DiffID() (v1.Hash, error) {
 
 // Size implements v1.Layer.
 func (l *Layer) Size() (int64, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	if l.size == 0 {
 		return 0, ErrNotComputed
 	}
@@ -136,6 +144,9 @@ func newCompressedReader(l *Layer) (*compressedReader, error) {
 func (cr *compressedReader) Read(b []byte) (int, error) { return cr.pr.Read(b) }
 
 func (cr *compressedReader) Close() error {
+	cr.l.mu.Lock()
+	defer cr.l.mu.Unlock()
+
 	// Close the inner ReadCloser.
 	if err := cr.closer.Close(); err != nil {
 		return err

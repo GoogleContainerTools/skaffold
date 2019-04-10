@@ -18,11 +18,13 @@ package gcb
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -60,14 +62,16 @@ const (
 // Builder builds artifacts with Google Cloud Build.
 type Builder struct {
 	*latest.GoogleCloudBuild
-	skipTests bool
+	skipTests          bool
+	insecureRegistries map[string]bool
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
-func NewBuilder(cfg *latest.GoogleCloudBuild, skipTests bool) *Builder {
+func NewBuilder(runCtx *runcontext.RunContext) *Builder {
 	return &Builder{
-		GoogleCloudBuild: cfg,
-		skipTests:        skipTests,
+		GoogleCloudBuild:   runCtx.Cfg.Build.GoogleCloudBuild,
+		skipTests:          runCtx.Opts.SkipTests,
+		insecureRegistries: runCtx.InsecureRegistries,
 	}
 }
 
@@ -83,7 +87,7 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 	var paths []string
 	var err error
 	if a.DockerArtifact != nil {
-		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs)
+		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, b.insecureRegistries)
 		if err != nil {
 			return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
 		}
@@ -102,4 +106,8 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 	}
 
 	return util.AbsolutePaths(a.Workspace, paths), nil
+}
+
+func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
+	return nil // noop
 }

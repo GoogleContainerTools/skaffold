@@ -18,73 +18,17 @@ package shared
 
 import (
 	"context"
-	"io"
 	"net/rpc"
 	"os"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	plugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 )
-
-// BuilderRPC is an implementation of an rpc client
-type BuilderRPC struct {
-	client *rpc.Client
-}
-
-func (b *BuilderRPC) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
-	// We don't expect a response, so we can just use interface{}
-	var resp interface{}
-	args := InitArgs{
-		Opts: opts,
-		Env:  env,
-	}
-	b.client.Call("Plugin.Init", args, &resp)
-}
-
-func (b *BuilderRPC) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
-	var resp []string
-	if err := convertPropertiesToBytes([]*latest.Artifact{artifact}); err != nil {
-		return nil, errors.Wrapf(err, "converting properties to bytes")
-	}
-	args := DependencyArgs{artifact}
-	err := b.client.Call("Plugin.DependenciesForArtifact", args, &resp)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
-func (b *BuilderRPC) Labels() map[string]string {
-	var resp map[string]string
-	err := b.client.Call("Plugin.Labels", new(interface{}), &resp)
-	if err != nil {
-		// Can't return error, so log it instead
-		logrus.Errorf("Unable to get labels from server: %v", err)
-	}
-	return resp
-}
-
-func (b *BuilderRPC) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	var resp []build.Artifact
-	if err := convertPropertiesToBytes(artifacts); err != nil {
-		return nil, errors.Wrapf(err, "converting properties to bytes")
-	}
-	args := BuildArgs{
-		ImageTags: tags,
-		Artifacts: artifacts,
-	}
-	err := b.client.Call("Plugin.Build", args, &resp)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
 
 func convertPropertiesToBytes(artifacts []*latest.Artifact) error {
 	for _, a := range artifacts {
@@ -107,12 +51,11 @@ type BuilderRPCServer struct {
 	Impl PluginBuilder
 }
 
-func (s *BuilderRPCServer) Init(args InitArgs, resp *interface{}) error {
-	s.Impl.Init(args.Opts, args.Env)
-	return nil
+func (s *BuilderRPCServer) Init(runCtx *runcontext.RunContext, resp *interface{}) error {
+	return s.Impl.Init(runCtx)
 }
 
-func (s *BuilderRPCServer) Labels(args interface{}, resp *map[string]string) error {
+func (s *BuilderRPCServer) Labels(_ interface{}, resp *map[string]string) error {
 	*resp = s.Impl.Labels()
 	return nil
 }
@@ -124,6 +67,10 @@ func (s *BuilderRPCServer) Build(b BuildArgs, resp *[]build.Artifact) error {
 	}
 	*resp = artifacts
 	return nil
+}
+
+func (s *BuilderRPCServer) Prune(args interface{}, resp *interface{}) error {
+	return s.Impl.Prune(context.Background(), os.Stdout)
 }
 
 func (s *BuilderRPCServer) DependenciesForArtifact(d DependencyArgs, resp *[]string) error {
@@ -138,12 +85,6 @@ func (s *BuilderRPCServer) DependenciesForArtifact(d DependencyArgs, resp *[]str
 // DependencyArgs are args passed via rpc to the build plugin on DependencyForArtifact()
 type DependencyArgs struct {
 	*latest.Artifact
-}
-
-// InitArgs are args passed via rpc to the builder plugin on Init()
-type InitArgs struct {
-	Opts *config.SkaffoldOptions
-	Env  *latest.ExecutionEnvironment
 }
 
 // BuildArgs are the args passed via rpc to the builder plugin on Build()

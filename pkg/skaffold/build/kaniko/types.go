@@ -18,10 +18,12 @@ package kaniko
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -31,18 +33,19 @@ import (
 type Builder struct {
 	*latest.ClusterDetails
 
-	timeout time.Duration
+	timeout            time.Duration
+	insecureRegistries map[string]bool
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Kaniko.
-func NewBuilder(clusterDetails *latest.ClusterDetails) (*Builder, error) {
-	timeout, err := time.ParseDuration(clusterDetails.Timeout)
+func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
+	timeout, err := time.ParseDuration(runCtx.Cfg.Build.Cluster.Timeout)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing timeout")
 	}
 
 	return &Builder{
-		ClusterDetails: clusterDetails,
+		ClusterDetails: runCtx.Cfg.Build.Cluster,
 		timeout:        timeout,
 	}, nil
 }
@@ -56,9 +59,13 @@ func (b *Builder) Labels() map[string]string {
 
 // DependenciesForArtifact returns the Dockerfile dependencies for this kaniko artifact
 func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
-	paths, err := docker.GetDependencies(ctx, a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs)
+	paths, err := docker.GetDependencies(ctx, a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, b.insecureRegistries)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
 	}
 	return util.AbsolutePaths(a.Workspace, paths), nil
+}
+
+func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
+	return nil
 }

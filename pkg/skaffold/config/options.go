@@ -30,29 +30,31 @@ type Output struct {
 // SkaffoldOptions are options that are set by command line arguments not included
 // in the config file itself
 type SkaffoldOptions struct {
-	ConfigurationFile string
-	Cleanup           bool
-	Notification      bool
-	Tail              bool
-	TailDev           bool
-	PortForward       bool
-	SkipTests         bool
-	CacheArtifacts    bool
-	ExperimentalGUI   bool
-	EnableRPC         bool
-	Profiles          []string
-	CustomTag         string
-	Namespace         string
-	CacheFile         string
-	TargetImages      []string
-	Trigger           string
-	CustomLabels      []string
-	WatchPollInterval int
-	DefaultRepo       string
-	PreBuiltImages    []string
-	Command           string
-	RPCPort           int
-	RPCHTTPPort       int
+	ConfigurationFile  string
+	Cleanup            bool
+	Notification       bool
+	Tail               bool
+	TailDev            bool
+	PortForward        bool
+	SkipTests          bool
+	CacheArtifacts     bool
+	ExperimentalGUI    bool
+	EnableRPC          bool
+	NoPrune            bool
+	CustomTag          string
+	Namespace          string
+	CacheFile          string
+	Trigger            string
+	WatchPollInterval  int
+	DefaultRepo        string
+	CustomLabels       []string
+	TargetImages       []string
+	Profiles           []string
+	PreBuiltImages     []string
+	InsecureRegistries []string
+	Command            string
+	RPCPort            int
+	RPCHTTPPort        int
 }
 
 // Labels returns a map of labels to be applied to all deployed
@@ -81,4 +83,10 @@ func (opts *SkaffoldOptions) Labels() map[string]string {
 		labels[l[0]] = l[1]
 	}
 	return labels
+}
+
+// Prune returns true iff the user did NOT specify the --no-prune flag,
+// and the user did NOT specify the --cache-artifacts flag.
+func (opts *SkaffoldOptions) Prune() bool {
+	return !opts.NoPrune && !opts.CacheArtifacts
 }

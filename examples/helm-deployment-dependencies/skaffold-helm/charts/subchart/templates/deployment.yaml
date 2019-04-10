@@ -15,12 +15,20 @@ spec:
         app: {{ template "subchart.name" . }}
         release: {{ .Release.Name }}
     spec:
+      volumes:
+        - name: static-assets
+          configMap:
+            name: {{ template "subchart.name" . }}
+            defaultMode: 420
       containers:
         - name: {{ .Chart.Name }}
           image: {{ .Values.image }}
           imagePullPolicy: {{ .Values.pullPolicy }}
-          command: ["/bin/bash", "-c", "--" ]
-          args: ["while true; do sleep 30; done;"]
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - mountPath: /usr/share/nginx/html/
+              name: static-assets
           resources:
 {{ toYaml .Values.resources | indent 12 }}
     {{- if .Values.nodeSelector }}

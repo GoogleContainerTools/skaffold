@@ -34,6 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -51,12 +52,12 @@ type HelmDeployer struct {
 
 // NewHelmDeployer returns a new HelmDeployer for a DeployConfig filled
 // with the needed configuration for `helm`
-func NewHelmDeployer(cfg *latest.HelmDeploy, kubeContext string, namespace string, defaultRepo string) *HelmDeployer {
+func NewHelmDeployer(runCtx *runcontext.RunContext) *HelmDeployer {
 	return &HelmDeployer{
-		HelmDeploy:  cfg,
-		kubeContext: kubeContext,
-		namespace:   namespace,
-		defaultRepo: defaultRepo,
+		HelmDeploy:  runCtx.Cfg.Deploy.HelmDeploy,
+		kubeContext: runCtx.KubeContext,
+		namespace:   runCtx.Opts.Namespace,
+		defaultRepo: runCtx.DefaultRepo,
 	}
 }
 

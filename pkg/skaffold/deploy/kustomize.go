@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -66,15 +67,15 @@ type KustomizeDeployer struct {
 	defaultRepo string
 }
 
-func NewKustomizeDeployer(cfg *latest.KustomizeDeploy, kubeContext string, namespace string, defaultRepo string) *KustomizeDeployer {
+func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 	return &KustomizeDeployer{
-		KustomizeDeploy: cfg,
+		KustomizeDeploy: runCtx.Cfg.Deploy.KustomizeDeploy,
 		kubectl: kubectl.CLI{
-			Namespace:   namespace,
-			KubeContext: kubeContext,
-			Flags:       cfg.Flags,
+			Namespace:   runCtx.Opts.Namespace,
+			KubeContext: runCtx.KubeContext,
+			Flags:       runCtx.Cfg.Deploy.KustomizeDeploy.Flags,
 		},
-		defaultRepo: defaultRepo,
+		defaultRepo: runCtx.DefaultRepo,
 	}
 }
 

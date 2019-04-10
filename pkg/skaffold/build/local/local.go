@@ -53,6 +53,17 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 	}
 
 	if b.pushImages {
+		// only track images for pruning when building with docker
+		// if we're pushing a bazel image, it was built directly to the registry
+		if artifact.DockerArtifact != nil {
+			imageID, err := b.getImageIDForTag(ctx, tag)
+			if err != nil {
+				logrus.Warnf("unable to inspect image: built images may not be cleaned up correctly by skaffold")
+			}
+			if imageID != "" {
+				b.builtImages = append(b.builtImages, imageID)
+			}
+		}
 		digest := digestOrImageID
 		return tag + "@" + digest, nil
 	}
@@ -62,6 +73,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 	// So, the solution we chose is to create a tag, just for Skaffold, from
 	// the imageID, and use that in the manifests.
 	imageID := digestOrImageID
+	b.builtImages = append(b.builtImages, imageID)
 	uniqueTag := artifact.ImageName + ":" + strings.TrimPrefix(imageID, "sha256:")
 	if err := b.localDocker.Tag(ctx, imageID, uniqueTag); err != nil {
 		return "", err
@@ -97,7 +109,7 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 
 	switch {
 	case a.DockerArtifact != nil:
-		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs)
+		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, b.insecureRegistries)
 
 	case a.BazelArtifact != nil:
 		paths, err = bazel.GetDependencies(ctx, a.Workspace, a.BazelArtifact)
@@ -124,4 +136,12 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 	}
 
 	return util.AbsolutePaths(a.Workspace, paths), nil
+}
+
+func (b *Builder) getImageIDForTag(ctx context.Context, tag string) (string, error) {
+	insp, _, err := b.localDocker.ImageInspectWithRaw(ctx, tag)
+	if err != nil {
+		return "", errors.Wrap(err, "inspecting image")
+	}
+	return insp.ID, nil
 }

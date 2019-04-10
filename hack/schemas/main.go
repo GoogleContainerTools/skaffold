@@ -68,6 +68,9 @@ type Definition struct {
 	HTMLDescription      string                 `json:"x-intellij-html-description,omitempty"`
 	Default              interface{}            `json:"default,omitempty"`
 	Examples             []string               `json:"examples,omitempty"`
+
+	inlines []*Definition
+	tags    string
 }
 
 func main() {
@@ -145,8 +148,10 @@ func setTypeOrRef(def *Definition, typeName string) {
 	}
 }
 
-func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string) *Definition {
-	def := &Definition{}
+func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string, tags string) *Definition {
+	def := &Definition{
+		tags: tags,
+	}
 
 	switch tt := t.(type) {
 	case *ast.Ident:
@@ -172,7 +177,7 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string)
 
 	case *ast.ArrayType:
 		def.Type = "array"
-		def.Items = g.newDefinition("", tt.Elt, "")
+		def.Items = g.newDefinition("", tt.Elt, "", "")
 		if def.Items.Ref == "" {
 			def.Default = "[]"
 		}
@@ -180,14 +185,14 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string)
 	case *ast.MapType:
 		def.Type = "object"
 		def.Default = "{}"
-		def.AdditionalProperties = g.newDefinition("", tt.Value, "")
+		def.AdditionalProperties = g.newDefinition("", tt.Value, "", "")
 
 	case *ast.StructType:
 		for _, field := range tt.Fields.List {
 			yamlName := yamlFieldName(field)
 
 			if strings.Contains(field.Tag.Value, "inline") {
-				def.AnyOf = append(def.AnyOf, &Definition{
+				def.inlines = append(def.inlines, &Definition{
 					Ref: defPrefix + field.Type.(*ast.Ident).Name,
 				})
 				continue
@@ -206,7 +211,7 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string)
 			}
 
 			def.PreferredOrder = append(def.PreferredOrder, yamlName)
-			def.Properties[yamlName] = g.newDefinition(field.Names[0].Name, field.Type, field.Doc.Text())
+			def.Properties[yamlName] = g.newDefinition(field.Names[0].Name, field.Type, field.Doc.Text(), field.Tag.Value)
 			def.AdditionalProperties = false
 		}
 	}
@@ -251,6 +256,11 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string)
 	return def
 }
 
+func isOneOf(definition *Definition) bool {
+	return len(definition.Properties) > 0 &&
+		strings.Contains(definition.Properties[definition.PreferredOrder[0]].tags, "oneOf=")
+}
+
 func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 	fset := token.NewFileSet()
 	node, err := parser.ParseFile(fset, inputPath, nil, parser.ParseComments)
@@ -275,29 +285,39 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 
 			name := typeSpec.Name.Name
 			preferredOrder = append(preferredOrder, name)
-			definitions[name] = g.newDefinition(name, typeSpec.Type, declaration.Doc.Text())
+			definitions[name] = g.newDefinition(name, typeSpec.Type, declaration.Doc.Text(), "")
 		}
 	}
 
-	// Inline anyOfs
+	var inlines []string
+
 	for _, k := range preferredOrder {
 		def := definitions[k]
-		if len(def.AnyOf) == 0 {
+		if len(def.inlines) == 0 {
 			continue
 		}
 
 		var options []*Definition
-		options = append(options, &Definition{
-			Properties:           def.Properties,
-			PreferredOrder:       def.PreferredOrder,
-			AdditionalProperties: false,
-		})
 
-		for _, anyOf := range def.AnyOf {
-			ref := strings.TrimPrefix(anyOf.Ref, defPrefix)
-			referenced := definitions[ref]
+		for _, inlineStruct := range def.inlines {
+			ref := strings.TrimPrefix(inlineStruct.Ref, defPrefix)
+			inlineStructRef := definitions[ref]
+			inlines = append(inlines, ref)
 
-			for _, key := range referenced.PreferredOrder {
+			// if not anyof, merge & continue
+			if !isOneOf(inlineStructRef) {
+				if def.Properties == nil {
+					def.Properties = make(map[string]*Definition, len(inlineStructRef.Properties))
+				}
+				for k, v := range inlineStructRef.Properties {
+					def.Properties[k] = v
+				}
+				def.PreferredOrder = append(def.PreferredOrder, inlineStructRef.PreferredOrder...)
+				def.Required = append(def.Required, inlineStructRef.Required...)
+				continue
+			}
+
+			for _, key := range inlineStructRef.PreferredOrder {
 				var preferredOrder []string
 				choice := make(map[string]*Definition)
 
@@ -309,7 +329,7 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 				}
 
 				preferredOrder = append(preferredOrder, key)
-				choice[key] = referenced.Properties[key]
+				choice[key] = inlineStructRef.Properties[key]
 
 				options = append(options, &Definition{
 					Properties:           choice,
@@ -319,10 +339,24 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 			}
 		}
 
+		if len(options) == 0 {
+			continue
+		}
+
+		options = append([]*Definition{{
+			Properties:           def.Properties,
+			PreferredOrder:       def.PreferredOrder,
+			AdditionalProperties: false,
+		}}, options...)
+
 		def.Properties = nil
 		def.PreferredOrder = nil
 		def.AdditionalProperties = nil
 		def.AnyOf = options
+	}
+
+	for _, ref := range inlines {
+		delete(definitions, ref)
 	}
 
 	schema := Schema{
@@ -330,7 +364,7 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 		Definition: &Definition{
 			Type: "object",
 			AnyOf: []*Definition{{
-				Ref: defPrefix + "SkaffoldPipeline",
+				Ref: defPrefix + preferredOrder[0],
 			}},
 		},
 		Definitions: definitions,

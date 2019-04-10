@@ -19,10 +19,12 @@ package local
 import (
 	"context"
 	"fmt"
+	"io"
 
 	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -32,16 +34,19 @@ import (
 type Builder struct {
 	cfg *latest.LocalBuild
 
-	localDocker  docker.LocalDaemon
-	localCluster bool
-	pushImages   bool
-	skipTests    bool
-	kubeContext  string
+	localDocker        docker.LocalDaemon
+	localCluster       bool
+	pushImages         bool
+	prune              bool
+	skipTests          bool
+	kubeContext        string
+	builtImages        []string
+	insecureRegistries map[string]bool
 }
 
 // NewBuilder returns an new instance of a local Builder.
-func NewBuilder(cfg *latest.LocalBuild, kubeContext string, skipTests bool) (*Builder, error) {
-	localDocker, err := docker.NewAPIClient()
+func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
+	localDocker, err := docker.NewAPIClient(runCtx.Opts.Prune(), runCtx.InsecureRegistries)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
@@ -52,20 +57,22 @@ func NewBuilder(cfg *latest.LocalBuild, kubeContext string, skipTests bool) (*Bu
 	}
 
 	var pushImages bool
-	if cfg.Push == nil {
+	if runCtx.Cfg.Build.LocalBuild.Push == nil {
 		pushImages = !localCluster
 		logrus.Debugf("push value not present, defaulting to %t because localCluster is %t", pushImages, localCluster)
 	} else {
-		pushImages = *cfg.Push
+		pushImages = *runCtx.Cfg.Build.LocalBuild.Push
 	}
 
 	return &Builder{
-		cfg:          cfg,
-		kubeContext:  kubeContext,
-		localDocker:  localDocker,
-		localCluster: localCluster,
-		pushImages:   pushImages,
-		skipTests:    skipTests,
+		cfg:                runCtx.Cfg.Build.LocalBuild,
+		kubeContext:        runCtx.KubeContext,
+		localDocker:        localDocker,
+		localCluster:       localCluster,
+		pushImages:         pushImages,
+		skipTests:          runCtx.Opts.SkipTests,
+		prune:              runCtx.Opts.Prune(),
+		insecureRegistries: runCtx.InsecureRegistries,
 	}, nil
 }
 
@@ -81,4 +88,9 @@ func (b *Builder) Labels() map[string]string {
 	}
 
 	return labels
+}
+
+// Prune uses the docker API client to remove all images built with Skaffold
+func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
+	return docker.Prune(ctx, out, b.builtImages, b.localDocker)
 }

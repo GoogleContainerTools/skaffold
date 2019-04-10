@@ -11,7 +11,7 @@ var version;
   const table = document.getElementById("table");
 
   render(html`
-    ${template(json.definitions, undefined, '#/definitions/SkaffoldPipeline', 0)}
+    ${template(json.definitions, undefined, json.anyOf[0].$ref, 0)}
   `, table);
 })();
 

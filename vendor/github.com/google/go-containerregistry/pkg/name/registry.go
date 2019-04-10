@@ -114,8 +114,9 @@ func checkRegistry(name string) error {
 
 // NewRegistry returns a Registry based on the given name.
 // Strict validation requires explicit, valid RFC 3986 URI authorities to be given.
-func NewRegistry(name string, strict Strictness) (Registry, error) {
-	if strict == StrictValidation && len(name) == 0 {
+func NewRegistry(name string, opts ...Option) (Registry, error) {
+	opt := makeOptions(opts...)
+	if opt.strict && len(name) == 0 {
 		return Registry{}, NewErrBadName("strict validation requires the registry to be explicitly defined")
 	}
 
@@ -129,16 +130,13 @@ func NewRegistry(name string, strict Strictness) (Registry, error) {
 		name = DefaultRegistry
 	}
 
-	return Registry{registry: name}, nil
+	return Registry{registry: name, insecure: opt.insecure}, nil
 }
 
 // NewInsecureRegistry returns an Insecure Registry based on the given name.
-// Strict validation requires explicit, valid RFC 3986 URI authorities to be given.
-func NewInsecureRegistry(name string, strict Strictness) (Registry, error) {
-	reg, err := NewRegistry(name, strict)
-	if err != nil {
-		return Registry{}, err
-	}
-	reg.insecure = true
-	return reg, nil
+//
+// Deprecated: Use the Insecure Option with NewRegistry instead.
+func NewInsecureRegistry(name string, opts ...Option) (Registry, error) {
+	opts = append(opts, Insecure)
+	return NewRegistry(name, opts...)
 }

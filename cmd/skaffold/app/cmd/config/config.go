@@ -26,7 +26,8 @@ type Config struct {
 // ContextConfig is the context-specific config information provided in
 // the global Skaffold config.
 type ContextConfig struct {
-	Kubecontext  string `yaml:"kube-context,omitempty"`
-	DefaultRepo  string `yaml:"default-repo,omitempty"`
-	LocalCluster *bool  `yaml:"local-cluster,omitempty"`
+	Kubecontext        string   `yaml:"kube-context,omitempty"`
+	DefaultRepo        string   `yaml:"default-repo,omitempty"`
+	LocalCluster       *bool    `yaml:"local-cluster,omitempty"`
+	InsecureRegistries []string `yaml:"insecure-registries,omitempty"`
 }

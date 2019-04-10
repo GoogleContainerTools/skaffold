@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -38,11 +39,13 @@ type Builder struct {
 	opts *config.SkaffoldOptions
 	env  *latest.ExecutionEnvironment
 	*latest.LocalBuild
-	LocalDocker  docker.LocalDaemon
-	LocalCluster bool
-	PushImages   bool
-	PluginMode   bool
-	KubeContext  string
+	LocalDocker        docker.LocalDaemon
+	LocalCluster       bool
+	PushImages         bool
+	PluginMode         bool
+	KubeContext        string
+	builtImages        []string
+	insecureRegistries map[string]bool
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Bazel.
@@ -53,15 +56,18 @@ func NewBuilder() *Builder {
 }
 
 // Init stores skaffold options and the execution environment
-func (b *Builder) Init(opts *config.SkaffoldOptions, env *latest.ExecutionEnvironment) {
+func (b *Builder) Init(runCtx *runcontext.RunContext) error {
 	if b.PluginMode {
-		if err := event.SetupRPCClient(opts); err != nil {
+		if err := event.SetupRPCClient(runCtx.Opts); err != nil {
 			logrus.Warn("error establishing gRPC connection to skaffold process; events will not be handled correctly")
 			logrus.Warn(err.Error())
+			return err
 		}
 	}
-	b.opts = opts
-	b.env = env
+	b.opts = runCtx.Opts
+	b.env = runCtx.Cfg.Build.ExecutionEnvironment
+	b.insecureRegistries = runCtx.InsecureRegistries
+	return nil
 }
 
 // Labels are labels specific to Bazel.
