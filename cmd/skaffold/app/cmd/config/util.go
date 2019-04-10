@@ -170,7 +170,6 @@ func GetDefaultRepo(cliValue string) (string, error) {
 			defaultRepo = cfg.DefaultRepo
 		}
 	}
-
 	return defaultRepo, nil
 }
 
@@ -197,6 +196,31 @@ func GetLocalCluster() (bool, error) {
 	}
 
 	return localCluster, nil
+}
+
+func GetInsecureRegistries() ([]string, error) {
+	cfg, err := GetConfigForKubectx()
+	registries := []string{}
+	if err != nil {
+		return registries, errors.Wrap(err, "retrieving global config")
+	}
+
+	if cfg != nil {
+		if cfg.InsecureRegistries != nil {
+			registries = cfg.InsecureRegistries
+		}
+	} else {
+		// if no value is set for this cluster, fall back to the global setting
+		globalCfg, err := GetGlobalConfig()
+		if err != nil {
+			return registries, errors.Wrap(err, "retrieving global config")
+		}
+		if globalCfg != nil && globalCfg.InsecureRegistries != nil {
+			registries = globalCfg.InsecureRegistries
+		}
+	}
+
+	return registries, nil
 }
 
 func isDefaultLocal(kubeContext string) bool {

@@ -45,9 +45,10 @@ type Builder struct {
 	LocalCluster bool
 	PushImages   bool
 	// TODO: remove once old docker build functionality is removed (priyawadhwa@)
-	PluginMode  bool
-	KubeContext string
-	builtImages []string
+	PluginMode         bool
+	KubeContext        string
+	builtImages        []string
+	insecureRegistries map[string]bool
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Docker.
@@ -68,6 +69,7 @@ func (b *Builder) Init(runCtx *runcontext.RunContext) error {
 	}
 	b.opts = runCtx.Opts
 	b.env = runCtx.Cfg.Build.ExecutionEnvironment
+	b.insecureRegistries = runCtx.InsecureRegistries
 	logrus.Debugf("initialized plugin with %+v", runCtx)
 	return nil
 }
@@ -84,7 +86,7 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.
 	if err := setArtifact(artifact); err != nil {
 		return nil, err
 	}
-	paths, err := docker.GetDependencies(ctx, artifact.Workspace, artifact.DockerArtifact.DockerfilePath, artifact.DockerArtifact.BuildArgs)
+	paths, err := docker.GetDependencies(ctx, artifact.Workspace, artifact.DockerArtifact.DockerfilePath, artifact.DockerArtifact.BuildArgs, b.insecureRegistries)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting dependencies for %s", artifact.ImageName)
 	}

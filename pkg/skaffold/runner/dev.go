@@ -50,7 +50,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifac
 		logger.Mute()
 
 		for _, a := range changed.dirtyArtifacts {
-			s, err := sync.NewItem(a.artifact, a.events, r.builds)
+			s, err := sync.NewItem(a.artifact, a.events, r.builds, r.runCtx.InsecureRegistries)
 			if err != nil {
 				return errors.Wrap(err, "sync")
 			}

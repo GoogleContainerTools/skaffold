@@ -34,7 +34,7 @@ type mockBuilder struct {
 	artifacts []build.Artifact
 }
 
-func (b *mockBuilder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (b *mockBuilder) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, _ []*latest.Artifact) ([]build.Artifact, error) {
 	return b.artifacts, nil
 }
 
@@ -42,13 +42,13 @@ func (b *mockBuilder) Labels() map[string]string {
 	return b.labels
 }
 
-func (b *mockBuilder) Init(runCtx *runcontext.RunContext) error { return nil }
+func (b *mockBuilder) Init(_ *runcontext.RunContext) error { return nil }
 
-func (b *mockBuilder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+func (b *mockBuilder) DependenciesForArtifact(_ context.Context, _ *latest.Artifact) ([]string, error) {
 	return nil, nil
 }
 
-func (b *mockBuilder) Prune(ctx context.Context, out io.Writer) error {
+func (b *mockBuilder) Prune(_ context.Context, _ io.Writer) error {
 	return nil
 }
 

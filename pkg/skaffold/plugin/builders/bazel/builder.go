@@ -39,12 +39,13 @@ type Builder struct {
 	opts *config.SkaffoldOptions
 	env  *latest.ExecutionEnvironment
 	*latest.LocalBuild
-	LocalDocker  docker.LocalDaemon
-	LocalCluster bool
-	PushImages   bool
-	PluginMode   bool
-	KubeContext  string
-	builtImages  []string
+	LocalDocker        docker.LocalDaemon
+	LocalCluster       bool
+	PushImages         bool
+	PluginMode         bool
+	KubeContext        string
+	builtImages        []string
+	insecureRegistries map[string]bool
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Bazel.
@@ -65,6 +66,7 @@ func (b *Builder) Init(runCtx *runcontext.RunContext) error {
 	}
 	b.opts = runCtx.Opts
 	b.env = runCtx.Cfg.Build.ExecutionEnvironment
+	b.insecureRegistries = runCtx.InsecureRegistries
 	return nil
 }
 

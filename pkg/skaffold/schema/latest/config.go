@@ -64,6 +64,10 @@ type BuildConfig struct {
 	// Artifacts lists the images you're going to be building.
 	Artifacts []*Artifact `yaml:"artifacts,omitempty"`
 
+	// InsecureRegistries is a list of registries declared by the user to be insecure.
+	// These registries will be connected to via HTTP instead of HTTPS.
+	InsecureRegistries []string `yaml:"insecureRegistries,omitempty"`
+
 	// TagPolicy *beta* determines how images are tagged.
 	// A few strategies are provided here, although you most likely won't need to care!
 	// If not specified, it defaults to `gitCommit: {}`.

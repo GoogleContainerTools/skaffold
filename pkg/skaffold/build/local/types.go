@@ -34,18 +34,19 @@ import (
 type Builder struct {
 	cfg *latest.LocalBuild
 
-	localDocker  docker.LocalDaemon
-	localCluster bool
-	pushImages   bool
-	prune        bool
-	skipTests    bool
-	kubeContext  string
-	builtImages  []string
+	localDocker        docker.LocalDaemon
+	localCluster       bool
+	pushImages         bool
+	prune              bool
+	skipTests          bool
+	kubeContext        string
+	builtImages        []string
+	insecureRegistries map[string]bool
 }
 
 // NewBuilder returns an new instance of a local Builder.
 func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
-	localDocker, err := docker.NewAPIClient(runCtx.Opts.Prune())
+	localDocker, err := docker.NewAPIClient(runCtx.Opts.Prune(), runCtx.InsecureRegistries)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
@@ -64,13 +65,14 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	}
 
 	return &Builder{
-		cfg:          runCtx.Cfg.Build.LocalBuild,
-		kubeContext:  runCtx.KubeContext,
-		localDocker:  localDocker,
-		localCluster: localCluster,
-		pushImages:   pushImages,
-		skipTests:    runCtx.Opts.SkipTests,
-		prune:        runCtx.Opts.Prune(),
+		cfg:                runCtx.Cfg.Build.LocalBuild,
+		kubeContext:        runCtx.KubeContext,
+		localDocker:        localDocker,
+		localCluster:       localCluster,
+		pushImages:         pushImages,
+		skipTests:          runCtx.Opts.SkipTests,
+		prune:              runCtx.Opts.Prune(),
+		insecureRegistries: runCtx.InsecureRegistries,
 	}, nil
 }
 

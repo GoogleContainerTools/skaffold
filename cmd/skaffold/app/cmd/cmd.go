@@ -158,6 +158,7 @@ func AddRunDevFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.CacheArtifacts, "cache-artifacts", false, "Set to true to enable caching of artifacts.")
 	cmd.Flags().StringVarP(&opts.CacheFile, "cache-file", "", "", "Specify the location of the cache file (default $HOME/.skaffold/cache)")
 	cmd.Flags().BoolVar(&opts.NoPrune, "no-prune", false, "Skip removing images and containers built by Skaffold")
+	cmd.Flags().StringArrayVar(&opts.InsecureRegistries, "insecure-registry", nil, "Target registries for built images which are not secure")
 }
 
 func AddDevDebugFlags(cmd *cobra.Command) {

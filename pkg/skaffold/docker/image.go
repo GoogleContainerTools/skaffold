@@ -56,18 +56,20 @@ type LocalDaemon interface {
 }
 
 type localDaemon struct {
-	forceRemove bool
-	apiClient   client.CommonAPIClient
-	extraEnv    []string
-	imageCache  sync.Map
+	forceRemove        bool
+	insecureRegistries map[string]bool
+	apiClient          client.CommonAPIClient
+	extraEnv           []string
+	imageCache         sync.Map
 }
 
 // NewLocalDaemon creates a new LocalDaemon.
-func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string, forceRemove bool) LocalDaemon {
+func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string, forceRemove bool, insecureRegistries map[string]bool) LocalDaemon {
 	return &localDaemon{
-		apiClient:   apiClient,
-		extraEnv:    extraEnv,
-		forceRemove: forceRemove,
+		apiClient:          apiClient,
+		extraEnv:           extraEnv,
+		forceRemove:        forceRemove,
+		insecureRegistries: insecureRegistries,
 	}
 }
 
@@ -112,7 +114,7 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 			return nil, err
 		}
 	} else {
-		cfg, err = RetrieveRemoteConfig(image)
+		cfg, err = RetrieveRemoteConfig(image, l.insecureRegistries)
 		if err != nil {
 			return nil, errors.Wrap(err, "getting remote config")
 		}
@@ -133,7 +135,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := CreateDockerTarContext(ctx, buildCtxWriter, workspace, a)
+		err := CreateDockerTarContext(ctx, buildCtxWriter, workspace, a, l.insecureRegistries)
 		if err != nil {
 			buildCtxWriter.CloseWithError(errors.Wrap(err, "creating docker context"))
 			return
@@ -231,7 +233,7 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 	if digest == "" {
 		// Maybe this version of Docker doesn't return the digest of the image
 		// that has been pushed.
-		digest, err = RemoteDigest(ref)
+		digest, err = RemoteDigest(ref, l.insecureRegistries)
 		if err != nil {
 			return "", errors.Wrap(err, "getting digest")
 		}
