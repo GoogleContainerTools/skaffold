@@ -40,11 +40,14 @@ import (
 type Builder struct {
 	opts *config.SkaffoldOptions
 	env  *latest.ExecutionEnvironment
+
+	gcbEnv *gcb.Builder
+
 	*latest.LocalBuild
 	LocalDocker  docker.LocalDaemon
 	LocalCluster bool
 	PushImages   bool
-	gcbEnv       *gcb.Builder
+
 	// TODO: remove once old docker build functionality is removed (priyawadhwa@)
 	PluginMode         bool
 	KubeContext        string
