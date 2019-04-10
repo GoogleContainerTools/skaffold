@@ -35,13 +35,13 @@ import (
 // pathMap contains fields parsed from Jib's JSON output
 type pathMap struct {
 	// Build lists paths to build definitions that trigger a call out to Jib to refresh the pathMap, as well as a rebuild, upon changing
-	Build []string
+	Build []string `json:"build"`
 
 	// Inputs lists paths to build dependencies that trigger a rebuild upon changing
-	Inputs []string
+	Inputs []string `json:"inputs"`
 
-	// Ignore lists paths to files that should be ignored when checking for changes to rebuild
-	Ignore []string
+	// Results lists paths to files that should be ignored when checking for changes to rebuild
+	Results []string `json:"ignore"`
 }
 
 // filesLists contains cached build/input dependencies
@@ -77,7 +77,7 @@ func getDependencies(cmd *exec.Cmd, projectName string) ([]string, error) {
 			return nil, errors.Wrap(err, "initial Jib dependency refresh failed")
 		}
 
-	} else if err := walkFiles(&template.Build, &template.Ignore, func(path string, info os.FileInfo) error {
+	} else if err := walkFiles(&template.Build, &template.Results, func(path string, info os.FileInfo) error {
 		// Walk build files to check for changes
 		if val, ok := files.BuildFileTimes[path]; !ok || info.ModTime() != val {
 			return refreshDependencyList(&files, cmd)
@@ -88,13 +88,13 @@ func getDependencies(cmd *exec.Cmd, projectName string) ([]string, error) {
 	}
 
 	// Walk updated files to build dependency list
-	if err := walkFiles(&files.PathMap.Inputs, &files.PathMap.Ignore, func(path string, info os.FileInfo) error {
+	if err := walkFiles(&files.PathMap.Inputs, &files.PathMap.Results, func(path string, info os.FileInfo) error {
 		dependencyList = append(dependencyList, path)
 		return nil
 	}); err != nil {
 		return nil, errors.Wrap(err, "failed to walk Jib input files to build dependency list")
 	}
-	if err := walkFiles(&files.PathMap.Build, &files.PathMap.Ignore, func(path string, info os.FileInfo) error {
+	if err := walkFiles(&files.PathMap.Build, &files.PathMap.Results, func(path string, info os.FileInfo) error {
 		dependencyList = append(dependencyList, path)
 		files.BuildFileTimes[path] = info.ModTime()
 		return nil
