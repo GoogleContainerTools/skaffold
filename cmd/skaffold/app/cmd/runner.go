@@ -17,7 +17,7 @@ limitations under the License.
 package cmd
 
 import (
-	"strings"
+	"os"
 
 	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -40,7 +40,7 @@ func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.Sk
 		// If the error is NOT that the file doesn't exist, then we warn the user
 		// that maybe they are using an outdated version of Skaffold that's unable to read
 		// the configuration.
-		if !strings.Contains(err.Error(), "no such file or directory") {
+		if !os.IsNotExist(err) {
 			warnIfUpdateIsAvailable()
 		}
 

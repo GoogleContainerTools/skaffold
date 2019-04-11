@@ -80,6 +80,20 @@ func CheckError(t *testing.T, shouldErr bool, err error) {
 	}
 }
 
+// CheckErrorContains checks that an error is not nil and contains
+// a given message.
+func CheckErrorContains(t *testing.T, message string, err error) {
+	t.Helper()
+	if err == nil {
+		t.Error("expected error, but returned none")
+		return
+	}
+	if !strings.Contains(err.Error(), message) {
+		t.Errorf("expected message [%s] not found in error: %s", message, err.Error())
+		return
+	}
+}
+
 // Chdir changes current directory for a test
 func Chdir(t *testing.T, dir string) func() {
 	t.Helper()
