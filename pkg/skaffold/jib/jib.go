@@ -39,7 +39,10 @@ func getDependencies(workspace string, cmd *exec.Cmd) ([]string, error) {
 		return nil, err
 	}
 
-	// Jib's dependencies are absolute, and usually canonicalized, so must canonicalize the workspace
+	// Skaffold prefers to deal with relative paths.  In *practice*, Jib's dependencies
+	// are *usually* absolute (relative to the root) and canonical (with all symlinks expanded).
+	// But that's not guaranteed, so we try to relativize paths against the workspace as
+	// both an absolute path and as a canonicalized workspace.
 	workspaceRoots, err := calculateRoots(workspace)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to resolve workspace %s", workspace)
@@ -72,7 +75,8 @@ func getDependencies(workspace string, cmd *exec.Cmd) ([]string, error) {
 		}
 
 		if !info.IsDir() {
-			// try to relativize the path
+			// try to relativize the path: an error indicates that the file cannot
+			// be made relative to the roots, and so we just use the full path
 			if relative, err := relativize(dep, workspaceRoots...); err == nil {
 				dep = relative
 			}
@@ -84,7 +88,8 @@ func getDependencies(workspace string, cmd *exec.Cmd) ([]string, error) {
 			Unsorted: true,
 			Callback: func(path string, _ *godirwalk.Dirent) error {
 				if info, err := os.Stat(path); err == nil && !info.IsDir() {
-					// try to relativize the path
+					// try to relativize the path: an error indicates that the file cannot
+					// be made relative to the roots, and so we just use the full path
 					if relative, err := relativize(path, workspaceRoots...); err == nil {
 						path = relative
 					}
