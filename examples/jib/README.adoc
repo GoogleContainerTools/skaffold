@@ -2,7 +2,7 @@
 :icons: font
 
 Jib is one of the supported builders in Skaffold.
-link:https://github.com/GoogleContainerTools/jib[Jib] builds Docker and OCI images
+[Jib](https://github.com/GoogleContainerTools/jib) builds Docker and OCI images
 for your Java applications and is available as plugins for Maven and Gradle.
 
 The way you configure it in `skaffold.yaml` is the following build stanza:
