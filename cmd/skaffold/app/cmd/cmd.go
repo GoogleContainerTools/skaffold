@@ -166,7 +166,6 @@ func AddDevDebugFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
 	cmd.Flags().BoolVar(&opts.PortForward, "port-forward", true, "Port-forward exposed container ports within pods")
 	cmd.Flags().StringArrayVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels")
-	cmd.Flags().BoolVar(&opts.ExperimentalGUI, "experimental-gui", false, "Experimental Graphical User Interface")
 }
 
 func SetUpLogs(out io.Writer, level string) error {

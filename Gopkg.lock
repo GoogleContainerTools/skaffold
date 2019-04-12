@@ -236,25 +236,6 @@
   version = "v1.12.0"
 
 [[projects]]
-  digest = "1:053c8b82c44fc384cca33724d4359235fa98e0cb8b135c392d8e14f396a2a7e8"
-  name = "github.com/gdamore/encoding"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "6289cdc94c00ac4aa177771c5fce7af2f96b626d"
-  version = "v1.0.0"
-
-[[projects]]
-  digest = "1:09b6d7ce76747ac52e2122e15eff2965e47f537f9ddf5e62acc2d79007ce9e07"
-  name = "github.com/gdamore/tcell"
-  packages = [
-    ".",
-    "terminfo",
-  ]
-  pruneopts = "NUT"
-  revision = "aaadc574a6ed8dc3abe56036ca130dcee1ee6b6e"
-  version = "v1.1.1"
-
-[[projects]]
   digest = "1:81466b4218bf6adddac2572a30ac733a9255919bc2f470b4827a317bd4ee1756"
   name = "github.com/ghodss/yaml"
   packages = ["."]
@@ -534,14 +515,6 @@
   version = "v0.0.10"
 
 [[projects]]
-  digest = "1:ed9924c64c12bb89cc6fe944985904f9c572a4ce38d9ad132716ef8c68237237"
-  name = "github.com/lucasb-eyer/go-colorful"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "345fbb3dbcdb252d9985ee899a84963c0fa24c82"
-  version = "v1.0"
-
-[[projects]]
   digest = "1:08c231ec84231a7e23d67e4b58f975e1423695a32467a362ee55a803f9de8061"
   name = "github.com/mattn/go-colorable"
   packages = ["."]
@@ -555,14 +528,6 @@
   packages = ["."]
   pruneopts = "NUT"
   revision = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c"
-  version = "v0.0.4"
-
-[[projects]]
-  digest = "1:70ef8268170621826f8c111ac1674afe75136f526f449453b4a6631c6dba1946"
-  name = "github.com/mattn/go-runewidth"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "3ee7d812e62a0804a7d0a324e0249ca2db3476d3"
   version = "v0.0.4"
 
 [[projects]]
@@ -738,14 +703,6 @@
   revision = "619930b0b4713cc1280189bf0a4c54b3fb506f60"
 
 [[projects]]
-  branch = "master"
-  digest = "1:d8cda3d9486dbc1ed442e36b9cbe69df4500af24f33fca217998e198d22b5bd7"
-  name = "github.com/rivo/tview"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "84fdb36408f35b8998d48d323f55f40b7f14a19b"
-
-[[projects]]
   digest = "1:b0e0e2abf5c70fd0f7f6c053c6c99c6960149146e40d5c7547cacc176e5d9973"
   name = "github.com/rjeczalik/notify"
   packages = ["."]
@@ -893,13 +850,11 @@
   revision = "4ed8d59d0b35e1e29334a206d1b3f38b1e5dfb31"
 
 [[projects]]
-  digest = "1:abee7d95958e649b0319b44f4964e55db9fa4098cef5b27e829143421e9a2376"
+  digest = "1:e7071ed636b5422cc51c0e3a6cebc229d6c9fffc528814b519a980641422d619"
   name = "golang.org/x/text"
   packages = [
     "collate",
     "collate/build",
-    "encoding",
-    "encoding/internal/identifier",
     "internal/colltab",
     "internal/gen",
     "internal/tag",
@@ -1359,7 +1314,6 @@
     "github.com/moby/buildkit/frontend/dockerfile/parser",
     "github.com/moby/buildkit/frontend/dockerfile/shell",
     "github.com/pkg/errors",
-    "github.com/rivo/tview",
     "github.com/rjeczalik/notify",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",

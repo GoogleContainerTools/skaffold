@@ -231,7 +231,6 @@ Flags:
       --cleanup                         Delete deployments after dev mode is interrupted (default true)
   -d, --default-repo string             Default repository value (overrides global config)
       --enable-rpc skaffold dev         Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
-      --experimental-gui                Experimental Graphical User Interface
   -f, --filename string                 Filename or URL to the pipeline file (default "skaffold.yaml")
       --insecure-registry stringArray   Target registries for built images which are not secure
   -l, --label stringArray               Add custom labels to deployed objects. Set multiple times for multiple labels
@@ -258,7 +257,6 @@ Env vars:
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
-* `SKAFFOLD_EXPERIMENTAL_GUI` (same as `--experimental-gui`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
 * `SKAFFOLD_LABEL` (same as `--label`)
@@ -382,7 +380,6 @@ Flags:
       --cleanup                         Delete deployments after dev mode is interrupted (default true)
   -d, --default-repo string             Default repository value (overrides global config)
       --enable-rpc skaffold dev         Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
-      --experimental-gui                Experimental Graphical User Interface
   -f, --filename string                 Filename or URL to the pipeline file (default "skaffold.yaml")
       --insecure-registry stringArray   Target registries for built images which are not secure
   -l, --label stringArray               Add custom labels to deployed objects. Set multiple times for multiple labels
@@ -412,7 +409,6 @@ Env vars:
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
-* `SKAFFOLD_EXPERIMENTAL_GUI` (same as `--experimental-gui`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
 * `SKAFFOLD_LABEL` (same as `--label`)

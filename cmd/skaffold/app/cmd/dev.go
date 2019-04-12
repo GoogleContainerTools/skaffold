@@ -19,15 +19,10 @@ package cmd
 import (
 	"context"
 	"io"
-	"strings"
 
-	"github.com/hashicorp/go-plugin"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	plugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
-	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -40,7 +35,7 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.Command = "dev"
-			return dev(out, opts.ExperimentalGUI)
+			return dev(out)
 		},
 	}
 	AddRunDevFlags(cmd)
@@ -51,13 +46,12 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func dev(out io.Writer, ui bool) error {
+func dev(out io.Writer) error {
 	opts.EnableRPC = true
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	if !ui {
-		catchCtrlC(cancel)
-	}
+
+	catchCtrlC(cancel)
 
 	cleanup := func() {}
 	if opts.Cleanup {
@@ -73,25 +67,6 @@ func dev(out io.Writer, ui bool) error {
 		}()
 	}
 
-	var (
-		app    *tview.Application
-		output *config.Output
-	)
-	if ui {
-		app, output = createApp()
-		defer app.Stop()
-
-		go func() {
-			app.Run()
-			cancel()
-		}()
-	} else {
-		output = &config.Output{
-			Main: out,
-			Logs: out,
-		}
-	}
-
 	for {
 		select {
 		case <-ctx.Done():
@@ -102,7 +77,7 @@ func dev(out io.Writer, ui bool) error {
 				return errors.Wrap(err, "creating runner")
 			}
 
-			err = r.Dev(ctx, output, config.Build.Artifacts)
+			err = r.Dev(ctx, out, config.Build.Artifacts)
 			if r.HasDeployed() {
 				cleanup = func() {
 					if err := r.Cleanup(context.Background(), out); err != nil {
@@ -128,79 +103,4 @@ func dev(out io.Writer, ui bool) error {
 			r.RPCServerShutdown()
 		}
 	}
-}
-
-func createApp() (*tview.Application, *config.Output) {
-	app := tview.NewApplication()
-
-	mainView := tview.NewTextView()
-	mainView.
-		SetChangedFunc(func() {
-			app.Draw()
-		}).
-		SetDynamicColors(true).
-		SetBorder(true).
-		SetTitle("Build")
-
-	logsView := tview.NewTextView()
-	logsView.
-		SetChangedFunc(func() {
-			app.Draw()
-		}).
-		SetDynamicColors(true).
-		SetBorder(true).
-		SetTitle("Logs")
-
-	grid := tview.NewGrid()
-	grid.
-		SetRows(0, 0).
-		SetColumns(0).
-		SetBorders(false).
-		AddItem(mainView, 0, 0, 1, 1, 0, 0, false).
-		AddItem(logsView, 1, 0, 1, 1, 0, 0, false)
-
-	app.
-		SetRoot(grid, true).
-		SetFocus(grid)
-
-	output := &config.Output{
-		Main: color.ColoredWriter{Writer: ansiWriter(mainView)},
-		Logs: color.ColoredWriter{Writer: ansiWriter(logsView)},
-	}
-
-	return app, output
-}
-
-func ansiWriter(writer io.Writer) io.Writer {
-	return &ansi{
-		Writer: writer,
-		replacer: strings.NewReplacer(
-			"\033[31m", "[maroon]",
-			"\033[32m", "[green]",
-			"\033[33m", "[olive]",
-			"\033[34m", "[navy]",
-			"\033[35m", "[purple]",
-			"\033[36m", "[teal]",
-			"\033[37m", "[silver]",
-
-			"\033[91m", "[red]",
-			"\033[92m", "[lime]",
-			"\033[93m", "[yellow]",
-			"\033[94m", "[blue]",
-			"\033[95m", "[fuchsia]",
-			"\033[96m", "[aqua]",
-			"\033[97m", "[white]",
-
-			"\033[0m", "",
-		),
-	}
-}
-
-type ansi struct {
-	io.Writer
-	replacer *strings.Replacer
-}
-
-func (a *ansi) Write(text []byte) (int, error) {
-	return a.replacer.WriteString(a.Writer, string(text))
 }
