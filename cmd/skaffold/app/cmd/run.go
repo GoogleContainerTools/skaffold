@@ -33,7 +33,6 @@ func NewCmdRun(out io.Writer) *cobra.Command {
 		Short: "Runs a pipeline file",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opts.Command = "run"
 			err := run(out)
 			if err == nil {
 				tips.PrintForRun(out, opts)
