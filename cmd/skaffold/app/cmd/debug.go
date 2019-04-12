@@ -49,5 +49,5 @@ func debug(out io.Writer) error {
 
 	deploy.AddManifestTransform(debugging.ApplyDebuggingTransforms)
 
-	return dev(out, opts.ExperimentalGUI)
+	return dev(out)
 }
