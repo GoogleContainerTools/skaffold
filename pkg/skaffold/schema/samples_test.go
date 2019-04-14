@@ -28,7 +28,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-const samplesRoot = "../../../docs/content/en/samples"
+const (
+	samplesRoot   = "../../../docs/content/en/samples"
+	ignoredSample = "structureTest.yaml"
+)
 
 func TestParseSamples(t *testing.T) {
 	paths, err := findSamples(samplesRoot)
@@ -45,6 +48,10 @@ func TestParseSamples(t *testing.T) {
 
 	for _, path := range paths {
 		name := filepath.Base(path)
+
+		if name == ignoredSample {
+			continue
+		}
 
 		t.Run(name, func(t *testing.T) {
 			buf, err := ioutil.ReadFile(path)
