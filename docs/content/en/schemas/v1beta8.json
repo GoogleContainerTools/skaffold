@@ -1576,6 +1576,10 @@
       "x-intellij-html-description": "<em>beta</em> tags images with their sha256 digest."
     },
     "SkaffoldConfig": {
+      "required": [
+        "apiVersion",
+        "kind"
+      ],
       "properties": {
         "apiVersion": {
           "type": "string",

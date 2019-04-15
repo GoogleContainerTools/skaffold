@@ -31,10 +31,10 @@ func NewSkaffoldConfig() util.VersionedConfig {
 // SkaffoldConfig holds the fields parsed from the Skaffold configuration file (skaffold.yaml).
 type SkaffoldConfig struct {
 	// APIVersion is the version of the configuration.
-	APIVersion string `yaml:"apiVersion"`
+	APIVersion string `yaml:"apiVersion" yamltags:"required"`
 
 	// Kind is always `Config`. Defaults to `Config`.
-	Kind string `yaml:"kind"`
+	Kind string `yaml:"kind" yamltags:"required"`
 
 	// Pipeline defines the Build/Test/Deploy phases.
 	Pipeline `yaml:",inline"`

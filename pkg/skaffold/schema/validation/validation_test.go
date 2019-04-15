@@ -17,6 +17,7 @@ limitations under the License.
 package validation
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -53,80 +54,151 @@ var (
 )
 
 func TestValidateSchema(t *testing.T) {
-	err := ValidateSchema(cfgWithErrors)
-	testutil.CheckError(t, true, err)
-
-	err = ValidateSchema(&latest.SkaffoldConfig{})
-	testutil.CheckError(t, false, err)
-}
-
-func TestValidateOneOf(t *testing.T) {
 	tests := []struct {
 		name      string
-		input     interface{}
+		cfg       *latest.SkaffoldConfig
 		shouldErr bool
-		expected  []string
 	}{
 		{
-			name: "only one field set",
-			input: &latest.BuildType{
-				Cluster: &latest.ClusterDetails{},
+			name:      "config with errors",
+			cfg:       cfgWithErrors,
+			shouldErr: true,
+		},
+		{
+			name:      "empty config",
+			cfg:       &latest.SkaffoldConfig{},
+			shouldErr: true,
+		},
+		{
+			name: "minimal config",
+			cfg: &latest.SkaffoldConfig{
+				APIVersion: "foo",
+				Kind:       "bar",
 			},
 			shouldErr: false,
 		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := Process(tt.cfg)
+			testutil.CheckError(t, tt.shouldErr, err)
+		})
+	}
+}
+
+func alwaysErr(_ interface{}) error {
+	return fmt.Errorf("always fail")
+}
+
+type emptyStruct struct{}
+type nestedEmptyStruct struct {
+	N emptyStruct
+}
+
+func TestVisitStructs(t *testing.T) {
+	tests := []struct {
+		name         string
+		input        interface{}
+		expectedErrs int
+	}{
 		{
-			name: "two colliding buildTypes",
-			input: &latest.BuildType{
-				GoogleCloudBuild: &latest.GoogleCloudBuild{},
-				Cluster:          &latest.ClusterDetails{},
+			name:         "single struct to validate",
+			input:        emptyStruct{},
+			expectedErrs: 1,
+		},
+		{
+			name:         "recurse into nested struct",
+			input:        nestedEmptyStruct{},
+			expectedErrs: 2,
+		},
+		{
+			name: "check all slice items",
+			input: struct {
+				A []emptyStruct
+			}{
+				A: []emptyStruct{{}, {}},
 			},
-			shouldErr: true,
-			expected:  []string{"googleCloudBuild cluster"},
+			expectedErrs: 3,
 		},
 		{
-			name: "deployType with two fields",
-			input: &latest.DeployType{
-				HelmDeploy:    &latest.HelmDeploy{},
-				KubectlDeploy: &latest.KubectlDeploy{},
+			name: "recurse into slices",
+			input: struct {
+				A []nestedEmptyStruct
+			}{
+				A: []nestedEmptyStruct{
+					{
+						N: emptyStruct{},
+					},
+				},
 			},
-			shouldErr: true,
-			expected:  []string{"helm kubectl"},
+			expectedErrs: 3,
 		},
 		{
-			name: "deployType with three fields",
-			input: &latest.DeployType{
-				HelmDeploy:      &latest.HelmDeploy{},
-				KubectlDeploy:   &latest.KubectlDeploy{},
-				KustomizeDeploy: &latest.KustomizeDeploy{},
+			name: "recurse into ptr slices",
+			input: struct {
+				A []*nestedEmptyStruct
+			}{
+				A: []*nestedEmptyStruct{
+					{
+						N: emptyStruct{},
+					},
+				},
 			},
-			shouldErr: true,
-			expected:  []string{"helm kubectl kustomize"},
+			expectedErrs: 3,
 		},
 		{
-			name:      "empty struct should not fail",
-			input:     &latest.GitTagger{},
-			shouldErr: false,
+			name: "ignore empty slices",
+			input: struct {
+				A []emptyStruct
+			}{},
+			expectedErrs: 1,
 		},
 		{
-			name:      "full Skaffold pipeline",
-			input:     cfgWithErrors,
-			shouldErr: true,
-			expected:  []string{"docker bazel", "bazel kaniko", "helm kubectl"},
+			name: "ignore nil pointers",
+			input: struct {
+				A *struct{}
+			}{},
+			expectedErrs: 1,
+		},
+		{
+			name: "recurse into members",
+			input: struct {
+				A, B emptyStruct
+			}{
+				A: emptyStruct{},
+				B: emptyStruct{},
+			},
+			expectedErrs: 3,
+		},
+		{
+			name: "recurse into ptr members",
+			input: struct {
+				A, B *emptyStruct
+			}{
+				A: &emptyStruct{},
+				B: &emptyStruct{},
+			},
+			expectedErrs: 3,
+		},
+		{
+			name: "ignore other fields",
+			input: struct {
+				A emptyStruct
+				C int
+			}{
+				A: emptyStruct{},
+				C: 2,
+			},
+			expectedErrs: 2,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actual := validateOneOf(test.input)
+			actual := visitStructs(test.input, alwaysErr)
 
-			if test.shouldErr {
-				testutil.CheckDeepEqual(t, len(test.expected), len(actual))
-				for i, message := range test.expected {
-					testutil.CheckContains(t, message, actual[i].Error())
-				}
-			} else {
-				testutil.CheckDeepEqual(t, []error(nil), actual)
-			}
+			testutil.CheckDeepEqual(t, test.expectedErrs, len(actual))
 		})
 	}
 }

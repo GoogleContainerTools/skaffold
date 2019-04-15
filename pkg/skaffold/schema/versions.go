@@ -19,11 +19,7 @@ package schema
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
-
-	apiversion "github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
@@ -39,7 +35,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta6"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta7"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 )
 
 type APIVersion struct {
@@ -100,10 +98,6 @@ func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
 	cfg := factory()
 	if err := yaml.UnmarshalStrict(buf, cfg); err != nil {
 		return nil, errors.Wrap(err, "unable to parse config")
-	}
-
-	if err := yamltags.ProcessStruct(cfg); err != nil {
-		return nil, errors.Wrap(err, "invalid config")
 	}
 
 	if upgrade && cfg.GetVersion() != latest.Version {
