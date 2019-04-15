@@ -121,7 +121,7 @@ func refreshDependencyList(files *filesLists, cmd *exec.Cmd) error {
 	}
 
 	line := bytes.Replace(matches[1], []byte(`\`), []byte(`\\`), -1)
-	return json.Unmarshal([]byte(line), &files)
+	return json.Unmarshal(line, &files)
 }
 
 // walkFiles walks through a list of files and directories and performs a callback on each of the files
