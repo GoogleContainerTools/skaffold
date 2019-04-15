@@ -19,6 +19,7 @@ package kubectl
 import (
 	"context"
 	"io"
+	"os"
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -76,6 +77,9 @@ func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files m
 	copy := exec.CommandContext(ctx, "kubectl", "exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name, "-i",
 		"--", "tar", "xmf", "-", "-C", "/", "--no-same-owner")
 	copy.Stdin = reader
+	copy.Stdout = os.Stdout
+	copy.Stderr = os.Stderr
+
 	go func() {
 		defer writer.Close()
 
