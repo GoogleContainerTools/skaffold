@@ -20,9 +20,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/docker"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -34,15 +32,18 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Arti
 	builder.PushImages = b.pushImages
 	builder.PluginMode = false
 
-	builder.Init(&runcontext.RunContext{
-		Opts: &config.SkaffoldOptions{
-			SkipTests: b.skipTests,
-		},
-		Cfg: &latest.Pipeline{
-			Build: latest.BuildConfig{
-				ExecutionEnvironment: &latest.ExecutionEnvironment{},
-			},
-		},
-	})
+	//builder.Init(&runcontext.RunContext{
+	//	Opts: &config.SkaffoldOptions{
+	//		SkipTests: b.skipTests,
+	//	},
+	//	Cfg: &latest.Pipeline{
+	//		Build: latest.BuildConfig{
+	//			ExecutionEnvironment: &latest.ExecutionEnvironment{},
+	//		},
+	//	},
+	//})
+	if err := builder.Init(&b.runCtx); err != nil {
+		return "", err
+	}
 	return builder.BuildArtifact(ctx, out, a, tag)
 }

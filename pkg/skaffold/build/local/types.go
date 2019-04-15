@@ -42,6 +42,7 @@ type Builder struct {
 	kubeContext        string
 	builtImages        []string
 	insecureRegistries map[string]bool
+	runCtx             runcontext.RunContext
 }
 
 // NewBuilder returns an new instance of a local Builder.
@@ -73,6 +74,7 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 		skipTests:          runCtx.Opts.SkipTests,
 		prune:              runCtx.Opts.Prune(),
 		insecureRegistries: runCtx.InsecureRegistries,
+		runCtx:             *runCtx,
 	}, nil
 }
 

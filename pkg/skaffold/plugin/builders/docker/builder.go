@@ -38,8 +38,9 @@ import (
 
 // Builder builds artifacts with Docker.
 type Builder struct {
-	opts *config.SkaffoldOptions
-	env  *latest.ExecutionEnvironment
+	opts   *config.SkaffoldOptions
+	env    *latest.ExecutionEnvironment
+	runCtx runcontext.RunContext
 
 	gcbEnv *gcb.Builder
 
@@ -66,6 +67,7 @@ func NewBuilder() *Builder {
 func (b *Builder) Init(runCtx *runcontext.RunContext) error {
 	b.opts = runCtx.Opts
 	b.env = runCtx.Cfg.Build.ExecutionEnvironment
+	b.runCtx = *runCtx
 	b.insecureRegistries = runCtx.InsecureRegistries
 
 	if b.PluginMode {

@@ -226,16 +226,18 @@ func TestLocalRun(t *testing.T) {
 					LocalBuild: &latest.LocalBuild{},
 				},
 			}
-			event.InitializeState(&runcontext.RunContext{
+			runContext := &runcontext.RunContext{
 				Cfg: &latest.Pipeline{
 					Build: cfg,
 				},
 				Opts: &config.SkaffoldOptions{},
-			})
+			}
+			event.InitializeState(runContext)
 			l := Builder{
 				cfg:         &latest.LocalBuild{},
 				localDocker: docker.NewLocalDaemon(&test.api, nil, false, map[string]bool{}),
 				pushImages:  test.pushImages,
+				runCtx:      *runContext,
 			}
 
 			res, err := l.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
