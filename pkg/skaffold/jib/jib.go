@@ -17,13 +17,14 @@ limitations under the License.
 package jib
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -32,41 +33,33 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// pathMap contains fields parsed from Jib's JSON output
-type pathMap struct {
-	// Build lists paths to build definitions that trigger a call out to Jib to refresh the pathMap, as well as a rebuild, upon changing
-	Build []string `json:"build"`
+// filesLists contains cached build/input dependencies
+type filesLists struct {
+	// BuildDefinitions lists paths to build definitions that trigger a call out to Jib to refresh the pathMap, as well as a rebuild, upon changing
+	BuildDefinitions []string `json:"build"`
 
 	// Inputs lists paths to build dependencies that trigger a rebuild upon changing
 	Inputs []string `json:"inputs"`
 
 	// Results lists paths to files that should be ignored when checking for changes to rebuild
 	Results []string `json:"ignore"`
-}
-
-// filesLists contains cached build/input dependencies
-type filesLists struct {
-	// PathMap saves the most recent output of the Jib Skaffold files task/goal
-	PathMap pathMap
 
 	// BuildFileTimes keeps track of the last modification time of each build file
 	BuildFileTimes map[string]time.Time
 }
 
 // watchedFiles maps from project name to watched files
-var watchedFiles = sync.Map{}
+var watchedFiles = map[string]filesLists{}
 
 // getDependencies returns a list of files to watch for changes to rebuild
 func getDependencies(cmd *exec.Cmd, projectName string) ([]string, error) {
 	var dependencyList []string
-	f, ok := watchedFiles.Load(projectName)
+	files, ok := watchedFiles[projectName]
 	if !ok {
-		f = filesLists{}
+		files = filesLists{}
 	}
-	files := f.(filesLists)
 
-	template := files.PathMap
-	if len(template.Inputs) == 0 && len(template.Build) == 0 {
+	if len(files.Inputs) == 0 && len(files.BuildDefinitions) == 0 {
 		// Make sure build file modification time map is setup
 		if files.BuildFileTimes == nil {
 			files.BuildFileTimes = make(map[string]time.Time)
@@ -77,7 +70,7 @@ func getDependencies(cmd *exec.Cmd, projectName string) ([]string, error) {
 			return nil, errors.Wrap(err, "initial Jib dependency refresh failed")
 		}
 
-	} else if err := walkFiles(&template.Build, &template.Results, func(path string, info os.FileInfo) error {
+	} else if err := walkFiles(files.BuildDefinitions, files.Results, func(path string, info os.FileInfo) error {
 		// Walk build files to check for changes
 		if val, ok := files.BuildFileTimes[path]; !ok || info.ModTime() != val {
 			return refreshDependencyList(&files, cmd)
@@ -88,13 +81,13 @@ func getDependencies(cmd *exec.Cmd, projectName string) ([]string, error) {
 	}
 
 	// Walk updated files to build dependency list
-	if err := walkFiles(&files.PathMap.Inputs, &files.PathMap.Results, func(path string, info os.FileInfo) error {
+	if err := walkFiles(files.Inputs, files.Results, func(path string, info os.FileInfo) error {
 		dependencyList = append(dependencyList, path)
 		return nil
 	}); err != nil {
 		return nil, errors.Wrap(err, "failed to walk Jib input files to build dependency list")
 	}
-	if err := walkFiles(&files.PathMap.Build, &files.PathMap.Results, func(path string, info os.FileInfo) error {
+	if err := walkFiles(files.BuildDefinitions, files.Results, func(path string, info os.FileInfo) error {
 		dependencyList = append(dependencyList, path)
 		files.BuildFileTimes[path] = info.ModTime()
 		return nil
@@ -103,13 +96,13 @@ func getDependencies(cmd *exec.Cmd, projectName string) ([]string, error) {
 	}
 
 	// Store updated files list information
-	watchedFiles.Store(projectName, files)
+	watchedFiles[projectName] = files
 
 	sort.Strings(dependencyList)
 	return dependencyList, nil
 }
 
-// refreshDependencyList calls out to Jib to update files.PathMap with the latest list of files/directories to watch.
+// refreshDependencyList calls out to Jib to update files with the latest list of files/directories to watch.
 func refreshDependencyList(files *filesLists, cmd *exec.Cmd) error {
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
@@ -122,24 +115,18 @@ func refreshDependencyList(files *filesLists, cmd *exec.Cmd) error {
 	// {"build":["/paths","/to","/buildFiles"],"inputs":["/paths","/to","/inputs"],"ignore":["/paths","/to","/ignore"]}
 	// ...
 	// To parse the output, search for "BEGIN JIB JSON", then unmarshal the next line into the pathMap struct.
-	lines := util.NonEmptyLines(stdout)
-	for i := range lines {
-		if lines[i] == "BEGIN JIB JSON" {
-			// Escape '\' for Windows paths in JSON string
-			line := strings.Replace(lines[i+1], "\\", "\\\\", -1)
-			if err := json.Unmarshal([]byte(line), &files.PathMap); err != nil {
-				return err
-			}
-			return nil
-		}
+	matches := regexp.MustCompile(`BEGIN JIB JSON\r?\n({.*})`).FindSubmatch(stdout)
+	if len(matches) == 0 {
+		return errors.New("failed to get Jib dependencies")
 	}
 
-	return errors.New("failed to get Jib dependencies")
+	line := bytes.Replace(matches[1], []byte(`\`), []byte(`\\`), -1)
+	return json.Unmarshal([]byte(line), &files)
 }
 
 // walkFiles walks through a list of files and directories and performs a callback on each of the files
-func walkFiles(watchedFiles *[]string, ignoredFiles *[]string, callback func(path string, info os.FileInfo) error) error {
-	for _, dep := range *watchedFiles {
+func walkFiles(watchedFiles []string, ignoredFiles []string, callback func(path string, info os.FileInfo) error) error {
+	for _, dep := range watchedFiles {
 		if isIgnored(dep, ignoredFiles) {
 			continue
 		}
@@ -169,7 +156,15 @@ func walkFiles(watchedFiles *[]string, ignoredFiles *[]string, callback func(pat
 				if isIgnored(path, ignoredFiles) {
 					return filepath.SkipDir
 				}
-				return callback(path, info)
+				pathInfo, err := os.Stat(dep)
+				if err != nil {
+					if os.IsNotExist(err) {
+						logrus.Debugf("could not stat dependency: %s", err)
+						return filepath.SkipDir
+					}
+					return errors.Wrapf(err, "unable to stat file %s", dep)
+				}
+				return callback(path, pathInfo)
 			},
 		}); err != nil {
 			return errors.Wrap(err, "filepath walk")
@@ -179,8 +174,8 @@ func walkFiles(watchedFiles *[]string, ignoredFiles *[]string, callback func(pat
 }
 
 // isIgnored tests a path for whether or not it should be ignored according to a list of ignored files/directories
-func isIgnored(path string, ignoredFiles *[]string) bool {
-	for _, ignored := range *ignoredFiles {
+func isIgnored(path string, ignoredFiles []string) bool {
+	for _, ignored := range ignoredFiles {
 		if strings.HasPrefix(path, ignored) {
 			return true
 		}
