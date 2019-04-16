@@ -247,7 +247,11 @@ func Perform(ctx context.Context, image string, files map[string]string, cmdFn f
 
 				cmds := cmdFn(ctx, p, c, files)
 				for _, cmd := range cmds {
+					buf := &bytes.Buffer{}
+					cmd.Stdout = buf
+					cmd.Stderr = buf
 					if err := util.RunCmd(cmd); err != nil {
+						logrus.Warnf("Sync failed: %s", buf.String())
 						return err
 					}
 					numSynced++
