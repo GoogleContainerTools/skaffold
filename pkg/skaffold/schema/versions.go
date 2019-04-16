@@ -34,6 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta5"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta6"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta7"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta8"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -57,6 +58,7 @@ var SchemaVersions = Versions{
 	{v1beta5.Version, v1beta5.NewSkaffoldPipeline},
 	{v1beta6.Version, v1beta6.NewSkaffoldPipeline},
 	{v1beta7.Version, v1beta7.NewSkaffoldPipeline},
+	{v1beta8.Version, v1beta8.NewSkaffoldConfig},
 	{latest.Version, latest.NewSkaffoldConfig},
 }
 

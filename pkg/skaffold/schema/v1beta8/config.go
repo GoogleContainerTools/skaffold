@@ -14,14 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v1beta8
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	yamlpatch "github.com/krishicks/yaml-patch"
 )
 
-const Version string = "skaffold/v1beta9"
+const Version string = "skaffold/v1beta8"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
