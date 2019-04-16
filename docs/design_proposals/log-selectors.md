@@ -119,7 +119,8 @@ Resolution: A UUID label is not required for now but can be added later when use
 ## Implementation plan
 1. Switch the selection of pods for the log selector from image lists to `tail=true` label (#1910).
 2. Add log section to the Skaffold config and select pods based on this
-3. Integration test for log selection
+3. Integration test for log selection.
+4. Add documentation for the new log section.
 
 ## Integration test plan
 
