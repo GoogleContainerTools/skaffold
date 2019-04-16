@@ -189,7 +189,15 @@ However, for non-standard local setups, such as `minikube` profiles, some extra 
 The essential steps are:
 
 1. Ensure that Skaffold builds the images with the docker daemon, which also runs the containers.
-2. Tell Skaffold to skip pushing images.
+2. Tell Skaffold to skip pushing images either by configuring
+
+    ```yaml
+    build:
+      local:
+        push: false
+    ```
+   
+   or by marking a kubernetes context as local (see the following example).
 
 For example, when running `minikube` with a custom profile, such as `minikube start -p my-profile`:
 
