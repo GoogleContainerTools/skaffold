@@ -31,7 +31,7 @@ func (b *Builder) dockerBuildSteps(artifact *latest.DockerArtifact, tags []strin
 		steps = append(steps, &cloudbuild.BuildStep{
 			Name:       b.DockerImage,
 			Entrypoint: "sh",
-			Args:       []string{"-c", fmt.Sprintf("docker pull %s || true", cacheFrom)},
+			Args:       []string{"-c", fmt.Sprintf("docker pull %s || true #skaffold", cacheFrom)},
 		})
 	}
 
