@@ -54,6 +54,9 @@ func visitStructs(s interface{}, visitor func(interface{}) error) []error {
 
 		// also check all fields of the current struct
 		for i := 0; i < t.NumField(); i++ {
+			if !v.Field(i).CanInterface() {
+				continue
+			}
 			if fieldErrs := visitStructs(v.Field(i).Interface(), visitor); fieldErrs != nil {
 				errs = append(errs, fieldErrs...)
 			}
