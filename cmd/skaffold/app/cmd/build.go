@@ -102,5 +102,13 @@ func createRunnerAndBuild(ctx context.Context, buildOut io.Writer) ([]build.Arti
 			targetArtifacts = append(targetArtifacts, artifact)
 		}
 	}
-	return runner.BuildAndTest(ctx, buildOut, targetArtifacts)
+	bRes, err := runner.BuildAndTest(ctx, buildOut, targetArtifacts)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]build.Artifact, len(bRes))
+	for i, r := range bRes {
+		results[i] = *r.Result
+	}
+	return results, nil
 }

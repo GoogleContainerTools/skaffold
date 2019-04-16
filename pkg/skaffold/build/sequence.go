@@ -29,8 +29,8 @@ import (
 )
 
 // InSequence builds a list of artifacts in sequence.
-func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
-	var builds []Artifact
+func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]Result, error) {
+	var results []Result
 
 	for _, artifact := range artifacts {
 		color.Default.Fprintf(out, "Building [%s]...\n", artifact.ImageName)
@@ -39,22 +39,32 @@ func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 
 		tag, present := tags[artifact.ImageName]
 		if !present {
-			return nil, fmt.Errorf("unable to find tag for image %s", artifact.ImageName)
+			results = append(results, Result{
+				Target: artifact,
+				Error:  fmt.Errorf("unable to find tag for image %s", artifact.ImageName),
+			})
+			continue
 		}
 
 		finalTag, err := buildArtifact(ctx, out, artifact, tag)
 		if err != nil {
 			event.BuildFailed(artifact.ImageName, err)
-			return nil, errors.Wrapf(err, "building [%s]", artifact.ImageName)
+			results = append(results, Result{
+				Target: artifact,
+				Error:  errors.Wrapf(err, "building [%s]", artifact.ImageName),
+			})
+		} else {
+			event.BuildComplete(artifact.ImageName)
+
+			results = append(results, Result{
+				Target: artifact,
+				Result: &Artifact{
+					ImageName: artifact.ImageName,
+					Tag:       finalTag,
+				},
+			})
 		}
-
-		event.BuildComplete(artifact.ImageName)
-
-		builds = append(builds, Artifact{
-			ImageName: artifact.ImageName,
-			Tag:       finalTag,
-		})
 	}
 
-	return builds, nil
+	return results, nil
 }

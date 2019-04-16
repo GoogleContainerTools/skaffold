@@ -18,6 +18,7 @@ package local
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"testing"
 
@@ -31,9 +32,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
+	"github.com/pkg/errors"
 )
 
 type testAuthHelper struct{}
+
+type testResult struct {
+	buildResult build.Result
+	shouldErr   bool
+}
 
 func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
 	return types.AuthConfig{}, nil
@@ -49,7 +56,7 @@ func TestLocalRun(t *testing.T) {
 		api              testutil.FakeAPIClient
 		tags             tag.ImageTags
 		artifacts        []*latest.Artifact
-		expected         []build.Artifact
+		expectedResults  []testResult
 		expectedWarnings []string
 		expectedPushed   []string
 		pushImages       bool
@@ -66,10 +73,22 @@ func TestLocalRun(t *testing.T) {
 			tags:       tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			api:        testutil.FakeAPIClient{},
 			pushImages: false,
-			expected: []build.Artifact{{
-				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:1",
-			}},
+			expectedResults: []testResult{
+				{
+					buildResult: build.Result{
+						Target: &latest.Artifact{
+							ImageName: "gcr.io/test/image",
+							ArtifactType: latest.ArtifactType{
+								DockerArtifact: &latest.DockerArtifact{},
+							},
+						},
+						Result: &build.Artifact{
+							ImageName: "gcr.io/test/image",
+							Tag:       "gcr.io/test/image:1",
+						},
+					},
+				},
+			},
 		},
 		{
 			description: "error getting image digest",
@@ -83,7 +102,20 @@ func TestLocalRun(t *testing.T) {
 			api: testutil.FakeAPIClient{
 				ErrImageInspect: true,
 			},
-			shouldErr: true,
+			expectedResults: []testResult{
+				{
+					buildResult: build.Result{
+						Target: &latest.Artifact{
+							ImageName: "gcr.io/test/image",
+							ArtifactType: latest.ArtifactType{
+								DockerArtifact: &latest.DockerArtifact{},
+							},
+						},
+						Error: errors.New("building [gcr.io/test/image]: build artifact: getting digest: inspecting image: "),
+					},
+					shouldErr: true,
+				},
+			},
 		},
 		{
 			description: "single build (remote)",
@@ -96,10 +128,22 @@ func TestLocalRun(t *testing.T) {
 			tags:       tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			api:        testutil.FakeAPIClient{},
 			pushImages: true,
-			expected: []build.Artifact{{
-				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:tag@sha256:7368613235363a31e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			}},
+			expectedResults: []testResult{
+				{
+					buildResult: build.Result{
+						Target: &latest.Artifact{
+							ImageName: "gcr.io/test/image",
+							ArtifactType: latest.ArtifactType{
+								DockerArtifact: &latest.DockerArtifact{},
+							},
+						},
+						Result: &build.Artifact{
+							ImageName: "gcr.io/test/image",
+							Tag:       "gcr.io/test/image:tag@sha256:7368613235363a31e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+						},
+					},
+				},
+			},
 			expectedPushed: []string{"sha256:7368613235363a31e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
 		},
 		{
@@ -114,7 +158,20 @@ func TestLocalRun(t *testing.T) {
 			api: testutil.FakeAPIClient{
 				ErrImageBuild: true,
 			},
-			shouldErr: true,
+			expectedResults: []testResult{
+				{
+					buildResult: build.Result{
+						Target: &latest.Artifact{
+							ImageName: "gcr.io/test/image",
+							ArtifactType: latest.ArtifactType{
+								DockerArtifact: &latest.DockerArtifact{},
+							},
+						},
+						Error: errors.New("building [gcr.io/test/image]: build artifact: docker build: "),
+					},
+					shouldErr: true,
+				},
+			},
 		},
 		{
 			description: "dont push on build error",
@@ -129,12 +186,33 @@ func TestLocalRun(t *testing.T) {
 			api: testutil.FakeAPIClient{
 				ErrImageBuild: true,
 			},
-			shouldErr: true,
+			expectedResults: []testResult{
+				{
+					buildResult: build.Result{
+						Target: &latest.Artifact{
+							ImageName: "gcr.io/test/image",
+							ArtifactType: latest.ArtifactType{
+								DockerArtifact: &latest.DockerArtifact{},
+							},
+						},
+						Error: errors.New("building [gcr.io/test/image]: build artifact: docker build: "),
+					},
+					shouldErr: true,
+				},
+			},
 		},
 		{
-			description: "unkown artifact type",
+			description: "unknown artifact type",
 			artifacts:   []*latest.Artifact{{}},
-			shouldErr:   true,
+			expectedResults: []testResult{
+				{
+					buildResult: build.Result{
+						Target: &latest.Artifact{},
+						Error:  errors.New("unable to find tag for image "),
+					},
+					shouldErr: true,
+				},
+			},
 		},
 		{
 			description: "cache-from images already pulled",
@@ -153,10 +231,24 @@ func TestLocalRun(t *testing.T) {
 				},
 			},
 			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
-			expected: []build.Artifact{{
-				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:1",
-			}},
+			expectedResults: []testResult{
+				{
+					buildResult: build.Result{
+						Target: &latest.Artifact{
+							ImageName: "gcr.io/test/image",
+							ArtifactType: latest.ArtifactType{
+								DockerArtifact: &latest.DockerArtifact{
+									CacheFrom: []string{"pull1", "pull2"},
+								},
+							},
+						},
+						Result: &build.Artifact{
+							ImageName: "gcr.io/test/image",
+							Tag:       "gcr.io/test/image:1",
+						},
+					},
+				},
+			},
 		},
 		{
 			description: "pull cache-from images",
@@ -172,10 +264,24 @@ func TestLocalRun(t *testing.T) {
 				TagToImageID: map[string]string{"pull1": "imageid", "pull2": "anotherimageid"},
 			},
 			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
-			expected: []build.Artifact{{
-				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:1",
-			}},
+			expectedResults: []testResult{
+				{
+					buildResult: build.Result{
+						Target: &latest.Artifact{
+							ImageName: "gcr.io/test/image",
+							ArtifactType: latest.ArtifactType{
+								DockerArtifact: &latest.DockerArtifact{
+									CacheFrom: []string{"pull1", "pull2"},
+								},
+							},
+						},
+						Result: &build.Artifact{
+							ImageName: "gcr.io/test/image",
+							Tag:       "gcr.io/test/image:1",
+						},
+					},
+				},
+			},
 		},
 		{
 			description: "ignore cache-from pull error",
@@ -192,10 +298,24 @@ func TestLocalRun(t *testing.T) {
 				TagToImageID: map[string]string{"pull1": ""},
 			},
 			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
-			expected: []build.Artifact{{
-				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:1",
-			}},
+			expectedResults: []testResult{
+				{
+					buildResult: build.Result{
+						Target: &latest.Artifact{
+							ImageName: "gcr.io/test/image",
+							ArtifactType: latest.ArtifactType{
+								DockerArtifact: &latest.DockerArtifact{
+									CacheFrom: []string{"pull1"},
+								},
+							},
+						},
+						Result: &build.Artifact{
+							ImageName: "gcr.io/test/image",
+							Tag:       "gcr.io/test/image:1",
+						},
+					},
+				},
+			},
 			expectedWarnings: []string{"Cache-From image couldn't be pulled: pull1\n"},
 		},
 		{
@@ -211,8 +331,23 @@ func TestLocalRun(t *testing.T) {
 			api: testutil.FakeAPIClient{
 				ErrImageInspect: true,
 			},
-			tags:      tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
-			shouldErr: true,
+			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			expectedResults: []testResult{
+				{
+					buildResult: build.Result{
+						Target: &latest.Artifact{
+							ImageName: "gcr.io/test/image",
+							ArtifactType: latest.ArtifactType{
+								DockerArtifact: &latest.DockerArtifact{
+									CacheFrom: []string{"pull"},
+								},
+							},
+						},
+						Error: fmt.Errorf("building [gcr.io/test/image]: build artifact: pulling cache-from images: getting imageID for pull: inspecting image: "),
+					},
+					shouldErr: true,
+				},
+			},
 		},
 	}
 
@@ -240,7 +375,33 @@ func TestLocalRun(t *testing.T) {
 
 			res, err := l.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
+			// none of these tests should fail before the builds start. assert that err is nil here first.
+			// testutil.CheckError(t, false, err)
+			testutil.CheckError(t, test.shouldErr, err)
+
+			// build results are returned in a list, of which we can't guarantee order.
+			// loop through the expected results, and find the matching build result by target artifact.
+			found := false
+			for _, testRes := range test.expectedResults {
+				for _, buildRes := range res {
+					if buildRes.Target.ImageName == testRes.buildResult.Target.ImageName {
+						found = true
+						// the embedded error in the build result contains a stack trace which we can't reproduce.
+						// directly compare the fields of the build result and optional error.
+						testutil.CheckError(t, testRes.shouldErr, buildRes.Error)
+						if testRes.shouldErr {
+							testutil.CheckDeepEqual(t, testRes.buildResult.Error.Error(), buildRes.Error.Error())
+						}
+						testutil.CheckDeepEqual(t, testRes.buildResult.Target, buildRes.Target)
+						testutil.CheckDeepEqual(t, testRes.buildResult.Result, buildRes.Result)
+					}
+				}
+				if !found {
+					t.Errorf("expected result %+v not found in build results", testRes)
+				}
+				found = false
+			}
+
 			testutil.CheckDeepEqual(t, test.expectedWarnings, fakeWarner.Warnings)
 			testutil.CheckDeepEqual(t, test.expectedPushed, test.api.Pushed)
 		})

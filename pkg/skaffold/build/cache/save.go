@@ -33,7 +33,7 @@ import (
 )
 
 // Retag retags newly built images in the format [imageName:workspaceHash] and pushes them if using a remote cluster
-func (c *Cache) RetagLocalImages(ctx context.Context, out io.Writer, artifactsToBuild []*latest.Artifact, buildArtifacts []build.Artifact) {
+func (c *Cache) RetagLocalImages(ctx context.Context, out io.Writer, artifactsToBuild []*latest.Artifact, buildArtifacts []build.Result) {
 	if !c.useCache || len(artifactsToBuild) == 0 {
 		return
 	}
@@ -43,7 +43,7 @@ func (c *Cache) RetagLocalImages(ctx context.Context, out io.Writer, artifactsTo
 	}
 	tags := map[string]string{}
 	for _, t := range buildArtifacts {
-		tags[t.ImageName] = t.Tag
+		tags[t.Result.ImageName] = t.Result.Tag
 	}
 	color.Default.Fprintln(out, "Retagging cached images...")
 	for _, artifact := range artifactsToBuild {
@@ -64,13 +64,13 @@ func (c *Cache) RetagLocalImages(ctx context.Context, out io.Writer, artifactsTo
 }
 
 // CacheArtifacts determines the hash for each artifact, stores it in the artifact cache, and saves the cache at the end
-func (c *Cache) CacheArtifacts(ctx context.Context, artifacts []*latest.Artifact, buildArtifacts []build.Artifact) error {
+func (c *Cache) CacheArtifacts(ctx context.Context, artifacts []*latest.Artifact, buildArtifacts []build.Result) error {
 	if !c.useCache {
 		return nil
 	}
 	tags := map[string]string{}
 	for _, t := range buildArtifacts {
-		tags[t.ImageName] = t.Tag
+		tags[t.Result.ImageName] = t.Result.Tag
 	}
 	for _, a := range artifacts {
 		hash, err := hashForArtifact(ctx, c.builder, a)

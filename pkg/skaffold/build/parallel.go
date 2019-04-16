@@ -34,7 +34,7 @@ const bufferedLinesPerArtifact = 10000
 type artifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error)
 
 // InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
-func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
+func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]Result, error) {
 	if len(artifacts) == 1 {
 		return InSequence(ctx, out, tags, artifacts, buildArtifact)
 	}
@@ -94,7 +94,7 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	}
 
 	// Print logs and collect results in order.
-	var built []Artifact
+	var results []Result
 
 	for i, artifact := range artifacts {
 		for line := range outputs[i] {
@@ -102,15 +102,24 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 			fmt.Fprintln(out)
 		}
 
+		var res Result
 		if errs[i] != nil {
-			return nil, errors.Wrapf(errs[i], "building [%s]", artifact.ImageName)
+			res = Result{
+				Target: artifact,
+				Error:  errors.Wrapf(errs[i], "building [%s]", artifact.ImageName),
+			}
+		} else {
+			res = Result{
+				Target: artifact,
+				Result: &Artifact{
+					ImageName: artifact.ImageName,
+					Tag:       finalTags[i],
+				},
+			}
 		}
 
-		built = append(built, Artifact{
-			ImageName: artifact.ImageName,
-			Tag:       finalTags[i],
-		})
+		results = append(results, res)
 	}
 
-	return built, nil
+	return results, nil
 }

@@ -34,7 +34,7 @@ func TestRetagLocalImages(t *testing.T) {
 		api              *testutil.FakeAPIClient
 		cache            *Cache
 		artifactsToBuild []*latest.Artifact
-		buildArtifacts   []build.Artifact
+		buildResults     []build.Result
 		expectedPush     []string
 	}{
 		{
@@ -58,10 +58,15 @@ func TestRetagLocalImages(t *testing.T) {
 					WorkspaceHash: "hash",
 				},
 			},
-			buildArtifacts: []build.Artifact{
+			buildResults: []build.Result{
 				{
-					ImageName: "image",
-					Tag:       "image:tag",
+					Target: &latest.Artifact{
+						ImageName: "image:tag",
+					},
+					Result: &build.Artifact{
+						ImageName: "image",
+						Tag:       "image:tag",
+					},
 				},
 			},
 			expectedPush: []string{"image:hash"},
@@ -77,7 +82,7 @@ func TestRetagLocalImages(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			test.cache.client = docker.NewLocalDaemon(test.api, nil, false, map[string]bool{})
-			test.cache.RetagLocalImages(context.Background(), os.Stdout, test.artifactsToBuild, test.buildArtifacts)
+			test.cache.RetagLocalImages(context.Background(), os.Stdout, test.artifactsToBuild, test.buildResults)
 			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedPush, test.api.PushedImages)
 		})
 	}
