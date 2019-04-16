@@ -17,6 +17,7 @@ limitations under the License.
 package sync
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os/exec"
