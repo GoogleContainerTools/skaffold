@@ -14,22 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta7
+package v1beta8
 
 import (
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta8"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v1beta7 to v1beta8
-// 1. Additions:
-// kaniko/resource requirements
+// Config changes from v1beta8 to v1beta9
+// 1. No additions
 // 2. No removals
 // 3. No updates
-func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
+func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
 	if err := pkgutil.CloneThroughJSON(config.Deploy, &newDeploy); err != nil {

@@ -14,18 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta7
+package v1beta8
 
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta8"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	yaml "gopkg.in/yaml.v2"
 )
 
 func TestUpgrade(t *testing.T) {
-	yaml := `apiVersion: skaffold/v1beta7
+	yaml := `apiVersion: skaffold/v1beta8
 kind: Config
 build:
   artifacts:
@@ -59,7 +59,7 @@ profiles:
         manifests:
         - k8s-*
 `
-	expected := `apiVersion: skaffold/v1beta8
+	expected := `apiVersion: skaffold/v1beta9
 kind: Config
 build:
   artifacts:
@@ -97,14 +97,14 @@ profiles:
 }
 
 func verifyUpgrade(t *testing.T, input, output string) {
-	pipeline := NewSkaffoldPipeline()
+	pipeline := NewSkaffoldConfig()
 	err := yaml.UnmarshalStrict([]byte(input), pipeline)
 	testutil.CheckErrorAndDeepEqual(t, false, err, Version, pipeline.GetVersion())
 
 	upgraded, err := pipeline.Upgrade()
 	testutil.CheckError(t, false, err)
 
-	expected := next.NewSkaffoldConfig()
+	expected := latest.NewSkaffoldConfig()
 	err = yaml.UnmarshalStrict([]byte(output), expected)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, upgraded)
