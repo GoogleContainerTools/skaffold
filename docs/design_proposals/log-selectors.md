@@ -57,9 +57,34 @@ log:
     matchLabels: # in one item, rules are AND'ed
       tail: "true"
 ```
-This structure is based on the standard selector spec for k8s deployments.
-For one selector spec item, the semantics should be exactly the same as for deployments, i.e. several conditions are AND'ed.
+This structure is based on the [standard selector spec](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors) for k8s resources.
 Using a standard k8s configuration structure increases the usability for our users.
+For one selector spec item, the semantics should be exactly the same as for deployments, i.e. several conditions are AND'ed. Quoting the kubernetes docs (`kubectl explain deployment.spec.selector`):
+```txt
+KIND:     Deployment
+VERSION:  extensions/v1beta1
+
+RESOURCE: selector <Object>
+
+DESCRIPTION:
+     Label selector for pods. Existing ReplicaSets whose pods are selected by
+     this will be the ones affected by this deployment.
+
+     A label selector is a label query over a set of resources. The result of
+     matchLabels and matchExpressions are ANDed. An empty label selector matches
+     all objects. A null label selector matches no objects.
+
+FIELDS:
+   matchExpressions     <[]Object>
+     matchExpressions is a list of label selector requirements. The requirements
+     are ANDed.
+
+   matchLabels  <map[string]string>
+     matchLabels is a map of {key,value} pairs. A single {key,value} in the
+     matchLabels map is equivalent to an element of matchExpressions, whose key
+     field is "key", the operator is "In", and the values array contains only
+     "value". The requirements are ANDed
+```
 
 In addition, Skaffold needs to support the use-case to add further pods to a selection.
 To address that, the log spec has to be a list of selector specs which is OR'ed.
@@ -89,7 +114,7 @@ Please list any open questions here in the format.
 **\<Is the `tail=true` label good enough?\>** In principle, it would be possible that other pods also have a `tail=true` label by accident (for example a previous `skaffold run --tail` followed by `skaffold dev`).
 Do we need to exclude such cases, e.g. by adding a unique `skaffold-run: <uuid>` label?
 
-Resolution: __Not Yet Resolved__
+Resolution: A UUID label is not required for now but can be added later when users request it.
 
 ## Implementation plan
 1. Switch the selection of pods for the log selector from image lists to `tail=true` label (#1910).
