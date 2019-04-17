@@ -805,8 +805,8 @@
       "properties": {
         "variant": {
           "type": "string",
-          "description": "determines the behavior of the git tagger. Valid variants are - Tags (default): use git tags or fall back to abbreviated commit hash. - CommitSha: use the full git commit sha. - AbbrevCommitSha: use the abbreviated git commit sha.",
-          "x-intellij-html-description": "determines the behavior of the git tagger. Valid variants are - Tags (default): use git tags or fall back to abbreviated commit hash. - CommitSha: use the full git commit sha. - AbbrevCommitSha: use the abbreviated git commit sha."
+          "description": "determines the behavior of the git tagger. Valid variants are `Tags` (default): use git tags or fall back to abbreviated commit hash. `CommitSha`: use the full git commit sha. `AbbrevCommitSha`: use the abbreviated git commit sha.",
+          "x-intellij-html-description": "determines the behavior of the git tagger. Valid variants are <code>Tags</code> (default): use git tags or fall back to abbreviated commit hash. <code>CommitSha</code>: use the full git commit sha. <code>AbbrevCommitSha</code>: use the abbreviated git commit sha."
         }
       },
       "preferredOrder": [
