@@ -127,8 +127,8 @@ Automated image name rewriting strategies are determined based on the default-re
     
 ### Insecure image registries
 
-During development you may be forced to push images to a registry that does not support https.
-By itself, Skaffold will never try to downgrade a connection to a registry to plain http.
+During development you may be forced to push images to a registry that does not support HTTPS.
+By itself, Skaffold will never try to downgrade a connection to a registry to plain HTTP.
 In order to access insecure registries, this has to be explicitly configured per registry name.
 
 There are several levels of granularity to allow insecure communication with some registry:
