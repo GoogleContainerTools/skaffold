@@ -159,11 +159,16 @@ func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
 			op = "replace"
 		}
 
+		var value *yamlpatch.Node
+		if v := patch.Value; v != nil {
+			value = &v.Node
+		}
+
 		patch := yamlpatch.Operation{
 			Op:    yamlpatch.Op(op),
 			Path:  yamlpatch.OpPath(patch.Path),
 			From:  yamlpatch.OpPath(patch.From),
-			Value: patch.Value,
+			Value: value,
 		}
 
 		if !tryPatch(patch, buf) {
