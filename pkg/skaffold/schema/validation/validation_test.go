@@ -196,21 +196,29 @@ func TestVisitStructs(t *testing.T) {
 			name: "unexported fields",
 			input: struct {
 				a emptyStruct
-			}{},
+			}{
+				a: emptyStruct{},
+			},
 			expectedErrs: 1,
 		},
 		{
 			name: "exported and unexported fields",
 			input: struct {
 				a, A, b emptyStruct
-			}{},
+			}{
+				a: emptyStruct{},
+				A: emptyStruct{},
+				b: emptyStruct{},
+			},
 			expectedErrs: 2,
 		},
 		{
 			name: "unexported nil ptr fields",
 			input: struct {
 				a *emptyStruct
-			}{},
+			}{
+				a: nil,
+			},
 			expectedErrs: 1,
 		},
 		{
