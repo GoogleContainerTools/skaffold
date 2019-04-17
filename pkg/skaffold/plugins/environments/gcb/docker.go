@@ -24,7 +24,7 @@ import (
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 )
 
-func (b *Builder) dockerBuildSteps(artifact *latest.DockerArtifact, tags []string) []*cloudbuild.BuildStep {
+func (b *ExecutionEnv) dockerBuildSteps(artifact *latest.DockerArtifact, tags []string) []*cloudbuild.BuildStep {
 	var steps []*cloudbuild.BuildStep
 
 	for _, cacheFrom := range artifact.CacheFrom {

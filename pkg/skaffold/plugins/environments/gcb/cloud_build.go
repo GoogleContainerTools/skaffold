@@ -42,12 +42,23 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-// Build builds a list of artifacts with Google Cloud Build.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+// Build builds a list of artifacts with Google Cloud Build implements build.Builder interface is used for correct syntax
+func (b *ExecutionEnv) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifactWithCloudBuild)
 }
 
-func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+// ExecuteArtifactBuild executes a Build in GCB
+func (b *ExecutionEnv) ExecuteArtifactBuild(ctx context.Context, out io.Writer, tagStr string, artifact *latest.Artifact, builder build.Builder) (*build.Artifact, error) {
+	t := tag.ImageTags(map[string]string{artifact.ImageName: tagStr})
+	b.builder = builder
+	as, err := build.InParallel(ctx, out, t, []*latest.Artifact{artifact}, b.buildArtifactWithCloudBuild)
+	if err != nil {
+		return nil, err
+	}
+	return &as[0], nil
+}
+
+func (b *ExecutionEnv) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	client, err := google.DefaultClient(ctx, cloudbuild.CloudPlatformScope)
 	if err != nil {
 		return "", errors.Wrap(err, "getting google client")
@@ -90,7 +101,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		return "", errors.Wrap(err, "could not create build description")
 	}
 
-	dependencies, err := b.DependenciesForArtifact(ctx, artifact)
+	dependencies, err := b.builder.DependenciesForArtifact(ctx, artifact)
 	if err != nil {
 		return "", errors.Wrapf(err, "getting dependencies for %s", artifact.ImageName)
 	}
@@ -181,7 +192,7 @@ func getDigest(b *cloudbuild.Build) (string, error) {
 	return b.Results.Images[0].Digest, nil
 }
 
-func (b *Builder) getLogs(ctx context.Context, offset int64, bucket, objectName string) (io.ReadCloser, error) {
+func (b *ExecutionEnv) getLogs(ctx context.Context, offset int64, bucket, objectName string) (io.ReadCloser, error) {
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting storage client")
@@ -207,7 +218,7 @@ func (b *Builder) getLogs(ctx context.Context, offset int64, bucket, objectName 
 	return r, nil
 }
 
-func (b *Builder) checkBucketProjectCorrect(ctx context.Context, projectID, bucket string) error {
+func (b *ExecutionEnv) checkBucketProjectCorrect(ctx context.Context, projectID, bucket string) error {
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
 		return errors.Wrap(err, "getting storage client")
@@ -231,7 +242,7 @@ func (b *Builder) checkBucketProjectCorrect(ctx context.Context, projectID, buck
 	}
 }
 
-func (b *Builder) createBucketIfNotExists(ctx context.Context, projectID, bucket string) error {
+func (b *ExecutionEnv) createBucketIfNotExists(ctx context.Context, projectID, bucket string) error {
 	c, err := cstorage.NewClient(ctx)
 	if err != nil {
 		return errors.Wrap(err, "getting storage client")

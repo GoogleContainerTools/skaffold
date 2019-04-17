@@ -29,14 +29,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/plugin"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/env"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/environments/gcb"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugins/builders"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugins/environments"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -49,6 +50,7 @@ import (
 // SkaffoldRunner is responsible for running the skaffold build and deploy config.
 type SkaffoldRunner struct {
 	build.Builder
+	env.EnvBuilder
 	deploy.Deployer
 	test.Tester
 	tag.Tagger
@@ -80,6 +82,11 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 	builder, err := getBuilder(runCtx)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing build config")
+	}
+
+	executor, err := getEnv(runCtx)
+	if err != nil {
+		return nil, errors.Wrap(err, "execution env not supported")
 	}
 
 	artifactCache := cache.NewCache(builder, runCtx)
@@ -114,6 +121,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 
 	return &SkaffoldRunner{
 		Builder:           builder,
+		EnvBuilder:        executor,
 		Tester:            tester,
 		Deployer:          deployer,
 		Tagger:            tagger,
@@ -127,11 +135,19 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 	}, nil
 }
 
+func getEnv(runCtx *runcontext.RunContext) (env.EnvBuilder, error) {
+	switch {
+	case runCtx.Cfg.Build.GoogleCloudBuild != nil:
+		return environments.RegisteredEnvPlugins(runCtx)
+	}
+	return nil, nil
+}
+
 func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
 	switch {
 	case runCtx.Plugin:
 		logrus.Debugln("Using builder plugins")
-		return plugin.NewPluginBuilder(runCtx)
+		return builders.RegisteredBuilderPlugins(runCtx)
 
 	case len(runCtx.Opts.PreBuiltImages) > 0:
 		logrus.Debugln("Using pre-built images")
@@ -142,8 +158,8 @@ func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
 		return local.NewBuilder(runCtx)
 
 	case runCtx.Cfg.Build.GoogleCloudBuild != nil:
-		logrus.Debugln("Using builder: google cloud")
-		return gcb.NewBuilder(runCtx), nil
+		logrus.Debugln("Using builder: google cloud. Returniung builder here")
+		return builders.RegisteredBuilderPlugins(runCtx)
 
 	case runCtx.Cfg.Build.Cluster != nil:
 		logrus.Debugln("Using builder: kaniko")
@@ -317,21 +333,38 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 		return nil, errors.Wrap(err, "retrieving cached artifacts")
 	}
 
-	bRes, err := r.Build(ctx, out, tags, artifactsToBuild)
-	if err != nil {
-		return nil, errors.Wrap(err, "build failed")
-	}
-	r.cache.RetagLocalImages(ctx, out, artifactsToBuild, bRes)
-	bRes = append(bRes, res...)
-	if err := r.cache.CacheArtifacts(ctx, artifacts, bRes); err != nil {
-		logrus.Warnf("error caching artifacts: %v", err)
-	}
-	if !r.runCtx.Opts.SkipTests {
-		if err = r.Test(ctx, out, bRes); err != nil {
-			return nil, errors.Wrap(err, "test failed")
+	// Here is the change,
+	// We need to build in Execution env. Since this only exists for `googlecloudbuild`,
+	// we hard code this check here where envBuilder is not nil
+	// this should go away in real implementation.
+	if r.EnvBuilder != nil {
+		bRes := []build.Artifact{}
+		// Use EnvBuilder Plugin
+		for _, a := range artifacts {
+			a, err := r.EnvBuilder.ExecuteArtifactBuild(ctx, out, tags[a.ImageName], a, r.Builder)
+			if err != nil {
+				return bRes, err
+			}
+			bRes = append(bRes, *a)
 		}
+		return bRes, nil
+	} else {
+		bRes, err := r.Build(ctx, out, tags, artifactsToBuild)
+		if err != nil {
+			return nil, errors.Wrap(err, "build failed")
+		}
+		r.cache.RetagLocalImages(ctx, out, artifactsToBuild, bRes)
+		bRes = append(bRes, res...)
+		if err := r.cache.CacheArtifacts(ctx, artifacts, bRes); err != nil {
+			logrus.Warnf("error caching artifacts: %v", err)
+		}
+		if !r.runCtx.Opts.SkipTests {
+			if err = r.Test(ctx, out, bRes); err != nil {
+				return nil, errors.Wrap(err, "test failed")
+			}
+		}
+		return bRes, err
 	}
-	return bRes, err
 }
 
 // Deploy deploys the given artifacts

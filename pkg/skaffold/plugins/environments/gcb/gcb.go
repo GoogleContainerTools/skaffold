@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package docker
+package gcb
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugins/environments/shared"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 )
@@ -27,9 +27,8 @@ func Execute(pluginLogLevel hclog.Level) func() error {
 	return func() error {
 		// pluginMap is the map of plugins we can dispense.
 		var pluginMap = map[string]plugin.Plugin{
-			"docker": &shared.BuilderPlugin{Impl: NewBuilder()},
+			"googlecloudbuild": &shared.EnvPlugin{Impl: NewExecutionEnv()},
 		}
-
 		plugin.Serve(&plugin.ServeConfig{
 			Logger: hclog.New(&hclog.LoggerOptions{
 				Level: pluginLogLevel,

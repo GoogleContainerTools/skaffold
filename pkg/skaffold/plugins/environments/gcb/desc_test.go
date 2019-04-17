@@ -23,28 +23,28 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestBuildBazelDescriptionFail(t *testing.T) {
+func TestExecuteBazelDescriptionFail(t *testing.T) {
 	artifact := &latest.Artifact{
 		ArtifactType: latest.ArtifactType{
 			BazelArtifact: &latest.BazelArtifact{},
 		},
 	}
 
-	builder := Builder{
+	executor := ExecutionEnv{
 		GoogleCloudBuild: &latest.GoogleCloudBuild{},
 	}
-	_, err := builder.buildDescription(artifact, "tag", "bucket", "object")
+	_, err := executor.buildDescription(artifact, "tag", "bucket", "object")
 
 	testutil.CheckError(t, true, err)
 }
 
-func TestBuildUnknownDescriptionFail(t *testing.T) {
+func TestExecuteUnknownDescriptionFail(t *testing.T) {
 	artifact := &latest.Artifact{}
 
-	builder := Builder{
+	executor := ExecutionEnv{
 		GoogleCloudBuild: &latest.GoogleCloudBuild{},
 	}
-	_, err := builder.buildDescription(artifact, "tag", "bucket", "object")
+	_, err := executor.buildDescription(artifact, "tag", "bucket", "object")
 
 	testutil.CheckError(t, true, err)
 }

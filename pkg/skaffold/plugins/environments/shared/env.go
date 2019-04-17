@@ -14,23 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package app
+package shared
 
 import (
-	"io"
-
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugins/builders"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/env"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 )
 
-func Run(out, stderr io.Writer) error {
-	corePlugin, err := builders.GetCorePluginFromEnv()
-	if err != nil {
-		return err
-	}
-	if corePlugin != "" {
-		return builders.Execute(corePlugin)
-	}
-	c := cmd.NewSkaffoldCommand(out, stderr)
-	return c.Execute()
+type PluginEnv interface {
+	Init(runCtx *runcontext.RunContext) error
+	env.EnvBuilder
 }

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package plugin
+package builders
 
 import (
 	"fmt"
@@ -23,8 +23,8 @@ import (
 	"github.com/hashicorp/go-hclog"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/bazel"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugins/builders/bazel"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugins/builders/docker"
 )
 
 //TODO(this should be rather wired through an env var from the skaffold process)

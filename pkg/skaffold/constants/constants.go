@@ -67,9 +67,14 @@ const (
 	// A regex matching valid repository names (https://github.com/docker/distribution/blob/master/reference/reference.go)
 	RepositoryComponentRegex string = `^[a-z\d]+(?:(?:[_.]|__|-+)[a-z\d]+)*$`
 
-	SkaffoldPluginKey       = "SKAFFOLD_PLUGIN_KEY"
-	SkaffoldPluginValue     = "1337"
-	SkaffoldPluginName      = "SKAFFOLD_PLUGIN_NAME"
+	SkaffoldPluginKey   = "SKAFFOLD_PLUGIN_KEY"
+	SkaffoldPluginValue = "1337"
+	SkaffoldPluginName  = "SKAFFOLD_PLUGIN_NAME"
+
+	SkaffoldEnvPluginKey   = "SKAFFOLD_ENV_PLUGIN_KEY"
+	SkaffoldEnvPluginValue = "1338"
+	SkaffoldEnvPluginName  = "SKAFFOLD_ENV_PLUGIN_NAME"
+
 	DockerBuilderPluginName = "docker"
 
 	DefaultRPCPort     = 50051

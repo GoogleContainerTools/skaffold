@@ -28,7 +28,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-func (b *Builder) buildDescription(artifact *latest.Artifact, tag, bucket, object string) (*cloudbuild.Build, error) {
+func (b *ExecutionEnv) buildDescription(artifact *latest.Artifact, tag, bucket, object string) (*cloudbuild.Build, error) {
 	tags := []string{tag}
 	if artifact.WorkspaceHash != "" {
 		tags = append(tags, cache.HashTag(artifact))
@@ -57,7 +57,7 @@ func (b *Builder) buildDescription(artifact *latest.Artifact, tag, bucket, objec
 	}, nil
 }
 
-func (b *Builder) buildSteps(artifact *latest.Artifact, tags []string) ([]*cloudbuild.BuildStep, error) {
+func (b *ExecutionEnv) buildSteps(artifact *latest.Artifact, tags []string) ([]*cloudbuild.BuildStep, error) {
 	switch {
 	case artifact.BuilderPlugin != nil:
 		return b.pluginBuildSteps(artifact, tags)
@@ -79,7 +79,7 @@ func (b *Builder) buildSteps(artifact *latest.Artifact, tags []string) ([]*cloud
 	}
 }
 
-func (b *Builder) pluginBuildSteps(artifact *latest.Artifact, tags []string) ([]*cloudbuild.BuildStep, error) {
+func (b *ExecutionEnv) pluginBuildSteps(artifact *latest.Artifact, tags []string) ([]*cloudbuild.BuildStep, error) {
 	switch artifact.BuilderPlugin.Name {
 	case constants.DockerBuilderPluginName:
 		var da *latest.DockerArtifact

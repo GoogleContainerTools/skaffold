@@ -38,7 +38,7 @@ func TestDockerBuildDescription(t *testing.T) {
 		},
 	}
 
-	builder := Builder{
+	executor := ExecutionEnv{
 		GoogleCloudBuild: &latest.GoogleCloudBuild{
 			DockerImage: "docker/docker",
 			DiskSizeGb:  100,
@@ -46,7 +46,7 @@ func TestDockerBuildDescription(t *testing.T) {
 			Timeout:     "10m",
 		},
 	}
-	desc, err := builder.buildDescription(artifact, "nginx", "bucket", "object")
+	desc, err := executor.buildDescription(artifact, "nginx", "bucket", "object")
 
 	expected := cloudbuild.Build{
 		LogsBucket: "bucket",
@@ -77,12 +77,12 @@ func TestPullCacheFrom(t *testing.T) {
 		CacheFrom:      []string{"from/image1", "from/image2"},
 	}
 
-	builder := Builder{
+	executor := ExecutionEnv{
 		GoogleCloudBuild: &latest.GoogleCloudBuild{
 			DockerImage: "docker/docker",
 		},
 	}
-	steps := builder.dockerBuildSteps(artifact, []string{"nginx2"})
+	steps := executor.dockerBuildSteps(artifact, []string{"nginx2"})
 
 	expected := []*cloudbuild.BuildStep{{
 		Name:       "docker/docker",

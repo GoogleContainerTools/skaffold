@@ -14,23 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package app
+package env
 
 import (
+	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugins/builders"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func Run(out, stderr io.Writer) error {
-	corePlugin, err := builders.GetCorePluginFromEnv()
-	if err != nil {
-		return err
-	}
-	if corePlugin != "" {
-		return builders.Execute(corePlugin)
-	}
-	c := cmd.NewSkaffoldCommand(out, stderr)
-	return c.Execute()
+// EnvBuilder is an interface to the Execute an artifact Build in Skaffold.
+
+type EnvBuilder interface {
+	ExecuteArtifactBuild(ctx context.Context, out io.Writer, tag string, artifact *latest.Artifact, builder build.Builder) (*build.Artifact, error)
 }

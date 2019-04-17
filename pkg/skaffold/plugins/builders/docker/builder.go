@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/environments/gcb"
+	//"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugins/environments/gcb"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -41,7 +41,7 @@ type Builder struct {
 	opts *config.SkaffoldOptions
 	env  *latest.ExecutionEnvironment
 
-	gcbEnv *gcb.Builder
+	//gcbEnv *gcb.Builder
 
 	*latest.LocalBuild
 	LocalDocker  docker.LocalDaemon
@@ -76,11 +76,12 @@ func (b *Builder) Init(runCtx *runcontext.RunContext) error {
 		}
 		switch b.env.Name {
 		case constants.GoogleCloudBuild:
-			gcbEnv, err := gcb.NewBuilderFromPluginConfig(runCtx)
-			if err != nil {
-				return errors.Wrap(err, "initializing GCB builder")
-			}
-			b.gcbEnv = gcbEnv
+			//pass
+			// gcbEnv, err := gcb.NewBuilderFromPluginConfig(runCtx)
+			// if err != nil {
+			// 	return errors.Wrap(err, "initializing GCB builder")
+			// }
+			// b.gcbEnv = gcbEnv
 		case constants.Local:
 			//pass
 		default:
@@ -116,7 +117,9 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.
 func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	switch b.env.Name {
 	case constants.GoogleCloudBuild:
-		return b.googleCloudBuild(ctx, out, tags, artifacts)
+		// Ideally on this branch, the flow should not come here.
+		return nil, errors.Errorf("tried to run google cloud build in docker Build")
+		//return b.googleCloudBuild(ctx, out, tags, artifacts)
 	case constants.Local:
 		return b.local(ctx, out, tags, artifacts)
 	default:
@@ -136,17 +139,16 @@ func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
 	// return b.builder.Prune(ctx, out)
 }
 
-// googleCloudBuild sets any necessary defaults and then builds artifacts with docker in GCB
-func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+// // googleCloudBuild sets any necessary defaults and then builds artifacts with docker in GCB
+// func (b *Builder) googleCloudBuild(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 
-	for _, a := range artifacts {
-		if err := setArtifact(a); err != nil {
-			return nil, err
-		}
-	}
-
-	return b.gcbEnv.Build(ctx, out, tags, artifacts)
-}
+// 	for _, a := range artifacts {
+// 		if err := setArtifact(a); err != nil {
+// 			return nil, err
+// 		}
+// 	}
+// 	return b.gcbEnv.Execute(ctx, out, tags, artifacts)
+// }
 
 func setArtifact(artifact *latest.Artifact) error {
 	if artifact.ArtifactType.DockerArtifact != nil {

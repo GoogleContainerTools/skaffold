@@ -23,14 +23,14 @@ import (
 )
 
 // TODO(dgageot): check that `package` is bound to `jib:build`
-func (b *Builder) jibMavenBuildSteps(artifact *latest.JibMavenArtifact, tag string) []*cloudbuild.BuildStep {
+func (b *ExecutionEnv) jibMavenBuildSteps(artifact *latest.JibMavenArtifact, tag string) []*cloudbuild.BuildStep {
 	return []*cloudbuild.BuildStep{{
 		Name: b.MavenImage,
 		Args: jib.GenerateMavenArgs("dockerBuild", tag, artifact, b.skipTests),
 	}}
 }
 
-func (b *Builder) jibGradleBuildSteps(artifact *latest.JibGradleArtifact, tag string) []*cloudbuild.BuildStep {
+func (b *ExecutionEnv) jibGradleBuildSteps(artifact *latest.JibGradleArtifact, tag string) []*cloudbuild.BuildStep {
 	return []*cloudbuild.BuildStep{{
 		Name: b.GradleImage,
 		Args: jib.GenerateGradleArgs("jibDockerBuild", tag, artifact, b.skipTests),

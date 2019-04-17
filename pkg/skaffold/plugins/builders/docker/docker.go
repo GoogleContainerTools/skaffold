@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package bazel
+package docker
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugins/builders/shared"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 )
@@ -27,7 +27,7 @@ func Execute(pluginLogLevel hclog.Level) func() error {
 	return func() error {
 		// pluginMap is the map of plugins we can dispense.
 		var pluginMap = map[string]plugin.Plugin{
-			"bazel": &shared.BuilderPlugin{Impl: NewBuilder()},
+			"docker": &shared.BuilderPlugin{Impl: NewBuilder()},
 		}
 
 		plugin.Serve(&plugin.ServeConfig{

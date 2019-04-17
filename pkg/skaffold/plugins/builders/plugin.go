@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package plugin
+package builders
 
 import (
 	"context"
@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/shared"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugins/builders/shared"
 	runctx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -40,15 +40,16 @@ var (
 	randomID = util.RandomFourCharacterID
 )
 
-// NewPluginBuilder initializes and returns all required plugin builders
-func NewPluginBuilder(runCtx *runctx.RunContext) (shared.PluginBuilder, error) {
+// RegisteredBuilderPlugins initializes and returns all required plugin builders
+func RegisteredBuilderPlugins(runCtx *runctx.RunContext) (shared.PluginBuilder, error) {
 	// We're a host. Start by launching the plugin process.
 	logrus.SetOutput(os.Stdout)
 
 	builders := map[string]shared.PluginBuilder{}
 
-	for _, a := range runCtx.Cfg.Build.Artifacts {
-		p := a.BuilderPlugin.Name
+	// This is very niave way of registering all the plugins.
+	// This should be replaced by a mature registration modules.
+	for _, p := range []string{"docker", "bazel", "jibMaven", "jibGradle"} {
 		if _, ok := builders[p]; ok {
 			continue
 		}

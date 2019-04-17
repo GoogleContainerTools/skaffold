@@ -39,14 +39,14 @@ func TestJibMavenBuildSteps(t *testing.T) {
 			},
 		}
 
-		builder := Builder{
+		executor := ExecutionEnv{
 			GoogleCloudBuild: &latest.GoogleCloudBuild{
 				MavenImage: "maven:3.6.0",
 			},
 			skipTests: tt.skipTests,
 		}
 
-		steps, err := builder.buildSteps(artifact, []string{"img"})
+		steps, err := executor.buildSteps(artifact, []string{"img"})
 		testutil.CheckError(t, false, err)
 
 		expected := []*cloudbuild.BuildStep{{
@@ -73,14 +73,14 @@ func TestJibGradleBuildSteps(t *testing.T) {
 			},
 		}
 
-		builder := Builder{
+		executor := ExecutionEnv{
 			GoogleCloudBuild: &latest.GoogleCloudBuild{
 				GradleImage: "gradle:5.1.1",
 			},
 			skipTests: tt.skipTests,
 		}
 
-		steps, err := builder.buildSteps(artifact, []string{"img"})
+		steps, err := executor.buildSteps(artifact, []string{"img"})
 		testutil.CheckError(t, false, err)
 
 		expected := []*cloudbuild.BuildStep{{
