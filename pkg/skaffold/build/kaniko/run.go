@@ -68,7 +68,7 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 		args = append(args, []string{"--destination", hashTag}...)
 	}
 
-	for insecureRegistry, insecure := range b.insecureRegisteries {
+	for insecureRegistry, insecure := range b.insecureRegistries {
 		if insecure {
 			args = append(args, []string{"--insecure-registry", insecureRegistry}...)
 		}
