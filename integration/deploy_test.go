@@ -17,11 +17,32 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
+
+func TestBuildDeploy(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	ns, client, deleteNs := SetupNamespace(t)
+	defer deleteNs()
+
+	dir, cleanUp := testutil.NewTempDir(t)
+	defer cleanUp()
+	dir.Write("build.out", "")
+	skaffold.Build("--quiet", fmt.Sprintf(">%s", dir.Path("build.out"))).InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
+	skaffold.Deploy("--images", "index.docker.io/library/busybox:1").InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
+
+	dep := client.GetDeployment("kustomize-test")
+	testutil.CheckDeepEqual(t, "index.docker.io/library/busybox:1", dep.Spec.Template.Spec.Containers[0].Image)
+
+	skaffold.Delete().InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
+}
 
 func TestDeploy(t *testing.T) {
 	if testing.Short() {

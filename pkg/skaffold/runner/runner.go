@@ -127,10 +127,6 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 
 func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
 	switch {
-	case len(runCtx.Opts.PreBuiltImages) > 0:
-		logrus.Debugln("Using pre-built images")
-		return build.NewPreBuiltImagesBuilder(runCtx), nil
-
 	case runCtx.Cfg.Build.LocalBuild != nil:
 		logrus.Debugln("Using builder: local")
 		return local.NewBuilder(runCtx)

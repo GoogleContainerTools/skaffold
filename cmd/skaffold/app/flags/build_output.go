@@ -41,10 +41,12 @@ func (t *BuildOutputFileFlag) String() string {
 	return t.filename
 }
 
+// Usage Implements Usage() method for pflag interface
 func (t *BuildOutputFileFlag) Usage() string {
 	return "Input file with json encoded BuildOutput e.g.`skaffold build -q -o >build.out`"
 }
 
+// Set Implements Set() method for pflag interface
 func (t *BuildOutputFileFlag) Set(value string) error {
 	if _, err := os.Stat(value); os.IsNotExist(err) {
 		return err
@@ -62,15 +64,17 @@ func (t *BuildOutputFileFlag) Set(value string) error {
 	return nil
 }
 
+// Type Implements Type() method for pflag interface
 func (t *BuildOutputFileFlag) Type() string {
 	return fmt.Sprintf("%T", t)
 }
 
-// Returns the Build Artifacts as mentioned in the BuildOutputFileFlag
+// BuildAritifacts returns the Build Artifacts in the BuildOutputFileFlag
 func (t *BuildOutputFileFlag) BuildAritifacts() []build.Artifact {
 	return t.buildOutput.Builds
 }
 
+// NewBuildOutputFileFlag returns a new BuildOutputFile without any validation
 func NewBuildOutputFileFlag(value string) *BuildOutputFileFlag {
 	return &BuildOutputFileFlag{
 		filename: value,
