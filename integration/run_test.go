@@ -70,7 +70,7 @@ func TestRun(t *testing.T) {
 			pods:        []string{"getting-started"},
 			remoteOnly:  true,
 		}, {
-			description: "Google Cloud Build - sub folder",
+			description: "Google Cloud Builder Subfolder",
 			dir:         "testdata/gcb-sub-folder",
 			pods:        []string{"getting-started"},
 			remoteOnly:  true,

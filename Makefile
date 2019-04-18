@@ -91,7 +91,7 @@ ifeq ($(REMOTE_INTEGRATION),true)
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-	REMOTE_INTEGRATION=$(REMOTE_INTEGRATION) go test -v $(REPOPATH)/integration -timeout 15m
+	REMOTE_INTEGRATION=$(REMOTE_INTEGRATION) go test -v $(REPOPATH)/integration -run TestRun/Google_Cloud_Build_Subfolder -timeout 15m
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
