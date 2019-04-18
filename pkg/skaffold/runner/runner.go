@@ -128,9 +128,9 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 
 func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
 	switch {
-	case len(runCtx.Opts.PreBuiltImages) > 0:
-		logrus.Debugln("Using pre-built images")
-		return build.NewPreBuiltImagesBuilder(runCtx), nil
+	case runCtx.Plugin:
+		logrus.Debugln("Using builder plugins")
+		return plugin.NewPluginBuilder(runCtx)
 
 	case runCtx.Cfg.Build.LocalBuild != nil:
 		logrus.Debugln("Using builder: local")
@@ -331,6 +331,15 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 
 // Deploy deploys the given artifacts
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+	if len(r.runCtx.Opts.PreBuiltImages) > 0 {
+		logrus.Debugln("Deploy using pre-built images")
+		pBuilts, err := convertImagesToArtifact(r.runCtx.Opts.PreBuiltImages)
+		if err != nil {
+			return errors.Wrap(err, "deploy failed")
+		}
+		// Merge current build artifacts with previously built
+		artifacts = build.MergeWithPreviousBuilds(artifacts, pBuilts)
+	}
 	err := r.Deployer.Deploy(ctx, out, artifacts, r.labellers)
 	r.hasDeployed = true
 	return err

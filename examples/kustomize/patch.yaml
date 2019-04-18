@@ -11,3 +11,5 @@ spec:
         command:
           - sleep
           - "3600"
+      - name: kustomize-test1
+        image: index.docker.io/library/nginx

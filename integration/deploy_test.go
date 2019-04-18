@@ -31,10 +31,11 @@ func TestDeploy(t *testing.T) {
 	ns, client, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	skaffold.Deploy("--images", "index.docker.io/library/busybox:1").InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
+	skaffold.Deploy("--images", "index.docker.io/library/busybox:1", "--images", "index.docker.io/library/nginx:2").InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
 
 	dep := client.GetDeployment("kustomize-test")
 	testutil.CheckDeepEqual(t, "index.docker.io/library/busybox:1", dep.Spec.Template.Spec.Containers[0].Image)
+	testutil.CheckDeepEqual(t, "index.docker.io/library/nginx:2", dep.Spec.Template.Spec.Containers[1].Image)
 
 	skaffold.Delete().InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
 }
