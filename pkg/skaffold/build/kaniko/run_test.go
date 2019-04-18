@@ -17,6 +17,8 @@ limitations under the License.
 package kaniko
 
 import (
+	"fmt"
+	"math/rand"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
