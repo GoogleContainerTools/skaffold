@@ -32,6 +32,7 @@ type SkaffoldOptions struct {
 	SkipTests          bool
 	CacheArtifacts     bool
 	EnableRPC          bool
+	Force              bool
 	NoPrune            bool
 	CustomTag          string
 	Namespace          string
@@ -81,4 +82,8 @@ func (opts *SkaffoldOptions) Labels() map[string]string {
 // and the user did NOT specify the --cache-artifacts flag.
 func (opts *SkaffoldOptions) Prune() bool {
 	return !opts.NoPrune && !opts.CacheArtifacts
+}
+
+func (opts *SkaffoldOptions) ForceDeploy() bool {
+	return opts.Command == "dev" || opts.Force
 }

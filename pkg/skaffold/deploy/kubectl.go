@@ -52,6 +52,7 @@ func NewKubectlDeployer(runCtx *runcontext.RunContext) *KubectlDeployer {
 			Namespace:   runCtx.Opts.Namespace,
 			KubeContext: runCtx.KubeContext,
 			Flags:       runCtx.Cfg.Deploy.KubectlDeploy.Flags,
+			ForceDeploy: runCtx.Opts.ForceDeploy(),
 		},
 		defaultRepo:        runCtx.DefaultRepo,
 		insecureRegistries: runCtx.InsecureRegistries,

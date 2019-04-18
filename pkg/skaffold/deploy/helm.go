@@ -48,6 +48,7 @@ type HelmDeployer struct {
 	kubeContext string
 	namespace   string
 	defaultRepo string
+	forceDeploy bool
 }
 
 // NewHelmDeployer returns a new HelmDeployer for a DeployConfig filled
@@ -58,6 +59,7 @@ func NewHelmDeployer(runCtx *runcontext.RunContext) *HelmDeployer {
 		kubeContext: runCtx.KubeContext,
 		namespace:   runCtx.Opts.Namespace,
 		defaultRepo: runCtx.DefaultRepo,
+		forceDeploy: runCtx.Opts.ForceDeploy(),
 	}
 }
 
@@ -190,6 +192,9 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	} else {
 		args = append(args, "upgrade", releaseName)
 		args = append(args, h.Flags.Upgrade...)
+		if h.forceDeploy {
+			args = append(args, "--force")
+		}
 		if r.RecreatePods {
 			args = append(args, "--recreate-pods")
 		}
