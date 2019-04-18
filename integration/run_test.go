@@ -70,7 +70,7 @@ func TestRun(t *testing.T) {
 			pods:        []string{"getting-started"},
 			remoteOnly:  true,
 		}, {
-			description: "Google Cloud Build - sub folder",
+			description: "Google Cloud Build with sub folder",
 			dir:         "testdata/gcb-sub-folder",
 			pods:        []string{"getting-started"},
 			remoteOnly:  true,
@@ -85,7 +85,7 @@ func TestRun(t *testing.T) {
 			pods:        []string{"getting-started-kaniko"},
 			remoteOnly:  true,
 		}, {
-			description: "kaniko local - sub folder",
+			description: "kaniko local with sub folder",
 			dir:         "testdata/kaniko-sub-folder",
 			pods:        []string{"getting-started-kaniko"},
 			remoteOnly:  true,
