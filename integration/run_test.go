@@ -65,8 +65,7 @@ func TestRun(t *testing.T) {
 			pods:        []string{"bazel"},
 		}, {
 			description: "Google Cloud Build",
-			dir:         "examples/structure-tests",
-			args:        []string{"-p", "gcb"},
+			dir:         "examples/google-cloud-build",
 			pods:        []string{"getting-started"},
 			remoteOnly:  true,
 		}, {
