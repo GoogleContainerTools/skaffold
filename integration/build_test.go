@@ -26,9 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
-	"github.com/kubernetes-sigs/kind/pkg/fs"
 )
 
 const imageName = "simple-build:"
@@ -43,7 +41,7 @@ func TestBuild(t *testing.T) {
 		dir         string
 		args        []string
 		expectImage string
-		setup       func(*testing.T)
+		setup       func(t *testing.T, workdir string) (teardown func())
 	}{
 		{
 			description: "docker build",
@@ -79,23 +77,14 @@ func TestBuild(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			tempDir, tearDown := testutil.NewTempDir(t)
-			defer tearDown()
-			err := fs.Copy(test.dir, tempDir.Root())
-			failNowIfError(t, err)
-
-			origWd, _ := os.Getwd()
-			defer func() { os.Chdir(origWd) }()
-			err = os.Chdir(tempDir.Root())
-			failNowIfError(t, err)
-
 			if test.setup != nil {
-				test.setup(t)
+				teardown := test.setup(t, test.dir)
+				defer teardown()
 			}
 
 			// remove image in case it is already present
 			removeImage(t, test.expectImage)
-			skaffold.Build(test.args...).RunOrFail(t)
+			skaffold.Build(test.args...).InDir(test.dir).RunOrFail(t)
 			checkImageExists(t, test.expectImage)
 		})
 	}
@@ -139,18 +128,23 @@ func checkImageExists(t *testing.T, image string) {
 }
 
 // setupGitRepo sets up a clean repo with tag v1
-func setupGitRepo(t *testing.T) {
-	multiArgs := [][]string{
+func setupGitRepo(t *testing.T, dir string) func() {
+	gitArgs := [][]string{
 		{"init"},
 		{"add", "."},
 		{"commit", "-m", "Initial commit"},
 		{"tag", "v1"},
 	}
 
-	for _, args := range multiArgs {
+	for _, args := range gitArgs {
 		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
 		err := util.RunCmd(cmd)
 		failNowIfError(t, err)
+	}
+
+	return func() {
+		os.RemoveAll(dir + "/.git")
 	}
 }
 
