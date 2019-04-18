@@ -68,6 +68,12 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 		args = append(args, []string{"--destination", hashTag}...)
 	}
 
+	for insecureRegistry, insecure := range b.insecureRegisteries {
+		if insecure {
+			args = append(args, []string{"--insecure-registry", insecureRegistry}...)
+		}
+	}
+
 	podSpec := s.Pod(args)
 	// Create pod
 	client, err := kubernetes.GetClientset()
