@@ -231,11 +231,12 @@ func (ev *eventHandler) handleBuildEvent(e *proto.BuildEvent) {
 }
 
 func (ev *eventHandler) doHandle(event *proto.Event) {
-	if pluginMode {
-		go cli.Handle(context.Background(), event)
-	} else {
-		go ev.handle(event)
-	}
+	go cli.Handle(context.Background(), event)
+	// if pluginMode {
+	// 	go cli.Handle(context.Background(), event)
+	// } else {
+	// 	go ev.handle(event)
+	// }
 }
 
 func LogSkaffoldMetadata(info *version.Info) {

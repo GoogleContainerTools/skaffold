@@ -18,6 +18,7 @@ package docker
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -71,7 +72,7 @@ func (b *Builder) Init(runCtx *runcontext.RunContext) error {
 	if b.PluginMode {
 		if err := event.SetupRPCClient(runCtx.Opts); err != nil {
 			logrus.Warn("error establishing gRPC connection to skaffold process; events will not be handled correctly")
-			logrus.Warn(err.Error())
+			logrus.Debug(err.Error())
 			return err
 		}
 		switch b.env.Name {
@@ -125,6 +126,27 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	default:
 		return nil, errors.Errorf("%s is not a supported environment for builder docker", b.env.Name)
 	}
+}
+
+func (b *Builder) BuildDescription(tags tag.ImageTags, a *latest.Artifact) (*build.Description, error) {
+	args := []string{"build"}
+	artifact := a.DockerArtifact
+	if artifact == nil {
+		return nil, nil
+	}
+	fmt.Println("=========", artifact)
+	args = append(args, []string{"-f", artifact.DockerfilePath}...)
+	args = append(args, docker.GetBuildArgs(artifact)...)
+	for _, t := range tags {
+		args = append(args, []string{"--tag", t}...)
+	}
+	args = append(args, ".")
+	d, _ := b.DependenciesForArtifact(context.Background(), a)
+	return &build.Description{
+		Command:      "docker",
+		Args:         args,
+		Dependencies: d,
+	}, nil
 }
 
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {

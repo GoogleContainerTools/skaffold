@@ -30,6 +30,7 @@ import (
 )
 
 func convertPropertiesToBytes(a *latest.Artifact) error {
+	//for _, a := range artifacts {
 	if a.BuilderPlugin.Properties == nil {
 		return nil
 	}
@@ -39,6 +40,7 @@ func convertPropertiesToBytes(a *latest.Artifact) error {
 	}
 	a.BuilderPlugin.Contents = data
 	a.BuilderPlugin.Properties = nil
+	//}
 	return nil
 }
 
@@ -54,17 +56,17 @@ func (s *EnvRPCServer) Init(runCtx *runcontext.RunContext, resp *interface{}) er
 
 // ExecuteBuildArgs are args passed via rpc to the build plugin on DependencyForArtifact()
 type ExecuteArtifactBuildArgs struct {
-	artifact *latest.Artifact
-	tag      string
-	builder  build.Builder
+	Artifact    *latest.Artifact
+	TagStr      string
+	Description build.Description
 }
 
 func (s *EnvRPCServer) ExecuteArtifactBuild(b ExecuteArtifactBuildArgs, resp *build.Artifact) error {
-	artifact, err := s.Impl.ExecuteArtifactBuild(context.Background(), os.Stdout, b.tag, b.artifact, b.builder)
+	artifact, err := s.Impl.ExecuteArtifactBuild(context.Background(), os.Stdout, b.TagStr, b.Artifact, b.Description)
 	if err != nil {
 		return errors.Wrap(err, "building artifacts")
 	}
-	resp = artifact
+	*resp = artifact
 	return nil
 }
 

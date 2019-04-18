@@ -20,17 +20,9 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugins/builders"
 )
 
 func Run(out, stderr io.Writer) error {
-	corePlugin, err := builders.GetCorePluginFromEnv()
-	if err != nil {
-		return err
-	}
-	if corePlugin != "" {
-		return builders.Execute(corePlugin)
-	}
 	c := cmd.NewSkaffoldCommand(out, stderr)
 	return c.Execute()
 }

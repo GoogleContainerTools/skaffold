@@ -48,14 +48,15 @@ func (b *ExecutionEnv) Build(ctx context.Context, out io.Writer, tags tag.ImageT
 }
 
 // ExecuteArtifactBuild executes a Build in GCB
-func (b *ExecutionEnv) ExecuteArtifactBuild(ctx context.Context, out io.Writer, tagStr string, artifact *latest.Artifact, builder build.Builder) (*build.Artifact, error) {
+func (b *ExecutionEnv) ExecuteArtifactBuild(ctx context.Context, out io.Writer, tagStr string, artifact *latest.Artifact, desc build.Description) (build.Artifact, error) {
+	b.Desc = desc
+	var a build.Artifact
 	t := tag.ImageTags(map[string]string{artifact.ImageName: tagStr})
-	b.builder = builder
-	as, err := build.InParallel(ctx, out, t, []*latest.Artifact{artifact}, b.buildArtifactWithCloudBuild)
+	as, err := build.InSequence(ctx, out, t, []*latest.Artifact{artifact}, b.buildArtifactWithCloudBuild)
 	if err != nil {
-		return nil, err
+		return a, err
 	}
-	return &as[0], nil
+	return as[0], nil
 }
 
 func (b *ExecutionEnv) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
@@ -82,7 +83,6 @@ func (b *ExecutionEnv) buildArtifactWithCloudBuild(ctx context.Context, out io.W
 		if err != nil {
 			return "", errors.Wrap(err, "extracting projectID from image name")
 		}
-
 		projectID = guessedProjectID
 	}
 
@@ -101,10 +101,7 @@ func (b *ExecutionEnv) buildArtifactWithCloudBuild(ctx context.Context, out io.W
 		return "", errors.Wrap(err, "could not create build description")
 	}
 
-	dependencies, err := b.builder.DependenciesForArtifact(ctx, artifact)
-	if err != nil {
-		return "", errors.Wrapf(err, "getting dependencies for %s", artifact.ImageName)
-	}
+	dependencies := b.Desc.Dependencies
 
 	color.Default.Fprintf(out, "Pushing code to gs://%s/%s\n", cbBucket, buildObject)
 	if err := sources.UploadToGCS(ctx, artifact, cbBucket, buildObject, dependencies); err != nil {

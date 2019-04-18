@@ -47,9 +47,11 @@ func RegisteredBuilderPlugins(runCtx *runctx.RunContext) (shared.PluginBuilder, 
 
 	builders := map[string]shared.PluginBuilder{}
 
-	// This is very niave way of registering all the plugins.
-	// This should be replaced by a mature registration modules.
-	for _, p := range []string{"docker", "bazel", "jibMaven", "jibGradle"} {
+	for _, a := range runCtx.Cfg.Build.Artifacts {
+		if a.BuilderPlugin == nil {
+			continue
+		}
+		p := a.BuilderPlugin.Name
 		if _, ok := builders[p]; ok {
 			continue
 		}
@@ -59,7 +61,7 @@ func RegisteredBuilderPlugins(runCtx *runctx.RunContext) (shared.PluginBuilder, 
 			if err != nil {
 				return nil, errors.Wrap(err, "getting executable path")
 			}
-			cmd = exec.Command(executable)
+			cmd = exec.Command(executable, "serve-builder-plugins")
 			cmd.Env = append(os.Environ(), []string{fmt.Sprintf("%s=%s", constants.SkaffoldPluginKey, constants.SkaffoldPluginValue),
 				fmt.Sprintf("%s=%s", constants.SkaffoldPluginName, p)}...)
 		}
@@ -74,14 +76,14 @@ func RegisteredBuilderPlugins(runCtx *runctx.RunContext) (shared.PluginBuilder, 
 			Cmd:             cmd,
 		})
 
-		logrus.Debugf("Starting plugin with command: %+v", cmd)
+		logrus.Debugf("Starting Build plugin with command: %+v", cmd)
 
 		// Connect via RPC
 		rpcClient, err := client.Client()
 		if err != nil {
 			return nil, errors.Wrap(err, "connecting via rpc")
 		}
-		logrus.Debugf("plugin started.")
+		logrus.Debugf("build plugin started.")
 		// Request the plugin
 		raw, err := rpcClient.Dispense(p)
 		if err != nil {
@@ -101,6 +103,57 @@ func RegisteredBuilderPlugins(runCtx *runctx.RunContext) (shared.PluginBuilder, 
 		return nil, err
 	}
 	return b, nil
+}
+
+func InitBuilderPluginForArtifact(runCtx *runctx.RunContext, a *latest.Artifact) (shared.PluginBuilder, error) {
+	// We're a host. Start by launching the plugin process.
+	logrus.SetOutput(os.Stdout)
+	if a.BuilderPlugin == nil {
+		return nil, errors.New(fmt.Sprint("found BuilderPlugin nil for artifact %s.", a.ImageName))
+	}
+	p := a.BuilderPlugin.Name
+	cmd := exec.Command(p)
+	if _, ok := SkaffoldCorePluginExecutionMap[p]; ok {
+		executable, err := os.Executable()
+		if err != nil {
+			return nil, errors.Wrap(err, "getting executable path")
+		}
+		cmd = exec.Command(executable, "serve-builder-plugins")
+		cmd.Env = append(os.Environ(), []string{fmt.Sprintf("%s=%s", constants.SkaffoldPluginKey, constants.SkaffoldPluginValue),
+			fmt.Sprintf("%s=%s", constants.SkaffoldPluginName, p)}...)
+	}
+
+	client := plugin.NewClient(&plugin.ClientConfig{
+		Stderr:          os.Stderr,
+		SyncStderr:      os.Stderr,
+		SyncStdout:      os.Stdout,
+		Managed:         true,
+		HandshakeConfig: shared.Handshake,
+		Plugins:         shared.PluginMap,
+		Cmd:             cmd,
+	})
+
+	logrus.Debugf("Starting Build plugin with command: %+v", cmd)
+
+	// Connect via RPC
+	rpcClient, err := client.Client()
+	if err != nil {
+		return nil, errors.Wrap(err, "connecting via rpc")
+	}
+	logrus.Debugf("build plugin started.")
+	// Request the plugin
+	raw, err := rpcClient.Dispense(p)
+	if err != nil {
+		return nil, errors.Wrap(err, "requesting rpc plugin")
+	}
+	pluginBuilder := raw.(shared.PluginBuilder)
+
+	logrus.Debugf("Calling Init() for all plugins.")
+	if err := pluginBuilder.Init(runCtx); err != nil {
+		plugin.CleanupClients()
+		return nil, err
+	}
+	return pluginBuilder, nil
 }
 
 type Builder struct {
@@ -155,6 +208,17 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, artifact *latest.
 			continue
 		}
 		return builder.DependenciesForArtifact(ctx, artifact)
+	}
+	return nil, errors.New("couldn't find plugin builder to get dependencies for artifact")
+}
+
+func (b *Builder) BuildDescription(tags tag.ImageTags, artifact *latest.Artifact) (*build.Description, error) {
+	// Group artifacts by builder
+	for name, builder := range b.Builders {
+		if name != artifact.BuilderPlugin.Name {
+			continue
+		}
+		return builder.BuildDescription(tags, artifact)
 	}
 	return nil, errors.New("couldn't find plugin builder to get dependencies for artifact")
 }

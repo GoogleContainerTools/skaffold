@@ -32,13 +32,13 @@ import (
 
 // BuilderRPC is an implementation of an rpc client
 type BuilderRPC struct {
-	client *rpc.Client
+	Client *rpc.Client
 }
 
 func (b *BuilderRPC) Init(runCtx *runcontext.RunContext) error {
 	// We don't expect a response, so we can just use interface{}
 	var resp interface{}
-	return b.client.Call("Plugin.Init", runCtx, &resp)
+	return b.Client.Call("Plugin.Init", runCtx, &resp)
 }
 
 func (b *BuilderRPC) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
@@ -47,16 +47,32 @@ func (b *BuilderRPC) DependenciesForArtifact(ctx context.Context, artifact *late
 		return nil, errors.Wrapf(err, "converting properties to bytes")
 	}
 	args := DependencyArgs{artifact}
-	err := b.client.Call("Plugin.DependenciesForArtifact", args, &resp)
+	err := b.Client.Call("Plugin.DependenciesForArtifact", args, &resp)
 	if err != nil {
 		return nil, err
 	}
 	return resp, nil
 }
 
+func (b *BuilderRPC) BuildDescription(tags tag.ImageTags, artifact *latest.Artifact) (*build.Description, error) {
+	var resp build.Description
+	if err := convertPropertiesToBytes([]*latest.Artifact{artifact}); err != nil {
+		return nil, errors.Wrapf(err, "converting properties to bytes")
+	}
+	args := BuildDescriptionArgs{
+		ImageTags: tags,
+		Artifact:  artifact,
+	}
+	err := b.Client.Call("Plugin.BuildDescription", args, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
 func (b *BuilderRPC) Labels() map[string]string {
 	var resp map[string]string
-	err := b.client.Call("Plugin.Labels", new(interface{}), &resp)
+	err := b.Client.Call("Plugin.Labels", new(interface{}), &resp)
 	if err != nil {
 		// Can't return error, so log it instead
 		logrus.Errorf("Unable to get labels from server: %v", err)
@@ -73,7 +89,7 @@ func (b *BuilderRPC) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		ImageTags: tags,
 		Artifacts: artifacts,
 	}
-	err := b.client.Call("Plugin.Build", args, &resp)
+	err := b.Client.Call("Plugin.Build", args, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +98,7 @@ func (b *BuilderRPC) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 
 func (b *BuilderRPC) Prune(ctx context.Context, out io.Writer) error {
 	var resp interface{}
-	if err := b.client.Call("Plugin.Prune", new(interface{}), &resp); err != nil {
+	if err := b.Client.Call("Plugin.Prune", new(interface{}), &resp); err != nil {
 		return err
 	}
 	return nil

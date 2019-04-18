@@ -452,6 +452,21 @@ Env vars:
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 
+### skaffold execute-builder-plugin
+
+Execute builder plugins and serves them
+
+```
+Usage:
+  skaffold execute-builder-plugin
+
+Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+
+
+```
+
 ### skaffold fix
 
 Converts old Skaffold config to newest schema version
@@ -557,6 +572,21 @@ Env vars:
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
+
+### skaffold serve-env-plugin
+
+Serve env plugins
+
+```
+Usage:
+  skaffold serve-env-plugin
+
+Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+
+
+```
 
 ### skaffold version
 

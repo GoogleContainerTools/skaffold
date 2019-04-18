@@ -3,6 +3,15 @@ kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
+    docker:
+      dockerfile: "Dockerfile"
+    plugin:
+      name: docker
+  executionEnvironment:
+    name: "googleCloudBuild"
+  googleCloudBuild:
+    dockerImage: gcr.io/cloud-builders/docker    
+    projectId: tejal-test
 deploy:
   kubectl:
     manifests:

@@ -25,12 +25,16 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/pkg/errors"
 )
 
 type mockBuilder struct {
 	dependencies []string
 }
 
+func (m *mockBuilder) BuildDescription(tags tag.ImageTags, a *latest.Artifact) (*build.Description, error) {
+	return nil, errors.New("nyi")
+}
 func (m *mockBuilder) Labels() map[string]string { return nil }
 
 func (m *mockBuilder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {

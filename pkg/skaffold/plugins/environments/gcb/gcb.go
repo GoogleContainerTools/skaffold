@@ -36,7 +36,6 @@ func Execute(pluginLogLevel hclog.Level) func() error {
 			HandshakeConfig: shared.Handshake,
 			Plugins:         pluginMap,
 		})
-
 		return nil
 	}
 }

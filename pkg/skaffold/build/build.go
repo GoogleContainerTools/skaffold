@@ -30,6 +30,14 @@ type Artifact struct {
 	Tag       string
 }
 
+// Description describes all the information to run a build which can be then used by execution environment
+// plugins to execute the build.
+type Description struct {
+	Command      string
+	Args         []string
+	Dependencies []string
+}
+
 // Builder is an interface to the Build API of Skaffold.
 // It must build and make the resulting image accesible to the cluster.
 // This could include pushing to a authorized repository or loading the nodes with the image.
@@ -38,6 +46,8 @@ type Builder interface {
 	Labels() map[string]string
 
 	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]Artifact, error)
+
+	BuildDescription(tags tag.ImageTags, artifacts *latest.Artifact) (*Description, error)
 
 	DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error)
 

@@ -58,7 +58,7 @@ type ExecutionEnv struct {
 	*latest.GoogleCloudBuild
 	skipTests          bool
 	insecureRegistries map[string]bool
-	builder            build.Builder
+	Desc               build.Description
 }
 
 // NewExecutionEnv creates a new Builder that builds artifacts with Google Cloud Build.

@@ -39,85 +39,86 @@ func TestRun(t *testing.T) {
 		remoteOnly  bool
 	}{
 		{
-			description: "getting-started",
-			dir:         "examples/getting-started",
-			pods:        []string{"getting-started"},
-		}, {
-			description: "nodejs",
-			dir:         "examples/nodejs",
-			pods:        []string{"node"},
-		}, {
-			description: "structure-tests",
-			dir:         "examples/structure-tests",
-			pods:        []string{"getting-started"},
-		}, {
-			description: "microservices",
-			dir:         "examples/microservices",
-			deployments: []string{"leeroy-app", "leeroy-web"},
-		}, {
-			description: "envTagger",
-			dir:         "examples/tagging-with-environment-variables",
-			pods:        []string{"getting-started"},
-			env:         []string{"FOO=foo"},
-		}, {
-			description: "bazel",
-			dir:         "examples/bazel",
-			pods:        []string{"bazel"},
-		}, {
-			description: "Google Cloud Build",
-			dir:         "examples/structure-tests",
-			args:        []string{"-p", "gcb"},
-			pods:        []string{"getting-started"},
-			remoteOnly:  true,
-		}, {
+			// 	description: "getting-started",
+			// 	dir:         "examples/getting-started",
+			// 	pods:        []string{"getting-started"},
+			// }, {
+			// 	description: "nodejs",
+			// 	dir:         "examples/nodejs",
+			// 	pods:        []string{"node"},
+			// }, {
+			// 	description: "structure-tests",
+			// 	dir:         "examples/structure-tests",
+			// 	pods:        []string{"getting-started"},
+			// }, {
+			// 	description: "microservices",
+			// 	dir:         "examples/microservices",
+			// 	deployments: []string{"leeroy-app", "leeroy-web"},
+			// }, {
+			// 	description: "envTagger",
+			// 	dir:         "examples/tagging-with-environment-variables",
+			// 	pods:        []string{"getting-started"},
+			// 	env:         []string{"FOO=foo"},
+			// }, {
+			// 	description: "bazel",
+			// 	dir:         "examples/bazel",
+			// 	pods:        []string{"bazel"},
+			// }, {
+			// description: "Google Cloud Build",
+			// dir:         "examples/structure-tests",
+			// args:        []string{"-p", "gcb", "-v", "debug"},
+			// pods:        []string{"getting-started"},
+			// remoteOnly:  true,
+			//}, {
 			description: "Google Cloud Builder Subfolder",
 			dir:         "testdata/gcb-sub-folder",
 			pods:        []string{"getting-started"},
-			remoteOnly:  true,
-		}, {
-			description: "kaniko",
-			dir:         "examples/kaniko",
-			pods:        []string{"getting-started-kaniko"},
-			remoteOnly:  true,
-		}, {
-			description: "kaniko local",
-			dir:         "examples/kaniko-local",
-			pods:        []string{"getting-started-kaniko"},
-			remoteOnly:  true,
-		}, {
-			description: "kaniko local - sub folder",
-			dir:         "testdata/kaniko-sub-folder",
-			pods:        []string{"getting-started-kaniko"},
-			remoteOnly:  true,
-		}, {
-			description: "kaniko microservices",
-			dir:         "testdata/kaniko-microservices",
-			deployments: []string{"leeroy-app", "leeroy-web"},
+			args:        []string{"-v", "debug"},
 			remoteOnly:  true,
 			// }, {
-			// 	description: "helm",
-			// 	dir:         "examples/helm-deployment",
-			// 	deployments: []string{"skaffold-helm"},
+			//description: "kaniko",
+			// 	dir:         "examples/kaniko",
+			// 	pods:        []string{"getting-started-kaniko"},
 			// 	remoteOnly:  true,
-		}, {
-			description: "docker plugin in gcb exec environment",
-			dir:         "testdata/plugin/gcb",
-			deployments: []string{"leeroy-app", "leeroy-web"},
-			remoteOnly:  true,
-		}, {
-			description: "bazel plugin in local exec environment",
-			dir:         "testdata/plugin/local/bazel",
-			pods:        []string{"bazel"},
-		}, {
-			description: "docker plugin in local exec environment",
-			dir:         "testdata/plugin/local/docker",
-			deployments: []string{"leeroy-app", "leeroy-web"},
-		}, {
-			description: "jib in googlecloudbuild",
-			dir:         "testdata/jib",
-			args:        []string{"-p", "gcb"},
-			deployments: []string{"web"},
-			remoteOnly:  true,
+			// }, {
+			// 	description: "kaniko local",
+			// 	dir:         "examples/kaniko-local",
+			// 	pods:        []string{"getting-started-kaniko"},
+			// 	remoteOnly:  true,
+			// }, {
+			// 	description: "kaniko local - sub folder",
+			// 	dir:         "testdata/kaniko-sub-folder",
+			// 	pods:        []string{"getting-started-kaniko"},
+			// 	remoteOnly:  true,
+			// }, {
+			// 	description: "kaniko microservices",
+			// 	dir:         "testdata/kaniko-microservices",
+			// 	deployments: []string{"leeroy-app", "leeroy-web"},
+			// 	remoteOnly:  true,
+			// 	// }, {
+			// 	// 	description: "helm",
+			// 	// 	dir:         "examples/helm-deployment",
+			// 	// 	deployments: []string{"skaffold-helm"},
+			// 	// 	remoteOnly:  true,
+			// }, {
+			// 	description: "docker plugin in gcb exec environment",
+			// 	dir:         "testdata/plugin/gcb",
+			// 	deployments: []string{"leeroy-app", "leeroy-web"},
+			// 	remoteOnly:  true,
+			// }, {
+			// 	description: "bazel plugin in local exec environment",
+			// 	dir:         "testdata/plugin/local/bazel",
+			// 	pods:        []string{"bazel"},
+			// }, {
+			// 	description: "docker plugin in local exec environment",
+			// 	dir:         "testdata/plugin/local/docker",
+			// 	deployments: []string{"leeroy-app", "leeroy-web"},
+			// }, {
+			// 	description: "jib in googlecloudbuild",
+			// 	dir:         "testdata/jib",
+			// 	args:        []string{"-p", "gcb"},
+			// 	deployments: []string{"web"},
+			// 	remoteOnly:  true,
 		},
 	}
 
@@ -130,7 +131,7 @@ func TestRun(t *testing.T) {
 			ns, client, deleteNs := SetupNamespace(t)
 			defer deleteNs()
 
-			skaffold.Run().WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFailOutput(t)
+			skaffold.Run(test.args...).WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFailOutput(t)
 
 			client.WaitForPodsReady(test.pods...)
 			client.WaitForDeploymentsToStabilize(test.deployments...)

@@ -55,6 +55,10 @@ func NewBuilder() *Builder {
 	}
 }
 
+func (b *Builder) BuildDescription(tags tag.ImageTags, a *latest.Artifact) (*build.Description, error) {
+	return nil, errors.New("nyi")
+}
+
 // Init stores skaffold options and the execution environment
 func (b *Builder) Init(runCtx *runcontext.RunContext) error {
 	if b.PluginMode {

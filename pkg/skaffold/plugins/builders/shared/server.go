@@ -82,6 +82,15 @@ func (s *BuilderRPCServer) DependenciesForArtifact(d DependencyArgs, resp *[]str
 	return nil
 }
 
+func (s *BuilderRPCServer) BuildDescription(d BuildDescriptionArgs, resp *build.Description) error {
+	desc, err := s.Impl.BuildDescription(d.ImageTags, d.Artifact)
+	if err != nil {
+		return errors.Wrapf(err, "getting dependencies for %s", d.Artifact.ImageName)
+	}
+	resp = desc
+	return nil
+}
+
 // DependencyArgs are args passed via rpc to the build plugin on DependencyForArtifact()
 type DependencyArgs struct {
 	*latest.Artifact
@@ -91,6 +100,12 @@ type DependencyArgs struct {
 type BuildArgs struct {
 	tag.ImageTags
 	Artifacts []*latest.Artifact
+}
+
+// BuildArgs are the args passed via rpc to the builder plugin on Build()
+type BuildDescriptionArgs struct {
+	tag.ImageTags
+	Artifact *latest.Artifact
 }
 
 // BuilderPlugin is the implementation of the hashicorp plugin.Plugin interface
@@ -103,5 +118,5 @@ func (p *BuilderPlugin) Server(*plugin.MuxBroker) (interface{}, error) {
 }
 
 func (BuilderPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (interface{}, error) {
-	return &BuilderRPC{client: c}, nil
+	return &BuilderRPC{Client: c}, nil
 }

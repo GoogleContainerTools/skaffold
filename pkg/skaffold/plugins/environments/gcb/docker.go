@@ -26,7 +26,6 @@ import (
 
 func (b *ExecutionEnv) dockerBuildSteps(artifact *latest.DockerArtifact, tags []string) []*cloudbuild.BuildStep {
 	var steps []*cloudbuild.BuildStep
-
 	for _, cacheFrom := range artifact.CacheFrom {
 		steps = append(steps, &cloudbuild.BuildStep{
 			Name:       b.DockerImage,
@@ -42,7 +41,7 @@ func (b *ExecutionEnv) dockerBuildSteps(artifact *latest.DockerArtifact, tags []
 	args = append(args, []string{"-f", artifact.DockerfilePath}...)
 	args = append(args, docker.GetBuildArgs(artifact)...)
 	args = append(args, ".")
-
+	fmt.Println(args)
 	return append(steps, &cloudbuild.BuildStep{
 		Name: b.DockerImage,
 		Args: args,

@@ -93,3 +93,7 @@ func (b *prebuiltImagesBuilder) Build(ctx context.Context, out io.Writer, _ tag.
 func (b *prebuiltImagesBuilder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 	return nil, nil
 }
+
+func (b *prebuiltImagesBuilder) BuildDescription(tags tag.ImageTags, artifacts *latest.Artifact) (*Description, error) {
+	return nil, errors.New("nyi")
+}

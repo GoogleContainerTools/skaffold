@@ -14,18 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package env
+package cmd
 
 import (
-	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugins/environments"
+	"github.com/spf13/cobra"
 )
 
-// EnvBuilder is an interface to the Execute an artifact Build in Skaffold.
-
-type EnvBuilder interface {
-	ExecuteArtifactBuild(ctx context.Context, out io.Writer, tagStr string, artifact *latest.Artifact, desc build.Description) (build.Artifact, error)
+// NewServeBuilderPlugins describes the CLI command to build artifacts.
+func NewServeEnvPlugins(out io.Writer) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "serve-env-plugin",
+		Short: "Serve env plugins",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			opts.Command = "serve-env-plugin"
+			// start google cloud plugin by default
+			return environments.Execute("googlecloudbuild")
+		},
+	}
+	return cmd
 }

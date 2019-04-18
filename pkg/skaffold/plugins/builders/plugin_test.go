@@ -27,11 +27,16 @@ import (
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/pkg/errors"
 )
 
 type mockBuilder struct {
 	labels    map[string]string
 	artifacts []build.Artifact
+}
+
+func (m *mockBuilder) BuildDescription(tags tag.ImageTags, a *latest.Artifact) (*build.Description, error) {
+	return nil, errors.New("nyi")
 }
 
 func (b *mockBuilder) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, _ []*latest.Artifact) ([]build.Artifact, error) {

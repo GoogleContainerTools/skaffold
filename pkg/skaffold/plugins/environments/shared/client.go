@@ -39,19 +39,19 @@ func (b *EnvRPCClient) Init(runCtx *runcontext.RunContext) error {
 	return b.client.Call("Plugin.Init", runCtx, &resp)
 }
 
-func (b *EnvRPCClient) ExecuteArtifactBuild(ctx context.Context, out io.Writer, tag string, artifact *latest.Artifact, builder build.Builder) (*build.Artifact, error) {
-	var resp *build.Artifact
+func (b *EnvRPCClient) ExecuteArtifactBuild(ctx context.Context, out io.Writer, tag string, artifact *latest.Artifact, d build.Description) (build.Artifact, error) {
+	var resp build.Artifact
 	if err := convertPropertiesToBytes(artifact); err != nil {
-		return nil, errors.Wrapf(err, "converting properties to bytes")
+		return resp, errors.Wrapf(err, "converting properties to bytes")
 	}
 	args := ExecuteArtifactBuildArgs{
-		artifact: artifact,
-		builder:  builder,
-		tag:      tag,
+		Artifact:    artifact,
+		Description: d,
+		TagStr:      tag,
 	}
 	err := b.client.Call("Plugin.ExecuteArtifactBuild", args, &resp)
 	if err != nil {
-		return nil, err
+		return resp, err
 	}
 	return resp, nil
 }

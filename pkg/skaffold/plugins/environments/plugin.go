@@ -43,25 +43,22 @@ var (
 func RegisteredEnvPlugins(runCtx *runctx.RunContext) (shared.PluginEnv, error) {
 	// We're a host. Start by launching the plugin process.
 	logrus.SetOutput(os.Stdout)
-
 	env := map[string]shared.PluginEnv{}
 
 	// This is very naive way of registering all the plugins.
 	// This should be replaced by a mature registration modules.
-	for _, p := range []string{"local", "cluster", "googlecloudbuild"} {
+	for _, p := range []string{"googlecloudbuild"} {
 		if _, ok := env[p]; ok {
 			continue
 		}
-		cmd := exec.Command("echo %s", p)
-		if _, ok := SkaffoldCoreEnvPluginExecutionMap[p]; ok {
-			executable, err := os.Executable()
-			if err != nil {
-				return nil, errors.Wrap(err, "getting executable path")
-			}
-			cmd = exec.Command(executable)
-			cmd.Env = append(os.Environ(), []string{fmt.Sprintf("%s=%s", constants.SkaffoldEnvPluginKey, constants.SkaffoldEnvPluginValue),
-				fmt.Sprintf("%s=%s", constants.SkaffoldPluginName, p)}...)
+
+		executable, err := os.Executable()
+		if err != nil {
+			return nil, errors.Wrap(err, "getting executable path")
 		}
+		cmd := exec.Command(executable, "serve-env-plugin")
+		cmd.Env = append(os.Environ(), []string{fmt.Sprintf("%s=%s", constants.SkaffoldEnvPluginKey, constants.SkaffoldEnvPluginValue),
+			fmt.Sprintf("%s=%s", constants.SkaffoldPluginName, p)}...)
 
 		client := plugin.NewClient(&plugin.ClientConfig{
 			Stderr:          os.Stderr,
@@ -73,14 +70,14 @@ func RegisteredEnvPlugins(runCtx *runctx.RunContext) (shared.PluginEnv, error) {
 			Cmd:             cmd,
 		})
 
-		logrus.Debugf("Starting plugin with command: %+v", cmd)
+		logrus.Debugf("Starting Env plugin with command: %+v", cmd)
 
 		// Connect via RPC
 		rpcClient, err := client.Client()
 		if err != nil {
 			return nil, errors.Wrap(err, "connecting via rpc")
 		}
-		logrus.Debugf("plugin started.")
+		logrus.Debugf("env plugin started.")
 		// Request the plugin
 		raw, err := rpcClient.Dispense(p)
 		if err != nil {
@@ -116,13 +113,13 @@ func (b *EnvBuilder) Init(runCtx *runctx.RunContext) error {
 }
 
 // ExecuteArtifactBuild
-func (b *EnvBuilder) ExecuteArtifactBuild(ctx context.Context, out io.Writer, tagStr string, artifact *latest.Artifact, builder build.Builder) (*build.Artifact, error) {
-	var bArts *build.Artifact
+func (b *EnvBuilder) ExecuteArtifactBuild(ctx context.Context, out io.Writer, tagStr string, artifact *latest.Artifact, d build.Description) (build.Artifact, error) {
+	var bArts build.Artifact
 	var err error
-	for name, env := range b.EnvBuilders {
-		bArts, err = env.ExecuteArtifactBuild(ctx, out, tagStr, artifact, builder)
+	for name, e := range b.EnvBuilders {
+		bArts, err = e.ExecuteArtifactBuild(ctx, out, tagStr, artifact, d)
 		if err != nil {
-			return nil, errors.Wrapf(err, "building artifacts in execution env %s", name)
+			return bArts, errors.Wrapf(err, "building artifacts in execution env %s", name)
 		}
 	}
 	return bArts, nil
