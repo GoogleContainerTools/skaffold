@@ -18,7 +18,6 @@ package v1beta8
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	yamlpatch "github.com/krishicks/yaml-patch"
 )
 
 const Version string = "skaffold/v1beta8"
@@ -539,7 +538,7 @@ type JSONPatch struct {
 	From string `yaml:"from,omitempty"`
 
 	// Value is the value to apply. Can be any portion of yaml.
-	Value *yamlpatch.Node `yaml:"value,omitempty"`
+	Value *util.YamlpatchNode `yaml:"value,omitempty"`
 }
 
 // Activation criteria by which a profile is auto-activated.
