@@ -106,10 +106,15 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 }
 
 func appendInsecureRegistriesIfExist(args []string, insecureRegistries map[string]bool) []string {
-	for insecureRegistry, insecure := range insecureRegistries {
+	orderedInsecureRegistries := make([]string, 0, len(insecureRegistries))
+	for registry, insecure := range insecureRegistries {
 		if insecure {
-			args = append(args, []string{"--insecure-registry", insecureRegistry}...)
+			orderedInsecureRegistries = append(orderedInsecureRegistries, registry)
 		}
+	}
+	sort.Strings(orderedInsecureRegistries)
+	for _, insecureRegistry := range orderedInsecureRegistries {
+		args = append(args, []string{"--insecure-registry", insecureRegistry}...)
 	}
 	return args
 }

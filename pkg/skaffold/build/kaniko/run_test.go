@@ -118,6 +118,7 @@ func TestAppendBuildArgsIfExists(t *testing.T) {
 }
 
 func TestAppendInsecureRegistriesIfExist(t *testing.T) {
+	// order matters so prefix of 1 should sort before prefix of 2
 	insecureRegistry1 := fmt.Sprintf("insecure1-%d.registry.com", rand.Int())
 	insecureRegistry2 := fmt.Sprintf("insecure2-%d.registry.com", rand.Int())
 	notInsecureRegistry := fmt.Sprintf("not-insecure-%d.registry.com", rand.Int())
@@ -145,8 +146,7 @@ func TestAppendInsecureRegistriesIfExist(t *testing.T) {
 				notInsecureRegistry: false,
 				insecureRegistry2:   true,
 			},
-			args: []string{"first", "args"},
-			// TODO: order should be deterministic in go 1.12+? check test isn't brittle
+			args:         []string{"first", "args"},
 			expectedArgs: []string{"first", "args", "--insecure-registry", insecureRegistry1, "--insecure-registry", insecureRegistry2},
 		},
 	}
