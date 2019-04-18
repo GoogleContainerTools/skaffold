@@ -12,10 +12,6 @@ deploy:
     manifests:
       - k8s-*
 profiles:
-  - name: gcb
-    build:
-      googleCloudBuild:
-        projectId: k8s-skaffold
   - name: test
     test:
       - image: gcr.io/k8s-skaffold/skaffold-example
