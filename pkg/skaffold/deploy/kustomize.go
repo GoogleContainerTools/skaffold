@@ -196,7 +196,7 @@ func (k *KustomizeDeployer) Dependencies() ([]string, error) {
 }
 
 func (k *KustomizeDeployer) readManifests(ctx context.Context) (kubectl.ManifestList, error) {
-	cmd := exec.CommandContext(ctx, "kustomize", "build", k.KustomizePath)
+	cmd := exec.CommandContext(ctx, "jk", "run", k.KustomizePath+"/install.js")
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "kustomize build")
