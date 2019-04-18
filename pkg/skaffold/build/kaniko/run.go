@@ -68,11 +68,7 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 		args = append(args, []string{"--destination", hashTag}...)
 	}
 
-	for insecureRegistry, insecure := range b.insecureRegistries {
-		if insecure {
-			args = append(args, []string{"--insecure-registry", insecureRegistry}...)
-		}
-	}
+	args = appendInsecureRegistriesIfExist(args, b.insecureRegistries)
 
 	podSpec := s.Pod(args)
 	// Create pod
@@ -107,6 +103,15 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 	waitForLogs()
 
 	return docker.RemoteDigest(tag, b.insecureRegistries)
+}
+
+func appendInsecureRegistriesIfExist(args []string, insecureRegistries map[string]bool) []string {
+	for insecureRegistry, insecure := range insecureRegistries {
+		if insecure {
+			args = append(args, []string{"--insecure-registry", insecureRegistry}...)
+		}
+	}
+	return args
 }
 
 func appendCacheIfExists(args []string, cache *latest.KanikoCache) []string {

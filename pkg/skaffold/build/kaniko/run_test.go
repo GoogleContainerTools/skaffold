@@ -115,6 +115,47 @@ func TestAppendBuildArgsIfExists(t *testing.T) {
 	}
 }
 
+func TestAppendInsecureRegistriesIfExist(t *testing.T) {
+	insecureRegistry1 := fmt.Sprintf("insecure1-%d.registry.com", rand.Int())
+	insecureRegistry2 := fmt.Sprintf("insecure2-%d.registry.com", rand.Int())
+	notInsecureRegistry := fmt.Sprintf("not-insecure-%d.registry.com", rand.Int())
+	tests := []struct {
+		name               string
+		insecureRegistries map[string]bool
+		args               []string
+		expectedArgs       []string
+	}{
+		{
+			name:         "no insecure registries args",
+			args:         []string{"first", "args"},
+			expectedArgs: []string{"first", "args"},
+		}, {
+			name: "insecure registries not empty but not none insecure",
+			insecureRegistries: map[string]bool{
+				notInsecureRegistry: false,
+			},
+			args:         []string{"first", "args"},
+			expectedArgs: []string{"first", "args"},
+		}, {
+			name: "insecure registries with some insecure",
+			insecureRegistries: map[string]bool{
+				insecureRegistry1:   true,
+				notInsecureRegistry: false,
+				insecureRegistry2:   true,
+			},
+			args: []string{"first", "args"},
+			// TODO: order should be deterministic in go 1.12+? check test isn't brittle
+			expectedArgs: []string{"first", "args", "--insecure-registry", insecureRegistry1, "--insecure-registry", insecureRegistry2},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual := appendInsecureRegistriesIfExist(test.args, test.insecureRegistries)
+			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedArgs, actual)
+		})
+	}
+}
+
 func pointer(a string) *string {
 	return &a
 }
