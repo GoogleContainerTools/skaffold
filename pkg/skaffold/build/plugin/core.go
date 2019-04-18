@@ -23,7 +23,6 @@ import (
 	"github.com/hashicorp/go-hclog"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/builders/docker"
 )
 
@@ -33,7 +32,6 @@ const DefaultPluginLogLevel = hclog.Info
 // SkaffoldCorePluginExecutionMap maps the core plugin name to the execution function
 var SkaffoldCorePluginExecutionMap = map[string]func() error{
 	"docker": docker.Execute(DefaultPluginLogLevel),
-	"bazel":  bazel.Execute(DefaultPluginLogLevel),
 }
 
 // GetCorePluginFromEnv returns the core plugin name if env variables for plugins are set properly

@@ -105,10 +105,6 @@ func TestRun(t *testing.T) {
 			deployments: []string{"leeroy-app", "leeroy-web"},
 			remoteOnly:  true,
 		}, {
-			description: "bazel plugin in local exec environment",
-			dir:         "testdata/plugin/local/bazel",
-			pods:        []string{"bazel"},
-		}, {
 			description: "docker plugin in local exec environment",
 			dir:         "testdata/plugin/local/docker",
 			deployments: []string{"leeroy-app", "leeroy-web"},
