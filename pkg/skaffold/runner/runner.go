@@ -27,16 +27,15 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/plugin"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/environments/gcb"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -129,10 +128,6 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 
 func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
 	switch {
-	case runCtx.Plugin:
-		logrus.Debugln("Using builder plugins")
-		return plugin.NewPluginBuilder(runCtx)
-
 	case len(runCtx.Opts.PreBuiltImages) > 0:
 		logrus.Debugln("Using pre-built images")
 		return build.NewPreBuiltImagesBuilder(runCtx), nil
