@@ -65,12 +65,11 @@ func TestRun(t *testing.T) {
 			pods:        []string{"bazel"},
 		}, {
 			description: "Google Cloud Build",
-			dir:         "examples/structure-tests",
-			args:        []string{"-p", "gcb"},
+			dir:         "examples/google-cloud-build",
 			pods:        []string{"getting-started"},
 			remoteOnly:  true,
 		}, {
-			description: "Google Cloud Build - sub folder",
+			description: "Google Cloud Build with sub folder",
 			dir:         "testdata/gcb-sub-folder",
 			pods:        []string{"getting-started"},
 			remoteOnly:  true,
@@ -85,7 +84,7 @@ func TestRun(t *testing.T) {
 			pods:        []string{"getting-started-kaniko"},
 			remoteOnly:  true,
 		}, {
-			description: "kaniko local - sub folder",
+			description: "kaniko local with sub folder",
 			dir:         "testdata/kaniko-sub-folder",
 			pods:        []string{"getting-started-kaniko"},
 			remoteOnly:  true,
@@ -130,7 +129,7 @@ func TestRun(t *testing.T) {
 			ns, client, deleteNs := SetupNamespace(t)
 			defer deleteNs()
 
-			skaffold.Run().WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+			skaffold.Run(test.args...).WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFailOutput(t)
 
 			client.WaitForPodsReady(test.pods...)
 			client.WaitForDeploymentsToStabilize(test.deployments...)

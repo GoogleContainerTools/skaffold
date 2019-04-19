@@ -74,6 +74,7 @@ func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 			Namespace:   runCtx.Opts.Namespace,
 			KubeContext: runCtx.KubeContext,
 			Flags:       runCtx.Cfg.Deploy.KustomizeDeploy.Flags,
+			ForceDeploy: runCtx.Opts.ForceDeploy(),
 		},
 		defaultRepo: runCtx.DefaultRepo,
 	}

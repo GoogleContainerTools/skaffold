@@ -19,14 +19,18 @@ package yamltags
 import (
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
-// ProcessStruct validates and processes the provided pointer to a struct.
-func ProcessStruct(s interface{}) error {
-	parentStruct := reflect.ValueOf(s).Elem()
+type fieldSet map[string]struct{}
+
+// ValidateStruct validates and processes the provided pointer to a struct.
+func ValidateStruct(s interface{}) error {
+	parentStruct := reflect.Indirect(reflect.ValueOf(s))
 	t := parentStruct.Type()
+	logrus.Debugf("validating yamltags of struct %s", t.Name())
 
 	// Loop through the fields on the struct, looking for tags.
 	for i := 0; i < t.NumField(); i++ {
@@ -34,13 +38,7 @@ func ProcessStruct(s interface{}) error {
 		val := parentStruct.Field(i)
 		field := parentStruct.Type().Field(i)
 		if tags, ok := f.Tag.Lookup("yamltags"); ok {
-			if err := ProcessTags(tags, val, parentStruct, field); err != nil {
-				return err
-			}
-		}
-		// Recurse down the struct
-		if val.Kind() == reflect.Struct {
-			if err := ProcessStruct(val.Addr().Interface()); err != nil {
+			if err := processTags(tags, val, parentStruct, field); err != nil {
 				return err
 			}
 		}
@@ -48,23 +46,23 @@ func ProcessStruct(s interface{}) error {
 	return nil
 }
 
-func ProcessTags(yamltags string, val reflect.Value, parentStruct reflect.Value, field reflect.StructField) error {
+func processTags(yamltags string, val reflect.Value, parentStruct reflect.Value, field reflect.StructField) error {
 	tags := strings.Split(yamltags, ",")
 	for _, tag := range tags {
 		tagParts := strings.Split(tag, "=")
-		var yt YamlTag
+		var yt yamlTag
 		switch tagParts[0] {
 		case "required":
-			yt = &RequiredTag{
+			yt = &requiredTag{
 				Field: field,
 			}
-		case "default":
-			yt = &DefaultTag{}
 		case "oneOf":
-			yt = &OneOfTag{
+			yt = &oneOfTag{
 				Field:  field,
 				Parent: parentStruct,
 			}
+		default:
+			logrus.Panicf("unknown yaml tag in %s", yamltags)
 		}
 		if err := yt.Load(tagParts); err != nil {
 			return err
@@ -76,20 +74,20 @@ func ProcessTags(yamltags string, val reflect.Value, parentStruct reflect.Value,
 	return nil
 }
 
-type YamlTag interface {
+type yamlTag interface {
 	Load([]string) error
 	Process(reflect.Value) error
 }
 
-type RequiredTag struct {
+type requiredTag struct {
 	Field reflect.StructField
 }
 
-func (rt *RequiredTag) Load(s []string) error {
+func (rt *requiredTag) Load(s []string) error {
 	return nil
 }
 
-func (rt *RequiredTag) Process(val reflect.Value) error {
+func (rt *requiredTag) Process(val reflect.Value) error {
 	if isZeroValue(val) {
 		if tags, ok := rt.Field.Tag.Lookup("yaml"); ok {
 			return fmt.Errorf("required value not set: %s", strings.Split(tags, ",")[0])
@@ -99,58 +97,28 @@ func (rt *RequiredTag) Process(val reflect.Value) error {
 	return nil
 }
 
-type DefaultTag struct {
-	dv string
-}
+// A program can have many structs, that each have many oneOfSets.
+// Each oneOfSet is a map of a oneOf-set name to the set of fields that belong to that oneOf-set
+// Only one field in that set may have a non-zero value.
 
-func (dt *DefaultTag) Load(s []string) error {
-	if len(s) != 2 {
-		return fmt.Errorf("invalid default tag: %v, expected key=value", s)
-	}
-	dt.dv = s[1]
-	return nil
-}
+var allOneOfs map[string]map[string]fieldSet
 
-func (dt *DefaultTag) Process(val reflect.Value) error {
-	if !isZeroValue(val) {
-		return nil
-	}
-
-	switch val.Kind() {
-	case reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64:
-		i, err := strconv.ParseInt(dt.dv, 0, 0)
-		if err != nil {
-			return err
-		}
-		val.SetInt(i)
-	case reflect.String:
-		val.SetString(dt.dv)
-	}
-	return nil
-}
-
-// A program can have many structs, that each have many oneOfSets
-// each oneOfSet is a map of a set name to the list of fields that belong to that set
-// only one field in that list can have a non-zero value.
-
-var allOneOfs map[string]map[string][]string
-
-func getOneOfSetsForStruct(structName string) map[string][]string {
+func getOneOfSetsForStruct(structName string) map[string]fieldSet {
 	_, ok := allOneOfs[structName]
 	if !ok {
-		allOneOfs[structName] = map[string][]string{}
+		allOneOfs[structName] = map[string]fieldSet{}
 	}
 	return allOneOfs[structName]
 }
 
-type OneOfTag struct {
+type oneOfTag struct {
 	Field     reflect.StructField
 	Parent    reflect.Value
-	oneOfSets map[string][]string
+	oneOfSets map[string]fieldSet
 	setName   string
 }
 
-func (oot *OneOfTag) Load(s []string) error {
+func (oot *oneOfTag) Load(s []string) error {
 	if len(s) != 2 {
 		return fmt.Errorf("invalid default struct tag: %v, expected key=value", s)
 	}
@@ -161,18 +129,21 @@ func (oot *OneOfTag) Load(s []string) error {
 	oot.oneOfSets = getOneOfSetsForStruct(structName)
 
 	// Add this field to the oneOfSet
-	oot.oneOfSets[oot.setName] = append(oot.oneOfSets[oot.setName], oot.Field.Name)
+	if _, ok := oot.oneOfSets[oot.setName]; !ok {
+		oot.oneOfSets[oot.setName] = fieldSet{}
+	}
+	oot.oneOfSets[oot.setName][oot.Field.Name] = struct{}{}
 	return nil
 }
 
-func (oot *OneOfTag) Process(val reflect.Value) error {
+func (oot *oneOfTag) Process(val reflect.Value) error {
 	if isZeroValue(val) {
 		return nil
 	}
 
 	// This must exist because process is always called after Load.
 	oneOfSet := oot.oneOfSets[oot.setName]
-	for _, otherField := range oneOfSet {
+	for otherField := range oneOfSet {
 		if otherField == oot.Field.Name {
 			continue
 		}
@@ -193,5 +164,5 @@ func isZeroValue(val reflect.Value) bool {
 }
 
 func init() {
-	allOneOfs = make(map[string]map[string][]string)
+	allOneOfs = make(map[string]map[string]fieldSet)
 }

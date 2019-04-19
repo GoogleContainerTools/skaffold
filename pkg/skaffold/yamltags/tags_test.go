@@ -33,7 +33,7 @@ type required struct {
 	C otherstruct
 }
 
-func TestProcessStructRequired(t *testing.T) {
+func TestValidateStructRequired(t *testing.T) {
 	type args struct {
 		s interface{}
 	}
@@ -64,7 +64,7 @@ func TestProcessStructRequired(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "missng some",
+			name: "missing some",
 			args: args{
 				s: &required{
 					A: "hey",
@@ -75,74 +75,11 @@ func TestProcessStructRequired(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		{
-			name: "missng nested",
-			args: args{
-				s: &required{
-					A: "hey",
-					B: 3,
-				},
-			},
-			wantErr: true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := ProcessStruct(tt.args.s); (err != nil) != tt.wantErr {
-				t.Errorf("ProcessStruct() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-type defaultTags struct {
-	A string `yamltags:"default=foo"`
-	B int    `yamltags:"default=3"`
-}
-
-func TestProcessStructDefault(t *testing.T) {
-	type args struct {
-		s interface{}
-	}
-
-	tests := []struct {
-		name    string
-		args    args
-		want    interface{}
-		wantErr bool
-	}{
-		{
-			name: "missing all",
-			args: args{
-				s: &defaultTags{},
-			},
-			want:    &defaultTags{A: "foo", B: 3},
-			wantErr: false,
-		},
-		{
-			name: "all set",
-			args: args{
-				s: &defaultTags{A: "yo", B: 1},
-			},
-			want:    &defaultTags{A: "yo", B: 1},
-			wantErr: false,
-		},
-		{
-			name: "some set",
-			args: args{
-				s: &defaultTags{A: "yo"},
-			},
-			want:    &defaultTags{A: "yo", B: 3},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := ProcessStruct(tt.args.s); (err != nil) != tt.wantErr {
-				t.Errorf("ProcessStruct() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			if !reflect.DeepEqual(tt.args.s, tt.want) {
-				t.Errorf("Got %v, want %v", tt.args.s, tt.want)
+			if err := ValidateStruct(tt.args.s); (err != nil) != tt.wantErr {
+				t.Errorf("ValidateStruct() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -160,7 +97,7 @@ type nested struct {
 	F string
 }
 
-func TestOneOf(t *testing.T) {
+func TestValidateStructOneOf(t *testing.T) {
 	type args struct {
 		s interface{}
 	}
@@ -213,11 +150,25 @@ func TestOneOf(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := ProcessStruct(tt.args.s); (err != nil) != tt.wantErr {
-				t.Errorf("ProcessStruct() error = %v, wantErr %v", err, tt.wantErr)
+			if err := ValidateStruct(tt.args.s); (err != nil) != tt.wantErr {
+				t.Errorf("ValidateStruct() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
+}
+
+func TestValidateStructInvalid(t *testing.T) {
+	invalidYamlTags := struct {
+		A string `yamltags:"invalidTag"`
+	}{A: "whatever"}
+
+	defer func() {
+		if recover() == nil {
+			t.Errorf("should have panicked")
+		}
+	}()
+
+	_ = ValidateStruct(invalidYamlTags)
 }
 
 func TestIsZeroValue(t *testing.T) {

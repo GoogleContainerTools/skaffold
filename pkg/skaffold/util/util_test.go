@@ -101,17 +101,6 @@ func TestExpandPathsGlob(t *testing.T) {
 	}
 }
 
-func TestDefaultConfigFilenameAlternate(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
-
-	tmpDir.Write("skaffold.yml", "foo")
-
-	content, err := ReadConfiguration(tmpDir.Path("skaffold.yaml"))
-
-	testutil.CheckErrorAndDeepEqual(t, false, err, []byte("foo"), content)
-}
-
 func TestExpand(t *testing.T) {
 	var tests = []struct {
 		description string

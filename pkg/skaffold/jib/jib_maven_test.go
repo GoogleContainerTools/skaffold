@@ -55,7 +55,7 @@ func TestGetDependenciesMaven(t *testing.T) {
 		{
 			description: "success",
 			stdout:      fmt.Sprintf("%s\n%s\n\n\n", dep1, dep2),
-			expected:    []string{dep1, dep2},
+			expected:    []string{"dep1", "dep2"},
 		},
 		{
 			description: "failure",
