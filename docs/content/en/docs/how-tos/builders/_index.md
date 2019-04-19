@@ -163,14 +163,16 @@ produce a container image. Then for each such module:
        `:artifactId`, `groupId:artifactId`, or the relative path to the module
        _within the project_.
   2. Configure the module's `pom.xml` to bind either `jib:build` or `jib:dockerBuild` to
-     the `package` phase as appropriate (see below(.
+     the `package` phase as appropriate (see below).
 
-This second step is necessary at the moment as Maven applies a given plugin goal to all
-modules, and not all modules are suit to have Jib be applied.  The situation is
-further complicated as Skaffold speeds up deploys to a local cluster, such as `minikube`,
-by building and loading container images directly to the local cluster's docker daemon
-(via `jib:dockerBuild` instead of `jib:build`), thus saving a push and a pull of the image.
-([#1876](https://github.com/GoogleContainerTools/skaffold/issues/1876))
+This second step is necessary at the moment as Maven applies plugin goals specified
+on the command-line, like `jib:build` or, to all modules and not just the modules
+producing container images.
+The situation is further complicated as Skaffold speeds up deploys to a local cluster,
+such as `minikube`, by building and loading container images directly to the
+local cluster's docker daemon (via `jib:dockerBuild` instead of `jib:build`),
+thus saving a push and a pull of the image.
+We plan to improve this situation [(#1876)](https://github.com/GoogleContainerTools/skaffold/issues/1876).
 
 #### Gradle
 
