@@ -158,10 +158,10 @@ To build a Maven multi-module project, first identify the modules that should
 produce a container image. Then for each such module:
 
   1. Create a Skaffold `artifact` in the `skaffold.yaml`:
-    - Set the `artifact`'s `context` field to the root project location.
-    - Add a `jibMaven` element and set its `module` field to the module's
-      `:artifactId`, `groupId:artifactId`, or the relative path to the module
-      _within the project_.
+     - Set the `artifact`'s `context` field to the root project location.
+     - Add a `jibMaven` element and set its `module` field to the module's
+       `:artifactId`, `groupId:artifactId`, or the relative path to the module
+       _within the project_.
   2. Configure the module's `pom.xml` to bind either `jib:build` or `jib:dockerBuild` to
      the `package` phase as appropriate (see below(.
 
