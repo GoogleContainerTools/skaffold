@@ -11,7 +11,7 @@ Skaffold offers the possibility to watch pod logs for the `dev` and `run` subcom
 So far, the pods to watch are determined by looking for known artifact images in the containers.
 This is restricting for two reasons:
 1. It does not allow to add additional pods to log aggregator which are not deployed by Skaffold (#666).
-2. It does not allow to exclude uninteresting pods deployed by Skaffold. For example, when working with istio, all the irrelevant istio logs spam the log (#588) 
+2. It does not allow to exclude uninteresting pods deployed by Skaffold. For example, when working with istio, all the irrelevant istio logs spam the log (#588, #1991) 
 
 ## Design
 I suggest to change the selection of pods for the log aggregator based on labels on this pod.
