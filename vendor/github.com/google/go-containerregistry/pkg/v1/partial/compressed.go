@@ -91,11 +91,6 @@ type compressedImageExtender struct {
 // Assert that our extender type completes the v1.Image interface
 var _ v1.Image = (*compressedImageExtender)(nil)
 
-// BlobSet implements v1.Image
-func (i *compressedImageExtender) BlobSet() (map[v1.Hash]struct{}, error) {
-	return BlobSet(i)
-}
-
 // Digest implements v1.Image
 func (i *compressedImageExtender) Digest() (v1.Hash, error) {
 	return Digest(i)

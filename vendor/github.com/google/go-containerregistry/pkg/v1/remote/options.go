@@ -19,7 +19,11 @@ import (
 	"net/http"
 
 	"github.com/google/go-containerregistry/pkg/authn"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
+
+// ImageOption is a functional option for Image, index, and Get.
+type ImageOption func(*imageOpener) error
 
 // WithTransport is a functional option for overriding the default transport
 // on a remote image
@@ -51,6 +55,16 @@ func WithAuthFromKeychain(keys authn.Keychain) ImageOption {
 			log.Println("No matching credentials were found, falling back on anonymous")
 		}
 		i.auth = auth
+		return nil
+	}
+}
+
+// WithPlatform is a functional option for overriding the default platform
+// that Image and Descriptor.Image use for resolving an index to an image.
+// The default platform is amd64/linux.
+func WithPlatform(p v1.Platform) ImageOption {
+	return func(i *imageOpener) error {
+		i.platform = p
 		return nil
 	}
 }

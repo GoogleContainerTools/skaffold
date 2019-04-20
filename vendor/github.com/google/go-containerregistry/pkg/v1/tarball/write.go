@@ -28,31 +28,41 @@ import (
 
 // WriteToFile writes in the compressed format to a tarball, on disk.
 // This is just syntactic sugar wrapping tarball.Write with a new file.
-func WriteToFile(p string, tag name.Tag, img v1.Image) error {
+func WriteToFile(p string, ref name.Reference, img v1.Image) error {
 	w, err := os.Create(p)
 	if err != nil {
 		return err
 	}
 	defer w.Close()
 
-	return Write(tag, img, w)
+	return Write(ref, img, w)
 }
 
 // MultiWriteToFile writes in the compressed format to a tarball, on disk.
 // This is just syntactic sugar wrapping tarball.MultiWrite with a new file.
 func MultiWriteToFile(p string, tagToImage map[name.Tag]v1.Image) error {
+	var refToImage map[name.Reference]v1.Image = make(map[name.Reference]v1.Image, len(tagToImage))
+	for i, d := range tagToImage {
+		refToImage[i] = d
+	}
+	return MultiRefWriteToFile(p, refToImage)
+}
+
+// MultiRefWriteToFile writes in the compressed format to a tarball, on disk.
+// This is just syntactic sugar wrapping tarball.MultiRefWrite with a new file.
+func MultiRefWriteToFile(p string, refToImage map[name.Reference]v1.Image) error {
 	w, err := os.Create(p)
 	if err != nil {
 		return err
 	}
 	defer w.Close()
 
-	return MultiWrite(tagToImage, w)
+	return MultiRefWrite(refToImage, w)
 }
 
 // Write is a wrapper to write a single image and tag to a tarball.
-func Write(tag name.Tag, img v1.Image, w io.Writer) error {
-	return MultiWrite(map[name.Tag]v1.Image{tag: img}, w)
+func Write(ref name.Reference, img v1.Image, w io.Writer) error {
+	return MultiRefWrite(map[name.Reference]v1.Image{ref: img}, w)
 }
 
 // MultiWrite writes the contents of each image to the provided reader, in the compressed format.
@@ -61,10 +71,23 @@ func Write(tag name.Tag, img v1.Image, w io.Writer) error {
 // One file for each layer, named after the layer's SHA.
 // One file for the config blob, named after its SHA.
 func MultiWrite(tagToImage map[name.Tag]v1.Image, w io.Writer) error {
+	var refToImage map[name.Reference]v1.Image = make(map[name.Reference]v1.Image, len(tagToImage))
+	for i, d := range tagToImage {
+		refToImage[i] = d
+	}
+	return MultiRefWrite(refToImage, w)
+}
+
+// MultiRefWrite writes the contents of each image to the provided reader, in the compressed format.
+// The contents are written in the following format:
+// One manifest.json file at the top level containing information about several images.
+// One file for each layer, named after the layer's SHA.
+// One file for the config blob, named after its SHA.
+func MultiRefWrite(refToImage map[name.Reference]v1.Image, w io.Writer) error {
 	tf := tar.NewWriter(w)
 	defer tf.Close()
 
-	imageToTags := dedupTagToImage(tagToImage)
+	imageToTags := dedupRefToImage(refToImage)
 	var td tarDescriptor
 
 	for img, tags := range imageToTags {
@@ -135,14 +158,20 @@ func MultiWrite(tagToImage map[name.Tag]v1.Image, w io.Writer) error {
 	return writeTarEntry(tf, "manifest.json", bytes.NewReader(tdBytes), int64(len(tdBytes)))
 }
 
-func dedupTagToImage(tagToImage map[name.Tag]v1.Image) map[v1.Image][]string {
+func dedupRefToImage(refToImage map[name.Reference]v1.Image) map[v1.Image][]string {
 	imageToTags := make(map[v1.Image][]string)
 
-	for tag, img := range tagToImage {
-		if tags, ok := imageToTags[img]; ok {
-			imageToTags[img] = append(tags, tag.String())
+	for ref, img := range refToImage {
+		if tag, ok := ref.(name.Tag); ok {
+			if tags, ok := imageToTags[img]; ok && tags != nil {
+				imageToTags[img] = append(tags, tag.String())
+			} else {
+				imageToTags[img] = []string{tag.String()}
+			}
 		} else {
-			imageToTags[img] = []string{tag.String()}
+			if _, ok := imageToTags[img]; !ok {
+				imageToTags[img] = nil
+			}
 		}
 	}
 

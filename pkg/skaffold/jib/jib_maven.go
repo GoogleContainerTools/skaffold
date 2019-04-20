@@ -31,7 +31,7 @@ var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 // GetDependenciesMaven finds the source dependencies for the given jib-maven artifact.
 // All paths are absolute.
 func GetDependenciesMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) ([]string, error) {
-	deps, err := getDependencies(getCommandMaven(ctx, workspace, a))
+	deps, err := getDependencies(workspace, getCommandMaven(ctx, workspace, a))
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jibMaven dependencies")
 	}

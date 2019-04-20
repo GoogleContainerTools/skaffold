@@ -1,8 +1,37 @@
+# v0.27.0 Release - 04/12/2019
+New Features:
+
+* Add support for pushing/pulling to insecure registries [#1870](https://github.com/GoogleContainerTools/skaffold/pull/1870)
+* Minor doc updates [#1923](https://github.com/GoogleContainerTools/skaffold/pull/1923)
+* Specify the resource requirements for the kaniko pod in Skaffold Config [#1683](https://github.com/GoogleContainerTools/skaffold/pull/1683)
+* Validate pipeline config [#1881](https://github.com/GoogleContainerTools/skaffold/pull/1881)
+* Configure Jib builds to use plain progress updates [#1895](https://github.com/GoogleContainerTools/skaffold/pull/1895)
+* Remove intermediate images and containers from local builds by default [#1400](https://github.com/GoogleContainerTools/skaffold/pull/1400)
+
+Bug Fixes:
+
+* remove runcontext creation from gcb builder path [#1944](https://github.com/GoogleContainerTools/skaffold/pull/1944)
+* Remove duplicate cache code [#1922](https://github.com/GoogleContainerTools/skaffold/pull/1922)
+* fixing non-oneof inline struct handling in schemas [#1904](https://github.com/GoogleContainerTools/skaffold/pull/1904)
+* Undo fmt.Fprint -> color.White.Fprint [#1903](https://github.com/GoogleContainerTools/skaffold/pull/1903)
+* ctx->runCtx [#1940](https://github.com/GoogleContainerTools/skaffold/pull/1940)
+* Fix flakes with rpc integration test [#1860](https://github.com/GoogleContainerTools/skaffold/pull/1860)
+
+Updates & refactoring:
+
+* remove inline structs from schema [#1913](https://github.com/GoogleContainerTools/skaffold/pull/1913)
+* Introduce RunContext object for passing necessary context to runner constructor methods [#1885](https://github.com/GoogleContainerTools/skaffold/pull/1885)
+* extracting Pipeline from SkaffoldConfig [#1899](https://github.com/GoogleContainerTools/skaffold/pull/1899)
+* Freeze v1alpha7 skaffold config version [#1914](https://github.com/GoogleContainerTools/skaffold/pull/1914)
+* Adding a design proposal template and README. [#1838](https://github.com/GoogleContainerTools/skaffold/pull/1838)
+* Upgrade golangci-lint to v1.16.0 [#1898](https://github.com/GoogleContainerTools/skaffold/pull/1898)
+* Remove container-friendly flags for Java 8 [#1894](https://github.com/GoogleContainerTools/skaffold/pull/1894)
+* Improve helm examples [#1891](https://github.com/GoogleContainerTools/skaffold/pull/1891)
 
 # v0.26.0 Release - 3/27/2019
 
 
-New features: 
+New features:
 
 * Add debugging support for Skaffold: `skaffold debug` [#1702](https://github.com/GoogleContainerTools/skaffold/pull/1702)
 * Add portName to the PortEvent payload of the event api [#1855](https://github.com/GoogleContainerTools/skaffold/pull/1855)
@@ -10,7 +39,7 @@ New features:
 * Preserve sync subtree for '***'. [#1813](https://github.com/GoogleContainerTools/skaffold/pull/1813)
 * Error if no Dockerfiles are found for skaffold init --analyze  [#1810](https://github.com/GoogleContainerTools/skaffold/pull/1810)
 
-Fixes: 
+Fixes:
 
 * Fix unnecessary warning in caching [#1873](https://github.com/GoogleContainerTools/skaffold/pull/1873)
 * Add folders to tarballs [#1878](https://github.com/GoogleContainerTools/skaffold/pull/1878)
@@ -45,7 +74,7 @@ Updates & refactorings:
 * Debug integration tests [#1816](https://github.com/GoogleContainerTools/skaffold/pull/1816)
 * Faster doc preview [#1773](https://github.com/GoogleContainerTools/skaffold/pull/1773)
 
-Docs updates: 
+Docs updates:
 
 * Improve manual installation instruction for windows [#1883](https://github.com/GoogleContainerTools/skaffold/pull/1883)
 * more docs for profiles [#1882](https://github.com/GoogleContainerTools/skaffold/pull/1882)

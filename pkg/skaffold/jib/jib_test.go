@@ -19,6 +19,7 @@ package jib
 import (
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -37,10 +38,6 @@ func TestGetDependencies(t *testing.T) {
 	dep1 := tmpDir.Path("dep1")
 	dep2 := tmpDir.Path("dep2")
 	dep3 := tmpDir.Path("dep3")
-	dep3FileA := tmpDir.Path("dep3/fileA")
-	dep3Sub := tmpDir.Path("dep3/sub")
-	dep3SubPath := tmpDir.Path("dep3/sub/path")
-	dep3SubPathFileB := tmpDir.Path("dep3/sub/path/fileB")
 
 	var tests = []struct {
 		stdout       string
@@ -52,15 +49,15 @@ func TestGetDependencies(t *testing.T) {
 		},
 		{
 			stdout:       fmt.Sprintf("%s\n%s", dep1, dep2),
-			expectedDeps: []string{dep1, dep2},
+			expectedDeps: []string{"dep1", "dep2"},
 		},
 		{
 			stdout:       fmt.Sprintf("%s\n%s\n", dep1, dep2),
-			expectedDeps: []string{dep1, dep2},
+			expectedDeps: []string{"dep1", "dep2"},
 		},
 		{
 			stdout:       fmt.Sprintf("%s\n%s\n%s\n", dep1, dep2, tmpDir.Root()),
-			expectedDeps: []string{dep1, dep2},
+			expectedDeps: []string{"dep1", "dep2"},
 		},
 		{
 			stdout:       "\n\n\n",
@@ -68,19 +65,19 @@ func TestGetDependencies(t *testing.T) {
 		},
 		{
 			stdout:       fmt.Sprintf("\n\n%s\n\n%s\n\n\n", dep1, dep2),
-			expectedDeps: []string{dep1, dep2},
+			expectedDeps: []string{"dep1", "dep2"},
 		},
 		{
 			stdout:       dep3,
-			expectedDeps: []string{dep3, dep3FileA, dep3Sub, dep3SubPath, dep3SubPathFileB},
+			expectedDeps: []string{filepath.FromSlash("dep3/fileA"), filepath.FromSlash("dep3/sub/path/fileB")},
 		},
 		{
 			stdout:       fmt.Sprintf("%s\n%s\n%s\n", dep1, dep2, dep3),
-			expectedDeps: []string{dep1, dep2, dep3, dep3FileA, dep3Sub, dep3SubPath, dep3SubPathFileB},
+			expectedDeps: []string{"dep1", "dep2", filepath.FromSlash("dep3/fileA"), filepath.FromSlash("dep3/sub/path/fileB")},
 		},
 		{
 			stdout:       fmt.Sprintf("%s\nnonexistent\n%s\n%s\n", dep1, dep2, dep3),
-			expectedDeps: []string{dep1, dep2, dep3, dep3FileA, dep3Sub, dep3SubPath, dep3SubPathFileB},
+			expectedDeps: []string{"dep1", "dep2", filepath.FromSlash("dep3/fileA"), filepath.FromSlash("dep3/sub/path/fileB")},
 		},
 	}
 
@@ -92,7 +89,7 @@ func TestGetDependencies(t *testing.T) {
 				test.stdout,
 			)
 
-			deps, err := getDependencies(&exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()})
+			deps, err := getDependencies(tmpDir.Root(), &exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()})
 
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedDeps, deps)
 		})

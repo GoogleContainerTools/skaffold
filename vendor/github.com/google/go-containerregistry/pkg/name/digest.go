@@ -63,8 +63,8 @@ func checkDigest(name string) error {
 	return checkElement("digest", name, digestChars, 7+64, 7+64)
 }
 
-// NewDigest returns a new Digest representing the given name, according to the given strictness.
-func NewDigest(name string, strict Strictness) (Digest, error) {
+// NewDigest returns a new Digest representing the given name.
+func NewDigest(name string, opts ...Option) (Digest, error) {
 	// Split on "@"
 	parts := strings.Split(name, digestDelim)
 	if len(parts) != 2 {
@@ -73,22 +73,17 @@ func NewDigest(name string, strict Strictness) (Digest, error) {
 	base := parts[0]
 	digest := parts[1]
 
-	// We don't require a digest, but if we get one check it's valid,
-	// even when not being strict.
-	// If we are being strict, we want to validate the digest regardless in case
-	// it's empty.
-	if digest != "" || strict == StrictValidation {
-		if err := checkDigest(digest); err != nil {
-			return Digest{}, err
-		}
+	// Always check that the digest is valid.
+	if err := checkDigest(digest); err != nil {
+		return Digest{}, err
 	}
 
-	tag, err := NewTag(base, strict)
+	tag, err := NewTag(base, opts...)
 	if err == nil {
 		base = tag.Repository.Name()
 	}
 
-	repo, err := NewRepository(base, strict)
+	repo, err := NewRepository(base, opts...)
 	if err != nil {
 		return Digest{}, err
 	}

@@ -49,13 +49,13 @@ var (
 )
 
 // ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.
-func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact) (kubectl.ManifestList, error) {
+func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact, insecureRegistries map[string]bool) (kubectl.ManifestList, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	retriever := func(image string) (imageConfiguration, error) {
 		if artifact := findArtifact(image, builds); artifact != nil {
-			return retrieveImageConfiguration(ctx, artifact)
+			return retrieveImageConfiguration(ctx, artifact, insecureRegistries)
 		}
 		return imageConfiguration{}, errors.Errorf("no build artifact for [%q]", image)
 	}
@@ -98,8 +98,8 @@ func findArtifact(image string, builds []build.Artifact) *build.Artifact {
 
 // retrieveImageConfiguration retrieves the image container configuration for
 // the given build artifact
-func retrieveImageConfiguration(ctx context.Context, artifact *build.Artifact) (imageConfiguration, error) {
-	apiClient, err := docker.NewAPIClient(false)
+func retrieveImageConfiguration(ctx context.Context, artifact *build.Artifact, insecureRegistries map[string]bool) (imageConfiguration, error) {
+	apiClient, err := docker.NewAPIClient(false, insecureRegistries)
 	if err != nil {
 		return imageConfiguration{}, errors.Wrap(err, "could not connect to local docker daemon")
 	}

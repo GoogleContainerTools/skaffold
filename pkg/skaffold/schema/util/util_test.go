@@ -24,14 +24,14 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-const overridesYaml string = `global:
+const yamlFragment string = `global:
   enabled: true
   localstack: {}
 `
 
 func TestHelmOverridesMarshalling(t *testing.T) {
 	h := &HelmOverrides{}
-	err := yaml.Unmarshal([]byte(overridesYaml), h)
+	err := yaml.Unmarshal([]byte(yamlFragment), h)
 	testutil.CheckError(t, false, err)
 
 	asJSON, err := json.Marshal(h)
@@ -41,12 +41,12 @@ func TestHelmOverridesMarshalling(t *testing.T) {
 	testutil.CheckError(t, false, err)
 
 	actual, err := yaml.Marshal(h)
-	testutil.CheckErrorAndDeepEqual(t, false, err, overridesYaml, string(actual))
+	testutil.CheckErrorAndDeepEqual(t, false, err, yamlFragment, string(actual))
 }
 
 func TestHelmOverridesWhenEmbedded(t *testing.T) {
 	h := HelmOverrides{}
-	err := yaml.Unmarshal([]byte(overridesYaml), &h)
+	err := yaml.Unmarshal([]byte(yamlFragment), &h)
 	testutil.CheckError(t, false, err)
 
 	out, err := yaml.Marshal(struct {
@@ -54,6 +54,37 @@ func TestHelmOverridesWhenEmbedded(t *testing.T) {
 	}{h})
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, `overrides:
+  global:
+    enabled: true
+    localstack: {}
+`, string(out))
+}
+
+func TestYamlpatchNodeMarshalling(t *testing.T) {
+	n := &YamlpatchNode{}
+	err := yaml.Unmarshal([]byte(yamlFragment), n)
+	testutil.CheckError(t, false, err)
+
+	asJSON, err := json.Marshal(n)
+	testutil.CheckError(t, false, err)
+
+	err = json.Unmarshal(asJSON, n)
+	testutil.CheckError(t, false, err)
+
+	actual, err := yaml.Marshal(n)
+	testutil.CheckErrorAndDeepEqual(t, false, err, yamlFragment, string(actual))
+}
+
+func TestYamlpatchNodeWhenEmbedded(t *testing.T) {
+	n := &YamlpatchNode{}
+	err := yaml.Unmarshal([]byte(yamlFragment), &n)
+	testutil.CheckError(t, false, err)
+
+	out, err := yaml.Marshal(struct {
+		Node *YamlpatchNode `yaml:"value,omitempty"`
+	}{n})
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, `value:
   global:
     enabled: true
     localstack: {}

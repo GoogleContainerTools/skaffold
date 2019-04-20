@@ -19,7 +19,9 @@ package jib
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/karrick/godirwalk"
@@ -27,10 +29,23 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func getDependencies(cmd *exec.Cmd) ([]string, error) {
+const (
+	dotDotSlash = ".." + string(filepath.Separator)
+)
+
+func getDependencies(workspace string, cmd *exec.Cmd) ([]string, error) {
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, err
+	}
+
+	// Skaffold prefers to deal with relative paths.  In *practice*, Jib's dependencies
+	// are *usually* absolute (relative to the root) and canonical (with all symlinks expanded).
+	// But that's not guaranteed, so we try to relativize paths against the workspace as
+	// both an absolute path and as a canonicalized workspace.
+	workspaceRoots, err := calculateRoots(workspace)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to resolve workspace %s", workspace)
 	}
 
 	cmdDirInfo, err := os.Stat(cmd.Dir)
@@ -60,6 +75,11 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 		}
 
 		if !info.IsDir() {
+			// try to relativize the path: an error indicates that the file cannot
+			// be made relative to the roots, and so we just use the full path
+			if relative, err := relativize(dep, workspaceRoots...); err == nil {
+				dep = relative
+			}
 			deps = append(deps, dep)
 			continue
 		}
@@ -67,7 +87,14 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 		if err = godirwalk.Walk(dep, &godirwalk.Options{
 			Unsorted: true,
 			Callback: func(path string, _ *godirwalk.Dirent) error {
-				deps = append(deps, path)
+				if info, err := os.Stat(path); err == nil && !info.IsDir() {
+					// try to relativize the path: an error indicates that the file cannot
+					// be made relative to the roots, and so we just use the full path
+					if relative, err := relativize(path, workspaceRoots...); err == nil {
+						path = relative
+					}
+					deps = append(deps, path)
+				}
 				return nil
 			},
 		}); err != nil {
@@ -77,4 +104,34 @@ func getDependencies(cmd *exec.Cmd) ([]string, error) {
 
 	sort.Strings(deps)
 	return deps, nil
+}
+
+// calculateRoots returns a list of possible symlink-expanded paths
+func calculateRoots(path string) ([]string, error) {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to resolve %s", path)
+	}
+	canonical, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to canonicalize workspace %s", path)
+	}
+	if path == canonical {
+		return []string{path}, nil
+	}
+	return []string{canonical, path}, nil
+}
+
+// relativize tries to make path relative to one of the given roots
+func relativize(path string, roots ...string) (string, error) {
+	if !filepath.IsAbs(path) {
+		return path, nil
+	}
+	for _, root := range roots {
+		// check that the path can be made relative and is contained (since `filepath.Rel("/a", "/b") => "../b"`)
+		if rel, err := filepath.Rel(root, path); err == nil && !strings.HasPrefix(rel, dotDotSlash) {
+			return rel, nil
+		}
+	}
+	return "", errors.New("could not relativize path")
 }

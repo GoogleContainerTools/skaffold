@@ -18,16 +18,15 @@ package runner
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // ErrorConfigurationChanged is a special error that's returned when the skaffold configuration was changed.
@@ -35,11 +34,11 @@ var ErrorConfigurationChanged = errors.New("configuration changed")
 
 // Dev watches for changes and runs the skaffold build and deploy
 // config until interrupted by the user.
-func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifacts []*latest.Artifact) error {
-	logger := r.newLogger(output.Logs, artifacts)
+func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
+	logger := r.newLogger(out, artifacts)
 	defer logger.Stop()
 
-	portForwarder := kubernetes.NewPortForwarder(output.Main, r.imageList, r.runCtx.Namespaces)
+	portForwarder := kubernetes.NewPortForwarder(out, r.imageList, r.runCtx.Namespaces)
 	defer portForwarder.Stop()
 
 	// Create watcher and register artifacts to build current state of files.
@@ -50,7 +49,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifac
 		logger.Mute()
 
 		for _, a := range changed.dirtyArtifacts {
-			s, err := sync.NewItem(a.artifact, a.events, r.builds)
+			s, err := sync.NewItem(a.artifact, a.events, r.builds, r.runCtx.InsecureRegistries)
 			if err != nil {
 				return errors.Wrap(err, "sync")
 			}
@@ -66,7 +65,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifac
 			return ErrorConfigurationChanged
 		case len(changed.needsResync) > 0:
 			for _, s := range changed.needsResync {
-				color.Default.Fprintf(output.Main, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
+				color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
 
 				if err := r.Syncer.Sync(ctx, s); err != nil {
 					logrus.Warnln("Skipping deploy due to sync error:", err)
@@ -74,12 +73,12 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifac
 				}
 			}
 		case len(changed.needsRebuild) > 0:
-			if err := r.buildTestDeploy(ctx, output.Main, changed.needsRebuild); err != nil {
+			if err := r.buildTestDeploy(ctx, out, changed.needsRebuild); err != nil {
 				logrus.Warnln("Skipping deploy due to error:", err)
 				return nil
 			}
 		case changed.needsRedeploy:
-			if err := r.Deploy(ctx, output.Main, r.builds); err != nil {
+			if err := r.Deploy(ctx, out, r.builds); err != nil {
 				logrus.Warnln("Skipping deploy due to error:", err)
 				return nil
 			}
@@ -130,7 +129,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifac
 	}
 
 	// First run
-	if err := r.buildTestDeploy(ctx, output.Main, artifacts); err != nil {
+	if err := r.buildTestDeploy(ctx, out, artifacts); err != nil {
 		return errors.Wrap(err, "exiting dev mode because first run failed")
 	}
 
@@ -147,5 +146,5 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, output *config.Output, artifac
 		}
 	}
 
-	return r.Watcher.Run(ctx, output.Main, onChange)
+	return r.Watcher.Run(ctx, out, onChange)
 }

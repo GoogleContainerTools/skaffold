@@ -119,7 +119,7 @@ func (td tarDescriptor) findSpecifiedImageDescriptor(tag *name.Tag) (*singleImag
 	}
 	for _, img := range td {
 		for _, tagStr := range img.RepoTags {
-			repoTag, err := name.NewTag(tagStr, name.WeakValidation)
+			repoTag, err := name.NewTag(tagStr)
 			if err != nil {
 				return nil, err
 			}

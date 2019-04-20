@@ -27,16 +27,15 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/plugin"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/plugin/environments/gcb"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -82,7 +81,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		return nil, errors.Wrap(err, "parsing build config")
 	}
 
-	artifactCache := cache.NewCache(builder, opts, cfg.Build)
+	artifactCache := cache.NewCache(builder, runCtx)
 	tester, err := getTester(runCtx)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing test config")
@@ -127,50 +126,46 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 	}, nil
 }
 
-func getBuilder(ctx *runcontext.RunContext) (build.Builder, error) {
+func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
 	switch {
-	case ctx.Plugin:
-		logrus.Debugln("Using builder plugins")
-		return plugin.NewPluginBuilder(ctx)
-
-	case len(ctx.Opts.PreBuiltImages) > 0:
+	case len(runCtx.Opts.PreBuiltImages) > 0:
 		logrus.Debugln("Using pre-built images")
-		return build.NewPreBuiltImagesBuilder(ctx), nil
+		return build.NewPreBuiltImagesBuilder(runCtx), nil
 
-	case ctx.Cfg.Build.LocalBuild != nil:
+	case runCtx.Cfg.Build.LocalBuild != nil:
 		logrus.Debugln("Using builder: local")
-		return local.NewBuilder(ctx)
+		return local.NewBuilder(runCtx)
 
-	case ctx.Cfg.Build.GoogleCloudBuild != nil:
+	case runCtx.Cfg.Build.GoogleCloudBuild != nil:
 		logrus.Debugln("Using builder: google cloud")
-		return gcb.NewBuilder(ctx), nil
+		return gcb.NewBuilder(runCtx), nil
 
-	case ctx.Cfg.Build.Cluster != nil:
+	case runCtx.Cfg.Build.Cluster != nil:
 		logrus.Debugln("Using builder: kaniko")
-		return kaniko.NewBuilder(ctx)
+		return kaniko.NewBuilder(runCtx)
 
 	default:
-		return nil, fmt.Errorf("unknown builder for config %+v", ctx.Cfg.Build)
+		return nil, fmt.Errorf("unknown builder for config %+v", runCtx.Cfg.Build)
 	}
 }
 
-func getTester(ctx *runcontext.RunContext) (test.Tester, error) {
-	return test.NewTester(ctx)
+func getTester(runCtx *runcontext.RunContext) (test.Tester, error) {
+	return test.NewTester(runCtx)
 }
 
-func getDeployer(ctx *runcontext.RunContext) (deploy.Deployer, error) {
+func getDeployer(runCtx *runcontext.RunContext) (deploy.Deployer, error) {
 	switch {
-	case ctx.Cfg.Deploy.HelmDeploy != nil:
-		return deploy.NewHelmDeployer(ctx), nil
+	case runCtx.Cfg.Deploy.HelmDeploy != nil:
+		return deploy.NewHelmDeployer(runCtx), nil
 
-	case ctx.Cfg.Deploy.KubectlDeploy != nil:
-		return deploy.NewKubectlDeployer(ctx), nil
+	case runCtx.Cfg.Deploy.KubectlDeploy != nil:
+		return deploy.NewKubectlDeployer(runCtx), nil
 
-	case ctx.Cfg.Deploy.KustomizeDeploy != nil:
-		return deploy.NewKustomizeDeployer(ctx), nil
+	case runCtx.Cfg.Deploy.KustomizeDeploy != nil:
+		return deploy.NewKustomizeDeployer(runCtx), nil
 
 	default:
-		return nil, fmt.Errorf("unknown deployer for config %+v", ctx.Cfg.Deploy)
+		return nil, fmt.Errorf("unknown deployer for config %+v", runCtx.Cfg.Deploy)
 	}
 }
 
