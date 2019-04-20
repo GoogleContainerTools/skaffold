@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  branch = "master"
+  digest = "1:f071bce3025fca7517eeeff0214674743ee58e49a475f91b2b109a971365ca7f"
+  name = "4d63.com/tz"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "bd6cee76f7319745d44ff235e42124b3891e293d"
+
+[[projects]]
   digest = "1:9f87b9342b5654607dcc25c292512bc3096e6b213ed83fc94e8b9e8b6f31113a"
   name = "cloud.google.com/go"
   packages = [
@@ -1271,6 +1279,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "4d63.com/tz",
     "cloud.google.com/go/storage",
     "github.com/blang/semver",
     "github.com/bmatcuk/doublestar",
@@ -1305,7 +1314,6 @@
     "github.com/google/go-github/github",
     "github.com/grpc-ecosystem/grpc-gateway/runtime",
     "github.com/grpc-ecosystem/grpc-gateway/utilities",
-    "github.com/hashicorp/go-hclog",
     "github.com/hashicorp/go-plugin",
     "github.com/karrick/godirwalk",
     "github.com/krishicks/yaml-patch",

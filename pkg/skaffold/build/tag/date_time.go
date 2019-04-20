@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"4d63.com/tz"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
@@ -60,7 +61,7 @@ func (tagger *dateTimeTagger) GenerateFullyQualifiedImageName(workingDir, imageN
 		timezone = tagger.TimeZone
 	}
 
-	loc, err := time.LoadLocation(timezone)
+	loc, err := tz.LoadLocation(timezone)
 	if err != nil {
 		return "", fmt.Errorf("bad timezone provided: \"%s\", error: %s", timezone, err)
 	}

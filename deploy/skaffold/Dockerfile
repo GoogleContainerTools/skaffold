@@ -14,9 +14,6 @@
 
 FROM gcr.io/gcp-runtimes/ubuntu_16_0_4 as runtime_deps
 
-# needed for dateTime tagger
-COPY --from=golang:1.11 /usr/local/go/lib/time/zoneinfo.zip /usr/local/go/lib/time/zoneinfo.zip
-
 RUN apt-get update && \
   apt-get install --no-install-recommends --no-install-suggests -y \
   git \
