@@ -128,10 +128,6 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 
 func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
 	switch {
-	case runCtx.Plugin:
-		logrus.Debugln("Using builder plugins")
-		return plugin.NewPluginBuilder(runCtx)
-
 	case runCtx.Cfg.Build.LocalBuild != nil:
 		logrus.Debugln("Using builder: local")
 		return local.NewBuilder(runCtx)
