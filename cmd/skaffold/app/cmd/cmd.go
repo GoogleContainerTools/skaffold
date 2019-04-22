@@ -142,6 +142,19 @@ func FlagToEnvVarName(f *pflag.Flag) string {
 	return fmt.Sprintf("SKAFFOLD_%s", strings.Replace(strings.ToUpper(f.Name), "-", "_", -1))
 }
 
+func AddRunDeleteFlags(cmd *cobra.Command) {
+	cmd.Flags().BoolVar(&opts.EnableRPC, "enable-rpc", false, "Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)")
+	cmd.Flags().IntVar(&opts.RPCPort, "rpc-port", constants.DefaultRPCPort, "tcp port to expose event API")
+	cmd.Flags().IntVar(&opts.RPCHTTPPort, "rpc-http-port", constants.DefaultRPCHTTPPort, "tcp port to expose event REST API over HTTP")
+	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
+	cmd.Flags().BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
+	cmd.Flags().StringArrayVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
+	cmd.Flags().StringVarP(&opts.Namespace, "namespace", "n", "", "Run deployments in the specified namespace")
+	cmd.Flags().StringVarP(&opts.DefaultRepo, "default-repo", "d", "", "Default repository value (overrides global config)")
+	cmd.Flags().BoolVar(&opts.NoPrune, "no-prune", false, "Skip removing images and containers built by Skaffold")
+	cmd.Flags().StringArrayVar(&opts.InsecureRegistries, "insecure-registry", nil, "Target registries for built images which are not secure")
+}
+
 func AddRunDeployFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.Tail, "tail", false, "Stream logs from deployed objects")
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)")
