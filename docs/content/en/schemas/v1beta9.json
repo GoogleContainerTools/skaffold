@@ -64,11 +64,6 @@
                 "gcr.io/k8s-skaffold/example"
               ]
             },
-            "plugin": {
-              "$ref": "#/definitions/BuilderPlugin",
-              "description": "plugin used to build this artifact.",
-              "x-intellij-html-description": "plugin used to build this artifact."
-            },
             "sync": {
               "additionalProperties": {
                 "type": "string"
@@ -85,8 +80,7 @@
           "preferredOrder": [
             "image",
             "context",
-            "sync",
-            "plugin"
+            "sync"
           ],
           "additionalProperties": false
         },
@@ -111,11 +105,6 @@
                 "gcr.io/k8s-skaffold/example"
               ]
             },
-            "plugin": {
-              "$ref": "#/definitions/BuilderPlugin",
-              "description": "plugin used to build this artifact.",
-              "x-intellij-html-description": "plugin used to build this artifact."
-            },
             "sync": {
               "additionalProperties": {
                 "type": "string"
@@ -133,7 +122,6 @@
             "image",
             "context",
             "sync",
-            "plugin",
             "docker"
           ],
           "additionalProperties": false
@@ -159,11 +147,6 @@
                 "gcr.io/k8s-skaffold/example"
               ]
             },
-            "plugin": {
-              "$ref": "#/definitions/BuilderPlugin",
-              "description": "plugin used to build this artifact.",
-              "x-intellij-html-description": "plugin used to build this artifact."
-            },
             "sync": {
               "additionalProperties": {
                 "type": "string"
@@ -181,7 +164,6 @@
             "image",
             "context",
             "sync",
-            "plugin",
             "bazel"
           ],
           "additionalProperties": false
@@ -207,11 +189,6 @@
               "description": "*alpha* builds images using the [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).",
               "x-intellij-html-description": "<em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin\">Jib plugin for Maven</a>."
             },
-            "plugin": {
-              "$ref": "#/definitions/BuilderPlugin",
-              "description": "plugin used to build this artifact.",
-              "x-intellij-html-description": "plugin used to build this artifact."
-            },
             "sync": {
               "additionalProperties": {
                 "type": "string"
@@ -229,7 +206,6 @@
             "image",
             "context",
             "sync",
-            "plugin",
             "jibMaven"
           ],
           "additionalProperties": false
@@ -255,11 +231,6 @@
               "description": "*alpha* builds images using the [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).",
               "x-intellij-html-description": "<em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin\">Jib plugin for Gradle</a>."
             },
-            "plugin": {
-              "$ref": "#/definitions/BuilderPlugin",
-              "description": "plugin used to build this artifact.",
-              "x-intellij-html-description": "plugin used to build this artifact."
-            },
             "sync": {
               "additionalProperties": {
                 "type": "string"
@@ -277,7 +248,6 @@
             "image",
             "context",
             "sync",
-            "plugin",
             "jibGradle"
           ],
           "additionalProperties": false
@@ -303,11 +273,6 @@
               "description": "*alpha* builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko).",
               "x-intellij-html-description": "<em>alpha</em> builds images using <a href=\"https://github.com/GoogleContainerTools/kaniko\">kaniko</a>."
             },
-            "plugin": {
-              "$ref": "#/definitions/BuilderPlugin",
-              "description": "plugin used to build this artifact.",
-              "x-intellij-html-description": "plugin used to build this artifact."
-            },
             "sync": {
               "additionalProperties": {
                 "type": "string"
@@ -325,7 +290,6 @@
             "image",
             "context",
             "sync",
-            "plugin",
             "kaniko"
           ],
           "additionalProperties": false
@@ -380,11 +344,6 @@
               "description": "the images you're going to be building.",
               "x-intellij-html-description": "the images you're going to be building."
             },
-            "executionEnvironment": {
-              "$ref": "#/definitions/ExecutionEnvironment",
-              "description": "environment in which the build should run. Possible values: googleCloudBuild.",
-              "x-intellij-html-description": "environment in which the build should run. Possible values: googleCloudBuild."
-            },
             "insecureRegistries": {
               "items": {
                 "type": "string"
@@ -403,8 +362,7 @@
           "preferredOrder": [
             "artifacts",
             "insecureRegistries",
-            "tagPolicy",
-            "executionEnvironment"
+            "tagPolicy"
           ],
           "additionalProperties": false
         },
@@ -417,11 +375,6 @@
               "type": "array",
               "description": "the images you're going to be building.",
               "x-intellij-html-description": "the images you're going to be building."
-            },
-            "executionEnvironment": {
-              "$ref": "#/definitions/ExecutionEnvironment",
-              "description": "environment in which the build should run. Possible values: googleCloudBuild.",
-              "x-intellij-html-description": "environment in which the build should run. Possible values: googleCloudBuild."
             },
             "insecureRegistries": {
               "items": {
@@ -447,7 +400,6 @@
             "artifacts",
             "insecureRegistries",
             "tagPolicy",
-            "executionEnvironment",
             "local"
           ],
           "additionalProperties": false
@@ -461,11 +413,6 @@
               "type": "array",
               "description": "the images you're going to be building.",
               "x-intellij-html-description": "the images you're going to be building."
-            },
-            "executionEnvironment": {
-              "$ref": "#/definitions/ExecutionEnvironment",
-              "description": "environment in which the build should run. Possible values: googleCloudBuild.",
-              "x-intellij-html-description": "environment in which the build should run. Possible values: googleCloudBuild."
             },
             "googleCloudBuild": {
               "$ref": "#/definitions/GoogleCloudBuild",
@@ -491,7 +438,6 @@
             "artifacts",
             "insecureRegistries",
             "tagPolicy",
-            "executionEnvironment",
             "googleCloudBuild"
           ],
           "additionalProperties": false
@@ -510,11 +456,6 @@
               "$ref": "#/definitions/ClusterDetails",
               "description": "*beta* describes how to do an on-cluster build.",
               "x-intellij-html-description": "<em>beta</em> describes how to do an on-cluster build."
-            },
-            "executionEnvironment": {
-              "$ref": "#/definitions/ExecutionEnvironment",
-              "description": "environment in which the build should run. Possible values: googleCloudBuild.",
-              "x-intellij-html-description": "environment in which the build should run. Possible values: googleCloudBuild."
             },
             "insecureRegistries": {
               "items": {
@@ -535,7 +476,6 @@
             "artifacts",
             "insecureRegistries",
             "tagPolicy",
-            "executionEnvironment",
             "cluster"
           ],
           "additionalProperties": false
@@ -543,29 +483,6 @@
       ],
       "description": "contains all the configuration for the build steps.",
       "x-intellij-html-description": "contains all the configuration for the build steps."
-    },
-    "BuilderPlugin": {
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "name of the build plugin.",
-          "x-intellij-html-description": "name of the build plugin."
-        },
-        "properties": {
-          "additionalProperties": {},
-          "type": "object",
-          "description": "key-value pairs passed to the plugin.",
-          "x-intellij-html-description": "key-value pairs passed to the plugin.",
-          "default": "{}"
-        }
-      },
-      "preferredOrder": [
-        "name",
-        "properties"
-      ],
-      "additionalProperties": false,
-      "description": "contains all fields necessary for specifying a build plugin.",
-      "x-intellij-html-description": "contains all fields necessary for specifying a build plugin."
     },
     "ClusterDetails": {
       "properties": {
@@ -772,34 +689,6 @@
       "additionalProperties": false,
       "description": "*beta* tags images with a configurable template string.",
       "x-intellij-html-description": "<em>beta</em> tags images with a configurable template string."
-    },
-    "ExecEnvironment": {
-      "type": "string",
-      "description": "name of an execution environment.",
-      "x-intellij-html-description": "name of an execution environment."
-    },
-    "ExecutionEnvironment": {
-      "properties": {
-        "name": {
-          "$ref": "#/definitions/ExecEnvironment",
-          "description": "name of the environment.",
-          "x-intellij-html-description": "name of the environment."
-        },
-        "properties": {
-          "additionalProperties": {},
-          "type": "object",
-          "description": "key-value pairs passed to the environment.",
-          "x-intellij-html-description": "key-value pairs passed to the environment.",
-          "default": "{}"
-        }
-      },
-      "preferredOrder": [
-        "name",
-        "properties"
-      ],
-      "additionalProperties": false,
-      "description": "environment in which the build should run (ex. local or in-cluster, etc.).",
-      "x-intellij-html-description": "environment in which the build should run (ex. local or in-cluster, etc.)."
     },
     "GitTagger": {
       "description": "*beta* tags images with the git tag or commit of the artifact's workspace.",
