@@ -111,26 +111,3 @@ func TestSetDefaultsOnCloudBuild(t *testing.T) {
 	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildMavenImage, cfg.Build.GoogleCloudBuild.MavenImage)
 	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildGradleImage, cfg.Build.GoogleCloudBuild.GradleImage)
 }
-
-func TestSetDefaultsOnPlugin(t *testing.T) {
-	cfg := &latest.SkaffoldConfig{
-		Pipeline: latest.Pipeline{
-			Build: latest.BuildConfig{
-				Artifacts: []*latest.Artifact{
-					{
-						ImageName:     "image",
-						BuilderPlugin: &latest.BuilderPlugin{},
-					},
-				},
-			},
-		},
-	}
-
-	err := Set(cfg)
-
-	testutil.CheckError(t, false, err)
-	testutil.CheckDeepEqual(t, &latest.ExecutionEnvironment{
-		Name:       constants.Local,
-		Properties: map[string]interface{}{},
-	}, cfg.Build.ExecutionEnvironment)
-}

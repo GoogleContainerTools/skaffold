@@ -21,7 +21,6 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	plugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -93,12 +92,10 @@ func dev(out io.Writer) error {
 			}
 			if err != nil {
 				if errors.Cause(err) != runner.ErrorConfigurationChanged {
-					plugin.CleanupClients()
 					r.RPCServerShutdown()
 					return err
 				}
 			}
-			plugin.CleanupClients()
 			r.RPCServerShutdown()
 		}
 	}
