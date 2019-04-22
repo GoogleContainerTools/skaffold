@@ -81,6 +81,11 @@ var (
 	Local            latest.ExecEnvironment = "local"
 )
 
+var (
+	// ImageName is the env variable that will pass the tagged image name to custom builders
+	ImageName = "IMAGE_NAME"
+)
+
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}
 
 var LatestDownloadURL = fmt.Sprintf("https://storage.googleapis.com/skaffold/releases/latest/skaffold-%s-%s", runtime.GOOS, runtime.GOARCH)

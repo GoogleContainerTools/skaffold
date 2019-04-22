@@ -18,11 +18,38 @@ package local
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"os"
+	"os/exec"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/pkg/errors"
 )
 
 func (b *Builder) buildCustom(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
-	return "soemthing", nil
+	artifact := a.CustomArtifact
+	cmd := exec.Command(artifact.BuildCommand)
+	cmd.Env = retrieveEnv(tag)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return "", errors.Wrapf(err, "building image with command %s", cmd.Args)
+	}
+
+	if b.pushImages {
+		return docker.RemoteDigest(tag, b.insecureRegistries)
+	}
+
+	return b.localDocker.ImageID(ctx, tag)
+}
+
+// TODO: priyawadhwa@ to write unit tests for this
+func retrieveEnv(tag string) []string {
+	tags := []string{
+		fmt.Sprintf("%s=%s", constants.ImageName, tag),
+	}
+	return append(tags, os.Environ()...)
 }
