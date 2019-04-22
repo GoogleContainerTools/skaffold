@@ -7,7 +7,7 @@ import (
 
 func main() {
 	for {
-		fmt.Println("Hello bazel!S!")
+		fmt.Println("Hello bazel!")
 		time.Sleep(time.Second * 1)
 	}
 }

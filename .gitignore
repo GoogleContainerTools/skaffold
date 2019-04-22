@@ -1,6 +1,7 @@
 out/
 examples/bazel/bazel-*
 integration/examples/bazel/bazel-*
+integration/examples/custom/bazel-*
 integration/testdata/plugin/local/bazel/bazel-*
 *.new
 *.iml
