@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"strings"
 
+	yamlpatch "github.com/krishicks/yaml-patch"
 	"gopkg.in/yaml.v2"
 )
 
@@ -34,24 +35,64 @@ type HelmOverrides struct {
 	Values map[string]interface{} `yaml:",inline"`
 }
 
-type inlineYaml struct {
-	Yaml string
+// MarshalJSON implements JSON marshalling by including the value as an inline yaml fragment.
+func (h *HelmOverrides) MarshalJSON() ([]byte, error) {
+	return marshalInlineYaml(h)
 }
 
-func (h *HelmOverrides) MarshalJSON() ([]byte, error) {
-	yaml, err := yaml.Marshal(h)
+// UnmarshalYAML implements JSON unmarshalling by reading an inline yaml fragment.
+func (h *HelmOverrides) UnmarshalJSON(text []byte) error {
+	yml, err := unmarshalInlineYaml(text)
+	if err != nil {
+		return err
+	}
+	return yaml.Unmarshal([]byte(yml), h)
+}
+
+// YamlpatchNode wraps a `yamlpatch.Node` and makes it serializable to JSON.
+// The yaml serialization needs to be implemented manually, because the node may be
+// an arbitrary yaml fragment so that a field tag `yaml:",inline"` does not work here.
+type YamlpatchNode struct {
+	// node is an arbitrary yaml fragment
+	Node yamlpatch.Node
+}
+
+// MarshalJSON implements JSON marshalling by including the value as an inline yaml fragment.
+func (n *YamlpatchNode) MarshalJSON() ([]byte, error) {
+	return marshalInlineYaml(n)
+}
+
+// UnmarshalYAML implements JSON unmarshalling by reading an inline yaml fragment.
+func (n *YamlpatchNode) UnmarshalJSON(text []byte) error {
+	yml, err := unmarshalInlineYaml(text)
+	if err != nil {
+		return err
+	}
+	return yaml.Unmarshal([]byte(yml), n)
+}
+
+// MarshalYAML implements yaml.Marshaler.
+func (n *YamlpatchNode) MarshalYAML() (interface{}, error) {
+	return n.Node.MarshalYAML()
+}
+
+// UnmarshalYAML implements yaml.Unmarshaler
+func (n *YamlpatchNode) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return n.Node.UnmarshalYAML(unmarshal)
+}
+
+func marshalInlineYaml(in interface{}) ([]byte, error) {
+	yaml, err := yaml.Marshal(in)
 	if err != nil {
 		return nil, err
 	}
-	return json.Marshal(inlineYaml{string(yaml)})
+	return json.Marshal(string(yaml))
 }
 
-func (h *HelmOverrides) UnmarshalJSON(text []byte) error {
-	in := inlineYaml{}
-	if err := json.Unmarshal(text, &in); err != nil {
-		return err
-	}
-	return yaml.Unmarshal([]byte(in.Yaml), h)
+func unmarshalInlineYaml(text []byte) (string, error) {
+	var in string
+	err := json.Unmarshal(text, &in)
+	return in, err
 }
 
 // IsOneOfField checks if a field is tagged with oneOf

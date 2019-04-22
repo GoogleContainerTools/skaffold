@@ -33,6 +33,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	dotDotSlash = ".." + string(filepath.Separator)
+)
+
 // filesLists contains cached build/input dependencies
 type filesLists struct {
 	// BuildDefinitions lists paths to build definitions that trigger a call out to Jib to refresh the pathMap, as well as a rebuild, upon changing
@@ -52,7 +56,7 @@ type filesLists struct {
 var watchedFiles = map[string]filesLists{}
 
 // getDependencies returns a list of files to watch for changes to rebuild
-func getDependencies(cmd *exec.Cmd, projectName string) ([]string, error) {
+func getDependencies(workspace string, cmd *exec.Cmd, projectName string) ([]string, error) {
 	var dependencyList []string
 	files, ok := watchedFiles[projectName]
 	if !ok {
@@ -70,7 +74,7 @@ func getDependencies(cmd *exec.Cmd, projectName string) ([]string, error) {
 			return nil, errors.Wrap(err, "initial Jib dependency refresh failed")
 		}
 
-	} else if err := walkFiles(files.BuildDefinitions, files.Results, func(path string, info os.FileInfo) error {
+	} else if err := walkFiles(workspace, files.BuildDefinitions, files.Results, func(path string, info os.FileInfo) error {
 		// Walk build files to check for changes
 		if val, ok := files.BuildFileTimes[path]; !ok || info.ModTime() != val {
 			return refreshDependencyList(&files, cmd)
@@ -81,13 +85,13 @@ func getDependencies(cmd *exec.Cmd, projectName string) ([]string, error) {
 	}
 
 	// Walk updated files to build dependency list
-	if err := walkFiles(files.Inputs, files.Results, func(path string, info os.FileInfo) error {
+	if err := walkFiles(workspace, files.Inputs, files.Results, func(path string, info os.FileInfo) error {
 		dependencyList = append(dependencyList, path)
 		return nil
 	}); err != nil {
 		return nil, errors.Wrap(err, "failed to walk Jib input files to build dependency list")
 	}
-	if err := walkFiles(files.BuildDefinitions, files.Results, func(path string, info os.FileInfo) error {
+	if err := walkFiles(workspace, files.BuildDefinitions, files.Results, func(path string, info os.FileInfo) error {
 		dependencyList = append(dependencyList, path)
 		files.BuildFileTimes[path] = info.ModTime()
 		return nil
@@ -125,7 +129,16 @@ func refreshDependencyList(files *filesLists, cmd *exec.Cmd) error {
 }
 
 // walkFiles walks through a list of files and directories and performs a callback on each of the files
-func walkFiles(watchedFiles []string, ignoredFiles []string, callback func(path string, info os.FileInfo) error) error {
+func walkFiles(workspace string, watchedFiles []string, ignoredFiles []string, callback func(path string, info os.FileInfo) error) error {
+	// Skaffold prefers to deal with relative paths.  In *practice*, Jib's dependencies
+	// are *usually* absolute (relative to the root) and canonical (with all symlinks expanded).
+	// But that's not guaranteed, so we try to relativize paths against the workspace as
+	// both an absolute path and as a canonicalized workspace.
+	workspaceRoots, err := calculateRoots(workspace)
+	if err != nil {
+		return errors.Wrapf(err, "unable to resolve workspace %s", workspace)
+	}
+
 	for _, dep := range watchedFiles {
 		if isIgnored(dep, ignoredFiles) {
 			continue
@@ -143,6 +156,11 @@ func walkFiles(watchedFiles []string, ignoredFiles []string, callback func(path 
 
 		// Process file
 		if !info.IsDir() {
+			// try to relativize the path: an error indicates that the file cannot
+			// be made relative to the roots, and so we just use the full path
+			if relative, err := relativize(dep, workspaceRoots...); err == nil {
+				dep = relative
+			}
 			if err := callback(dep, info); err != nil {
 				return err
 			}
@@ -156,15 +174,15 @@ func walkFiles(watchedFiles []string, ignoredFiles []string, callback func(path 
 				if isIgnored(path, ignoredFiles) {
 					return filepath.SkipDir
 				}
-				pathInfo, err := os.Stat(dep)
-				if err != nil {
-					if os.IsNotExist(err) {
-						logrus.Debugf("could not stat dependency: %s", err)
-						return filepath.SkipDir
+				if info, err := os.Stat(path); err == nil && !info.IsDir() {
+					// try to relativize the path: an error indicates that the file cannot
+					// be made relative to the roots, and so we just use the full path
+					if relative, err := relativize(path, workspaceRoots...); err == nil {
+						path = relative
 					}
-					return errors.Wrapf(err, "unable to stat file %s", dep)
+					return callback(path, info)
 				}
-				return callback(path, pathInfo)
+				return nil
 			},
 		}); err != nil {
 			return errors.Wrap(err, "filepath walk")
@@ -181,4 +199,34 @@ func isIgnored(path string, ignoredFiles []string) bool {
 		}
 	}
 	return false
+}
+
+// calculateRoots returns a list of possible symlink-expanded paths
+func calculateRoots(path string) ([]string, error) {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to resolve %s", path)
+	}
+	canonical, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to canonicalize workspace %s", path)
+	}
+	if path == canonical {
+		return []string{path}, nil
+	}
+	return []string{canonical, path}, nil
+}
+
+// relativize tries to make path relative to one of the given roots
+func relativize(path string, roots ...string) (string, error) {
+	if !filepath.IsAbs(path) {
+		return path, nil
+	}
+	for _, root := range roots {
+		// check that the path can be made relative and is contained (since `filepath.Rel("/a", "/b") => "../b"`)
+		if rel, err := filepath.Rel(root, path); err == nil && !strings.HasPrefix(rel, dotDotSlash) {
+			return rel, nil
+		}
+	}
+	return "", errors.New("could not relativize path")
 }

@@ -127,7 +127,7 @@ pushes them to the local Docker daemon or to remote registries as instructed by 
 
 To use Jib, add a `jibMaven` or `jibGradle` field to each artifact you specify in the
 `artifacts` part of the `build` section. `context` should be a path to
-your Maven or Gradle project.
+your Maven or Gradle project.  
 
 {{< alert title="Note" >}}
 Your project must be configured to use Jib already.
@@ -154,15 +154,25 @@ each produce a separate container image.
 
 #### Maven
 
-To build a multi-module project with Maven, specify each module as a separate
-Skaffold artifact. For each artifact, add a `jibMaven` field with a `module` field
-specifying either the module's `:artifactId`, `groupId:artifactId`, or the relative path
-to the module _within the project_. Each artifact's `context` field
-should point to the root project location.
+To build a Maven multi-module project, first identify the modules that should
+produce a container image. Then for each such module:
 
-Building multi-module projects with Skaffold-Jib has one additional requirement:
-a Jib goal must be explicitly bound to the `package` phase for each specific
-module that produces a container image.
+  1. Create a Skaffold `artifact` in the `skaffold.yaml`:
+     - Set the `artifact`'s `context` field to the root project location.
+     - Add a `jibMaven` element and set its `module` field to the module's
+       `:artifactId`, `groupId:artifactId`, or the relative path to the module
+       _within the project_.
+  2. Configure the module's `pom.xml` to bind either `jib:build` or `jib:dockerBuild` to
+     the `package` phase as appropriate (see below).
+
+This second step is necessary at the moment as Maven applies plugin goals specified
+on the command-line, like `jib:build` or, to all modules and not just the modules
+producing container images.
+The situation is further complicated as Skaffold speeds up deploys to a local cluster,
+such as `minikube`, by building and loading container images directly to the
+local cluster's docker daemon (via `jib:dockerBuild` instead of `jib:build`),
+thus saving a push and a pull of the image.
+We plan to improve this situation [(#1876)](https://github.com/GoogleContainerTools/skaffold/issues/1876).
 
 #### Gradle
 

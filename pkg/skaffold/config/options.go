@@ -17,15 +17,8 @@ limitations under the License.
 package config
 
 import (
-	"io"
 	"strings"
 )
-
-// Output defines which zones on the screen to print to
-type Output struct {
-	Main io.Writer
-	Logs io.Writer
-}
 
 // SkaffoldOptions are options that are set by command line arguments not included
 // in the config file itself
@@ -38,8 +31,8 @@ type SkaffoldOptions struct {
 	PortForward        bool
 	SkipTests          bool
 	CacheArtifacts     bool
-	ExperimentalGUI    bool
 	EnableRPC          bool
+	Force              bool
 	NoPrune            bool
 	CustomTag          string
 	Namespace          string
@@ -89,4 +82,8 @@ func (opts *SkaffoldOptions) Labels() map[string]string {
 // and the user did NOT specify the --cache-artifacts flag.
 func (opts *SkaffoldOptions) Prune() bool {
 	return !opts.NoPrune && !opts.CacheArtifacts
+}
+
+func (opts *SkaffoldOptions) ForceDeploy() bool {
+	return opts.Command == "dev" || opts.Force
 }

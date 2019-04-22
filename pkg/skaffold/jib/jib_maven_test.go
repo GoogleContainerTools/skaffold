@@ -67,20 +67,20 @@ func TestGetDependenciesMaven(t *testing.T) {
 			description: "success",
 			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\"],\"ignore\":[]}", build, dep1),
 			modTime:     time.Unix(0, 0),
-			expected:    []string{build, dep1},
+			expected:    []string{"build", "dep1"},
 		},
 		{
 			// Expected output differs from stdout since build file hasn't change, thus maven command won't run
 			description: "success",
 			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\", \"%s\"],\"ignore\":[]}", build, dep1, dep2),
 			modTime:     time.Unix(0, 0),
-			expected:    []string{build, dep1},
+			expected:    []string{"build", "dep1"},
 		},
 		{
 			description: "success",
 			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\", \"%s\"],\"ignore\":[]}", build, dep1, dep2),
 			modTime:     time.Unix(10000, 0),
-			expected:    []string{build, dep1, dep2},
+			expected:    []string{"build", "dep1", "dep2"},
 		},
 	}
 

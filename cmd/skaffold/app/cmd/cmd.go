@@ -50,6 +50,8 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	}
 
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		opts.Command = cmd.Use
+
 		if err := SetUpLogs(err, v); err != nil {
 			return err
 		}
@@ -142,6 +144,7 @@ func FlagToEnvVarName(f *pflag.Flag) string {
 
 func AddRunDeployFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.Tail, "tail", false, "Stream logs from deployed objects")
+	cmd.Flags().BoolVar(&opts.Force, "force", false, "Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)")
 	cmd.Flags().StringArrayVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels.")
 }
 
@@ -166,7 +169,6 @@ func AddDevDebugFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
 	cmd.Flags().BoolVar(&opts.PortForward, "port-forward", true, "Port-forward exposed container ports within pods")
 	cmd.Flags().StringArrayVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels")
-	cmd.Flags().BoolVar(&opts.ExperimentalGUI, "experimental-gui", false, "Experimental Graphical User Interface")
 }
 
 func SetUpLogs(out io.Writer, level string) error {

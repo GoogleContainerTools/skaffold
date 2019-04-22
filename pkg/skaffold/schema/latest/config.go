@@ -18,10 +18,9 @@ package latest
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	yamlpatch "github.com/krishicks/yaml-patch"
 )
 
-const Version string = "skaffold/v1beta8"
+const Version string = "skaffold/v1beta9"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -31,10 +30,10 @@ func NewSkaffoldConfig() util.VersionedConfig {
 // SkaffoldConfig holds the fields parsed from the Skaffold configuration file (skaffold.yaml).
 type SkaffoldConfig struct {
 	// APIVersion is the version of the configuration.
-	APIVersion string `yaml:"apiVersion"`
+	APIVersion string `yaml:"apiVersion" yamltags:"required"`
 
 	// Kind is always `Config`. Defaults to `Config`.
-	Kind string `yaml:"kind"`
+	Kind string `yaml:"kind" yamltags:"required"`
 
 	// Pipeline defines the Build/Test/Deploy phases.
 	Pipeline `yaml:",inline"`
@@ -539,7 +538,7 @@ type JSONPatch struct {
 	From string `yaml:"from,omitempty"`
 
 	// Value is the value to apply. Can be any portion of yaml.
-	Value *yamlpatch.Node `yaml:"value,omitempty"`
+	Value *util.YamlpatchNode `yaml:"value,omitempty"`
 }
 
 // Activation criteria by which a profile is auto-activated.
