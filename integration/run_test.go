@@ -99,19 +99,6 @@ func TestRun(t *testing.T) {
 			// 	deployments: []string{"skaffold-helm"},
 			// 	remoteOnly:  true,
 		}, {
-			description: "docker plugin in gcb exec environment",
-			dir:         "testdata/plugin/gcb",
-			deployments: []string{"leeroy-app", "leeroy-web"},
-			remoteOnly:  true,
-		}, {
-			description: "bazel plugin in local exec environment",
-			dir:         "testdata/plugin/local/bazel",
-			pods:        []string{"bazel"},
-		}, {
-			description: "docker plugin in local exec environment",
-			dir:         "testdata/plugin/local/docker",
-			deployments: []string{"leeroy-app", "leeroy-web"},
-		}, {
 			description: "jib in googlecloudbuild",
 			dir:         "testdata/jib",
 			args:        []string{"-p", "gcb"},

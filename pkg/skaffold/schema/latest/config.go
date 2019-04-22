@@ -577,21 +577,25 @@ type ArtifactType struct {
 	// KanikoArtifact *alpha* builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko).
 	KanikoArtifact *KanikoArtifact `yaml:"kaniko,omitempty" yamltags:"oneOf=artifact"`
 
-	// CustomArtifact *alpha* builds images using a custom build script written by the user
+	// CustomArtifact *alpha* builds images using a custom build script written by the user.
 	CustomArtifact *CustomArtifact `yaml:"custom,omitempty" yamltags:"oneOf=artifact"`
 }
 
 // CustomArtifact *alpha* describes an artifact built from a custom build script
 // written by the user. It can be used to build images with builders that aren't directly integrated with skaffold.
 type CustomArtifact struct {
-	BuildCommand string              `yaml:"buildCommand,omitempty"`
+	// BuildCommand is the command executed to build the image.
+	BuildCommand string `yaml:"buildCommand,omitempty"`
+	// Dependencies are the file dependencies that skaffold should watch for this artifact.
 	Dependencies *CustomDependencies `yaml:"dependencies,omitempty"`
 }
 
 // CustomDependencies is used to specify dependencies for an artifact built by a custom build script.
 type CustomDependencies struct {
-	Dockerfile string   `yaml:"dockerfile,omitempty" yamltags:"oneOf=dependency"`
-	Paths      []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
+	// Dockerfile can be set if the custom builder uses a Dockerfile to build images.
+	Dockerfile string `yaml:"dockerfile,omitempty" yamltags:"oneOf=dependency"`
+	// Paths should be set to the dependencies for this artifact if no Dockerfile exists.
+	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
 }
 
 // KanikoArtifact *alpha* describes an artifact built from a Dockerfile,

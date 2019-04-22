@@ -329,6 +329,54 @@
             "kaniko"
           ],
           "additionalProperties": false
+        },
+        {
+          "properties": {
+            "context": {
+              "type": "string",
+              "description": "directory containing the artifact's sources.",
+              "x-intellij-html-description": "directory containing the artifact's sources.",
+              "default": "."
+            },
+            "custom": {
+              "$ref": "#/definitions/CustomArtifact",
+              "description": "*alpha* builds images using a custom build script written by the user.",
+              "x-intellij-html-description": "<em>alpha</em> builds images using a custom build script written by the user."
+            },
+            "image": {
+              "type": "string",
+              "description": "name of the image to be built.",
+              "x-intellij-html-description": "name of the image to be built.",
+              "examples": [
+                "gcr.io/k8s-skaffold/example"
+              ]
+            },
+            "plugin": {
+              "$ref": "#/definitions/BuilderPlugin",
+              "description": "plugin used to build this artifact.",
+              "x-intellij-html-description": "plugin used to build this artifact."
+            },
+            "sync": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
+              "default": "{}",
+              "examples": [
+                "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
+              ]
+            }
+          },
+          "preferredOrder": [
+            "image",
+            "context",
+            "sync",
+            "plugin",
+            "custom"
+          ],
+          "additionalProperties": false
         }
       ],
       "description": "items that need to be built, along with the context in which they should be built.",
@@ -612,6 +660,52 @@
       "additionalProperties": false,
       "description": "*beta* describes how to do an on-cluster build.",
       "x-intellij-html-description": "<em>beta</em> describes how to do an on-cluster build."
+    },
+    "CustomArtifact": {
+      "properties": {
+        "buildCommand": {
+          "type": "string",
+          "description": "command executed to build the image.",
+          "x-intellij-html-description": "command executed to build the image."
+        },
+        "dependencies": {
+          "$ref": "#/definitions/CustomDependencies",
+          "description": "file dependencies that skaffold should watch for this artifact.",
+          "x-intellij-html-description": "file dependencies that skaffold should watch for this artifact."
+        }
+      },
+      "preferredOrder": [
+        "buildCommand",
+        "dependencies"
+      ],
+      "additionalProperties": false,
+      "description": "*alpha* describes an artifact built from a custom build script written by the user. It can be used to build images with builders that aren't directly integrated with skaffold.",
+      "x-intellij-html-description": "<em>alpha</em> describes an artifact built from a custom build script written by the user. It can be used to build images with builders that aren't directly integrated with skaffold."
+    },
+    "CustomDependencies": {
+      "properties": {
+        "dockerfile": {
+          "type": "string",
+          "description": "can be set if the custom builder uses a Dockerfile to build images.",
+          "x-intellij-html-description": "can be set if the custom builder uses a Dockerfile to build images."
+        },
+        "paths": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "should be set to the dependencies for this artifact if no Dockerfile exists.",
+          "x-intellij-html-description": "should be set to the dependencies for this artifact if no Dockerfile exists.",
+          "default": "[]"
+        }
+      },
+      "preferredOrder": [
+        "dockerfile",
+        "paths"
+      ],
+      "additionalProperties": false,
+      "description": "used to specify dependencies for an artifact built by a custom build script.",
+      "x-intellij-html-description": "used to specify dependencies for an artifact built by a custom build script."
     },
     "DateTimeTagger": {
       "properties": {
