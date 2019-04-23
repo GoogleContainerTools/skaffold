@@ -1,6 +1,6 @@
 # Title
 
-* Author(s): Corneius Weig (@corneliusweig)
+* Author(s): Cornelius Weig (@corneliusweig)
 * Design Shepherd: Priya Wadhwa (@priyawadhwa)
 * Date: 21/04/2019
 * Status: [Reviewed/Cancelled/Under implementation/Complete]
