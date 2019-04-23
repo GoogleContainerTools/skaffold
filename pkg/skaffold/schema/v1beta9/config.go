@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v1beta9
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v1beta10"
+const Version string = "skaffold/v1beta9"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -72,7 +72,35 @@ type BuildConfig struct {
 	// If not specified, it defaults to `gitCommit: {}`.
 	TagPolicy TagPolicy `yaml:"tagPolicy,omitempty"`
 
+	// ExecutionEnvironment is the environment in which the build
+	// should run. Possible values: googleCloudBuild.
+	ExecutionEnvironment *ExecutionEnvironment `yaml:"executionEnvironment,omitempty"`
+
 	BuildType `yaml:",inline"`
+}
+
+// ExecEnvironment is the name of an execution environment.
+type ExecEnvironment string
+
+// ExecutionEnvironment is the environment in which the build should run (ex. local or in-cluster, etc.).
+type ExecutionEnvironment struct {
+	// Name is the name of the environment.
+	Name ExecEnvironment `yaml:"name,omitempty"`
+
+	// Properties are key-value pairs passed to the environment.
+	Properties map[string]interface{} `yaml:"properties,omitempty"`
+}
+
+// BuilderPlugin contains all fields necessary for specifying a build plugin.
+type BuilderPlugin struct {
+	// Name is the name of the build plugin.
+	Name string `yaml:"name,omitempty"`
+
+	// Properties are key-value pairs passed to the plugin.
+	Properties map[string]interface{} `yaml:"properties,omitempty"`
+
+	// Contents
+	Contents []byte `yaml:",omitempty"`
 }
 
 // TagPolicy contains all the configuration for the tagging step.
@@ -471,6 +499,9 @@ type Artifact struct {
 	ArtifactType `yaml:",inline"`
 
 	WorkspaceHash string `yaml:"-,omitempty"`
+
+	// BuilderPlugin is the plugin used to build this artifact.
+	BuilderPlugin *BuilderPlugin `yaml:"plugin,omitempty"`
 }
 
 // Profile *beta* profiles are used to override any `build`, `test` or `deploy` configuration.
