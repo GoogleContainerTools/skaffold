@@ -333,7 +333,7 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 		if err != nil {
 			return errors.Wrap(err, "deploy failed")
 		}
-		// Merge current build artifacts with previously built
+		// Merge current build artifacts with previously built passed in --images.
 		artifacts = build.MergeWithPreviousBuilds(artifacts, pBuilts)
 	}
 	err := r.Deployer.Deploy(ctx, out, artifacts, r.labellers)
