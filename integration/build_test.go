@@ -132,6 +132,8 @@ func checkImageExists(t *testing.T, image string) {
 func setupGitRepo(t *testing.T, dir string) func() {
 	gitArgs := [][]string{
 		{"init"},
+		{"config", "user.email", "john@doe.org"},
+		{"config", "user.name", "John Doe"},
 		{"add", "."},
 		{"commit", "-m", "Initial commit"},
 		{"tag", "v1"},
@@ -140,8 +142,10 @@ func setupGitRepo(t *testing.T, dir string) func() {
 	for _, args := range gitArgs {
 		cmd := exec.Command("git", args...)
 		cmd.Dir = dir
-		err := util.RunCmd(cmd)
-		failNowIfError(t, err)
+		if buf, err := util.RunCmdOut(cmd); err != nil {
+			t.Logf(string(buf))
+			t.Fatal(err)
+		}
 	}
 
 	return func() {
