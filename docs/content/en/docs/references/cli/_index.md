@@ -279,8 +279,6 @@ Usage:
   skaffold delete
 
 Flags:
-      --cache-artifacts                 Set to true to enable caching of artifacts.
-      --cache-file string               Specify the location of the cache file (default $HOME/.skaffold/cache)
   -d, --default-repo string             Default repository value (overrides global config)
       --enable-rpc skaffold dev         Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
   -f, --filename string                 Filename or URL to the pipeline file (default "skaffold.yaml")
@@ -290,7 +288,6 @@ Flags:
   -p, --profile stringArray             Activate profiles by name
       --rpc-http-port int               tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                    tcp port to expose event API (default 50051)
-      --skip-tests                      Whether to skip the tests after building
       --toot                            Emit a terminal beep after the deploy is complete
 
 Global Flags:
@@ -301,8 +298,6 @@ Global Flags:
 ```
 Env vars:
 
-* `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
-* `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
@@ -312,7 +307,6 @@ Env vars:
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
-* `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 
 ### skaffold deploy
