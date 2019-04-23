@@ -34,7 +34,7 @@ func NewCmdDelete(out io.Writer) *cobra.Command {
 			return delete(out)
 		},
 	}
-	AddRunDeleteFlags(cmd)
+	AddRunCommonFlags(cmd)
 	return cmd
 }
 
