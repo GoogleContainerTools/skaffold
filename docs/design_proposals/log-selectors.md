@@ -7,7 +7,7 @@
 
 ## Background
 
-Skaffold offers the possibility to watch pod logs for the `dev` and `run` subcommands.
+Skaffold offers the possibility to watch pod logs for the `run`, `dev`, and `deploy` subcommands.
 So far, the pods to watch are determined by looking for known artifact images in the containers.
 This is restricting for two reasons:
 1. It does not allow to add additional pods to log aggregator which are not deployed by Skaffold (#666).
