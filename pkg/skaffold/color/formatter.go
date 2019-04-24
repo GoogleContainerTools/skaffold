@@ -101,11 +101,6 @@ type ColoredWriteCloser struct {
 	io.WriteCloser
 }
 
-// ColoredWriter forces printing with colors to an io.Writer.
-type ColoredWriter struct {
-	io.Writer
-}
-
 // OverwriteDefault overwrites default color
 func OverwriteDefault(color Color) {
 	Default = color
@@ -115,9 +110,6 @@ func OverwriteDefault(color Color) {
 // unfortunately logrus doesn't expose a public interface we can use to call it.
 func isTerminal(w io.Writer) bool {
 	if _, ok := w.(ColoredWriteCloser); ok {
-		return true
-	}
-	if _, ok := w.(ColoredWriter); ok {
 		return true
 	}
 
