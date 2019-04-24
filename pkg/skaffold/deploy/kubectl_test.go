@@ -300,7 +300,7 @@ spec:
 		WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML)
 
 	cfg := &latest.KubectlDeploy{
-		Manifests: []string{"*.yaml"},
+		Manifests: []string{tmpDir.Path("deployment-app.yaml"), "deployment-web.yaml"},
 	}
 	deployer := NewKubectlDeployer(&runcontext.RunContext{
 		WorkingDir: tmpDir.Root(),
