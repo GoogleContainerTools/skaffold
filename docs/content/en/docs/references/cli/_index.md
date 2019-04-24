@@ -328,6 +328,7 @@ Flags:
   -p, --profile stringArray       Activate profiles by name
       --rpc-http-port int         tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int              tcp port to expose event API (default 50051)
+      --tail                      Stream logs from deployed objects
       --toot                      Emit a terminal beep after the deploy is complete
 
 Global Flags:
@@ -348,6 +349,7 @@ Env vars:
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
+* `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 
 ### skaffold dev

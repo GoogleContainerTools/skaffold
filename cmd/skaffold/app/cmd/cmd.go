@@ -156,6 +156,7 @@ func AddRunCommonFlags(cmd *cobra.Command) {
 }
 
 func AddRunDeployCommonFlags(cmd *cobra.Command) {
+	cmd.Flags().BoolVar(&opts.Tail, "tail", false, "Stream logs from deployed objects")
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)")
 	cmd.Flags().StringArrayVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels.")
 }
