@@ -84,6 +84,9 @@ var (
 var (
 	// ImageName is the env variable that will pass the tagged image name to custom builders
 	ImageName = "IMAGE_NAME"
+
+	// PushImage lets the custom builder know if the image is expected to be pushed to a remote registry
+	PushImage = "PUSH_IMAGE"
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}

@@ -37,7 +37,7 @@ var (
 func (b *Builder) buildCustom(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
 	artifact := a.CustomArtifact
 	cmd := exec.Command(artifact.BuildCommand)
-	cmd.Env = retrieveEnv(tag)
+	cmd.Env = retrieveEnv(tag, b.pushImages)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -51,9 +51,10 @@ func (b *Builder) buildCustom(ctx context.Context, out io.Writer, a *latest.Arti
 	return b.localDocker.ImageID(ctx, tag)
 }
 
-func retrieveEnv(tag string) []string {
+func retrieveEnv(tag string, pushImage bool) []string {
 	tags := []string{
 		fmt.Sprintf("%s=%s", constants.ImageName, tag),
+		fmt.Sprintf("%s=%s", constants.PushImage, pushImage),
 	}
 	return append(tags, environ()...)
 }
