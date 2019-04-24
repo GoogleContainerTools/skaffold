@@ -49,8 +49,6 @@ GO_LDFLAGS +="
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 GO_BUILD_TAGS := "kqueue"
 
-DOCSY_COMMIT:=a7141a2eac26cb598b707cab87d224f9105c315d
-
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
 
@@ -140,7 +138,7 @@ release-build-in-docker:
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR) ./docs/public ./docs/resources
+	rm -rf $(BUILD_DIR)
 
 .PHONY: integration-in-docker
 integration-in-docker:
