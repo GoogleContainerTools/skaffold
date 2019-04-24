@@ -31,7 +31,7 @@ import (
 // 3. Updates
 //  - KanikoBuildContext instead of GCSBucket
 //  - HelmRelease.valuesFilePath -> valuesFiles in yaml
-func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
+func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
 	if err := convert(config.Deploy, &newDeploy); err != nil {
@@ -87,7 +87,7 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 		}
 	}
 
-	return &next.SkaffoldPipeline{
+	return &next.SkaffoldConfig{
 		APIVersion: next.Version,
 		Kind:       config.Kind,
 		Deploy:     newDeploy,

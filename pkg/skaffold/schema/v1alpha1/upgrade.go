@@ -39,7 +39,7 @@ import (
 // 3. Updates
 //  - TagPolicy is a struct
 //
-func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
+func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var tagPolicy next.TagPolicy
 	if config.Build.TagPolicy == constants.TagStrategySha256 {
 		tagPolicy = next.TagPolicy{
@@ -111,7 +111,7 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 		}
 	}
 
-	return &next.SkaffoldPipeline{
+	return &next.SkaffoldConfig{
 		APIVersion: next.Version,
 		Kind:       config.Kind,
 		Deploy: next.DeployConfig{

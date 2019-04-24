@@ -2,7 +2,7 @@
   "type": "object",
   "anyOf": [
     {
-      "$ref": "#/definitions/SkaffoldPipeline"
+      "$ref": "#/definitions/SkaffoldConfig"
     }
   ],
   "$schema": "http://json-schema-org/draft-07/schema#",
@@ -791,7 +791,7 @@
       "description": "contains the configuration for the SHA tagger.",
       "x-intellij-html-description": "contains the configuration for the SHA tagger."
     },
-    "SkaffoldPipeline": {
+    "SkaffoldConfig": {
       "properties": {
         "apiVersion": {
           "type": "string"

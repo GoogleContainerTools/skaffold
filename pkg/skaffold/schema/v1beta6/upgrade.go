@@ -31,7 +31,7 @@ import (
 // 2. No removals
 // 3. Updates:
 // kaniko becomes cluster
-func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
+func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
 	if err := pkgutil.CloneThroughJSON(config.Deploy, &newDeploy); err != nil {
@@ -68,7 +68,7 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 		return nil, errors.Wrap(err, "converting new test")
 	}
 
-	return &next.SkaffoldPipeline{
+	return &next.SkaffoldConfig{
 		APIVersion: next.Version,
 		Kind:       config.Kind,
 		Build:      newBuild,
