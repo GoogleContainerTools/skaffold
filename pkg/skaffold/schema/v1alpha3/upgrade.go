@@ -27,7 +27,7 @@ import (
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v1alpha3 to v1alpha4:
 // 1. Additions:
-//   - SkaffoldPipeline.Test, Profile.Test, TestCase, TestConfig
+//   - SkaffoldConfig.Test, Profile.Test, TestCase, TestConfig
 //   - KanikoBuildContext.LocalDir, LocalDir
 //   - KanikoBuild.Image
 //   - Artifact.Sync
@@ -41,7 +41,7 @@ import (
 //    - Artifact.imageName -> image, workspace -> context in yaml
 //		- DockerArtifact.dockerfilePath -> dockerfile in yaml
 //    - BazelArtifact.BuildTarget is optional in yaml
-func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
+func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
 	if err := convert(config.Deploy, &newDeploy); err != nil {
@@ -67,7 +67,7 @@ func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
 	}
 	convertBuild(oldBuild, newBuild)
 
-	return &next.SkaffoldPipeline{
+	return &next.SkaffoldConfig{
 		APIVersion: next.Version,
 		Kind:       config.Kind,
 		Deploy:     newDeploy,
