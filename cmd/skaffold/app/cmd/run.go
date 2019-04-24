@@ -41,8 +41,9 @@ func NewCmdRun(out io.Writer) *cobra.Command {
 		},
 	}
 	AddRunDevFlags(cmd)
-	AddRunDeployFlags(cmd)
+	AddRunDeployCommonFlags(cmd)
 
+	cmd.Flags().BoolVar(&opts.Tail, "tail", false, "Stream logs from deployed objects")
 	cmd.Flags().StringVarP(&opts.CustomTag, "tag", "t", "", "The optional custom tag to use for images which overrides the current Tagger configuration")
 	return cmd
 }

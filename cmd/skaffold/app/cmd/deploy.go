@@ -33,8 +33,8 @@ func NewCmdDeploy(out io.Writer) *cobra.Command {
 			return run(out)
 		},
 	}
-	AddRunDevFlags(cmd)
-	AddRunDeployFlags(cmd)
+	AddRunDeployCommonFlags(cmd)
+	AddRunDeployOnlyFlags(cmd)
 	cmd.Flags().StringSliceVar(&opts.PreBuiltImages, "images", nil, "A list of pre-built images to deploy")
 	return cmd
 }
