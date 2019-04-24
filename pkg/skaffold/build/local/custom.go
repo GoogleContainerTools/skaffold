@@ -29,6 +29,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+var (
+	// For testing
+	environ = os.Environ
+)
+
 func (b *Builder) buildCustom(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
 	artifact := a.CustomArtifact
 	cmd := exec.Command(artifact.BuildCommand)
@@ -46,10 +51,9 @@ func (b *Builder) buildCustom(ctx context.Context, out io.Writer, a *latest.Arti
 	return b.localDocker.ImageID(ctx, tag)
 }
 
-// TODO: priyawadhwa@ to write unit tests for this
 func retrieveEnv(tag string) []string {
 	tags := []string{
 		fmt.Sprintf("%s=%s", constants.ImageName, tag),
 	}
-	return append(tags, os.Environ()...)
+	return append(tags, environ()...)
 }

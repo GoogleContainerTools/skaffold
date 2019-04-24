@@ -684,10 +684,14 @@
     },
     "CustomDependencies": {
       "properties": {
-        "dockerfile": {
-          "type": "string",
-          "description": "can be set if the custom builder uses a Dockerfile to build images.",
-          "x-intellij-html-description": "can be set if the custom builder uses a Dockerfile to build images."
+        "ignore": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "specifies the paths that should be ignored by the watcher. If a file exists in `paths` and in `ignore`, it will be ignored. Will only work in conjunction with `paths`.",
+          "x-intellij-html-description": "specifies the paths that should be ignored by the watcher. If a file exists in <code>paths</code> and in <code>ignore</code>, it will be ignored. Will only work in conjunction with <code>paths</code>.",
+          "default": "[]"
         },
         "paths": {
           "items": {
@@ -700,8 +704,8 @@
         }
       },
       "preferredOrder": [
-        "dockerfile",
-        "paths"
+        "paths",
+        "ignore"
       ],
       "additionalProperties": false,
       "description": "used to specify dependencies for an artifact built by a custom build script.",
