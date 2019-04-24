@@ -31,8 +31,8 @@ type Artifact struct {
 }
 
 type Result struct {
-	Target *latest.Artifact
-	Result *Artifact
+	Target latest.Artifact
+	Result Artifact
 	Error  error
 }
 

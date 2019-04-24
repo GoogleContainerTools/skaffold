@@ -30,14 +30,16 @@ import (
 )
 
 func TestQuietFlag(t *testing.T) {
-	mockCreateRunner := func(context.Context, io.Writer) ([]build.Artifact, error) {
-		return []build.Artifact{{
-			ImageName: "gcr.io/skaffold/example",
-			Tag:       "test",
+	mockCreateRunner := func(context.Context, io.Writer) ([]build.Result, error) {
+		return []build.Result{{
+			Result: build.Artifact{
+				ImageName: "gcr.io/skaffold/example",
+				Tag:       "test",
+			},
 		}}, nil
 	}
 
-	defer func(f func(context.Context, io.Writer) ([]build.Artifact, error)) {
+	defer func(f func(context.Context, io.Writer) ([]build.Result, error)) {
 		createRunnerAndBuildFunc = f
 	}(createRunnerAndBuildFunc)
 
@@ -45,18 +47,18 @@ func TestQuietFlag(t *testing.T) {
 		description    string
 		template       string
 		expectedOutput []byte
-		mock           func(context.Context, io.Writer) ([]build.Artifact, error)
+		mock           func(context.Context, io.Writer) ([]build.Result, error)
 		shouldErr      bool
 	}{
 		{
 			description:    "quiet flag print build images with no template",
-			expectedOutput: []byte(`{"builds":[{"imageName":"gcr.io/skaffold/example","tag":"test"}]}`),
+			expectedOutput: []byte("{gcr.io/skaffold/example test}"),
 			shouldErr:      false,
 			mock:           mockCreateRunner,
 		},
 		{
 			description:    "quiet flag print build images applies pattern specified in template ",
-			template:       "{{range .Builds}}{{.ImageName}} -> {{.Tag}}\n{{end}}",
+			template:       "{{range .Builds}}{{.Result.ImageName}} -> {{.Result.Tag}}\n{{end}}",
 			expectedOutput: []byte("gcr.io/skaffold/example -> test\n"),
 			shouldErr:      false,
 			mock:           mockCreateRunner,
@@ -87,22 +89,24 @@ func TestQuietFlag(t *testing.T) {
 }
 
 func TestRunBuild(t *testing.T) {
-	errRunner := func(context.Context, io.Writer) ([]build.Artifact, error) {
+	errRunner := func(context.Context, io.Writer) ([]build.Result, error) {
 		return nil, errors.New("some error")
 	}
-	mockCreateRunner := func(context.Context, io.Writer) ([]build.Artifact, error) {
-		return []build.Artifact{{
-			ImageName: "gcr.io/skaffold/example",
-			Tag:       "test",
+	mockCreateRunner := func(context.Context, io.Writer) ([]build.Result, error) {
+		return []build.Result{{
+			Result: build.Artifact{
+				ImageName: "gcr.io/skaffold/example",
+				Tag:       "test",
+			},
 		}}, nil
 	}
-	defer func(f func(context.Context, io.Writer) ([]build.Artifact, error)) {
+	defer func(f func(context.Context, io.Writer) ([]build.Result, error)) {
 		createRunnerAndBuildFunc = f
 	}(createRunnerAndBuildFunc)
 
 	var tests = []struct {
 		description string
-		mock        func(context.Context, io.Writer) ([]build.Artifact, error)
+		mock        func(context.Context, io.Writer) ([]build.Result, error)
 		shouldErr   bool
 	}{
 		{

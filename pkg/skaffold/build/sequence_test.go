@@ -59,14 +59,14 @@ func TestInSequence(t *testing.T) {
 			expectedResults: []testResult{
 				{
 					buildResult: Result{
-						Target: &latest.Artifact{ImageName: "skaffold/image1"},
-						Result: &Artifact{ImageName: "skaffold/image1", Tag: "skaffold/image1:v0.0.1@sha256:abac"},
+						Target: latest.Artifact{ImageName: "skaffold/image1"},
+						Result: Artifact{ImageName: "skaffold/image1", Tag: "skaffold/image1:v0.0.1@sha256:abac"},
 					},
 				},
 				{
 					buildResult: Result{
-						Target: &latest.Artifact{ImageName: "skaffold/image2"},
-						Result: &Artifact{ImageName: "skaffold/image2", Tag: "skaffold/image2:v0.0.2@sha256:abac"},
+						Target: latest.Artifact{ImageName: "skaffold/image2"},
+						Result: Artifact{ImageName: "skaffold/image2", Tag: "skaffold/image2:v0.0.2@sha256:abac"},
 					},
 				},
 			},
@@ -84,7 +84,7 @@ func TestInSequence(t *testing.T) {
 			expectedResults: []testResult{
 				{
 					buildResult: Result{
-						Target: &latest.Artifact{
+						Target: latest.Artifact{
 							ImageName: "skaffold/image1",
 						},
 						Error: errors.New("building [skaffold/image1]: build fails"),
@@ -93,7 +93,7 @@ func TestInSequence(t *testing.T) {
 				},
 				{
 					buildResult: Result{
-						Target: &latest.Artifact{
+						Target: latest.Artifact{
 							ImageName: "skaffold/image2",
 						},
 						Error: errors.New("unable to find tag for image skaffold/image2"),
@@ -109,7 +109,7 @@ func TestInSequence(t *testing.T) {
 			expectedResults: []testResult{
 				{
 					buildResult: Result{
-						Target: &latest.Artifact{
+						Target: latest.Artifact{
 							ImageName: "skaffold/image1",
 						},
 						Error: errors.New("unable to find tag for image skaffold/image1"),
@@ -118,7 +118,7 @@ func TestInSequence(t *testing.T) {
 				},
 				{
 					buildResult: Result{
-						Target: &latest.Artifact{
+						Target: latest.Artifact{
 							ImageName: "skaffold/image2",
 						},
 						Error: errors.New("unable to find tag for image skaffold/image2"),

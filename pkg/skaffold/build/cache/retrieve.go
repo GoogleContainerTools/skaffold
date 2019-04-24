@@ -102,7 +102,7 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 			if details.needsRetag {
 				if err := c.client.Tag(ctx, details.prebuiltImage, details.hashTag); err != nil {
 					built = append(built, build.Result{
-						Target: artifact,
+						Target: *artifact,
 						Error:  errors.Wrap(err, "retagging image"),
 					})
 					continue
@@ -111,7 +111,7 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 			if details.needsPush {
 				if _, err := c.client.Push(ctx, out, details.hashTag); err != nil {
 					built = append(built, build.Result{
-						Target: artifact,
+						Target: *artifact,
 						Error:  errors.Wrap(err, "pushing image"),
 					})
 					continue
@@ -119,8 +119,8 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 			}
 
 			built = append(built, build.Result{
-				Target: artifact,
-				Result: &build.Artifact{
+				Target: *artifact,
+				Result: build.Artifact{
 					ImageName: artifact.ImageName,
 					Tag:       details.hashTag,
 				},

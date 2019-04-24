@@ -105,13 +105,13 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 		var res Result
 		if errs[i] != nil {
 			res = Result{
-				Target: artifact,
+				Target: *artifact,
 				Error:  errors.Wrapf(errs[i], "building [%s]", artifact.ImageName),
 			}
 		} else {
 			res = Result{
-				Target: artifact,
-				Result: &Artifact{
+				Target: *artifact,
+				Result: Artifact{
 					ImageName: artifact.ImageName,
 					Tag:       finalTags[i],
 				},

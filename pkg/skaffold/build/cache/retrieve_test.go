@@ -95,8 +95,8 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 			artifacts: []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
 			expectedBuildResults: []build.Result{
 				{
-					Target: &latest.Artifact{ImageName: "image1", WorkspaceHash: "workspace-hash"},
-					Result: &build.Artifact{ImageName: "image1", Tag: "image1:workspace-hash"},
+					Target: latest.Artifact{ImageName: "image1", WorkspaceHash: "workspace-hash"},
+					Result: build.Artifact{ImageName: "image1", Tag: "image1:workspace-hash"},
 				},
 			},
 			expectedArtifacts: []*latest.Artifact{{ImageName: "image2", WorkspaceHash: "workspace-hash-2"}},
@@ -125,8 +125,8 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 			expectedArtifacts: []*latest.Artifact{{ImageName: "image2", WorkspaceHash: "hash2"}},
 			expectedBuildResults: []build.Result{
 				{
-					Target: &latest.Artifact{ImageName: "image1", WorkspaceHash: "hash"},
-					Result: &build.Artifact{ImageName: "image1", Tag: "image1:hash"},
+					Target: latest.Artifact{ImageName: "image1", WorkspaceHash: "hash"},
+					Result: build.Artifact{ImageName: "image1", Tag: "image1:hash"},
 				},
 			},
 		},

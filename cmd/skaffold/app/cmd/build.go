@@ -31,8 +31,10 @@ import (
 )
 
 var (
-	quietFlag       bool
-	buildFormatFlag = flags.NewTemplateFlag("{{json .}}", flags.BuildOutput{})
+	quietFlag bool
+	// buildFormatFlag = flags.NewTemplateFlag("{{json .}}", flags.BuildOutput{})
+	template        = "{{ range .Builds}}{{if not .}}{{else}}{{.Result}}{{end}}{{end}}"
+	buildFormatFlag = flags.NewTemplateFlag(template, BuildOutput{})
 )
 
 // For testing
@@ -55,6 +57,11 @@ func NewCmdBuild(out io.Writer) *cobra.Command {
 	cmd.Flags().BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output.")
 	cmd.Flags().VarP(buildFormatFlag, "output", "o", "Used in conjuction with --quiet flag. "+buildFormatFlag.Usage())
 	return cmd
+}
+
+// BuildOutput is the output of `skaffold build`.
+type BuildOutput struct {
+	Builds []build.Result
 }
 
 func runBuild(out io.Writer) error {
@@ -90,7 +97,7 @@ func runBuild(out io.Writer) error {
 	return nil
 }
 
-func createRunnerAndBuild(ctx context.Context, buildOut io.Writer) ([]build.Artifact, error) {
+func createRunnerAndBuild(ctx context.Context, buildOut io.Writer) ([]build.Result, error) {
 	runner, config, err := newRunner(opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating runner")
@@ -102,13 +109,13 @@ func createRunnerAndBuild(ctx context.Context, buildOut io.Writer) ([]build.Arti
 			targetArtifacts = append(targetArtifacts, artifact)
 		}
 	}
-	bRes, err := runner.BuildAndTest(ctx, buildOut, targetArtifacts)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]build.Artifact, len(bRes))
-	for i, r := range bRes {
-		results[i] = *r.Result
-	}
-	return results, nil
+	return runner.BuildAndTest(ctx, buildOut, targetArtifacts)
+	// if err != nil {
+	// return nil, err
+	// }
+	// results := make([]build.Artifact, len(bRes))
+	// for i, r := range bRes {
+	// 	results[i] = *r.Result
+	// }
+	// return results, nil
 }

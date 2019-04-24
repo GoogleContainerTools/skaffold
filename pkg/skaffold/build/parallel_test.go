@@ -53,14 +53,14 @@ func TestInParallel(t *testing.T) {
 			expectedResults: []testResult{
 				{
 					buildResult: Result{
-						Target: &latest.Artifact{ImageName: "skaffold/image1"},
-						Result: &Artifact{ImageName: "skaffold/image1", Tag: "skaffold/image1:v0.0.1@sha256:abac"},
+						Target: latest.Artifact{ImageName: "skaffold/image1"},
+						Result: Artifact{ImageName: "skaffold/image1", Tag: "skaffold/image1:v0.0.1@sha256:abac"},
 					},
 				},
 				{
 					buildResult: Result{
-						Target: &latest.Artifact{ImageName: "skaffold/image2"},
-						Result: &Artifact{ImageName: "skaffold/image2", Tag: "skaffold/image2:v0.0.2@sha256:abac"},
+						Target: latest.Artifact{ImageName: "skaffold/image2"},
+						Result: Artifact{ImageName: "skaffold/image2", Tag: "skaffold/image2:v0.0.2@sha256:abac"},
 					},
 				},
 			},
@@ -77,7 +77,7 @@ func TestInParallel(t *testing.T) {
 			expectedResults: []testResult{
 				{
 					buildResult: Result{
-						Target: &latest.Artifact{
+						Target: latest.Artifact{
 							ImageName: "skaffold/image1",
 						},
 						Error: errors.New("building [skaffold/image1]: build fails"),
@@ -86,7 +86,7 @@ func TestInParallel(t *testing.T) {
 				},
 				{
 					buildResult: Result{
-						Target: &latest.Artifact{
+						Target: latest.Artifact{
 							ImageName: "skaffold/image2",
 						},
 						Error: errors.New("building [skaffold/image2]: unable to find tag for image skaffold/image2"),
@@ -102,7 +102,7 @@ func TestInParallel(t *testing.T) {
 			expectedResults: []testResult{
 				{
 					buildResult: Result{
-						Target: &latest.Artifact{
+						Target: latest.Artifact{
 							ImageName: "skaffold/image1",
 						},
 						Error: errors.New("building [skaffold/image1]: unable to find tag for image skaffold/image1"),
@@ -111,7 +111,7 @@ func TestInParallel(t *testing.T) {
 				},
 				{
 					buildResult: Result{
-						Target: &latest.Artifact{
+						Target: latest.Artifact{
 							ImageName: "skaffold/image2",
 						},
 						Error: errors.New("building [skaffold/image2]: unable to find tag for image skaffold/image2"),

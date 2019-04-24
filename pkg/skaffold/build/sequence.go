@@ -40,7 +40,7 @@ func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 		tag, present := tags[artifact.ImageName]
 		if !present {
 			results = append(results, Result{
-				Target: artifact,
+				Target: *artifact,
 				Error:  fmt.Errorf("unable to find tag for image %s", artifact.ImageName),
 			})
 			continue
@@ -50,15 +50,15 @@ func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 		if err != nil {
 			event.BuildFailed(artifact.ImageName, err)
 			results = append(results, Result{
-				Target: artifact,
+				Target: *artifact,
 				Error:  errors.Wrapf(err, "building [%s]", artifact.ImageName),
 			})
 		} else {
 			event.BuildComplete(artifact.ImageName)
 
 			results = append(results, Result{
-				Target: artifact,
-				Result: &Artifact{
+				Target: *artifact,
+				Result: Artifact{
 					ImageName: artifact.ImageName,
 					Tag:       finalTag,
 				},

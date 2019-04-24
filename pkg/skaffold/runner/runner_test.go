@@ -84,8 +84,8 @@ func (t *TestBench) Build(ctx context.Context, w io.Writer, tags tag.ImageTags, 
 	var results []build.Result
 	for _, artifact := range artifacts {
 		results = append(results, build.Result{
-			Target: artifact,
-			Result: &build.Artifact{
+			Target: *artifact,
+			Result: build.Artifact{
 				ImageName: artifact.ImageName,
 				Tag:       fmt.Sprintf("%s:%d", artifact.ImageName, t.tag),
 			},

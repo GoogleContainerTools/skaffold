@@ -60,10 +60,10 @@ func TestRetagLocalImages(t *testing.T) {
 			},
 			buildResults: []build.Result{
 				{
-					Target: &latest.Artifact{
+					Target: latest.Artifact{
 						ImageName: "image:tag",
 					},
-					Result: &build.Artifact{
+					Result: build.Artifact{
 						ImageName: "image",
 						Tag:       "image:tag",
 					},

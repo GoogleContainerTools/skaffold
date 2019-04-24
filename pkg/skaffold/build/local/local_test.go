@@ -76,13 +76,13 @@ func TestLocalRun(t *testing.T) {
 			expectedResults: []testResult{
 				{
 					buildResult: build.Result{
-						Target: &latest.Artifact{
+						Target: latest.Artifact{
 							ImageName: "gcr.io/test/image",
 							ArtifactType: latest.ArtifactType{
 								DockerArtifact: &latest.DockerArtifact{},
 							},
 						},
-						Result: &build.Artifact{
+						Result: build.Artifact{
 							ImageName: "gcr.io/test/image",
 							Tag:       "gcr.io/test/image:1",
 						},
@@ -105,7 +105,7 @@ func TestLocalRun(t *testing.T) {
 			expectedResults: []testResult{
 				{
 					buildResult: build.Result{
-						Target: &latest.Artifact{
+						Target: latest.Artifact{
 							ImageName: "gcr.io/test/image",
 							ArtifactType: latest.ArtifactType{
 								DockerArtifact: &latest.DockerArtifact{},
@@ -131,13 +131,13 @@ func TestLocalRun(t *testing.T) {
 			expectedResults: []testResult{
 				{
 					buildResult: build.Result{
-						Target: &latest.Artifact{
+						Target: latest.Artifact{
 							ImageName: "gcr.io/test/image",
 							ArtifactType: latest.ArtifactType{
 								DockerArtifact: &latest.DockerArtifact{},
 							},
 						},
-						Result: &build.Artifact{
+						Result: build.Artifact{
 							ImageName: "gcr.io/test/image",
 							Tag:       "gcr.io/test/image:tag@sha256:7368613235363a31e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 						},
@@ -161,7 +161,7 @@ func TestLocalRun(t *testing.T) {
 			expectedResults: []testResult{
 				{
 					buildResult: build.Result{
-						Target: &latest.Artifact{
+						Target: latest.Artifact{
 							ImageName: "gcr.io/test/image",
 							ArtifactType: latest.ArtifactType{
 								DockerArtifact: &latest.DockerArtifact{},
@@ -189,7 +189,7 @@ func TestLocalRun(t *testing.T) {
 			expectedResults: []testResult{
 				{
 					buildResult: build.Result{
-						Target: &latest.Artifact{
+						Target: latest.Artifact{
 							ImageName: "gcr.io/test/image",
 							ArtifactType: latest.ArtifactType{
 								DockerArtifact: &latest.DockerArtifact{},
@@ -207,7 +207,7 @@ func TestLocalRun(t *testing.T) {
 			expectedResults: []testResult{
 				{
 					buildResult: build.Result{
-						Target: &latest.Artifact{},
+						Target: latest.Artifact{},
 						Error:  errors.New("unable to find tag for image "),
 					},
 					shouldErr: true,
@@ -234,7 +234,7 @@ func TestLocalRun(t *testing.T) {
 			expectedResults: []testResult{
 				{
 					buildResult: build.Result{
-						Target: &latest.Artifact{
+						Target: latest.Artifact{
 							ImageName: "gcr.io/test/image",
 							ArtifactType: latest.ArtifactType{
 								DockerArtifact: &latest.DockerArtifact{
@@ -242,7 +242,7 @@ func TestLocalRun(t *testing.T) {
 								},
 							},
 						},
-						Result: &build.Artifact{
+						Result: build.Artifact{
 							ImageName: "gcr.io/test/image",
 							Tag:       "gcr.io/test/image:1",
 						},
@@ -267,7 +267,7 @@ func TestLocalRun(t *testing.T) {
 			expectedResults: []testResult{
 				{
 					buildResult: build.Result{
-						Target: &latest.Artifact{
+						Target: latest.Artifact{
 							ImageName: "gcr.io/test/image",
 							ArtifactType: latest.ArtifactType{
 								DockerArtifact: &latest.DockerArtifact{
@@ -275,7 +275,7 @@ func TestLocalRun(t *testing.T) {
 								},
 							},
 						},
-						Result: &build.Artifact{
+						Result: build.Artifact{
 							ImageName: "gcr.io/test/image",
 							Tag:       "gcr.io/test/image:1",
 						},
@@ -301,7 +301,7 @@ func TestLocalRun(t *testing.T) {
 			expectedResults: []testResult{
 				{
 					buildResult: build.Result{
-						Target: &latest.Artifact{
+						Target: latest.Artifact{
 							ImageName: "gcr.io/test/image",
 							ArtifactType: latest.ArtifactType{
 								DockerArtifact: &latest.DockerArtifact{
@@ -309,7 +309,7 @@ func TestLocalRun(t *testing.T) {
 								},
 							},
 						},
-						Result: &build.Artifact{
+						Result: build.Artifact{
 							ImageName: "gcr.io/test/image",
 							Tag:       "gcr.io/test/image:1",
 						},
@@ -335,7 +335,7 @@ func TestLocalRun(t *testing.T) {
 			expectedResults: []testResult{
 				{
 					buildResult: build.Result{
-						Target: &latest.Artifact{
+						Target: latest.Artifact{
 							ImageName: "gcr.io/test/image",
 							ArtifactType: latest.ArtifactType{
 								DockerArtifact: &latest.DockerArtifact{

@@ -27,7 +27,7 @@ func MergeWithPreviousBuilds(builds []Result, previous []Artifact) []Artifact {
 
 	merged := make([]Artifact, len(builds))
 	for i, b := range builds {
-		merged[i] = *b.Result
+		merged[i] = b.Result
 	}
 
 	for _, b := range previous {
