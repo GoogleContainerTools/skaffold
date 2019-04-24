@@ -27,20 +27,14 @@ import (
 
 // GetDependencies returns dependencies listed for a custom artifact
 func GetDependencies(ctx context.Context, workspace string, a *latest.CustomArtifact) ([]string, error) {
-	switch {
-	case a.Dependencies.Dockerfile != "":
-		return docker.GetDependencies(ctx, workspace, a.Dependencies.Dockerfile, nil, nil)
-
-	default:
-		files, err := docker.WalkWorkspace(workspace, a.Dependencies.Ignore, a.Dependencies.Paths)
-		if err != nil {
-			return nil, errors.Wrapf(err, "walking workspace %s", workspace)
-		}
-		var dependencies []string
-		for file := range files {
-			dependencies = append(dependencies, file)
-		}
-		sort.Strings(dependencies)
-		return dependencies, nil
+	files, err := docker.WalkWorkspace(workspace, a.Dependencies.Ignore, a.Dependencies.Paths)
+	if err != nil {
+		return nil, errors.Wrapf(err, "walking workspace %s", workspace)
 	}
+	var dependencies []string
+	for file := range files {
+		dependencies = append(dependencies, file)
+	}
+	sort.Strings(dependencies)
+	return dependencies, nil
 }

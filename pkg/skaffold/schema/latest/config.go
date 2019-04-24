@@ -592,8 +592,6 @@ type CustomArtifact struct {
 
 // CustomDependencies is used to specify dependencies for an artifact built by a custom build script.
 type CustomDependencies struct {
-	// Dockerfile can be set if the custom builder uses a Dockerfile to build images.
-	Dockerfile string `yaml:"dockerfile,omitempty" yamltags:"oneOf=dependency"`
 	// Paths should be set to the dependencies for this artifact if no Dockerfile exists.
 	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
 	// Ignore specifies the paths that should be ignored by the watcher. If a file exists in `paths` and in `ignore`, it will be ignored.
