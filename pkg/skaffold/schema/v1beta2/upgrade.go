@@ -30,8 +30,8 @@ import (
 // kaniko docker config
 // 2. No removals
 // 3. No updates
-func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
-	var newConfig next.SkaffoldPipeline
+func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
+	var newConfig next.SkaffoldConfig
 
 	err := pkgutil.CloneThroughJSON(config, &newConfig)
 	newConfig.APIVersion = next.Version
