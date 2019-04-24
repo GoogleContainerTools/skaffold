@@ -32,8 +32,9 @@ import (
 
 var (
 	quietFlag bool
-	// buildFormatFlag = flags.NewTemplateFlag("{{json .}}", flags.BuildOutput{})
-	template        = "{{ range .Builds}}{{if not .}}{{else}}{{.Result}}{{end}}{{end}}"
+	// buildFormatFlag = flags.NewTemplateFlag("{{.}}", BuildOutput{})
+	template = `{{ range .Builds}}{{if not .}}{{else}}{{.Target.ImageName}} -> {{if .Error}}Error: {{.Error}}{{else}}{{.Result.Tag}}{{end}}{{end}}
+{{end}}`
 	buildFormatFlag = flags.NewTemplateFlag(template, BuildOutput{})
 )
 
@@ -83,10 +84,6 @@ func runBuild(out io.Writer) error {
 
 	bRes, err := createRunnerAndBuildFunc(ctx, buildOut)
 
-	if err != nil {
-		return err
-	}
-
 	if quietFlag {
 		cmdOut := flags.BuildOutput{Builds: bRes}
 		if err := buildFormatFlag.Template().Execute(out, cmdOut); err != nil {
@@ -94,7 +91,7 @@ func runBuild(out io.Writer) error {
 		}
 	}
 
-	return nil
+	return err
 }
 
 func createRunnerAndBuild(ctx context.Context, buildOut io.Writer) ([]build.Result, error) {
@@ -110,12 +107,4 @@ func createRunnerAndBuild(ctx context.Context, buildOut io.Writer) ([]build.Resu
 		}
 	}
 	return runner.BuildAndTest(ctx, buildOut, targetArtifacts)
-	// if err != nil {
-	// return nil, err
-	// }
-	// results := make([]build.Artifact, len(bRes))
-	// for i, r := range bRes {
-	// 	results[i] = *r.Result
-	// }
-	// return results, nil
 }

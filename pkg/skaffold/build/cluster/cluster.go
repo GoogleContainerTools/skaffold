@@ -24,23 +24,20 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // Build builds a list of artifacts with Kaniko.
 func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Result, error) {
 	teardownPullSecret, err := b.setupPullSecret(out)
 	if err != nil {
-		logrus.Errorf("error setting up pull secret for kaniko build: %s", err.Error())
-		return nil, nil
+		return nil, errors.Wrap(err, "error setting up pull secret for kaniko build")
 	}
 	defer teardownPullSecret()
 
 	if b.DockerConfig != nil {
 		teardownDockerConfigSecret, err := b.setupDockerConfigSecret(out)
 		if err != nil {
-			logrus.Errorf("error setting up docker config secret for kaniko build: %s", err.Error())
-			return nil, nil
+			return nil, errors.Wrap(err, "error setting up docker config secret for kaniko build")
 		}
 		defer teardownDockerConfigSecret()
 	}

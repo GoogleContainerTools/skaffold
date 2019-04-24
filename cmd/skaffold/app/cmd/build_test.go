@@ -26,22 +26,44 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestQuietFlag(t *testing.T) {
-	mockCreateRunner := func(context.Context, io.Writer) ([]build.Result, error) {
+	singleArtifactRunner := func(context.Context, io.Writer) ([]build.Result, error) {
 		return []build.Result{{
+			Target: latest.Artifact{
+				ImageName: "gcr.io/skaffold/example",
+			},
 			Result: build.Artifact{
 				ImageName: "gcr.io/skaffold/example",
-				Tag:       "test",
+				Tag:       "gcr.io/skaffold/example:test",
 			},
 		}}, nil
 	}
 
-	defer func(f func(context.Context, io.Writer) ([]build.Result, error)) {
-		createRunnerAndBuildFunc = f
-	}(createRunnerAndBuildFunc)
+	doubleArtifactRunner := func(context.Context, io.Writer) ([]build.Result, error) {
+		return []build.Result{
+			{
+				Target: latest.Artifact{
+					ImageName: "gcr.io/skaffold/image1",
+				},
+				Result: build.Artifact{
+					ImageName: "gcr.io/skaffold/image1",
+					Tag:       "gcr.io/skaffold/image1:tag",
+				},
+			},
+			{
+				Target: latest.Artifact{
+					ImageName: "gcr.io/skaffold/image2",
+				},
+				Error: errors.New("build error"),
+			},
+		}, nil
+	}
+
+	originalBuildFormatFlag := buildFormatFlag
 
 	var tests = []struct {
 		description    string
@@ -51,24 +73,26 @@ func TestQuietFlag(t *testing.T) {
 		shouldErr      bool
 	}{
 		{
-			description:    "quiet flag print build images with no template",
-			expectedOutput: []byte("{gcr.io/skaffold/example test}"),
-			shouldErr:      false,
-			mock:           mockCreateRunner,
+			description:    "single image with no template",
+			expectedOutput: []byte("gcr.io/skaffold/example -> gcr.io/skaffold/example:test\n"),
+			mock:           singleArtifactRunner,
 		},
 		{
-			description:    "quiet flag print build images applies pattern specified in template ",
+			description:    "single image with specified template",
 			template:       "{{range .Builds}}{{.Result.ImageName}} -> {{.Result.Tag}}\n{{end}}",
-			expectedOutput: []byte("gcr.io/skaffold/example -> test\n"),
-			shouldErr:      false,
-			mock:           mockCreateRunner,
+			expectedOutput: []byte("gcr.io/skaffold/example -> gcr.io/skaffold/example:test\n"),
+			mock:           singleArtifactRunner,
 		},
 		{
-			description:    "build errors out when incorrect template specified",
-			template:       "{{.Incorrect}}",
-			expectedOutput: nil,
-			shouldErr:      true,
-			mock:           mockCreateRunner,
+			description: "build errors out when incorrect template specified",
+			template:    "{{.Incorrect}}",
+			shouldErr:   true,
+			mock:        singleArtifactRunner,
+		},
+		{
+			description:    "two images, no template, one error",
+			expectedOutput: []byte("gcr.io/skaffold/image1 -> gcr.io/skaffold/image1:tag\ngcr.io/skaffold/image2 -> Error: build error\n"),
+			mock:           doubleArtifactRunner,
 		},
 	}
 
@@ -79,7 +103,7 @@ func TestQuietFlag(t *testing.T) {
 			if test.template != "" {
 				buildFormatFlag = flags.NewTemplateFlag(test.template, flags.BuildOutput{})
 			}
-			defer func() { buildFormatFlag = nil }()
+			defer func() { buildFormatFlag = originalBuildFormatFlag }()
 			createRunnerAndBuildFunc = test.mock
 			var output bytes.Buffer
 			err := runBuild(&output)
