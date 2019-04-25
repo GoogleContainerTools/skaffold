@@ -248,14 +248,29 @@ package merkletrie
 // h: else of i
 
 import (
+	"context"
+	"errors"
 	"fmt"
 
 	"gopkg.in/src-d/go-git.v4/utils/merkletrie/noder"
 )
 
+var (
+	ErrCanceled = errors.New("operation canceled")
+)
+
 // DiffTree calculates the list of changes between two merkletries.  It
 // uses the provided hashEqual callback to compare noders.
 func DiffTree(fromTree, toTree noder.Noder,
+	hashEqual noder.Equal) (Changes, error) {
+	return DiffTreeContext(context.Background(), fromTree, toTree, hashEqual)
+}
+
+// DiffTree calculates the list of changes between two merkletries.  It
+// uses the provided hashEqual callback to compare noders.
+// Error will be returned if context expires
+// Provided context must be non nil
+func DiffTreeContext(ctx context.Context, fromTree, toTree noder.Noder,
 	hashEqual noder.Equal) (Changes, error) {
 	ret := NewChanges()
 
@@ -265,6 +280,12 @@ func DiffTree(fromTree, toTree noder.Noder,
 	}
 
 	for {
+		select {
+		case <-ctx.Done():
+			return nil, ErrCanceled
+		default:
+		}
+
 		from := ii.from.current
 		to := ii.to.current
 
