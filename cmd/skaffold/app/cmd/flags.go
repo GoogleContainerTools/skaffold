@@ -24,7 +24,6 @@ import (
 
 const (
 	BuildAnnotation  = "build"
-	DevAnnotation    = "dev"
 	DeployAnnotation = "deploy"
 	TestAnnotation   = "test"
 	DeleteAnnotation = "delete"
@@ -36,7 +35,6 @@ var (
 	CommandFlags = commandFlagSet("common")
 
 	AnnotationToFlag = map[string]*flag.FlagSet{
-		DevAnnotation:    devFlagSet(DevAnnotation),
 		BuildAnnotation:  buildFlagSet(BuildAnnotation),
 		EventsAnnotation: eventsAPIFlagSet(EventsAnnotation),
 		DeployAnnotation: deployFlagSet(DeployAnnotation),
@@ -52,13 +50,6 @@ func commandFlagSet(name string) *flag.FlagSet {
 	commonFlags.StringVarP(&opts.Namespace, "namespace", "n", "", "Run deployments in the specified namespace")
 	commonFlags.StringVarP(&opts.DefaultRepo, "default-repo", "d", "", "Default repository value (overrides global config)")
 	return commonFlags
-}
-
-func devFlagSet(name string) *flag.FlagSet {
-	devFlags := flag.NewFlagSet(name, flag.ContinueOnError)
-	devFlags.BoolVar(&opts.Tail, "tail", true, "Stream logs from deployed objects. (default true)")
-	devFlags.BoolVar(&opts.NoPrune, "no-prune", false, "Skip removing images and containers built by Skaffold")
-	return devFlags
 }
 
 func buildFlagSet(name string) *flag.FlagSet {
@@ -114,4 +105,9 @@ func getAnnotatedFlags(name string, annotations map[string]string) *flag.FlagSet
 		}
 	}
 	return allFlags
+}
+
+func overrideTailFlag(cmd *cobra.Command) {
+	cmd.Flags().BoolVar(&opts.Tail, "tail", true, "Stream logs from deployed objects")
+
 }

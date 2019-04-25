@@ -55,6 +55,7 @@ func NewCmdDebug(out io.Writer) *cobra.Command {
 			EventsAnnotation: "true",
 		},
 	}
+	overrideTailFlag(cmd)
 	AddFlags(cmd)
 	return cmd
 >>>>>>> Fixed --tail and removed opts.TailDev

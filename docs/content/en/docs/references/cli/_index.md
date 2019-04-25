@@ -314,7 +314,7 @@ Flags:
       --rpc-http-port int               tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                    tcp port to expose event API (default 50051)
       --skip-tests                      Whether to skip the tests after building
-      --tail                            Stream logs from deployed objects
+      --tail                            Stream logs from deployed objects (default true)
       --toot                            Emit a terminal beep after the deploy is complete
 
 Global Flags:
@@ -516,7 +516,7 @@ Flags:
       --rpc-http-port int               tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                    tcp port to expose event API (default 50051)
       --skip-tests                      Whether to skip the tests after building
-      --tail                            Stream logs from deployed objects
+      --tail                            Stream logs from deployed objects (default true)
       --toot                            Emit a terminal beep after the deploy is complete
       --trigger string                  How are changes detected? (polling, manual or notify) (default "polling")
   -w, --watch-image strings             Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
@@ -663,6 +663,7 @@ Flags:
 =======
       --cache-artifacts                 Set to true to enable caching of artifacts.
       --cache-file string               Specify the location of the cache file (default $HOME/.skaffold/cache)
+      --cleanup                         Delete deployments after dev or debug mode is interrupted (default true)
   -d, --default-repo string             Default repository value (overrides global config)
       --enable-rpc skaffold dev         Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
   -f, --filename string                 Filename or URL to the pipeline file (default "skaffold.yaml")
@@ -671,6 +672,7 @@ Flags:
   -l, --label stringArray               Add custom labels to deployed objects. Set multiple times for multiple labels.
   -n, --namespace string                Run deployments in the specified namespace
       --no-prune                        Skip removing images and containers built by Skaffold
+      --port-forward                    Port-forward exposed container ports within pods (default true)
   -p, --profile stringArray             Activate profiles by name
       --rpc-http-port int               tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                    tcp port to expose event API (default 50051)
@@ -690,6 +692,7 @@ Env vars:
 
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
+* `SKAFFOLD_CLEANUP` (same as `--cleanup`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
@@ -698,7 +701,11 @@ Env vars:
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
+<<<<<<< HEAD
 * `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
+=======
+* `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
+>>>>>>> Override tail config
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
