@@ -39,6 +39,7 @@ type GitCommit struct {
 	variant int
 }
 
+// NewGitCommit creates a new git commit tagger. It fails if the tagger variant is invalid.
 func NewGitCommit(taggerVariant string) (*GitCommit, error) {
 	var variant int
 	switch strings.ToLower(taggerVariant) {
@@ -50,7 +51,7 @@ func NewGitCommit(taggerVariant string) (*GitCommit, error) {
 	case "abbrevcommitsha":
 		variant = abbrevCommitSha
 	default:
-		return nil, fmt.Errorf("%s is no valid git tagger variant", taggerVariant)
+		return nil, fmt.Errorf("%s is not a valid git tagger variant", taggerVariant)
 	}
 
 	return &GitCommit{variant: variant}, nil
@@ -94,7 +95,7 @@ func (c *GitCommit) makeGitTag(workingDir string) (string, error) {
 			args = append(args, "--abbrev-commit")
 		}
 	default:
-		return "", fmt.Errorf("this should not happen, please raise an issue")
+		return "", errors.New("invalid git tag variant: defaulting to 'dirty'")
 	}
 
 	return runGit(workingDir, args...)
