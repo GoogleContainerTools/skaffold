@@ -5,15 +5,15 @@
 
 [[constraint]]
   name = "github.com/pkg/errors"
-  version = "0.8.0"
+  version = "0.8.1"
 
 [[constraint]]
   name = "github.com/google/go-containerregistry"
-  revision = "7df26a6795af089f2cac25d48650d07960b2b33d"
+  revision = "7d6d1d3cd63b486f713ddf83be5956744f4e1bb3"
 
 [[constraint]]
   name = "github.com/sirupsen/logrus"
-  version = "1.0.5"
+  version = "1.4.1"
 
 [[constraint]]
   name = "github.com/spf13/cobra"
@@ -53,7 +53,7 @@
 
 [[constraint]]
   name = "gopkg.in/src-d/go-git.v4"
-  revision = "v4.4.0"
+  revision = "v4.11.0"
 
 [[constraint]]
   name = "github.com/google/go-github"
