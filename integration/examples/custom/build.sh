@@ -5,7 +5,8 @@ TAR_PATH=$(bazel info bazel-bin)
 docker load -i $TAR_PATH/skaffold_example.tar
 docker tag bazel:skaffold_example $IMAGE_NAME
 
-if [[ $PUSH_IMAGE = "true" ]]
+
+if $PUSH_IMAGE
 then
     docker push $IMAGE_NAME
 fi

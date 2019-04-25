@@ -26,7 +26,9 @@ func TestRetrieveEnv(t *testing.T) {
 	tests := []struct {
 		description string
 		tag         string
+		pushImage   bool
 		environ     []string
+		dockerEnv   []string
 		expected    []string
 	}{
 
@@ -34,12 +36,22 @@ func TestRetrieveEnv(t *testing.T) {
 			description: "make sure tags are correct",
 			tag:         "gcr.io/image/tag:mytag",
 			environ:     nil,
-			expected:    []string{"IMAGE_NAME=gcr.io/image/tag:mytag"},
+			expected:    []string{"IMAGE_NAME=gcr.io/image/tag:mytag", "PUSH_IMAGE=false"},
 		}, {
 			description: "make sure environ is correctly applied",
 			tag:         "gcr.io/image/tag:anothertag",
 			environ:     []string{"PATH=/path", "HOME=/root"},
-			expected:    []string{"IMAGE_NAME=gcr.io/image/tag:anothertag", "PATH=/path", "HOME=/root"},
+			expected:    []string{"IMAGE_NAME=gcr.io/image/tag:anothertag", "PUSH_IMAGE=false", "PATH=/path", "HOME=/root"},
+		}, {
+			description: "make sure docker env is correctly applied",
+			tag:         "gcr.io/image/docker:tag",
+			dockerEnv:   []string{"DOCKER_API_VERSION=1.3", "DOCKER_CERT_PATH=/home/.minikube/certs"},
+			expected:    []string{"IMAGE_NAME=gcr.io/image/docker:tag", "PUSH_IMAGE=false", "DOCKER_API_VERSION=1.3", "DOCKER_CERT_PATH=/home/.minikube/certs"},
+		}, {
+			description: "push image is true",
+			tag:         "gcr.io/image/push:tag",
+			pushImage:   true,
+			expected:    []string{"IMAGE_NAME=gcr.io/image/push:tag", "PUSH_IMAGE=true"},
 		},
 	}
 
@@ -52,7 +64,7 @@ func TestRetrieveEnv(t *testing.T) {
 			environ = func() []string {
 				return test.environ
 			}
-			actual := retrieveEnv(test.tag)
+			actual := retrieveEnv(test.tag, test.pushImage, test.dockerEnv)
 			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expected, actual)
 		})
 	}

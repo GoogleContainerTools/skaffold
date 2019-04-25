@@ -4,5 +4,5 @@ metadata:
   name: bazel
 spec:
   containers:
-  - name: bazel
-    image: gcr.io/k8s-skaffold/skaffold-bazel
+    - name: bazel
+      image: gcr.io/k8s-skaffold/skaffold-bazel
