@@ -13,7 +13,7 @@
 
 [[constraint]]
   name = "github.com/sirupsen/logrus"
-  version = "1.0.5"
+  version = "1.4.1"
 
 [[constraint]]
   name = "github.com/spf13/cobra"
