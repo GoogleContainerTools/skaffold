@@ -25,7 +25,8 @@ import (
 
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v1beta8 to v1beta9
-// 1. No additions
+// 1. Additions:
+//    gitTagger/variant
 // 2. No removals
 // 3. No updates
 func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
