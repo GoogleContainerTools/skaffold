@@ -14,19 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta8
+package v1beta9
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta9"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v1beta8 to v1beta9
+// Config changes from v1beta9 to v1beta10
 // 1. No additions
-// 2. No removals
+// 2. Removed all schemas associated with builder plugins
 // 3. No updates
 func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
@@ -43,10 +45,39 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 		}
 	}
 
-	// convert Kaniko (should be same)
+	// convert Build (should be same)
 	var newBuild next.BuildConfig
 	if err := pkgutil.CloneThroughJSON(config.Build, &newBuild); err != nil {
 		return nil, errors.Wrap(err, "converting new build")
+	}
+
+	for i, a := range config.Build.Artifacts {
+		if a.BuilderPlugin == nil {
+			continue
+		}
+		if a.BuilderPlugin.Name == "bazel" {
+			var ba *latest.BazelArtifact
+			contents, err := yaml.Marshal(a.BuilderPlugin.Properties)
+			if err != nil {
+				return nil, errors.Wrap(err, "unmarshalling properties")
+			}
+			if err := yaml.Unmarshal(contents, &ba); err != nil {
+				return nil, errors.Wrap(err, "unmarshalling bazel artifact")
+			}
+			newBuild.Artifacts[i].BazelArtifact = ba
+		}
+
+		if a.BuilderPlugin.Name == "docker" {
+			var da *latest.DockerArtifact
+			contents, err := yaml.Marshal(a.BuilderPlugin.Properties)
+			if err != nil {
+				return nil, errors.Wrap(err, "unmarshalling properties")
+			}
+			if err := yaml.Unmarshal(contents, &da); err != nil {
+				return nil, errors.Wrap(err, "unmarshalling bazel artifact")
+			}
+			newBuild.Artifacts[i].DockerArtifact = da
+		}
 	}
 
 	// convert Test (should be the same)

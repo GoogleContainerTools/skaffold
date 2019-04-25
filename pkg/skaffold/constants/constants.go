@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/sirupsen/logrus"
 )
 
@@ -61,18 +60,8 @@ const (
 	DefaultSkaffoldDir = ".skaffold"
 	DefaultCacheFile   = "cache"
 
-	SkaffoldPluginKey       = "SKAFFOLD_PLUGIN_KEY"
-	SkaffoldPluginValue     = "1337"
-	SkaffoldPluginName      = "SKAFFOLD_PLUGIN_NAME"
-	DockerBuilderPluginName = "docker"
-
 	DefaultRPCPort     = 50051
 	DefaultRPCHTTPPort = 50052
-)
-
-var (
-	GoogleCloudBuild latest.ExecEnvironment = "googleCloudBuild"
-	Local            latest.ExecEnvironment = "local"
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}

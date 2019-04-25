@@ -14,22 +14,33 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta8
+package v1beta9
 
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta9"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	yaml "gopkg.in/yaml.v2"
 )
 
 func TestUpgrade(t *testing.T) {
-	yaml := `apiVersion: skaffold/v1beta8
+	yaml := `apiVersion: skaffold/v1beta9
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
+    plugin:
+      name: docker
+      properties:
+        dockerfile: path/to/Dockerfile
+  - image: gcr.io/k8s-skaffold/bazel
+    plugin:
+      name: bazel
+      properties:
+        target: //mytarget
+  executionEnvironment:
+    name: local
 test:
   - image: gcr.io/k8s-skaffold/skaffold-example
     structureTests:
@@ -59,11 +70,16 @@ profiles:
         manifests:
         - k8s-*
 `
-	expected := `apiVersion: skaffold/v1beta9
+	expected := `apiVersion: skaffold/v1beta10
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
+    docker:
+      dockerfile: path/to/Dockerfile
+  - image: gcr.io/k8s-skaffold/bazel
+    bazel:
+      target: //mytarget
 test:
   - image: gcr.io/k8s-skaffold/skaffold-example
     structureTests:
@@ -97,14 +113,14 @@ profiles:
 }
 
 func verifyUpgrade(t *testing.T, input, output string) {
-	config := NewSkaffoldConfig()
-	err := yaml.UnmarshalStrict([]byte(input), config)
-	testutil.CheckErrorAndDeepEqual(t, false, err, Version, config.GetVersion())
+	pipeline := NewSkaffoldConfig()
+	err := yaml.UnmarshalStrict([]byte(input), pipeline)
+	testutil.CheckErrorAndDeepEqual(t, false, err, Version, pipeline.GetVersion())
 
-	upgraded, err := config.Upgrade()
+	upgraded, err := pipeline.Upgrade()
 	testutil.CheckError(t, false, err)
 
-	expected := next.NewSkaffoldConfig()
+	expected := latest.NewSkaffoldConfig()
 	err = yaml.UnmarshalStrict([]byte(output), expected)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, upgraded)
