@@ -32,7 +32,7 @@ import (
 
 var (
 	quietFlag       bool
-	buildFormatFlag = flags.NewTemplateFlag("{{.}}", flags.BuildOutput{})
+	buildFormatFlag = flags.NewTemplateFlag("{{json .}}", flags.BuildOutput{})
 )
 
 // For testing

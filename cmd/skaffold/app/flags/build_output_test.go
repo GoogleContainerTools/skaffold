@@ -43,23 +43,23 @@ func TestBuildOutputSet(t *testing.T) {
 		expectedBuildOutput BuildOutput
 	}{
 		{
-			description: "set returns correct build output format",
+			description: "set returns correct build output format for json",
 			buildOutputBytes: []byte(`{
 "builds": [{
-	"imageName": "gcr.io/test1",
+	"imageName": "gcr.io/k8s/test1",
 	"tag": "sha256@foo"
 	}, {
-	"imageName": "gcr.io/test2",
+	"imageName": "gcr.io/k8s/test2",
 	"tag": "sha256@bar"
   }]
 }`),
 			setValue: "test.in",
 			expectedBuildOutput: BuildOutput{
 				Builds: []build.Artifact{{
-					ImageName: "gcr.io/test1",
+					ImageName: "gcr.io/k8s/test1",
 					Tag:       "sha256@foo",
 				}, {
-					ImageName: "gcr.io/test2",
+					ImageName: "gcr.io/k8s/test2",
 					Tag:       "sha256@bar",
 				}},
 			},

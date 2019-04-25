@@ -50,7 +50,7 @@ func TestQuietFlag(t *testing.T) {
 	}{
 		{
 			description:    "quiet flag print build images with no template",
-			expectedOutput: []byte("{[{gcr.io/skaffold/example test}]}"),
+			expectedOutput: []byte(`{"builds":[{"imageName":"gcr.io/skaffold/example","tag":"test"}]}`),
 			shouldErr:      false,
 			mock:           mockCreateRunner,
 		},

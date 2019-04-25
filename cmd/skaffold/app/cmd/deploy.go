@@ -44,7 +44,7 @@ func NewCmdDeploy(out io.Writer) *cobra.Command {
 	AddRunDevFlags(cmd)
 	AddRunDeployFlags(cmd)
 	cmd.Flags().VarP(&preBuiltImages, "images", "i", "A list of pre-built images to deploy")
-	cmd.Flags().VarP(&buildOutputFile, "build-artifacts", "a", "`skaffold build -o {{.}}` output")
+	cmd.Flags().VarP(&buildOutputFile, "build-artifacts", "a", "Output of `skaffold build --quiet {{json .}} > build.out`")
 	return cmd
 }
 
@@ -58,12 +58,13 @@ func runDeploy(out io.Writer) error {
 	}
 	defer runner.RPCServerShutdown()
 
-	deployArtifacts := build.MergeWithPreviousBuilds(buildOutputFile.BuildAritifacts(), preBuiltImages.Artifacts())
+	// If the BuildAritfacts contains an image in the preBuilt list,
+	// use image from BuildArtifacts instead
+	deployArtifacts := mergeDeployArtifacts(buildOutputFile.BuildAritifacts(), preBuiltImages.Artifacts())
 
-	if err := runner.Deploy(ctx, out, deployArtifacts); err != nil {
-		return err
-	}
+	return runner.Deploy(ctx, out, deployArtifacts)
+}
 
-	runner.TailLogs(ctx, out, nil, deployArtifacts)
-	return nil
+func mergeDeployArtifacts(builds, previous []build.Artifact) []build.Artifact {
+	return build.MergeWithPreviousBuilds(buildOutputFile.BuildAritifacts(), preBuiltImages.Artifacts())
 }

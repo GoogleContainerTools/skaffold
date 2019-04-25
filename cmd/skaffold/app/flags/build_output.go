@@ -55,7 +55,7 @@ func (t *BuildOutputFileFlag) Set(value string) error {
 	if err != nil {
 		return err
 	}
-	buildOutput, err := parseBuildOutput(b)
+	buildOutput, err := ParseBuildOutput(b)
 	if err != nil {
 		return errors.Wrap(err, "setting template flag")
 	}
@@ -81,7 +81,8 @@ func NewBuildOutputFileFlag(value string) *BuildOutputFileFlag {
 	}
 }
 
-func parseBuildOutput(b []byte) (*BuildOutput, error) {
+// ParseBuildOutput parses BuildOutput from bytes
+func ParseBuildOutput(b []byte) (*BuildOutput, error) {
 	buildOutput := &BuildOutput{}
 	if err := json.Unmarshal(b, buildOutput); err != nil {
 		return nil, err

@@ -23,6 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
@@ -187,4 +189,13 @@ func (k *NSKubernetesClient) debug(entities string) {
 
 func isStable(dp *appsv1.Deployment) bool {
 	return dp.Generation <= dp.Status.ObservedGeneration && *(dp.Spec.Replicas) == dp.Status.Replicas
+}
+
+func getBuildArtifacts(t *testing.T, filename string) []build.Artifact {
+	flag := flags.NewBuildOutputFileFlag(filename)
+	if err := flag.Set(filename); err != nil {
+		t.Errorf("Invalid build output. Could not parse the build output due to %s", err)
+	}
+	return flag.BuildAritifacts()
+
 }
