@@ -19,7 +19,7 @@ package v1beta8
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta9"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -30,6 +30,15 @@ kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
+    plugin:
+      name: docker
+      properties:
+        dockerfile: path/to/Dockerfile
+  - image: gcr.io/k8s-skaffold/bazel
+    plugin:
+      name: bazel
+      properties:
+        target: //mytarget
 test:
   - image: gcr.io/k8s-skaffold/skaffold-example
     structureTests:
@@ -64,6 +73,11 @@ kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
+    docker:
+      dockerfile: path/to/Dockerfile
+  - image: gcr.io/k8s-skaffold/bazel
+    bazel:
+      target: //mytarget
 test:
   - image: gcr.io/k8s-skaffold/skaffold-example
     structureTests:
@@ -104,7 +118,7 @@ func verifyUpgrade(t *testing.T, input, output string) {
 	upgraded, err := config.Upgrade()
 	testutil.CheckError(t, false, err)
 
-	expected := next.NewSkaffoldConfig()
+	expected := latest.NewSkaffoldConfig()
 	err = yaml.UnmarshalStrict([]byte(output), expected)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, upgraded)
