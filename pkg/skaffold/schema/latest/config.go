@@ -69,7 +69,7 @@ type BuildConfig struct {
 
 	// TagPolicy *beta* determines how images are tagged.
 	// A few strategies are provided here, although you most likely won't need to care!
-	// If not specified, it defaults to `gitCommit: {}`.
+	// If not specified, it defaults to `gitCommit: {variant: Tags}`.
 	TagPolicy TagPolicy `yaml:"tagPolicy,omitempty"`
 
 	BuildType `yaml:",inline"`
@@ -94,7 +94,13 @@ type TagPolicy struct {
 type ShaTagger struct{}
 
 // GitTagger *beta* tags images with the git tag or commit of the artifact's workspace.
-type GitTagger struct{}
+type GitTagger struct {
+	// Variant determines the behavior of the git tagger. Valid variants are
+	// `Tags` (default): use git tags or fall back to abbreviated commit hash.
+	// `CommitSha`: use the full git commit sha.
+	// `AbbrevCommitSha`: use the abbreviated git commit sha.
+	Variant string `yaml:"variant,omitempty"`
+}
 
 // EnvTemplateTagger *beta* tags images with a configurable template string.
 type EnvTemplateTagger struct {
