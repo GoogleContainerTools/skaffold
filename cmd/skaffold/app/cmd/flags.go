@@ -56,7 +56,7 @@ func commandFlagSet(name string) *flag.FlagSet {
 
 func devFlagSet(name string) *flag.FlagSet {
 	devFlags := flag.NewFlagSet(name, flag.ContinueOnError)
-	devFlags.BoolVar(&opts.TailDev, "tail", true, "Stream logs from deployed objects")
+	devFlags.BoolVar(&opts.Tail, "tail", true, "Stream logs from deployed objects. (default true)")
 	devFlags.BoolVar(&opts.NoPrune, "no-prune", false, "Skip removing images and containers built by Skaffold")
 	return devFlags
 }
