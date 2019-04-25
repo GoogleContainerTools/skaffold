@@ -33,7 +33,12 @@ build:
     plugin:
       name: docker
       properties:
-        first: one
+        dockerfile: path/to/Dockerfile
+  - image: gcr.io/k8s-skaffold/bazel
+    plugin:
+      name: bazel
+      properties:
+        target: //mytarget
   executionEnvironment:
     name: local
 test:
@@ -70,6 +75,11 @@ kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
+    docker:
+      dockerfile: path/to/Dockerfile
+  - image: gcr.io/k8s-skaffold/bazel
+    bazel:
+      target: //mytarget
 test:
   - image: gcr.io/k8s-skaffold/skaffold-example
     structureTests:

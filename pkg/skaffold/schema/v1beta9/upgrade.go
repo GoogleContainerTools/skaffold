@@ -17,10 +17,12 @@ limitations under the License.
 package v1beta9
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 // Upgrade upgrades a configuration to the next version.
@@ -47,6 +49,35 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newBuild next.BuildConfig
 	if err := pkgutil.CloneThroughJSON(config.Build, &newBuild); err != nil {
 		return nil, errors.Wrap(err, "converting new build")
+	}
+
+	for i, a := range config.Build.Artifacts {
+		if a.BuilderPlugin == nil {
+			continue
+		}
+		if a.BuilderPlugin.Name == "bazel" {
+			var ba *latest.BazelArtifact
+			contents, err := yaml.Marshal(a.BuilderPlugin.Properties)
+			if err != nil {
+				return nil, errors.Wrap(err, "unmarshalling properties")
+			}
+			if err := yaml.Unmarshal(contents, &ba); err != nil {
+				return nil, errors.Wrap(err, "unmarshalling bazel artifact")
+			}
+			newBuild.Artifacts[i].BazelArtifact = ba
+		}
+
+		if a.BuilderPlugin.Name == "docker" {
+			var da *latest.DockerArtifact
+			contents, err := yaml.Marshal(a.BuilderPlugin.Properties)
+			if err != nil {
+				return nil, errors.Wrap(err, "unmarshalling properties")
+			}
+			if err := yaml.Unmarshal(contents, &da); err != nil {
+				return nil, errors.Wrap(err, "unmarshalling bazel artifact")
+			}
+			newBuild.Artifacts[i].DockerArtifact = da
+		}
 	}
 
 	// convert Test (should be the same)
