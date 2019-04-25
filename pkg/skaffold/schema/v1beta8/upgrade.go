@@ -45,39 +45,20 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 		}
 	}
 
+	for i, p := range config.Profiles {
+		if err := updateBuild(&p.Pipeline.Build, &newProfiles[i].Pipeline.Build); err != nil {
+			return nil, errors.Wrapf(err, "updating build for profile %s", p.Name)
+		}
+	}
+
 	// convert Build (should be same)
 	var newBuild latest.BuildConfig
 	if err := pkgutil.CloneThroughJSON(config.Build, &newBuild); err != nil {
 		return nil, errors.Wrap(err, "converting new build")
 	}
 
-	for i, a := range config.Build.Artifacts {
-		if a.BuilderPlugin == nil {
-			continue
-		}
-		if a.BuilderPlugin.Name == "bazel" {
-			var ba *latest.BazelArtifact
-			contents, err := yaml.Marshal(a.BuilderPlugin.Properties)
-			if err != nil {
-				return nil, errors.Wrap(err, "unmarshalling properties")
-			}
-			if err := yaml.Unmarshal(contents, &ba); err != nil {
-				return nil, errors.Wrap(err, "unmarshalling bazel artifact")
-			}
-			newBuild.Artifacts[i].BazelArtifact = ba
-		}
-
-		if a.BuilderPlugin.Name == "docker" {
-			var da *latest.DockerArtifact
-			contents, err := yaml.Marshal(a.BuilderPlugin.Properties)
-			if err != nil {
-				return nil, errors.Wrap(err, "unmarshalling properties")
-			}
-			if err := yaml.Unmarshal(contents, &da); err != nil {
-				return nil, errors.Wrap(err, "unmarshalling bazel artifact")
-			}
-			newBuild.Artifacts[i].DockerArtifact = da
-		}
+	if err := updateBuild(&config.Build, &newBuild); err != nil {
+		return nil, errors.Wrap(err, "updating build")
 	}
 
 	// convert Test (should be the same)
@@ -96,4 +77,61 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 		},
 		Profiles: newProfiles,
 	}, nil
+}
+
+func updateBuild(config *BuildConfig, newBuild *latest.BuildConfig) error {
+	for i, a := range config.Artifacts {
+		if a.BuilderPlugin == nil {
+			continue
+		}
+		if a.BuilderPlugin.Name == "bazel" {
+			var ba *latest.BazelArtifact
+			contents, err := yaml.Marshal(a.BuilderPlugin.Properties)
+			if err != nil {
+				return errors.Wrap(err, "unmarshalling properties")
+			}
+			if err := yaml.Unmarshal(contents, &ba); err != nil {
+				return errors.Wrap(err, "unmarshalling bazel artifact")
+			}
+			newBuild.Artifacts[i].BazelArtifact = ba
+		}
+
+		if a.BuilderPlugin.Name == "docker" {
+			var da *latest.DockerArtifact
+			contents, err := yaml.Marshal(a.BuilderPlugin.Properties)
+			if err != nil {
+				return errors.Wrap(err, "unmarshalling properties")
+			}
+			if err := yaml.Unmarshal(contents, &da); err != nil {
+				return errors.Wrap(err, "unmarshalling bazel artifact")
+			}
+			newBuild.Artifacts[i].DockerArtifact = da
+		}
+	}
+
+	if c := config.ExecutionEnvironment; c != nil {
+		if c.Name == "googleCloudBuild" {
+			var gcb *latest.GoogleCloudBuild
+			contents, err := yaml.Marshal(c.Properties)
+			if err != nil {
+				return errors.Wrap(err, "unmarshalling properties")
+			}
+			if err := yaml.Unmarshal(contents, &gcb); err != nil {
+				return errors.Wrap(err, "unmarshalling bazel artifact")
+			}
+			newBuild.GoogleCloudBuild = gcb
+		}
+		if c.Name == "local" {
+			var local *latest.LocalBuild
+			contents, err := yaml.Marshal(c.Properties)
+			if err != nil {
+				return errors.Wrap(err, "unmarshalling properties")
+			}
+			if err := yaml.Unmarshal(contents, &local); err != nil {
+				return errors.Wrap(err, "unmarshalling bazel artifact")
+			}
+			newBuild.LocalBuild = local
+		}
+	}
+	return nil
 }
