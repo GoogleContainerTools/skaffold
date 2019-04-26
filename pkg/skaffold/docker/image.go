@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -159,6 +160,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 		AuthConfigs: authConfigs,
 		Target:      a.Target,
 		ForceRemove: l.forceRemove,
+		NetworkMode: a.NetworkMode,
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "docker build")
@@ -356,6 +358,10 @@ func GetBuildArgs(a *latest.DockerArtifact) []string {
 
 	if a.Target != "" {
 		args = append(args, "--target", a.Target)
+	}
+
+	if a.NetworkMode != "" {
+		args = append(args, "--network", strings.ToLower(a.NetworkMode))
 	}
 
 	return args
