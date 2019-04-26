@@ -23,27 +23,27 @@ import (
 )
 
 const (
-	BuildAnnotation  = "build"
-	DeployAnnotation = "deploy"
-	TestAnnotation   = "test"
-	DeleteAnnotation = "delete"
-	DebugAnnotation  = "debug"
-	EventsAnnotation = "events"
+	BuildAnnotation   = "build"
+	DeployAnnotation  = "deploy"
+	TestAnnotation    = "test"
+	DeleteAnnotation  = "delete"
+	CleanupAnnotation = "cleanup"
+	EventsAnnotation  = "events"
 )
 
 var (
-	CommandFlags = commandFlagSet("common")
+	CommonFlagSet = commonFlagSet("common")
 
 	AnnotationToFlag = map[string]*flag.FlagSet{
-		BuildAnnotation:  buildFlagSet(BuildAnnotation),
-		EventsAnnotation: eventsAPIFlagSet(EventsAnnotation),
-		DeployAnnotation: deployFlagSet(DeployAnnotation),
-		TestAnnotation:   testFlagSet(TestAnnotation),
-		DebugAnnotation:  debugFlagSet(DebugAnnotation),
+		BuildAnnotation:   buildFlagSet(BuildAnnotation),
+		EventsAnnotation:  eventsAPIFlagSet(EventsAnnotation),
+		DeployAnnotation:  deployFlagSet(DeployAnnotation),
+		TestAnnotation:    testFlagSet(TestAnnotation),
+		CleanupAnnotation: cleanupFlagSet(CleanupAnnotation),
 	}
 )
 
-func commandFlagSet(name string) *flag.FlagSet {
+func commonFlagSet(name string) *flag.FlagSet {
 	commonFlags := flag.NewFlagSet(name, flag.ContinueOnError)
 	commonFlags.StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	commonFlags.StringArrayVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
@@ -83,16 +83,16 @@ func testFlagSet(name string) *flag.FlagSet {
 	return testFlags
 }
 
-func debugFlagSet(name string) *flag.FlagSet {
-	debugFlags := flag.NewFlagSet(name, flag.ContinueOnError)
-	debugFlags.BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev or debug mode is interrupted")
-	debugFlags.BoolVar(&opts.PortForward, "port-forward", true, "Port-forward exposed container ports within pods")
-	debugFlags.BoolVar(&opts.NoPrune, "no-prune", false, "Skip removing images and containers built by Skaffold")
-	return debugFlags
+func cleanupFlagSet(name string) *flag.FlagSet {
+	cleanupFlags := flag.NewFlagSet(name, flag.ContinueOnError)
+	cleanupFlags.BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev or debug mode is interrupted")
+	cleanupFlags.BoolVar(&opts.PortForward, "port-forward", true, "Port-forward exposed container ports within pods")
+	cleanupFlags.BoolVar(&opts.NoPrune, "no-prune", false, "Skip removing images and containers built by Skaffold")
+	return cleanupFlags
 }
 
 func AddFlags(cmd *cobra.Command) {
-	cmd.Flags().AddFlagSet(CommandFlags)
+	cmd.Flags().AddFlagSet(CommonFlagSet)
 	cmd.Flags().AddFlagSet(getAnnotatedFlags(cmd.Use, cmd.Annotations))
 }
 
@@ -109,5 +109,4 @@ func getAnnotatedFlags(name string, annotations map[string]string) *flag.FlagSet
 
 func overrideTailFlag(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.Tail, "tail", true, "Stream logs from deployed objects")
-
 }

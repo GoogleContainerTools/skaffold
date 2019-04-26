@@ -48,11 +48,11 @@ func NewCmdDebug(out io.Writer) *cobra.Command {
 			return debug(out)
 		},
 		Annotations: map[string]string{
-			BuildAnnotation:  "true",
-			DeployAnnotation: "true",
-			TestAnnotation:   "true",
-			DebugAnnotation:  "true",
-			EventsAnnotation: "true",
+			BuildAnnotation:   "true",
+			DeployAnnotation:  "true",
+			TestAnnotation:    "true",
+			CleanupAnnotation: "true",
+			EventsAnnotation:  "true",
 		},
 	}
 	overrideTailFlag(cmd)
