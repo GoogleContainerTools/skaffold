@@ -84,14 +84,14 @@ profiles:
 }
 
 func verifyUpgrade(t *testing.T, input, output string) {
-	pipeline := NewSkaffoldPipeline()
-	err := yaml.UnmarshalStrict([]byte(input), pipeline)
-	testutil.CheckErrorAndDeepEqual(t, false, err, Version, pipeline.GetVersion())
+	config := NewSkaffoldConfig()
+	err := yaml.UnmarshalStrict([]byte(input), config)
+	testutil.CheckErrorAndDeepEqual(t, false, err, Version, config.GetVersion())
 
-	upgraded, err := pipeline.Upgrade()
+	upgraded, err := config.Upgrade()
 	testutil.CheckError(t, false, err)
 
-	expected := v1alpha5.NewSkaffoldPipeline()
+	expected := v1alpha5.NewSkaffoldConfig()
 	err = yaml.UnmarshalStrict([]byte(output), expected)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, upgraded)

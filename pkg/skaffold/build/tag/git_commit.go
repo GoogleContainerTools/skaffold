@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"os/exec"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -27,8 +28,34 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	tags = iota
+	commitSha
+	abbrevCommitSha
+)
+
 // GitCommit tags an image by the git commit it was built at.
-type GitCommit struct{}
+type GitCommit struct {
+	variant int
+}
+
+// NewGitCommit creates a new git commit tagger. It fails if the tagger variant is invalid.
+func NewGitCommit(taggerVariant string) (*GitCommit, error) {
+	var variant int
+	switch strings.ToLower(taggerVariant) {
+	case "", "tags":
+		// default to "tags" when unset
+		variant = tags
+	case "commitsha":
+		variant = commitSha
+	case "abbrevcommitsha":
+		variant = abbrevCommitSha
+	default:
+		return nil, fmt.Errorf("%s is not a valid git tagger variant", taggerVariant)
+	}
+
+	return &GitCommit{variant: variant}, nil
+}
 
 // Labels are labels specific to the git tagger.
 func (c *GitCommit) Labels() map[string]string {
@@ -39,7 +66,7 @@ func (c *GitCommit) Labels() map[string]string {
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the git commit.
 func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, imageName string) (string, error) {
-	ref, err := runGit(workingDir, "describe", "--tags", "--always")
+	ref, err := c.makeGitTag(workingDir)
 	if err != nil {
 		logrus.Warnln("Unable to find git commit:", err)
 		return fmt.Sprintf("%s:dirty", imageName), nil
@@ -55,6 +82,23 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, imageName
 	}
 
 	return fmt.Sprintf("%s:%s", imageName, ref), nil
+}
+
+func (c *GitCommit) makeGitTag(workingDir string) (string, error) {
+	args := make([]string, 0, 4)
+	switch c.variant {
+	case tags:
+		args = append(args, "describe", "--tags", "--always")
+	case commitSha, abbrevCommitSha:
+		args = append(args, "rev-list", "-1", "HEAD")
+		if c.variant == abbrevCommitSha {
+			args = append(args, "--abbrev-commit")
+		}
+	default:
+		return "", errors.New("invalid git tag variant: defaulting to 'dirty'")
+	}
+
+	return runGit(workingDir, args...)
 }
 
 func runGit(workingDir string, arg ...string) (string, error) {

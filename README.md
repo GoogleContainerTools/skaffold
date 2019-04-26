@@ -4,6 +4,9 @@
 
 [![Build Status](https://travis-ci.org/GoogleContainerTools/skaffold.svg?branch=master)](https://travis-ci.org/GoogleContainerTools/skaffold)
 [![Code Coverage](https://codecov.io/gh/GoogleContainerTools/skaffold/branch/master/graph/badge.svg)](https://codecov.io/gh/GoogleContainerTools/skaffold)
+[![Go Report Card](https://goreportcard.com/badge/GoogleContainerTools/skaffold)](https://goreportcard.com/report/GoogleContainerTools/skaffold)
+[![LICENSE](https://img.shields.io/github/license/GoogleContainerTools/skaffold.svg)](https://github.com/GoogleContainerTools/skaffold/blob/master/LICENSE)
+[![Releases](https://img.shields.io/github/release-pre/GoogleContainerTools/skaffold.svg)](https://github.com/GoogleContainerTools/skaffold/releases)
 
 Skaffold is a command line tool that facilitates continuous development for
 Kubernetes applications. You can iterate on your application source code

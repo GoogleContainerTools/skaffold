@@ -60,7 +60,8 @@ type localDaemon struct {
 	insecureRegistries map[string]bool
 	apiClient          client.CommonAPIClient
 	extraEnv           []string
-	imageCache         sync.Map
+	imageCache         map[string]*v1.ConfigFile
+	imageCacheLock     sync.Mutex
 }
 
 // NewLocalDaemon creates a new LocalDaemon.
@@ -70,6 +71,7 @@ func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string, forceRe
 		extraEnv:           extraEnv,
 		forceRemove:        forceRemove,
 		insecureRegistries: insecureRegistries,
+		imageCache:         make(map[string]*v1.ConfigFile),
 	}
 }
 
@@ -101,9 +103,12 @@ func (l *localDaemon) ServerVersion(ctx context.Context) (types.Version, error) 
 
 // ConfigFile retrieves and caches image configurations.
 func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error) {
-	cachedCfg, present := l.imageCache.Load(image)
+	l.imageCacheLock.Lock()
+	defer l.imageCacheLock.Unlock()
+
+	cachedCfg, present := l.imageCache[image]
 	if present {
-		return cachedCfg.(*v1.ConfigFile), nil
+		return cachedCfg, nil
 	}
 
 	cfg := &v1.ConfigFile{}
@@ -120,7 +125,7 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 		}
 	}
 
-	l.imageCache.Store(image, cfg)
+	l.imageCache[image] = cfg
 
 	return cfg, nil
 }

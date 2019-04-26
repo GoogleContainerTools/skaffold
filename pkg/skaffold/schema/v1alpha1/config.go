@@ -22,14 +22,14 @@ import (
 
 const Version string = "skaffold/v1alpha1"
 
-// NewSkaffoldPipeline creates a SkaffoldPipeline
-func NewSkaffoldPipeline() util.VersionedConfig {
-	return new(SkaffoldPipeline)
+// NewSkaffoldConfig creates a SkaffoldConfig
+func NewSkaffoldConfig() util.VersionedConfig {
+	return new(SkaffoldConfig)
 }
 
-// SkaffoldPipeline is the top level config object
+// SkaffoldConfig is the top level config object
 // that is parsed from a skaffold.yaml
-type SkaffoldPipeline struct {
+type SkaffoldConfig struct {
 	APIVersion string `yaml:"apiVersion"`
 	Kind       string `yaml:"kind"`
 
@@ -37,7 +37,7 @@ type SkaffoldPipeline struct {
 	Deploy DeployConfig `yaml:"deploy"`
 }
 
-func (config *SkaffoldPipeline) GetVersion() string {
+func (config *SkaffoldConfig) GetVersion() string {
 	return config.APIVersion
 }
 

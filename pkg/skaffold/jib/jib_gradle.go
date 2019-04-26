@@ -27,13 +27,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// GradleCommand stores Gradle executable and wrapper name
 var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"}
 
 // GetDependenciesGradle finds the source dependencies for the given jib-gradle artifact.
 // All paths are absolute.
 func GetDependenciesGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) ([]string, error) {
 	cmd := getCommandGradle(ctx, workspace, a)
-	deps, err := getDependencies(workspace, cmd)
+	deps, err := getDependencies(workspace, cmd, a.Project)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jibGradle dependencies")
 	}
@@ -42,7 +43,7 @@ func GetDependenciesGradle(ctx context.Context, workspace string, a *latest.JibG
 }
 
 func getCommandGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) *exec.Cmd {
-	args := []string{gradleCommand(a, "_jibSkaffoldFiles"), "-q"}
+	args := []string{gradleCommand(a, "_jibSkaffoldFilesV2"), "-q"}
 	return GradleCommand.CreateCommand(ctx, workspace, args)
 }
 

@@ -22,9 +22,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
@@ -43,6 +40,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // SkaffoldRunner is responsible for running the skaffold build and deploy config.
@@ -183,7 +182,7 @@ func getTagger(t latest.TagPolicy, customTag string) (tag.Tagger, error) {
 		return &tag.ChecksumTagger{}, nil
 
 	case t.GitTagger != nil:
-		return &tag.GitCommit{}, nil
+		return tag.NewGitCommit(t.GitTagger.Variant)
 
 	case t.DateTimeTagger != nil:
 		return tag.NewDateTimeTagger(t.DateTimeTagger.Format, t.DateTimeTagger.TimeZone), nil
@@ -334,23 +333,4 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	err := r.Deployer.Deploy(ctx, out, artifacts, r.labellers)
 	r.hasDeployed = true
 	return err
-}
-
-// TailLogs prints the logs for deployed artifacts.
-func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, artifacts []*latest.Artifact, bRes []build.Artifact) error {
-	if !r.runCtx.Opts.Tail {
-		return nil
-	}
-
-	for _, b := range bRes {
-		r.imageList.Add(b.Tag)
-	}
-
-	logger := r.newLogger(out, artifacts)
-	if err := logger.Start(ctx); err != nil {
-		return errors.Wrap(err, "starting logger")
-	}
-
-	<-ctx.Done()
-	return nil
 }

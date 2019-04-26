@@ -2,7 +2,7 @@
   "type": "object",
   "anyOf": [
     {
-      "$ref": "#/definitions/SkaffoldPipeline"
+      "$ref": "#/definitions/SkaffoldConfig"
     }
   ],
   "$schema": "http://json-schema-org/draft-07/schema#",
@@ -1380,7 +1380,7 @@
       "description": "*beta* tags images with their sha256 digest.",
       "x-intellij-html-description": "<em>beta</em> tags images with their sha256 digest."
     },
-    "SkaffoldPipeline": {
+    "SkaffoldConfig": {
       "properties": {
         "apiVersion": {
           "type": "string",
