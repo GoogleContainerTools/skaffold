@@ -19,7 +19,7 @@ package v1beta8
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta9"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -30,6 +30,19 @@ kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
+    plugin:
+      name: docker
+      properties:
+        dockerfile: path/to/Dockerfile
+  - image: gcr.io/k8s-skaffold/bazel
+    plugin:
+      name: bazel
+      properties:
+        target: //mytarget
+  executionEnvironment:
+    name: googleCloudBuild
+    properties:
+      projectId: test-project
 test:
   - image: gcr.io/k8s-skaffold/skaffold-example
     structureTests:
@@ -58,12 +71,35 @@ profiles:
       kubectl:
         manifests:
         - k8s-*
+  - name: test local
+    build:
+      artifacts:
+      - image: gcr.io/k8s-skaffold/skaffold-example
+        plugin:
+          name: docker
+          properties:
+            dockerfile: path/to/Dockerfile
+      executionEnvironment:
+        name: local
+        properties:
+          push: false
+    deploy:
+      kubectl:
+        manifests:
+        - k8s-*
 `
 	expected := `apiVersion: skaffold/v1beta9
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
+    docker:
+      dockerfile: path/to/Dockerfile
+  - image: gcr.io/k8s-skaffold/bazel
+    bazel:
+      target: //mytarget
+  googleCloudBuild:
+    projectId: test-project
 test:
   - image: gcr.io/k8s-skaffold/skaffold-example
     structureTests:
@@ -88,6 +124,18 @@ profiles:
      - image: gcr.io/k8s-skaffold/skaffold-example
        structureTests:
          - ./test/*
+    deploy:
+      kubectl:
+        manifests:
+        - k8s-*
+  - name: test local
+    build:
+      artifacts:
+      - image: gcr.io/k8s-skaffold/skaffold-example
+        docker:
+          dockerfile: path/to/Dockerfile
+      local:
+        push: false
     deploy:
       kubectl:
         manifests:
@@ -104,7 +152,7 @@ func verifyUpgrade(t *testing.T, input, output string) {
 	upgraded, err := config.Upgrade()
 	testutil.CheckError(t, false, err)
 
-	expected := next.NewSkaffoldConfig()
+	expected := latest.NewSkaffoldConfig()
 	err = yaml.UnmarshalStrict([]byte(output), expected)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, upgraded)
