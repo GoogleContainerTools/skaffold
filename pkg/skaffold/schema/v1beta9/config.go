@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v1beta9
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v1beta10"
+const Version string = "skaffold/v1beta9"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -551,27 +551,6 @@ type ArtifactType struct {
 
 	// KanikoArtifact *alpha* builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko).
 	KanikoArtifact *KanikoArtifact `yaml:"kaniko,omitempty" yamltags:"oneOf=artifact"`
-
-	// CustomArtifact *alpha* builds images using a custom build script written by the user.
-	CustomArtifact *CustomArtifact `yaml:"custom,omitempty" yamltags:"oneOf=artifact"`
-}
-
-// CustomArtifact *alpha* describes an artifact built from a custom build script
-// written by the user. It can be used to build images with builders that aren't directly integrated with skaffold.
-type CustomArtifact struct {
-	// BuildCommand is the command executed to build the image.
-	BuildCommand string `yaml:"buildCommand,omitempty"`
-	// Dependencies are the file dependencies that skaffold should watch for this artifact.
-	Dependencies *CustomDependencies `yaml:"dependencies,omitempty"`
-}
-
-// CustomDependencies is used to specify dependencies for an artifact built by a custom build script.
-type CustomDependencies struct {
-	// Paths should be set to the dependencies for this artifact if no Dockerfile exists.
-	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
-	// Ignore specifies the paths that should be ignored by the watcher. If a file exists in `paths` and in `ignore`, it will be ignored.
-	// Will only work in conjunction with `paths`.
-	Ignore []string `yaml:"ignore,omitempty"`
 }
 
 // KanikoArtifact *alpha* describes an artifact built from a Dockerfile,
