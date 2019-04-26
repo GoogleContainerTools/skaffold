@@ -55,8 +55,8 @@ func NewCmdDebug(out io.Writer) *cobra.Command {
 			EventsAnnotation:  "true",
 		},
 	}
-	overrideTailFlag(cmd)
 	AddFlags(cmd)
+	cmd.Flags().BoolVar(&opts.PortForward, "port-forward", true, "Port-forward exposed container ports within pods")
 	return cmd
 >>>>>>> Fixed --tail and removed opts.TailDev
 }

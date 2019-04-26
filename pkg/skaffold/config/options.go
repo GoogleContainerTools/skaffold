@@ -29,6 +29,7 @@ type SkaffoldOptions struct {
 	Cleanup            bool
 	Notification       bool
 	Tail               bool
+	TailDev            bool
 	PortForward        bool
 	SkipTests          bool
 	CacheArtifacts     bool

@@ -133,7 +133,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	// Start logs
-	if r.runCtx.Opts.Tail {
+	if r.runCtx.Opts.TailDev {
 		if err := logger.Start(ctx); err != nil {
 			return errors.Wrap(err, "starting logger")
 		}

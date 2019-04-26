@@ -86,7 +86,6 @@ func testFlagSet(name string) *flag.FlagSet {
 func cleanupFlagSet(name string) *flag.FlagSet {
 	cleanupFlags := flag.NewFlagSet(name, flag.ContinueOnError)
 	cleanupFlags.BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev or debug mode is interrupted")
-	cleanupFlags.BoolVar(&opts.PortForward, "port-forward", true, "Port-forward exposed container ports within pods")
 	cleanupFlags.BoolVar(&opts.NoPrune, "no-prune", false, "Skip removing images and containers built by Skaffold")
 	return cleanupFlags
 }
@@ -107,6 +106,6 @@ func getAnnotatedFlags(name string, annotations map[string]string) *flag.FlagSet
 	return allFlags
 }
 
-func overrideTailFlag(cmd *cobra.Command) {
-	cmd.Flags().BoolVar(&opts.Tail, "tail", true, "Stream logs from deployed objects")
+func addTailDevFlag(cmd *cobra.Command) {
+	cmd.Flags().BoolVar(&opts.TailDev, "tail", true, "Stream logs from deployed objects")
 }

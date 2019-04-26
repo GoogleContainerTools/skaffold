@@ -314,7 +314,7 @@ Flags:
       --rpc-http-port int               tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                    tcp port to expose event API (default 50051)
       --skip-tests                      Whether to skip the tests after building
-      --tail                            Stream logs from deployed objects (default true)
+      --tail                            Stream logs from deployed objects
       --toot                            Emit a terminal beep after the deploy is complete
 
 Global Flags:
@@ -511,7 +511,6 @@ Flags:
   -l, --label stringArray               Add custom labels to deployed objects. Set multiple times for multiple labels.
   -n, --namespace string                Run deployments in the specified namespace
       --no-prune                        Skip removing images and containers built by Skaffold
-      --port-forward                    Port-forward exposed container ports within pods (default true)
   -p, --profile stringArray             Activate profiles by name
       --rpc-http-port int               tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                    tcp port to expose event API (default 50051)
@@ -542,8 +541,11 @@ Env vars:
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
+<<<<<<< HEAD
 * `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
+=======
+>>>>>>> Bring TailDev back. Maybe this should be renamed to something else
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
@@ -672,7 +674,6 @@ Flags:
   -l, --label stringArray               Add custom labels to deployed objects. Set multiple times for multiple labels.
   -n, --namespace string                Run deployments in the specified namespace
       --no-prune                        Skip removing images and containers built by Skaffold
-      --port-forward                    Port-forward exposed container ports within pods (default true)
   -p, --profile stringArray             Activate profiles by name
       --rpc-http-port int               tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                    tcp port to expose event API (default 50051)
@@ -702,10 +703,13 @@ Env vars:
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
 <<<<<<< HEAD
+<<<<<<< HEAD
 * `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
 =======
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 >>>>>>> Override tail config
+=======
+>>>>>>> Bring TailDev back. Maybe this should be renamed to something else
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
