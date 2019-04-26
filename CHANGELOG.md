@@ -8,6 +8,7 @@ New Features:
 * Git tagger variants (Tags, CommitSha, AbbrevCommitSha) [#1902](https://github.com/GoogleContainerTools/skaffold/pull/1902)
 * Add `--force` command line option to run and deploy sub-commands [#1568](https://github.com/GoogleContainerTools/skaffold/pull/1568)
 * Full validation for `required` and `oneOf` config fields [#1939](https://github.com/GoogleContainerTools/skaffold/pull/1939)
+* Add hidden flag `--force-colors` to always print color codes [#2033](https://github.com/GoogleContainerTools/skaffold/pull/2033)
 
 Bug Fixes:
 * Rename SkaffoldPipeline to SkaffoldConfig [#2015](https://github.com/GoogleContainerTools/skaffold/pull/2015)
