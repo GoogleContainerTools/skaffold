@@ -1,4 +1,70 @@
+# v0.28.0 Release - 04/25/2019
+
+*Note*: This release comes with a new config version `v1beta9`.
+        To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
+        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+
+New Features: 
+* Git tagger variants (Tags, CommitSha, AbbrevCommitSha) [#1902](https://github.com/GoogleContainerTools/skaffold/pull/1902)
+* Add `--force` command line option to run and deploy sub-commands [#1568](https://github.com/GoogleContainerTools/skaffold/pull/1568)
+* Full validation for `required` and `oneOf` config fields [#1939](https://github.com/GoogleContainerTools/skaffold/pull/1939)
+* Add hidden flag `--force-colors` to always print color codes [#2033](https://github.com/GoogleContainerTools/skaffold/pull/2033)
+
+Bug Fixes:
+* Rename SkaffoldPipeline to SkaffoldConfig [#2015](https://github.com/GoogleContainerTools/skaffold/pull/2015)
+* Fix typo [#2013](https://github.com/GoogleContainerTools/skaffold/pull/2013)
+* Include runtime dependencies for taggers in `gcr.io/k8s-skaffold/skaffold` [#1987](https://github.com/GoogleContainerTools/skaffold/pull/1987)
+* fix show some option in skaffold delete #1995 [#1997](https://github.com/GoogleContainerTools/skaffold/pull/1997)
+* Fix panic when upgrading configurations with patches [#1971](https://github.com/GoogleContainerTools/skaffold/pull/1971)
+* Fix error message when the `skaffold.yaml` is not found [#1947](https://github.com/GoogleContainerTools/skaffold/pull/1947)
+* Fix syncing for Jib [#1926](https://github.com/GoogleContainerTools/skaffold/pull/1926)
+
+Updates & refactoring: 
+* Reduce overhead of Jib builder [#1744](https://github.com/GoogleContainerTools/skaffold/pull/1744)
+* Remove plugin code from config [#2016](https://github.com/GoogleContainerTools/skaffold/pull/2016)
+* Update a few dependencies [#2020](https://github.com/GoogleContainerTools/skaffold/pull/2020)
+* Remove some dead code [#2017](https://github.com/GoogleContainerTools/skaffold/pull/2017)
+* Don’t fetch the same config twice [#2014](https://github.com/GoogleContainerTools/skaffold/pull/2014)
+* Remove unused instructions from Makefile [#2012](https://github.com/GoogleContainerTools/skaffold/pull/2012)
+*  Remove bazel plugin & revert back to original [#1989](https://github.com/GoogleContainerTools/skaffold/pull/1989)
+*  Remove docker plugin and revert to original code structure [#1990](https://github.com/GoogleContainerTools/skaffold/pull/1990)
+* Don't run GCB example on structure tests [#1984](https://github.com/GoogleContainerTools/skaffold/pull/1984)
+* Use `RunOrFailOutput` instead of `RunOrFail` to see the error logs in test [#1976](https://github.com/GoogleContainerTools/skaffold/pull/1976)
+* Freeze v1beta8 skaffold config [#1965](https://github.com/GoogleContainerTools/skaffold/pull/1965)
+* Remove the experimental UI [#1953](https://github.com/GoogleContainerTools/skaffold/pull/1953)
+* Always configure which command runs [#1956](https://github.com/GoogleContainerTools/skaffold/pull/1956)
+
+Docs updates:
+
+* Add more github shields [#2026](https://github.com/GoogleContainerTools/skaffold/pull/2026)
+* Improve Skaffold-Jib docs for Maven multi-module projects [#1993](https://github.com/GoogleContainerTools/skaffold/pull/1993)
+* Add contributing docs for making a config change [#1982](https://github.com/GoogleContainerTools/skaffold/pull/1982)
+* Add start on filesync doc [#1994](https://github.com/GoogleContainerTools/skaffold/pull/1994)
+* Add some documentation for container structure tests [#1959](https://github.com/GoogleContainerTools/skaffold/pull/1959)
+* Add documentation for insecure registries [#1973](https://github.com/GoogleContainerTools/skaffold/pull/1973)
+* Add documentation for local development setups [#1970](https://github.com/GoogleContainerTools/skaffold/pull/1970)
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Alexandre Ardhuin
+- Balint Pato
+- Brian de Alwis
+- Cornelius Weig
+- David Gageot
+- Nick Kubala
+- Priya Wadhwa
+- Tad Cordle
+- Tejal Desai
+- u5surf
+
+
 # v0.27.0 Release - 04/12/2019
+
+*Note*: This release comes with a new config version `v1beta8`.
+        To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
+        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+
 New Features:
 
 * Add support for pushing/pulling to insecure registries [#1870](https://github.com/GoogleContainerTools/skaffold/pull/1870)

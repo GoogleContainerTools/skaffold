@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/sirupsen/logrus"
@@ -41,11 +40,11 @@ import (
 //
 func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var tagPolicy next.TagPolicy
-	if config.Build.TagPolicy == constants.TagStrategySha256 {
+	if config.Build.TagPolicy == "sha256" {
 		tagPolicy = next.TagPolicy{
 			ShaTagger: &next.ShaTagger{},
 		}
-	} else if config.Build.TagPolicy == constants.TagStrategyGitCommit {
+	} else if config.Build.TagPolicy == "gitCommit" {
 		tagPolicy = next.TagPolicy{
 			GitTagger: &next.GitTagger{},
 		}

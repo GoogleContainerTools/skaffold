@@ -2,6 +2,8 @@ package object
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -15,10 +17,25 @@ import (
 	dmp "github.com/sergi/go-diff/diffmatchpatch"
 )
 
+var (
+	ErrCanceled = errors.New("operation canceled")
+)
+
 func getPatch(message string, changes ...*Change) (*Patch, error) {
+	ctx := context.Background()
+	return getPatchContext(ctx, message, changes...)
+}
+
+func getPatchContext(ctx context.Context, message string, changes ...*Change) (*Patch, error) {
 	var filePatches []fdiff.FilePatch
 	for _, c := range changes {
-		fp, err := filePatch(c)
+		select {
+		case <-ctx.Done():
+			return nil, ErrCanceled
+		default:
+		}
+
+		fp, err := filePatchWithContext(ctx, c)
 		if err != nil {
 			return nil, err
 		}
@@ -29,7 +46,7 @@ func getPatch(message string, changes ...*Change) (*Patch, error) {
 	return &Patch{message, filePatches}, nil
 }
 
-func filePatch(c *Change) (fdiff.FilePatch, error) {
+func filePatchWithContext(ctx context.Context, c *Change) (fdiff.FilePatch, error) {
 	from, to, err := c.Files()
 	if err != nil {
 		return nil, err
@@ -52,6 +69,12 @@ func filePatch(c *Change) (fdiff.FilePatch, error) {
 
 	var chunks []fdiff.Chunk
 	for _, d := range diffs {
+		select {
+		case <-ctx.Done():
+			return nil, ErrCanceled
+		default:
+		}
+
 		var op fdiff.Operation
 		switch d.Type {
 		case dmp.DiffEqual:
@@ -70,6 +93,11 @@ func filePatch(c *Change) (fdiff.FilePatch, error) {
 		from:   c.From,
 		to:     c.To,
 	}, nil
+
+}
+
+func filePatch(c *Change) (fdiff.FilePatch, error) {
+	return filePatchWithContext(context.Background(), c)
 }
 
 func fileContent(f *File) (content string, isBinary bool, err error) {
@@ -292,11 +320,18 @@ func getFileStatsFromFilePatches(filePatches []fdiff.FilePatch) FileStats {
 		}
 
 		for _, chunk := range fp.Chunks() {
+			s := chunk.Content()
 			switch chunk.Type() {
 			case fdiff.Add:
-				cs.Addition += strings.Count(chunk.Content(), "\n")
+				cs.Addition += strings.Count(s, "\n")
+				if s[len(s)-1] != '\n' {
+					cs.Addition++
+				}
 			case fdiff.Delete:
-				cs.Deletion += strings.Count(chunk.Content(), "\n")
+				cs.Deletion += strings.Count(s, "\n")
+				if s[len(s)-1] != '\n' {
+					cs.Deletion++
+				}
 			}
 		}
 

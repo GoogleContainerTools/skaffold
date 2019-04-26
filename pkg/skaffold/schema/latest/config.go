@@ -69,38 +69,10 @@ type BuildConfig struct {
 
 	// TagPolicy *beta* determines how images are tagged.
 	// A few strategies are provided here, although you most likely won't need to care!
-	// If not specified, it defaults to `gitCommit: {}`.
+	// If not specified, it defaults to `gitCommit: {variant: Tags}`.
 	TagPolicy TagPolicy `yaml:"tagPolicy,omitempty"`
 
-	// ExecutionEnvironment is the environment in which the build
-	// should run. Possible values: googleCloudBuild.
-	ExecutionEnvironment *ExecutionEnvironment `yaml:"executionEnvironment,omitempty"`
-
 	BuildType `yaml:",inline"`
-}
-
-// ExecEnvironment is the name of an execution environment.
-type ExecEnvironment string
-
-// ExecutionEnvironment is the environment in which the build should run (ex. local or in-cluster, etc.).
-type ExecutionEnvironment struct {
-	// Name is the name of the environment.
-	Name ExecEnvironment `yaml:"name,omitempty"`
-
-	// Properties are key-value pairs passed to the environment.
-	Properties map[string]interface{} `yaml:"properties,omitempty"`
-}
-
-// BuilderPlugin contains all fields necessary for specifying a build plugin.
-type BuilderPlugin struct {
-	// Name is the name of the build plugin.
-	Name string `yaml:"name,omitempty"`
-
-	// Properties are key-value pairs passed to the plugin.
-	Properties map[string]interface{} `yaml:"properties,omitempty"`
-
-	// Contents
-	Contents []byte `yaml:",omitempty"`
 }
 
 // TagPolicy contains all the configuration for the tagging step.
@@ -122,7 +94,13 @@ type TagPolicy struct {
 type ShaTagger struct{}
 
 // GitTagger *beta* tags images with the git tag or commit of the artifact's workspace.
-type GitTagger struct{}
+type GitTagger struct {
+	// Variant determines the behavior of the git tagger. Valid variants are
+	// `Tags` (default): use git tags or fall back to abbreviated commit hash.
+	// `CommitSha`: use the full git commit sha.
+	// `AbbrevCommitSha`: use the abbreviated git commit sha.
+	Variant string `yaml:"variant,omitempty"`
+}
 
 // EnvTemplateTagger *beta* tags images with a configurable template string.
 type EnvTemplateTagger struct {
@@ -499,9 +477,6 @@ type Artifact struct {
 	ArtifactType `yaml:",inline"`
 
 	WorkspaceHash string `yaml:"-,omitempty"`
-
-	// BuilderPlugin is the plugin used to build this artifact.
-	BuilderPlugin *BuilderPlugin `yaml:"plugin,omitempty"`
 }
 
 // Profile *beta* profiles are used to override any `build`, `test` or `deploy` configuration.

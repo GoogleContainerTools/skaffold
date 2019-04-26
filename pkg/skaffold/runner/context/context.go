@@ -32,10 +32,6 @@ type RunContext struct {
 	Opts *config.SkaffoldOptions
 	Cfg  *latest.Pipeline
 
-	// Plugin is true if at least one artifact is built by a plugin
-	// this is temporary - will go away as soon as all the builders are plugins
-	Plugin bool
-
 	DefaultRepo        string
 	KubeContext        string
 	WorkingDir         string
@@ -78,16 +74,9 @@ func GetRunContext(opts *config.SkaffoldOptions, cfg *latest.Pipeline) (*RunCont
 		insecureRegistries[r] = true
 	}
 
-	plugin := false
-	for _, a := range cfg.Build.Artifacts {
-		if a.BuilderPlugin != nil {
-			plugin = true
-		}
-	}
 	return &RunContext{
 		Opts:               opts,
 		Cfg:                cfg,
-		Plugin:             plugin,
 		WorkingDir:         cwd,
 		DefaultRepo:        defaultRepo,
 		KubeContext:        kubeContext,

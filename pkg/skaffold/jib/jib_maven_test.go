@@ -19,9 +19,11 @@ package jib
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -38,9 +40,11 @@ func TestGetDependenciesMaven(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
+	tmpDir.Write("build", "")
 	tmpDir.Write("dep1", "")
 	tmpDir.Write("dep2", "")
 
+	build := tmpDir.Path("build")
 	dep1 := tmpDir.Path("dep1")
 	dep2 := tmpDir.Path("dep2")
 
@@ -49,18 +53,34 @@ func TestGetDependenciesMaven(t *testing.T) {
 	var tests = []struct {
 		description string
 		stdout      string
+		modTime     time.Time
 		expected    []string
 		err         error
 	}{
 		{
-			description: "success",
-			stdout:      fmt.Sprintf("%s\n%s\n\n\n", dep1, dep2),
-			expected:    []string{"dep1", "dep2"},
-		},
-		{
 			description: "failure",
 			stdout:      "",
+			modTime:     time.Unix(0, 0),
 			err:         errors.New("error"),
+		},
+		{
+			description: "success",
+			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\"],\"ignore\":[]}", build, dep1),
+			modTime:     time.Unix(0, 0),
+			expected:    []string{"build", "dep1"},
+		},
+		{
+			// Expected output differs from stdout since build file hasn't change, thus maven command won't run
+			description: "success",
+			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\", \"%s\"],\"ignore\":[]}", build, dep1, dep2),
+			modTime:     time.Unix(0, 0),
+			expected:    []string{"build", "dep1"},
+		},
+		{
+			description: "success",
+			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\", \"%s\"],\"ignore\":[]}", build, dep1, dep2),
+			modTime:     time.Unix(10000, 0),
+			expected:    []string{"build", "dep1", "dep2"},
 		},
 	}
 
@@ -68,14 +88,17 @@ func TestGetDependenciesMaven(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOutErr(
-				strings.Join(getCommandMaven(ctx, tmpDir.Root(), &latest.JibMavenArtifact{}).Args, " "),
+				strings.Join(getCommandMaven(ctx, tmpDir.Root(), &latest.JibMavenArtifact{Module: "maven-test"}).Args, " "),
 				test.stdout,
 				test.err,
 			)
 
-			deps, err := GetDependenciesMaven(ctx, tmpDir.Root(), &latest.JibMavenArtifact{})
+			// Change build file mod time
+			os.Chtimes(build, test.modTime, test.modTime)
+
+			deps, err := GetDependenciesMaven(ctx, tmpDir.Root(), &latest.JibMavenArtifact{Module: "maven-test"})
 			if test.err != nil {
-				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jibMaven dependencies: "+test.err.Error(), err.Error())
+				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jibMaven dependencies: initial Jib dependency refresh failed: failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.0.2+): "+test.err.Error(), err.Error())
 			} else {
 				testutil.CheckDeepEqual(t, test.expected, deps)
 			}
@@ -96,7 +119,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--non-recursive", "jib:_skaffold-files", "--quiet"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--non-recursive", "jib:_skaffold-files-v2", "--quiet"})
 			},
 		},
 		{
@@ -106,7 +129,7 @@ func TestGetCommandMaven(t *testing.T) {
 			},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"-DskipTests", "-x", "--non-recursive", "jib:_skaffold-files", "--quiet"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"-DskipTests", "-x", "--non-recursive", "jib:_skaffold-files-v2", "--quiet"})
 			},
 		},
 		{
@@ -114,7 +137,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{Profile: "profile"},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--activate-profiles", "profile", "--non-recursive", "jib:_skaffold-files", "--quiet"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--activate-profiles", "profile", "--non-recursive", "jib:_skaffold-files-v2", "--quiet"})
 			},
 		},
 		{
@@ -122,7 +145,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{},
 			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--non-recursive", "jib:_skaffold-files", "--quiet"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--non-recursive", "jib:_skaffold-files-v2", "--quiet"})
 			},
 		},
 		{
@@ -130,7 +153,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{},
 			filesInWorkspace: []string{"mvnw", "mvnw.cmd"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--non-recursive", "jib:_skaffold-files", "--quiet"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--non-recursive", "jib:_skaffold-files-v2", "--quiet"})
 			},
 		},
 		{
@@ -138,7 +161,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{Profile: "profile"},
 			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--activate-profiles", "profile", "--non-recursive", "jib:_skaffold-files", "--quiet"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--activate-profiles", "profile", "--non-recursive", "jib:_skaffold-files-v2", "--quiet"})
 			},
 		},
 		{
@@ -146,7 +169,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibMavenArtifact: latest.JibMavenArtifact{Module: "module"},
 			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"--projects", "module", "--also-make", "jib:_skaffold-files", "--quiet"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"--projects", "module", "--also-make", "jib:_skaffold-files-v2", "--quiet"})
 			},
 		},
 	}

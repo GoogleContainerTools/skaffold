@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/google/go-containerregistry/pkg/v1/v1util"
 )
 
@@ -78,6 +79,12 @@ func (cl *configLayer) Compressed() (io.ReadCloser, error) {
 // Size implements v1.Layer
 func (cl *configLayer) Size() (int64, error) {
 	return int64(len(cl.content)), nil
+}
+
+func (cl *configLayer) MediaType() (types.MediaType, error) {
+	// Defaulting this to OCIConfigJSON as it should remain
+	// backwards compatible with DockerConfigJSON
+	return types.OCIConfigJSON, nil
 }
 
 var _ v1.Layer = (*configLayer)(nil)

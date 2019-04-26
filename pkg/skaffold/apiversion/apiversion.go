@@ -22,7 +22,7 @@ import (
 	"github.com/blang/semver"
 )
 
-var re = regexp.MustCompile(`^skaffold/v(\d)(?:(alpha|beta)(\d))?$`)
+var re = regexp.MustCompile(`^skaffold/v(\d)(?:(alpha|beta)([1-9]?[0-9]))?$`)
 
 // Parse parses a string into a Version.
 func Parse(v string) (semver.Version, error) {

@@ -45,6 +45,14 @@ func (ul *uncompressedLayer) Uncompressed() (io.ReadCloser, error) {
 	return ioutil.NopCloser(bytes.NewBuffer(ul.content)), nil
 }
 
+// MediaType returns the media type of the layer
+func (ul *uncompressedLayer) MediaType() (types.MediaType, error) {
+	// Technically the media type should be 'application/tar' but given that our
+	// v1.Layer doesn't force consumers to care about whether the layer is compressed
+	// we should be fine returning the DockerLayer media type
+	return types.DockerLayer, nil
+}
+
 var _ partial.UncompressedLayer = (*uncompressedLayer)(nil)
 
 // Image returns a pseudo-randomly generated Image.
