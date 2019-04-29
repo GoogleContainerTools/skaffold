@@ -19,15 +19,6 @@ import (
 	"unicode/utf8"
 )
 
-// Strictness defines the level of strictness for name validation.
-type Strictness int
-
-// Enums for CRUD operations.
-const (
-	StrictValidation Strictness = iota
-	WeakValidation
-)
-
 // stripRunesFn returns a function which returns -1 (i.e. a value which
 // signals deletion in strings.Map) for runes in 'runes', and the rune otherwise.
 func stripRunesFn(runes string) func(rune) rune {

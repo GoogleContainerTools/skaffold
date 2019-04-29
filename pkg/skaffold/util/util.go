@@ -89,6 +89,12 @@ func StrSliceContains(sl []string, s string) bool {
 func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 	expandedPaths := make(map[string]bool)
 	for _, p := range paths {
+		if filepath.IsAbs(p) {
+			// This is a absolute file reference
+			expandedPaths[p] = true
+			continue
+		}
+
 		path := filepath.Join(workingDir, p)
 
 		if _, err := os.Stat(path); err == nil {
@@ -148,30 +154,6 @@ func BoolPtr(b bool) *bool {
 func StringPtr(s string) *string {
 	o := s
 	return &o
-}
-
-func ReadConfiguration(filename string) ([]byte, error) {
-	switch {
-	case filename == "":
-		return nil, errors.New("filename not specified")
-	case filename == "-":
-		return ioutil.ReadAll(os.Stdin)
-	case IsURL(filename):
-		return Download(filename)
-	default:
-		directory := filepath.Dir(filename)
-		baseName := filepath.Base(filename)
-		if baseName != "skaffold.yaml" {
-			return ioutil.ReadFile(filename)
-		}
-		contents, err := ioutil.ReadFile(filename)
-		if err != nil {
-			logrus.Infof("Could not open skaffold.yaml: \"%s\"", err)
-			logrus.Infof("Trying to read from skaffold.yml instead")
-			return ioutil.ReadFile(filepath.Join(directory, "skaffold.yml"))
-		}
-		return contents, err
-	}
 }
 
 func IsURL(s string) bool {

@@ -139,16 +139,16 @@ func emptyState(build *latest.BuildConfig) proto.State {
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
 // It returns a shutdown callback for tearing down the grpc server, which the runner is responsible for calling.
 // This function can only be called once.
-func InitializeState(ctx *runcontext.RunContext) (func() error, error) {
+func InitializeState(runCtx *runcontext.RunContext) (func() error, error) {
 	var err error
 	serverShutdown := func() error { return nil }
 	once.Do(func() {
 		handler = &eventHandler{
-			state: emptyState(&ctx.Cfg.Build),
+			state: emptyState(&runCtx.Cfg.Build),
 		}
 
-		if ctx.Opts.EnableRPC {
-			serverShutdown, err = newStatusServer(ctx.Opts.RPCPort, ctx.Opts.RPCHTTPPort)
+		if runCtx.Opts.EnableRPC {
+			serverShutdown, err = newStatusServer(runCtx.Opts.RPCPort, runCtx.Opts.RPCHTTPPort)
 			if err != nil {
 				err = errors.Wrap(err, "creating status server")
 				return

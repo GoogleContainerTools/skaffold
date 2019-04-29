@@ -36,6 +36,7 @@ type CLI struct {
 
 	version       ClientVersion
 	versionOnce   sync.Once
+	ForceDeploy   bool
 	previousApply ManifestList
 }
 
@@ -59,8 +60,12 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 		return nil
 	}
 
-	// Add --force flag to delete and redeploy image if changes can't be applied
-	if err := c.Run(ctx, updated.Reader(), out, "apply", c.Flags.Apply, "--force", "-f", "-"); err != nil {
+	args := []string{"-f", "-"}
+	if c.ForceDeploy {
+		args = append(args, "--force")
+	}
+
+	if err := c.Run(ctx, updated.Reader(), out, "apply", c.Flags.Apply, args...); err != nil {
 		return errors.Wrap(err, "kubectl apply")
 	}
 

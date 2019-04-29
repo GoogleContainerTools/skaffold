@@ -100,7 +100,7 @@ func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artif
 
 	waitForLogs()
 
-	return docker.RemoteDigest(tag)
+	return docker.RemoteDigest(tag, b.insecureRegistries)
 }
 
 func appendCacheIfExists(args []string, cache *latest.KanikoCache) []string {

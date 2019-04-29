@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  branch = "master"
+  digest = "1:f071bce3025fca7517eeeff0214674743ee58e49a475f91b2b109a971365ca7f"
+  name = "4d63.com/tz"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "bd6cee76f7319745d44ff235e42124b3891e293d"
+
+[[projects]]
   digest = "1:9f87b9342b5654607dcc25c292512bc3096e6b213ed83fc94e8b9e8b6f31113a"
   name = "cloud.google.com/go"
   packages = [
@@ -236,25 +244,6 @@
   version = "v1.12.0"
 
 [[projects]]
-  digest = "1:053c8b82c44fc384cca33724d4359235fa98e0cb8b135c392d8e14f396a2a7e8"
-  name = "github.com/gdamore/encoding"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "6289cdc94c00ac4aa177771c5fce7af2f96b626d"
-  version = "v1.0.0"
-
-[[projects]]
-  digest = "1:09b6d7ce76747ac52e2122e15eff2965e47f537f9ddf5e62acc2d79007ce9e07"
-  name = "github.com/gdamore/tcell"
-  packages = [
-    ".",
-    "terminfo",
-  ]
-  pruneopts = "NUT"
-  revision = "aaadc574a6ed8dc3abe56036ca130dcee1ee6b6e"
-  version = "v1.1.1"
-
-[[projects]]
   digest = "1:81466b4218bf6adddac2572a30ac733a9255919bc2f470b4827a317bd4ee1756"
   name = "github.com/ghodss/yaml"
   packages = ["."]
@@ -325,22 +314,22 @@
   version = "v0.2.0"
 
 [[projects]]
-  digest = "1:f25f0ba1157af718c239c7ea37fae2d5d1b929f9227c56d410ebc6ac8c957a6d"
+  digest = "1:89b8adf786b463014ba1866cfd5f1d97c6abb6db72407b740a704551f649438b"
   name = "github.com/google/go-containerregistry"
   packages = [
     "pkg/authn",
     "pkg/name",
     "pkg/v1",
     "pkg/v1/partial",
+    "pkg/v1/random",
     "pkg/v1/remote",
     "pkg/v1/remote/transport",
-    "pkg/v1/stream",
     "pkg/v1/tarball",
     "pkg/v1/types",
     "pkg/v1/v1util",
   ]
   pruneopts = "NUT"
-  revision = "16d6587b5a87052c861b30443f31c588a319e8d4"
+  revision = "7d6d1d3cd63b486f713ddf83be5956744f4e1bb3"
 
 [[projects]]
   digest = "1:f4f203acd8b11b8747bdcd91696a01dbc95ccb9e2ca2db6abf81c3a4f5e950ce"
@@ -533,14 +522,6 @@
   version = "v0.0.10"
 
 [[projects]]
-  digest = "1:ed9924c64c12bb89cc6fe944985904f9c572a4ce38d9ad132716ef8c68237237"
-  name = "github.com/lucasb-eyer/go-colorful"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "345fbb3dbcdb252d9985ee899a84963c0fa24c82"
-  version = "v1.0"
-
-[[projects]]
   digest = "1:08c231ec84231a7e23d67e4b58f975e1423695a32467a362ee55a803f9de8061"
   name = "github.com/mattn/go-colorable"
   packages = ["."]
@@ -554,14 +535,6 @@
   packages = ["."]
   pruneopts = "NUT"
   revision = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c"
-  version = "v0.0.4"
-
-[[projects]]
-  digest = "1:70ef8268170621826f8c111ac1674afe75136f526f449453b4a6631c6dba1946"
-  name = "github.com/mattn/go-runewidth"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "3ee7d812e62a0804a7d0a324e0249ca2db3476d3"
   version = "v0.0.4"
 
 [[projects]]
@@ -684,12 +657,12 @@
   version = "v2.0.1"
 
 [[projects]]
-  digest = "1:5cf3f025cbee5951a4ee961de067c8a89fc95a5adabead774f82822efabab121"
+  digest = "1:14715f705ff5dfe0ffd6571d7d201dd8e921030f8070321a79380d8ca4ec1a24"
   name = "github.com/pkg/errors"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
-  version = "v0.8.0"
+  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
+  version = "v0.8.1"
 
 [[projects]]
   digest = "1:a8512715947d49f24e6aa2d0fdd06f46bdd8d2e792517ba0ac95a2c089eaae28"
@@ -737,14 +710,6 @@
   revision = "619930b0b4713cc1280189bf0a4c54b3fb506f60"
 
 [[projects]]
-  branch = "master"
-  digest = "1:d8cda3d9486dbc1ed442e36b9cbe69df4500af24f33fca217998e198d22b5bd7"
-  name = "github.com/rivo/tview"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "84fdb36408f35b8998d48d323f55f40b7f14a19b"
-
-[[projects]]
   digest = "1:b0e0e2abf5c70fd0f7f6c053c6c99c6960149146e40d5c7547cacc176e5d9973"
   name = "github.com/rjeczalik/notify"
   packages = ["."]
@@ -769,12 +734,12 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:d848e2bdc690ea54c4b49894b67a05db318a97ee6561879b814c2c1f82f61406"
+  digest = "1:998e4640c25e00ccb7b2569bf94562283937b8afb3485c0e1a0a05a15330240d"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "bcd833dfe83d3cebad139e4a29ed79cb2318bf95"
-  version = "v1.2.0"
+  revision = "8bdbc7bcc01dcbb8ec23dc8a28e332258d25251f"
+  version = "v1.4.1"
 
 [[projects]]
   digest = "1:343d44e06621142ab09ae0c76c1799104cdfddd3ffb445d78b1adf8dc3ffaf3d"
@@ -892,13 +857,11 @@
   revision = "4ed8d59d0b35e1e29334a206d1b3f38b1e5dfb31"
 
 [[projects]]
-  digest = "1:abee7d95958e649b0319b44f4964e55db9fa4098cef5b27e829143421e9a2376"
+  digest = "1:e7071ed636b5422cc51c0e3a6cebc229d6c9fffc528814b519a980641422d619"
   name = "golang.org/x/text"
   packages = [
     "collate",
     "collate/build",
-    "encoding",
-    "encoding/internal/identifier",
     "internal/colltab",
     "internal/gen",
     "internal/tag",
@@ -1054,12 +1017,13 @@
   version = "v4.3.0"
 
 [[projects]]
-  digest = "1:5d317769c02e0b093c50d1f849b89cd786f0d4b546c1a19b9dbeb4bbcb89ecfe"
+  digest = "1:a9a6646fe5aef17a55d66f119337fa69e789e5d9cfcdd0fdfe6782d0fb2fdb7d"
   name = "gopkg.in/src-d/go-git.v4"
   packages = [
     ".",
     "config",
     "internal/revision",
+    "internal/url",
     "plumbing",
     "plumbing/cache",
     "plumbing/filemode",
@@ -1087,7 +1051,7 @@
     "plumbing/transport/ssh",
     "storage",
     "storage/filesystem",
-    "storage/filesystem/internal/dotgit",
+    "storage/filesystem/dotgit",
     "storage/memory",
     "utils/binary",
     "utils/diff",
@@ -1099,7 +1063,7 @@
     "utils/merkletrie/noder",
   ]
   pruneopts = "NUT"
-  revision = "v4.4.0"
+  revision = "v4.11.0"
 
 [[projects]]
   digest = "1:b233ad4ec87ac916e7bf5e678e98a2cb9e8b52f6de6ad3e11834fc7a71b8e3bf"
@@ -1315,6 +1279,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "4d63.com/tz",
     "cloud.google.com/go/storage",
     "github.com/blang/semver",
     "github.com/bmatcuk/doublestar",
@@ -1334,6 +1299,7 @@
     "github.com/docker/docker/registry",
     "github.com/docker/go-connections/tlsconfig",
     "github.com/golang/glog",
+    "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/ptypes",
     "github.com/golang/protobuf/ptypes/empty",
@@ -1342,6 +1308,7 @@
     "github.com/google/go-containerregistry/pkg/authn",
     "github.com/google/go-containerregistry/pkg/name",
     "github.com/google/go-containerregistry/pkg/v1",
+    "github.com/google/go-containerregistry/pkg/v1/random",
     "github.com/google/go-containerregistry/pkg/v1/remote",
     "github.com/google/go-containerregistry/pkg/v1/tarball",
     "github.com/google/go-github/github",
@@ -1355,7 +1322,6 @@
     "github.com/moby/buildkit/frontend/dockerfile/parser",
     "github.com/moby/buildkit/frontend/dockerfile/shell",
     "github.com/pkg/errors",
-    "github.com/rivo/tview",
     "github.com/rjeczalik/notify",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
@@ -1378,14 +1344,17 @@
     "gopkg.in/src-d/go-git.v4/plumbing/object",
     "gopkg.in/yaml.v2",
     "k8s.io/api/apps/v1",
+    "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/api/meta",
+    "k8s.io/apimachinery/pkg/api/resource",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/fields",
     "k8s.io/apimachinery/pkg/labels",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
+    "k8s.io/apimachinery/pkg/runtime/serializer/json",
     "k8s.io/apimachinery/pkg/types",
     "k8s.io/apimachinery/pkg/util/strategicpatch",
     "k8s.io/apimachinery/pkg/util/wait",

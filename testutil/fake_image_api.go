@@ -89,14 +89,17 @@ func (f *FakeAPIClient) ImageInspectWithRaw(_ context.Context, ref string) (type
 		return types.ImageInspect{}, nil, fmt.Errorf("")
 	}
 
-	if _, ok := f.TagToImageID[ref]; !ok {
+	id, ok := f.TagToImageID[ref]
+	if !ok {
 		return types.ImageInspect{}, nil, fmt.Errorf("")
 	}
 
+	rawConfig := []byte(fmt.Sprintf(`{"Config":{"Image":"%s"}}`, id))
+
 	return types.ImageInspect{
-		ID:          f.TagToImageID[ref],
+		ID:          id,
 		RepoDigests: f.RepoDigests,
-	}, nil, nil
+	}, rawConfig, nil
 }
 
 func (f *FakeAPIClient) ImageTag(_ context.Context, image, ref string) error {

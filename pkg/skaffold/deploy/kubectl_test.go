@@ -67,6 +67,7 @@ func TestKubectlDeploy(t *testing.T) {
 		builds      []build.Artifact
 		command     util.Command
 		shouldErr   bool
+		forceDeploy bool
 	}{
 		{
 			description: "no manifest",
@@ -88,6 +89,21 @@ func TestKubectlDeploy(t *testing.T) {
 			command: testutil.NewFakeCmd(t).WithRunOut("kubectl version --client -ojson", kubectlVersion),
 		},
 		{
+			description: "deploy success (forced)",
+			cfg: &latest.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
+			},
+			command: testutil.NewFakeCmd(t).
+				WithRunOut("kubectl version --client -ojson", kubectlVersion).
+				WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), deploymentWebYAML).
+				WithRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force"),
+			builds: []build.Artifact{{
+				ImageName: "leeroy-web",
+				Tag:       "leeroy-web:123",
+			}},
+			forceDeploy: true,
+		},
+		{
 			description: "deploy success",
 			cfg: &latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
@@ -95,7 +111,7 @@ func TestKubectlDeploy(t *testing.T) {
 			command: testutil.NewFakeCmd(t).
 				WithRunOut("kubectl version --client -ojson", kubectlVersion).
 				WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), deploymentWebYAML).
-				WithRun("kubectl --context kubecontext --namespace testNamespace apply --force -f -"),
+				WithRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:123",
@@ -109,7 +125,7 @@ func TestKubectlDeploy(t *testing.T) {
 			command: testutil.NewFakeCmd(t).
 				WithRunOut("kubectl version --client -ojson", kubectlVersion).
 				WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), deploymentWebYAML).
-				WithRunErr("kubectl --context kubecontext --namespace testNamespace apply --force -f -", fmt.Errorf("")),
+				WithRunErr("kubectl --context kubecontext --namespace testNamespace apply -f -", fmt.Errorf("")),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:123",
@@ -129,7 +145,7 @@ func TestKubectlDeploy(t *testing.T) {
 			command: testutil.NewFakeCmd(t).
 				WithRunOut("kubectl version --client -ojson", kubectlVersion).
 				WithRunOut("kubectl --context kubecontext --namespace testNamespace -v=0 create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), deploymentWebYAML).
-				WithRunErr("kubectl --context kubecontext --namespace testNamespace -v=0 apply --overwrite=true --force -f -", fmt.Errorf("")),
+				WithRunErr("kubectl --context kubecontext --namespace testNamespace -v=0 apply --overwrite=true -f -", fmt.Errorf("")),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:123",
@@ -155,6 +171,7 @@ func TestKubectlDeploy(t *testing.T) {
 				KubeContext: testKubeContext,
 				Opts: &config.SkaffoldOptions{
 					Namespace: testNamespace,
+					Force:     test.forceDeploy,
 				},
 			})
 
@@ -248,7 +265,7 @@ func TestKubectlRedeploy(t *testing.T) {
 	util.DefaultExecCommand = testutil.NewFakeCmd(t).
 		WithRunOut("kubectl version --client -ojson", kubectlVersion).
 		WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML).
-		WithRunInput("kubectl --context kubecontext --namespace testNamespace apply --force -f -", `apiVersion: v1
+		WithRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", `apiVersion: v1
 kind: Pod
 metadata:
   labels:
@@ -270,7 +287,7 @@ spec:
   - image: leeroy-web:v1
     name: leeroy-web`).
 		WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML).
-		WithRunInput("kubectl --context kubecontext --namespace testNamespace apply --force -f -", `apiVersion: v1
+		WithRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", `apiVersion: v1
 kind: Pod
 metadata:
   labels:
@@ -283,7 +300,7 @@ spec:
 		WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML)
 
 	cfg := &latest.KubectlDeploy{
-		Manifests: []string{"*.yaml"},
+		Manifests: []string{tmpDir.Path("deployment-app.yaml"), "deployment-web.yaml"},
 	}
 	deployer := NewKubectlDeployer(&runcontext.RunContext{
 		WorkingDir: tmpDir.Root(),

@@ -32,10 +32,10 @@ import (
 // NewTester parses the provided test cases from the Skaffold config,
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
-func NewTester(ctx *runcontext.RunContext) (Tester, error) {
+func NewTester(runCtx *runcontext.RunContext) (Tester, error) {
 	return FullTester{
-		testCases:  ctx.Cfg.Test,
-		workingDir: ctx.WorkingDir,
+		testCases:  runCtx.Cfg.Test,
+		workingDir: runCtx.WorkingDir,
 	}, nil
 }
 

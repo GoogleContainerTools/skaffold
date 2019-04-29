@@ -51,7 +51,7 @@ func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, w
 		return "", err
 	}
 
-	return docker.RemoteDigest(tag)
+	return docker.RemoteDigest(tag, b.insecureRegistries)
 }
 
 func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {

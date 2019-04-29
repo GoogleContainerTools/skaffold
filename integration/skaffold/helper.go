@@ -203,7 +203,7 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	// If the test is killed by a timeout, go test will wait for
 	// os.Stderr and os.Stdout to close as a result.
 	//
-	// However, the `cmd` will stil run in the background
+	// However, the `cmd` will still run in the background
 	// and hold those descriptors open.
 	// As a result, go test will hang forever.
 	//

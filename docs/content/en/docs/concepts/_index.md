@@ -36,6 +36,7 @@ The options are:
 | Option | Type | Description |
 | ------ | ---- | ----------- |
 | `default-repo` | string | The image registry where images are published (See below). |
+| `insecure-registries` | list of strings | A list of image registries that may be accesses without TLS. |
 | `local-cluster` | boolean | If true, do not try to push images after building. By default, contexts with names `docker-for-desktop`, `docker-desktop`, or `minikube` are treated as local. |
 
 For example, to treat any context as local by default:
@@ -123,6 +124,47 @@ Automated image name rewriting strategies are determined based on the default-re
       default-repo: 	gcr.io/k8s-skaffold/myimage
       rewritten image:  gcr.io/k8s-skaffold/myimage/skaffold-example1	
     ```
+    
+### Insecure image registries
+
+During development you may be forced to push images to a registry that does not support HTTPS.
+By itself, Skaffold will never try to downgrade a connection to a registry to plain HTTP.
+In order to access insecure registries, this has to be explicitly configured per registry name.
+
+There are several levels of granularity to allow insecure communication with some registry:
+
+1. Per Skaffold run via the repeatable `--insecure-registry` flag
+
+    ```bash
+    skaffold dev --insecure-registry insecure1.io --insecure-registry insecure2.io
+    ```
+    
+1. Per Skaffold run via `SKAFFOLD_INSECURE_REGISTRY` environment variable
+
+    ```bash
+    SKAFFOLD_INSECURE_REGISTRY='insecure1.io,insecure2.io' skaffold dev
+    ```
+    
+1. Per project via the Skaffold pipeline config `skaffold.yaml`
+    
+    ```yaml
+    build:
+        insecureRegistries:
+        - insecure1.io
+        - insecure2.io
+    ```
+
+1. Per user via Skaffold's global config
+
+    ```bash
+    skaffold config set insecure-registries insecure1.io
+    skaffold config set insecure-registries insecure2.io
+    ```
+    
+    Note that multiple set commands _add_ to the existing list of insecure registries.
+    To clear the list, run `skaffold config unset insecure-registries`.
+    
+Skaffold will join the lists of insecure registries, if configured via multiple sources.
 
 ## Architecture
 
@@ -179,3 +221,34 @@ Skaffold provides two separate operating modes:
 
 Skaffold command-line interface also provides other functionalities that may
 be helpful to your project. For more information, see [CLI References](/docs/references/cli).
+
+## Local development
+
+Local development means that Skaffold can skip pushing built container images, because the images are already present where they are run.
+For standard development setups such as `minikube` and `docker-for-desktop`, this works out of the box.
+
+However, for non-standard local setups, such as `minikube` profiles, some extra configuration is necessary.
+The essential steps are:
+
+1. Ensure that Skaffold builds the images with the docker daemon, which also runs the containers.
+2. Tell Skaffold to skip pushing images either by configuring
+
+    ```yaml
+    build:
+      local:
+        push: false
+    ```
+   
+   or by marking a kubernetes context as local (see the following example).
+
+For example, when running `minikube` with a custom profile, such as `minikube start -p my-profile`:
+
+1. Set up the docker environment for Skaffold with `source <(minikube docker-env -p my-profile)`.
+   This should set some environment variables for docker (check with `env | grep DOCKER`).
+   It is important to do this in the same shell where Skaffold is executed.
+   
+2. Tell Skaffold that the kubernetes context `my-profile` refers to a local cluster with
+
+    ```bash
+    skaffold config set --kube-context my-profile local-cluster true
+    ```

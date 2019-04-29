@@ -15,16 +15,12 @@
 package remote
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
-	"strings"
 	"sync"
 
-	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/partial"
@@ -43,129 +39,25 @@ type remoteImage struct {
 	mediaType    types.MediaType
 }
 
-// ImageOption is a functional option for Image.
-type ImageOption func(*imageOpener) error
-
 var _ partial.CompressedImageCore = (*remoteImage)(nil)
-
-type imageOpener struct {
-	auth      authn.Authenticator
-	transport http.RoundTripper
-	ref       name.Reference
-	client    *http.Client
-}
-
-func (i *imageOpener) Open() (v1.Image, error) {
-	tr, err := transport.New(i.ref.Context().Registry, i.auth, i.transport, []string{i.ref.Scope(transport.PullScope)})
-	if err != nil {
-		return nil, err
-	}
-	ri := &remoteImage{
-		fetcher: fetcher{
-			Ref:    i.ref,
-			Client: &http.Client{Transport: tr},
-		},
-	}
-	imgCore, err := partial.CompressedToImage(ri)
-	if err != nil {
-		return imgCore, err
-	}
-	// Wrap the v1.Layers returned by this v1.Image in a hint for downstream
-	// remote.Write calls to facilitate cross-repo "mounting".
-	return &mountableImage{
-		Image:     imgCore,
-		Reference: i.ref,
-	}, nil
-}
 
 // Image provides access to a remote image reference, applying functional options
 // to the underlying imageOpener before resolving the reference into a v1.Image.
 func Image(ref name.Reference, options ...ImageOption) (v1.Image, error) {
-	img := &imageOpener{
-		auth:      authn.Anonymous,
-		transport: http.DefaultTransport,
-		ref:       ref,
+	acceptable := []types.MediaType{
+		types.DockerManifestSchema2,
+		types.OCIManifestSchema1,
+		// We resolve these to images later.
+		types.DockerManifestList,
+		types.OCIImageIndex,
 	}
 
-	for _, option := range options {
-		if err := option(img); err != nil {
-			return nil, err
-		}
-	}
-	return img.Open()
-}
-
-// fetcher implements methods for reading from a remote image.
-type fetcher struct {
-	Ref    name.Reference
-	Client *http.Client
-}
-
-// url returns a url.Url for the specified path in the context of this remote image reference.
-func (f *fetcher) url(resource, identifier string) url.URL {
-	return url.URL{
-		Scheme: f.Ref.Context().Registry.Scheme(),
-		Host:   f.Ref.Context().RegistryStr(),
-		Path:   fmt.Sprintf("/v2/%s/%s/%s", f.Ref.Context().RepositoryStr(), resource, identifier),
-	}
-}
-
-func (f *fetcher) fetchManifest(acceptable []types.MediaType) ([]byte, *v1.Descriptor, error) {
-	u := f.url("manifests", f.Ref.Identifier())
-	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	desc, err := get(ref, acceptable, options...)
 	if err != nil {
-		return nil, nil, err
-	}
-	accept := []string{}
-	for _, mt := range acceptable {
-		accept = append(accept, string(mt))
-	}
-	req.Header.Set("Accept", strings.Join(accept, ","))
-
-	resp, err := f.Client.Do(req)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer resp.Body.Close()
-
-	if err := transport.CheckError(resp, http.StatusOK); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	manifest, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	digest, size, err := v1.SHA256(bytes.NewReader(manifest))
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Validate the digest matches what we asked for, if pulling by digest.
-	if dgst, ok := f.Ref.(name.Digest); ok {
-		if digest.String() != dgst.DigestStr() {
-			return nil, nil, fmt.Errorf("manifest digest: %q does not match requested digest: %q for %q", digest, dgst.DigestStr(), f.Ref)
-		}
-	} else {
-		// Do nothing for tags; I give up.
-		//
-		// We'd like to validate that the "Docker-Content-Digest" header matches what is returned by the registry,
-		// but so many registries implement this incorrectly that it's not worth checking.
-		//
-		// For reference:
-		// https://github.com/docker/distribution/issues/2395
-		// https://github.com/GoogleContainerTools/kaniko/issues/298
-	}
-
-	// Return all this info since we have to calculate it anyway.
-	desc := v1.Descriptor{
-		Digest:    digest,
-		Size:      size,
-		MediaType: types.MediaType(resp.Header.Get("Content-Type")),
-	}
-
-	return manifest, &desc, nil
+	return desc.Image()
 }
 
 func (r *remoteImage) MediaType() (types.MediaType, error) {
@@ -175,7 +67,6 @@ func (r *remoteImage) MediaType() (types.MediaType, error) {
 	return types.DockerManifestSchema2, nil
 }
 
-// TODO(jonjohnsonjr): Handle manifest lists.
 func (r *remoteImage) RawManifest() ([]byte, error) {
 	r.manifestLock.Lock()
 	defer r.manifestLock.Unlock()
@@ -183,12 +74,14 @@ func (r *remoteImage) RawManifest() ([]byte, error) {
 		return r.manifest, nil
 	}
 
-	// TODO(jonjohnsonjr): Accept manifest list and image index?
+	// NOTE(jonjohnsonjr): We should never get here because the public entrypoints
+	// do type-checking via remote.Descriptor. I've left this here for tests that
+	// directly instantiate a remoteImage.
 	acceptable := []types.MediaType{
 		types.DockerManifestSchema2,
 		types.OCIManifestSchema1,
 	}
-	manifest, desc, err := r.fetchManifest(acceptable)
+	manifest, desc, err := r.fetchManifest(r.Ref, acceptable)
 	if err != nil {
 		return nil, err
 	}
@@ -257,6 +150,22 @@ func (rl *remoteLayer) Compressed() (io.ReadCloser, error) {
 // Manifest implements partial.WithManifest so that we can use partial.BlobSize below.
 func (rl *remoteLayer) Manifest() (*v1.Manifest, error) {
 	return partial.Manifest(rl.ri)
+}
+
+// MediaType implements v1.Layer
+func (rl *remoteLayer) MediaType() (types.MediaType, error) {
+	m, err := rl.Manifest()
+	if err != nil {
+		return "", err
+	}
+
+	for _, layer := range m.Layers {
+		if layer.Digest == rl.digest {
+			return layer.MediaType, nil
+		}
+	}
+
+	return "", fmt.Errorf("unable to find layer with digest: %v", rl.digest)
 }
 
 // Size implements partial.CompressedLayer

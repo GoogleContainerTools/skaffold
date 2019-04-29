@@ -33,18 +33,19 @@ import (
 type Builder struct {
 	*latest.ClusterDetails
 
-	timeout time.Duration
+	timeout            time.Duration
+	insecureRegistries map[string]bool
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Kaniko.
-func NewBuilder(ctx *runcontext.RunContext) (*Builder, error) {
-	timeout, err := time.ParseDuration(ctx.Cfg.Build.Cluster.Timeout)
+func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
+	timeout, err := time.ParseDuration(runCtx.Cfg.Build.Cluster.Timeout)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing timeout")
 	}
 
 	return &Builder{
-		ClusterDetails: ctx.Cfg.Build.Cluster,
+		ClusterDetails: runCtx.Cfg.Build.Cluster,
 		timeout:        timeout,
 	}, nil
 }
@@ -58,7 +59,7 @@ func (b *Builder) Labels() map[string]string {
 
 // DependenciesForArtifact returns the Dockerfile dependencies for this kaniko artifact
 func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
-	paths, err := docker.GetDependencies(ctx, a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs)
+	paths, err := docker.GetDependencies(ctx, a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, b.insecureRegistries)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
 	}

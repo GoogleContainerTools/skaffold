@@ -119,7 +119,7 @@ func (td tarDescriptor) findSpecifiedImageDescriptor(tag *name.Tag) (*singleImag
 	}
 	for _, img := range td {
 		for _, tagStr := range img.RepoTags {
-			repoTag, err := name.NewTag(tagStr, name.WeakValidation)
+			repoTag, err := name.NewTag(tagStr)
 			if err != nil {
 				return nil, err
 			}
@@ -226,6 +226,13 @@ func (ulft *uncompressedLayerFromTarball) Uncompressed() (io.ReadCloser, error) 
 	return extractFileFromTar(ulft.opener, ulft.filePath)
 }
 
+func (ulft *uncompressedLayerFromTarball) MediaType() (types.MediaType, error) {
+	// Technically the media type should be 'application/tar' but given that our
+	// v1.Layer doesn't force consumers to care about whether the layer is compressed
+	// we should be fine returning the DockerLayer media type
+	return types.DockerLayer, nil
+}
+
 func (i *uncompressedImage) LayerByDiffID(h v1.Hash) (partial.UncompressedLayer, error) {
 	cfg, err := partial.ConfigFile(i)
 	if err != nil {
@@ -308,6 +315,11 @@ func (clft *compressedLayerFromTarball) Digest() (v1.Hash, error) {
 // Compressed implements partial.CompressedLayer
 func (clft *compressedLayerFromTarball) Compressed() (io.ReadCloser, error) {
 	return extractFileFromTar(clft.opener, clft.filePath)
+}
+
+// MediaType implements partial.CompressedLayer
+func (clft *compressedLayerFromTarball) MediaType() (types.MediaType, error) {
+	return types.DockerLayer, nil
 }
 
 // Size implements partial.CompressedLayer

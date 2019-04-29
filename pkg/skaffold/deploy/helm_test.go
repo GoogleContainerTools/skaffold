@@ -285,93 +285,33 @@ func TestHelmDeploy(t *testing.T) {
 		{
 			description: "deploy success",
 			cmd:         &MockHelm{t: t},
-			runContext: &runcontext.RunContext{
-				Cfg: &latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							HelmDeploy: testDeployConfig,
-						},
-					},
-				},
-				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
-					Namespace: testNamespace,
-				},
-			},
-			builds: testBuilds,
+			runContext:  makeRunContext(testDeployConfig, false),
+			builds:      testBuilds,
 		},
 		{
 			description: "deploy success with recreatePods",
 			cmd:         &MockHelm{t: t},
-			runContext: &runcontext.RunContext{
-				Cfg: &latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							HelmDeploy: testDeployRecreatePodsConfig,
-						},
-					},
-				},
-				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
-					Namespace: testNamespace,
-				},
-			},
-			builds: testBuilds,
+			runContext:  makeRunContext(testDeployRecreatePodsConfig, false),
+			builds:      testBuilds,
 		},
 		{
 			description: "deploy success with skipBuildDependencies",
 			cmd:         &MockHelm{t: t},
-			runContext: &runcontext.RunContext{
-				Cfg: &latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							HelmDeploy: testDeploySkipBuildDependenciesConfig,
-						},
-					},
-				},
-				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
-					Namespace: testNamespace,
-				},
-			},
-			builds: testBuilds,
+			runContext:  makeRunContext(testDeploySkipBuildDependenciesConfig, false),
+			builds:      testBuilds,
 		},
 		{
 			description: "deploy error unmatched parameter",
 			cmd:         &MockHelm{t: t},
-			runContext: &runcontext.RunContext{
-				Cfg: &latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							HelmDeploy: testDeployConfigParameterUnmatched,
-						},
-					},
-				},
-				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
-					Namespace: testNamespace,
-				},
-			},
-			builds:    testBuilds,
-			shouldErr: true,
+			runContext:  makeRunContext(testDeployConfigParameterUnmatched, false),
+			builds:      testBuilds,
+			shouldErr:   true,
 		},
 		{
 			description: "deploy success remote chart with skipBuildDependencies",
 			cmd:         &MockHelm{t: t},
-			runContext: &runcontext.RunContext{
-				Cfg: &latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							HelmDeploy: testDeploySkipBuildDependencies,
-						},
-					},
-				},
-				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
-					Namespace: testNamespace,
-				},
-			},
-			builds: testBuilds,
+			runContext:  makeRunContext(testDeploySkipBuildDependencies, false),
+			builds:      testBuilds,
 		},
 		{
 			description: "deploy error remote chart without skipBuildDependencies",
@@ -379,21 +319,9 @@ func TestHelmDeploy(t *testing.T) {
 				t:         t,
 				depResult: fmt.Errorf("unexpected error"),
 			},
-			runContext: &runcontext.RunContext{
-				Cfg: &latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							HelmDeploy: testDeployRemoteChart,
-						},
-					},
-				},
-				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
-					Namespace: testNamespace,
-				},
-			},
-			builds:    testBuilds,
-			shouldErr: true,
+			runContext: makeRunContext(testDeployRemoteChart, false),
+			builds:     testBuilds,
+			shouldErr:  true,
 		},
 		{
 			description: "get failure should install not upgrade",
@@ -401,9 +329,9 @@ func TestHelmDeploy(t *testing.T) {
 				t:         t,
 				getResult: fmt.Errorf("not found"),
 				installMatcher: func(cmd *exec.Cmd) bool {
-					expected := map[string]bool{fmt.Sprintf("image=%s", testBuilds[0].Tag): true}
+					expected := fmt.Sprintf("image=%s", testBuilds[0].Tag)
 					for _, arg := range cmd.Args {
-						if expected[arg] {
+						if expected == arg {
 							return true
 						}
 					}
@@ -411,20 +339,8 @@ func TestHelmDeploy(t *testing.T) {
 				},
 				upgradeResult: fmt.Errorf("should not have called upgrade"),
 			},
-			runContext: &runcontext.RunContext{
-				Cfg: &latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							HelmDeploy: testDeployConfig,
-						},
-					},
-				},
-				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
-					Namespace: testNamespace,
-				},
-			},
-			builds: testBuilds,
+			runContext: makeRunContext(testDeployConfig, false),
+			builds:     testBuilds,
 		},
 		{
 			description: "get failure should install not upgrade with helm image strategy",
@@ -437,9 +353,9 @@ func TestHelmDeploy(t *testing.T) {
 						return false
 					}
 
-					expected := map[string]bool{fmt.Sprintf("image.repository=%s,image.tag=%s", dockerRef.BaseName, dockerRef.Tag): true}
+					expected := fmt.Sprintf("image.repository=%s,image.tag=%s", dockerRef.BaseName, dockerRef.Tag)
 					for _, arg := range cmd.Args {
-						if expected[arg] {
+						if expected == arg {
 							return true
 						}
 					}
@@ -447,41 +363,42 @@ func TestHelmDeploy(t *testing.T) {
 				},
 				upgradeResult: fmt.Errorf("should not have called upgrade"),
 			},
-			runContext: &runcontext.RunContext{
-				Cfg: &latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							HelmDeploy: testDeployHelmStyleConfig,
-						},
-					},
-				},
-				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
-					Namespace: testNamespace,
-				},
-			},
-			builds: testBuilds,
+			runContext: makeRunContext(testDeployHelmStyleConfig, false),
+			builds:     testBuilds,
 		},
 		{
-			description: "get success should upgrade not install",
+			description: "get success should upgrade by force, not install",
 			cmd: &MockHelm{
-				t:             t,
+				t: t,
+				upgradeMatcher: func(cmd *exec.Cmd) bool {
+					for _, arg := range cmd.Args {
+						if arg == "--force" {
+							return true
+						}
+					}
+					return false
+				},
 				installResult: fmt.Errorf("should not have called install"),
 			},
-			runContext: &runcontext.RunContext{
-				Cfg: &latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							HelmDeploy: testDeployConfig,
-						},
-					},
+			runContext: makeRunContext(testDeployConfig, true),
+			builds:     testBuilds,
+		},
+		{
+			description: "get success should upgrade without force, not install",
+			cmd: &MockHelm{
+				t: t,
+				upgradeMatcher: func(cmd *exec.Cmd) bool {
+					for _, arg := range cmd.Args {
+						if arg == "--force" {
+							return false
+						}
+					}
+					return true
 				},
-				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
-					Namespace: testNamespace,
-				},
+				installResult: fmt.Errorf("should not have called install"),
 			},
-			builds: testBuilds,
+			runContext: makeRunContext(testDeployConfig, false),
+			builds:     testBuilds,
 		},
 		{
 			description: "deploy error",
@@ -489,21 +406,9 @@ func TestHelmDeploy(t *testing.T) {
 				t:             t,
 				upgradeResult: fmt.Errorf("unexpected error"),
 			},
-			shouldErr: true,
-			runContext: &runcontext.RunContext{
-				Cfg: &latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							HelmDeploy: testDeployConfig,
-						},
-					},
-				},
-				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
-					Namespace: testNamespace,
-				},
-			},
-			builds: testBuilds,
+			shouldErr:  true,
+			runContext: makeRunContext(testDeployConfig, false),
+			builds:     testBuilds,
 		},
 		{
 			description: "dep build error",
@@ -511,21 +416,9 @@ func TestHelmDeploy(t *testing.T) {
 				t:         t,
 				depResult: fmt.Errorf("unexpected error"),
 			},
-			shouldErr: true,
-			runContext: &runcontext.RunContext{
-				Cfg: &latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							HelmDeploy: testDeployConfig,
-						},
-					},
-				},
-				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
-					Namespace: testNamespace,
-				},
-			},
-			builds: testBuilds,
+			shouldErr:  true,
+			runContext: makeRunContext(testDeployConfig, false),
+			builds:     testBuilds,
 		},
 		{
 			description: "should package chart and deploy",
@@ -533,21 +426,9 @@ func TestHelmDeploy(t *testing.T) {
 				t:          t,
 				packageOut: bytes.NewBufferString("Packaged to " + os.TempDir() + "foo-0.1.2.tgz"),
 			},
-			shouldErr: false,
-			runContext: &runcontext.RunContext{
-				Cfg: &latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							HelmDeploy: testDeployFooWithPackaged,
-						},
-					},
-				},
-				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
-					Namespace: testNamespace,
-				},
-			},
-			builds: testBuildsFoo,
+			shouldErr:  false,
+			runContext: makeRunContext(testDeployFooWithPackaged, false),
+			builds:     testBuildsFoo,
 		},
 		{
 			description: "should fail to deploy when packaging fails",
@@ -555,39 +436,15 @@ func TestHelmDeploy(t *testing.T) {
 				t:             t,
 				packageResult: fmt.Errorf("packaging failed"),
 			},
-			shouldErr: true,
-			runContext: &runcontext.RunContext{
-				Cfg: &latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							HelmDeploy: testDeployFooWithPackaged,
-						},
-					},
-				},
-				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
-					Namespace: testNamespace,
-				},
-			},
-			builds: testBuildsFoo,
+			shouldErr:  true,
+			runContext: makeRunContext(testDeployFooWithPackaged, false),
+			builds:     testBuildsFoo,
 		},
 		{
 			description: "deploy and get templated release name",
 			cmd:         &MockHelm{t: t},
-			runContext: &runcontext.RunContext{
-				Cfg: &latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							HelmDeploy: testDeployWithTemplatedName,
-						},
-					},
-				},
-				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
-					Namespace: testNamespace,
-				},
-			},
-			builds: testBuilds,
+			runContext:  makeRunContext(testDeployWithTemplatedName, false),
+			builds:      testBuilds,
 		},
 	}
 
@@ -752,35 +609,39 @@ func TestHelmDependencies(t *testing.T) {
 			for _, file := range tt.files {
 				folder.Write(file, "")
 			}
-
-			deployer := NewHelmDeployer(&runcontext.RunContext{
-				Cfg: &latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							HelmDeploy: &latest.HelmDeploy{
-								Releases: []latest.HelmRelease{
-									{
-										Name:        "skaffold-helm",
-										ChartPath:   folder.Root(),
-										ValuesFiles: tt.valuesFiles,
-										Values:      map[string]string{"image": "skaffold-helm"},
-										Overrides:   schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-										SetValues:   map[string]string{"some.key": "somevalue"},
-									},
-								},
-							},
-						},
+			deployer := NewHelmDeployer(makeRunContext(&latest.HelmDeploy{
+				Releases: []latest.HelmRelease{
+					{
+						Name:        "skaffold-helm",
+						ChartPath:   folder.Root(),
+						ValuesFiles: tt.valuesFiles,
+						Values:      map[string]string{"image": "skaffold-helm"},
+						Overrides:   schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+						SetValues:   map[string]string{"some.key": "somevalue"},
 					},
 				},
-				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
-					Namespace: testNamespace,
-				},
-			})
+			}, false))
 
 			deps, err := deployer.Dependencies()
 
 			testutil.CheckErrorAndDeepEqual(t, false, err, tt.expected(folder), deps)
 		})
+	}
+}
+
+func makeRunContext(helmDeploy *latest.HelmDeploy, force bool) *runcontext.RunContext {
+	return &runcontext.RunContext{
+		Cfg: &latest.Pipeline{
+			Deploy: latest.DeployConfig{
+				DeployType: latest.DeployType{
+					HelmDeploy: helmDeploy,
+				},
+			},
+		},
+		KubeContext: testKubeContext,
+		Opts: &config.SkaffoldOptions{
+			Namespace: testNamespace,
+			Force:     force,
+		},
 	}
 }

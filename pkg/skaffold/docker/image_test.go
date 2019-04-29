@@ -20,12 +20,19 @@ import (
 	"context"
 	"io/ioutil"
 	"os"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-containerregistry/pkg/name"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/random"
 )
 
 func TestMain(m *testing.M) {
@@ -315,4 +322,119 @@ func TestRepoDigest(t *testing.T) {
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
 		})
 	}
+}
+
+func TestInsecureRegistry(t *testing.T) {
+	called := false // variable to make sure we've called our getInsecureRegistry function
+	getInsecureRegistryImpl = func(_ string) (name.Reference, error) {
+		called = true
+		return name.Tag{}, nil
+	}
+	getRemoteImageImpl = func(_ name.Reference) (v1.Image, error) {
+		return random.Image(0, 0)
+	}
+
+	tests := []struct {
+		name               string
+		image              string
+		insecureRegistries map[string]bool
+		insecure           bool
+		shouldErr          bool
+	}{
+		{
+			name:               "secure image",
+			image:              "gcr.io/secure/image",
+			insecureRegistries: map[string]bool{},
+		},
+		{
+			name:  "insecure image",
+			image: "my.insecure.registry/image",
+			insecureRegistries: map[string]bool{
+				"my.insecure.registry": true,
+			},
+			insecure: true,
+		},
+		{
+			name:      "insecure image not provided by user",
+			image:     "my.insecure.registry/image",
+			insecure:  true,
+			shouldErr: true,
+		},
+		{
+			name:  "secure image provided in insecure registries list",
+			image: "gcr.io/secure/image",
+			insecureRegistries: map[string]bool{
+				"gcr.io": true,
+			},
+			shouldErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := remoteImage(test.image, test.insecureRegistries)
+			if err != nil {
+				t.Errorf("error calling remoteImage: %s", err.Error())
+			}
+			if test.insecure && !called { // error condition
+				if !test.shouldErr {
+					t.Errorf("getInsecureRegistry not called for insecure registry")
+				}
+			}
+			if !test.insecure && called { // error condition
+				if !test.shouldErr {
+					t.Errorf("getInsecureRegistry called for secure registry")
+				}
+			}
+			called = false
+		})
+	}
+}
+
+func TestConfigFile(t *testing.T) {
+	api := &testutil.FakeAPIClient{
+		TagToImageID: map[string]string{
+			"gcr.io/image": "sha256:imageIDabcab",
+		},
+	}
+
+	localDocker := NewLocalDaemon(api, nil, false, nil)
+	cfg, err := localDocker.ConfigFile(context.Background(), "gcr.io/image")
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, "sha256:imageIDabcab", cfg.Config.Image)
+}
+
+type APICallsCounter struct {
+	client.CommonAPIClient
+	calls int32
+}
+
+func (c *APICallsCounter) ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error) {
+	atomic.AddInt32(&c.calls, 1)
+	return c.CommonAPIClient.ImageInspectWithRaw(ctx, image)
+}
+
+func TestConfigFileConcurrentCalls(t *testing.T) {
+	api := &APICallsCounter{
+		CommonAPIClient: &testutil.FakeAPIClient{
+			TagToImageID: map[string]string{
+				"gcr.io/image": "sha256:imageIDabcab",
+			},
+		},
+	}
+
+	localDocker := NewLocalDaemon(api, nil, false, nil)
+
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			localDocker.ConfigFile(context.Background(), "gcr.io/image")
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	// Check that the APIClient was called only once
+	testutil.CheckDeepEqual(t, int32(1), atomic.LoadInt32(&api.calls))
 }

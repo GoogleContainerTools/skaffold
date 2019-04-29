@@ -22,8 +22,8 @@ import (
 	"testing"
 
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	yamlpatch "github.com/krishicks/yaml-patch"
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -248,7 +248,7 @@ func TestApplyProfiles(t *testing.T) {
 					Name: "profile",
 					Patches: []latest.JSONPatch{{
 						Path:  "/build/artifacts/0/docker/dockerfile",
-						Value: yamlpatch.NewNode(str("Dockerfile.DEV")),
+						Value: &util.YamlpatchNode{Node: *yamlpatch.NewNode(str("Dockerfile.DEV"))},
 					}},
 				}),
 			),
@@ -304,76 +304,6 @@ func TestApplyProfiles(t *testing.T) {
 					ImageName:      "image",
 					StructureTests: []string{"test/*"},
 				}),
-			),
-		},
-		{
-			description: "execution environment",
-			profile:     "profile",
-			config: config(
-				withLocalBuild(
-					withGitTagger(),
-					withExecutionEnvironment(constants.Local),
-				),
-				withProfiles(latest.Profile{
-					Name: "profile",
-					Pipeline: latest.Pipeline{
-						Build: latest.BuildConfig{
-							ExecutionEnvironment: &latest.ExecutionEnvironment{
-								Name: constants.GoogleCloudBuild,
-							},
-						},
-					},
-				}),
-			),
-			expected: config(
-				withLocalBuild(
-					withGitTagger(),
-					withExecutionEnvironment(constants.GoogleCloudBuild),
-				),
-			),
-		},
-		{
-			description: "existing execution environment",
-			profile:     "profile",
-			config: config(
-				withLocalBuild(
-					withGitTagger(),
-					withExecutionEnvironment(constants.Local),
-				),
-				withProfiles(latest.Profile{
-					Name: "profile",
-				}),
-			),
-			expected: config(
-				withLocalBuild(
-					withGitTagger(),
-					withExecutionEnvironment(constants.Local),
-				),
-			),
-		},
-		{
-			description: "no original execution environment",
-			profile:     "profile",
-			config: config(
-				withLocalBuild(
-					withGitTagger(),
-				),
-				withProfiles(latest.Profile{
-					Name: "profile",
-					Pipeline: latest.Pipeline{
-						Build: latest.BuildConfig{
-							ExecutionEnvironment: &latest.ExecutionEnvironment{
-								Name: constants.GoogleCloudBuild,
-							},
-						},
-					},
-				}),
-			),
-			expected: config(
-				withLocalBuild(
-					withGitTagger(),
-					withExecutionEnvironment(constants.GoogleCloudBuild),
-				),
 			),
 		},
 	}

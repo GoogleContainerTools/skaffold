@@ -32,14 +32,11 @@ type RunContext struct {
 	Opts *config.SkaffoldOptions
 	Cfg  *latest.Pipeline
 
-	// Plugin is true if at least one artifact is built by a plugin
-	// this is temporary - will go away as soon as all the builders are plugins
-	Plugin bool
-
-	DefaultRepo string
-	KubeContext string
-	WorkingDir  string
-	Namespaces  []string
+	DefaultRepo        string
+	KubeContext        string
+	WorkingDir         string
+	Namespaces         []string
+	InsecureRegistries map[string]bool
 }
 
 func GetRunContext(opts *config.SkaffoldOptions, cfg *latest.Pipeline) (*RunContext, error) {
@@ -65,19 +62,25 @@ func GetRunContext(opts *config.SkaffoldOptions, cfg *latest.Pipeline) (*RunCont
 		return nil, errors.Wrap(err, "getting default repo")
 	}
 
-	plugin := false
-	for _, a := range cfg.Build.Artifacts {
-		if a.BuilderPlugin != nil {
-			plugin = true
-		}
+	// combine all provided lists of insecure registries into a map
+	cfgRegistries, err := configutil.GetInsecureRegistries()
+	if err != nil {
+		logrus.Warnf("error retrieving insecure registries from global config: push/pull issues may exist...")
 	}
+	regList := append(opts.InsecureRegistries, cfg.Build.InsecureRegistries...)
+	regList = append(regList, cfgRegistries...)
+	insecureRegistries := make(map[string]bool, len(regList))
+	for _, r := range regList {
+		insecureRegistries[r] = true
+	}
+
 	return &RunContext{
-		Opts:        opts,
-		Cfg:         cfg,
-		Plugin:      plugin,
-		WorkingDir:  cwd,
-		DefaultRepo: defaultRepo,
-		KubeContext: kubeContext,
-		Namespaces:  namespaces,
+		Opts:               opts,
+		Cfg:                cfg,
+		WorkingDir:         cwd,
+		DefaultRepo:        defaultRepo,
+		KubeContext:        kubeContext,
+		Namespaces:         namespaces,
+		InsecureRegistries: insecureRegistries,
 	}, nil
 }

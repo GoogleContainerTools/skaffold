@@ -21,7 +21,6 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
-	plugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -33,7 +32,6 @@ func NewCmdRun(out io.Writer) *cobra.Command {
 		Short: "Runs a pipeline file",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opts.Command = "run"
 			err := run(out)
 			if err == nil {
 				tips.PrintForRun(out, opts)
@@ -50,7 +48,6 @@ func NewCmdRun(out io.Writer) *cobra.Command {
 
 func run(out io.Writer) error {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer plugin.CleanupClients()
 	defer cancel()
 	catchCtrlC(cancel)
 

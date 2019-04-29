@@ -17,8 +17,8 @@ limitations under the License.
 package v1beta7
 
 import (
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta8"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
@@ -29,7 +29,7 @@ import (
 // kaniko/resource requirements
 // 2. No removals
 // 3. No updates
-func (config *SkaffoldPipeline) Upgrade() (util.VersionedConfig, error) {
+func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
 	if err := pkgutil.CloneThroughJSON(config.Deploy, &newDeploy); err != nil {

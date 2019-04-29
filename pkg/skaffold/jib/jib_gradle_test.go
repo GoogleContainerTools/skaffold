@@ -19,9 +19,11 @@ package jib
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -38,9 +40,11 @@ func TestGetDependenciesGradle(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
+	tmpDir.Write("build", "")
 	tmpDir.Write("dep1", "")
 	tmpDir.Write("dep2", "")
 
+	build := tmpDir.Path("build")
 	dep1 := tmpDir.Path("dep1")
 	dep2 := tmpDir.Path("dep2")
 
@@ -49,18 +53,34 @@ func TestGetDependenciesGradle(t *testing.T) {
 	var tests = []struct {
 		description string
 		stdout      string
+		modTime     time.Time
 		expected    []string
 		err         error
 	}{
 		{
-			description: "success",
-			stdout:      fmt.Sprintf("%s\n%s\n\n\n", dep1, dep2),
-			expected:    []string{dep1, dep2},
-		},
-		{
 			description: "failure",
 			stdout:      "",
+			modTime:     time.Unix(0, 0),
 			err:         errors.New("error"),
+		},
+		{
+			description: "success",
+			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\"],\"ignore\":[]}", build, dep1),
+			modTime:     time.Unix(0, 0),
+			expected:    []string{"build", "dep1"},
+		},
+		{
+			// Expected output differs from stdout since build file hasn't change, thus gradle command won't run
+			description: "success",
+			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\", \"%s\"],\"ignore\":[]}", build, dep1, dep2),
+			modTime:     time.Unix(0, 0),
+			expected:    []string{"build", "dep1"},
+		},
+		{
+			description: "success",
+			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\", \"%s\"],\"ignore\":[]}", build, dep1, dep2),
+			modTime:     time.Unix(10000, 0),
+			expected:    []string{"build", "dep1", "dep2"},
 		},
 	}
 
@@ -68,16 +88,19 @@ func TestGetDependenciesGradle(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 			util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOutErr(
-				strings.Join(getCommandGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{}).Args, " "),
+				strings.Join(getCommandGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{Project: "gradle-test"}).Args, " "),
 				test.stdout,
 				test.err,
 			)
 
-			deps, err := GetDependenciesGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{})
+			// Change build file mod time
+			os.Chtimes(build, test.modTime, test.modTime)
+
+			deps, err := GetDependenciesGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{Project: "gradle-test"})
 			if test.err != nil {
-				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jibGradle dependencies: "+test.err.Error(), err.Error())
+				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jibGradle dependencies: initial Jib dependency refresh failed: failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.0.2+): "+test.err.Error(), err.Error())
 			} else {
-				testutil.CheckDeepEqual(t, []string{dep1, dep2}, deps)
+				testutil.CheckDeepEqual(t, test.expected, deps)
 			}
 		})
 	}
@@ -97,7 +120,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{},
 			filesInWorkspace:  []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{":_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{":_jibSkaffoldFilesV2", "-q"})
 			},
 		},
 		{
@@ -105,7 +128,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{Project: "project"},
 			filesInWorkspace:  []string{},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{":project:_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{":project:_jibSkaffoldFilesV2", "-q"})
 			},
 		},
 		{
@@ -113,7 +136,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{},
 			filesInWorkspace:  []string{"gradlew", "gradlew.cmd"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{":_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{":_jibSkaffoldFilesV2", "-q"})
 			},
 		},
 		{
@@ -121,7 +144,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{Project: "project"},
 			filesInWorkspace:  []string{"gradlew", "gradlew.cmd"},
 			expectedCmd: func(workspace string) *exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{":project:_jibSkaffoldFiles", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{":project:_jibSkaffoldFilesV2", "-q"})
 			},
 		},
 	}

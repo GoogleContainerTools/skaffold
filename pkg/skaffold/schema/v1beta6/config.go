@@ -18,18 +18,17 @@ package v1beta6
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	yamlpatch "github.com/krishicks/yaml-patch"
 )
 
 const Version string = "skaffold/v1beta6"
 
-// NewSkaffoldPipeline creates a SkaffoldPipeline
-func NewSkaffoldPipeline() util.VersionedConfig {
-	return new(SkaffoldPipeline)
+// NewSkaffoldConfig creates a SkaffoldConfig
+func NewSkaffoldConfig() util.VersionedConfig {
+	return new(SkaffoldConfig)
 }
 
-// SkaffoldPipeline describes a Skaffold pipeline.
-type SkaffoldPipeline struct {
+// SkaffoldConfig describes a Skaffold pipeline.
+type SkaffoldConfig struct {
 	// APIVersion is the version of the configuration.
 	APIVersion string `yaml:"apiVersion"`
 
@@ -49,7 +48,7 @@ type SkaffoldPipeline struct {
 	Profiles []Profile `yaml:"profiles,omitempty"`
 }
 
-func (c *SkaffoldPipeline) GetVersion() string {
+func (c *SkaffoldConfig) GetVersion() string {
 	return c.APIVersion
 }
 
@@ -523,7 +522,7 @@ type JSONPatch struct {
 	From string `yaml:"from,omitempty"`
 
 	// Value is the value to apply. Can be any portion of yaml.
-	Value *yamlpatch.Node `yaml:"value,omitempty"`
+	Value *util.YamlpatchNode `yaml:"value,omitempty"`
 }
 
 // Activation criteria by which a profile is auto-activated.

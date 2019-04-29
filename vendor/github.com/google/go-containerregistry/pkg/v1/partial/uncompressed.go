@@ -32,6 +32,9 @@ type UncompressedLayer interface {
 
 	// Uncompressed returns an io.ReadCloser for the uncompressed layer contents.
 	Uncompressed() (io.ReadCloser, error)
+
+	// Returns the mediaType for the compressed Layer
+	MediaType() (types.MediaType, error)
 }
 
 // uncompressedLayerExtender implements v1.Image using the uncompressed base properties.
@@ -111,11 +114,6 @@ type uncompressedImageExtender struct {
 
 // Assert that our extender type completes the v1.Image interface
 var _ v1.Image = (*uncompressedImageExtender)(nil)
-
-// BlobSet implements v1.Image
-func (i *uncompressedImageExtender) BlobSet() (map[v1.Hash]struct{}, error) {
-	return BlobSet(i)
-}
 
 // Digest implements v1.Image
 func (i *uncompressedImageExtender) Digest() (v1.Hash, error) {

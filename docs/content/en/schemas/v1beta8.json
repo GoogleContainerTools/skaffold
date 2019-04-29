@@ -385,6 +385,15 @@
               "description": "environment in which the build should run. Possible values: googleCloudBuild.",
               "x-intellij-html-description": "environment in which the build should run. Possible values: googleCloudBuild."
             },
+            "insecureRegistries": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "a list of registries declared by the user to be insecure. These registries will be connected to via HTTP instead of HTTPS.",
+              "x-intellij-html-description": "a list of registries declared by the user to be insecure. These registries will be connected to via HTTP instead of HTTPS.",
+              "default": "[]"
+            },
             "tagPolicy": {
               "$ref": "#/definitions/TagPolicy",
               "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {}`.",
@@ -393,6 +402,7 @@
           },
           "preferredOrder": [
             "artifacts",
+            "insecureRegistries",
             "tagPolicy",
             "executionEnvironment"
           ],
@@ -413,6 +423,15 @@
               "description": "environment in which the build should run. Possible values: googleCloudBuild.",
               "x-intellij-html-description": "environment in which the build should run. Possible values: googleCloudBuild."
             },
+            "insecureRegistries": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "a list of registries declared by the user to be insecure. These registries will be connected to via HTTP instead of HTTPS.",
+              "x-intellij-html-description": "a list of registries declared by the user to be insecure. These registries will be connected to via HTTP instead of HTTPS.",
+              "default": "[]"
+            },
             "local": {
               "$ref": "#/definitions/LocalBuild",
               "description": "*beta* describes how to do a build on the local docker daemon and optionally push to a repository.",
@@ -426,6 +445,7 @@
           },
           "preferredOrder": [
             "artifacts",
+            "insecureRegistries",
             "tagPolicy",
             "executionEnvironment",
             "local"
@@ -452,6 +472,15 @@
               "description": "*beta* describes how to do a remote build on [Google Cloud Build](https://cloud.google.com/cloud-build/).",
               "x-intellij-html-description": "<em>beta</em> describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/\">Google Cloud Build</a>."
             },
+            "insecureRegistries": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "a list of registries declared by the user to be insecure. These registries will be connected to via HTTP instead of HTTPS.",
+              "x-intellij-html-description": "a list of registries declared by the user to be insecure. These registries will be connected to via HTTP instead of HTTPS.",
+              "default": "[]"
+            },
             "tagPolicy": {
               "$ref": "#/definitions/TagPolicy",
               "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {}`.",
@@ -460,6 +489,7 @@
           },
           "preferredOrder": [
             "artifacts",
+            "insecureRegistries",
             "tagPolicy",
             "executionEnvironment",
             "googleCloudBuild"
@@ -486,6 +516,15 @@
               "description": "environment in which the build should run. Possible values: googleCloudBuild.",
               "x-intellij-html-description": "environment in which the build should run. Possible values: googleCloudBuild."
             },
+            "insecureRegistries": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "a list of registries declared by the user to be insecure. These registries will be connected to via HTTP instead of HTTPS.",
+              "x-intellij-html-description": "a list of registries declared by the user to be insecure. These registries will be connected to via HTTP instead of HTTPS.",
+              "default": "[]"
+            },
             "tagPolicy": {
               "$ref": "#/definitions/TagPolicy",
               "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {}`.",
@@ -494,6 +533,7 @@
           },
           "preferredOrder": [
             "artifacts",
+            "insecureRegistries",
             "tagPolicy",
             "executionEnvironment",
             "cluster"
@@ -1536,6 +1576,10 @@
       "x-intellij-html-description": "<em>beta</em> tags images with their sha256 digest."
     },
     "SkaffoldConfig": {
+      "required": [
+        "apiVersion",
+        "kind"
+      ],
       "properties": {
         "apiVersion": {
           "type": "string",

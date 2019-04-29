@@ -2,6 +2,7 @@ package object
 
 import (
 	"bytes"
+	"context"
 
 	"gopkg.in/src-d/go-git.v4/utils/merkletrie"
 	"gopkg.in/src-d/go-git.v4/utils/merkletrie/noder"
@@ -10,6 +11,13 @@ import (
 // DiffTree compares the content and mode of the blobs found via two
 // tree objects.
 func DiffTree(a, b *Tree) (Changes, error) {
+	return DiffTreeContext(context.Background(), a, b)
+}
+
+// DiffTree compares the content and mode of the blobs found via two
+// tree objects. Provided context must be non-nil.
+// An error will be return if context expires
+func DiffTreeContext(ctx context.Context, a, b *Tree) (Changes, error) {
 	from := NewTreeRootNode(a)
 	to := NewTreeRootNode(b)
 
@@ -17,8 +25,11 @@ func DiffTree(a, b *Tree) (Changes, error) {
 		return bytes.Equal(a.Hash(), b.Hash())
 	}
 
-	merkletrieChanges, err := merkletrie.DiffTree(from, to, hashEqual)
+	merkletrieChanges, err := merkletrie.DiffTreeContext(ctx, from, to, hashEqual)
 	if err != nil {
+		if err == merkletrie.ErrCanceled {
+			return nil, ErrCanceled
+		}
 		return nil, err
 	}
 

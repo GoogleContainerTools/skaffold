@@ -5,6 +5,7 @@ integration/testdata/plugin/local/bazel/bazel-*
 *.new
 *.iml
 .idea/
+.vscode/
 docs/.firebase
 docs/firebase-debug*
 docs/public

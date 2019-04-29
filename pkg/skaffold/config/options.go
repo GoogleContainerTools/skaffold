@@ -17,43 +17,37 @@ limitations under the License.
 package config
 
 import (
-	"io"
 	"strings"
 )
-
-// Output defines which zones on the screen to print to
-type Output struct {
-	Main io.Writer
-	Logs io.Writer
-}
 
 // SkaffoldOptions are options that are set by command line arguments not included
 // in the config file itself
 type SkaffoldOptions struct {
-	ConfigurationFile string
-	Cleanup           bool
-	Notification      bool
-	Tail              bool
-	TailDev           bool
-	PortForward       bool
-	SkipTests         bool
-	CacheArtifacts    bool
-	ExperimentalGUI   bool
-	EnableRPC         bool
-	NoPrune           bool
-	Profiles          []string
-	CustomTag         string
-	Namespace         string
-	CacheFile         string
-	TargetImages      []string
-	Trigger           string
-	CustomLabels      []string
-	WatchPollInterval int
-	DefaultRepo       string
-	PreBuiltImages    []string
-	Command           string
-	RPCPort           int
-	RPCHTTPPort       int
+	ConfigurationFile  string
+	Cleanup            bool
+	Notification       bool
+	Tail               bool
+	TailDev            bool
+	PortForward        bool
+	SkipTests          bool
+	CacheArtifacts     bool
+	EnableRPC          bool
+	Force              bool
+	NoPrune            bool
+	CustomTag          string
+	Namespace          string
+	CacheFile          string
+	Trigger            string
+	WatchPollInterval  int
+	DefaultRepo        string
+	CustomLabels       []string
+	TargetImages       []string
+	Profiles           []string
+	PreBuiltImages     []string
+	InsecureRegistries []string
+	Command            string
+	RPCPort            int
+	RPCHTTPPort        int
 }
 
 // Labels returns a map of labels to be applied to all deployed
@@ -88,4 +82,8 @@ func (opts *SkaffoldOptions) Labels() map[string]string {
 // and the user did NOT specify the --cache-artifacts flag.
 func (opts *SkaffoldOptions) Prune() bool {
 	return !opts.NoPrune && !opts.CacheArtifacts
+}
+
+func (opts *SkaffoldOptions) ForceDeploy() bool {
+	return opts.Command == "dev" || opts.Force
 }
