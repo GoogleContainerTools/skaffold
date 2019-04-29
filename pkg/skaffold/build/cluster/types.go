@@ -30,7 +30,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Builder builds docker artifacts on Kubernetes, using Kaniko.
+// Builder builds docker artifacts on Kubernetes.
 type Builder struct {
 	*latest.ClusterDetails
 
@@ -38,7 +38,7 @@ type Builder struct {
 	insecureRegistries map[string]bool
 }
 
-// NewBuilder creates a new Builder that builds artifacts with Kaniko.
+// NewBuilder creates a new Builder that builds artifacts on cluster.
 func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	timeout, err := time.ParseDuration(runCtx.Cfg.Build.Cluster.Timeout)
 	if err != nil {
@@ -58,7 +58,7 @@ func (b *Builder) Labels() map[string]string {
 	}
 }
 
-// DependenciesForArtifact returns the Dockerfile dependencies for this kaniko artifact
+// DependenciesForArtifact returns the Dockerfile dependencies for this artifact
 func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
 	var (
 		paths []string

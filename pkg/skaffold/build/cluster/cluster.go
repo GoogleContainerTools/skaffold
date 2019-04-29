@@ -18,7 +18,6 @@ package cluster
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -43,34 +42,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 		defer teardownDockerConfigSecret()
 	}
 
-	// We can run kaniko builds in parallel
-	var kanikoArtifacts []*latest.Artifact
-	var otherArtifacts []*latest.Artifact
-
-	for _, a := range artifacts {
-		if a.ArtifactType.KanikoArtifact != nil {
-			kanikoArtifacts = append(kanikoArtifacts, a)
-			continue
-		}
-		otherArtifacts = append(otherArtifacts, a)
-	}
-	pb, err := build.InParallel(ctx, out, tags, kanikoArtifacts, b.buildArtifactWithKaniko)
-	if err != nil {
-		return nil, errors.Wrap(err, "building kaniko artifacts in parallel")
-	}
-
-	sb, err := build.InSequence(ctx, out, tags, otherArtifacts, b.runBuildForArtifact)
-	return append(pb, sb...), err
-}
-
-func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	switch {
-	case artifact.KanikoArtifact != nil:
-		return b.buildArtifactWithKaniko(ctx, out, artifact, tag)
-
-	default:
-		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
-	}
+	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifactWithKaniko)
 }
 
 func (b *Builder) buildArtifactWithKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
