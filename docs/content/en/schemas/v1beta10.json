@@ -632,6 +632,11 @@
           "x-intellij-html-description": "locates the Dockerfile relative to workspace.",
           "default": "Dockerfile"
         },
+        "network": {
+          "type": "string",
+          "description": "passed through to docker and overrides the network configuration of docker builder. If unset, use whatever is configured in the underlying docker daemon. Valid modes are `Host`: use the host's networking stack. `Bridge`: use the bridged network configuration. `None`: no networking in the container.",
+          "x-intellij-html-description": "passed through to docker and overrides the network configuration of docker builder. If unset, use whatever is configured in the underlying docker daemon. Valid modes are <code>Host</code>: use the host's networking stack. <code>Bridge</code>: use the bridged network configuration. <code>None</code>: no networking in the container."
+        },
         "target": {
           "type": "string",
           "description": "Dockerfile target name to build.",
@@ -642,6 +647,7 @@
         "dockerfile",
         "target",
         "buildArgs",
+        "network",
         "cacheFrom"
       ],
       "additionalProperties": false,
