@@ -21,7 +21,7 @@ import (
 
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 func TestUpgrade(t *testing.T) {
@@ -30,6 +30,13 @@ kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
+    docker:
+      dockerfile: path/to/Dockerfile
+  - image: gcr.io/k8s-skaffold/bazel
+    bazel:
+      target: //mytarget
+  googleCloudBuild:
+    projectId: test-project
 test:
   - image: gcr.io/k8s-skaffold/skaffold-example
     structureTests:
@@ -58,12 +65,31 @@ profiles:
       kubectl:
         manifests:
         - k8s-*
+  - name: test local
+    build:
+      artifacts:
+      - image: gcr.io/k8s-skaffold/skaffold-example
+        docker:
+          dockerfile: path/to/Dockerfile
+      local:
+        push: false
+    deploy:
+      kubectl:
+        manifests:
+        - k8s-*
 `
 	expected := `apiVersion: skaffold/v1beta10
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
+    docker:
+      dockerfile: path/to/Dockerfile
+  - image: gcr.io/k8s-skaffold/bazel
+    bazel:
+      target: //mytarget
+  googleCloudBuild:
+    projectId: test-project
 test:
   - image: gcr.io/k8s-skaffold/skaffold-example
     structureTests:
@@ -88,6 +114,18 @@ profiles:
      - image: gcr.io/k8s-skaffold/skaffold-example
        structureTests:
          - ./test/*
+    deploy:
+      kubectl:
+        manifests:
+        - k8s-*
+  - name: test local
+    build:
+      artifacts:
+      - image: gcr.io/k8s-skaffold/skaffold-example
+        docker:
+          dockerfile: path/to/Dockerfile
+      local:
+        push: false
     deploy:
       kubectl:
         manifests:

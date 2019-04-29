@@ -142,7 +142,7 @@ There are several levels of granularity to allow insecure communication with som
 1. Per Skaffold run via `SKAFFOLD_INSECURE_REGISTRY` environment variable
 
     ```bash
-    SKAFFOLD_INSECURE_REGISTRY='insecure.io' skaffold dev
+    SKAFFOLD_INSECURE_REGISTRY='insecure1.io,insecure2.io' skaffold dev
     ```
     
 1. Per project via the Skaffold pipeline config `skaffold.yaml`
