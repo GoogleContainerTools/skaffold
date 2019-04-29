@@ -40,6 +40,7 @@ type SkaffoldOptions struct {
 	CacheArtifacts    bool
 	ExperimentalGUI   bool
 	EnableRPC         bool
+	NoPrune           bool
 	Profiles          []string
 	CustomTag         string
 	Namespace         string
@@ -52,6 +53,7 @@ type SkaffoldOptions struct {
 	PreBuiltImages    []string
 	Command           string
 	RPCPort           int
+	RPCHTTPPort       int
 }
 
 // Labels returns a map of labels to be applied to all deployed
@@ -80,4 +82,10 @@ func (opts *SkaffoldOptions) Labels() map[string]string {
 		labels[l[0]] = l[1]
 	}
 	return labels
+}
+
+// Prune returns true iff the user did NOT specify the --no-prune flag,
+// and the user did NOT specify the --cache-artifacts flag.
+func (opts *SkaffoldOptions) Prune() bool {
+	return !opts.NoPrune && !opts.CacheArtifacts
 }

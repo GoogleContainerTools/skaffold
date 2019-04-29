@@ -38,21 +38,21 @@ func CheckContains(t *testing.T, expected, actual string) {
 	}
 }
 
-func CheckDeepEqual(t *testing.T, expected, actual interface{}) {
+func CheckDeepEqual(t *testing.T, expected, actual interface{}, opts ...cmp.Option) {
 	t.Helper()
-	if diff := cmp.Diff(actual, expected); diff != "" {
+	if diff := cmp.Diff(actual, expected, opts...); diff != "" {
 		t.Errorf("%T differ (-got, +want): %s", expected, diff)
 		return
 	}
 }
 
-func CheckErrorAndDeepEqual(t *testing.T, shouldErr bool, err error, expected, actual interface{}) {
+func CheckErrorAndDeepEqual(t *testing.T, shouldErr bool, err error, expected, actual interface{}, opts ...cmp.Option) {
 	t.Helper()
 	if err := checkErr(shouldErr, err); err != nil {
 		t.Error(err)
 		return
 	}
-	if diff := cmp.Diff(actual, expected); diff != "" {
+	if diff := cmp.Diff(actual, expected, opts...); diff != "" {
 		t.Errorf("%T differ (-got, +want): %s", expected, diff)
 		return
 	}

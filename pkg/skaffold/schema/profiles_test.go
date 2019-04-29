@@ -59,23 +59,51 @@ profiles:
 	parsed, err := ParseConfig(tmp.Path("skaffold.yaml"), false)
 	testutil.CheckError(t, false, err)
 
-	pipeline := parsed.(*latest.SkaffoldPipeline)
-	err = ApplyProfiles(pipeline, &cfg.SkaffoldOptions{
+	skaffoldConfig := parsed.(*latest.SkaffoldConfig)
+	err = ApplyProfiles(skaffoldConfig, &cfg.SkaffoldOptions{
 		Profiles: []string{"patches"},
 	})
 	testutil.CheckError(t, false, err)
 
-	testutil.CheckDeepEqual(t, "replacement", pipeline.Build.Artifacts[0].ImageName)
-	testutil.CheckDeepEqual(t, "Dockerfile.DEV", pipeline.Build.Artifacts[0].DockerArtifact.DockerfilePath)
-	testutil.CheckDeepEqual(t, "Dockerfile.second", pipeline.Build.Artifacts[1].DockerArtifact.DockerfilePath)
+	testutil.CheckDeepEqual(t, "replacement", skaffoldConfig.Build.Artifacts[0].ImageName)
+	testutil.CheckDeepEqual(t, "Dockerfile.DEV", skaffoldConfig.Build.Artifacts[0].DockerArtifact.DockerfilePath)
+	testutil.CheckDeepEqual(t, "Dockerfile.second", skaffoldConfig.Build.Artifacts[1].DockerArtifact.DockerfilePath)
+}
+
+func TestApplyInvalidPatch(t *testing.T) {
+	config := `build:
+  artifacts:
+  - image: example
+profiles:
+- name: patches
+  patches:
+  - path: /build/artifacts/0/image/
+    value: replacement
+`
+
+	tmp, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+
+	yaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, config)
+	tmp.Write("skaffold.yaml", yaml)
+
+	parsed, err := ParseConfig(tmp.Path("skaffold.yaml"), false)
+	testutil.CheckError(t, false, err)
+
+	skaffoldConfig := parsed.(*latest.SkaffoldConfig)
+	err = ApplyProfiles(skaffoldConfig, &cfg.SkaffoldOptions{
+		Profiles: []string{"patches"},
+	})
+
+	testutil.CheckErrorAndDeepEqual(t, true, err, "applying profile patches: invalid path: /build/artifacts/0/image/", err.Error())
 }
 
 func TestApplyProfiles(t *testing.T) {
 	tests := []struct {
 		description string
-		config      *latest.SkaffoldPipeline
+		config      *latest.SkaffoldConfig
 		profile     string
-		expected    *latest.SkaffoldPipeline
+		expected    *latest.SkaffoldConfig
 		shouldErr   bool
 	}{
 		{
@@ -95,13 +123,15 @@ func TestApplyProfiles(t *testing.T) {
 				withKubectlDeploy("k8s/*.yaml"),
 				withProfiles(latest.Profile{
 					Name: "profile",
-					Build: latest.BuildConfig{
-						BuildType: latest.BuildType{
-							GoogleCloudBuild: &latest.GoogleCloudBuild{
-								ProjectID:   "my-project",
-								DockerImage: "gcr.io/cloud-builders/docker",
-								MavenImage:  "gcr.io/cloud-builders/mvn@sha256:0ec283f2ee1ab1d2ac779dcbb24bddaa46275aec7088cc10f2926b4ea0fcac9b",
-								GradleImage: "gcr.io/cloud-builders/gradle",
+					Pipeline: latest.Pipeline{
+						Build: latest.BuildConfig{
+							BuildType: latest.BuildType{
+								GoogleCloudBuild: &latest.GoogleCloudBuild{
+									ProjectID:   "my-project",
+									DockerImage: "gcr.io/cloud-builders/docker",
+									MavenImage:  "gcr.io/cloud-builders/mvn@sha256:0ec283f2ee1ab1d2ac779dcbb24bddaa46275aec7088cc10f2926b4ea0fcac9b",
+									GradleImage: "gcr.io/cloud-builders/gradle",
+								},
 							},
 						},
 					},
@@ -126,8 +156,10 @@ func TestApplyProfiles(t *testing.T) {
 				withKubectlDeploy("k8s/*.yaml"),
 				withProfiles(latest.Profile{
 					Name: "dev",
-					Build: latest.BuildConfig{
-						TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					Pipeline: latest.Pipeline{
+						Build: latest.BuildConfig{
+							TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+						},
 					},
 				}),
 			),
@@ -150,18 +182,20 @@ func TestApplyProfiles(t *testing.T) {
 				withKubectlDeploy("k8s/*.yaml"),
 				withProfiles(latest.Profile{
 					Name: "profile",
-					Build: latest.BuildConfig{
-						Artifacts: []*latest.Artifact{
-							{ImageName: "image", Workspace: ".", ArtifactType: latest.ArtifactType{
-								DockerArtifact: &latest.DockerArtifact{
-									DockerfilePath: "Dockerfile.DEV",
-								},
-							}},
-							{ImageName: "imageProd", Workspace: ".", ArtifactType: latest.ArtifactType{
-								DockerArtifact: &latest.DockerArtifact{
-									DockerfilePath: "Dockerfile.DEV",
-								},
-							}},
+					Pipeline: latest.Pipeline{
+						Build: latest.BuildConfig{
+							Artifacts: []*latest.Artifact{
+								{ImageName: "image", Workspace: ".", ArtifactType: latest.ArtifactType{
+									DockerArtifact: &latest.DockerArtifact{
+										DockerfilePath: "Dockerfile.DEV",
+									},
+								}},
+								{ImageName: "imageProd", Workspace: ".", ArtifactType: latest.ArtifactType{
+									DockerArtifact: &latest.DockerArtifact{
+										DockerfilePath: "Dockerfile.DEV",
+									},
+								}},
+							},
 						},
 					},
 				}),
@@ -185,9 +219,11 @@ func TestApplyProfiles(t *testing.T) {
 				withKubectlDeploy("k8s/*.yaml"),
 				withProfiles(latest.Profile{
 					Name: "profile",
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							HelmDeploy: &latest.HelmDeploy{},
+					Pipeline: latest.Pipeline{
+						Deploy: latest.DeployConfig{
+							DeployType: latest.DeployType{
+								HelmDeploy: &latest.HelmDeploy{},
+							},
 						},
 					},
 				}),
@@ -252,10 +288,12 @@ func TestApplyProfiles(t *testing.T) {
 				),
 				withProfiles(latest.Profile{
 					Name: "profile",
-					Test: []*latest.TestCase{{
-						ImageName:      "image",
-						StructureTests: []string{"test/*"},
-					}},
+					Pipeline: latest.Pipeline{
+						Test: []*latest.TestCase{{
+							ImageName:      "image",
+							StructureTests: []string{"test/*"},
+						}},
+					},
 				}),
 			),
 			expected: config(
@@ -278,9 +316,11 @@ func TestApplyProfiles(t *testing.T) {
 				),
 				withProfiles(latest.Profile{
 					Name: "profile",
-					Build: latest.BuildConfig{
-						ExecutionEnvironment: &latest.ExecutionEnvironment{
-							Name: constants.GoogleCloudBuild,
+					Pipeline: latest.Pipeline{
+						Build: latest.BuildConfig{
+							ExecutionEnvironment: &latest.ExecutionEnvironment{
+								Name: constants.GoogleCloudBuild,
+							},
 						},
 					},
 				}),
@@ -320,9 +360,11 @@ func TestApplyProfiles(t *testing.T) {
 				),
 				withProfiles(latest.Profile{
 					Name: "profile",
-					Build: latest.BuildConfig{
-						ExecutionEnvironment: &latest.ExecutionEnvironment{
-							Name: constants.GoogleCloudBuild,
+					Pipeline: latest.Pipeline{
+						Build: latest.BuildConfig{
+							ExecutionEnvironment: &latest.ExecutionEnvironment{
+								Name: constants.GoogleCloudBuild,
+							},
 						},
 					},
 				}),

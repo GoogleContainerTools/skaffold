@@ -77,35 +77,7 @@ func DoInit(out io.Writer, c Config) error {
 		}
 	}
 
-	var potentialConfigs, dockerfiles []string
-
-	err := filepath.Walk(rootDir, func(path string, f os.FileInfo, e error) error {
-		if f.IsDir() && util.IsHiddenDir(f.Name()) {
-			logrus.Debugf("skip walking hidden dir %s", f.Name())
-			return filepath.SkipDir
-		}
-		if f.IsDir() || util.IsHiddenFile(f.Name()) {
-			return nil
-		}
-		if IsSkaffoldConfig(path) {
-			if !c.Force {
-				return fmt.Errorf("pre-existing %s found", path)
-			}
-			logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", path)
-			return nil
-		}
-		if IsSupportedKubernetesFileExtension(path) {
-			potentialConfigs = append(potentialConfigs, path)
-			return nil
-		}
-		// try and parse dockerfile
-		if docker.ValidateDockerfile(path) {
-			logrus.Infof("existing dockerfile found: %s", path)
-			dockerfiles = append(dockerfiles, path)
-		}
-		return nil
-	})
-
+	potentialConfigs, dockerfiles, err := walk(rootDir, c.Force, docker.ValidateDockerfile)
 	if err != nil {
 		return err
 	}
@@ -270,18 +242,18 @@ func generateSkaffoldPipeline(k Initializer, dockerfilePairs []dockerfilePair) (
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	logrus.Info("generating skaffold config")
 
-	pipeline := &latest.SkaffoldPipeline{
+	cfg := &latest.SkaffoldConfig{
 		APIVersion: latest.Version,
 		Kind:       "Config",
 	}
-	if err := defaults.Set(pipeline); err != nil {
+	if err := defaults.Set(cfg); err != nil {
 		return nil, errors.Wrap(err, "generating default pipeline")
 	}
 
-	pipeline.Build = processBuildArtifacts(dockerfilePairs)
-	pipeline.Deploy = k.GenerateDeployConfig()
+	cfg.Build = processBuildArtifacts(dockerfilePairs)
+	cfg.Deploy = k.GenerateDeployConfig()
 
-	pipelineStr, err := yaml.Marshal(pipeline)
+	pipelineStr, err := yaml.Marshal(cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "marshaling generated pipeline")
 	}
@@ -311,4 +283,38 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, dockerfiles, images []strin
 type dockerfilePair struct {
 	Dockerfile string
 	ImageName  string
+}
+
+func walk(dir string, force bool, validateDockerfile func(string) bool) ([]string, []string, error) {
+	var dockerfiles, potentialConfigs []string
+	err := filepath.Walk(dir, func(path string, f os.FileInfo, e error) error {
+		if f.IsDir() && util.IsHiddenDir(f.Name()) {
+			logrus.Debugf("skip walking hidden dir %s", f.Name())
+			return filepath.SkipDir
+		}
+		if f.IsDir() || util.IsHiddenFile(f.Name()) {
+			return nil
+		}
+		if IsSkaffoldConfig(path) {
+			if !force {
+				return fmt.Errorf("pre-existing %s found", path)
+			}
+			logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", path)
+			return nil
+		}
+		if IsSupportedKubernetesFileExtension(path) {
+			potentialConfigs = append(potentialConfigs, path)
+			return nil
+		}
+		// try and parse dockerfile
+		if validateDockerfile(path) {
+			logrus.Infof("existing dockerfile found: %s", path)
+			dockerfiles = append(dockerfiles, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return potentialConfigs, dockerfiles, nil
 }

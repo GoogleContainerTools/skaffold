@@ -25,6 +25,7 @@ import (
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	yamlpatch "github.com/krishicks/yaml-patch"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -33,7 +34,7 @@ import (
 
 // ApplyProfiles returns configuration modified by the application
 // of a list of profiles.
-func ApplyProfiles(c *latest.SkaffoldPipeline, opts *cfg.SkaffoldOptions) error {
+func ApplyProfiles(c *latest.SkaffoldConfig, opts *cfg.SkaffoldOptions) error {
 	byName := profilesByName(c.Profiles)
 
 	profiles, err := activatedProfiles(c.Profiles, opts)
@@ -48,7 +49,7 @@ func ApplyProfiles(c *latest.SkaffoldPipeline, opts *cfg.SkaffoldOptions) error 
 		}
 
 		if err := applyProfile(c, profile); err != nil {
-			return errors.Wrapf(err, "appying profile %s", name)
+			return errors.Wrapf(err, "applying profile %s", name)
 		}
 	}
 
@@ -126,16 +127,18 @@ func satisfies(expected, actual string) bool {
 	return actual == expected
 }
 
-func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) error {
+func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
 	logrus.Infof("applying profile: %s", profile.Name)
 
 	// this intentionally removes the Profiles field from the returned config
-	*config = latest.SkaffoldPipeline{
+	*config = latest.SkaffoldConfig{
 		APIVersion: config.APIVersion,
 		Kind:       config.Kind,
-		Build:      overlayProfileField(config.Build, profile.Build).(latest.BuildConfig),
-		Deploy:     overlayProfileField(config.Deploy, profile.Deploy).(latest.DeployConfig),
-		Test:       overlayProfileField(config.Test, profile.Test).([]*latest.TestCase),
+		Pipeline: latest.Pipeline{
+			Build:  overlayProfileField(config.Build, profile.Build).(latest.BuildConfig),
+			Deploy: overlayProfileField(config.Deploy, profile.Deploy).(latest.DeployConfig),
+			Test:   overlayProfileField(config.Test, profile.Test).([]*latest.TestCase),
+		},
 	}
 
 	if len(profile.Patches) == 0 {
@@ -156,12 +159,18 @@ func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) error
 			op = "replace"
 		}
 
-		patches = append(patches, yamlpatch.Operation{
+		patch := yamlpatch.Operation{
 			Op:    yamlpatch.Op(op),
 			Path:  yamlpatch.OpPath(patch.Path),
 			From:  yamlpatch.OpPath(patch.From),
 			Value: patch.Value,
-		})
+		}
+
+		if !tryPatch(patch, buf) {
+			return fmt.Errorf("invalid path: %s", patch.Path)
+		}
+
+		patches = append(patches, patch)
 	}
 
 	buf, err = yamlpatch.Patch(patches).Apply(buf)
@@ -170,6 +179,20 @@ func applyProfile(config *latest.SkaffoldPipeline, profile latest.Profile) error
 	}
 
 	return yaml.Unmarshal(buf, config)
+}
+
+// tryPatch is here to verify patches one by one before we
+// apply them because yamlpatch.Patch is known to panic when a path
+// is not valid.
+func tryPatch(patch yamlpatch.Operation, buf []byte) (valid bool) {
+	defer func() {
+		if errPanic := recover(); errPanic != nil {
+			valid = false
+		}
+	}()
+
+	_, err := yamlpatch.Patch([]yamlpatch.Operation{patch}).Apply(buf)
+	return err == nil
 }
 
 func profilesByName(profiles []latest.Profile) map[string]latest.Profile {
@@ -223,7 +246,7 @@ func overlayProfileField(config interface{}, profile interface{}) interface{} {
 	switch v.Kind() {
 	case reflect.Struct:
 		// check the first field of the struct for a oneOf yamltag.
-		if isOneOf(t.Field(0)) {
+		if util.IsOneOfField(t.Field(0)) {
 			return overlayOneOfField(config, profile)
 		}
 		return overlayStructField(config, profile)
@@ -243,15 +266,4 @@ func overlayProfileField(config interface{}, profile interface{}) interface{} {
 		logrus.Warnf("unknown field type in profile overlay: %s. falling back to original config values", v.Kind())
 		return config
 	}
-}
-
-func isOneOf(field reflect.StructField) bool {
-	for _, tag := range strings.Split(field.Tag.Get("yamltags"), ",") {
-		tagParts := strings.Split(tag, "=")
-
-		if tagParts[0] == "oneOf" {
-			return true
-		}
-	}
-	return false
 }

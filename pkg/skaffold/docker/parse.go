@@ -44,27 +44,6 @@ type from struct {
 // RetrieveImage is overridden for unit testing
 var RetrieveImage = retrieveImage
 
-func ValidateDockerfile(path string) bool {
-	f, err := os.Open(path)
-	if err != nil {
-		logrus.Warnf("opening file %s: %s", path, err.Error())
-		return false
-	}
-	res, err := parser.Parse(f)
-	if err != nil || res == nil || len(res.AST.Children) == 0 {
-		return false
-	}
-	// validate each node contains valid dockerfile directive
-	for _, child := range res.AST.Children {
-		_, ok := command.Commands[child.Value]
-		if !ok {
-			return false
-		}
-	}
-
-	return true
-}
-
 func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) {
 	for i, node := range nodes {
 		if node.Value != command.Arg {
@@ -384,7 +363,7 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 }
 
 func retrieveImage(image string) (*v1.ConfigFile, error) {
-	localDaemon, err := NewAPIClient() // Cached after first call
+	localDaemon, err := NewAPIClient(false) // Cached after first call
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}

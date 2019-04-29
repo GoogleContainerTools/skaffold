@@ -21,10 +21,11 @@ import (
 	"encoding/json"
 	"os/exec"
 	"strconv"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 const unknown = "unknown"
@@ -50,10 +51,16 @@ func (v ClientVersion) String() string {
 
 // CheckVersion warns the user if their kubectl version is < 1.12.0
 func (c *CLI) CheckVersion(ctx context.Context) error {
-	m, err := strconv.Atoi(c.Version(ctx).Minor)
+	minor := c.Version(ctx).Minor
+
+	// Some patched versions get a '+' suffix.
+	minor = strings.TrimRight(minor, "+")
+
+	m, err := strconv.Atoi(minor)
 	if err != nil {
 		return errors.Wrap(err, "couldn't get kubectl minor version")
 	}
+
 	if m < 12 {
 		return errors.New("kubectl version 1.12.0 or greater is recommended for use with Skaffold")
 	}
@@ -72,9 +79,9 @@ func (c *CLI) Version(ctx context.Context) ClientVersion {
 
 		buf, err := c.getVersion(ctx)
 		if err != nil {
-			logrus.Warnln("unable to get kubectl client version", err)
+			warnings.Printf("unable to get kubectl client version: %v", err)
 		} else if err := json.Unmarshal(buf, &version); err != nil {
-			logrus.Warnln("unable to parse client version", err)
+			warnings.Printf("unable to parse client version: %v", err)
 		}
 
 		c.version = version.Client

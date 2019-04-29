@@ -130,7 +130,7 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 				hashForArtifact = originalHash
 			}()
 
-			test.cache.client = docker.NewLocalDaemon(&test.api, nil)
+			test.cache.client = docker.NewLocalDaemon(&test.api, nil, false)
 
 			actualArtifacts, actualBuildResults, err := test.cache.RetrieveCachedArtifacts(context.Background(), os.Stdout, test.artifacts)
 			sort.Sort(&artifactSorter{artifacts: actualArtifacts})
@@ -271,7 +271,7 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			hashes:                    map[string]string{"image": "hash"},
 			cache: &Cache{
 				useCache:      true,
-				needsPush:     true,
+				pushImages:    true,
 				localCluster:  true,
 				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
 				imageList: []types.ImageSummary{
@@ -295,7 +295,7 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			targetImageExistsRemotely: true,
 			cache: &Cache{
 				useCache:      true,
-				needsPush:     true,
+				pushImages:    true,
 				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
 			},
 			digest: digest,
@@ -330,7 +330,7 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			}()
 
 			if test.api != nil {
-				test.cache.client = docker.NewLocalDaemon(test.api, nil)
+				test.cache.client = docker.NewLocalDaemon(test.api, nil, false)
 			}
 			actual, err := test.cache.retrieveCachedArtifactDetails(context.Background(), test.artifact)
 			if err != nil {
@@ -452,7 +452,7 @@ func TestRetrievePrebuiltImage(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			test.cache.client = docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil)
+			test.cache.client = docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false)
 			actual, err := test.cache.retrievePrebuiltImage(test.imageDetails)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
 		})

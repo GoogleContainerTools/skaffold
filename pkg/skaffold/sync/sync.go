@@ -94,7 +94,7 @@ func retrieveWorkingDir(tagged string) (string, error) {
 	var cf *registry_v1.ConfigFile
 	var err error
 
-	localDocker, err := docker.NewAPIClient()
+	localDocker, err := docker.NewAPIClient(false)
 	if err != nil {
 		// No local Docker is available
 		cf, err = docker.RetrieveRemoteConfig(tagged)

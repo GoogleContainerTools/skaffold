@@ -21,6 +21,8 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -92,7 +94,11 @@ func TestPreBuiltImagesBuilder(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			builder := NewPreBuiltImagesBuilder(test.images)
+			builder := NewPreBuiltImagesBuilder(&runcontext.RunContext{
+				Opts: &config.SkaffoldOptions{
+					PreBuiltImages: test.images,
+				},
+			})
 
 			bRes, err := builder.Build(context.Background(), ioutil.Discard, nil, test.artifacts)
 

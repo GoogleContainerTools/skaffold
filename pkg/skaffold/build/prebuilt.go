@@ -23,20 +23,26 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
 
 // NewPreBuiltImagesBuilder returns an new instance a Builder that assumes images are
 // already built with given fully qualified names.
-func NewPreBuiltImagesBuilder(images []string) Builder {
+func NewPreBuiltImagesBuilder(ctx *runcontext.RunContext) Builder {
 	return &prebuiltImagesBuilder{
-		images: images,
+		images: ctx.Opts.PreBuiltImages,
 	}
 }
 
 type prebuiltImagesBuilder struct {
 	images []string
+}
+
+func (b *prebuiltImagesBuilder) Prune(_ context.Context, _ io.Writer) error {
+	// noop
+	return nil
 }
 
 // Labels are labels applied to deployed resources.

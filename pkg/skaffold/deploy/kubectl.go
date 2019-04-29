@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -42,16 +43,16 @@ type KubectlDeployer struct {
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(workingDir string, cfg *latest.KubectlDeploy, kubeContext string, namespace string, defaultRepo string) *KubectlDeployer {
+func NewKubectlDeployer(ctx *runcontext.RunContext) *KubectlDeployer {
 	return &KubectlDeployer{
-		KubectlDeploy: cfg,
-		workingDir:    workingDir,
+		KubectlDeploy: ctx.Cfg.Deploy.KubectlDeploy,
+		workingDir:    ctx.WorkingDir,
 		kubectl: kubectl.CLI{
-			Namespace:   namespace,
-			KubeContext: kubeContext,
-			Flags:       cfg.Flags,
+			Namespace:   ctx.Opts.Namespace,
+			KubeContext: ctx.KubeContext,
+			Flags:       ctx.Cfg.Deploy.KubectlDeploy.Flags,
 		},
-		defaultRepo: defaultRepo,
+		defaultRepo: ctx.DefaultRepo,
 	}
 }
 
@@ -59,6 +60,14 @@ func (k *KubectlDeployer) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.Deployer: "kubectl",
 	}
+}
+
+// Transforms are applied to manifests
+var manifestTransforms []func(kubectl.ManifestList, []build.Artifact) (kubectl.ManifestList, error)
+
+// AddManifestTransform adds a transform to be applied when deploying.
+func AddManifestTransform(newTransform func(kubectl.ManifestList, []build.Artifact) (kubectl.ManifestList, error)) {
+	manifestTransforms = append(manifestTransforms, newTransform)
 }
 
 // Deploy templates the provided manifests with a simple `find and replace` and
@@ -91,6 +100,13 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	if err != nil {
 		event.DeployFailed(err)
 		return errors.Wrap(err, "setting labels in manifests")
+	}
+
+	for _, transform := range manifestTransforms {
+		manifests, err = transform(manifests, builds)
+		if err != nil {
+			return errors.Wrap(err, "debug transform of manifests")
+		}
 	}
 
 	err = k.kubectl.Apply(ctx, out, manifests)

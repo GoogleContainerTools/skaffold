@@ -24,6 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/golang/protobuf/ptypes"
@@ -138,16 +139,16 @@ func emptyState(build *latest.BuildConfig) proto.State {
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
 // It returns a shutdown callback for tearing down the grpc server, which the runner is responsible for calling.
 // This function can only be called once.
-func InitializeState(build *latest.BuildConfig, deploy *latest.DeployConfig, opts *config.SkaffoldOptions) (func() error, error) {
+func InitializeState(ctx *runcontext.RunContext) (func() error, error) {
 	var err error
 	serverShutdown := func() error { return nil }
 	once.Do(func() {
 		handler = &eventHandler{
-			state: emptyState(build),
+			state: emptyState(&ctx.Cfg.Build),
 		}
 
-		if opts.EnableRPC {
-			serverShutdown, err = newStatusServer(opts.RPCPort)
+		if ctx.Opts.EnableRPC {
+			serverShutdown, err = newStatusServer(ctx.Opts.RPCPort, ctx.Opts.RPCHTTPPort)
 			if err != nil {
 				err = errors.Wrap(err, "creating status server")
 				return
@@ -198,7 +199,7 @@ func BuildComplete(imageName string) {
 }
 
 // PortForwarded notifies that a remote port has been forwarded locally.
-func PortForwarded(localPort, remotePort int32, podName, containerName, namespace string) {
+func PortForwarded(localPort, remotePort int32, podName, containerName, namespace string, portName string) {
 	handler.doHandle(&proto.Event{
 		EventType: &proto.Event_PortEvent{
 			PortEvent: &proto.PortEvent{
@@ -207,6 +208,7 @@ func PortForwarded(localPort, remotePort int32, podName, containerName, namespac
 				PodName:       podName,
 				ContainerName: containerName,
 				Namespace:     namespace,
+				PortName:      portName,
 			},
 		},
 	})

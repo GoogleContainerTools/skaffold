@@ -83,6 +83,7 @@ func (t *pollTrigger) Start(ctx context.Context) (<-chan bool, error) {
 				trigger <- true
 			case <-ctx.Done():
 				ticker.Stop()
+				return
 			}
 		}
 	}()
@@ -172,6 +173,7 @@ func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 				trigger <- true
 			case <-ctx.Done():
 				timer.Stop()
+				return
 			}
 		}
 	}()

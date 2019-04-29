@@ -23,11 +23,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/plugin"
 )
 
-func Run(out, err io.Writer) error {
-	if plugin.ShouldExecuteCorePlugin() {
-		return plugin.Execute()
+func Run(out, stderr io.Writer) error {
+	corePlugin, err := plugin.GetCorePluginFromEnv()
+	if err != nil {
+		return err
 	}
-
-	c := cmd.NewSkaffoldCommand(out, err)
+	if corePlugin != "" {
+		return plugin.Execute(corePlugin)
+	}
+	c := cmd.NewSkaffoldCommand(out, stderr)
 	return c.Execute()
 }

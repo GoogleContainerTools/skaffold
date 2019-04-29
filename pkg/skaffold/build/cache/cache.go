@@ -21,14 +21,14 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	skafconfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/docker/docker/api/types"
-
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/docker/docker/api/types"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -40,26 +40,28 @@ type ArtifactCache map[string]ImageDetails
 
 // Cache holds any data necessary for accessing the cache
 type Cache struct {
-	artifactCache ArtifactCache
-	client        docker.LocalDaemon
-	builder       build.Builder
-	imageList     []types.ImageSummary
-	cacheFile     string
-	useCache      bool
-	needsPush     bool
-	localCluster  bool
+	artifactCache  ArtifactCache
+	client         docker.LocalDaemon
+	builder        build.Builder
+	imageList      []types.ImageSummary
+	cacheFile      string
+	useCache       bool
+	isLocalBuilder bool
+	pushImages     bool
+	localCluster   bool
+	prune          bool
 }
 
 var (
 	// For testing
 	localCluster    = config.GetLocalCluster
 	remoteDigest    = docker.RemoteDigest
-	newDockerCilent = docker.NewAPIClient
+	newDockerClient = docker.NewAPIClient
 	noCache         = &Cache{}
 )
 
 // NewCache returns the current state of the cache
-func NewCache(ctx context.Context, builder build.Builder, opts *skafconfig.SkaffoldOptions, needsPush bool) *Cache {
+func NewCache(builder build.Builder, opts *skafconfig.SkaffoldOptions, cfg latest.BuildConfig) *Cache {
 	if !opts.CacheArtifacts {
 		return noCache
 	}
@@ -73,13 +75,13 @@ func NewCache(ctx context.Context, builder build.Builder, opts *skafconfig.Skaff
 		logrus.Warnf("Error retrieving artifact cache, not using skaffold cache: %v", err)
 		return noCache
 	}
-	client, err := newDockerCilent()
+	client, err := newDockerClient(opts.Prune())
 	if err != nil {
 		logrus.Warnf("Error retrieving local daemon client; local daemon will not be used as a cache: %v", err)
 	}
 	var imageList []types.ImageSummary
 	if client != nil {
-		imageList, err = client.ImageList(ctx, types.ImageListOptions{})
+		imageList, err = client.ImageList(context.Background(), types.ImageListOptions{})
 		if err != nil {
 			logrus.Warn("Unable to get list of images from local docker daemon, won't be checked for cache.")
 		}
@@ -89,15 +91,18 @@ func NewCache(ctx context.Context, builder build.Builder, opts *skafconfig.Skaff
 	if err != nil {
 		logrus.Warn("Unable to determine if using a local cluster, cache may not work.")
 	}
+	pushImages := cfg.LocalBuild != nil && cfg.LocalBuild.Push != nil && *cfg.LocalBuild.Push
 	return &Cache{
-		artifactCache: cache,
-		cacheFile:     cf,
-		useCache:      opts.CacheArtifacts,
-		client:        client,
-		builder:       builder,
-		needsPush:     needsPush,
-		imageList:     imageList,
-		localCluster:  lc,
+		artifactCache:  cache,
+		cacheFile:      cf,
+		useCache:       opts.CacheArtifacts,
+		client:         client,
+		builder:        builder,
+		pushImages:     pushImages,
+		isLocalBuilder: cfg.LocalBuild != nil,
+		imageList:      imageList,
+		localCluster:   lc,
+		prune:          opts.Prune(),
 	}
 }
 

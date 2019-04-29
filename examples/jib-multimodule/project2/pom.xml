@@ -33,9 +33,6 @@
                     <container>
                         <jvmFlags>
                             <jvmFlag>-Djava.security.egd=file:/dev/./urandom</jvmFlag>
-                            <!-- specific to Java 8 containers -->
-                            <jvmFlag>-XX:+UnlockExperimentalVMOptions</jvmFlag>
-                            <jvmFlag>-XX:+UseCGroupMemoryLimitForHeap</jvmFlag>
                         </jvmFlags>
                     </container>
                 </configuration>

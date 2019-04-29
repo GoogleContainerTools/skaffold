@@ -150,11 +150,11 @@ func TestGenerateGradleArgs(t *testing.T) {
 		skipTests bool
 		out       []string
 	}{
-		{latest.JibGradleArtifact{}, false, []string{":task", "--image=image"}},
-		{latest.JibGradleArtifact{Flags: []string{"-extra", "args"}}, false, []string{":task", "--image=image", "-extra", "args"}},
-		{latest.JibGradleArtifact{}, true, []string{":task", "--image=image", "-x", "test"}},
-		{latest.JibGradleArtifact{Project: "project"}, false, []string{":project:task", "--image=image"}},
-		{latest.JibGradleArtifact{Project: "project"}, true, []string{":project:task", "--image=image", "-x", "test"}},
+		{latest.JibGradleArtifact{}, false, []string{"-Djib.console=plain", ":task", "--image=image"}},
+		{latest.JibGradleArtifact{Flags: []string{"-extra", "args"}}, false, []string{"-Djib.console=plain", ":task", "--image=image", "-extra", "args"}},
+		{latest.JibGradleArtifact{}, true, []string{"-Djib.console=plain", ":task", "--image=image", "-x", "test"}},
+		{latest.JibGradleArtifact{Project: "project"}, false, []string{"-Djib.console=plain", ":project:task", "--image=image"}},
+		{latest.JibGradleArtifact{Project: "project"}, true, []string{"-Djib.console=plain", ":project:task", "--image=image", "-x", "test"}},
 	}
 
 	for _, tt := range testCases {
