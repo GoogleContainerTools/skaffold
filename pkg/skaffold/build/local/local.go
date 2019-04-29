@@ -98,8 +98,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 		return b.buildJibGradle(ctx, out, artifact.Workspace, artifact.JibGradleArtifact, tag)
 
 	case artifact.CustomArtifact != nil:
-		artifactBuilder := custom.NewArtifactBuilder(b.pushImages, b.kubeContext, b.insecureRegistries, b.localDocker)
-		return artifactBuilder.Build(ctx, out, artifact, tag)
+		return b.buildCustom(ctx, out, artifact, tag)
 	default:
 		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 	}

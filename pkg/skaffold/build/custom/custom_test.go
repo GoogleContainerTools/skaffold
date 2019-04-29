@@ -19,22 +19,20 @@ package custom
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestRetrieveEnv(t *testing.T) {
 	tests := []struct {
-		description  string
-		tag          string
-		pushImages   bool
-		buildContext string
-		api          *testutil.FakeAPIClient
-		artifact     *latest.Artifact
-		dockerEnv    []string
-		environ      []string
-		expected     []string
+		description   string
+		tag           string
+		pushImages    bool
+		buildContext  string
+		artifact      *latest.Artifact
+		additionalEnv []string
+		environ       []string
+		expected      []string
 	}{
 
 		{
@@ -49,17 +47,17 @@ func TestRetrieveEnv(t *testing.T) {
 			environ:      []string{"PATH=/path", "HOME=/root"},
 			buildContext: "/some/path",
 			expected:     []string{"BUILD_CONTEXT=/some/path", "HOME=/root", "IMAGES=gcr.io/image/tag:anothertag", "PATH=/path", "PUSH_IMAGE=false"},
-		},
-		{
-			description: "make sure docker env is correctly applied",
-			tag:         "gcr.io/image/docker:tag",
-			dockerEnv:   []string{"DOCKER_API_VERSION=1.3", "DOCKER_CERT_PATH=/home/.minikube/certs"},
-			expected:    []string{"BUILD_CONTEXT=", "DOCKER_API_VERSION=1.3", "DOCKER_CERT_PATH=/home/.minikube/certs", "IMAGES=gcr.io/image/docker:tag", "PUSH_IMAGE=false"},
 		}, {
 			description: "push image is true",
 			tag:         "gcr.io/image/push:tag",
 			pushImages:  true,
 			expected:    []string{"BUILD_CONTEXT=", "IMAGES=gcr.io/image/push:tag", "PUSH_IMAGE=true"},
+		}, {
+			description:   "add additional env",
+			tag:           "gcr.io/image/push:tag",
+			pushImages:    true,
+			additionalEnv: []string{"KUBECONTEXT=mycluster"},
+			expected:      []string{"BUILD_CONTEXT=", "IMAGES=gcr.io/image/push:tag", "KUBECONTEXT=mycluster", "PUSH_IMAGE=true"},
 		},
 	}
 
@@ -81,8 +79,7 @@ func TestRetrieveEnv(t *testing.T) {
 				return test.buildContext, nil
 			}
 
-			client := docker.NewLocalDaemon(test.api, test.dockerEnv, false, nil)
-			artifactBuilder := NewArtifactBuilder(test.pushImages, "", nil, client)
+			artifactBuilder := NewArtifactBuilder(test.pushImages, test.additionalEnv)
 			actual, err := artifactBuilder.retrieveEnv(&latest.Artifact{}, test.tag)
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
 		})

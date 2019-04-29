@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
@@ -40,41 +39,34 @@ var (
 
 // ArtifactBuilder is a builder for custom artifacts
 type ArtifactBuilder struct {
-	pushImages         bool
-	localDocker        docker.LocalDaemon
-	kubeContext        string
-	insecureRegistries map[string]bool
+	pushImages    bool
+	additionalEnv []string
 }
 
-func NewArtifactBuilder(pushImages bool, kubeContext string, insecureRegistries map[string]bool, localDocker docker.LocalDaemon) *ArtifactBuilder {
+// NewArtifactBuilder returns a new custom artifact builder
+func NewArtifactBuilder(pushImages bool, additionalEnv []string) *ArtifactBuilder {
 	return &ArtifactBuilder{
-		pushImages:         pushImages,
-		kubeContext:        kubeContext,
-		localDocker:        localDocker,
-		insecureRegistries: insecureRegistries,
+		pushImages:    pushImages,
+		additionalEnv: additionalEnv,
 	}
 }
 
-// Build builds a custom artifact and returns the digest of the built image
-func (b *ArtifactBuilder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
+// Build builds a custom artifact
+// It returns true if the image is expected to exist remotely, or false if it is expected to exist locally
+func (b *ArtifactBuilder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (bool, error) {
 	artifact := a.CustomArtifact
 	cmd := exec.Command(artifact.BuildCommand)
 	env, err := b.retrieveEnv(a, tag)
 	if err != nil {
-		return "", errors.Wrapf(err, "retrieving env variables for %s", a.ImageName)
+		return false, errors.Wrapf(err, "retrieving env variables for %s", a.ImageName)
 	}
 	cmd.Env = env
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return "", errors.Wrapf(err, "building image with command %s", cmd.Args)
+		return false, errors.Wrapf(err, "building image with command %s", cmd.Args)
 	}
-
-	if b.pushImages {
-		return docker.RemoteDigest(tag, b.insecureRegistries)
-	}
-
-	return b.localDocker.ImageID(ctx, tag)
+	return b.pushImages, nil
 }
 
 func (b *ArtifactBuilder) retrieveEnv(a *latest.Artifact, tag string) ([]string, error) {
@@ -89,9 +81,7 @@ func (b *ArtifactBuilder) retrieveEnv(a *latest.Artifact, tag string) ([]string,
 		fmt.Sprintf("%s=%t", constants.PushImage, b.pushImages),
 		fmt.Sprintf("%s=%s", constants.BuildContext, buildContext),
 	}
-	if b.localDocker != nil {
-		envs = append(envs, b.localDocker.ExtraEnv()...)
-	}
+	envs = append(envs, b.additionalEnv...)
 	envs = append(envs, environ()...)
 	sort.Strings(envs)
 	return envs, nil
