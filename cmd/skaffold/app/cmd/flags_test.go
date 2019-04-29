@@ -39,7 +39,7 @@ func TestAddFlags(t *testing.T) {
 		{
 			description:   "union of anotations",
 			annotations:   map[string]string{"cleanup": "true", "test": "true"},
-			expectedFlags: []string{"skip-tests", "cleanup", "port-forward", "no-prune"},
+			expectedFlags: []string{"skip-tests", "cleanup", "no-prune"},
 		},
 	}
 
