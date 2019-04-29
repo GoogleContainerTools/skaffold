@@ -82,7 +82,7 @@ func TestPullCacheFrom(t *testing.T) {
 			DockerImage: "docker/docker",
 		},
 	}
-	steps, _ := builder.dockerBuildSteps(artifact, []string{"nginx2"})
+	steps, err := builder.dockerBuildSteps(artifact, []string{"nginx2"})
 
 	expected := []*cloudbuild.BuildStep{{
 		Name:       "docker/docker",
@@ -97,5 +97,5 @@ func TestPullCacheFrom(t *testing.T) {
 		Args: []string{"build", "--tag", "nginx2", "-f", "Dockerfile", "--cache-from", "from/image1", "--cache-from", "from/image2", "."},
 	}}
 
-	testutil.CheckDeepEqual(t, expected, steps)
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected, steps)
 }
