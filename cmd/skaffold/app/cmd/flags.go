@@ -106,6 +106,14 @@ func getAnnotatedFlags(name string, annotations map[string]string) *flag.FlagSet
 	return allFlags
 }
 
+// This is hack to get around an existing issue.
+// Flag "--tail" is used for setting "opts.TailDev" and "opts.Tail".
+// In Deploy flow, "--tail" is set to opts.Tail with default set to false.
+// However, in Run and Dev flow, "--tail" is set to opts.TailDev with default set to true.
+// Dev and Run, both run deploy, and hence default to --tail is set to false based on order
+// of the keys in *cobra.Command.Annotations (determined at runtime)
+// Dev and Run commands should first call addTailDevFlag() and register "--tail" flag with default set to true.
+// This will ignore the "--tail" flag added in `AddFlags` function
 func addTailDevFlag(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.TailDev, "tail", true, "Stream logs from deployed objects")
 }
