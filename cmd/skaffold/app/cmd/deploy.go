@@ -44,7 +44,8 @@ func NewCmdDeploy(out io.Writer) *cobra.Command {
 	AddRunDevFlags(cmd)
 	AddRunDeployFlags(cmd)
 	cmd.Flags().VarP(&preBuiltImages, "images", "i", "A list of pre-built images to deploy")
-	cmd.Flags().VarP(&buildOutputFile, "build-artifacts", "a", "Output of `skaffold build --quiet {{json .}} > build.out`")
+	cmd.Flags().VarP(&buildOutputFile, "build-artifacts", "a", `Filepath containing build output.
+E.g. build.out created by running skaffold build --quiet {{json .}} > build.out`)
 	return cmd
 }
 
@@ -58,9 +59,9 @@ func runDeploy(out io.Writer) error {
 	}
 	defer runner.RPCServerShutdown()
 
-	// If the BuildAritfacts contains an image in the preBuilt list,
+	// If the BuildArtifacts contains an image in the preBuilt list,
 	// use image from BuildArtifacts instead
-	deployArtifacts := build.MergeWithPreviousBuilds(buildOutputFile.BuildAritifacts(), preBuiltImages.Artifacts())
+	deployArtifacts := build.MergeWithPreviousBuilds(buildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts())
 
 	return runner.Deploy(ctx, out, deployArtifacts)
 }

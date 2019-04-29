@@ -26,15 +26,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-// BuildOutput is the output of `skaffold build`.
-type BuildOutput struct {
-	Builds []build.Artifact `json:"builds"`
-}
-
 // BuildOutputFileFlag describes a flag which contains a BuildOutput.
 type BuildOutputFileFlag struct {
 	filename    string
 	buildOutput BuildOutput
+}
+
+// BuildOutput is the output of `skaffold build`.
+type BuildOutput struct {
+	Builds []build.Artifact `json:"builds"`
 }
 
 func (t *BuildOutputFileFlag) String() string {
@@ -69,8 +69,8 @@ func (t *BuildOutputFileFlag) Type() string {
 	return fmt.Sprintf("%T", t)
 }
 
-// BuildAritifacts returns the Build Artifacts in the BuildOutputFileFlag
-func (t *BuildOutputFileFlag) BuildAritifacts() []build.Artifact {
+// BuildArtifacts returns the Build Artifacts in the BuildOutputFileFlag
+func (t *BuildOutputFileFlag) BuildArtifacts() []build.Artifact {
 	return t.buildOutput.Builds
 }
 

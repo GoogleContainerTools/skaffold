@@ -318,24 +318,25 @@ Usage:
   skaffold deploy
 
 Flags:
-  -a, --build-artifacts skaffold build --quiet {{json .}} > build.out   Output of skaffold build --quiet {{json .}} > build.out
-      --cache-artifacts                                                 Set to true to enable caching of artifacts.
-      --cache-file string                                               Specify the location of the cache file (default $HOME/.skaffold/cache)
-  -d, --default-repo string                                             Default repository value (overrides global config)
-      --enable-rpc skaffold dev                                         Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
-  -f, --filename string                                                 Filename or URL to the pipeline file (default "skaffold.yaml")
-      --force                                                           Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)
-  -i, --images *flags.Images                                            A list of pre-built images to deploy
-      --insecure-registry strings                                       Target registries for built images which are not secure
-  -l, --label strings                                                   Add custom labels to deployed objects. Set multiple times for multiple labels.
-  -n, --namespace string                                                Run deployments in the specified namespace
-      --no-prune                                                        Skip removing images and containers built by Skaffold
-  -p, --profile strings                                                 Activate profiles by name
-      --rpc-http-port int                                               tcp port to expose event REST API over HTTP (default 50052)
-      --rpc-port int                                                    tcp port to expose event API (default 50051)
-      --skip-tests                                                      Whether to skip the tests after building
-      --tail                                                            Stream logs from deployed objects
-      --toot                                                            Emit a terminal beep after the deploy is complete
+  -a, --build-artifacts *flags.BuildOutputFileFlag   Filepath containing build output.
+                                                     E.g. build.out created by running skaffold build --quiet {{json .}} > build.out
+      --cache-artifacts                              Set to true to enable caching of artifacts.
+      --cache-file string                            Specify the location of the cache file (default $HOME/.skaffold/cache)
+  -d, --default-repo string                          Default repository value (overrides global config)
+      --enable-rpc skaffold dev                      Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
+  -f, --filename string                              Filename or URL to the pipeline file (default "skaffold.yaml")
+      --force                                        Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)
+  -i, --images *flags.Images                         A list of pre-built images to deploy
+      --insecure-registry strings                    Target registries for built images which are not secure
+  -l, --label strings                                Add custom labels to deployed objects. Set multiple times for multiple labels.
+  -n, --namespace string                             Run deployments in the specified namespace
+      --no-prune                                     Skip removing images and containers built by Skaffold
+  -p, --profile strings                              Activate profiles by name
+      --rpc-http-port int                            tcp port to expose event REST API over HTTP (default 50052)
+      --rpc-port int                                 tcp port to expose event API (default 50051)
+      --skip-tests                                   Whether to skip the tests after building
+      --tail                                         Stream logs from deployed objects
+      --toot                                         Emit a terminal beep after the deploy is complete
 
 Global Flags:
       --color int          Specify the default output color in ANSI escape codes (default 34)

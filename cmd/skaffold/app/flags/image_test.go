@@ -75,6 +75,11 @@ func TestImagesFlagSet(t *testing.T) {
 			setValue:    "docker_:!",
 			shouldErr:   true,
 		},
+		{
+			description: "set errors with empty image name",
+			setValue:    "",
+			shouldErr:   true,
+		},
 	}
 
 	for _, test := range tests {
@@ -130,7 +135,7 @@ func TestConvertToArtifact(t *testing.T) {
 		{
 			description: "empty artifact",
 			image:       "",
-			expected:    nil,
+			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {

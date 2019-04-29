@@ -17,6 +17,7 @@ limitations under the License.
 package flags
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -84,7 +85,7 @@ func NewEmptyImages(usage string) *Images {
 
 func convertImageToArtifact(value string) (*build.Artifact, error) {
 	if value == "" {
-		return nil, nil
+		return nil, errors.New("cannot add an empty image value")
 	}
 	parsed, err := docker.ParseReference(value)
 	if err != nil {
