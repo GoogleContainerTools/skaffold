@@ -60,11 +60,7 @@ func runDeploy(out io.Writer) error {
 
 	// If the BuildAritfacts contains an image in the preBuilt list,
 	// use image from BuildArtifacts instead
-	deployArtifacts := mergeDeployArtifacts(buildOutputFile.BuildAritifacts(), preBuiltImages.Artifacts())
+	deployArtifacts := build.MergeWithPreviousBuilds(buildOutputFile.BuildAritifacts(), preBuiltImages.Artifacts())
 
 	return runner.Deploy(ctx, out, deployArtifacts)
-}
-
-func mergeDeployArtifacts(builds, previous []build.Artifact) []build.Artifact {
-	return build.MergeWithPreviousBuilds(buildOutputFile.BuildAritifacts(), preBuiltImages.Artifacts())
 }

@@ -67,10 +67,10 @@ func TestBuildDeploy(t *testing.T) {
 	skaffold.Deploy("--build-artifacts", buildOutputFile).InDir("examples/microservices").InNs(ns.Name).RunOrFail(t)
 
 	depApp := client.GetDeployment("leeroy-app")
-	testutil.CheckDeepEqual(t, webTag, depApp.Spec.Template.Spec.Containers[0].Image)
+	testutil.CheckDeepEqual(t, appTag, depApp.Spec.Template.Spec.Containers[0].Image)
 
 	depWeb := client.GetDeployment("leeroy-web")
-	testutil.CheckDeepEqual(t, appTag, depWeb.Spec.Template.Spec.Containers[0].Image)
+	testutil.CheckDeepEqual(t, webTag, depWeb.Spec.Template.Spec.Containers[0].Image)
 
 	skaffold.Delete().InDir("examples/microservices").InNs(ns.Name).RunOrFail(t)
 }

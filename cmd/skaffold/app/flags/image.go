@@ -65,7 +65,7 @@ func (i *Images) Type() string {
 	return fmt.Sprintf("%T", i)
 }
 
-// Artifacts retuns an artifact representation for the corresponding image
+// Artifacts returns an artifact representation for the corresponding image
 func (i *Images) Artifacts() []build.Artifact {
 	artifacts := []build.Artifact{}
 	for _, image := range i.images {
