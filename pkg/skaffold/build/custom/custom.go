@@ -70,7 +70,7 @@ func (b *ArtifactBuilder) Build(ctx context.Context, out io.Writer, a *latest.Ar
 }
 
 func (b *ArtifactBuilder) retrieveEnv(a *latest.Artifact, tag string) ([]string, error) {
-	images := strings.Join([]string{tag}, ",")
+	images := strings.Join([]string{tag}, " ")
 	buildContext, err := buildContext(a.Workspace)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting absolute path for artifact build context")
