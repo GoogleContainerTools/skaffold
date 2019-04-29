@@ -182,7 +182,7 @@ func getTagger(t latest.TagPolicy, customTag string) (tag.Tagger, error) {
 		return &tag.ChecksumTagger{}, nil
 
 	case t.GitTagger != nil:
-		return &tag.GitCommit{}, nil
+		return tag.NewGitCommit(t.GitTagger.Variant)
 
 	case t.DateTimeTagger != nil:
 		return tag.NewDateTimeTagger(t.DateTimeTagger.Format, t.DateTimeTagger.TimeZone), nil
