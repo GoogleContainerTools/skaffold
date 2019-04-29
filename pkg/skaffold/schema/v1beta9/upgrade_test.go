@@ -19,9 +19,9 @@ package v1beta9
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 func TestUpgrade(t *testing.T) {
@@ -30,17 +30,13 @@ kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
-    plugin:
-      name: docker
-      properties:
-        dockerfile: path/to/Dockerfile
+    docker:
+      dockerfile: path/to/Dockerfile
   - image: gcr.io/k8s-skaffold/bazel
-    plugin:
-      name: bazel
-      properties:
-        target: //mytarget
-  executionEnvironment:
-    name: local
+    bazel:
+      target: //mytarget
+  googleCloudBuild:
+    projectId: test-project
 test:
   - image: gcr.io/k8s-skaffold/skaffold-example
     structureTests:
@@ -65,6 +61,18 @@ profiles:
      - image: gcr.io/k8s-skaffold/skaffold-example
        structureTests:
          - ./test/*
+    deploy:
+      kubectl:
+        manifests:
+        - k8s-*
+  - name: test local
+    build:
+      artifacts:
+      - image: gcr.io/k8s-skaffold/skaffold-example
+        docker:
+          dockerfile: path/to/Dockerfile
+      local:
+        push: false
     deploy:
       kubectl:
         manifests:
@@ -80,6 +88,8 @@ build:
   - image: gcr.io/k8s-skaffold/bazel
     bazel:
       target: //mytarget
+  googleCloudBuild:
+    projectId: test-project
 test:
   - image: gcr.io/k8s-skaffold/skaffold-example
     structureTests:
@@ -108,19 +118,31 @@ profiles:
       kubectl:
         manifests:
         - k8s-*
+  - name: test local
+    build:
+      artifacts:
+      - image: gcr.io/k8s-skaffold/skaffold-example
+        docker:
+          dockerfile: path/to/Dockerfile
+      local:
+        push: false
+    deploy:
+      kubectl:
+        manifests:
+        - k8s-*
 `
 	verifyUpgrade(t, yaml, expected)
 }
 
 func verifyUpgrade(t *testing.T, input, output string) {
-	pipeline := NewSkaffoldConfig()
-	err := yaml.UnmarshalStrict([]byte(input), pipeline)
-	testutil.CheckErrorAndDeepEqual(t, false, err, Version, pipeline.GetVersion())
+	config := NewSkaffoldConfig()
+	err := yaml.UnmarshalStrict([]byte(input), config)
+	testutil.CheckErrorAndDeepEqual(t, false, err, Version, config.GetVersion())
 
-	upgraded, err := pipeline.Upgrade()
+	upgraded, err := config.Upgrade()
 	testutil.CheckError(t, false, err)
 
-	expected := latest.NewSkaffoldConfig()
+	expected := next.NewSkaffoldConfig()
 	err = yaml.UnmarshalStrict([]byte(output), expected)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, upgraded)
