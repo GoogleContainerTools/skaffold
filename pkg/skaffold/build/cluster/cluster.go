@@ -43,18 +43,24 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 		defer teardownDockerConfigSecret()
 	}
 
-	// If we only have kaniko builds running in cluster, then we can do the builds in parallel
-	onlyKanikoBuilds := true
+	// We can run kaniko builds in parallel
+	var kanikoArtifacts []*latest.Artifact
+	var otherArtifacts []*latest.Artifact
+
 	for _, a := range artifacts {
-		onlyKanikoBuilds = onlyKanikoBuilds && a.ArtifactType.KanikoArtifact != nil
+		if a.ArtifactType.KanikoArtifact != nil {
+			kanikoArtifacts = append(kanikoArtifacts, a)
+			continue
+		}
+		otherArtifacts = append(otherArtifacts, a)
 	}
-	if onlyKanikoBuilds {
-		return build.InParallel(ctx, out, tags, artifacts, b.buildArtifactWithKaniko)
+	pb, err := build.InParallel(ctx, out, tags, kanikoArtifacts, b.buildArtifactWithKaniko)
+	if err != nil {
+		return nil, errors.Wrap(err, "building kaniko artifacts in parallel")
 	}
 
-	// Otherwise, run the builds in sequence.
-	return build.InSequence(ctx, out, tags, artifacts, b.runBuildForArtifact)
-
+	sb, err := build.InSequence(ctx, out, tags, otherArtifacts, b.runBuildForArtifact)
+	return append(pb, sb...), err
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
