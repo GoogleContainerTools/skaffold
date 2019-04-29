@@ -14,10 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kaniko
+package cluster
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -42,11 +43,32 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 		defer teardownDockerConfigSecret()
 	}
 
-	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifactWithKaniko)
+	// If we only have kaniko builds running in cluster, then we can do the builds in parallel
+	onlyKanikoBuilds := true
+	for _, a := range artifacts {
+		onlyKanikoBuilds = onlyKanikoBuilds && a.ArtifactType.KanikoArtifact != nil
+	}
+	if onlyKanikoBuilds {
+		return build.InParallel(ctx, out, tags, artifacts, b.buildArtifactWithKaniko)
+	}
+
+	// Otherwise, run the builds in sequence.
+	return build.InSequence(ctx, out, tags, artifacts, b.runBuildForArtifact)
+
+}
+
+func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+	switch {
+	case artifact.KanikoArtifact != nil:
+		return b.buildArtifactWithKaniko(ctx, out, artifact, tag)
+
+	default:
+		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
+	}
 }
 
 func (b *Builder) buildArtifactWithKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	digest, err := b.run(ctx, out, artifact, tag)
+	digest, err := b.runKanikoBuild(ctx, out, artifact, tag)
 	if err != nil {
 		return "", errors.Wrapf(err, "kaniko build for [%s]", artifact.ImageName)
 	}

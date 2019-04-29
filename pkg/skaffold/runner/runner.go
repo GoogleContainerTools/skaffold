@@ -24,8 +24,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -140,8 +140,8 @@ func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
 		return gcb.NewBuilder(runCtx), nil
 
 	case runCtx.Cfg.Build.Cluster != nil:
-		logrus.Debugln("Using builder: kaniko")
-		return kaniko.NewBuilder(runCtx)
+		logrus.Debugln("Using builder: cluster")
+		return cluster.NewBuilder(runCtx)
 
 	default:
 		return nil, fmt.Errorf("unknown builder for config %+v", runCtx.Cfg.Build)
