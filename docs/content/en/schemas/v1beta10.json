@@ -581,8 +581,8 @@
         },
         "dependencies": {
           "$ref": "#/definitions/CustomDependencies",
-          "description": "file dependencies that skaffold should watch for this artifact.",
-          "x-intellij-html-description": "file dependencies that skaffold should watch for this artifact."
+          "description": "file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.",
+          "x-intellij-html-description": "file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact."
         }
       },
       "preferredOrder": [
@@ -600,8 +600,8 @@
             "type": "string"
           },
           "type": "array",
-          "description": "specifies the paths that should be ignored by the watcher. If a file exists in `paths` and in `ignore`, it will be ignored. Will only work in conjunction with `paths`.",
-          "x-intellij-html-description": "specifies the paths that should be ignored by the watcher. If a file exists in <code>paths</code> and in <code>ignore</code>, it will be ignored. Will only work in conjunction with <code>paths</code>.",
+          "description": "specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization. Will only work in conjunction with `paths`.",
+          "x-intellij-html-description": "specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both <code>paths</code> and in <code>ignore</code>, it will be ignored, and will be excluded from both rebuilds and file synchronization. Will only work in conjunction with <code>paths</code>.",
           "default": "[]"
         },
         "paths": {
@@ -609,8 +609,8 @@
             "type": "string"
           },
           "type": "array",
-          "description": "should be set to the dependencies for this artifact if no Dockerfile exists.",
-          "x-intellij-html-description": "should be set to the dependencies for this artifact if no Dockerfile exists.",
+          "description": "should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.",
+          "x-intellij-html-description": "should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.",
           "default": "[]"
         }
       },
@@ -619,8 +619,8 @@
         "ignore"
       ],
       "additionalProperties": false,
-      "description": "used to specify dependencies for an artifact built by a custom build script.",
-      "x-intellij-html-description": "used to specify dependencies for an artifact built by a custom build script."
+      "description": "*alpha* used to specify dependencies for an artifact built by a custom build script.",
+      "x-intellij-html-description": "<em>alpha</em> used to specify dependencies for an artifact built by a custom build script."
     },
     "DateTimeTagger": {
       "properties": {

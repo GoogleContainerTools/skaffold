@@ -561,15 +561,15 @@ type ArtifactType struct {
 type CustomArtifact struct {
 	// BuildCommand is the command executed to build the image.
 	BuildCommand string `yaml:"buildCommand,omitempty"`
-	// Dependencies are the file dependencies that skaffold should watch for this artifact.
+	// Dependencies are the file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.
 	Dependencies *CustomDependencies `yaml:"dependencies,omitempty"`
 }
 
-// CustomDependencies is used to specify dependencies for an artifact built by a custom build script.
+// CustomDependencies *alpha* is used to specify dependencies for an artifact built by a custom build script.
 type CustomDependencies struct {
-	// Paths should be set to the dependencies for this artifact if no Dockerfile exists.
+	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.
 	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
-	// Ignore specifies the paths that should be ignored by the watcher. If a file exists in `paths` and in `ignore`, it will be ignored.
+	// Ignore specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.
 	// Will only work in conjunction with `paths`.
 	Ignore []string `yaml:"ignore,omitempty"`
 }

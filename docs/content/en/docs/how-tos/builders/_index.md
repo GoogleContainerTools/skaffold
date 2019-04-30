@@ -15,6 +15,7 @@ Skaffold supports the following tools to build your image:
 * [Bazel](https://bazel.build/) locally
 * [Jib](https://github.com/GoogleContainerTools/jib) Maven and Gradle projects locally
 * [Jib](https://github.com/GoogleContainerTools/jib) remotely with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
+* Custom build script run locally
 
 The `build` section in the Skaffold configuration file, `skaffold.yaml`,
 controls how artifacts are built. To use a specific tool for building
@@ -208,3 +209,69 @@ The following `build` section instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with Bazel:
 
 {{% readfile file="samples/builders/bazel.yaml" %}}
+
+## Custom Build Script Run Locally
+
+Custom build scripts allow skaffold users the flexibility to build artifacts with any builder they desire. 
+Users can write a custom build script which must abide by the following contract for skaffold to work as expected:
+
+### Contract between Skaffold and Custom Build Script
+
+Skaffold will pass in the following environment variables to the custom build script:
+
+| Environment Variable         | Description           | Expectation  |
+| ------------- |-------------| -----|
+| $IMAGES     | An array of fully qualified image names, separated by spaces.  | The custom build script is expected to build an image and tag it with each image name in $IMAGES. Each image should also be pushed if `$PUSH_IMAGE=true`. | 
+| $PUSH_IMAGE      | Set to true if each image in `$IMAGES` is expected to exist in a remote registry. Set to false if each image in `$IMAGES` is expected to exist locally.      |   The custom build script will push each image in `$IMAGES` if `$PUSH_IMAGE=true` | 
+| $BUILD_CONTEXT  | An absolute path to the directory this artifact is meant to be built from. Specified by artifact `context` in the skaffold.yaml.      | None. | 
+| Local environment variables | The current state of the local environment (e.g. `$HOST`, `$PATH)`. Determined by the golang [os.Environ](https://golang.org/pkg/os/#Environ) function.| None. |
+
+As described above, the custom build script is expected to:
+
+1. Build and tag each image in `$IMAGES`
+2. Push each image in `$IMAGES` if `$PUSH_IMAGE=true`
+
+Once the build script has finished executing, skaffold will try to obtain the digest of the newly built image from a remote registry (if `$PUSH_IMAGE=true`) or the local daemon (if `$PUSH_IMAGE=false`).
+If skaffold fails to obtain the digest, it will error out.
+
+#### Additional Environment Variables
+
+Skaffold will pass in the following additional environment variables for the following builders:
+
+##### Local builder
+| Environment Variable         | Description           | Expectation  |
+| ------------- |-------------| -----|
+| Docker daemon environment variables     | Inform the custom builder of which docker daemon endpoint we are using. Allows custom build scripts to work with tools like Minikube.| None. | 
+
+
+### Configuration
+
+To use a custom build script, add a `custom` field to each artifact in the `build` section of the skaffold.yaml.
+Currently, this only works with the build type `local`. Supported schema for `custom` includes:
+
+
+{{< schema root="CustomArtifact" >}}
+
+
+`buildCommand` is *required* and points skaffold to the custom build script which will be executed to build the artifact.
+`dependencies` tells the skaffold file watcher which files should be watched to trigger rebuilds and file syncs.  Supported schema for `dependencies` includes:
+
+
+{{< schema root="CustomDependencies" >}}
+
+#### Custom Build Scripts and File Sync
+Syncable files must be specified in the `paths` section of `dependencies` so that the skaffold file watcher knows to watch them. 
+
+#### Custom Build Scripts and Logging
+STDOUT and STDERR from the custom build script will be redirected and displayed within skaffold logs.
+
+
+### Example
+
+The following `build` section instructs Skaffold to build an image `gcr.io/k8s-skaffold/example` with a custom build script `build.sh`:
+
+{{% readfile file="samples/builders/custom.yaml" %}}
+
+A sample `build.sh` file, which builds an image with bazel and docker:
+
+{{% readfile file="samples/builders/build.sh" %}}
