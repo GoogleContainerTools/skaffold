@@ -374,10 +374,10 @@ func TestLocalRun(t *testing.T) {
 				pushImages:  test.pushImages,
 			}
 
-			res, err := l.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
+			buildResultChannels, err := l.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
+			res := build.CollectResultsFromChannels(buildResultChannels)
 
 			// none of these tests should fail before the builds start. assert that err is nil here first.
-			// testutil.CheckError(t, false, err)
 			testutil.CheckError(t, test.shouldErr, err)
 
 			// build results are returned in a list, of which we can't guarantee order.
@@ -394,7 +394,6 @@ func TestLocalRun(t *testing.T) {
 							if !strings.Contains(buildRes.Error.Error(), testRes.buildResult.Error.Error()) {
 								t.Errorf("build error %s does not match expected error: %s", buildRes.Error.Error(), testRes.buildResult.Error.Error())
 							}
-							// testutil.CheckDeepEqual(t, testRes.buildResult.Error.Error(), buildRes.Error.Error())
 						}
 						testutil.CheckDeepEqual(t, testRes.buildResult.Target, buildRes.Target)
 						testutil.CheckDeepEqual(t, testRes.buildResult.Result, buildRes.Result)

@@ -44,6 +44,7 @@ func TestQuietFlag(t *testing.T) {
 	}
 
 	doubleArtifactRunner := func(context.Context, io.Writer) ([]build.Result, error) {
+		err := errors.New("build error")
 		return []build.Result{
 			{
 				Target: latest.Artifact{
@@ -58,9 +59,9 @@ func TestQuietFlag(t *testing.T) {
 				Target: latest.Artifact{
 					ImageName: "gcr.io/skaffold/image2",
 				},
-				Error: errors.New("build error"),
+				Error: err,
 			},
-		}, nil
+		}, err
 	}
 
 	originalBuildFormatFlag := buildFormatFlag
@@ -90,9 +91,9 @@ func TestQuietFlag(t *testing.T) {
 			mock:        singleArtifactRunner,
 		},
 		{
-			description:    "two images, no template, one error",
-			expectedOutput: []byte(`{"builds":[{"imageName":"gcr.io/skaffold/image1","tag":"gcr.io/skaffold/image1:tag"}]}`),
-			mock:           doubleArtifactRunner,
+			description: "two images, no template, one error",
+			mock:        doubleArtifactRunner,
+			shouldErr:   true,
 		},
 	}
 

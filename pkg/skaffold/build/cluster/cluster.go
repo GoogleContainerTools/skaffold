@@ -27,17 +27,17 @@ import (
 )
 
 // Build builds a list of artifacts with Kaniko.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Result, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]chan build.Result, error) {
 	teardownPullSecret, err := b.setupPullSecret(out)
 	if err != nil {
-		return nil, errors.Wrap(err, "error setting up pull secret for kaniko build")
+		return nil, errors.Wrap(err, "setting up pull secret for kaniko build")
 	}
 	defer teardownPullSecret()
 
 	if b.DockerConfig != nil {
 		teardownDockerConfigSecret, err := b.setupDockerConfigSecret(out)
 		if err != nil {
-			return nil, errors.Wrap(err, "error setting up docker config secret for kaniko build")
+			return nil, errors.Wrap(err, "setting up docker config secret for kaniko build")
 		}
 		defer teardownDockerConfigSecret()
 	}

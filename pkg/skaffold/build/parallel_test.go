@@ -80,7 +80,7 @@ func TestInParallel(t *testing.T) {
 						Target: latest.Artifact{
 							ImageName: "skaffold/image1",
 						},
-						Error: errors.New("building [skaffold/image1]: build fails"),
+						Error: errors.New("build fails"),
 					},
 					shouldErr: true,
 				},
@@ -89,7 +89,7 @@ func TestInParallel(t *testing.T) {
 						Target: latest.Artifact{
 							ImageName: "skaffold/image2",
 						},
-						Error: errors.New("building [skaffold/image2]: unable to find tag for image skaffold/image2"),
+						Error: errors.New("building [skaffold/image2]: unable to find tag for image"),
 					},
 					shouldErr: true,
 				},
@@ -105,7 +105,7 @@ func TestInParallel(t *testing.T) {
 						Target: latest.Artifact{
 							ImageName: "skaffold/image1",
 						},
-						Error: errors.New("building [skaffold/image1]: unable to find tag for image skaffold/image1"),
+						Error: errors.New("building [skaffold/image1]: unable to find tag for image"),
 					},
 					shouldErr: true,
 				},
@@ -114,7 +114,7 @@ func TestInParallel(t *testing.T) {
 						Target: latest.Artifact{
 							ImageName: "skaffold/image2",
 						},
-						Error: errors.New("building [skaffold/image2]: unable to find tag for image skaffold/image2"),
+						Error: errors.New("building [skaffold/image2]: unable to find tag for image"),
 					},
 					shouldErr: true,
 				},
@@ -141,8 +141,10 @@ func TestInParallel(t *testing.T) {
 				Opts: &config.SkaffoldOptions{},
 			})
 
-			res, err := InParallel(context.Background(), out, test.tags, artifacts, test.buildArtifact)
+			buildResultChannels, err := InParallel(context.Background(), out, test.tags, artifacts, test.buildArtifact)
 			testutil.CheckError(t, test.shouldErr, err)
+
+			res := CollectResultsFromChannels(buildResultChannels)
 
 			// build results are returned in a list, of which we can't guarantee order.
 			// loop through the expected results, and find the matching build result by target artifact.

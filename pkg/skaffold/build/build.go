@@ -30,12 +30,10 @@ type Artifact struct {
 	Tag       string `json:"tag"`
 }
 
-type Result struct {
-	Target latest.Artifact
-	Result Artifact
-	Error  error
-}
-
+// Result contains the result of a build of a single target artifact.
+// It contains the target artifact (parsed from the skaffold config),
+// and either an Artifact representing the result of a successful build,
+// or the error encountered while executing the build.
 type Result struct {
 	Target latest.Artifact
 	Result Artifact
@@ -49,7 +47,7 @@ type Result struct {
 type Builder interface {
 	Labels() map[string]string
 
-	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]Result, error)
+	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]chan Result, error)
 
 	DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error)
 

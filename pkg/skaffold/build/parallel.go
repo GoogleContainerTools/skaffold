@@ -21,12 +21,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
 )
 
 const bufferedLinesPerArtifact = 10000
@@ -34,92 +34,91 @@ const bufferedLinesPerArtifact = 10000
 type artifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error)
 
 // InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
-func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]Result, error) {
+func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]chan Result, error) {
 	if len(artifacts) == 1 {
 		return InSequence(ctx, out, tags, artifacts, buildArtifact)
 	}
 
+	resultChans := make([]chan Result, len(artifacts))
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	n := len(artifacts)
-	finalTags := make([]string, n)
-	errs := make([]error, n)
-	outputs := make([]chan []byte, n)
+	// for collecting all output and printing in order later on
+	outputs := make([]chan []byte, len(artifacts))
 
-	// Run builds in //
-	for index := range artifacts {
-		i := index
+	for i, a := range artifacts {
+		resChan := make(chan Result, 1)
+		resultChans[i] = resChan
+
+		// give each build a byte buffer to write its output to
 		lines := make(chan []byte, bufferedLinesPerArtifact)
 		outputs[i] = lines
 
-		r, w := io.Pipe()
-
-		// Log to the pipe, output will be collected and printed later
-		go func() {
-			// Make sure logs are printed in colors
-			var cw io.WriteCloser
-			if color.IsTerminal(out) {
-				cw = color.ColoredWriteCloser{WriteCloser: w}
-			} else {
-				cw = w
+		go func(artifact *latest.Artifact, c chan Result, lines chan []byte) {
+			res := &Result{
+				Target: *artifact,
 			}
+			wg := &sync.WaitGroup{}
 
-			color.Default.Fprintf(cw, "Building [%s]...\n", artifacts[i].ImageName)
+			r, w := io.Pipe()
 
-			event.BuildInProgress(artifacts[i].ImageName)
-
-			tag, present := tags[artifacts[i].ImageName]
-			if !present {
-				errs[i] = fmt.Errorf("unable to find tag for image %s", artifacts[i].ImageName)
-				event.BuildFailed(artifacts[i].ImageName, errs[i])
-			} else {
-				finalTags[i], errs[i] = buildArtifact(ctx, cw, artifacts[i], tag)
-				if errs[i] != nil {
-					event.BuildFailed(artifacts[i].ImageName, errs[i])
+			// Log to the pipe, output will be collected and printed later
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				// Make sure logs are printed in colors
+				var cw io.WriteCloser
+				if color.IsTerminal(out) {
+					cw = color.ColoredWriteCloser{WriteCloser: w}
+				} else {
+					cw = w
 				}
-			}
 
-			event.BuildComplete(artifacts[i].ImageName)
-			cw.Close()
-		}()
+				color.Default.Fprintf(cw, "Building [%s]...\n", artifact.ImageName)
 
-		go func() {
-			scanner := bufio.NewScanner(r)
-			for scanner.Scan() {
-				lines <- scanner.Bytes()
-			}
-			close(lines)
-		}()
+				event.BuildInProgress(artifact.ImageName)
+
+				tag, present := tags[artifact.ImageName]
+				if !present {
+					res.Error = fmt.Errorf("building [%s]: unable to find tag for image", artifact.ImageName)
+					event.BuildFailed(artifact.ImageName, res.Error)
+				} else {
+					bRes, err := buildArtifact(ctx, cw, artifact, tag)
+					if err != nil {
+						res.Error = err
+						event.BuildFailed(artifact.ImageName, err)
+					} else {
+						res.Result = Artifact{
+							ImageName: artifact.ImageName,
+							Tag:       bRes,
+						}
+					}
+				}
+				event.BuildComplete(artifact.ImageName)
+				cw.Close()
+			}()
+
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				scanner := bufio.NewScanner(r)
+				for scanner.Scan() {
+					lines <- scanner.Bytes()
+				}
+				close(lines)
+			}()
+
+			wg.Wait() // wait for build to finish and output to be processed
+			c <- *res // send the result back through the callback channel
+		}(a, resChan, lines)
 	}
 
-	// Print logs and collect results in order.
-	var results []Result
-
-	for i, artifact := range artifacts {
+	for i := range artifacts {
 		for line := range outputs[i] {
 			out.Write(line)
 			fmt.Fprintln(out)
 		}
-
-		var res Result
-		if errs[i] != nil {
-			res = Result{
-				Target: *artifact,
-				Error:  errors.Wrapf(errs[i], "building [%s]", artifact.ImageName),
-			}
-		} else {
-			res = Result{
-				Target: *artifact,
-				Result: Artifact{
-					ImageName: artifact.ImageName,
-					Tag:       finalTags[i],
-				},
-			}
-		}
-
-		results = append(results, res)
 	}
-
-	return results, nil
+	return resultChans, nil
 }

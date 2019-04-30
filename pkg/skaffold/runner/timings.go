@@ -54,7 +54,7 @@ func (w withTimings) Labels() map[string]string {
 	return labels.Merge(w.Builder.Labels(), w.Deployer.Labels())
 }
 
-func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Result, error) {
+func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]chan build.Result, error) {
 	if len(artifacts) == 0 && w.cacheArtifacts {
 		return nil, nil
 	}

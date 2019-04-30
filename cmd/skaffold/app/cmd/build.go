@@ -32,8 +32,7 @@ import (
 
 var (
 	quietFlag       bool
-	template        = "{{json .}}"
-	buildFormatFlag = flags.NewTemplateFlag(template, BuildOutput{})
+	buildFormatFlag = flags.NewTemplateFlag("{{json .}}", flags.BuildOutput{})
 )
 
 // For testing
@@ -58,11 +57,6 @@ func NewCmdBuild(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-// BuildOutput is the output of `skaffold build`.
-type BuildOutput struct {
-	Builds []build.Result
-}
-
 func runBuild(out io.Writer) error {
 	start := time.Now()
 	defer func() {
@@ -81,6 +75,10 @@ func runBuild(out io.Writer) error {
 	}
 
 	bRes, err := createRunnerAndBuildFunc(ctx, buildOut)
+
+	if err != nil {
+		return err
+	}
 
 	if quietFlag {
 		var artifacts []build.Artifact

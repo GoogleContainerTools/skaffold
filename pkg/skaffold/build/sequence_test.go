@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -148,8 +149,12 @@ func TestInSequence(t *testing.T) {
 				Opts: &config.SkaffoldOptions{},
 			})
 
-			res, err := InSequence(context.Background(), out, test.tags, artifacts, test.buildArtifact)
+			buildResultChannels, err := InSequence(context.Background(), out, test.tags, artifacts, test.buildArtifact)
 			testutil.CheckError(t, test.shouldErr, err)
+
+			res := CollectResultsFromChannels(buildResultChannels)
+
+			fmt.Fprintf(os.Stdout, "final build results: %+v\n", res)
 
 			// build results are returned in a list, of which we can't guarantee order.
 			// loop through the expected results, and find the matching build result by target artifact.
