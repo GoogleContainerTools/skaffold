@@ -304,7 +304,7 @@ Flags:
   -d, --default-repo string             Default repository value (overrides global config)
       --enable-rpc skaffold dev         Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
   -f, --filename string                 Filename or URL to the pipeline file (default "skaffold.yaml")
-      --force                           Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)
+      --force                           Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!) (default true)
       --insecure-registry stringArray   Target registries for built images which are not secure
   -l, --label stringArray               Add custom labels to deployed objects. Set multiple times for multiple labels.
   -n, --namespace string                Run deployments in the specified namespace
@@ -314,7 +314,7 @@ Flags:
       --rpc-http-port int               tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                    tcp port to expose event API (default 50051)
       --skip-tests                      Whether to skip the tests after building
-      --tail                            Stream logs from deployed objects
+      --tail                            Stream logs from deployed objects (default true)
       --toot                            Emit a terminal beep after the deploy is complete
 
 Global Flags:
@@ -506,7 +506,7 @@ Flags:
   -d, --default-repo string             Default repository value (overrides global config)
       --enable-rpc skaffold dev         Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
   -f, --filename string                 Filename or URL to the pipeline file (default "skaffold.yaml")
-      --force                           Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)
+      --force                           Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!) (default true)
       --insecure-registry stringArray   Target registries for built images which are not secure
   -l, --label stringArray               Add custom labels to deployed objects. Set multiple times for multiple labels.
   -n, --namespace string                Run deployments in the specified namespace
@@ -669,7 +669,7 @@ Flags:
   -d, --default-repo string             Default repository value (overrides global config)
       --enable-rpc skaffold dev         Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
   -f, --filename string                 Filename or URL to the pipeline file (default "skaffold.yaml")
-      --force                           Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)
+      --force                           Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!) (default true)
       --insecure-registry stringArray   Target registries for built images which are not secure
   -l, --label stringArray               Add custom labels to deployed objects. Set multiple times for multiple labels.
   -n, --namespace string                Run deployments in the specified namespace
@@ -679,7 +679,7 @@ Flags:
       --rpc-port int                    tcp port to expose event API (default 50051)
       --skip-tests                      Whether to skip the tests after building
   -t, --tag string                      The optional custom tag to use for images which overrides the current Tagger configuration
-      --tail                            Stream logs from deployed objects
+      --tail                            Stream logs from deployed objects (default true)
       --toot                            Emit a terminal beep after the deploy is complete
 >>>>>>> Correct flags except for --tail in dev and deploy
 

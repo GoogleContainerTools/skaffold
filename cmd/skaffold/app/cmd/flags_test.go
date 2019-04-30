@@ -20,36 +20,36 @@ import (
 	"testing"
 )
 
-func TestAddFlags(t *testing.T) {
+func TestHasCmdAnnotation(t *testing.T) {
 	tests := []struct {
-		description   string
-		annotations   map[string]string
-		expectedFlags []string
+		description     string
+		cmd             string
+		flagAnnotations []string
+		expected        bool
 	}{
 		{
-			description:   "not register annotations + correct annotation",
-			annotations:   map[string]string{"some": "true", "test": "true"},
-			expectedFlags: []string{"skip-tests"},
+			description:     "flag has command annotations",
+			cmd:             "build",
+			flagAnnotations: []string{"build", "events"},
+			expected:        true,
 		},
 		{
-			description:   "not register annotations should return no flags",
-			annotations:   map[string]string{"some": "true"},
-			expectedFlags: nil,
+			description:     "flag does not have command annotations",
+			cmd:             "build",
+			flagAnnotations: []string{"some"},
 		},
 		{
-			description:   "union of annotations",
-			annotations:   map[string]string{"cleanup": "true", "test": "true"},
-			expectedFlags: []string{"skip-tests", "cleanup", "no-prune"},
+			description:     "flag has all annotations",
+			cmd:             "build",
+			flagAnnotations: []string{"all"},
+			expected:        true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			flags := getAnnotatedFlags("test", test.annotations)
-			for _, f := range test.expectedFlags {
-				if flags.Lookup(f) == nil {
-					t.Errorf("expected flag %s to be found.", f)
-				}
+			if test.expected != hasCmdAnnotation(test.cmd, test.flagAnnotations) {
+				t.Errorf("expected %t but found %t", test.expected, !test.expected)
 			}
 		})
 	}

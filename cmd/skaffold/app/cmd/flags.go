@@ -22,24 +22,16 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
-const (
-	BuildAnnotation   = "build"
-	DeployAnnotation  = "deploy"
-	TestAnnotation    = "test"
-	DeleteAnnotation  = "delete"
-	CleanupAnnotation = "cleanup"
-	EventsAnnotation  = "events"
-)
-
 var (
-	CommonFlagSet = commonFlagSet("common")
-
-	AnnotationToFlag = map[string]*flag.FlagSet{
-		BuildAnnotation:   buildFlagSet(BuildAnnotation),
-		EventsAnnotation:  eventsAPIFlagSet(EventsAnnotation),
-		DeployAnnotation:  deployFlagSet(DeployAnnotation),
-		TestAnnotation:    testFlagSet(TestAnnotation),
-		CleanupAnnotation: cleanupFlagSet(CleanupAnnotation),
+	AllFlags = []*flag.FlagSet{
+		commonFlagSet("common"),
+		buildFlagSet("build"),
+		eventsAPIFlagSet("events"),
+		deployPhaseFlagSet("deploy-phase"),
+		deployCommandFlagSet("deploy-cmd"),
+		testFlagSet("test"),
+		cleanupFlagSet("cleanup"),
+		devFlagSet("dev"),
 	}
 )
 
@@ -49,6 +41,9 @@ func commonFlagSet(name string) *flag.FlagSet {
 	commonFlags.StringArrayVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
 	commonFlags.StringVarP(&opts.Namespace, "namespace", "n", "", "Run deployments in the specified namespace")
 	commonFlags.StringVarP(&opts.DefaultRepo, "default-repo", "d", "", "Default repository value (overrides global config)")
+	commonFlags.VisitAll(func(flag *flag.Flag) {
+		commonFlags.SetAnnotation(flag.Name, "cmds", []string{"all"})
+	})
 	return commonFlags
 }
 
@@ -57,6 +52,9 @@ func buildFlagSet(name string) *flag.FlagSet {
 	buildFlags.BoolVar(&opts.CacheArtifacts, "cache-artifacts", false, "Set to true to enable caching of artifacts.")
 	buildFlags.StringVarP(&opts.CacheFile, "cache-file", "", "", "Specify the location of the cache file (default $HOME/.skaffold/cache)")
 	buildFlags.StringArrayVar(&opts.InsecureRegistries, "insecure-registry", nil, "Target registries for built images which are not secure")
+	buildFlags.VisitAll(func(flag *flag.Flag) {
+		buildFlags.SetAnnotation(flag.Name, "cmds", []string{"dev", "run", "build", "debug"})
+	})
 	return buildFlags
 }
 
@@ -65,21 +63,49 @@ func eventsAPIFlagSet(name string) *flag.FlagSet {
 	eventFlags.BoolVar(&opts.EnableRPC, "enable-rpc", false, "Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)")
 	eventFlags.IntVar(&opts.RPCPort, "rpc-port", constants.DefaultRPCPort, "tcp port to expose event API")
 	eventFlags.IntVar(&opts.RPCHTTPPort, "rpc-http-port", constants.DefaultRPCHTTPPort, "tcp port to expose event REST API over HTTP")
+	eventFlags.VisitAll(func(flag *flag.Flag) {
+		eventFlags.SetAnnotation(flag.Name, "cmds", []string{"dev", "run", "build", "deploy", "debug"})
+	})
 	return eventFlags
 }
 
-func deployFlagSet(name string) *flag.FlagSet {
-	deployFlags := flag.NewFlagSet(name, flag.ContinueOnError)
-	deployFlags.BoolVar(&opts.Tail, "tail", false, "Stream logs from deployed objects")
-	deployFlags.BoolVar(&opts.Force, "force", false, "Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)")
-	deployFlags.StringArrayVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels.")
-	deployFlags.BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
-	return deployFlags
+func deployPhaseFlagSet(name string) *flag.FlagSet {
+	deployPhaseFlags := flag.NewFlagSet(name, flag.ContinueOnError)
+	deployPhaseFlags.StringArrayVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels.")
+	deployPhaseFlags.BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
+	deployPhaseFlags.VisitAll(func(flag *flag.Flag) {
+		deployPhaseFlags.SetAnnotation(flag.Name, "cmds", []string{"dev", "run", "deploy", "debug"})
+	})
+	return deployPhaseFlags
+}
+
+func deployCommandFlagSet(name string) *flag.FlagSet {
+	deployCommandFlags := flag.NewFlagSet("deploy-command", flag.ContinueOnError)
+	deployCommandFlags.BoolVar(&opts.Tail, "tail", false, "Stream logs from deployed objects")
+	deployCommandFlags.StringSliceVar(&opts.PreBuiltImages, "images", nil, "A list of pre-built images to deploy")
+	deployCommandFlags.BoolVar(&opts.Force, "force", false, "Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)")
+	deployCommandFlags.VisitAll(func(flag *flag.Flag) {
+		deployCommandFlags.SetAnnotation(flag.Name, "cmds", []string{"deploy"})
+	})
+	return deployCommandFlags
+}
+
+func devFlagSet(name string) *flag.FlagSet {
+	devFlags := flag.NewFlagSet(name, flag.ContinueOnError)
+	devFlags.BoolVar(&opts.TailDev, "tail", true, "Stream logs from deployed objects")
+	devFlags.BoolVar(&opts.ForceDev, "force", true, "Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)")
+	devFlags.VisitAll(func(flag *flag.Flag) {
+		devFlags.SetAnnotation(flag.Name, "cmds", []string{"dev", "run", "debug"})
+	})
+	return devFlags
 }
 
 func testFlagSet(name string) *flag.FlagSet {
 	testFlags := flag.NewFlagSet(name, flag.ContinueOnError)
 	testFlags.BoolVar(&opts.SkipTests, "skip-tests", false, "Whether to skip the tests after building")
+	testFlags.VisitAll(func(flag *flag.Flag) {
+		testFlags.SetAnnotation(flag.Name, "cmds", []string{"dev", "run", "debug", "build"})
+	})
 	return testFlags
 }
 
@@ -87,33 +113,27 @@ func cleanupFlagSet(name string) *flag.FlagSet {
 	cleanupFlags := flag.NewFlagSet(name, flag.ContinueOnError)
 	cleanupFlags.BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev or debug mode is interrupted")
 	cleanupFlags.BoolVar(&opts.NoPrune, "no-prune", false, "Skip removing images and containers built by Skaffold")
+	cleanupFlags.VisitAll(func(flag *flag.Flag) {
+		cleanupFlags.SetAnnotation(flag.Name, "cmds", []string{"dev", "run", "debug"})
+	})
 	return cleanupFlags
 }
 
 func AddFlags(cmd *cobra.Command) {
-	cmd.Flags().AddFlagSet(CommonFlagSet)
-	cmd.Flags().AddFlagSet(getAnnotatedFlags(cmd.Use, cmd.Annotations))
+	for _, flagSet := range AllFlags {
+		flagSet.VisitAll(func(flag *flag.Flag) {
+			if hasCmdAnnotation(cmd.Use, flag.Annotations["cmds"]) {
+				cmd.Flags().AddFlag(flag)
+			}
+		})
+	}
 }
 
-func getAnnotatedFlags(name string, annotations map[string]string) *flag.FlagSet {
-	allFlags := flag.NewFlagSet(name, flag.ContinueOnError)
-	for a := range annotations {
-		flags, ok := AnnotationToFlag[a]
-		if ok {
-			allFlags.AddFlagSet(flags)
+func hasCmdAnnotation(cmdName string, annotations []string) bool {
+	for _, a := range annotations {
+		if cmdName == a || a == "all" {
+			return true
 		}
 	}
-	return allFlags
-}
-
-// This is hack to get around an existing issue.
-// Flag "--tail" is used for setting "opts.TailDev" and "opts.Tail".
-// In Deploy flow, "--tail" is set to opts.Tail with default set to false.
-// However, in Run and Dev flow, "--tail" is set to opts.TailDev with default set to true.
-// Dev and Run, both run deploy, and hence default to --tail is set to false based on order
-// of the keys in *cobra.Command.Annotations (determined at runtime)
-// Dev and Run commands should first call addTailDevFlag() and register "--tail" flag with default set to true.
-// This will ignore the "--tail" flag added in `AddFlags` function
-func addTailDevFlag(cmd *cobra.Command) {
-	cmd.Flags().BoolVar(&opts.TailDev, "tail", true, "Stream logs from deployed objects")
+	return false
 }

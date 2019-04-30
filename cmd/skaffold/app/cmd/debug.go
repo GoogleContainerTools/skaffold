@@ -47,13 +47,6 @@ func NewCmdDebug(out io.Writer) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return debug(out)
 		},
-		Annotations: map[string]string{
-			BuildAnnotation:   "true",
-			DeployAnnotation:  "true",
-			TestAnnotation:    "true",
-			CleanupAnnotation: "true",
-			EventsAnnotation:  "true",
-		},
 	}
 	AddFlags(cmd)
 	cmd.Flags().BoolVar(&opts.PortForward, "port-forward", true, "Port-forward exposed container ports within pods")
