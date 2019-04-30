@@ -221,7 +221,7 @@ Skaffold will pass in the following environment variables to the custom build sc
 
 | Environment Variable         | Description           | Expectation  |
 | ------------- |-------------| -----|
-| $IMAGES     | An array of fully qualified image names, separated by spaces.  | The custom build script is expected to build an image and tag it with each image name in $IMAGES. Each image should also be pushed if `$PUSH_IMAGE=true`. | 
+| $IMAGES     | An array of fully qualified image names, separated by spaces. For example, "gcr.io/image1 gcr.io/image2" | The custom build script is expected to build an image and tag it with each image name in $IMAGES. Each image should also be pushed if `$PUSH_IMAGE=true`. | 
 | $PUSH_IMAGE      | Set to true if each image in `$IMAGES` is expected to exist in a remote registry. Set to false if each image in `$IMAGES` is expected to exist locally.      |   The custom build script will push each image in `$IMAGES` if `$PUSH_IMAGE=true` | 
 | $BUILD_CONTEXT  | An absolute path to the directory this artifact is meant to be built from. Specified by artifact `context` in the skaffold.yaml.      | None. | 
 | Local environment variables | The current state of the local environment (e.g. `$HOST`, `$PATH)`. Determined by the golang [os.Environ](https://golang.org/pkg/os/#Environ) function.| None. |
@@ -241,12 +241,12 @@ Skaffold will pass in the following additional environment variables for the fol
 ##### Local builder
 | Environment Variable         | Description           | Expectation  |
 | ------------- |-------------| -----|
-| Docker daemon environment variables     | Inform the custom builder of which docker daemon endpoint we are using. Allows custom build scripts to work with tools like Minikube.| None. | 
+| Docker daemon environment variables     | Inform the custom builder of which docker daemon endpoint we are using. Allows custom build scripts to work with tools like Minikube. For Minikube, this is the output of `minikube docker-env`.| None. | 
 
 
 ### Configuration
 
-To use a custom build script, add a `custom` field to each artifact in the `build` section of the skaffold.yaml.
+To use a custom build script, add a `custom` field to each corresponding artifact in the `build` section of the skaffold.yaml.
 Currently, this only works with the build type `local`. Supported schema for `custom` includes:
 
 
@@ -260,7 +260,7 @@ Currently, this only works with the build type `local`. Supported schema for `cu
 {{< schema root="CustomDependencies" >}}
 
 #### Custom Build Scripts and File Sync
-Syncable files must be specified in the `paths` section of `dependencies` so that the skaffold file watcher knows to watch them. 
+Syncable files must be included in both the `paths` section of `dependencies`, so that the skaffold file watcher knows to watch them, and the `sync` section, so that skaffold knows to sync them.  
 
 #### Custom Build Scripts and Logging
 STDOUT and STDERR from the custom build script will be redirected and displayed within skaffold logs.
