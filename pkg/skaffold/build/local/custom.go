@@ -28,12 +28,14 @@ import (
 
 func (b *Builder) buildCustom(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	customArtifactBuilder := custom.NewArtifactBuilder(b.pushImages, b.localDocker.ExtraEnv())
-	imageExpectedRemotely, err := customArtifactBuilder.Build(ctx, out, artifact, tag)
-	if err != nil {
+
+	if err := customArtifactBuilder.Build(ctx, out, artifact, tag); err != nil {
 		return "", errors.Wrap(err, "building custom artifact")
 	}
-	if imageExpectedRemotely {
+
+	if b.pushImages {
 		return docker.RemoteDigest(tag, b.insecureRegistries)
 	}
+
 	return b.localDocker.ImageID(ctx, tag)
 }

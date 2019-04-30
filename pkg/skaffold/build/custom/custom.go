@@ -53,20 +53,18 @@ func NewArtifactBuilder(pushImages bool, additionalEnv []string) *ArtifactBuilde
 
 // Build builds a custom artifact
 // It returns true if the image is expected to exist remotely, or false if it is expected to exist locally
-func (b *ArtifactBuilder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (bool, error) {
+func (b *ArtifactBuilder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) error {
 	artifact := a.CustomArtifact
 	cmd := exec.Command(artifact.BuildCommand)
 	env, err := b.retrieveEnv(a, tag)
 	if err != nil {
-		return false, errors.Wrapf(err, "retrieving env variables for %s", a.ImageName)
+		return errors.Wrapf(err, "retrieving env variables for %s", a.ImageName)
 	}
 	cmd.Env = env
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return false, errors.Wrapf(err, "building image with command %s", cmd.Args)
-	}
-	return b.pushImages, nil
+
+	return cmd.Run()
 }
 
 func (b *ArtifactBuilder) retrieveEnv(a *latest.Artifact, tag string) ([]string, error) {

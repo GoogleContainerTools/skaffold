@@ -29,7 +29,6 @@ func TestRetrieveEnv(t *testing.T) {
 		tag           string
 		pushImages    bool
 		buildContext  string
-		artifact      *latest.Artifact
 		additionalEnv []string
 		environ       []string
 		expected      []string
