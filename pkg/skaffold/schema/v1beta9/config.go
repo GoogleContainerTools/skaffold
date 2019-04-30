@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v1beta9
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v1beta10"
+const Version string = "skaffold/v1beta9"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -569,8 +569,7 @@ type KanikoArtifact struct {
 	Target string `yaml:"target,omitempty"`
 
 	// BuildArgs are arguments passed to the docker build.
-	// It also accepts environment variables via the go template syntax.
-	// For example: `{"key1": "value1", "key2": "value2", "key3": "{{.ENV_VARIABLE}}"}`.
+	// For example: `{"key1": "value1", "key2": "value2"}`.
 	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 
 	// BuildContext is where the build context for this artifact resides.
@@ -598,14 +597,6 @@ type DockerArtifact struct {
 	// BuildArgs are arguments passed to the docker build.
 	// For example: `{"key1": "value1", "key2": "value2"}`.
 	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
-
-	// NetworkMode is passed through to docker and overrides the
-	// network configuration of docker builder. If unset, use whatever
-	// is configured in the underlying docker daemon. Valid modes are
-	// `Host`: use the host's networking stack.
-	// `Bridge`: use the bridged network configuration.
-	// `None`: no networking in the container.
-	NetworkMode string `yaml:"network,omitempty"`
 
 	// CacheFrom lists the Docker images used as cache sources.
 	// For example: `["golang:1.10.1-alpine3.7", "alpine:3.7"]`.

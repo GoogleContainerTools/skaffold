@@ -1,4 +1,4 @@
-apiVersion: skaffold/v1beta9
+apiVersion: skaffold/v1beta10
 kind: Config
 build:
   artifacts:
@@ -6,7 +6,7 @@ build:
     context: backend
     docker:
       buildArgs:
-        SCRIPT: "{{.SCRIPT_ENV}}"
+        SCRIPT: "{{.SCRIPT}}"
     sync:
       '*.js': .
 deploy:

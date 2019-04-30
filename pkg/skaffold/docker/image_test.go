@@ -221,15 +221,23 @@ func TestGetBuildArgs(t *testing.T) {
 			want: []string{"--target", "stage1"},
 		},
 		{
+			description: "network mode",
+			artifact: &latest.DockerArtifact{
+				NetworkMode: "Bridge",
+			},
+			want: []string{"--network", "bridge"},
+		},
+		{
 			description: "all",
 			artifact: &latest.DockerArtifact{
 				BuildArgs: map[string]*string{
 					"key1": util.StringPtr("value1"),
 				},
-				CacheFrom: []string{"foo"},
-				Target:    "stage1",
+				CacheFrom:   []string{"foo"},
+				Target:      "stage1",
+				NetworkMode: "None",
 			},
-			want: []string{"--build-arg", "key1=value1", "--cache-from", "foo", "--target", "stage1"},
+			want: []string{"--build-arg", "key1=value1", "--cache-from", "foo", "--target", "stage1", "--network", "none"},
 		},
 	}
 	for _, tt := range tests {

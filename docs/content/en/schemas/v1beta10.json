@@ -355,8 +355,8 @@
             },
             "tagPolicy": {
               "$ref": "#/definitions/TagPolicy",
-              "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {}`.",
-              "x-intellij-html-description": "<em>beta</em> determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {}</code>."
+              "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {variant: Tags}`.",
+              "x-intellij-html-description": "<em>beta</em> determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {variant: Tags}</code>."
             }
           },
           "preferredOrder": [
@@ -392,8 +392,8 @@
             },
             "tagPolicy": {
               "$ref": "#/definitions/TagPolicy",
-              "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {}`.",
-              "x-intellij-html-description": "<em>beta</em> determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {}</code>."
+              "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {variant: Tags}`.",
+              "x-intellij-html-description": "<em>beta</em> determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {variant: Tags}</code>."
             }
           },
           "preferredOrder": [
@@ -430,8 +430,8 @@
             },
             "tagPolicy": {
               "$ref": "#/definitions/TagPolicy",
-              "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {}`.",
-              "x-intellij-html-description": "<em>beta</em> determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {}</code>."
+              "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {variant: Tags}`.",
+              "x-intellij-html-description": "<em>beta</em> determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {variant: Tags}</code>."
             }
           },
           "preferredOrder": [
@@ -468,8 +468,8 @@
             },
             "tagPolicy": {
               "$ref": "#/definitions/TagPolicy",
-              "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {}`.",
-              "x-intellij-html-description": "<em>beta</em> determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {}</code>."
+              "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {variant: Tags}`.",
+              "x-intellij-html-description": "<em>beta</em> determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {variant: Tags}</code>."
             }
           },
           "preferredOrder": [
@@ -632,6 +632,11 @@
           "x-intellij-html-description": "locates the Dockerfile relative to workspace.",
           "default": "Dockerfile"
         },
+        "network": {
+          "type": "string",
+          "description": "passed through to docker and overrides the network configuration of docker builder. If unset, use whatever is configured in the underlying docker daemon. Valid modes are `Host`: use the host's networking stack. `Bridge`: use the bridged network configuration. `None`: no networking in the container.",
+          "x-intellij-html-description": "passed through to docker and overrides the network configuration of docker builder. If unset, use whatever is configured in the underlying docker daemon. Valid modes are <code>Host</code>: use the host's networking stack. <code>Bridge</code>: use the bridged network configuration. <code>None</code>: no networking in the container."
+        },
         "target": {
           "type": "string",
           "description": "Dockerfile target name to build.",
@@ -642,6 +647,7 @@
         "dockerfile",
         "target",
         "buildArgs",
+        "network",
         "cacheFrom"
       ],
       "additionalProperties": false,
@@ -691,6 +697,17 @@
       "x-intellij-html-description": "<em>beta</em> tags images with a configurable template string."
     },
     "GitTagger": {
+      "properties": {
+        "variant": {
+          "type": "string",
+          "description": "determines the behavior of the git tagger. Valid variants are `Tags` (default): use git tags or fall back to abbreviated commit hash. `CommitSha`: use the full git commit sha. `AbbrevCommitSha`: use the abbreviated git commit sha.",
+          "x-intellij-html-description": "determines the behavior of the git tagger. Valid variants are <code>Tags</code> (default): use git tags or fall back to abbreviated commit hash. <code>CommitSha</code>: use the full git commit sha. <code>AbbrevCommitSha</code>: use the abbreviated git commit sha."
+        }
+      },
+      "preferredOrder": [
+        "variant"
+      ],
+      "additionalProperties": false,
       "description": "*beta* tags images with the git tag or commit of the artifact's workspace.",
       "x-intellij-html-description": "<em>beta</em> tags images with the git tag or commit of the artifact's workspace."
     },
@@ -1120,11 +1137,11 @@
             "type": "string"
           },
           "type": "object",
-          "description": "arguments passed to the docker build.",
-          "x-intellij-html-description": "arguments passed to the docker build.",
+          "description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
+          "x-intellij-html-description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
           "default": "{}",
           "examples": [
-            "{\"key1\": \"value1\", \"key2\": \"value2\"}"
+            "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"{{.ENV_VARIABLE}}\"}"
           ]
         },
         "buildContext": {

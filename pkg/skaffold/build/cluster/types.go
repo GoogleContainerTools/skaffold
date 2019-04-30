@@ -14,10 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kaniko
+package cluster
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
 
@@ -29,7 +30,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Builder builds docker artifacts on Kubernetes, using Kaniko.
+// Builder builds docker artifacts on Kubernetes.
 type Builder struct {
 	*latest.ClusterDetails
 
@@ -37,7 +38,7 @@ type Builder struct {
 	insecureRegistries map[string]bool
 }
 
-// NewBuilder creates a new Builder that builds artifacts with Kaniko.
+// NewBuilder creates a new Builder that builds artifacts on cluster.
 func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	timeout, err := time.ParseDuration(runCtx.Cfg.Build.Cluster.Timeout)
 	if err != nil {
@@ -50,18 +51,29 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	}, nil
 }
 
-// Labels are labels specific to Kaniko builder.
+// Labels are labels specific to cluster builder.
 func (b *Builder) Labels() map[string]string {
 	return map[string]string{
-		constants.Labels.Builder: "kaniko",
+		constants.Labels.Builder: "cluster",
 	}
 }
 
-// DependenciesForArtifact returns the Dockerfile dependencies for this kaniko artifact
+// DependenciesForArtifact returns the Dockerfile dependencies for this artifact
 func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
-	paths, err := docker.GetDependencies(ctx, a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, b.insecureRegistries)
+	var (
+		paths []string
+		err   error
+	)
+	switch {
+	case a.KanikoArtifact != nil:
+		paths, err = docker.GetDependencies(ctx, a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, b.insecureRegistries)
+
+	default:
+		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
+	}
+
 	if err != nil {
-		return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
+		return nil, err
 	}
 	return util.AbsolutePaths(a.Workspace, paths), nil
 }

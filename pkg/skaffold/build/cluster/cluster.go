@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kaniko
+package cluster
 
 import (
 	"context"
@@ -46,7 +46,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 }
 
 func (b *Builder) buildArtifactWithKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	digest, err := b.run(ctx, out, artifact, tag)
+	digest, err := b.runKanikoBuild(ctx, out, artifact, tag)
 	if err != nil {
 		return "", errors.Wrapf(err, "kaniko build for [%s]", artifact.ImageName)
 	}
