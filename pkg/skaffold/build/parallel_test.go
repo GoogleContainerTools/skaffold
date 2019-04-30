@@ -19,6 +19,7 @@ package build
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"testing"
@@ -33,12 +34,12 @@ import (
 
 func TestInParallel(t *testing.T) {
 	var tests = []struct {
-		description       string
-		buildArtifact     artifactBuilder
-		tags              tag.ImageTags
-		expectedArtifacts []Artifact
-		expectedOut       string
-		shouldErr         bool
+		description     string
+		buildArtifact   artifactBuilder
+		tags            tag.ImageTags
+		expectedResults []testResult
+		expectedOut     string
+		shouldErr       bool
 	}{
 		{
 			description: "build succeeds",
@@ -49,9 +50,19 @@ func TestInParallel(t *testing.T) {
 				"skaffold/image1": "skaffold/image1:v0.0.1",
 				"skaffold/image2": "skaffold/image2:v0.0.2",
 			},
-			expectedArtifacts: []Artifact{
-				{ImageName: "skaffold/image1", Tag: "skaffold/image1:v0.0.1@sha256:abac"},
-				{ImageName: "skaffold/image2", Tag: "skaffold/image2:v0.0.2@sha256:abac"},
+			expectedResults: []testResult{
+				{
+					buildResult: Result{
+						Target: latest.Artifact{ImageName: "skaffold/image1"},
+						Result: Artifact{ImageName: "skaffold/image1", Tag: "skaffold/image1:v0.0.1@sha256:abac"},
+					},
+				},
+				{
+					buildResult: Result{
+						Target: latest.Artifact{ImageName: "skaffold/image2"},
+						Result: Artifact{ImageName: "skaffold/image2", Tag: "skaffold/image2:v0.0.2@sha256:abac"},
+					},
+				},
 			},
 			expectedOut: "Building [skaffold/image1]...\nBuilding [skaffold/image2]...\n",
 		},
@@ -63,14 +74,52 @@ func TestInParallel(t *testing.T) {
 			tags: tag.ImageTags{
 				"skaffold/image1": "",
 			},
-			expectedOut: "Building [skaffold/image1]...\n",
-			shouldErr:   true,
+			expectedResults: []testResult{
+				{
+					buildResult: Result{
+						Target: latest.Artifact{
+							ImageName: "skaffold/image1",
+						},
+						Error: errors.New("build fails"),
+					},
+					shouldErr: true,
+				},
+				{
+					buildResult: Result{
+						Target: latest.Artifact{
+							ImageName: "skaffold/image2",
+						},
+						Error: errors.New("building [skaffold/image2]: unable to find tag for image"),
+					},
+					shouldErr: true,
+				},
+			},
+			expectedOut: "Building [skaffold/image1]...\nBuilding [skaffold/image2]...\n",
 		},
 		{
 			description: "tag not found",
 			tags:        tag.ImageTags{},
-			expectedOut: "Building [skaffold/image1]...\n",
-			shouldErr:   true,
+			expectedResults: []testResult{
+				{
+					buildResult: Result{
+						Target: latest.Artifact{
+							ImageName: "skaffold/image1",
+						},
+						Error: errors.New("building [skaffold/image1]: unable to find tag for image"),
+					},
+					shouldErr: true,
+				},
+				{
+					buildResult: Result{
+						Target: latest.Artifact{
+							ImageName: "skaffold/image2",
+						},
+						Error: errors.New("building [skaffold/image2]: unable to find tag for image"),
+					},
+					shouldErr: true,
+				},
+			},
+			expectedOut: "Building [skaffold/image1]...\nBuilding [skaffold/image2]...\n",
 		},
 	}
 	for _, test := range tests {
@@ -92,9 +141,34 @@ func TestInParallel(t *testing.T) {
 				Opts: &config.SkaffoldOptions{},
 			})
 
-			got, err := InParallel(context.Background(), out, test.tags, artifacts, test.buildArtifact)
+			buildResultChannels, err := InParallel(context.Background(), out, test.tags, artifacts, test.buildArtifact)
+			testutil.CheckError(t, test.shouldErr, err)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedArtifacts, got)
+			res := CollectResultsFromChannels(buildResultChannels)
+
+			// build results are returned in a list, of which we can't guarantee order.
+			// loop through the expected results, and find the matching build result by target artifact.
+			found := false
+			for _, testRes := range test.expectedResults {
+				for _, buildRes := range res {
+					if buildRes.Target.ImageName == testRes.buildResult.Target.ImageName {
+						found = true
+						// the embedded error in the build result contains a stack trace which we can't reproduce.
+						// directly compare the fields of the build result and optional error.
+						testutil.CheckError(t, testRes.shouldErr, buildRes.Error)
+						if testRes.shouldErr {
+							testutil.CheckDeepEqual(t, testRes.buildResult.Error.Error(), buildRes.Error.Error())
+						}
+						testutil.CheckDeepEqual(t, testRes.buildResult.Target, buildRes.Target)
+						testutil.CheckDeepEqual(t, testRes.buildResult.Result, buildRes.Result)
+					}
+				}
+				if !found {
+					t.Errorf("expected result %+v not found in build results", testRes)
+				}
+				found = false
+			}
+
 			testutil.CheckDeepEqual(t, test.expectedOut, out.String())
 		})
 	}

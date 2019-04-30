@@ -54,7 +54,7 @@ func (w withTimings) Labels() map[string]string {
 	return labels.Merge(w.Builder.Labels(), w.Deployer.Labels())
 }
 
-func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]chan build.Result, error) {
 	if len(artifacts) == 0 && w.cacheArtifacts {
 		return nil, nil
 	}
@@ -62,15 +62,12 @@ func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 	color.Default.Fprintln(out, "Starting build...")
 
 	bRes, err := w.Builder.Build(ctx, out, tags, artifacts)
-	if err != nil {
-		return nil, err
-	}
 
 	color.Default.Fprintln(out, "Build complete in", time.Since(start))
-	return bRes, nil
+	return bRes, err
 }
 
-func (w withTimings) Test(ctx context.Context, out io.Writer, builds []build.Artifact) error {
+func (w withTimings) Test(ctx context.Context, out io.Writer, builds []build.Result) error {
 	start := time.Now()
 	color.Default.Fprintln(out, "Starting test...")
 

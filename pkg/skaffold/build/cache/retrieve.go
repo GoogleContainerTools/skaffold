@@ -47,10 +47,11 @@ type detailsErr struct {
 	err     error
 }
 
-// RetrieveCachedArtifacts checks to see if artifacts are cached, and returns tags for cached images, otherwise a list of images to be built
-func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]*latest.Artifact, []build.Artifact, error) {
+// RetrieveCachedArtifacts checks to see if artifacts are cached
+// it returns a list of tags to be built by the runner, as well as a list of cached build results
+func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]*latest.Artifact, []build.Result) {
 	if !c.useCache {
-		return artifacts, nil, nil
+		return artifacts, nil
 	}
 
 	start := time.Now()
@@ -70,7 +71,7 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 
 	var (
 		needToBuild []*latest.Artifact
-		built       []build.Artifact
+		built       []build.Result
 	)
 
 	for i, artifact := range artifacts {
@@ -78,7 +79,7 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 
 		select {
 		case <-ctx.Done():
-			return nil, nil, context.Canceled
+			return nil, nil
 
 		case d := <-detailsErrs[i]:
 			details := d.details
@@ -100,24 +101,35 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 
 			if details.needsRetag {
 				if err := c.client.Tag(ctx, details.prebuiltImage, details.hashTag); err != nil {
-					return nil, nil, errors.Wrap(err, "retagging image")
+					built = append(built, build.Result{
+						Target: *artifact,
+						Error:  errors.Wrap(err, "retagging image"),
+					})
+					continue
 				}
 			}
 			if details.needsPush {
 				if _, err := c.client.Push(ctx, out, details.hashTag); err != nil {
-					return nil, nil, errors.Wrap(err, "pushing image")
+					built = append(built, build.Result{
+						Target: *artifact,
+						Error:  errors.Wrap(err, "pushing image"),
+					})
+					continue
 				}
 			}
 
-			built = append(built, build.Artifact{
-				ImageName: artifact.ImageName,
-				Tag:       details.hashTag,
+			built = append(built, build.Result{
+				Target: *artifact,
+				Result: build.Artifact{
+					ImageName: artifact.ImageName,
+					Tag:       details.hashTag,
+				},
 			})
 		}
 	}
 
 	color.Default.Fprintln(out, "Cache check complete in", time.Since(start))
-	return needToBuild, built, nil
+	return needToBuild, built
 }
 
 type cachedArtifactDetails struct {

@@ -70,7 +70,7 @@ func (t *TestBench) enterNewCycle() {
 	t.currentActions = Actions{}
 }
 
-func (t *TestBench) Build(ctx context.Context, w io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (t *TestBench) Build(ctx context.Context, w io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]chan build.Result, error) {
 	if len(t.buildErrors) > 0 {
 		err := t.buildErrors[0]
 		t.buildErrors = t.buildErrors[1:]
@@ -81,16 +81,26 @@ func (t *TestBench) Build(ctx context.Context, w io.Writer, tags tag.ImageTags, 
 
 	t.tag++
 
-	var builds []build.Artifact
+	var results []build.Result
+	var resultChannels []chan build.Result
 	for _, artifact := range artifacts {
-		builds = append(builds, build.Artifact{
-			ImageName: artifact.ImageName,
-			Tag:       fmt.Sprintf("%s:%d", artifact.ImageName, t.tag),
-		})
+		resultChan := make(chan build.Result, 1)
+		resultChannels = append(resultChannels, resultChan)
+
+		res := build.Result{
+			Target: *artifact,
+			Result: build.Artifact{
+				ImageName: artifact.ImageName,
+				Tag:       fmt.Sprintf("%s:%d", artifact.ImageName, t.tag),
+			},
+		}
+		resultChan <- res
+		results = append(results, res)
+		close(resultChan)
 	}
 
-	t.currentActions.Built = findTags(builds)
-	return builds, nil
+	t.currentActions.Built = findTagsForResults(results)
+	return resultChannels, nil
 }
 
 func (t *TestBench) Sync(ctx context.Context, item *sync.Item) error {
@@ -106,7 +116,7 @@ func (t *TestBench) Sync(ctx context.Context, item *sync.Item) error {
 	return nil
 }
 
-func (t *TestBench) Test(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+func (t *TestBench) Test(ctx context.Context, out io.Writer, results []build.Result) error {
 	if len(t.testErrors) > 0 {
 		err := t.testErrors[0]
 		t.testErrors = t.testErrors[1:]
@@ -115,7 +125,7 @@ func (t *TestBench) Test(ctx context.Context, out io.Writer, artifacts []build.A
 		}
 	}
 
-	t.currentActions.Tested = findTags(artifacts)
+	t.currentActions.Tested = findTagsForResults(results)
 	return nil
 }
 
@@ -134,6 +144,14 @@ func (t *TestBench) Deploy(ctx context.Context, out io.Writer, artifacts []build
 
 func (t *TestBench) Actions() []Actions {
 	return append(t.actions, t.currentActions)
+}
+
+func findTagsForResults(results []build.Result) []string {
+	var tags []string
+	for _, res := range results {
+		tags = append(tags, res.Result.Tag)
+	}
+	return tags
 }
 
 func findTags(artifacts []build.Artifact) []string {

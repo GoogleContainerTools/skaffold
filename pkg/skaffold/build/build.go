@@ -30,6 +30,16 @@ type Artifact struct {
 	Tag       string `json:"tag"`
 }
 
+// Result contains the result of a build of a single target artifact.
+// It contains the target artifact (parsed from the skaffold config),
+// and either an Artifact representing the result of a successful build,
+// or the error encountered while executing the build.
+type Result struct {
+	Target latest.Artifact
+	Result Artifact
+	Error  error
+}
+
 // Builder is an interface to the Build API of Skaffold.
 // It must build and make the resulting image accesible to the cluster.
 // This could include pushing to a authorized repository or loading the nodes with the image.
@@ -37,7 +47,7 @@ type Artifact struct {
 type Builder interface {
 	Labels() map[string]string
 
-	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]Artifact, error)
+	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]chan Result, error)
 
 	DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error)
 

@@ -59,7 +59,7 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 		artifacts            []*latest.Artifact
 		expectedArtifacts    []*latest.Artifact
 		api                  testutil.FakeAPIClient
-		expectedBuildResults []build.Artifact
+		expectedBuildResults []build.Result
 	}{
 		{
 			name:              "useCache is false, return all artifacts",
@@ -92,9 +92,14 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 					},
 				},
 			},
-			artifacts:            []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			expectedBuildResults: []build.Artifact{{ImageName: "image1", Tag: "image1:workspace-hash"}},
-			expectedArtifacts:    []*latest.Artifact{{ImageName: "image2", WorkspaceHash: "workspace-hash-2"}},
+			artifacts: []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
+			expectedBuildResults: []build.Result{
+				{
+					Target: latest.Artifact{ImageName: "image1", WorkspaceHash: "workspace-hash"},
+					Result: build.Artifact{ImageName: "image1", Tag: "image1:workspace-hash"},
+				},
+			},
+			expectedArtifacts: []*latest.Artifact{{ImageName: "image2", WorkspaceHash: "workspace-hash-2"}},
 		},
 		{
 			name: "both artifacts in cache, but only one exists locally",
@@ -115,10 +120,15 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 					},
 				},
 			},
-			hashes:               map[string]string{"image1": "hash", "image2": "hash2"},
-			artifacts:            []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			expectedArtifacts:    []*latest.Artifact{{ImageName: "image2", WorkspaceHash: "hash2"}},
-			expectedBuildResults: []build.Artifact{{ImageName: "image1", Tag: "image1:hash"}},
+			hashes:            map[string]string{"image1": "hash", "image2": "hash2"},
+			artifacts:         []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
+			expectedArtifacts: []*latest.Artifact{{ImageName: "image2", WorkspaceHash: "hash2"}},
+			expectedBuildResults: []build.Result{
+				{
+					Target: latest.Artifact{ImageName: "image1", WorkspaceHash: "hash"},
+					Result: build.Artifact{ImageName: "image1", Tag: "image1:hash"},
+				},
+			},
 		},
 	}
 
@@ -132,9 +142,9 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 
 			test.cache.client = docker.NewLocalDaemon(&test.api, nil, false, map[string]bool{})
 
-			actualArtifacts, actualBuildResults, err := test.cache.RetrieveCachedArtifacts(context.Background(), os.Stdout, test.artifacts)
+			actualArtifacts, actualBuildResults := test.cache.RetrieveCachedArtifacts(context.Background(), os.Stdout, test.artifacts)
 			sort.Sort(&artifactSorter{artifacts: actualArtifacts})
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedArtifacts, actualArtifacts)
+			testutil.CheckDeepEqual(t, test.expectedArtifacts, actualArtifacts)
 			testutil.CheckDeepEqual(t, test.expectedBuildResults, actualBuildResults)
 		})
 	}
@@ -170,7 +180,7 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			},
 		},
 		{
-			name:                      "image in cache and exists remotely, remote cluster",
+			name: "image in cache and exists remotely, remote cluster",
 			targetImageExistsRemotely: true,
 			artifact:                  &latest.Artifact{ImageName: "image"},
 			hashes:                    map[string]string{"image": "hash"},
@@ -218,11 +228,11 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			},
 		},
 		{
-			name:                      "image in cache, prebuilt image exists, remote cluster",
+			name: "image in cache, prebuilt image exists, remote cluster",
 			targetImageExistsRemotely: true,
-			api:                       &testutil.FakeAPIClient{},
-			artifact:                  &latest.Artifact{ImageName: "image"},
-			hashes:                    map[string]string{"image": "hash"},
+			api:      &testutil.FakeAPIClient{},
+			artifact: &latest.Artifact{ImageName: "image"},
+			hashes:   map[string]string{"image": "hash"},
 			cache: &Cache{
 				useCache:      true,
 				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
@@ -264,11 +274,11 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			},
 		},
 		{
-			name:                      "push specified, local cluster, image exists remotely",
+			name: "push specified, local cluster, image exists remotely",
 			targetImageExistsRemotely: true,
-			api:                       &testutil.FakeAPIClient{},
-			artifact:                  &latest.Artifact{ImageName: "image"},
-			hashes:                    map[string]string{"image": "hash"},
+			api:      &testutil.FakeAPIClient{},
+			artifact: &latest.Artifact{ImageName: "image"},
+			hashes:   map[string]string{"image": "hash"},
 			cache: &Cache{
 				useCache:      true,
 				pushImages:    true,
@@ -289,9 +299,9 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			},
 		},
 		{
-			name:                      "no local daemon, image exists remotely",
-			artifact:                  &latest.Artifact{ImageName: "image"},
-			hashes:                    map[string]string{"image": "hash"},
+			name:     "no local daemon, image exists remotely",
+			artifact: &latest.Artifact{ImageName: "image"},
+			hashes:   map[string]string{"image": "hash"},
 			targetImageExistsRemotely: true,
 			cache: &Cache{
 				useCache:      true,

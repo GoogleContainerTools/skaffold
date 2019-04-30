@@ -81,16 +81,22 @@ func runBuild(out io.Writer) error {
 	}
 
 	if quietFlag {
-		cmdOut := flags.BuildOutput{Builds: bRes}
+		var artifacts []build.Artifact
+		for _, b := range bRes {
+			if b.Error == nil {
+				artifacts = append(artifacts, b.Result)
+			}
+		}
+		cmdOut := flags.BuildOutput{Builds: artifacts}
 		if err := buildFormatFlag.Template().Execute(out, cmdOut); err != nil {
 			return errors.Wrap(err, "executing template")
 		}
 	}
 
-	return nil
+	return err
 }
 
-func createRunnerAndBuild(ctx context.Context, buildOut io.Writer) ([]build.Artifact, error) {
+func createRunnerAndBuild(ctx context.Context, buildOut io.Writer) ([]build.Result, error) {
 	runner, config, err := newRunner(opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating runner")

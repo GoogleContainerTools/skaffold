@@ -61,7 +61,7 @@ func (t FullTester) TestDependencies() ([]string, error) {
 
 // Test is the top level testing execution call. It serves as the
 // entrypoint to all individual tests.
-func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
+func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Result) error {
 	for _, test := range t.testCases {
 		if err := t.runStructureTests(ctx, out, bRes, test); err != nil {
 			return errors.Wrap(err, "running structure tests")
@@ -71,7 +71,7 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifa
 	return nil
 }
 
-func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes []build.Artifact, testCase *latest.TestCase) error {
+func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes []build.Result, testCase *latest.TestCase) error {
 	if len(testCase.StructureTests) == 0 {
 		return nil
 	}
@@ -87,12 +87,11 @@ func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes [
 	return runner.Test(ctx, out, fqn)
 }
 
-func resolveArtifactImageTag(imageName string, bRes []build.Artifact) string {
+func resolveArtifactImageTag(imageName string, bRes []build.Result) string {
 	for _, res := range bRes {
-		if imageName == res.ImageName {
-			return res.Tag
+		if imageName == res.Result.ImageName {
+			return res.Result.Tag
 		}
 	}
-
 	return imageName
 }

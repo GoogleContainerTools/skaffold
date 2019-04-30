@@ -29,7 +29,7 @@ import (
 // each of which contains one or more TestRunners which implements
 // a single test run.
 type Tester interface {
-	Test(context.Context, io.Writer, []build.Artifact) error
+	Test(context.Context, io.Writer, []build.Result) error
 
 	TestDependencies() ([]string, error)
 }

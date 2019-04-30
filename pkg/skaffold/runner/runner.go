@@ -219,11 +219,15 @@ func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, art
 
 	// Update which images are logged.
 	for _, build := range bRes {
-		r.imageList.Add(build.Tag)
+		r.imageList.Add(build.Result.Tag)
 	}
 
 	// Make sure all artifacts are redeployed. Not only those that were just built.
-	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
+	aRes := make([]build.Artifact, len(bRes))
+	for i, b := range bRes {
+		aRes[i] = b.Result
+	}
+	r.builds = build.MergeWithPreviousBuilds(aRes, r.builds)
 
 	if err := r.deploy(ctx, out, r.builds); err != nil {
 		return errors.Wrap(err, "deploy failed")
@@ -273,8 +277,8 @@ type tagErr struct {
 	err error
 }
 
-// imageTags generates tags for a list of artifacts
-func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
+// imageTags generates tags for a list of artifacts and returns a map of image name -> tag
+func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) tag.ImageTags {
 	start := time.Now()
 	color.Default.Fprintln(out, "Generating tags...")
 
@@ -298,53 +302,62 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 
 		select {
 		case <-ctx.Done():
-			return nil, context.Canceled
+			// TODO(nkubala): do we need to signal to the caller that this was cancelled?
+			return nil
 
 		case t := <-tagErrs[i]:
 			tag := t.tag
 			err := t.err
 			if err != nil {
-				return nil, errors.Wrapf(err, "generating tag for %s", imageName)
+				logrus.Errorf("error generating tag for image %s: build will be skipped", imageName)
+			} else {
+				fmt.Fprintln(out, tag)
+
+				imageTags[imageName] = tag
 			}
-
-			fmt.Fprintln(out, tag)
-
-			imageTags[imageName] = tag
 		}
 	}
 
 	color.Default.Fprintln(out, "Tags generated in", time.Since(start))
-	return imageTags, nil
+	return imageTags
 }
 
 // BuildAndTest builds artifacts and runs tests on built artifacts
-func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	tags, err := r.imageTags(ctx, out, artifacts)
-	if err != nil {
-		return nil, errors.Wrap(err, "generating tag")
-	}
+func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Result, error) {
+	tags := r.imageTags(ctx, out, artifacts)
 	r.hasBuilt = true
 
-	artifactsToBuild, res, err := r.cache.RetrieveCachedArtifacts(ctx, out, artifacts)
+	artifactsToBuild, res := r.cache.RetrieveCachedArtifacts(ctx, out, artifacts)
+
+	buildResultChannels, err := r.Build(ctx, out, tags, artifactsToBuild)
 	if err != nil {
-		return nil, errors.Wrap(err, "retrieving cached artifacts")
+		return nil, errors.Wrap(err, "failed to start build")
 	}
 
-	bRes, err := r.Build(ctx, out, tags, artifactsToBuild)
-	if err != nil {
-		return nil, errors.Wrap(err, "build failed")
+	bRes := build.CollectResultsFromChannels(buildResultChannels)
+
+	var errStr string
+	var buildErr error
+	for _, res := range bRes {
+		if res.Error != nil {
+			errStr += "\n" + res.Error.Error()
+		}
 	}
+	if errStr != "" {
+		buildErr = errors.New("build failed for artifacts: " + errStr)
+	}
+
 	r.cache.RetagLocalImages(ctx, out, artifactsToBuild, bRes)
 	bRes = append(bRes, res...)
 	if err := r.cache.CacheArtifacts(ctx, artifacts, bRes); err != nil {
 		logrus.Warnf("error caching artifacts: %v", err)
 	}
-	if !r.runCtx.Opts.SkipTests {
-		if err = r.Test(ctx, out, bRes); err != nil {
-			return nil, errors.Wrap(err, "test failed")
+	if !r.runCtx.Opts.SkipTests && buildErr == nil {
+		if err := r.Test(ctx, out, bRes); err != nil {
+			return bRes, errors.Wrap(err, "test failed")
 		}
 	}
-	return bRes, err
+	return bRes, buildErr
 }
 
 // Deploy deploys the given artifacts and tail logs if tail present
