@@ -36,8 +36,8 @@ representations are untouched.
 
 `skaffold debug` has some limitations:
 
-  - Only the `kubectl` deployer is supported at the moment: the Helm and Kustomize
-    deployers are not yet available.
+  - Only the `kubectl` and `kustomize` deployers are supported at the moment: support for
+    the Helm deployer is not yet available.
   - Only JVM and NodeJS applications are supported:
       - JVM applications are configured using the `JAVA_TOOL_OPTIONS` environment variable
         which causes extra debugging output on launch.
