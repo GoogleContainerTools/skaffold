@@ -4,6 +4,9 @@ build:
   artifacts:
   - image: gcr.io/k8s-skaffold/node-example
     context: backend
+    docker:
+      buildArgs:
+        SCRIPT: "{{.SCRIPT}}"
     sync:
       '*.js': .
 deploy:

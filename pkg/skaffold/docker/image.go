@@ -332,7 +332,7 @@ func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.
 }
 
 // GetBuildArgs gives the build args flags for docker build.
-func GetBuildArgs(a *latest.DockerArtifact) []string {
+func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
 	var args []string
 
 	var keys []string
@@ -348,7 +348,11 @@ func GetBuildArgs(a *latest.DockerArtifact) []string {
 		if v == nil {
 			args = append(args, k)
 		} else {
-			args = append(args, fmt.Sprintf("%s=%s", k, *v))
+			value, err := evaluateBuildArgsValue(*v)
+			if err != nil {
+				return nil, errors.Wrapf(err, "unable to get value for build arg: %s", k)
+			}
+			args = append(args, fmt.Sprintf("%s=%s", k, value))
 		}
 	}
 
@@ -364,5 +368,5 @@ func GetBuildArgs(a *latest.DockerArtifact) []string {
 		args = append(args, "--network", strings.ToLower(a.NetworkMode))
 	}
 
-	return args
+	return args, nil
 }
