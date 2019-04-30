@@ -196,7 +196,7 @@ func TestPodTemplate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			actual := podTemplate(test.initial, test.image, test.args)
+			actual := podTemplate(test.initial, &latest.KanikoArtifact{Image: test.image, Cache: &latest.KanikoCache{}}, test.args)
 			testutil.CheckDeepEqual(t, test.expected, actual, opt)
 		})
 	}
