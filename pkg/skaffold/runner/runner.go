@@ -91,7 +91,8 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		return nil, errors.Wrap(err, "parsing deploy config")
 	}
 
-	labellers := []deploy.Labeller{opts, builder, deployer, tagger}
+	defaultLabeller := NewLabeller("")
+	labellers := []deploy.Labeller{opts, builder, deployer, tagger, defaultLabeller}
 
 	builder, tester, deployer = WithTimings(builder, tester, deployer, opts.CacheArtifacts)
 	if opts.Notification {

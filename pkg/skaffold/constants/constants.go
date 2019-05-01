@@ -84,11 +84,7 @@ var Labels = struct {
 	Deployer         string
 	Builder          string
 	DockerAPIVersion string
-	DefaultLabels    map[string]string
 }{
-	DefaultLabels: map[string]string{
-		"deployed-with": "skaffold",
-	},
 	TagPolicy:        "skaffold-tag-policy",
 	Deployer:         "skaffold-deployer",
 	Builder:          "skaffold-builder",
