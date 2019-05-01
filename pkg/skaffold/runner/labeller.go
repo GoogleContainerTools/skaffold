@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	K8_MANAGED_BY_LABEL = "app.kubernetes.io/managed-by"
+	K8ManagedByLabel = "app.kubernetes.io/managed-by"
 )
 
 // DefaultLabeller adds K9 style managed-by label
@@ -42,6 +42,6 @@ func NewLabeller(verStr string) *DefaultLabeller {
 
 func (d *DefaultLabeller) Labels() map[string]string {
 	return map[string]string{
-		K8_MANAGED_BY_LABEL: fmt.Sprintf("skaffold-%s", d.version),
+		K8ManagedByLabel: fmt.Sprintf("skaffold-%s", d.version),
 	}
 }
