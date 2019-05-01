@@ -243,11 +243,15 @@ Skaffold will pass in the following additional environment variables for the fol
 | ------------- |-------------| -----|
 | Docker daemon environment variables     | Inform the custom builder of which docker daemon endpoint we are using. Allows custom build scripts to work with tools like Minikube. For Minikube, this is the output of `minikube docker-env`.| None. | 
 
+##### Cluster Builder
+| Environment Variable         | Description           | Expectation  |
+| ------------- |-------------| -----|
+| $KUBECONTEXT    | The expected kubecontext in which the image will be built.| None. | 
 
 ### Configuration
 
 To use a custom build script, add a `custom` field to each corresponding artifact in the `build` section of the skaffold.yaml.
-Currently, this only works with the build type `local`. Supported schema for `custom` includes:
+Currently, this only works with the `local` and `cluster` build types. Supported schema for `custom` includes:
 
 
 {{< schema root="CustomArtifact" >}}
