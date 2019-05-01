@@ -632,7 +632,7 @@ type DockerArtifact struct {
 	// For example: `["golang:1.10.1-alpine3.7", "alpine:3.7"]`.
 	CacheFrom []string `yaml:"cacheFrom,omitempty"`
 	
-	// NoCache used to pass in --no-cache to docker build to prevent caching
+	// NoCache used to pass in --no-cache to docker build to prevent caching.
 	NoCache bool `yaml:"noCache,omitempty"`
 }
 
