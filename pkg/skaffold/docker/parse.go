@@ -300,6 +300,31 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 		}
 	}
 
+	files, err := WalkWorkspace(workspace, excludes, deps)
+	if err != nil {
+		return nil, errors.Wrap(err, "walking workspace")
+	}
+
+	// Always add dockerfile even if it's .dockerignored. The daemon will need it anyways.
+	if !filepath.IsAbs(dockerfilePath) {
+		files[dockerfilePath] = true
+	} else {
+		files[absDockerfilePath] = true
+	}
+
+	// Ignore .dockerignore
+	delete(files, ".dockerignore")
+
+	var dependencies []string
+	for file := range files {
+		dependencies = append(dependencies, file)
+	}
+	sort.Strings(dependencies)
+
+	return dependencies, nil
+}
+
+func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, error) {
 	pExclude, err := fileutils.NewPatternMatcher(excludes)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid exclude patterns")
@@ -359,24 +384,7 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 			}
 		}
 	}
-
-	// Always add dockerfile even if it's .dockerignored. The daemon will need it anyways.
-	if !filepath.IsAbs(dockerfilePath) {
-		files[dockerfilePath] = true
-	} else {
-		files[absDockerfilePath] = true
-	}
-
-	// Ignore .dockerignore
-	delete(files, ".dockerignore")
-
-	var dependencies []string
-	for file := range files {
-		dependencies = append(dependencies, file)
-	}
-	sort.Strings(dependencies)
-
-	return dependencies, nil
+	return files, nil
 }
 
 func retrieveImage(image string, insecureRegistries map[string]bool) (*v1.ConfigFile, error) {

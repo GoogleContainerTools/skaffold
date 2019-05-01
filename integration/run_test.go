@@ -105,6 +105,10 @@ func TestRun(t *testing.T) {
 			args:        []string{"-p", "gcb"},
 			deployments: []string{"web"},
 			remoteOnly:  true,
+		}, {
+			description: "custom builder",
+			dir:         "testdata/custom",
+			pods:        []string{"bazel"},
 		},
 	}
 

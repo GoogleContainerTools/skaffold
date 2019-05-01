@@ -64,6 +64,17 @@ const (
 	DefaultRPCHTTPPort = 50052
 )
 
+var (
+	// Images is an environment variable key, whose value is an array of fully qualified image names passed in to a custom build script.
+	Images = "IMAGES"
+
+	// PushImage lets the custom build script know if the image is expected to be pushed to a remote registry
+	PushImage = "PUSH_IMAGE"
+
+	// BuildContext is the absolute path to a directory this artifact is meant to be built from for custom artifacts
+	BuildContext = "BUILD_CONTEXT"
+)
+
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}
 
 var LatestDownloadURL = fmt.Sprintf("https://storage.googleapis.com/skaffold/releases/latest/skaffold-%s-%s", runtime.GOOS, runtime.GOARCH)
