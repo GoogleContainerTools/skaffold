@@ -127,10 +127,6 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 
 func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
 	switch {
-	case len(runCtx.Opts.PreBuiltImages) > 0:
-		logrus.Debugln("Using pre-built images")
-		return build.NewPreBuiltImagesBuilder(runCtx), nil
-
 	case runCtx.Cfg.Build.LocalBuild != nil:
 		logrus.Debugln("Using builder: local")
 		return local.NewBuilder(runCtx)
@@ -197,8 +193,11 @@ func (r *SkaffoldRunner) newLogger(out io.Writer, artifacts []*latest.Artifact) 
 	for _, artifact := range artifacts {
 		imageNames = append(imageNames, artifact.ImageName)
 	}
+	return r.newLoggerForImages(out, imageNames)
+}
 
-	return kubernetes.NewLogAggregator(out, imageNames, r.imageList, r.runCtx.Namespaces)
+func (r *SkaffoldRunner) newLoggerForImages(out io.Writer, images []string) *kubernetes.LogAggregator {
+	return kubernetes.NewLogAggregator(out, images, r.imageList, r.runCtx.Namespaces)
 }
 
 // HasDeployed returns true if this runner has deployed something.
@@ -225,7 +224,7 @@ func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, art
 	// Make sure all artifacts are redeployed. Not only those that were just built.
 	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
 
-	if err := r.Deploy(ctx, out, r.builds); err != nil {
+	if err := r.deploy(ctx, out, r.builds); err != nil {
 		return errors.Wrap(err, "deploy failed")
 	}
 
@@ -237,15 +236,34 @@ func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*la
 	if err := r.buildTestDeploy(ctx, out, artifacts); err != nil {
 		return err
 	}
-
 	if r.runCtx.Opts.Tail {
 		logger := r.newLogger(out, artifacts)
-		if err := logger.Start(ctx); err != nil {
-			return errors.Wrap(err, "starting logger")
-		}
-		<-ctx.Done()
+		return r.TailLogs(ctx, out, logger)
 	}
+	return nil
+}
 
+// Deploy deploys build artifacts.
+func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+	if err := r.deploy(ctx, out, artifacts); err != nil {
+		return err
+	}
+	if r.runCtx.Opts.Tail {
+		images := make([]string, len(artifacts))
+		for i, a := range artifacts {
+			images[i] = a.ImageName
+		}
+		logger := r.newLoggerForImages(out, images)
+		return r.TailLogs(ctx, out, logger)
+	}
+	return nil
+}
+
+func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, logger *kubernetes.LogAggregator) error {
+	if err := logger.Start(ctx); err != nil {
+		return errors.Wrap(err, "starting logger")
+	}
+	<-ctx.Done()
 	return nil
 }
 
@@ -328,8 +346,8 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	return bRes, err
 }
 
-// Deploy deploys the given artifacts
-func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+// Deploy deploys the given artifacts and tail logs if tail present
+func (r *SkaffoldRunner) deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
 	err := r.Deployer.Deploy(ctx, out, artifacts, r.labellers)
 	r.hasDeployed = true
 	return err

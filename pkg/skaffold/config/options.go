@@ -43,7 +43,6 @@ type SkaffoldOptions struct {
 	CustomLabels       []string
 	TargetImages       []string
 	Profiles           []string
-	PreBuiltImages     []string
 	InsecureRegistries []string
 	Command            string
 	RPCPort            int
