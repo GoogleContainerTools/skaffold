@@ -161,6 +161,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 		Target:      a.Target,
 		ForceRemove: l.forceRemove,
 		NetworkMode: a.NetworkMode,
+		NoCache:     a.NoCache,
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "docker build")
@@ -367,6 +368,11 @@ func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
 	if a.NetworkMode != "" {
 		args = append(args, "--network", strings.ToLower(a.NetworkMode))
 	}
+	
+	if a.NoCache != "" {
+		args = append(args, "--no-cache")
+	}
+	
 
 	return args, nil
 }
