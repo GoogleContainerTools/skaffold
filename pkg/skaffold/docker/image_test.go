@@ -230,7 +230,7 @@ func TestGetBuildArgs(t *testing.T) {
 		{
 			description: "no-cache",
 			artifact: &latest.DockerArtifact{
-				NoCache: "noCache",
+				NoCache: true,
 			},
 			want: []string{"--no-cache"},
 		},
