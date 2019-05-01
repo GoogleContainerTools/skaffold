@@ -243,7 +243,7 @@ func (p *PortForwarder) forward(ctx context.Context, entry *portForwardEntry) er
 
 // Key is an identifier for the lock on a port during the skaffold dev cycle.
 func (p *portForwardEntry) key() string {
-	return fmt.Sprintf("%s-%s-%s-%s-%d", p.containerName, p.podName, p.namespace, p.portName, p.port)
+	return fmt.Sprintf("%s-%s-%s-%d", p.containerName, p.namespace, p.portName, p.port)
 }
 
 // String is a utility function that returns the port forward entry as a user-readable string
