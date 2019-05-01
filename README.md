@@ -1,3 +1,4 @@
+<!-- github does not support `width` with markdown images-->
 <img src="logo/skaffold.png" width="220">
 
 ---------------------
@@ -92,7 +93,6 @@ Skaffold supports the following tools:
   * push to registry
 
 ![architecture](docs/static/images/architecture.png)
-
 
 Besides the above steps, skaffold also automatically manages the following utilities for you:
 
