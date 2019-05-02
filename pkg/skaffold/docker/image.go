@@ -373,6 +373,5 @@ func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
 		args = append(args, "--no-cache")
 	}
 	
-
 	return args, nil
 }
