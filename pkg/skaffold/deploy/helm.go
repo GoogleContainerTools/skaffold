@@ -98,26 +98,29 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 	var deps []string
 	for _, release := range h.Releases {
 		deps = append(deps, release.ValuesFiles...)
-		chartDepsDir := filepath.Join(release.ChartPath, "charts")
-		err := filepath.Walk(release.ChartPath, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return errors.Wrapf(err, "failure accessing path '%s'", path)
-			}
-
-			if !info.IsDir() {
-				if !strings.HasPrefix(path, chartDepsDir) || release.SkipBuildDependencies {
-					// We can always add a dependency if it is not contained in our chartDepsDir.
-					// However, if the file is in  our chartDepsDir, we can only include the file
-					// if we are not running the helm dep build phase, as that modifies files inside
-					// the chartDepsDir and results in an infinite build loop.
-					deps = append(deps, path)
+		// chart path is only a dependency if it exists on the local filesystem
+		if !release.Remote {
+			chartDepsDir := filepath.Join(release.ChartPath, "charts")
+			err := filepath.Walk(release.ChartPath, func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return errors.Wrapf(err, "failure accessing path '%s'", path)
 				}
-			}
 
-			return nil
-		})
-		if err != nil {
-			return deps, errors.Wrap(err, "issue walking releases")
+				if !info.IsDir() {
+					if !strings.HasPrefix(path, chartDepsDir) || release.SkipBuildDependencies {
+						// We can always add a dependency if it is not contained in our chartDepsDir.
+						// However, if the file is in  our chartDepsDir, we can only include the file
+						// if we are not running the helm dep build phase, as that modifies files inside
+						// the chartDepsDir and results in an infinite build loop.
+						deps = append(deps, path)
+					}
+				}
+
+				return nil
+			})
+			if err != nil {
+				return deps, errors.Wrap(err, "issue walking releases")
+			}
 		}
 	}
 	sort.Strings(deps)
@@ -136,7 +139,6 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 func (h *HelmDeployer) helm(ctx context.Context, out io.Writer, useSecrets bool, arg ...string) error {
-
 	args := append([]string{"--kube-context", h.kubeContext}, arg...)
 	args = append(args, h.Flags.Global...)
 
@@ -185,7 +187,8 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	// Dependency builds should be skipped when trying to install a chart
 	// with local dependencies in the chart folder, e.g. the istio helm chart.
 	// This decision is left to the user.
-	if !r.SkipBuildDependencies {
+	// Dep builds should also be skipped whenever a remote chart path is specified.
+	if !r.SkipBuildDependencies && !r.Remote {
 		// First build dependencies.
 		logrus.Infof("Building helm dependencies...")
 		if err := h.helm(ctx, out, false, "dep", "build", r.ChartPath); err != nil {

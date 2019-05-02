@@ -375,6 +375,9 @@ type HelmRelease struct {
 	// ChartPath is the path to the Helm chart.
 	ChartPath string `yaml:"chartPath,omitempty" yamltags:"required"`
 
+	// Remote specifies whether the chart path is remote, or exists on the host filesystem.
+	Remote bool `yaml:"remote,omitempty"`
+
 	// ValuesFiles are the paths to the Helm `values` files.
 	ValuesFiles []string `yaml:"valuesFiles,omitempty"`
 
