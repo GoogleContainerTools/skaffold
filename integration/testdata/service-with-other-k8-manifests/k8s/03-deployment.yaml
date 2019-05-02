@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-hello
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello
+  template:
+    metadata:
+      name: say-hello
+      labels:
+        app: hello
+    spec:
+      containers:
+      - name: say-hello
+        image: gcr.io/k8s-skaffold/hello-service:latest
+        ports:
+          - name: http
+            containerPort: 80
+        env:
+          - name: GREET
+            valueFrom:
+              configMapKeyRef:
+                name: greet-config
+                key: hello.greeting

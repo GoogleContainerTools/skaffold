@@ -23,8 +23,15 @@ import (
 )
 
 func TestSetLabels(t *testing.T) {
-	manifests := ManifestList{[]byte(`
-apiVersion: v1
+	tests := []struct {
+		description string
+		manifests   ManifestList
+		expected    ManifestList
+		labels      map[string]string
+	}{
+		{
+			description: "Add labels when not present",
+			manifests: ManifestList{[]byte(`apiVersion: v1
 kind: Pod
 metadata:
   name: getting-started
@@ -32,10 +39,8 @@ spec:
   containers:
   - image: gcr.io/k8s-skaffold/example
     name: example
-`)}
-
-	expected := ManifestList{[]byte(`
-apiVersion: v1
+`)},
+			expected: ManifestList{[]byte(`apiVersion: v1
 kind: Pod
 metadata:
   labels:
@@ -46,19 +51,11 @@ spec:
   containers:
   - image: gcr.io/k8s-skaffold/example
     name: example
-`)}
-
-	resultManifest, err := manifests.SetLabels(map[string]string{
-		"key1": "value1",
-		"key2": "value2",
-	})
-
-	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
-}
-
-func TestAddLabels(t *testing.T) {
-	manifests := ManifestList{[]byte(`
-apiVersion: v1
+`)},
+			labels: map[string]string{"key1": "value1", "key2": "value2"},
+		}, {
+			description: "Set labels replaces existing labels",
+			manifests: ManifestList{[]byte(`apiVersion: v1
 kind: Pod
 metadata:
   labels:
@@ -69,10 +66,8 @@ spec:
   containers:
   - image: gcr.io/k8s-skaffold/example
     name: example
-`)}
-
-	expected := ManifestList{[]byte(`
-apiVersion: v1
+`)},
+			expected: ManifestList{[]byte(`apiVersion: v1
 kind: Pod
 metadata:
   labels:
@@ -84,40 +79,123 @@ spec:
   containers:
   - image: gcr.io/k8s-skaffold/example
     name: example
-`)}
-
-	resultManifest, err := manifests.SetLabels(map[string]string{
-		"key1": "value1",
-		"key2": "value2",
-	})
-
-	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
+`)},
+			labels: map[string]string{"key1": "value1", "key2": "value2"},
+		}, {
+			description: "no labels are set when input label is nil",
+			manifests: ManifestList{[]byte(`apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)},
+			expected: ManifestList{[]byte(`apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)},
+			labels: nil,
+		}, {
+			description: "no labels are set for kind CustomResourceDefinition",
+			manifests: ManifestList{[]byte(`apiVersion: v1
+kind: CustomResourceDefinition
+metadata:
+  name: custom
+`)},
+			expected: ManifestList{[]byte(`apiVersion: v1
+kind: CustomResourceDefinition
+metadata:
+  name: custom
+`)},
+			labels: map[string]string{"key1": "value1"},
+		}, {
+			description: "no recursive metadata setting",
+			manifests: ManifestList{[]byte(`apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  validation:
+    openAPIV3Schema:
+      properties:
+        kind:
+          type: string
+        metadata:
+          type: object
+`)},
+			expected: ManifestList{[]byte(`apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  validation:
+    openAPIV3Schema:
+      properties:
+        kind:
+          type: string
+        metadata:
+          type: object
+`)},
+			labels: nil,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			resultManifest, err := test.manifests.SetLabels(test.labels)
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected.String(), resultManifest.String())
+		})
+	}
 }
 
-func TestSetNoLabel(t *testing.T) {
-	manifests := ManifestList{[]byte(`
-apiVersion: v1
-kind: Pod
-metadata:
-  name: getting-started
-spec:
-  containers:
-  - image: gcr.io/k8s-skaffold/example
-    name: example
-`)}
-
-	expected := ManifestList{[]byte(`
-apiVersion: v1
-kind: Pod
-metadata:
-  name: getting-started
-spec:
-  containers:
-  - image: gcr.io/k8s-skaffold/example
-    name: example
-`)}
-
-	resultManifest, err := manifests.SetLabels(nil)
-
-	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
+func TestShouldReplaceForKind(t *testing.T) {
+	tests := []struct {
+		description string
+		kind        string
+		expect      bool
+	}{
+		{
+			description: "shd replace for pod",
+			kind:        "pod",
+			expect:      true,
+		},
+		{
+			description: "shd replace for POD (case ignore equal)",
+			kind:        "POD",
+			expect:      true,
+		},
+		{
+			description: "shd replace for deployment",
+			kind:        "deployment",
+			expect:      true,
+		},
+		{
+			description: "shd replace for services",
+			kind:        "service",
+			expect:      true,
+		},
+		{
+			description: "shd not replace for any other kind",
+			kind:        "customresourcedefinition",
+		},
+		{
+			description: "shd not replace if kind not set",
+			kind:        "",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			l := newLabelsSetter(map[string]string{"test": "value"})
+			l.SetKind(test.kind)
+			if l.ShouldReplaceForKind() != test.expect {
+				t.Errorf("expected to see %t for %s. found %t", test.expect, test.kind, !test.expect)
+			}
+		})
+	}
 }

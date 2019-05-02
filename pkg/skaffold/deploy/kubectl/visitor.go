@@ -25,7 +25,15 @@ import (
 type Replacer interface {
 	Matches(key string) bool
 
+	SetKind(key string)
+
+	GetKind() (string, error)
+
 	NewValue(old interface{}) (bool, interface{})
+
+	ReplaceRecursive() bool
+
+	ShouldReplaceForKind() bool
 }
 
 // Visit recursively visits a list of manifests and applies transformations of them.
@@ -42,7 +50,7 @@ func (l *ManifestList) Visit(replacer Replacer) (ManifestList, error) {
 			continue
 		}
 
-		recursiveVisit(m, replacer)
+		recursiveVisit(m, replacer, true)
 
 		updatedManifest, err := yaml.Marshal(m)
 		if err != nil {
@@ -55,24 +63,31 @@ func (l *ManifestList) Visit(replacer Replacer) (ManifestList, error) {
 	return updated, nil
 }
 
-func recursiveVisit(i interface{}, replacer Replacer) {
+func recursiveVisit(i interface{}, replacer Replacer, recurse bool) {
+	if !recurse {
+		return
+	}
 	switch t := i.(type) {
 	case []interface{}:
 		for _, v := range t {
-			recursiveVisit(v, replacer)
+			recursiveVisit(v, replacer, replacer.ReplaceRecursive())
 		}
 	case map[interface{}]interface{}:
 		for k, v := range t {
 			key := k.(string)
-
-			if !replacer.Matches(key) {
-				recursiveVisit(v, replacer)
+			if key == "kind" {
+				replacer.SetKind(v.(string))
 				continue
 			}
-
-			ok, newValue := replacer.NewValue(v)
-			if ok {
-				t[k] = newValue
+			if !replacer.Matches(key) {
+				recursiveVisit(v, replacer, replacer.ReplaceRecursive())
+				continue
+			}
+			if replacer.ShouldReplaceForKind() {
+				ok, newValue := replacer.NewValue(v)
+				if ok {
+					t[k] = newValue
+				}
 			}
 		}
 	}

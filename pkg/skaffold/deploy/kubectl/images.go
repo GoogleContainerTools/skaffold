@@ -17,13 +17,19 @@ limitations under the License.
 package kubectl
 
 import (
+	"fmt"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
+)
 
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+var (
+	knownDepoyableResources = []string{}
 )
 
 // ReplaceImages replaces image names in a list of manifests.
@@ -77,6 +83,7 @@ type imageReplacer struct {
 	defaultRepo     string
 	tagsByImageName map[string]string
 	found           map[string]bool
+	kind            string
 }
 
 func newImageReplacer(builds []build.Artifact, defaultRepo string) *imageReplacer {
@@ -116,6 +123,28 @@ func (r *imageReplacer) NewValue(old interface{}) (bool, interface{}) {
 
 // parseAndReplace takes an image from a manifest and if that image matches
 // a built image it will update the tag
+func (r *imageReplacer) SetKind(kind string) {
+	r.kind = kind
+}
+
+func (r *imageReplacer) GetKind() (string, error) {
+	if r.kind == "" {
+		return r.kind, fmt.Errorf("kind not set")
+	}
+	return r.kind, nil
+}
+
+func (r *imageReplacer) ReplaceRecursive() bool {
+	return true
+}
+
+func (r *imageReplacer) ShouldReplaceForKind() bool {
+	if _, ok := map[string]bool {"POD": true}[r.kind]; ok{
+		return true
+	}
+	return false
+}
+
 func (r *imageReplacer) parseAndReplace(image string) (bool, interface{}) {
 	parsed, err := docker.ParseReference(image)
 	if err != nil {

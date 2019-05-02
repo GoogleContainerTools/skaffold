@@ -17,8 +17,15 @@ limitations under the License.
 package kubectl
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+)
+
+var (
+	allowedLabelSetterKinds = []string{"Pod", "Deployment", "Service"}
 )
 
 // SetLabels add labels to a list of Kubernetes manifests.
@@ -37,6 +44,8 @@ func (l *ManifestList) SetLabels(labels map[string]string) (ManifestList, error)
 
 type labelsSetter struct {
 	labels map[string]string
+	kind   string
+	name   string
 }
 
 func newLabelsSetter(labels map[string]string) *labelsSetter {
@@ -75,4 +84,32 @@ func (r *labelsSetter) NewValue(old interface{}) (bool, interface{}) {
 	}
 
 	return true, metadata
+}
+
+func (r *labelsSetter) SetKind(kind string) {
+	r.kind = kind
+}
+
+func (r *labelsSetter) GetKind() (string, error) {
+	if r.kind == "" {
+		return r.kind, fmt.Errorf("kind not set")
+	}
+	return r.kind, nil
+}
+
+func (r *labelsSetter) ReplaceRecursive() bool {
+	return false
+}
+
+func (r *labelsSetter) ShouldReplaceForKind() bool {
+	kind, err := r.GetKind()
+	if err != nil {
+		return false
+	}
+	for _, allowed := range allowedLabelSetterKinds {
+		if strings.EqualFold(kind, allowed) {
+			return true
+		}
+	}
+	return false
 }
