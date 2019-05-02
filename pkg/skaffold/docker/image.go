@@ -368,10 +368,10 @@ func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
 	if a.NetworkMode != "" {
 		args = append(args, "--network", strings.ToLower(a.NetworkMode))
 	}
-	
+
 	if a.NoCache {
 		args = append(args, "--no-cache")
 	}
-	
+
 	return args, nil
 }
