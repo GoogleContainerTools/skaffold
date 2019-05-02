@@ -228,6 +228,13 @@ func TestGetBuildArgs(t *testing.T) {
 			want: []string{"--network", "bridge"},
 		},
 		{
+			description: "no-cache",
+			artifact: &latest.DockerArtifact{
+				NoCache: true,
+			},
+			want: []string{"--no-cache"},
+		},
+		{
 			description: "all",
 			artifact: &latest.DockerArtifact{
 				BuildArgs: map[string]*string{

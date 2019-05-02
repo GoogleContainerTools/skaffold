@@ -729,6 +729,12 @@
           "description": "passed through to docker and overrides the network configuration of docker builder. If unset, use whatever is configured in the underlying docker daemon. Valid modes are `Host`: use the host's networking stack. `Bridge`: use the bridged network configuration. `None`: no networking in the container.",
           "x-intellij-html-description": "passed through to docker and overrides the network configuration of docker builder. If unset, use whatever is configured in the underlying docker daemon. Valid modes are <code>Host</code>: use the host's networking stack. <code>Bridge</code>: use the bridged network configuration. <code>None</code>: no networking in the container."
         },
+        "noCache": {
+          "type": "boolean",
+          "description": "used to pass in --no-cache to docker build to prevent caching.",
+          "x-intellij-html-description": "used to pass in --no-cache to docker build to prevent caching.",
+          "default": "false"
+        },
         "target": {
           "type": "string",
           "description": "Dockerfile target name to build.",
@@ -740,7 +746,8 @@
         "target",
         "buildArgs",
         "network",
-        "cacheFrom"
+        "cacheFrom",
+        "noCache"
       ],
       "additionalProperties": false,
       "description": "*beta* describes an artifact built from a Dockerfile, usually using `docker build`.",
