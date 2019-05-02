@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 
@@ -462,5 +463,25 @@ func TestPortForwardPod(t *testing.T) {
 				t.Errorf("Forwarded entries differs from expected entries. Expected: %s, Actual: %s", test.expectedEntries, test.forwarder.forwardedEntries)
 			}
 		})
+	}
+}
+
+func TestPortForwardEntryKey(t *testing.T) {
+	pfe := &portForwardEntry{
+		podName:       "pod",
+		containerName: "container",
+		namespace:     "default",
+		portName:      "port",
+		port:          8080,
+	}
+
+	expectedKey := "container-default-port-8080"
+	acutalKey := pfe.key()
+
+	if acutalKey != expectedKey {
+		t.Fatalf("port forward entry key is incorrect: \n actual: %s \n expected: %s", acutalKey, expectedKey)
+	}
+	if strings.Contains(acutalKey, "pod") {
+		t.Fatal("key should not contain podname, otherwise containers will be mapped to a new port every time a pod is regenerated. See Issues #1815 and #1594.")
 	}
 }
