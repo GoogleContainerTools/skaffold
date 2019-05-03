@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	re "regexp"
 	"strings"
 
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -124,7 +125,13 @@ func satisfies(expected, actual string) bool {
 	if strings.HasPrefix(expected, "!") {
 		return actual != expected[1:]
 	}
-	return actual == expected
+	matcher, err := re.Compile(expected)
+	if err != nil {
+		logrus.Infof("Not a regexp: %s, falling back to string equals", expected)
+		return actual == expected
+	}
+
+	return matcher.MatchString(actual)
 }
 
 func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
