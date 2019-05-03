@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -464,8 +463,10 @@ func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files map[string]str
 
 var pod = &v1.Pod{
 	ObjectMeta: meta_v1.ObjectMeta{
-		Name:   "podname",
-		Labels: constants.Labels.DefaultLabels,
+		Name: "podname",
+		Labels: map[string]string{
+			"app.kubernetes.io/managed-by": "skaffold-dirty",
+		},
 	},
 	Status: v1.PodStatus{
 		Phase: v1.PodRunning,

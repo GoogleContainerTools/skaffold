@@ -22,7 +22,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/pkg/errors"
@@ -96,7 +95,6 @@ func labelDeployResults(labels map[string]string, results []Artifact) {
 func addLabels(labels map[string]string, accessor metav1.Object) {
 	kv := make(map[string]string)
 
-	copyMap(kv, constants.Labels.DefaultLabels)
 	copyMap(kv, accessor.GetLabels())
 	copyMap(kv, labels)
 
