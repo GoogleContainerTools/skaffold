@@ -36,7 +36,6 @@ func TestLabels(t *testing.T) {
 			description: "cleanup",
 			options:     SkaffoldOptions{Cleanup: true},
 			expectedLabels: map[string]string{
-				"cleanup":          "true",
 				"skaffold-cleanup": "true",
 			},
 		},
@@ -44,7 +43,6 @@ func TestLabels(t *testing.T) {
 			description: "namespace",
 			options:     SkaffoldOptions{Namespace: "NS"},
 			expectedLabels: map[string]string{
-				"namespace":          "NS",
 				"skaffold-namespace": "NS",
 			},
 		},
@@ -52,7 +50,6 @@ func TestLabels(t *testing.T) {
 			description: "profile",
 			options:     SkaffoldOptions{Profiles: []string{"profile"}},
 			expectedLabels: map[string]string{
-				"profiles":          "profile",
 				"skaffold-profiles": "profile",
 			},
 		},
@@ -60,7 +57,6 @@ func TestLabels(t *testing.T) {
 			description: "profiles",
 			options:     SkaffoldOptions{Profiles: []string{"profile1", "profile2"}},
 			expectedLabels: map[string]string{
-				"profiles":          "profile1__profile2",
 				"skaffold-profiles": "profile1__profile2",
 			},
 		},
@@ -72,9 +68,6 @@ func TestLabels(t *testing.T) {
 				Profiles:  []string{"p1", "p2"},
 			},
 			expectedLabels: map[string]string{
-				"cleanup":            "true",
-				"namespace":          "namespace",
-				"profiles":           "p1__p2",
 				"skaffold-cleanup":   "true",
 				"skaffold-namespace": "namespace",
 				"skaffold-profiles":  "p1__p2",
@@ -92,7 +85,6 @@ func TestLabels(t *testing.T) {
 				},
 			},
 			expectedLabels: map[string]string{
-				"cleanup":          "true",
 				"skaffold-cleanup": "true",
 				"one":              "first",
 				"two":              "second",

@@ -88,5 +88,5 @@ var Labels = struct {
 	TagPolicy:        "skaffold-tag-policy",
 	Deployer:         "skaffold-deployer",
 	Builder:          "skaffold-builder",
-	DockerAPIVersion: "docker-api-version",
+	DockerAPIVersion: "skaffold-docker-api-version",
 }

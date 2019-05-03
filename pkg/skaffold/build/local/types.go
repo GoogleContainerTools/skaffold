@@ -85,7 +85,6 @@ func (b *Builder) Labels() map[string]string {
 	v, err := b.localDocker.ServerVersion(context.Background())
 	if err == nil {
 		labels[constants.Labels.DockerAPIVersion] = fmt.Sprintf("%v", v.APIVersion)
-		labels[constants.Labels.DockerAPIVersionDeprecated] = fmt.Sprintf("%v", v.APIVersion)
 	}
 
 	return labels
