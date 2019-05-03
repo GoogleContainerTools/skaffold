@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta6"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta7"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta8"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta9"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -46,19 +47,20 @@ type APIVersion struct {
 }
 
 var SchemaVersions = Versions{
-	{v1alpha1.Version, v1alpha1.NewSkaffoldPipeline},
-	{v1alpha2.Version, v1alpha2.NewSkaffoldPipeline},
-	{v1alpha3.Version, v1alpha3.NewSkaffoldPipeline},
-	{v1alpha4.Version, v1alpha4.NewSkaffoldPipeline},
-	{v1alpha5.Version, v1alpha5.NewSkaffoldPipeline},
-	{v1beta1.Version, v1beta1.NewSkaffoldPipeline},
-	{v1beta2.Version, v1beta2.NewSkaffoldPipeline},
-	{v1beta3.Version, v1beta3.NewSkaffoldPipeline},
-	{v1beta4.Version, v1beta4.NewSkaffoldPipeline},
-	{v1beta5.Version, v1beta5.NewSkaffoldPipeline},
-	{v1beta6.Version, v1beta6.NewSkaffoldPipeline},
-	{v1beta7.Version, v1beta7.NewSkaffoldPipeline},
+	{v1alpha1.Version, v1alpha1.NewSkaffoldConfig},
+	{v1alpha2.Version, v1alpha2.NewSkaffoldConfig},
+	{v1alpha3.Version, v1alpha3.NewSkaffoldConfig},
+	{v1alpha4.Version, v1alpha4.NewSkaffoldConfig},
+	{v1alpha5.Version, v1alpha5.NewSkaffoldConfig},
+	{v1beta1.Version, v1beta1.NewSkaffoldConfig},
+	{v1beta2.Version, v1beta2.NewSkaffoldConfig},
+	{v1beta3.Version, v1beta3.NewSkaffoldConfig},
+	{v1beta4.Version, v1beta4.NewSkaffoldConfig},
+	{v1beta5.Version, v1beta5.NewSkaffoldConfig},
+	{v1beta6.Version, v1beta6.NewSkaffoldConfig},
+	{v1beta7.Version, v1beta7.NewSkaffoldConfig},
 	{v1beta8.Version, v1beta8.NewSkaffoldConfig},
+	{v1beta9.Version, v1beta9.NewSkaffoldConfig},
 	{latest.Version, latest.NewSkaffoldConfig},
 }
 

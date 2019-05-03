@@ -632,7 +632,7 @@ type DockerArtifact struct {
 type BazelArtifact struct {
 	// BuildTarget is the `bazel build` target to run.
 	// For example: `//:skaffold_example.tar`.
-	BuildTarget string `yaml:"target,omitempty" yamltags:"required"`
+	BuildTarget string `yaml:"target,omitempty" yamltags:"required" json:"target"`
 
 	// BuildArgs are additional args to pass to `bazel build`.
 	// For example: `["-flag", "--otherflag"]`.

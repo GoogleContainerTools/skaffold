@@ -36,6 +36,7 @@ import (
 var (
 	opts         = &config.SkaffoldOptions{}
 	v            string
+	forceColors  bool
 	defaultColor int
 	overwrite    bool
 )
@@ -54,6 +55,10 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 
 		if err := SetUpLogs(err, v); err != nil {
 			return err
+		}
+
+		if forceColors {
+			color.ForceColors()
 		}
 
 		rootCmd.SilenceUsage = true
@@ -97,6 +102,8 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
 	rootCmd.PersistentFlags().IntVar(&defaultColor, "color", int(color.Default), "Specify the default output color in ANSI escape codes")
+	rootCmd.PersistentFlags().BoolVar(&forceColors, "force-colors", false, "Always print color codes (hidden)")
+	rootCmd.PersistentFlags().MarkHidden("force-colors")
 
 	setFlagsFromEnvVariables(rootCmd.Commands())
 
@@ -148,17 +155,17 @@ func AddRunCommonFlags(cmd *cobra.Command) {
 	cmd.Flags().IntVar(&opts.RPCHTTPPort, "rpc-http-port", constants.DefaultRPCHTTPPort, "tcp port to expose event REST API over HTTP")
 	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
-	cmd.Flags().StringArrayVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
+	cmd.Flags().StringSliceVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
 	cmd.Flags().StringVarP(&opts.Namespace, "namespace", "n", "", "Run deployments in the specified namespace")
 	cmd.Flags().StringVarP(&opts.DefaultRepo, "default-repo", "d", "", "Default repository value (overrides global config)")
 	cmd.Flags().BoolVar(&opts.NoPrune, "no-prune", false, "Skip removing images and containers built by Skaffold")
-	cmd.Flags().StringArrayVar(&opts.InsecureRegistries, "insecure-registry", nil, "Target registries for built images which are not secure")
+	cmd.Flags().StringSliceVar(&opts.InsecureRegistries, "insecure-registry", nil, "Target registries for built images which are not secure")
 }
 
 func AddRunDeployFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.Tail, "tail", false, "Stream logs from deployed objects")
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)")
-	cmd.Flags().StringArrayVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels.")
+	cmd.Flags().StringSliceVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels.")
 }
 
 func AddRunDevFlags(cmd *cobra.Command) {
@@ -172,7 +179,7 @@ func AddDevDebugFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.TailDev, "tail", true, "Stream logs from deployed objects")
 	cmd.Flags().BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
 	cmd.Flags().BoolVar(&opts.PortForward, "port-forward", true, "Port-forward exposed container ports within pods")
-	cmd.Flags().StringArrayVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels")
+	cmd.Flags().StringSliceVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels")
 }
 
 func SetUpLogs(out io.Writer, level string) error {

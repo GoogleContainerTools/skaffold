@@ -1,10 +1,12 @@
 out/
 examples/bazel/bazel-*
 integration/examples/bazel/bazel-*
+integration/testdata/custom/bazel-*
 integration/testdata/plugin/local/bazel/bazel-*
 *.new
 *.iml
 .idea/
+.vscode/
 docs/.firebase
 docs/firebase-debug*
 docs/public

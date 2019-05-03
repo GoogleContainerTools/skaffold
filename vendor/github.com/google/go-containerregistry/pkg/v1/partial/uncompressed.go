@@ -32,6 +32,9 @@ type UncompressedLayer interface {
 
 	// Uncompressed returns an io.ReadCloser for the uncompressed layer contents.
 	Uncompressed() (io.ReadCloser, error)
+
+	// Returns the mediaType for the compressed Layer
+	MediaType() (types.MediaType, error)
 }
 
 // uncompressedLayerExtender implements v1.Image using the uncompressed base properties.

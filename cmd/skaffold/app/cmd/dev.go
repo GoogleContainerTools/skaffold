@@ -21,7 +21,6 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	plugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -40,7 +39,7 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 	AddRunDevFlags(cmd)
 	AddDevDebugFlags(cmd)
 	cmd.Flags().StringVar(&opts.Trigger, "trigger", "polling", "How are changes detected? (polling, manual or notify)")
-	cmd.Flags().StringArrayVarP(&opts.TargetImages, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")
+	cmd.Flags().StringSliceVarP(&opts.TargetImages, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")
 	cmd.Flags().IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes")
 	return cmd
 }
@@ -93,12 +92,10 @@ func dev(out io.Writer) error {
 			}
 			if err != nil {
 				if errors.Cause(err) != runner.ErrorConfigurationChanged {
-					plugin.CleanupClients()
 					r.RPCServerShutdown()
 					return err
 				}
 			}
-			plugin.CleanupClients()
 			r.RPCServerShutdown()
 		}
 	}

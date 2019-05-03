@@ -251,3 +251,118 @@ func TestVisitStructs(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateNetworkMode(t *testing.T) {
+	tests := []struct {
+		name      string
+		artifacts []*latest.Artifact
+		shouldErr bool
+	}{
+		{
+			name: "not a docker artifact",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/bazel",
+					ArtifactType: latest.ArtifactType{
+						BazelArtifact: &latest.BazelArtifact{},
+					},
+				},
+			},
+		},
+		{
+			name: "no networkmode",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/no-network",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{},
+					},
+				},
+			},
+		},
+		{
+			name: "bridge",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/bridge",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Bridge",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "none",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/none",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "None",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "host",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/host",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Host",
+						},
+					},
+				},
+			},
+		},
+		{
+			name:      "invalid networkmode",
+			shouldErr: true,
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/bad",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Bad",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "case insensitive",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/case-insensitive",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "bRiDgE",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	origValidateYamlTags := validateYamltags
+	validateYamltags = func(_ interface{}) error { return nil }
+	defer func() { validateYamltags = origValidateYamlTags }()
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := Process(
+				&latest.SkaffoldConfig{
+					Pipeline: latest.Pipeline{
+						Build: latest.BuildConfig{
+							Artifacts: test.artifacts,
+						},
+					},
+				})
+			testutil.CheckError(t, test.shouldErr, err)
+		})
+	}
+}

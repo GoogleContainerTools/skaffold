@@ -1,4 +1,4 @@
-apiVersion: skaffold/v1beta9
+apiVersion: skaffold/v1beta10
 kind: Config
 build:
   artifacts:
@@ -20,7 +20,9 @@ profiles:
     tagPolicy:
       dateTime:
         format: "2006-01-02"
-        timezone: "UTC"
+        # UTC does not require timezone data lookup
+        # Would have caught #1979
+        timezone: "America/Chicago"
 - name: envTemplate
   build:
     tagPolicy:

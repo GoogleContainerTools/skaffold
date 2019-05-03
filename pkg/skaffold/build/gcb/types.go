@@ -21,8 +21,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
@@ -75,22 +73,6 @@ func NewBuilder(runCtx *runcontext.RunContext) *Builder {
 		skipTests:          runCtx.Opts.SkipTests,
 		insecureRegistries: runCtx.InsecureRegistries,
 	}
-}
-
-// NewBuilderFromPluginConfig creates a new gcb.Builder that builds artifacts with Google Cloud Build.
-// This version bootstraps the config from the new config that is being introduced with the builder plugins.
-func NewBuilderFromPluginConfig(runCtx *runcontext.RunContext) (*Builder, error) {
-	var g *latest.GoogleCloudBuild
-	env := runCtx.Cfg.Build.ExecutionEnvironment
-	if err := util.CloneThroughJSON(env.Properties, &g); err != nil {
-		return nil, errors.Wrap(err, "converting execution environment to googleCloudBuild struct")
-	}
-	defaults.SetDefaultCloudBuildDockerImage(g)
-	return &Builder{
-		GoogleCloudBuild:   g,
-		skipTests:          runCtx.Opts.SkipTests,
-		insecureRegistries: runCtx.InsecureRegistries,
-	}, nil
 }
 
 // Labels are labels specific to Google Cloud Build.

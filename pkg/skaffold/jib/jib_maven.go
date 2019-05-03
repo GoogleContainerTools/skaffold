@@ -26,12 +26,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// MavenCommand stores Maven executable and wrapper name
 var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 
 // GetDependenciesMaven finds the source dependencies for the given jib-maven artifact.
 // All paths are absolute.
 func GetDependenciesMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) ([]string, error) {
-	deps, err := getDependencies(workspace, getCommandMaven(ctx, workspace, a))
+	deps, err := getDependencies(workspace, getCommandMaven(ctx, workspace, a), a.Module)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jibMaven dependencies")
 	}
@@ -41,7 +42,7 @@ func GetDependenciesMaven(ctx context.Context, workspace string, a *latest.JibMa
 
 func getCommandMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) *exec.Cmd {
 	args := mavenArgs(a)
-	args = append(args, "jib:_skaffold-files", "--quiet")
+	args = append(args, "jib:_skaffold-files-v2", "--quiet")
 
 	return MavenCommand.CreateCommand(ctx, workspace, args)
 }

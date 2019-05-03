@@ -111,7 +111,7 @@ func diffDelta(index *deltaIndex, src []byte, tgt []byte) []byte {
 
 			rl := l
 			aOffset := offset
-			for {
+			for rl > 0 {
 				if rl < maxCopySize {
 					buf.Write(encodeCopyOperation(aOffset, rl))
 					break

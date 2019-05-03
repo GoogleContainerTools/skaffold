@@ -22,8 +22,6 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/hashicorp/go-plugin"
-
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -34,7 +32,7 @@ import (
 
 var (
 	quietFlag       bool
-	buildFormatFlag = flags.NewTemplateFlag("{{.}}", BuildOutput{})
+	buildFormatFlag = flags.NewTemplateFlag("{{json .}}", flags.BuildOutput{})
 )
 
 // For testing
@@ -53,15 +51,10 @@ func NewCmdBuild(out io.Writer) *cobra.Command {
 		},
 	}
 	AddRunDevFlags(cmd)
-	cmd.Flags().StringArrayVarP(&opts.TargetImages, "build-image", "b", nil, "Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts")
+	cmd.Flags().StringSliceVarP(&opts.TargetImages, "build-image", "b", nil, "Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts")
 	cmd.Flags().BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output.")
 	cmd.Flags().VarP(buildFormatFlag, "output", "o", "Used in conjuction with --quiet flag. "+buildFormatFlag.Usage())
 	return cmd
-}
-
-// BuildOutput is the output of `skaffold build`.
-type BuildOutput struct {
-	Builds []build.Artifact
 }
 
 func runBuild(out io.Writer) error {
@@ -74,7 +67,6 @@ func runBuild(out io.Writer) error {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	defer plugin.CleanupClients()
 	catchCtrlC(cancel)
 
 	buildOut := out
@@ -89,7 +81,7 @@ func runBuild(out io.Writer) error {
 	}
 
 	if quietFlag {
-		cmdOut := BuildOutput{Builds: bRes}
+		cmdOut := flags.BuildOutput{Builds: bRes}
 		if err := buildFormatFlag.Template().Execute(out, cmdOut); err != nil {
 			return errors.Wrap(err, "executing template")
 		}

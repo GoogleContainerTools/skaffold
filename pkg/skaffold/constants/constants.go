@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,10 +30,6 @@ const (
 	// DefaultDockerfilePath is the dockerfile path is given relative to the
 	// context directory
 	DefaultDockerfilePath = "Dockerfile"
-
-	// TagStrategySha256 uses the checksum of the built artifact as the tag
-	TagStrategySha256    = "sha256"
-	TagStrategyGitCommit = "gitCommit"
 
 	DefaultMinikubeContext         = "minikube"
 	DefaultDockerForDesktopContext = "docker-for-desktop"
@@ -64,21 +59,20 @@ const (
 
 	DefaultSkaffoldDir = ".skaffold"
 	DefaultCacheFile   = "cache"
-	// A regex matching valid repository names (https://github.com/docker/distribution/blob/master/reference/reference.go)
-	RepositoryComponentRegex string = `^[a-z\d]+(?:(?:[_.]|__|-+)[a-z\d]+)*$`
-
-	SkaffoldPluginKey       = "SKAFFOLD_PLUGIN_KEY"
-	SkaffoldPluginValue     = "1337"
-	SkaffoldPluginName      = "SKAFFOLD_PLUGIN_NAME"
-	DockerBuilderPluginName = "docker"
 
 	DefaultRPCPort     = 50051
 	DefaultRPCHTTPPort = 50052
 )
 
 var (
-	GoogleCloudBuild latest.ExecEnvironment = "googleCloudBuild"
-	Local            latest.ExecEnvironment = "local"
+	// Images is an environment variable key, whose value is an array of fully qualified image names passed in to a custom build script.
+	Images = "IMAGES"
+
+	// PushImage lets the custom build script know if the image is expected to be pushed to a remote registry
+	PushImage = "PUSH_IMAGE"
+
+	// BuildContext is the absolute path to a directory this artifact is meant to be built from for custom artifacts
+	BuildContext = "BUILD_CONTEXT"
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}

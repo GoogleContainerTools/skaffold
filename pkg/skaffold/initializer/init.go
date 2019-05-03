@@ -107,7 +107,7 @@ func DoInit(out io.Writer, c Config) error {
 		}
 	}
 
-	pipeline, err := generateSkaffoldPipeline(k, pairs)
+	pipeline, err := generateSkaffoldConfig(k, pairs)
 	if err != nil {
 		return err
 	}
@@ -237,7 +237,7 @@ func processBuildArtifacts(pairs []dockerfilePair) latest.BuildConfig {
 	return config
 }
 
-func generateSkaffoldPipeline(k Initializer, dockerfilePairs []dockerfilePair) ([]byte, error) {
+func generateSkaffoldConfig(k Initializer, dockerfilePairs []dockerfilePair) ([]byte, error) {
 	// if we're here, the user has no skaffold yaml so we need to generate one
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	logrus.Info("generating skaffold config")

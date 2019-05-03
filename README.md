@@ -1,9 +1,13 @@
+<!-- github does not support `width` with markdown images-->
 <img src="logo/skaffold.png" width="220">
 
 ---------------------
 
 [![Build Status](https://travis-ci.org/GoogleContainerTools/skaffold.svg?branch=master)](https://travis-ci.org/GoogleContainerTools/skaffold)
 [![Code Coverage](https://codecov.io/gh/GoogleContainerTools/skaffold/branch/master/graph/badge.svg)](https://codecov.io/gh/GoogleContainerTools/skaffold)
+[![Go Report Card](https://goreportcard.com/badge/GoogleContainerTools/skaffold)](https://goreportcard.com/report/GoogleContainerTools/skaffold)
+[![LICENSE](https://img.shields.io/github/license/GoogleContainerTools/skaffold.svg)](https://github.com/GoogleContainerTools/skaffold/blob/master/LICENSE)
+[![Releases](https://img.shields.io/github/release-pre/GoogleContainerTools/skaffold.svg)](https://github.com/GoogleContainerTools/skaffold/releases)
 
 Skaffold is a command line tool that facilitates continuous development for
 Kubernetes applications. You can iterate on your application source code
@@ -31,13 +35,14 @@ provides building blocks and describe customizations for a CI/CD pipeline.
   * **minimal pipeline** - Skaffold provides an opinionated, minimal pipeline to keep things simple
 
 ## Install
+
 Installation methods can be found in the [Getting Started Guide](https://skaffold.dev/docs/getting-started/#installing-skaffold).
 
 See [Github Releases](https://github.com/GoogleContainerTools/skaffold/releases) for more information.
 
 ## Demo
 
-![](docs/static/images/intro.gif)
+![Demo](docs/static/images/intro.gif)
 
 ## A Glance at Skaffold Workflow and Architecture
 
@@ -84,35 +89,31 @@ Skaffold supports the following tools:
   * tag by environment variables based template
   * tag by checksum of the source code
 * Push
-    * don't push - keep the image on the local daemon
-    * push to registry
+  * don't push - keep the image on the local daemon
+  * push to registry
 
 ![architecture](docs/static/images/architecture.png)
-
 
 Besides the above steps, skaffold also automatically manages the following utilities for you:
 
 * forwards container ports to your local machine using `kubectl port-forward`
 * aggregates all the logs from the deployed pods
 
-
 ## Documentation
 
-Documentation for latest release: http://skaffold.dev
+Documentation for latest release: <https://skaffold.dev>
 
-Documentation for latest build: http://skaffold-latest.firebaseapp.com
+Documentation for latest build: <https://skaffold-latest.firebaseapp.com>
 
 ## More examples
 
 Check out our [examples page](./examples)
 
+## Community
 
-##  Community
-- [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users)
-- [#skaffold on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/)
+* [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users)
+* [#skaffold on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/)
 
 There is a bi-weekly Skaffold users meeting at 9:30am-10am PST hosted on hangouts under "skaffold".
 Everyone is welcome to add suggestions to the [agenda](https://docs.google.com/document/d/1mnCC_fAI3pmg3Vb2nMJyPk8Qtjjuapw_BTyqI_dX7sk/edit) and attend.
 Join the [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users) to get the calendar invite directly on your calendar.
-
-

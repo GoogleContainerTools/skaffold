@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -60,7 +61,8 @@ type localDaemon struct {
 	insecureRegistries map[string]bool
 	apiClient          client.CommonAPIClient
 	extraEnv           []string
-	imageCache         sync.Map
+	imageCache         map[string]*v1.ConfigFile
+	imageCacheLock     sync.Mutex
 }
 
 // NewLocalDaemon creates a new LocalDaemon.
@@ -70,6 +72,7 @@ func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string, forceRe
 		extraEnv:           extraEnv,
 		forceRemove:        forceRemove,
 		insecureRegistries: insecureRegistries,
+		imageCache:         make(map[string]*v1.ConfigFile),
 	}
 }
 
@@ -101,9 +104,12 @@ func (l *localDaemon) ServerVersion(ctx context.Context) (types.Version, error) 
 
 // ConfigFile retrieves and caches image configurations.
 func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error) {
-	cachedCfg, present := l.imageCache.Load(image)
+	l.imageCacheLock.Lock()
+	defer l.imageCacheLock.Unlock()
+
+	cachedCfg, present := l.imageCache[image]
 	if present {
-		return cachedCfg.(*v1.ConfigFile), nil
+		return cachedCfg, nil
 	}
 
 	cfg := &v1.ConfigFile{}
@@ -120,7 +126,7 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 		}
 	}
 
-	l.imageCache.Store(image, cfg)
+	l.imageCache[image] = cfg
 
 	return cfg, nil
 }
@@ -154,6 +160,8 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 		AuthConfigs: authConfigs,
 		Target:      a.Target,
 		ForceRemove: l.forceRemove,
+		NetworkMode: a.NetworkMode,
+		NoCache:     a.NoCache,
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "docker build")
@@ -325,7 +333,7 @@ func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.
 }
 
 // GetBuildArgs gives the build args flags for docker build.
-func GetBuildArgs(a *latest.DockerArtifact) []string {
+func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
 	var args []string
 
 	var keys []string
@@ -341,7 +349,11 @@ func GetBuildArgs(a *latest.DockerArtifact) []string {
 		if v == nil {
 			args = append(args, k)
 		} else {
-			args = append(args, fmt.Sprintf("%s=%s", k, *v))
+			value, err := evaluateBuildArgsValue(*v)
+			if err != nil {
+				return nil, errors.Wrapf(err, "unable to get value for build arg: %s", k)
+			}
+			args = append(args, fmt.Sprintf("%s=%s", k, value))
 		}
 	}
 
@@ -353,5 +365,13 @@ func GetBuildArgs(a *latest.DockerArtifact) []string {
 		args = append(args, "--target", a.Target)
 	}
 
-	return args
+	if a.NetworkMode != "" {
+		args = append(args, "--network", strings.ToLower(a.NetworkMode))
+	}
+
+	if a.NoCache {
+		args = append(args, "--no-cache")
+	}
+
+	return args, nil
 }

@@ -24,7 +24,7 @@ In this quickstart, you will:
 * Configure `kubectl` to connect to a Kubernetes cluster. You can use
     * any Kubernetes platform with Skaffold; see [Picking the Right Solution](https://kubernetes.io/docs/setup/pick-right-solution/)
     from Kubernetes documentation for instructions on choosing the
-    right platfrom.
+    right platform.
     * [Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine/)
     is a hosted Kubernetes solution. To set up `kubectl` with Google Kubernetes Engine,
     see [Kubernetes Engine Quickstart](https://cloud.google.com/kubernetes-engine/docs/quickstart).

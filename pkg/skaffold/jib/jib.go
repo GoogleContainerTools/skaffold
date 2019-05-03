@@ -17,11 +17,15 @@ limitations under the License.
 package jib
 
 import (
+	"bytes"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/karrick/godirwalk"
@@ -33,31 +37,113 @@ const (
 	dotDotSlash = ".." + string(filepath.Separator)
 )
 
-func getDependencies(workspace string, cmd *exec.Cmd) ([]string, error) {
-	stdout, err := util.RunCmdOut(cmd)
-	if err != nil {
-		return nil, err
+// filesLists contains cached build/input dependencies
+type filesLists struct {
+	// BuildDefinitions lists paths to build definitions that trigger a call out to Jib to refresh the pathMap, as well as a rebuild, upon changing
+	BuildDefinitions []string `json:"build"`
+
+	// Inputs lists paths to build dependencies that trigger a rebuild upon changing
+	Inputs []string `json:"inputs"`
+
+	// Results lists paths to files that should be ignored when checking for changes to rebuild
+	Results []string `json:"ignore"`
+
+	// BuildFileTimes keeps track of the last modification time of each build file
+	BuildFileTimes map[string]time.Time
+}
+
+// watchedFiles maps from project name to watched files
+var watchedFiles = map[string]filesLists{}
+
+// getDependencies returns a list of files to watch for changes to rebuild
+func getDependencies(workspace string, cmd *exec.Cmd, projectName string) ([]string, error) {
+	var dependencyList []string
+	files, ok := watchedFiles[projectName]
+	if !ok {
+		files = filesLists{}
 	}
 
-	// Skaffold prefers to deal with relative paths.  In *practice*, Jib's dependencies
+	if len(files.Inputs) == 0 && len(files.BuildDefinitions) == 0 {
+		// Make sure build file modification time map is setup
+		if files.BuildFileTimes == nil {
+			files.BuildFileTimes = make(map[string]time.Time)
+		}
+
+		// Refresh dependency list if empty
+		if err := refreshDependencyList(&files, cmd); err != nil {
+			return nil, errors.Wrap(err, "initial Jib dependency refresh failed")
+		}
+
+	} else if err := walkFiles(workspace, files.BuildDefinitions, files.Results, func(path string, info os.FileInfo) error {
+		// Walk build files to check for changes
+		if val, ok := files.BuildFileTimes[path]; !ok || info.ModTime() != val {
+			return refreshDependencyList(&files, cmd)
+		}
+		return nil
+	}); err != nil {
+		return nil, errors.Wrap(err, "failed to walk Jib build files for changes")
+	}
+
+	// Walk updated files to build dependency list
+	if err := walkFiles(workspace, files.Inputs, files.Results, func(path string, info os.FileInfo) error {
+		dependencyList = append(dependencyList, path)
+		return nil
+	}); err != nil {
+		return nil, errors.Wrap(err, "failed to walk Jib input files to build dependency list")
+	}
+	if err := walkFiles(workspace, files.BuildDefinitions, files.Results, func(path string, info os.FileInfo) error {
+		dependencyList = append(dependencyList, path)
+		files.BuildFileTimes[path] = info.ModTime()
+		return nil
+	}); err != nil {
+		return nil, errors.Wrap(err, "failed to walk Jib build files to build dependency list")
+	}
+
+	// Store updated files list information
+	watchedFiles[projectName] = files
+
+	sort.Strings(dependencyList)
+	return dependencyList, nil
+}
+
+// refreshDependencyList calls out to Jib to update files with the latest list of files/directories to watch.
+func refreshDependencyList(files *filesLists, cmd *exec.Cmd) error {
+	stdout, err := util.RunCmdOut(cmd)
+	if err != nil {
+		return errors.Wrap(err, "failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.0.2+)")
+	}
+
+	// Search for Jib's output JSON. Jib's Maven/Gradle output takes the following form:
+	// ...
+	// BEGIN JIB JSON
+	// {"build":["/paths","/to","/buildFiles"],"inputs":["/paths","/to","/inputs"],"ignore":["/paths","/to","/ignore"]}
+	// ...
+	// To parse the output, search for "BEGIN JIB JSON", then unmarshal the next line into the pathMap struct.
+	matches := regexp.MustCompile(`BEGIN JIB JSON\r?\n({.*})`).FindSubmatch(stdout)
+	if len(matches) == 0 {
+		return errors.New("failed to get Jib dependencies")
+	}
+
+	line := bytes.Replace(matches[1], []byte(`\`), []byte(`\\`), -1)
+	return json.Unmarshal(line, &files)
+}
+
+// walkFiles walks through a list of files and directories and performs a callback on each of the files
+func walkFiles(workspace string, watchedFiles []string, ignoredFiles []string, callback func(path string, info os.FileInfo) error) error {
+	// Skaffold prefers to deal with relative paths. In *practice*, Jib's dependencies
 	// are *usually* absolute (relative to the root) and canonical (with all symlinks expanded).
 	// But that's not guaranteed, so we try to relativize paths against the workspace as
 	// both an absolute path and as a canonicalized workspace.
 	workspaceRoots, err := calculateRoots(workspace)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to resolve workspace %s", workspace)
+		return errors.Wrapf(err, "unable to resolve workspace %s", workspace)
 	}
 
-	cmdDirInfo, err := os.Stat(cmd.Dir)
-	if err != nil {
-		return nil, err
-	}
+	for _, dep := range watchedFiles {
+		if isIgnored(dep, ignoredFiles) {
+			continue
+		}
 
-	// Parses stdout for the dependencies, one per line
-	lines := util.NonEmptyLines(stdout)
-
-	var deps []string
-	for _, dep := range lines {
 		// Resolves directories recursively.
 		info, err := os.Stat(dep)
 		if err != nil {
@@ -65,45 +151,54 @@ func getDependencies(workspace string, cmd *exec.Cmd) ([]string, error) {
 				logrus.Debugf("could not stat dependency: %s", err)
 				continue // Ignore files that don't exist
 			}
-			return nil, errors.Wrapf(err, "unable to stat file %s", dep)
+			return errors.Wrapf(err, "unable to stat file %s", dep)
 		}
 
-		// TODO(coollog): Remove this once Jib deps are prepended with special sequence.
-		// Skips the project directory itself. This is necessary as some wrappers print the project directory for some reason.
-		if os.SameFile(cmdDirInfo, info) {
-			continue
-		}
-
+		// Process file
 		if !info.IsDir() {
 			// try to relativize the path: an error indicates that the file cannot
 			// be made relative to the roots, and so we just use the full path
 			if relative, err := relativize(dep, workspaceRoots...); err == nil {
 				dep = relative
 			}
-			deps = append(deps, dep)
+			if err := callback(dep, info); err != nil {
+				return err
+			}
 			continue
 		}
 
+		// Process directory
 		if err = godirwalk.Walk(dep, &godirwalk.Options{
 			Unsorted: true,
 			Callback: func(path string, _ *godirwalk.Dirent) error {
+				if isIgnored(path, ignoredFiles) {
+					return filepath.SkipDir
+				}
 				if info, err := os.Stat(path); err == nil && !info.IsDir() {
 					// try to relativize the path: an error indicates that the file cannot
 					// be made relative to the roots, and so we just use the full path
 					if relative, err := relativize(path, workspaceRoots...); err == nil {
 						path = relative
 					}
-					deps = append(deps, path)
+					return callback(path, info)
 				}
 				return nil
 			},
 		}); err != nil {
-			return nil, errors.Wrap(err, "filepath walk")
+			return errors.Wrap(err, "filepath walk")
 		}
 	}
+	return nil
+}
 
-	sort.Strings(deps)
-	return deps, nil
+// isIgnored tests a path for whether or not it should be ignored according to a list of ignored files/directories
+func isIgnored(path string, ignoredFiles []string) bool {
+	for _, ignored := range ignoredFiles {
+		if strings.HasPrefix(path, ignored) {
+			return true
+		}
+	}
+	return false
 }
 
 // calculateRoots returns a list of possible symlink-expanded paths

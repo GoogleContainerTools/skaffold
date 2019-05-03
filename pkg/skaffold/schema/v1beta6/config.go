@@ -22,13 +22,13 @@ import (
 
 const Version string = "skaffold/v1beta6"
 
-// NewSkaffoldPipeline creates a SkaffoldPipeline
-func NewSkaffoldPipeline() util.VersionedConfig {
-	return new(SkaffoldPipeline)
+// NewSkaffoldConfig creates a SkaffoldConfig
+func NewSkaffoldConfig() util.VersionedConfig {
+	return new(SkaffoldConfig)
 }
 
-// SkaffoldPipeline describes a Skaffold pipeline.
-type SkaffoldPipeline struct {
+// SkaffoldConfig describes a Skaffold pipeline.
+type SkaffoldConfig struct {
 	// APIVersion is the version of the configuration.
 	APIVersion string `yaml:"apiVersion"`
 
@@ -48,7 +48,7 @@ type SkaffoldPipeline struct {
 	Profiles []Profile `yaml:"profiles,omitempty"`
 }
 
-func (c *SkaffoldPipeline) GetVersion() string {
+func (c *SkaffoldConfig) GetVersion() string {
 	return c.APIVersion
 }
 

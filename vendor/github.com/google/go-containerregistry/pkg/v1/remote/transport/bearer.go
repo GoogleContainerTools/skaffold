@@ -60,10 +60,14 @@ func (bt *bearerTransport) RoundTrip(in *http.Request) (*http.Response, error) {
 		// In case of redirect http.Client can use an empty Host, check URL too.
 		if in.Host == bt.registry.RegistryStr() || in.URL.Host == bt.registry.RegistryStr() {
 			in.Header.Set("Authorization", hdr)
+
+			// When we ping() the registry, we determine whether to use http or https
+			// based on which scheme was successful. That is only valid for the
+			// registry server and not e.g. a separate token server or blob storage,
+			// so we should only override the scheme if the host is the registry.
+			in.URL.Scheme = bt.scheme
 		}
 		in.Header.Set("User-Agent", transportName)
-
-		in.URL.Scheme = bt.scheme
 		return bt.inner.RoundTrip(in)
 	}
 
