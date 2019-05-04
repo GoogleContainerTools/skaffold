@@ -89,6 +89,12 @@ func StrSliceContains(sl []string, s string) bool {
 func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 	expandedPaths := make(map[string]bool)
 	for _, p := range paths {
+		if filepath.IsAbs(p) {
+			// This is a absolute file reference
+			expandedPaths[p] = true
+			continue
+		}
+
 		path := filepath.Join(workingDir, p)
 
 		if _, err := os.Stat(path); err == nil {

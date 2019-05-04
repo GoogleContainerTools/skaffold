@@ -225,6 +225,7 @@ func TestGetDependencies(t *testing.T) {
 		workspace   string
 		ignore      string
 		buildArgs   map[string]*string
+		env         []string
 
 		expected  []string
 		fetched   []string
@@ -486,10 +487,22 @@ func TestGetDependencies(t *testing.T) {
 			expected:    []string{"Dockerfile", "file"},
 			fetched:     []string{"jboss/wildfly:14.0.1.Final"},
 		},
+		{
+			description: "build args with an environment variable",
+			dockerfile:  copyServerGoBuildArg,
+			workspace:   ".",
+			buildArgs:   map[string]*string{"FOO": util.StringPtr("{{.FILE_NAME}}")},
+			env:         []string{"FILE_NAME=server.go"},
+			expected:    []string{"Dockerfile", "server.go"},
+			fetched:     []string{"ubuntu:14.04"},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			util.OSEnviron = func() []string {
+				return test.env
+			}
 			tmpDir, cleanup := testutil.NewTempDir(t)
 			defer cleanup()
 

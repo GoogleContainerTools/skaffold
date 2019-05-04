@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kaniko
+package cluster
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 	"sort"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko/sources"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -33,7 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (b *Builder) run(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	// Prepare context
 	s := sources.Retrieve(b.ClusterDetails, artifact.KanikoArtifact)
 	dependencies, err := b.DependenciesForArtifact(ctx, artifact)

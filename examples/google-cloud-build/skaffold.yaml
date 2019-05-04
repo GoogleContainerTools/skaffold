@@ -5,7 +5,6 @@ build:
     projectId: k8s-skaffold
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
-
 deploy:
   kubectl:
     manifests:

@@ -21,10 +21,11 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/pkg/errors"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 )
 
-func (b *Builder) dockerBuildSteps(artifact *latest.DockerArtifact, tags []string) []*cloudbuild.BuildStep {
+func (b *Builder) dockerBuildSteps(artifact *latest.DockerArtifact, tags []string) ([]*cloudbuild.BuildStep, error) {
 	var steps []*cloudbuild.BuildStep
 
 	for _, cacheFrom := range artifact.CacheFrom {
@@ -40,11 +41,15 @@ func (b *Builder) dockerBuildSteps(artifact *latest.DockerArtifact, tags []strin
 		args = append(args, []string{"--tag", t}...)
 	}
 	args = append(args, []string{"-f", artifact.DockerfilePath}...)
-	args = append(args, docker.GetBuildArgs(artifact)...)
+	ba, err := docker.GetBuildArgs(artifact)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting docker build args")
+	}
+	args = append(args, ba...)
 	args = append(args, ".")
 
 	return append(steps, &cloudbuild.BuildStep{
 		Name: b.DockerImage,
 		Args: args,
-	})
+	}), nil
 }

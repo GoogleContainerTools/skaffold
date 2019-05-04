@@ -20,7 +20,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v1beta9"
+const Version string = "skaffold/v1beta10"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -553,6 +553,27 @@ type ArtifactType struct {
 
 	// KanikoArtifact *alpha* builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko).
 	KanikoArtifact *KanikoArtifact `yaml:"kaniko,omitempty" yamltags:"oneOf=artifact"`
+
+	// CustomArtifact *alpha* builds images using a custom build script written by the user.
+	CustomArtifact *CustomArtifact `yaml:"custom,omitempty" yamltags:"oneOf=artifact"`
+}
+
+// CustomArtifact *alpha* describes an artifact built from a custom build script
+// written by the user. It can be used to build images with builders that aren't directly integrated with skaffold.
+type CustomArtifact struct {
+	// BuildCommand is the command executed to build the image.
+	BuildCommand string `yaml:"buildCommand,omitempty"`
+	// Dependencies are the file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.
+	Dependencies *CustomDependencies `yaml:"dependencies,omitempty"`
+}
+
+// CustomDependencies *alpha* is used to specify dependencies for an artifact built by a custom build script.
+type CustomDependencies struct {
+	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.
+	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
+	// Ignore specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.
+	// Will only work in conjunction with `paths`.
+	Ignore []string `yaml:"ignore,omitempty"`
 }
 
 // KanikoArtifact *alpha* describes an artifact built from a Dockerfile,
@@ -571,7 +592,8 @@ type KanikoArtifact struct {
 	Target string `yaml:"target,omitempty"`
 
 	// BuildArgs are arguments passed to the docker build.
-	// For example: `{"key1": "value1", "key2": "value2"}`.
+	// It also accepts environment variables via the go template syntax.
+	// For example: `{"key1": "value1", "key2": "value2", "key3": "{{.ENV_VARIABLE}}"}`.
 	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 
 	// BuildContext is where the build context for this artifact resides.
@@ -600,9 +622,20 @@ type DockerArtifact struct {
 	// For example: `{"key1": "value1", "key2": "value2"}`.
 	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 
+	// NetworkMode is passed through to docker and overrides the
+	// network configuration of docker builder. If unset, use whatever
+	// is configured in the underlying docker daemon. Valid modes are
+	// `Host`: use the host's networking stack.
+	// `Bridge`: use the bridged network configuration.
+	// `None`: no networking in the container.
+	NetworkMode string `yaml:"network,omitempty"`
+
 	// CacheFrom lists the Docker images used as cache sources.
 	// For example: `["golang:1.10.1-alpine3.7", "alpine:3.7"]`.
 	CacheFrom []string `yaml:"cacheFrom,omitempty"`
+
+	// NoCache used to pass in --no-cache to docker build to prevent caching.
+	NoCache bool `yaml:"noCache,omitempty"`
 }
 
 // BazelArtifact *beta* describes an artifact built with [Bazel](https://bazel.build/).

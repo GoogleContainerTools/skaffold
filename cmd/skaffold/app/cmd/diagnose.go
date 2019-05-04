@@ -39,7 +39,7 @@ func NewCmdDiagnose(out io.Writer) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
-	cmd.Flags().StringArrayVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
+	cmd.Flags().StringSliceVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
 	return cmd
 }
 

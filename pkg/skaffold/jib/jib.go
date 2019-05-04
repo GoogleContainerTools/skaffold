@@ -130,7 +130,7 @@ func refreshDependencyList(files *filesLists, cmd *exec.Cmd) error {
 
 // walkFiles walks through a list of files and directories and performs a callback on each of the files
 func walkFiles(workspace string, watchedFiles []string, ignoredFiles []string, callback func(path string, info os.FileInfo) error) error {
-	// Skaffold prefers to deal with relative paths.  In *practice*, Jib's dependencies
+	// Skaffold prefers to deal with relative paths. In *practice*, Jib's dependencies
 	// are *usually* absolute (relative to the root) and canonical (with all symlinks expanded).
 	// But that's not guaranteed, so we try to relativize paths against the workspace as
 	// both an absolute path and as a canonicalized workspace.

@@ -25,9 +25,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
 
+var (
+	// for testing
+	validateYamltags = yamltags.ValidateStruct
+)
+
 // Process checks if the Skaffold pipeline is valid and returns all encountered errors as a concatenated string
 func Process(config *latest.SkaffoldConfig) error {
-	errs := visitStructs(config, yamltags.ValidateStruct)
+	errs := visitStructs(config, validateYamltags)
+	errs = append(errs, validateDockerNetworkMode(config.Build.Artifacts)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -38,6 +44,21 @@ func Process(config *latest.SkaffoldConfig) error {
 		messages = append(messages, err.Error())
 	}
 	return fmt.Errorf(strings.Join(messages, " | "))
+}
+
+// validateDockerNetworkMode makes sure that networkMode is one of `Bridge`, `None`, or `Host` if set.
+func validateDockerNetworkMode(artifacts []*latest.Artifact) (errs []error) {
+	for _, a := range artifacts {
+		if a.DockerArtifact == nil || a.DockerArtifact.NetworkMode == "" {
+			continue
+		}
+		mode := strings.ToLower(a.DockerArtifact.NetworkMode)
+		if mode == "none" || mode == "bridge" || mode == "host" {
+			continue
+		}
+		errs = append(errs, fmt.Errorf("artifact %s has invalid networkMode '%s'", a.ImageName, mode))
+	}
+	return
 }
 
 // visitStructs recursively visits all fields in the config and collects errors found by the visitor

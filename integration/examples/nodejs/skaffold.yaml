@@ -1,9 +1,12 @@
-apiVersion: skaffold/v1beta9
+apiVersion: skaffold/v1beta10
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/node-example
     context: backend
+    docker:
+      buildArgs:
+        SCRIPT: "{{.SCRIPT}}"
     sync:
       '*.js': .
 deploy:

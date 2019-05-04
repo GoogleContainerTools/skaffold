@@ -44,7 +44,16 @@ type from struct {
 // RetrieveImage is overridden for unit testing
 var RetrieveImage = retrieveImage
 
-func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) {
+func evaluateBuildArgsValue(nameTemplate string) (string, error) {
+	tmpl, err := util.ParseEnvTemplate(nameTemplate)
+	if err != nil {
+		return "", errors.Wrap(err, "parsing template")
+	}
+
+	return util.ExecuteEnvTemplate(tmpl, nil)
+}
+
+func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
 	for i, node := range nodes {
 		if node.Value != command.Arg {
 			continue
@@ -56,8 +65,12 @@ func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) {
 
 		// build arg's value
 		var value string
+		var err error
 		if buildArgs[key] != nil {
-			value = *buildArgs[key]
+			value, err = evaluateBuildArgsValue(*buildArgs[key])
+			if err != nil {
+				return errors.Wrapf(err, "unable to get value for build arg: %s", key)
+			}
 		} else if len(keyValue) > 1 {
 			value = keyValue[1]
 		}
@@ -74,6 +87,7 @@ func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) {
 			}
 		}
 	}
+	return nil
 }
 
 func fromInstructions(nodes []*parser.Node) []from {
@@ -181,7 +195,10 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 
 	dockerfileLines := res.AST.Children
 
-	expandBuildArgs(dockerfileLines, buildArgs)
+	err = expandBuildArgs(dockerfileLines, buildArgs)
+	if err != nil {
+		return nil, errors.Wrap(err, "putting build arguments")
+	}
 
 	instructions, err := onbuildInstructions(dockerfileLines, insecureRegistries)
 	if err != nil {
@@ -283,6 +300,31 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 		}
 	}
 
+	files, err := WalkWorkspace(workspace, excludes, deps)
+	if err != nil {
+		return nil, errors.Wrap(err, "walking workspace")
+	}
+
+	// Always add dockerfile even if it's .dockerignored. The daemon will need it anyways.
+	if !filepath.IsAbs(dockerfilePath) {
+		files[dockerfilePath] = true
+	} else {
+		files[absDockerfilePath] = true
+	}
+
+	// Ignore .dockerignore
+	delete(files, ".dockerignore")
+
+	var dependencies []string
+	for file := range files {
+		dependencies = append(dependencies, file)
+	}
+	sort.Strings(dependencies)
+
+	return dependencies, nil
+}
+
+func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, error) {
 	pExclude, err := fileutils.NewPatternMatcher(excludes)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid exclude patterns")
@@ -342,24 +384,7 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 			}
 		}
 	}
-
-	// Always add dockerfile even if it's .dockerignored. The daemon will need it anyways.
-	if !filepath.IsAbs(dockerfilePath) {
-		files[dockerfilePath] = true
-	} else {
-		files[absDockerfilePath] = true
-	}
-
-	// Ignore .dockerignore
-	delete(files, ".dockerignore")
-
-	var dependencies []string
-	for file := range files {
-		dependencies = append(dependencies, file)
-	}
-	sort.Strings(dependencies)
-
-	return dependencies, nil
+	return files, nil
 }
 
 func retrieveImage(image string, insecureRegistries map[string]bool) (*v1.ConfigFile, error) {

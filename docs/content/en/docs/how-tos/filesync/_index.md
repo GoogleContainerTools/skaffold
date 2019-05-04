@@ -42,6 +42,7 @@ the sync rules.  This tar file is sent and extracted on the corresponding contai
 
 File sync has some limitations:
 
+  - File sync can only update files that can be modified by the container's configured User ID.
   - File sync requires the `tar` command to be available in the container.
   - Only local source files can be synchronized: files created by the builder will not be copied.
 

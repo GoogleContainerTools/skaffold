@@ -26,8 +26,8 @@ import (
 
 // Artifact is the result corresponding to each successful build.
 type Artifact struct {
-	ImageName string
-	Tag       string
+	ImageName string `json:"imageName"`
+	Tag       string `json:"tag"`
 }
 
 // Builder is an interface to the Build API of Skaffold.

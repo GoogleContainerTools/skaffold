@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 
@@ -87,7 +88,7 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-podname-namespace-portname-8080": {
+				"containername-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -126,7 +127,7 @@ func TestPortForwardPod(t *testing.T) {
 				9000: true,
 			},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-podname-namespace-portname-8080": {
+				"containername-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -198,7 +199,7 @@ func TestPortForwardPod(t *testing.T) {
 			shouldErr:      true,
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-podname-namespace-portname-8080": {
+				"containername-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -239,7 +240,7 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int{8080, 50051},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-podname-namespace-portname-8080": {
+				"containername-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -248,7 +249,7 @@ func TestPortForwardPod(t *testing.T) {
 					port:            8080,
 					localPort:       8080,
 				},
-				"containername2-podname2-namespace2-portname2-50051": {
+				"containername2-namespace2-portname2-50051": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
@@ -309,7 +310,7 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int{8080, 9000},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-podname-namespace-portname-8080": {
+				"containername-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -318,7 +319,7 @@ func TestPortForwardPod(t *testing.T) {
 					port:            8080,
 					localPort:       8080,
 				},
-				"containername2-podname2-namespace2-portname2-8080": {
+				"containername2-namespace2-portname2-8080": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
@@ -378,7 +379,7 @@ func TestPortForwardPod(t *testing.T) {
 			},
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-podname-namespace-portname-8080": {
+				"containername-namespace-portname-8080": {
 					resourceVersion: 2,
 					podName:         "podname",
 					containerName:   "containername",
@@ -462,5 +463,25 @@ func TestPortForwardPod(t *testing.T) {
 				t.Errorf("Forwarded entries differs from expected entries. Expected: %s, Actual: %s", test.expectedEntries, test.forwarder.forwardedEntries)
 			}
 		})
+	}
+}
+
+func TestPortForwardEntryKey(t *testing.T) {
+	pfe := &portForwardEntry{
+		podName:       "pod",
+		containerName: "container",
+		namespace:     "default",
+		portName:      "port",
+		port:          8080,
+	}
+
+	expectedKey := "container-default-port-8080"
+	acutalKey := pfe.key()
+
+	if acutalKey != expectedKey {
+		t.Fatalf("port forward entry key is incorrect: \n actual: %s \n expected: %s", acutalKey, expectedKey)
+	}
+	if strings.Contains(acutalKey, "pod") {
+		t.Fatal("key should not contain podname, otherwise containers will be mapped to a new port every time a pod is regenerated. See Issues #1815 and #1594.")
 	}
 }
