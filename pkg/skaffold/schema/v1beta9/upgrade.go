@@ -27,6 +27,7 @@ import (
 // Config changes from v1beta9 to v1beta10
 // 1. Additions:
 //    - DockerArtifact.NetworkMode
+//    - GitTagger variants `TreeSha` and `AbbrevTreeSha`
 // 2. No removals
 // 3. No updates
 func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
