@@ -49,25 +49,19 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 		return nil, errors.Wrap(err, "normalizing dockerfile path")
 	}
 
-	deps, err := readDockerfile(workspace, absDockerfilePath, buildArgs, insecureRegistries)
+	fts, err := readCopyCmdsFromDockerfile(false, absDockerfilePath, workspace, buildArgs, insecureRegistries)
 	if err != nil {
 		return nil, err
 	}
 
-	// Read patterns to ignore
-	var excludes []string
-	dockerignorePath := filepath.Join(workspace, ".dockerignore")
-	if _, err := os.Stat(dockerignorePath); !os.IsNotExist(err) {
-		r, err := os.Open(dockerignorePath)
-		if err != nil {
-			return nil, err
-		}
-		defer r.Close()
+	excludes, err := readDockerignore(workspace)
+	if err != nil {
+		return nil, errors.Wrap(err, "reading .dockerignore")
+	}
 
-		excludes, err = dockerignore.ReadAll(r)
-		if err != nil {
-			return nil, err
-		}
+	deps := make([]string, 0, len(fts))
+	for _, ft := range fts {
+		deps = append(deps, ft.from)
 	}
 
 	files, err := WalkWorkspace(workspace, excludes, deps)
@@ -94,6 +88,27 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 	return dependencies, nil
 }
 
+// readDockerignore reads patterns to ignore
+func readDockerignore(workspace string) ([]string, error) {
+	var excludes []string
+	dockerignorePath := filepath.Join(workspace, ".dockerignore")
+	if _, err := os.Stat(dockerignorePath); !os.IsNotExist(err) {
+		r, err := os.Open(dockerignorePath)
+		if err != nil {
+			return nil, err
+		}
+		defer r.Close()
+
+		excludes, err = dockerignore.ReadAll(r)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return excludes, nil
+}
+
+// WalkWorkspace walks the given host directories and records all files found.
+// Note: if you change this function, you might also want to modify `walkWorkspaceWithDestinations`.
 func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, error) {
 	pExclude, err := fileutils.NewPatternMatcher(excludes)
 	if err != nil {
