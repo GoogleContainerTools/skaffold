@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -63,7 +64,10 @@ func TestParseSamples(t *testing.T) {
 
 			tmpDir.Write(name, addHeader(buf))
 
-			_, err = ParseConfig(tmpDir.Path(name), true)
+			cfg, err := ParseConfig(tmpDir.Path(name), true)
+			testutil.CheckError(t, false, err)
+
+			err = validation.Process(cfg.(*latest.SkaffoldConfig))
 			testutil.CheckError(t, false, err)
 		})
 	}
