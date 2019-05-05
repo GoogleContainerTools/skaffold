@@ -1,0 +1,15 @@
+build:
+  artifacts:
+    - image: gcr.io/k8s-skaffold/node-example
+      context: node
+      sync:
+        manual:
+          - src: '.filebaserc'
+            dest: /etc
+          - src: 'static-html/*.html'
+            dest: static
+          - src: '**/*.png'
+            dest: assets
+          - src: 'content/en/**/*.md'
+            dest: content
+            strip: 'content/en/'
