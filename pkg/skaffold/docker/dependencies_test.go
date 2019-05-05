@@ -61,7 +61,7 @@ FROM nginx
 ADD *.go *.none /tmp/
 `
 
-const multiStageDockerfile = `
+const multiStageDockerfile1 = `
 FROM golang:1.9.2
 WORKDIR /go/src/github.com/r2d4/leeroy/
 COPY worker.go .
@@ -70,6 +70,14 @@ RUN go build -o worker .
 FROM gcr.io/distroless/base
 WORKDIR /root/
 COPY --from=0 /go/src/github.com/r2d4/leeroy ./
+`
+
+const multiStageDockerfile2 = `
+FROM golang:1.9.2
+COPY worker.go .
+
+FROM gcr.io/distroless/base
+ADD server.go .
 `
 
 const envTest = `
@@ -281,9 +289,16 @@ func TestGetDependencies(t *testing.T) {
 		},
 		{
 			description: "multistage dockerfile",
-			dockerfile:  multiStageDockerfile,
+			dockerfile:  multiStageDockerfile1,
 			workspace:   "",
 			expected:    []string{"Dockerfile", "worker.go"},
+			fetched:     []string{"golang:1.9.2", "gcr.io/distroless/base"},
+		},
+		{
+			description: "multistage dockerfile with source dependencies in both stages",
+			dockerfile:  multiStageDockerfile2,
+			workspace:   "",
+			expected:    []string{"Dockerfile", "server.go", "worker.go"},
 			fetched:     []string{"golang:1.9.2", "gcr.io/distroless/base"},
 		},
 		{
@@ -512,6 +527,12 @@ func TestGetDependencies(t *testing.T) {
 			shouldErr:   true,
 		},
 	}
+
+	resetWorkingDir := testutil.Override(t, &WorkingDir, func(_ string, _ map[string]bool) (string, error) {
+		return "/", nil
+	})
+	defer resetWorkingDir()
+
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			imageFetcher := fakeImageFetcher{}

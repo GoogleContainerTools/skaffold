@@ -20,10 +20,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	registry_v1 "github.com/google/go-containerregistry/pkg/v1"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
@@ -37,10 +39,34 @@ type from struct {
 	as    string
 }
 
-// RetrieveImage is overridden for unit testing
-var RetrieveImage = retrieveImage
+// copyCommand records a docker COPY/ADD command.
+type copyCommand struct {
+	// srcs records the source glob patterns.
+	srcs []string
+	// dest records the destination which may be a directory.
+	dest string
+	// destIsDir indicates if dest must be treated as directory.
+	destIsDir bool
+}
 
-func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]string, error) {
+type fromTo struct {
+	// from is the relative path (wrt. the skaffold root directory) of the dependency on the host system.
+	from string
+	// to is the destination location in the container. Must use slashes as path separator.
+	to string
+	// toIsDir indicates if the `to` path must be treated as directory
+	toIsDir bool
+}
+
+var (
+	// WorkingDir is overridden for unit testing
+	WorkingDir = retrieveWorkingDir
+
+	// RetrieveImage is overridden for unit testing
+	RetrieveImage = retrieveImage
+)
+
+func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]fromTo, error) {
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "opening dockerfile: %s", absDockerfilePath)
@@ -64,12 +90,12 @@ func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*s
 		return nil, errors.Wrap(err, "expanding ONBUILD instructions")
 	}
 
-	copied, err := copiedFiles(dockerfileLinesWithOnbuild)
+	cpCmds, err := extractCopyCommands(dockerfileLinesWithOnbuild, onlyLastImage, insecureRegistries)
 	if err != nil {
 		return nil, errors.Wrap(err, "listing copied files")
 	}
 
-	return expandPaths(workspace, copied)
+	return expandSrcGlobPatterns(workspace, cpCmds)
 }
 
 func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
@@ -118,15 +144,15 @@ func evaluateBuildArgsValue(nameTemplate string) (string, error) {
 	return util.ExecuteEnvTemplate(tmpl, nil)
 }
 
-func expandPaths(workspace string, copied [][]string) ([]string, error) {
-	expandedPaths := make(map[string]bool)
-	for _, files := range copied {
+func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]fromTo, error) {
+	var fts []fromTo
+	for _, cpCmd := range cpCmds {
 		matchesOne := false
 
-		for _, p := range files {
+		for _, p := range cpCmd.srcs {
 			path := filepath.Join(workspace, p)
 			if _, err := os.Stat(path); err == nil {
-				expandedPaths[p] = true
+				fts = append(fts, fromTo{from: filepath.Clean(p), to: cpCmd.dest, toIsDir: cpCmd.destIsDir})
 				matchesOne = true
 				continue
 			}
@@ -145,39 +171,51 @@ func expandPaths(workspace string, copied [][]string) ([]string, error) {
 					return nil, fmt.Errorf("getting relative path of %s", f)
 				}
 
-				expandedPaths[rel] = true
+				fts = append(fts, fromTo{from: rel, to: cpCmd.dest, toIsDir: cpCmd.destIsDir})
 			}
 			matchesOne = true
 		}
 
 		if !matchesOne {
-			return nil, fmt.Errorf("file pattern %s must match at least one file", files)
+			return nil, fmt.Errorf("file pattern %s must match at least one file", cpCmd.srcs)
 		}
 	}
 
-	var deps []string
-	for dep := range expandedPaths {
-		deps = append(deps, dep)
-	}
-	logrus.Debugf("Found dependencies for dockerfile: %v", deps)
-
-	return deps, nil
+	logrus.Debugf("Found dependencies for dockerfile: %v", fts)
+	return fts, nil
 }
 
-func copiedFiles(nodes []*parser.Node) ([][]string, error) {
-	var copied [][]string
+func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, insecureRegistries map[string]bool) ([]*copyCommand, error) {
+	slex := shell.NewLex('\\')
+	var copied []*copyCommand
 
+	workdir := "/"
 	envs := make([]string, 0)
 	for _, node := range nodes {
 		switch node.Value {
+		case command.From:
+			wd, err := WorkingDir(node.Next.Value, insecureRegistries)
+			if err != nil {
+				return nil, err
+			}
+			workdir = wd
+			if onlyLastImage {
+				copied = nil
+			}
+		case command.Workdir:
+			value, err := slex.ProcessWord(node.Next.Value, envs)
+			if err != nil {
+				return nil, errors.Wrap(err, "processing word")
+			}
+			workdir = changeDir(workdir, value)
 		case command.Add, command.Copy:
-			files, err := processCopy(node, envs)
+			cpCmd, err := readCopyCommand(node, envs, workdir)
 			if err != nil {
 				return nil, err
 			}
 
-			if len(files) > 0 {
-				copied = append(copied, files)
+			if cpCmd != nil && len(cpCmd.srcs) > 0 {
+				copied = append(copied, cpCmd)
 			}
 		case command.Env:
 			// one env command may define multiple variables
@@ -190,16 +228,24 @@ func copiedFiles(nodes []*parser.Node) ([][]string, error) {
 	return copied, nil
 }
 
-func processCopy(value *parser.Node, envs []string) ([]string, error) {
-	var copied []string
+func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCommand, error) {
+	var srcs []string
+	var dest string
+	var destIsDir bool
 
 	slex := shell.NewLex('\\')
-	for {
+	for i := 0; ; i++ {
 		// Skip last node, since it is the destination, and stop if we arrive at a comment
+		v := value.Next.Value
 		if value.Next.Next == nil || strings.HasPrefix(value.Next.Next.Value, "#") {
+			// COPY or ADD with multiple files must have a directory destination
+			if i > 1 || strings.HasSuffix(v, "/") || path.Base(v) == "." || path.Base(v) == ".." {
+				destIsDir = true
+			}
+			dest = changeDir(workdir, v)
 			break
 		}
-		src, err := slex.ProcessWord(value.Next.Value, envs)
+		src, err := slex.ProcessWord(v, envs)
 		if err != nil {
 			return nil, errors.Wrap(err, "processing word")
 		}
@@ -209,7 +255,7 @@ func processCopy(value *parser.Node, envs []string) ([]string, error) {
 			return nil, nil
 		}
 		if !strings.HasPrefix(src, "http://") && !strings.HasPrefix(src, "https://") {
-			copied = append(copied, src)
+			srcs = append(srcs, src)
 		} else {
 			logrus.Debugf("Skipping watch on remote dependency %s", src)
 		}
@@ -217,7 +263,7 @@ func processCopy(value *parser.Node, envs []string) ([]string, error) {
 		value = value.Next
 	}
 
-	return copied, nil
+	return &copyCommand{srcs: srcs, dest: dest, destIsDir: destIsDir}, nil
 }
 
 func expandOnbuildInstructions(nodes []*parser.Node, insecureRegistries map[string]bool) ([]*parser.Node, error) {
@@ -303,6 +349,32 @@ func retrieveImage(image string, insecureRegistries map[string]bool) (*v1.Config
 	return localDaemon.ConfigFile(context.Background(), image)
 }
 
+func retrieveWorkingDir(tagged string, insecureRegistries map[string]bool) (string, error) {
+	var cf *registry_v1.ConfigFile
+	var err error
+
+	if strings.ToLower(tagged) == "scratch" {
+		return "/", nil
+	}
+
+	localDocker, err := NewAPIClient(false, nil)
+	if err != nil {
+		// No local Docker is available
+		cf, err = RetrieveRemoteConfig(tagged, insecureRegistries)
+	} else {
+		cf, err = localDocker.ConfigFile(context.Background(), tagged)
+	}
+	if err != nil {
+		return "", errors.Wrap(err, "retrieving image config")
+	}
+
+	if cf.Config.WorkingDir == "" {
+		logrus.Debugf("Using default workdir '/' for %s", tagged)
+		return "/", nil
+	}
+	return cf.Config.WorkingDir, nil
+}
+
 func hasMultiStageFlag(flags []string) bool {
 	for _, f := range flags {
 		if strings.HasPrefix(f, "--from=") {
@@ -310,4 +382,11 @@ func hasMultiStageFlag(flags []string) bool {
 		}
 	}
 	return false
+}
+
+func changeDir(cur, to string) string {
+	if path.IsAbs(to) {
+		return path.Clean(to)
+	}
+	return path.Clean(path.Join(cur, to))
 }
