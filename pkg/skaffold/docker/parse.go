@@ -333,6 +333,10 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 	return dependencies, nil
 }
 
+func SyncMap(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string, insecureRegistries map[string]bool) (map[string][]string, error) {
+	return nil, nil
+}
+
 func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, error) {
 	pExclude, err := fileutils.NewPatternMatcher(excludes)
 	if err != nil {
