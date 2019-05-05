@@ -58,6 +58,21 @@ func (r *SkaffoldRunner) DiagnoseArtifacts(out io.Writer) error {
 		fmt.Fprintln(out, " - Dependencies:", len(deps), "files")
 		fmt.Fprintf(out, " - Time to list dependencies: %v (2nd time: %v)\n", timeDeps1, timeDeps2)
 
+		timeSyncMap1, err := timeToConstructSyncMap(ctx, r.Builder, artifact)
+		if err != nil {
+			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
+				return errors.Wrap(err, "construct artifact dependencies")
+			}
+		}
+		timeSyncMap2, err := timeToConstructSyncMap(ctx, r.Builder, artifact)
+		if err != nil {
+			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
+				return errors.Wrap(err, "construct artifact dependencies")
+			}
+		} else {
+			fmt.Fprintf(out, " - Time to construct sync-map: %v (2nd time: %v)\n", timeSyncMap1, timeSyncMap2)
+		}
+
 		timeMTimes1, err := timeToComputeMTimes(deps)
 		if err != nil {
 			return errors.Wrap(err, "computing modTimes")
@@ -92,6 +107,12 @@ func timeToListDependencies(ctx context.Context, builder build.Builder, a *lates
 	start := time.Now()
 	paths, err := builder.DependenciesForArtifact(ctx, a)
 	return time.Since(start), paths, err
+}
+
+func timeToConstructSyncMap(ctx context.Context, builder build.Builder, a *latest.Artifact) (time.Duration, error) {
+	start := time.Now()
+	_, err := builder.SyncMap(ctx, a)
+	return time.Since(start), err
 }
 
 func timeToComputeMTimes(deps []string) (time.Duration, error) {

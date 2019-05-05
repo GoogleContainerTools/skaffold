@@ -41,6 +41,15 @@ type Builder interface {
 
 	DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error)
 
+	// SyncMap provides a map of sync destinations by source paths.
+	SyncMap(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error)
+
 	// Prune removes images built with Skaffold
 	Prune(context.Context, io.Writer) error
+}
+
+type ErrSyncMapNotSupported struct{}
+
+func (ErrSyncMapNotSupported) Error() string {
+	return "SyncMap is not supported by this builder"
 }

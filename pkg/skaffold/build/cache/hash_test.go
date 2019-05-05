@@ -45,6 +45,10 @@ func (m *mockBuilder) Prune(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
+func (m *mockBuilder) SyncMap(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
+	return nil, nil
+}
+
 var mockCacheHasher = func(s string) (string, error) {
 	return s, nil
 }
