@@ -55,16 +55,16 @@ func (opts *SkaffoldOptions) Labels() map[string]string {
 	labels := map[string]string{}
 
 	if opts.Cleanup {
-		labels["skaffold-cleanup"] = "true"
+		labels["skaffold.dev/cleanup"] = "true"
 	}
 	if opts.Tail || opts.TailDev {
-		labels["skaffold-tail"] = "true"
+		labels["skaffold.dev/tail"] = "true"
 	}
 	if opts.Namespace != "" {
-		labels["skaffold-namespace"] = opts.Namespace
+		labels["skaffold.dev/namespace"] = opts.Namespace
 	}
 	if len(opts.Profiles) > 0 {
-		labels["skaffold-profiles"] = strings.Join(opts.Profiles, "__")
+		labels["skaffold.dev/profiles"] = strings.Join(opts.Profiles, "__")
 	}
 	for _, cl := range opts.CustomLabels {
 		l := strings.SplitN(cl, "=", 2)

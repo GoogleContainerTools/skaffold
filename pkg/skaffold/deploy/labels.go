@@ -44,6 +44,7 @@ type Artifact struct {
 
 // Labeller can give key/value labels to set on deployed resources.
 type Labeller interface {
+	// Labels keys must be prefixed with "skaffold.dev/"
 	Labels() map[string]string
 }
 
