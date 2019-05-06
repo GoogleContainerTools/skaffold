@@ -117,6 +117,7 @@ Do we need to exclude such cases, e.g. by adding a unique `skaffold-run: <uuid>`
 Resolution: A UUID label is not required for now but can be added later when users request it.
 
 ## Implementation plan
+0. Preparation: ensure that helm deployments correctly add labels to pods created from pod templates (#2074, #2075)
 1. Switch the selection of pods for the log selector from image lists to `tail=true` label (#1910).
 2. Add log section to the Skaffold config and select pods based on this
 3. Integration test for log selection.
