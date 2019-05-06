@@ -36,6 +36,12 @@ type Result struct {
 	Error  error
 }
 
+type Result struct {
+	Target latest.Artifact
+	Result Artifact
+	Error  error
+}
+
 // Builder is an interface to the Build API of Skaffold.
 // It must build and make the resulting image accesible to the cluster.
 // This could include pushing to a authorized repository or loading the nodes with the image.

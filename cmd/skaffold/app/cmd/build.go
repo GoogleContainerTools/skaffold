@@ -31,10 +31,8 @@ import (
 )
 
 var (
-	quietFlag bool
-	// buildFormatFlag = flags.NewTemplateFlag("{{.}}", BuildOutput{})
-	template = `{{ range .Builds}}{{if not .}}{{else}}{{.Target.ImageName}} -> {{if .Error}}Error: {{.Error}}{{else}}{{.Result.Tag}}{{end}}{{end}}
-{{end}}`
+	quietFlag       bool
+	template        = "{{json .}}"
 	buildFormatFlag = flags.NewTemplateFlag(template, BuildOutput{})
 )
 
@@ -85,7 +83,13 @@ func runBuild(out io.Writer) error {
 	bRes, err := createRunnerAndBuildFunc(ctx, buildOut)
 
 	if quietFlag {
-		cmdOut := flags.BuildOutput{Builds: bRes}
+		var artifacts []build.Artifact
+		for _, b := range bRes {
+			if b.Error == nil {
+				artifacts = append(artifacts, b.Result)
+			}
+		}
+		cmdOut := flags.BuildOutput{Builds: artifacts}
 		if err := buildFormatFlag.Template().Execute(out, cmdOut); err != nil {
 			return errors.Wrap(err, "executing template")
 		}

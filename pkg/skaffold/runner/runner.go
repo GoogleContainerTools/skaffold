@@ -223,7 +223,11 @@ func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, art
 	}
 
 	// Make sure all artifacts are redeployed. Not only those that were just built.
-	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
+	aRes := make([]build.Artifact, len(bRes))
+	for i, b := range bRes {
+		aRes[i] = b.Result
+	}
+	r.builds = build.MergeWithPreviousBuilds(aRes, r.builds)
 
 	if err := r.deploy(ctx, out, r.builds); err != nil {
 		return errors.Wrap(err, "deploy failed")

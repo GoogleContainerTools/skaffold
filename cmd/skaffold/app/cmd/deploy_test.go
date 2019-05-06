@@ -24,26 +24,32 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestRunDeploy(t *testing.T) {
-	errRunner := func(context.Context, io.Writer) ([]build.Artifact, error) {
+	errRunner := func(context.Context, io.Writer) ([]build.Result, error) {
 		return nil, errors.New("some error")
 	}
-	mockCreateRunner := func(context.Context, io.Writer) ([]build.Artifact, error) {
-		return []build.Artifact{{
-			ImageName: "gcr.io/skaffold/example",
-			Tag:       "test",
+	mockCreateRunner := func(context.Context, io.Writer) ([]build.Result, error) {
+		return []build.Result{{
+			Target: latest.Artifact{
+				ImageName: "gcr.io/skaffold/example",
+			},
+			Result: build.Artifact{
+				ImageName: "gcr.io/skaffold/example",
+				Tag:       "gcr.io/skaffold/example:test",
+			},
 		}}, nil
 	}
-	defer func(f func(context.Context, io.Writer) ([]build.Artifact, error)) {
+	defer func(f func(context.Context, io.Writer) ([]build.Result, error)) {
 		createRunnerAndBuildFunc = f
 	}(createRunnerAndBuildFunc)
 
 	var tests = []struct {
 		description string
-		mock        func(context.Context, io.Writer) ([]build.Artifact, error)
+		mock        func(context.Context, io.Writer) ([]build.Result, error)
 		shouldErr   bool
 	}{
 		{
