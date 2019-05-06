@@ -99,6 +99,15 @@ func addLabels(labels map[string]string, accessor metav1.Object) {
 	copyMap(kv, labels)
 
 	accessor.SetLabels(kv)
+
+	if podTpl := kubernetes.GetPodTemplateSpec(accessor); podTpl != nil {
+		dkv := make(map[string]string)
+
+		copyMap(dkv, podTpl.GetLabels())
+		copyMap(dkv, labels)
+
+		podTpl.SetLabels(dkv)
+	}
 }
 
 func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInterface, labels map[string]string, res Artifact) error {
