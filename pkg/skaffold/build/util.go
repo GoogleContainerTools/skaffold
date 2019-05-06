@@ -19,16 +19,14 @@ package build
 // MergeWithPreviousBuilds merges previous or prebuilt build artifacts with
 // builds. If an artifact is already present in builds, the same artifact from
 // previous will be ignored.
-func MergeWithPreviousBuilds(builds []Result, previous []Artifact) []Artifact {
+func MergeWithPreviousBuilds(builds []Artifact, previous []Artifact) []Artifact {
 	updatedBuilds := map[string]bool{}
 	for _, build := range builds {
-		updatedBuilds[build.Result.ImageName] = true
+		updatedBuilds[build.ImageName] = true
 	}
 
 	merged := make([]Artifact, len(builds))
-	for i, b := range builds {
-		merged[i] = b.Result
-	}
+	copy(merged, builds)
 
 	for _, b := range previous {
 		if !updatedBuilds[b.ImageName] {

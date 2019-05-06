@@ -74,12 +74,12 @@ func TestQuietFlag(t *testing.T) {
 	}{
 		{
 			description:    "single image with no template",
-			expectedOutput: []byte("gcr.io/skaffold/example -> gcr.io/skaffold/example:test\n"),
+			expectedOutput: []byte(`{"builds":[{"imageName":"gcr.io/skaffold/example","tag":"gcr.io/skaffold/example:test"}]}`),
 			mock:           singleArtifactRunner,
 		},
 		{
 			description:    "single image with specified template",
-			template:       "{{range .Builds}}{{.Result.ImageName}} -> {{.Result.Tag}}\n{{end}}",
+			template:       "{{range .Builds}}{{.ImageName}} -> {{.Tag}}\n{{end}}",
 			expectedOutput: []byte("gcr.io/skaffold/example -> gcr.io/skaffold/example:test\n"),
 			mock:           singleArtifactRunner,
 		},
@@ -91,7 +91,7 @@ func TestQuietFlag(t *testing.T) {
 		},
 		{
 			description:    "two images, no template, one error",
-			expectedOutput: []byte("gcr.io/skaffold/image1 -> gcr.io/skaffold/image1:tag\ngcr.io/skaffold/image2 -> Error: build error\n"),
+			expectedOutput: []byte(`{"builds":[{"imageName":"gcr.io/skaffold/image1","tag":"gcr.io/skaffold/image1:tag"}]}`),
 			mock:           doubleArtifactRunner,
 		},
 	}
