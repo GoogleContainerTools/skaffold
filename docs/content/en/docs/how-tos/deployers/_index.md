@@ -86,6 +86,15 @@ Each `release` includes the following fields:
 
 {{< schema root="HelmRelease" >}}
 
+### Helm Build Dependencies
+
+The `skipBuildDependencies` flag toggles whether depenedencies of the Helm chart are built with the `helm dep build` command. This command manipulates files inside the `charts` subfolder of the specified Helm chart.
+
+If `skipBuildDependencies` is `false` then `skaffold dev` does **not** watch the `charts` subfolder of the Helm chart, in order to prevent a build loop - the actions of `helm dep build` always trigger another build.
+
+If `skipBuildDependencies` is `true` then `skaffold dev` watches all files inside the Helm chart.
+
+
 ### Example
 
 The following `deploy` section instructs Skaffold to deploy
