@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // Build builds a list of artifacts with Kaniko.
@@ -46,24 +47,19 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 		defer teardownDockerConfigSecret()
 	}
 
-	var kanikoArtifacts []*latest.Artifact
-	var otherArtifacts []*latest.Artifact
+	kanikoArtifacts, otherArtifacts := splitArtifacts(artifacts)
 
-	for _, a := range artifacts {
-		if a.ArtifactType.KanikoArtifact != nil {
-			kanikoArtifacts = append(kanikoArtifacts, a)
-			continue
-		}
-		otherArtifacts = append(otherArtifacts, a)
-	}
-
-	pArts, err := build.InParallel(ctx, out, tags, kanikoArtifacts, b.buildArtifactWithKaniko)
-	if err != nil {
-		return nil, errors.Wrap(err, "building artifacts in parallel with kaniko")
+	pArts, parallelErr := build.InParallel(ctx, out, tags, kanikoArtifacts, b.buildArtifactWithKaniko)
+	if parallelErr != nil {
+		logrus.Warnf("error building kaniko artifacts in parallel: %v", parallelErr)
 	}
 
 	sArts, err := build.InSequence(ctx, out, tags, otherArtifacts, b.runBuildForArtifact)
-	return append(pArts, sArts...), err
+	if err != nil {
+		return append(pArts, sArts...), err
+	}
+
+	return append(pArts, sArts...), parallelErr
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
@@ -95,4 +91,19 @@ func (b *Builder) buildArtifactWithKaniko(ctx context.Context, out io.Writer, ar
 	}
 
 	return tag + "@" + digest, nil
+}
+
+func splitArtifacts(artifacts []*latest.Artifact) ([]*latest.Artifact, []*latest.Artifact) {
+	var kanikoArtifacts []*latest.Artifact
+	var otherArtifacts []*latest.Artifact
+
+	for _, a := range artifacts {
+		if a.ArtifactType.KanikoArtifact != nil {
+			kanikoArtifacts = append(kanikoArtifacts, a)
+			continue
+		}
+		otherArtifacts = append(otherArtifacts, a)
+	}
+
+	return kanikoArtifacts, otherArtifacts
 }

@@ -75,7 +75,7 @@ var (
 	BuildContext = "BUILD_CONTEXT"
 
 	// Kubecontext is the expected kubecontext to build an artifact with a custom build script on cluster
-	Kubecontext = "KUBECONTEXT"
+	Kubecontext = "KUBE_CONTEXT"
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}
