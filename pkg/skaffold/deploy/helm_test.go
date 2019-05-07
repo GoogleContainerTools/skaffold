@@ -29,6 +29,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
@@ -188,85 +189,25 @@ var testDeployRemoteChart = &latest.HelmDeploy{
 	},
 }
 
+var testDeployWithMultipleReleases = &latest.HelmDeploy{
+	Releases: []latest.HelmRelease{
+		{
+			Name:      "release-1",
+			ChartPath: "examples/test1",
+			Values: map[string]string{
+				"image": "skaffold-helm-1",
+			},
+		}, {
+			Name:      "releases-2",
+			ChartPath: "examples/test2",
+			Values: map[string]string{
+				"image": "skaffold-helm-2",
+			},
+		},
+	},
+}
+
 var testNamespace = "testNamespace"
-
-var validDeployYaml = `
-# Source: skaffold-helm/templates/deployment.yaml
-apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  name: skaffold-helm
-  labels:
-    app: skaffold-helm
-    chart: skaffold-helm-0.1.0
-    release: skaffold-helm
-    heritage: Tiller
-spec:
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        app: skaffold-helm
-        release: skaffold-helm
-    spec:
-      containers:
-        - name: skaffold-helm
-          image: gcr.io/nick-cloudbuild/skaffold-helm:f759510436c8fd6f7ffa13dd9e9d85e64bec8d2bfd12c5aa3fb9af1288eccdab
-          imagePullPolicy: 
-          command: ["/bin/bash", "-c", "--" ]
-          args: ["while true; do sleep 30; done;"]
-          resources:
-            {}
-`
-
-var validServiceYaml = `
-# Source: skaffold-helm/templates/service.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: skaffold-helm-skaffold-helm
-  labels:
-    app: skaffold-helm
-    chart: skaffold-helm-0.1.0
-    release: skaffold-helm
-    heritage: Tiller
-spec:
-  type: ClusterIP
-  ports:
-    - port: 80
-      targetPort: 80
-      protocol: TCP
-      name: nginx
-  selector:
-    app: skaffold-helm
-    release: skaffold-helm
-`
-
-var invalidDeployYaml = `REVISION: 2
-RELEASED: Tue Jun 12 15:40:18 2018
-CHART: skaffold-helm-0.1.0
-USER-SUPPLIED VALUES:
-image: gcr.io/nick-cloudbuild/skaffold-helm:f759510436c8fd6f7ffa13dd9e9d85e64bec8d2bfd12c5aa3fb9af1288eccdab
-
-COMPUTED VALUES:
-image: gcr.io/nick-cloudbuild/skaffold-helm:f759510436c8fd6f7ffa13dd9e9d85e64bec8d2bfd12c5aa3fb9af1288eccdab
-ingress:
-  annotations: null
-  enabled: false
-  hosts:
-  - chart-example.local
-  tls: null
-replicaCount: 1
-resources: {}
-service:
-  externalPort: 80
-  internalPort: 80
-  name: nginx
-  type: ClusterIP
-
-HOOKS:
-MANIFEST:
-`
 
 // TestMain disables logrus output before running tests.
 func TestMain(m *testing.M) {
@@ -467,6 +408,7 @@ type MockHelm struct {
 	t *testing.T
 
 	getResult      error
+	getResultBytes func(string) (io.Reader, error)
 	getMatcher     CommandMatcher
 	installResult  error
 	installMatcher CommandMatcher
@@ -492,8 +434,17 @@ func (m *MockHelm) RunCmd(c *exec.Cmd) error {
 		m.t.Errorf("Invalid kubernetes context %v", c)
 	}
 
-	if c.Args[3] == "get" || c.Args[3] == "upgrade" {
+	if c.Args[3] == "upgrade" {
 		if releaseName := c.Args[4]; strings.Contains(releaseName, "{{") {
+			m.t.Errorf("Invalid release name: %v", releaseName)
+		}
+	}
+	if c.Args[3] == "get" {
+		releaseName := c.Args[4]
+		if releaseName == "manifest" {
+			releaseName = c.Args[5]
+		}
+		if strings.Contains(releaseName, "{{") {
 			m.t.Errorf("Invalid release name: %v", releaseName)
 		}
 	}
@@ -502,6 +453,15 @@ func (m *MockHelm) RunCmd(c *exec.Cmd) error {
 	case "get":
 		if m.getMatcher != nil && !m.getMatcher(c) {
 			m.t.Errorf("get matcher failed to match cmd")
+		}
+		if m.getResultBytes != nil {
+			b, err := m.getResultBytes(c.Args[5])
+			if err != nil {
+				return err
+			}
+			if _, err := io.Copy(c.Stdout, b); err != nil {
+				m.t.Errorf("Failed to copy stdout")
+			}
 		}
 		return m.getResult
 	case "install":
@@ -526,35 +486,6 @@ func (m *MockHelm) RunCmd(c *exec.Cmd) error {
 	default:
 		m.t.Errorf("Unknown helm command: %+v", c)
 		return nil
-	}
-}
-
-func TestParseHelmRelease(t *testing.T) {
-	var tests = []struct {
-		name      string
-		yaml      []byte
-		shouldErr bool
-	}{
-		{
-			name: "parse valid deployment yaml",
-			yaml: []byte(validDeployYaml),
-		},
-		{
-			name: "parse valid service yaml",
-			yaml: []byte(validServiceYaml),
-		},
-		{
-			name:      "parse invalid deployment yaml",
-			yaml:      []byte(invalidDeployYaml),
-			shouldErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := parseRuntimeObject(testNamespace, tt.yaml)
-			testutil.CheckError(t, tt.shouldErr, err)
-		})
 	}
 }
 
@@ -645,4 +576,84 @@ func makeRunContext(helmDeploy *latest.HelmDeploy, force bool) *runcontext.RunCo
 			Force:     force,
 		},
 	}
+}
+
+func TestHelmGetManifestsFromReleases(t *testing.T) {
+	var tests = []struct {
+		description string
+		cmd         util.Command
+		runContext  *runcontext.RunContext
+		releases    []string
+		expected    kubectl.ManifestList
+	}{
+		{
+			description: "get manifests for multiple releases",
+			cmd:         &MockHelm{t: t},
+			runContext:  makeRunContext(testDeployWithMultipleReleases, false),
+			releases:    []string{"release-1", "release-2"},
+			expected: kubectl.ManifestList{
+				[]byte(serviceYaml),
+				[]byte(deploymentYaml),
+				[]byte(podYaml),
+			},
+		},
+		{
+			description: "get manifests for single release",
+			cmd:         &MockHelm{t: t},
+			runContext:  makeRunContext(testDeployConfig, false),
+			releases:    []string{"release-1"},
+			expected: kubectl.ManifestList{
+				[]byte(serviceYaml),
+				[]byte(deploymentYaml),
+			},
+		},
+		{
+			description: "get manifests for non existing release",
+			cmd:         &MockHelm{t: t},
+			runContext:  makeRunContext(testDeployWithMultipleReleases, false),
+			releases:    []string{"does-not-exist"},
+			expected:    kubectl.ManifestList{},
+		},
+		{
+			description: "get manifests for no releases",
+			cmd:         &MockHelm{t: t},
+			runContext:  makeRunContext(testDeployWithMultipleReleases, false),
+			releases:    []string{""},
+			expected:    kubectl.ManifestList{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			event.InitializeState(tt.runContext)
+			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+			util.DefaultExecCommand = tt.cmd
+			tt.cmd.(*MockHelm).getResultBytes = mockReleseInfo
+			h := NewHelmDeployer(tt.runContext)
+			actual := h.getManifestsFromReleases(context.Background(), tt.releases)
+			testutil.CheckDeepEqual(t, tt.expected.String(), actual.String())
+		})
+	}
+
+}
+
+var (
+	releaseMap = map[string]string{
+		"release-1": fmt.Sprintf(`---
+# Source: skaffold-helm/templates/service.yaml
+%s---
+# Source: skaffold-helm/templates/deployment.yaml
+%s---`, serviceYaml, deploymentYaml),
+		"release-2": fmt.Sprintf(`---
+		# Source: skaffold-helm/templates/service.yaml
+		%s---`, podYaml),
+	}
+)
+
+func mockReleseInfo(r string) (io.Reader, error) {
+	b, ok := releaseMap[r]
+	if !ok {
+		return nil, fmt.Errorf("not found release %s", r)
+	}
+	return strings.NewReader(b), nil
 }

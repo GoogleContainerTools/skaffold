@@ -23,8 +23,11 @@ import (
 	"strings"
 )
 
+// ManifestBytes is a list of yaml bytes.
+type ManifestBytes []byte
+
 // ManifestList is a list of yaml manifests.
-type ManifestList [][]byte
+type ManifestList []ManifestBytes
 
 func (l *ManifestList) String() string {
 	var str string

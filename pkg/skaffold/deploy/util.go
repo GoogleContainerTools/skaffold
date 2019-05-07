@@ -18,45 +18,30 @@ package deploy
 
 import (
 	"bufio"
-	"fmt"
+	"bytes"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/sirupsen/logrus"
 
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/kubernetes/scheme"
 )
 
-func parseRuntimeObject(namespace string, b []byte) (Artifact, error) {
-	d := scheme.Codecs.UniversalDeserializer()
-	obj, _, err := d.Decode(b, nil, nil)
-	if err != nil {
-		return Artifact{}, fmt.Errorf("error decoding parsed yaml: %s", err.Error())
-	}
-	return Artifact{
-		Obj:       obj,
-		Namespace: namespace,
-	}, nil
-}
-
-func parseReleaseInfo(namespace string, b *bufio.Reader) []Artifact {
-	results := []Artifact{}
+func parseReleaseInfo(b *bufio.Reader) kubectl.ManifestList {
 	r := k8syaml.NewYAMLReader(b)
+	var manifests kubectl.ManifestList
 	for {
-		doc, err := r.Read()
+		b, err := r.Read()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			logrus.Infof("error parsing object from string: %s", err.Error())
+			logrus.Infof("error reading line string: %s", err.Error())
 			continue
 		}
-		obj, err := parseRuntimeObject(namespace, doc)
-		if err != nil {
-			logrus.Infof(err.Error())
-		} else {
-			results = append(results, obj)
+		if i := bytes.Index(b, []byte("apiVersion")); i >= 0 {
+			manifests.Append(kubectl.ManifestBytes(b[i:]))
 		}
 	}
-	return results
+	return manifests
 }

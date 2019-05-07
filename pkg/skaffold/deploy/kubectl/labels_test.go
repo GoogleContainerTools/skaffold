@@ -23,7 +23,15 @@ import (
 )
 
 func TestSetLabels(t *testing.T) {
-	manifests := ManifestList{[]byte(`
+	var tests = []struct {
+		description string
+		manifests   ManifestList
+		expected    ManifestList
+		labels      map[string]string
+	}{
+		{
+			description: "set labels when no labels are present",
+			manifests: ManifestList{[]byte(`
 apiVersion: v1
 kind: Pod
 metadata:
@@ -31,10 +39,8 @@ metadata:
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/example
-    name: example
-`)}
-
-	expected := ManifestList{[]byte(`
+    name: example`)},
+			expected: ManifestList{[]byte(`
 apiVersion: v1
 kind: Pod
 metadata:
@@ -45,19 +51,14 @@ metadata:
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/example
-    name: example
-`)}
-
-	resultManifest, err := manifests.SetLabels(map[string]string{
-		"key1": "value1",
-		"key2": "value2",
-	})
-
-	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
-}
-
-func TestAddLabels(t *testing.T) {
-	manifests := ManifestList{[]byte(`
+    name: example`)},
+			labels: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+			},
+		}, {
+			description: "add labels to existing labels",
+			manifests: ManifestList{[]byte(`
 apiVersion: v1
 kind: Pod
 metadata:
@@ -68,10 +69,8 @@ metadata:
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/example
-    name: example
-`)}
-
-	expected := ManifestList{[]byte(`
+    name: example`)},
+			expected: ManifestList{[]byte(`
 apiVersion: v1
 kind: Pod
 metadata:
@@ -83,19 +82,14 @@ metadata:
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/example
-    name: example
-`)}
-
-	resultManifest, err := manifests.SetLabels(map[string]string{
-		"key1": "value1",
-		"key2": "value2",
-	})
-
-	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
-}
-
-func TestSetNoLabel(t *testing.T) {
-	manifests := ManifestList{[]byte(`
+    name: example`)},
+			labels: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+			},
+		}, {
+			description: "set no labels",
+			manifests: ManifestList{[]byte(`
 apiVersion: v1
 kind: Pod
 metadata:
@@ -103,10 +97,8 @@ metadata:
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/example
-    name: example
-`)}
-
-	expected := ManifestList{[]byte(`
+    name: example`)},
+			expected: ManifestList{[]byte(`
 apiVersion: v1
 kind: Pod
 metadata:
@@ -114,10 +106,47 @@ metadata:
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/example
-    name: example
-`)}
+    name: example`)},
+			labels: nil,
+		}, {
+			description: "adds labels recursively",
+			manifests: ManifestList{[]byte(`
+apiVersion: v1
+kind: Deployment
+metadata:
+  name: getting-started
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: skaffold-helm
+        release: skaffold-helm`)},
+			expected: ManifestList{[]byte(`
+apiVersion: v1
+kind: Deployment
+metadata:
+  labels:
+    key1: value1
+  name: getting-started
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: skaffold-helm
+        key1: value1
+        release: skaffold-helm`)},
+			labels: map[string]string{
+				"key1": "value1",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			actual, err := test.manifests.SetLabels(test.labels)
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected.String(), actual.String())
+		})
+	}
 
-	resultManifest, err := manifests.SetLabels(nil)
-
-	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
 }
