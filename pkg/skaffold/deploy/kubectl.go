@@ -117,6 +117,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	err = k.kubectl.Apply(ctx, out, manifests)
 	if err != nil {
 		event.DeployFailed(err)
+		return errors.Wrap(err, "kubectl error")
 	}
 
 	event.DeployComplete()
