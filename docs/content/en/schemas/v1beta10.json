@@ -1247,8 +1247,8 @@
       "properties": {
         "gcsBucket": {
           "type": "string",
-          "description": "CGS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources.",
-          "x-intellij-html-description": "CGS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources."
+          "description": "GCS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources.",
+          "x-intellij-html-description": "GCS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources."
         },
         "localDir": {
           "$ref": "#/definitions/LocalDir",

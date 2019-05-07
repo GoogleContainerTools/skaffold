@@ -205,7 +205,7 @@ type LocalDir struct {
 // KanikoBuildContext contains the different fields available to specify
 // a Kaniko build context.
 type KanikoBuildContext struct {
-	// GCSBucket is the CGS bucket to which sources are uploaded.
+	// GCSBucket is the GCS bucket to which sources are uploaded.
 	// Kaniko will need access to that bucket to download the sources.
 	GCSBucket string `yaml:"gcsBucket,omitempty" yamltags:"oneOf=buildContext"`
 
