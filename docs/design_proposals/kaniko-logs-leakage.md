@@ -64,8 +64,6 @@ Extra podGracePeriodSeconds field would be added, so that user can configure it.
 #1978
 
 
-Resolution: This is an implementation detail.
-
 ## Implementation plan
 
 1. Modify kaniko pod definition
