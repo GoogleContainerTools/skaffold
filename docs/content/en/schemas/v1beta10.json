@@ -1273,6 +1273,12 @@
           "description": "Docker image used by the Kaniko pod. Defaults to the latest released version of `gcr.io/kaniko-project/executor`.",
           "x-intellij-html-description": "Docker image used by the Kaniko pod. Defaults to the latest released version of <code>gcr.io/kaniko-project/executor</code>."
         },
+        "noPush": {
+          "type": "boolean",
+          "description": "used to pass in --no-push to kaniko build to prevent pushing to a registry.",
+          "x-intellij-html-description": "used to pass in --no-push to kaniko build to prevent pushing to a registry.",
+          "default": "false"
+        },
         "target": {
           "type": "string",
           "description": "Dockerfile target name to build.",
@@ -1286,7 +1292,8 @@
         "buildArgs",
         "buildContext",
         "image",
-        "cache"
+        "cache",
+        "noPush"
       ],
       "additionalProperties": false,
       "description": "*alpha* describes an artifact built from a Dockerfile, with kaniko.",
