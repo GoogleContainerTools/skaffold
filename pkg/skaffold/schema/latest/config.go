@@ -531,6 +531,11 @@ type Artifact struct {
 type Sync struct {
 	// Manual lists manual sync rules indicating the source and destination.
 	Manual []*SyncRule `yaml:"manual,omitempty" yamltags:"oneOf=sync"`
+
+	// Infer lists file patterns which may be synced into the container.
+	// The container destination is inferred by the builder.
+	// Currently only available for docker artifacts.
+	Infer []string `yaml:"infer,omitempty" yamltags:"oneOf=sync"`
 }
 
 // SyncRule specifies which local files to sync to remote folders.
