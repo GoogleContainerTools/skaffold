@@ -25,5 +25,5 @@ spec:
 ```
 
 {{< alert title="Note" >}}
-If port 8000 isn't available, another random port will be chosen.
+If port 8000 isn't available, another random port will be chosen. Currently, only containers that contain images specified as skaffold artifacts will be port forwarded. In other words, port forwarding will not work for containers which reference images not built by the skaffold itself (e.g. official images hosted on 3rd party container registries such as Docker Hub, docker.elastic.co, etc.). We're working on adding user defined port-forwarding, which would allow you to specify additional containers to port-forward.
 {{< /alert >}}
