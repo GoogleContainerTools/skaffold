@@ -8,7 +8,9 @@ build:
       buildArgs:
         SCRIPT: "{{.SCRIPT}}"
     sync:
-      '*.js': .
+      # Sync all the javascript files that are in the src folder 
+      # with the container src folder
+      'src/***/*.js': src/
 deploy:
   kubectl:
     manifests:
