@@ -1,7 +1,7 @@
 # Title
 
 * Author(s): Prashant Arya
-* Design Shepherd: 
+* Design Shepherd: Tejal Desai
 * Date: 3rd April 2018
 * Status: 
 
