@@ -63,6 +63,10 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 	args = appendTargetIfExists(args, kanikoArtifact.Target)
 	args = appendCacheIfExists(args, kanikoArtifact.Cache)
 
+	if kanikoArtifact.NoPush {
+		args = append(args, "--no-push")
+	}
+
 	if artifact.WorkspaceHash != "" {
 		hashTag := cache.HashTag(artifact)
 		args = append(args, []string{"--destination", hashTag}...)

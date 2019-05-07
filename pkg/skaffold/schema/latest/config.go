@@ -604,6 +604,9 @@ type KanikoArtifact struct {
 	// Cache configures Kaniko caching. If a cache is specified, Kaniko will
 	// use a remote cache which will speed up builds.
 	Cache *KanikoCache `yaml:"cache,omitempty"`
+
+	// NoPush used to pass in --no-push to kaniko build to prevent pushing to a registry.
+	NoPush bool `yaml:"noPush,omitempty"`
 }
 
 // DockerArtifact *beta* describes an artifact built from a Dockerfile,
