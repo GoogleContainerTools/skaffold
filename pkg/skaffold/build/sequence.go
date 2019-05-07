@@ -31,33 +31,15 @@ import (
 // InSequence builds a list of artifacts in sequence.
 func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]chan Result, error) {
 	resultChans := make([]chan Result, len(artifacts))
-	callbackChans := make([]chan bool, len(artifacts))
-
-	for i, a := range artifacts {
-		resultChan := make(chan Result, 1)
-		resultChans[i] = resultChan
-
-		// when the current build is done, it will send a signal on this channel.
-		// the next build will use this channel as a start signal for its build.
-		// this way, we can chain builds together.
-		callbackChan := make(chan bool, 1)
-		callbackChans[i] = callbackChan
-
-		// callback channel for the previous build. this callback tells us that the
-		// previous build is finished, so we're good to start the next one.
-		var startSignal chan bool
-		if i == 0 {
-			startSignal = make(chan bool, 1)
-			startSignal <- true // start signal for first build, since there is no previous build
-		} else {
-			startSignal = callbackChans[i-1]
-		}
-		go func(artifact *latest.Artifact, resultChan chan Result, doneChan chan bool, startSignal chan bool) {
-			<-startSignal // previous build is finished, so we can start this one
-			resultChan <- doBuild(ctx, out, tags, artifact, buildArtifact)
-			doneChan <- true
-		}(a, resultChan, callbackChan, startSignal)
+	for i := 0; i < len(artifacts); i++ {
+		resultChans[i] = make(chan Result, 1)
 	}
+
+	go func() {
+		for i, a := range artifacts {
+			resultChans[i] <- doBuild(ctx, out, tags, a, buildArtifact)
+		}
+	}()
 
 	return resultChans, nil
 }
