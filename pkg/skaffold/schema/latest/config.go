@@ -582,9 +582,6 @@ type DockerfileDependency struct {
 	// Path locates the Dockerfile relative to workspace.
 	Path string `yaml:"path,omitempty"`
 
-	// Target is the Dockerfile target name to build.
-	Target string `yaml:"target,omitempty"`
-
 	// BuildArgs are arguments passed to the docker build.
 	// It also accepts environment variables via the go template syntax.
 	// For example: `{"key1": "value1", "key2": "value2", "key3": "{{.ENV_VARIABLE}}"}`.
