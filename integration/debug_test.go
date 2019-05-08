@@ -22,7 +22,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 )
 
-func TestDebugKubectl(t *testing.T) {
+func TestDebug(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
@@ -38,10 +38,15 @@ func TestDebugKubectl(t *testing.T) {
 		remoteOnly  bool
 	}{
 		{
-			description: "jib",
+			description: "jib+kubectl",
 			dir:         "testdata/jib",
 			deployments: []string{"web"},
-			remoteOnly:  true,
+		},
+		{
+			description: "jib+kustomize",
+			args:        []string{"--profile", "kustomize"},
+			dir:         "testdata/jib",
+			deployments: []string{"web"},
 		},
 	}
 	for _, test := range tests {
