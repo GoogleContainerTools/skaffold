@@ -388,6 +388,13 @@ func TestValidateCustomDependencies(t *testing.T) {
 				Ignore: []string{"ignoreme"},
 			},
 			expectedErrors: 1,
+		}, {
+			description: "ignore in conjunction with command",
+			dependencies: &latest.CustomDependencies{
+				Command: "bazel query",
+				Ignore:  []string{"ignoreme"},
+			},
+			expectedErrors: 1,
 		},
 	}
 

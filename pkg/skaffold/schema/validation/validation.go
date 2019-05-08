@@ -71,7 +71,7 @@ func validateCustomDependencies(artifacts []*latest.Artifact) (errs []error) {
 		if a.CustomArtifact.Dependencies.Ignore == nil {
 			continue
 		}
-		if a.CustomArtifact.Dependencies.Dockerfile != nil {
+		if a.CustomArtifact.Dependencies.Dockerfile != nil || a.CustomArtifact.Dependencies.Command != "" {
 			errs = append(errs, fmt.Errorf("artifact %s has invalid dependencies; dependencies.ignore can only be used in conjunction with dependencies.paths", a.ImageName))
 		}
 	}

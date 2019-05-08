@@ -18,7 +18,10 @@ package custom
 
 import (
 	"context"
+	"encoding/json"
+	"os/exec"
 	"sort"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -32,6 +35,19 @@ func GetDependencies(ctx context.Context, workspace string, a *latest.CustomArti
 	case a.Dependencies.Dockerfile != nil:
 		dockerfile := a.Dependencies.Dockerfile
 		return docker.GetDependencies(ctx, workspace, dockerfile.Path, dockerfile.BuildArgs, insecureRegistries)
+
+	case a.Dependencies.Command != "":
+		split := strings.Split(a.Dependencies.Command, " ")
+		cmd := exec.CommandContext(ctx, split[0], split[1:]...)
+		output, err := cmd.Output()
+		if err != nil {
+			return nil, errors.Wrapf(err, "getting dependencies from command: %s", a.Dependencies.Command)
+		}
+		var deps []string
+		if err := json.Unmarshal(output, &deps); err != nil {
+			return nil, errors.Wrap(err, "unmarshalling dependency output into string array")
+		}
+		return deps, nil
 
 	default:
 		files, err := docker.WalkWorkspace(workspace, a.Dependencies.Ignore, a.Dependencies.Paths)
