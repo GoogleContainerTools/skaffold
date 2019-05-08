@@ -443,6 +443,20 @@ func TestValidateSyncRules(t *testing.T) {
 			},
 			shouldErr: true,
 		},
+		{
+			name: "stripping part of folder name is valid",
+			artifacts: []*latest.Artifact{
+				{
+					Sync: &latest.Sync{Manual: []*latest.SyncRule{
+						{
+							Src:   "srcsomeother/**/*.js",
+							Dest:  ".",
+							Strip: "src",
+						},
+					}},
+				},
+			},
+		},
 	}
 
 	// disable yamltags validation
