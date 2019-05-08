@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	incompatibleSyncWarning = `the semantics of the sync rules has changed, the folder structure is not flattened anymore but preserved, the likely impacted patterns in your skaffold yaml are: %s`
+	incompatibleSyncWarning = `The semantics of sync has changed, the folder structure is no longer flattened but preserved (see https://skaffold.dev/docs/how-tos/filesync/). The likely impacted patterns in your skaffold yaml are: %s`
 )
 
 // Upgrade upgrades a configuration to the next version.

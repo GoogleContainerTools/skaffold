@@ -19,8 +19,8 @@ This tar file is sent to and extracted on the corresponding containers.
 
 A manual sync rule must specify the `src` and `dest` field.
 The `src` field is a glob pattern to match files relative to the artifact _context_ directory, which may contain `**` to match nested files.
-The `dest` field is the destination location in the container.
-It may be absolute or relative, in which case files are put below the container's `WORKDIR`.
+The `dest` field is the absolute or relative destination path in the container.
+If the destination is a relative path, an absolute path will be inferred by prepending the path with the container's `WORKDIR`.
 By default, matched files are transplanted with their whole directory hierarchy below the artifact context directory onto the destination.
 The optional `strip` field can cut off some levels from the directory hierarchy.
 The following example showcases manual filesync:
