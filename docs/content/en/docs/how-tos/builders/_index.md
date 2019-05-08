@@ -254,10 +254,59 @@ Currently, this only works with the build type `local`. Supported schema for `cu
 
 
 `buildCommand` is *required* and points skaffold to the custom build script which will be executed to build the artifact.
+
+#### Dependencies for a Custom Artifact
+
 `dependencies` tells the skaffold file watcher which files should be watched to trigger rebuilds and file syncs.  Supported schema for `dependencies` includes:
 
 
 {{< schema root="CustomDependencies" >}}
+
+##### Paths and Ignore
+`Paths` and `Ignore` are arrays used to list dependencies. 
+Any paths in `Ignore` will be ignored by the skaffold file watcher, even if they are also specified in `Paths`.
+`Ignore` will only work in conjunction with `Paths`, and with none of the other custom artifact dependency types.
+
+```yaml
+custom:
+  buildCommand: ./build.sh
+  dependencies:
+    paths:
+    - pkg/**
+    - src/*.go
+    ignore:
+    - vendor/**
+```
+
+
+##### Dockerfile
+Skaffold can calculate dependencies from a Dockerfile for a custom artifact.
+Passing in the path to the Dockerfile and any build args, if necessary, will allow skaffold to do dependency calculation.
+
+{{< schema root="DockerfileDependency" >}}
+
+```yaml
+custom:
+  buildCommand: ./build.sh
+  dependencies:
+    dockerfile:
+      path: path/to/Dockerfile
+      buildArgs:
+        file: foo
+```
+
+##### Custom Command
+Skaffold can execute a custom command, which will return dependencies for the artifact.
+The command *must* return dependencies as a JSON array, otherwise skaffold will error out.
+
+For example, the following configuration is valid, as executing the dependency command returns a valid JSON array.
+
+```yaml
+custom:
+  buildCommand: ./build.sh
+  dependencies:
+    command: echo ["file1","file2","file3"]
+```
 
 #### Custom Build Scripts and File Sync
 Syncable files must be included in both the `paths` section of `dependencies`, so that the skaffold file watcher knows to watch them, and the `sync` section, so that skaffold knows to sync them.  

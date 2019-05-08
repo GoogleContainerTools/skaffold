@@ -595,6 +595,11 @@
     },
     "CustomDependencies": {
       "properties": {
+        "command": {
+          "type": "string",
+          "description": "represents a custom command that skaffold executes to obtain dependencies. The output of this command *must* be a valid JSON array.",
+          "x-intellij-html-description": "represents a custom command that skaffold executes to obtain dependencies. The output of this command <em>must</em> be a valid JSON array."
+        },
         "dockerfile": {
           "$ref": "#/definitions/DockerfileDependency",
           "description": "should be set if the artifact is built from a Dockerfile, from which skaffold can determine dependencies.",
@@ -621,6 +626,7 @@
       },
       "preferredOrder": [
         "dockerfile",
+        "command",
         "paths",
         "ignore"
       ],
