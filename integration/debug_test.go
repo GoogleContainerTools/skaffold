@@ -35,7 +35,6 @@ func TestDebug(t *testing.T) {
 		deployments []string
 		pods        []string
 		env         []string
-		remoteOnly  bool
 	}{
 		{
 			description: "jib+kubectl",
