@@ -42,7 +42,6 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	resultChan := make(chan Result, len(artifacts))
 
 	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 
 	// for collecting all output and printing in order later on
 	outputs := make([]chan []byte, len(artifacts))
@@ -116,6 +115,7 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	}
 
 	go func() {
+		defer cancel()
 		for i := range artifacts {
 			for line := range outputs[i] {
 				out.Write(line)
