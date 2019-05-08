@@ -1,4 +1,4 @@
-apiVersion: skaffold/v1beta13
+apiVersion: skaffold/v1beta12
 kind: Config
 build:
   tagPolicy:
@@ -7,9 +7,8 @@ build:
   - image: gcr.io/k8s-skaffold/test-file-sync
     context: .
     sync:
-      manual:
-      - src: '**/foo*'
-        dest: /test
+      infer:
+      - '**/foo*'
 deploy:
  kubectl:
    manifests:

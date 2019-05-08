@@ -32,14 +32,22 @@ func TestDevSync(t *testing.T) {
 	tests := []struct {
 		description string
 		trigger     string
+		config      string
 	}{
 		{
-			description: "sync with polling trigger",
+			description: "manual sync with polling trigger",
 			trigger:     "polling",
+			config:      "skaffold-manual.yaml",
 		},
 		{
-			description: "sync with notify trigger",
+			description: "manual sync with notify trigger",
 			trigger:     "notify",
+			config:      "skaffold-manual.yaml",
+		},
+		{
+			description: "inferred sync with notify trigger",
+			trigger:     "notify",
+			config:      "skaffold-infer.yaml",
 		},
 	}
 	for _, test := range tests {
@@ -52,12 +60,12 @@ func TestDevSync(t *testing.T) {
 			}
 
 			// Run skaffold build first to fail quickly on a build failure
-			skaffold.Build().InDir("testdata/file-sync").RunOrFail(t)
+			skaffold.Build().InDir("testdata/file-sync").WithConfig(test.config).RunOrFail(t)
 
 			ns, client, deleteNs := SetupNamespace(t)
 			defer deleteNs()
 
-			stop := skaffold.Dev("--trigger", test.trigger).InDir("testdata/file-sync").InNs(ns.Name).RunBackground(t)
+			stop := skaffold.Dev("--trigger", test.trigger).InDir("testdata/file-sync").WithConfig(test.config).InNs(ns.Name).RunBackground(t)
 			defer stop()
 
 			client.WaitForPodsReady("test-file-sync")
