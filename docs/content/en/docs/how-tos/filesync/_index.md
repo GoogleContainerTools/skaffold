@@ -42,6 +42,9 @@ And a `skaffold.yaml` with the following sync configuration:
 - The third rule synchronizes any `png`. For example if `assest/img.png` ↷ `assets/img.png` or `static-html/imgs/demo.png` ↷ `static/imgs/demo.png`.
 - The last rule enables synchronization for all `md` files below the `content/en`.
   For example, `content/en/sub/index.md` ↷ `content/sub/index.md` but _not_ `content/en_GB/index.md`.
+  
+Inferred sync mode only applies to modified and added files.
+File deletion will always cause a complete rebuild.
 
 ### Manual sync mode
 
