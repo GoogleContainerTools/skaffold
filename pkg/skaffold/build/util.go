@@ -16,8 +16,6 @@ limitations under the License.
 
 package build
 
-import "sync"
-
 // MergeWithPreviousBuilds merges previous or prebuilt build artifacts with
 // builds. If an artifact is already present in builds, the same artifact from
 // previous will be ignored.
@@ -39,18 +37,10 @@ func MergeWithPreviousBuilds(builds []Artifact, previous []Artifact) []Artifact 
 	return merged
 }
 
-func CollectResultsFromChannels(channels []chan Result) []Result {
-	results := make([]Result, len(channels))
-
-	wg := &sync.WaitGroup{}
-	for i, c := range channels {
-		wg.Add(1)
-		go func(i int, c chan Result) {
-			defer wg.Done()
-			res := <-c
-			results[i] = res
-		}(i, c)
+func CollectResultsFromChannels(resultChannel chan Result) []Result {
+	var results []Result
+	for result := range resultChannel {
+		results = append(results, result)
 	}
-	wg.Wait()
 	return results
 }

@@ -34,12 +34,12 @@ const bufferedLinesPerArtifact = 10000
 type artifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error)
 
 // InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
-func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]chan Result, error) {
+func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) (chan Result, error) {
 	if len(artifacts) == 1 {
 		return InSequence(ctx, out, tags, artifacts, buildArtifact)
 	}
 
-	resultChans := make([]chan Result, len(artifacts))
+	resultChan := make(chan Result, len(artifacts))
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -47,15 +47,16 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	// for collecting all output and printing in order later on
 	outputs := make([]chan []byte, len(artifacts))
 
-	for i, a := range artifacts {
-		resChan := make(chan Result, 1)
-		resultChans[i] = resChan
+	allBuildsWg := &sync.WaitGroup{}
 
+	for i, a := range artifacts {
 		// give each build a byte buffer to write its output to
 		lines := make(chan []byte, bufferedLinesPerArtifact)
 		outputs[i] = lines
 
+		allBuildsWg.Add(1)
 		go func(artifact *latest.Artifact, c chan Result, lines chan []byte) {
+			defer allBuildsWg.Done()
 			res := &Result{
 				Target: *artifact,
 			}
@@ -110,15 +111,19 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 			}()
 
 			wg.Wait() // wait for build to finish and output to be processed
-			c <- *res // send the result back through the callback channel
-		}(a, resChan, lines)
+			c <- *res // send the result back through the results channel
+		}(a, resultChan, lines)
 	}
 
-	for i := range artifacts {
-		for line := range outputs[i] {
-			out.Write(line)
-			fmt.Fprintln(out)
+	go func() {
+		for i := range artifacts {
+			for line := range outputs[i] {
+				out.Write(line)
+				fmt.Fprintln(out)
+			}
 		}
-	}
-	return resultChans, nil
+		allBuildsWg.Wait()
+		close(resultChan)
+	}()
+	return resultChan, nil
 }

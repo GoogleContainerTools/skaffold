@@ -70,7 +70,7 @@ func (t *TestBench) enterNewCycle() {
 	t.currentActions = Actions{}
 }
 
-func (t *TestBench) Build(ctx context.Context, w io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]chan build.Result, error) {
+func (t *TestBench) Build(ctx context.Context, w io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) (chan build.Result, error) {
 	if len(t.buildErrors) > 0 {
 		err := t.buildErrors[0]
 		t.buildErrors = t.buildErrors[1:]
@@ -82,11 +82,8 @@ func (t *TestBench) Build(ctx context.Context, w io.Writer, tags tag.ImageTags, 
 	t.tag++
 
 	var results []build.Result
-	var resultChannels []chan build.Result
+	resultChan := make(chan build.Result, len(artifacts))
 	for _, artifact := range artifacts {
-		resultChan := make(chan build.Result, 1)
-		resultChannels = append(resultChannels, resultChan)
-
 		res := build.Result{
 			Target: *artifact,
 			Result: build.Artifact{
@@ -96,11 +93,10 @@ func (t *TestBench) Build(ctx context.Context, w io.Writer, tags tag.ImageTags, 
 		}
 		resultChan <- res
 		results = append(results, res)
-		close(resultChan)
 	}
-
+	close(resultChan)
 	t.currentActions.Built = findTagsForResults(results)
-	return resultChannels, nil
+	return resultChan, nil
 }
 
 func (t *TestBench) Sync(ctx context.Context, item *sync.Item) error {

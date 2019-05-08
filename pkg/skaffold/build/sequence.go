@@ -29,19 +29,17 @@ import (
 )
 
 // InSequence builds a list of artifacts in sequence.
-func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]chan Result, error) {
-	resultChans := make([]chan Result, len(artifacts))
-	for i := 0; i < len(artifacts); i++ {
-		resultChans[i] = make(chan Result, 1)
-	}
+func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) (chan Result, error) {
+	resultChan := make(chan Result, len(artifacts))
 
 	go func() {
-		for i, a := range artifacts {
-			resultChans[i] <- doBuild(ctx, out, tags, a, buildArtifact)
+		for _, a := range artifacts {
+			resultChan <- doBuild(ctx, out, tags, a, buildArtifact)
 		}
+		close(resultChan)
 	}()
 
-	return resultChans, nil
+	return resultChan, nil
 }
 
 func doBuild(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact *latest.Artifact, buildArtifact artifactBuilder) Result {
