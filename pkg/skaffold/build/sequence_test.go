@@ -149,18 +149,21 @@ func TestInSequence(t *testing.T) {
 				Opts: &config.SkaffoldOptions{},
 			})
 
-			buildResultChannels, err := InSequence(context.Background(), out, test.tags, artifacts, test.buildArtifact)
+			ch := make(chan Result)
+			results, err := InSequence(context.Background(), out, test.tags, artifacts, test.buildArtifact, ch)
+			// Wait for all results
+			for i := 0; i < len(artifacts); i++ {
+				<-ch
+			}
 			testutil.CheckError(t, test.shouldErr, err)
 
-			res := CollectResultsFromChannels(buildResultChannels)
-
-			fmt.Fprintf(os.Stdout, "final build results: %+v\n", res)
+			fmt.Fprintf(os.Stdout, "final build results: %+v\n", results)
 
 			// build results are returned in a list, of which we can't guarantee order.
 			// loop through the expected results, and find the matching build result by target artifact.
 			found := false
 			for _, testRes := range test.expectedResults {
-				for _, buildRes := range res {
+				for _, buildRes := range results {
 					if buildRes.Target.ImageName == testRes.buildResult.Target.ImageName {
 						found = true
 						// the embedded error in the build result contains a stack trace which we can't reproduce.

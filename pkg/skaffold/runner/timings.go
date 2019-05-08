@@ -54,14 +54,14 @@ func (w withTimings) Labels() map[string]string {
 	return labels.Merge(w.Builder.Labels(), w.Deployer.Labels())
 }
 
-func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]chan build.Result, error) {
+func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, ch chan build.Result) ([]build.Result, error) {
 	if len(artifacts) == 0 && w.cacheArtifacts {
 		return nil, nil
 	}
 	start := time.Now()
 	color.Default.Fprintln(out, "Starting build...")
 
-	bRes, err := w.Builder.Build(ctx, out, tags, artifacts)
+	bRes, err := w.Builder.Build(ctx, out, tags, artifacts, ch)
 
 	color.Default.Fprintln(out, "Build complete in", time.Since(start))
 	return bRes, err

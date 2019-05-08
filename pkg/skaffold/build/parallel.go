@@ -34,31 +34,28 @@ const bufferedLinesPerArtifact = 10000
 type artifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error)
 
 // InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
-func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]chan Result, error) {
+func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder, ch chan Result) ([]Result, error) {
 	if len(artifacts) == 1 {
-		return InSequence(ctx, out, tags, artifacts, buildArtifact)
+		return InSequence(ctx, out, tags, artifacts, buildArtifact, ch)
 	}
-
-	resultChans := make([]chan Result, len(artifacts))
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	// for collecting all output and printing in order later on
 	outputs := make([]chan []byte, len(artifacts))
+	results := make([]Result, len(artifacts))
+	var mutex = &sync.Mutex{}
 
 	for i, a := range artifacts {
-		resChan := make(chan Result, 1)
-		resultChans[i] = resChan
-
 		// give each build a byte buffer to write its output to
 		lines := make(chan []byte, bufferedLinesPerArtifact)
 		outputs[i] = lines
+		results[i] = Result{
+			Target: *artifacts[i],
+		}
 
-		go func(artifact *latest.Artifact, c chan Result, lines chan []byte) {
-			res := &Result{
-				Target: *artifact,
-			}
+		go func(artifact *latest.Artifact, res *Result, c chan Result, lines chan []byte) {
 			wg := &sync.WaitGroup{}
 
 			r, w := io.Pipe()
@@ -110,8 +107,10 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 			}()
 
 			wg.Wait() // wait for build to finish and output to be processed
+			mutex.Lock()
 			c <- *res // send the result back through the callback channel
-		}(a, resChan, lines)
+			mutex.Unlock()
+		}(a, &results[i], ch, lines)
 	}
 
 	for i := range artifacts {
@@ -120,5 +119,5 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 			fmt.Fprintln(out)
 		}
 	}
-	return resultChans, nil
+	return results, nil
 }

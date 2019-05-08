@@ -141,16 +141,20 @@ func TestInParallel(t *testing.T) {
 				Opts: &config.SkaffoldOptions{},
 			})
 
-			buildResultChannels, err := InParallel(context.Background(), out, test.tags, artifacts, test.buildArtifact)
-			testutil.CheckError(t, test.shouldErr, err)
+			ch := make(chan Result)
+			results, err := InParallel(context.Background(), out, test.tags, artifacts, test.buildArtifact, ch)
+			// Wait for all results
+			for i := 0; i < len(artifacts); i++ {
+				<-ch
+			}
 
-			res := CollectResultsFromChannels(buildResultChannels)
+			testutil.CheckError(t, test.shouldErr, err)
 
 			// build results are returned in a list, of which we can't guarantee order.
 			// loop through the expected results, and find the matching build result by target artifact.
 			found := false
 			for _, testRes := range test.expectedResults {
-				for _, buildRes := range res {
+				for _, buildRes := range results {
 					if buildRes.Target.ImageName == testRes.buildResult.Target.ImageName {
 						found = true
 						// the embedded error in the build result contains a stack trace which we can't reproduce.

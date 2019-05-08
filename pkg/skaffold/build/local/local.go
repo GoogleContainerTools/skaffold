@@ -37,14 +37,14 @@ import (
 
 // Build runs a docker build on the host and tags the resulting image with
 // its checksum. It streams build progress to the writer argument.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]chan build.Result, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, ch chan build.Result) ([]build.Result, error) {
 	if b.localCluster {
 		color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext)
 	}
 	defer b.localDocker.Close()
 
 	// TODO(dgageot): parallel builds
-	return build.InSequence(ctx, out, tags, artifacts, b.buildArtifact)
+	return build.InSequence(ctx, out, tags, artifacts, b.buildArtifact, ch)
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {

@@ -374,8 +374,12 @@ func TestLocalRun(t *testing.T) {
 				pushImages:  test.pushImages,
 			}
 
-			buildResultChannels, err := l.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
-			res := build.CollectResultsFromChannels(buildResultChannels)
+			ch := make(chan build.Result)
+			res, err := l.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts, ch)
+			// Wait for all results
+			for i := 0; i < len(test.artifacts); i++ {
+				<-ch
+			}
 
 			// none of these tests should fail before the builds start. assert that err is nil here first.
 			testutil.CheckError(t, test.shouldErr, err)

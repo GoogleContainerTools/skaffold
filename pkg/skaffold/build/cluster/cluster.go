@@ -27,7 +27,7 @@ import (
 )
 
 // Build builds a list of artifacts with Kaniko.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]chan build.Result, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, ch chan build.Result) ([]build.Result, error) {
 	teardownPullSecret, err := b.setupPullSecret(out)
 	if err != nil {
 		return nil, errors.Wrap(err, "setting up pull secret for kaniko build")
@@ -42,7 +42,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 		defer teardownDockerConfigSecret()
 	}
 
-	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifactWithKaniko)
+	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifactWithKaniko, ch)
 }
 
 func (b *Builder) buildArtifactWithKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
