@@ -74,8 +74,8 @@ var (
 	// BuildContext is the absolute path to a directory this artifact is meant to be built from for custom artifacts
 	BuildContext = "BUILD_CONTEXT"
 
-	// Kubecontext is the expected kubecontext to build an artifact with a custom build script on cluster
-	Kubecontext = "KUBE_CONTEXT"
+	// KubeContext is the expected kubecontext to build an artifact with a custom build script on cluster
+	KubeContext = "KUBE_CONTEXT"
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}

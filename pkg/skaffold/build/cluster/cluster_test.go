@@ -49,10 +49,10 @@ func TestSplitArtifacts(t *testing.T) {
 		},
 	}
 
-	bazelArtifact := &latest.Artifact{
+	customArtifact := &latest.Artifact{
 		ArtifactType: latest.ArtifactType{
-			BazelArtifact: &latest.BazelArtifact{
-				BuildTarget: "://target",
+			CustomArtifact: &latest.CustomArtifact{
+				BuildCommand: "./build.sh",
 			},
 		},
 	}
@@ -74,21 +74,21 @@ func TestSplitArtifacts(t *testing.T) {
 		}, {
 			description: "all other",
 			artifacts: []*latest.Artifact{
-				bazelArtifact, dockerArtifact,
+				customArtifact, dockerArtifact,
 			},
 			expectedOther: []*latest.Artifact{
-				bazelArtifact, dockerArtifact,
+				customArtifact, dockerArtifact,
 			},
 		}, {
 			description: "mixture of kaniko and other",
 			artifacts: []*latest.Artifact{
-				kanikoOne, kanikoTwo, bazelArtifact, dockerArtifact,
+				kanikoOne, kanikoTwo, customArtifact, dockerArtifact,
 			},
 			expectedKaniko: []*latest.Artifact{
 				kanikoOne, kanikoTwo,
 			},
 			expectedOther: []*latest.Artifact{
-				bazelArtifact, dockerArtifact,
+				customArtifact, dockerArtifact,
 			},
 		},
 	}

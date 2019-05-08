@@ -76,7 +76,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 }
 
 func (b *Builder) buildArtifactWithCustomBuilder(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	extraEnv := []string{fmt.Sprintf("%s=%s", constants.Kubecontext, b.kubeContext)}
+	extraEnv := []string{fmt.Sprintf("%s=%s", constants.KubeContext, b.kubeContext)}
 	customArtifactBuilder := custom.NewArtifactBuilder(true, extraEnv)
 	if err := customArtifactBuilder.Build(ctx, out, artifact, tag); err != nil {
 		return "", errors.Wrapf(err, "building custom artifact %s", artifact.ImageName)
