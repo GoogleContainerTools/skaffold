@@ -566,12 +566,26 @@ type CustomArtifact struct {
 }
 
 // CustomDependencies *alpha* is used to specify dependencies for an artifact built by a custom build script.
+// Either `dockerfile` or `paths` should be specified for file watching to work as expected.
 type CustomDependencies struct {
+	// Dockerfile should be set if the artifact is built from a Dockerfile, from which skaffold can determine dependencies.
+	Dockerfile *DockerfileDependency `yaml:"dockerfile,omitempty" yamltags:"oneOf=dependency"`
 	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.
 	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
 	// Ignore specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.
 	// Will only work in conjunction with `paths`.
 	Ignore []string `yaml:"ignore,omitempty"`
+}
+
+// DockerfileDependency *alpha* is used to specify a custom build artifact that is built from a Dockerfile. This allows skaffold to determine dependencies from the Dockerfile.
+type DockerfileDependency struct {
+	// Path locates the Dockerfile relative to workspace.
+	Path string `yaml:"path,omitempty"`
+
+	// BuildArgs are arguments passed to the docker build.
+	// It also accepts environment variables via the go template syntax.
+	// For example: `{"key1": "value1", "key2": "value2", "key3": "{{.ENV_VARIABLE}}"}`.
+	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 }
 
 // KanikoArtifact *alpha* describes an artifact built from a Dockerfile,
