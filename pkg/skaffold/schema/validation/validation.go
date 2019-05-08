@@ -34,6 +34,7 @@ var (
 func Process(config *latest.SkaffoldConfig) error {
 	errs := visitStructs(config, validateYamltags)
 	errs = append(errs, validateDockerNetworkMode(config.Build.Artifacts)...)
+	errs = append(errs, validateCustomDependencies(config.Build.Artifacts)...)
 	errs = append(errs, validateSyncRules(config.Build.Artifacts)...)
 
 	if len(errs) == 0 {
@@ -58,6 +59,22 @@ func validateDockerNetworkMode(artifacts []*latest.Artifact) (errs []error) {
 			continue
 		}
 		errs = append(errs, fmt.Errorf("artifact %s has invalid networkMode '%s'", a.ImageName, mode))
+	}
+	return
+}
+
+// validateCustomDependencies makes sure that dependencies.ignore is only used in conjunction with dependencies.paths
+func validateCustomDependencies(artifacts []*latest.Artifact) (errs []error) {
+	for _, a := range artifacts {
+		if a.CustomArtifact == nil {
+			continue
+		}
+		if a.CustomArtifact.Dependencies.Ignore == nil {
+			continue
+		}
+		if a.CustomArtifact.Dependencies.Dockerfile != nil {
+			errs = append(errs, fmt.Errorf("artifact %s has invalid dependencies; dependencies.ignore can only be used in conjunction with dependencies.paths", a.ImageName))
+		}
 	}
 	return
 }

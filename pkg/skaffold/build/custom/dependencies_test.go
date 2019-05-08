@@ -25,7 +25,40 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGetDependencies(t *testing.T) {
+func TestGetDependenciesDockerfile(t *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+
+	// Directory structure:
+	//   foo
+	//   bar
+	// - baz
+	//     file
+	//   Dockerfile
+	tmpDir.Write("foo", "")
+	tmpDir.Write("bar", "")
+	tmpDir.Mkdir("baz")
+	tmpDir.Write("baz/file", "")
+	tmpDir.Write("Dockerfile", "FROM scratch \n ARG file \n COPY $file baz/file .")
+
+	customArtifact := &latest.CustomArtifact{
+		Dependencies: &latest.CustomDependencies{
+			Dockerfile: &latest.DockerfileDependency{
+				Path: "Dockerfile",
+				BuildArgs: map[string]*string{
+					"file": stringPointer("foo"),
+				},
+			},
+		},
+	}
+
+	expected := []string{"Dockerfile", filepath.FromSlash("baz/file"), "foo"}
+	deps, err := GetDependencies(context.Background(), tmpDir.Root(), customArtifact, nil)
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected, deps)
+}
+
+func TestGetDependenciesPaths(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
@@ -66,9 +99,13 @@ func TestGetDependencies(t *testing.T) {
 					Paths:  test.paths,
 					Ignore: test.ignore,
 				},
-			})
+			}, nil)
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, deps)
 		})
 	}
 
+}
+
+func stringPointer(s string) *string {
+	return &s
 }

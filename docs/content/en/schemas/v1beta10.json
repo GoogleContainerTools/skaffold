@@ -546,6 +546,11 @@
     },
     "CustomDependencies": {
       "properties": {
+        "dockerfile": {
+          "$ref": "#/definitions/DockerfileDependency",
+          "description": "should be set if the artifact is built from a Dockerfile, from which skaffold can determine dependencies.",
+          "x-intellij-html-description": "should be set if the artifact is built from a Dockerfile, from which skaffold can determine dependencies."
+        },
         "ignore": {
           "items": {
             "type": "string"
@@ -566,12 +571,13 @@
         }
       },
       "preferredOrder": [
+        "dockerfile",
         "paths",
         "ignore"
       ],
       "additionalProperties": false,
-      "description": "*alpha* used to specify dependencies for an artifact built by a custom build script.",
-      "x-intellij-html-description": "<em>alpha</em> used to specify dependencies for an artifact built by a custom build script."
+      "description": "*alpha* used to specify dependencies for an artifact built by a custom build script. Either `dockerfile` or `paths` should be specified for file watching to work as expected.",
+      "x-intellij-html-description": "<em>alpha</em> used to specify dependencies for an artifact built by a custom build script. Either <code>dockerfile</code> or <code>paths</code> should be specified for file watching to work as expected."
     },
     "DateTimeTagger": {
       "properties": {
@@ -724,6 +730,34 @@
       "additionalProperties": false,
       "description": "contains information about the docker `config.json` to mount.",
       "x-intellij-html-description": "contains information about the docker <code>config.json</code> to mount."
+    },
+    "DockerfileDependency": {
+      "properties": {
+        "buildArgs": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
+          "x-intellij-html-description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
+          "default": "{}",
+          "examples": [
+            "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"{{.ENV_VARIABLE}}\"}"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "description": "locates the Dockerfile relative to workspace.",
+          "x-intellij-html-description": "locates the Dockerfile relative to workspace."
+        }
+      },
+      "preferredOrder": [
+        "path",
+        "buildArgs"
+      ],
+      "additionalProperties": false,
+      "description": "*alpha* used to specify a custom build artifact that is built from a Dockerfile. This allows skaffold to determine dependencies from the Dockerfile.",
+      "x-intellij-html-description": "<em>alpha</em> used to specify a custom build artifact that is built from a Dockerfile. This allows skaffold to determine dependencies from the Dockerfile."
     },
     "EnvTemplateTagger": {
       "required": [
