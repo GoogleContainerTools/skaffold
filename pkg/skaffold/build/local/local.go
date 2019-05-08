@@ -124,7 +124,7 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 		paths, err = jib.GetDependenciesGradle(ctx, a.Workspace, a.JibGradleArtifact)
 
 	case a.CustomArtifact != nil:
-		paths, err = custom.GetDependencies(ctx, a.Workspace, a.CustomArtifact)
+		paths, err = custom.GetDependencies(ctx, a.Workspace, a.CustomArtifact, b.insecureRegistries)
 
 	default:
 		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)

@@ -569,22 +569,33 @@ func TestExtractChartFilename(t *testing.T) {
 
 func TestHelmDependencies(t *testing.T) {
 	var tests = []struct {
-		description string
-		files       []string
-		valuesFiles []string
-		expected    func(folder *testutil.TempDir) []string
+		description           string
+		files                 []string
+		valuesFiles           []string
+		skipBuildDependencies bool
+		expected              func(folder *testutil.TempDir) []string
 	}{
 		{
-			description: "charts dir is excluded",
-			files:       []string{"Chart.yaml", "charts/xyz.tar", "templates/deploy.yaml"},
+			description:           "charts dir is included when skipBuildDependencies is true",
+			files:                 []string{"Chart.yaml", "charts/xyz.tar", "templates/deploy.yaml"},
+			skipBuildDependencies: true,
+			expected: func(folder *testutil.TempDir) []string {
+				return []string{folder.Path("Chart.yaml"), folder.Path("charts/xyz.tar"), folder.Path("templates/deploy.yaml")}
+			},
+		},
+		{
+			description:           "charts dir is excluded when skipBuildDependencies is false",
+			files:                 []string{"Chart.yaml", "charts/xyz.tar", "templates/deploy.yaml"},
+			skipBuildDependencies: false,
 			expected: func(folder *testutil.TempDir) []string {
 				return []string{folder.Path("Chart.yaml"), folder.Path("templates/deploy.yaml")}
 			},
 		},
 		{
-			description: "values file is included",
-			files:       []string{"Chart.yaml"},
-			valuesFiles: []string{"/folder/values.yaml"},
+			description:           "values file is included",
+			skipBuildDependencies: false,
+			files:                 []string{"Chart.yaml"},
+			valuesFiles:           []string{"/folder/values.yaml"},
 			expected: func(folder *testutil.TempDir) []string {
 				return []string{"/folder/values.yaml", folder.Path("Chart.yaml")}
 			},
@@ -601,12 +612,13 @@ func TestHelmDependencies(t *testing.T) {
 			deployer := NewHelmDeployer(makeRunContext(&latest.HelmDeploy{
 				Releases: []latest.HelmRelease{
 					{
-						Name:        "skaffold-helm",
-						ChartPath:   folder.Root(),
-						ValuesFiles: tt.valuesFiles,
-						Values:      map[string]string{"image": "skaffold-helm"},
-						Overrides:   schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-						SetValues:   map[string]string{"some.key": "somevalue"},
+						Name:                  "skaffold-helm",
+						ChartPath:             folder.Root(),
+						ValuesFiles:           tt.valuesFiles,
+						Values:                map[string]string{"image": "skaffold-helm"},
+						Overrides:             schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+						SetValues:             map[string]string{"some.key": "somevalue"},
+						SkipBuildDependencies: tt.skipBuildDependencies,
 					},
 				},
 			}, false))
