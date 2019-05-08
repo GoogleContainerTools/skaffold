@@ -61,6 +61,11 @@ func Deploy(args ...string) *RunBuilder {
 	return &RunBuilder{command: "deploy", args: args}
 }
 
+// Debug runs `skaffold debug` with the given arguments.
+func Debug(args ...string) *RunBuilder {
+	return &RunBuilder{command: "debug", args: args}
+}
+
 // Run runs `skaffold run` with the given arguments.
 func Run(args ...string) *RunBuilder {
 	return &RunBuilder{command: "run", args: args}
@@ -172,7 +177,7 @@ func (b *RunBuilder) RunOrFailOutput(t *testing.T) []byte {
 	logrus.Infoln(cmd.Args)
 
 	start := time.Now()
-	out, err := cmd.Output()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("skaffold %s: %v, %s", b.command, err, out)
 	}
