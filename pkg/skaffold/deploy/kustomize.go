@@ -121,7 +121,7 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 	}
 
 	for _, transform := range manifestTransforms {
-		manifests, err = transform(manifests, builds, nil) // fixme: k.insecureRegistries?
+		manifests, err = transform(manifests, builds, k.insecureRegistries)
 		if err != nil {
 			return errors.Wrap(err, "debug transform of manifests")
 		}
