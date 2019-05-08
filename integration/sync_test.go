@@ -18,6 +18,8 @@ package integration
 
 import (
 	"context"
+	"io/ioutil"
+	"os"
 	"os/exec"
 	"testing"
 	"time"
@@ -70,13 +72,12 @@ func TestDevSync(t *testing.T) {
 
 			client.WaitForPodsReady("test-file-sync")
 
-			Run(t, "testdata/file-sync", "mkdir", "-p", "test")
-			Run(t, "testdata/file-sync", "touch", "test/foobar")
-			defer Run(t, "testdata/file-sync", "rm", "-rf", "test")
+			ioutil.WriteFile("testdata/file-sync/foo", []byte("foo"), 0644)
+			defer func() { os.Truncate("testdata/file-sync/foo", 0) }()
 
 			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
-				_, err := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "ls", "/test").Output()
-				return err == nil, nil
+				out, _ := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "cat", "foo").Output()
+				return string(out) == "foo", nil
 			})
 			testutil.CheckError(t, false, err)
 		})
