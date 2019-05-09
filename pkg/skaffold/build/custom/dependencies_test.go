@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -59,6 +60,13 @@ func TestGetDependenciesDockerfile(t *testing.T) {
 }
 
 func TestGetDependenciesCommand(t *testing.T) {
+
+	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
+		"echo [\"file1\",\"file2\",\"file3\"]",
+		"[\"file1\",\"file2\",\"file3\"]",
+	)
+
 	customArtifact := &latest.CustomArtifact{
 		Dependencies: &latest.CustomDependencies{
 			Command: "echo [\"file1\",\"file2\",\"file3\"]",

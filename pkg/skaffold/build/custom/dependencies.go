@@ -25,6 +25,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
@@ -39,7 +40,7 @@ func GetDependencies(ctx context.Context, workspace string, a *latest.CustomArti
 	case a.Dependencies.Command != "":
 		split := strings.Split(a.Dependencies.Command, " ")
 		cmd := exec.CommandContext(ctx, split[0], split[1:]...)
-		output, err := cmd.Output()
+		output, err := util.RunCmdOut(cmd)
 		if err != nil {
 			return nil, errors.Wrapf(err, "getting dependencies from command: %s", a.Dependencies.Command)
 		}
