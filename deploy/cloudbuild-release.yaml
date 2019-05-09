@@ -37,6 +37,7 @@ steps:
 
 images:
 - 'gcr.io/$PROJECT_ID/skaffold-builder:latest'
+- 'gcr.io/$PROJECT_ID/skaffold:latest'
 - 'gcr.io/$PROJECT_ID/skaffold:$TAG_NAME'
 
 options:

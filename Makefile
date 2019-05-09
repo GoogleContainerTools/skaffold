@@ -100,6 +100,7 @@ release: cross $(BUILD_DIR)/VERSION
         		-f deploy/skaffold/Dockerfile \
         		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
         		--build-arg VERSION=$(VERSION) \
+        		-t gcr.io/$(GCP_PROJECT)/skaffold:latest \
         		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) .
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_RELEASE_PATH)/
 	gsutil -m cp $(BUILD_DIR)/VERSION $(GSC_RELEASE_PATH)/VERSION
@@ -122,7 +123,7 @@ release-build: cross
 	docker build \
     		-f deploy/skaffold/Dockerfile \
     		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
-    		-t gcr.io/$(GCP_PROJECT)/skaffold:latest \
+    		-t gcr.io/$(GCP_PROJECT)/skaffold:edge \
     		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) .
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_BUILD_PATH)/
 	gsutil -m cp -r $(GSC_BUILD_PATH)/* $(GSC_BUILD_LATEST)
