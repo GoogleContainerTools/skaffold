@@ -33,7 +33,10 @@ BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
 VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
 COMMIT = $(shell git rev-parse HEAD)
-VERSION ?= $(shell git describe --always --tags --dirty)
+
+ifeq "$(strip $(VERSION))" ""
+ override VERSION = $(shell git describe --always --tags --dirty)
+endif
 
 GO_GCFLAGS := "all=-trimpath=${PWD}"
 GO_ASMFLAGS := "all=-trimpath=${PWD}"
