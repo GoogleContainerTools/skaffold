@@ -295,8 +295,11 @@ custom:
         file: foo
 ```
 
-##### Custom Command
-Skaffold can execute a custom command, which will return dependencies for the artifact.
+##### Getting depedencies from a command
+Sometimes you might have a builder that can provide the dependencies for a given artifact.
+For example bazel has the `bazel query deps` command.
+Custom artifact builders can ask Skaffold to execute a custom command, which Skaffold can use to get the dependencies for the artifact for file watching.
+
 The command *must* return dependencies as a JSON array, otherwise skaffold will error out.
 
 For example, the following configuration is valid, as executing the dependency command returns a valid JSON array.
