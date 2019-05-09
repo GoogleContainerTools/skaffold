@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"testing"
 
@@ -34,17 +35,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-type testResult struct {
-	buildResult Result
-	shouldErr   bool
-}
-
 func TestInSequence(t *testing.T) {
 	var tests = []struct {
 		description     string
 		buildArtifact   artifactBuilder
 		tags            tag.ImageTags
-		expectedResults []testResult
+		expectedResults []Result
 		expectedOut     string
 		shouldErr       bool
 	}{
@@ -57,18 +53,14 @@ func TestInSequence(t *testing.T) {
 				"skaffold/image1": "skaffold/image1:v0.0.1",
 				"skaffold/image2": "skaffold/image2:v0.0.2",
 			},
-			expectedResults: []testResult{
+			expectedResults: []Result{
 				{
-					buildResult: Result{
-						Target: latest.Artifact{ImageName: "skaffold/image1"},
-						Result: Artifact{ImageName: "skaffold/image1", Tag: "skaffold/image1:v0.0.1@sha256:abac"},
-					},
+					Target: latest.Artifact{ImageName: "skaffold/image1"},
+					Result: Artifact{ImageName: "skaffold/image1", Tag: "skaffold/image1:v0.0.1@sha256:abac"},
 				},
 				{
-					buildResult: Result{
-						Target: latest.Artifact{ImageName: "skaffold/image2"},
-						Result: Artifact{ImageName: "skaffold/image2", Tag: "skaffold/image2:v0.0.2@sha256:abac"},
-					},
+					Target: latest.Artifact{ImageName: "skaffold/image2"},
+					Result: Artifact{ImageName: "skaffold/image2", Tag: "skaffold/image2:v0.0.2@sha256:abac"},
 				},
 			},
 			expectedOut: "Building [skaffold/image1]...\nBuilding [skaffold/image2]...\n",
@@ -82,24 +74,18 @@ func TestInSequence(t *testing.T) {
 				"skaffold/image1": "",
 			},
 			expectedOut: "Building [skaffold/image1]...\nBuilding [skaffold/image2]...\n",
-			expectedResults: []testResult{
+			expectedResults: []Result{
 				{
-					buildResult: Result{
-						Target: latest.Artifact{
-							ImageName: "skaffold/image1",
-						},
-						Error: errors.New("building [skaffold/image1]: build fails"),
+					Target: latest.Artifact{
+						ImageName: "skaffold/image1",
 					},
-					shouldErr: true,
+					Error: errors.New("building [skaffold/image1]: build fails"),
 				},
 				{
-					buildResult: Result{
-						Target: latest.Artifact{
-							ImageName: "skaffold/image2",
-						},
-						Error: errors.New("unable to find tag for image skaffold/image2"),
+					Target: latest.Artifact{
+						ImageName: "skaffold/image2",
 					},
-					shouldErr: true,
+					Error: errors.New("unable to find tag for image skaffold/image2"),
 				},
 			},
 		},
@@ -107,24 +93,18 @@ func TestInSequence(t *testing.T) {
 			description: "tag not found",
 			tags:        tag.ImageTags{},
 			expectedOut: "Building [skaffold/image1]...\nBuilding [skaffold/image2]...\n",
-			expectedResults: []testResult{
+			expectedResults: []Result{
 				{
-					buildResult: Result{
-						Target: latest.Artifact{
-							ImageName: "skaffold/image1",
-						},
-						Error: errors.New("unable to find tag for image skaffold/image1"),
+					Target: latest.Artifact{
+						ImageName: "skaffold/image1",
 					},
-					shouldErr: true,
+					Error: errors.New("unable to find tag for image skaffold/image1"),
 				},
 				{
-					buildResult: Result{
-						Target: latest.Artifact{
-							ImageName: "skaffold/image2",
-						},
-						Error: errors.New("unable to find tag for image skaffold/image2"),
+					Target: latest.Artifact{
+						ImageName: "skaffold/image2",
 					},
-					shouldErr: true,
+					Error: errors.New("unable to find tag for image skaffold/image2"),
 				},
 			},
 		},
@@ -149,37 +129,85 @@ func TestInSequence(t *testing.T) {
 				Opts: &config.SkaffoldOptions{},
 			})
 
-			buildResultChannels, err := InSequence(context.Background(), out, test.tags, artifacts, test.buildArtifact)
+			ch, err := InSequence(context.Background(), out, test.tags, artifacts, test.buildArtifact)
+			results := make([]Result, len(artifacts))
+			// Wait for all results
+			for i := 0; i < len(artifacts); i++ {
+				results[i] = <-ch
+			}
 			testutil.CheckError(t, test.shouldErr, err)
 
-			res := CollectResultsFromChannels(buildResultChannels)
+			fmt.Fprintf(os.Stdout, "final build results: %+v\n", results)
 
-			fmt.Fprintf(os.Stdout, "final build results: %+v\n", res)
-
-			// build results are returned in a list, of which we can't guarantee order.
-			// loop through the expected results, and find the matching build result by target artifact.
-			found := false
-			for _, testRes := range test.expectedResults {
-				for _, buildRes := range res {
-					if buildRes.Target.ImageName == testRes.buildResult.Target.ImageName {
-						found = true
-						// the embedded error in the build result contains a stack trace which we can't reproduce.
-						// directly compare the fields of the build result and optional error.
-						testutil.CheckError(t, testRes.shouldErr, buildRes.Error)
-						if testRes.shouldErr {
-							testutil.CheckDeepEqual(t, testRes.buildResult.Error.Error(), buildRes.Error.Error())
-						}
-						testutil.CheckDeepEqual(t, testRes.buildResult.Target, buildRes.Target)
-						testutil.CheckDeepEqual(t, testRes.buildResult.Result, buildRes.Result)
-					}
-				}
-				if !found {
-					t.Errorf("expected result %+v not found in build results", testRes)
-				}
-				found = false
-			}
+			CheckBuildResults(t, test.expectedResults, results)
 
 			testutil.CheckDeepEqual(t, test.expectedOut, out.String())
+		})
+	}
+}
+
+func TestInSequenceResultsSeen(t *testing.T) {
+	var tests = []struct {
+		description   string
+		images        []string
+		expectedOrder []Result
+	}{
+		{
+			description: "shd see results sequentially in order of input",
+			images:      []string{"four", "one", "eight", "two"},
+			expectedOrder: []Result{
+				{
+					Target: latest.Artifact{ImageName: "four"},
+					Result: Artifact{ImageName: "four", Tag: "four:tag@sha256:abac"},
+				},
+				{
+					Target: latest.Artifact{ImageName: "one"},
+					Result: Artifact{ImageName: "one", Tag: "one:tag@sha256:abac"},
+				},
+				{
+					Target: latest.Artifact{ImageName: "eight"},
+					Result: Artifact{ImageName: "eight", Tag: "eight:tag@sha256:abac"},
+				},
+				{
+					Target: latest.Artifact{ImageName: "two"},
+					Result: Artifact{ImageName: "two", Tag: "two:tag@sha256:abac"},
+				},
+			},
+		},
+		// Add test when artifact has an error
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			out := ioutil.Discard
+			artifacts := make([]*latest.Artifact, len(test.images))
+			tags := tag.ImageTags{}
+			for i, image := range test.images {
+				artifacts[i] = &latest.Artifact{
+					ImageName: image,
+				}
+				tags[image] = fmt.Sprintf("%s:tag", image)
+			}
+
+			cfg := latest.BuildConfig{
+				BuildType: latest.BuildType{
+					LocalBuild: &latest.LocalBuild{},
+				},
+			}
+			event.InitializeState(&runcontext.RunContext{
+				Cfg: &latest.Pipeline{
+					Build: cfg,
+				},
+				Opts: &config.SkaffoldOptions{},
+			})
+
+			ch, _ := InSequence(context.Background(), out, tags, artifacts, StaggerBuild)
+			actualOrder := make([]Result, len(test.images))
+			// Wait for all results
+			for i := 0; i < len(artifacts); i++ {
+				actualOrder[i] = <-ch
+			}
+			CheckBuildResultsOrder(t, test.expectedOrder, actualOrder)
 		})
 	}
 }

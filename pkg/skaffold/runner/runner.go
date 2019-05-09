@@ -329,12 +329,12 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 
 	artifactsToBuild, res := r.cache.RetrieveCachedArtifacts(ctx, out, artifacts)
 
-	buildResultChannels, err := r.Build(ctx, out, tags, artifactsToBuild)
+	buildResultChannel, err := r.Build(ctx, out, tags, artifactsToBuild)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start build")
 	}
 
-	bRes := build.CollectResultsFromChannels(buildResultChannels)
+	bRes := build.CollectResultsFromChannels(buildResultChannel)
 
 	var errStr string
 	var buildErr error

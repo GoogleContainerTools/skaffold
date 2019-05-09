@@ -53,7 +53,7 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 		lines := make(chan []byte, bufferedLinesPerArtifact)
 		outputs[i] = lines
 
-		allBuildsWg.Add(1)
+		//	allBuildsWg.Add(1)
 		go func(artifact *latest.Artifact, c chan Result, lines chan []byte) {
 			defer allBuildsWg.Done()
 			res := &Result{
