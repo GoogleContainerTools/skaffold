@@ -121,11 +121,30 @@ For the latest **stable** release download and place it in your `PATH` as `skaff
 
 https://storage.googleapis.com/skaffold/releases/latest/skaffold-windows-amd64.exe
 
+### Bleeding edge binary
+
 For the latest **bleeding edge** build, download and place it in your `PATH` as `skaffold.exe`:
 
 https://storage.googleapis.com/skaffold/builds/latest/skaffold-windows-amd64.exe
 
 {{% /tab %}}
+
+{{% tab "DOCKER" %}}
+
+### Stable binary
+
+For the latest **stable** release, you can use: 
+
+`docker run gcr.io/k8s-skaffold/skaffold:latest skaffold <command>`
+
+### Bleeding edge binary
+
+For the latest **bleeding edge** build:
+
+`docker run gcr.io/k8s-skaffold/skaffold:edge skaffold <command>`
+
+{{% /tab %}}
+
 {{% /tabs %}}
 
 ## Downloading the sample app
