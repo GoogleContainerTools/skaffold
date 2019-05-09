@@ -591,6 +591,8 @@ type CustomArtifact struct {
 type CustomDependencies struct {
 	// Dockerfile should be set if the artifact is built from a Dockerfile, from which skaffold can determine dependencies.
 	Dockerfile *DockerfileDependency `yaml:"dockerfile,omitempty" yamltags:"oneOf=dependency"`
+	// Command represents a custom command that skaffold executes to obtain dependencies. The output of this command *must* be a valid JSON array.
+	Command string `yaml:"command,omitempty" yamltags:"oneOf=dependency"`
 	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.
 	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
 	// Ignore specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.

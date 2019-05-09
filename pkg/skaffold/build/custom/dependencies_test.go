@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -54,6 +55,26 @@ func TestGetDependenciesDockerfile(t *testing.T) {
 
 	expected := []string{"Dockerfile", filepath.FromSlash("baz/file"), "foo"}
 	deps, err := GetDependencies(context.Background(), tmpDir.Root(), customArtifact, nil)
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected, deps)
+}
+
+func TestGetDependenciesCommand(t *testing.T) {
+
+	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
+		"echo [\"file1\",\"file2\",\"file3\"]",
+		"[\"file1\",\"file2\",\"file3\"]",
+	)
+
+	customArtifact := &latest.CustomArtifact{
+		Dependencies: &latest.CustomDependencies{
+			Command: "echo [\"file1\",\"file2\",\"file3\"]",
+		},
+	}
+
+	expected := []string{"file1", "file2", "file3"}
+	deps, err := GetDependencies(context.Background(), "", customArtifact, nil)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, deps)
 }
