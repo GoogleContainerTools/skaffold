@@ -134,6 +134,51 @@ profiles:
 	verifyUpgrade(t, yaml, expected)
 }
 
+func TestUpgradeSync(t *testing.T) {
+	yaml := `
+apiVersion: skaffold/v1beta9
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/node-example
+    sync:
+      '**/*.js': .
+  - image: gcr.io/k8s-skaffold/leeroy
+  - image: gcr.io/k8s-skaffold/react-reload
+    sync:
+      'src/***/*.js': app/
+  - image: nginx
+deploy:
+  kubectl:
+    manifests:
+    - "backend/k8s/**"
+`
+	expected := `
+apiVersion: skaffold/v1beta10
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/node-example
+    sync:
+      manual:
+      - src: '**/*.js'
+        dest: .
+  - image: gcr.io/k8s-skaffold/leeroy
+  - image: gcr.io/k8s-skaffold/react-reload
+    sync:
+      manual:
+      - src: 'src/**/*.js'
+        dest: app/
+        strip: src/
+  - image: nginx
+deploy:
+  kubectl:
+    manifests:
+    - "backend/k8s/**"
+`
+	verifyUpgrade(t, yaml, expected)
+}
+
 func verifyUpgrade(t *testing.T, input, output string) {
 	config := NewSkaffoldConfig()
 	err := yaml.UnmarshalStrict([]byte(input), config)

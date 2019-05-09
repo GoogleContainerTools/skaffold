@@ -35,6 +35,7 @@ func Process(config *latest.SkaffoldConfig) error {
 	errs := visitStructs(config, validateYamltags)
 	errs = append(errs, validateDockerNetworkMode(config.Build.Artifacts)...)
 	errs = append(errs, validateCustomDependencies(config.Build.Artifacts)...)
+	errs = append(errs, validateSyncRules(config.Build.Artifacts)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -123,4 +124,20 @@ func visitStructs(s interface{}, visitor func(interface{}) error) []error {
 		// other values are fine
 		return nil
 	}
+}
+
+// validateSyncRules checks that all manual sync rules have a valid strip prefix
+func validateSyncRules(artifacts []*latest.Artifact) []error {
+	var errs []error
+	for _, a := range artifacts {
+		if a.Sync != nil {
+			for _, r := range a.Sync.Manual {
+				if !strings.HasPrefix(r.Src, r.Strip) {
+					err := fmt.Errorf("sync rule pattern '%s' does not have prefix '%s'", r.Src, r.Strip)
+					errs = append(errs, err)
+				}
+			}
+		}
+	}
+	return errs
 }

@@ -469,14 +469,35 @@ type Artifact struct {
 
 	// Sync *alpha* lists local files synced to pods instead
 	// of triggering an image build when modified.
-	// This is a mapping of local files to sync to remote folders.
-	// For example: `{"*.py": ".", "css/**/*.css": "app/css"}`.
-	Sync map[string]string `yaml:"sync,omitempty"`
+	Sync *Sync `yaml:"sync,omitempty"`
 
 	// ArtifactType describes how to build an artifact.
 	ArtifactType `yaml:",inline"`
 
 	WorkspaceHash string `yaml:"-,omitempty"`
+}
+
+// Sync *alpha* specifies what files to sync into the container.
+// This is a list of sync rules indicating the intent to sync for source files.
+type Sync struct {
+	// Manual lists manual sync rules indicating the source and destination.
+	Manual []*SyncRule `yaml:"manual,omitempty" yamltags:"oneOf=sync"`
+}
+
+// SyncRule specifies which local files to sync to remote folders.
+type SyncRule struct {
+	// Src is a glob pattern to match local paths against.
+	// For example: `"css/**/*.css"`.
+	Src string `yaml:"src,omitempty" yamltags:"required"`
+
+	// Dest is the destination path in the container where the files should be synced to.
+	// For example: `"app/"`
+	Dest string `yaml:"dest,omitempty" yamltags:"required"`
+
+	// Strip specifies the path prefix to remove from the source path when
+	// transplanting the files into the destination folder.
+	// For example: `"css/"`
+	Strip string `yaml:"strip,omitempty"`
 }
 
 // Profile *beta* profiles are used to override any `build`, `test` or `deploy` configuration.

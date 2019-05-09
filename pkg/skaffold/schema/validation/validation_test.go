@@ -348,6 +348,118 @@ func TestValidateNetworkMode(t *testing.T) {
 		},
 	}
 
+	// disable yamltags validation
+	origValidateYamlTags := validateYamltags
+	validateYamltags = func(_ interface{}) error { return nil }
+	defer func() { validateYamltags = origValidateYamlTags }()
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := Process(
+				&latest.SkaffoldConfig{
+					Pipeline: latest.Pipeline{
+						Build: latest.BuildConfig{
+							Artifacts: test.artifacts,
+						},
+					},
+				})
+			testutil.CheckError(t, test.shouldErr, err)
+		})
+	}
+}
+
+func TestValidateSyncRules(t *testing.T) {
+	tests := []struct {
+		name      string
+		artifacts []*latest.Artifact
+		shouldErr bool
+	}{
+		{
+			name:      "no artifacts",
+			artifacts: nil,
+		},
+		{
+			name: "no sync rules",
+			artifacts: []*latest.Artifact{
+				{
+					Sync: nil,
+				},
+			},
+		},
+		{
+			name: "two good rules",
+			artifacts: []*latest.Artifact{
+				{
+					Sync: &latest.Sync{Manual: []*latest.SyncRule{
+						{
+							Src:  "src/**/*.js",
+							Dest: ".",
+						},
+						{
+							Src:   "src/**/*.js",
+							Dest:  ".",
+							Strip: "src/",
+						},
+					}},
+				},
+			},
+		},
+		{
+			name: "one good one bad rule",
+			artifacts: []*latest.Artifact{
+				{
+					Sync: &latest.Sync{Manual: []*latest.SyncRule{
+						{
+							Src:   "src/**/*.js",
+							Dest:  ".",
+							Strip: "/src",
+						},
+						{
+							Src:   "src/**/*.py",
+							Dest:  ".",
+							Strip: "src/",
+						},
+					}},
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			name: "two bad rules",
+			artifacts: []*latest.Artifact{
+				{
+					Sync: &latest.Sync{Manual: []*latest.SyncRule{
+						{
+							Dest:  ".",
+							Strip: "src",
+						},
+						{
+							Src:   "**/*.js",
+							Dest:  ".",
+							Strip: "src/",
+						},
+					}},
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			name: "stripping part of folder name is valid",
+			artifacts: []*latest.Artifact{
+				{
+					Sync: &latest.Sync{Manual: []*latest.SyncRule{
+						{
+							Src:   "srcsomeother/**/*.js",
+							Dest:  ".",
+							Strip: "src",
+						},
+					}},
+				},
+			},
+		},
+	}
+
+	// disable yamltags validation
 	origValidateYamlTags := validateYamltags
 	validateYamltags = func(_ interface{}) error { return nil }
 	defer func() { validateYamltags = origValidateYamlTags }()
