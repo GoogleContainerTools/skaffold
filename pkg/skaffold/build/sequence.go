@@ -28,6 +28,20 @@ import (
 	"github.com/pkg/errors"
 )
 
+//
+//type BuilderFunc func(ctx context.Context, ch chan Result, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) error
+//
+//func WithSafeChannel(builderFunc BuilderFunc, ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) (<-chan Result, error) {
+//	resultChan := make(chan Result, len(artifacts))
+//	go func() {
+//		_ = builderFunc(ctx, resultChan, out, tags, artifacts, buildArtifact) /// assume sync
+//
+//		///synchronize until builderFunc is "finished" ????
+//		close(resultChan)
+//	}()
+//	return resultChan, nil
+//}
+
 // InSequence builds a list of artifacts in sequence.
 func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) (<-chan Result, error) {
 	resultChan := make(chan Result, len(artifacts))
