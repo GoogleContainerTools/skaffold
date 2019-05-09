@@ -328,13 +328,17 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	r.hasBuilt = true
 
 	artifactsToBuild, res := r.cache.RetrieveCachedArtifacts(ctx, out, artifacts)
-	ch := make(chan build.Result)
+	// Buffered channels to avoid blocking on Builder writing to the same channel until
+	// read from channel.
+	// See https://stackoverflow.com/questions/29342701/write-to-same-channel-with-multiple-goroutines
+	ch := make(chan build.Result, len(artifacts))
+
 	bRes, err := r.Build(ctx, out, tags, artifactsToBuild, ch)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start build")
 	}
 
-	// Wait for Results
+	// Wait for all Results and process them as they get.
 	ProcessBuildResults(ch, len(artifacts))
 
 	var errStr string

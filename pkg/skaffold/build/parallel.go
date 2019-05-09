@@ -45,7 +45,6 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	// for collecting all output and printing in order later on
 	outputs := make([]chan []byte, len(artifacts))
 	results := make([]Result, len(artifacts))
-	var mutex = &sync.Mutex{}
 
 	for i, a := range artifacts {
 		// give each build a byte buffer to write its output to
@@ -81,7 +80,7 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 					res.Error = fmt.Errorf("building [%s]: unable to find tag for image", artifact.ImageName)
 					event.BuildFailed(artifact.ImageName, res.Error)
 				} else {
-					bRes, err := buildArtifact(ctx, cw, artifact, tag)
+					bRes, err := buildArtifact(ctx, out, artifact, tag)
 					if err != nil {
 						res.Error = err
 						event.BuildFailed(artifact.ImageName, err)
@@ -107,10 +106,9 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 			}()
 
 			wg.Wait() // wait for build to finish and output to be processed
-			mutex.Lock()
 			c <- *res // send the result back through the callback channel
-			mutex.Unlock()
 		}(a, &results[i], ch, lines)
+
 	}
 
 	for i := range artifacts {
