@@ -269,7 +269,7 @@ func TestKubectlRedeploy(t *testing.T) {
 kind: Pod
 metadata:
   labels:
-    skaffold-deployer: kubectl
+    skaffold.dev/deployer: kubectl
   name: leeroy-app
 spec:
   containers:
@@ -280,7 +280,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    skaffold-deployer: kubectl
+    skaffold.dev/deployer: kubectl
   name: leeroy-web
 spec:
   containers:
@@ -291,7 +291,7 @@ spec:
 kind: Pod
 metadata:
   labels:
-    skaffold-deployer: kubectl
+    skaffold.dev/deployer: kubectl
   name: leeroy-app
 spec:
   containers:

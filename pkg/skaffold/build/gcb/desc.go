@@ -57,7 +57,7 @@ func (b *Builder) buildDescription(artifact *latest.Artifact, tag, bucket, objec
 func (b *Builder) buildSteps(artifact *latest.Artifact, tags []string) ([]*cloudbuild.BuildStep, error) {
 	switch {
 	case artifact.DockerArtifact != nil:
-		return b.dockerBuildSteps(artifact.DockerArtifact, tags), nil
+		return b.dockerBuildSteps(artifact.DockerArtifact, tags)
 
 	case artifact.BazelArtifact != nil:
 		return nil, errors.New("skaffold can't build a bazel artifact with Google Cloud Build")

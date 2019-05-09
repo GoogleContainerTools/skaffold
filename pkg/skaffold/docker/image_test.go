@@ -179,7 +179,9 @@ func TestGetBuildArgs(t *testing.T) {
 	tests := []struct {
 		description string
 		artifact    *latest.DockerArtifact
+		env         []string
 		want        []string
+		shouldErr   bool
 	}{
 		{
 			description: "build args",
@@ -187,9 +189,22 @@ func TestGetBuildArgs(t *testing.T) {
 				BuildArgs: map[string]*string{
 					"key1": util.StringPtr("value1"),
 					"key2": nil,
+					"key3": util.StringPtr("{{.FOO}}"),
 				},
 			},
-			want: []string{"--build-arg", "key1=value1", "--build-arg", "key2"},
+			env:  []string{"FOO=bar"},
+			want: []string{"--build-arg", "key1=value1", "--build-arg", "key2", "--build-arg", "key3=bar"},
+		},
+		{
+			description: "build args",
+			artifact: &latest.DockerArtifact{
+				BuildArgs: map[string]*string{
+					"key1": util.StringPtr("value1"),
+					"key2": nil,
+					"key3": util.StringPtr("{{.DOES_NOT_EXIST}}"),
+				},
+			},
+			shouldErr: true,
 		},
 		{
 			description: "cache from",
@@ -213,6 +228,13 @@ func TestGetBuildArgs(t *testing.T) {
 			want: []string{"--network", "bridge"},
 		},
 		{
+			description: "no-cache",
+			artifact: &latest.DockerArtifact{
+				NoCache: true,
+			},
+			want: []string{"--no-cache"},
+		},
+		{
 			description: "all",
 			artifact: &latest.DockerArtifact{
 				BuildArgs: map[string]*string{
@@ -227,7 +249,16 @@ func TestGetBuildArgs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
-			result := GetBuildArgs(tt.artifact)
+			util.OSEnviron = func() []string {
+				return tt.env
+			}
+			result, err := GetBuildArgs(tt.artifact)
+			if tt.shouldErr && err != nil {
+				t.Errorf("expected to see an error, but saw none")
+			}
+			if tt.shouldErr {
+				return
+			}
 			if diff := cmp.Diff(result, tt.want); diff != "" {
 				t.Errorf("%T differ (-got, +want): %s", tt.want, diff)
 			}

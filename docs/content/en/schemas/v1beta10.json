@@ -293,6 +293,48 @@
             "kaniko"
           ],
           "additionalProperties": false
+        },
+        {
+          "properties": {
+            "context": {
+              "type": "string",
+              "description": "directory containing the artifact's sources.",
+              "x-intellij-html-description": "directory containing the artifact's sources.",
+              "default": "."
+            },
+            "custom": {
+              "$ref": "#/definitions/CustomArtifact",
+              "description": "*alpha* builds images using a custom build script written by the user.",
+              "x-intellij-html-description": "<em>alpha</em> builds images using a custom build script written by the user."
+            },
+            "image": {
+              "type": "string",
+              "description": "name of the image to be built.",
+              "x-intellij-html-description": "name of the image to be built.",
+              "examples": [
+                "gcr.io/k8s-skaffold/example"
+              ]
+            },
+            "sync": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
+              "default": "{}",
+              "examples": [
+                "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
+              ]
+            }
+          },
+          "preferredOrder": [
+            "image",
+            "context",
+            "sync",
+            "custom"
+          ],
+          "additionalProperties": false
         }
       ],
       "description": "items that need to be built, along with the context in which they should be built.",
@@ -530,6 +572,62 @@
       "description": "*beta* describes how to do an on-cluster build.",
       "x-intellij-html-description": "<em>beta</em> describes how to do an on-cluster build."
     },
+    "CustomArtifact": {
+      "properties": {
+        "buildCommand": {
+          "type": "string",
+          "description": "command executed to build the image.",
+          "x-intellij-html-description": "command executed to build the image."
+        },
+        "dependencies": {
+          "$ref": "#/definitions/CustomDependencies",
+          "description": "file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.",
+          "x-intellij-html-description": "file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact."
+        }
+      },
+      "preferredOrder": [
+        "buildCommand",
+        "dependencies"
+      ],
+      "additionalProperties": false,
+      "description": "*alpha* describes an artifact built from a custom build script written by the user. It can be used to build images with builders that aren't directly integrated with skaffold.",
+      "x-intellij-html-description": "<em>alpha</em> describes an artifact built from a custom build script written by the user. It can be used to build images with builders that aren't directly integrated with skaffold."
+    },
+    "CustomDependencies": {
+      "properties": {
+        "dockerfile": {
+          "$ref": "#/definitions/DockerfileDependency",
+          "description": "should be set if the artifact is built from a Dockerfile, from which skaffold can determine dependencies.",
+          "x-intellij-html-description": "should be set if the artifact is built from a Dockerfile, from which skaffold can determine dependencies."
+        },
+        "ignore": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization. Will only work in conjunction with `paths`.",
+          "x-intellij-html-description": "specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both <code>paths</code> and in <code>ignore</code>, it will be ignored, and will be excluded from both rebuilds and file synchronization. Will only work in conjunction with <code>paths</code>.",
+          "default": "[]"
+        },
+        "paths": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.",
+          "x-intellij-html-description": "should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.",
+          "default": "[]"
+        }
+      },
+      "preferredOrder": [
+        "dockerfile",
+        "paths",
+        "ignore"
+      ],
+      "additionalProperties": false,
+      "description": "*alpha* used to specify dependencies for an artifact built by a custom build script. Either `dockerfile` or `paths` should be specified for file watching to work as expected.",
+      "x-intellij-html-description": "<em>alpha</em> used to specify dependencies for an artifact built by a custom build script. Either <code>dockerfile</code> or <code>paths</code> should be specified for file watching to work as expected."
+    },
     "DateTimeTagger": {
       "properties": {
         "format": {
@@ -637,6 +735,12 @@
           "description": "passed through to docker and overrides the network configuration of docker builder. If unset, use whatever is configured in the underlying docker daemon. Valid modes are `Host`: use the host's networking stack. `Bridge`: use the bridged network configuration. `None`: no networking in the container.",
           "x-intellij-html-description": "passed through to docker and overrides the network configuration of docker builder. If unset, use whatever is configured in the underlying docker daemon. Valid modes are <code>Host</code>: use the host's networking stack. <code>Bridge</code>: use the bridged network configuration. <code>None</code>: no networking in the container."
         },
+        "noCache": {
+          "type": "boolean",
+          "description": "used to pass in --no-cache to docker build to prevent caching.",
+          "x-intellij-html-description": "used to pass in --no-cache to docker build to prevent caching.",
+          "default": "false"
+        },
         "target": {
           "type": "string",
           "description": "Dockerfile target name to build.",
@@ -648,7 +752,8 @@
         "target",
         "buildArgs",
         "network",
-        "cacheFrom"
+        "cacheFrom",
+        "noCache"
       ],
       "additionalProperties": false,
       "description": "*beta* describes an artifact built from a Dockerfile, usually using `docker build`.",
@@ -674,6 +779,34 @@
       "additionalProperties": false,
       "description": "contains information about the docker `config.json` to mount.",
       "x-intellij-html-description": "contains information about the docker <code>config.json</code> to mount."
+    },
+    "DockerfileDependency": {
+      "properties": {
+        "buildArgs": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
+          "x-intellij-html-description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
+          "default": "{}",
+          "examples": [
+            "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"{{.ENV_VARIABLE}}\"}"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "description": "locates the Dockerfile relative to workspace.",
+          "x-intellij-html-description": "locates the Dockerfile relative to workspace."
+        }
+      },
+      "preferredOrder": [
+        "path",
+        "buildArgs"
+      ],
+      "additionalProperties": false,
+      "description": "*alpha* used to specify a custom build artifact that is built from a Dockerfile. This allows skaffold to determine dependencies from the Dockerfile.",
+      "x-intellij-html-description": "<em>alpha</em> used to specify a custom build artifact that is built from a Dockerfile. This allows skaffold to determine dependencies from the Dockerfile."
     },
     "EnvTemplateTagger": {
       "required": [
@@ -1137,11 +1270,11 @@
             "type": "string"
           },
           "type": "object",
-          "description": "arguments passed to the docker build.",
-          "x-intellij-html-description": "arguments passed to the docker build.",
+          "description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
+          "x-intellij-html-description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
           "default": "{}",
           "examples": [
-            "{\"key1\": \"value1\", \"key2\": \"value2\"}"
+            "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"{{.ENV_VARIABLE}}\"}"
           ]
         },
         "buildContext": {
@@ -1197,8 +1330,8 @@
       "properties": {
         "gcsBucket": {
           "type": "string",
-          "description": "CGS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources.",
-          "x-intellij-html-description": "CGS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources."
+          "description": "GCS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources.",
+          "x-intellij-html-description": "GCS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources."
         },
         "localDir": {
           "$ref": "#/definitions/LocalDir",

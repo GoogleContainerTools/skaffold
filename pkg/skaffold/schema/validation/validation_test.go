@@ -366,3 +366,45 @@ func TestValidateNetworkMode(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateCustomDependencies(t *testing.T) {
+	tests := []struct {
+		description    string
+		dependencies   *latest.CustomDependencies
+		expectedErrors int
+	}{
+		{
+			description: "no errors",
+			dependencies: &latest.CustomDependencies{
+				Paths:  []string{"somepath"},
+				Ignore: []string{"anotherpath"},
+			},
+		}, {
+			description: "ignore in conjunction with dockerfile",
+			dependencies: &latest.CustomDependencies{
+				Dockerfile: &latest.DockerfileDependency{
+					Path: "some/path",
+				},
+				Ignore: []string{"ignoreme"},
+			},
+			expectedErrors: 1,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			artifact := &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					CustomArtifact: &latest.CustomArtifact{
+						Dependencies: test.dependencies,
+					},
+				},
+			}
+
+			errs := validateCustomDependencies([]*latest.Artifact{artifact})
+			if len(errs) != test.expectedErrors {
+				t.Fatalf("got incorrect number of errors. got: %d \n expected: %d \n", len(errs), test.expectedErrors)
+			}
+		})
+	}
+}

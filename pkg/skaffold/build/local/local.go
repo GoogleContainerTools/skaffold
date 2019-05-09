@@ -24,6 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/bazel"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -96,6 +97,8 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 	case artifact.JibGradleArtifact != nil:
 		return b.buildJibGradle(ctx, out, artifact.Workspace, artifact.JibGradleArtifact, tag)
 
+	case artifact.CustomArtifact != nil:
+		return b.buildCustom(ctx, out, artifact, tag)
 	default:
 		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 	}
@@ -119,6 +122,9 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 
 	case a.JibGradleArtifact != nil:
 		paths, err = jib.GetDependenciesGradle(ctx, a.Workspace, a.JibGradleArtifact)
+
+	case a.CustomArtifact != nil:
+		paths, err = custom.GetDependencies(ctx, a.Workspace, a.CustomArtifact, b.insecureRegistries)
 
 	default:
 		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)

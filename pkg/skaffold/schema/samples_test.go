@@ -29,8 +29,11 @@ import (
 )
 
 const (
-	samplesRoot   = "../../../docs/content/en/samples"
-	ignoredSample = "structureTest.yaml"
+	samplesRoot = "../../../docs/content/en/samples"
+)
+
+var (
+	ignoredSamples = []string{"structureTest.yaml", "build.sh"}
 )
 
 func TestParseSamples(t *testing.T) {
@@ -49,11 +52,12 @@ func TestParseSamples(t *testing.T) {
 	for _, path := range paths {
 		name := filepath.Base(path)
 
-		if name == ignoredSample {
-			continue
-		}
-
 		t.Run(name, func(t *testing.T) {
+			for _, is := range ignoredSamples {
+				if name == is {
+					t.Skip()
+				}
+			}
 			buf, err := ioutil.ReadFile(path)
 			testutil.CheckError(t, false, err)
 

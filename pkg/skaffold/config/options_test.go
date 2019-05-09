@@ -33,24 +33,32 @@ func TestLabels(t *testing.T) {
 			expectedLabels: map[string]string{},
 		},
 		{
-			description:    "cleanup",
-			options:        SkaffoldOptions{Cleanup: true},
-			expectedLabels: map[string]string{"cleanup": "true"},
+			description: "cleanup",
+			options:     SkaffoldOptions{Cleanup: true},
+			expectedLabels: map[string]string{
+				"skaffold.dev/cleanup": "true",
+			},
 		},
 		{
-			description:    "namespace",
-			options:        SkaffoldOptions{Namespace: "NS"},
-			expectedLabels: map[string]string{"namespace": "NS"},
+			description: "namespace",
+			options:     SkaffoldOptions{Namespace: "NS"},
+			expectedLabels: map[string]string{
+				"skaffold.dev/namespace": "NS",
+			},
 		},
 		{
-			description:    "profile",
-			options:        SkaffoldOptions{Profiles: []string{"profile"}},
-			expectedLabels: map[string]string{"profiles": "profile"},
+			description: "profile",
+			options:     SkaffoldOptions{Profiles: []string{"profile"}},
+			expectedLabels: map[string]string{
+				"skaffold.dev/profiles": "profile",
+			},
 		},
 		{
-			description:    "profiles",
-			options:        SkaffoldOptions{Profiles: []string{"profile1", "profile2"}},
-			expectedLabels: map[string]string{"profiles": "profile1__profile2"},
+			description: "profiles",
+			options:     SkaffoldOptions{Profiles: []string{"profile1", "profile2"}},
+			expectedLabels: map[string]string{
+				"skaffold.dev/profiles": "profile1__profile2",
+			},
 		},
 		{
 			description: "all labels",
@@ -60,9 +68,9 @@ func TestLabels(t *testing.T) {
 				Profiles:  []string{"p1", "p2"},
 			},
 			expectedLabels: map[string]string{
-				"cleanup":   "true",
-				"namespace": "namespace",
-				"profiles":  "p1__p2",
+				"skaffold.dev/cleanup":   "true",
+				"skaffold.dev/namespace": "namespace",
+				"skaffold.dev/profiles":  "p1__p2",
 			},
 		},
 		{
@@ -77,11 +85,11 @@ func TestLabels(t *testing.T) {
 				},
 			},
 			expectedLabels: map[string]string{
-				"cleanup": "true",
-				"one":     "first",
-				"two":     "second",
-				"three":   "",
-				"four":    "",
+				"skaffold.dev/cleanup": "true",
+				"one":                  "first",
+				"two":                  "second",
+				"three":                "",
+				"four":                 "",
 			},
 		},
 	}
