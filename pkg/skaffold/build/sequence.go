@@ -29,7 +29,7 @@ import (
 )
 
 // InSequence builds a list of artifacts in sequence.
-func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) (chan Result, error) {
+func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) (<-chan Result, error) {
 	resultChan := make(chan Result, len(artifacts))
 
 	go func() {

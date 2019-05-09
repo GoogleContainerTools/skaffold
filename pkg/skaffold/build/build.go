@@ -47,7 +47,7 @@ type Result struct {
 type Builder interface {
 	Labels() map[string]string
 
-	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) (chan Result, error)
+	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) (<-chan Result, error)
 
 	DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error)
 

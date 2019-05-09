@@ -27,7 +27,7 @@ import (
 )
 
 // Build builds a list of artifacts with Kaniko.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) (chan build.Result, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) (<-chan build.Result, error) {
 	teardownPullSecret, err := b.setupPullSecret(out)
 	if err != nil {
 		return nil, errors.Wrap(err, "setting up pull secret for kaniko build")

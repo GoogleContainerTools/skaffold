@@ -34,7 +34,7 @@ const bufferedLinesPerArtifact = 10000
 type artifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error)
 
 // InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
-func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) (chan Result, error) {
+func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) (<-chan Result, error) {
 	if len(artifacts) == 1 {
 		return InSequence(ctx, out, tags, artifacts, buildArtifact)
 	}

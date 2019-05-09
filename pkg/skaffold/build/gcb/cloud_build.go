@@ -43,7 +43,7 @@ import (
 )
 
 // Build builds a list of artifacts with Google Cloud Build.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) (chan build.Result, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) (<-chan build.Result, error) {
 	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifactWithCloudBuild)
 }
 

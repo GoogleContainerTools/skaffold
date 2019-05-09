@@ -37,7 +37,7 @@ func MergeWithPreviousBuilds(builds []Artifact, previous []Artifact) []Artifact 
 	return merged
 }
 
-func CollectResultsFromChannels(resultChannel chan Result) []Result {
+func CollectResultsFromChannels(resultChannel <-chan Result) []Result {
 	var results []Result
 	for result := range resultChannel {
 		results = append(results, result)

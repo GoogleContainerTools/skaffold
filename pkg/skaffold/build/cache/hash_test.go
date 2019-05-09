@@ -33,7 +33,7 @@ type mockBuilder struct {
 
 func (m *mockBuilder) Labels() map[string]string { return nil }
 
-func (m *mockBuilder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) (chan build.Result, error) {
+func (m *mockBuilder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) (<-chan build.Result, error) {
 	return nil, nil
 }
 
