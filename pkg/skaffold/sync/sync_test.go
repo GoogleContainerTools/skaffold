@@ -404,7 +404,7 @@ func TestIntersect(t *testing.T) {
 		files       []string
 		context     string
 		workingDir  string
-		expected    map[string][]string
+		expected    syncMap
 		shouldErr   bool
 	}{
 		{
@@ -515,7 +515,7 @@ func TestPerform(t *testing.T) {
 	var tests = []struct {
 		description string
 		image       string
-		files       map[string][]string
+		files       syncMap
 		cmdFn       func(context.Context, v1.Pod, v1.Container, map[string][]string) []*exec.Cmd
 		cmdErr      error
 		clientErr   error
@@ -525,14 +525,14 @@ func TestPerform(t *testing.T) {
 		{
 			description: "no error",
 			image:       "gcr.io/k8s-skaffold:123",
-			files:       map[string][]string{"test.go": {"/test.go"}},
+			files:       syncMap{"test.go": {"/test.go"}},
 			cmdFn:       fakeCmd,
 			expected:    []string{"copy test.go /test.go"},
 		},
 		{
 			description: "cmd error",
 			image:       "gcr.io/k8s-skaffold:123",
-			files:       map[string][]string{"test.go": {"/test.go"}},
+			files:       syncMap{"test.go": {"/test.go"}},
 			cmdFn:       fakeCmd,
 			cmdErr:      fmt.Errorf(""),
 			shouldErr:   true,
@@ -540,7 +540,7 @@ func TestPerform(t *testing.T) {
 		{
 			description: "client error",
 			image:       "gcr.io/k8s-skaffold:123",
-			files:       map[string][]string{"test.go": {"/test.go"}},
+			files:       syncMap{"test.go": {"/test.go"}},
 			cmdFn:       fakeCmd,
 			clientErr:   fmt.Errorf(""),
 			shouldErr:   true,
@@ -548,7 +548,7 @@ func TestPerform(t *testing.T) {
 		{
 			description: "no copy",
 			image:       "gcr.io/different-pod:123",
-			files:       map[string][]string{"test.go": {"/test.go"}},
+			files:       syncMap{"test.go": {"/test.go"}},
 			cmdFn:       fakeCmd,
 			shouldErr:   true,
 		},
