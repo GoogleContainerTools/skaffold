@@ -1,3 +1,75 @@
+# v0.29.0 Release - 05/09/2019
+
+*Note*: This release comes with a new config version `v1beta10`.
+        To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
+        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+        
+New Features: 
+
+* Add command to custom artifact dependencies [#2095](https://github.com/GoogleContainerTools/skaffold/pull/2095)
+* Improve syntax for artifact.sync config [1/3] [#1847](https://github.com/GoogleContainerTools/skaffold/pull/1847)
+* Add dockerfile to custom dependencies [#2049](https://github.com/GoogleContainerTools/skaffold/pull/2049)
+* Automatically watch helm subcharts when skipBuildDependencies is enabled [#1371](https://github.com/GoogleContainerTools/skaffold/pull/1371)
+* Allow environment variables to be used in docker build argument [#1912](https://github.com/GoogleContainerTools/skaffold/pull/1912)
+* Add option to configure the networking stack in docker build [#2036](https://github.com/GoogleContainerTools/skaffold/pull/2036)
+* Allow --no-cache to be passed to docker [#2054](https://github.com/GoogleContainerTools/skaffold/pull/2054)
+* Deploy to  consume build output [#2001](https://github.com/GoogleContainerTools/skaffold/pull/2001)
+* Add k8 style managed by label to skaffold deployed pods [#2055](https://github.com/GoogleContainerTools/skaffold/pull/2055)
+* Support kubectl deploy absolute manifest files [#2011](https://github.com/GoogleContainerTools/skaffold/pull/2011)
+        
+Bug Fixes:
+
+* Add custom artifact for custom local builds [#1999](https://github.com/GoogleContainerTools/skaffold/pull/1999)
+* Add version as unknown if version.Get().Version is empty [#2097](https://github.com/GoogleContainerTools/skaffold/pull/2097)
+* Fix image release process: master -> edge, tag -> latest [#2099](https://github.com/GoogleContainerTools/skaffold/pull/2099)
+* :bug: fix kubectl apply error handling [#2076](https://github.com/GoogleContainerTools/skaffold/pull/2076)
+* Remove podname from port forward key [#2047](https://github.com/GoogleContainerTools/skaffold/pull/2047)
+* Correctly parse env-var for multi-valued flags [#2032](https://github.com/GoogleContainerTools/skaffold/pull/2032)
+
+Updates & refactoring: 
+
+* Prefix Skaffold labels with 'skaffold-' [#2062](https://github.com/GoogleContainerTools/skaffold/pull/2062)
+* Remove copy paste deploy_test.go [#2085](https://github.com/GoogleContainerTools/skaffold/pull/2085)
+* Freeze v1beta9 config [#2035](https://github.com/GoogleContainerTools/skaffold/pull/2035)
+* Add unit test for port forwarding key [#2059](https://github.com/GoogleContainerTools/skaffold/pull/2059)
+* Refactor kaniko builder to cluster builder [#2037](https://github.com/GoogleContainerTools/skaffold/pull/2037)
+* Attaching os standard error and out stream to the copy command [#1960](https://github.com/GoogleContainerTools/skaffold/pull/1960)
+
+Docs updates:
+
+* Mention kind in docs for local development [#2090](https://github.com/GoogleContainerTools/skaffold/pull/2090)
+* Clarify which containers are port forwarded [#2078](https://github.com/GoogleContainerTools/skaffold/pull/2078)
+* Improve nodejs example to show subdirectories sync [#2024](https://github.com/GoogleContainerTools/skaffold/pull/2024)
+* Minor fix on Markdown to follow markdown rules [#2052](https://github.com/GoogleContainerTools/skaffold/pull/2052)
+* Note filesync limitation for files not owned by container user [#2041](https://github.com/GoogleContainerTools/skaffold/pull/2041)
+
+Design proposals: 
+
+* Design proposal for sync improvements [#1844](https://github.com/GoogleContainerTools/skaffold/pull/1844)
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Balint Pato
+- Brian de Alwis
+- Byungjin Park
+- Charles-Henri GUÉRIN
+- Cornelius Weig
+- David Gageot
+- Dmitri Moore
+- Ilyes Hammadi
+- Nick Kubala
+- peter
+- Pierre-Yves Aillet
+- Prashant Arya
+- Priya Wadhwa
+- Rahul Sinha
+- robertrbruno
+- Tejal Desai
+- Tigran Tch
+- Xiaoxi He
+
+
 # v0.28.0 Release - 04/25/2019
 
 *Note*: This release comes with a new config version `v1beta9`.
