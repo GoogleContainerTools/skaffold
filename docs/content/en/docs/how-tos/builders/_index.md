@@ -74,7 +74,7 @@ be saved to the specified remote registry, such as
 Skaffold Google Cloud Build process differs from the gcloud command
 `gcloud builds submit`. Skaffold will create a list of dependent files
 and submit a tar file to GCB. It will then generate a single step `cloudbuild.yaml`
-and will start the building process. Skaffold does not honors `.gitignore` or `.gcloudignore`
+and will start the building process. Skaffold does not honor `.gitignore` or `.gcloudignore`
 exclusions. If you need to ignore files use `.dockerignore`. Any `cloudbuild.yaml` found will not
 be used in the build process. 
 
