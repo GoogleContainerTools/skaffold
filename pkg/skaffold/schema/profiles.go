@@ -123,11 +123,19 @@ func isKubeContext(kubeContext string) (bool, error) {
 
 func satisfies(expected, actual string) bool {
 	if strings.HasPrefix(expected, "!") {
-		return actual != expected[1:]
+		notExpected := expected[1:]
+
+		return !matches(notExpected, actual)
 	}
+
+	return matches(expected, actual)
+}
+
+func matches(expected, actual string) bool {
 	matcher, err := re.Compile(expected)
+
 	if err != nil {
-		logrus.Infof("profile activation criteria '%s' is not a valid regexp, falling back to string equals", expected)
+		logrus.Infof("profile activation criteria '%s' is not a valid regexp, falling back to string", expected)
 		return actual == expected
 	}
 
