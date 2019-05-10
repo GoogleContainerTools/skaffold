@@ -71,6 +71,13 @@ with it. After Cloud Build finishes building your artifacts, they will
 be saved to the specified remote registry, such as
 [Google Container Registry](https://cloud.google.com/container-registry/).
 
+Skaffold Google Cloud Build process differs from the gcloud command
+`gcloud builds submit`. Skaffold will create a list of dependent files
+and submit a tar file to GCB. It will then generate a single step `cloudbuild.yaml`
+and will start the building process. Skaffold does not honor `.gitignore` or `.gcloudignore`
+exclusions. If you need to ignore files use `.dockerignore`. Any `cloudbuild.yaml` found will not
+be used in the build process. 
+
 ### Configuration
 
 To use Cloud Build, add build type `googleCloudBuild` to the `build`
