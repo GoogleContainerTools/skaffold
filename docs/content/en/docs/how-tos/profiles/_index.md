@@ -16,6 +16,8 @@ For a detailed discussion on Skaffold configuration, see
 
 ## Profiles (`profiles`)
 
+**NOTE:** To use profiles you should use the skaffold apiVersion: `skaffold/v1beta10`
+
 Each profile has six parts:
 
 * Name (`name`): The name of the profile
