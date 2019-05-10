@@ -47,6 +47,8 @@ type Syncer interface {
 	Sync(context.Context, *Item) error
 }
 
+type syncMap map[string][]string
+
 type Item struct {
 	Image  string
 	Copy   map[string][]string
@@ -121,8 +123,8 @@ func latestTag(image string, builds []build.Artifact) string {
 	return ""
 }
 
-func intersect(contextWd, containerWd string, syncRules []*latest.SyncRule, files []string) (map[string][]string, error) {
-	ret := make(map[string][]string)
+func intersect(contextWd, containerWd string, syncRules []*latest.SyncRule, files []string) (syncMap, error) {
+	ret := make(syncMap)
 	for _, f := range files {
 		relPath, err := filepath.Rel(contextWd, f)
 		if err != nil {
@@ -169,7 +171,7 @@ func matchSyncRules(syncRules []*latest.SyncRule, relPath, containerWd string) (
 	return dsts, nil
 }
 
-func Perform(ctx context.Context, image string, files map[string][]string, cmdFn func(context.Context, v1.Pod, v1.Container, map[string][]string) []*exec.Cmd, namespaces []string) error {
+func Perform(ctx context.Context, image string, files syncMap, cmdFn func(context.Context, v1.Pod, v1.Container, map[string][]string) []*exec.Cmd, namespaces []string) error {
 	if len(files) == 0 {
 		return nil
 	}
