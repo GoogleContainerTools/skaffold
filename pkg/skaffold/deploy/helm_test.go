@@ -242,11 +242,10 @@ func TestHelmDeploy(t *testing.T) {
 			builds:      testBuilds,
 		},
 		{
-			description: "deploy error unmatched parameter",
+			description: "deploy should not error for unmatched parameter",
 			cmd:         &MockHelm{t: t},
 			runContext:  makeRunContext(testDeployConfigParameterUnmatched, false),
 			builds:      testBuilds,
-			shouldErr:   true,
 		},
 		{
 			description: "deploy success remote chart with skipBuildDependencies",

@@ -49,6 +49,7 @@ type HelmDeployer struct {
 	kubeContext string
 	namespace   string
 	defaultRepo string
+	kubectl     kubectl.CLI
 	forceDeploy bool
 }
 
@@ -58,6 +59,10 @@ func NewHelmDeployer(runCtx *runcontext.RunContext) *HelmDeployer {
 	return &HelmDeployer{
 		HelmDeploy:  runCtx.Cfg.Deploy.HelmDeploy,
 		kubeContext: runCtx.KubeContext,
+		kubectl: kubectl.CLI{
+			Namespace:   runCtx.Opts.Namespace,
+			KubeContext: runCtx.KubeContext,
+		},
 		namespace:   runCtx.Opts.Namespace,
 		defaultRepo: runCtx.DefaultRepo,
 		forceDeploy: runCtx.Opts.ForceDeploy(),
@@ -88,6 +93,13 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 		event.DeployFailed(err)
 		return errors.Wrap(err, "setting labels in manifests")
 	}
+
+	err = h.kubectl.Apply(ctx, out, manifests)
+	if err != nil {
+		event.DeployFailed(err)
+		return errors.Wrap(err, "kubectl error while applying labels in manifests")
+	}
+
 	event.DeployComplete()
 	return nil
 }
@@ -171,11 +183,9 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		color.Red.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
 		isInstalled = false
 	}
-	params, err := h.joinTagsToBuildResult(builds, r.Values)
-	if err != nil {
-		return "", errors.Wrap(err, "matching build results to chart values")
-	}
 
+	params := h.joinTagsToBuildResult(builds, r.Values)
+	logrus.Warn(params)
 	var setOpts []string
 	for k, v := range params {
 		setOpts = append(setOpts, "--set")
@@ -409,22 +419,23 @@ func (h *HelmDeployer) deleteRelease(ctx context.Context, out io.Writer, r lates
 	return nil
 }
 
-func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {
+func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map[string]string) map[string]build.Artifact {
 	imageToBuildResult := map[string]build.Artifact{}
-	for _, build := range builds {
-		imageToBuildResult[build.ImageName] = build
+	for _, b := range builds {
+		imageToBuildResult[b.ImageName] = b
 	}
-
 	paramToBuildResult := map[string]build.Artifact{}
 	for param, imageName := range params {
 		newImageName := util.SubstituteDefaultRepoIntoImage(h.defaultRepo, imageName)
-		build, ok := imageToBuildResult[newImageName]
+		b, ok := imageToBuildResult[newImageName]
 		if !ok {
-			return nil, fmt.Errorf("no build present for %s", imageName)
+			logrus.Warnf("no build present for %s", imageName)
+			logrus.Warnf("continuing with %s", imageName)
+			b = build.Artifact{ImageName: imageName, Tag: imageName}
 		}
-		paramToBuildResult[param] = build
+		paramToBuildResult[param] = b
 	}
-	return paramToBuildResult, nil
+	return paramToBuildResult
 }
 
 func evaluateReleaseName(nameTemplate string) (string, error) {

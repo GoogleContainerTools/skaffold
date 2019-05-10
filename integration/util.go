@@ -130,6 +130,16 @@ func (k *NSKubernetesClient) GetDeployment(depName string) *appsv1.Deployment {
 	return dep
 }
 
+// GetPods gets all pods in the client namespace
+func (k *NSKubernetesClient) GetPods() *v1.PodList {
+	pods, err := k.client.CoreV1().Pods(k.ns).List(meta_v1.ListOptions{})
+	if err != nil {
+		k.t.Fatalf("Could not find pods for in namespace %s", k.ns)
+	}
+	return pods
+}
+
+
 // WaitForDeploymentsToStabilize waits for a list of deployments to become stable.
 func (k *NSKubernetesClient) WaitForDeploymentsToStabilize(depNames ...string) {
 	if len(depNames) == 0 {
