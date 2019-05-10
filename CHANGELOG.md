@@ -4,6 +4,15 @@
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
         See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
         
+**Note**: `skaffold deploy` now requires images to be built first, `skaffold deploy` will not build images itself. 
+
+Users can use `skaffold deploy` in this flow for example: 
+
+1. `skaffold build -q > built.json`
+2. ` skaffold deploy -a built.json` 
+
+Or if users want a single command that builds and deploys, they can still run `skaffold run`. 
+
 New Features: 
 
 * Add command to custom artifact dependencies [#2095](https://github.com/GoogleContainerTools/skaffold/pull/2095)
