@@ -180,7 +180,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 			if err != nil {
 				return nil, errors.Wrapf(err, "cannot parse the docker image reference %s", v.Tag)
 			}
-			imageRepositoryTag := fmt.Sprintf("%s.repository=%s,%s.tag=%s", k, dockerRef.BaseName, k, dockerRef.Tag)
+			imageRepositoryTag := fmt.Sprintf("%s.repository=%s,%s.tag=%s", k, dockerRef.BaseName, k, extractTag(v.Tag))
 			setOpts = append(setOpts, imageRepositoryTag)
 		} else {
 			setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v.Tag))
