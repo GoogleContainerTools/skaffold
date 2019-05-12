@@ -21,15 +21,26 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/docker/docker/api/types"
 	"github.com/pkg/errors"
 )
 
+var (
+	opts = &config.SkaffoldOptions{}
+)
+
 func Prune(ctx context.Context, out io.Writer, images []string, client LocalDaemon) error {
+	pruneChildren := true
+
+	if opts.NoPruneChildren {
+		pruneChildren = false
+	}
+
 	for _, id := range images {
 		resp, err := client.ImageRemove(ctx, id, types.ImageRemoveOptions{
 			Force:         true,
-			PruneChildren: true,
+			PruneChildren: pruneChildren,
 		})
 		if err != nil {
 			return errors.Wrap(err, "pruning images")

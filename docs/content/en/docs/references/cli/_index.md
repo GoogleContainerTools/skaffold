@@ -72,6 +72,7 @@ Flags:
       --insecure-registry strings    Target registries for built images which are not secure
   -n, --namespace string             Run deployments in the specified namespace
       --no-prune                     Skip removing images and containers built by Skaffold
+      --no-prune-children            Skip removing layers reused by Skaffold
   -o, --output *flags.TemplateFlag   Used in conjuction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags#BuildOutput (default {{json .}})
   -p, --profile strings              Activate profiles by name
   -q, --quiet                        Suppress the build output and print image built on success. See --output to format output.
@@ -97,6 +98,7 @@ Env vars:
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
+* `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
 * `SKAFFOLD_OUTPUT` (same as `--output`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_QUIET` (same as `--quiet`)
@@ -236,6 +238,7 @@ Flags:
   -l, --label strings               Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace string            Run deployments in the specified namespace
       --no-prune                    Skip removing images and containers built by Skaffold
+      --no-prune-children           Skip removing layers reused by Skaffold
       --port-forward                Port-forward exposed container ports within pods
   -p, --profile strings             Activate profiles by name
       --rpc-http-port int           tcp port to expose event REST API over HTTP (default 50052)
@@ -262,6 +265,7 @@ Env vars:
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
+* `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
@@ -285,6 +289,7 @@ Flags:
       --insecure-registry strings   Target registries for built images which are not secure
   -n, --namespace string            Run deployments in the specified namespace
       --no-prune                    Skip removing images and containers built by Skaffold
+      --no-prune-children           Skip removing layers reused by Skaffold
   -p, --profile strings             Activate profiles by name
       --rpc-http-port int           tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                tcp port to expose event API (default 50051)
@@ -304,6 +309,7 @@ Env vars:
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
+* `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
@@ -331,6 +337,7 @@ Flags:
   -l, --label strings                                Add custom labels to deployed objects. Set multiple times for multiple labels.
   -n, --namespace string                             Run deployments in the specified namespace
       --no-prune                                     Skip removing images and containers built by Skaffold
+      --no-prune-children                            Skip removing layers reused by Skaffold
   -p, --profile strings                              Activate profiles by name
       --rpc-http-port int                            tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                                 tcp port to expose event API (default 50051)
@@ -358,6 +365,7 @@ Env vars:
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
+* `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
@@ -384,6 +392,7 @@ Flags:
   -l, --label strings               Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace string            Run deployments in the specified namespace
       --no-prune                    Skip removing images and containers built by Skaffold
+      --no-prune-children           Skip removing layers reused by Skaffold
       --port-forward                Port-forward exposed container ports within pods
   -p, --profile strings             Activate profiles by name
       --rpc-http-port int           tcp port to expose event REST API over HTTP (default 50052)
@@ -413,6 +422,7 @@ Env vars:
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
+* `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
@@ -521,6 +531,7 @@ Flags:
   -l, --label strings               Add custom labels to deployed objects. Set multiple times for multiple labels.
   -n, --namespace string            Run deployments in the specified namespace
       --no-prune                    Skip removing images and containers built by Skaffold
+      --no-prune-children           Skip removing layers reused by Skaffold
   -p, --profile strings             Activate profiles by name
       --rpc-http-port int           tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                tcp port to expose event API (default 50051)
@@ -547,6 +558,7 @@ Env vars:
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
+* `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
