@@ -33,6 +33,18 @@ const bufferedLinesPerArtifact = 10000
 
 type artifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error)
 
+type buildSync struct {
+	outputs                 []chan []byte
+	artifacts               []*latest.Artifact
+	out                     io.Writer
+	perArtifactOutputWg     []*sync.WaitGroup
+	perArtifactOutputReader []*io.PipeReader
+	perArtifactOutputWriter []*io.PipeWriter
+	buildArtifact           artifactBuilder
+	ch                      chan Result
+	tags                    tag.ImageTags
+}
+
 // InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
 func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) (<-chan Result, error) {
 	if len(artifacts) == 1 {
@@ -40,90 +52,103 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	}
 
 	resultChan := make(chan Result, len(artifacts))
-
-	ctx, cancel := context.WithCancel(ctx)
-
-	// for collecting all output and printing in order later on
-	outputs := make([]chan []byte, len(artifacts))
-
 	allBuildsWg := &sync.WaitGroup{}
 
-	for i, a := range artifacts {
-		// give each build a byte buffer to write its output to
-		lines := make(chan []byte, bufferedLinesPerArtifact)
-		outputs[i] = lines
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-		//	allBuildsWg.Add(1)
-		go func(artifact *latest.Artifact, c chan Result, lines chan []byte) {
-			defer allBuildsWg.Done()
-			res := &Result{
-				Target: *artifact,
-			}
-			wg := &sync.WaitGroup{}
-
-			r, w := io.Pipe()
-
-			// Log to the pipe, output will be collected and printed later
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				// Make sure logs are printed in colors
-				var cw io.WriteCloser
-				if color.IsTerminal(out) {
-					cw = color.ColoredWriteCloser{WriteCloser: w}
-				} else {
-					cw = w
-				}
-
-				color.Default.Fprintf(cw, "Building [%s]...\n", artifact.ImageName)
-
-				event.BuildInProgress(artifact.ImageName)
-
-				tag, present := tags[artifact.ImageName]
-				if !present {
-					res.Error = fmt.Errorf("building [%s]: unable to find tag for image", artifact.ImageName)
-					event.BuildFailed(artifact.ImageName, res.Error)
-				} else {
-					bRes, err := buildArtifact(ctx, cw, artifact, tag)
-					if err != nil {
-						res.Error = err
-						event.BuildFailed(artifact.ImageName, err)
-					} else {
-						res.Result = Artifact{
-							ImageName: artifact.ImageName,
-							Tag:       bRes,
-						}
-					}
-				}
-				event.BuildComplete(artifact.ImageName)
-				cw.Close()
-			}()
-
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				scanner := bufio.NewScanner(r)
-				for scanner.Scan() {
-					lines <- scanner.Bytes()
-				}
-				close(lines)
-			}()
-
-			wg.Wait() // wait for build to finish and output to be processed
-			c <- *res // send the result back through the results channel
-		}(a, resultChan, lines)
+	bs := buildSync{
+		outputs:                 make([]chan []byte, len(artifacts)),
+		artifacts:               artifacts,
+		out:                     out,
+		perArtifactOutputWg:     make([]*sync.WaitGroup, len(artifacts)),
+		perArtifactOutputReader: make([]*io.PipeReader, len(artifacts)),
+		perArtifactOutputWriter: make([]*io.PipeWriter, len(artifacts)),
+		ch:                      resultChan,
+		buildArtifact:           buildArtifact,
+		tags:                    tags,
 	}
 
-	go func() {
-		defer cancel()
-		for i := range artifacts {
-			for line := range outputs[i] {
-				out.Write(line)
-				fmt.Fprintln(out)
+	for i := range artifacts {
+		allBuildsWg.Add(1)
+		bs.outputs[i] = make(chan []byte, bufferedLinesPerArtifact)
+		bs.perArtifactOutputWg[i] = &sync.WaitGroup{}
+		bs.perArtifactOutputWg[i].Add(1)
+
+		r, w := io.Pipe()
+		bs.perArtifactOutputReader[i] = r
+		bs.perArtifactOutputWriter[i] = w
+
+		go run(ctx, bs, allBuildsWg, i)
+		go collectArtifactBuildOutput(bs, i)
+	}
+
+	// Wait for all output lines from artifact build
+	allBuildsWg.Add(1)
+	go processAllBuildOutput(bs, allBuildsWg)
+
+	// Wait for all builds to complete and output lines to be processed
+	allBuildsWg.Wait()
+	close(bs.ch)
+
+	return resultChan, nil
+}
+
+func run(ctx context.Context, bs buildSync, allBuildsWg *sync.WaitGroup, i int) {
+	defer allBuildsWg.Done()
+
+	res := &Result{
+		Target: *bs.artifacts[i],
+	}
+
+	// Make sure logs are printed in colors
+	var cw io.WriteCloser
+	if color.IsTerminal(bs.out) {
+		cw = color.ColoredWriteCloser{WriteCloser: bs.perArtifactOutputWriter[i]}
+	} else {
+		cw = bs.perArtifactOutputWriter[i]
+	}
+	color.Default.Fprintf(cw, "Building [%s]...\n", bs.artifacts[i].ImageName)
+
+	event.BuildInProgress(bs.artifacts[i].ImageName)
+
+	tag, present := bs.tags[bs.artifacts[i].ImageName]
+	if !present {
+		res.Error = fmt.Errorf("building [%s]: unable to find tag for image", bs.artifacts[i].ImageName)
+		event.BuildFailed(bs.artifacts[i].ImageName, res.Error)
+	} else {
+		bRes, err := bs.buildArtifact(ctx, cw, bs.artifacts[i], tag)
+		if err != nil {
+			res.Error = err
+			event.BuildFailed(bs.artifacts[i].ImageName, err)
+		} else {
+			res.Result = Artifact{
+				ImageName: bs.artifacts[i].ImageName,
+				Tag:       bRes,
 			}
 		}
-		allBuildsWg.Wait()
-		close(resultChan)
-	}()
-	return resultChan, nil
+	}
+	event.BuildComplete(bs.artifacts[i].ImageName)
+	cw.Close()
+	bs.ch <- *res // send the result back through the results channel
+}
+
+func collectArtifactBuildOutput(bs buildSync, i int) {
+	defer bs.perArtifactOutputWg[i].Done()
+	scanner := bufio.NewScanner(bs.perArtifactOutputReader[i])
+	for scanner.Scan() {
+		bs.outputs[i] <- scanner.Bytes()
+	}
+	close(bs.outputs[i])
+}
+
+func processAllBuildOutput(bs buildSync, allBuildsWg *sync.WaitGroup) {
+	defer allBuildsWg.Done()
+	for i := range bs.artifacts {
+		bs.perArtifactOutputWg[i].Wait()
+		for line := range bs.outputs[i] {
+			bs.out.Write(line)
+			fmt.Fprintln(bs.out)
+		}
+	}
 }

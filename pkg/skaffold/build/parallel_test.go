@@ -142,29 +142,29 @@ func TestInParallel(t *testing.T) {
 
 func TestInParallelResultsSeen(t *testing.T) {
 	var tests = []struct {
-		description   string
-		images        []string
-		expectedOrder []Result
+		description     string
+		images          []string
+		expectedResults []Result
 	}{
 		{
 			description: "shd see results as they complete",
 			images:      []string{"four", "one", "eight", "two"},
-			expectedOrder: []Result{
+			expectedResults: []Result{
 				{
 					Target: latest.Artifact{ImageName: "one"},
-					Result: Artifact{ImageName: "one", Tag: "one:tag@sha256:abac"},
+					Result: Artifact{ImageName: "one", Tag: "one:tag@sha256:1"},
 				},
 				{
 					Target: latest.Artifact{ImageName: "two"},
-					Result: Artifact{ImageName: "two", Tag: "two:tag@sha256:abac"},
+					Result: Artifact{ImageName: "two", Tag: "two:tag@sha256:2"},
 				},
 				{
 					Target: latest.Artifact{ImageName: "four"},
-					Result: Artifact{ImageName: "four", Tag: "four:tag@sha256:abac"},
+					Result: Artifact{ImageName: "four", Tag: "four:tag@sha256:4"},
 				},
 				{
 					Target: latest.Artifact{ImageName: "eight"},
-					Result: Artifact{ImageName: "eight", Tag: "eight:tag@sha256:abac"},
+					Result: Artifact{ImageName: "eight", Tag: "eight:tag@sha256:8"},
 				},
 			},
 		},
@@ -175,6 +175,7 @@ func TestInParallelResultsSeen(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			out := ioutil.Discard
 			artifacts := make([]*latest.Artifact, len(test.images))
+			builder := newOperator("")
 			tags := tag.ImageTags{}
 			for i, image := range test.images {
 				artifacts[i] = &latest.Artifact{
@@ -195,13 +196,13 @@ func TestInParallelResultsSeen(t *testing.T) {
 				Opts: &config.SkaffoldOptions{},
 			})
 
-			ch, _ := InParallel(context.Background(), out, tags, artifacts, StaggerBuild)
-			actualOrder := make([]Result, len(test.images))
+			ch, _ := InParallel(context.Background(), out, tags, artifacts, builder.doBuild)
+			actualResults := make([]Result, len(test.images))
 			// Collect all results
 			for i := 0; i < len(artifacts); i++ {
-				actualOrder[i] = <-ch
+				actualResults[i] = <-ch
 			}
-			CheckBuildResultsOrder(t, test.expectedOrder, actualOrder)
+			CheckBuildResults(t, test.expectedResults, actualResults)
 		})
 	}
 }

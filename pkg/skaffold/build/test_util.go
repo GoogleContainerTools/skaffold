@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"testing"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -38,20 +37,50 @@ var (
 	}
 )
 
-// StaggerBuild function stalls the build by adding a sleep for the number of
-// milliseconds passed in as `artifact.ImageName`
-func StaggerBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+type operator interface {
+	doBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error)
+}
+
+func newOperator(op string) operator {
+	switch op {
+	case "sum":
+		return &summer{}
+	default:
+		return &identity{}
+	}
+}
+
+// SummerBuild function
+type summer struct {
+	sum int
+}
+
+// Build Calculate the tag based in the sum value. For in sequence builds the sum will updated safely.
+func (s *summer) doBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	num, ok := wordsToInt[artifact.ImageName]
 	if !ok {
 		return "", fmt.Errorf("could not build artifact %s", artifact.ImageName)
 	}
-	time.Sleep(time.Duration(num) * time.Millisecond)
-	return fmt.Sprintf("%s@sha256:abac", tag), nil
+	// update sum
+	s.sum = s.sum + num
+	return fmt.Sprintf("%s@sha256:%d", tag, s.sum), nil
+}
+
+// SummerBuild function
+type identity struct {
+}
+
+// Build Calculate the tag based in the sum value. For in sequence builds the sum will updated safely.
+func (i *identity) doBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+	num, ok := wordsToInt[artifact.ImageName]
+	if !ok {
+		return "", fmt.Errorf("could not build artifact %s", artifact.ImageName)
+	}
+	return fmt.Sprintf("%s@sha256:%d", tag, num), nil
 }
 
 func CheckBuildResults(t *testing.T, expected []Result, actual []Result) {
-	// build results are going to be out of order so
-	// exported field.
+	// build results are going to be out of order so checking individual fields.
 	for _, e := range expected {
 		for _, a := range actual {
 			if a.Target.ImageName != e.Target.ImageName {

@@ -148,29 +148,29 @@ func TestInSequence(t *testing.T) {
 
 func TestInSequenceResultsSeen(t *testing.T) {
 	var tests = []struct {
-		description   string
-		images        []string
-		expectedOrder []Result
+		description     string
+		images          []string
+		expectedResults []Result
 	}{
 		{
 			description: "shd see results sequentially in order of input",
 			images:      []string{"four", "one", "eight", "two"},
-			expectedOrder: []Result{
+			expectedResults: []Result{
 				{
 					Target: latest.Artifact{ImageName: "four"},
-					Result: Artifact{ImageName: "four", Tag: "four:tag@sha256:abac"},
+					Result: Artifact{ImageName: "four", Tag: "four:tag@sha256:4"},
 				},
 				{
 					Target: latest.Artifact{ImageName: "one"},
-					Result: Artifact{ImageName: "one", Tag: "one:tag@sha256:abac"},
+					Result: Artifact{ImageName: "one", Tag: "one:tag@sha256:5"},
 				},
 				{
 					Target: latest.Artifact{ImageName: "eight"},
-					Result: Artifact{ImageName: "eight", Tag: "eight:tag@sha256:abac"},
+					Result: Artifact{ImageName: "eight", Tag: "eight:tag@sha256:13"},
 				},
 				{
 					Target: latest.Artifact{ImageName: "two"},
-					Result: Artifact{ImageName: "two", Tag: "two:tag@sha256:abac"},
+					Result: Artifact{ImageName: "two", Tag: "two:tag@sha256:15"},
 				},
 			},
 		},
@@ -201,13 +201,14 @@ func TestInSequenceResultsSeen(t *testing.T) {
 				Opts: &config.SkaffoldOptions{},
 			})
 
-			ch, _ := InSequence(context.Background(), out, tags, artifacts, StaggerBuild)
-			actualOrder := make([]Result, len(test.images))
+			builder := newOperator("sum")
+			ch, _ := InSequence(context.Background(), out, tags, artifacts, builder.doBuild)
+			actualResults := make([]Result, len(test.images))
 			// Wait for all results
 			for i := 0; i < len(artifacts); i++ {
-				actualOrder[i] = <-ch
+				actualResults[i] = <-ch
 			}
-			CheckBuildResultsOrder(t, test.expectedOrder, actualOrder)
+			CheckBuildResultsOrder(t, test.expectedResults, actualResults)
 		})
 	}
 }
