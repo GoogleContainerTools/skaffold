@@ -178,7 +178,7 @@ func AddRunDevFlags(cmd *cobra.Command) {
 func AddDevDebugFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&opts.TailDev, "tail", true, "Stream logs from deployed objects")
 	cmd.Flags().BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
-	cmd.Flags().BoolVar(&opts.PortForward, "port-forward", true, "Port-forward exposed container ports within pods")
+	cmd.Flags().BoolVar(&opts.PortForward, "port-forward", false, "Port-forward exposed container ports within pods")
 	cmd.Flags().StringSliceVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels")
 }
 

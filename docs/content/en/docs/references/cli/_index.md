@@ -236,7 +236,7 @@ Flags:
   -l, --label strings               Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace string            Run deployments in the specified namespace
       --no-prune                    Skip removing images and containers built by Skaffold
-      --port-forward                Port-forward exposed container ports within pods (default true)
+      --port-forward                Port-forward exposed container ports within pods
   -p, --profile strings             Activate profiles by name
       --rpc-http-port int           tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                tcp port to expose event API (default 50051)
@@ -384,7 +384,7 @@ Flags:
   -l, --label strings               Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace string            Run deployments in the specified namespace
       --no-prune                    Skip removing images and containers built by Skaffold
-      --port-forward                Port-forward exposed container ports within pods (default true)
+      --port-forward                Port-forward exposed container ports within pods
   -p, --profile strings             Activate profiles by name
       --rpc-http-port int           tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                tcp port to expose event API (default 50051)
