@@ -26,11 +26,15 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+const (
+	True = "true"
+)
+
 func TestHelmDeploy(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
-	if os.Getenv("REMOTE_INTEGRATION") != "true" {
+	if os.Getenv("REMOTE_INTEGRATION") != True {
 		t.Skip("skipping remote only test")
 	}
 
@@ -46,7 +50,7 @@ func TestHelmDeploy(t *testing.T) {
 	client.WaitForDeploymentsToStabilize(depName)
 
 	expectedLabels := map[string]string{
-		"app.kubernetes.io/managed-by": "true",
+		"app.kubernetes.io/managed-by": True,
 		"release":                      depName,
 		"skaffold.dev/deployer":        "helm",
 	}
@@ -66,7 +70,7 @@ func TestHelmDeploy(t *testing.T) {
 	// A new revision of deployments is rolled out https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#updating-a-deployment
 	// The pod belonging to the earlier revision does not have the newly set labels correctly so.
 	// There is no easy way to get Deployments -> Current ReplicaSet -> Pods.
-	// Hence we have this hack to check if alteast one Running pod has all the right set of labels.
+	// Hence we have this hack to check if at the least one pod has all the right set of labels.
 	// Alternatively we can `kubectl get  pods --namespace skaffoldtzbff -o=jsonpath='{range .items[*]}{.metadata.labels}{end}'`
 	// and parse the output.
 	foundPodWithCorrectLabels := false
@@ -91,7 +95,7 @@ func extractLabels(expected map[string]string, actual map[string]string) string 
 	for k, v := range actual {
 		switch k {
 		case "app.kubernetes.io/managed-by":
-			extracted[k] = "true" // ignore version since its runtime
+			extracted[k] = True // ignore version since its runtime
 		case "release":
 			extracted[k] = v
 		case "skaffold.dev/deployer":
