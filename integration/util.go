@@ -139,7 +139,6 @@ func (k *NSKubernetesClient) GetPods() *v1.PodList {
 	return pods
 }
 
-
 // WaitForDeploymentsToStabilize waits for a list of deployments to become stable.
 func (k *NSKubernetesClient) WaitForDeploymentsToStabilize(depNames ...string) {
 	if len(depNames) == 0 {

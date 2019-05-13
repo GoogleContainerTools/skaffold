@@ -19,6 +19,7 @@ package integration
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -49,21 +50,43 @@ func TestHelmDeploy(t *testing.T) {
 		"release":                      depName,
 		"skaffold.dev/deployer":        "helm",
 	}
-	//check if labels are set correctly for deploument
-	dep := client.GetDeployment(depName)
-	extractLabels(t, fmt.Sprintf("Dep: %s", depName), expectedLabels, dep.ObjectMeta.Labels)
 
-	//check if labels are set correctly for pods
+	// check if labels are set correctly for deploument
+	dep := client.GetDeployment(depName)
+	if d := extractLabels(expectedLabels, dep.ObjectMeta.Labels); d != "" {
+		t.Errorf("did not find expected labels for dep %s: %s", depName, d)
+	}
+
+	// check if atleast one pod has has correct labels set.
+	// Currently, we do a
+	// 1. helm install or upgrade,
+	// 2. grab the manifests for deployed resources,
+	// 3. change the deployed manifests and apply.
+	// In this example, we use a deployment. Applying labels after deployment triggers a spec change.
+	// A new revision of deployments is rolled out https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#updating-a-deployment
+	// The pod belonging to the earlier revision does not have the newly set labels correctly so.
+	// There is no easy way to get Deployments -> Current ReplicaSet -> Pods.
+	// Hence we have this hack to check if alteast one Running pod has all the right set of labels.
+	// Alternatively we can `kubectl get  pods --namespace skaffoldtzbff -o=jsonpath='{range .items[*]}{.metadata.labels}{end}'`
+	// and parse the output.
+	foundPodWithCorrectLabels := false
 	pods := client.GetPods()
-	// FIX ME the first pod dies.
-	fmt.Println(pods.Items[1])
-	po := pods.Items[0]
-	extractLabels(t, fmt.Sprintf("Pod:%s", po.ObjectMeta.Name), expectedLabels, po.ObjectMeta.Labels)
+	diffs := make([]string, len(pods.Items))
+	for i, po := range pods.Items {
+		diffs[i] = extractLabels(expectedLabels, po.ObjectMeta.Labels)
+		if diffs[i] == "" {
+			foundPodWithCorrectLabels = true
+			break
+		}
+	}
+	if !foundPodWithCorrectLabels {
+		t.Errorf("Could not find one pod with all the labels. See diff:\n%s", strings.Join(diffs, "\n"))
+	}
 
 	skaffold.Delete().InDir(helmDir).InNs(ns.Name).WithEnv(env).RunOrFail(t)
 }
 
-func extractLabels(t *testing.T, name string, expected map[string]string, actual map[string]string) {
+func extractLabels(expected map[string]string, actual map[string]string) string {
 	extracted := map[string]string{}
 	for k, v := range actual {
 		switch k {
@@ -77,7 +100,5 @@ func extractLabels(t *testing.T, name string, expected map[string]string, actual
 			continue
 		}
 	}
-	if d := cmp.Diff(extracted, expected); d != "" {
-		t.Errorf("expected to see %s labels for %s. Diff %s", expected, name, d)
-	}
+	return cmp.Diff(extracted, expected)
 }
