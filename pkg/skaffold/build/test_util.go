@@ -50,27 +50,29 @@ func newOperator(op string) operator {
 	}
 }
 
-// SummerBuild function
+// summer builder sums all the numbers
 type summer struct {
 	sum int
 }
 
-// Build Calculate the tag based in the sum value. For in sequence builds the sum will updated safely.
+// Build Calculate the tag based in the sum value.
+// For in sequence builds the sum will updated safely and the next images will
+// be tagged as sum of values seen so far.
 func (s *summer) doBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	num, ok := wordsToInt[artifact.ImageName]
 	if !ok {
 		return "", fmt.Errorf("could not build artifact %s", artifact.ImageName)
 	}
 	// update sum
-	s.sum = s.sum + num
+	s.sum += num
 	return fmt.Sprintf("%s@sha256:%d", tag, s.sum), nil
 }
 
-// SummerBuild function
+// identity build returns the tag as is
 type identity struct {
 }
 
-// Build Calculate the tag based in the sum value. For in sequence builds the sum will updated safely.
+// doBuild returns the int value corresponding to the image name
 func (i *identity) doBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	num, ok := wordsToInt[artifact.ImageName]
 	if !ok {

@@ -126,11 +126,14 @@ func TestInParallel(t *testing.T) {
 				Opts: &config.SkaffoldOptions{},
 			})
 
-			reCh, err := InParallel(context.Background(), out, test.tags, artifacts, test.buildArtifact)
+			ch, err := InParallel(context.Background(), out, test.tags, artifacts, test.buildArtifact)
 			actualResults := make([]Result, len(artifacts))
-			// Wait for all results
-			for i := 0; i < len(artifacts); i++ {
-				actualResults[i] = <-reCh
+			// Collect all results by waiting for channels to close so that
+			// all build output are done processing
+			i := 0
+			for c := range ch {
+				actualResults[i] = c
+				i++
 			}
 
 			testutil.CheckError(t, test.shouldErr, err)
@@ -199,8 +202,10 @@ func TestInParallelResultsSeen(t *testing.T) {
 			ch, _ := InParallel(context.Background(), out, tags, artifacts, builder.doBuild)
 			actualResults := make([]Result, len(test.images))
 			// Collect all results
-			for i := 0; i < len(artifacts); i++ {
-				actualResults[i] = <-ch
+			i := 0
+			for c := range ch {
+				actualResults[i] = c
+				i++
 			}
 			CheckBuildResults(t, test.expectedResults, actualResults)
 		})

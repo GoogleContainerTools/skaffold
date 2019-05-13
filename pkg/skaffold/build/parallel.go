@@ -33,10 +33,13 @@ const bufferedLinesPerArtifact = 10000
 
 type artifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error)
 
-type buildSync struct {
+// buildSyncContext struct contains all the context for build in parallel running
+// go process to execute and sync
+type buildSyncContext struct {
 	outputs                 []chan []byte
 	artifacts               []*latest.Artifact
 	out                     io.Writer
+	outMutex                *sync.Mutex
 	perArtifactOutputWg     []*sync.WaitGroup
 	perArtifactOutputReader []*io.PipeReader
 	perArtifactOutputWriter []*io.PipeWriter
@@ -57,10 +60,11 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	bs := buildSync{
+	bs := buildSyncContext{
 		outputs:                 make([]chan []byte, len(artifacts)),
 		artifacts:               artifacts,
 		out:                     out,
+		outMutex:                &sync.Mutex{},
 		perArtifactOutputWg:     make([]*sync.WaitGroup, len(artifacts)),
 		perArtifactOutputReader: make([]*io.PipeReader, len(artifacts)),
 		perArtifactOutputWriter: make([]*io.PipeWriter, len(artifacts)),
@@ -80,21 +84,25 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 		bs.perArtifactOutputWriter[i] = w
 
 		go run(ctx, bs, allBuildsWg, i)
-		go collectArtifactBuildOutput(bs, i)
+		go readBuildOutput(bs, i)
 	}
 
 	// Wait for all output lines from artifact build
-	allBuildsWg.Add(1)
-	go processAllBuildOutput(bs, allBuildsWg)
+	processOutput := &sync.WaitGroup{}
+	processOutput.Add(1)
+	go processAllBuildOutput(bs, processOutput)
 
 	// Wait for all builds to complete and output lines to be processed
-	allBuildsWg.Wait()
-	close(bs.ch)
+	go func() {
+		processOutput.Wait()
+		allBuildsWg.Wait()
+		close(bs.ch)
+	}()
 
 	return resultChan, nil
 }
 
-func run(ctx context.Context, bs buildSync, allBuildsWg *sync.WaitGroup, i int) {
+func run(ctx context.Context, bs buildSyncContext, allBuildsWg *sync.WaitGroup, i int) {
 	defer allBuildsWg.Done()
 
 	res := &Result{
@@ -133,7 +141,7 @@ func run(ctx context.Context, bs buildSync, allBuildsWg *sync.WaitGroup, i int) 
 	bs.ch <- *res // send the result back through the results channel
 }
 
-func collectArtifactBuildOutput(bs buildSync, i int) {
+func readBuildOutput(bs buildSyncContext, i int) {
 	defer bs.perArtifactOutputWg[i].Done()
 	scanner := bufio.NewScanner(bs.perArtifactOutputReader[i])
 	for scanner.Scan() {
@@ -142,13 +150,17 @@ func collectArtifactBuildOutput(bs buildSync, i int) {
 	close(bs.outputs[i])
 }
 
-func processAllBuildOutput(bs buildSync, allBuildsWg *sync.WaitGroup) {
-	defer allBuildsWg.Done()
+func processAllBuildOutput(bs buildSyncContext, wg *sync.WaitGroup) {
+	defer wg.Done()
 	for i := range bs.artifacts {
 		bs.perArtifactOutputWg[i].Wait()
+		// Sync over writing build results so that all output for a build is
+		// appears together
+		bs.outMutex.Lock()
 		for line := range bs.outputs[i] {
 			bs.out.Write(line)
 			fmt.Fprintln(bs.out)
 		}
+		bs.outMutex.Unlock()
 	}
 }
