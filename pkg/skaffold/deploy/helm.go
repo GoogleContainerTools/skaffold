@@ -162,10 +162,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		color.Red.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
 		isInstalled = false
 	}
-	params, err := h.joinTagsToBuildResult(builds, r.Values)
-	if err != nil {
-		return nil, errors.Wrap(err, "matching build results to chart values")
-	}
+	params := h.joinTagsToBuildResult(builds, r.Values)
 
 	var setOpts []string
 	for k, v := range params {
@@ -399,7 +396,7 @@ func (h *HelmDeployer) deleteRelease(ctx context.Context, out io.Writer, r lates
 	return nil
 }
 
-func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {
+func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map[string]string) map[string]build.Artifact {
 	imageToBuildResult := map[string]build.Artifact{}
 	for _, b := range builds {
 		imageToBuildResult[b.ImageName] = b
@@ -415,7 +412,7 @@ func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map
 		}
 		paramToBuildResult[param] = b
 	}
-	return paramToBuildResult, nil
+	return paramToBuildResult
 }
 
 func evaluateReleaseName(nameTemplate string) (string, error) {
