@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -33,45 +32,15 @@ metadata:
   name: skaffold-helm
   labels:
     app: skaffold-helm
-    chart: skaffold-helm-0.1.0
-    release: skaffold-helm
-    heritage: Tiller
 spec:
   replicas: 1
-  template:
-    metadata:
-      labels:
-        app: skaffold-helm
-        release: skaffold-helm
-    spec:
-      containers:
-        - name: skaffold-helm
-          image: gcr.io/k8s-skaffold/skaffold-helm:latest@sha256:f363d1c3d6c724dbfa9fda36207a2ac699686729bb98e00a68e8dd23f3efa94d
-          imagePullPolicy:
-          ports:
-            - containerPort: 80
-          resources:
-            {}
 `
 	serviceYaml = `apiVersion: v1
 kind: Service
 metadata:
   name: skaffold-helm-skaffold-helm
-  labels:
-    app: skaffold-helm
-    chart: skaffold-helm-0.1.0
-    release: skaffold-helm
-    heritage: Tiller
 spec:
   type: ClusterIP
-  ports:
-    - port: 80
-      targetPort: 80
-      protocol: TCP
-      name: nginx
-  selector:
-    app: skaffold-helm
-    release: skaffold-helm
 `
 	podYaml = `apiVersion: v1
 kind: Pod
@@ -140,16 +109,12 @@ apiVersi
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			var expected kubectl.ManifestList
-			for _, b := range test.expected {
-				expected.Append(b)
-			}
 			actual := parseReleaseInfo(bufio.NewReader(bytes.NewBuffer(test.releaseBytes)))
-			if len(actual) != len(expected) {
-				t.Errorf("want %d artifacts, got %d", len(expected), len(actual))
+			if len(actual) != len(test.expected) {
+				t.Errorf("want %d artifacts, got %d", len(test.expected), len(actual))
 			} else {
 				for i := 0; i < len(actual); i++ {
-					testutil.CheckDeepEqual(t, string(expected[i]), string(actual[i]))
+					testutil.CheckDeepEqual(t, string(test.expected[i]), string(actual[i]))
 				}
 			}
 		})

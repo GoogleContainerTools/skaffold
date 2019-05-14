@@ -185,7 +185,6 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	}
 
 	params := h.joinTagsToBuildResult(builds, r.Values)
-	logrus.Warn(params)
 	var setOpts []string
 	for k, v := range params {
 		setOpts = append(setOpts, "--set")
@@ -394,7 +393,7 @@ func (h *HelmDeployer) getReleaseManifests(ctx context.Context, release string) 
 }
 
 // Retrieve info about all releases using helm get
-// Skaffold labels will be applied to each deployed k8s object includeing k8object from
+// Skaffold labels will be applied to each deployed k8s object including k8object from
 // remote charts
 // Since helm isn't always consistent with retrieving results, don't return errors here
 func (h *HelmDeployer) getDeployResults(ctx context.Context, release string) kubectl.ManifestList {

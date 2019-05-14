@@ -644,7 +644,7 @@ var (
 # Source: skaffold-helm/templates/deployment.yaml
 %s---`, serviceYaml, deploymentYaml),
 		"release-2": fmt.Sprintf(`---
-		# Source: skaffold-helm/templates/service.yaml
+		# Source: skaffold-helm/templates/pod.yaml
 		%s---`, podYaml),
 	}
 )

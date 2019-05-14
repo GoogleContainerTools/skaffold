@@ -41,7 +41,7 @@ func TestHelmDeploy(t *testing.T) {
 	ns, client, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	// To fix #1823, we make use of templating release name
+	// To fix #1823, we make use of env variable templating for release name
 	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
 	depName := fmt.Sprintf("skaffold-helm-%s", ns.Name)
 	helmDir := "examples/helm-deployment"

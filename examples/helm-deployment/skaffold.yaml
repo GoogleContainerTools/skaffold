@@ -8,7 +8,7 @@ build:
 deploy:
   helm:
     releases:
-    - name: skaffold-helm-{{.TEST_NS}}
+    - name: skaffold-helm
       chartPath: skaffold-helm
       #wait: true
       #valuesFiles:
