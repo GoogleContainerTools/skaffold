@@ -212,7 +212,7 @@ spec:
       containers:
         - name: skaffold-helm
           image: gcr.io/nick-cloudbuild/skaffold-helm:f759510436c8fd6f7ffa13dd9e9d85e64bec8d2bfd12c5aa3fb9af1288eccdab
-          imagePullPolicy: 
+          imagePullPolicy:
           command: ["/bin/bash", "-c", "--" ]
           args: ["while true; do sleep 30; done;"]
           resources:
@@ -301,11 +301,10 @@ func TestHelmDeploy(t *testing.T) {
 			builds:      testBuilds,
 		},
 		{
-			description: "deploy error unmatched parameter",
+			description: "deploy should not error for unmatched parameter",
 			cmd:         &MockHelm{t: t},
 			runContext:  makeRunContext(testDeployConfigParameterUnmatched, false),
 			builds:      testBuilds,
-			shouldErr:   true,
 		},
 		{
 			description: "deploy success remote chart with skipBuildDependencies",

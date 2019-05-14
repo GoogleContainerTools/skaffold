@@ -401,18 +401,19 @@ func (h *HelmDeployer) deleteRelease(ctx context.Context, out io.Writer, r lates
 
 func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {
 	imageToBuildResult := map[string]build.Artifact{}
-	for _, build := range builds {
-		imageToBuildResult[build.ImageName] = build
+	for _, b := range builds {
+		imageToBuildResult[b.ImageName] = b
 	}
 
 	paramToBuildResult := map[string]build.Artifact{}
 	for param, imageName := range params {
 		newImageName := util.SubstituteDefaultRepoIntoImage(h.defaultRepo, imageName)
-		build, ok := imageToBuildResult[newImageName]
+		b, ok := imageToBuildResult[newImageName]
 		if !ok {
-			return nil, fmt.Errorf("no build present for %s", imageName)
+			logrus.Warnf("no build present for %s. Continuing with %s", imageName, imageName)
+			b = build.Artifact{ImageName: imageName, Tag: imageName}
 		}
-		paramToBuildResult[param] = build
+		paramToBuildResult[param] = b
 	}
 	return paramToBuildResult, nil
 }
