@@ -131,6 +131,8 @@ without a Docker daemon.
 Skaffold can help build artifacts using Jib; Jib builds the container images and then
 pushes them to the local Docker daemon or to remote registries as instructed by Skaffold.
 
+Skaffold requires using Jib v1.3.0 or later.
+
 ### Configuration
 
 To use Jib, add a `jibMaven` or `jibGradle` field to each artifact you specify in the
@@ -165,22 +167,17 @@ each produce a separate container image.
 To build a Maven multi-module project, first identify the modules that should
 produce a container image. Then for each such module:
 
-  1. Create a Skaffold `artifact` in the `skaffold.yaml`:
-     - Set the `artifact`'s `context` field to the root project location.
-     - Add a `jibMaven` element and set its `module` field to the module's
-       `:artifactId`, `groupId:artifactId`, or the relative path to the module
-       _within the project_.
-  2. Configure the module's `pom.xml` to bind either `jib:build` or `jib:dockerBuild` to
-     the `package` phase as appropriate (see below).
+  - Create a Skaffold `artifact` in the `skaffold.yaml`:
+  - Set the `artifact`'s `context` field to the root project location.
+  - Add a `jibMaven` element and set its `module` field to the module's
+    `:artifactId`, `groupId:artifactId`, or the relative path to the module
+    _within the project_.
 
-This second step is necessary at the moment as Maven applies plugin goals specified
-on the command-line, like `jib:build` or, to all modules and not just the modules
-producing container images.
-The situation is further complicated as Skaffold speeds up deploys to a local cluster,
-such as `minikube`, by building and loading container images directly to the
-local cluster's docker daemon (via `jib:dockerBuild` instead of `jib:build`),
-thus saving a push and a pull of the image.
-We plan to improve this situation [(#1876)](https://github.com/GoogleContainerTools/skaffold/issues/1876).
+{{% alert title="Updating from earlier versions" %}}
+Skaffold had required Maven multi-module projects bind a Jib
+`build` or `dockerBuild` goal to the *package* phase.  These bindings are
+no longer required with Jib 1.3.0 and should be removed.
+{{% /alert %}}
 
 #### Gradle
 
