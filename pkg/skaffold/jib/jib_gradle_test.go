@@ -65,20 +65,20 @@ func TestGetDependenciesGradle(t *testing.T) {
 		},
 		{
 			description: "success",
-			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\"],\"ignore\":[]}", build, dep1),
+			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"version\":\"1.3.0\",\"build\":[\"%s\"],\"inputs\":[\"%s\"],\"ignore\":[]}", build, dep1),
 			modTime:     time.Unix(0, 0),
 			expected:    []string{"build", "dep1"},
 		},
 		{
 			// Expected output differs from stdout since build file hasn't change, thus gradle command won't run
 			description: "success",
-			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\", \"%s\"],\"ignore\":[]}", build, dep1, dep2),
+			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"version\":\"1.3.0\",\"build\":[\"%s\"],\"inputs\":[\"%s\", \"%s\"],\"ignore\":[]}", build, dep1, dep2),
 			modTime:     time.Unix(0, 0),
 			expected:    []string{"build", "dep1"},
 		},
 		{
 			description: "success",
-			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\", \"%s\"],\"ignore\":[]}", build, dep1, dep2),
+			stdout:      fmt.Sprintf("BEGIN JIB JSON\n{\"version\":\"1.3.0\",\"build\":[\"%s\"],\"inputs\":[\"%s\", \"%s\"],\"ignore\":[]}", build, dep1, dep2),
 			modTime:     time.Unix(10000, 0),
 			expected:    []string{"build", "dep1", "dep2"},
 		},
@@ -98,7 +98,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 
 			deps, err := GetDependenciesGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{Project: "gradle-test"})
 			if test.err != nil {
-				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jibGradle dependencies: initial Jib dependency refresh failed: failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.0.2+): "+test.err.Error(), err.Error())
+				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jibGradle dependencies: initial Jib dependency refresh failed: failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.3.0+): "+test.err.Error(), err.Error())
 			} else {
 				testutil.CheckDeepEqual(t, test.expected, deps)
 			}

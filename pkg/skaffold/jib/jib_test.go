@@ -40,40 +40,63 @@ func TestGetDependencies(t *testing.T) {
 	dep3 := tmpDir.Path("dep3")
 
 	var tests = []struct {
-		stdout       string
-		expectedDeps []string
+		name          string
+		stdout        string
+		expectedError bool
+		expectedDeps  []string
 	}{
 		{
-			stdout:       "BEGIN JIB JSON\n{\"build\":[],\"inputs\":[],\"ignore\":[]}",
-			expectedDeps: nil,
+			name:          "missing version",
+			stdout:        "BEGIN JIB JSON\n{\"build\":[],\"inputs\":[],\"ignore\":[]}",
+			expectedError: true,
+			expectedDeps:  nil,
 		},
 		{
-			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\"],\"ignore\":[]}\n", dep1, dep2),
-			expectedDeps: []string{"dep1", "dep2"},
+			name:          "out of date version",
+			stdout:        "BEGIN JIB JSON\n{\"version\":\"1.0.0\",\"build\":[],\"inputs\":[],\"ignore\":[]}",
+			expectedError: true,
+			expectedDeps:  nil,
 		},
 		{
-			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\"],\"ignore\":[]}\n", dep3),
-			expectedDeps: []string{filepath.FromSlash("dep3/fileA"), filepath.FromSlash("dep3/sub/path/fileB")},
+			name:          "base case",
+			stdout:        "BEGIN JIB JSON\n{\"version\":\"1.3.0\",\"build\":[],\"inputs\":[],\"ignore\":[]}",
+			expectedError: false,
+			expectedDeps:  nil,
 		},
 		{
-			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\",\"%s\"],\"ignore\":[]}\n", dep1, dep2, dep3),
-			expectedDeps: []string{"dep1", "dep2", filepath.FromSlash("dep3/fileA"), filepath.FromSlash("dep3/sub/path/fileB")},
+			stdout:        fmt.Sprintf("BEGIN JIB JSON\n{\"version\":\"1.3.0\",\"build\":[\"%s\"],\"inputs\":[\"%s\"],\"ignore\":[]}\n", dep1, dep2),
+			expectedError: false,
+			expectedDeps:  []string{"dep1", "dep2"},
 		},
 		{
-			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\",\"nonexistent\",\"%s\"],\"ignore\":[]}\n", dep1, dep2, dep3),
-			expectedDeps: []string{"dep1", "dep2", filepath.FromSlash("dep3/fileA"), filepath.FromSlash("dep3/sub/path/fileB")},
+			stdout:        fmt.Sprintf("BEGIN JIB JSON\n{\"version\":\"1.3.0\",\"build\":[],\"inputs\":[\"%s\"],\"ignore\":[]}\n", dep3),
+			expectedError: false,
+			expectedDeps:  []string{filepath.FromSlash("dep3/fileA"), filepath.FromSlash("dep3/sub/path/fileB")},
 		},
 		{
-			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[],\"inputs\":[\"%s\",\"%s\"],\"ignore\":[\"%s\"]}\n", dep1, dep2, dep2),
-			expectedDeps: []string{"dep1"},
+			stdout:        fmt.Sprintf("BEGIN JIB JSON\n{\"version\":\"1.3.0\",\"build\":[],\"inputs\":[\"%s\",\"%s\",\"%s\"],\"ignore\":[]}\n", dep1, dep2, dep3),
+			expectedError: false,
+			expectedDeps:  []string{"dep1", "dep2", filepath.FromSlash("dep3/fileA"), filepath.FromSlash("dep3/sub/path/fileB")},
 		},
 		{
-			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\"],\"inputs\":[\"%s\"],\"ignore\":[\"%s\",\"%s\"]}\n", dep1, dep3, dep1, dep3),
-			expectedDeps: nil,
+			stdout:        fmt.Sprintf("BEGIN JIB JSON\n{\"version\":\"1.3.0\",\"build\":[],\"inputs\":[\"%s\",\"%s\",\"nonexistent\",\"%s\"],\"ignore\":[]}\n", dep1, dep2, dep3),
+			expectedError: false,
+			expectedDeps:  []string{"dep1", "dep2", filepath.FromSlash("dep3/fileA"), filepath.FromSlash("dep3/sub/path/fileB")},
 		},
 		{
-			stdout:       fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\",\"%s\",\"%s\"],\"inputs\":[],\"ignore\":[\"%s\"]}\n", dep1, dep2, dep3, tmpDir.Path("dep3/sub/path")),
-			expectedDeps: []string{"dep1", "dep2", filepath.FromSlash("dep3/fileA")},
+			stdout:        fmt.Sprintf("BEGIN JIB JSON\n{\"version\":\"1.3.0\",\"build\":[],\"inputs\":[\"%s\",\"%s\"],\"ignore\":[\"%s\"]}\n", dep1, dep2, dep2),
+			expectedError: false,
+			expectedDeps:  []string{"dep1"},
+		},
+		{
+			stdout:        fmt.Sprintf("BEGIN JIB JSON\n{\"version\":\"1.3.0\",\"build\":[\"%s\"],\"inputs\":[\"%s\"],\"ignore\":[\"%s\",\"%s\"]}\n", dep1, dep3, dep1, dep3),
+			expectedError: false,
+			expectedDeps:  nil,
+		},
+		{
+			stdout:        fmt.Sprintf("BEGIN JIB JSON\n{\"version\":\"1.3.0\",\"build\":[\"%s\",\"%s\",\"%s\"],\"inputs\":[],\"ignore\":[\"%s\"]}\n", dep1, dep2, dep3, tmpDir.Path("dep3/sub/path")),
+			expectedError: false,
+			expectedDeps:  []string{"dep1", "dep2", filepath.FromSlash("dep3/fileA")},
 		},
 	}
 
@@ -90,7 +113,33 @@ func TestGetDependencies(t *testing.T) {
 
 			results, err := getDependencies(tmpDir.Root(), &exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()}, "test")
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedDeps, results)
+			testutil.CheckErrorAndDeepEqual(t, test.expectedError, err, test.expectedDeps, results)
+		})
+	}
+}
+
+func TestCheckJibVersion(t *testing.T) {
+	var tests = []struct {
+		version       string
+		expectedError bool
+	}{
+		{"", true},
+		{"-1", true},
+		{"1", true},
+		{"-SNAPSHOT", true},
+		{"abc", true},
+		{"1.2", true},
+		{"1.2-SNAPSHOT", true},
+		{"1.2.0", true},
+		{"1.2.0-SNAPSHOT", true},
+		{"1.3.0", false},
+		{"1.3.0-SNAPSHOT", false},
+		{"2.0.0", false},
+	}
+	for _, test := range tests {
+		t.Run(test.version, func(t *testing.T) {
+			err := checkJibVersion(test.version)
+			testutil.CheckError(t, test.expectedError, err)
 		})
 	}
 }
