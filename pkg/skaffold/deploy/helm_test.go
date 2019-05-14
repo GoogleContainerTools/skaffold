@@ -301,10 +301,17 @@ func TestHelmDeploy(t *testing.T) {
 			builds:      testBuilds,
 		},
 		{
-			description: "deploy should not error for unmatched parameter",
+			description: "deploy should not error for unmatched parameter when no builds present",
+			cmd:         &MockHelm{t: t},
+			runContext:  makeRunContext(testDeployConfigParameterUnmatched, false),
+			builds:      nil,
+		},
+		{
+			description: "deploy should error for unmatched parameter when builds present",
 			cmd:         &MockHelm{t: t},
 			runContext:  makeRunContext(testDeployConfigParameterUnmatched, false),
 			builds:      testBuilds,
+			shouldErr:   true,
 		},
 		{
 			description: "deploy success remote chart with skipBuildDependencies",
