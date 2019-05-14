@@ -90,6 +90,9 @@ func WaitForPodComplete(ctx context.Context, pods corev1.PodInterface, podName s
 	defer cancelTimeout()
 
 	return watchUntil(ctx, w, func(event *watch.Event) (bool, error) {
+		if event.Object == nil {
+			return false, nil
+		}
 		pod := event.Object.(*v1.Pod)
 		if pod.Name != podName {
 			return false, nil
