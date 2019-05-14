@@ -4,7 +4,9 @@ linkTitle: "Port forwarding"
 weight: 50
 ---
 
-This page discusses how Skaffold sets up port forwarding for container ports from pods. When Skaffold deploys an application, it will automatically forward any ports mentioned in the pod spec.
+This page discusses how Skaffold sets up port forwarding for container ports from pods. 
+Port forwarding is set to false by default; you can enable it with the `--port-forward` flag for `skaffold dev` and `skaffold debug`. 
+When this flag is set, skaffold will automatically forward any ports mentioned in the pod spec.
 
 ### Example
 
