@@ -184,7 +184,11 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		isInstalled = false
 	}
 
-	params := h.joinTagsToBuildResult(builds, r.Values)
+	params, err := h.joinTagsToBuildResult(builds, r.Values)
+	if err != nil {
+		return "", errors.Wrap(err, "matching build results to chart values")
+	}
+
 	var setOpts []string
 	for k, v := range params {
 		setOpts = append(setOpts, "--set")
@@ -418,23 +422,22 @@ func (h *HelmDeployer) deleteRelease(ctx context.Context, out io.Writer, r lates
 	return nil
 }
 
-func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map[string]string) map[string]build.Artifact {
+func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {
 	imageToBuildResult := map[string]build.Artifact{}
-	for _, b := range builds {
-		imageToBuildResult[b.ImageName] = b
+	for _, build := range builds {
+		imageToBuildResult[build.ImageName] = build
 	}
+
 	paramToBuildResult := map[string]build.Artifact{}
 	for param, imageName := range params {
 		newImageName := util.SubstituteDefaultRepoIntoImage(h.defaultRepo, imageName)
-		b, ok := imageToBuildResult[newImageName]
+		build, ok := imageToBuildResult[newImageName]
 		if !ok {
-			logrus.Warnf("no build present for %s", imageName)
-			logrus.Warnf("continuing with %s", imageName)
-			b = build.Artifact{ImageName: imageName, Tag: imageName}
+			return nil, fmt.Errorf("no build present for %s", imageName)
 		}
-		paramToBuildResult[param] = b
+		paramToBuildResult[param] = build
 	}
-	return paramToBuildResult
+	return paramToBuildResult, nil
 }
 
 func evaluateReleaseName(nameTemplate string) (string, error) {

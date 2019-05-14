@@ -27,41 +27,45 @@ import (
 )
 
 const (
-	True = "true"
+	TestVersion = "vtest"
 )
 
 func TestHelmDeploy(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
-	if os.Getenv("REMOTE_INTEGRATION") != True {
+	if os.Getenv("REMOTE_INTEGRATION") != "true" {
 		t.Skip("skipping remote only test")
 	}
 
-	ns, client, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	helmDir := "examples/helm-deployment"
 
+	ns, client, deleteNs := SetupNamespace(t)
 	// To fix #1823, we make use of env variable templating for release name
 	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
 	depName := fmt.Sprintf("skaffold-helm-%s", ns.Name)
-	helmDir := "examples/helm-deployment"
-	skaffold.Deploy().InDir(helmDir).InNs(ns.Name).WithEnv(env).RunOrFailOutput(t)
+	defer func() {
+		skaffold.Delete().InDir(helmDir).InNs(ns.Name).WithEnv(env).RunOrFail(t)
+		deleteNs()
+	}()
+
+	skaffold.Deploy("--images", "gcr.io/k8s-skaffold/skaffold-helm").InDir(helmDir).InNs(ns.Name).WithEnv(env).RunOrFailOutput(t)
 
 	client.WaitForDeploymentsToStabilize(depName)
 
 	expectedLabels := map[string]string{
-		"app.kubernetes.io/managed-by": True,
+		"app.kubernetes.io/managed-by": TestVersion,
 		"release":                      depName,
 		"skaffold.dev/deployer":        "helm",
 	}
 
 	// check if labels are set correctly for deploument
 	dep := client.GetDeployment(depName)
-	if d := extractLabels(expectedLabels, dep.ObjectMeta.Labels); d != "" {
+	if d := diffLabels(expectedLabels, dep.ObjectMeta.Labels); d != "" {
 		t.Errorf("did not find expected labels for dep %s: %s", depName, d)
 	}
 
-	// check if atleast one pod has has correct labels set.
+	// check if atleast one pod has correct labels set.
 	// Currently, we do a
 	// 1. helm install or upgrade,
 	// 2. grab the manifests for deployed resources,
@@ -77,7 +81,7 @@ func TestHelmDeploy(t *testing.T) {
 	pods := client.GetPods()
 	diffs := make([]string, len(pods.Items))
 	for i, po := range pods.Items {
-		diffs[i] = extractLabels(expectedLabels, po.ObjectMeta.Labels)
+		diffs[i] = diffLabels(expectedLabels, po.ObjectMeta.Labels)
 		if diffs[i] == "" {
 			foundPodWithCorrectLabels = true
 			break
@@ -90,12 +94,12 @@ func TestHelmDeploy(t *testing.T) {
 	skaffold.Delete().InDir(helmDir).InNs(ns.Name).WithEnv(env).RunOrFail(t)
 }
 
-func extractLabels(expected map[string]string, actual map[string]string) string {
+func diffLabels(expected map[string]string, actual map[string]string) string {
 	extracted := map[string]string{}
 	for k, v := range actual {
 		switch k {
 		case "app.kubernetes.io/managed-by":
-			extracted[k] = True // ignore version since its runtime
+			extracted[k] = TestVersion // ignore version since its runtime
 		case "release":
 			extracted[k] = v
 		case "skaffold.dev/deployer":

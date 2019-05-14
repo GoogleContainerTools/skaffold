@@ -174,7 +174,7 @@ func (b *RunBuilder) RunOrFailOutput(t *testing.T) []byte {
 	start := time.Now()
 	out, err := cmd.Output()
 	if err != nil {
-		t.Fatalf("skaffold %s: %v, %s", b.command, err, out)
+		t.Fatalf("skaffold %s: %v\nCommand Output:\n %s", b.command, err, out)
 	}
 
 	logrus.Infoln("Ran in", time.Since(start))
