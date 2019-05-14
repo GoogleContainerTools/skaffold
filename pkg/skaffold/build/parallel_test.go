@@ -75,6 +75,7 @@ func TestInParallel(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			initializeEvents()
 			out := new(bytes.Buffer)
 			artifacts := []*latest.Artifact{
 				{ImageName: "skaffold/image1"},

@@ -21,9 +21,13 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -84,4 +88,71 @@ func TestInSequence(t *testing.T) {
 			testutil.CheckDeepEqual(t, test.expectedOut, out.String())
 		})
 	}
+}
+
+func TestInSequenceResultsOrder(t *testing.T) {
+	var tests = []struct {
+		description string
+		images      []string
+		expected    []Artifact
+		shouldErr   bool
+	}{
+		{
+			description: "shd concatenate the tag",
+			images:      []string{"a", "b", "c", "d"},
+			expected: []Artifact{
+				{ImageName: "a", Tag: "a:a"},
+				{ImageName: "b", Tag: "b:ab"},
+				{ImageName: "c", Tag: "c:abc"},
+				{ImageName: "d", Tag: "d:abcd"},
+			},
+		},
+		// Add test when artifact has an error
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			out := ioutil.Discard
+			initializeEvents()
+			artifacts := make([]*latest.Artifact, len(test.images))
+			tags := tag.ImageTags{}
+			for i, image := range test.images {
+				artifacts[i] = &latest.Artifact{
+					ImageName: image,
+				}
+				tags[image] = image
+			}
+
+			builder := concatTagger{}
+			got, err := InSequence(context.Background(), out, tags, artifacts, builder.doBuild)
+
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, got)
+		})
+	}
+}
+
+// summer builder sums all the numbers
+type concatTagger struct {
+	tag string
+}
+
+// doBuild calculate the tag based by concatinating the tag values for artifact
+// builds seen so far.
+func (t *concatTagger) doBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+	t.tag += tag
+	return fmt.Sprintf("%s:%s", artifact.ImageName, t.tag), nil
+}
+
+func initializeEvents() {
+	cfg := latest.BuildConfig{
+		BuildType: latest.BuildType{
+			LocalBuild: &latest.LocalBuild{},
+		},
+	}
+	event.InitializeState(&runcontext.RunContext{
+		Cfg: &latest.Pipeline{
+			Build: cfg,
+		},
+		Opts: &config.SkaffoldOptions{},
+	})
 }
