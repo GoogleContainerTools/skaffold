@@ -107,7 +107,6 @@ func TestInSequenceResultsOrder(t *testing.T) {
 				{ImageName: "d", Tag: "d:abcd"},
 			},
 		},
-		// Add test when artifact has an error
 	}
 
 	for _, test := range tests {
@@ -122,22 +121,21 @@ func TestInSequenceResultsOrder(t *testing.T) {
 				}
 				tags[image] = image
 			}
-
 			builder := concatTagger{}
 			got, err := InSequence(context.Background(), out, tags, artifacts, builder.doBuild)
-
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, got)
 		})
 	}
 }
 
-// summer builder sums all the numbers
+// concatTagger builder sums all the numbers
 type concatTagger struct {
 	tag string
 }
 
 // doBuild calculate the tag based by concatinating the tag values for artifact
-// builds seen so far.
+// builds seen so far. It mimics artifact dependency where the next build result
+// depends on the previous build result.
 func (t *concatTagger) doBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	t.tag += tag
 	return fmt.Sprintf("%s:%s", artifact.ImageName, t.tag), nil

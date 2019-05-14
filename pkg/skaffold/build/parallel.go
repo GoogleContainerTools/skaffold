@@ -34,10 +34,20 @@ const bufferedLinesPerArtifact = 10000
 
 type artifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error)
 
+// For testing
+var (
+	buffSize      = bufferedLinesPerArtifact
+	runInSequence = InSequence
+)
+
 // InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
 func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
+	if len(artifacts) == 0 {
+		return nil, nil
+	}
+
 	if len(artifacts) == 1 {
-		return InSequence(ctx, out, tags, artifacts, buildArtifact)
+		return runInSequence(ctx, out, tags, artifacts, buildArtifact)
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -47,32 +57,27 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	outputs := make([]chan []byte, len(artifacts))
 
 	// Run builds in //
-	for index := range artifacts {
-		i := index
-		lines := make(chan []byte, bufferedLinesPerArtifact)
-		outputs[i] = lines
-
+	for i := range artifacts {
+		outputs[i] = make(chan []byte, buffSize)
 		r, w := io.Pipe()
 		cw := setUpColorWriter(w, out)
 
 		// Run build and write output/logs to piped writer and store build result in
 		// sync.Map
-		go runBuild(ctx, cw, artifacts[i], tags, results, buildArtifact)
+		go runBuild(ctx, cw, tags, artifacts[i], results, buildArtifact)
 		// Read build output/logs and write to buffered channel
-		go readOutputAndWriteToChannel(r, lines)
-
+		go readOutputAndWriteToChannel(r, outputs[i])
 	}
 
 	// Print logs and collect results in order.
-	return printAndCollectResults(out, artifacts, outputs, results)
+	printResults(out, outputs)
+	return collectResults(artifacts, results)
 }
 
-func runBuild(ctx context.Context, cw io.WriteCloser, artifact *latest.Artifact, tags tag.ImageTags, results *sync.Map, build artifactBuilder) {
-	color.Default.Fprintf(cw, "Building [%s]...\n", artifact.ImageName)
-
+func runBuild(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, artifact *latest.Artifact, results *sync.Map, build artifactBuilder) {
 	event.BuildInProgress(artifact.ImageName)
 
-	finalTag, err := getBuildResult(ctx, cw, artifact, tags, build)
+	finalTag, err := getBuildResult(ctx, cw, tags, artifact, build)
 	if err != nil {
 		event.BuildFailed(artifact.ImageName, err)
 		results.Store(artifact.ImageName, err)
@@ -84,7 +89,7 @@ func runBuild(ctx context.Context, cw io.WriteCloser, artifact *latest.Artifact,
 	cw.Close()
 }
 
-func readOutputAndWriteToChannel(r *io.PipeReader, lines chan []byte) {
+func readOutputAndWriteToChannel(r io.Reader, lines chan []byte) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		lines <- scanner.Bytes()
@@ -92,7 +97,7 @@ func readOutputAndWriteToChannel(r *io.PipeReader, lines chan []byte) {
 	close(lines)
 }
 
-func setUpColorWriter(w *io.PipeWriter, out io.Writer) io.WriteCloser {
+func setUpColorWriter(w io.WriteCloser, out io.Writer) io.WriteCloser {
 	var cw io.WriteCloser
 	if color.IsTerminal(out) {
 		cw = color.ColoredWriteCloser{WriteCloser: w}
@@ -102,7 +107,8 @@ func setUpColorWriter(w *io.PipeWriter, out io.Writer) io.WriteCloser {
 	return cw
 }
 
-func getBuildResult(ctx context.Context, cw io.WriteCloser, artifact *latest.Artifact, tags tag.ImageTags, build artifactBuilder) (string, error) {
+func getBuildResult(ctx context.Context, cw io.Writer, tags tag.ImageTags, artifact *latest.Artifact, build artifactBuilder) (string, error) {
+	color.Default.Fprintf(cw, "Building [%s]...\n", artifact.ImageName)
 	tag, present := tags[artifact.ImageName]
 	if !present {
 		return "", fmt.Errorf("unable to find tag for image %s", artifact.ImageName)
@@ -110,25 +116,31 @@ func getBuildResult(ctx context.Context, cw io.WriteCloser, artifact *latest.Art
 	return build(ctx, cw, artifact, tag)
 }
 
-func printAndCollectResults(out io.Writer, artifacts []*latest.Artifact, outputs []chan []byte, results *sync.Map) ([]Artifact, error) {
+func collectResults(artifacts []*latest.Artifact, results *sync.Map) ([]Artifact, error) {
 	var built []Artifact
 
-	for i, artifact := range artifacts {
-		for line := range outputs[i] {
-			out.Write(line)
-			fmt.Fprintln(out)
+	for _, artifact := range artifacts {
+		v, ok := results.Load(artifact.ImageName)
+		if !ok {
+			return nil, fmt.Errorf("could not find build result for image %s", artifact.ImageName)
 		}
-
-		if v, ok := results.Load(artifact.ImageName); ok {
-			switch t := v.(type) {
-			case error:
-				return nil, errors.Wrapf(v.(error), "building [%s]", artifact.ImageName)
-			case string:
-				built = append(built, Artifact{ImageName: artifact.ImageName, Tag: v.(string)})
-			default:
-				return nil, fmt.Errorf("unknown type %T for %s", t, artifact.ImageName)
-			}
+		switch t := v.(type) {
+		case error:
+			return nil, errors.Wrapf(v.(error), "building [%s]", artifact.ImageName)
+		case string:
+			built = append(built, Artifact{ImageName: artifact.ImageName, Tag: v.(string)})
+		default:
+			return nil, fmt.Errorf("unknown type %T for %s", t, artifact.ImageName)
 		}
 	}
 	return built, nil
+}
+
+func printResults(out io.Writer, outputs []chan []byte) {
+	for _, output := range outputs {
+		for line := range output {
+			out.Write(line)
+			fmt.Fprintln(out)
+		}
+	}
 }
