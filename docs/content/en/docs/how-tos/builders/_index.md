@@ -247,6 +247,10 @@ Skaffold will pass in the following additional environment variables for the fol
 | Environment Variable         | Description           | Expectation  |
 | ------------- |-------------| -----|
 | $KUBECONTEXT    | The expected kubecontext in which the image will be built.| None. | 
+| $NAMESPACE      | The expected namespace in which the image will be built.| None. | 
+| $PULL_SECRET_NAME    | The name of the secret with authentication required to pull a base image/push the final image built on cluster.| None. | 
+| $DOCKER_CONFIG_SECRET_NAME    | The secret containing any required docker authentication for custom builds on cluster.| None. | 
+| $TIMEOUT        | The amount of time an on cluster build is allowed to run.| None. | 
 
 ### Configuration
 

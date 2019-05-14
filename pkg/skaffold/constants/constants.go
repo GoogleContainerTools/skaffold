@@ -76,6 +76,18 @@ var (
 
 	// KubeContext is the expected kubecontext to build an artifact with a custom build script on cluster
 	KubeContext = "KUBE_CONTEXT"
+
+	// Namespace is the expected namsepace to build an artifact with a custom build script on cluster.
+	Namespace = "NAMESPACE"
+
+	// PullSecretName is the secret with authentication required to pull a base image/push the final image built on cluster.
+	PullSecretName = "PULL_SECRET_NAME"
+
+	// DockerConfigSecretName is the secret containing any required docker authentication for custom builds on cluster.
+	DockerConfigSecretName = "DOCKER_CONFIG_SECRET_NAME"
+
+	// Timeout is the amount of time an on cluster build is allowed to run.
+	Timeout = "TIMEOUT"
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}
