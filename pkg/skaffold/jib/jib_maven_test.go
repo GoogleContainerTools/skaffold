@@ -202,10 +202,10 @@ func TestGenerateMavenArgs(t *testing.T) {
 		{latest.JibMavenArtifact{}, true, []string{"-Djib.console=plain", "--non-recursive", "-DskipTests=true", "prepare-package", "jib:goal", "-Dimage=image"}},
 		{latest.JibMavenArtifact{Profile: "profile"}, false, []string{"-Djib.console=plain", "--activate-profiles", "profile", "--non-recursive", "prepare-package", "jib:goal", "-Dimage=image"}},
 		{latest.JibMavenArtifact{Profile: "profile"}, true, []string{"-Djib.console=plain", "--activate-profiles", "profile", "--non-recursive", "-DskipTests=true", "prepare-package", "jib:goal", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Module: "module"}, false, []string{"-Djib.console=plain", "--projects", "module", "--also-make", "package", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Module: "module"}, true, []string{"-Djib.console=plain", "--projects", "module", "--also-make", "-DskipTests=true", "package", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, false, []string{"-Djib.console=plain", "--activate-profiles", "profile", "--projects", "module", "--also-make", "package", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, true, []string{"-Djib.console=plain", "--activate-profiles", "profile", "--projects", "module", "--also-make", "-DskipTests=true", "package", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Module: "module"}, false, []string{"-Djib.console=plain", "--projects", "module", "--also-make", "package", "jib:goal", "-Djib.containerize=module", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Module: "module"}, true, []string{"-Djib.console=plain", "--projects", "module", "--also-make", "-DskipTests=true", "package", "jib:goal", "-Djib.containerize=module", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, false, []string{"-Djib.console=plain", "--activate-profiles", "profile", "--projects", "module", "--also-make", "package", "jib:goal", "-Djib.containerize=module", "-Dimage=image"}},
+		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, true, []string{"-Djib.console=plain", "--activate-profiles", "profile", "--projects", "module", "--also-make", "-DskipTests=true", "package", "jib:goal", "-Djib.containerize=module", "-Dimage=image"}},
 	}
 
 	for _, tt := range testCases {

@@ -62,8 +62,8 @@ func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact
 		// single-module project
 		args = append(args, "prepare-package", "jib:"+goal)
 	} else {
-		// multi-module project: we assume `package` is bound to `jib:<goal>`
-		args = append(args, "package")
+		// multi-module project: instruct jib to containerize only the given module
+		args = append(args, "package", "jib:"+goal, "-Djib.containerize=" + a.Module)
 	}
 
 	args = append(args, "-Dimage="+imageName)
