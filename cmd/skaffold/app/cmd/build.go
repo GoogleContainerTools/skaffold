@@ -57,17 +57,15 @@ func NewCmdBuild(out io.Writer) *cobra.Command {
 }
 
 func doBuild(ctx context.Context, out io.Writer) error {
-	start := time.Now()
-	defer func() {
-		if !quietFlag {
-			color.Default.Fprintln(out, "Complete in", time.Since(start))
-		}
-	}()
-
 	buildOut := out
 	if quietFlag {
 		buildOut = ioutil.Discard
 	}
+
+	start := time.Now()
+	defer func() {
+		color.Default.Fprintln(buildOut, "Complete in", time.Since(start))
+	}()
 
 	bRes, err := createRunnerAndBuildFunc(ctx, buildOut)
 	if err != nil {
