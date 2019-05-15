@@ -23,7 +23,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/pkg/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -49,15 +50,11 @@ E.g. build.out created by running skaffold build --quiet {{json .}} > build.out`
 }
 
 func doDeploy(ctx context.Context, out io.Writer) error {
-	runner, _, err := newRunner(opts)
-	if err != nil {
-		return errors.Wrap(err, "creating runner")
-	}
-	defer runner.RPCServerShutdown()
+	return withRunner(func(r *runner.SkaffoldRunner, _ *latest.SkaffoldConfig) error {
+		// If the BuildArtifacts contains an image in the preBuilt list,
+		// use image from BuildArtifacts instead
+		deployArtifacts := build.MergeWithPreviousBuilds(buildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts())
 
-	// If the BuildArtifacts contains an image in the preBuilt list,
-	// use image from BuildArtifacts instead
-	deployArtifacts := build.MergeWithPreviousBuilds(buildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts())
-
-	return runner.Deploy(ctx, out, deployArtifacts)
+		return r.Deploy(ctx, out, deployArtifacts)
+	})
 }

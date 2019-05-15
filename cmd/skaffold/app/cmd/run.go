@@ -22,7 +22,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
-	"github.com/pkg/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -41,16 +42,12 @@ func NewCmdRun(out io.Writer) *cobra.Command {
 }
 
 func doRun(ctx context.Context, out io.Writer) error {
-	runner, config, err := newRunner(opts)
-	if err != nil {
-		return errors.Wrap(err, "creating runner")
-	}
-	defer runner.RPCServerShutdown()
+	return withRunner(func(r *runner.SkaffoldRunner, config *latest.SkaffoldConfig) error {
+		err := r.Run(ctx, out, config.Build.Artifacts)
+		if err == nil {
+			tips.PrintForRun(out, opts)
+		}
 
-	err = runner.Run(ctx, out, config.Build.Artifacts)
-	if err == nil {
-		tips.PrintForRun(out, opts)
-	}
-
-	return err
+		return err
+	})
 }

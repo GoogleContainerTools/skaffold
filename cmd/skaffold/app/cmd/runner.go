@@ -33,6 +33,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func withRunner(action func(*runner.SkaffoldRunner, *latest.SkaffoldConfig) error) error {
+	runner, config, err := newRunner(opts)
+	if err != nil {
+		return errors.Wrap(err, "creating runner")
+	}
+	defer runner.RPCServerShutdown()
+
+	return action(runner, config)
+}
+
 // newRunner creates a SkaffoldRunner and returns the SkaffoldConfig associated with it.
 func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.SkaffoldConfig, error) {
 	parsed, err := schema.ParseConfig(opts.ConfigurationFile, true)

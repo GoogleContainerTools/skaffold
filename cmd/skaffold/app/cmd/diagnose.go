@@ -22,6 +22,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 
 	"github.com/pkg/errors"
@@ -43,25 +45,22 @@ func NewCmdDiagnose(out io.Writer) *cobra.Command {
 }
 
 func doDiagnose(out io.Writer) error {
-	runner, config, err := newRunner(opts)
-	if err != nil {
-		return errors.Wrap(err, "creating runner")
-	}
+	return withRunner(func(r *runner.SkaffoldRunner, config *latest.SkaffoldConfig) error {
+		fmt.Fprintln(out, "Skaffold version:", version.Get().GitCommit)
+		fmt.Fprintln(out, "Configuration version:", config.APIVersion)
+		fmt.Fprintln(out, "Number of artifacts:", len(config.Build.Artifacts))
 
-	fmt.Fprintln(out, "Skaffold version:", version.Get().GitCommit)
-	fmt.Fprintln(out, "Configuration version:", config.APIVersion)
-	fmt.Fprintln(out, "Number of artifacts:", len(config.Build.Artifacts))
+		if err := r.DiagnoseArtifacts(out); err != nil {
+			return errors.Wrap(err, "running diagnostic on artifacts")
+		}
 
-	if err := runner.DiagnoseArtifacts(out); err != nil {
-		return errors.Wrap(err, "running diagnostic on artifacts")
-	}
+		color.Blue.Fprintln(out, "\nConfiguration")
+		buf, err := yaml.Marshal(config)
+		if err != nil {
+			return errors.Wrap(err, "marshalling configuration")
+		}
+		out.Write(buf)
 
-	color.Blue.Fprintln(out, "\nConfiguration")
-	buf, err := yaml.Marshal(config)
-	if err != nil {
-		return errors.Wrap(err, "marshalling configuration")
-	}
-	out.Write(buf)
-
-	return nil
+		return nil
+	})
 }
