@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -88,11 +89,18 @@ func createRunnerAndBuild(ctx context.Context, buildOut io.Writer) ([]build.Arti
 		return nil, errors.Wrap(err, "creating runner")
 	}
 	defer runner.RPCServerShutdown()
+
+	return runner.BuildAndTest(ctx, buildOut, targetArtifacts(opts, config))
+}
+
+func targetArtifacts(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) []*latest.Artifact {
 	var targetArtifacts []*latest.Artifact
-	for _, artifact := range config.Build.Artifacts {
-		if runner.IsTargetImage(artifact) {
+
+	for _, artifact := range cfg.Build.Artifacts {
+		if opts.IsTargetImage(artifact) {
 			targetArtifacts = append(targetArtifacts, artifact)
 		}
 	}
-	return runner.BuildAndTest(ctx, buildOut, targetArtifacts)
+
+	return targetArtifacts
 }
