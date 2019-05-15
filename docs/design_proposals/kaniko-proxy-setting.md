@@ -86,8 +86,10 @@ type ClusterDetails struct {
 
 
 **\<Question\>**
+
 Do we need to set proxy for other builders as well?
-Right now we don't have anyother cluster builder.
+
+Resolution: No. As of now we don't have anyother cluster builder.
 
 ## Implementation plan
 ___
