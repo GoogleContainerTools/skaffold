@@ -168,9 +168,9 @@ func VerifyOrCreateFile(path string) error {
 
 // RemoveFromSlice removes a string from a slice of strings
 func RemoveFromSlice(s []string, target string) []string {
-	for i, val := range s {
-		if val == target {
-			return append(s[:i], s[i+1:]...)
+	for i := len(s) - 1; i >= 0; i-- {
+		if s[i] == target {
+			s = append(s[:i], s[i+1:]...)
 		}
 	}
 	return s
