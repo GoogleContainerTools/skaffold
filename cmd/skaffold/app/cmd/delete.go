@@ -34,14 +34,10 @@ func NewCmdDelete(out io.Writer) *cobra.Command {
 		WithFlags(func(f *pflag.FlagSet) {
 			AddRunCommonFlags(f)
 		}).
-		NoArgs(doDelete)
+		NoArgs(cancelWithCtrlC(context.Background(), doDelete))
 }
 
-func doDelete(out io.Writer) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	catchCtrlC(cancel)
-
+func doDelete(ctx context.Context, out io.Writer) error {
 	runner, _, err := newRunner(opts)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")

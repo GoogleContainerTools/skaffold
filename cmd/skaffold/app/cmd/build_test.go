@@ -80,7 +80,8 @@ func TestQuietFlag(t *testing.T) {
 			}
 
 			var output bytes.Buffer
-			err := doBuild(&output)
+
+			err := doBuild(context.Background(), &output)
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, string(test.expectedOutput), output.String())
 		})
@@ -119,7 +120,7 @@ func TestRunBuild(t *testing.T) {
 			restore := testutil.Override(t, &createRunnerAndBuildFunc, test.mock)
 			defer restore()
 
-			err := doBuild(ioutil.Discard)
+			err := doBuild(context.Background(), ioutil.Discard)
 
 			testutil.CheckError(t, test.shouldErr, err)
 		})

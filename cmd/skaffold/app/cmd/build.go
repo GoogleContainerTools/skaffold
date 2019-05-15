@@ -53,20 +53,16 @@ func NewCmdBuild(out io.Writer) *cobra.Command {
 			f.BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output.")
 			f.VarP(buildFormatFlag, "output", "o", "Used in conjuction with --quiet flag. "+buildFormatFlag.Usage())
 		}).
-		NoArgs(doBuild)
+		NoArgs(cancelWithCtrlC(context.Background(), doBuild))
 }
 
-func doBuild(out io.Writer) error {
+func doBuild(ctx context.Context, out io.Writer) error {
 	start := time.Now()
 	defer func() {
 		if !quietFlag {
 			color.Default.Fprintln(out, "Complete in", time.Since(start))
 		}
 	}()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	catchCtrlC(cancel)
 
 	buildOut := out
 	if quietFlag {

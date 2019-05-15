@@ -37,14 +37,10 @@ func NewCmdRun(out io.Writer) *cobra.Command {
 			AddRunDevFlags(f)
 			AddRunDeployFlags(f)
 		}).
-		NoArgs(doRun)
+		NoArgs(cancelWithCtrlC(context.Background(), doRun))
 }
 
-func doRun(out io.Writer) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	catchCtrlC(cancel)
-
+func doRun(ctx context.Context, out io.Writer) error {
 	runner, config, err := newRunner(opts)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")

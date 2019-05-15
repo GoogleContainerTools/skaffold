@@ -45,13 +45,10 @@ E.g. build.out created by running skaffold build --quiet {{json .}} > build.out`
 			AddRunDevFlags(f)
 			AddRunDeployFlags(f)
 		}).
-		NoArgs(doDeploy)
+		NoArgs(cancelWithCtrlC(context.Background(), doDeploy))
 }
 
-func doDeploy(out io.Writer) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	catchCtrlC(cancel)
+func doDeploy(ctx context.Context, out io.Writer) error {
 	runner, _, err := newRunner(opts)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
