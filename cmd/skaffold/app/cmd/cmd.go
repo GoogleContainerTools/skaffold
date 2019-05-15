@@ -159,6 +159,7 @@ func AddRunCommonFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&opts.Namespace, "namespace", "n", "", "Run deployments in the specified namespace")
 	cmd.Flags().StringVarP(&opts.DefaultRepo, "default-repo", "d", "", "Default repository value (overrides global config)")
 	cmd.Flags().BoolVar(&opts.NoPrune, "no-prune", false, "Skip removing images and containers built by Skaffold")
+	cmd.Flags().BoolVar(&opts.NoPruneChildren, "no-prune-children", false, "Skip removing layers reused by Skaffold")
 	cmd.Flags().StringSliceVar(&opts.InsecureRegistries, "insecure-registry", nil, "Target registries for built images which are not secure")
 }
 
