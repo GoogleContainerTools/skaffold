@@ -61,6 +61,11 @@ func Deploy(args ...string) *RunBuilder {
 	return &RunBuilder{command: "deploy", args: args}
 }
 
+// Debug runs `skaffold debug` with the given arguments.
+func Debug(args ...string) *RunBuilder {
+	return &RunBuilder{command: "debug", args: args}
+}
+
 // Run runs `skaffold run` with the given arguments.
 func Run(args ...string) *RunBuilder {
 	return &RunBuilder{command: "run", args: args}
