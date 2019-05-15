@@ -2,9 +2,8 @@
 
 *Note for Jib users*:
 The Jib binding has changed and projects are now required to use
-Jib v1.3.0 or later.  Maven multi-module projects should no longer
-include bindings to `jib:build` and `jib:dockerBuild` foror the
-_package_ phase.
+Jib v1.3.0 or later.  Maven multi-module projects no longer require
+binding `jib:build` or `jib:dockerBuild` to the _package_ phase.
 
 # v0.29.0 Release - 05/09/2019
 
