@@ -96,15 +96,7 @@ func TestBuildOutputSet(t *testing.T) {
 
 func TestBuildOutputString(t *testing.T) {
 	flag := NewBuildOutputFileFlag("test.in")
-	if "test.in" != flag.String() {
-		t.Errorf("Flag String() does not match. Expected test.in, Actual %s", flag.String())
-	}
-}
 
-func TestBuildOutputType(t *testing.T) {
-	flag := NewBuildOutputFileFlag("test.in")
-	expectedFlagType := "*flags.BuildOutputFileFlag"
-	if flag.Type() != expectedFlagType {
-		t.Errorf("Flag returned wrong type. Expected %s, Actual %s", expectedFlagType, flag.Type())
-	}
+	testutil.CheckDeepEqual(t, "test.in", flag.String())
+	testutil.CheckDeepEqual(t, "*flags.BuildOutputFileFlag", flag.Type())
 }
