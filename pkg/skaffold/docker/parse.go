@@ -21,14 +21,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/docker/docker/builder/dockerignore"
-	"github.com/docker/docker/pkg/fileutils"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/karrick/godirwalk"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
@@ -44,13 +40,36 @@ type from struct {
 // RetrieveImage is overridden for unit testing
 var RetrieveImage = retrieveImage
 
-func evaluateBuildArgsValue(nameTemplate string) (string, error) {
-	tmpl, err := util.ParseEnvTemplate(nameTemplate)
+func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]string, error) {
+	f, err := os.Open(absDockerfilePath)
 	if err != nil {
-		return "", errors.Wrap(err, "parsing template")
+		return nil, errors.Wrapf(err, "opening dockerfile: %s", absDockerfilePath)
+	}
+	defer f.Close()
+
+	res, err := parser.Parse(f)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing dockerfile")
 	}
 
-	return util.ExecuteEnvTemplate(tmpl, nil)
+	dockerfileLines := res.AST.Children
+
+	err = expandBuildArgs(dockerfileLines, buildArgs)
+	if err != nil {
+		return nil, errors.Wrap(err, "putting build arguments")
+	}
+
+	dockerfileLinesWithOnbuild, err := expandOnbuildInstructions(dockerfileLines, insecureRegistries)
+	if err != nil {
+		return nil, errors.Wrap(err, "expanding ONBUILD instructions")
+	}
+
+	copied, err := copiedFiles(dockerfileLinesWithOnbuild)
+	if err != nil {
+		return nil, errors.Wrap(err, "listing copied files")
+	}
+
+	return expandPaths(workspace, copied)
 }
 
 func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
@@ -90,16 +109,115 @@ func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
 	return nil
 }
 
-func fromInstruction(node *parser.Node) from {
-	var as string
-	if next := node.Next.Next; next != nil && strings.ToLower(next.Value) == "as" && next.Next != nil {
-		as = next.Next.Value
+func evaluateBuildArgsValue(nameTemplate string) (string, error) {
+	tmpl, err := util.ParseEnvTemplate(nameTemplate)
+	if err != nil {
+		return "", errors.Wrap(err, "parsing template")
 	}
 
-	return from{
-		image: node.Next.Value,
-		as:    strings.ToLower(as),
+	return util.ExecuteEnvTemplate(tmpl, nil)
+}
+
+func expandPaths(workspace string, copied [][]string) ([]string, error) {
+	expandedPaths := make(map[string]bool)
+	for _, files := range copied {
+		matchesOne := false
+
+		for _, p := range files {
+			path := filepath.Join(workspace, p)
+			if _, err := os.Stat(path); err == nil {
+				expandedPaths[p] = true
+				matchesOne = true
+				continue
+			}
+
+			files, err := filepath.Glob(path)
+			if err != nil {
+				return nil, errors.Wrap(err, "invalid glob pattern")
+			}
+			if files == nil {
+				continue
+			}
+
+			for _, f := range files {
+				rel, err := filepath.Rel(workspace, f)
+				if err != nil {
+					return nil, fmt.Errorf("getting relative path of %s", f)
+				}
+
+				expandedPaths[rel] = true
+			}
+			matchesOne = true
+		}
+
+		if !matchesOne {
+			return nil, fmt.Errorf("file pattern %s must match at least one file", files)
+		}
 	}
+
+	var deps []string
+	for dep := range expandedPaths {
+		deps = append(deps, dep)
+	}
+	logrus.Debugf("Found dependencies for dockerfile: %v", deps)
+
+	return deps, nil
+}
+
+func copiedFiles(nodes []*parser.Node) ([][]string, error) {
+	var copied [][]string
+
+	envs := make([]string, 0)
+	for _, node := range nodes {
+		switch node.Value {
+		case command.Add, command.Copy:
+			files, err := processCopy(node, envs)
+			if err != nil {
+				return nil, err
+			}
+
+			if len(files) > 0 {
+				copied = append(copied, files)
+			}
+		case command.Env:
+			// one env command may define multiple variables
+			for node := node.Next; node != nil && node.Next != nil; node = node.Next.Next {
+				envs = append(envs, fmt.Sprintf("%s=%s", node.Value, node.Next.Value))
+			}
+		}
+	}
+
+	return copied, nil
+}
+
+func processCopy(value *parser.Node, envs []string) ([]string, error) {
+	var copied []string
+
+	slex := shell.NewLex('\\')
+	for {
+		// Skip last node, since it is the destination, and stop if we arrive at a comment
+		if value.Next.Next == nil || strings.HasPrefix(value.Next.Next.Value, "#") {
+			break
+		}
+		src, err := slex.ProcessWord(value.Next.Value, envs)
+		if err != nil {
+			return nil, errors.Wrap(err, "processing word")
+		}
+		// If the --from flag is provided, we are dealing with a multi-stage dockerfile
+		// Adding a dependency from a different stage does not imply a source dependency
+		if hasMultiStageFlag(value.Flags) {
+			return nil, nil
+		}
+		if !strings.HasPrefix(src, "http://") && !strings.HasPrefix(src, "https://") {
+			copied = append(copied, src)
+		} else {
+			logrus.Debugf("Skipping watch on remote dependency %s", src)
+		}
+
+		value = value.Next
+	}
+
+	return copied, nil
 }
 
 func expandOnbuildInstructions(nodes []*parser.Node, insecureRegistries map[string]bool) ([]*parser.Node, error) {
@@ -164,240 +282,16 @@ func parseOnbuild(image string, insecureRegistries map[string]bool) ([]*parser.N
 	return obRes.AST.Children, nil
 }
 
-func copiedFiles(nodes []*parser.Node) ([][]string, error) {
-	var copied [][]string
-
-	envs := make([]string, 0)
-	for _, node := range nodes {
-		switch node.Value {
-		case command.Add, command.Copy:
-			files, err := processCopy(node, envs)
-			if err != nil {
-				return nil, err
-			}
-
-			if len(files) > 0 {
-				copied = append(copied, files)
-			}
-		case command.Env:
-			// one env command may define multiple variables
-			for node := node.Next; node != nil && node.Next != nil; node = node.Next.Next {
-				envs = append(envs, fmt.Sprintf("%s=%s", node.Value, node.Next.Value))
-			}
-		}
+func fromInstruction(node *parser.Node) from {
+	var as string
+	if next := node.Next.Next; next != nil && strings.ToLower(next.Value) == "as" && next.Next != nil {
+		as = next.Next.Value
 	}
 
-	return copied, nil
-}
-
-func readDockerfile(workspace, absDockerfilePath string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]string, error) {
-	f, err := os.Open(absDockerfilePath)
-	if err != nil {
-		return nil, errors.Wrapf(err, "opening dockerfile: %s", absDockerfilePath)
+	return from{
+		image: node.Next.Value,
+		as:    strings.ToLower(as),
 	}
-	defer f.Close()
-
-	res, err := parser.Parse(f)
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing dockerfile")
-	}
-
-	dockerfileLines := res.AST.Children
-
-	err = expandBuildArgs(dockerfileLines, buildArgs)
-	if err != nil {
-		return nil, errors.Wrap(err, "putting build arguments")
-	}
-
-	dockerfileLinesWithOnbuild, err := expandOnbuildInstructions(dockerfileLines, insecureRegistries)
-	if err != nil {
-		return nil, errors.Wrap(err, "expanding ONBUILD instructions")
-	}
-
-	copied, err := copiedFiles(dockerfileLinesWithOnbuild)
-	if err != nil {
-		return nil, errors.Wrap(err, "listing copied files")
-	}
-
-	return expandPaths(workspace, copied)
-}
-
-func expandPaths(workspace string, copied [][]string) ([]string, error) {
-	expandedPaths := make(map[string]bool)
-	for _, files := range copied {
-		matchesOne := false
-
-		for _, p := range files {
-			path := filepath.Join(workspace, p)
-			if _, err := os.Stat(path); err == nil {
-				expandedPaths[p] = true
-				matchesOne = true
-				continue
-			}
-
-			files, err := filepath.Glob(path)
-			if err != nil {
-				return nil, errors.Wrap(err, "invalid glob pattern")
-			}
-			if files == nil {
-				continue
-			}
-
-			for _, f := range files {
-				rel, err := filepath.Rel(workspace, f)
-				if err != nil {
-					return nil, fmt.Errorf("getting relative path of %s", f)
-				}
-
-				expandedPaths[rel] = true
-			}
-			matchesOne = true
-		}
-
-		if !matchesOne {
-			return nil, fmt.Errorf("file pattern %s must match at least one file", files)
-		}
-	}
-
-	var deps []string
-	for dep := range expandedPaths {
-		deps = append(deps, dep)
-	}
-	logrus.Debugf("Found dependencies for dockerfile: %v", deps)
-
-	return deps, nil
-}
-
-// NormalizeDockerfilePath returns the absolute path to the dockerfile.
-func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
-	if filepath.IsAbs(dockerfile) {
-		return dockerfile, nil
-	}
-
-	if !strings.HasPrefix(dockerfile, context) {
-		dockerfile = filepath.Join(context, dockerfile)
-	}
-	return filepath.Abs(dockerfile)
-}
-
-// GetDependencies finds the sources dependencies for the given docker artifact.
-// All paths are relative to the workspace.
-func GetDependencies(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]string, error) {
-	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
-	if err != nil {
-		return nil, errors.Wrap(err, "normalizing dockerfile path")
-	}
-
-	deps, err := readDockerfile(workspace, absDockerfilePath, buildArgs, insecureRegistries)
-	if err != nil {
-		return nil, err
-	}
-
-	// Read patterns to ignore
-	var excludes []string
-	dockerignorePath := filepath.Join(workspace, ".dockerignore")
-	if _, err := os.Stat(dockerignorePath); !os.IsNotExist(err) {
-		r, err := os.Open(dockerignorePath)
-		if err != nil {
-			return nil, err
-		}
-		defer r.Close()
-
-		excludes, err = dockerignore.ReadAll(r)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	files, err := WalkWorkspace(workspace, excludes, deps)
-	if err != nil {
-		return nil, errors.Wrap(err, "walking workspace")
-	}
-
-	// Always add dockerfile even if it's .dockerignored. The daemon will need it anyways.
-	if !filepath.IsAbs(dockerfilePath) {
-		files[dockerfilePath] = true
-	} else {
-		files[absDockerfilePath] = true
-	}
-
-	// Ignore .dockerignore
-	delete(files, ".dockerignore")
-
-	var dependencies []string
-	for file := range files {
-		dependencies = append(dependencies, file)
-	}
-	sort.Strings(dependencies)
-
-	return dependencies, nil
-}
-
-func SyncMap(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string, insecureRegistries map[string]bool) (map[string][]string, error) {
-	return nil, nil
-}
-
-func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, error) {
-	pExclude, err := fileutils.NewPatternMatcher(excludes)
-	if err != nil {
-		return nil, errors.Wrap(err, "invalid exclude patterns")
-	}
-
-	// Walk the workspace
-	files := make(map[string]bool)
-	for _, dep := range deps {
-		dep = filepath.Clean(dep)
-		absDep := filepath.Join(workspace, dep)
-
-		fi, err := os.Stat(absDep)
-		if err != nil {
-			return nil, errors.Wrapf(err, "stating file %s", absDep)
-		}
-
-		switch mode := fi.Mode(); {
-		case mode.IsDir():
-			if err := godirwalk.Walk(absDep, &godirwalk.Options{
-				Unsorted: true,
-				Callback: func(fpath string, info *godirwalk.Dirent) error {
-					if fpath == absDep {
-						return nil
-					}
-
-					relPath, err := filepath.Rel(workspace, fpath)
-					if err != nil {
-						return err
-					}
-
-					ignored, err := pExclude.Matches(relPath)
-					if err != nil {
-						return err
-					}
-
-					if info.IsDir() {
-						if ignored {
-							return filepath.SkipDir
-						}
-					} else if !ignored {
-						files[relPath] = true
-					}
-
-					return nil
-				},
-			}); err != nil {
-				return nil, errors.Wrapf(err, "walking folder %s", absDep)
-			}
-		case mode.IsRegular():
-			ignored, err := pExclude.Matches(dep)
-			if err != nil {
-				return nil, err
-			}
-
-			if !ignored {
-				files[dep] = true
-			}
-		}
-	}
-	return files, nil
 }
 
 func retrieveImage(image string, insecureRegistries map[string]bool) (*v1.ConfigFile, error) {
@@ -407,36 +301,6 @@ func retrieveImage(image string, insecureRegistries map[string]bool) (*v1.Config
 	}
 
 	return localDaemon.ConfigFile(context.Background(), image)
-}
-
-func processCopy(value *parser.Node, envs []string) ([]string, error) {
-	var copied []string
-
-	slex := shell.NewLex('\\')
-	for {
-		// Skip last node, since it is the destination, and stop if we arrive at a comment
-		if value.Next.Next == nil || strings.HasPrefix(value.Next.Next.Value, "#") {
-			break
-		}
-		src, err := slex.ProcessWord(value.Next.Value, envs)
-		if err != nil {
-			return nil, errors.Wrap(err, "processing word")
-		}
-		// If the --from flag is provided, we are dealing with a multi-stage dockerfile
-		// Adding a dependency from a different stage does not imply a source dependency
-		if hasMultiStageFlag(value.Flags) {
-			return nil, nil
-		}
-		if !strings.HasPrefix(src, "http://") && !strings.HasPrefix(src, "https://") {
-			copied = append(copied, src)
-		} else {
-			logrus.Debugf("Skipping watch on remote dependency %s", src)
-		}
-
-		value = value.Next
-	}
-
-	return copied, nil
 }
 
 func hasMultiStageFlag(flags []string) bool {
