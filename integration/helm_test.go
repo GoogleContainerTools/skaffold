@@ -43,13 +43,16 @@ func TestHelmDeploy(t *testing.T) {
 	// To fix #1823, we make use of env variable templating for release name
 	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
 	depName := fmt.Sprintf("skaffold-helm-%s", ns.Name)
-	fmt.Println(env)
+	overrideConfigArgs := []string{"-f", "skaffold.yaml"}
+
 	defer func() {
-		skaffold.Delete().InDir(helmDir).InNs(ns.Name).WithEnv(env).RunOrFail(t)
+		skaffold.Delete(overrideConfigArgs...).InDir(helmDir).InNs(ns.Name).WithEnv(env).RunOrFail(t)
 		deleteNs()
 	}()
 
-	skaffold.Deploy("--images", "gcr.io/k8s-skaffold/skaffold-helm").InDir(helmDir).InNs(ns.Name).WithEnv(env).RunOrFailOutput(t)
+	runArgs := append(overrideConfigArgs, "--images", "gcr.io/k8s-skaffold/skaffold-helm")
+
+	skaffold.Deploy(runArgs...).InDir(helmDir).InNs(ns.Name).WithEnv(env).RunOrFailOutput(t)
 
 	client.WaitForDeploymentsToStabilize(depName)
 
