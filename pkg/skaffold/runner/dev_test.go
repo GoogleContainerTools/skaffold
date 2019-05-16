@@ -330,13 +330,11 @@ func TestDevSync(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			originalWorkingDir := sync.WorkingDir
-			sync.WorkingDir = func(_ string, _ map[string]bool) (string, error) {
+			defer func(s func(string, map[string]bool) (string, error)) { sync.WorkingDir = s }(sync.WorkingDir)
+			sync.WorkingDir = func(string, map[string]bool) (string, error) {
 				return "/", nil
 			}
-			defer func() {
-				sync.WorkingDir = originalWorkingDir
-			}()
+
 			runner := createRunner(t, test.testBench)
 			runner.Watcher = &TestWatcher{
 				events:    test.watchEvents,

@@ -349,9 +349,8 @@ func TestValidateNetworkMode(t *testing.T) {
 	}
 
 	// disable yamltags validation
-	origValidateYamlTags := validateYamltags
-	validateYamltags = func(_ interface{}) error { return nil }
-	defer func() { validateYamltags = origValidateYamlTags }()
+	defer func(v func(interface{}) error) { validateYamltags = v }(validateYamltags)
+	validateYamltags = func(interface{}) error { return nil }
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -460,9 +459,8 @@ func TestValidateSyncRules(t *testing.T) {
 	}
 
 	// disable yamltags validation
-	origValidateYamlTags := validateYamltags
-	validateYamltags = func(_ interface{}) error { return nil }
-	defer func() { validateYamltags = origValidateYamlTags }()
+	defer func(v func(interface{}) error) { validateYamltags = v }(validateYamltags)
+	validateYamltags = func(interface{}) error { return nil }
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
