@@ -10,7 +10,3 @@ build:
         dest: .
       - src: 'src/styles/*'
         dest: .
-deploy:
-  kubectl:
-    manifests:
-    - 'app/k8s/**'

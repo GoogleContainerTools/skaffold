@@ -10,7 +10,3 @@ build:
       # with the container src folder
       - src: 'src/**/*.js'
         dest: .
-deploy:
-  kubectl:
-    manifests:
-    - "backend/k8s/**"

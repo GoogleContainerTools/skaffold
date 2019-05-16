@@ -4,8 +4,7 @@ metadata:
   name: node
 spec:
   ports:
-    - port: 8080
-      name: http
+  - port: 8080
   type: LoadBalancer
   selector:
     app: node
@@ -15,7 +14,6 @@ kind: Deployment
 metadata:
   name: node
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: node

@@ -1,31 +1,29 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: node
+  name: python
 spec:
   ports:
-    - port: 3000
-      name: http
+  - port: 5000
   type: LoadBalancer
   selector:
-    app: node
+    app: python
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: node
+  name: python
 spec:
-  replicas: 1
   selector:
     matchLabels:
-      app: node
+      app: python
   template:
     metadata:
       labels:
-        app: node
+        app: python
     spec:
       containers:
-      - name: node
-        image: gcr.io/k8s-skaffold/node-example
+      - name: python
+        image: gcr.io/k8s-skaffold/python-reload
         ports:
-        - containerPort: 3000
+        - containerPort: 5000
