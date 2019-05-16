@@ -20,26 +20,30 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func NewCmdUnset(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "unset",
-		Short: "Unset a value in the global Skaffold config",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			resolveKubectlContext()
-			if err := unsetConfigValue(args[0]); err != nil {
-				return err
-			}
-			logUnsetConfigForUser(out, args[0])
-			return nil
-		},
+	return commands.
+		New(out).
+		WithDescription("unset", "Unset a value in the global Skaffold config").
+		WithFlags(func(f *pflag.FlagSet) {
+			AddConfigFlags(f)
+			AddSetFlags(f)
+		}).
+		ExactArgs(1, doUnset)
+}
+
+func doUnset(out io.Writer, args []string) error {
+	resolveKubectlContext()
+	if err := unsetConfigValue(args[0]); err != nil {
+		return err
 	}
-	AddConfigFlags(cmd)
-	AddSetFlags(cmd)
-	return cmd
+
+	logUnsetConfigForUser(out, args[0])
+	return nil
 }
 
 func logUnsetConfigForUser(out io.Writer, key string) {

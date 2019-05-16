@@ -115,7 +115,7 @@ kind: Config
 			defer teardown()
 
 			var b bytes.Buffer
-			err := runFix(&b, cfgFile, false)
+			err := fix(&b, cfgFile, false)
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.output, b.String())
 		})
@@ -160,7 +160,7 @@ deploy:
 	defer teardown()
 
 	var b bytes.Buffer
-	err := runFix(&b, cfgFile, true)
+	err := fix(&b, cfgFile, true)
 
 	output, _ := ioutil.ReadFile(cfgFile)
 
