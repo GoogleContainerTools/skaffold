@@ -230,7 +230,7 @@ func completion(cmd *cobra.Command, args []string) {
 // NewCmdCompletion returns the cobra command that outputs shell completion code
 func NewCmdCompletion(out io.Writer) *cobra.Command {
 	return &cobra.Command{
-		Use: "completion",
+		Use: "completion SHELL",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return fmt.Errorf("requires 1 arg, found %d", len(args))

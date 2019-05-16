@@ -111,7 +111,7 @@ Output shell completion for the given shell (bash or zsh)
 
 ```
 Usage:
-  skaffold completion
+  skaffold completion SHELL
 
 Global Flags:
       --color int          Specify the default output color in ANSI escape codes (default 34)
