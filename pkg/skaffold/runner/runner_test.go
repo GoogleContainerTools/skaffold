@@ -58,11 +58,9 @@ func (t *TestBench) TestDependencies() ([]string, error)              { return n
 func (t *TestBench) Dependencies() ([]string, error)                  { return nil, nil }
 func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error { return nil }
 func (t *TestBench) Prune(ctx context.Context, out io.Writer) error   { return nil }
-
 func (t *TestBench) SyncMap(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
 	return nil, nil
 }
-
 func (t *TestBench) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 	return nil, nil
 }

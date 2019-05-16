@@ -31,7 +31,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/bmatcuk/doublestar"
-	registry_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -40,7 +39,7 @@ import (
 
 var (
 	// WorkingDir is here for testing
-	WorkingDir = retrieveWorkingDir
+	WorkingDir = docker.RetrieveWorkingDir
 )
 
 type Syncer interface {
@@ -91,27 +90,6 @@ func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact, insecu
 		Copy:   toCopy,
 		Delete: toDelete,
 	}, nil
-}
-
-func retrieveWorkingDir(tagged string, insecureRegistries map[string]bool) (string, error) {
-	var cf *registry_v1.ConfigFile
-	var err error
-
-	localDocker, err := docker.NewAPIClient(false, insecureRegistries)
-	if err != nil {
-		// No local Docker is available
-		cf, err = docker.RetrieveRemoteConfig(tagged, insecureRegistries)
-	} else {
-		cf, err = localDocker.ConfigFile(context.Background(), tagged)
-	}
-	if err != nil {
-		return "", errors.Wrap(err, "retrieving image config")
-	}
-
-	if cf.Config.WorkingDir == "" {
-		return "/", nil
-	}
-	return cf.Config.WorkingDir, nil
 }
 
 func latestTag(image string, builds []build.Artifact) string {
