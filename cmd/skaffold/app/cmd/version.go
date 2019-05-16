@@ -19,6 +19,7 @@ package cmd
 import (
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/helper"
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
@@ -28,19 +29,12 @@ import (
 var versionFlag = flags.NewTemplateFlag("{{.Version}}\n", version.Info{})
 
 func NewCmdVersion(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "version",
-		Short: "Print the version information",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return RunVersion(out, cmd)
-		},
-	}
-
+	cmd := helper.NoArgCommand(out, "version", "Print the version information", RunVersion)
 	cmd.Flags().VarP(versionFlag, "output", "o", versionFlag.Usage())
 	return cmd
 }
 
-func RunVersion(out io.Writer, cmd *cobra.Command) error {
+func RunVersion(out io.Writer) error {
 	if err := versionFlag.Template().Execute(out, version.Get()); err != nil {
 		return errors.Wrap(err, "executing template")
 	}

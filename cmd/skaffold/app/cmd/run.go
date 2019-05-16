@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/helper"
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -27,21 +28,9 @@ import (
 
 // NewCmdRun describes the CLI command to run a pipeline.
 func NewCmdRun(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "run",
-		Short: "Runs a pipeline file",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			err := run(out)
-			if err == nil {
-				tips.PrintForRun(out, opts)
-			}
-			return err
-		},
-	}
+	cmd := helper.NoArgCommand(out, "run", "Runs a pipeline file", run)
 	AddRunDevFlags(cmd)
 	AddRunDeployFlags(cmd)
-
 	cmd.Flags().StringVarP(&opts.CustomTag, "tag", "t", "", "The optional custom tag to use for images which overrides the current Tagger configuration")
 	return cmd
 }
@@ -58,5 +47,9 @@ func run(out io.Writer) error {
 	defer runner.RPCServerShutdown()
 
 	err = runner.Run(ctx, out, config.Build.Artifacts)
+	if err == nil {
+		tips.PrintForRun(out, opts)
+	}
+
 	return err
 }

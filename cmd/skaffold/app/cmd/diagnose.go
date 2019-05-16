@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/helper"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 
@@ -30,14 +31,7 @@ import (
 
 // NewCmdDiagnose describes the CLI command to diagnose skaffold.
 func NewCmdDiagnose(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "diagnose",
-		Short: "Run a diagnostic on Skaffold",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return doDiagnose(out)
-		},
-	}
+	cmd := helper.NoArgCommand(out, "diagnose", "Run a diagnostic on Skaffold", doDiagnose)
 	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().StringSliceVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
 	return cmd

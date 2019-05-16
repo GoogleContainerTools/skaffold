@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/helper"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -28,14 +29,7 @@ import (
 
 // NewCmdDev describes the CLI command to run a pipeline in development mode.
 func NewCmdDev(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "dev",
-		Short: "Runs a pipeline file in development mode",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return dev(out)
-		},
-	}
+	cmd := helper.NoArgCommand(out, "dev", "Runs a pipeline file in development mode", dev)
 	AddRunDevFlags(cmd)
 	AddDevDebugFlags(cmd)
 	cmd.Flags().StringVar(&opts.Trigger, "trigger", "polling", "How are changes detected? (polling, manual or notify)")

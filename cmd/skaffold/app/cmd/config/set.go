@@ -24,27 +24,25 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/helper"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
 )
 
 func NewCmdSet(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "set",
-		Short: "Set a value in the global Skaffold config",
-		Args:  cobra.ExactArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := setConfigValue(args[0], args[1]); err != nil {
-				return err
-			}
-			logSetConfigForUser(out, args[0], args[1])
-			return nil
-		},
-	}
+	cmd := helper.ArgsCommand(out, "set", "Set a value in the global Skaffold config", 2, runSetConfigValue)
 	AddConfigFlags(cmd)
 	AddSetFlags(cmd)
 	return cmd
+}
+
+func runSetConfigValue(out io.Writer, args []string) error {
+	if err := setConfigValue(args[0], args[1]); err != nil {
+		return err
+	}
+	logSetConfigForUser(out, args[0], args[1])
+	return nil
 }
 
 func setConfigValue(name string, value string) error {

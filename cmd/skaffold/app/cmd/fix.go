@@ -20,6 +20,7 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/helper"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -30,17 +31,14 @@ import (
 )
 
 func NewCmdFix(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "fix",
-		Short: "Converts old Skaffold config to newest schema version",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runFix(out, opts.ConfigurationFile, overwrite)
-		},
-		Args: cobra.NoArgs,
-	}
+	cmd := helper.NoArgCommand(out, "fix", "Converts old Skaffold config to newest schema version", fix)
 	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 	cmd.Flags().BoolVar(&overwrite, "overwrite", false, "Overwrite original config with fixed config")
 	return cmd
+}
+
+func fix(out io.Writer) error {
+	return runFix(out, opts.ConfigurationFile, overwrite)
 }
 
 func runFix(out io.Writer, configFile string, overwrite bool) error {

@@ -19,6 +19,7 @@ package cmd
 import (
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/helper"
 	debugging "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/spf13/cobra"
@@ -26,15 +27,8 @@ import (
 
 // NewCmdDebug describes the CLI command to run a pipeline in debug mode.
 func NewCmdDebug(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "debug",
-		Short: "Runs a pipeline file in debug mode",
-		Long:  "Similar to `dev`, but configures the pipeline for debugging.",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return debug(out)
-		},
-	}
+	cmd := helper.NoArgCommand(out, "debug", "Runs a pipeline file in debug mode", debug)
+	cmd.Long = "Similar to `dev`, but configures the pipeline for debugging."
 	AddRunDevFlags(cmd)
 	AddDevDebugFlags(cmd)
 	return cmd

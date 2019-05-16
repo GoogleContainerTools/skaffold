@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/helper"
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -42,14 +43,7 @@ var (
 
 // NewCmdBuild describes the CLI command to build artifacts.
 func NewCmdBuild(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "build",
-		Short: "Builds the artifacts",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runBuild(out)
-		},
-	}
+	cmd := helper.NoArgCommand(out, "build", "Builds the artifacts", runBuild)
 	AddRunDevFlags(cmd)
 	cmd.Flags().StringSliceVarP(&opts.TargetImages, "build-image", "b", nil, "Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts")
 	cmd.Flags().BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output.")

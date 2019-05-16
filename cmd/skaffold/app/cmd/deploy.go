@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/helper"
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/pkg/errors"
@@ -33,14 +34,7 @@ var (
 
 // NewCmdDeploy describes the CLI command to deploy artifacts.
 func NewCmdDeploy(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "deploy",
-		Short: "Deploys the artifacts",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDeploy(out)
-		},
-	}
+	cmd := helper.NoArgCommand(out, "deploy", "Deploys the artifacts", runDeploy)
 	AddRunDevFlags(cmd)
 	AddRunDeployFlags(cmd)
 	cmd.Flags().VarP(&preBuiltImages, "images", "i", "A list of pre-built images to deploy")
