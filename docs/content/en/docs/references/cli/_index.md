@@ -107,7 +107,7 @@ Env vars:
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 
-### skaffold completion SHELL
+### skaffold completion
 
 Output shell completion for the given shell (bash or zsh)
 

@@ -51,7 +51,7 @@ func printSubCommands(out io.Writer, command *cobra.Command) error {
 func printCommand(out io.Writer, command *cobra.Command) error {
 	command.DisableFlagsInUseLine = true
 
-	fmt.Fprintf(out, "\n### %s\n", command.UseLine())
+	fmt.Fprintf(out, "\n### %s\n", command.CommandPath())
 	fmt.Fprintf(out, "\n%s\n", command.Short)
 	fmt.Fprintf(out, "\n```\n%s\n\n```\n", command.UsageString())
 
