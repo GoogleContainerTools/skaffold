@@ -45,7 +45,6 @@ func TestRun(t *testing.T) {
 		}, {
 			description: "nodejs",
 			dir:         "examples/nodejs",
-			env:         []string{"SCRIPT=dev"},
 			deployments: []string{"node"},
 		}, {
 			description: "structure-tests",
