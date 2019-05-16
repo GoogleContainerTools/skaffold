@@ -19,85 +19,35 @@ package cluster
 import (
 	"testing"
 
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestSplitArtifacts(t *testing.T) {
-
-	kanikoOne := &latest.Artifact{
-		ArtifactType: latest.ArtifactType{
-			KanikoArtifact: &latest.KanikoArtifact{
-				Image: "image",
+func TestRetrieveEnv(t *testing.T) {
+	builder, err := NewBuilder(&runcontext.RunContext{
+		KubeContext: "kubecontext",
+		Cfg: &latest.Pipeline{
+			Build: latest.BuildConfig{
+				BuildType: latest.BuildType{
+					Cluster: &latest.ClusterDetails{
+						Namespace:      "namespace",
+						PullSecretName: "pullSecret",
+						DockerConfig: &latest.DockerConfig{
+							SecretName: "dockerconfig",
+						},
+						Timeout: "2m",
+					},
+				},
 			},
 		},
+	})
+
+	if err != nil {
+		t.Fatalf("err retrieving builder: %v", err)
 	}
 
-	kanikoTwo := &latest.Artifact{
-		ArtifactType: latest.ArtifactType{
-			KanikoArtifact: &latest.KanikoArtifact{
-				Image: "image2",
-			},
-		},
-	}
-
-	dockerArtifact := &latest.Artifact{
-		ArtifactType: latest.ArtifactType{
-			DockerArtifact: &latest.DockerArtifact{
-				DockerfilePath: "path/to/Dockerfile",
-			},
-		},
-	}
-
-	customArtifact := &latest.Artifact{
-		ArtifactType: latest.ArtifactType{
-			CustomArtifact: &latest.CustomArtifact{
-				BuildCommand: "./build.sh",
-			},
-		},
-	}
-
-	tests := []struct {
-		description    string
-		artifacts      []*latest.Artifact
-		expectedKaniko []*latest.Artifact
-		expectedOther  []*latest.Artifact
-	}{
-		{
-			description: "all kaniko",
-			artifacts: []*latest.Artifact{
-				kanikoOne, kanikoTwo,
-			},
-			expectedKaniko: []*latest.Artifact{
-				kanikoOne, kanikoTwo,
-			},
-		}, {
-			description: "all other",
-			artifacts: []*latest.Artifact{
-				customArtifact, dockerArtifact,
-			},
-			expectedOther: []*latest.Artifact{
-				customArtifact, dockerArtifact,
-			},
-		}, {
-			description: "mixture of kaniko and other",
-			artifacts: []*latest.Artifact{
-				kanikoOne, kanikoTwo, customArtifact, dockerArtifact,
-			},
-			expectedKaniko: []*latest.Artifact{
-				kanikoOne, kanikoTwo,
-			},
-			expectedOther: []*latest.Artifact{
-				customArtifact, dockerArtifact,
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			actualKaniko, actualOther := splitArtifacts(test.artifacts)
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedKaniko, actualKaniko)
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedOther, actualOther)
-		})
-	}
+	actual := builder.retrieveExtraEnv()
+	expected := []string{"KUBE_CONTEXT=kubecontext", "NAMESPACE=namespace", "PULL_SECRET_NAME=pullSecret", "DOCKER_CONFIG_SECRET_NAME=dockerconfig", "TIMEOUT=2m"}
+	testutil.CheckErrorAndDeepEqual(t, false, nil, expected, actual)
 }
