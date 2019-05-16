@@ -30,7 +30,12 @@ artifacts are transformed to enable the runtime technology's debugging functions
       
 `skaffold debug` uses a set of heuristics to identify the runtime technology.
 The Kubernetes manifests are transformed on-the-fly such that the on-disk
-representations are untouched. 
+representations are untouched.
+
+{{< alert title="Caution" >}}
+`skaffold debug` does not support deprecated versions of Workload API objects such as `apps/v1beta1`.
+{{< /alert >}}
+
 
 ## Limitations
 
