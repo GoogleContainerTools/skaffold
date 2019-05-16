@@ -105,7 +105,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.PersistentFlags().BoolVar(&forceColors, "force-colors", false, "Always print color codes (hidden)")
 	rootCmd.PersistentFlags().MarkHidden("force-colors")
 
-	setFlagsFromEnvVariables(rootCmd.Commands())
+	setFlagsFromEnvVariables(rootCmd)
 
 	return rootCmd
 }
@@ -126,8 +126,14 @@ func updateCheck(ch chan string) error {
 }
 
 // Each flag can also be set with an env variable whose name starts with `SKAFFOLD_`.
-func setFlagsFromEnvVariables(commands []*cobra.Command) {
-	for _, cmd := range commands {
+func setFlagsFromEnvVariables(rootCmd *cobra.Command) {
+	rootCmd.PersistentFlags().VisitAll(func(f *pflag.Flag) {
+		envVar := FlagToEnvVarName(f)
+		if val, present := os.LookupEnv(envVar); present {
+			rootCmd.PersistentFlags().Set(f.Name, val)
+		}
+	})
+	for _, cmd := range rootCmd.Commands() {
 		cmd.Flags().VisitAll(func(f *pflag.Flag) {
 			// special case for backward compatibility.
 			if f.Name == "namespace" {
