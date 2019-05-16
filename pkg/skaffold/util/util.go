@@ -76,12 +76,16 @@ func IsSupportedKubernetesFormat(n string) bool {
 }
 
 func StrSliceContains(sl []string, s string) bool {
-	for _, a := range sl {
+	return StrSliceIndex(sl, s) >= 0
+}
+
+func StrSliceIndex(sl []string, s string) int {
+	for i, a := range sl {
 		if a == s {
-			return true
+			return i
 		}
 	}
-	return false
+	return -1
 }
 
 // ExpandPathsGlob expands paths according to filepath.Glob patterns
