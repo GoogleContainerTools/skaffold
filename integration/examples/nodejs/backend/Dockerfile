@@ -4,5 +4,6 @@ WORKDIR /opt/backend
 EXPOSE 3000
 CMD ["npm", "run", "dev"]
 
-COPY . .
+COPY package* ./
 RUN npm install
+COPY . .
