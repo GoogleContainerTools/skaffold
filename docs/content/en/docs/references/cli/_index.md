@@ -99,6 +99,7 @@ Usage:
   skaffold build
 
 Flags:
+<<<<<<< HEAD
   -b, --build-image strings          Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts
       --cache-artifacts              Set to true to enable caching of artifacts.
       --cache-file string            Specify the location of the cache file (default $HOME/.skaffold/cache)
@@ -116,6 +117,8 @@ Flags:
       --rpc-port int                 tcp port to expose event API (default 50051)
       --skip-tests                   Whether to skip the tests after building
       --toot                         Emit a terminal beep after the deploy is complete
+=======
+>>>>>>> rebase from master
   -b, --build-image stringArray         Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts
       --cache-artifacts                 Set to true to enable caching of artifacts.
       --cache-file string               Specify the location of the cache file (default $HOME/.skaffold/cache)
@@ -124,7 +127,7 @@ Flags:
   -f, --filename string                 Filename or URL to the pipeline file (default "skaffold.yaml")
       --insecure-registry stringArray   Target registries for built images which are not secure
   -n, --namespace string                Run deployments in the specified namespace
-  -o, --output *flags.TemplateFlag      Used in conjuction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd#BuildOutput (default {{.}})
+  -o, --output *flags.TemplateFlag      Used in conjuction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags#BuildOutput (default {{json .}})
   -p, --profile stringArray             Activate profiles by name
   -q, --quiet                           Suppress the build output and print image built on success. See --output to format output.
       --rpc-http-port int               tcp port to expose event REST API over HTTP (default 50052)
@@ -280,6 +283,7 @@ Usage:
   skaffold debug
 
 Flags:
+<<<<<<< HEAD
       --cache-artifacts             Set to true to enable caching of artifacts.
       --cache-file string           Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup                     Delete deployments after dev mode is interrupted (default true)
@@ -298,6 +302,8 @@ Flags:
       --skip-tests                  Whether to skip the tests after building
       --tail                        Stream logs from deployed objects (default true)
       --toot                        Emit a terminal beep after the deploy is complete
+=======
+>>>>>>> rebase from master
       --cache-artifacts                 Set to true to enable caching of artifacts.
       --cache-file string               Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup                         Delete deployments after dev or debug mode is interrupted (default true)
@@ -400,41 +406,26 @@ Usage:
   skaffold deploy
 
 Flags:
-<<<<<<< HEAD
   -a, --build-artifacts *flags.BuildOutputFileFlag   Filepath containing build output.
                                                      E.g. build.out created by running skaffold build --quiet {{json .}} > build.out
-      --cache-artifacts                              Set to true to enable caching of artifacts.
-      --cache-file string                            Specify the location of the cache file (default $HOME/.skaffold/cache)
   -d, --default-repo string                          Default repository value (overrides global config)
       --enable-rpc skaffold dev                      Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
   -f, --filename string                              Filename or URL to the pipeline file (default "skaffold.yaml")
       --force                                        Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)
   -i, --images *flags.Images                         A list of pre-built images to deploy
-      --insecure-registry strings                    Target registries for built images which are not secure
-  -l, --label strings                                Add custom labels to deployed objects. Set multiple times for multiple labels.
+  -l, --label stringArray                            Add custom labels to deployed objects. Set multiple times for multiple labels.
   -n, --namespace string                             Run deployments in the specified namespace
+<<<<<<< HEAD
       --no-prune                                     Skip removing images and containers built by Skaffold
       --no-prune-children                            Skip removing layers reused by Skaffold
   -p, --profile strings                              Activate profiles by name
+=======
+  -p, --profile stringArray                          Activate profiles by name
+>>>>>>> rebase from master
       --rpc-http-port int                            tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                                 tcp port to expose event API (default 50051)
-      --skip-tests                                   Whether to skip the tests after building
       --tail                                         Stream logs from deployed objects
       --toot                                         Emit a terminal beep after the deploy is complete
-=======
-  -d, --default-repo string       Default repository value (overrides global config)
-      --enable-rpc skaffold dev   Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
-  -f, --filename string           Filename or URL to the pipeline file (default "skaffold.yaml")
-      --force                     Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)
-      --images strings            A list of pre-built images to deploy
-  -l, --label stringArray         Add custom labels to deployed objects. Set multiple times for multiple labels.
-  -n, --namespace string          Run deployments in the specified namespace
-  -p, --profile stringArray       Activate profiles by name
-      --rpc-http-port int         tcp port to expose event REST API over HTTP (default 50052)
-      --rpc-port int              tcp port to expose event API (default 50051)
-      --tail                      Stream logs from deployed objects
-      --toot                      Emit a terminal beep after the deploy is complete
->>>>>>> Correct flags except for --tail in dev and deploy
 
 Global Flags:
       --color int          Specify the default output color in ANSI escape codes (default 34)
@@ -444,12 +435,7 @@ Global Flags:
 ```
 Env vars:
 
-<<<<<<< HEAD
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
-* `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
-* `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
-=======
->>>>>>> Correct flags except for --tail in dev and deploy
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
@@ -478,6 +464,7 @@ Usage:
 
 Flags:
 <<<<<<< HEAD
+<<<<<<< HEAD
       --cache-artifacts             Set to true to enable caching of artifacts.
       --cache-file string           Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup                     Delete deployments after dev mode is interrupted (default true)
@@ -500,6 +487,8 @@ Flags:
   -w, --watch-image strings         Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
   -i, --watch-poll-interval int     Interval (in ms) between two checks for file changes (default 1000)
 =======
+=======
+>>>>>>> rebase from master
       --cache-artifacts                 Set to true to enable caching of artifacts.
       --cache-file string               Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup                         Delete deployments after dev or debug mode is interrupted (default true)
@@ -520,7 +509,6 @@ Flags:
       --trigger string                  How are changes detected? (polling, manual or notify) (default "polling")
   -w, --watch-image strings             Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
   -i, --watch-poll-interval int         Interval (in ms) between two checks for file changes (default 1000)
->>>>>>> Correct flags except for --tail in dev and deploy
 
 Global Flags:
       --color int          Specify the default output color in ANSI escape codes (default 34)

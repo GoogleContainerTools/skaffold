@@ -82,7 +82,6 @@ func deployPhaseFlagSet(name string) *flag.FlagSet {
 func deployCommandFlagSet(name string) *flag.FlagSet {
 	deployCommandFlags := flag.NewFlagSet("deploy-command", flag.ContinueOnError)
 	deployCommandFlags.BoolVar(&opts.Tail, "tail", false, "Stream logs from deployed objects")
-	deployCommandFlags.StringSliceVar(&opts.PreBuiltImages, "images", nil, "A list of pre-built images to deploy")
 	deployCommandFlags.BoolVar(&opts.Force, "force", false, "Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)")
 	deployCommandFlags.VisitAll(func(flag *flag.Flag) {
 		deployCommandFlags.SetAnnotation(flag.Name, "cmds", []string{"deploy"})
