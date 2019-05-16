@@ -34,8 +34,7 @@ func main() {
 
 func printMan(stdout, stderr io.Writer) error {
 	command := cmd.NewSkaffoldCommand(stdout, stderr)
-
-	return printSubCommands(stdout, command)
+	return printCommand(stdout, command)
 }
 
 func printSubCommands(out io.Writer, command *cobra.Command) error {
