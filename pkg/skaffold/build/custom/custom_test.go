@@ -65,19 +65,13 @@ func TestRetrieveEnv(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			initialEnviron := environ
-			defer func() {
-				environ = initialEnviron
-			}()
+			defer func(e func() []string) { environ = e }(environ)
 			environ = func() []string {
 				return test.environ
 			}
 
-			initialBuildContext := buildContext
-			defer func() {
-				buildContext = initialBuildContext
-			}()
-			buildContext = func(_ string) (string, error) {
+			defer func(bc func(string) (string, error)) { buildContext = bc }(buildContext)
+			buildContext = func(string) (string, error) {
 				return test.buildContext, nil
 			}
 
@@ -125,11 +119,11 @@ func TestRetrieveCmd(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			builder := NewArtifactBuilder(false, nil)
 
-			defer func(initialEnviron func() []string) { environ = initialEnviron }(environ)
+			defer func(e func() []string) { environ = e }(environ)
 			environ = func() []string { return nil }
 
-			defer func(initialBuildContext func(string) (string, error)) { buildContext = initialBuildContext }(buildContext)
-			buildContext = func(_ string) (string, error) {
+			defer func(bc func(string) (string, error)) { buildContext = bc }(buildContext)
+			buildContext = func(string) (string, error) {
 				return test.artifact.Workspace, nil
 			}
 

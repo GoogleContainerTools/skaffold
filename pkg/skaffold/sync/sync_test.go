@@ -387,18 +387,15 @@ func TestNewSyncItem(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			originalWorkingDir := WorkingDir
-			WorkingDir = func(_ string, _ map[string]bool) (string, error) {
+			defer func(w func(string, map[string]bool) (string, error)) { WorkingDir = w }(WorkingDir)
+			WorkingDir = func(string, map[string]bool) (string, error) {
 				return test.workingDir, nil
 			}
-			defer func() {
-				WorkingDir = originalWorkingDir
-			}()
+
 			actual, err := NewItem(test.artifact, test.evt, test.builds, map[string]bool{})
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
 		})
 	}
-
 }
 
 func TestIntersect(t *testing.T) {

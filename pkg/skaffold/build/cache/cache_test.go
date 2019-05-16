@@ -147,13 +147,10 @@ func Test_NewCache(t *testing.T) {
 			}
 			test.opts.CacheFile = cacheFile
 
-			originalDockerClient := newDockerClient
+			defer func(c func(bool, map[string]bool) (docker.LocalDaemon, error)) { newDockerClient = c }(newDockerClient)
 			newDockerClient = func(forceRemove bool, insecureRegistries map[string]bool) (docker.LocalDaemon, error) {
 				return docker.NewLocalDaemon(test.api, nil, forceRemove, test.insecureRegistries), nil
 			}
-			defer func() {
-				newDockerClient = originalDockerClient
-			}()
 
 			if test.updateClient {
 				test.expectedCache.client = docker.NewLocalDaemon(test.api, nil, false, test.insecureRegistries)

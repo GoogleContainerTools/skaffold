@@ -124,11 +124,8 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			originalHash := hashForArtifact
+			defer func(h func(context.Context, build.Builder, *latest.Artifact) (string, error)) { hashForArtifact = h }(hashForArtifact)
 			hashForArtifact = mockHashForArtifact(test.hashes)
-			defer func() {
-				hashForArtifact = originalHash
-			}()
 
 			test.cache.client = docker.NewLocalDaemon(&test.api, nil, false, map[string]bool{})
 
@@ -307,27 +304,18 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			originalHash := hashForArtifact
+			defer func(h func(context.Context, build.Builder, *latest.Artifact) (string, error)) { hashForArtifact = h }(hashForArtifact)
 			hashForArtifact = mockHashForArtifact(test.hashes)
-			defer func() {
-				hashForArtifact = originalHash
-			}()
 
-			originalRemoteDigest := remoteDigest
+			defer func(d func(string, map[string]bool) (string, error)) { remoteDigest = d }(remoteDigest)
 			remoteDigest = func(string, map[string]bool) (string, error) {
 				return test.digest, nil
 			}
-			defer func() {
-				remoteDigest = originalRemoteDigest
-			}()
 
-			originalImgExistsRemotely := imgExistsRemotely
-			imgExistsRemotely = func(_, _ string, _ map[string]bool) bool {
+			defer func(i func(string, string, map[string]bool) bool) { imgExistsRemotely = i }(imgExistsRemotely)
+			imgExistsRemotely = func(string, string, map[string]bool) bool {
 				return test.targetImageExistsRemotely
 			}
-			defer func() {
-				imgExistsRemotely = originalImgExistsRemotely
-			}()
 
 			if test.api != nil {
 				test.cache.client = docker.NewLocalDaemon(test.api, nil, false, map[string]bool{})
