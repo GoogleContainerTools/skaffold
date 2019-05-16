@@ -150,10 +150,5 @@ func (b *Builder) SyncMap(ctx context.Context, a *latest.Artifact) (map[string][
 		return nil, build.ErrSyncMapNotSupported{}
 	}
 
-	syncMap, err := docker.SyncMap(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, b.insecureRegistries)
-	if err != nil {
-		return nil, err
-	}
-
-	return syncMap, nil
+	return docker.SyncMap(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, b.insecureRegistries)
 }

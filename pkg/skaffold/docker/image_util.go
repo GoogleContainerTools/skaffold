@@ -69,11 +69,12 @@ func RetrieveWorkingDir(tagged string, insecureRegistries map[string]bool) (stri
 	}
 
 	localDocker, err := NewAPIClient(false, nil)
+	if err == nil {
+		cf, err = localDocker.ConfigFile(context.Background(), tagged)
+	}
 	if err != nil {
 		// No local Docker is available
 		cf, err = RetrieveRemoteConfig(tagged, insecureRegistries)
-	} else {
-		cf, err = localDocker.ConfigFile(context.Background(), tagged)
 	}
 	if err != nil {
 		return "", errors.Wrap(err, "retrieving image config")
