@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -39,11 +40,11 @@ func NewCmdDiagnose(out io.Writer) *cobra.Command {
 			f.StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 			f.StringSliceVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
 		}).
-		NoArgs(doDiagnose)
+		NoArgs(cancelWithCtrlC(context.Background(), doDiagnose))
 }
 
-func doDiagnose(out io.Writer) error {
-	return withRunner(func(r *runner.SkaffoldRunner, config *latest.SkaffoldConfig) error {
+func doDiagnose(ctx context.Context, out io.Writer) error {
+	return withRunner(ctx, func(r *runner.SkaffoldRunner, config *latest.SkaffoldConfig) error {
 		fmt.Fprintln(out, "Skaffold version:", version.Get().GitCommit)
 		fmt.Fprintln(out, "Configuration version:", config.APIVersion)
 		fmt.Fprintln(out, "Number of artifacts:", len(config.Build.Artifacts))

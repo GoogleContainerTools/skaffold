@@ -68,7 +68,7 @@ func doBuild(ctx context.Context, out io.Writer) error {
 
 	bRes, err := createRunnerAndBuildFunc(ctx, buildOut)
 	if err != nil {
-		return err
+		return alwaysSucceedWhenCancelled(ctx, err)
 	}
 
 	if quietFlag {

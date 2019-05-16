@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -164,4 +165,12 @@ func SetUpLogs(out io.Writer, level string) error {
 	}
 	logrus.SetLevel(lvl)
 	return nil
+}
+
+func alwaysSucceedWhenCancelled(ctx context.Context, err error) error {
+	// if the context was cancelled act as if all is well
+	if err != nil && ctx.Err() == context.Canceled {
+		return nil
+	}
+	return err
 }

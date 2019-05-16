@@ -39,7 +39,7 @@ func NewCmdRun(out io.Writer) *cobra.Command {
 }
 
 func doRun(ctx context.Context, out io.Writer) error {
-	return withRunner(func(r *runner.SkaffoldRunner, config *latest.SkaffoldConfig) error {
+	return withRunner(ctx, func(r *runner.SkaffoldRunner, config *latest.SkaffoldConfig) error {
 		err := r.Run(ctx, out, config.Build.Artifacts)
 		if err == nil {
 			tips.PrintForRun(out, opts)

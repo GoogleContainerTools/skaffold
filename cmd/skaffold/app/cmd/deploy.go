@@ -47,7 +47,7 @@ E.g. build.out created by running skaffold build --quiet {{json .}} > build.out`
 }
 
 func doDeploy(ctx context.Context, out io.Writer) error {
-	return withRunner(func(r *runner.SkaffoldRunner, _ *latest.SkaffoldConfig) error {
+	return withRunner(ctx, func(r *runner.SkaffoldRunner, _ *latest.SkaffoldConfig) error {
 		// If the BuildArtifacts contains an image in the preBuilt list,
 		// use image from BuildArtifacts instead
 		deployArtifacts := build.MergeWithPreviousBuilds(buildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts())

@@ -131,13 +131,6 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 	}
 
 	if err != nil {
-		// if the context was cancelled act as if all is well
-		// TODO(dgageot): this should be even higher in the call chain.
-		if ctx.Err() == context.Canceled {
-			logrus.Debugln(errors.Wrap(err, "ignore error since context is cancelled"))
-			return nil, nil
-		}
-
 		return nil, err
 	}
 
@@ -158,15 +151,7 @@ func (b *Builder) SyncMap(ctx context.Context, a *latest.Artifact) (map[string][
 	}
 
 	syncMap, err := docker.SyncMap(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, b.insecureRegistries)
-
 	if err != nil {
-		// if the context was cancelled act as if all is well
-		// TODO(dgageot): this should be even higher in the call chain.
-		if ctx.Err() == context.Canceled {
-			logrus.Debugln(errors.Wrap(err, "ignore error since context is cancelled"))
-			return nil, nil
-		}
-
 		return nil, err
 	}
 
