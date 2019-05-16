@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	registry_v1 "github.com/google/go-containerregistry/pkg/v1"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
@@ -60,7 +59,7 @@ type fromTo struct {
 
 var (
 	// WorkingDir is overridden for unit testing
-	WorkingDir = retrieveWorkingDir
+	WorkingDir = RetrieveWorkingDir
 
 	// RetrieveImage is overridden for unit testing
 	RetrieveImage = retrieveImage
@@ -207,7 +206,7 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, insecureRegis
 			if err != nil {
 				return nil, errors.Wrap(err, "processing word")
 			}
-			workdir = changeDir(workdir, value)
+			workdir = resolveDir(workdir, value)
 		case command.Add, command.Copy:
 			cpCmd, err := readCopyCommand(node, envs, workdir)
 			if err != nil {
@@ -242,7 +241,7 @@ func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCo
 			if i > 1 || strings.HasSuffix(v, "/") || path.Base(v) == "." || path.Base(v) == ".." {
 				destIsDir = true
 			}
-			dest = changeDir(workdir, v)
+			dest = resolveDir(workdir, v)
 			break
 		}
 		src, err := slex.ProcessWord(v, envs)
@@ -349,32 +348,6 @@ func retrieveImage(image string, insecureRegistries map[string]bool) (*v1.Config
 	return localDaemon.ConfigFile(context.Background(), image)
 }
 
-func retrieveWorkingDir(tagged string, insecureRegistries map[string]bool) (string, error) {
-	var cf *registry_v1.ConfigFile
-	var err error
-
-	if strings.ToLower(tagged) == "scratch" {
-		return "/", nil
-	}
-
-	localDocker, err := NewAPIClient(false, nil)
-	if err != nil {
-		// No local Docker is available
-		cf, err = RetrieveRemoteConfig(tagged, insecureRegistries)
-	} else {
-		cf, err = localDocker.ConfigFile(context.Background(), tagged)
-	}
-	if err != nil {
-		return "", errors.Wrap(err, "retrieving image config")
-	}
-
-	if cf.Config.WorkingDir == "" {
-		logrus.Debugf("Using default workdir '/' for %s", tagged)
-		return "/", nil
-	}
-	return cf.Config.WorkingDir, nil
-}
-
 func hasMultiStageFlag(flags []string) bool {
 	for _, f := range flags {
 		if strings.HasPrefix(f, "--from=") {
@@ -384,9 +357,10 @@ func hasMultiStageFlag(flags []string) bool {
 	return false
 }
 
-func changeDir(cur, to string) string {
-	if path.IsAbs(to) {
-		return path.Clean(to)
+// resolveDir determines the resulting directory as if a change-dir to targetDir was executed in cwd.
+func resolveDir(cwd, targetDir string) string {
+	if path.IsAbs(targetDir) {
+		return path.Clean(targetDir)
 	}
-	return path.Clean(path.Join(cur, to))
+	return path.Clean(path.Join(cwd, targetDir))
 }
