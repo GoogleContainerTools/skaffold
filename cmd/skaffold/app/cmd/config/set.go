@@ -138,8 +138,8 @@ func writeFullConfig(cfg *Config) error {
 
 func logSetConfigForUser(out io.Writer, key string, value string) {
 	if global {
-		out.Write([]byte(fmt.Sprintf("set global value %s to %s\n", key, value)))
+		fmt.Fprintf(out, "set global value %s to %s\n", key, value)
 	} else {
-		out.Write([]byte(fmt.Sprintf("set value %s to %s for context %s\n", key, value, kubecontext)))
+		fmt.Fprintf(out, "set value %s to %s for context %s\n", key, value, kubecontext)
 	}
 }

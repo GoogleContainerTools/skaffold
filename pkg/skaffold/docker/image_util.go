@@ -47,10 +47,10 @@ func Prune(ctx context.Context, out io.Writer, images []string, client LocalDaem
 		}
 		for _, r := range resp {
 			if r.Deleted != "" {
-				out.Write([]byte(fmt.Sprintf("deleted image %s\n", r.Deleted)))
+				fmt.Fprintf(out, "deleted image %s\n", r.Deleted)
 			}
 			if r.Untagged != "" {
-				out.Write([]byte(fmt.Sprintf("untagged image %s\n", r.Untagged)))
+				fmt.Fprintf(out, "untagged image %s\n", r.Untagged)
 			}
 		}
 	}
