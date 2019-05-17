@@ -16,7 +16,3 @@ build:
       - src: 'src/**/*.py'
         dest: .
         strip: src/
-deploy:
-  kubectl:
-    manifests:
-    - "**/k8s"

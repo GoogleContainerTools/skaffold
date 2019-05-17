@@ -1,10 +1,9 @@
-FROM node:8.12.0-alpine
+FROM node:10.15.3-alpine
 
-ARG SCRIPT
-ENV SCRIPT ${SCRIPT}
-WORKDIR /opt/backend
+WORKDIR /app
 EXPOSE 3000
-CMD ["npm", "run", ${SCRIPT}]
+CMD ["npm", "run", "dev"]
 
-COPY . .
+COPY package* ./
 RUN npm install
+COPY . .
