@@ -173,3 +173,33 @@ func CreateTempFileWithContents(t *testing.T, dir string, name string, content [
 	}
 	return tmpfile.Name()
 }
+
+// Override sets a dest variable to a given value.
+// Returns the function to call to restore the variable
+// to its original state.
+func Override(t *testing.T, dest, tmp interface{}) func() {
+	t.Helper()
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Error("temporary value is of invalid type")
+		}
+	}()
+
+	dValue := reflect.ValueOf(dest).Elem()
+
+	// Save current value
+	curValue := reflect.New(dValue.Type()).Elem()
+	curValue.Set(dValue)
+
+	// Set to temporary value
+	var tmpV reflect.Value
+	if tmp == nil {
+		tmpV = reflect.Zero(dValue.Type())
+	} else {
+		tmpV = reflect.ValueOf(tmp)
+	}
+	dValue.Set(tmpV)
+
+	return func() { dValue.Set(curValue) }
+}
