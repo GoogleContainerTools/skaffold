@@ -80,16 +80,16 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 		spec = &inspectSpec{port: portAlloc(defaultDevtoolsPort)}
 		switch {
 		case len(config.entrypoint) > 0 && isLaunchingNode(config.entrypoint):
-			container.Command = rewriteNodeCommandLine(config.entrypoint, spec)
+			container.Command = rewriteNodeCommandLine(config.entrypoint, *spec)
 
 		case len(config.entrypoint) > 0 && isLaunchingNpm(config.entrypoint):
-			container.Command = rewriteNpmCommandLine(config.entrypoint, spec)
+			container.Command = rewriteNpmCommandLine(config.entrypoint, *spec)
 
 		case len(config.entrypoint) == 0 && len(config.arguments) > 0 && isLaunchingNode(config.arguments):
-			container.Args = rewriteNodeCommandLine(config.arguments, spec)
+			container.Args = rewriteNodeCommandLine(config.arguments, *spec)
 
 		case len(config.entrypoint) == 0 && len(config.arguments) > 0 && isLaunchingNpm(config.arguments):
-			container.Args = rewriteNpmCommandLine(config.arguments, spec)
+			container.Args = rewriteNpmCommandLine(config.arguments, *spec)
 
 		default:
 			logrus.Warnf("Skipping [%s] as does not appear to invoke node", container.Name)
@@ -128,6 +128,8 @@ func retrieveNodeInspectSpec(config imageConfiguration) *inspectSpec {
 	return nil
 }
 
+// extractInspectArg attempts to parse out an `--inspect=xxx` argument,
+// returning true if found and false if not
 func extractInspectArg(arg string) *inspectSpec {
 	spec := inspectSpec{port: 9229}
 	address := ""
@@ -182,7 +184,7 @@ func (spec inspectSpec) String() string {
 }
 
 // rewriteNodeCommandLine rewrites a node/nodemon command-line to insert a `--inspect=xxx`
-func rewriteNodeCommandLine(commandLine []string, spec *inspectSpec) []string {
+func rewriteNodeCommandLine(commandLine []string, spec inspectSpec) []string {
 	// Assumes that commandLine[0] is "node" or "nodemon"
 	commandLine = append(commandLine, "")
 	copy(commandLine[2:], commandLine[1:]) // shift
@@ -191,7 +193,7 @@ func rewriteNodeCommandLine(commandLine []string, spec *inspectSpec) []string {
 }
 
 // rewriteNpmCommandLine rewrites an npm command-line to add a `--node-options=--inspect=xxx`
-func rewriteNpmCommandLine(commandLine []string, spec *inspectSpec) []string {
+func rewriteNpmCommandLine(commandLine []string, spec inspectSpec) []string {
 	// Assumes that commandLine[0] is "npm"
 	newOption := "--node-options=" + spec.String()
 	// see if there is "--" for end of npm arguments

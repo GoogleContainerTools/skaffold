@@ -167,7 +167,7 @@ func TestRewriteNodeCommandLine(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(strings.Join(test.in, " "), func(t *testing.T) {
-			result := rewriteNodeCommandLine(test.in, &inspectSpec{port: 9226})
+			result := rewriteNodeCommandLine(test.in, inspectSpec{port: 9226})
 			testutil.CheckDeepEqual(t, test.result, result)
 		})
 	}
@@ -183,7 +183,7 @@ func TestRewriteNpmCommandLine(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(strings.Join(test.in, " "), func(t *testing.T) {
-			result := rewriteNpmCommandLine(test.in, &inspectSpec{port: 9226})
+			result := rewriteNpmCommandLine(test.in, inspectSpec{port: 9226})
 			testutil.CheckDeepEqual(t, test.result, result)
 		})
 	}
