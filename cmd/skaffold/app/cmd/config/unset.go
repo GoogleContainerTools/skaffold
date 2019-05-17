@@ -44,9 +44,9 @@ func NewCmdUnset(out io.Writer) *cobra.Command {
 
 func logUnsetConfigForUser(out io.Writer, key string) {
 	if global {
-		out.Write([]byte(fmt.Sprintf("unset global value %s", key)))
+		fmt.Fprintf(out, "unset global value %s\n", key)
 	} else {
-		out.Write([]byte(fmt.Sprintf("unset value %s for context %s\n", key, kubecontext)))
+		fmt.Fprintf(out, "unset value %s for context %s\n", key, kubecontext)
 	}
 }
 

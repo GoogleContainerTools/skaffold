@@ -66,7 +66,9 @@ func runList(out io.Writer) error {
 			return errors.Wrap(err, "marshaling config")
 		}
 	}
-	out.Write([]byte(fmt.Sprintf("skaffold config: %s\n", configFile)))
+
+	fmt.Fprintf(out, "skaffold config: %s\n", configFile)
 	out.Write(configYaml)
+
 	return nil
 }
