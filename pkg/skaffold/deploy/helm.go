@@ -98,29 +98,32 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 	var deps []string
 	for _, release := range h.Releases {
 		deps = append(deps, release.ValuesFiles...)
-		// chart path is only a dependency if it exists on the local filesystem
-		if !release.Remote {
-			chartDepsDir := filepath.Join(release.ChartPath, "charts")
-			err := filepath.Walk(release.ChartPath, func(path string, info os.FileInfo, err error) error {
-				if err != nil {
-					return errors.Wrapf(err, "failure accessing path '%s'", path)
-				}
 
-				if !info.IsDir() {
-					if !strings.HasPrefix(path, chartDepsDir) || release.SkipBuildDependencies {
-						// We can always add a dependency if it is not contained in our chartDepsDir.
-						// However, if the file is in  our chartDepsDir, we can only include the file
-						// if we are not running the helm dep build phase, as that modifies files inside
-						// the chartDepsDir and results in an infinite build loop.
-						deps = append(deps, path)
-					}
-				}
+		if release.Remote {
+			// chart path is only a dependency if it exists on the local filesystem
+			continue
+		}
 
-				return nil
-			})
+		chartDepsDir := filepath.Join(release.ChartPath, "charts")
+		err := filepath.Walk(release.ChartPath, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
-				return deps, errors.Wrap(err, "issue walking releases")
+				return errors.Wrapf(err, "failure accessing path '%s'", path)
 			}
+
+			if !info.IsDir() {
+				if !strings.HasPrefix(path, chartDepsDir) || release.SkipBuildDependencies {
+					// We can always add a dependency if it is not contained in our chartDepsDir.
+					// However, if the file is in  our chartDepsDir, we can only include the file
+					// if we are not running the helm dep build phase, as that modifies files inside
+					// the chartDepsDir and results in an infinite build loop.
+					deps = append(deps, path)
+				}
+			}
+
+			return nil
+		})
+		if err != nil {
+			return deps, errors.Wrap(err, "issue walking releases")
 		}
 	}
 	sort.Strings(deps)
