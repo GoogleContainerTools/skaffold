@@ -17,10 +17,15 @@ limitations under the License.
 package debug
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func TestAllocatePort(t *testing.T) {
@@ -98,6 +103,32 @@ func TestAllocatePort(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			result := allocatePort(&test.pod, test.desiredPort)
 			testutil.CheckDeepEqual(t, test.result, result)
+		})
+	}
+}
+
+func TestDescribe(t *testing.T) {
+	tests := []struct {
+		in     runtime.Object
+		result string
+	}{
+		{&v1.Pod{TypeMeta: metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.String(), Kind: "Pod"}, ObjectMeta: metav1.ObjectMeta{Name: "name"}}, "pod/name"},
+		{&v1.ReplicationController{TypeMeta: metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.String(), Kind: "ReplicationController"}, ObjectMeta: metav1.ObjectMeta{Name: "name"}}, "replicationcontroller/name"},
+		{&appsv1.Deployment{TypeMeta: metav1.TypeMeta{APIVersion: appsv1.SchemeGroupVersion.String(), Kind: "Deployment"}, ObjectMeta: metav1.ObjectMeta{Name: "name"}}, "deployment.apps/name"},
+		{&appsv1.ReplicaSet{TypeMeta: metav1.TypeMeta{APIVersion: appsv1.SchemeGroupVersion.String(), Kind: "ReplicaSet"}, ObjectMeta: metav1.ObjectMeta{Name: "name"}}, "replicaset.apps/name"},
+		{&appsv1.StatefulSet{TypeMeta: metav1.TypeMeta{APIVersion: appsv1.SchemeGroupVersion.String(), Kind: "StatefulSet"}, ObjectMeta: metav1.ObjectMeta{Name: "name"}}, "statefulset.apps/name"},
+		{&appsv1.DaemonSet{TypeMeta: metav1.TypeMeta{APIVersion: appsv1.SchemeGroupVersion.String(), Kind: "DaemonSet"}, ObjectMeta: metav1.ObjectMeta{Name: "name"}}, "daemonset.apps/name"},
+		{&batchv1.Job{TypeMeta: metav1.TypeMeta{APIVersion: batchv1.SchemeGroupVersion.String(), Kind: "Job"}, ObjectMeta: metav1.ObjectMeta{Name: "name"}}, "job.batch/name"},
+	}
+
+	for _, test := range tests {
+		t.Run(reflect.TypeOf(test.in).Name(), func(t *testing.T) {
+			gvk := test.in.GetObjectKind().GroupVersionKind()
+			group, version, kind, description := describe(test.in)
+			testutil.CheckDeepEqual(t, gvk.Group, group)
+			testutil.CheckDeepEqual(t, gvk.Kind, kind)
+			testutil.CheckDeepEqual(t, gvk.Version, version)
+			testutil.CheckDeepEqual(t, test.result, description)
 		})
 	}
 }
