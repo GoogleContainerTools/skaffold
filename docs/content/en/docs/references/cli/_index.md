@@ -54,6 +54,42 @@ To edit this file above edit index_header - the rest of the file is autogenerate
 ******
 -->
 
+### skaffold
+
+A tool that facilitates continuous development for Kubernetes applications.
+
+```
+Usage:
+  skaffold [command]
+
+Available Commands:
+  build       Builds the artifacts
+  completion  Output shell completion for the given shell (bash or zsh)
+  config      A set of commands for interacting with the Skaffold config.
+  debug       Runs a pipeline file in debug mode
+  delete      Delete the deployed resources
+  deploy      Deploys the artifacts
+  dev         Runs a pipeline file in development mode
+  diagnose    Run a diagnostic on Skaffold
+  fix         Converts old Skaffold config to newest schema version
+  init        Automatically generate Skaffold configuration for deploying an application
+  run         Runs a pipeline file
+  version     Print the version information
+
+Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+
+Use "skaffold [command] --help" for more information about a command.
+
+
+```
+Env vars:
+
+* `SKAFFOLD_COLOR` (same as `--color`)
+* `SKAFFOLD_FORCE_COLORS` (same as `--force-colors`)
+* `SKAFFOLD_VERBOSITY` (same as `--verbosity`)
+
 ### skaffold build
 
 Builds the artifacts
