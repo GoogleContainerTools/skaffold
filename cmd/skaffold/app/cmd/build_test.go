@@ -80,7 +80,8 @@ func TestQuietFlag(t *testing.T) {
 			createRunnerAndBuildFunc = test.mock
 
 			var output bytes.Buffer
-			err := runBuild(&output)
+			err := doBuild(&output)
+
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, string(test.expectedOutput), output.String())
 		})
 	}
@@ -118,7 +119,8 @@ func TestRunBuild(t *testing.T) {
 			defer func(f func(context.Context, io.Writer) ([]build.Artifact, error)) { createRunnerAndBuildFunc = f }(createRunnerAndBuildFunc)
 			createRunnerAndBuildFunc = test.mock
 
-			err := runBuild(ioutil.Discard)
+			err := doBuild(ioutil.Discard)
+
 			testutil.CheckError(t, test.shouldErr, err)
 		})
 	}

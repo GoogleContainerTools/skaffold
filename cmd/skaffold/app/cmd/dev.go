@@ -20,31 +20,30 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // NewCmdDev describes the CLI command to run a pipeline in development mode.
 func NewCmdDev(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "dev",
-		Short: "Runs a pipeline file in development mode",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return dev(out)
-		},
-	}
-	AddRunDevFlags(cmd)
-	AddDevDebugFlags(cmd)
-	cmd.Flags().StringVar(&opts.Trigger, "trigger", "polling", "How are changes detected? (polling, manual or notify)")
-	cmd.Flags().StringSliceVarP(&opts.TargetImages, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")
-	cmd.Flags().IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes")
-	return cmd
+	return commands.
+		New(out).
+		WithDescription("dev", "Runs a pipeline file in development mode").
+		WithFlags(func(f *pflag.FlagSet) {
+			f.StringVar(&opts.Trigger, "trigger", "polling", "How are changes detected? (polling, manual or notify)")
+			f.StringSliceVarP(&opts.TargetImages, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")
+			f.IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes")
+			AddRunDevFlags(f)
+			AddDevDebugFlags(f)
+		}).
+		NoArgs(doDev)
 }
 
-func dev(out io.Writer) error {
+func doDev(out io.Writer) error {
 	opts.EnableRPC = true
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

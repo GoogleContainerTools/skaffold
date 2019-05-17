@@ -19,8 +19,10 @@ package cmd
 import (
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -33,27 +35,27 @@ var (
 
 // NewCmdInit describes the CLI command to generate a Skaffold configuration.
 func NewCmdInit(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "init",
-		Short: "Automatically generate Skaffold configuration for deploying an application",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			c := initializer.Config{
-				ComposeFile:  composeFile,
-				CliArtifacts: cliArtifacts,
-				SkipBuild:    skipBuild,
-				Force:        force,
-				Analyze:      analyze,
-				Opts:         opts,
-			}
-			return initializer.DoInit(out, c)
-		},
-	}
-	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
-	cmd.Flags().BoolVar(&skipBuild, "skip-build", false, "Skip generating build artifacts in Skaffold config")
-	cmd.Flags().BoolVar(&force, "force", false, "Force the generation of the Skaffold config")
-	cmd.Flags().StringVar(&composeFile, "compose-file", "", "Initialize from a docker-compose file")
-	cmd.Flags().StringSliceVarP(&cliArtifacts, "artifact", "a", nil, "'='-delimited dockerfile/image pair to generate build artifact\n(example: --artifact=/web/Dockerfile.web=gcr.io/web-project/image)")
-	cmd.Flags().BoolVar(&analyze, "analyze", false, "Print all discoverable Dockerfiles and images in JSON format to stdout")
-	return cmd
+	return commands.
+		New(out).
+		WithDescription("init", "Automatically generate Skaffold configuration for deploying an application").
+		WithFlags(func(f *pflag.FlagSet) {
+			f.StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
+			f.BoolVar(&skipBuild, "skip-build", false, "Skip generating build artifacts in Skaffold config")
+			f.BoolVar(&force, "force", false, "Force the generation of the Skaffold config")
+			f.StringVar(&composeFile, "compose-file", "", "Initialize from a docker-compose file")
+			f.StringSliceVarP(&cliArtifacts, "artifact", "a", nil, "'='-delimited dockerfile/image pair to generate build artifact\n(example: --artifact=/web/Dockerfile.web=gcr.io/web-project/image)")
+			f.BoolVar(&analyze, "analyze", false, "Print all discoverable Dockerfiles and images in JSON format to stdout")
+		}).
+		NoArgs(doInit)
+}
+
+func doInit(out io.Writer) error {
+	return initializer.DoInit(out, initializer.Config{
+		ComposeFile:  composeFile,
+		CliArtifacts: cliArtifacts,
+		SkipBuild:    skipBuild,
+		Force:        force,
+		Analyze:      analyze,
+		Opts:         opts,
+	})
 }

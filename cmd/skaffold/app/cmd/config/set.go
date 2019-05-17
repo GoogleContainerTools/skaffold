@@ -24,27 +24,30 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	yaml "gopkg.in/yaml.v2"
 )
 
 func NewCmdSet(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "set",
-		Short: "Set a value in the global Skaffold config",
-		Args:  cobra.ExactArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := setConfigValue(args[0], args[1]); err != nil {
-				return err
-			}
-			logSetConfigForUser(out, args[0], args[1])
-			return nil
-		},
+	return commands.
+		New(out).
+		WithDescription("set", "Set a value in the global Skaffold config").
+		WithFlags(func(f *pflag.FlagSet) {
+			AddConfigFlags(f)
+			AddSetFlags(f)
+		}).
+		ExactArgs(2, doSet)
+}
+
+func doSet(out io.Writer, args []string) error {
+	if err := setConfigValue(args[0], args[1]); err != nil {
+		return err
 	}
-	AddConfigFlags(cmd)
-	AddSetFlags(cmd)
-	return cmd
+	logSetConfigForUser(out, args[0], args[1])
+	return nil
 }
 
 func setConfigValue(name string, value string) error {
