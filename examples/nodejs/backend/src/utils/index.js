@@ -1,7 +1,7 @@
 function echo(string) {
-  return string;
+    return string;
 }
 
 module.exports = {
-  echo
-};
+    echo
+}

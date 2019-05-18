@@ -27,13 +27,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func CreateMappedTar(w io.Writer, root string, pathMap map[string]string) error {
+func CreateMappedTar(w io.Writer, root string, pathMap map[string][]string) error {
 	tw := tar.NewWriter(w)
 	defer tw.Close()
 
-	for src, dst := range pathMap {
-		if err := addFileToTar(root, src, dst, tw); err != nil {
-			return err
+	for src, dsts := range pathMap {
+		for _, dst := range dsts {
+			if err := addFileToTar(root, src, dst, tw); err != nil {
+				return err
+			}
 		}
 	}
 

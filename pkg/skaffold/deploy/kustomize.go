@@ -63,8 +63,9 @@ type secretGenerator struct {
 type KustomizeDeployer struct {
 	*latest.KustomizeDeploy
 
-	kubectl     kubectl.CLI
-	defaultRepo string
+	kubectl            kubectl.CLI
+	defaultRepo        string
+	insecureRegistries map[string]bool
 }
 
 func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
@@ -76,7 +77,8 @@ func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 			Flags:       runCtx.Cfg.Deploy.KustomizeDeploy.Flags,
 			ForceDeploy: runCtx.Opts.ForceDeploy(),
 		},
-		defaultRepo: runCtx.DefaultRepo,
+		defaultRepo:        runCtx.DefaultRepo,
+		insecureRegistries: runCtx.InsecureRegistries,
 	}
 }
 
@@ -118,9 +120,17 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 		return errors.Wrap(err, "setting labels in manifests")
 	}
 
+	for _, transform := range manifestTransforms {
+		manifests, err = transform(manifests, builds, k.insecureRegistries)
+		if err != nil {
+			return errors.Wrap(err, "unable to transform manifests")
+		}
+	}
+
 	err = k.kubectl.Apply(ctx, out, manifests)
 	if err != nil {
 		event.DeployFailed(err)
+		return errors.Wrap(err, "kubectl error")
 	}
 
 	event.DeployComplete()

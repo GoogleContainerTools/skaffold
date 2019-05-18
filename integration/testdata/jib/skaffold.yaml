@@ -12,3 +12,6 @@ profiles:
   - name: gcb
     build:
       googleCloudBuild: {}
+  - name: kustomize
+    deploy:
+      kustomize: {}

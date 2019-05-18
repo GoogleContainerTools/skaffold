@@ -22,12 +22,14 @@ import (
 	"io/ioutil"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -42,22 +44,19 @@ var (
 
 // NewCmdBuild describes the CLI command to build artifacts.
 func NewCmdBuild(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "build",
-		Short: "Builds the artifacts",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runBuild(out)
-		},
-	}
-	AddRunDevFlags(cmd)
-	cmd.Flags().StringSliceVarP(&opts.TargetImages, "build-image", "b", nil, "Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts")
-	cmd.Flags().BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output.")
-	cmd.Flags().VarP(buildFormatFlag, "output", "o", "Used in conjuction with --quiet flag. "+buildFormatFlag.Usage())
-	return cmd
+	return commands.
+		New(out).
+		WithDescription("build", "Builds the artifacts").
+		WithFlags(func(f *pflag.FlagSet) {
+			AddRunDevFlags(f)
+			f.StringSliceVarP(&opts.TargetImages, "build-image", "b", nil, "Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts")
+			f.BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output.")
+			f.VarP(buildFormatFlag, "output", "o", "Used in conjuction with --quiet flag. "+buildFormatFlag.Usage())
+		}).
+		NoArgs(doBuild)
 }
 
-func runBuild(out io.Writer) error {
+func doBuild(out io.Writer) error {
 	start := time.Now()
 	defer func() {
 		if !quietFlag {
@@ -75,7 +74,6 @@ func runBuild(out io.Writer) error {
 	}
 
 	bRes, err := createRunnerAndBuildFunc(ctx, buildOut)
-
 	if err != nil {
 		return err
 	}

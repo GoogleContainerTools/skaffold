@@ -17,7 +17,6 @@ limitations under the License.
 package initializer
 
 import (
-	"os"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -62,40 +61,42 @@ func TestIsSupportedKubernetesFileExtension(t *testing.T) {
 
 func TestIsSkaffoldConfig(t *testing.T) {
 	tests := []struct {
-		name     string
-		contents []byte
-		expected bool
+		description string
+		contents    string
+		isValid     bool
 	}{
 		{
-			name: "valid skaffold config",
-			contents: []byte(`apiVersion: skaffold/v1beta6
+			description: "valid skaffold config",
+			contents: `apiVersion: skaffold/v1beta6
 kind: Config
 deploy:
-  kustomize: {}`),
-			expected: true,
+  kustomize: {}`,
+			isValid: true,
 		},
 		{
-			name:     "not a valid format",
-			contents: []byte("test"),
-			expected: false,
+			description: "not a valid format",
+			contents:    "test",
+			isValid:     false,
 		},
 		{
-			name: "invalid skaffold config version",
-			contents: []byte(`apiVersion: skaffold/v2beta1
+			description: "invalid skaffold config version",
+			contents: `apiVersion: skaffold/v2beta1
 kind: Config
 deploy:
-  kustomize: {}`),
-			expected: false,
+  kustomize: {}`,
+			isValid: false,
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			filename := testutil.CreateTempFileWithContents(t, "", "skaffold.yaml", test.contents)
-			defer os.Remove(filename) // clean up
-			if IsSkaffoldConfig(filename) != test.expected {
-				t.Errorf("expected to see %t for\n%s. but instead got %t", test.expected,
-					test.contents, !test.expected)
-			}
+		t.Run(test.description, func(t *testing.T) {
+			tmpDir, delete := testutil.NewTempDir(t)
+			defer delete()
+
+			tmpDir.Write("skaffold.yaml", test.contents)
+
+			isValid := IsSkaffoldConfig(tmpDir.Path("skaffold.yaml"))
+
+			testutil.CheckDeepEqual(t, test.isValid, isValid)
 		})
 	}
 }

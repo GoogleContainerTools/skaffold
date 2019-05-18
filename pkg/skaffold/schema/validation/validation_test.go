@@ -348,9 +348,9 @@ func TestValidateNetworkMode(t *testing.T) {
 		},
 	}
 
-	origValidateYamlTags := validateYamltags
-	validateYamltags = func(_ interface{}) error { return nil }
-	defer func() { validateYamltags = origValidateYamlTags }()
+	// disable yamltags validation
+	defer func(v func(interface{}) error) { validateYamltags = v }(validateYamltags)
+	validateYamltags = func(interface{}) error { return nil }
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -363,6 +363,165 @@ func TestValidateNetworkMode(t *testing.T) {
 					},
 				})
 			testutil.CheckError(t, test.shouldErr, err)
+		})
+	}
+}
+
+func TestValidateSyncRules(t *testing.T) {
+	tests := []struct {
+		name      string
+		artifacts []*latest.Artifact
+		shouldErr bool
+	}{
+		{
+			name:      "no artifacts",
+			artifacts: nil,
+		},
+		{
+			name: "no sync rules",
+			artifacts: []*latest.Artifact{
+				{
+					Sync: nil,
+				},
+			},
+		},
+		{
+			name: "two good rules",
+			artifacts: []*latest.Artifact{
+				{
+					Sync: &latest.Sync{Manual: []*latest.SyncRule{
+						{
+							Src:  "src/**/*.js",
+							Dest: ".",
+						},
+						{
+							Src:   "src/**/*.js",
+							Dest:  ".",
+							Strip: "src/",
+						},
+					}},
+				},
+			},
+		},
+		{
+			name: "one good one bad rule",
+			artifacts: []*latest.Artifact{
+				{
+					Sync: &latest.Sync{Manual: []*latest.SyncRule{
+						{
+							Src:   "src/**/*.js",
+							Dest:  ".",
+							Strip: "/src",
+						},
+						{
+							Src:   "src/**/*.py",
+							Dest:  ".",
+							Strip: "src/",
+						},
+					}},
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			name: "two bad rules",
+			artifacts: []*latest.Artifact{
+				{
+					Sync: &latest.Sync{Manual: []*latest.SyncRule{
+						{
+							Dest:  ".",
+							Strip: "src",
+						},
+						{
+							Src:   "**/*.js",
+							Dest:  ".",
+							Strip: "src/",
+						},
+					}},
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			name: "stripping part of folder name is valid",
+			artifacts: []*latest.Artifact{
+				{
+					Sync: &latest.Sync{Manual: []*latest.SyncRule{
+						{
+							Src:   "srcsomeother/**/*.js",
+							Dest:  ".",
+							Strip: "src",
+						},
+					}},
+				},
+			},
+		},
+	}
+
+	// disable yamltags validation
+	defer func(v func(interface{}) error) { validateYamltags = v }(validateYamltags)
+	validateYamltags = func(interface{}) error { return nil }
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := Process(
+				&latest.SkaffoldConfig{
+					Pipeline: latest.Pipeline{
+						Build: latest.BuildConfig{
+							Artifacts: test.artifacts,
+						},
+					},
+				})
+			testutil.CheckError(t, test.shouldErr, err)
+		})
+	}
+}
+
+func TestValidateCustomDependencies(t *testing.T) {
+	tests := []struct {
+		description    string
+		dependencies   *latest.CustomDependencies
+		expectedErrors int
+	}{
+		{
+			description: "no errors",
+			dependencies: &latest.CustomDependencies{
+				Paths:  []string{"somepath"},
+				Ignore: []string{"anotherpath"},
+			},
+		}, {
+			description: "ignore in conjunction with dockerfile",
+			dependencies: &latest.CustomDependencies{
+				Dockerfile: &latest.DockerfileDependency{
+					Path: "some/path",
+				},
+				Ignore: []string{"ignoreme"},
+			},
+			expectedErrors: 1,
+		}, {
+			description: "ignore in conjunction with command",
+			dependencies: &latest.CustomDependencies{
+				Command: "bazel query deps",
+				Ignore:  []string{"ignoreme"},
+			},
+			expectedErrors: 1,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			artifact := &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					CustomArtifact: &latest.CustomArtifact{
+						Dependencies: test.dependencies,
+					},
+				},
+			}
+
+			errs := validateCustomDependencies([]*latest.Artifact{artifact})
+			if len(errs) != test.expectedErrors {
+				t.Fatalf("got incorrect number of errors. got: %d \n expected: %d \n", len(errs), test.expectedErrors)
+			}
 		})
 	}
 }

@@ -25,7 +25,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -436,13 +435,10 @@ func TestPortForwardPod(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-
 			taken := map[int]struct{}{}
-			originalGetAvailablePort := util.GetAvailablePort
+
+			defer func(r func(int, *sync.Map) int) { retrieveAvailablePort = r }(retrieveAvailablePort)
 			retrieveAvailablePort = mockRetrieveAvailablePort(taken, test.availablePorts)
-			defer func() {
-				retrieveAvailablePort = originalGetAvailablePort
-			}()
 
 			p := NewPortForwarder(ioutil.Discard, NewImageList(), []string{""})
 			if test.forwarder == nil {

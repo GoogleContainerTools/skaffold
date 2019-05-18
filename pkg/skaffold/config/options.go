@@ -34,6 +34,7 @@ type SkaffoldOptions struct {
 	EnableRPC          bool
 	Force              bool
 	NoPrune            bool
+	NoPruneChildren    bool
 	CustomTag          string
 	Namespace          string
 	CacheFile          string
