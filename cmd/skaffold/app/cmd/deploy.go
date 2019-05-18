@@ -20,10 +20,12 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -33,23 +35,20 @@ var (
 
 // NewCmdDeploy describes the CLI command to deploy artifacts.
 func NewCmdDeploy(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "deploy",
-		Short: "Deploys the artifacts",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDeploy(out)
-		},
-	}
-	AddRunDevFlags(cmd)
-	AddRunDeployFlags(cmd)
-	cmd.Flags().VarP(&preBuiltImages, "images", "i", "A list of pre-built images to deploy")
-	cmd.Flags().VarP(&buildOutputFile, "build-artifacts", "a", `Filepath containing build output.
+	return commands.
+		New(out).
+		WithDescription("deploy", "Deploys the artifacts").
+		WithFlags(func(f *pflag.FlagSet) {
+			f.VarP(&preBuiltImages, "images", "i", "A list of pre-built images to deploy")
+			f.VarP(&buildOutputFile, "build-artifacts", "a", `Filepath containing build output.
 E.g. build.out created by running skaffold build --quiet {{json .}} > build.out`)
-	return cmd
+			AddRunDevFlags(f)
+			AddRunDeployFlags(f)
+		}).
+		NoArgs(doDeploy)
 }
 
-func runDeploy(out io.Writer) error {
+func doDeploy(out io.Writer) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	catchCtrlC(cancel)

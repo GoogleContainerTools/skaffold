@@ -18,6 +18,8 @@ package debug
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -25,6 +27,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -96,7 +99,17 @@ func transformManifest(obj runtime.Object, retrieveImageConfiguration configurat
 		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration)
 
 	default:
-		logrus.Debugf("skipping unknown object: %T (%v)\n", obj.GetObjectKind(), obj)
+		group, version, _, description := describe(obj)
+		if group == "apps" || group == "batch" {
+			if version != "v1" {
+				// treat deprecated objects as errors
+				logrus.Errorf("deprecated versions not supported by debug: %s (%s)", description, version)
+			} else {
+				logrus.Warnf("no debug transformation for: %s", description)
+			}
+		} else {
+			logrus.Debugf("no debug transformation for: %s", description)
+		}
 		return false
 	}
 }
@@ -199,4 +212,25 @@ func encodeConfigurations(configurations map[string]map[string]interface{}) stri
 		return ""
 	}
 	return string(bytes)
+}
+
+func describe(obj runtime.Object) (group, version, kind, description string) {
+	// get metadata/name; shamelessly stolen from from k8s.io/cli-runtime/pkg/printers/name.go
+	name := "<unknown>"
+	if acc, err := meta.Accessor(obj); err == nil {
+		if n := acc.GetName(); len(n) > 0 {
+			name = n
+		}
+	}
+
+	gvk := obj.GetObjectKind().GroupVersionKind()
+	group = gvk.Group
+	version = gvk.Version
+	kind = gvk.Kind
+	if group == "" {
+		description = fmt.Sprintf("%s/%s", strings.ToLower(kind), name)
+	} else {
+		description = fmt.Sprintf("%s.%s/%s", strings.ToLower(kind), group, name)
+	}
+	return
 }

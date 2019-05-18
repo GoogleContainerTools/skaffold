@@ -4,14 +4,9 @@ build:
   artifacts:
   - image: gcr.io/k8s-skaffold/node-example
     context: backend
-    docker:
-      buildArgs:
-        SCRIPT: "{{.SCRIPT}}"
     sync:
-      # Sync all the javascript files that are in the src folder 
+      manual:
+      # Sync all the javascript files that are in the src folder
       # with the container src folder
-      'src/***/*.js': src/
-deploy:
-  kubectl:
-    manifests:
-    - "backend/k8s/**"
+      - src: 'src/**/*.js'
+        dest: .

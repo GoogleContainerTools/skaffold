@@ -110,13 +110,14 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	for _, transform := range manifestTransforms {
 		manifests, err = transform(manifests, builds, k.insecureRegistries)
 		if err != nil {
-			return errors.Wrap(err, "debug transform of manifests")
+			return errors.Wrap(err, "unable to transform manifests")
 		}
 	}
 
 	err = k.kubectl.Apply(ctx, out, manifests)
 	if err != nil {
 		event.DeployFailed(err)
+		return errors.Wrap(err, "kubectl error")
 	}
 
 	event.DeployComplete()

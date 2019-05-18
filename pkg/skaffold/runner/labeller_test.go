@@ -20,11 +20,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestDEfaultLabeller(t *testing.T) {
+func TestDefaultLabeller(t *testing.T) {
 	var tests = []struct {
 		description string
 		version     string
@@ -36,8 +35,8 @@ func TestDEfaultLabeller(t *testing.T) {
 			expected:    "skaffold-1.0",
 		},
 		{
-			description: "no version",
-			expected:    fmt.Sprintf("skaffold-%s", version.Get().Version),
+			description: "empty version should add postfix unknown",
+			expected:    fmt.Sprintf("skaffold-unknown"),
 		},
 	}
 

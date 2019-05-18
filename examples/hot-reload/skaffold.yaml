@@ -1,15 +1,21 @@
-apiVersion: skaffold/v1beta9
+apiVersion: skaffold/v1beta10
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/node-example
     context: node
     sync:
-      '**/*.js': .
+      manual:
+      - src: 'src/**/*.js'
+        dest: .
+        strip: src/
   - image: gcr.io/k8s-skaffold/python-reload
     context: python
     sync:
-      '**/*.py': .
+      manual:
+      - src: 'src/**/*.py'
+        dest: .
+        strip: src/
 deploy:
   kubectl:
     manifests:

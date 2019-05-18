@@ -19,7 +19,6 @@ package testutil
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -155,21 +154,4 @@ func ServeFile(t *testing.T, content []byte) (url string, tearDown func()) {
 	}))
 
 	return ts.URL, ts.Close
-}
-
-// CreateTempFileWithContents creates a temporary file in the dir specified or
-// os.TempDir by default with contents mentioned.
-func CreateTempFileWithContents(t *testing.T, dir string, name string, content []byte) string {
-	t.Helper()
-	tmpfile, err := ioutil.TempFile(dir, name)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := tmpfile.Write(content); err != nil {
-		t.Fatal(err)
-	}
-	if err := tmpfile.Close(); err != nil {
-		t.Fatal(err)
-	}
-	return tmpfile.Name()
 }

@@ -20,30 +20,33 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	yaml "gopkg.in/yaml.v2"
 )
 
 func NewCmdFix(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "fix",
-		Short: "Converts old Skaffold config to newest schema version",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runFix(out, opts.ConfigurationFile, overwrite)
-		},
-		Args: cobra.NoArgs,
-	}
-	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
-	cmd.Flags().BoolVar(&overwrite, "overwrite", false, "Overwrite original config with fixed config")
-	return cmd
+	return commands.
+		New(out).
+		WithDescription("fix", "Converts old Skaffold config to newest schema version").
+		WithFlags(func(f *pflag.FlagSet) {
+			f.StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
+			f.BoolVar(&overwrite, "overwrite", false, "Overwrite original config with fixed config")
+		}).
+		NoArgs(doFix)
 }
 
-func runFix(out io.Writer, configFile string, overwrite bool) error {
+func doFix(out io.Writer) error {
+	return fix(out, opts.ConfigurationFile, overwrite)
+}
+
+func fix(out io.Writer, configFile string, overwrite bool) error {
 	cfg, err := schema.ParseConfig(configFile, false)
 	if err != nil {
 		return err

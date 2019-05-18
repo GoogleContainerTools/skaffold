@@ -30,14 +30,19 @@ artifacts are transformed to enable the runtime technology's debugging functions
       
 `skaffold debug` uses a set of heuristics to identify the runtime technology.
 The Kubernetes manifests are transformed on-the-fly such that the on-disk
-representations are untouched. 
+representations are untouched.
+
+{{< alert title="Caution" >}}
+`skaffold debug` does not support deprecated versions of Workload API objects such as `apps/v1beta1`.
+{{< /alert >}}
+
 
 ## Limitations
 
 `skaffold debug` has some limitations:
 
-  - Only the `kubectl` deployer is supported at the moment: the Helm and Kustomize
-    deployers are not yet available.
+  - Only the `kubectl` and `kustomize` deployers are supported at the moment: support for
+    the Helm deployer is not yet available.
   - Only JVM and NodeJS applications are supported:
       - JVM applications are configured using the `JAVA_TOOL_OPTIONS` environment variable
         which causes extra debugging output on launch.

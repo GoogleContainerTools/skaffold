@@ -34,8 +34,7 @@ func main() {
 
 func printMan(stdout, stderr io.Writer) error {
 	command := cmd.NewSkaffoldCommand(stdout, stderr)
-
-	return printSubCommands(stdout, command)
+	return printCommand(stdout, command)
 }
 
 func printSubCommands(out io.Writer, command *cobra.Command) error {
@@ -51,7 +50,7 @@ func printSubCommands(out io.Writer, command *cobra.Command) error {
 func printCommand(out io.Writer, command *cobra.Command) error {
 	command.DisableFlagsInUseLine = true
 
-	fmt.Fprintf(out, "\n### %s\n", command.UseLine())
+	fmt.Fprintf(out, "\n### %s\n", command.CommandPath())
 	fmt.Fprintf(out, "\n%s\n", command.Short)
 	fmt.Fprintf(out, "\n```\n%s\n\n```\n", command.UsageString())
 
