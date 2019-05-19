@@ -48,6 +48,7 @@ const (
 	DefaultKanikoEmptyDirMountPath      = "/kaniko/buildcontext"
 	DefaultKanikoDockerConfigSecretName = "docker-cfg"
 	DefaultKanikoDockerConfigPath       = "/kaniko/.docker"
+	DefaultKanikoPodGracePeriodSeconds  = "2"
 
 	DefaultBusyboxImage = "busybox"
 

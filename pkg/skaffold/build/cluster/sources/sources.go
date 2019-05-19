@@ -77,6 +77,12 @@ func podTemplate(clusterDetails *latest.ClusterDetails, image string, args []str
 					},
 					Resources: resourceRequirements(clusterDetails.Resources),
 				},
+				{
+                    Name:            "logger-container",
+                    Image:           constants.DefaultBusyboxImage,
+                    ImagePullPolicy: v1.PullIfNotPresent,
+                    Command: []string{"sh", "-c", "while [[ $(ps -ef | grep kaniko | wc -l) -gt 1 ]] ; do   sleep 1; done; sleep " + clusterDetails.PodGracePeriodSeconds},
+                },
 			},
 			RestartPolicy: v1.RestartPolicyNever,
 			Volumes: []v1.Volume{{

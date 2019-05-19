@@ -244,6 +244,9 @@ type ClusterDetails struct {
 
 	// Resources define the resource requirements for the kaniko pod.
 	Resources *ResourceRequirements `yaml:"resources,omitempty"`
+
+	// Wait period for kaniko pod after it finishes of building and pushing the image
+	PodGracePeriodSeconds string `yaml:podGracePeriodSeconds, omitempty"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.

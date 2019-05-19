@@ -57,6 +57,7 @@ func Set(c *latest.SkaffoldConfig) error {
 		setDefaultClusterTimeout,
 		setDefaultClusterPullSecret,
 		setDefaultClusterDockerConfigSecret,
+		setDefaultKanikoPodGracePeriod,
 	); err != nil {
 		return err
 	}
@@ -244,6 +245,10 @@ func setDefaultKanikoArtifactImage(artifact *latest.Artifact) {
 	artifact.KanikoArtifact.Image = valueOrDefault(kanikoArtifact.Image, constants.DefaultKanikoImage)
 }
 
+func setDefaultKanikoPodGracePeriod(cluster *latest.ClusterDetails) error{
+	artifact.KanikoArtifact.PodGracePeriodSeconds = valueOrDefault(kanikoArtifact.PodGracePeriodSeconds, constants.DefaultKanikoPodGracePeriodSeconds)
+	return nil
+}
 func valueOrDefault(v, def string) string {
 	if v != "" {
 		return v
