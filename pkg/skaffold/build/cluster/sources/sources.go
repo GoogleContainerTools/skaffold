@@ -91,7 +91,7 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 		},
 	}
 
-	if artifact.Cache.HostPath != "" {
+	if artifact.Cache != nil && artifact.Cache.HostPath != "" {
 		volumeMount := v1.VolumeMount{
 			Name:      constants.DefaultKanikoCacheDirName,
 			MountPath: constants.DefaultKanikoCacheDirMountPath,
