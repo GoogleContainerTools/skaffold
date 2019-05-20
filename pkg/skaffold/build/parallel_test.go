@@ -101,8 +101,14 @@ func TestCollectResults(t *testing.T) {
 				{ImageName: "skaffold/image2", Tag: "skaffold/image2:v0.0.2@sha256:abac"},
 			},
 			results: map[string]interface{}{
-				"skaffold/image1": "skaffold/image1:v0.0.1@sha256:abac",
-				"skaffold/image2": "skaffold/image2:v0.0.2@sha256:abac",
+				"skaffold/image1": Artifact{
+					ImageName: "skaffold/image1",
+					Tag:       "skaffold/image1:v0.0.1@sha256:abac",
+				},
+				"skaffold/image2": Artifact{
+					ImageName: "skaffold/image2",
+					Tag:       "skaffold/image2:v0.0.2@sha256:abac",
+				},
 			},
 		},
 		{
@@ -114,7 +120,10 @@ func TestCollectResults(t *testing.T) {
 			expected: nil,
 			results: map[string]interface{}{
 				"skaffold/image1": fmt.Errorf("Could not build image skaffold/image1"),
-				"skaffold/image2": "skaffold/image2:v0.0.2@sha256:abac",
+				"skaffold/image2": Artifact{
+					ImageName: "skaffold/image2",
+					Tag:       "skaffold/image2:v0.0.2@sha256:abac",
+				},
 			},
 			shouldErr: true,
 		},
@@ -127,9 +136,15 @@ func TestCollectResults(t *testing.T) {
 			},
 			expected: nil,
 			results: map[string]interface{}{
-				"skaffold/image1": "skaffold/image1:v0.0.1@sha256:abac",
+				"skaffold/image1": Artifact{
+					ImageName: "skaffold/image1",
+					Tag:       "skaffold/image1:v0.0.1@sha256:abac",
+				},
 				"skaffold/image2": fmt.Errorf("Could not build image skaffold/image1"),
-				"skaffold/image3": "skaffold/image3:v0.0.1@sha256:abac",
+				"skaffold/image3": Artifact{
+					ImageName: "skaffold/image3",
+					Tag:       "skaffold/image3:v0.0.1@sha256:abac",
+				},
 			},
 			shouldErr: true,
 		},
@@ -141,7 +156,10 @@ func TestCollectResults(t *testing.T) {
 			},
 			expected: nil,
 			results: map[string]interface{}{
-				"skaffold/image1": "skaffold/image1:v0.0.1@sha256:abac",
+				"skaffold/image1": Artifact{
+					ImageName: "skaffold/image1:v0.0.1@sha256:abac",
+					Tag:       "skaffold/image1:v0.0.1@sha256:abac",
+				},
 			},
 			shouldErr: true,
 		},
@@ -161,11 +179,12 @@ func TestCollectResults(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			outputs := setUpChannels(len(test.artifacts))
 			resultMap := new(sync.Map)
 			for k, v := range test.results {
 				resultMap.Store(k, v)
 			}
-			got, err := collectResults(test.artifacts, resultMap)
+			got, err := collectResults(ioutil.Discard, test.artifacts, resultMap, outputs)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, got)
 		})
 	}
@@ -235,7 +254,7 @@ func TestInParallelForArgs(t *testing.T) {
 			expected:    []Artifact{{ImageName: "singleArtifact", Tag: "one"}},
 		},
 		{
-			description: "runs in sequence for 2 artifacts",
+			description: "runs in parallel for 2 artifacts",
 			buildArtifact: func(_ context.Context, _ io.Writer, _ *latest.Artifact, tag string) (string, error) {
 				return tag, nil
 			},
@@ -261,9 +280,8 @@ func TestInParallelForArgs(t *testing.T) {
 				tags[a] = fmt.Sprintf("%s@tag%d", a, i+1)
 			}
 			if test.inSeqFunc != nil {
-				originalInSeq := runInSequence
-				defer func() { runInSequence = originalInSeq }()
-				runInSequence = test.inSeqFunc
+				restore := testutil.Override(t, &runInSequence, test.inSeqFunc)
+				defer restore()
 			}
 			initializeEvents()
 			actual, _ := InParallel(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact)
@@ -292,9 +310,9 @@ func TestColoredOutput(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			originalIsColor := color.IsTerminal
-			defer func() { color.IsTerminal = originalIsColor }()
-			color.IsTerminal = test.isTerminal
+			restore := testutil.Override(t, &color.IsTerminal, test.isTerminal)
+			defer restore()
+
 			_, w := io.Pipe()
 			actual := setUpColorWriter(w, ioutil.Discard)
 			if _, ok := actual.(color.ColoredWriteCloser); ok != test.exceptedColor {
@@ -303,4 +321,13 @@ func TestColoredOutput(t *testing.T) {
 		})
 	}
 
+}
+
+func setUpChannels(n int) []chan []byte {
+	outputs := make([]chan []byte, n)
+	for i := 0; i < n; i++ {
+		outputs[i] = make(chan []byte, 10)
+		close(outputs[i])
+	}
+	return outputs
 }
