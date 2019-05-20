@@ -65,9 +65,9 @@ For a new config change, please mention:
   Refer to the [deprecation policy requirements.](./../../deprecation-policy.md#how-do-we-deprecate-things)
   for details.
 
-### Open Issues/Question
+### Open Issues/Questions
 
-Please list any open questions here in the format.
+Please list any open questions here in the following format:
 
 **\<Question\>**
 
@@ -79,8 +79,7 @@ As a team, we've noticed that larger PRs can go unreviewed for long periods of
 time. Small incremental changes get reviewed faster and are also easier for
 reviewers.
 
-For a design feature, list a summary of tasks breakdown for e.g.:
-For the example artifact sync proposal, some of the smaller tasks could be:
+For a new feature, list the major tasks required for the implementation. Given the example artifact sync proposal, some of the smaller tasks could be:
 ___
 
 1. Add new config key `infer` to `artifact.sync` and test schema validation.
