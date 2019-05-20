@@ -20,7 +20,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v1beta10"
+const Version string = "skaffold/v1beta11"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -99,6 +99,8 @@ type GitTagger struct {
 	// `Tags` (default): use git tags or fall back to abbreviated commit hash.
 	// `CommitSha`: use the full git commit sha.
 	// `AbbrevCommitSha`: use the abbreviated git commit sha.
+	// `TreeSha`: use the full tree hash of the artifact workingdir.
+	// `AbbrevTreeSha`: use the abbreviated tree hash of the artifact workingdir.
 	Variant string `yaml:"variant,omitempty"`
 }
 
@@ -219,6 +221,9 @@ type KanikoCache struct {
 	// Repo is a remote repository to store cached layers. If none is specified, one will be
 	// inferred from the image name. See [Kaniko Caching](https://github.com/GoogleContainerTools/kaniko#caching).
 	Repo string `yaml:"repo,omitempty"`
+	// HostPath specifies a path on the host that is mounted to each pod as read only cache volume containing base images.
+	// If set, must exist on each node and prepopulated with kaniko-warmer.
+	HostPath string `yaml:"hostPath,omitempty"`
 }
 
 // ClusterDetails *beta* describes how to do an on-cluster build.

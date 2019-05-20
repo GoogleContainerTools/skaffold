@@ -19,7 +19,7 @@ package v1beta9
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta10"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"gopkg.in/yaml.v2"
 )
