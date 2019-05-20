@@ -5,7 +5,12 @@
 * Date: 04/11/19
 * Status: [Reviewed/Cancelled/Under implementation/Complete]
 
+## Final decision
 
+After multiple days invested in this direction we still feel that it is not worthwhile to go down this direction: the complexity of adding go channels adds a lot of complexity and the design more error prone for subtle bugs. The current arguments for going towards this direction is the Event API redesign to centralize event management in the Runner. This in itself is a valuable idea but at this point the current design is simpler to reason about this new design with the go channels, plus if we want to extend the events sent by builders, e.g. progress bar events, we will have to send data through the go channels anyway that represents those events and convert them to events, or directly call the `event` package - at which point the complexity of "handling events from the builders" is going to be the same. 
+We are open to introduce a streaming/reactive design in Skaffold on the long run if we have a strong enough argument/featureset for it. For this redesign I don't see that it is worthwhile. I am closing this and the related PRs. 
+
+Thank you @nkubala  and @tejal29  for all the hard work in exploring this avenue in detail in code with testing and thoughtful conversations! 
 ## Background
 
 Currently there are two major pain points with the event API:
