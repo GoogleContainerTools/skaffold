@@ -65,16 +65,9 @@
               ]
             },
             "sync": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "type": "object",
-              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "default": "{}",
-              "examples": [
-                "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
-              ]
+              "$ref": "#/definitions/Sync",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified."
             }
           },
           "preferredOrder": [
@@ -106,16 +99,9 @@
               ]
             },
             "sync": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "type": "object",
-              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "default": "{}",
-              "examples": [
-                "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
-              ]
+              "$ref": "#/definitions/Sync",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified."
             }
           },
           "preferredOrder": [
@@ -148,16 +134,9 @@
               ]
             },
             "sync": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "type": "object",
-              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "default": "{}",
-              "examples": [
-                "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
-              ]
+              "$ref": "#/definitions/Sync",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified."
             }
           },
           "preferredOrder": [
@@ -190,16 +169,9 @@
               "x-intellij-html-description": "<em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin\">Jib plugin for Maven</a>."
             },
             "sync": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "type": "object",
-              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "default": "{}",
-              "examples": [
-                "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
-              ]
+              "$ref": "#/definitions/Sync",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified."
             }
           },
           "preferredOrder": [
@@ -232,16 +204,9 @@
               "x-intellij-html-description": "<em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin\">Jib plugin for Gradle</a>."
             },
             "sync": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "type": "object",
-              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "default": "{}",
-              "examples": [
-                "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
-              ]
+              "$ref": "#/definitions/Sync",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified."
             }
           },
           "preferredOrder": [
@@ -274,16 +239,9 @@
               "x-intellij-html-description": "<em>alpha</em> builds images using <a href=\"https://github.com/GoogleContainerTools/kaniko\">kaniko</a>."
             },
             "sync": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "type": "object",
-              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "default": "{}",
-              "examples": [
-                "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
-              ]
+              "$ref": "#/definitions/Sync",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified."
             }
           },
           "preferredOrder": [
@@ -316,16 +274,9 @@
               ]
             },
             "sync": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "type": "object",
-              "description": "*alpha* local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified. This is a mapping of local files to sync to remote folders.",
-              "default": "{}",
-              "examples": [
-                "{\"*.py\": \".\", \"css/**/*.css\": \"app/css\"}"
-              ]
+              "$ref": "#/definitions/Sync",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified."
             }
           },
           "preferredOrder": [
@@ -595,6 +546,16 @@
     },
     "CustomDependencies": {
       "properties": {
+        "command": {
+          "type": "string",
+          "description": "represents a custom command that skaffold executes to obtain dependencies. The output of this command *must* be a valid JSON array.",
+          "x-intellij-html-description": "represents a custom command that skaffold executes to obtain dependencies. The output of this command <em>must</em> be a valid JSON array."
+        },
+        "dockerfile": {
+          "$ref": "#/definitions/DockerfileDependency",
+          "description": "should be set if the artifact is built from a Dockerfile, from which skaffold can determine dependencies.",
+          "x-intellij-html-description": "should be set if the artifact is built from a Dockerfile, from which skaffold can determine dependencies."
+        },
         "ignore": {
           "items": {
             "type": "string"
@@ -615,12 +576,14 @@
         }
       },
       "preferredOrder": [
+        "dockerfile",
+        "command",
         "paths",
         "ignore"
       ],
       "additionalProperties": false,
-      "description": "*alpha* used to specify dependencies for an artifact built by a custom build script.",
-      "x-intellij-html-description": "<em>alpha</em> used to specify dependencies for an artifact built by a custom build script."
+      "description": "*alpha* used to specify dependencies for an artifact built by a custom build script. Either `dockerfile` or `paths` should be specified for file watching to work as expected.",
+      "x-intellij-html-description": "<em>alpha</em> used to specify dependencies for an artifact built by a custom build script. Either <code>dockerfile</code> or <code>paths</code> should be specified for file watching to work as expected."
     },
     "DateTimeTagger": {
       "properties": {
@@ -774,6 +737,34 @@
       "description": "contains information about the docker `config.json` to mount.",
       "x-intellij-html-description": "contains information about the docker <code>config.json</code> to mount."
     },
+    "DockerfileDependency": {
+      "properties": {
+        "buildArgs": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
+          "x-intellij-html-description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
+          "default": "{}",
+          "examples": [
+            "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"{{.ENV_VARIABLE}}\"}"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "description": "locates the Dockerfile relative to workspace.",
+          "x-intellij-html-description": "locates the Dockerfile relative to workspace."
+        }
+      },
+      "preferredOrder": [
+        "path",
+        "buildArgs"
+      ],
+      "additionalProperties": false,
+      "description": "*alpha* used to specify a custom build artifact that is built from a Dockerfile. This allows skaffold to determine dependencies from the Dockerfile.",
+      "x-intellij-html-description": "<em>alpha</em> used to specify a custom build artifact that is built from a Dockerfile. This allows skaffold to determine dependencies from the Dockerfile."
+    },
     "EnvTemplateTagger": {
       "required": [
         "template"
@@ -799,8 +790,8 @@
       "properties": {
         "variant": {
           "type": "string",
-          "description": "determines the behavior of the git tagger. Valid variants are `Tags` (default): use git tags or fall back to abbreviated commit hash. `CommitSha`: use the full git commit sha. `AbbrevCommitSha`: use the abbreviated git commit sha. `TreeSha`: use the full tree hash of the artifact workingdir. `AbbrevTreeSha`: use the abbreviated tree hash of the artifact workingdir.",
-          "x-intellij-html-description": "determines the behavior of the git tagger. Valid variants are <code>Tags</code> (default): use git tags or fall back to abbreviated commit hash. <code>CommitSha</code>: use the full git commit sha. <code>AbbrevCommitSha</code>: use the abbreviated git commit sha. <code>TreeSha</code>: use the full tree hash of the artifact workingdir. <code>AbbrevTreeSha</code>: use the abbreviated tree hash of the artifact workingdir."
+          "description": "determines the behavior of the git tagger. Valid variants are `Tags` (default): use git tags or fall back to abbreviated commit hash. `CommitSha`: use the full git commit sha. `AbbrevCommitSha`: use the abbreviated git commit sha.",
+          "x-intellij-html-description": "determines the behavior of the git tagger. Valid variants are <code>Tags</code> (default): use git tags or fall back to abbreviated commit hash. <code>CommitSha</code>: use the full git commit sha. <code>AbbrevCommitSha</code>: use the abbreviated git commit sha."
         }
       },
       "preferredOrder": [
@@ -1296,8 +1287,8 @@
       "properties": {
         "gcsBucket": {
           "type": "string",
-          "description": "CGS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources.",
-          "x-intellij-html-description": "CGS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources."
+          "description": "GCS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources.",
+          "x-intellij-html-description": "GCS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources."
         },
         "localDir": {
           "$ref": "#/definitions/LocalDir",
@@ -1635,6 +1626,64 @@
       "additionalProperties": false,
       "description": "holds the fields parsed from the Skaffold configuration file (skaffold.yaml).",
       "x-intellij-html-description": "holds the fields parsed from the Skaffold configuration file (skaffold.yaml)."
+    },
+    "Sync": {
+      "properties": {
+        "manual": {
+          "items": {
+            "$ref": "#/definitions/SyncRule"
+          },
+          "type": "array",
+          "description": "manual sync rules indicating the source and destination.",
+          "x-intellij-html-description": "manual sync rules indicating the source and destination."
+        }
+      },
+      "preferredOrder": [
+        "manual"
+      ],
+      "additionalProperties": false,
+      "description": "*alpha* specifies what files to sync into the container. This is a list of sync rules indicating the intent to sync for source files.",
+      "x-intellij-html-description": "<em>alpha</em> specifies what files to sync into the container. This is a list of sync rules indicating the intent to sync for source files."
+    },
+    "SyncRule": {
+      "required": [
+        "src",
+        "dest"
+      ],
+      "properties": {
+        "dest": {
+          "type": "string",
+          "description": "destination path in the container where the files should be synced to.",
+          "x-intellij-html-description": "destination path in the container where the files should be synced to.",
+          "examples": [
+            "\"app/\""
+          ]
+        },
+        "src": {
+          "type": "string",
+          "description": "a glob pattern to match local paths against.",
+          "x-intellij-html-description": "a glob pattern to match local paths against.",
+          "examples": [
+            "\"css/**/*.css\""
+          ]
+        },
+        "strip": {
+          "type": "string",
+          "description": "specifies the path prefix to remove from the source path when transplanting the files into the destination folder.",
+          "x-intellij-html-description": "specifies the path prefix to remove from the source path when transplanting the files into the destination folder.",
+          "examples": [
+            "\"css/\""
+          ]
+        }
+      },
+      "preferredOrder": [
+        "src",
+        "dest",
+        "strip"
+      ],
+      "additionalProperties": false,
+      "description": "specifies which local files to sync to remote folders.",
+      "x-intellij-html-description": "specifies which local files to sync to remote folders."
     },
     "TagPolicy": {
       "properties": {

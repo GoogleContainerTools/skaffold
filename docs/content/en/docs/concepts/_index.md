@@ -227,7 +227,7 @@ be helpful to your project. For more information, see [CLI References](/docs/ref
 Local development means that Skaffold can skip pushing built container images, because the images are already present where they are run.
 For standard development setups such as `minikube` and `docker-for-desktop`, this works out of the box.
 
-However, for non-standard local setups, such as `minikube` profiles, some extra configuration is necessary.
+However, for non-standard local setups, such as [minikube](https://github.com/kubernetes/minikube/) with custom profile or [kind](https://github.com/kubernetes-sigs/kind), some extra configuration is necessary.
 The essential steps are:
 
 1. Ensure that Skaffold builds the images with the docker daemon, which also runs the containers.

@@ -20,7 +20,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v1beta10"
+const Version string = "skaffold/v1beta11"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -207,7 +207,7 @@ type LocalDir struct {
 // KanikoBuildContext contains the different fields available to specify
 // a Kaniko build context.
 type KanikoBuildContext struct {
-	// GCSBucket is the CGS bucket to which sources are uploaded.
+	// GCSBucket is the GCS bucket to which sources are uploaded.
 	// Kaniko will need access to that bucket to download the sources.
 	GCSBucket string `yaml:"gcsBucket,omitempty" yamltags:"oneOf=buildContext"`
 
@@ -471,14 +471,35 @@ type Artifact struct {
 
 	// Sync *alpha* lists local files synced to pods instead
 	// of triggering an image build when modified.
-	// This is a mapping of local files to sync to remote folders.
-	// For example: `{"*.py": ".", "css/**/*.css": "app/css"}`.
-	Sync map[string]string `yaml:"sync,omitempty"`
+	Sync *Sync `yaml:"sync,omitempty"`
 
 	// ArtifactType describes how to build an artifact.
 	ArtifactType `yaml:",inline"`
 
 	WorkspaceHash string `yaml:"-,omitempty"`
+}
+
+// Sync *alpha* specifies what files to sync into the container.
+// This is a list of sync rules indicating the intent to sync for source files.
+type Sync struct {
+	// Manual lists manual sync rules indicating the source and destination.
+	Manual []*SyncRule `yaml:"manual,omitempty" yamltags:"oneOf=sync"`
+}
+
+// SyncRule specifies which local files to sync to remote folders.
+type SyncRule struct {
+	// Src is a glob pattern to match local paths against.
+	// For example: `"css/**/*.css"`.
+	Src string `yaml:"src,omitempty" yamltags:"required"`
+
+	// Dest is the destination path in the container where the files should be synced to.
+	// For example: `"app/"`
+	Dest string `yaml:"dest,omitempty" yamltags:"required"`
+
+	// Strip specifies the path prefix to remove from the source path when
+	// transplanting the files into the destination folder.
+	// For example: `"css/"`
+	Strip string `yaml:"strip,omitempty"`
 }
 
 // Profile *beta* profiles are used to override any `build`, `test` or `deploy` configuration.
@@ -568,12 +589,28 @@ type CustomArtifact struct {
 }
 
 // CustomDependencies *alpha* is used to specify dependencies for an artifact built by a custom build script.
+// Either `dockerfile` or `paths` should be specified for file watching to work as expected.
 type CustomDependencies struct {
+	// Dockerfile should be set if the artifact is built from a Dockerfile, from which skaffold can determine dependencies.
+	Dockerfile *DockerfileDependency `yaml:"dockerfile,omitempty" yamltags:"oneOf=dependency"`
+	// Command represents a custom command that skaffold executes to obtain dependencies. The output of this command *must* be a valid JSON array.
+	Command string `yaml:"command,omitempty" yamltags:"oneOf=dependency"`
 	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.
 	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
 	// Ignore specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.
 	// Will only work in conjunction with `paths`.
 	Ignore []string `yaml:"ignore,omitempty"`
+}
+
+// DockerfileDependency *alpha* is used to specify a custom build artifact that is built from a Dockerfile. This allows skaffold to determine dependencies from the Dockerfile.
+type DockerfileDependency struct {
+	// Path locates the Dockerfile relative to workspace.
+	Path string `yaml:"path,omitempty"`
+
+	// BuildArgs are arguments passed to the docker build.
+	// It also accepts environment variables via the go template syntax.
+	// For example: `{"key1": "value1", "key2": "value2", "key3": "{{.ENV_VARIABLE}}"}`.
+	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 }
 
 // KanikoArtifact *alpha* describes an artifact built from a Dockerfile,

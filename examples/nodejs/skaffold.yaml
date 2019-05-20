@@ -1,11 +1,18 @@
-apiVersion: skaffold/v1beta9
+apiVersion: skaffold/v1beta10
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/node-example
     context: backend
+    docker:
+      buildArgs:
+        SCRIPT: "{{.SCRIPT}}"
     sync:
-      '*.js': .
+      manual:
+      # Sync all the javascript files that are in the src folder
+      # with the container src folder
+      - src: 'src/**/*.js'
+        dest: .
 deploy:
   kubectl:
     manifests:
