@@ -68,16 +68,16 @@ func TestQuietFlag(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			defer func(flag bool) { quietFlag = flag }(quietFlag)
-			quietFlag = true
+			restore := testutil.Override(t, &quietFlag, true)
+			defer restore()
 
-			defer func(tf *flags.TemplateFlag) { buildFormatFlag = tf }(buildFormatFlag)
+			restoreFn := testutil.Override(t, &createRunnerAndBuildFunc, test.mock)
+			defer restoreFn()
+
 			if test.template != "" {
-				buildFormatFlag = flags.NewTemplateFlag(test.template, flags.BuildOutput{})
+				restoreTemplate := testutil.Override(t, &buildFormatFlag, flags.NewTemplateFlag(test.template, flags.BuildOutput{}))
+				defer restoreTemplate()
 			}
-
-			defer func(f func(context.Context, io.Writer) ([]build.Artifact, error)) { createRunnerAndBuildFunc = f }(createRunnerAndBuildFunc)
-			createRunnerAndBuildFunc = test.mock
 
 			var output bytes.Buffer
 			err := doBuild(&output)
@@ -116,8 +116,8 @@ func TestRunBuild(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			defer func(f func(context.Context, io.Writer) ([]build.Artifact, error)) { createRunnerAndBuildFunc = f }(createRunnerAndBuildFunc)
-			createRunnerAndBuildFunc = test.mock
+			restore := testutil.Override(t, &createRunnerAndBuildFunc, test.mock)
+			defer restore()
 
 			err := doBuild(ioutil.Discard)
 
