@@ -21,7 +21,11 @@ type ImageTags map[string]string
 
 // Tagger is an interface for tag strategies to be implemented against
 type Tagger interface {
+	// Labels produces labels to indicate the used tagger in deployed pods.
 	Labels() map[string]string
 
+	// GenerateFullyQualifiedImageName resolves the fully qualified image name for an artifact.
+	// The workingDir is the root directory of the artifact with respect to the Skaffold root,
+	// and imageName is the base name of the image.
 	GenerateFullyQualifiedImageName(workingDir string, imageName string) (string, error)
 }
