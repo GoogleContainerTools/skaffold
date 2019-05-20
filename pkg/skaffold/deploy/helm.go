@@ -411,7 +411,7 @@ func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map
 		b, ok := imageToBuildResult[newImageName]
 		if !ok {
 			if len(builds) == 0 {
-				logrus.Warnf("no build artifacts present. Assuming skaffold deploy. Continuing with %s", imageName)
+				logrus.Debugf("no build artifacts present. Assuming skaffold deploy. Continuing with %s", imageName)
 				b = build.Artifact{ImageName: imageName, Tag: imageName}
 			} else {
 				return nil, fmt.Errorf("no build present for %s", imageName)
