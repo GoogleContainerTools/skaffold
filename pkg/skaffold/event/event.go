@@ -17,19 +17,16 @@ limitations under the License.
 package event
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc"
 )
 
 const (
@@ -40,11 +37,8 @@ const (
 )
 
 var (
-	handler    *eventHandler
-	once       sync.Once
-	pluginMode bool
-
-	cli proto.SkaffoldServiceClient // for plugin RPC connections
+	handler *eventHandler
+	once    sync.Once
 )
 
 type eventHandler struct {
@@ -158,16 +152,6 @@ func InitializeState(runCtx *runcontext.RunContext) (func() error, error) {
 	return serverShutdown, err
 }
 
-func SetupRPCClient(opts *config.SkaffoldOptions) error {
-	pluginMode = true
-	conn, err := grpc.Dial(fmt.Sprintf(":%d", opts.RPCPort), grpc.WithInsecure())
-	if err != nil {
-		return errors.Wrap(err, "opening gRPC connection to remote skaffold process")
-	}
-	cli = proto.NewSkaffoldServiceClient(conn)
-	return nil
-}
-
 // DeployInProgress notifies that a deployment has been started.
 func DeployInProgress() {
 	handler.handleDeployEvent(&proto.DeployEvent{Status: InProgress})
@@ -200,7 +184,7 @@ func BuildComplete(imageName string) {
 
 // PortForwarded notifies that a remote port has been forwarded locally.
 func PortForwarded(localPort, remotePort int32, podName, containerName, namespace string, portName string) {
-	handler.doHandle(&proto.Event{
+	go handler.handle(&proto.Event{
 		EventType: &proto.Event_PortEvent{
 			PortEvent: &proto.PortEvent{
 				LocalPort:     localPort,
@@ -215,7 +199,7 @@ func PortForwarded(localPort, remotePort int32, podName, containerName, namespac
 }
 
 func (ev *eventHandler) handleDeployEvent(e *proto.DeployEvent) {
-	ev.doHandle(&proto.Event{
+	go ev.handle(&proto.Event{
 		EventType: &proto.Event_DeployEvent{
 			DeployEvent: e,
 		},
@@ -223,19 +207,11 @@ func (ev *eventHandler) handleDeployEvent(e *proto.DeployEvent) {
 }
 
 func (ev *eventHandler) handleBuildEvent(e *proto.BuildEvent) {
-	ev.doHandle(&proto.Event{
+	go ev.handle(&proto.Event{
 		EventType: &proto.Event_BuildEvent{
 			BuildEvent: e,
 		},
 	})
-}
-
-func (ev *eventHandler) doHandle(event *proto.Event) {
-	if pluginMode {
-		go cli.Handle(context.Background(), event)
-	} else {
-		go ev.handle(event)
-	}
 }
 
 func LogSkaffoldMetadata(info *version.Info) {
