@@ -1037,6 +1037,12 @@
           "x-intellij-html-description": "if <code>true</code>, Skaffold will send <code>--recreate-pods</code> flag to Helm CLI.",
           "default": "false"
         },
+        "remote": {
+          "type": "boolean",
+          "description": "specifies whether the chart path is remote, or exists on the host filesystem. `remote: true` implies `skipBuildDependencies: true`.",
+          "x-intellij-html-description": "specifies whether the chart path is remote, or exists on the host filesystem. <code>remote: true</code> implies <code>skipBuildDependencies: true</code>.",
+          "default": "false"
+        },
         "setValueTemplates": {
           "additionalProperties": {
             "type": "string"
@@ -1110,6 +1116,7 @@
         "recreatePods",
         "skipBuildDependencies",
         "useHelmSecrets",
+        "remote",
         "overrides",
         "packaged",
         "imageStrategy"

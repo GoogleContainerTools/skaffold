@@ -579,6 +579,7 @@ func TestHelmDependencies(t *testing.T) {
 		files                 []string
 		valuesFiles           []string
 		skipBuildDependencies bool
+		remote                bool
 		expected              func(folder *testutil.TempDir) []string
 	}{
 		{
@@ -606,6 +607,15 @@ func TestHelmDependencies(t *testing.T) {
 				return []string{"/folder/values.yaml", folder.Path("Chart.yaml")}
 			},
 		},
+		{
+			description:           "no deps for remote chart path",
+			skipBuildDependencies: false,
+			files:                 []string{"Chart.yaml"},
+			remote:                true,
+			expected: func(folder *testutil.TempDir) []string {
+				return nil
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -625,6 +635,7 @@ func TestHelmDependencies(t *testing.T) {
 						Overrides:             schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 						SetValues:             map[string]string{"some.key": "somevalue"},
 						SkipBuildDependencies: tt.skipBuildDependencies,
+						Remote:                tt.remote,
 					},
 				},
 			}, false))

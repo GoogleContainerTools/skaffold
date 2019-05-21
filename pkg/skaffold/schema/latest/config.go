@@ -416,6 +416,10 @@ type HelmRelease struct {
 	// UseHelmSecrets instructs skaffold to use secrets plugin on deployment.
 	UseHelmSecrets bool `yaml:"useHelmSecrets,omitempty"`
 
+	// Remote specifies whether the chart path is remote, or exists on the host filesystem.
+	// `remote: true` implies `skipBuildDependencies: true`.
+	Remote bool `yaml:"remote,omitempty"`
+
 	// Overrides are key-value pairs.
 	// If present, Skaffold will build a Helm `values` file that overrides
 	// the original and use it to call Helm CLI (`--f` flag).
