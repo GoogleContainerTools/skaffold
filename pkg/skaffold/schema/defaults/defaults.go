@@ -250,7 +250,7 @@ func setDefaultKanikoArtifactImage(artifact *latest.Artifact) {
 }
 
 func setDefaultKanikoPodGracePeriod(cluster *latest.ClusterDetails) error{
-	artifact.KanikoArtifact.PodGracePeriodSeconds = valueOrDefault(kanikoArtifact.PodGracePeriodSeconds, constants.DefaultKanikoPodGracePeriodSeconds)
+	cluster.PodGracePeriodSeconds = valueOrDefault(cluster.PodGracePeriodSeconds, constants.DefaultKanikoPodGracePeriodSeconds)
 	return nil
 }
 func valueOrDefault(v, def string) string {
