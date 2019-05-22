@@ -496,6 +496,13 @@ func TestGetDependencies(t *testing.T) {
 			expected:    []string{"Dockerfile", "server.go"},
 			fetched:     []string{"ubuntu:14.04"},
 		},
+		{
+			description: "invalid go template as build arg",
+			dockerfile:  copyServerGoBuildArg,
+			workspace:   ".",
+			buildArgs:   map[string]*string{"FOO": util.StringPtr("{{")},
+			shouldErr:   true,
+		},
 	}
 
 	for _, test := range tests {

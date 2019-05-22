@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -53,25 +54,19 @@ func NewCmdBuild(out io.Writer) *cobra.Command {
 			f.BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output.")
 			f.VarP(buildFormatFlag, "output", "o", "Used in conjuction with --quiet flag. "+buildFormatFlag.Usage())
 		}).
-		NoArgs(doBuild)
+		NoArgs(cancelWithCtrlC(context.Background(), doBuild))
 }
 
-func doBuild(out io.Writer) error {
-	start := time.Now()
-	defer func() {
-		if !quietFlag {
-			color.Default.Fprintln(out, "Complete in", time.Since(start))
-		}
-	}()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	catchCtrlC(cancel)
-
+func doBuild(ctx context.Context, out io.Writer) error {
 	buildOut := out
 	if quietFlag {
 		buildOut = ioutil.Discard
 	}
+
+	start := time.Now()
+	defer func() {
+		color.Default.Fprintln(buildOut, "Complete in", time.Since(start))
+	}()
 
 	bRes, err := createRunnerAndBuildFunc(ctx, buildOut)
 	if err != nil {
@@ -94,11 +89,18 @@ func createRunnerAndBuild(ctx context.Context, buildOut io.Writer) ([]build.Arti
 		return nil, errors.Wrap(err, "creating runner")
 	}
 	defer runner.RPCServerShutdown()
+
+	return runner.BuildAndTest(ctx, buildOut, targetArtifacts(opts, config))
+}
+
+func targetArtifacts(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) []*latest.Artifact {
 	var targetArtifacts []*latest.Artifact
-	for _, artifact := range config.Build.Artifacts {
-		if runner.IsTargetImage(artifact) {
+
+	for _, artifact := range cfg.Build.Artifacts {
+		if opts.IsTargetImage(artifact) {
 			targetArtifacts = append(targetArtifacts, artifact)
 		}
 	}
-	return runner.BuildAndTest(ctx, buildOut, targetArtifacts)
+
+	return targetArtifacts
 }

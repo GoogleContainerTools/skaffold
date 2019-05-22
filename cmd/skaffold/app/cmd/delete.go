@@ -21,7 +21,8 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
-	"github.com/pkg/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -34,19 +35,11 @@ func NewCmdDelete(out io.Writer) *cobra.Command {
 		WithFlags(func(f *pflag.FlagSet) {
 			AddRunCommonFlags(f)
 		}).
-		NoArgs(doDelete)
+		NoArgs(cancelWithCtrlC(context.Background(), doDelete))
 }
 
-func doDelete(out io.Writer) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	catchCtrlC(cancel)
-
-	runner, _, err := newRunner(opts)
-	if err != nil {
-		return errors.Wrap(err, "creating runner")
-	}
-	defer runner.RPCServerShutdown()
-
-	return runner.Deployer.Cleanup(ctx, out)
+func doDelete(ctx context.Context, out io.Writer) error {
+	return withRunner(func(r *runner.SkaffoldRunner, _ *latest.SkaffoldConfig) error {
+		return r.Deployer.Cleanup(ctx, out)
+	})
 }

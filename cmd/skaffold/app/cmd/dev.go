@@ -40,15 +40,11 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 			AddRunDevFlags(f)
 			AddDevDebugFlags(f)
 		}).
-		NoArgs(doDev)
+		NoArgs(cancelWithCtrlC(context.Background(), doDev))
 }
 
-func doDev(out io.Writer) error {
+func doDev(ctx context.Context, out io.Writer) error {
 	opts.EnableRPC = true
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	catchCtrlC(cancel)
 
 	cleanup := func() {}
 	if opts.Cleanup {

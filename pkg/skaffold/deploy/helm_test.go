@@ -212,7 +212,7 @@ spec:
       containers:
         - name: skaffold-helm
           image: gcr.io/nick-cloudbuild/skaffold-helm:f759510436c8fd6f7ffa13dd9e9d85e64bec8d2bfd12c5aa3fb9af1288eccdab
-          imagePullPolicy: 
+          imagePullPolicy:
           command: ["/bin/bash", "-c", "--" ]
           args: ["while true; do sleep 30; done;"]
           resources:
@@ -301,7 +301,13 @@ func TestHelmDeploy(t *testing.T) {
 			builds:      testBuilds,
 		},
 		{
-			description: "deploy error unmatched parameter",
+			description: "deploy should not error for unmatched parameter when no builds present",
+			cmd:         &MockHelm{t: t},
+			runContext:  makeRunContext(testDeployConfigParameterUnmatched, false),
+			builds:      nil,
+		},
+		{
+			description: "deploy should error for unmatched parameter when builds present",
 			cmd:         &MockHelm{t: t},
 			runContext:  makeRunContext(testDeployConfigParameterUnmatched, false),
 			builds:      testBuilds,
@@ -573,6 +579,7 @@ func TestHelmDependencies(t *testing.T) {
 		files                 []string
 		valuesFiles           []string
 		skipBuildDependencies bool
+		remote                bool
 		expected              func(folder *testutil.TempDir) []string
 	}{
 		{
@@ -600,6 +607,15 @@ func TestHelmDependencies(t *testing.T) {
 				return []string{"/folder/values.yaml", folder.Path("Chart.yaml")}
 			},
 		},
+		{
+			description:           "no deps for remote chart path",
+			skipBuildDependencies: false,
+			files:                 []string{"Chart.yaml"},
+			remote:                true,
+			expected: func(folder *testutil.TempDir) []string {
+				return nil
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -619,6 +635,7 @@ func TestHelmDependencies(t *testing.T) {
 						Overrides:             schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 						SetValues:             map[string]string{"some.key": "somevalue"},
 						SkipBuildDependencies: tt.skipBuildDependencies,
+						Remote:                tt.remote,
 					},
 				},
 			}, false))
