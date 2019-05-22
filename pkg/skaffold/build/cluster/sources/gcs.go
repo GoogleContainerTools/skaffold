@@ -61,7 +61,7 @@ func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.A
 
 // Pod returns the pod template for this builder
 func (g *GCSBucket) Pod(args []string) *v1.Pod {
-	return podTemplate(g.clusterDetails, g.artifact.Image, args)
+	return podTemplate(g.clusterDetails, g.artifact, args)
 }
 
 // ModifyPod does nothing here, since we just need to let kaniko run to completion

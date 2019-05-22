@@ -30,7 +30,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"sort"
 	"strings"
 
@@ -44,15 +43,6 @@ const (
 
 func RandomID() string {
 	b := make([]byte, 16)
-	_, err := rand.Read(b)
-	if err != nil {
-		panic(err)
-	}
-	return fmt.Sprintf("%x", b)
-}
-
-func RandomFourCharacterID() string {
-	b := make([]byte, 2)
 	_, err := rand.Read(b)
 	if err != nil {
 		panic(err)
@@ -133,17 +123,6 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 	return ret, nil
 }
 
-// HasMeta reports whether path contains any of the magic characters
-// recognized by filepath.Match.
-// This is a copy of filepath/match.go's hasMeta
-func HasMeta(path string) bool {
-	magicChars := `*?[`
-	if runtime.GOOS != "windows" {
-		magicChars = `*?[\`
-	}
-	return strings.ContainsAny(path, magicChars)
-}
-
 // BoolPtr returns a pointer to a bool
 func BoolPtr(b bool) *bool {
 	o := b
@@ -189,9 +168,9 @@ func VerifyOrCreateFile(path string) error {
 
 // RemoveFromSlice removes a string from a slice of strings
 func RemoveFromSlice(s []string, target string) []string {
-	for i, val := range s {
-		if val == target {
-			return append(s[:i], s[i+1:]...)
+	for i := len(s) - 1; i >= 0; i-- {
+		if s[i] == target {
+			s = append(s[:i], s[i+1:]...)
 		}
 	}
 	return s

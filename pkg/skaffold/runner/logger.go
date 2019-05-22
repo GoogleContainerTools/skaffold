@@ -1,0 +1,46 @@
+/*
+Copyright 2019 The Skaffold Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package runner
+
+import (
+	"context"
+	"io"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/pkg/errors"
+)
+
+func (r *SkaffoldRunner) newLogger(out io.Writer, artifacts []*latest.Artifact) *kubernetes.LogAggregator {
+	var imageNames []string
+	for _, artifact := range artifacts {
+		imageNames = append(imageNames, artifact.ImageName)
+	}
+	return r.newLoggerForImages(out, imageNames)
+}
+
+func (r *SkaffoldRunner) newLoggerForImages(out io.Writer, images []string) *kubernetes.LogAggregator {
+	return kubernetes.NewLogAggregator(out, images, r.imageList, r.runCtx.Namespaces)
+}
+
+func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, logger *kubernetes.LogAggregator) error {
+	if err := logger.Start(ctx); err != nil {
+		return errors.Wrap(err, "starting logger")
+	}
+	<-ctx.Done()
+	return nil
+}

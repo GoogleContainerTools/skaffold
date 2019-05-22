@@ -13,11 +13,8 @@ go:
 
 go_import_path: github.com/GoogleContainerTools/skaffold
 
-before_script:
-  - echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
-
 script:
-  - make out/skaffold
+  - make
   - make test
 
 after_success:

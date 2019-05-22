@@ -31,8 +31,8 @@ func TestMainHelp(t *testing.T) {
 		errOutput bytes.Buffer
 	)
 
-	defer func(args []string) { os.Args = args }(os.Args)
-	os.Args = []string{"skaffold", "help"}
+	restore := testutil.Override(t, &os.Args, []string{"skaffold", "help"})
+	defer restore()
 
 	err := Run(&output, &errOutput)
 
@@ -42,8 +42,8 @@ func TestMainHelp(t *testing.T) {
 }
 
 func TestMainUnknownCommand(t *testing.T) {
-	defer func(args []string) { os.Args = args }(os.Args)
-	os.Args = []string{"skaffold", "unknown"}
+	restore := testutil.Override(t, &os.Args, []string{"skaffold", "unknown"})
+	defer restore()
 
 	err := Run(ioutil.Discard, ioutil.Discard)
 

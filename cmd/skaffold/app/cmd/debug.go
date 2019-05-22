@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
@@ -35,10 +36,10 @@ func NewCmdDebug(out io.Writer) *cobra.Command {
 			AddRunDevFlags(f)
 			AddDevDebugFlags(f)
 		}).
-		NoArgs(doDebug)
+		NoArgs(cancelWithCtrlC(context.Background(), doDebug))
 }
 
-func doDebug(out io.Writer) error {
+func doDebug(ctx context.Context, out io.Writer) error {
 	// HACK: disable watcher to prevent redeploying changed containers during debugging
 	// TODO: enable file-sync but avoid redeploys of artifacts being debugged
 	if len(opts.TargetImages) == 0 {
@@ -47,5 +48,5 @@ func doDebug(out io.Writer) error {
 
 	deploy.AddManifestTransform(debugging.ApplyDebuggingTransforms)
 
-	return doDev(out)
+	return doDev(ctx, out)
 }

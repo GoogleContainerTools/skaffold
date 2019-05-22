@@ -98,6 +98,12 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 	var deps []string
 	for _, release := range h.Releases {
 		deps = append(deps, release.ValuesFiles...)
+
+		if release.Remote {
+			// chart path is only a dependency if it exists on the local filesystem
+			continue
+		}
+
 		chartDepsDir := filepath.Join(release.ChartPath, "charts")
 		err := filepath.Walk(release.ChartPath, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
@@ -136,7 +142,6 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 func (h *HelmDeployer) helm(ctx context.Context, out io.Writer, useSecrets bool, arg ...string) error {
-
 	args := append([]string{"--kube-context", h.kubeContext}, arg...)
 	args = append(args, h.Flags.Global...)
 
@@ -185,7 +190,8 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	// Dependency builds should be skipped when trying to install a chart
 	// with local dependencies in the chart folder, e.g. the istio helm chart.
 	// This decision is left to the user.
-	if !r.SkipBuildDependencies {
+	// Dep builds should also be skipped whenever a remote chart path is specified.
+	if !r.SkipBuildDependencies && !r.Remote {
 		// First build dependencies.
 		logrus.Infof("Building helm dependencies...")
 		if err := h.helm(ctx, out, false, "dep", "build", r.ChartPath); err != nil {
@@ -401,18 +407,23 @@ func (h *HelmDeployer) deleteRelease(ctx context.Context, out io.Writer, r lates
 
 func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {
 	imageToBuildResult := map[string]build.Artifact{}
-	for _, build := range builds {
-		imageToBuildResult[build.ImageName] = build
+	for _, b := range builds {
+		imageToBuildResult[b.ImageName] = b
 	}
 
 	paramToBuildResult := map[string]build.Artifact{}
 	for param, imageName := range params {
 		newImageName := util.SubstituteDefaultRepoIntoImage(h.defaultRepo, imageName)
-		build, ok := imageToBuildResult[newImageName]
+		b, ok := imageToBuildResult[newImageName]
 		if !ok {
-			return nil, fmt.Errorf("no build present for %s", imageName)
+			if len(builds) == 0 {
+				logrus.Debugf("no build artifacts present. Assuming skaffold deploy. Continuing with %s", imageName)
+				b = build.Artifact{ImageName: imageName, Tag: imageName}
+			} else {
+				return nil, fmt.Errorf("no build present for %s", imageName)
+			}
 		}
-		paramToBuildResult[param] = build
+		paramToBuildResult[param] = b
 	}
 	return paramToBuildResult, nil
 }

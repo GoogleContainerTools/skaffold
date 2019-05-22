@@ -86,6 +86,11 @@ func Init(args ...string) *RunBuilder {
 	return &RunBuilder{command: "init", args: args}
 }
 
+// Diagnose runs `skaffold diagnose` with the given arguments.
+func Diagnose(args ...string) *RunBuilder {
+	return &RunBuilder{command: "diagnose", args: args}
+}
+
 // InDir sets the directory in which skaffold is running.
 func (b *RunBuilder) InDir(dir string) *RunBuilder {
 	b.dir = dir

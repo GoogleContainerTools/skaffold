@@ -85,7 +85,7 @@ func (g *LocalDir) Pod(args []string) *v1.Pod {
 		VolumeMounts: []v1.VolumeMount{vm},
 	}
 
-	p := podTemplate(g.clusterDetails, g.artifact.Image, args)
+	p := podTemplate(g.clusterDetails, g.artifact, args)
 	p.Spec.InitContainers = []v1.Container{ic}
 	p.Spec.Containers[0].VolumeMounts = append(p.Spec.Containers[0].VolumeMounts, vm)
 	p.Spec.Volumes = append(p.Spec.Volumes, v)

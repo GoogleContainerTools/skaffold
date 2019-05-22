@@ -31,7 +31,7 @@ type Artifact struct {
 }
 
 // Builder is an interface to the Build API of Skaffold.
-// It must build and make the resulting image accesible to the cluster.
+// It must build and make the resulting image accessible to the cluster.
 // This could include pushing to a authorized repository or loading the nodes with the image.
 // If artifacts is supplied, the builder should only rebuild those artifacts.
 type Builder interface {

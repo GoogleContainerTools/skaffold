@@ -18,10 +18,8 @@ package runner
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"testing"
 
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -298,63 +296,6 @@ func TestNewForConfig(t *testing.T) {
 				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, _t, cfg.Tester)
 				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, d, cfg.Deployer)
 			}
-		})
-	}
-}
-
-func TestRun(t *testing.T) {
-	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
-	defer restore()
-
-	var tests = []struct {
-		description     string
-		testBench       *TestBench
-		shouldErr       bool
-		expectedActions []Actions
-	}{
-		{
-			description: "run no error",
-			testBench:   &TestBench{},
-			expectedActions: []Actions{{
-				Built:    []string{"img:1"},
-				Tested:   []string{"img:1"},
-				Deployed: []string{"img:1"},
-			}},
-		},
-		{
-			description:     "run build error",
-			testBench:       &TestBench{buildErrors: []error{errors.New("")}},
-			shouldErr:       true,
-			expectedActions: []Actions{{}},
-		},
-		{
-			description: "run test error",
-			testBench:   &TestBench{testErrors: []error{errors.New("")}},
-			shouldErr:   true,
-			expectedActions: []Actions{{
-				Built: []string{"img:1"},
-			}},
-		},
-		{
-			description: "run deploy error",
-			testBench:   &TestBench{deployErrors: []error{errors.New("")}},
-			shouldErr:   true,
-			expectedActions: []Actions{{
-				Built:  []string{"img:1"},
-				Tested: []string{"img:1"},
-			}},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			runner := createRunner(t, test.testBench)
-
-			err := runner.Run(context.Background(), ioutil.Discard, []*latest.Artifact{{
-				ImageName: "img",
-			}})
-
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedActions, test.testBench.Actions())
 		})
 	}
 }

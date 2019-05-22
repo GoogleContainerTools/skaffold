@@ -19,6 +19,7 @@ package testutil
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -154,4 +155,51 @@ func ServeFile(t *testing.T, content []byte) (url string, tearDown func()) {
 	}))
 
 	return ts.URL, ts.Close
+}
+
+// CreateTempFileWithContents creates a temporary file in the dir specified or
+// os.TempDir by default with contents mentioned.
+func CreateTempFileWithContents(t *testing.T, dir string, name string, content []byte) string {
+	t.Helper()
+	tmpfile, err := ioutil.TempFile(dir, name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tmpfile.Write(content); err != nil {
+		t.Fatal(err)
+	}
+	if err := tmpfile.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return tmpfile.Name()
+}
+
+// Override sets a dest variable to a given value.
+// Returns the function to call to restore the variable
+// to its original state.
+func Override(t *testing.T, dest, tmp interface{}) func() {
+	t.Helper()
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Error("temporary value is of invalid type")
+		}
+	}()
+
+	dValue := reflect.ValueOf(dest).Elem()
+
+	// Save current value
+	curValue := reflect.New(dValue.Type()).Elem()
+	curValue.Set(dValue)
+
+	// Set to temporary value
+	var tmpV reflect.Value
+	if tmp == nil {
+		tmpV = reflect.Zero(dValue.Type())
+	} else {
+		tmpV = reflect.ValueOf(tmp)
+	}
+	dValue.Set(tmpV)
+
+	return func() { dValue.Set(curValue) }
 }
