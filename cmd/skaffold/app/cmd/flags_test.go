@@ -18,39 +18,50 @@ package cmd
 
 import (
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
 func TestHasCmdAnnotation(t *testing.T) {
 	tests := []struct {
-		description     string
-		cmd             string
-		flagAnnotations []string
-		expected        bool
+		description string
+		cmd         string
+		definedOn   []string
+		expected    bool
 	}{
 		{
-			description:     "flag has command annotations",
-			cmd:             "build",
-			flagAnnotations: []string{"build", "events"},
-			expected:        true,
+			description: "flag has command annotations",
+			cmd:         "build",
+			definedOn:   []string{"build", "events"},
+			expected:    true,
 		},
 		{
-			description:     "flag does not have command annotations",
-			cmd:             "build",
-			flagAnnotations: []string{"some"},
+			description: "flag does not have command annotations",
+			cmd:         "build",
+			definedOn:   []string{"some"},
 		},
 		{
-			description:     "flag has all annotations",
-			cmd:             "build",
-			flagAnnotations: []string{"all"},
-			expected:        true,
+			description: "flag has all annotations",
+			cmd:         "build",
+			definedOn:   []string{"all"},
+			expected:    true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			if test.expected != hasCmdAnnotation(test.cmd, test.flagAnnotations) {
+			if test.expected != hasCmdAnnotation(test.cmd, test.definedOn) {
 				t.Errorf("expected %t but found %t", test.expected, !test.expected)
 			}
 		})
 	}
+}
+
+func TestAddFlagsSmoke(t *testing.T) {
+	testCmd := &cobra.Command{
+		Use:   "test",
+		Short: "Test commanf for smoke testing",
+	}
+	SetUpFlags()
+	AddFlags(testCmd.Flags(), "test")
 }

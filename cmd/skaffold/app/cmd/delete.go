@@ -29,11 +29,12 @@ import (
 
 // NewCmdDelete describes the CLI command to delete deployed resources.
 func NewCmdDelete(out io.Writer) *cobra.Command {
+	cmdUse := "delete"
 	return commands.
 		New(out).
-		WithDescription("delete", "Delete the deployed resources").
+		WithDescription(cmdUse, "Delete the deployed resources").
 		WithFlags(func(f *pflag.FlagSet) {
-			AddRunCommonFlags(f)
+			AddFlags(f, cmdUse)
 		}).
 		NoArgs(cancelWithCtrlC(context.Background(), doDelete))
 }

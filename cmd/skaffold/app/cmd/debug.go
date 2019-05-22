@@ -29,29 +29,14 @@ import (
 
 // NewCmdDebug describes the CLI command to run a pipeline in debug mode.
 func NewCmdDebug(out io.Writer) *cobra.Command {
-<<<<<<< HEAD
+	cmdUse := "debug"
 	return commands.
 		New(out).
-		WithLongDescription("debug", "Runs a pipeline file in debug mode", "Similar to `dev`, but configures the pipeline for debugging.").
+		WithLongDescription(cmdUse, "Runs a pipeline file in debug mode", "Similar to `dev`, but configures the pipeline for debugging.").
 		WithFlags(func(f *pflag.FlagSet) {
-			AddRunDevFlags(f)
-			AddDevDebugFlags(f)
+			AddFlags(f, cmdUse)
 		}).
 		NoArgs(cancelWithCtrlC(context.Background(), doDebug))
-=======
-	cmd := &cobra.Command{
-		Use:   "debug",
-		Short: "Runs a pipeline file in debug mode",
-		Long:  "Similar to `dev`, but configures the pipeline for debugging.",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return debug(out)
-		},
-	}
-	AddFlags(cmd)
-	cmd.Flags().BoolVar(&opts.PortForward, "port-forward", true, "Port-forward exposed container ports within pods")
-	return cmd
->>>>>>> Fixed --tail and removed opts.TailDev
 }
 
 func doDebug(ctx context.Context, out io.Writer) error {
