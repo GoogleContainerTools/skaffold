@@ -86,6 +86,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 		}
 	}
 
+	SetUpFlags()
 	rootCmd.SetOutput(out)
 	rootCmd.AddCommand(NewCmdCompletion(out))
 	rootCmd.AddCommand(NewCmdVersion(out))
@@ -153,40 +154,6 @@ func setFlagsFromEnvVariables(rootCmd *cobra.Command) {
 
 func FlagToEnvVarName(f *pflag.Flag) string {
 	return fmt.Sprintf("SKAFFOLD_%s", strings.Replace(strings.ToUpper(f.Name), "-", "_", -1))
-}
-
-func AddRunCommonFlags(f *pflag.FlagSet) {
-	f.BoolVar(&opts.EnableRPC, "enable-rpc", false, "Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)")
-	f.IntVar(&opts.RPCPort, "rpc-port", constants.DefaultRPCPort, "tcp port to expose event API")
-	f.IntVar(&opts.RPCHTTPPort, "rpc-http-port", constants.DefaultRPCHTTPPort, "tcp port to expose event REST API over HTTP")
-	f.StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
-	f.BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
-	f.StringSliceVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
-	f.StringVarP(&opts.Namespace, "namespace", "n", "", "Run deployments in the specified namespace")
-	f.StringVarP(&opts.DefaultRepo, "default-repo", "d", "", "Default repository value (overrides global config)")
-	f.BoolVar(&opts.NoPrune, "no-prune", false, "Skip removing images and containers built by Skaffold")
-	f.BoolVar(&opts.NoPruneChildren, "no-prune-children", false, "Skip removing layers reused by Skaffold")
-	f.StringSliceVar(&opts.InsecureRegistries, "insecure-registry", nil, "Target registries for built images which are not secure")
-}
-
-func AddRunDeployFlags(f *pflag.FlagSet) {
-	f.BoolVar(&opts.Tail, "tail", false, "Stream logs from deployed objects")
-	f.BoolVar(&opts.Force, "force", false, "Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)")
-	f.StringSliceVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels.")
-}
-
-func AddRunDevFlags(f *pflag.FlagSet) {
-	AddRunCommonFlags(f)
-	f.BoolVar(&opts.SkipTests, "skip-tests", false, "Whether to skip the tests after building")
-	f.BoolVar(&opts.CacheArtifacts, "cache-artifacts", false, "Set to true to enable caching of artifacts.")
-	f.StringVarP(&opts.CacheFile, "cache-file", "", "", "Specify the location of the cache file (default $HOME/.skaffold/cache)")
-}
-
-func AddDevDebugFlags(f *pflag.FlagSet) {
-	f.BoolVar(&opts.TailDev, "tail", true, "Stream logs from deployed objects")
-	f.BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
-	f.BoolVar(&opts.PortForward, "port-forward", false, "Port-forward exposed container ports within pods")
-	f.StringSliceVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels")
 }
 
 func SetUpLogs(out io.Writer, level string) error {

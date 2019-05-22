@@ -35,6 +35,7 @@ type SkaffoldOptions struct {
 	CacheArtifacts     bool
 	EnableRPC          bool
 	Force              bool
+	ForceDev           bool
 	NoPrune            bool
 	NoPruneChildren    bool
 	CustomTag          string
@@ -87,7 +88,7 @@ func (opts *SkaffoldOptions) Prune() bool {
 }
 
 func (opts *SkaffoldOptions) ForceDeploy() bool {
-	return opts.Command == "dev" || opts.Force
+	return opts.ForceDev || opts.Force
 }
 
 func (opts *SkaffoldOptions) IsTargetImage(artifact *latest.Artifact) bool {

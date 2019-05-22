@@ -36,15 +36,15 @@ var (
 
 // NewCmdDeploy describes the CLI command to deploy artifacts.
 func NewCmdDeploy(out io.Writer) *cobra.Command {
+	cmdUse := "deploy"
 	return commands.
 		New(out).
-		WithDescription("deploy", "Deploys the artifacts").
+		WithDescription(cmdUse, "Deploys the artifacts").
 		WithFlags(func(f *pflag.FlagSet) {
 			f.VarP(&preBuiltImages, "images", "i", "A list of pre-built images to deploy")
 			f.VarP(&buildOutputFile, "build-artifacts", "a", `Filepath containing build output.
 E.g. build.out created by running skaffold build --quiet {{json .}} > build.out`)
-			AddRunDevFlags(f)
-			AddRunDeployFlags(f)
+			AddFlags(f, cmdUse)
 		}).
 		NoArgs(cancelWithCtrlC(context.Background(), doDeploy))
 }
