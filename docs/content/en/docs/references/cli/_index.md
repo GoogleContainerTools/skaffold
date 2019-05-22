@@ -266,7 +266,7 @@ Flags:
   -d, --default-repo string         Default repository value (overrides global config)
       --enable-rpc skaffold dev     Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
   -f, --filename string             Filename or URL to the pipeline file (default "skaffold.yaml")
-      --force                       Recreate kubernetes resources if necessary for deployment, warning: might cause downtime!) (default true)
+      --force                       Recreate kubernetes resources if necessary for deployment (warning: might cause downtime!) (default true)
       --insecure-registry strings   Target registries for built images which are not secure
   -l, --label strings               Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace string            Run deployments in the specified namespace
@@ -349,14 +349,14 @@ Flags:
   -d, --default-repo string                          Default repository value (overrides global config)
       --enable-rpc skaffold dev                      Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
   -f, --filename string                              Filename or URL to the pipeline file (default "skaffold.yaml")
-      --force                                        Recreate kubernetes resources if necessary for deployment, warning: might cause downtime!)
+      --force                                        Recreate kubernetes resources if necessary for deployment (default false, warning: might cause downtime!)
   -i, --images *flags.Images                         A list of pre-built images to deploy
   -l, --label strings                                Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace string                             Run deployments in the specified namespace
   -p, --profile strings                              Activate profiles by name
       --rpc-http-port int                            tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                                 tcp port to expose event API (default 50051)
-      --tail                                         Stream logs from deployed objects
+      --tail                                         Stream logs from deployed objects. (default false)
       --toot                                         Emit a terminal beep after the deploy is complete
 
 Global Flags:
@@ -396,7 +396,7 @@ Flags:
   -d, --default-repo string         Default repository value (overrides global config)
       --enable-rpc skaffold dev     Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
   -f, --filename string             Filename or URL to the pipeline file (default "skaffold.yaml")
-      --force                       Recreate kubernetes resources if necessary for deployment, warning: might cause downtime!) (default true)
+      --force                       Recreate kubernetes resources if necessary for deployment (warning: might cause downtime!) (default true)
       --insecure-registry strings   Target registries for built images which are not secure
   -l, --label strings               Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace string            Run deployments in the specified namespace
@@ -537,7 +537,7 @@ Flags:
   -d, --default-repo string         Default repository value (overrides global config)
       --enable-rpc skaffold dev     Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
   -f, --filename string             Filename or URL to the pipeline file (default "skaffold.yaml")
-      --force                       Recreate kubernetes resources if necessary for deployment, warning: might cause downtime!) (default true)
+      --force                       Recreate kubernetes resources if necessary for deployment (warning: might cause downtime!) (default true)
       --insecure-registry strings   Target registries for built images which are not secure
   -l, --label strings               Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace string            Run deployments in the specified namespace

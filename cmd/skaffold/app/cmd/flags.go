@@ -35,14 +35,14 @@ type Flag struct {
 	DefinedOn     []string
 }
 
-// FlagResitry is a list of all Skaffold CLI flags.
+// FlagRegistry is a list of all Skaffold CLI flags.
 // When adding a new flag to the registry, please specify the
 // command/commands to which the flag belongs in `DefinedOn` field.
 // If the flag is a global flag, or belongs to all the subcommands,
 /// specify "all"
 // FlagAddMethod is method which defines a flag value with specified
 // name, default value, and usage string. e.g. `StringVar`, `BoolVar`
-var FlagResitry = []Flag{
+var FlagRegistry = []Flag{
 	{
 		Name:          "filename",
 		Shorthand:     "f",
@@ -144,18 +144,12 @@ var FlagResitry = []Flag{
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
 	},
+	// We need opts.Tail and opts.TailDev since cobra, overwrites the default value
+	// when registering the flag twice.
 	{
 		Name:          "tail",
-		Usage:         "Stream logs from deployed objects",
+		Usage:         "Stream logs from deployed objects. (default false)",
 		Value:         &opts.Tail,
-		DefValue:      false,
-		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"deploy"},
-	},
-	{
-		Name:          "force",
-		Usage:         "Recreate kubernetes resources if necessary for deployment, warning: might cause downtime!)",
-		Value:         &opts.Force,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"deploy"},
@@ -168,9 +162,19 @@ var FlagResitry = []Flag{
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "run", "debug"},
 	},
+	// We need opts.Force and opts.ForceDev since cobra, overwrites the default value
+	// when registering the flag twice.
 	{
 		Name:          "force",
-		Usage:         "Recreate kubernetes resources if necessary for deployment, warning: might cause downtime!)",
+		Usage:         "Recreate kubernetes resources if necessary for deployment (default false, warning: might cause downtime!)",
+		Value:         &opts.Force,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"deploy"},
+	},
+	{
+		Name:          "force",
+		Usage:         "Recreate kubernetes resources if necessary for deployment (warning: might cause downtime!)",
 		Value:         &opts.ForceDev,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
@@ -222,8 +226,8 @@ var commandFlags []*pflag.Flag
 
 // SetUpFlags creates pflag.Flag for all registered flags
 func SetUpFlags() {
-	commandFlags = make([]*pflag.Flag, len(FlagResitry))
-	for i, fl := range FlagResitry {
+	commandFlags = make([]*pflag.Flag, len(FlagRegistry))
+	for i, fl := range FlagRegistry {
 		fs := pflag.NewFlagSet(fl.Name, pflag.ContinueOnError)
 		inputs := []reflect.Value{
 			reflect.ValueOf(fl.Value),
