@@ -23,22 +23,22 @@ import (
 	"github.com/spf13/pflag"
 )
 
-type CmdBuilder interface {
-	WithDescription(description string) CmdBuilder
-	WithLongDescription(long string) CmdBuilder
-	WithCommonFlags() CmdBuilder
-	WithFlags(adder func(*pflag.FlagSet)) CmdBuilder
+type Builder interface {
+	WithDescription(description string) Builder
+	WithLongDescription(long string) Builder
+	WithCommonFlags() Builder
+	WithFlags(adder func(*pflag.FlagSet)) Builder
 	ExactArgs(argCount int, action func(io.Writer, []string) error) *cobra.Command
 	NoArgs(action func(io.Writer) error) *cobra.Command
 }
 
-type cmdBuilder struct {
+type builder struct {
 	out io.Writer
 	cmd cobra.Command
 }
 
-func NewCmd(out io.Writer, use string) CmdBuilder {
-	return &cmdBuilder{
+func NewCmd(out io.Writer, use string) Builder {
+	return &builder{
 		out: out,
 		cmd: cobra.Command{
 			Use: use,
@@ -46,27 +46,27 @@ func NewCmd(out io.Writer, use string) CmdBuilder {
 	}
 }
 
-func (c *cmdBuilder) WithDescription(description string) CmdBuilder {
+func (c *builder) WithDescription(description string) Builder {
 	c.cmd.Short = description
 	return c
 }
 
-func (c *cmdBuilder) WithLongDescription(long string) CmdBuilder {
+func (c *builder) WithLongDescription(long string) Builder {
 	c.cmd.Long = long
 	return c
 }
 
-func (c *cmdBuilder) WithCommonFlags() CmdBuilder {
+func (c *builder) WithCommonFlags() Builder {
 	AddFlags(c.cmd.Flags(), c.cmd.Use)
 	return c
 }
 
-func (c *cmdBuilder) WithFlags(adder func(*pflag.FlagSet)) CmdBuilder {
+func (c *builder) WithFlags(adder func(*pflag.FlagSet)) Builder {
 	adder(c.cmd.Flags())
 	return c
 }
 
-func (c *cmdBuilder) ExactArgs(argCount int, action func(io.Writer, []string) error) *cobra.Command {
+func (c *builder) ExactArgs(argCount int, action func(io.Writer, []string) error) *cobra.Command {
 	c.cmd.Args = cobra.ExactArgs(argCount)
 	c.cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		return action(c.out, args)
@@ -74,7 +74,7 @@ func (c *cmdBuilder) ExactArgs(argCount int, action func(io.Writer, []string) er
 	return &c.cmd
 }
 
-func (c *cmdBuilder) NoArgs(action func(io.Writer) error) *cobra.Command {
+func (c *builder) NoArgs(action func(io.Writer) error) *cobra.Command {
 	c.cmd.Args = cobra.NoArgs
 	c.cmd.RunE = func(cmd *cobra.Command, _ []string) error {
 		return action(c.out)
