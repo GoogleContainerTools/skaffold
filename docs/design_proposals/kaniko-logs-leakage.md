@@ -1,7 +1,7 @@
 # Skaffold logs improvements
 
 * Author(s): Prashant Arya (@prary)
-* Design Shepherd: 
+* Design Shepherd: Tejal Desai
 * Date: 7/05/2019
 * Status: 
 
