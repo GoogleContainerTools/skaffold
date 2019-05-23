@@ -32,8 +32,8 @@ import (
 func NewCmdDev(out io.Writer) *cobra.Command {
 	cmdUse := "dev"
 	return commands.
-		New(out).
-		WithDescription(cmdUse, "Runs a pipeline file in development mode").
+		New(out, cmdUse).
+		WithDescription("Runs a pipeline file in development mode").
 		WithFlags(func(f *pflag.FlagSet) {
 			f.StringVar(&opts.Trigger, "trigger", "polling", "How are changes detected? (polling, manual or notify)")
 			f.StringSliceVarP(&opts.TargetImages, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")

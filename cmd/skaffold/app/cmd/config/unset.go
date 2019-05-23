@@ -27,8 +27,8 @@ import (
 
 func NewCmdUnset(out io.Writer) *cobra.Command {
 	return commands.
-		New(out).
-		WithDescription("unset", "Unset a value in the global Skaffold config").
+		New(out, "unset").
+		WithDescription("Unset a value in the global Skaffold config").
 		WithFlags(func(f *pflag.FlagSet) {
 			AddConfigFlags(f)
 			AddSetFlags(f)

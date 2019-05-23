@@ -47,8 +47,8 @@ var (
 func NewCmdBuild(out io.Writer) *cobra.Command {
 	cmdUse := "build"
 	return commands.
-		New(out).
-		WithDescription(cmdUse, "Builds the artifacts").
+		New(out, cmdUse).
+		WithDescription("Builds the artifacts").
 		WithFlags(func(f *pflag.FlagSet) {
 			f.StringSliceVarP(&opts.TargetImages, "build-image", "b", nil, "Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts")
 			f.BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output.")

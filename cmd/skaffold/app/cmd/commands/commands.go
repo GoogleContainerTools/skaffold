@@ -24,8 +24,8 @@ import (
 )
 
 type CmdBuilder interface {
-	WithDescription(use, description string) CmdBuilder
-	WithLongDescription(use, description, long string) CmdBuilder
+	WithDescription(description string) CmdBuilder
+	WithLongDescription(long string) CmdBuilder
 	WithFlags(adder func(*pflag.FlagSet)) CmdBuilder
 	ExactArgs(argCount int, action func(io.Writer, []string) error) *cobra.Command
 	NoArgs(action func(io.Writer) error) *cobra.Command
@@ -36,22 +36,23 @@ type cmdBuilder struct {
 	cmd cobra.Command
 }
 
-func New(out io.Writer) CmdBuilder {
+func New(out io.Writer, use string) CmdBuilder {
 	return &cmdBuilder{
 		out: out,
-		cmd: cobra.Command{},
+		cmd: cobra.Command{
+			Use: use,
+		},
 	}
 }
 
-func (c *cmdBuilder) WithDescription(use, description string) CmdBuilder {
-	c.cmd.Use = use
+func (c *cmdBuilder) WithDescription(description string) CmdBuilder {
 	c.cmd.Short = description
 	return c
 }
 
-func (c *cmdBuilder) WithLongDescription(use, description, long string) CmdBuilder {
+func (c *cmdBuilder) WithLongDescription(long string) CmdBuilder {
 	c.cmd.Long = long
-	return c.WithDescription(use, description)
+	return c
 }
 
 func (c *cmdBuilder) WithFlags(adder func(*pflag.FlagSet)) CmdBuilder {

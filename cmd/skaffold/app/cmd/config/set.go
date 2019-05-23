@@ -33,8 +33,8 @@ import (
 
 func NewCmdSet(out io.Writer) *cobra.Command {
 	return commands.
-		New(out).
-		WithDescription("set", "Set a value in the global Skaffold config").
+		New(out, "set").
+		WithDescription("Set a value in the global Skaffold config").
 		WithFlags(func(f *pflag.FlagSet) {
 			AddConfigFlags(f)
 			AddSetFlags(f)
