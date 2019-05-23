@@ -1,4 +1,4 @@
-apiVersion: skaffold/v1beta10
+apiVersion: skaffold/v1beta11
 kind: Config
 build:
   artifacts:
@@ -16,7 +16,3 @@ build:
       - src: 'src/**/*.py'
         dest: .
         strip: src/
-deploy:
-  kubectl:
-    manifests:
-    - "**/k8s"

@@ -1,4 +1,6 @@
-apiVersion: skaffold/v1beta11
+# This config should be used for running integration tests purpose only.
+# Please use to skaffold.yaml to run this example
+apiVersion: skaffold/v1beta10
 kind: Config
 build:
   tagPolicy:
@@ -8,7 +10,8 @@ build:
 deploy:
   helm:
     releases:
-    - name: skaffold-helm
+    # seed test namespace in the release name.
+    - name: skaffold-helm-{{.TEST_NS}}
       chartPath: skaffold-helm
       #wait: true
       #valuesFiles:
