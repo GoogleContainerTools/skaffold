@@ -31,8 +31,9 @@ import (
 func NewCmdDebug(out io.Writer) *cobra.Command {
 	cmdUse := "debug"
 	return commands.
-		New(out).
-		WithLongDescription(cmdUse, "Runs a pipeline file in debug mode", "Similar to `dev`, but configures the pipeline for debugging.").
+		New(out, cmdUse).
+		WithDescription("Runs a pipeline file in debug mode").
+		WithLongDescription("Similar to `dev`, but configures the pipeline for debugging.").
 		WithFlags(func(f *pflag.FlagSet) {
 			AddFlags(f, cmdUse)
 		}).

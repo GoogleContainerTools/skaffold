@@ -29,8 +29,8 @@ import (
 
 func NewCmdList(out io.Writer) *cobra.Command {
 	return commands.
-		New(out).
-		WithDescription("list", "List all values set in the global Skaffold config").
+		New(out, "list").
+		WithDescription("List all values set in the global Skaffold config").
 		WithFlags(func(f *pflag.FlagSet) {
 			f.BoolVarP(&showAll, "all", "a", false, "Show values for all kubecontexts")
 			AddConfigFlags(f)

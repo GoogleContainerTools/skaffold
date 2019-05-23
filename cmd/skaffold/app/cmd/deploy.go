@@ -38,8 +38,8 @@ var (
 func NewCmdDeploy(out io.Writer) *cobra.Command {
 	cmdUse := "deploy"
 	return commands.
-		New(out).
-		WithDescription(cmdUse, "Deploys the artifacts").
+		New(out, cmdUse).
+		WithDescription("Deploys the artifacts").
 		WithFlags(func(f *pflag.FlagSet) {
 			f.VarP(&preBuiltImages, "images", "i", "A list of pre-built images to deploy")
 			f.VarP(&buildOutputFile, "build-artifacts", "a", `Filepath containing build output.

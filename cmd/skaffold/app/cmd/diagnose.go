@@ -35,8 +35,8 @@ import (
 // NewCmdDiagnose describes the CLI command to diagnose skaffold.
 func NewCmdDiagnose(out io.Writer) *cobra.Command {
 	return commands.
-		New(out).
-		WithDescription("diagnose", "Run a diagnostic on Skaffold").
+		New(out, "diagnose").
+		WithDescription("Run a diagnostic on Skaffold").
 		WithFlags(func(f *pflag.FlagSet) {
 			AddFlags(f, "diagnose")
 		}).

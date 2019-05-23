@@ -31,8 +31,8 @@ import (
 func NewCmdDelete(out io.Writer) *cobra.Command {
 	cmdUse := "delete"
 	return commands.
-		New(out).
-		WithDescription(cmdUse, "Delete the deployed resources").
+		New(out, cmdUse).
+		WithDescription("Delete the deployed resources").
 		WithFlags(func(f *pflag.FlagSet) {
 			AddFlags(f, cmdUse)
 		}).
