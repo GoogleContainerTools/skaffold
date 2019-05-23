@@ -37,15 +37,17 @@ func TestDebug(t *testing.T) {
 		env         []string
 	}{
 		{
-			description: "jib+kubectl",
-			dir:         "testdata/jib",
-			deployments: []string{"web"},
+			description: "kubectl",
+			dir:         "testdata/debug",
+			deployments: []string{"jib"},
+			pods:        []string{"nodejs", "npm"},
 		},
 		{
-			description: "jib+kustomize",
+			description: "kustomize",
 			args:        []string{"--profile", "kustomize"},
-			dir:         "testdata/jib",
-			deployments: []string{"web"},
+			dir:         "testdata/debug",
+			deployments: []string{"jib"},
+			pods:        []string{"nodejs", "npm"},
 		},
 	}
 	for _, test := range tests {

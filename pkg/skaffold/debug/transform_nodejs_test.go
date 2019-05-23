@@ -17,6 +17,7 @@ limitations under the License.
 package debug
 
 import (
+	"strings"
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -111,6 +112,31 @@ func TestNodeTransformer_IsApplicable(t *testing.T) {
 			result:      true,
 		},
 		{
+			description: "entrypoint npm",
+			source:      imageConfiguration{entrypoint: []string{"npm", "run", "dev"}},
+			result:      true,
+		},
+		{
+			description: "entrypoint /usr/bin/npm",
+			source:      imageConfiguration{entrypoint: []string{"/usr/bin/npm", "run", "dev"}},
+			result:      true,
+		},
+		{
+			description: "no entrypoint, args npm",
+			source:      imageConfiguration{arguments: []string{"npm", "run", "dev"}},
+			result:      true,
+		},
+		{
+			description: "no entrypoint, arguments npm",
+			source:      imageConfiguration{arguments: []string{"npm", "run", "dev"}},
+			result:      true,
+		},
+		{
+			description: "no entrypoint, arguments /usr/bin/npm",
+			source:      imageConfiguration{arguments: []string{"/usr/bin/npm", "run", "dev"}},
+			result:      true,
+		},
+		{
 			description: "entrypoint /bin/sh",
 			source:      imageConfiguration{entrypoint: []string{"/bin/sh"}},
 			result:      false,
@@ -125,6 +151,39 @@ func TestNodeTransformer_IsApplicable(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			result := nodeTransformer{}.IsApplicable(test.source)
+			testutil.CheckDeepEqual(t, test.result, result)
+		})
+	}
+}
+
+func TestRewriteNodeCommandLine(t *testing.T) {
+	tests := []struct {
+		in     []string
+		result []string
+	}{
+		{[]string{"node", "index.js"}, []string{"node", "--inspect=9226", "index.js"}},
+		{[]string{"node"}, []string{"node", "--inspect=9226"}},
+	}
+
+	for _, test := range tests {
+		t.Run(strings.Join(test.in, " "), func(t *testing.T) {
+			result := rewriteNodeCommandLine(test.in, inspectSpec{port: 9226})
+			testutil.CheckDeepEqual(t, test.result, result)
+		})
+	}
+}
+func TestRewriteNpmCommandLine(t *testing.T) {
+	tests := []struct {
+		in     []string
+		result []string
+	}{
+		{[]string{"npm", "run", "server"}, []string{"npm", "run", "server", "--node-options=--inspect=9226"}},
+		{[]string{"npm", "run", "server", "--", "option"}, []string{"npm", "run", "server", "--node-options=--inspect=9226", "--", "option"}},
+	}
+
+	for _, test := range tests {
+		t.Run(strings.Join(test.in, " "), func(t *testing.T) {
+			result := rewriteNpmCommandLine(test.in, inspectSpec{port: 9226})
 			testutil.CheckDeepEqual(t, test.result, result)
 		})
 	}

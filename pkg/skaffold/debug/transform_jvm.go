@@ -108,12 +108,10 @@ func retrieveJdwpSpec(config imageConfiguration) *jdwpSpec {
 		}
 	}
 	// Nobody should be setting JDWP options via _JAVA_OPTIONS and IBM_JAVA_OPTIONS
-	for key, value := range config.env {
-		if key == "JAVA_TOOL_OPTIONS" {
-			for _, arg := range strings.Split(value, " ") {
-				if spec := extractJdwpArg(arg); spec != nil {
-					return spec
-				}
+	if value, found := config.env["JAVA_TOOL_OPTIONS"]; found {
+		for _, arg := range strings.Split(value, " ") {
+			if spec := extractJdwpArg(arg); spec != nil {
+				return spec
 			}
 		}
 	}
