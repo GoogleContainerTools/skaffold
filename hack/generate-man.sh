@@ -14,9 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-readonly DOCS_CHANGES=`git diff --name-status master | grep "docs/" | wc -l`
-
-if [ $DOCS_CHANGES -gt 0 ]; then
-  echo "There are $DOCS_CHANGES changes in docs, testing site generation..."
-  make build-docs-preview
-fi
+cat \
+  docs/content/en/docs/references/cli/index_header \
+  <(go run cmd/skaffold/man/man.go) \
+  > docs/content/en/docs/references/cli/_index.md
