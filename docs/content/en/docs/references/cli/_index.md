@@ -100,7 +100,7 @@ Usage:
 
 Flags:
   -b, --build-image strings          Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts
-      --cache-artifacts              Set to true to enable caching of artifacts.
+      --cache-artifacts              Set to true to enable caching of artifacts
       --cache-file string            Specify the location of the cache file (default $HOME/.skaffold/cache)
   -d, --default-repo string          Default repository value (overrides global config)
       --enable-rpc skaffold dev      Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
@@ -260,7 +260,7 @@ Usage:
   skaffold debug
 
 Flags:
-      --cache-artifacts             Set to true to enable caching of artifacts.
+      --cache-artifacts             Set to true to enable caching of artifacts
       --cache-file string           Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup                     Delete deployments after dev or debug mode is interrupted (default true)
   -d, --default-repo string         Default repository value (overrides global config)
@@ -390,7 +390,7 @@ Usage:
   skaffold dev
 
 Flags:
-      --cache-artifacts             Set to true to enable caching of artifacts.
+      --cache-artifacts             Set to true to enable caching of artifacts
       --cache-file string           Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup                     Delete deployments after dev or debug mode is interrupted (default true)
   -d, --default-repo string         Default repository value (overrides global config)
@@ -531,7 +531,7 @@ Usage:
   skaffold run
 
 Flags:
-      --cache-artifacts             Set to true to enable caching of artifacts.
+      --cache-artifacts             Set to true to enable caching of artifacts
       --cache-file string           Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup                     Delete deployments after dev or debug mode is interrupted (default true)
   -d, --default-repo string         Default repository value (overrides global config)

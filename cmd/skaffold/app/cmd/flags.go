@@ -59,7 +59,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.Profiles,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"all"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "delete", "diagnose"},
 	},
 	{
 		Name:          "namespace",
@@ -68,7 +68,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.Namespace,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"all"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "delete"},
 	},
 	{
 		Name:          "default-repo",
@@ -77,11 +77,11 @@ var FlagRegistry = []Flag{
 		Value:         &opts.DefaultRepo,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"all"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "delete"},
 	},
 	{
 		Name:          "cache-artifacts",
-		Usage:         "Set to true to enable caching of artifacts.",
+		Usage:         "Set to true to enable caching of artifacts",
 		Value:         &opts.CacheArtifacts,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",

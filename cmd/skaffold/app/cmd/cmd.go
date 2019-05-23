@@ -86,7 +86,6 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 		}
 	}
 
-	SetUpFlags()
 	rootCmd.SetOutput(out)
 	rootCmd.AddCommand(NewCmdCompletion(out))
 	rootCmd.AddCommand(NewCmdVersion(out))
