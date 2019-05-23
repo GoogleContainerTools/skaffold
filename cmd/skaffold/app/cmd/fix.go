@@ -20,7 +20,6 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -32,8 +31,7 @@ import (
 )
 
 func NewCmdFix(out io.Writer) *cobra.Command {
-	return commands.
-		New(out, "fix").
+	return NewCmd(out, "fix").
 		WithDescription("Converts old Skaffold config to newest schema version").
 		WithFlags(func(f *pflag.FlagSet) {
 			f.BoolVar(&overwrite, "overwrite", false, "Overwrite original config with fixed config")

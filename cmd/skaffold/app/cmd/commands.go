@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package commands
+package cmd
 
 import (
 	"io"
@@ -36,7 +36,7 @@ type cmdBuilder struct {
 	cmd cobra.Command
 }
 
-func New(out io.Writer, use string) CmdBuilder {
+func NewCmd(out io.Writer, use string) CmdBuilder {
 	return &cmdBuilder{
 		out: out,
 		cmd: cobra.Command{
