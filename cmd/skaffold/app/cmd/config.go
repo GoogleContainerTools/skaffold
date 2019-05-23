@@ -21,6 +21,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func NewCmdConfig(out io.Writer) *cobra.Command {
@@ -29,8 +30,38 @@ func NewCmdConfig(out io.Writer) *cobra.Command {
 		Short: "A set of commands for interacting with the Skaffold config.",
 	}
 
-	cmd.AddCommand(config.NewCmdSet(out))
-	cmd.AddCommand(config.NewCmdUnset(out))
-	cmd.AddCommand(config.NewCmdList(out))
+	cmd.AddCommand(NewCmdSet(out))
+	cmd.AddCommand(NewCmdUnset(out))
+	cmd.AddCommand(NewCmdList(out))
 	return cmd
+}
+
+func NewCmdSet(out io.Writer) *cobra.Command {
+	return NewCmd(out, "set").
+		WithDescription("Set a value in the global Skaffold config").
+		WithFlags(func(f *pflag.FlagSet) {
+			config.AddCommonFlags(f)
+			config.AddSetUnsetFlags(f)
+		}).
+		ExactArgs(2, config.Set)
+}
+
+func NewCmdUnset(out io.Writer) *cobra.Command {
+	return NewCmd(out, "unset").
+		WithDescription("Unset a value in the global Skaffold config").
+		WithFlags(func(f *pflag.FlagSet) {
+			config.AddCommonFlags(f)
+			config.AddSetUnsetFlags(f)
+		}).
+		ExactArgs(1, config.Unset)
+}
+
+func NewCmdList(out io.Writer) *cobra.Command {
+	return NewCmd(out, "list").
+		WithDescription("List all values set in the global Skaffold config").
+		WithFlags(func(f *pflag.FlagSet) {
+			config.AddCommonFlags(f)
+			config.AddListFlags(f)
+		}).
+		NoArgs(config.List)
 }

@@ -19,7 +19,6 @@ package cmd
 import (
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -35,8 +34,7 @@ var (
 
 // NewCmdInit describes the CLI command to generate a Skaffold configuration.
 func NewCmdInit(out io.Writer) *cobra.Command {
-	return commands.
-		New(out, "init").
+	return NewCmd(out, "init").
 		WithDescription("Automatically generate Skaffold configuration for deploying an application").
 		WithFlags(func(f *pflag.FlagSet) {
 			f.StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
