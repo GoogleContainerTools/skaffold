@@ -81,7 +81,7 @@ var FlagRegistry = []Flag{
 	},
 	{
 		Name:          "cache-artifacts",
-		Usage:         "Set to true to enable caching of artifacts.",
+		Usage:         "Set to true to enable caching of artifacts",
 		Value:         &opts.CacheArtifacts,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
