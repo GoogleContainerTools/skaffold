@@ -26,6 +26,7 @@ import (
 type CmdBuilder interface {
 	WithDescription(description string) CmdBuilder
 	WithLongDescription(long string) CmdBuilder
+	WithCommonFlags() CmdBuilder
 	WithFlags(adder func(*pflag.FlagSet)) CmdBuilder
 	ExactArgs(argCount int, action func(io.Writer, []string) error) *cobra.Command
 	NoArgs(action func(io.Writer) error) *cobra.Command
@@ -52,6 +53,11 @@ func (c *cmdBuilder) WithDescription(description string) CmdBuilder {
 
 func (c *cmdBuilder) WithLongDescription(long string) CmdBuilder {
 	c.cmd.Long = long
+	return c
+}
+
+func (c *cmdBuilder) WithCommonFlags() CmdBuilder {
+	AddFlags(c.cmd.Flags(), c.cmd.Use)
 	return c
 }
 

@@ -36,13 +36,13 @@ var (
 func NewCmdInit(out io.Writer) *cobra.Command {
 	return NewCmd(out, "init").
 		WithDescription("Automatically generate Skaffold configuration for deploying an application").
+		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.BoolVar(&skipBuild, "skip-build", false, "Skip generating build artifacts in Skaffold config")
 			f.BoolVar(&force, "force", false, "Force the generation of the Skaffold config")
 			f.StringVar(&composeFile, "compose-file", "", "Initialize from a docker-compose file")
 			f.StringSliceVarP(&cliArtifacts, "artifact", "a", nil, "'='-delimited dockerfile/image pair to generate build artifact\n(example: --artifact=/web/Dockerfile.web=gcr.io/web-project/image)")
 			f.BoolVar(&analyze, "analyze", false, "Print all discoverable Dockerfiles and images in JSON format to stdout")
-			AddFlags(f, "init")
 		}).
 		NoArgs(doInit)
 }

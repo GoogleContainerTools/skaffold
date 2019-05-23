@@ -27,7 +27,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -35,9 +34,7 @@ import (
 func NewCmdDiagnose(out io.Writer) *cobra.Command {
 	return NewCmd(out, "diagnose").
 		WithDescription("Run a diagnostic on Skaffold").
-		WithFlags(func(f *pflag.FlagSet) {
-			AddFlags(f, "diagnose")
-		}).
+		WithCommonFlags().
 		NoArgs(doDiagnose)
 }
 
