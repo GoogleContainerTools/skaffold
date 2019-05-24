@@ -21,39 +21,37 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"sync"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestInParallel(t *testing.T) {
+func TestGetBuild(t *testing.T) {
 	var tests = []struct {
-		description       string
-		buildArtifact     artifactBuilder
-		tags              tag.ImageTags
-		expectedArtifacts []Artifact
-		expectedOut       string
-		shouldErr         bool
+		description   string
+		buildArtifact artifactBuilder
+		tags          tag.ImageTags
+		expectedTag   string
+		expectedOut   string
+		shouldErr     bool
 	}{
 		{
 			description: "build succeeds",
 			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+				out.Write([]byte("build succeeds"))
 				return fmt.Sprintf("%s@sha256:abac", tag), nil
 			},
 			tags: tag.ImageTags{
 				"skaffold/image1": "skaffold/image1:v0.0.1",
 				"skaffold/image2": "skaffold/image2:v0.0.2",
 			},
-			expectedArtifacts: []Artifact{
-				{ImageName: "skaffold/image1", Tag: "skaffold/image1:v0.0.1@sha256:abac"},
-				{ImageName: "skaffold/image2", Tag: "skaffold/image2:v0.0.2@sha256:abac"},
-			},
-			expectedOut: "Building [skaffold/image1]...\nBuilding [skaffold/image2]...\n",
+			expectedTag: "skaffold/image1:v0.0.1@sha256:abac",
+			expectedOut: "Building [skaffold/image1]...\nbuild succeeds",
 		},
 		{
 			description: "build fails",
@@ -76,26 +74,260 @@ func TestInParallel(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			out := new(bytes.Buffer)
+			artifact := &latest.Artifact{ImageName: "skaffold/image1"}
+			got, err := getBuildResult(context.Background(), out, test.tags, artifact, test.buildArtifact)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedTag, got)
+			testutil.CheckDeepEqual(t, test.expectedOut, out.String())
+		})
+	}
+}
+
+func TestCollectResults(t *testing.T) {
+	var tests = []struct {
+		description string
+		artifacts   []*latest.Artifact
+		expected    []Artifact
+		results     map[string]interface{}
+		shouldErr   bool
+	}{
+		{
+			description: "all builds completely successfully",
+			artifacts: []*latest.Artifact{
+				{ImageName: "skaffold/image1"},
+				{ImageName: "skaffold/image2"},
+			},
+			expected: []Artifact{
+				{ImageName: "skaffold/image1", Tag: "skaffold/image1:v0.0.1@sha256:abac"},
+				{ImageName: "skaffold/image2", Tag: "skaffold/image2:v0.0.2@sha256:abac"},
+			},
+			results: map[string]interface{}{
+				"skaffold/image1": Artifact{
+					ImageName: "skaffold/image1",
+					Tag:       "skaffold/image1:v0.0.1@sha256:abac",
+				},
+				"skaffold/image2": Artifact{
+					ImageName: "skaffold/image2",
+					Tag:       "skaffold/image2:v0.0.2@sha256:abac",
+				},
+			},
+		},
+		{
+			description: "first build errors",
+			artifacts: []*latest.Artifact{
+				{ImageName: "skaffold/image1"},
+				{ImageName: "skaffold/image2"},
+			},
+			expected: nil,
+			results: map[string]interface{}{
+				"skaffold/image1": fmt.Errorf("Could not build image skaffold/image1"),
+				"skaffold/image2": Artifact{
+					ImageName: "skaffold/image2",
+					Tag:       "skaffold/image2:v0.0.2@sha256:abac",
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "arbitrary image build failure",
+			artifacts: []*latest.Artifact{
+				{ImageName: "skaffold/image1"},
+				{ImageName: "skaffold/image2"},
+				{ImageName: "skaffold/image3"},
+			},
+			expected: nil,
+			results: map[string]interface{}{
+				"skaffold/image1": Artifact{
+					ImageName: "skaffold/image1",
+					Tag:       "skaffold/image1:v0.0.1@sha256:abac",
+				},
+				"skaffold/image2": fmt.Errorf("Could not build image skaffold/image1"),
+				"skaffold/image3": Artifact{
+					ImageName: "skaffold/image3",
+					Tag:       "skaffold/image3:v0.0.1@sha256:abac",
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "no build result produced for a build",
+			artifacts: []*latest.Artifact{
+				{ImageName: "skaffold/image1"},
+				{ImageName: "skaffold/image2"},
+			},
+			expected: nil,
+			results: map[string]interface{}{
+				"skaffold/image1": Artifact{
+					ImageName: "skaffold/image1:v0.0.1@sha256:abac",
+					Tag:       "skaffold/image1:v0.0.1@sha256:abac",
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "build produced an incorrect value type",
+			artifacts: []*latest.Artifact{
+				{ImageName: "skaffold/image1"},
+				{ImageName: "skaffold/image2"},
+			},
+			expected: nil,
+			results: map[string]interface{}{
+				"skaffold/image1": 1,
+			},
+			shouldErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			outputs := setUpChannels(len(test.artifacts))
+			resultMap := new(sync.Map)
+			for k, v := range test.results {
+				resultMap.Store(k, v)
+			}
+			got, err := collectResults(ioutil.Discard, test.artifacts, resultMap, outputs)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, got)
+		})
+	}
+}
+
+func TestInParallel(t *testing.T) {
+	var tests = []struct {
+		description string
+		buildFunc   artifactBuilder
+		expected    string
+	}{
+		{
+			description: "short and nice build log",
+			expected:    "Building [skaffold/image1]...\nshort\nBuilding [skaffold/image2]...\nshort\n",
+			buildFunc: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+				out.Write([]byte("short"))
+				return fmt.Sprintf("%s:tag", artifact.ImageName), nil
+			},
+		},
+		{
+			description: "long build log gets printed correctly",
+			expected: `Building [skaffold/image1]...
+This is a long string more than 10 bytes.
+And new lines
+Building [skaffold/image2]...
+This is a long string more than 10 bytes.
+And new lines
+`,
+			buildFunc: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+				out.Write([]byte("This is a long string more than 10 bytes.\nAnd new lines"))
+				return fmt.Sprintf("%s:tag", artifact.ImageName), nil
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			out := new(bytes.Buffer)
 			artifacts := []*latest.Artifact{
 				{ImageName: "skaffold/image1"},
 				{ImageName: "skaffold/image2"},
 			}
-			cfg := latest.BuildConfig{
-				BuildType: latest.BuildType{
-					LocalBuild: &latest.LocalBuild{},
-				},
+			tags := tag.ImageTags{
+				"skaffold/image1": "skaffold/image1:v0.0.1",
+				"skaffold/image2": "skaffold/image2:v0.0.2",
 			}
-			event.InitializeState(&runcontext.RunContext{
-				Cfg: &latest.Pipeline{
-					Build: cfg,
-				},
-				Opts: &config.SkaffoldOptions{},
-			})
-
-			got, err := InParallel(context.Background(), out, test.tags, artifacts, test.buildArtifact)
-
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedArtifacts, got)
-			testutil.CheckDeepEqual(t, test.expectedOut, out.String())
+			initializeEvents()
+			InParallel(context.Background(), out, tags, artifacts, test.buildFunc)
+			testutil.CheckDeepEqual(t, test.expected, out.String())
 		})
 	}
+}
+
+func TestInParallelForArgs(t *testing.T) {
+	var tests = []struct {
+		description   string
+		inSeqFunc     func(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, artifactBuilder) ([]Artifact, error)
+		buildArtifact artifactBuilder
+		artifactLen   int
+		expected      []Artifact
+	}{
+		{
+			description: "runs in sequence for 1 artifact",
+			inSeqFunc: func(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, artifactBuilder) ([]Artifact, error) {
+				return []Artifact{{ImageName: "singleArtifact", Tag: "one"}}, nil
+			},
+			artifactLen: 1,
+			expected:    []Artifact{{ImageName: "singleArtifact", Tag: "one"}},
+		},
+		{
+			description: "runs in parallel for 2 artifacts",
+			buildArtifact: func(_ context.Context, _ io.Writer, _ *latest.Artifact, tag string) (string, error) {
+				return tag, nil
+			},
+			artifactLen: 2,
+			expected: []Artifact{
+				{ImageName: "artifact1", Tag: "artifact1@tag1"},
+				{ImageName: "artifact2", Tag: "artifact2@tag2"},
+			},
+		},
+		{
+			description: "runs in parallel should return for 0 artifacts",
+			artifactLen: 0,
+			expected:    nil,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			artifacts := make([]*latest.Artifact, test.artifactLen)
+			tags := tag.ImageTags{}
+			for i := 0; i < test.artifactLen; i++ {
+				a := fmt.Sprintf("artifact%d", i+1)
+				artifacts[i] = &latest.Artifact{ImageName: a}
+				tags[a] = fmt.Sprintf("%s@tag%d", a, i+1)
+			}
+			if test.inSeqFunc != nil {
+				restore := testutil.Override(t, &runInSequence, test.inSeqFunc)
+				defer restore()
+			}
+			initializeEvents()
+			actual, _ := InParallel(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact)
+			testutil.CheckDeepEqual(t, test.expected, actual)
+		})
+	}
+
+}
+
+func TestColoredOutput(t *testing.T) {
+	var tests = []struct {
+		description   string
+		isTerminal    func(w io.Writer) bool
+		exceptedColor bool
+	}{
+		{
+			description:   "setUpColorWriter returns color out writer for terminal",
+			isTerminal:    func(w io.Writer) bool { return true },
+			exceptedColor: true,
+		},
+		{
+			description:   "setUpColorWriter returns color out writer if not terminal",
+			isTerminal:    func(w io.Writer) bool { return false },
+			exceptedColor: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			restore := testutil.Override(t, &color.IsTerminal, test.isTerminal)
+			defer restore()
+
+			_, w := io.Pipe()
+			actual := setUpColorWriter(w, ioutil.Discard)
+			if _, ok := actual.(color.ColoredWriteCloser); ok != test.exceptedColor {
+				t.Errorf("got %t, expected %t", ok, test.exceptedColor)
+			}
+		})
+	}
+
+}
+
+func setUpChannels(n int) []chan []byte {
+	outputs := make([]chan []byte, n)
+	for i := 0; i < n; i++ {
+		outputs[i] = make(chan []byte, 10)
+		close(outputs[i])
+	}
+	return outputs
 }
