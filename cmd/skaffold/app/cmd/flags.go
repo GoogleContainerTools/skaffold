@@ -152,7 +152,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.Tail,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"deploy"},
+		DefinedOn:     []string{"deploy", "run"},
 	},
 	{
 		Name:          "tail",
@@ -160,7 +160,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.TailDev,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "run", "debug"},
+		DefinedOn:     []string{"dev", "debug"},
 	},
 	// We need opts.Force and opts.ForceDev since cobra, overwrites the default value
 	// when registering the flag twice.
