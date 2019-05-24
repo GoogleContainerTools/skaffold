@@ -148,7 +148,7 @@ var FlagRegistry = []Flag{
 	// when registering the flag twice.
 	{
 		Name:          "tail",
-		Usage:         "Stream logs from deployed objects. (default false)",
+		Usage:         "Stream logs from deployed objects (default false)",
 		Value:         &opts.Tail,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
