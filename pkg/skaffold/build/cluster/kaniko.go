@@ -60,7 +60,10 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 		logrus.Warn("The additionalFlags field in kaniko is deprecated, please consult the current schema at skaffold.dev to update your skaffold.yaml.")
 		args = append(args, kanikoArtifact.AdditionalFlags...)
 	}
-	args = appendBuildArgsIfExists(args, kanikoArtifact.BuildArgs)
+	args, err = appendBuildArgsIfExists(args, kanikoArtifact.BuildArgs)
+	if err != nil {
+		return "", errors.Wrap(err, "appending build args")
+	}
 	args = appendTargetIfExists(args, kanikoArtifact.Target)
 	args = appendCacheIfExists(args, kanikoArtifact.Cache)
 
@@ -125,9 +128,17 @@ func appendTargetIfExists(args []string, target string) []string {
 	return append(args, fmt.Sprintf("--target=%s", target))
 }
 
-func appendBuildArgsIfExists(args []string, buildArgs map[string]*string) []string {
+func evaluateBuildArg(argTemplate string) (string, error) {
+	tmpl, err := util.ParseEnvTemplate(argTemplate)
+	if err != nil {
+		return "", errors.Wrap(err, "parsing template")
+	}
+	return util.ExecuteEnvTemplate(tmpl, nil)
+}
+
+func appendBuildArgsIfExists(args []string, buildArgs map[string]*string) ([]string, error) {
 	if buildArgs == nil {
-		return args
+		return args, nil
 	}
 
 	var keys []string
@@ -143,8 +154,12 @@ func appendBuildArgsIfExists(args []string, buildArgs map[string]*string) []stri
 		if v == nil {
 			args = append(args, k)
 		} else {
-			args = append(args, fmt.Sprintf("%s=%s", k, *v))
+			value, err := evaluateBuildArg(*v)
+			if err != nil {
+				return nil, errors.Wrapf(err, "unable to get value for build arg: %s", k)
+			}
+			args = append(args, fmt.Sprintf("%s=%s", k, value))
 		}
 	}
-	return args
+	return args, nil
 }

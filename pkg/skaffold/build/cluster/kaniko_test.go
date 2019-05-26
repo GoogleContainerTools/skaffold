@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -90,14 +91,16 @@ func TestAppendBuildArgsIfExists(t *testing.T) {
 		name         string
 		buildArgs    map[string]*string
 		args         []string
+		env          []string
 		expectedArgs []string
+		shouldErr    bool
 	}{
 		{
 			name:         "no build args",
 			args:         []string{"first", "args"},
 			expectedArgs: []string{"first", "args"},
 		}, {
-			name: "buid args",
+			name: "build args",
 			buildArgs: map[string]*string{
 				"nil_key":   nil,
 				"empty_key": pointer(""),
@@ -105,12 +108,32 @@ func TestAppendBuildArgsIfExists(t *testing.T) {
 			},
 			args:         []string{"first", "args"},
 			expectedArgs: []string{"first", "args", "--build-arg", "empty_key=", "--build-arg", "nil_key", "--build-arg", "value_key=value"},
+		}, {
+			name: "build arg with env",
+			buildArgs: map[string]*string{
+				"value_key": pointer("value"),
+				"env_key":   pointer("{{.KEY}}"),
+			},
+			args:         []string{"first", "args"},
+			env:          []string{"KEY=VALUE"},
+			expectedArgs: []string{"first", "args", "--build-arg", "env_key=VALUE", "--build-arg", "value_key=value"},
+		}, {
+			name: "build arg with bad template",
+			buildArgs: map[string]*string{
+				"value_key":    pointer("value"),
+				"template_key": pointer("{{.BAD_TEMPLATE}"),
+			},
+			args:      []string{"first", "args"},
+			shouldErr: true,
 		},
 	}
 	for _, test := range tests {
+		util.OSEnviron = func() []string {
+			return test.env
+		}
 		t.Run(test.name, func(t *testing.T) {
-			actual := appendBuildArgsIfExists(test.args, test.buildArgs)
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedArgs, actual)
+			actual, err := appendBuildArgsIfExists(test.args, test.buildArgs)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedArgs, actual)
 		})
 	}
 }
