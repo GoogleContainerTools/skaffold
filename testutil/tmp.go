@@ -130,7 +130,7 @@ func (h *TempDir) failIfErr(err error) *TempDir {
 }
 
 // Paths returns the paths to a list of files in the temp directory.
-func (h *TempDir) Paths(files []string) []string {
+func (h *TempDir) Paths(files ...string) []string {
 	var paths []string
 	for _, file := range files {
 		paths = append(paths, h.Path(file))
