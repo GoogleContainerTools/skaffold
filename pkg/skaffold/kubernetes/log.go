@@ -112,6 +112,11 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 						continue
 					}
 
+					if container.State.Terminated != nil {
+						color.Purple.Fprintln(a.output, container.State.Terminated.Message)
+						continue
+					}
+
 					if !a.trackedContainers.add(container.ContainerID) {
 						go a.streamContainerLogs(cancelCtx, pod, container)
 					}
