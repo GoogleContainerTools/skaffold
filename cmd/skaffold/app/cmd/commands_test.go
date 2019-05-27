@@ -26,28 +26,28 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestNewCommandDescription(t *testing.T) {
+func TestNewCmdDescription(t *testing.T) {
 	cmd := NewCmd(nil, "help").WithDescription("prints help").NoArgs(nil)
 
 	testutil.CheckDeepEqual(t, "help", cmd.Use)
 	testutil.CheckDeepEqual(t, "prints help", cmd.Short)
 }
 
-func TestNewCommandLongDescription(t *testing.T) {
+func TestNewCmdLongDescription(t *testing.T) {
 	cmd := NewCmd(nil, "help").WithLongDescription("long description").NoArgs(nil)
 
 	testutil.CheckDeepEqual(t, "help", cmd.Use)
 	testutil.CheckDeepEqual(t, "long description", cmd.Long)
 }
 
-func TestNewCommandNoArgs(t *testing.T) {
+func TestNewCmdNoArgs(t *testing.T) {
 	cmd := NewCmd(nil, "").NoArgs(nil)
 
 	testutil.CheckError(t, false, cmd.Args(cmd, []string{}))
 	testutil.CheckError(t, true, cmd.Args(cmd, []string{"extract arg"}))
 }
 
-func TestNewCommandExactArgs(t *testing.T) {
+func TestNewCmdExactArgs(t *testing.T) {
 	cmd := NewCmd(nil, "").ExactArgs(1, nil)
 
 	testutil.CheckError(t, true, cmd.Args(cmd, []string{}))
@@ -55,7 +55,7 @@ func TestNewCommandExactArgs(t *testing.T) {
 	testutil.CheckError(t, true, cmd.Args(cmd, []string{"valid", "extra"}))
 }
 
-func TestNewCommandError(t *testing.T) {
+func TestNewCmdError(t *testing.T) {
 	cmd := NewCmd(nil, "").NoArgs(func(out io.Writer) error {
 		return errors.New("expected error")
 	})
@@ -65,7 +65,7 @@ func TestNewCommandError(t *testing.T) {
 	testutil.CheckErrorAndDeepEqual(t, true, err, "expected error", err.Error())
 }
 
-func TestNewCommandOutput(t *testing.T) {
+func TestNewCmdOutput(t *testing.T) {
 	var buf bytes.Buffer
 
 	cmd := NewCmd(&buf, "").ExactArgs(1, func(out io.Writer, args []string) error {
