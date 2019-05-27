@@ -29,12 +29,11 @@ import (
 
 // NewCmdRun describes the CLI command to run a pipeline.
 func NewCmdRun(out io.Writer) *cobra.Command {
-	cmdUse := "run"
-	return NewCmd(out, cmdUse).
+	return NewCmd(out, "run").
 		WithDescription("Runs a pipeline file").
+		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.StringVarP(&opts.CustomTag, "tag", "t", "", "The optional custom tag to use for images which overrides the current Tagger configuration")
-			AddFlags(f, cmdUse)
 		}).
 		NoArgs(cancelWithCtrlC(context.Background(), doRun))
 }

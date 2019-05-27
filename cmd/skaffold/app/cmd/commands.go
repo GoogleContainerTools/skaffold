@@ -28,6 +28,7 @@ type Builder interface {
 	WithDescription(description string) Builder
 	WithLongDescription(long string) Builder
 	WithFlags(adder func(*pflag.FlagSet)) Builder
+	WithCommonFlags() Builder
 	ExactArgs(argCount int, action func(io.Writer, []string) error) *cobra.Command
 	NoArgs(action func(io.Writer) error) *cobra.Command
 }
@@ -54,6 +55,11 @@ func (b *builder) WithDescription(description string) Builder {
 
 func (b *builder) WithLongDescription(long string) Builder {
 	b.cmd.Long = long
+	return b
+}
+
+func (b *builder) WithCommonFlags() Builder {
+	AddFlags(b.cmd.Flags(), b.cmd.Use)
 	return b
 }
 
