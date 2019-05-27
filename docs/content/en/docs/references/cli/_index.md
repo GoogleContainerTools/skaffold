@@ -356,7 +356,7 @@ Flags:
   -p, --profile strings                              Activate profiles by name
       --rpc-http-port int                            tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                                 tcp port to expose event API (default 50051)
-      --tail                                         Stream logs from deployed objects. (default false)
+      --tail                                         Stream logs from deployed objects (default false)
       --toot                                         Emit a terminal beep after the deploy is complete
 
 Global Flags:
@@ -548,7 +548,7 @@ Flags:
       --rpc-port int                tcp port to expose event API (default 50051)
       --skip-tests                  Whether to skip the tests after building
   -t, --tag string                  The optional custom tag to use for images which overrides the current Tagger configuration
-      --tail                        Stream logs from deployed objects (default true)
+      --tail                        Stream logs from deployed objects (default false)
       --toot                        Emit a terminal beep after the deploy is complete
 
 Global Flags:
