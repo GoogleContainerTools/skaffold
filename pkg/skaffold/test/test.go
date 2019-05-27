@@ -32,11 +32,11 @@ import (
 // NewTester parses the provided test cases from the Skaffold config,
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
-func NewTester(runCtx *runcontext.RunContext) (Tester, error) {
+func NewTester(runCtx *runcontext.RunContext) Tester {
 	return FullTester{
 		testCases:  runCtx.Cfg.Test,
 		workingDir: runCtx.WorkingDir,
-	}, nil
+	}
 }
 
 // TestDependencies returns the watch dependencies to the runner.
