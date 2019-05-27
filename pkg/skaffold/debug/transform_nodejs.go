@@ -67,7 +67,7 @@ func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
 	return false
 }
 
-func (t nodeTransformer) RequiresHelpers() bool {
+func (t nodeTransformer) RequiresRuntimeSupport() bool {
 	return false
 }
 

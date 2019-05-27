@@ -108,7 +108,7 @@ func (t testTransformer) IsApplicable(config imageConfiguration) bool {
 	return true
 }
 
-func (t testTransformer) RequiresHelpers() bool {
+func (t testTransformer) RequiresRuntimeSupport() bool {
 	return false
 }
 

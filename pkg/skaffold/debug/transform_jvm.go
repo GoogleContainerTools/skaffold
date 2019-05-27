@@ -63,7 +63,7 @@ type jdwpSpec struct {
 	server  bool
 }
 
-func (t jdwpTransformer) RequiresHelpers() bool {
+func (t jdwpTransformer) RequiresRuntimeSupport() bool {
 	return false
 }
 

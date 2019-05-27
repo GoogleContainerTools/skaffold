@@ -62,7 +62,7 @@ func (t pythonTransformer) IsApplicable(config imageConfiguration) bool {
 	return false
 }
 
-func (t pythonTransformer) RequiresHelpers() bool {
+func (t pythonTransformer) RequiresRuntimeSupport() bool {
 	return true
 }
 

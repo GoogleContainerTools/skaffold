@@ -52,8 +52,8 @@ type containerTransformer interface {
 	// IsApplicable determines if this container is suitable to be transformed.
 	IsApplicable(config imageConfiguration) bool
 
-	// RequiresHelpers returns true if this transformer requires the duct-tape helpers
-	RequiresHelpers() bool
+	// RequiresRuntimeSupport returns true if this transformer requires the duct-tape helpers
+	RequiresRuntimeSupport() bool
 
 	// Apply configures a container definition for debugging, returning a simple map describing the debug configuration details or `nil` if it could not be done
 	Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{}
@@ -125,35 +125,38 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 	}
 	// containers are required to have unique name within a pod
 	configurations := make(map[string]map[string]interface{})
-	var ductTapeRequired []*v1.Container
+	var supportFilesRequired []*v1.Container
 	for i := range podSpec.Containers {
 		container := &podSpec.Containers[i]
 		// we only reconfigure build artifacts
-		if configuration, requiresDuctTape, err := transformContainer(container, retrieveImageConfiguration, portAlloc); err == nil {
+		if configuration, requiresSupportFiles, err := transformContainer(container, retrieveImageConfiguration, portAlloc); err == nil {
 			configurations[container.Name] = configuration
-			if requiresDuctTape {
-				logrus.Infof("%s requires duct-tape", container.Name)
-				ductTapeRequired = append(ductTapeRequired, container)
+			if requiresSupportFiles {
+				logrus.Infof("%s requires debugging support files", container.Name)
+				supportFilesRequired = append(supportFilesRequired, container)
 			}
 			// todo: add this artifact to the watch list?
 		} else {
 			logrus.Infof("Image [%s] not configured for debugging: %v", container.Image, err)
 		}
 	}
-	logrus.Infof("Checking if duct-tape is needed: %d", len(ductTapeRequired))
-	if len(ductTapeRequired) > 0 {
-		ductTapeVolume := v1.Volume{Name: "duct-tape", VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}
-		podSpec.Volumes = append(podSpec.Volumes, ductTapeVolume)
-		ductTapeVolumeMount := v1.VolumeMount{Name: "duct-tape", MountPath: "/dbg"}
-		for _, container := range ductTapeRequired {
-			container.VolumeMounts = append(container.VolumeMounts, ductTapeVolumeMount)
+	if len(supportFilesRequired) > 0 {
+		logrus.Infof("Configuring installation of debugging support files")
+		supportVolume := v1.Volume{Name: "debugging-support-files", VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}
+		podSpec.Volumes = append(podSpec.Volumes, supportVolume)
+		supportVolumeMount := v1.VolumeMount{Name: "debugging-support-files", MountPath: "/dbg"}
+		for _, container := range supportFilesRequired {
+			container.VolumeMounts = append(container.VolumeMounts, supportVolumeMount)
 		}
-		ductTapeInitContainer := v1.Container{
-			Name:         "apply-duct-tape",
-			Image:        "gcr.io/gcp-dev-tools/duct-tape:latest",
-			VolumeMounts: []v1.VolumeMount{ductTapeVolumeMount},
+		// TODO create separate separate images for each runtime as some runtimes are rather heavyweight
+		// https://github.com/GoogleContainerTools/container-debug-support/issues/24
+		// TODO make this pluggable for airgapped clusters? or is making container `imagePullPolicy:IfNotPresent` sufficient?
+		supportFilesInitContainer := v1.Container{
+			Name:            "install-debugging-support-files",
+			Image:           "gcr.io/gcp-dev-tools/duct-tape:latest",
+			VolumeMounts:    []v1.VolumeMount{supportVolumeMount},
 		}
-		podSpec.InitContainers = append(podSpec.InitContainers, ductTapeInitContainer)
+		podSpec.InitContainers = append(podSpec.InitContainers, supportFilesInitContainer)
 	}
 
 	if len(configurations) > 0 {
@@ -224,7 +227,7 @@ func transformContainer(container *v1.Container, retrieveImageConfiguration conf
 
 	for _, transform := range containerTransforms {
 		if transform.IsApplicable(config) {
-			return transform.Apply(container, config, portAlloc), transform.RequiresHelpers(), nil
+			return transform.Apply(container, config, portAlloc), transform.RequiresRuntimeSupport(), nil
 		}
 	}
 	return nil, false, errors.Errorf("unable to determine runtime for [%s]", container.Name)
