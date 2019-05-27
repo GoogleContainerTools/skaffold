@@ -17,10 +17,15 @@ limitations under the License.
 package test
 
 import (
+	"context"
+	"errors"
+	"io/ioutil"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -57,4 +62,81 @@ func TestTestDependencies(t *testing.T) {
 
 	expectedDeps := tmpDir.Paths("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
 	testutil.CheckErrorAndDeepEqual(t, false, err, expectedDeps, deps)
+}
+
+func TestNoTest(t *testing.T) {
+	runCtx := &runcontext.RunContext{
+		Cfg: &latest.Pipeline{},
+	}
+
+	err := NewTester(runCtx).Test(context.Background(), ioutil.Discard, nil)
+
+	testutil.CheckError(t, false, err)
+}
+
+func TestTestSuccess(t *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+
+	tmpDir.Write("tests/test1.yaml", "")
+	tmpDir.Write("tests/test2.yaml", "")
+	tmpDir.Write("test3.yaml", "")
+
+	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+	util.DefaultExecCommand = testutil.
+		NewFakeCmd(t).
+		WithRun("container-structure-test test -v warn --image TAG --config " + tmpDir.Path("tests/test1.yaml") + " --config " + tmpDir.Path("tests/test2.yaml")).
+		WithRun("container-structure-test test -v warn --image TAG --config " + tmpDir.Path("test3.yaml"))
+
+	runCtx := &runcontext.RunContext{
+		WorkingDir: tmpDir.Root(),
+		Cfg: &latest.Pipeline{
+			Test: []*latest.TestCase{
+				{
+					ImageName:      "image",
+					StructureTests: []string{"./tests/*"},
+				},
+				{},
+				{
+					ImageName:      "image",
+					StructureTests: []string{"test3.yaml"},
+				},
+			},
+		},
+	}
+
+	err := NewTester(runCtx).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		ImageName: "image",
+		Tag:       "TAG",
+	}})
+
+	testutil.CheckError(t, false, err)
+}
+
+func TestTestFailure(t *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+
+	tmpDir.Write("test.yaml", "")
+
+	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
+	util.DefaultExecCommand = testutil.
+		NewFakeCmd(t).
+		WithRunErr("container-structure-test test -v warn --image broken-image --config "+tmpDir.Path("test.yaml"), errors.New("FAIL"))
+
+	runCtx := &runcontext.RunContext{
+		WorkingDir: tmpDir.Root(),
+		Cfg: &latest.Pipeline{
+			Test: []*latest.TestCase{
+				{
+					ImageName:      "broken-image",
+					StructureTests: []string{"test.yaml"},
+				},
+			},
+		},
+	}
+
+	err := NewTester(runCtx).Test(context.Background(), ioutil.Discard, []build.Artifact{{}})
+
+	testutil.CheckError(t, true, err)
 }

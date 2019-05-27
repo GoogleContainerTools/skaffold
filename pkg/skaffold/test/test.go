@@ -77,9 +77,9 @@ func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes [
 		return errors.Wrap(err, "expanding test file paths")
 	}
 
-	runner := structure.NewRunner(files)
 	fqn := resolveArtifactImageTag(testCase.ImageName, bRes)
 
+	runner := structure.NewRunner(files)
 	return runner.Test(ctx, out, fqn)
 }
 
