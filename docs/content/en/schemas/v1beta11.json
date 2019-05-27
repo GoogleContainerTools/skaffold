@@ -491,13 +491,13 @@
         },
         "pullSecret": {
           "type": "string",
-          "description": "path to the secret key file.",
-          "x-intellij-html-description": "path to the secret key file."
+          "description": "path to the Google Cloud service account secret key file.",
+          "x-intellij-html-description": "path to the Google Cloud service account secret key file."
         },
         "pullSecretName": {
           "type": "string",
-          "description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image.",
-          "x-intellij-html-description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image.",
+          "description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image. If given, the secret needs to contain the Google Cloud service account secret key under the key `kaniko-secret`.",
+          "x-intellij-html-description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image. If given, the secret needs to contain the Google Cloud service account secret key under the key <code>kaniko-secret</code>.",
           "default": "kaniko-secret"
         },
         "resources": {
@@ -725,8 +725,8 @@
         },
         "secretName": {
           "type": "string",
-          "description": "Kubernetes secret that will hold the Docker configuration.",
-          "x-intellij-html-description": "Kubernetes secret that will hold the Docker configuration."
+          "description": "Kubernetes secret that contains the `config.json` Docker configuration. Note that the expected secret type is not 'kubernetes.io/dockerconfigjson' but 'Opaque'.",
+          "x-intellij-html-description": "Kubernetes secret that contains the <code>config.json</code> Docker configuration. Note that the expected secret type is not 'kubernetes.io/dockerconfigjson' but 'Opaque'."
         }
       },
       "preferredOrder": [

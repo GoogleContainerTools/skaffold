@@ -100,7 +100,7 @@ Kubernetes cluster. Kaniko enables building container images in environments
 that cannot easily or securely run a Docker daemon.
 
 Skaffold can help build artifacts in a Kubernetes cluster using the Kaniko
-image; after the artifacts are built, kaniko can push them to remote registries.
+image; after the artifacts are built, kaniko must push them to a registry.
 
 ### Configuration
 
@@ -112,6 +112,24 @@ To use Kaniko, add build type `kaniko` to the `build` section of
 The `buildContext` can be either:
 
 {{< schema root="KanikoBuildContext" >}}
+
+Since Kaniko must push images to a registry, it is required to set up cluster credentials.
+For example, Google Cloud Build requires a service account secret with push and pull access:
+```yaml
+build:
+  cluster:
+    pullSecret: path-to-service-account-key-file
+```
+Or when pushing to a docker registry:
+```yaml
+build:
+  cluster:
+    dockerConfig:
+      path: ~/.docker/config.json
+      # OR
+      secretName: docker-config-secret
+```
+Note that the kubernetes secret must not be of type `kubernetes.io/dockerconfigjson` which stores the config json under the key `".dockerconfigjson"`, but an opaque secret with the key `"config.json"`.
 
 ### Example
 
