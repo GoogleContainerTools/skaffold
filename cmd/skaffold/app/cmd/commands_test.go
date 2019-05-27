@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/spf13/pflag"
 )
 
 func TestNewCmdDescription(t *testing.T) {
@@ -76,4 +77,35 @@ func TestNewCmdOutput(t *testing.T) {
 	err := cmd.RunE(nil, []string{"arg1"})
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, "test output: [arg1]\n", buf.String())
+}
+
+func TestNewCmdWithFlags(t *testing.T) {
+	cmd := NewCmd(nil, "").WithFlags(func(flagSet *pflag.FlagSet) {
+		flagSet.Bool("test", false, "usage")
+	}).NoArgs(nil)
+
+	flags := listFlags(cmd.Flags())
+
+	testutil.CheckDeepEqual(t, 1, len(flags))
+	testutil.CheckDeepEqual(t, "usage", flags["test"].Usage)
+}
+
+func TestNewCmdWithCommonFlags(t *testing.T) {
+	cmd := NewCmd(nil, "run").WithCommonFlags().NoArgs(nil)
+
+	flags := listFlags(cmd.Flags())
+
+	if _, present := flags["profile"]; !present {
+		t.Error("Expected flag `profile` to be added")
+	}
+}
+
+func listFlags(set *pflag.FlagSet) map[string]*pflag.Flag {
+	flagsByName := make(map[string]*pflag.Flag)
+
+	set.VisitAll(func(f *pflag.Flag) {
+		flagsByName[f.Name] = f
+	})
+
+	return flagsByName
 }
