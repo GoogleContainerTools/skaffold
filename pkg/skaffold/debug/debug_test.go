@@ -108,6 +108,10 @@ func (t testTransformer) IsApplicable(config imageConfiguration) bool {
 	return true
 }
 
+func (t testTransformer) RequiresHelpers() bool {
+	return false
+}
+
 func (t testTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
 	port := portAlloc(9999)
 	container.Ports = append(container.Ports, v1.ContainerPort{Name: "test", ContainerPort: port})

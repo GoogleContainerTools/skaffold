@@ -63,6 +63,10 @@ type jdwpSpec struct {
 	server  bool
 }
 
+func (t jdwpTransformer) RequiresHelpers() bool {
+	return false
+}
+
 // Apply configures a container definition for JVM debugging.
 // Returns a simple map describing the debug configuration details.
 func (t jdwpTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {

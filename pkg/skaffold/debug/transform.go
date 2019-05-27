@@ -52,6 +52,9 @@ type containerTransformer interface {
 	// IsApplicable determines if this container is suitable to be transformed.
 	IsApplicable(config imageConfiguration) bool
 
+	// RequiresHelpers returns true if this transformer requires the duct-tape helpers
+	RequiresHelpers() bool
+
 	// Apply configures a container definition for debugging, returning a simple map describing the debug configuration details or `nil` if it could not be done
 	Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{}
 }
@@ -122,16 +125,37 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 	}
 	// containers are required to have unique name within a pod
 	configurations := make(map[string]map[string]interface{})
+	var ductTapeRequired []*v1.Container
 	for i := range podSpec.Containers {
 		container := &podSpec.Containers[i]
 		// we only reconfigure build artifacts
-		if configuration, err := transformContainer(container, retrieveImageConfiguration, portAlloc); err == nil {
+		if configuration, requiresDuctTape, err := transformContainer(container, retrieveImageConfiguration, portAlloc); err == nil {
 			configurations[container.Name] = configuration
+			if requiresDuctTape {
+				logrus.Infof("%s requires duct-tape", container.Name)
+				ductTapeRequired = append(ductTapeRequired, container)
+			}
 			// todo: add this artifact to the watch list?
 		} else {
 			logrus.Infof("Image [%s] not configured for debugging: %v", container.Image, err)
 		}
 	}
+	logrus.Infof("Checking if duct-tape is needed: %d", len(ductTapeRequired))
+	if len(ductTapeRequired) > 0 {
+		ductTapeVolume := v1.Volume{Name: "duct-tape", VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}
+		podSpec.Volumes = append(podSpec.Volumes, ductTapeVolume)
+		ductTapeVolumeMount := v1.VolumeMount{Name: "duct-tape", MountPath: "/dbg"}
+		for _, container := range ductTapeRequired {
+			container.VolumeMounts = append(container.VolumeMounts, ductTapeVolumeMount)
+		}
+		ductTapeInitContainer := v1.Container{
+			Name:         "apply-duct-tape",
+			Image:        "gcr.io/gcp-dev-tools/duct-tape:latest",
+			VolumeMounts: []v1.VolumeMount{ductTapeVolumeMount},
+		}
+		podSpec.InitContainers = append(podSpec.InitContainers, ductTapeInitContainer)
+	}
+
 	if len(configurations) > 0 {
 		if metadata.Annotations == nil {
 			metadata.Annotations = make(map[string]string)
@@ -178,11 +202,11 @@ func isPortAvailable(podSpec *v1.PodSpec, port int32) bool {
 
 // transformContainer rewrites the container definition to enable debugging.
 // Returns a debugging configuration description or an error if the rewrite was unsuccessful.
-func transformContainer(container *v1.Container, retrieveImageConfiguration configurationRetriever, portAlloc portAllocator) (map[string]interface{}, error) {
+func transformContainer(container *v1.Container, retrieveImageConfiguration configurationRetriever, portAlloc portAllocator) (map[string]interface{}, bool, error) {
 	var config imageConfiguration
 	config, err := retrieveImageConfiguration(container.Image)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	// update image configuration values with those set in the k8s manifest
@@ -200,10 +224,10 @@ func transformContainer(container *v1.Container, retrieveImageConfiguration conf
 
 	for _, transform := range containerTransforms {
 		if transform.IsApplicable(config) {
-			return transform.Apply(container, config, portAlloc), nil
+			return transform.Apply(container, config, portAlloc), transform.RequiresHelpers(), nil
 		}
 	}
-	return nil, errors.Errorf("unable to determine runtime for [%s]", container.Name)
+	return nil, false, errors.Errorf("unable to determine runtime for [%s]", container.Name)
 }
 
 func encodeConfigurations(configurations map[string]map[string]interface{}) string {
