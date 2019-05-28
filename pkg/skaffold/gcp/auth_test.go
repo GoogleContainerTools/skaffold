@@ -105,7 +105,7 @@ func TestAutoConfigureGCRCredentialHelper(t *testing.T) {
 			reset := testutil.SetEnvs(t, map[string]string{
 				"PATH": tmp.Root(),
 			})
-			defer reset(t)
+			defer reset()
 
 			if test.helperInPath {
 				tmp.Write("docker-credential-gcloud", "")

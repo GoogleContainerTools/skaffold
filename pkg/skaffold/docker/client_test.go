@@ -48,15 +48,14 @@ func TestNewEnvClient(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			unsetEnvs := testutil.SetEnvs(t, test.envs)
+			reset := testutil.SetEnvs(t, test.envs)
+			defer reset()
 
 			env, _, err := newEnvAPIClient()
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, []string(nil), env)
-			unsetEnvs(t)
 		})
 	}
-
 }
 
 func TestNewMinikubeImageAPIClient(t *testing.T) {
