@@ -21,6 +21,8 @@ import "github.com/docker/distribution/reference"
 // ImageReference is a parsed image name.
 type ImageReference struct {
 	BaseName       string
+	Domain         string
+	Path           string
 	Tag            string
 	Digest         string
 	FullyQualified bool
@@ -34,8 +36,12 @@ func ParseReference(image string) (*ImageReference, error) {
 	}
 
 	baseName := image
+	var domain string
+	var path string
 	if n, ok := r.(reference.Named); ok {
 		baseName = n.Name()
+		domain = reference.Domain(n)
+		path = reference.Path(n)
 	}
 
 	fullyQualified := false
@@ -53,6 +59,8 @@ func ParseReference(image string) (*ImageReference, error) {
 
 	return &ImageReference{
 		BaseName:       baseName,
+		Domain:         domain,
+		Path:           path,
 		Tag:            tag,
 		Digest:         digest,
 		FullyQualified: fullyQualified,
