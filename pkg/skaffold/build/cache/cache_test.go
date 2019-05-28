@@ -19,7 +19,6 @@ package cache
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"reflect"
 	"testing"
 
@@ -141,7 +140,9 @@ func Test_NewCache(t *testing.T) {
 			restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
 			defer restore()
 
-			cacheFile := createTempCacheFile(t, test.cacheFileContents)
+			cacheFile, delete := createTempCacheFile(t, test.cacheFileContents)
+			defer delete()
+
 			if test.updateCacheFile {
 				test.expectedCache.cacheFile = cacheFile
 			}
@@ -180,18 +181,11 @@ func Test_NewCache(t *testing.T) {
 	}
 }
 
-func createTempCacheFile(t *testing.T, cacheFileContents interface{}) string {
-	temp, err := ioutil.TempFile("", "")
-	if err != nil {
-		t.Fatalf("error creating temp cache file: %v", err)
-	}
-	defer temp.Close()
+func createTempCacheFile(t *testing.T, cacheFileContents interface{}) (string, func()) {
 	contents, err := yaml.Marshal(cacheFileContents)
 	if err != nil {
 		t.Fatalf("error marshalling cache: %v", err)
 	}
-	if err := ioutil.WriteFile(temp.Name(), contents, 0755); err != nil {
-		t.Fatalf("error writing contents to %s: %v", temp.Name(), err)
-	}
-	return temp.Name()
+
+	return testutil.TempFile(t, "", contents)
 }
