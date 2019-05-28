@@ -26,11 +26,11 @@ import (
 )
 
 func TestGetDependenciesWithWorkspace(t *testing.T) {
-	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
+	reset := testutil.Override(t, &util.DefaultExecCommand, testutil.NewFakeCmd(t).WithRunOut(
 		"bazel query kind('source file', deps('target')) union buildfiles('target') --noimplicit_deps --order_output=no",
 		"@ignored\n//external/ignored\n\n//:dep1\n//:dep2\n",
-	)
+	))
+	defer reset()
 
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
@@ -44,11 +44,11 @@ func TestGetDependenciesWithWorkspace(t *testing.T) {
 }
 
 func TestGetDependenciesWithoutWorkspace(t *testing.T) {
-	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
+	reset := testutil.Override(t, &util.DefaultExecCommand, testutil.NewFakeCmd(t).WithRunOut(
 		"bazel query kind('source file', deps('target2')) union buildfiles('target2') --noimplicit_deps --order_output=no",
 		"@ignored\n//external/ignored\n\n//:dep3\n",
-	)
+	))
+	defer reset()
 
 	deps, err := GetDependencies(context.Background(), ".", &latest.BazelArtifact{
 		BuildTarget: "target2",

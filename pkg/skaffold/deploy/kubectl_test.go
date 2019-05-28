@@ -156,8 +156,8 @@ func TestKubectlDeploy(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = test.command
+			reset := testutil.Override(t, &util.DefaultExecCommand, test.command)
+			defer reset()
 
 			k := NewKubectlDeployer(&runcontext.RunContext{
 				WorkingDir: tmpDir.Root(),
@@ -231,8 +231,8 @@ func TestKubectlCleanup(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = test.command
+			reset := testutil.Override(t, &util.DefaultExecCommand, test.command)
+			defer reset()
 
 			k := NewKubectlDeployer(&runcontext.RunContext{
 				WorkingDir: tmpDir.Root(),
@@ -261,8 +261,7 @@ func TestKubectlRedeploy(t *testing.T) {
 	tmpDir.Write("deployment-web.yaml", deploymentWebYAML)
 	tmpDir.Write("deployment-app.yaml", deploymentAppYAML)
 
-	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-	util.DefaultExecCommand = testutil.NewFakeCmd(t).
+	reset := testutil.Override(t, &util.DefaultExecCommand, testutil.NewFakeCmd(t).
 		WithRunOut("kubectl version --client -ojson", kubectlVersion).
 		WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML).
 		WithRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", `apiVersion: v1
@@ -297,7 +296,9 @@ spec:
   containers:
   - image: leeroy-app:v2
     name: leeroy-app`).
-		WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML)
+		WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML),
+	)
+	defer reset()
 
 	cfg := &latest.KubectlDeploy{
 		Manifests: []string{tmpDir.Path("deployment-app.yaml"), "deployment-web.yaml"},

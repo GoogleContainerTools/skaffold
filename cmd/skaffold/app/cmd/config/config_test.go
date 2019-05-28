@@ -68,6 +68,9 @@ func TestReadConfig(t *testing.T) {
 
 func TestSetAndUnsetConfig(t *testing.T) {
 	dummyContext := "dummy_context"
+	reset := testutil.Override(t, &kubecontext, dummyContext)
+	defer reset()
+
 	var tests = []struct {
 		expectedSetCfg   *Config
 		expectedUnsetCfg *Config
@@ -205,21 +208,18 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			// create new config file
 			c, _ := yaml.Marshal(*emptyConfig)
 			cfg, teardown := testutil.TempFile(t, "config", c)
+			defer teardown()
 
-			defer func() {
-				// reset all config context for next test
-				teardown()
-				kubecontext = dummyContext
-				configFile = ""
-				global = false
-			}()
-
-			// setup config context
 			if test.kubecontext != "" {
-				kubecontext = test.kubecontext
+				reset := testutil.Override(t, &kubecontext, test.kubecontext)
+				defer reset()
 			}
-			configFile = cfg
-			global = test.global
+
+			resetConfigFile := testutil.Override(t, &configFile, cfg)
+			defer resetConfigFile()
+
+			resetGlobal := testutil.Override(t, &global, test.global)
+			defer resetGlobal()
 
 			// set specified value
 			err := setConfigValue(test.key, test.value)

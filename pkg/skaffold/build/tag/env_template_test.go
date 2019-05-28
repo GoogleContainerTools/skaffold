@@ -95,9 +95,9 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 				return test.env
 			}
 
-			defer func(w warnings.Warner) { warnings.Printf = w }(warnings.Printf)
 			fakeWarner := &warnings.Collect{}
-			warnings.Printf = fakeWarner.Warnf
+			reset := testutil.Override(t, &warnings.Printf, fakeWarner.Warnf)
+			defer reset()
 
 			c, err := NewEnvTemplateTagger(test.template)
 			testutil.CheckError(t, false, err)

@@ -115,8 +115,11 @@ DOCKER_API_VERSION=1.23`,
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut("minikube docker-env --shell none", test.env)
+			reset := testutil.Override(t, &util.DefaultExecCommand, testutil.NewFakeCmd(t).WithRunOut(
+				"minikube docker-env --shell none",
+				test.env,
+			))
+			defer reset()
 
 			env, _, err := newMinikubeAPIClient()
 

@@ -41,8 +41,8 @@ func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
 func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { return nil, nil }
 
 func TestLocalRun(t *testing.T) {
-	defer func(h docker.AuthConfigHelper) { docker.DefaultAuthHelper = h }(docker.DefaultAuthHelper)
-	docker.DefaultAuthHelper = testAuthHelper{}
+	reset := testutil.Override(t, &docker.DefaultAuthHelper, testAuthHelper{})
+	defer reset()
 
 	var tests = []struct {
 		description      string
@@ -218,9 +218,10 @@ func TestLocalRun(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			defer func(w warnings.Warner) { warnings.Printf = w }(warnings.Printf)
 			fakeWarner := &warnings.Collect{}
-			warnings.Printf = fakeWarner.Warnf
+			reset := testutil.Override(t, &warnings.Printf, fakeWarner.Warnf)
+			defer reset()
+
 			cfg := latest.BuildConfig{
 				BuildType: latest.BuildType{
 					LocalBuild: &latest.LocalBuild{},

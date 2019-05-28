@@ -349,8 +349,8 @@ func TestValidateNetworkMode(t *testing.T) {
 	}
 
 	// disable yamltags validation
-	defer func(v func(interface{}) error) { validateYamltags = v }(validateYamltags)
-	validateYamltags = func(interface{}) error { return nil }
+	reset := testutil.Override(t, &validateYamltags, func(interface{}) error { return nil })
+	defer reset()
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -459,8 +459,8 @@ func TestValidateSyncRules(t *testing.T) {
 	}
 
 	// disable yamltags validation
-	defer func(v func(interface{}) error) { validateYamltags = v }(validateYamltags)
-	validateYamltags = func(interface{}) error { return nil }
+	reset := testutil.Override(t, &validateYamltags, func(interface{}) error { return nil })
+	defer reset()
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

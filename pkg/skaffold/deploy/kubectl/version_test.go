@@ -62,12 +62,12 @@ func TestCheckVersion(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			defer func(w warnings.Warner) { warnings.Printf = w }(warnings.Printf)
 			fakeWarner := &warnings.Collect{}
-			warnings.Printf = fakeWarner.Warnf
+			reset := testutil.Override(t, &warnings.Printf, fakeWarner.Warnf)
+			defer reset()
 
-			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = test.command
+			resetCmd := testutil.Override(t, &util.DefaultExecCommand, test.command)
+			defer resetCmd()
 
 			cli := CLI{}
 			err := cli.CheckVersion(context.Background())
