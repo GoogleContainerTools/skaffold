@@ -387,12 +387,13 @@ func TestNewSyncItem(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			defer func(w func(string, map[string]bool) (string, error)) { WorkingDir = w }(WorkingDir)
-			WorkingDir = func(string, map[string]bool) (string, error) {
+			reset := testutil.Override(t, &WorkingDir, func(string, map[string]bool) (string, error) {
 				return test.workingDir, nil
-			}
+			})
+			defer reset()
 
 			actual, err := NewItem(test.artifact, test.evt, test.builds, map[string]bool{})
+
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
 		})
 	}
@@ -558,13 +559,14 @@ func TestPerform(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			cmdRecord := &TestCmdRecorder{err: test.cmdErr}
-			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = cmdRecord
 
-			defer func(c func() (kubernetes.Interface, error)) { pkgkubernetes.Client = c }(pkgkubernetes.GetClientset)
-			pkgkubernetes.Client = func() (kubernetes.Interface, error) {
+			reset := testutil.Override(t, &util.DefaultExecCommand, cmdRecord)
+			defer reset()
+
+			resetClient := testutil.Override(t, &pkgkubernetes.Client, func() (kubernetes.Interface, error) {
 				return fake.NewSimpleClientset(pod), test.clientErr
-			}
+			})
+			defer resetClient()
 
 			util.DefaultExecCommand = cmdRecord
 

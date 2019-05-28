@@ -67,8 +67,8 @@ func TestGetHashForArtifact(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			defer func(h func(string) (string, error)) { hashFunction = h }(hashFunction)
-			hashFunction = mockCacheHasher
+			reset := testutil.Override(t, &hashFunction, mockCacheHasher)
+			defer reset()
 
 			for _, d := range test.dependencies {
 				builder := &mockBuilder{dependencies: d}

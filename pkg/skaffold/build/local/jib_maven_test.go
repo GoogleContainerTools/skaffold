@@ -39,14 +39,18 @@ func TestMavenVerifyJibPackageGoal(t *testing.T) {
 		{"dockerBuild", "build\ndockerBuild\n", true},
 	}
 
-	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-	defer func(previous bool) { util.SkipWrapperCheck = previous }(util.SkipWrapperCheck)
-	util.SkipWrapperCheck = true
+	reset := testutil.Override(t, &util.SkipWrapperCheck, true)
+	defer reset()
 
 	for _, tt := range testCases {
-		util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut("mvn --quiet --projects module jib:_skaffold-package-goals", tt.mavenOutput)
+		reset := testutil.Override(t, &util.DefaultExecCommand, testutil.NewFakeCmd(t).WithRunOut(
+			"mvn --quiet --projects module jib:_skaffold-package-goals",
+			tt.mavenOutput,
+		))
+		defer reset()
 
 		err := verifyJibPackageGoal(context.Background(), tt.requiredGoal, ".", &latest.JibMavenArtifact{Module: "module"})
+
 		if hasError := err != nil; tt.shouldError != hasError {
 			t.Error("Unexpected return result")
 		}

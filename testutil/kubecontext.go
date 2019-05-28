@@ -36,6 +36,6 @@ func SetupFakeKubernetesContext(t *testing.T, config api.Config) func() {
 
 	return func() {
 		cleanup()
-		unsetEnvs(t)
+		unsetEnvs()
 	}
 }

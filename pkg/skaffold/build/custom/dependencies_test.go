@@ -60,12 +60,11 @@ func TestGetDependenciesDockerfile(t *testing.T) {
 }
 
 func TestGetDependenciesCommand(t *testing.T) {
-
-	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
+	reset := testutil.Override(t, &util.DefaultExecCommand, testutil.NewFakeCmd(t).WithRunOut(
 		"echo [\"file1\",\"file2\",\"file3\"]",
 		"[\"file1\",\"file2\",\"file3\"]",
-	)
+	))
+	defer reset()
 
 	customArtifact := &latest.CustomArtifact{
 		Dependencies: &latest.CustomDependencies{

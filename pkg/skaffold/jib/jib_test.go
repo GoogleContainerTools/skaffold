@@ -82,11 +82,11 @@ func TestGetDependencies(t *testing.T) {
 		watchedFiles = map[string]filesLists{}
 
 		t.Run("getDependencies", func(t *testing.T) {
-			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
+			reset := testutil.Override(t, &util.DefaultExecCommand, testutil.NewFakeCmd(t).WithRunOut(
 				"ignored",
 				test.stdout,
-			)
+			))
+			defer reset()
 
 			results, err := getDependencies(tmpDir.Root(), &exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()}, "test")
 

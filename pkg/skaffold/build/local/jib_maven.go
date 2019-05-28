@@ -19,7 +19,6 @@ package local
 import (
 	"context"
 	"io"
-	"os"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
@@ -96,7 +95,7 @@ func verifyJibPackageGoal(ctx context.Context, requiredGoal string, workspace st
 
 func (b *Builder) runMavenCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {
 	cmd := jib.MavenCommand.CreateCommand(ctx, workspace, args)
-	cmd.Env = append(os.Environ(), b.localDocker.ExtraEnv()...)
+	cmd.Env = append(util.OSEnviron(), b.localDocker.ExtraEnv()...)
 	cmd.Stdout = out
 	cmd.Stderr = out
 

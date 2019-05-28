@@ -456,10 +456,10 @@ func TestHelmDeploy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
-			event.InitializeState(tt.runContext)
-			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = tt.cmd
+			reset := testutil.Override(t, &util.DefaultExecCommand, tt.cmd)
+			defer reset()
 
+			event.InitializeState(tt.runContext)
 			err := NewHelmDeployer(tt.runContext).Deploy(context.Background(), ioutil.Discard, tt.builds, nil)
 
 			testutil.CheckError(t, tt.shouldErr, err)

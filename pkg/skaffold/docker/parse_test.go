@@ -513,9 +513,9 @@ func TestGetDependencies(t *testing.T) {
 			tmpDir, cleanup := testutil.NewTempDir(t)
 			defer cleanup()
 
-			defer func(f func(string, map[string]bool) (*v1.ConfigFile, error)) { RetrieveImage = f }(RetrieveImage)
 			imageFetcher := fakeImageFetcher{}
-			RetrieveImage = imageFetcher.fetch
+			reset := testutil.Override(t, &RetrieveImage, imageFetcher.fetch)
+			defer reset()
 
 			for _, file := range []string{"docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file", ".dot"} {
 				tmpDir.Write(file, "")

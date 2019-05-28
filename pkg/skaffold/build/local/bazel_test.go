@@ -26,11 +26,11 @@ import (
 )
 
 func TestBazelBin(t *testing.T) {
-	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
+	reset := testutil.Override(t, &util.DefaultExecCommand, testutil.NewFakeCmd(t).WithRunOut(
 		"bazel info bazel-bin --arg1 --arg2",
 		"/absolute/path/bin\n",
-	)
+	))
+	defer reset()
 
 	bazelBin, err := bazelBin(context.Background(), ".", &latest.BazelArtifact{
 		BuildArgs: []string{"--arg1", "--arg2"},

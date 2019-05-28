@@ -28,12 +28,12 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
 var (
 	// For testing
-	environ      = os.Environ
 	buildContext = retrieveBuildContext
 )
 
@@ -93,7 +93,7 @@ func (b *ArtifactBuilder) retrieveEnv(a *latest.Artifact, tag string) ([]string,
 		fmt.Sprintf("%s=%s", constants.BuildContext, buildContext),
 	}
 	envs = append(envs, b.additionalEnv...)
-	envs = append(envs, environ()...)
+	envs = append(envs, util.OSEnviron()...)
 	sort.Strings(envs)
 	return envs, nil
 }

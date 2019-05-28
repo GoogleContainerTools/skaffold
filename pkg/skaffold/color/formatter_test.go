@@ -38,33 +38,33 @@ func compareText(t *testing.T, expected, actual string, expectedN int, actualN i
 }
 
 func TestFprint(t *testing.T) {
-	defer func(f func(io.Writer) bool) { IsTerminal = f }(IsTerminal)
-	IsTerminal = func(io.Writer) bool { return true }
+	reset := testutil.Override(t, &IsTerminal, func(io.Writer) bool { return true })
+	defer reset()
 
 	var b bytes.Buffer
 	n, err := Green.Fprint(&b, "It's not easy being")
-	expected := "\033[32mIt's not easy being\033[0m"
-	compareText(t, expected, b.String(), 28, n, err)
+
+	compareText(t, "\033[32mIt's not easy being\033[0m", b.String(), 28, n, err)
 }
 
 func TestFprintln(t *testing.T) {
-	defer func(f func(io.Writer) bool) { IsTerminal = f }(IsTerminal)
-	IsTerminal = func(io.Writer) bool { return true }
+	reset := testutil.Override(t, &IsTerminal, func(io.Writer) bool { return true })
+	defer reset()
 
 	var b bytes.Buffer
 	n, err := Green.Fprintln(&b, "2", "less", "chars!")
-	expected := "\033[32m2 less chars!\033[0m\n"
-	compareText(t, expected, b.String(), 23, n, err)
+
+	compareText(t, "\033[32m2 less chars!\033[0m\n", b.String(), 23, n, err)
 }
 
 func TestFprintf(t *testing.T) {
-	defer func(f func(io.Writer) bool) { IsTerminal = f }(IsTerminal)
-	IsTerminal = func(io.Writer) bool { return true }
+	reset := testutil.Override(t, &IsTerminal, func(io.Writer) bool { return true })
+	defer reset()
 
 	var b bytes.Buffer
 	n, err := Green.Fprintf(&b, "It's been %d %s", 1, "week")
-	expected := "\033[32mIt's been 1 week\033[0m"
-	compareText(t, expected, b.String(), 25, n, err)
+
+	compareText(t, "\033[32mIt's been 1 week\033[0m", b.String(), 25, n, err)
 }
 
 func TestFprintNoTTY(t *testing.T) {

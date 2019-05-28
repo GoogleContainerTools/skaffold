@@ -24,7 +24,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 func TestDockerContext(t *testing.T) {
@@ -33,9 +32,9 @@ func TestDockerContext(t *testing.T) {
 			tmpDir, cleanup := testutil.NewTempDir(t)
 			defer cleanup()
 
-			defer func(f func(string, map[string]bool) (*v1.ConfigFile, error)) { RetrieveImage = f }(RetrieveImage)
 			imageFetcher := fakeImageFetcher{}
-			RetrieveImage = imageFetcher.fetch
+			reset := testutil.Override(t, &RetrieveImage, imageFetcher.fetch)
+			defer reset()
 
 			artifact := &latest.DockerArtifact{
 				DockerfilePath: "Dockerfile",
@@ -48,8 +47,8 @@ func TestDockerContext(t *testing.T) {
 			tmpDir.Write(dir+"/ignored.txt", "")
 			tmpDir.Write(dir+"/alsoignored.txt", "")
 
-			reset := testutil.Chdir(t, tmpDir.Root())
-			defer reset()
+			resetDir := testutil.Chdir(t, tmpDir.Root())
+			defer resetDir()
 
 			reader, writer := io.Pipe()
 			go func() {

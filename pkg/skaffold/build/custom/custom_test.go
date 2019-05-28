@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -65,18 +66,19 @@ func TestRetrieveEnv(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			defer func(e func() []string) { environ = e }(environ)
-			environ = func() []string {
+			resetEnv := testutil.Override(t, &util.OSEnviron, func() []string {
 				return test.environ
-			}
+			})
+			defer resetEnv()
 
-			defer func(bc func(string) (string, error)) { buildContext = bc }(buildContext)
-			buildContext = func(string) (string, error) {
+			reset := testutil.Override(t, &buildContext, func(string) (string, error) {
 				return test.buildContext, nil
-			}
+			})
+			defer reset()
 
 			artifactBuilder := NewArtifactBuilder(test.pushImages, test.additionalEnv)
 			actual, err := artifactBuilder.retrieveEnv(&latest.Artifact{}, test.tag)
+
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
 		})
 	}
@@ -117,16 +119,17 @@ func TestRetrieveCmd(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			builder := NewArtifactBuilder(false, nil)
+			resetEnv := testutil.Override(t, &util.OSEnviron, func() []string {
+				return nil
+			})
+			defer resetEnv()
 
-			defer func(e func() []string) { environ = e }(environ)
-			environ = func() []string { return nil }
-
-			defer func(bc func(string) (string, error)) { buildContext = bc }(buildContext)
-			buildContext = func(string) (string, error) {
+			reset := testutil.Override(t, &buildContext, func(string) (string, error) {
 				return test.artifact.Workspace, nil
-			}
+			})
+			defer reset()
 
+			builder := NewArtifactBuilder(false, nil)
 			cmd, err := builder.retrieveCmd(test.artifact, test.tag)
 			if err != nil {
 				t.Fatalf("error retrieving command: %v", err)

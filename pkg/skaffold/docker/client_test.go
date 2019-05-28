@@ -48,15 +48,14 @@ func TestNewEnvClient(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			unsetEnvs := testutil.SetEnvs(t, test.envs)
+			reset := testutil.SetEnvs(t, test.envs)
+			defer reset()
 
 			env, _, err := newEnvAPIClient()
 
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, []string(nil), env)
-			unsetEnvs(t)
 		})
 	}
-
 }
 
 func TestNewMinikubeImageAPIClient(t *testing.T) {
@@ -116,8 +115,11 @@ DOCKER_API_VERSION=1.23`,
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut("minikube docker-env --shell none", test.env)
+			reset := testutil.Override(t, &util.DefaultExecCommand, testutil.NewFakeCmd(t).WithRunOut(
+				"minikube docker-env --shell none",
+				test.env,
+			))
+			defer reset()
 
 			env, _, err := newMinikubeAPIClient()
 
