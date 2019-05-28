@@ -162,9 +162,9 @@ deploy:
 			writeAllFiles(testDir, test.filesWithContents)
 			potentialConfigs, dockerfiles, err := walk(rootDir, test.force, testValidDocker)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err,
-				testDir.Paths(test.expectedConfigs), potentialConfigs)
+				testDir.Paths(test.expectedConfigs...), potentialConfigs)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err,
-				testDir.Paths(test.expectedDockerfiles), dockerfiles)
+				testDir.Paths(test.expectedDockerfiles...), dockerfiles)
 		})
 	}
 }

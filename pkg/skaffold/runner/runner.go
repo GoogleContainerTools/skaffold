@@ -79,12 +79,9 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing build config")
 	}
-
 	artifactCache := cache.NewCache(builder, runCtx)
-	tester, err := getTester(runCtx)
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing test config")
-	}
+
+	tester := getTester(runCtx)
 
 	deployer, err := getDeployer(runCtx)
 	if err != nil {
@@ -145,7 +142,7 @@ func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
 	}
 }
 
-func getTester(runCtx *runcontext.RunContext) (test.Tester, error) {
+func getTester(runCtx *runcontext.RunContext) test.Tester {
 	return test.NewTester(runCtx)
 }
 
