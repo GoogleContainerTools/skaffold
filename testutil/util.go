@@ -29,6 +29,82 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+type T struct {
+	*testing.T
+	teardownActions []func()
+}
+
+func (t *T) NewFakeCmd() *FakeCmd {
+	return NewFakeCmd(t.T)
+}
+
+func (t *T) FakeRunOut(command string, output string) *FakeCmd {
+	return FakeRunOut(t.T, command, output)
+}
+
+func (t *T) Override(dest, tmp interface{}) {
+	teardown := Override(t.T, dest, tmp)
+	t.teardownActions = append(t.teardownActions, teardown)
+}
+
+func (t *T) CheckContains(expected, actual string) {
+	CheckContains(t.T, expected, actual)
+}
+
+func (t *T) CheckDeepEqual(expected, actual interface{}, opts ...cmp.Option) {
+	CheckDeepEqual(t.T, expected, actual, opts...)
+}
+
+func (t *T) CheckErrorAndDeepEqual(shouldErr bool, err error, expected, actual interface{}, opts ...cmp.Option) {
+	CheckErrorAndDeepEqual(t.T, shouldErr, err, expected, actual, opts...)
+}
+
+func (t *T) CheckError(shouldErr bool, err error) {
+	CheckError(t.T, shouldErr, err)
+}
+
+func (t *T) CheckErrorContains(message string, err error) {
+	CheckErrorContains(t.T, message, err)
+}
+
+func (t *T) TempFile(prefix string, content []byte) string {
+	name, teardown := TempFile(t.T, prefix, content)
+	t.teardownActions = append(t.teardownActions, teardown)
+	return name
+}
+
+func (t *T) NewTempDir() *TempDir {
+	tmpDir, teardown := NewTempDir(t.T)
+	t.teardownActions = append(t.teardownActions, teardown)
+	return tmpDir
+}
+
+func NewTest(t *testing.T) *T {
+	return &T{
+		T: t,
+	}
+}
+
+func Run(t *testing.T, name string, f func(t *T)) {
+	if name == "" {
+		name = t.Name()
+	}
+
+	t.Run(name, func(tt *testing.T) {
+		testWrapper := NewTest(tt)
+
+		defer func() {
+			for _, teardownAction := range testWrapper.teardownActions {
+				teardownAction()
+			}
+		}()
+
+		f(testWrapper)
+	})
+}
+
+////
+
 func CheckContains(t *testing.T, expected, actual string) {
 	t.Helper()
 	if !strings.Contains(actual, expected) {

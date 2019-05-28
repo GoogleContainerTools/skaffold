@@ -65,21 +65,14 @@ func TestRetrieveEnv(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			resetEnv := testutil.Override(t, &util.OSEnviron, func() []string {
-				return test.environ
-			})
-			defer resetEnv()
-
-			reset := testutil.Override(t, &buildContext, func(string) (string, error) {
-				return test.buildContext, nil
-			})
-			defer reset()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.OSEnviron, func() []string { return test.environ })
+			t.Override(&buildContext, func(string) (string, error) { return test.buildContext, nil })
 
 			artifactBuilder := NewArtifactBuilder(test.pushImages, test.additionalEnv)
 			actual, err := artifactBuilder.retrieveEnv(&latest.Artifact{}, test.tag)
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
+			t.CheckErrorAndDeepEqual(false, err, test.expected, actual)
 		})
 	}
 }
@@ -118,16 +111,9 @@ func TestRetrieveCmd(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			resetEnv := testutil.Override(t, &util.OSEnviron, func() []string {
-				return nil
-			})
-			defer resetEnv()
-
-			reset := testutil.Override(t, &buildContext, func(string) (string, error) {
-				return test.artifact.Workspace, nil
-			})
-			defer reset()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.OSEnviron, func() []string { return nil })
+			t.Override(&buildContext, func(string) (string, error) { return test.artifact.Workspace, nil })
 
 			builder := NewArtifactBuilder(false, nil)
 			cmd, err := builder.retrieveCmd(test.artifact, test.tag)
