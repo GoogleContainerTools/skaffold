@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -65,7 +66,7 @@ func TestRetrieveEnv(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			resetEnv := testutil.Override(t, &environ, func() []string {
+			resetEnv := testutil.Override(t, &util.OSEnviron, func() []string {
 				return test.environ
 			})
 			defer resetEnv()
@@ -118,7 +119,7 @@ func TestRetrieveCmd(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			resetEnv := testutil.Override(t, &environ, func() []string {
+			resetEnv := testutil.Override(t, &util.OSEnviron, func() []string {
 				return nil
 			})
 			defer resetEnv()

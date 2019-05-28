@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -202,7 +203,7 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	args = append(args, b.args...)
 
 	cmd := exec.CommandContext(ctx, "skaffold", args...)
-	cmd.Env = append(removeSkaffoldEnvVariables(os.Environ()), b.env...)
+	cmd.Env = append(removeSkaffoldEnvVariables(util.OSEnviron()), b.env...)
 	if b.stdin != nil {
 		cmd.Stdin = bytes.NewReader(b.stdin)
 	}
