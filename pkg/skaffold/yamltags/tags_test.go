@@ -160,11 +160,11 @@ func TestValidateStructOneOf(t *testing.T) {
 func TestValidateStructInvalid(t *testing.T) {
 	defer testutil.EnsureTestPanicked(t)
 
-	invalidYamlTags := struct {
+	invalidTags := struct {
 		A string `yamltags:"invalidTag"`
-	}{A: "whatever"}
+	}{}
 
-	_ = ValidateStruct(invalidYamlTags)
+	ValidateStruct(invalidTags)
 }
 
 func TestIsZeroValue(t *testing.T) {
