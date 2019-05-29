@@ -93,7 +93,7 @@ build:
   cluster:
     secrets: 
     - secretName: docker-secret
-      mountPath:  "/kaniko/.docker"
+      mountPath:  "/kaniko/.docker/"
 ```
 #### ECR:
 current scheme: None
@@ -127,7 +127,7 @@ specify __Not Yet Resolved__
 
 ## Implementation plan
 1. We will implement the new configurations first, so ECR can be supported
-2. Write skaffold fix for converting GCR/Docker secrets and give dprecation warnings for same
+2. Write skaffold fix for converting GCR/Docker secrets and give deprecation warnings for same
 3. Remove GCR/Docker specific config and code for configuring secrets
 
 ___
