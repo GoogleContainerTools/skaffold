@@ -80,6 +80,40 @@ deploy:
 	verifyUpgrade(t, yaml, expected)
 }
 
+func TestUpgrade_helm(t *testing.T) {
+	yaml := `apiVersion: skaffold/v1alpha1
+kind: Config
+build:
+  artifacts:
+  - imageName: gcr.io/k8s-skaffold/skaffold-example
+deploy:
+  helm:
+    releases:
+    - name: release
+      chartPath: path
+      valuesFilePath: valuesFile
+      values: {key:value}
+      namespace: ns
+      version: 1.0
+`
+	expected := `apiVersion: skaffold/v1alpha2
+kind: Config
+build:
+  artifacts:
+  - imageName: gcr.io/k8s-skaffold/skaffold-example
+deploy:
+  helm:
+    releases:
+    - name: release
+      chartPath: path
+      valuesFilePath: valuesFile
+      values: {key:value}
+      namespace: ns
+      version: 1.0
+`
+	verifyUpgrade(t, yaml, expected)
+}
+
 func verifyUpgrade(t *testing.T, input, output string) {
 	config := NewSkaffoldConfig()
 	err := yaml.UnmarshalStrict([]byte(input), config)
