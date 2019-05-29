@@ -18,6 +18,6 @@ export DOCKER_NAMESPACE=gcr.io/k8s-skaffold
 source $KOKORO_GFILE_DIR/common.sh
 
 pushd $KOKORO_ARTIFACTS_DIR/github/skaffold >/dev/null
-    make integration-in-docker
+    REMOTE_INTEGRATION=true make integration-in-docker
 popd
 
