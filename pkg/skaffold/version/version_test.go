@@ -54,3 +54,12 @@ func TestParseVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestUserAgent(t *testing.T) {
+	testutil.Override(t, &platform, "osx")
+	testutil.Override(t, &version, "1.0")
+
+	userAgent := UserAgent()
+
+	testutil.CheckDeepEqual(t, "skaffold/osx/1.0", userAgent)
+}
