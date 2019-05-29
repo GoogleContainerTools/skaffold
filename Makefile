@@ -148,19 +148,38 @@ release-build-in-docker:
 clean:
 	rm -rf $(BUILD_DIR)
 
-.PHONY: integration-in-docker
-integration-in-docker:
+.PHONY: kind-cluster
+kind-cluster:
+	kind get clusters | grep -q kind || kind create cluster
+
+.PHONY: skaffold-builder
+skaffold-builder:
 	-docker pull gcr.io/$(GCP_PROJECT)/skaffold-builder
 	docker build \
 		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		-f deploy/skaffold/Dockerfile \
 		--target integration \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-integration .
+
+.PHONY: integration-in-kind
+integration-in-kind: kind-cluster skaffold-builder
+	docker exec -it kind-control-plane cat /etc/kubernetes/admin.conf > /tmp/kind-config
+	echo '{}' > /tmp/docker-config
+	docker run --rm \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v /tmp/kind-config:/kind-config \
+		-v /tmp/docker-config:/root/.docker/config.json \
+		-e REMOTE_INTEGRATION=$(REMOTE_INTEGRATION) \
+		-e KUBECONFIG=/kind-config \
+		gcr.io/$(GCP_PROJECT)/skaffold-integration
+
+.PHONY: integration-in-docker
+integration-in-docker: skaffold-builder
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		-v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
-		-e REMOTE_INTEGRATION=true \
+		-e REMOTE_INTEGRATION=$(REMOTE_INTEGRATION) \
 		-e GCP_PROJECT=$(GCP_PROJECT) \
 		-e GKE_CLUSTER_NAME=$(GKE_CLUSTER_NAME) \
 		-e GKE_ZONE=$(GKE_ZONE) \

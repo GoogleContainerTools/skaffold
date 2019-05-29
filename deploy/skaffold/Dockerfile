@@ -96,6 +96,11 @@ COPY . .
 FROM builder as integration
 ARG VERSION
 
+ENV KIND_VERSION=v0.3.0
+RUN curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64 && \
+  chmod +x kind && \
+  mv kind /usr/local/bin/
+
 RUN make out/skaffold-linux-amd64 VERSION=$VERSION && mv out/skaffold-linux-amd64 /usr/bin/skaffold
 
 CMD ["make", "integration"]
