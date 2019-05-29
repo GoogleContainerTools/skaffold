@@ -18,6 +18,7 @@ package color
 
 import (
 	"bytes"
+	"io"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -64,6 +65,22 @@ func TestFprintf(t *testing.T) {
 	n, err := Green.Fprintf(&b, "It's been %d %s", 1, "week")
 
 	compareText(t, "\033[32mIt's been 1 week\033[0m", b.String(), 25, n, err)
+}
+
+type nopCloser struct{ io.Writer }
+
+func (n *nopCloser) Close() error { return nil }
+
+func TestFprintOnColoredWriter(t *testing.T) {
+	var b bytes.Buffer
+
+	coloredWriter := ColoredWriteCloser{
+		WriteCloser: &nopCloser{Writer: &b},
+	}
+
+	n, err := Green.Fprint(coloredWriter, "It's not easy being")
+
+	compareText(t, "\033[32mIt's not easy being\033[0m", b.String(), 28, n, err)
 }
 
 func TestFprintNoTTY(t *testing.T) {
