@@ -42,7 +42,13 @@ func TestGetDependencies(t *testing.T) {
 	var tests = []struct {
 		stdout       string
 		expectedDeps []string
+		shouldErr    bool
 	}{
+		{
+			stdout:       "",
+			expectedDeps: nil,
+			shouldErr:    true,
+		},
 		{
 			stdout:       "BEGIN JIB JSON\n{\"build\":[],\"inputs\":[],\"ignore\":[]}",
 			expectedDeps: nil,
@@ -90,7 +96,7 @@ func TestGetDependencies(t *testing.T) {
 
 			results, err := getDependencies(tmpDir.Root(), &exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()}, "test")
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedDeps, results)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedDeps, results)
 		})
 	}
 }
