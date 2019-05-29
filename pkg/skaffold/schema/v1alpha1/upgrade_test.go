@@ -152,6 +152,38 @@ build:
 	verifyUpgrade(t, yaml, expected)
 }
 
+func TestUpgrade_gcb(t *testing.T) {
+	yaml := `apiVersion: skaffold/v1alpha1
+kind: Config
+build:
+  googleCloudBuild:
+    projectId: PROJECT
+`
+	expected := `apiVersion: skaffold/v1alpha2
+kind: Config
+build:
+  googleCloudBuild:
+    projectId: PROJECT
+`
+	verifyUpgrade(t, yaml, expected)
+}
+
+func TestUpgrade_local(t *testing.T) {
+	yaml := `apiVersion: skaffold/v1alpha1
+kind: Config
+build:
+  local:
+    skipPush: true
+`
+	expected := `apiVersion: skaffold/v1alpha2
+kind: Config
+build:
+  local:
+    skipPush: true
+`
+	verifyUpgrade(t, yaml, expected)
+}
+
 func verifyUpgrade(t *testing.T, input, output string) {
 	config := NewSkaffoldConfig()
 	err := yaml.UnmarshalStrict([]byte(input), config)
