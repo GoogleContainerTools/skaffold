@@ -26,13 +26,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Client is for tests
@@ -62,6 +62,8 @@ func NewLogAggregator(out io.Writer, baseImageNames []string, podSelector PodSel
 		trackedContainers: trackedContainers{
 			ids: map[string]bool{},
 		},
+		// TODO: rename and check that we don't print logs that are too old
+		startTime: time.Now(),
 	}
 }
 
@@ -70,7 +72,6 @@ func NewLogAggregator(out io.Writer, baseImageNames []string, podSelector PodSel
 func (a *LogAggregator) Start(ctx context.Context) error {
 	cancelCtx, cancel := context.WithCancel(ctx)
 	a.cancel = cancel
-	a.startTime = time.Now()
 
 	aggregate := make(chan watch.Event)
 	stopWatchers, err := AggregatePodWatcher(a.namespaces, aggregate)
@@ -109,11 +110,6 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 						if container.State.Waiting != nil && container.State.Waiting.Message != "" {
 							color.Red.Fprintln(a.output, container.State.Waiting.Message)
 						}
-						continue
-					}
-
-					if container.State.Terminated != nil {
-						color.Purple.Fprintln(a.output, container.State.Terminated.Message)
 						continue
 					}
 
@@ -156,15 +152,35 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 	tr, tw := io.Pipe()
 	cmd := exec.CommandContext(ctx, "kubectl", "logs", sinceSeconds, "-f", pod.Name, "-c", container.Name, "--namespace", pod.Namespace)
 	cmd.Stdout = tw
-	go util.RunCmd(cmd)
+	go func() {
+		util.RunCmd(cmd)
+		tw.Close()
+	}()
 
-	color := a.colorPicker.Pick(pod)
+	podColor := a.colorPicker.Pick(pod)
 	prefix := prefix(pod, container)
 	go func() {
-		if err := a.streamRequest(ctx, color, prefix, tr); err != nil {
+		if err := a.streamRequest(ctx, podColor, prefix, tr); err != nil {
 			logrus.Errorf("streaming request %s", err)
 		}
-		a.trackedContainers.remove(container.ContainerID)
+
+		// TEMP: Get the updated state of the container
+		// We could instead wait here for the pod selector to send us the container status
+		// on a channel or something
+		client, _ := Client()
+		pod, _ := client.CoreV1().Pods(pod.Namespace).Get(pod.Name, meta_v1.GetOptions{})
+		for _, c := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
+			if c.Name != container.Name {
+				continue
+			}
+
+			if c.State.Terminated != nil {
+				podColor.Fprintf(a.output, "%s ", prefix)
+				fmt.Fprintf(a.output, "<%s> %s\n", c.State.Terminated.Reason, c.State.Terminated.Message)
+			}
+		}
+
+		// a.trackedContainers.remove(container.ContainerID)
 	}()
 }
 

@@ -25,11 +25,13 @@ import (
 
 // Run builds artifacts, runs tests on built artifacts, and then deploys them.
 func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
+	logger := r.newLogger(out, artifacts)
+	defer logger.Stop()
+
 	if err := r.buildTestDeploy(ctx, out, artifacts); err != nil {
 		return err
 	}
 	if r.runCtx.Opts.Tail {
-		logger := r.newLogger(out, artifacts)
 		return r.TailLogs(ctx, out, logger)
 	}
 	return nil
