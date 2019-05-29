@@ -19,6 +19,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/blang/semver"
 )
 
@@ -27,11 +28,8 @@ func TestMustParse(t *testing.T) {
 }
 
 func TestMustParse_panic(t *testing.T) {
-	defer func() {
-		if recover() == nil {
-			t.Errorf("Should have panicked")
-		}
-	}()
+	defer testutil.EnsureTestPanicked(t)
+
 	_ = MustParse("invalid version")
 }
 
