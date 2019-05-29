@@ -171,6 +171,16 @@ func TestValidateStructInvalid(t *testing.T) {
 	_ = ValidateStruct(invalidYamlTags)
 }
 
+func TestValidateStructInvalidSyntax(t *testing.T) {
+	invalidTags := struct {
+		A string `yamltags:"oneOf=set1=set2"`
+	}{}
+
+	err := ValidateStruct(invalidTags)
+
+	testutil.CheckError(t, true, err)
+}
+
 func TestIsZeroValue(t *testing.T) {
 	testutil.CheckDeepEqual(t, true, isZeroValue(reflect.ValueOf(0)))
 	testutil.CheckDeepEqual(t, true, isZeroValue(reflect.ValueOf(nil)))
