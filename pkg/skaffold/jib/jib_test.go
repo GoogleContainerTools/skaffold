@@ -88,7 +88,7 @@ func TestGetDependencies(t *testing.T) {
 		watchedFiles = map[string]filesLists{}
 
 		t.Run("getDependencies", func(t *testing.T) {
-			reset := testutil.Override(t, &util.DefaultExecCommand, testutil.NewFakeCmd(t).WithRunOut(
+			reset := testutil.Override(t, &util.DefaultExecCommand, testutil.FakeRunOut(t,
 				"ignored",
 				test.stdout,
 			))

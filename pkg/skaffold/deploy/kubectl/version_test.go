@@ -35,26 +35,26 @@ func TestCheckVersion(t *testing.T) {
 	}{
 		{
 			description: "1.12 is valid",
-			command:     testutil.NewFakeCmd(t).WithRunOut("kubectl version --client -ojson", `{"clientVersion":{"major":"1","minor":"12"}}`),
+			command:     testutil.FakeRunOut(t, "kubectl version --client -ojson", `{"clientVersion":{"major":"1","minor":"12"}}`),
 		},
 		{
 			description: "1.12+ is valid",
-			command:     testutil.NewFakeCmd(t).WithRunOut("kubectl version --client -ojson", `{"clientVersion":{"major":"1","minor":"12+"}}`),
+			command:     testutil.FakeRunOut(t, "kubectl version --client -ojson", `{"clientVersion":{"major":"1","minor":"12+"}}`),
 		},
 		{
 			description: "1.11 is too old",
-			command:     testutil.NewFakeCmd(t).WithRunOut("kubectl version --client -ojson", `{"clientVersion":{"major":"1","minor":"11"}}`),
+			command:     testutil.FakeRunOut(t, "kubectl version --client -ojson", `{"clientVersion":{"major":"1","minor":"11"}}`),
 			shouldErr:   true,
 		},
 		{
 			description: "invalid version",
-			command:     testutil.NewFakeCmd(t).WithRunOut("kubectl version --client -ojson", `not json`),
+			command:     testutil.FakeRunOut(t, "kubectl version --client -ojson", `not json`),
 			shouldErr:   true,
 			warnings:    []string{"unable to parse client version: invalid character 'o' in literal null (expecting 'u')"},
 		},
 		{
 			description: "cli not found",
-			command:     testutil.NewFakeCmd(t).WithRunOutErr("kubectl version --client -ojson", ``, errors.New("not found")),
+			command:     testutil.FakeRunOutErr(t, "kubectl version --client -ojson", ``, errors.New("not found")),
 			shouldErr:   true,
 			warnings:    []string{"unable to get kubectl client version: not found"},
 		},

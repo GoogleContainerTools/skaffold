@@ -72,21 +72,21 @@ func TestKubectlDeploy(t *testing.T) {
 		{
 			description: "no manifest",
 			cfg:         &latest.KubectlDeploy{},
-			command:     testutil.NewFakeCmd(t).WithRunOut("kubectl version --client -ojson", kubectlVersion),
+			command:     testutil.FakeRunOut(t, "kubectl version --client -ojson", kubectlVersion),
 		},
 		{
 			description: "missing manifest file",
 			cfg: &latest.KubectlDeploy{
 				Manifests: []string{"missing.yaml"},
 			},
-			command: testutil.NewFakeCmd(t).WithRunOut("kubectl version --client -ojson", kubectlVersion),
+			command: testutil.FakeRunOut(t, "kubectl version --client -ojson", kubectlVersion),
 		},
 		{
 			description: "ignore non-manifest",
 			cfg: &latest.KubectlDeploy{
 				Manifests: []string{"*.ignored"},
 			},
-			command: testutil.NewFakeCmd(t).WithRunOut("kubectl version --client -ojson", kubectlVersion),
+			command: testutil.FakeRunOut(t, "kubectl version --client -ojson", kubectlVersion),
 		},
 		{
 			description: "deploy success (forced)",

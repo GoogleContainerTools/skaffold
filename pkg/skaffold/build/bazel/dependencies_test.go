@@ -26,7 +26,7 @@ import (
 )
 
 func TestGetDependenciesWithWorkspace(t *testing.T) {
-	reset := testutil.Override(t, &util.DefaultExecCommand, testutil.NewFakeCmd(t).WithRunOut(
+	reset := testutil.Override(t, &util.DefaultExecCommand, testutil.FakeRunOut(t,
 		"bazel query kind('source file', deps('target')) union buildfiles('target') --noimplicit_deps --order_output=no",
 		"@ignored\n//external/ignored\n\n//:dep1\n//:dep2\n",
 	))
@@ -44,7 +44,7 @@ func TestGetDependenciesWithWorkspace(t *testing.T) {
 }
 
 func TestGetDependenciesWithoutWorkspace(t *testing.T) {
-	reset := testutil.Override(t, &util.DefaultExecCommand, testutil.NewFakeCmd(t).WithRunOut(
+	reset := testutil.Override(t, &util.DefaultExecCommand, testutil.FakeRunOut(t,
 		"bazel query kind('source file', deps('target2')) union buildfiles('target2') --noimplicit_deps --order_output=no",
 		"@ignored\n//external/ignored\n\n//:dep3\n",
 	))

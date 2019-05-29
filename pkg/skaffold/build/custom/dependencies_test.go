@@ -60,7 +60,7 @@ func TestGetDependenciesDockerfile(t *testing.T) {
 }
 
 func TestGetDependenciesCommand(t *testing.T) {
-	reset := testutil.Override(t, &util.DefaultExecCommand, testutil.NewFakeCmd(t).WithRunOut(
+	reset := testutil.Override(t, &util.DefaultExecCommand, testutil.FakeRunOut(t,
 		"echo [\"file1\",\"file2\",\"file3\"]",
 		"[\"file1\",\"file2\",\"file3\"]",
 	))
