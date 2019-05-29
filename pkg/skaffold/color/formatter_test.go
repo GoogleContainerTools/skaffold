@@ -18,7 +18,6 @@ package color
 
 import (
 	"bytes"
-	"io"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -38,7 +37,7 @@ func compareText(t *testing.T, expected, actual string, expectedN int, actualN i
 }
 
 func TestFprint(t *testing.T) {
-	reset := testutil.Override(t, &IsTerminal, func(io.Writer) bool { return true })
+	reset := ForceColors()
 	defer reset()
 
 	var b bytes.Buffer
@@ -48,7 +47,7 @@ func TestFprint(t *testing.T) {
 }
 
 func TestFprintln(t *testing.T) {
-	reset := testutil.Override(t, &IsTerminal, func(io.Writer) bool { return true })
+	reset := ForceColors()
 	defer reset()
 
 	var b bytes.Buffer
@@ -58,7 +57,7 @@ func TestFprintln(t *testing.T) {
 }
 
 func TestFprintf(t *testing.T) {
-	reset := testutil.Override(t, &IsTerminal, func(io.Writer) bool { return true })
+	reset := ForceColors()
 	defer reset()
 
 	var b bytes.Buffer

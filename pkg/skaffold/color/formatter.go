@@ -121,8 +121,11 @@ func isTerminal(w io.Writer) bool {
 	}
 }
 
-func ForceColors() {
+func ForceColors() func() {
 	IsTerminal = func(_ io.Writer) bool {
 		return true
+	}
+	return func() {
+		IsTerminal = isTerminal
 	}
 }
