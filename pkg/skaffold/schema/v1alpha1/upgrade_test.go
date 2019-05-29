@@ -114,6 +114,44 @@ deploy:
 	verifyUpgrade(t, yaml, expected)
 }
 
+func TestUpgrade_dockerfile(t *testing.T) {
+	yaml := `apiVersion: skaffold/v1alpha1
+kind: Config
+build:
+  artifacts:
+  - imageName: gcr.io/k8s-skaffold/skaffold-example
+    dockerfilePath: Dockerfile
+`
+	expected := `apiVersion: skaffold/v1alpha2
+kind: Config
+build:
+  artifacts:
+  - imageName: gcr.io/k8s-skaffold/skaffold-example
+    docker:
+      dockerfilePath: Dockerfile
+`
+	verifyUpgrade(t, yaml, expected)
+}
+
+func TestUpgrade_buildargs(t *testing.T) {
+	yaml := `apiVersion: skaffold/v1alpha1
+kind: Config
+build:
+  artifacts:
+  - imageName: gcr.io/k8s-skaffold/skaffold-example
+    buildArgs: {key:value}
+`
+	expected := `apiVersion: skaffold/v1alpha2
+kind: Config
+build:
+  artifacts:
+  - imageName: gcr.io/k8s-skaffold/skaffold-example
+    docker:
+      buildArgs: {key:value}
+`
+	verifyUpgrade(t, yaml, expected)
+}
+
 func verifyUpgrade(t *testing.T, input, output string) {
 	config := NewSkaffoldConfig()
 	err := yaml.UnmarshalStrict([]byte(input), config)
