@@ -92,4 +92,11 @@ service SkaffoldService {
       body: "*"
     };
   }
+
+  rpc Build(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/build"
+      body: "*"
+    };
+  }
 }

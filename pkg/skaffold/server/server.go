@@ -24,8 +24,8 @@ import (
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/proto"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/pkg/errors"
@@ -35,9 +35,11 @@ import (
 
 var once sync.Once
 
-type server struct{}
+type server struct {
+	trigger chan bool
+}
 
-func newGRPCServer(port int) (func() error, error) {
+func newGRPCServer(port int, trigger chan bool) (func() error, error) {
 	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, port))
 	if err != nil {
 		return func() error { return nil }, errors.Wrap(err, "creating listener")
@@ -45,7 +47,9 @@ func newGRPCServer(port int) (func() error, error) {
 	logrus.Infof("starting gRPC server on port %d", port)
 
 	s := grpc.NewServer()
-	proto.RegisterSkaffoldServiceServer(s, &server{})
+	proto.RegisterSkaffoldServiceServer(s, &server{
+		trigger: trigger,
+	})
 
 	go func() {
 		if err := s.Serve(l); err != nil {
@@ -84,12 +88,13 @@ func Initialize(runctx *runcontext.RunContext) (func() error, error) {
 	var callback func() error
 	var err error
 	once.Do(func() {
-		callback, err = initialize(runctx.Opts.RPCPort, runctx.Opts.RPCHTTPPort)
+		callback, err = initialize(runctx)
 	})
 	return callback, err
 }
 
-func initialize(originalRPCPort, originalHTTPPort int) (func() error, error) {
+func initialize(runctx *runcontext.RunContext) (func() error, error) {
+	originalRPCPort := runctx.Opts.RPCPort
 	if originalRPCPort == -1 {
 		return func() error { return nil }, nil
 	}
@@ -97,12 +102,14 @@ func initialize(originalRPCPort, originalHTTPPort int) (func() error, error) {
 	if rpcPort != originalRPCPort && originalRPCPort != constants.DefaultRPCPort {
 		logrus.Warnf("provided port %d already in use: using %d instead", originalRPCPort, rpcPort)
 	}
-	grpcCallback, err := newGRPCServer(rpcPort)
+	grpcCallback, err := newGRPCServer(rpcPort, runctx.Trigger)
 	if err != nil {
 		return grpcCallback, errors.Wrap(err, "starting gRPC server")
 	}
 	m := &sync.Map{}
 	m.Store(rpcPort, true)
+
+	originalHTTPPort := runctx.Opts.RPCHTTPPort
 	httpPort := util.GetAvailablePort(originalHTTPPort, m)
 	if httpPort != originalHTTPPort && originalHTTPPort != constants.DefaultRPCHTTPPort {
 		logrus.Warnf("provided port %d already in use: using %d instead", originalHTTPPort, httpPort)

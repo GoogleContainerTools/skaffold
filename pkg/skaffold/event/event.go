@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/proto"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/golang/protobuf/ptypes"
 )
