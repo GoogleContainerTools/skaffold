@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package event
+package server
 
 import (
 	"fmt"
@@ -32,7 +32,7 @@ var (
 
 func TestServerStartup(t *testing.T) {
 	// start up servers
-	newStatusServer(rpcAddr, httpAddr)
+	initialize(rpcAddr, httpAddr)
 
 	// create gRPC client and ensure we can connect
 	conn, err := grpc.Dial(fmt.Sprintf(":%d", rpcAddr), grpc.WithInsecure())

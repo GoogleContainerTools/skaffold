@@ -26,7 +26,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/golang/protobuf/ptypes"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -55,6 +54,22 @@ type listener struct {
 	callback func(*proto.LogEntry) error
 	errors   chan error
 	closed   bool
+}
+
+func GetState() (*proto.State, error) {
+	state := handler.getState()
+	return &state, nil
+}
+
+func ForEachEvent(callback func(*proto.LogEntry) error) error {
+	return handler.forEachEvent(callback)
+}
+
+func Handle(event *proto.Event) error {
+	if event != nil {
+		handler.handle(event)
+	}
+	return nil
 }
 
 func (ev *eventHandler) getState() proto.State {
@@ -131,25 +146,12 @@ func emptyState(build *latest.BuildConfig) proto.State {
 }
 
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
-// It returns a shutdown callback for tearing down the grpc server, which the runner is responsible for calling.
-// This function can only be called once.
-func InitializeState(runCtx *runcontext.RunContext) (func() error, error) {
-	var err error
-	serverShutdown := func() error { return nil }
+func InitializeState(runCtx *runcontext.RunContext) {
 	once.Do(func() {
 		handler = &eventHandler{
 			state: emptyState(&runCtx.Cfg.Build),
 		}
-
-		if runCtx.Opts.EnableRPC {
-			serverShutdown, err = newStatusServer(runCtx.Opts.RPCPort, runCtx.Opts.RPCHTTPPort)
-			if err != nil {
-				err = errors.Wrap(err, "creating status server")
-				return
-			}
-		}
 	})
-	return serverShutdown, err
 }
 
 // DeployInProgress notifies that a deployment has been started.

@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
@@ -101,10 +102,11 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		return nil, errors.Wrap(err, "creating watch trigger")
 	}
 
-	shutdown, err := event.InitializeState(runCtx)
+	shutdown, err := server.Initialize(runCtx)
 	if err != nil {
-		return nil, errors.Wrap(err, "initializing skaffold event handler")
+		return nil, errors.Wrap(err, "initializing skaffold server")
 	}
+	event.InitializeState(runCtx)
 
 	event.LogSkaffoldMetadata(version.Get())
 
