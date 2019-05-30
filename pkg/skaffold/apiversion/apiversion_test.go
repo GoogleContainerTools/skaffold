@@ -16,23 +16,20 @@ limitations under the License.
 package apiversion
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/blang/semver"
 )
 
 func TestMustParse(t *testing.T) {
-	_ = MustParse("skaffold/v1alpha4")
+	MustParse("skaffold/v1alpha4")
 }
 
 func TestMustParse_panic(t *testing.T) {
-	defer func() {
-		if recover() == nil {
-			t.Errorf("Should have panicked")
-		}
-	}()
-	_ = MustParse("invalid version")
+	defer testutil.EnsureTestPanicked(t)
+
+	MustParse("invalid version")
 }
 
 func TestParseVersion(t *testing.T) {
@@ -83,13 +80,8 @@ func TestParseVersion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := Parse(tt.args.v)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Parse() = %v, want %v", got, tt.want)
-			}
+
+			testutil.CheckErrorAndDeepEqual(t, tt.wantErr, err, tt.want, got)
 		})
 	}
 }

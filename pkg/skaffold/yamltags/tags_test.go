@@ -158,17 +158,13 @@ func TestValidateStructOneOf(t *testing.T) {
 }
 
 func TestValidateStructInvalid(t *testing.T) {
-	invalidYamlTags := struct {
+	defer testutil.EnsureTestPanicked(t)
+
+	invalidTags := struct {
 		A string `yamltags:"invalidTag"`
-	}{A: "whatever"}
+	}{}
 
-	defer func() {
-		if recover() == nil {
-			t.Errorf("should have panicked")
-		}
-	}()
-
-	_ = ValidateStruct(invalidYamlTags)
+	ValidateStruct(invalidTags)
 }
 
 func TestValidateStructInvalidSyntax(t *testing.T) {
