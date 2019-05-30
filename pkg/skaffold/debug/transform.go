@@ -233,7 +233,7 @@ func transformContainer(container *v1.Container, retrieveImageConfiguration conf
 			return transform.Apply(container, config, portAlloc), transform.RuntimeSupportImage(), nil
 		}
 	}
-	return nil, "", errors.Errorf("unable to determine runtime for [%s]", container.Name)
+	return nil, "", errors.Errorf("unable to determine runtime for %q", container.Name)
 }
 
 func encodeConfigurations(configurations map[string]map[string]interface{}) string {
