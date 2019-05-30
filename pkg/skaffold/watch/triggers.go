@@ -54,8 +54,7 @@ func NewTrigger(runctx *runcontext.RunContext) (Trigger, error) {
 		return &manualTrigger{}, nil
 	case "api":
 		return &apiTrigger{
-			Trigger:  runctx.Trigger,
-			Interval: time.Duration(runctx.Opts.WatchPollInterval) * time.Millisecond,
+			Trigger: runctx.Trigger,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported trigger: %s", runctx.Opts.Trigger)
@@ -187,8 +186,7 @@ func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 }
 
 type apiTrigger struct {
-	Trigger  chan bool
-	Interval time.Duration
+	Trigger chan bool
 }
 
 // Start receives triggers from gRPC/HTTP and triggers a rebuild.
