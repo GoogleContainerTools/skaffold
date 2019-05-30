@@ -29,6 +29,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+func TestJdwpTransformer_RuntimeSupportImage(t *testing.T) {
+	testutil.CheckDeepEqual(t, "", jdwpTransformer{}.RuntimeSupportImage())
+}
+
 func TestJdwpTransformer_IsApplicable(t *testing.T) {
 	tests := []struct {
 		description string

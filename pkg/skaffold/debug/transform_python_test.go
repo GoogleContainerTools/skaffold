@@ -128,6 +128,10 @@ func TestPythonTransformer_IsApplicable(t *testing.T) {
 	}
 }
 
+func TestJPythonTransformer_RuntimeSupportImage(t *testing.T) {
+	testutil.CheckDeepEqual(t, "python", pythonTransformer{}.RuntimeSupportImage())
+}
+
 func TestPythonTransformerApply(t *testing.T) {
 	tests := []struct {
 		description   string
@@ -234,8 +238,8 @@ func TestTransformManifestPython(t *testing.T) {
 						VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 					}},
 					InitContainers: []v1.Container{{
-						Name:         "install-debugging-support-files",
-						Image:        "gcr.io/gcp-dev-tools/duct-tape:latest",
+						Name:         "install-python-support",
+						Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
 						VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 					}},
 					Volumes: []v1.Volume{{
@@ -276,8 +280,8 @@ func TestTransformManifestPython(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-debugging-support-files",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape:latest",
+								Name:         "install-python-support",
+								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -318,8 +322,8 @@ func TestTransformManifestPython(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-debugging-support-files",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape:latest",
+								Name:         "install-python-support",
+								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -360,8 +364,8 @@ func TestTransformManifestPython(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-debugging-support-files",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape:latest",
+								Name:         "install-python-support",
+								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -400,8 +404,8 @@ func TestTransformManifestPython(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-debugging-support-files",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape:latest",
+								Name:         "install-python-support",
+								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -440,8 +444,8 @@ func TestTransformManifestPython(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-debugging-support-files",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape:latest",
+								Name:         "install-python-support",
+								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -482,8 +486,8 @@ func TestTransformManifestPython(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-debugging-support-files",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape:latest",
+								Name:         "install-python-support",
+								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -534,8 +538,8 @@ func TestTransformManifestPython(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-debugging-support-files",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape:latest",
+								Name:         "install-python-support",
+								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{

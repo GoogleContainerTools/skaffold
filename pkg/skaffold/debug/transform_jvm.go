@@ -63,8 +63,9 @@ type jdwpSpec struct {
 	server  bool
 }
 
-func (t jdwpTransformer) RequiresRuntimeSupport() bool {
-	return false
+func (t jdwpTransformer) RuntimeSupportImage() string {
+	// no additional support required
+	return ""
 }
 
 // Apply configures a container definition for JVM debugging.

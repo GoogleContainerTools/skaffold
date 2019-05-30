@@ -108,8 +108,8 @@ func (t testTransformer) IsApplicable(config imageConfiguration) bool {
 	return true
 }
 
-func (t testTransformer) RequiresRuntimeSupport() bool {
-	return false
+func (t testTransformer) RuntimeSupportImage() string {
+	return ""
 }
 
 func (t testTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {

@@ -62,8 +62,8 @@ func (t pythonTransformer) IsApplicable(config imageConfiguration) bool {
 	return false
 }
 
-func (t pythonTransformer) RequiresRuntimeSupport() bool {
-	return true
+func (t pythonTransformer) RuntimeSupportImage() string {
+	return "python"
 }
 
 // configureNodeJsDebugging configures a container definition for NodeJS Chrome V8 Inspector.

@@ -67,8 +67,8 @@ func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
 	return false
 }
 
-func (t nodeTransformer) RequiresRuntimeSupport() bool {
-	return false
+func (t nodeTransformer) RuntimeSupportImage() string {
+	return ""
 }
 
 // Apply configures a container definition for NodeJS Chrome V8 Inspector.

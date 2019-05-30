@@ -52,8 +52,8 @@ type containerTransformer interface {
 	// IsApplicable determines if this container is suitable to be transformed.
 	IsApplicable(config imageConfiguration) bool
 
-	// RequiresRuntimeSupport returns true if this transformer requires the duct-tape helpers
-	RequiresRuntimeSupport() bool
+	// RuntimeSupportImage returns the associated duct-tape helper image required or empty string
+	RuntimeSupportImage() string
 
 	// Apply configures a container definition for debugging, returning a simple map describing the debug configuration details or `nil` if it could not be done
 	Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{}
@@ -125,19 +125,21 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 	}
 	// containers are required to have unique name within a pod
 	configurations := make(map[string]map[string]interface{})
+	requiredSupportImages := make(map[string]string)
 	var supportFilesRequired []*v1.Container
 	for i := range podSpec.Containers {
 		container := &podSpec.Containers[i]
 		// we only reconfigure build artifacts
-		if configuration, requiresSupportFiles, err := transformContainer(container, retrieveImageConfiguration, portAlloc); err == nil {
+		if configuration, requiredSupportImage, err := transformContainer(container, retrieveImageConfiguration, portAlloc); err == nil {
 			configurations[container.Name] = configuration
-			if requiresSupportFiles {
-				logrus.Infof("%s requires debugging support files", container.Name)
+			if len(requiredSupportImage) > 0 {
+				logrus.Infof("%q requires debugging support image %s", container.Name, requiredSupportImage)
 				supportFilesRequired = append(supportFilesRequired, container)
+				requiredSupportImages[requiredSupportImage] = requiredSupportImage
 			}
 			// todo: add this artifact to the watch list?
 		} else {
-			logrus.Infof("Image [%s] not configured for debugging: %v", container.Image, err)
+			logrus.Infof("Image %q not configured for debugging: %v", container.Name, err)
 		}
 	}
 	if len(supportFilesRequired) > 0 {
@@ -148,15 +150,15 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		for _, container := range supportFilesRequired {
 			container.VolumeMounts = append(container.VolumeMounts, supportVolumeMount)
 		}
-		// TODO create separate separate images for each runtime as some runtimes are rather heavyweight
-		// https://github.com/GoogleContainerTools/container-debug-support/issues/24
 		// TODO make this pluggable for airgapped clusters? or is making container `imagePullPolicy:IfNotPresent` sufficient?
-		supportFilesInitContainer := v1.Container{
-			Name:            "install-debugging-support-files",
-			Image:           "gcr.io/gcp-dev-tools/duct-tape:latest",
-			VolumeMounts:    []v1.VolumeMount{supportVolumeMount},
+		for imageId, _ := range requiredSupportImages {
+			supportFilesInitContainer := v1.Container{
+				Name:            fmt.Sprintf("install-%s-support", imageId),
+				Image:           fmt.Sprintf("gcr.io/gcp-dev-tools/duct-tape/%s", imageId),
+				VolumeMounts:    []v1.VolumeMount{supportVolumeMount},
+			}
+			podSpec.InitContainers = append(podSpec.InitContainers, supportFilesInitContainer)
 		}
-		podSpec.InitContainers = append(podSpec.InitContainers, supportFilesInitContainer)
 	}
 
 	if len(configurations) > 0 {
@@ -204,12 +206,13 @@ func isPortAvailable(podSpec *v1.PodSpec, port int32) bool {
 }
 
 // transformContainer rewrites the container definition to enable debugging.
-// Returns a debugging configuration description or an error if the rewrite was unsuccessful.
-func transformContainer(container *v1.Container, retrieveImageConfiguration configurationRetriever, portAlloc portAllocator) (map[string]interface{}, bool, error) {
+// Returns a debugging configuration description with associated language runtime support
+// container image, or an error if the rewrite was unsuccessful.
+func transformContainer(container *v1.Container, retrieveImageConfiguration configurationRetriever, portAlloc portAllocator) (map[string]interface{}, string, error) {
 	var config imageConfiguration
 	config, err := retrieveImageConfiguration(container.Image)
 	if err != nil {
-		return nil, false, err
+		return nil, "", err
 	}
 
 	// update image configuration values with those set in the k8s manifest
@@ -227,10 +230,10 @@ func transformContainer(container *v1.Container, retrieveImageConfiguration conf
 
 	for _, transform := range containerTransforms {
 		if transform.IsApplicable(config) {
-			return transform.Apply(container, config, portAlloc), transform.RequiresRuntimeSupport(), nil
+			return transform.Apply(container, config, portAlloc), transform.RuntimeSupportImage(), nil
 		}
 	}
-	return nil, false, errors.Errorf("unable to determine runtime for [%s]", container.Name)
+	return nil, "", errors.Errorf("unable to determine runtime for [%s]", container.Name)
 }
 
 func encodeConfigurations(configurations map[string]map[string]interface{}) string {
