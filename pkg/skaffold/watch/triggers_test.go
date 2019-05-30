@@ -60,6 +60,13 @@ func TestNewTrigger(t *testing.T) {
 			},
 		},
 		{
+			description: "api trigger with interval",
+			opts:        &config.SkaffoldOptions{Trigger: "api", WatchPollInterval: 1},
+			expected: &apiTrigger{
+				Interval: time.Duration(1) * time.Second,
+			},
+		},
+		{
 			description: "unknown trigger",
 			opts:        &config.SkaffoldOptions{Trigger: "unknown"},
 			shouldErr:   true,
