@@ -73,7 +73,7 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 
 	// try to find existing `--inspect` command
 	spec := retrievePtvsdSpec(config)
-	// todo: find existing containerPort "ptvsd" and use port. But what if it conflicts with command-line spec?
+	// todo: find existing containerPort "dap" (debug-adapter protocol) and use port. But what if it conflicts with command-line spec?
 
 	if spec == nil {
 		spec = &ptvsdSpec{host: "localhost", port: portAlloc(defaultPtvsdPort)}
@@ -91,7 +91,7 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 	}
 
 	ptvsdPort := v1.ContainerPort{
-		Name:          "ptvsd",
+		Name:          "dap", // debug adapter protocol
 		ContainerPort: spec.port,
 	}
 	container.Ports = append(container.Ports, ptvsdPort)
@@ -104,7 +104,7 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 
 	return map[string]interface{}{
 		"runtime": "python",
-		"ptvsd":   spec.port,
+		"dap":     spec.port,
 	}
 }
 
