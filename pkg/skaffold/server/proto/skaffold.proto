@@ -73,6 +73,10 @@ message LogEntry {
   string entry = 3;
 }
 
+message ApiResponse {
+  string response = 1;
+}
+
 service SkaffoldService {
   rpc GetState(google.protobuf.Empty) returns (State) {
     option (google.api.http) = {
@@ -93,9 +97,16 @@ service SkaffoldService {
     };
   }
 
-  rpc Build(google.protobuf.Empty) returns (google.protobuf.Empty) {
+  rpc Build(google.protobuf.Empty) returns (ApiResponse) {
     option (google.api.http) = {
       post: "/v1/build"
+      body: "*"
+    };
+  }
+
+  rpc Deploy(google.protobuf.Empty) returns (ApiResponse) {
+    option (google.api.http) = {
+      post: "/v1/deploy"
       body: "*"
     };
   }

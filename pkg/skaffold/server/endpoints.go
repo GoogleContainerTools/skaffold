@@ -19,9 +19,13 @@ package server
 import (
 	"context"
 
+	"google.golang.org/grpc/codes"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/proto"
 	"github.com/golang/protobuf/ptypes/empty"
+
+	"google.golang.org/grpc/status"
 )
 
 func (s *server) GetState(context.Context, *empty.Empty) (*proto.State, error) {
@@ -37,7 +41,32 @@ func (s *server) Handle(ctx context.Context, e *proto.Event) (*empty.Empty, erro
 	return &empty.Empty{}, nil
 }
 
-func (s *server) Build(context.Context, *empty.Empty) (*empty.Empty, error) {
-	s.trigger <- true
-	return &empty.Empty{}, nil
+func (s *server) Build(context.Context, *empty.Empty) (*proto.ApiResponse, error) {
+	if s.buildTrigger == nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "manual build trigger not enabled")
+	}
+	if len(s.buildTrigger) > 0 {
+		return &proto.ApiResponse{
+			Response: "build trigger already queued",
+		}, nil
+	}
+	s.buildTrigger <- true
+	return &proto.ApiResponse{
+		Response: "build trigger received",
+	}, nil
+}
+
+func (s *server) Deploy(context.Context, *empty.Empty) (*proto.ApiResponse, error) {
+	if s.deployTrigger == nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "manual deploy trigger is not enabled")
+	}
+	if len(s.deployTrigger) > 0 {
+		return &proto.ApiResponse{
+			Response: "deploy trigger already queued",
+		}, nil
+	}
+	s.deployTrigger <- true
+	return &proto.ApiResponse{
+		Response: "deploy trigger received",
+	}, nil
 }

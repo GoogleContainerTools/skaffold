@@ -38,10 +38,11 @@ type SkaffoldOptions struct {
 	ForceDev           bool
 	NoPrune            bool
 	NoPruneChildren    bool
+	ManualDeploy       bool
 	CustomTag          string
 	Namespace          string
 	CacheFile          string
-	Trigger            string
+	BuildTrigger       string
 	WatchPollInterval  int
 	DefaultRepo        string
 	CustomLabels       []string

@@ -24,6 +24,7 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	runnerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	watchutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -32,7 +33,12 @@ type RunContext struct {
 	Opts *config.SkaffoldOptions
 	Cfg  *latest.Pipeline
 
-	Trigger chan bool
+	// TODO(nkubala): these channels can be sent to by the client at anytime,
+	// meaning if a trigger is sent by the user it will "stick" in the channel
+	// and cannot be cancelled by the user. we should only open these channels
+	// for writing when skaffold is explicitly waiting for a user signal.
+	BuildTrigger  chan bool
+	DeployTrigger chan bool
 
 	DefaultRepo        string
 	KubeContext        string
@@ -76,6 +82,15 @@ func GetRunContext(opts *config.SkaffoldOptions, cfg *latest.Pipeline) (*RunCont
 		insecureRegistries[r] = true
 	}
 
+	var buildTrigger, deployTrigger chan bool
+
+	if opts.ManualDeploy {
+		deployTrigger = make(chan bool, 1)
+	}
+	if watchutil.IsApiTrigger(opts.BuildTrigger) {
+		buildTrigger = make(chan bool, 1)
+	}
+
 	return &RunContext{
 		Opts:               opts,
 		Cfg:                cfg,
@@ -84,6 +99,7 @@ func GetRunContext(opts *config.SkaffoldOptions, cfg *latest.Pipeline) (*RunCont
 		KubeContext:        kubeContext,
 		Namespaces:         namespaces,
 		InsecureRegistries: insecureRegistries,
-		Trigger:            make(chan bool),
+		BuildTrigger:       buildTrigger,
+		DeployTrigger:      deployTrigger,
 	}, nil
 }

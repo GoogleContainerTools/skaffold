@@ -36,10 +36,11 @@ import (
 var once sync.Once
 
 type server struct {
-	trigger chan bool
+	buildTrigger  chan bool
+	deployTrigger chan bool
 }
 
-func newGRPCServer(port int, trigger chan bool) (func() error, error) {
+func newGRPCServer(port int, buildTrigger, deployTrigger chan bool) (func() error, error) {
 	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, port))
 	if err != nil {
 		return func() error { return nil }, errors.Wrap(err, "creating listener")
@@ -48,7 +49,8 @@ func newGRPCServer(port int, trigger chan bool) (func() error, error) {
 
 	s := grpc.NewServer()
 	proto.RegisterSkaffoldServiceServer(s, &server{
-		trigger: trigger,
+		buildTrigger:  buildTrigger,
+		deployTrigger: deployTrigger,
 	})
 
 	go func() {
@@ -102,7 +104,7 @@ func initialize(runctx *runcontext.RunContext) (func() error, error) {
 	if rpcPort != originalRPCPort && originalRPCPort != constants.DefaultRPCPort {
 		logrus.Warnf("provided port %d already in use: using %d instead", originalRPCPort, rpcPort)
 	}
-	grpcCallback, err := newGRPCServer(rpcPort, runctx.Trigger)
+	grpcCallback, err := newGRPCServer(rpcPort, runctx.BuildTrigger, runctx.DeployTrigger)
 	if err != nil {
 		return grpcCallback, errors.Wrap(err, "starting gRPC server")
 	}

@@ -18,7 +18,9 @@ package runner
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"os"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -78,6 +80,13 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 				return nil
 			}
 		case changed.needsRedeploy:
+			if r.runCtx.Opts.ManualDeploy {
+				fmt.Fprintf(os.Stdout, "!!!!!\n")
+				fmt.Fprintf(os.Stdout, "waiting for build trigger\n")
+				<-r.runCtx.DeployTrigger
+			} else {
+				fmt.Fprintf(os.Stdout, "!!!!! not in manual mode....deploying?\n")
+			}
 			if err := r.Deploy(ctx, out, r.builds); err != nil {
 				logrus.Warnln("Skipping deploy due to error:", err)
 				return nil

@@ -28,6 +28,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch/util"
 	"github.com/rjeczalik/notify"
 	"github.com/sirupsen/logrus"
 )
@@ -41,23 +42,23 @@ type Trigger interface {
 
 // NewTrigger creates a new trigger.
 func NewTrigger(runctx *runcontext.RunContext) (Trigger, error) {
-	switch strings.ToLower(runctx.Opts.Trigger) {
-	case "polling":
+	switch strings.ToLower(runctx.Opts.BuildTrigger) {
+	case util.Polling:
 		return &pollTrigger{
 			Interval: time.Duration(runctx.Opts.WatchPollInterval) * time.Millisecond,
 		}, nil
-	case "notify":
+	case util.Notify:
 		return &fsNotifyTrigger{
 			Interval: time.Duration(runctx.Opts.WatchPollInterval) * time.Millisecond,
 		}, nil
-	case "manual":
+	case util.Manual:
 		return &manualTrigger{}, nil
-	case "api":
+	case util.Api:
 		return &apiTrigger{
-			Trigger: runctx.Trigger,
+			Trigger: runctx.BuildTrigger,
 		}, nil
 	default:
-		return nil, fmt.Errorf("unsupported trigger: %s", runctx.Opts.Trigger)
+		return nil, fmt.Errorf("unsupported trigger: %s", runctx.Opts.BuildTrigger)
 	}
 }
 
