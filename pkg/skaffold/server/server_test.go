@@ -40,7 +40,6 @@ func TestServerStartup(t *testing.T) {
 			RPCHTTPPort: httpAddr,
 		},
 	}
-	// initialize(rpcAddr, httpAddr)
 	initialize(runCtx)
 
 	// create gRPC client and ensure we can connect

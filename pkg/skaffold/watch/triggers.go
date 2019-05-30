@@ -196,18 +196,13 @@ func (t *apiTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	trigger := make(chan bool)
 
 	go func() {
-		timer := time.NewTimer(1<<63 - 1) // Forever
-
 		for {
 			select {
 			case <-t.Trigger:
 				logrus.Debugln("build request received")
-
-				timer.Reset(t.Interval)
-			case <-timer.C:
 				trigger <- true
 			case <-ctx.Done():
-				timer.Stop()
+				break
 			}
 		}
 	}()
