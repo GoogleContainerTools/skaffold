@@ -42,7 +42,13 @@ func TestGetDependencies(t *testing.T) {
 	var tests = []struct {
 		stdout       string
 		expectedDeps []string
+		shouldErr    bool
 	}{
+		{
+			stdout:       "",
+			expectedDeps: nil,
+			shouldErr:    true,
+		},
 		{
 			stdout:       "BEGIN JIB JSON\n{\"build\":[],\"inputs\":[],\"ignore\":[]}",
 			expectedDeps: nil,
@@ -82,7 +88,7 @@ func TestGetDependencies(t *testing.T) {
 		watchedFiles = map[string]filesLists{}
 
 		t.Run("getDependencies", func(t *testing.T) {
-			reset := testutil.Override(t, &util.DefaultExecCommand, testutil.NewFakeCmd(t).WithRunOut(
+			reset := testutil.Override(t, &util.DefaultExecCommand, testutil.FakeRunOut(t,
 				"ignored",
 				test.stdout,
 			))
@@ -90,7 +96,7 @@ func TestGetDependencies(t *testing.T) {
 
 			results, err := getDependencies(tmpDir.Root(), &exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()}, "test")
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedDeps, results)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedDeps, results)
 		})
 	}
 }

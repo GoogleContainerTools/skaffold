@@ -86,7 +86,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			reset := testutil.Override(t, &util.DefaultExecCommand, testutil.NewFakeCmd(t).WithRunOutErr(
+			reset := testutil.Override(t, &util.DefaultExecCommand, testutil.FakeRunOutErr(t,
 				strings.Join(getCommandGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{Project: "gradle-test"}).Args, " "),
 				test.stdout,
 				test.err,

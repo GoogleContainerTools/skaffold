@@ -49,6 +49,11 @@ func TestExtractProjectID(t *testing.T) {
 			imageName:   "gcr.io",
 			shouldErr:   true,
 		},
+		{
+			description: "invalid reference",
+			imageName:   "",
+			shouldErr:   true,
+		},
 	}
 
 	for _, test := range tests {

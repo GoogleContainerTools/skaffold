@@ -17,10 +17,9 @@ limitations under the License.
 package v1alpha4
 
 import (
-	"encoding/json"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha5"
+	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
@@ -34,27 +33,27 @@ import (
 func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
-	if err := convert(config.Deploy, &newDeploy); err != nil {
+	if err := pkgutil.CloneThroughJSON(config.Deploy, &newDeploy); err != nil {
 		return nil, errors.Wrap(err, "converting deploy config")
 	}
 
 	// convert Profiles (should be the same)
 	var newProfiles []next.Profile
 	if config.Profiles != nil {
-		if err := convert(config.Profiles, &newProfiles); err != nil {
+		if err := pkgutil.CloneThroughJSON(config.Profiles, &newProfiles); err != nil {
 			return nil, errors.Wrap(err, "converting new profile")
 		}
 	}
 
 	// convert Build (should be the same)
 	var newBuild next.BuildConfig
-	if err := convert(config.Build, &newBuild); err != nil {
+	if err := pkgutil.CloneThroughJSON(config.Build, &newBuild); err != nil {
 		return nil, errors.Wrap(err, "converting new build")
 	}
 
 	// convert Test (should be the same)
 	var newTest next.TestConfig
-	if err := convert(config.Test, &newTest); err != nil {
+	if err := pkgutil.CloneThroughJSON(config.Test, &newTest); err != nil {
 		return nil, errors.Wrap(err, "converting new test")
 	}
 
@@ -66,15 +65,4 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 		Deploy:     newDeploy,
 		Profiles:   newProfiles,
 	}, nil
-}
-
-func convert(old interface{}, new interface{}) error {
-	o, err := json.Marshal(old)
-	if err != nil {
-		return errors.Wrap(err, "marshalling old")
-	}
-	if err := json.Unmarshal(o, &new); err != nil {
-		return errors.Wrap(err, "unmarshalling new")
-	}
-	return nil
 }

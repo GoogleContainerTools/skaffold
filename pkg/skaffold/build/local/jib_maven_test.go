@@ -43,7 +43,7 @@ func TestMavenVerifyJibPackageGoal(t *testing.T) {
 	defer reset()
 
 	for _, tt := range testCases {
-		reset := testutil.Override(t, &util.DefaultExecCommand, testutil.NewFakeCmd(t).WithRunOut(
+		reset := testutil.Override(t, &util.DefaultExecCommand, testutil.FakeRunOut(t,
 			"mvn --quiet --projects module jib:_skaffold-package-goals",
 			tt.mavenOutput,
 		))
