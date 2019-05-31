@@ -133,7 +133,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		if configuration, requiredSupportImage, err := transformContainer(container, retrieveImageConfiguration, portAlloc); err == nil {
 			configurations[container.Name] = configuration
 			if len(requiredSupportImage) > 0 {
-				logrus.Infof("%q requires debugging support image %s", container.Name, requiredSupportImage)
+				logrus.Infof("%q requires debugging support image %q", container.Name, requiredSupportImage)
 				supportFilesRequired = append(supportFilesRequired, container)
 				requiredSupportImages[requiredSupportImage] = requiredSupportImage
 			}
@@ -151,10 +151,10 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 			container.VolumeMounts = append(container.VolumeMounts, supportVolumeMount)
 		}
 		// TODO make this pluggable for airgapped clusters? or is making container `imagePullPolicy:IfNotPresent` sufficient?
-		for imageID, _ := range requiredSupportImages {
+		for imageID := range requiredSupportImages {
 			supportFilesInitContainer := v1.Container{
-				Name:         fmt.Sprintf("install-%s-support", imageId),
-				Image:        fmt.Sprintf("gcr.io/gcp-dev-tools/duct-tape/%s", imageId),
+				Name:         fmt.Sprintf("install-%s-support", imageID),
+				Image:        fmt.Sprintf("gcr.io/gcp-dev-tools/duct-tape/%s", imageID),
 				VolumeMounts: []v1.VolumeMount{supportVolumeMount},
 			}
 			podSpec.InitContainers = append(podSpec.InitContainers, supportFilesInitContainer)
