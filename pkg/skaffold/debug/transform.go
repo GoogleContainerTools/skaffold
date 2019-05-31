@@ -151,11 +151,11 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 			container.VolumeMounts = append(container.VolumeMounts, supportVolumeMount)
 		}
 		// TODO make this pluggable for airgapped clusters? or is making container `imagePullPolicy:IfNotPresent` sufficient?
-		for imageId, _ := range requiredSupportImages {
+		for imageID, _ := range requiredSupportImages {
 			supportFilesInitContainer := v1.Container{
-				Name:            fmt.Sprintf("install-%s-support", imageId),
-				Image:           fmt.Sprintf("gcr.io/gcp-dev-tools/duct-tape/%s", imageId),
-				VolumeMounts:    []v1.VolumeMount{supportVolumeMount},
+				Name:         fmt.Sprintf("install-%s-support", imageId),
+				Image:        fmt.Sprintf("gcr.io/gcp-dev-tools/duct-tape/%s", imageId),
+				VolumeMounts: []v1.VolumeMount{supportVolumeMount},
 			}
 			podSpec.InitContainers = append(podSpec.InitContainers, supportFilesInitContainer)
 		}
