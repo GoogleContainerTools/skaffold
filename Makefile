@@ -50,13 +50,17 @@ GO_LDFLAGS += -X $(VERSION_PACKAGE).gitTreeState=$(if $(shell git status --porce
 GO_LDFLAGS +="
 
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
-GO_BUILD_TAGS := "kqueue"
 
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
 
 $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
-	GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -tags $(GO_BUILD_TAGS) -o $@ $(BUILD_PACKAGE)
+	if [ "$(GOOS)" = "$*" ]; then \
+		GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=1 go build -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE);\
+	else \
+		docker build --build-arg PROJECT=$(REPOPATH) --build-arg TARGETS=$*/$(GOARCH) --build-arg FLAG_LDFLAGS=$(GO_LDFLAGS) -f deploy/cross/Dockerfile -t skaffold/cross .;\
+		docker run --rm --entrypoint sh skaffold/cross -c "cat /build/skaffold*" > $@;\
+	fi
 
 %.sha256: %
 	shasum -a 256 $< > $@
@@ -82,7 +86,7 @@ test: $(BUILD_DIR)
 
 .PHONY: install
 install: $(GO_FILES) $(BUILD_DIR)
-	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go install -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -tags $(GO_BUILD_TAGS) $(BUILD_PACKAGE)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go install -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) $(BUILD_PACKAGE)
 
 .PHONY: integration
 integration: install
