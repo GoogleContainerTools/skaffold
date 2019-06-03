@@ -114,10 +114,14 @@ The `buildContext` can be either:
 {{< schema root="KanikoBuildContext" >}}
 
 Since Kaniko must push images to a registry, it is required to set up cluster credentials.
-For example, Google Cloud Build requires a service account secret with push and pull access:
+See the [kaniko docs](https://github.com/GoogleContainerTools/kaniko#kubernetes-secret) for details on how to set up a pull secret.
+The recommended way is to store the secret in Kubernetes and configure `pullSecretName`.
+Another option is to directly supply a path to a credentials file using `pullSecret`
 ```yaml
 build:
   cluster:
+    pullSecretName: pull-secret-in-kubernetes
+    # OR
     pullSecret: path-to-service-account-key-file
 ```
 Or when pushing to a docker registry:
@@ -127,7 +131,7 @@ build:
     dockerConfig:
       path: ~/.docker/config.json
       # OR
-      secretName: docker-config-secret
+      secretName: docker-config-secret-in-kubernetes
 ```
 Note that the kubernetes secret must not be of type `kubernetes.io/dockerconfigjson` which stores the config json under the key `".dockerconfigjson"`, but an opaque secret with the key `"config.json"`.
 
