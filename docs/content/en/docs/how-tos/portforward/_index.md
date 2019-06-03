@@ -4,28 +4,47 @@ linkTitle: "Port forwarding"
 weight: 50
 ---
 
-This page discusses how Skaffold sets up port forwarding for container ports from pods. 
-Port forwarding is set to false by default; you can enable it with the `--port-forward` flag for `skaffold dev` and `skaffold debug`. 
-When this flag is set, skaffold will automatically forward any ports mentioned in the pod spec.
+This page discusses how to set up port forwarding with Skaffold for `skaffold dev` and `skaffold debug`.
 
-### Example
+Port forwarding is set to false by default; it is enabled with the `--port-forward` flag.
+If this flag is not set, no port forwarding will occur. 
+If the flag is set, Skaffold will:
 
-With the following pod manifest, Skaffold will forward port 8000 to port 8000 on our machine:
+1. Set up automatic port forwarding as described in the following section
+2. Port forward any user defined resources in the Skaffold config
 
+
+### Automatic Port Forwarding
+
+Skaffold will perform automatic port forwarding as follows:
+
+* automatic port forwarding of services for `skaffold dev` and `skaffold debug`
+* automatic port forwarding of pods for `skaffold debug`
+
+Skaffold will autmatically port forward all services it deploys for both `skaffold dev` and `skaffold debug`.
+
+Skaffold will also automatically port forward pods, including only containers that run artifacts built by skaffold, for `skaffold debug`. 
+
+
+### User Defined Port Forwarding
+
+Users can also define additional resources to port forward in the skaffold config.
+This is useful for forwarding additional resources like deployments or replica sets.
+This is also useful for forwarding additional containers which run images not built by Skaffold.
+
+For example:
+
+```yaml
+portForward:
+- resourceType: pod
+  resourceName: myPod
+  namespace: mynamespace 
+  port: 8080
+  targetPort: 9000 # *Optional*
 ```
-apiVersion: v1
-kind: Pod
-metadata:
-  name: example
-spec:
-  containers:
-  - name: skaffold-example
-    image: gcr.io/k8s-skaffold/skaffold-example
-    ports:
-      - name: web
-        containerPort: 8000
-```
 
-{{< alert title="Note" >}}
-If port 8000 isn't available, another random port will be chosen. Currently, only containers that contain images specified as skaffold artifacts will be port forwarded. In other words, port forwarding will not work for containers which reference images not built by the skaffold itself (e.g. official images hosted on 3rd party container registries such as Docker Hub, docker.elastic.co, etc.). We're working on adding user defined port-forwarding, which would allow you to specify additional containers to port-forward.
-{{< /alert >}}
+For this example, Skaffold will attempt to forward port 8080 to `localhost:9000`.
+If port 9000 is unavailable, Skaffold will forward to a random open port. 
+ 
+Skaffold will run `kubectl port-forward` on each of these resources in addition to the automatic port forwarding described above.
+Acceptable resource types include: `pod`, `deployment`, `replicaset`, and `service`. 
