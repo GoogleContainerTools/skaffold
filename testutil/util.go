@@ -93,6 +93,12 @@ func CheckErrorContains(t *testing.T, message string, err error) {
 	}
 }
 
+func EnsureTestPanicked(t *testing.T) {
+	if recover() == nil {
+		t.Errorf("should have panicked")
+	}
+}
+
 // Chdir changes current directory for a test
 func Chdir(t *testing.T, dir string) func() {
 	t.Helper()

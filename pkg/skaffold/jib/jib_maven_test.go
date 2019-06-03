@@ -86,7 +86,7 @@ func TestGetDependenciesMaven(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			reset := testutil.Override(t, &util.DefaultExecCommand, testutil.NewFakeCmd(t).WithRunOutErr(
+			reset := testutil.Override(t, &util.DefaultExecCommand, testutil.FakeRunOutErr(t,
 				strings.Join(getCommandMaven(ctx, tmpDir.Root(), &latest.JibMavenArtifact{Module: "maven-test"}).Args, " "),
 				test.stdout,
 				test.err,

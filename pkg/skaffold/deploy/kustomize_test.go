@@ -129,7 +129,7 @@ func TestKustomizeCleanup(t *testing.T) {
 			cfg: &latest.KustomizeDeploy{
 				KustomizePath: tmpDir.Root(),
 			},
-			command:   testutil.NewFakeCmd(t).WithRunOutErr("kustomize build "+tmpDir.Root(), ``, errors.New("BUG")),
+			command:   testutil.FakeRunOutErr(t, "kustomize build "+tmpDir.Root(), ``, errors.New("BUG")),
 			shouldErr: true,
 		},
 	}

@@ -26,7 +26,7 @@ import (
 )
 
 func TestBazelBin(t *testing.T) {
-	reset := testutil.Override(t, &util.DefaultExecCommand, testutil.NewFakeCmd(t).WithRunOut(
+	reset := testutil.Override(t, &util.DefaultExecCommand, testutil.FakeRunOut(t,
 		"bazel info bazel-bin --arg1 --arg2",
 		"/absolute/path/bin\n",
 	))

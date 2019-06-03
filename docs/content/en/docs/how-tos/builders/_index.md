@@ -302,7 +302,7 @@ custom:
         file: foo
 ```
 
-##### Getting depedencies from a command
+##### Getting dependencies from a command
 Sometimes you might have a builder that can provide the dependencies for a given artifact.
 For example bazel has the `bazel query deps` command.
 Custom artifact builders can ask Skaffold to execute a custom command, which Skaffold can use to get the dependencies for the artifact for file watching.

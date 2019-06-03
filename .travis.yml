@@ -1,21 +1,31 @@
 language: go
 
-os:
-  - linux
-  - osx
-
 git:
   submodules: false
 
-go:
-  - "1.11.x"
-  - "1.12.x"
-
 go_import_path: github.com/GoogleContainerTools/skaffold
 
-script:
-  - make
-  - make test
-
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
+jobs:
+  include:
+    - os: linux
+      go: "1.11.x"
+      script:
+        - make
+        - make test
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
+    - os: osx
+      go: "1.11.x"
+      script:
+        - make
+        - make test
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
+    - os: linux
+      go: "1.12.x"
+      script:
+        - make
+    - os: osx
+      go: "1.12.x"
+      script:
+        - make

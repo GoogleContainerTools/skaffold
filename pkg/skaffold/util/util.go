@@ -35,6 +35,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v2"
 )
 
 const (
@@ -254,6 +255,18 @@ func CloneThroughJSON(old interface{}, new interface{}) error {
 	}
 	if err := json.Unmarshal(o, &new); err != nil {
 		return errors.Wrap(err, "unmarshalling new")
+	}
+	return nil
+}
+
+// CloneThroughYAML marshals the old interface into the new one
+func CloneThroughYAML(old interface{}, new interface{}) error {
+	contents, err := yaml.Marshal(old)
+	if err != nil {
+		return errors.Wrap(err, "unmarshalling properties")
+	}
+	if err := yaml.Unmarshal(contents, new); err != nil {
+		return errors.Wrap(err, "unmarshalling bazel artifact")
 	}
 	return nil
 }

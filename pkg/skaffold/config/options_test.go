@@ -64,6 +64,20 @@ func TestLabels(t *testing.T) {
 			},
 		},
 		{
+			description: "tail",
+			options:     SkaffoldOptions{Tail: true},
+			expectedLabels: map[string]string{
+				"skaffold.dev/tail": "true",
+			},
+		},
+		{
+			description: "tail dev",
+			options:     SkaffoldOptions{TailDev: true},
+			expectedLabels: map[string]string{
+				"skaffold.dev/tail": "true",
+			},
+		},
+		{
 			description: "all labels",
 			options: SkaffoldOptions{
 				Cleanup:   true,
