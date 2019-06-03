@@ -128,7 +128,7 @@ func TestPythonTransformer_IsApplicable(t *testing.T) {
 	}
 }
 
-func TestJPythonTransformer_RuntimeSupportImage(t *testing.T) {
+func TestPythonTransformer_RuntimeSupportImage(t *testing.T) {
 	testutil.CheckDeepEqual(t, "python", pythonTransformer{}.RuntimeSupportImage())
 }
 
