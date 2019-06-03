@@ -199,10 +199,9 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 }
 
 // streamDockerMessages streams formatted json output from the docker daemon
-// TODO(@r2d4): Make this output much better, this is the bare minimum
 func streamDockerMessages(dst io.Writer, src io.Reader, auxCallback func(jsonmessage.JSONMessage)) error {
-	fd, _ := term.GetFdInfo(dst)
-	return jsonmessage.DisplayJSONMessagesStream(src, dst, fd, false, auxCallback)
+	fd, isTerm := term.GetFdInfo(dst)
+	return jsonmessage.DisplayJSONMessagesStream(src, dst, fd, isTerm, auxCallback)
 }
 
 // Push pushes an image reference to a registry. Returns the image digest.
