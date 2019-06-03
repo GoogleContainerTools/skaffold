@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package commands
+package cmd
 
 import (
 	"bytes"
@@ -24,40 +24,40 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/spf13/pflag"
 )
 
-func TestNewCommandDescription(t *testing.T) {
-	cmd := New(nil).WithDescription("help", "prints help").NoArgs(nil)
+func TestNewCmdDescription(t *testing.T) {
+	cmd := NewCmd(nil, "help").WithDescription("prints help").NoArgs(nil)
 
 	testutil.CheckDeepEqual(t, "help", cmd.Use)
 	testutil.CheckDeepEqual(t, "prints help", cmd.Short)
 }
 
-func TestNewCommandLongDescription(t *testing.T) {
-	cmd := New(nil).WithLongDescription("help", "prints help", "long description").NoArgs(nil)
+func TestNewCmdLongDescription(t *testing.T) {
+	cmd := NewCmd(nil, "help").WithLongDescription("long description").NoArgs(nil)
 
 	testutil.CheckDeepEqual(t, "help", cmd.Use)
-	testutil.CheckDeepEqual(t, "prints help", cmd.Short)
 	testutil.CheckDeepEqual(t, "long description", cmd.Long)
 }
 
-func TestNewCommandNoArgs(t *testing.T) {
-	cmd := New(nil).NoArgs(nil)
+func TestNewCmdNoArgs(t *testing.T) {
+	cmd := NewCmd(nil, "").NoArgs(nil)
 
 	testutil.CheckError(t, false, cmd.Args(cmd, []string{}))
 	testutil.CheckError(t, true, cmd.Args(cmd, []string{"extract arg"}))
 }
 
-func TestNewCommandExactArgs(t *testing.T) {
-	cmd := New(nil).ExactArgs(1, nil)
+func TestNewCmdExactArgs(t *testing.T) {
+	cmd := NewCmd(nil, "").ExactArgs(1, nil)
 
 	testutil.CheckError(t, true, cmd.Args(cmd, []string{}))
 	testutil.CheckError(t, false, cmd.Args(cmd, []string{"valid"}))
 	testutil.CheckError(t, true, cmd.Args(cmd, []string{"valid", "extra"}))
 }
 
-func TestNewCommandError(t *testing.T) {
-	cmd := New(nil).NoArgs(func(out io.Writer) error {
+func TestNewCmdError(t *testing.T) {
+	cmd := NewCmd(nil, "").NoArgs(func(out io.Writer) error {
 		return errors.New("expected error")
 	})
 
@@ -66,10 +66,10 @@ func TestNewCommandError(t *testing.T) {
 	testutil.CheckErrorAndDeepEqual(t, true, err, "expected error", err.Error())
 }
 
-func TestNewCommandOutput(t *testing.T) {
+func TestNewCmdOutput(t *testing.T) {
 	var buf bytes.Buffer
 
-	cmd := New(&buf).ExactArgs(1, func(out io.Writer, args []string) error {
+	cmd := NewCmd(&buf, "").ExactArgs(1, func(out io.Writer, args []string) error {
 		fmt.Fprintf(out, "test output: %v\n", args)
 		return nil
 	})
@@ -77,4 +77,35 @@ func TestNewCommandOutput(t *testing.T) {
 	err := cmd.RunE(nil, []string{"arg1"})
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, "test output: [arg1]\n", buf.String())
+}
+
+func TestNewCmdWithFlags(t *testing.T) {
+	cmd := NewCmd(nil, "").WithFlags(func(flagSet *pflag.FlagSet) {
+		flagSet.Bool("test", false, "usage")
+	}).NoArgs(nil)
+
+	flags := listFlags(cmd.Flags())
+
+	testutil.CheckDeepEqual(t, 1, len(flags))
+	testutil.CheckDeepEqual(t, "usage", flags["test"].Usage)
+}
+
+func TestNewCmdWithCommonFlags(t *testing.T) {
+	cmd := NewCmd(nil, "run").WithCommonFlags().NoArgs(nil)
+
+	flags := listFlags(cmd.Flags())
+
+	if _, present := flags["profile"]; !present {
+		t.Error("Expected flag `profile` to be added")
+	}
+}
+
+func listFlags(set *pflag.FlagSet) map[string]*pflag.Flag {
+	flagsByName := make(map[string]*pflag.Flag)
+
+	set.VisitAll(func(f *pflag.Flag) {
+		flagsByName[f.Name] = f
+	})
+
+	return flagsByName
 }
