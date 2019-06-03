@@ -222,7 +222,11 @@ var FlagRegistry = []Flag{
 	},
 	{
 		Name:          "status-check",
+<<<<<<< HEAD
 		Usage:         "Wait for deployed resources to stabilize",
+=======
+		Usage:         "",
+>>>>>>> wip
 		Value:         &opts.StatusCheck,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
