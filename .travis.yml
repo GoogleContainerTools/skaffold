@@ -29,3 +29,8 @@ jobs:
       go: "1.12.x"
       script:
         - make
+    - os: windows
+      go: "1.11.x"
+      script:
+        - go build -o out/skaffold.exe cmd/skaffold/skaffold.go
+        - go test -short -timeout 60s ./...
