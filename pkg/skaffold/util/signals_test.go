@@ -41,3 +41,41 @@ func TestCatchCtrlC(t *testing.T) {
 
 	wg.Wait()
 }
+
+func TestWaitForSignalOrCtrlC(t *testing.T) {
+	tests := []struct {
+		name          string
+		killWithCtrlC bool
+	}{
+		{
+			name:          "kill with signal",
+			killWithCtrlC: false,
+		},
+		{
+			name:          "kill with ctrl-c",
+			killWithCtrlC: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var wg sync.WaitGroup
+			wg.Add(1)
+
+			trigger := make(chan bool, 1)
+
+			go func() {
+				WaitForSignalOrCtrlC(context.Background(), trigger)
+				wg.Done()
+			}()
+
+			if tt.killWithCtrlC {
+				syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+			} else {
+				trigger <- true
+			}
+
+			wg.Wait()
+		})
+	}
+}
