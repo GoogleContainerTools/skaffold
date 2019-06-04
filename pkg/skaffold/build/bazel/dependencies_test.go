@@ -25,36 +25,35 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGetDependenciesWithWorkspace(t *testing.T) {
-	reset := testutil.Override(t, &util.DefaultExecCommand, testutil.FakeRunOut(t,
+func TestGetDependenciesWithWorkspace(tt *testing.T) {
+	t := testutil.NewTest(tt)
+	t.Override(&util.DefaultExecCommand, t.FakeRunOut(
 		"bazel query kind('source file', deps('target')) union buildfiles('target') --noimplicit_deps --order_output=no",
 		"@ignored\n//external/ignored\n\n//:dep1\n//:dep2\n",
 	))
-	defer reset()
 
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
-	tmpDir.Write("WORKSPACE", "")
+	tmpDir := t.NewTempDir().
+		Write("WORKSPACE", "")
 
 	deps, err := GetDependencies(context.Background(), tmpDir.Root(), &latest.BazelArtifact{
 		BuildTarget: "target",
 	})
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, []string{"dep1", "dep2", "WORKSPACE"}, deps)
+	t.CheckErrorAndDeepEqual(false, err, []string{"dep1", "dep2", "WORKSPACE"}, deps)
 }
 
-func TestGetDependenciesWithoutWorkspace(t *testing.T) {
-	reset := testutil.Override(t, &util.DefaultExecCommand, testutil.FakeRunOut(t,
+func TestGetDependenciesWithoutWorkspace(tt *testing.T) {
+	t := testutil.NewTest(tt)
+	t.Override(&util.DefaultExecCommand, t.FakeRunOut(
 		"bazel query kind('source file', deps('target2')) union buildfiles('target2') --noimplicit_deps --order_output=no",
 		"@ignored\n//external/ignored\n\n//:dep3\n",
 	))
-	defer reset()
 
 	deps, err := GetDependencies(context.Background(), ".", &latest.BazelArtifact{
 		BuildTarget: "target2",
 	})
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, []string{"dep3"}, deps)
+	t.CheckErrorAndDeepEqual(false, err, []string{"dep3"}, deps)
 }
 
 func TestQuery(t *testing.T) {

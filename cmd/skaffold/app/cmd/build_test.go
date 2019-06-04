@@ -67,23 +67,18 @@ func TestQuietFlag(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			restore := testutil.Override(t, &quietFlag, true)
-			defer restore()
-
-			restoreFn := testutil.Override(t, &createRunnerAndBuildFunc, test.mock)
-			defer restoreFn()
-
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&quietFlag, true)
+			t.Override(&createRunnerAndBuildFunc, test.mock)
 			if test.template != "" {
-				restoreTemplate := testutil.Override(t, &buildFormatFlag, flags.NewTemplateFlag(test.template, flags.BuildOutput{}))
-				defer restoreTemplate()
+				t.Override(&buildFormatFlag, flags.NewTemplateFlag(test.template, flags.BuildOutput{}))
 			}
 
 			var output bytes.Buffer
 
 			err := doBuild(context.Background(), &output)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, string(test.expectedOutput), output.String())
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, string(test.expectedOutput), output.String())
 		})
 	}
 }
@@ -116,13 +111,12 @@ func TestRunBuild(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			restore := testutil.Override(t, &createRunnerAndBuildFunc, test.mock)
-			defer restore()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&createRunnerAndBuildFunc, test.mock)
 
 			err := doBuild(context.Background(), ioutil.Discard)
 
-			testutil.CheckError(t, test.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
