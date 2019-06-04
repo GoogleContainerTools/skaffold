@@ -107,7 +107,7 @@ image; after the artifacts are built, kaniko must push them to a registry.
 To use Kaniko, add build type `kaniko` to the `build` section of
 `skaffold.yaml`. The following options can optionally be configured:
 
-{{< schema root="KanikoBuild" >}}
+{{< schema root="KanikoArtifact" >}}
 
 The `buildContext` can be either:
 
@@ -124,7 +124,7 @@ build:
     # OR
     pullSecret: path-to-service-account-key-file
 ```
-Or when pushing to a docker registry:
+Similarly, when pushing to a docker registry:
 ```yaml
 build:
   cluster:
