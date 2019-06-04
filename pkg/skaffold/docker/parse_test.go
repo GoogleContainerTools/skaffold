@@ -504,7 +504,6 @@ func TestGetDependencies(t *testing.T) {
 			shouldErr:   true,
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			util.OSEnviron = func() []string {

@@ -70,7 +70,6 @@ func TestRun(t *testing.T) {
 			}},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			runner := createRunner(t, test.testBench)

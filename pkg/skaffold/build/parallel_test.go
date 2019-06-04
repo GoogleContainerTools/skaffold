@@ -72,12 +72,14 @@ func TestGetBuild(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
+
 			artifact := &latest.Artifact{ImageName: "skaffold/image1"}
 			got, err := getBuildResult(context.Background(), out, test.tags, artifact, test.buildArtifact)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedTag, got)
-			testutil.CheckDeepEqual(t, test.expectedOut, out.String())
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedTag, got)
+			t.CheckDeepEqual(test.expectedOut, out.String())
 		})
 	}
 }
@@ -176,7 +178,6 @@ func TestCollectResults(t *testing.T) {
 			shouldErr: true,
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			outputs := setUpChannels(len(test.artifacts))
@@ -309,12 +310,12 @@ func TestColoredOutput(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			restore := testutil.Override(t, &color.IsTerminal, test.isTerminal)
-			defer restore()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&color.IsTerminal, test.isTerminal)
 
 			_, w := io.Pipe()
 			actual := setUpColorWriter(w, ioutil.Discard)
+
 			if _, ok := actual.(color.ColoredWriteCloser); ok != test.exceptedColor {
 				t.Errorf("got %t, expected %t", ok, test.exceptedColor)
 			}

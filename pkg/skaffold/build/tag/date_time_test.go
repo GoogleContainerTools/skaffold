@@ -58,7 +58,6 @@ func TestDateTime_GenerateFullyQualifiedImageName(t *testing.T) {
 			want:        "test_image:2015-03-07",
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			c := &dateTimeTagger{

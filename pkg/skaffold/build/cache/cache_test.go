@@ -134,7 +134,6 @@ func Test_NewCache(t *testing.T) {
 			expectedCache: &Cache{},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})

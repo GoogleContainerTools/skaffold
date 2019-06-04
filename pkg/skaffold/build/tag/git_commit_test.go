@@ -329,28 +329,26 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 	tAbbrevT, err := NewGitCommit("AbbrevTreeSha")
 	testutil.CheckError(t, false, err)
 
-	for _, tt := range tests {
-		t.Run(tt.description, func(t *testing.T) {
-			tmpDir, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
-
-			tt.createGitRepo(tmpDir.Root())
-			workspace := tmpDir.Path(tt.subDir)
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
+			test.createGitRepo(tmpDir.Root())
+			workspace := tmpDir.Path(test.subDir)
 
 			name, err := tTags.GenerateFullyQualifiedImageName(workspace, "test")
-			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.variantTags, name)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.variantTags, name)
 
 			name, err = tCommit.GenerateFullyQualifiedImageName(workspace, "test")
-			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.variantCommitSha, name)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.variantCommitSha, name)
 
 			name, err = tAbbrevC.GenerateFullyQualifiedImageName(workspace, "test")
-			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.variantAbbrevCommitSha, name)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.variantAbbrevCommitSha, name)
 
 			name, err = tTree.GenerateFullyQualifiedImageName(workspace, "test")
-			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.variantTreeSha, name)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.variantTreeSha, name)
 
 			name, err = tAbbrevT.GenerateFullyQualifiedImageName(workspace, "test")
-			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.variantAbbrevTreeSha, name)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.variantAbbrevTreeSha, name)
 		})
 	}
 }

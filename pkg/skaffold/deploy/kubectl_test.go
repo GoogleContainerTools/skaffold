@@ -153,11 +153,9 @@ func TestKubectlDeploy(t *testing.T) {
 			shouldErr: true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			reset := testutil.Override(t, &util.DefaultExecCommand, test.command)
-			defer reset()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, test.command)
 
 			k := NewKubectlDeployer(&runcontext.RunContext{
 				WorkingDir: tmpDir.Root(),
@@ -177,7 +175,7 @@ func TestKubectlDeploy(t *testing.T) {
 
 			err := k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
 
-			testutil.CheckError(t, test.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
@@ -228,11 +226,9 @@ func TestKubectlCleanup(t *testing.T) {
 				WithRun("kubectl --context kubecontext --namespace testNamespace -v=0 delete --grace-period=1 --ignore-not-found=true -f -"),
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			reset := testutil.Override(t, &util.DefaultExecCommand, test.command)
-			defer reset()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, test.command)
 
 			k := NewKubectlDeployer(&runcontext.RunContext{
 				WorkingDir: tmpDir.Root(),
@@ -250,7 +246,7 @@ func TestKubectlCleanup(t *testing.T) {
 			})
 			err := k.Cleanup(context.Background(), ioutil.Discard)
 
-			testutil.CheckError(t, test.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }

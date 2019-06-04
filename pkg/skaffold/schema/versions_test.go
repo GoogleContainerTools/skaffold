@@ -206,7 +206,6 @@ func TestParseConfig(t *testing.T) {
 			shouldErr:   true,
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			tmp, cleanup := testutil.NewTempDir(t)

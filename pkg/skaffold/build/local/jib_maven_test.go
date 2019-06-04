@@ -26,33 +26,60 @@ import (
 )
 
 func TestMavenVerifyJibPackageGoal(t *testing.T) {
-	var testCases = []struct {
+	var tests = []struct {
+		description  string
 		requiredGoal string
 		mavenOutput  string
-		shouldError  bool
+		shouldErr    bool
 	}{
-		{"xxx", "", true},   // no goals should fail
-		{"xxx", "\n", true}, // no goals should fail; newline stripped
-		{"dockerBuild", "dockerBuild", false},
-		{"dockerBuild", "dockerBuild\n", false}, // newline stripped
-		{"dockerBuild", "build\n", true},
-		{"dockerBuild", "build\ndockerBuild\n", true},
+		{
+			description:  "no goals should fail",
+			requiredGoal: "xxx",
+			mavenOutput:  "",
+			shouldErr:    true,
+		},
+		{
+			description:  "no goals should fail; newline stripped",
+			requiredGoal: "xxx",
+			mavenOutput:  "\n",
+			shouldErr:    true,
+		},
+		{
+			description:  "valid goal",
+			requiredGoal: "dockerBuild",
+			mavenOutput:  "dockerBuild",
+			shouldErr:    false,
+		},
+		{
+			description:  "newline stripped",
+			requiredGoal: "dockerBuild",
+			mavenOutput:  "dockerBuild\n",
+			shouldErr:    false,
+		},
+		{
+			description:  "invalid goal",
+			requiredGoal: "dockerBuild",
+			mavenOutput:  "build\n",
+			shouldErr:    true,
+		},
+		{
+			description:  "too many goals",
+			requiredGoal: "dockerBuild",
+			mavenOutput:  "build\ndockerBuild\n",
+			shouldErr:    true,
+		},
 	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.SkipWrapperCheck, true)
+			t.Override(&util.DefaultExecCommand, t.FakeRunOut(
+				"mvn --quiet --projects module jib:_skaffold-package-goals",
+				test.mavenOutput,
+			))
 
-	reset := testutil.Override(t, &util.SkipWrapperCheck, true)
-	defer reset()
+			err := verifyJibPackageGoal(context.Background(), test.requiredGoal, ".", &latest.JibMavenArtifact{Module: "module"})
 
-	for _, tt := range testCases {
-		reset := testutil.Override(t, &util.DefaultExecCommand, testutil.FakeRunOut(t,
-			"mvn --quiet --projects module jib:_skaffold-package-goals",
-			tt.mavenOutput,
-		))
-		defer reset()
-
-		err := verifyJibPackageGoal(context.Background(), tt.requiredGoal, ".", &latest.JibMavenArtifact{Module: "module"})
-
-		if hasError := err != nil; tt.shouldError != hasError {
-			t.Error("Unexpected return result")
-		}
+			t.CheckError(test.shouldErr, err)
+		})
 	}
 }

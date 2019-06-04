@@ -147,11 +147,11 @@ func TestNodeTransformer_IsApplicable(t *testing.T) {
 			result:      false,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			result := nodeTransformer{}.IsApplicable(test.source)
-			testutil.CheckDeepEqual(t, test.result, result)
+
+			t.CheckDeepEqual(test.result, result)
 		})
 	}
 }
@@ -164,7 +164,6 @@ func TestRewriteNodeCommandLine(t *testing.T) {
 		{[]string{"node", "index.js"}, []string{"node", "--inspect=9226", "index.js"}},
 		{[]string{"node"}, []string{"node", "--inspect=9226"}},
 	}
-
 	for _, test := range tests {
 		t.Run(strings.Join(test.in, " "), func(t *testing.T) {
 			result := rewriteNodeCommandLine(test.in, inspectSpec{port: 9226})
@@ -180,7 +179,6 @@ func TestRewriteNpmCommandLine(t *testing.T) {
 		{[]string{"npm", "run", "server"}, []string{"npm", "run", "server", "--node-options=--inspect=9226"}},
 		{[]string{"npm", "run", "server", "--", "option"}, []string{"npm", "run", "server", "--node-options=--inspect=9226", "--", "option"}},
 	}
-
 	for _, test := range tests {
 		t.Run(strings.Join(test.in, " "), func(t *testing.T) {
 			result := rewriteNpmCommandLine(test.in, inspectSpec{port: 9226})
@@ -236,9 +234,10 @@ func TestNodeTransformerApply(t *testing.T) {
 		return port
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			nodeTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
-			testutil.CheckDeepEqual(t, test.result, test.containerSpec)
+
+			t.CheckDeepEqual(test.result, test.containerSpec)
 		})
 	}
 }

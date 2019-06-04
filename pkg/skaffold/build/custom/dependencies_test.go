@@ -111,19 +111,18 @@ func TestGetDependenciesPaths(t *testing.T) {
 			expected:    []string{"foo"},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			deps, err := GetDependencies(context.Background(), tmpDir.Root(), &latest.CustomArtifact{
 				Dependencies: &latest.CustomDependencies{
 					Paths:  test.paths,
 					Ignore: test.ignore,
 				},
 			}, nil)
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, deps)
+
+			t.CheckErrorAndDeepEqual(false, err, test.expected, deps)
 		})
 	}
-
 }
 
 func stringPointer(s string) *string {

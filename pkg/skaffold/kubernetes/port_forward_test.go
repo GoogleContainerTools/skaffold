@@ -432,7 +432,6 @@ func TestPortForwardPod(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			taken := map[int]struct{}{}

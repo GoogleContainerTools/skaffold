@@ -55,7 +55,6 @@ func TestExtractProjectID(t *testing.T) {
 			shouldErr:   true,
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			projectID, err := ExtractProjectID(test.imageName)

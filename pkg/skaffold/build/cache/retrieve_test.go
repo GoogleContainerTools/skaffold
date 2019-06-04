@@ -53,7 +53,7 @@ func (s *artifactSorter) Less(i, j int) bool {
 
 func Test_RetrieveCachedArtifacts(t *testing.T) {
 	tests := []struct {
-		name                 string
+		description          string
 		cache                *Cache
 		hashes               map[string]string
 		artifacts            []*latest.Artifact
@@ -62,20 +62,20 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 		expectedBuildResults []build.Artifact
 	}{
 		{
-			name:              "useCache is false, return all artifacts",
+			description:       "useCache is false, return all artifacts",
 			cache:             &Cache{},
 			artifacts:         []*latest.Artifact{{ImageName: "image1"}},
 			expectedArtifacts: []*latest.Artifact{{ImageName: "image1"}},
 		},
 		{
-			name:              "no artifacts in cache",
+			description:       "no artifacts in cache",
 			cache:             &Cache{useCache: true},
 			hashes:            map[string]string{"image1": "hash", "image2": "hash2"},
 			artifacts:         []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
 			expectedArtifacts: []*latest.Artifact{{ImageName: "image1", WorkspaceHash: "hash"}, {ImageName: "image2", WorkspaceHash: "hash2"}},
 		},
 		{
-			name: "one artifact in cache",
+			description: "one artifact in cache",
 			cache: &Cache{
 				useCache: true,
 				artifactCache: ArtifactCache{"workspace-hash": ImageDetails{
@@ -97,7 +97,7 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 			expectedArtifacts:    []*latest.Artifact{{ImageName: "image2", WorkspaceHash: "workspace-hash-2"}},
 		},
 		{
-			name: "both artifacts in cache, but only one exists locally",
+			description: "both artifacts in cache, but only one exists locally",
 			cache: &Cache{
 				useCache: true,
 				artifactCache: ArtifactCache{
@@ -121,25 +121,24 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 			expectedBuildResults: []build.Artifact{{ImageName: "image1", Tag: "image1:hash"}},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			reset := testutil.Override(t, &hashForArtifact, mockHashForArtifact(test.hashes))
-			defer reset()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&hashForArtifact, mockHashForArtifact(test.hashes))
 
 			test.cache.client = docker.NewLocalDaemon(&test.api, nil, false, map[string]bool{})
-
 			actualArtifacts, actualBuildResults, err := test.cache.RetrieveCachedArtifacts(context.Background(), os.Stdout, test.artifacts)
+
 			sort.Sort(&artifactSorter{artifacts: actualArtifacts})
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedArtifacts, actualArtifacts)
-			testutil.CheckDeepEqual(t, test.expectedBuildResults, actualBuildResults)
+
+			t.CheckErrorAndDeepEqual(false, err, test.expectedArtifacts, actualArtifacts)
+			t.CheckDeepEqual(test.expectedBuildResults, actualBuildResults)
 		})
 	}
 }
 
 func TestRetrieveCachedArtifactDetails(t *testing.T) {
 	tests := []struct {
-		name                      string
+		description               string
 		targetImageExistsRemotely bool
 		artifact                  *latest.Artifact
 		hashes                    map[string]string
@@ -149,25 +148,25 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 		expected                  *cachedArtifactDetails
 	}{
 		{
-			name:     "image doesn't exist in cache, remote cluster",
-			artifact: &latest.Artifact{ImageName: "image"},
-			hashes:   map[string]string{"image": "hash"},
-			cache:    noCache,
+			description: "image doesn't exist in cache, remote cluster",
+			artifact:    &latest.Artifact{ImageName: "image"},
+			hashes:      map[string]string{"image": "hash"},
+			cache:       noCache,
 			expected: &cachedArtifactDetails{
 				needsRebuild: true,
 			},
 		},
 		{
-			name:     "image doesn't exist in cache, local cluster",
-			artifact: &latest.Artifact{ImageName: "image"},
-			hashes:   map[string]string{"image": "hash"},
-			cache:    noCache,
+			description: "image doesn't exist in cache, local cluster",
+			artifact:    &latest.Artifact{ImageName: "image"},
+			hashes:      map[string]string{"image": "hash"},
+			cache:       noCache,
 			expected: &cachedArtifactDetails{
 				needsRebuild: true,
 			},
 		},
 		{
-			name:                      "image in cache and exists remotely, remote cluster",
+			description:               "image in cache and exists remotely, remote cluster",
 			targetImageExistsRemotely: true,
 			artifact:                  &latest.Artifact{ImageName: "image"},
 			hashes:                    map[string]string{"image": "hash"},
@@ -191,9 +190,9 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			},
 		},
 		{
-			name:     "image in cache and exists in daemon, local cluster",
-			artifact: &latest.Artifact{ImageName: "image"},
-			hashes:   map[string]string{"image": "hash"},
+			description: "image in cache and exists in daemon, local cluster",
+			artifact:    &latest.Artifact{ImageName: "image"},
+			hashes:      map[string]string{"image": "hash"},
 			api: &testutil.FakeAPIClient{
 				TagToImageID: map[string]string{"image:hash": "image:tag"},
 				ImageSummaries: []types.ImageSummary{
@@ -215,7 +214,7 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			},
 		},
 		{
-			name:                      "image in cache, prebuilt image exists, remote cluster",
+			description:               "image in cache, prebuilt image exists, remote cluster",
 			targetImageExistsRemotely: true,
 			api:                       &testutil.FakeAPIClient{},
 			artifact:                  &latest.Artifact{ImageName: "image"},
@@ -238,10 +237,10 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			},
 		},
 		{
-			name:     "image in cache, prebuilt image exists, local cluster",
-			artifact: &latest.Artifact{ImageName: "image"},
-			hashes:   map[string]string{"image": "hash"},
-			api:      &testutil.FakeAPIClient{},
+			description: "image in cache, prebuilt image exists, local cluster",
+			artifact:    &latest.Artifact{ImageName: "image"},
+			hashes:      map[string]string{"image": "hash"},
+			api:         &testutil.FakeAPIClient{},
 			cache: &Cache{
 				useCache:      true,
 				localCluster:  true,
@@ -261,7 +260,7 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			},
 		},
 		{
-			name:                      "push specified, local cluster, image exists remotely",
+			description:               "push specified, local cluster, image exists remotely",
 			targetImageExistsRemotely: true,
 			api:                       &testutil.FakeAPIClient{},
 			artifact:                  &latest.Artifact{ImageName: "image"},
@@ -286,7 +285,7 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			},
 		},
 		{
-			name:                      "no local daemon, image exists remotely",
+			description:               "no local daemon, image exists remotely",
 			artifact:                  &latest.Artifact{ImageName: "image"},
 			hashes:                    map[string]string{"image": "hash"},
 			targetImageExistsRemotely: true,
@@ -301,21 +300,17 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			reset := testutil.Override(t, &hashForArtifact, mockHashForArtifact(test.hashes))
-			defer reset()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&hashForArtifact, mockHashForArtifact(test.hashes))
 
-			resetDigest := testutil.Override(t, &remoteDigest, func(string, map[string]bool) (string, error) {
+			t.Override(&remoteDigest, func(string, map[string]bool) (string, error) {
 				return test.digest, nil
 			})
-			defer resetDigest()
 
-			resetExists := testutil.Override(t, &imgExistsRemotely, func(string, string, map[string]bool) bool {
+			t.Override(&imgExistsRemotely, func(string, string, map[string]bool) bool {
 				return test.targetImageExistsRemotely
 			})
-			defer resetExists()
 
 			if test.api != nil {
 				test.cache.client = docker.NewLocalDaemon(test.api, nil, false, map[string]bool{})
@@ -334,14 +329,14 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 
 func TestRetrievePrebuiltImage(t *testing.T) {
 	tests := []struct {
-		name         string
+		description  string
 		cache        *Cache
 		imageDetails ImageDetails
 		shouldErr    bool
 		expected     string
 	}{
 		{
-			name: "one image id exists",
+			description: "one image id exists",
 			cache: &Cache{
 				imageList: []types.ImageSummary{
 					{
@@ -360,7 +355,7 @@ func TestRetrievePrebuiltImage(t *testing.T) {
 			expected: "image:mytag",
 		},
 		{
-			name: "no image id exists",
+			description: "no image id exists",
 			cache: &Cache{
 				imageList: []types.ImageSummary{
 					{
@@ -380,7 +375,7 @@ func TestRetrievePrebuiltImage(t *testing.T) {
 			expected: "",
 		},
 		{
-			name: "one image id exists",
+			description: "one image id exists",
 			cache: &Cache{
 				imageList: []types.ImageSummary{
 					{
@@ -399,7 +394,7 @@ func TestRetrievePrebuiltImage(t *testing.T) {
 			expected: "image3",
 		},
 		{
-			name: "multiple image ids exist",
+			description: "multiple image ids exist",
 			cache: &Cache{
 				imageList: []types.ImageSummary{
 					{
@@ -418,7 +413,7 @@ func TestRetrievePrebuiltImage(t *testing.T) {
 			expected: "image3",
 		},
 		{
-			name: "no image id exists",
+			description: "no image id exists",
 			cache: &Cache{
 				imageList: []types.ImageSummary{
 					{
@@ -439,10 +434,12 @@ func TestRetrievePrebuiltImage(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			test.cache.client = docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, map[string]bool{})
+
 			actual, err := test.cache.retrievePrebuiltImage(test.imageDetails)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}
 }

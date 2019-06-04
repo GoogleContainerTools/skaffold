@@ -50,7 +50,6 @@ func TestInit(t *testing.T) {
 			args: []string{"--compose-file", "docker-compose.yaml"},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ns, _, deleteNs := SetupNamespace(t)

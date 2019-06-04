@@ -33,20 +33,15 @@ func TestMustParse_panic(t *testing.T) {
 }
 
 func TestParseVersion(t *testing.T) {
-	type args struct {
-		v string
-	}
 	tests := []struct {
-		name    string
-		args    args
-		want    semver.Version
-		wantErr bool
+		description string
+		version     string
+		want        semver.Version
+		shouldErr   bool
 	}{
 		{
-			name: "full",
-			args: args{
-				v: "skaffold/v7alpha3",
-			},
+			description: "full",
+			version:     "skaffold/v7alpha3",
 			want: semver.Version{
 				Major: 7,
 				Pre: []semver.PRVersion{
@@ -61,27 +56,23 @@ func TestParseVersion(t *testing.T) {
 			},
 		},
 		{
-			name: "ga",
-			args: args{
-				v: "skaffold/v4",
-			},
+			description: "ga",
+			version:     "skaffold/v4",
 			want: semver.Version{
 				Major: 4,
 			},
 		},
 		{
-			name: "incorrect",
-			args: args{
-				v: "apps/v1",
-			},
-			wantErr: true,
+			description: "incorrect",
+			version:     "apps/v1",
+			shouldErr:   true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := Parse(tt.args.v)
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			got, err := Parse(test.version)
 
-			testutil.CheckErrorAndDeepEqual(t, tt.wantErr, err, tt.want, got)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.want, got)
 		})
 	}
 }

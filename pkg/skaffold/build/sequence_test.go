@@ -75,7 +75,7 @@ func TestInSequence(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
 			artifacts := []*latest.Artifact{
 				{ImageName: "skaffold/image1"},
@@ -84,8 +84,8 @@ func TestInSequence(t *testing.T) {
 
 			got, err := InSequence(context.Background(), out, test.tags, artifacts, test.buildArtifact)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedArtifacts, got)
-			testutil.CheckDeepEqual(t, test.expectedOut, out.String())
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedArtifacts, got)
+			t.CheckDeepEqual(test.expectedOut, out.String())
 		})
 	}
 }
@@ -108,7 +108,6 @@ func TestInSequenceResultsOrder(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			out := ioutil.Discard

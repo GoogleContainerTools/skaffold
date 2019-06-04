@@ -81,7 +81,6 @@ spec:
 			shouldErr: false,
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			tmpDir, delete := testutil.NewTempDir(t)

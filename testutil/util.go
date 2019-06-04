@@ -79,6 +79,11 @@ func (t *T) NewTempDir() *TempDir {
 	return tmpDir
 }
 
+func (t *T) SetEnvs(envs map[string]string) {
+	teardown := SetEnvs(t.T, envs)
+	t.teardownActions = append(t.teardownActions, teardown)
+}
+
 func NewTest(t *testing.T) *T {
 	return &T{
 		T: t,

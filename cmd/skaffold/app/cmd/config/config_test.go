@@ -58,7 +58,6 @@ func TestReadConfig(t *testing.T) {
 			shouldErr:   false,
 		},
 	}
-
 	for _, test := range tests {
 		cfg, err := ReadConfigForFile(test.filename)
 
@@ -74,7 +73,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 	var tests = []struct {
 		expectedSetCfg   *Config
 		expectedUnsetCfg *Config
-		name             string
+		description      string
 		key              string
 		value            string
 		kubecontext      string
@@ -82,7 +81,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 		shouldErrSet     bool
 	}{
 		{
-			name:        "set default repo",
+			description: "set default repo",
 			key:         "default-repo",
 			value:       "value",
 			kubecontext: "this_is_a_context",
@@ -103,7 +102,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			},
 		},
 		{
-			name:        "set local cluster",
+			description: "set local cluster",
 			key:         "local-cluster",
 			value:       "false",
 			kubecontext: "this_is_a_context",
@@ -124,7 +123,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			},
 		},
 		{
-			name:         "set invalid local cluster",
+			description:  "set invalid local cluster",
 			key:          "local-cluster",
 			shouldErrSet: true,
 			value:        "not-a-bool",
@@ -137,7 +136,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			},
 		},
 		{
-			name:         "set fake value",
+			description:  "set fake value",
 			key:          "not_a_real_value",
 			shouldErrSet: true,
 			expectedSetCfg: &Config{
@@ -149,10 +148,10 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			},
 		},
 		{
-			name:   "set global default repo",
-			key:    "default-repo",
-			value:  "global",
-			global: true,
+			description: "set global default repo",
+			key:         "default-repo",
+			value:       "global",
+			global:      true,
 			expectedSetCfg: &Config{
 				Global: &ContextConfig{
 					DefaultRepo: "global",
@@ -165,10 +164,10 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			},
 		},
 		{
-			name:   "set global local cluster",
-			key:    "local-cluster",
-			value:  "true",
-			global: true,
+			description: "set global local cluster",
+			key:         "local-cluster",
+			value:       "true",
+			global:      true,
 			expectedSetCfg: &Config{
 				Global: &ContextConfig{
 					LocalCluster: util.BoolPtr(true),
@@ -181,7 +180,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			},
 		},
 		{
-			name:        "set insecure registries",
+			description: "set insecure registries",
 			key:         "insecure-registries",
 			value:       "my.insecure.registry",
 			kubecontext: "this_is_a_context",
@@ -202,24 +201,18 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			// create new config file
 			c, _ := yaml.Marshal(*emptyConfig)
-			cfg, teardown := testutil.TempFile(t, "config", c)
-			defer teardown()
 
+			cfg := t.TempFile("config", c)
+
+			t.Override(&configFile, cfg)
+			t.Override(&global, test.global)
 			if test.kubecontext != "" {
-				reset := testutil.Override(t, &kubecontext, test.kubecontext)
-				defer reset()
+				t.Override(&kubecontext, test.kubecontext)
 			}
-
-			resetConfigFile := testutil.Override(t, &configFile, cfg)
-			defer resetConfigFile()
-
-			resetGlobal := testutil.Override(t, &global, test.global)
-			defer resetGlobal()
 
 			// set specified value
 			err := setConfigValue(test.key, test.value)
@@ -227,7 +220,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			if cfgErr != nil {
 				t.Error(cfgErr)
 			}
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErrSet, err, test.expectedSetCfg, actualConfig)
+			t.CheckErrorAndDeepEqual(test.shouldErrSet, err, test.expectedSetCfg, actualConfig)
 
 			if test.shouldErrSet {
 				// if we expect an error when setting, don't try and unset
@@ -240,7 +233,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			if cfgErr != nil {
 				t.Error(cfgErr)
 			}
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedUnsetCfg, newConfig)
+			t.CheckErrorAndDeepEqual(false, err, test.expectedUnsetCfg, newConfig)
 		})
 	}
 }

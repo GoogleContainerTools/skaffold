@@ -307,7 +307,6 @@ func TestApplyProfiles(t *testing.T) {
 			),
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			err := ApplyProfiles(test.config, &cfg.SkaffoldOptions{

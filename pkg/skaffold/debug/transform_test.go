@@ -98,7 +98,6 @@ func TestAllocatePort(t *testing.T) {
 			result:      65534,
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			result := allocatePort(&test.pod, test.desiredPort)
@@ -120,7 +119,6 @@ func TestDescribe(t *testing.T) {
 		{&appsv1.DaemonSet{TypeMeta: metav1.TypeMeta{APIVersion: appsv1.SchemeGroupVersion.String(), Kind: "DaemonSet"}, ObjectMeta: metav1.ObjectMeta{Name: "name"}}, "daemonset.apps/name"},
 		{&batchv1.Job{TypeMeta: metav1.TypeMeta{APIVersion: batchv1.SchemeGroupVersion.String(), Kind: "Job"}, ObjectMeta: metav1.ObjectMeta{Name: "name"}}, "job.batch/name"},
 	}
-
 	for _, test := range tests {
 		t.Run(reflect.TypeOf(test.in).Name(), func(t *testing.T) {
 			gvk := test.in.GetObjectKind().GroupVersionKind()

@@ -73,12 +73,13 @@ func TestRetagLocalImages(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			test.cache.client = docker.NewLocalDaemon(test.api, nil, false, map[string]bool{})
+
 			test.cache.RetagLocalImages(context.Background(), os.Stdout, test.artifactsToBuild, test.buildArtifacts)
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedPush, test.api.PushedImages)
+
+			t.CheckErrorAndDeepEqual(false, nil, test.expectedPush, test.api.PushedImages)
 		})
 	}
 }

@@ -67,11 +67,9 @@ func TestKustomizeDeploy(t *testing.T) {
 			forceDeploy: true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			reset := testutil.Override(t, &util.DefaultExecCommand, test.command)
-			defer reset()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, test.command)
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
 				WorkingDir: tmpDir.Root(),
@@ -90,7 +88,7 @@ func TestKustomizeDeploy(t *testing.T) {
 			})
 			err := k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
 
-			testutil.CheckError(t, test.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
@@ -133,11 +131,9 @@ func TestKustomizeCleanup(t *testing.T) {
 			shouldErr: true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			reset := testutil.Override(t, &util.DefaultExecCommand, test.command)
-			defer reset()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, test.command)
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
 				WorkingDir: tmpDir.Root(),
@@ -155,7 +151,7 @@ func TestKustomizeCleanup(t *testing.T) {
 			})
 			err := k.Cleanup(context.Background(), ioutil.Discard)
 
-			testutil.CheckError(t, test.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
@@ -209,13 +205,10 @@ func TestDependenciesForKustomization(t *testing.T) {
 			shouldErr:   true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			tmp, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
-
-			tmp.Write("kustomization.yaml", test.yaml)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmp := t.NewTempDir().
+				Write("kustomization.yaml", test.yaml)
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
 				Cfg: &latest.Pipeline{
@@ -232,7 +225,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 			})
 			deps, err := k.Dependencies()
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, joinPaths(tmp.Root(), test.expected), deps)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, joinPaths(tmp.Root(), test.expected), deps)
 		})
 	}
 }
