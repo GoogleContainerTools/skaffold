@@ -23,6 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -35,7 +36,7 @@ func NewCmdRun(out io.Writer) *cobra.Command {
 		WithFlags(func(f *pflag.FlagSet) {
 			f.StringVarP(&opts.CustomTag, "tag", "t", "", "The optional custom tag to use for images which overrides the current Tagger configuration")
 		}).
-		NoArgs(cancelWithCtrlC(context.Background(), doRun))
+		NoArgs(util.CancelWithCtrlC(context.Background(), doRun))
 }
 
 func doRun(ctx context.Context, out io.Writer) error {

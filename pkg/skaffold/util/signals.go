@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package util
 
 import (
 	"context"
@@ -24,17 +24,17 @@ import (
 	"syscall"
 )
 
-func cancelWithCtrlC(ctx context.Context, action func(context.Context, io.Writer) error) func(io.Writer) error {
+func CancelWithCtrlC(ctx context.Context, action func(context.Context, io.Writer) error) func(io.Writer) error {
 	return func(out io.Writer) error {
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
-		catchCtrlC(cancel)
+		go CatchCtrlC(cancel)
 		return action(ctx, out)
 	}
 }
 
-func catchCtrlC(cancel context.CancelFunc) {
+func CatchCtrlC(cancel context.CancelFunc) {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals,
 		syscall.SIGTERM,
@@ -42,8 +42,20 @@ func catchCtrlC(cancel context.CancelFunc) {
 		syscall.SIGPIPE,
 	)
 
+	<-signals
+	cancel()
+}
+
+func WaitForSignalOrCtrlC(ctx context.Context, trigger chan bool) {
+	proceed := make(chan bool, 1)
 	go func() {
-		<-signals
-		cancel()
+		<-trigger
+		proceed <- true
 	}()
+	go func(ctx context.Context) {
+		ctx, cancel := context.WithCancel(ctx)
+		CatchCtrlC(cancel)
+		proceed <- true
+	}(ctx)
+	<-proceed
 }

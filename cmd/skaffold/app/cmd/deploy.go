@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -43,7 +44,7 @@ func NewCmdDeploy(out io.Writer) *cobra.Command {
 			f.VarP(&buildOutputFile, "build-artifacts", "a", `Filepath containing build output.
 E.g. build.out created by running skaffold build --quiet {{json .}} > build.out`)
 		}).
-		NoArgs(cancelWithCtrlC(context.Background(), doDeploy))
+		NoArgs(util.CancelWithCtrlC(context.Background(), doDeploy))
 }
 
 func doDeploy(ctx context.Context, out io.Writer) error {

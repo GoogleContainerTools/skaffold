@@ -22,6 +22,7 @@ import (
 
 	debugging "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +32,7 @@ func NewCmdDebug(out io.Writer) *cobra.Command {
 		WithDescription("Runs a pipeline file in debug mode").
 		WithLongDescription("Similar to `dev`, but configures the pipeline for debugging.").
 		WithCommonFlags().
-		NoArgs(cancelWithCtrlC(context.Background(), doDebug))
+		NoArgs(util.CancelWithCtrlC(context.Background(), doDebug))
 }
 
 func doDebug(ctx context.Context, out io.Writer) error {

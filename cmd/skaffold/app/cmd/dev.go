@@ -21,6 +21,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -39,7 +40,7 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 			f.StringSliceVarP(&opts.TargetImages, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")
 			f.IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes")
 		}).
-		NoArgs(cancelWithCtrlC(context.Background(), doDev))
+		NoArgs(util.CancelWithCtrlC(context.Background(), doDev))
 }
 
 func doDev(ctx context.Context, out io.Writer) error {

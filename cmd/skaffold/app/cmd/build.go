@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -52,7 +53,7 @@ func NewCmdBuild(out io.Writer) *cobra.Command {
 			f.BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output.")
 			f.VarP(buildFormatFlag, "output", "o", "Used in conjuction with --quiet flag. "+buildFormatFlag.Usage())
 		}).
-		NoArgs(cancelWithCtrlC(context.Background(), doBuild))
+		NoArgs(util.CancelWithCtrlC(context.Background(), doBuild))
 }
 
 func doBuild(ctx context.Context, out io.Writer) error {

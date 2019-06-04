@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +31,7 @@ func NewCmdDelete(out io.Writer) *cobra.Command {
 	return NewCmd(out, "delete").
 		WithDescription("Delete the deployed resources").
 		WithCommonFlags().
-		NoArgs(cancelWithCtrlC(context.Background(), doDelete))
+		NoArgs(util.CancelWithCtrlC(context.Background(), doDelete))
 }
 
 func doDelete(ctx context.Context, out io.Writer) error {

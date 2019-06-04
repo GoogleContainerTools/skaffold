@@ -39,6 +39,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
@@ -247,7 +248,7 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 	return imageTags, nil
 }
 
-func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
+func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, artifacts []*latest.Artifact, unmute func()) error {
 	bRes, err := r.BuildAndTest(ctx, out, artifacts)
 	if err != nil {
 		return err
@@ -263,7 +264,8 @@ func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, art
 
 	if r.runCtx.Opts.ManualDeploy && r.HasDeployed() {
 		color.Default.Fprintf(out, "Waiting for manual deploy trigger...\n")
-		<-r.runCtx.DeployTrigger
+		unmute() // unmute the logs while we wait for the deploy trigger
+		util.WaitForSignalOrCtrlC(ctx, r.runCtx.DeployTrigger)
 	}
 	if err := r.deploy(ctx, out, r.builds); err != nil {
 		return errors.Wrap(err, "deploy failed")

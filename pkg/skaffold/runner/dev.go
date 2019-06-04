@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -73,14 +74,15 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 				}
 			}
 		case len(changed.needsRebuild) > 0:
-			if err := r.buildTestDeploy(ctx, out, changed.needsRebuild); err != nil {
+			if err := r.buildTestDeploy(ctx, out, changed.needsRebuild, logger.Unmute); err != nil {
 				logrus.Warnln("Skipping deploy due to error:", err)
 				return nil
 			}
 		case changed.needsRedeploy:
 			if r.runCtx.Opts.ManualDeploy {
 				color.Default.Fprintf(out, "Waiting for manual deploy trigger...\n")
-				<-r.runCtx.DeployTrigger
+				logger.Unmute() // unmute the logs while we wait for the deploy trigger
+				util.WaitForSignalOrCtrlC(ctx, r.runCtx.DeployTrigger)
 			}
 			if err := r.Deploy(ctx, out, r.builds); err != nil {
 				logrus.Warnln("Skipping deploy due to error:", err)
@@ -132,7 +134,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	// First run
-	if err := r.buildTestDeploy(ctx, out, artifacts); err != nil {
+	if err := r.buildTestDeploy(ctx, out, artifacts, func() {}); err != nil {
 		return errors.Wrap(err, "exiting dev mode because first run failed")
 	}
 

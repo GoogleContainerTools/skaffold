@@ -16,7 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package util
 
 import (
 	"context"
@@ -30,7 +30,7 @@ func TestCatchCtrlC(t *testing.T) {
 	wg.Add(1)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	catchCtrlC(cancel)
+	CatchCtrlC(cancel)
 
 	go func() {
 		<-ctx.Done()
