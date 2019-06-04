@@ -39,7 +39,6 @@ func TestDefaultLabeller(t *testing.T) {
 			expected:    fmt.Sprintf("skaffold-unknown"),
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			l := &DefaultLabeller{

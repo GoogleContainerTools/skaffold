@@ -82,14 +82,11 @@ func TestDepToPath(t *testing.T) {
 			expected:    "vendor/github.com/gorilla/mux/mux.go",
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			path := depToPath(test.dep)
 
-			if path != test.expected {
-				t.Errorf("Expected %s. Got %s", test.expected, path)
-			}
+			t.CheckDeepEqual(test.expected, path)
 		})
 	}
 }

@@ -83,7 +83,6 @@ func TestGetDependenciesMaven(t *testing.T) {
 			expected:    []string{"build", "dep1", "dep2"},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			reset := testutil.Override(t, &util.DefaultExecCommand, testutil.FakeRunOutErr(t,
@@ -173,7 +172,6 @@ func TestGetCommandMaven(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			tmpDir, cleanup := testutil.NewTempDir(t)
@@ -193,7 +191,7 @@ func TestGetCommandMaven(t *testing.T) {
 }
 
 func TestGenerateMavenArgs(t *testing.T) {
-	var testCases = []struct {
+	var tests = []struct {
 		in        latest.JibMavenArtifact
 		skipTests bool
 		out       []string
@@ -207,10 +205,9 @@ func TestGenerateMavenArgs(t *testing.T) {
 		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, false, []string{"-Djib.console=plain", "--activate-profiles", "profile", "--projects", "module", "--also-make", "package", "-Dimage=image"}},
 		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, true, []string{"-Djib.console=plain", "--activate-profiles", "profile", "--projects", "module", "--also-make", "-DskipTests=true", "package", "-Dimage=image"}},
 	}
+	for _, test := range tests {
+		args := GenerateMavenArgs("goal", "image", &test.in, test.skipTests)
 
-	for _, tt := range testCases {
-		args := GenerateMavenArgs("goal", "image", &tt.in, tt.skipTests)
-
-		testutil.CheckDeepEqual(t, tt.out, args)
+		testutil.CheckDeepEqual(t, test.out, args)
 	}
 }

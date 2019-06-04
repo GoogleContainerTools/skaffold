@@ -38,7 +38,6 @@ func TestDiagnose(t *testing.T) {
 		{name: "bazel builder", dir: "examples/bazel"},
 		// todo add test cases for "jib gradle builder" and "custom builder"
 	}
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			skaffold.Diagnose(test.args...).InDir(test.dir).RunOrFailOutput(t)

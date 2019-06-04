@@ -118,14 +118,14 @@ func TestRunBuild(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			localDocker := &localDaemon{
 				apiClient: &test.api,
 			}
 
 			_, err := localDocker.Build(context.Background(), ioutil.Discard, ".", &latest.DockerArtifact{}, "finalimage")
 
-			testutil.CheckError(t, test.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
@@ -247,20 +247,20 @@ func TestGetBuildArgs(t *testing.T) {
 			want: []string{"--build-arg", "key1=value1", "--cache-from", "foo", "--target", "stage1", "--network", "none"},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.description, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
 			util.OSEnviron = func() []string {
-				return tt.env
+				return test.env
 			}
-			result, err := GetBuildArgs(tt.artifact)
-			if tt.shouldErr && err != nil {
+			result, err := GetBuildArgs(test.artifact)
+			if test.shouldErr && err != nil {
 				t.Errorf("expected to see an error, but saw none")
 			}
-			if tt.shouldErr {
+			if test.shouldErr {
 				return
 			}
-			if diff := cmp.Diff(result, tt.want); diff != "" {
-				t.Errorf("%T differ (-got, +want): %s", tt.want, diff)
+			if diff := cmp.Diff(result, test.want); diff != "" {
+				t.Errorf("%T differ (-got, +want): %s", test.want, diff)
 			}
 		})
 	}
@@ -340,7 +340,6 @@ func TestRepoDigest(t *testing.T) {
 			repoDigests:     []string{"repoDigest", "repoDigest1"},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			api := &testutil.FakeAPIClient{
@@ -408,7 +407,6 @@ func TestInsecureRegistry(t *testing.T) {
 			shouldErr: true,
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := remoteImage(test.image, test.insecureRegistries)

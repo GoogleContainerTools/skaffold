@@ -73,14 +73,13 @@ func TestParseReference(t *testing.T) {
 			expectedFullyQualified: false,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			parsed, err := ParseReference(test.image)
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedName, parsed.BaseName)
-			testutil.CheckDeepEqual(t, test.expectedTag, parsed.Tag)
-			testutil.CheckDeepEqual(t, test.expectedFullyQualified, parsed.FullyQualified)
+			t.CheckErrorAndDeepEqual(false, err, test.expectedName, parsed.BaseName)
+			t.CheckDeepEqual(test.expectedTag, parsed.Tag)
+			t.CheckDeepEqual(test.expectedFullyQualified, parsed.FullyQualified)
 		})
 	}
 }

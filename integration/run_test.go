@@ -105,7 +105,6 @@ func TestRun(t *testing.T) {
 			pods:        []string{"bazel"},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			if test.remoteOnly && os.Getenv("REMOTE_INTEGRATION") != "true" {

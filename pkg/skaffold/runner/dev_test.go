@@ -128,7 +128,6 @@ func TestDevFailFirstCycle(t *testing.T) {
 			}},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			runner := createRunner(t, test.testBench)
@@ -259,7 +258,6 @@ func TestDev(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			runner := createRunner(t, test.testBench)
@@ -327,7 +325,6 @@ func TestDevSync(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			reset := testutil.Override(t, &sync.WorkingDir, func(string, map[string]bool) (string, error) {

@@ -51,12 +51,12 @@ var mockCacheHasher = func(s string) (string, error) {
 
 func TestGetHashForArtifact(t *testing.T) {
 	tests := []struct {
-		name         string
+		description  string
 		dependencies [][]string
 		expected     string
 	}{
 		{
-			name: "check dependencies in different orders",
+			description: "check dependencies in different orders",
 			dependencies: [][]string{
 				{"a", "b"},
 				{"b", "a"},
@@ -64,29 +64,29 @@ func TestGetHashForArtifact(t *testing.T) {
 			expected: "eb394fd4559b1d9c383f4359667a508a615b82a74e1b160fce539f86ae0842e8",
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			reset := testutil.Override(t, &hashFunction, mockCacheHasher)
-			defer reset()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&hashFunction, mockCacheHasher)
 
 			for _, d := range test.dependencies {
 				builder := &mockBuilder{dependencies: d}
 				actual, err := getHashForArtifact(context.Background(), builder, nil)
-				testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
+
+				t.CheckErrorAndDeepEqual(false, err, test.expected, actual)
 			}
 		})
 	}
 }
+
 func TestCacheHasher(t *testing.T) {
 	tests := []struct {
-		name          string
+		description   string
 		differentHash bool
 		newFilename   string
 		update        func(oldFile string, folder *testutil.TempDir)
 	}{
 		{
-			name:          "change filename",
+			description:   "change filename",
 			differentHash: true,
 			newFilename:   "newfoo",
 			update: func(oldFile string, folder *testutil.TempDir) {
@@ -94,14 +94,14 @@ func TestCacheHasher(t *testing.T) {
 			},
 		},
 		{
-			name:          "change file contents",
+			description:   "change file contents",
 			differentHash: true,
 			update: func(oldFile string, folder *testutil.TempDir) {
 				folder.Write(oldFile, "newcontents")
 			},
 		},
 		{
-			name:          "change both",
+			description:   "change both",
 			differentHash: true,
 			newFilename:   "newfoo",
 			update: func(oldFile string, folder *testutil.TempDir) {
@@ -110,20 +110,18 @@ func TestCacheHasher(t *testing.T) {
 			},
 		},
 		{
-			name:          "change nothing",
+			description:   "change nothing",
 			differentHash: false,
 			update:        func(oldFile string, folder *testutil.TempDir) {},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			originalFile := "foo"
 			originalContents := "contents"
 
-			folder, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
-			folder.Write(originalFile, originalContents)
+			folder := t.NewTempDir().
+				Write(originalFile, originalContents)
 
 			path := originalFile
 			builder := &mockBuilder{dependencies: []string{folder.Path(originalFile)}}

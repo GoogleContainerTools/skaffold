@@ -63,7 +63,6 @@ func TestRetrieveEnv(t *testing.T) {
 			expected:      []string{"BUILD_CONTEXT=", "IMAGES=gcr.io/image/push:tag", "KUBECONTEXT=mycluster", "PUSH_IMAGE=true"},
 		},
 	}
-
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.OSEnviron, func() []string { return test.environ })
@@ -109,7 +108,6 @@ func TestRetrieveCmd(t *testing.T) {
 			expected: expectedCmd("./build.sh", "", []string{"--flag", "--anotherflag"}, []string{"BUILD_CONTEXT=", "IMAGES=image:tag", "PUSH_IMAGE=false"}),
 		},
 	}
-
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.OSEnviron, func() []string { return nil })

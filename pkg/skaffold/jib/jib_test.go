@@ -82,7 +82,6 @@ func TestGetDependencies(t *testing.T) {
 			expectedDeps: []string{"dep1", "dep2", filepath.FromSlash("dep3/fileA")},
 		},
 	}
-
 	for _, test := range tests {
 		// Reset map between each test to ensure stdout is read each time
 		watchedFiles = map[string]filesLists{}

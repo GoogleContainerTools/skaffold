@@ -453,16 +453,14 @@ func TestHelmDeploy(t *testing.T) {
 			builds:      testBuilds,
 		},
 	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, test.cmd)
 
-	for _, tt := range tests {
-		t.Run(tt.description, func(t *testing.T) {
-			reset := testutil.Override(t, &util.DefaultExecCommand, tt.cmd)
-			defer reset()
+			event.InitializeState(test.runContext)
+			err := NewHelmDeployer(test.runContext).Deploy(context.Background(), ioutil.Discard, test.builds, nil)
 
-			event.InitializeState(tt.runContext)
-			err := NewHelmDeployer(tt.runContext).Deploy(context.Background(), ioutil.Discard, tt.builds, nil)
-
-			testutil.CheckError(t, tt.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
@@ -537,29 +535,29 @@ func (m *MockHelm) RunCmd(c *exec.Cmd) error {
 
 func TestParseHelmRelease(t *testing.T) {
 	var tests = []struct {
-		name      string
-		yaml      []byte
-		shouldErr bool
+		description string
+		yaml        []byte
+		shouldErr   bool
 	}{
 		{
-			name: "parse valid deployment yaml",
-			yaml: []byte(validDeployYaml),
+			description: "parse valid deployment yaml",
+			yaml:        []byte(validDeployYaml),
 		},
 		{
-			name: "parse valid service yaml",
-			yaml: []byte(validServiceYaml),
+			description: "parse valid service yaml",
+			yaml:        []byte(validServiceYaml),
 		},
 		{
-			name:      "parse invalid deployment yaml",
-			yaml:      []byte(invalidDeployYaml),
-			shouldErr: true,
+			description: "parse invalid deployment yaml",
+			yaml:        []byte(invalidDeployYaml),
+			shouldErr:   true,
 		},
 	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			_, err := parseRuntimeObject(testNamespace, test.yaml)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := parseRuntimeObject(testNamespace, tt.yaml)
-			testutil.CheckError(t, tt.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
@@ -617,32 +615,32 @@ func TestHelmDependencies(t *testing.T) {
 			},
 		},
 	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			folder := t.NewTempDir()
 
-	for _, tt := range tests {
-		t.Run(tt.description, func(t *testing.T) {
-			folder, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
-			for _, file := range tt.files {
+			for _, file := range test.files {
 				folder.Write(file, "")
 			}
+
 			deployer := NewHelmDeployer(makeRunContext(&latest.HelmDeploy{
 				Releases: []latest.HelmRelease{
 					{
 						Name:                  "skaffold-helm",
 						ChartPath:             folder.Root(),
-						ValuesFiles:           tt.valuesFiles,
+						ValuesFiles:           test.valuesFiles,
 						Values:                map[string]string{"image": "skaffold-helm"},
 						Overrides:             schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 						SetValues:             map[string]string{"some.key": "somevalue"},
-						SkipBuildDependencies: tt.skipBuildDependencies,
-						Remote:                tt.remote,
+						SkipBuildDependencies: test.skipBuildDependencies,
+						Remote:                test.remote,
 					},
 				},
 			}, false))
 
 			deps, err := deployer.Dependencies()
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, tt.expected(folder), deps)
+			t.CheckErrorAndDeepEqual(false, err, test.expected(folder), deps)
 		})
 	}
 }

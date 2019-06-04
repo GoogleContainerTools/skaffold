@@ -45,15 +45,13 @@ func TestNewEnvClient(t *testing.T) {
 			shouldErr: true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			reset := testutil.SetEnvs(t, test.envs)
-			defer reset()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetEnvs(test.envs)
 
 			env, _, err := newEnvAPIClient()
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, []string(nil), env)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, []string(nil), env)
 		})
 	}
 }
@@ -112,20 +110,18 @@ DOCKER_CERT_PATH=testdata
 DOCKER_API_VERSION=1.23`,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			reset := testutil.Override(t, &util.DefaultExecCommand, testutil.FakeRunOut(t,
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, t.FakeRunOut(
 				"minikube docker-env --shell none",
 				test.env,
 			))
-			defer reset()
 
 			env, _, err := newMinikubeAPIClient()
 
-			testutil.CheckError(t, test.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
-				testutil.CheckDeepEqual(t, test.expectedEnv, env)
+				t.CheckDeepEqual(test.expectedEnv, env)
 			}
 		})
 	}

@@ -83,7 +83,6 @@ func TestGetDependenciesGradle(t *testing.T) {
 			expected:    []string{"build", "dep1", "dep2"},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			reset := testutil.Override(t, &util.DefaultExecCommand, testutil.FakeRunOutErr(t,
@@ -148,7 +147,6 @@ func TestGetCommandGradle(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			tmpDir, cleanup := testutil.NewTempDir(t)
@@ -168,7 +166,7 @@ func TestGetCommandGradle(t *testing.T) {
 }
 
 func TestGenerateGradleArgs(t *testing.T) {
-	var testCases = []struct {
+	var tests = []struct {
 		in        latest.JibGradleArtifact
 		skipTests bool
 		out       []string
@@ -179,10 +177,9 @@ func TestGenerateGradleArgs(t *testing.T) {
 		{latest.JibGradleArtifact{Project: "project"}, false, []string{"-Djib.console=plain", ":project:task", "--image=image"}},
 		{latest.JibGradleArtifact{Project: "project"}, true, []string{"-Djib.console=plain", ":project:task", "--image=image", "-x", "test"}},
 	}
+	for _, test := range tests {
+		command := GenerateGradleArgs("task", "image", &test.in, test.skipTests)
 
-	for _, tt := range testCases {
-		command := GenerateGradleArgs("task", "image", &tt.in, tt.skipTests)
-
-		testutil.CheckDeepEqual(t, tt.out, command)
+		testutil.CheckDeepEqual(t, test.out, command)
 	}
 }

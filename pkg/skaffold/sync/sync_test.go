@@ -384,17 +384,15 @@ func TestNewSyncItem(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			reset := testutil.Override(t, &WorkingDir, func(string, map[string]bool) (string, error) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) {
 				return test.workingDir, nil
 			})
-			defer reset()
 
 			actual, err := NewItem(test.artifact, test.evt, test.builds, map[string]bool{})
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}
 }
@@ -455,11 +453,11 @@ func TestIntersect(t *testing.T) {
 			shouldErr: true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual, err := intersect(test.context, test.workingDir, test.syncRules, test.files)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}
 }
@@ -555,7 +553,6 @@ func TestPerform(t *testing.T) {
 			shouldErr:   true,
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			cmdRecord := &TestCmdRecorder{err: test.cmdErr}

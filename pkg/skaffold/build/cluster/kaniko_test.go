@@ -49,7 +49,6 @@ func TestAppendCacheIfExists(t *testing.T) {
 			expectedArgs: []string{"initial", "args", "--cache=true", "--cache-repo=myrepo"},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			actual := appendCacheIfExists(test.args, test.cache)
@@ -76,7 +75,6 @@ func TestAppendTargetIfExists(t *testing.T) {
 			expectedArgs: []string{"first", "args", "--target=stageOne"},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			actual := appendTargetIfExists(test.args, test.target)

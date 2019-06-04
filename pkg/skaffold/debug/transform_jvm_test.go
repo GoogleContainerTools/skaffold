@@ -76,11 +76,11 @@ func TestJdwpTransformer_IsApplicable(t *testing.T) {
 			result:      false,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			result := jdwpTransformer{}.IsApplicable(test.source)
-			testutil.CheckDeepEqual(t, test.result, result)
+
+			t.CheckDeepEqual(test.result, result)
 		})
 	}
 }

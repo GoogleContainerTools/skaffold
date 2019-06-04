@@ -65,7 +65,6 @@ func TestQuietFlag(t *testing.T) {
 			mock:           mockCreateRunner,
 		},
 	}
-
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&quietFlag, true)

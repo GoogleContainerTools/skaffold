@@ -75,7 +75,6 @@ func TestBuild(t *testing.T) {
 			expectImage: imageName + "tag",
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			if test.setup != nil {

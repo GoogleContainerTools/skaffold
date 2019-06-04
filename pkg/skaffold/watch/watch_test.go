@@ -60,11 +60,9 @@ func TestWatch(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			folder, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			folder := t.NewTempDir()
 
 			test.setup(folder)
 			folderChanged := newCallback()
@@ -75,7 +73,7 @@ func TestWatch(t *testing.T) {
 				Interval: 10 * time.Millisecond,
 			})
 			err := watcher.Register(folder.List, folderChanged.call)
-			testutil.CheckError(t, false, err)
+			t.CheckError(false, err)
 
 			// Run the watcher
 			ctx, cancel := context.WithCancel(context.Background())
@@ -84,7 +82,7 @@ func TestWatch(t *testing.T) {
 			go func() {
 				err = watcher.Run(ctx, ioutil.Discard, somethingChanged.callNoErr)
 				stopped.Done()
-				testutil.CheckError(t, false, err)
+				t.CheckError(false, err)
 			}()
 
 			test.update(folder)

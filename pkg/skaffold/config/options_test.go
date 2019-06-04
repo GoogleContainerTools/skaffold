@@ -110,7 +110,6 @@ func TestLabels(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			labels := test.options.Labels()
@@ -154,9 +153,8 @@ func TestIsTargetImage(t *testing.T) {
 			expectedMatch: false,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			opts := &SkaffoldOptions{
 				TargetImages: test.targetImages,
 			}
@@ -165,7 +163,7 @@ func TestIsTargetImage(t *testing.T) {
 				ImageName: "domain/image",
 			})
 
-			testutil.CheckDeepEqual(t, test.expectedMatch, match)
+			t.CheckDeepEqual(test.expectedMatch, match)
 		})
 	}
 }

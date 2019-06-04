@@ -59,21 +59,16 @@ func TestCheckVersion(t *testing.T) {
 			warnings:    []string{"unable to get kubectl client version: not found"},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			fakeWarner := &warnings.Collect{}
-			reset := testutil.Override(t, &warnings.Printf, fakeWarner.Warnf)
-			defer reset()
-
-			resetCmd := testutil.Override(t, &util.DefaultExecCommand, test.command)
-			defer resetCmd()
+			t.Override(&warnings.Printf, fakeWarner.Warnf)
+			t.Override(&util.DefaultExecCommand, test.command)
 
 			cli := CLI{}
 			err := cli.CheckVersion(context.Background())
 
-			testutil.CheckError(t, test.shouldErr, err)
-			testutil.CheckDeepEqual(t, test.warnings, fakeWarner.Warnings)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.warnings, fakeWarner.Warnings)
 		})
 	}
 }

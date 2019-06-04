@@ -46,11 +46,11 @@ func TestParseVersion(t *testing.T) {
 			shouldErr:   true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual, err := ParseVersion(test.in)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.out, actual)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.out, actual)
 		})
 	}
 }
