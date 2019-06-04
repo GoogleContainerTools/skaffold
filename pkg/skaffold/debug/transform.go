@@ -218,6 +218,9 @@ func transformContainer(container *v1.Container, retrieveImageConfiguration conf
 	// update image configuration values with those set in the k8s manifest
 	for _, envVar := range container.Env {
 		// FIXME handle ValueFrom?
+		if(config.env == nil) {
+			config.env = make(map[string]string)
+		}
 		config.env[envVar.Name] = envVar.Value
 	}
 
