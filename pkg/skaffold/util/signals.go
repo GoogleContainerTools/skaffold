@@ -42,8 +42,10 @@ func CatchCtrlC(cancel context.CancelFunc) {
 		syscall.SIGPIPE,
 	)
 
-	<-signals
-	cancel()
+	go func() {
+		<-signals
+		cancel()
+	}()
 }
 
 func WaitForSignalOrCtrlC(ctx context.Context, trigger chan bool) {
@@ -53,7 +55,7 @@ func WaitForSignalOrCtrlC(ctx context.Context, trigger chan bool) {
 		proceed <- true
 	}()
 	go func(ctx context.Context) {
-		ctx, cancel := context.WithCancel(ctx)
+		_, cancel := context.WithCancel(ctx)
 		CatchCtrlC(cancel)
 		proceed <- true
 	}(ctx)
