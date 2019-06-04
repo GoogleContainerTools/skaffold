@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
+	"strconv"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
@@ -27,13 +29,25 @@ import (
 	"github.com/pkg/errors"
 )
 
+var (
+	deploymentOutputTemplate            = "{{range .items}}{{.metadata.name}}:{{.spec.progressDeadlineSeconds}}{{\",\"}}{{end}}"
+	defaultStatusCheckDeadlineInSeconds = 600
+)
+
 func StatusCheck(ctx context.Context, out io.Writer, runCtx runcontext.RunContext) error {
 	kubeCtl := kubectl.CLI{
 		Namespace:   runCtx.Opts.Namespace,
 		KubeContext: runCtx.KubeContext,
 	}
-	deployments, err := getDeployments(ctx, kubeCtl)
-	fmt.Println(deployments)
+	dMap, err := getDeployments(ctx, kubeCtl)
+	for dName, deadline := range dMap {
+		// Set the deadline to defaultStatusCheckDeadlineInSeconds if deadline is set to Math.MaxInt
+		// See https://github.com/kubernetes/kubernetes/blob/master/pkg/apis/extensions/v1beta1/defaults.go#L119
+		if deadline == math.MaxInt32 {
+			deadline = defaultStatusCheckDeadlineInSeconds
+		}
+		go fmt.Println(dName)
+	}
 	if err != nil {
 		return errors.Wrap(err, "could not fetch deployments")
 	}
@@ -41,15 +55,28 @@ func StatusCheck(ctx context.Context, out io.Writer, runCtx runcontext.RunContex
 	return nil
 }
 
-func getDeployments(ctx context.Context, k kubectl.CLI) ([]string, error) {
-	b, err := k.RunOut(ctx, nil, "get", []string{"deployments"}, "--output", "jsonpath='{.items[*].metadata.name}'")
+func getDeployments(ctx context.Context, k kubectl.CLI) (map[string]int, error) {
+	b, err := k.RunOut(ctx, nil, "get", []string{"deployments"}, "--output", fmt.Sprintf("go-template='%s'", deploymentOutputTemplate))
 	if err != nil {
 		return nil, err
 	}
-	s := []string{}
-	if len(string(b)) > 0 {
-		s = strings.Split(string(b), " ")
+	m := map[string]int{}
+	if len(b) == 0 {
+		return m, nil
 	}
-	return s, nil
+	lines := strings.Split(string(b), ",")
+	for _, line := range lines {
+		kv := strings.Split(line, ":")
+		if len(kv) != 2 {
+			return nil, fmt.Errorf("error parsing `kubectl get deployments` %s", line)
+		}
+		i, err := strconv.Atoi(kv[1])
+		if err != nil {
+			return m, err
+		}
+
+		m[kv[0]] = i
+	}
+	return m, nil
 
 }

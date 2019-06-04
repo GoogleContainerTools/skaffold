@@ -27,29 +27,30 @@ import (
 )
 
 func TestGetDeployments(t *testing.T) {
+	getDeploymentCommand := "kubectl --context kubecontext --namespace test get deployments --output go-template='{{range .items}}{{.metadata.name}}:{{.spec.progressDeadlineSeconds}}{{\",\"}}{{end}}'"
 
 	var tests = []struct {
 		description string
 		command     util.Command
-		expected    []string
+		expected    map[string]int
 		shouldErr   bool
 	}{
 		{
 			description: "returns deployments",
 			command: testutil.NewFakeCmd(t).
-				WithRunOut("kubectl --context kubecontext --namespace test get deployments --output jsonpath='{.items[*].metadata.name}'", "dep1 dep2"),
-			expected: []string{"dep1", "dep2"},
+				WithRunOut(getDeploymentCommand, "dep1:100,dep2:200"),
+			expected: map[string]int{"dep1": 100, "dep2": 200},
 		},
 		{
 			description: "no deployments",
 			command: testutil.NewFakeCmd(t).
-				WithRunOut("kubectl --context kubecontext --namespace test get deployments --output jsonpath='{.items[*].metadata.name}'", ""),
-			expected: []string{},
+				WithRunOut(getDeploymentCommand, ""),
+			expected: map[string]int{},
 		},
 		{
 			description: "get deployments error",
 			command: testutil.NewFakeCmd(t).
-				WithRunOutErr("kubectl --context kubecontext --namespace test get deployments --output jsonpath='{.items[*].metadata.name}'", "", fmt.Errorf("error")),
+				WithRunOutErr(getDeploymentCommand, "", fmt.Errorf("error")),
 			shouldErr: true,
 		},
 	}
