@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -52,6 +53,11 @@ func TestNewTrigger(t *testing.T) {
 			expected:    &manualTrigger{},
 		},
 		{
+			description: "api trigger",
+			opts:        &config.SkaffoldOptions{Trigger: "api"},
+			expected:    &apiTrigger{},
+		},
+		{
 			description: "unknown trigger",
 			opts:        &config.SkaffoldOptions{Trigger: "unknown"},
 			shouldErr:   true,
@@ -60,7 +66,10 @@ func TestNewTrigger(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			got, err := NewTrigger(test.opts)
+			runCtx := &runcontext.RunContext{
+				Opts: test.opts,
+			}
+			got, err := NewTrigger(runCtx)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, got)
 		})
 	}

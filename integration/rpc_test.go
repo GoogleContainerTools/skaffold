@@ -29,7 +29,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes/empty"
@@ -139,7 +139,7 @@ func TestEventLogHTTP(t *testing.T) {
 	defer teardown()
 	time.Sleep(500 * time.Millisecond) // give skaffold time to process all events
 
-	httpResponse, err := http.Get(fmt.Sprintf("http://localhost:%s/v1/event_log", httpAddr))
+	httpResponse, err := http.Get(fmt.Sprintf("http://localhost:%s/v1/events", httpAddr))
 	if err != nil {
 		t.Fatalf("error connecting to gRPC REST API: %s", err.Error())
 	}
