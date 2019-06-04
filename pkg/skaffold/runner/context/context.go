@@ -33,10 +33,6 @@ type RunContext struct {
 	Opts *config.SkaffoldOptions
 	Cfg  *latest.Pipeline
 
-	// TODO(nkubala): these channels can be sent to by the client at anytime,
-	// meaning if a trigger is sent by the user it will "stick" in the channel
-	// and cannot be cancelled by the user. we should only open these channels
-	// for writing when skaffold is explicitly waiting for a user signal.
 	BuildTrigger  chan bool
 	DeployTrigger chan bool
 

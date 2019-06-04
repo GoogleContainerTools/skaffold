@@ -390,7 +390,7 @@ Usage:
   skaffold dev
 
 Flags:
-      --build-trigger string        How are changes detected? (polling, manual or notify) (default "polling")
+      --build-trigger string        How are changes detected? (polling, notify, manual, or api) (default "polling")
       --cache-artifacts             Set to true to enable caching of artifacts
       --cache-file string           Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup                     Delete deployments after dev or debug mode is interrupted (default true)

@@ -262,7 +262,7 @@ func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, art
 	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
 
 	if r.runCtx.Opts.ManualDeploy && r.HasDeployed() {
-		logrus.Infof("Waiting for deploy trigger...")
+		color.Default.Fprintf(out, "Waiting for manual deploy trigger...\n")
 		<-r.runCtx.DeployTrigger
 	}
 	if err := r.deploy(ctx, out, r.builds); err != nil {
