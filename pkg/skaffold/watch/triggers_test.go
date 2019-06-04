@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestNewTrigger(t *testing.T) {
+func TestNewBuildTrigger(t *testing.T) {
 	var tests = []struct {
 		description string
 		opts        *config.SkaffoldOptions
@@ -35,31 +35,31 @@ func TestNewTrigger(t *testing.T) {
 	}{
 		{
 			description: "polling trigger",
-			opts:        &config.SkaffoldOptions{Trigger: "polling", WatchPollInterval: 1},
+			opts:        &config.SkaffoldOptions{BuildTrigger: "polling", WatchPollInterval: 1},
 			expected: &pollTrigger{
 				Interval: time.Duration(1) * time.Millisecond,
 			},
 		},
 		{
 			description: "notify trigger",
-			opts:        &config.SkaffoldOptions{Trigger: "notify", WatchPollInterval: 1},
+			opts:        &config.SkaffoldOptions{BuildTrigger: "notify", WatchPollInterval: 1},
 			expected: &fsNotifyTrigger{
 				Interval: time.Duration(1) * time.Millisecond,
 			},
 		},
 		{
 			description: "manual trigger",
-			opts:        &config.SkaffoldOptions{Trigger: "manual"},
+			opts:        &config.SkaffoldOptions{BuildTrigger: "manual"},
 			expected:    &manualTrigger{},
 		},
 		{
 			description: "api trigger",
-			opts:        &config.SkaffoldOptions{Trigger: "api"},
+			opts:        &config.SkaffoldOptions{BuildTrigger: "api"},
 			expected:    &apiTrigger{},
 		},
 		{
 			description: "unknown trigger",
-			opts:        &config.SkaffoldOptions{Trigger: "unknown"},
+			opts:        &config.SkaffoldOptions{BuildTrigger: "unknown"},
 			shouldErr:   true,
 		},
 	}

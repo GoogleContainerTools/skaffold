@@ -124,10 +124,6 @@ func request_SkaffoldService_Build_0(ctx context.Context, marshaler runtime.Mars
 
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD:pkg/skaffold/server/proto/skaffold.pb.gw.go
-=======
->>>>>>> wip; adding deploy trigger. hangs on ctrlc
 func request_SkaffoldService_Deploy_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq empty.Empty
 	var metadata runtime.ServerMetadata
@@ -145,11 +141,6 @@ func request_SkaffoldService_Deploy_0(ctx context.Context, marshaler runtime.Mar
 
 }
 
-<<<<<<< HEAD
-=======
->>>>>>> Add API build trigger:pkg/skaffold/event/proto/skaffold.pb.gw.go
-=======
->>>>>>> wip; adding deploy trigger. hangs on ctrlc
 // RegisterSkaffoldServiceHandlerFromEndpoint is same as RegisterSkaffoldServiceHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
 func RegisterSkaffoldServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
@@ -268,10 +259,6 @@ func RegisterSkaffoldServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 
 	})
 
-<<<<<<< HEAD
-<<<<<<< HEAD:pkg/skaffold/server/proto/skaffold.pb.gw.go
-=======
->>>>>>> wip; adding deploy trigger. hangs on ctrlc
 	mux.Handle("POST", pattern_SkaffoldService_Deploy_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -292,11 +279,6 @@ func RegisterSkaffoldServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 
 	})
 
-<<<<<<< HEAD
-=======
->>>>>>> Add API build trigger:pkg/skaffold/event/proto/skaffold.pb.gw.go
-=======
->>>>>>> wip; adding deploy trigger. hangs on ctrlc
 	return nil
 }
 
@@ -308,16 +290,8 @@ var (
 	pattern_SkaffoldService_Handle_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "events", "handle"}, ""))
 
 	pattern_SkaffoldService_Build_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "build"}, ""))
-<<<<<<< HEAD
-<<<<<<< HEAD:pkg/skaffold/server/proto/skaffold.pb.gw.go
 
 	pattern_SkaffoldService_Deploy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "deploy"}, ""))
-=======
->>>>>>> Add API build trigger:pkg/skaffold/event/proto/skaffold.pb.gw.go
-=======
-
-	pattern_SkaffoldService_Deploy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "deploy"}, ""))
->>>>>>> wip; adding deploy trigger. hangs on ctrlc
 )
 
 var (
@@ -328,14 +302,6 @@ var (
 	forward_SkaffoldService_Handle_0 = runtime.ForwardResponseMessage
 
 	forward_SkaffoldService_Build_0 = runtime.ForwardResponseMessage
-<<<<<<< HEAD
-<<<<<<< HEAD:pkg/skaffold/server/proto/skaffold.pb.gw.go
 
 	forward_SkaffoldService_Deploy_0 = runtime.ForwardResponseMessage
-=======
->>>>>>> Add API build trigger:pkg/skaffold/event/proto/skaffold.pb.gw.go
-=======
-
-	forward_SkaffoldService_Deploy_0 = runtime.ForwardResponseMessage
->>>>>>> wip; adding deploy trigger. hangs on ctrlc
 )

@@ -38,7 +38,7 @@ func TestNewRunner(t *testing.T) {
 
 	_, _, err := newRunner(&config.SkaffoldOptions{
 		ConfigurationFile: cfg,
-		Trigger:           "polling",
+		BuildTrigger:      "polling",
 	})
 
 	testutil.CheckError(t, false, err)

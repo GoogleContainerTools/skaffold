@@ -87,7 +87,7 @@ func GetRunContext(opts *config.SkaffoldOptions, cfg *latest.Pipeline) (*RunCont
 	if opts.ManualDeploy {
 		deployTrigger = make(chan bool, 1)
 	}
-	if watchutil.IsApiTrigger(opts.BuildTrigger) {
+	if watchutil.IsAPITrigger(opts.BuildTrigger) {
 		buildTrigger = make(chan bool, 1)
 	}
 

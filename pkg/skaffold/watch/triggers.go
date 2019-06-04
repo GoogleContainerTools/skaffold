@@ -53,7 +53,7 @@ func NewTrigger(runctx *runcontext.RunContext) (Trigger, error) {
 		}, nil
 	case util.Manual:
 		return &manualTrigger{}, nil
-	case util.Api:
+	case util.API:
 		return &apiTrigger{
 			Trigger: runctx.BuildTrigger,
 		}, nil

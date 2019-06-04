@@ -22,9 +22,9 @@ const (
 	Polling = "polling"
 	Notify  = "notify"
 	Manual  = "manual"
-	Api     = "api"
+	API     = "api"
 )
 
-func IsApiTrigger(trigger string) bool {
+func IsAPITrigger(trigger string) bool {
 	return strings.ToLower(trigger) == "api"
 }

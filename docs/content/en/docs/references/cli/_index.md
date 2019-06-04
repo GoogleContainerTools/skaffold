@@ -390,6 +390,7 @@ Usage:
   skaffold dev
 
 Flags:
+      --build-trigger string        How are changes detected? (polling, manual or notify) (default "polling")
       --cache-artifacts             Set to true to enable caching of artifacts
       --cache-file string           Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup                     Delete deployments after dev or debug mode is interrupted (default true)
@@ -399,6 +400,7 @@ Flags:
       --force                       Recreate kubernetes resources if necessary for deployment (warning: might cause downtime!) (default true)
       --insecure-registry strings   Target registries for built images which are not secure
   -l, --label strings               Add custom labels to deployed objects. Set multiple times for multiple labels
+      --manual-deploy               Whether deploys are done automatically or manually (through the API)
   -n, --namespace string            Run deployments in the specified namespace
       --no-prune                    Skip removing images and containers built by Skaffold
       --no-prune-children           Skip removing layers reused by Skaffold
@@ -409,7 +411,6 @@ Flags:
       --skip-tests                  Whether to skip the tests after building
       --tail                        Stream logs from deployed objects (default true)
       --toot                        Emit a terminal beep after the deploy is complete
-      --trigger string              How are changes detected? (polling, manual or notify) (default "notify")
   -w, --watch-image strings         Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
   -i, --watch-poll-interval int     Interval (in ms) between two checks for file changes (default 1000)
 
@@ -421,6 +422,7 @@ Global Flags:
 ```
 Env vars:
 
+* `SKAFFOLD_BUILD_TRIGGER` (same as `--build-trigger`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
@@ -430,6 +432,7 @@ Env vars:
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
 * `SKAFFOLD_LABEL` (same as `--label`)
+* `SKAFFOLD_MANUAL_DEPLOY` (same as `--manual-deploy`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
 * `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
@@ -440,7 +443,6 @@ Env vars:
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
-* `SKAFFOLD_TRIGGER` (same as `--trigger`)
 * `SKAFFOLD_WATCH_IMAGE` (same as `--watch-image`)
 * `SKAFFOLD_WATCH_POLL_INTERVAL` (same as `--watch-poll-interval`)
 

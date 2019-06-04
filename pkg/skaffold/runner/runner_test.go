@@ -146,7 +146,7 @@ func createRunner(t *testing.T, testBench *TestBench) *SkaffoldRunner {
 	t.Helper()
 
 	opts := &config.SkaffoldOptions{
-		Trigger: "polling",
+		BuildTrigger: "polling",
 	}
 
 	cfg := &latest.SkaffoldConfig{}
@@ -285,7 +285,7 @@ func TestNewForConfig(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			cfg, err := NewForConfig(&config.SkaffoldOptions{
-				Trigger: "polling",
+				BuildTrigger: "polling",
 			}, test.config)
 
 			testutil.CheckError(t, test.shouldErr, err)
