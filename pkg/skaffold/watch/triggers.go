@@ -153,7 +153,6 @@ func (t *fsNotifyTrigger) WatchForChanges(out io.Writer) {
 
 // Start listening for file system changes
 func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
-	// TODO(@dgageot): If file changes happen too quickly, events might be lost
 	c := make(chan notify.EventInfo, 100)
 
 	// Watch current directory recursively
