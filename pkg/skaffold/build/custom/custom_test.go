@@ -71,7 +71,8 @@ func TestRetrieveEnv(t *testing.T) {
 			artifactBuilder := NewArtifactBuilder(test.pushImages, test.additionalEnv)
 			actual, err := artifactBuilder.retrieveEnv(&latest.Artifact{}, test.tag)
 
-			t.CheckErrorAndDeepEqual(false, err, test.expected, actual)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }
@@ -115,9 +116,8 @@ func TestRetrieveCmd(t *testing.T) {
 
 			builder := NewArtifactBuilder(false, nil)
 			cmd, err := builder.retrieveCmd(test.artifact, test.tag)
-			if err != nil {
-				t.Fatalf("error retrieving command: %v", err)
-			}
+
+			t.CheckNoError(err)
 			// cmp.Diff cannot access unexported fields in *exec.Cmd, so use reflect.DeepEqual here directly
 			if !reflect.DeepEqual(test.expected, cmd) {
 				t.Errorf("Expected result different from actual result. Expected: \n%v, \nActual: \n%v", test.expected, cmd)

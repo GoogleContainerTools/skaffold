@@ -25,35 +25,49 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGetDependenciesWithWorkspace(tt *testing.T) {
-	t := testutil.NewTest(tt)
-	t.Override(&util.DefaultExecCommand, t.FakeRunOut(
-		"bazel query kind('source file', deps('target')) union buildfiles('target') --noimplicit_deps --order_output=no",
-		"@ignored\n//external/ignored\n\n//:dep1\n//:dep2\n",
-	))
+func TestGetDependencies(t *testing.T) {
+	tests := []struct {
+		description   string
+		target        string
+		hasWorkspace  bool
+		expectedQuery string
+		output        string
+		expected      []string
+	}{
+		{
+			description:   "with workspace",
+			target:        "target",
+			hasWorkspace:  true,
+			expectedQuery: "bazel query kind('source file', deps('target')) union buildfiles('target') --noimplicit_deps --order_output=no",
+			output:        "@ignored\n//external/ignored\n\n//:dep1\n//:dep2\n",
+			expected:      []string{"dep1", "dep2", "WORKSPACE"},
+		},
+		{
+			description:   "without workspace",
+			target:        "target2",
+			hasWorkspace:  false,
+			expectedQuery: "bazel query kind('source file', deps('target2')) union buildfiles('target2') --noimplicit_deps --order_output=no",
+			output:        "@ignored\n//external/ignored\n\n//:dep3\n",
+			expected:      []string{"dep3"},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, t.FakeRunOut(test.expectedQuery, test.output))
 
-	tmpDir := t.NewTempDir().
-		Write("WORKSPACE", "")
+			tmpDir := t.NewTempDir()
+			if test.hasWorkspace {
+				tmpDir.Write("WORKSPACE", "")
+			}
 
-	deps, err := GetDependencies(context.Background(), tmpDir.Root(), &latest.BazelArtifact{
-		BuildTarget: "target",
-	})
+			deps, err := GetDependencies(context.Background(), tmpDir.Root(), &latest.BazelArtifact{
+				BuildTarget: test.target,
+			})
 
-	t.CheckErrorAndDeepEqual(false, err, []string{"dep1", "dep2", "WORKSPACE"}, deps)
-}
-
-func TestGetDependenciesWithoutWorkspace(tt *testing.T) {
-	t := testutil.NewTest(tt)
-	t.Override(&util.DefaultExecCommand, t.FakeRunOut(
-		"bazel query kind('source file', deps('target2')) union buildfiles('target2') --noimplicit_deps --order_output=no",
-		"@ignored\n//external/ignored\n\n//:dep3\n",
-	))
-
-	deps, err := GetDependencies(context.Background(), ".", &latest.BazelArtifact{
-		BuildTarget: "target2",
-	})
-
-	t.CheckErrorAndDeepEqual(false, err, []string{"dep3"}, deps)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, deps)
+		})
+	}
 }
 
 func TestQuery(t *testing.T) {

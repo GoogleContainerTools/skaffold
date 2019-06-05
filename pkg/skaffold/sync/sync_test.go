@@ -554,22 +554,17 @@ func TestPerform(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			cmdRecord := &TestCmdRecorder{err: test.cmdErr}
 
-			reset := testutil.Override(t, &util.DefaultExecCommand, cmdRecord)
-			defer reset()
-
-			resetClient := testutil.Override(t, &pkgkubernetes.Client, func() (kubernetes.Interface, error) {
+			t.Override(&util.DefaultExecCommand, cmdRecord)
+			t.Override(&pkgkubernetes.Client, func() (kubernetes.Interface, error) {
 				return fake.NewSimpleClientset(pod), test.clientErr
 			})
-			defer resetClient()
-
-			util.DefaultExecCommand = cmdRecord
 
 			err := Perform(context.Background(), test.image, test.files, test.cmdFn, []string{""})
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cmdRecord.cmds)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, cmdRecord.cmds)
 		})
 	}
 }

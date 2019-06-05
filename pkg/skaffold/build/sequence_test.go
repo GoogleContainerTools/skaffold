@@ -109,7 +109,7 @@ func TestInSequenceResultsOrder(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := ioutil.Discard
 			initializeEvents()
 			artifacts := make([]*latest.Artifact, len(test.images))
@@ -121,8 +121,10 @@ func TestInSequenceResultsOrder(t *testing.T) {
 				tags[image] = image
 			}
 			builder := concatTagger{}
+
 			got, err := InSequence(context.Background(), out, tags, artifacts, builder.doBuild)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, got)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
 		})
 	}
 }

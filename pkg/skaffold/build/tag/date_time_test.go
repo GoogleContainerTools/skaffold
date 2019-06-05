@@ -59,15 +59,17 @@ func TestDateTime_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			c := &dateTimeTagger{
 				Format:   test.format,
 				TimeZone: test.timezone,
 				timeFn:   func() time.Time { return test.buildTime },
 			}
+
 			tag, err := c.GenerateFullyQualifiedImageName(".", test.imageName)
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.want, tag)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.want, tag)
 		})
 	}
 }

@@ -54,10 +54,10 @@ func mockHashForArtifact(hashes map[string]string) func(context.Context, build.B
 
 func Test_NewCache(t *testing.T) {
 	tests := []struct {
+		description        string
 		updateCacheFile    bool
 		pushImages         bool
 		updateClient       bool
-		name               string
 		opts               *config.SkaffoldOptions
 		expectedCache      *Cache
 		api                *testutil.FakeAPIClient
@@ -65,7 +65,7 @@ func Test_NewCache(t *testing.T) {
 		insecureRegistries map[string]bool
 	}{
 		{
-			name:              "get a valid cache from file",
+			description:       "get a valid cache from file",
 			cacheFileContents: defaultArtifactCache,
 			updateCacheFile:   true,
 			opts: &config.SkaffoldOptions{
@@ -99,7 +99,7 @@ func Test_NewCache(t *testing.T) {
 			},
 		},
 		{
-			name:              "needs push",
+			description:       "needs push",
 			cacheFileContents: defaultArtifactCache,
 			pushImages:        true,
 			updateCacheFile:   true,
@@ -118,7 +118,7 @@ func Test_NewCache(t *testing.T) {
 			},
 		},
 		{
-			name:              "valid cache file exists, but useCache is false",
+			description:       "valid cache file exists, but useCache is false",
 			cacheFileContents: defaultArtifactCache,
 			api:               &testutil.FakeAPIClient{},
 			opts:              &config.SkaffoldOptions{},
@@ -126,7 +126,7 @@ func Test_NewCache(t *testing.T) {
 		},
 		{
 
-			name:              "corrupted cache file",
+			description:       "corrupted cache file",
 			cacheFileContents: "corrupted cache file",
 			opts: &config.SkaffoldOptions{
 				CacheArtifacts: true,
@@ -135,22 +135,18 @@ func Test_NewCache(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
-			defer restore()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 
-			cacheFile, delete := createTempCacheFile(t, test.cacheFileContents)
-			defer delete()
-
+			cacheFile := createTempCacheFile(t, test.cacheFileContents)
 			if test.updateCacheFile {
 				test.expectedCache.cacheFile = cacheFile
 			}
 			test.opts.CacheFile = cacheFile
 
-			reset := testutil.Override(t, &newDockerClient, func(forceRemove bool, insecureRegistries map[string]bool) (docker.LocalDaemon, error) {
+			t.Override(&newDockerClient, func(forceRemove bool, insecureRegistries map[string]bool) (docker.LocalDaemon, error) {
 				return docker.NewLocalDaemon(test.api, nil, forceRemove, test.insecureRegistries), nil
 			})
-			defer reset()
 
 			if test.updateClient {
 				test.expectedCache.client = docker.NewLocalDaemon(test.api, nil, false, test.insecureRegistries)
@@ -180,11 +176,11 @@ func Test_NewCache(t *testing.T) {
 	}
 }
 
-func createTempCacheFile(t *testing.T, cacheFileContents interface{}) (string, func()) {
+func createTempCacheFile(t *testutil.T, cacheFileContents interface{}) string {
 	contents, err := yaml.Marshal(cacheFileContents)
 	if err != nil {
 		t.Fatalf("error marshalling cache: %v", err)
 	}
 
-	return testutil.TempFile(t, "", contents)
+	return t.TempFile("", contents)
 }

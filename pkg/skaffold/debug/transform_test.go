@@ -99,9 +99,10 @@ func TestAllocatePort(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			result := allocatePort(&test.pod, test.desiredPort)
-			testutil.CheckDeepEqual(t, test.result, result)
+
+			t.CheckDeepEqual(test.result, result)
 		})
 	}
 }
@@ -120,13 +121,14 @@ func TestDescribe(t *testing.T) {
 		{&batchv1.Job{TypeMeta: metav1.TypeMeta{APIVersion: batchv1.SchemeGroupVersion.String(), Kind: "Job"}, ObjectMeta: metav1.ObjectMeta{Name: "name"}}, "job.batch/name"},
 	}
 	for _, test := range tests {
-		t.Run(reflect.TypeOf(test.in).Name(), func(t *testing.T) {
+		testutil.Run(t, reflect.TypeOf(test.in).Name(), func(t *testutil.T) {
 			gvk := test.in.GetObjectKind().GroupVersionKind()
 			group, version, kind, description := describe(test.in)
-			testutil.CheckDeepEqual(t, gvk.Group, group)
-			testutil.CheckDeepEqual(t, gvk.Kind, kind)
-			testutil.CheckDeepEqual(t, gvk.Version, version)
-			testutil.CheckDeepEqual(t, test.result, description)
+
+			t.CheckDeepEqual(gvk.Group, group)
+			t.CheckDeepEqual(gvk.Kind, kind)
+			t.CheckDeepEqual(gvk.Version, version)
+			t.CheckDeepEqual(test.result, description)
 		})
 	}
 }

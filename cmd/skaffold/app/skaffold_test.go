@@ -26,26 +26,28 @@ import (
 )
 
 func TestMainHelp(t *testing.T) {
-	var (
-		output    bytes.Buffer
-		errOutput bytes.Buffer
-	)
+	testutil.Run(t, "", func(t *testutil.T) {
+		var (
+			output    bytes.Buffer
+			errOutput bytes.Buffer
+		)
 
-	restore := testutil.Override(t, &os.Args, []string{"skaffold", "help"})
-	defer restore()
+		t.Override(&os.Args, []string{"skaffold", "help"})
 
-	err := Run(&output, &errOutput)
+		err := Run(&output, &errOutput)
 
-	testutil.CheckError(t, false, err)
-	testutil.CheckContains(t, "Available Commands", output.String())
-	testutil.CheckDeepEqual(t, "", errOutput.String())
+		t.CheckNoError(err)
+		t.CheckContains("Available Commands", output.String())
+		t.CheckDeepEqual("", errOutput.String())
+	})
 }
 
 func TestMainUnknownCommand(t *testing.T) {
-	restore := testutil.Override(t, &os.Args, []string{"skaffold", "unknown"})
-	defer restore()
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&os.Args, []string{"skaffold", "unknown"})
 
-	err := Run(ioutil.Discard, ioutil.Discard)
+		err := Run(ioutil.Discard, ioutil.Discard)
 
-	testutil.CheckError(t, true, err)
+		t.CheckError(true, err)
+	})
 }
