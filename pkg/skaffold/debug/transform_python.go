@@ -36,7 +36,7 @@ const (
 	defaultPtvsdPort = 5678
 )
 
-// ptvsdSpec captures the useful nodejs devtools options
+// ptvsdSpec captures the useful python-ptvsd devtools options
 type ptvsdSpec struct {
 	host string
 	port int32
@@ -71,7 +71,7 @@ func (t pythonTransformer) RuntimeSupportImage() string {
 func (t pythonTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
 	logrus.Infof("Configuring %q for python debugging", container.Name)
 
-	// try to find existing `--inspect` command
+	// try to find existing `-mptvsd` command
 	spec := retrievePtvsdSpec(config)
 	// todo: find existing containerPort "dap" (debug-adapter protocol) and use port. But what if it conflicts with command-line spec?
 
@@ -167,7 +167,7 @@ func hasPtvsdModule(args []string) bool {
 	return false
 }
 
-// rewriteNodeCommandLine rewrites a node/nodemon command-line to insert a `--inspect=xxx`
+// rewritePythonCommandLine rewrites a python command-line to insert a `-mptvsd` etc
 func rewritePythonCommandLine(commandLine []string, spec ptvsdSpec) []string {
 	// Assumes that commandLine[0] is "python" or "python3" etc
 	return util.StrSliceInsert(commandLine, 1, spec.asArguments())
