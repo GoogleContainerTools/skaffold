@@ -34,3 +34,8 @@ jobs:
       script:
         - go build -o out/skaffold.exe cmd/skaffold/skaffold.go
         - go test -short -timeout 60s ./...
+    - stage: todo
+      if: branch = master
+      os: linux
+      script:
+        - echo "Hello"
