@@ -50,14 +50,34 @@ func CatchCtrlC(cancel context.CancelFunc) {
 
 func WaitForSignalOrCtrlC(ctx context.Context, trigger chan bool) {
 	proceed := make(chan bool, 1)
-	go func() {
-		<-trigger
-		proceed <- true
-	}()
-	go func(ctx context.Context) {
-		_, cancel := context.WithCancel(ctx)
+	kill := make(chan bool, 1)
+	go func(ctx context.Context, kill chan bool) {
+		ctx, cancel := context.WithCancel(ctx)
 		CatchCtrlC(cancel)
-		proceed <- true
-	}(ctx)
+		for {
+			select {
+			case <-ctx.Done():
+				proceed <- true
+				kill <- true
+				return
+			default:
+				continue
+			}
+		}
+	}(ctx, kill)
+	go func(kill chan bool) {
+		for {
+			select {
+			case <-kill:
+				// return
+				break
+			case <-trigger:
+				proceed <- true
+				return
+			default:
+				continue
+			}
+		}
+	}(kill)
 	<-proceed
 }

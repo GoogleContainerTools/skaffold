@@ -23,6 +23,7 @@ import (
 	"sync"
 	"syscall"
 	"testing"
+	"time"
 )
 
 func TestCatchCtrlC(t *testing.T) {
@@ -68,6 +69,10 @@ func TestWaitForSignalOrCtrlC(t *testing.T) {
 				WaitForSignalOrCtrlC(context.Background(), trigger)
 				wg.Done()
 			}()
+
+			// give goroutine time to start worker before sending SIGINT
+			// otherwise, SIGINT sometimes gets sent before we can catch it
+			time.Sleep(50 * time.Millisecond)
 
 			if tt.killWithCtrlC {
 				syscall.Kill(syscall.Getpid(), syscall.SIGINT)
