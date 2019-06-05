@@ -218,7 +218,8 @@ func TestCloneThroughJSON(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			err := CloneThroughJSON(test.old, test.new)
 
-			t.CheckErrorAndDeepEqual(false, err, test.expected, test.new)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, test.new)
 		})
 	}
 }

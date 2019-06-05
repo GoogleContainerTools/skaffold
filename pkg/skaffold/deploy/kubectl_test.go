@@ -55,12 +55,6 @@ spec:
     image: leeroy-app`
 
 func TestKubectlDeploy(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
-
-	tmpDir.Write("deployment.yaml", deploymentWebYAML)
-	tmpDir.Write("empty.ignored", "")
-
 	var tests = []struct {
 		description string
 		cfg         *latest.KubectlDeploy
@@ -95,7 +89,7 @@ func TestKubectlDeploy(t *testing.T) {
 			},
 			command: testutil.NewFakeCmd(t).
 				WithRunOut("kubectl version --client -ojson", kubectlVersion).
-				WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), deploymentWebYAML).
+				WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
 				WithRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
@@ -110,7 +104,7 @@ func TestKubectlDeploy(t *testing.T) {
 			},
 			command: testutil.NewFakeCmd(t).
 				WithRunOut("kubectl version --client -ojson", kubectlVersion).
-				WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), deploymentWebYAML).
+				WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
 				WithRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
@@ -124,7 +118,7 @@ func TestKubectlDeploy(t *testing.T) {
 			},
 			command: testutil.NewFakeCmd(t).
 				WithRunOut("kubectl version --client -ojson", kubectlVersion).
-				WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), deploymentWebYAML).
+				WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
 				WithRunErr("kubectl --context kubecontext --namespace testNamespace apply -f -", fmt.Errorf("")),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
@@ -144,7 +138,7 @@ func TestKubectlDeploy(t *testing.T) {
 			},
 			command: testutil.NewFakeCmd(t).
 				WithRunOut("kubectl version --client -ojson", kubectlVersion).
-				WithRunOut("kubectl --context kubecontext --namespace testNamespace -v=0 create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), deploymentWebYAML).
+				WithRunOut("kubectl --context kubecontext --namespace testNamespace -v=0 create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
 				WithRunErr("kubectl --context kubecontext --namespace testNamespace -v=0 apply --overwrite=true -f -", fmt.Errorf("")),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
@@ -155,10 +149,15 @@ func TestKubectlDeploy(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir().
+				Write("deployment.yaml", deploymentWebYAML).
+				Write("empty.ignored", "")
+			t.Chdir(tmpDir.Root())
+
 			t.Override(&util.DefaultExecCommand, test.command)
 
 			k := NewKubectlDeployer(&runcontext.RunContext{
-				WorkingDir: tmpDir.Root(),
+				WorkingDir: ".",
 				Cfg: &latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
@@ -172,7 +171,6 @@ func TestKubectlDeploy(t *testing.T) {
 					Force:     test.forceDeploy,
 				},
 			})
-
 			err := k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
 
 			t.CheckError(test.shouldErr, err)
@@ -181,11 +179,6 @@ func TestKubectlDeploy(t *testing.T) {
 }
 
 func TestKubectlCleanup(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
-
-	tmpDir.Write("deployment.yaml", deploymentWebYAML)
-
 	var tests = []struct {
 		description string
 		cfg         *latest.KubectlDeploy
@@ -198,7 +191,7 @@ func TestKubectlCleanup(t *testing.T) {
 				Manifests: []string{"deployment.yaml"},
 			},
 			command: testutil.NewFakeCmd(t).
-				WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), deploymentWebYAML).
+				WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
 				WithRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -"),
 		},
 		{
@@ -207,7 +200,7 @@ func TestKubectlCleanup(t *testing.T) {
 				Manifests: []string{"deployment.yaml"},
 			},
 			command: testutil.NewFakeCmd(t).
-				WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), deploymentWebYAML).
+				WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
 				WithRunErr("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -", errors.New("BUG")),
 			shouldErr: true,
 		},
@@ -222,16 +215,20 @@ func TestKubectlCleanup(t *testing.T) {
 				},
 			},
 			command: testutil.NewFakeCmd(t).
-				WithRunOut("kubectl --context kubecontext --namespace testNamespace -v=0 create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), deploymentWebYAML).
+				WithRunOut("kubectl --context kubecontext --namespace testNamespace -v=0 create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
 				WithRun("kubectl --context kubecontext --namespace testNamespace -v=0 delete --grace-period=1 --ignore-not-found=true -f -"),
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir().
+				Write("deployment.yaml", deploymentWebYAML)
+			t.Chdir(tmpDir.Root())
+
 			t.Override(&util.DefaultExecCommand, test.command)
 
 			k := NewKubectlDeployer(&runcontext.RunContext{
-				WorkingDir: tmpDir.Root(),
+				WorkingDir: ".",
 				Cfg: &latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{

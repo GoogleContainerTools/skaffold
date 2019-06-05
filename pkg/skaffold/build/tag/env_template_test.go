@@ -96,11 +96,12 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return test.env })
 
 			c, err := NewEnvTemplateTagger(test.template)
-			t.CheckError(false, err)
+			t.CheckNoError(err)
 
 			got, err := c.GenerateFullyQualifiedImageName("", test.imageName)
 
-			t.CheckErrorAndDeepEqual(false, err, test.expected, got)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, got)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})
 	}

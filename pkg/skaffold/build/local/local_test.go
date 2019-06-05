@@ -216,10 +216,9 @@ func TestLocalRun(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			fakeWarner := &warnings.Collect{}
-			reset := testutil.Override(t, &warnings.Printf, fakeWarner.Warnf)
-			defer reset()
+			t.Override(&warnings.Printf, fakeWarner.Warnf)
 
 			cfg := latest.BuildConfig{
 				BuildType: latest.BuildType{
@@ -240,9 +239,9 @@ func TestLocalRun(t *testing.T) {
 
 			res, err := l.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
-			testutil.CheckDeepEqual(t, test.expectedWarnings, fakeWarner.Warnings)
-			testutil.CheckDeepEqual(t, test.expectedPushed, test.api.Pushed)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
+			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
+			t.CheckDeepEqual(test.expectedPushed, test.api.Pushed)
 		})
 	}
 }

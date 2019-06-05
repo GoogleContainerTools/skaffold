@@ -22,8 +22,6 @@ import (
 	"io"
 	"testing"
 
-	"k8s.io/client-go/tools/clientcmd/api"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -34,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 type Actions struct {
@@ -142,9 +141,7 @@ func findTags(artifacts []build.Artifact) []string {
 	return tags
 }
 
-func createRunner(t *testing.T, testBench *TestBench) *SkaffoldRunner {
-	t.Helper()
-
+func createRunner(t *testutil.T, testBench *TestBench) *SkaffoldRunner {
 	opts := &config.SkaffoldOptions{
 		Trigger: "polling",
 	}
@@ -153,8 +150,7 @@ func createRunner(t *testing.T, testBench *TestBench) *SkaffoldRunner {
 	defaults.Set(cfg)
 
 	runner, err := NewForConfig(opts, cfg)
-
-	testutil.CheckError(t, false, err)
+	t.CheckNoError(err)
 
 	runner.Builder = testBench
 	runner.Syncer = testBench
@@ -165,9 +161,6 @@ func createRunner(t *testing.T, testBench *TestBench) *SkaffoldRunner {
 }
 
 func TestNewForConfig(t *testing.T) {
-	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
-	defer restore()
-
 	var tests = []struct {
 		description      string
 		config           *latest.SkaffoldConfig
@@ -283,18 +276,20 @@ func TestNewForConfig(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+
 			cfg, err := NewForConfig(&config.SkaffoldOptions{
 				Trigger: "polling",
 			}, test.config)
 
-			testutil.CheckError(t, test.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 			if cfg != nil {
 				b, _t, d := WithTimings(test.expectedBuilder, test.expectedTester, test.expectedDeployer, test.cacheArtifacts)
 
-				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, b, cfg.Builder)
-				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, _t, cfg.Tester)
-				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, d, cfg.Deployer)
+				t.CheckErrorAndTypeEquality(test.shouldErr, err, b, cfg.Builder)
+				t.CheckErrorAndTypeEquality(test.shouldErr, err, _t, cfg.Tester)
+				t.CheckErrorAndTypeEquality(test.shouldErr, err, d, cfg.Deployer)
 			}
 		})
 	}

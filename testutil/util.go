@@ -34,12 +34,12 @@ type T struct {
 	teardownActions []func()
 }
 
-func (t *T) NewFakeCmd() *FakeCmd {
-	return NewFakeCmd(t.T)
-}
-
 func (t *T) FakeRunOut(command string, output string) *FakeCmd {
 	return FakeRunOut(t.T, command, output)
+}
+
+func (t *T) FakeRunOutErr(command string, output string, err error) *FakeCmd {
+	return FakeRunOutErr(t.T, command, output, err)
 }
 
 func (t *T) Override(dest, tmp interface{}) {
@@ -79,15 +79,14 @@ func (t *T) NewTempDir() *TempDir {
 	return tmpDir
 }
 
-func (t *T) SetEnvs(envs map[string]string) {
-	teardown := SetEnvs(t.T, envs)
+func (t *T) Chdir(dir string) {
+	teardown := Chdir(t.T, dir)
 	t.teardownActions = append(t.teardownActions, teardown)
 }
 
-func NewTest(t *testing.T) *T {
-	return &T{
-		T: t,
-	}
+func (t *T) SetEnvs(envs map[string]string) {
+	teardown := SetEnvs(t.T, envs)
+	t.teardownActions = append(t.teardownActions, teardown)
 }
 
 func Run(t *testing.T, name string, f func(t *T)) {
@@ -96,7 +95,9 @@ func Run(t *testing.T, name string, f func(t *T)) {
 	}
 
 	t.Run(name, func(tt *testing.T) {
-		testWrapper := NewTest(tt)
+		testWrapper := &T{
+			T: tt,
+		}
 
 		defer func() {
 			for _, teardownAction := range testWrapper.teardownActions {
@@ -134,21 +135,6 @@ func CheckErrorAndDeepEqual(t *testing.T, shouldErr bool, err error, expected, a
 	}
 	if diff := cmp.Diff(actual, expected, opts...); diff != "" {
 		t.Errorf("%T differ (-got, +want): %s", expected, diff)
-		return
-	}
-}
-
-func CheckErrorAndTypeEquality(t *testing.T, shouldErr bool, err error, expected, actual interface{}) {
-	t.Helper()
-	if err := checkErr(shouldErr, err); err != nil {
-		t.Error(err)
-		return
-	}
-	expectedType := reflect.TypeOf(expected)
-	actualType := reflect.TypeOf(actual)
-
-	if expectedType != actualType {
-		t.Errorf("Types do not match. Expected %s, Actual %s", expectedType, actualType)
 		return
 	}
 }

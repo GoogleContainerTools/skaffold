@@ -32,9 +32,6 @@ func TestNewBuildOutputFlag(t *testing.T) {
 }
 
 func TestBuildOutputSet(t *testing.T) {
-	dir, cleanUp := testutil.NewTempDir(t)
-	defer cleanUp()
-
 	var tests = []struct {
 		description         string
 		buildOutputBytes    []byte
@@ -79,6 +76,8 @@ func TestBuildOutputSet(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			dir := t.NewTempDir()
+
 			flag := NewBuildOutputFileFlag("")
 			if test.buildOutputBytes != nil {
 				dir.Write(test.setValue, string(test.buildOutputBytes))

@@ -17,7 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -111,12 +110,10 @@ func TestLabels(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			labels := test.options.Labels()
 
-			if !reflect.DeepEqual(test.expectedLabels, labels) {
-				t.Errorf("Wrong labels. Expected %v. Got %v", test.expectedLabels, labels)
-			}
+			t.CheckDeepEqual(test.expectedLabels, labels)
 		})
 	}
 }

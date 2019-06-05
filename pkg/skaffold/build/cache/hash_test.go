@@ -72,7 +72,8 @@ func TestGetHashForArtifact(t *testing.T) {
 				builder := &mockBuilder{dependencies: d}
 				actual, err := getHashForArtifact(context.Background(), builder, nil)
 
-				t.CheckErrorAndDeepEqual(false, err, test.expected, actual)
+				t.CheckNoError(err)
+				t.CheckDeepEqual(test.expected, actual)
 			}
 		})
 	}
@@ -120,34 +121,26 @@ func TestCacheHasher(t *testing.T) {
 			originalFile := "foo"
 			originalContents := "contents"
 
-			folder := t.NewTempDir().
+			tmpDir := t.NewTempDir().
 				Write(originalFile, originalContents)
 
 			path := originalFile
-			builder := &mockBuilder{dependencies: []string{folder.Path(originalFile)}}
+			builder := &mockBuilder{dependencies: []string{tmpDir.Path(originalFile)}}
 
 			oldHash, err := getHashForArtifact(context.Background(), builder, nil)
-			if err != nil {
-				t.Errorf("error getting hash for artifact: %v", err)
-			}
+			t.CheckNoError(err)
 
-			test.update(originalFile, folder)
+			test.update(originalFile, tmpDir)
 			if test.newFilename != "" {
 				path = test.newFilename
 			}
 
-			builder.dependencies = []string{folder.Path(path)}
+			builder.dependencies = []string{tmpDir.Path(path)}
 			newHash, err := getHashForArtifact(context.Background(), builder, nil)
-			if err != nil {
-				t.Errorf("error getting hash for artifact: %v", err)
-			}
 
-			if test.differentHash && oldHash == newHash {
-				t.Fatalf("expected hashes to be different but they were the same:\n oldHash: %s\n newHash: %s", oldHash, newHash)
-			}
-			if !test.differentHash && oldHash != newHash {
-				t.Fatalf("expected hashes to be the same but they were different:\n oldHash: %s\n newHash: %s", oldHash, newHash)
-			}
+			t.CheckNoError(err)
+			t.CheckDeepEqual(false, test.differentHash && oldHash == newHash)
+			t.CheckDeepEqual(false, !test.differentHash && oldHash != newHash)
 		})
 	}
 }

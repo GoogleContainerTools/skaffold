@@ -126,7 +126,7 @@ func TestApplyDebuggingTransforms(t *testing.T) {
 
 	tests := []struct {
 		description string
-		shouldError bool
+		shouldErr   bool
 		in          string
 		out         string
 	}{
@@ -486,9 +486,9 @@ status:
 				return imageConfiguration{}, nil
 			}
 
-			result, error := applyDebuggingTransforms(kubectl.ManifestList{[]byte(test.in)}, retriever)
+			result, err := applyDebuggingTransforms(kubectl.ManifestList{[]byte(test.in)}, retriever)
 
-			t.CheckErrorAndDeepEqual(test.shouldError, error, test.out, result.String())
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.out, result.String())
 		})
 	}
 }

@@ -24,27 +24,32 @@ import (
 )
 
 func TestReadConfiguration(t *testing.T) {
-	localFile, delete := testutil.TempFile(t, "skaffold.yaml", []byte("some yaml"))
-	defer delete()
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir()
+		t.Chdir(tmpDir.Root())
 
-	content, err := ReadConfiguration(localFile)
+		tmpDir.Write("skaffold.yaml", "some yaml")
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, []byte("some yaml"), content)
+		content, err := ReadConfiguration("skaffold.yaml")
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual([]byte("some yaml"), content)
+	})
 }
 
 func TestReadConfigurationFallback(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir()
+		t.Chdir(tmpDir.Root())
 
-	reset := testutil.Chdir(t, tmpDir.Root())
-	defer reset()
+		// skaffold.yaml doesn't exist but .yml does
+		tmpDir.Write("skaffold.yml", "some yaml")
 
-	// skaffold.yaml doesn't exist but .yml does
-	tmpDir.Write("skaffold.yml", "some yaml")
+		content, err := ReadConfiguration("skaffold.yaml")
 
-	content, err := ReadConfiguration("skaffold.yaml")
-
-	testutil.CheckErrorAndDeepEqual(t, false, err, []byte("some yaml"), content)
+		t.CheckNoError(err)
+		t.CheckDeepEqual([]byte("some yaml"), content)
+	})
 }
 
 func TestReadConfigurationNotFound(t *testing.T) {

@@ -78,9 +78,9 @@ func TestValidateStructRequired(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			if err := ValidateStruct(test.args.s); (err != nil) != test.shouldErr {
-				t.Errorf("ValidateStruct() error = %v, shouldErr %v", err, test.shouldErr)
-			}
+			err := ValidateStruct(test.args.s)
+
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
@@ -150,9 +150,9 @@ func TestValidateStructOneOf(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			if err := ValidateStruct(test.args.s); (err != nil) != test.shouldErr {
-				t.Errorf("ValidateStruct() error = %v, shouldErr %v", err, test.shouldErr)
-			}
+			err := ValidateStruct(test.args.s)
+
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
