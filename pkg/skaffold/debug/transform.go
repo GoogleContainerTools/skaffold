@@ -20,7 +20,7 @@ for remote debugging as required for a container's runtime technology.  This pac
 a _container transformer_ interface. Each implementation does 4 things:
 
 1. The transformer should modify the container's entrypoint, command arguments, and environment to enable debugging for the appropriate language runtime.
-2. The transformer should expose the port(s) required to connect remote debuggers. 
+2. The transformer should expose the port(s) required to connect remote debuggers.
 3. The transformer should identify any additional support files required to enable debugging (e.g., the `Delve` debugger for Go).
 4. The transform should return metadata to describe the remote connection information.
 
@@ -31,7 +31,7 @@ The appropriate image ID is returned by the language transformer.  These support
 are configured as initContainers on the pod and are expected to copy the debugging support
 files into a support volume mounted at `/dbg`.  The expected convention is that each runtime's
 files are placed in `/dbg/<runtimeId>`.  This same volume is then mounted into the
-actual containers at `/dbg`.    
+actual containers at `/dbg`.
 
 As Kubernetes container objects don't actually carry metadata, we place this metadata on
 the container's parent as an _annotation_; as a pod/podspec can have multiple containers, each of which may
@@ -92,7 +92,7 @@ type containerTransformer interface {
 	Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{}
 }
 
-// debuggingSupportVolume is the name of the volume used to hold language runtime debugging support files 
+// debuggingSupportVolume is the name of the volume used to hold language runtime debugging support files
 const debuggingSupportFilesVolume = "debugging-support-files"
 
 var containerTransforms []containerTransformer
@@ -170,7 +170,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		// the usual retriever returns an error for non-build artifacts
 		imageConfig, err := retrieveImageConfiguration(container.Image)
 		if err != nil {
-			continue;
+			continue
 		}
 		// requiredImage, if not empty, is the image ID providing the debugging support files
 		if configuration, requiredImage, err := transformContainer(container, imageConfig, portAlloc); err == nil {
@@ -185,17 +185,17 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 			logrus.Infof("Image %q not configured for debugging: %v", container.Name, err)
 		}
 	}
-	
+
 	// check if we have any images requiring additional debugging support files
 	if len(containersRequiringSupport) > 0 {
 		logrus.Infof("Configuring installation of debugging support files")
 		// we create the volume that will hold the debugging support files
 		supportVolume := v1.Volume{Name: debuggingSupportFilesVolume, VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}
 		podSpec.Volumes = append(podSpec.Volumes, supportVolume)
-		
+
 		// this volume is mounted in the containers at `/dbg`
 		supportVolumeMount := v1.VolumeMount{Name: debuggingSupportFilesVolume, MountPath: "/dbg"}
-		// the initContainers are responsible for populating the contents of `/dbg` 
+		// the initContainers are responsible for populating the contents of `/dbg`
 		// TODO make this pluggable for airgapped clusters? or is making container `imagePullPolicy:IfNotPresent` sufficient?
 		for imageID := range requiredSupportImages {
 			supportFilesInitContainer := v1.Container{
@@ -262,7 +262,7 @@ func transformContainer(container *v1.Container, config imageConfiguration, port
 	// update image configuration values with those set in the k8s manifest
 	for _, envVar := range container.Env {
 		// FIXME handle ValueFrom?
-		if(config.env == nil) {
+		if config.env == nil {
 			config.env = make(map[string]string)
 		}
 		config.env[envVar.Name] = envVar.Value
