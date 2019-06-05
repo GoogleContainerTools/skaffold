@@ -23,7 +23,7 @@ GSC_BUILD_LATEST ?= gs://$(RELEASE_BUCKET)/builds/latest
 GSC_RELEASE_PATH ?= gs://$(RELEASE_BUCKET)/releases/$(VERSION)
 GSC_RELEASE_LATEST ?= gs://$(RELEASE_BUCKET)/releases/latest
 
-REMOTE_INTEGRATION ?= false
+GCP_ONLY ?= false
 GCP_PROJECT ?= k8s-skaffold
 GKE_CLUSTER_NAME ?= integration-tests
 GKE_ZONE ?= us-central1-a
@@ -90,13 +90,13 @@ install: $(GO_FILES) $(BUILD_DIR)
 
 .PHONY: integration
 integration: install
-ifeq ($(REMOTE_INTEGRATION),true)
+ifeq ($(GCP_ONLY),true)
 	gcloud container clusters get-credentials \
 		$(GKE_CLUSTER_NAME) \
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-	REMOTE_INTEGRATION=$(REMOTE_INTEGRATION) go test -v $(REPOPATH)/integration -timeout 15m
+	GCP_ONLY=$(GCP_ONLY) go test -v $(REPOPATH)/integration -timeout 15m
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
@@ -169,7 +169,6 @@ integration-in-kind: kind-cluster skaffold-builder
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v /tmp/kind-config:/kind-config \
 		-v /tmp/docker-config:/root/.docker/config.json \
-		-e REMOTE_INTEGRATION=$(REMOTE_INTEGRATION) \
 		-e KUBECONFIG=/kind-config \
 		gcr.io/$(GCP_PROJECT)/skaffold-integration
 
@@ -179,7 +178,7 @@ integration-in-docker: skaffold-builder
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		-v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
-		-e REMOTE_INTEGRATION=$(REMOTE_INTEGRATION) \
+		-e GCP_ONLY=$(GCP_ONLY) \
 		-e GCP_PROJECT=$(GCP_PROJECT) \
 		-e GKE_CLUSTER_NAME=$(GKE_CLUSTER_NAME) \
 		-e GKE_ZONE=$(GKE_ZONE) \
