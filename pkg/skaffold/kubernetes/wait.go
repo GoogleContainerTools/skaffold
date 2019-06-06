@@ -53,27 +53,6 @@ func watchUntil(ctx context.Context, w watch.Interface, condition func(event *wa
 	}
 }
 
-// WaitForPodScheduled waits until the Pod is scheduled.
-func WaitForPodScheduled(ctx context.Context, pods corev1.PodInterface, podName string) error {
-	logrus.Infof("Waiting for %s to be scheduled", podName)
-
-	w, err := pods.Watch(meta_v1.ListOptions{
-		IncludeUninitialized: true,
-	})
-	if err != nil {
-		return fmt.Errorf("initializing pod watcher: %s", err)
-	}
-	defer w.Stop()
-
-	ctx, cancelTimeout := context.WithTimeout(ctx, 30*time.Second)
-	defer cancelTimeout()
-
-	return watchUntil(ctx, w, func(event *watch.Event) (bool, error) {
-		pod := event.Object.(*v1.Pod)
-		return pod.Name == podName, nil
-	})
-}
-
 // WaitForPodComplete waits until the Pod status is complete.
 func WaitForPodComplete(ctx context.Context, pods corev1.PodInterface, podName string, timeout time.Duration) error {
 	logrus.Infof("Waiting for %s to be complete", podName)
