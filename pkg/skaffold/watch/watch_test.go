@@ -26,7 +26,19 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestWatch(t *testing.T) {
+func TestWatchWithPollTrigger(t *testing.T) {
+	testWatch(t, &pollTrigger{
+		Interval: 10 * time.Millisecond,
+	})
+}
+
+func TestWatchWithNotifyTrigger(t *testing.T) {
+	testWatch(t, &fsNotifyTrigger{
+		Interval: 10 * time.Millisecond,
+	})
+}
+
+func testWatch(t *testing.T, trigger Trigger) {
 	var tests = []struct {
 		description string
 		setup       func(folder *testutil.TempDir)
@@ -62,16 +74,14 @@ func TestWatch(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir()
+			tmpDir := t.NewTempDir().Chdir()
 			test.setup(tmpDir)
 
 			folderChanged := newCallback()
 			somethingChanged := newCallback()
 
 			// Watch folder
-			watcher := NewWatcher(&pollTrigger{
-				Interval: 10 * time.Millisecond,
-			})
+			watcher := NewWatcher(trigger)
 			err := watcher.Register(tmpDir.List, folderChanged.call)
 			t.CheckNoError(err)
 
