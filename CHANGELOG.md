@@ -1,3 +1,81 @@
+# v0.31.0 Release - 06/06/2019
+
+New Features:
+* Add CI on windows [#2214](https://github.com/GoogleContainerTools/skaffold/pull/2214)
+* Add API build trigger [#2201](https://github.com/GoogleContainerTools/skaffold/pull/2201)
+* Cross compile Skaffold, with CGO=1, using xgo [#2006](https://github.com/GoogleContainerTools/skaffold/pull/2006)
+* Print logs from init containers [#2182](https://github.com/GoogleContainerTools/skaffold/pull/2182)
+
+Bug Fixes:
+* Restore defaulting to polling trigger [#2228](https://github.com/GoogleContainerTools/skaffold/pull/2228)
+* Fix master branch [#2221](https://github.com/GoogleContainerTools/skaffold/pull/2221)
+* Revert "Improve output for docker push" [#2216](https://github.com/GoogleContainerTools/skaffold/pull/2216)
+* Fix error in flag refactoring for `skaffold run --tail` [#2172](https://github.com/GoogleContainerTools/skaffold/pull/2172)
+
+Updates & refactoring:
+* Increase test coverage [#2225](https://github.com/GoogleContainerTools/skaffold/pull/2225)
+* Use test wrapper in more tests [#2222](https://github.com/GoogleContainerTools/skaffold/pull/2222)
+* Improve documentation for kaniko [#2186](https://github.com/GoogleContainerTools/skaffold/pull/2186)
+*  Use the testutils test helper [#2218](https://github.com/GoogleContainerTools/skaffold/pull/2218)
+* Remove AppVeyor [#2219](https://github.com/GoogleContainerTools/skaffold/pull/2219)
+* Check man page with a unit test instead of a script [#2180](https://github.com/GoogleContainerTools/skaffold/pull/2180)
+* Make notify trigger the default trigger [#2213](https://github.com/GoogleContainerTools/skaffold/pull/2213)
+* Test helper to make tests less verbose [#2193](https://github.com/GoogleContainerTools/skaffold/pull/2193)
+* Refactor cmd builder [#2179](https://github.com/GoogleContainerTools/skaffold/pull/2179)
+* Improve output for docker push [#2209](https://github.com/GoogleContainerTools/skaffold/pull/2209)
+* Faster Travis CI [#2210](https://github.com/GoogleContainerTools/skaffold/pull/2210)
+* Simplify schema upgrades: remove duplication [#2212](https://github.com/GoogleContainerTools/skaffold/pull/2212)
+* Moar tests [#2195](https://github.com/GoogleContainerTools/skaffold/pull/2195)
+* Add a test help to verify that a test panicked [#2194](https://github.com/GoogleContainerTools/skaffold/pull/2194)
+* [Refactor] Move gRPC and HTTP server logic out of event package [#2199](https://github.com/GoogleContainerTools/skaffold/pull/2199)
+* Update _index.md [#2192](https://github.com/GoogleContainerTools/skaffold/pull/2192)
+* Multiple small improvements to unit tests [#2189](https://github.com/GoogleContainerTools/skaffold/pull/2189)
+* Test tester [#2181](https://github.com/GoogleContainerTools/skaffold/pull/2181)
+* Remove dead code [#2183](https://github.com/GoogleContainerTools/skaffold/pull/2183)
+* Remove trailing dot. [#2178](https://github.com/GoogleContainerTools/skaffold/pull/2178)
+* Remove $ from example commands [#2177](https://github.com/GoogleContainerTools/skaffold/pull/2177)
+* Add sync test and refactor InParallel [#2118](https://github.com/GoogleContainerTools/skaffold/pull/2118)
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Alexandre Ardhuin
+- Balint Pato
+- Brian de Alwis
+- Byungjin Park
+- Chanseok Oh
+- Charles-Henri GUÉRIN
+- Cornelius Weig
+- David Gageot
+- Dmitri Moore
+- Etan Shaul
+- Gareth Evans
+- g-harel
+- guille
+- Ilyes Hammadi
+- Iván Aponte
+- Marcos Ottonello
+- Martin Hoefling
+- Michael FIG
+- Nick Kubala
+- Persevere Von
+- peter
+- Pierre-Yves Aillet
+- Prashant Arya
+- Priya Wadhwa
+- Rahul Sinha
+- robertrbruno
+- Rory Shively
+- Tad Cordle
+- Taylor Barrella
+- Tejal Desai
+- Tigran Tch
+- TJ Koblentz
+- u5surf
+- venkatk-25
+- Xiaoxi He
+
+
 # v0.30.0 Release - 05/23/2019
 
 *Note*: This release comes with a new config version `v1beta11`.
