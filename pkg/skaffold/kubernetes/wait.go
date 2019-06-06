@@ -36,7 +36,10 @@ import (
 )
 
 // WatchUntil reads items from the watch until the provided condition succeeds or the context is cancelled.
-func watchUntil(ctx context.Context, w watch.Interface, condition func(event *watch.Event) (bool, error)) error {
+func watchUntilTimeout(ctx context.Context, timeout time.Duration, w watch.Interface, condition func(event *watch.Event) (bool, error)) error {
+	ctx, cancelTimeout := context.WithTimeout(ctx, timeout)
+	defer cancelTimeout()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -53,27 +56,6 @@ func watchUntil(ctx context.Context, w watch.Interface, condition func(event *wa
 	}
 }
 
-// WaitForPodScheduled waits until the Pod is scheduled.
-func WaitForPodScheduled(ctx context.Context, pods corev1.PodInterface, podName string) error {
-	logrus.Infof("Waiting for %s to be scheduled", podName)
-
-	w, err := pods.Watch(meta_v1.ListOptions{
-		IncludeUninitialized: true,
-	})
-	if err != nil {
-		return fmt.Errorf("initializing pod watcher: %s", err)
-	}
-	defer w.Stop()
-
-	ctx, cancelTimeout := context.WithTimeout(ctx, 30*time.Second)
-	defer cancelTimeout()
-
-	return watchUntil(ctx, w, func(event *watch.Event) (bool, error) {
-		pod := event.Object.(*v1.Pod)
-		return pod.Name == podName, nil
-	})
-}
-
 // WaitForPodComplete waits until the Pod status is complete.
 func WaitForPodComplete(ctx context.Context, pods corev1.PodInterface, podName string, timeout time.Duration) error {
 	logrus.Infof("Waiting for %s to be complete", podName)
@@ -86,10 +68,7 @@ func WaitForPodComplete(ctx context.Context, pods corev1.PodInterface, podName s
 	}
 	defer w.Stop()
 
-	ctx, cancelTimeout := context.WithTimeout(ctx, timeout)
-	defer cancelTimeout()
-
-	return watchUntil(ctx, w, func(event *watch.Event) (bool, error) {
+	return watchUntilTimeout(ctx, timeout, w, func(event *watch.Event) (bool, error) {
 		if event.Object == nil {
 			return false, nil
 		}
@@ -124,10 +103,7 @@ func WaitForPodInitialized(ctx context.Context, pods corev1.PodInterface, podNam
 	}
 	defer w.Stop()
 
-	ctx, cancelTimeout := context.WithTimeout(ctx, 10*time.Minute)
-	defer cancelTimeout()
-
-	return watchUntil(ctx, w, func(event *watch.Event) (bool, error) {
+	return watchUntilTimeout(ctx, 10*time.Minute, w, func(event *watch.Event) (bool, error) {
 		pod := event.Object.(*v1.Pod)
 		if pod.Name != podName {
 			return false, nil
@@ -157,10 +133,7 @@ func WaitForDeploymentToStabilize(ctx context.Context, c kubernetes.Interface, n
 		return fmt.Errorf("initializing deployment watcher: %s", err)
 	}
 
-	ctx, cancelTimeout := context.WithTimeout(ctx, timeout)
-	defer cancelTimeout()
-
-	return watchUntil(ctx, w, func(event *watch.Event) (bool, error) {
+	return watchUntilTimeout(ctx, timeout, w, func(event *watch.Event) (bool, error) {
 		if event.Type == watch.Deleted {
 			return false, apierrs.NewNotFound(schema.GroupResource{Resource: "deployments"}, "")
 		}

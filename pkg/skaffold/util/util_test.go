@@ -88,6 +88,11 @@ func TestExpandPathsGlob(t *testing.T) {
 			in:          []string{"dir*"},
 			out:         []string{tmpDir.Path("dir/sub_dir/file"), tmpDir.Path("dir_b/sub_dir_b/file")},
 		},
+		{
+			description: "invalid pattern",
+			in:          []string{"[]"},
+			shouldErr:   true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
