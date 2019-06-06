@@ -431,33 +431,6 @@
   version = "v1.8.5"
 
 [[projects]]
-  branch = "master"
-  digest = "1:26159b03ea04b155cb70d071c32bf599f0519548f8724be87df85fe8fd0a33a3"
-  name = "github.com/hashicorp/go-hclog"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "4783caec6f2e5cdd47fab8b2bb47ce2ce5c546b7"
-
-[[projects]]
-  branch = "master"
-  digest = "1:8c38df748ea4cf82f8a5185eb3e6292a1047b76c90c8c8e8b924451e043ba7e4"
-  name = "github.com/hashicorp/go-plugin"
-  packages = [
-    ".",
-    "internal/proto",
-  ]
-  pruneopts = "NUT"
-  revision = "362c99b11937c6a84686ee5726a8170e921ab406"
-
-[[projects]]
-  branch = "master"
-  digest = "1:8deb0c5545c824dfeb0ac77ab8eb67a3d541eab76df5c85ce93064ef02d44cd0"
-  name = "github.com/hashicorp/yamux"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "2f1d1f20f75d5404f53b9edf6b53ed5505508675"
-
-[[projects]]
   digest = "1:9a52adf44086cead3b384e5d0dbf7a1c1cce65e67552ee3383a8561c42a18cd3"
   name = "github.com/imdario/mergo"
   packages = ["."]
@@ -562,14 +535,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:18b773b92ac82a451c1276bd2776c1e55ce057ee202691ab33c8d6690efcc048"
-  name = "github.com/mitchellh/go-testing-interface"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "6d0b8010fcc857872e42fc6c931227569016843c"
-  version = "v1.0.0"
-
-[[projects]]
   digest = "1:5b4289f0f483890552edcb868d9834ff96ffdb68847fa82ec45764cc4a83d8b8"
   name = "github.com/moby/buildkit"
   packages = [
@@ -596,14 +561,6 @@
   pruneopts = "NUT"
   revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
   version = "1.0.1"
-
-[[projects]]
-  digest = "1:3b517122f3aad1ecce45a630ea912b3092b4729f25532a911d0cb2935a1f9352"
-  name = "github.com/oklog/run"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "4dadeb3030eda0273a12382bb2348ffc7c9d1a39"
-  version = "v1.0.0"
 
 [[projects]]
   digest = "1:e0cc8395ea893c898ff5eb0850f4d9851c1f57c78c232304a026379a47a552d0"
@@ -939,7 +896,7 @@
   revision = "31ac5d88444a9e7ad18077db9a165d793ad06a2e"
 
 [[projects]]
-  digest = "1:f112c6f3e9bbd16eb113db8f37adb6bd10270142079d00c7ac625534cbb16475"
+  digest = "1:2f91d3e11b666570f8c923912f1cc8cf2f0c6b7371b2687ee67a8f73f08c6272"
   name = "google.golang.org/grpc"
   packages = [
     ".",
@@ -952,8 +909,6 @@
     "encoding",
     "encoding/proto",
     "grpclog",
-    "health",
-    "health/grpc_health_v1",
     "internal",
     "internal/backoff",
     "internal/channelz",
@@ -1314,7 +1269,6 @@
     "github.com/google/go-github/github",
     "github.com/grpc-ecosystem/grpc-gateway/runtime",
     "github.com/grpc-ecosystem/grpc-gateway/utilities",
-    "github.com/hashicorp/go-plugin",
     "github.com/karrick/godirwalk",
     "github.com/krishicks/yaml-patch",
     "github.com/mitchellh/go-homedir",
@@ -1368,6 +1322,7 @@
     "k8s.io/client-go/kubernetes/typed/core/v1",
     "k8s.io/client-go/plugin/pkg/client/auth",
     "k8s.io/client-go/rest",
+    "k8s.io/client-go/testing",
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/clientcmd/api",
   ]
