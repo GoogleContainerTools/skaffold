@@ -24,37 +24,36 @@ import (
 
 func TestIsSupportedKubernetesFileExtension(t *testing.T) {
 	tests := []struct {
-		name     string
-		filename string
-		expected bool
+		description string
+		filename    string
+		expected    bool
 	}{
 		{
-			name:     "valid k8 yaml filename format",
-			filename: "test1.yaml",
-			expected: true,
+			description: "valid k8 yaml filename format",
+			filename:    "test1.yaml",
+			expected:    true,
 		},
 		{
-			name:     "valid k8 json filename format",
-			filename: "test1.json",
-			expected: true,
+			description: "valid k8 json filename format",
+			filename:    "test1.json",
+			expected:    true,
 		},
 		{
-			name:     "valid k8 yaml filename format",
-			filename: "test1.yml",
-			expected: true,
+			description: "valid k8 yaml filename format",
+			filename:    "test1.yml",
+			expected:    true,
 		},
 		{
-			name:     "invalid file",
-			filename: "some.config",
-			expected: false,
+			description: "invalid file",
+			filename:    "some.config",
+			expected:    false,
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			if IsSupportedKubernetesFileExtension(test.filename) != test.expected {
-				t.Errorf("expected to see %t for %s, but instead got %t", test.expected,
-					test.filename, !test.expected)
-			}
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			supported := IsSupportedKubernetesFileExtension(test.filename)
+
+			t.CheckDeepEqual(test.expected, supported)
 		})
 	}
 }
@@ -88,15 +87,13 @@ deploy:
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			tmpDir, delete := testutil.NewTempDir(t)
-			defer delete()
-
-			tmpDir.Write("skaffold.yaml", test.contents)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir().
+				Write("skaffold.yaml", test.contents)
 
 			isValid := IsSkaffoldConfig(tmpDir.Path("skaffold.yaml"))
 
-			testutil.CheckDeepEqual(t, test.isValid, isValid)
+			t.CheckDeepEqual(test.isValid, isValid)
 		})
 	}
 }

@@ -179,14 +179,16 @@ func TestCollectResults(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			outputs := setUpChannels(len(test.artifacts))
 			resultMap := new(sync.Map)
 			for k, v := range test.results {
 				resultMap.Store(k, v)
 			}
+
 			got, err := collectResults(ioutil.Discard, test.artifacts, resultMap, outputs)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, got)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
 		})
 	}
 }
@@ -221,7 +223,7 @@ And new lines
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
 			artifacts := []*latest.Artifact{
 				{ImageName: "skaffold/image1"},
@@ -232,8 +234,10 @@ And new lines
 				"skaffold/image2": "skaffold/image2:v0.0.2",
 			}
 			initializeEvents()
+
 			InParallel(context.Background(), out, tags, artifacts, test.buildFunc)
-			testutil.CheckDeepEqual(t, test.expected, out.String())
+
+			t.CheckDeepEqual(test.expected, out.String())
 		})
 	}
 }
@@ -272,7 +276,7 @@ func TestInParallelForArgs(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			artifacts := make([]*latest.Artifact, test.artifactLen)
 			tags := tag.ImageTags{}
 			for i := 0; i < test.artifactLen; i++ {
@@ -281,15 +285,14 @@ func TestInParallelForArgs(t *testing.T) {
 				tags[a] = fmt.Sprintf("%s@tag%d", a, i+1)
 			}
 			if test.inSeqFunc != nil {
-				restore := testutil.Override(t, &runInSequence, test.inSeqFunc)
-				defer restore()
+				t.Override(&runInSequence, test.inSeqFunc)
 			}
 			initializeEvents()
 			actual, _ := InParallel(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact)
-			testutil.CheckDeepEqual(t, test.expected, actual)
+
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
-
 }
 
 func TestColoredOutput(t *testing.T) {
@@ -316,12 +319,10 @@ func TestColoredOutput(t *testing.T) {
 			_, w := io.Pipe()
 			actual := setUpColorWriter(w, ioutil.Discard)
 
-			if _, ok := actual.(color.ColoredWriteCloser); ok != test.exceptedColor {
-				t.Errorf("got %t, expected %t", ok, test.exceptedColor)
-			}
+			_, isColorWriter := actual.(color.ColoredWriteCloser)
+			t.CheckDeepEqual(test.exceptedColor, isColorWriter)
 		})
 	}
-
 }
 
 func setUpChannels(n int) []chan []byte {

@@ -56,10 +56,10 @@ func TestExtractProjectID(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			projectID, err := ExtractProjectID(test.imageName)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, projectID)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, projectID)
 		})
 	}
 }

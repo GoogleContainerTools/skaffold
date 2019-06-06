@@ -41,10 +41,10 @@ func TestRelativize(t *testing.T) {
 		{"multilevel found", "/b/c/d/z", []string{"/a", "/b"}, false, "c/d/z"},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			rel, err := relativize(test.path, test.roots...)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.result, rel)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.result, rel)
 		})
 	}
 }

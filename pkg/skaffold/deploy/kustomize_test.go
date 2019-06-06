@@ -31,9 +31,6 @@ import (
 )
 
 func TestKustomizeDeploy(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
-
 	var tests = []struct {
 		description string
 		cfg         *latest.KustomizeDeploy
@@ -45,20 +42,20 @@ func TestKustomizeDeploy(t *testing.T) {
 		{
 			description: "no manifest",
 			cfg: &latest.KustomizeDeploy{
-				KustomizePath: tmpDir.Root(),
+				KustomizePath: ".",
 			},
 			command: testutil.NewFakeCmd(t).
 				WithRunOut("kubectl version --client -ojson", kubectlVersion).
-				WithRunOut("kustomize build "+tmpDir.Root(), ""),
+				WithRunOut("kustomize build .", ""),
 		},
 		{
 			description: "deploy success",
 			cfg: &latest.KustomizeDeploy{
-				KustomizePath: tmpDir.Root(),
+				KustomizePath: ".",
 			},
 			command: testutil.NewFakeCmd(t).
 				WithRunOut("kubectl version --client -ojson", kubectlVersion).
-				WithRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
+				WithRunOut("kustomize build .", deploymentWebYAML).
 				WithRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
@@ -69,10 +66,13 @@ func TestKustomizeDeploy(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
+			t.Chdir(tmpDir.Root())
+
 			t.Override(&util.DefaultExecCommand, test.command)
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
-				WorkingDir: tmpDir.Root(),
+				WorkingDir: ".",
 				Cfg: &latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
@@ -207,7 +207,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmp := t.NewTempDir().
+			tmpDir := t.NewTempDir().
 				Write("kustomization.yaml", test.yaml)
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
@@ -215,7 +215,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KustomizeDeploy: &latest.KustomizeDeploy{
-								KustomizePath: tmp.Root(),
+								KustomizePath: tmpDir.Root(),
 							},
 						},
 					},
@@ -225,7 +225,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 			})
 			deps, err := k.Dependencies()
 
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, joinPaths(tmp.Root(), test.expected), deps)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, tmpDir.Paths(test.expected...), deps)
 		})
 	}
 }

@@ -79,7 +79,7 @@ func TestRetagLocalImages(t *testing.T) {
 
 			test.cache.RetagLocalImages(context.Background(), os.Stdout, test.artifactsToBuild, test.buildArtifacts)
 
-			t.CheckErrorAndDeepEqual(false, nil, test.expectedPush, test.api.PushedImages)
+			t.CheckDeepEqual(test.expectedPush, test.api.PushedImages)
 		})
 	}
 }

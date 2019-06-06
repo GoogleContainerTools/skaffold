@@ -617,17 +617,16 @@ func TestHelmDependencies(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			folder := t.NewTempDir()
-
+			tmpDir := t.NewTempDir()
 			for _, file := range test.files {
-				folder.Write(file, "")
+				tmpDir.Write(file, "")
 			}
 
 			deployer := NewHelmDeployer(makeRunContext(&latest.HelmDeploy{
 				Releases: []latest.HelmRelease{
 					{
 						Name:                  "skaffold-helm",
-						ChartPath:             folder.Root(),
+						ChartPath:             tmpDir.Root(),
 						ValuesFiles:           test.valuesFiles,
 						Values:                map[string]string{"image": "skaffold-helm"},
 						Overrides:             schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
@@ -640,7 +639,8 @@ func TestHelmDependencies(t *testing.T) {
 
 			deps, err := deployer.Dependencies()
 
-			t.CheckErrorAndDeepEqual(false, err, test.expected(folder), deps)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected(tmpDir), deps)
 		})
 	}
 }

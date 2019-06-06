@@ -79,10 +79,10 @@ func TestValidateSchema(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			err := Process(test.cfg)
 
-			testutil.CheckError(t, test.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
@@ -98,22 +98,22 @@ type nestedEmptyStruct struct {
 
 func TestVisitStructs(t *testing.T) {
 	tests := []struct {
-		name         string
+		description  string
 		input        interface{}
 		expectedErrs int
 	}{
 		{
-			name:         "single struct to validate",
+			description:  "single struct to validate",
 			input:        emptyStruct{},
 			expectedErrs: 1,
 		},
 		{
-			name:         "recurse into nested struct",
+			description:  "recurse into nested struct",
 			input:        nestedEmptyStruct{},
 			expectedErrs: 2,
 		},
 		{
-			name: "check all slice items",
+			description: "check all slice items",
 			input: struct {
 				A []emptyStruct
 			}{
@@ -122,7 +122,7 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 3,
 		},
 		{
-			name: "recurse into slices",
+			description: "recurse into slices",
 			input: struct {
 				A []nestedEmptyStruct
 			}{
@@ -135,7 +135,7 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 3,
 		},
 		{
-			name: "recurse into ptr slices",
+			description: "recurse into ptr slices",
 			input: struct {
 				A []*nestedEmptyStruct
 			}{
@@ -148,21 +148,21 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 3,
 		},
 		{
-			name: "ignore empty slices",
+			description: "ignore empty slices",
 			input: struct {
 				A []emptyStruct
 			}{},
 			expectedErrs: 1,
 		},
 		{
-			name: "ignore nil pointers",
+			description: "ignore nil pointers",
 			input: struct {
 				A *struct{}
 			}{},
 			expectedErrs: 1,
 		},
 		{
-			name: "recurse into members",
+			description: "recurse into members",
 			input: struct {
 				A, B emptyStruct
 			}{
@@ -172,7 +172,7 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 3,
 		},
 		{
-			name: "recurse into ptr members",
+			description: "recurse into ptr members",
 			input: struct {
 				A, B *emptyStruct
 			}{
@@ -182,7 +182,7 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 3,
 		},
 		{
-			name: "ignore other fields",
+			description: "ignore other fields",
 			input: struct {
 				A emptyStruct
 				C int
@@ -193,7 +193,7 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 2,
 		},
 		{
-			name: "unexported fields",
+			description: "unexported fields",
 			input: struct {
 				a emptyStruct
 			}{
@@ -202,7 +202,7 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 1,
 		},
 		{
-			name: "exported and unexported fields",
+			description: "exported and unexported fields",
 			input: struct {
 				a, A, b emptyStruct
 			}{
@@ -213,7 +213,7 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 2,
 		},
 		{
-			name: "unexported nil ptr fields",
+			description: "unexported nil ptr fields",
 			input: struct {
 				a *emptyStruct
 			}{
@@ -222,7 +222,7 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 1,
 		},
 		{
-			name: "unexported ptr fields",
+			description: "unexported ptr fields",
 			input: struct {
 				a *emptyStruct
 			}{
@@ -231,7 +231,7 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 1,
 		},
 		{
-			name: "unexported and exported ptr fields",
+			description: "unexported and exported ptr fields",
 			input: struct {
 				a, A, b *emptyStruct
 			}{
@@ -243,10 +243,10 @@ func TestVisitStructs(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual := visitStructs(test.input, alwaysErr)
 
-			testutil.CheckDeepEqual(t, test.expectedErrs, len(actual))
+			t.CheckDeepEqual(test.expectedErrs, len(actual))
 		})
 	}
 }

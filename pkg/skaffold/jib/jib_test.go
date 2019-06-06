@@ -86,16 +86,15 @@ func TestGetDependencies(t *testing.T) {
 		// Reset map between each test to ensure stdout is read each time
 		watchedFiles = map[string]filesLists{}
 
-		t.Run("getDependencies", func(t *testing.T) {
-			reset := testutil.Override(t, &util.DefaultExecCommand, testutil.FakeRunOut(t,
+		testutil.Run(t, "", func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, t.FakeRunOut(
 				"ignored",
 				test.stdout,
 			))
-			defer reset()
 
 			results, err := getDependencies(tmpDir.Root(), &exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()}, "test")
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedDeps, results)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDeps, results)
 		})
 	}
 }

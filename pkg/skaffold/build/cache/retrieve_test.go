@@ -130,7 +130,8 @@ func Test_RetrieveCachedArtifacts(t *testing.T) {
 
 			sort.Sort(&artifactSorter{artifacts: actualArtifacts})
 
-			t.CheckErrorAndDeepEqual(false, err, test.expectedArtifacts, actualArtifacts)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedArtifacts, actualArtifacts)
 			t.CheckDeepEqual(test.expectedBuildResults, actualBuildResults)
 		})
 	}
@@ -316,9 +317,8 @@ func TestRetrieveCachedArtifactDetails(t *testing.T) {
 				test.cache.client = docker.NewLocalDaemon(test.api, nil, false, map[string]bool{})
 			}
 			actual, err := test.cache.retrieveCachedArtifactDetails(context.Background(), test.artifact)
-			if err != nil {
-				t.Fatalf("error retrieving artifact details: %v", err)
-			}
+			t.CheckNoError(err)
+
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
 			if !reflect.DeepEqual(test.expected, actual) {
 				t.Errorf("Expected: %v, Actual: %v", test.expected, actual)

@@ -50,9 +50,9 @@ func TestHasCmdAnnotation(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			if test.expected != hasCmdAnnotation(test.cmd, test.definedOn) {
-				t.Errorf("expected %t but found %t", test.expected, !test.expected)
-			}
+			hasAnnotation := hasCmdAnnotation(test.cmd, test.definedOn)
+
+			t.CheckDeepEqual(test.expected, hasAnnotation)
 		})
 	}
 }

@@ -28,9 +28,6 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
-	defer restore()
-
 	var tests = []struct {
 		description     string
 		testBench       *TestBench
@@ -71,14 +68,15 @@ func TestRun(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			runner := createRunner(t, test.testBench)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 
+			runner := createRunner(t, test.testBench)
 			err := runner.Run(context.Background(), ioutil.Discard, []*latest.Artifact{{
 				ImageName: "img",
 			}})
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedActions, test.testBench.Actions())
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedActions, test.testBench.Actions())
 		})
 	}
 }

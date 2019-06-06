@@ -505,17 +505,12 @@ func TestGetDependencies(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			util.OSEnviron = func() []string {
-				return test.env
-			}
-			tmpDir, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
-
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			imageFetcher := fakeImageFetcher{}
-			reset := testutil.Override(t, &RetrieveImage, imageFetcher.fetch)
-			defer reset()
+			t.Override(&RetrieveImage, imageFetcher.fetch)
+			t.Override(&util.OSEnviron, func() []string { return test.env })
 
+			tmpDir := t.NewTempDir()
 			for _, file := range []string{"docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file", ".dot"} {
 				tmpDir.Write(file, "")
 			}
@@ -531,8 +526,8 @@ func TestGetDependencies(t *testing.T) {
 			workspace := tmpDir.Path(test.workspace)
 			deps, err := GetDependencies(context.Background(), workspace, "Dockerfile", test.buildArgs, map[string]bool{})
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
-			testutil.CheckDeepEqual(t, test.fetched, imageFetcher.fetched)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deps)
+			t.CheckDeepEqual(test.fetched, imageFetcher.fetched)
 		})
 	}
 }
