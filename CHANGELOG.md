@@ -2,7 +2,7 @@
 
 New Features:
 * Add CI on windows [#2214](https://github.com/GoogleContainerTools/skaffold/pull/2214)
-* Add API build trigger [#2201](https://github.com/GoogleContainerTools/skaffold/pull/2201)
+* Add API build trigger *alpha* [#2201](https://github.com/GoogleContainerTools/skaffold/pull/2201)
 * Cross compile Skaffold, with CGO=1, using xgo [#2006](https://github.com/GoogleContainerTools/skaffold/pull/2006)
 * Print logs from init containers [#2182](https://github.com/GoogleContainerTools/skaffold/pull/2182)
 
@@ -19,10 +19,8 @@ Updates & refactoring:
 *  Use the testutils test helper [#2218](https://github.com/GoogleContainerTools/skaffold/pull/2218)
 * Remove AppVeyor [#2219](https://github.com/GoogleContainerTools/skaffold/pull/2219)
 * Check man page with a unit test instead of a script [#2180](https://github.com/GoogleContainerTools/skaffold/pull/2180)
-* Make notify trigger the default trigger [#2213](https://github.com/GoogleContainerTools/skaffold/pull/2213)
 * Test helper to make tests less verbose [#2193](https://github.com/GoogleContainerTools/skaffold/pull/2193)
 * Refactor cmd builder [#2179](https://github.com/GoogleContainerTools/skaffold/pull/2179)
-* Improve output for docker push [#2209](https://github.com/GoogleContainerTools/skaffold/pull/2209)
 * Faster Travis CI [#2210](https://github.com/GoogleContainerTools/skaffold/pull/2210)
 * Simplify schema upgrades: remove duplication [#2212](https://github.com/GoogleContainerTools/skaffold/pull/2212)
 * Moar tests [#2195](https://github.com/GoogleContainerTools/skaffold/pull/2195)
@@ -35,6 +33,11 @@ Updates & refactoring:
 * Remove trailing dot. [#2178](https://github.com/GoogleContainerTools/skaffold/pull/2178)
 * Remove $ from example commands [#2177](https://github.com/GoogleContainerTools/skaffold/pull/2177)
 * Add sync test and refactor InParallel [#2118](https://github.com/GoogleContainerTools/skaffold/pull/2118)
+
+Rolled Back:
+* Make notify trigger the default trigger [#2213](https://github.com/GoogleContainerTools/skaffold/pull/2213)
+* Improve output for docker push [#2209](https://github.com/GoogleContainerTools/skaffold/pull/2209)
+
 
 
 Huge thanks goes out to all of our contributors for this release:
