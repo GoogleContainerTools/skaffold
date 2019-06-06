@@ -161,6 +161,11 @@ func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 		return nil, err
 	}
 
+	// Since the file watcher runs in a separate go routine
+	// and can take some time to start, it can lose the very first change.
+	// As a mitigation, we act as if a change was detected.
+	go func() { c <- nil }()
+
 	trigger := make(chan bool)
 	go func() {
 		timer := time.NewTimer(1<<63 - 1) // Forever
