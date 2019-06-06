@@ -30,7 +30,8 @@ import (
 )
 
 var (
-	deploymentOutputTemplate            = "{{range .items}}{{.metadata.name}}:{{.spec.progressDeadlineSeconds}}{{\",\"}}{{end}}"
+	deploymentOutputTemplate = "{{range .items}}{{.metadata.name}}:{{.spec.progressDeadlineSeconds}}{{\",\"}}{{end}}"
+	// TODO: Move this to a flag or global setting.
 	defaultStatusCheckDeadlineInSeconds = 600
 )
 
