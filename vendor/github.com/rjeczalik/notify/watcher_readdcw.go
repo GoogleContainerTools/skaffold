@@ -360,9 +360,9 @@ func (r *readdcw) loop() {
 		overEx := (*overlappedEx)(unsafe.Pointer(overlapped))
 		if n != 0 {
 			r.loopevent(n, overEx)
-			if err = overEx.parent.readDirChanges(); err != nil {
-				// TODO: error handling
-			}
+		}
+		if err = overEx.parent.readDirChanges(); err != nil {
+			// TODO: error handling
 		}
 		r.loopstate(overEx)
 	}

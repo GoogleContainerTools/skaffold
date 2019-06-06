@@ -73,7 +73,8 @@
 
 [[constraint]]
   name = "github.com/rjeczalik/notify"
-  version = "0.9.2"
+  revision = "9ace999fc73bca667fd45dafc41356186f8b7e65"
+  source = "https://github.com/dgageot/notify.git"
 
 [[constraint]]
   name = "github.com/golang/protobuf"

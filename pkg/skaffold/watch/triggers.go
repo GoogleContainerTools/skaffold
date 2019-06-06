@@ -157,7 +157,7 @@ func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	c := make(chan notify.EventInfo, 100)
 
 	// Watch current directory recursively
-	if err := notify.Watch("./...", c, notify.All); err != nil {
+	if err := notify.NewTree().Watch("./...", c, notify.All); err != nil {
 		return nil, err
 	}
 

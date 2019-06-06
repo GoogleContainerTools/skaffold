@@ -6,6 +6,16 @@ package notify
 
 const buffer = 128
 
+type Tree interface {
+	Watch(string, chan<- EventInfo, ...Event) error
+	Stop(chan<- EventInfo)
+	Close() error
+}
+
+func NewTree() tree {
+	return newTree()
+}
+
 type tree interface {
 	Watch(string, chan<- EventInfo, ...Event) error
 	Stop(chan<- EventInfo)
