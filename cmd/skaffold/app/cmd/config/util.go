@@ -38,15 +38,17 @@ func resolveKubectlContext() {
 		return
 	}
 
-	context, err := context.CurrentContext()
-	if err != nil {
-		logrus.Warn(errors.Wrap(err, "retrieving current kubectl context"))
-	}
-	if context == "" {
+	config, err := context.CurrentConfig()
+	switch {
+	case err != nil:
+		logrus.Warn("unable to retrieve current kubectl context, using global values")
+		global = true
+	case config.CurrentContext == "":
 		logrus.Infof("no kubectl context currently set, using global values")
 		global = true
+	default:
+		kubecontext = config.CurrentContext
 	}
-	kubecontext = context
 }
 
 func resolveConfigFile() error {

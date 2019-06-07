@@ -43,11 +43,3 @@ func CurrentConfig() (clientcmdapi.Config, error) {
 	})
 	return currentConfig, currentConfigErr
 }
-
-func CurrentContext() (string, error) {
-	cfg, err := CurrentConfig()
-	if err != nil {
-		return "", err
-	}
-	return cfg.CurrentContext, nil
-}

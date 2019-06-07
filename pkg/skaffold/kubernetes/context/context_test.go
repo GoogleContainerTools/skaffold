@@ -27,9 +27,9 @@ func TestCurrentContext(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 
-		context, err := CurrentContext()
+		config, err := CurrentConfig()
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual("cluster1", context)
+		t.CheckDeepEqual("cluster1", config.CurrentContext)
 	})
 }

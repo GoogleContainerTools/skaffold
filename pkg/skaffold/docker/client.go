@@ -49,13 +49,13 @@ var (
 // NewAPIClient guesses the docker client to use based on current kubernetes context.
 func NewAPIClient(forceRemove bool, insecureRegistries map[string]bool) (LocalDaemon, error) {
 	dockerAPIClientOnce.Do(func() {
-		kubeContext, err := kubectx.CurrentContext()
+		kubeConfig, err := kubectx.CurrentConfig()
 		if err != nil {
 			dockerAPIClientErr = errors.Wrap(err, "getting current cluster context")
 			return
 		}
 
-		env, apiClient, err := newAPIClient(kubeContext)
+		env, apiClient, err := newAPIClient(kubeConfig.CurrentContext)
 		dockerAPIClient = NewLocalDaemon(apiClient, env, forceRemove, insecureRegistries)
 		dockerAPIClientErr = err
 	})
