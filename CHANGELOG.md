@@ -7,9 +7,7 @@ New Features:
 * Print logs from init containers [#2182](https://github.com/GoogleContainerTools/skaffold/pull/2182)
 
 Bug Fixes:
-* Restore defaulting to polling trigger [#2228](https://github.com/GoogleContainerTools/skaffold/pull/2228)
 * Fix master branch [#2221](https://github.com/GoogleContainerTools/skaffold/pull/2221)
-* Revert "Improve output for docker push" [#2216](https://github.com/GoogleContainerTools/skaffold/pull/2216)
 * Fix error in flag refactoring for `skaffold run --tail` [#2172](https://github.com/GoogleContainerTools/skaffold/pull/2172)
 
 Updates & refactoring:
@@ -33,11 +31,6 @@ Updates & refactoring:
 * Remove trailing dot. [#2178](https://github.com/GoogleContainerTools/skaffold/pull/2178)
 * Remove $ from example commands [#2177](https://github.com/GoogleContainerTools/skaffold/pull/2177)
 * Add sync test and refactor InParallel [#2118](https://github.com/GoogleContainerTools/skaffold/pull/2118)
-
-Rolled Back:
-* Make notify trigger the default trigger [#2213](https://github.com/GoogleContainerTools/skaffold/pull/2213)
-* Improve output for docker push [#2209](https://github.com/GoogleContainerTools/skaffold/pull/2209)
-
 
 
 Huge thanks goes out to all of our contributors for this release:
