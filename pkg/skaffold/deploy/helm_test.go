@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -36,6 +37,7 @@ import (
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 )
 
@@ -641,6 +643,53 @@ func TestHelmDependencies(t *testing.T) {
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected(tmpDir), deps)
+		})
+	}
+}
+
+func TestExpandPaths(t *testing.T) {
+	home := os.Getenv("HOME")
+	defer os.Setenv("HOME", home)
+
+	homedir.DisableCache = true // for testing only
+
+	var tests = []struct {
+		description  string
+		paths        []string
+		unixExpanded []string //unix expands path with forward slashes, windows with backward slashes
+		winExpanded  []string
+		setEnvFunc   func()
+	}{
+		{
+			description:  "expand paths on unix",
+			paths:        []string{"~/path/with/tilde/values.yaml", "/some/absolute/path/values.yaml"},
+			unixExpanded: []string{"/home/path/with/tilde/values.yaml", "/some/absolute/path/values.yaml"},
+			winExpanded:  []string{`\home\path\with\tilde\values.yaml`, "/some/absolute/path/values.yaml"},
+			setEnvFunc: func() {
+				os.Setenv("HOME", "/home")
+			},
+		},
+		{
+			description:  "expand paths on windows",
+			paths:        []string{"~/path/with/tilde/values.yaml", `C:\Users\SomeUser\path\values.yaml`},
+			unixExpanded: []string{`C:\Users\SomeUser/path/with/tilde/values.yaml`, `C:\Users\SomeUser\path\values.yaml`},
+			winExpanded:  []string{`C:\Users\SomeUser\path\with\tilde\values.yaml`, `C:\Users\SomeUser\path\values.yaml`},
+			setEnvFunc: func() {
+				os.Setenv("HOME", `C:\Users\SomeUser`)
+			},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			test.setEnvFunc()
+			expanded := expandPaths(test.paths)
+
+			if runtime.GOOS == "windows" {
+				t.CheckDeepEqual(test.winExpanded, expanded)
+			} else {
+				t.CheckDeepEqual(test.unixExpanded, expanded)
+			}
 		})
 	}
 }
