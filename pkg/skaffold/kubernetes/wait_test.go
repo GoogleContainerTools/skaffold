@@ -23,10 +23,8 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	watch "k8s.io/apimachinery/pkg/watch"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	fake_testing "k8s.io/client-go/testing"
 )
 
 func TestWaitForPodComplete(t *testing.T) {
@@ -47,7 +45,7 @@ func TestWaitForPodComplete(t *testing.T) {
 	pod.Status.Phase = v1.PodFailed
 	pod.Status.Phase = v1.PodSucceeded
 	//pod.Status.Phase = v1.PodRunning
-	fakeWatcher.Modify(pod)
+	// fakeWatcher.Modify(pod)
 
 	err := <-errCh
 	if err != nil {

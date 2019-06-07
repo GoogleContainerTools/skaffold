@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/golang/glog"
@@ -70,10 +71,12 @@ func WaitForPodComplete(ctx context.Context, pods corev1.PodInterface, podName s
 
 	return watchUntilTimeout(ctx, timeout, w, func(event *watch.Event) (bool, error) {
 		if event.Object == nil {
+			fmt.Fprintf(os.Stdout, "event.Object is nil")
 			return false, nil
 		}
 		pod := event.Object.(*v1.Pod)
 		if pod.Name != podName {
+			fmt.Fprintf(os.Stdout, "pod.Name %s != podName %s", pod.Name, podName)
 			return false, nil
 		}
 
