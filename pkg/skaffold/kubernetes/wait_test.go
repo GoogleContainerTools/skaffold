@@ -21,6 +21,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/testutil"
+
+	"k8s.io/apimachinery/pkg/watch"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
@@ -52,4 +56,20 @@ func TestWaitForPodComplete(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed with %s", err)
 	}
+}
+
+func TestIsPodComplete(t *testing.T) {
+	pod := &v1.Pod{ObjectMeta: metav1.ObjectMeta{
+		Namespace: "test",
+		Name:      "dummy-pod",
+	}}
+	f := isPodComplete("dummy-pod")
+	dummyEvent := &watch.Event{
+		Type:   "something",
+		Object: pod,
+	}
+	pod.Status.Phase = v1.PodSucceeded
+	actual, err := f(dummyEvent)
+	testutil.CheckErrorAndDeepEqual(t, false, err, actual, true)
+
 }
