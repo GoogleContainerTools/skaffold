@@ -21,7 +21,7 @@ GREEN='\033[0;32m'
 RESET='\033[0m'
 
 echo "Running go tests..."
-CVPKG=$(go list ./... | grep -v  "github.com/GoogleContainerTools/skaffold/pkg/webhook\.*\|github.com/GoogleContainerTools/skaffold/webhook" | tr '\n' ',')
+CVPKG=$(go list ./pkg/... ./cmd/... | grep -v  "github.com/GoogleContainerTools/skaffold/pkg/webhook\.*\|github.com/GoogleContainerTools/skaffold/webhook" | tr '\n' ',')
 go test -count=1 -race -cover -short -timeout=60s -coverprofile=out/coverage.txt -coverpkg="$CVPKG" ./... | awk -v FAIL="${RED}FAIL${RESET}" '! /no test files/ { gsub("FAIL", FAIL, $0); print $0 }'
 
 GO_TEST_EXIT_CODE=${PIPESTATUS[0]}
