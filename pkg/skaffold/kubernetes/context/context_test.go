@@ -20,16 +20,29 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 func TestCurrentContext(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+	testutil.Run(t, "valid context", func(t *testutil.T) {
+		resetKubeConfig(t, "apiVersion: v1\nkind: Config\ncurrent-context: cluster1\n")
 
 		config, err := CurrentConfig()
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual("cluster1", config.CurrentContext)
 	})
+
+	testutil.Run(t, "invalid context", func(t *testutil.T) {
+		resetKubeConfig(t, "invalid")
+
+		_, err := CurrentConfig()
+
+		t.CheckError(true, err)
+	})
+}
+
+func resetKubeConfig(t *testutil.T, content string) {
+	kubeConfig := t.TempFile("config", []byte(content))
+	t.SetEnvs(map[string]string{"KUBECONFIG": kubeConfig})
+	ResetCurrentConfig()
 }

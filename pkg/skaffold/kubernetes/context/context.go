@@ -30,6 +30,11 @@ var (
 	currentConfigErr  error
 )
 
+// ResetCurrentConfig is used by tests
+func ResetCurrentConfig() {
+	currentConfigOnce = sync.Once{}
+}
+
 func CurrentConfig() (clientcmdapi.Config, error) {
 	currentConfigOnce.Do(func() {
 		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
