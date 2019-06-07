@@ -69,7 +69,11 @@ func WaitForPodComplete(ctx context.Context, pods corev1.PodInterface, podName s
 	}
 	defer w.Stop()
 
-	return watchUntilTimeout(ctx, timeout, w, func(event *watch.Event) (bool, error) {
+	return watchUntilTimeout(ctx, timeout, w, isPodComplete(podName))
+}
+
+func isPodComplete(podName string) func(event *watch.Event) (bool, error) {
+	return func(event *watch.Event) (bool, error) {
 		if event.Object == nil {
 			fmt.Fprintf(os.Stdout, "event.Object is nil")
 			return false, nil
@@ -91,7 +95,7 @@ func WaitForPodComplete(ctx context.Context, pods corev1.PodInterface, podName s
 			return false, nil
 		}
 		return false, fmt.Errorf("unknown phase: %s", pod.Status.Phase)
-	})
+	}
 }
 
 // WaitForPodInitialized waits until init containers have started running
