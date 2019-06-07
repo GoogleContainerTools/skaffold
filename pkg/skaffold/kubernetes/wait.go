@@ -46,6 +46,7 @@ func watchUntilTimeout(ctx context.Context, timeout time.Duration, w watch.Inter
 		case <-ctx.Done():
 			return errors.New("context closed while waiting for condition")
 		case event := <-w.ResultChan():
+			fmt.Println("got event!!!!!!")
 			done, err := condition(&event)
 			if err != nil {
 				return fmt.Errorf("condition error: %s", err)
@@ -57,8 +58,8 @@ func watchUntilTimeout(ctx context.Context, timeout time.Duration, w watch.Inter
 	}
 }
 
-// WaitForPodComplete waits until the Pod status is complete.
-func WaitForPodComplete(ctx context.Context, pods corev1.PodInterface, podName string, timeout time.Duration) error {
+// WaitForPodSucceeded waits until the Pod status is Succeeded.
+func WaitForPodSucceeded(ctx context.Context, pods corev1.PodInterface, podName string, timeout time.Duration) error {
 	logrus.Infof("Waiting for %s to be complete", podName)
 
 	w, err := pods.Watch(meta_v1.ListOptions{
@@ -69,10 +70,10 @@ func WaitForPodComplete(ctx context.Context, pods corev1.PodInterface, podName s
 	}
 	defer w.Stop()
 
-	return watchUntilTimeout(ctx, timeout, w, isPodComplete(podName))
+	return watchUntilTimeout(ctx, timeout, w, isPodSucceeded(podName))
 }
 
-func isPodComplete(podName string) func(event *watch.Event) (bool, error) {
+func isPodSucceeded(podName string) func(event *watch.Event) (bool, error) {
 	return func(event *watch.Event) (bool, error) {
 		if event.Object == nil {
 			fmt.Fprintf(os.Stdout, "event.Object is nil")
@@ -84,6 +85,7 @@ func isPodComplete(podName string) func(event *watch.Event) (bool, error) {
 			return false, nil
 		}
 
+		fmt.Println("got watch event with phase", pod.Status.Phase)
 		switch pod.Status.Phase {
 		case v1.PodSucceeded:
 			return true, nil
