@@ -1,0 +1,9 @@
+# we ignore packages and files indicating that it
+# is either not possible or not strategically important
+# to test these pieces with unittests and hence we can accept
+# contributions without unittests in these areas
+
+ignore:
+  # webhook is going to be replaced with a managed solution
+  - "webhook"
+  - "pkg/webhook"
