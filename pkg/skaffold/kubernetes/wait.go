@@ -56,8 +56,8 @@ func watchUntilTimeout(ctx context.Context, timeout time.Duration, w watch.Inter
 	}
 }
 
-// WaitForPodComplete waits until the Pod status is complete.
-func WaitForPodComplete(ctx context.Context, pods corev1.PodInterface, podName string, timeout time.Duration) error {
+// WaitForPodSucceeded waits until the Pod status is Succeeded.
+func WaitForPodSucceeded(ctx context.Context, pods corev1.PodInterface, podName string, timeout time.Duration) error {
 	logrus.Infof("Waiting for %s to be complete", podName)
 
 	w, err := pods.Watch(meta_v1.ListOptions{
@@ -68,7 +68,11 @@ func WaitForPodComplete(ctx context.Context, pods corev1.PodInterface, podName s
 	}
 	defer w.Stop()
 
-	return watchUntilTimeout(ctx, timeout, w, func(event *watch.Event) (bool, error) {
+	return watchUntilTimeout(ctx, timeout, w, isPodSucceeded(podName))
+}
+
+func isPodSucceeded(podName string) func(event *watch.Event) (bool, error) {
+	return func(event *watch.Event) (bool, error) {
 		if event.Object == nil {
 			return false, nil
 		}
@@ -88,7 +92,7 @@ func WaitForPodComplete(ctx context.Context, pods corev1.PodInterface, podName s
 			return false, nil
 		}
 		return false, fmt.Errorf("unknown phase: %s", pod.Status.Phase)
-	})
+	}
 }
 
 // WaitForPodInitialized waits until init containers have started running
