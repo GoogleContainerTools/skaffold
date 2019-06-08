@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/golang/glog"
@@ -46,7 +45,6 @@ func watchUntilTimeout(ctx context.Context, timeout time.Duration, w watch.Inter
 		case <-ctx.Done():
 			return errors.New("context closed while waiting for condition")
 		case event := <-w.ResultChan():
-			fmt.Println("got event!!!!!!")
 			done, err := condition(&event)
 			if err != nil {
 				return fmt.Errorf("condition error: %s", err)
@@ -76,16 +74,13 @@ func WaitForPodSucceeded(ctx context.Context, pods corev1.PodInterface, podName 
 func isPodSucceeded(podName string) func(event *watch.Event) (bool, error) {
 	return func(event *watch.Event) (bool, error) {
 		if event.Object == nil {
-			fmt.Fprintf(os.Stdout, "event.Object is nil")
 			return false, nil
 		}
 		pod := event.Object.(*v1.Pod)
 		if pod.Name != podName {
-			fmt.Fprintf(os.Stdout, "pod.Name %s != podName %s", pod.Name, podName)
 			return false, nil
 		}
 
-		fmt.Println("got watch event with phase", pod.Status.Phase)
 		switch pod.Status.Phase {
 		case v1.PodSucceeded:
 			return true, nil

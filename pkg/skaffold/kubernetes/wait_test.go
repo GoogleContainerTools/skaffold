@@ -18,7 +18,6 @@ package kubernetes
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -27,37 +26,66 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	fake_testing "k8s.io/client-go/testing"
 )
 
-func TestWaitForPodSucceeded(t *testing.T) {
-	pod := &v1.Pod{ObjectMeta: metav1.ObjectMeta{
-		Namespace: "test",
-		Name:      "test-pod",
-	}}
-	client := fakekubeclientset.NewSimpleClientset(pod)
-	fakePods := client.CoreV1().Pods("test")
-
-	// Update Pod status
-	ctx := context.TODO()
-	errCh := make(chan error)
-	go func(ctx context.Context, pods corev1.PodInterface) {
-		errCh <- WaitForPodSucceeded(ctx, fakePods, "test-pod", 10*time.Second)
-	}(ctx, fakePods)
-
-	fmt.Println("changing phase to success")
-	time.Sleep(5 * time.Second)
-	// pod.Status.Phase = v1.PodFailed
-	pod.Status.Phase = v1.PodSucceeded
-	//pod.Status.Phase = v1.PodRunning
-	// fakeWatcher.Modify(pod)
-
-	err := <-errCh
-	if err != nil {
-		t.Errorf("failed with %s", err)
+func watcher(w watch.Interface) func(a fake_testing.Action) (handled bool, ret watch.Interface, err error) {
+	return func(a fake_testing.Action) (handled bool, ret watch.Interface, err error) {
+		return true, w, nil
 	}
+}
+
+func TestWaitForPodSucceeded(t *testing.T) {
+	tests := []struct {
+		description string
+		phases      []v1.PodPhase
+		shouldErr   bool
+	}{
+		{
+			description: "pod eventually succeeds",
+			phases:      []v1.PodPhase{v1.PodRunning, v1.PodSucceeded},
+		}, {
+			description: "pod eventually fails",
+			phases:      []v1.PodPhase{v1.PodRunning, v1.PodFailed},
+			shouldErr:   true,
+		}, {
+			description: "pod times out",
+			phases:      []v1.PodPhase{v1.PodRunning, v1.PodRunning, v1.PodRunning, v1.PodRunning, v1.PodRunning, v1.PodRunning},
+			shouldErr:   true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			pod := &v1.Pod{}
+			client := fakekubeclientset.NewSimpleClientset(pod)
+
+			fakeWatcher := watch.NewFake()
+			client.PrependWatchReactor("*", watcher(fakeWatcher))
+			fakePods := client.CoreV1().Pods("")
+
+			errChan := make(chan (error))
+			go func() {
+				errChan <- WaitForPodSucceeded(context.TODO(), fakePods, "", 5*time.Second)
+			}()
+
+			for _, phase := range test.phases {
+				if fakeWatcher.IsStopped() {
+					break
+				}
+				fakeWatcher.Modify(&v1.Pod{
+					Status: v1.PodStatus{
+						Phase: phase,
+					},
+				})
+				time.Sleep(time.Second)
+			}
+			err := <-errChan
+			testutil.CheckError(t, test.shouldErr, err)
+		})
+	}
+
 }
 
 func TestIsPodSucceeded(t *testing.T) {
@@ -103,12 +131,11 @@ func TestIsPodSucceeded(t *testing.T) {
 					Phase: test.phase,
 				},
 			}
-			f := isPodSucceeded(test.podName)
 			dummyEvent := &watch.Event{
 				Type:   "dummyEvent",
 				Object: pod,
 			}
-			actual, err := f(dummyEvent)
+			actual, err := isPodSucceeded(test.podName)(dummyEvent)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, actual, test.expected)
 		})
 	}
