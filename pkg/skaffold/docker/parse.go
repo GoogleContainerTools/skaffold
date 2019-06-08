@@ -74,7 +74,7 @@ func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace
 
 	res, err := parser.Parse(f)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing dockerfile")
+		return nil, errors.Wrapf(err, "parsing dockerfile %s", absDockerfilePath)
 	}
 
 	dockerfileLines := res.AST.Children
