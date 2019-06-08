@@ -100,6 +100,12 @@ func (h *TempDir) Write(file, content string) *TempDir {
 	return h.failIfErr(ioutil.WriteFile(h.Path(file), []byte(content), os.ModePerm))
 }
 
+// Symlink creates a symlink.
+func (h *TempDir) Symlink(dst, src string) *TempDir {
+	h.failIfErr(os.MkdirAll(filepath.Dir(h.Path(src)), os.ModePerm))
+	return h.failIfErr(os.Symlink(h.Path(dst), h.Path(src)))
+}
+
 // Rename renames a file from oldname to newname
 func (h *TempDir) Rename(oldName, newName string) *TempDir {
 	return h.failIfErr(os.Rename(h.Path(oldName), h.Path(newName)))
