@@ -259,7 +259,6 @@ func TestNewBuilder(t *testing.T) {
 
 	tcs := []struct {
 		name            string
-		runCtx          *runcontext.RunContext
 		shouldErr       bool
 		expectedBuilder *Builder
 		localClusterFn  func() (bool, error)
