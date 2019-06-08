@@ -21,6 +21,10 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/pkg/errors"
+
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -244,4 +248,84 @@ func TestLocalRun(t *testing.T) {
 			t.CheckDeepEqual(test.expectedPushed, test.api.Pushed)
 		})
 	}
+}
+
+type dummyLocalDaemon struct {
+	docker.LocalDaemon
+}
+
+func TestNewBuilder(t *testing.T) {
+	dummyDaemon := dummyLocalDaemon{}
+
+	tcs := []struct {
+		name            string
+		runCtx          *runcontext.RunContext
+		shouldErr       bool
+		expectedBuilder *Builder
+		localClusterFn  func() (bool, error)
+		localDockerFn   func(*runcontext.RunContext) (docker.LocalDaemon, error)
+	}{
+		{
+			name: "failed to get docker client",
+			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
+				e = errors.New("dummy docker error")
+				return
+			},
+			shouldErr: true,
+		}, {
+			name: "pushImages becomes !localCluster when local:push is not defined",
+			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
+				daemon = dummyDaemon
+				return
+			},
+			localClusterFn: func() (b bool, e error) {
+				b = false
+				return
+			},
+			shouldErr: false,
+			expectedBuilder: &Builder{
+				cfg:                &latest.LocalBuild{},
+				kubeContext:        "",
+				localDocker:        dummyDaemon,
+				localCluster:       false,
+				pushImages:         true,
+				skipTests:          false,
+				prune:              true,
+				insecureRegistries: nil,
+			},
+		},
+	}
+	for _, tc := range tcs {
+		testutil.Run(t, tc.name, func(t *testutil.T) {
+			if tc.localDockerFn != nil {
+				t.Override(&getLocalDocker, tc.localDockerFn)
+			}
+			if tc.localClusterFn != nil {
+				t.Override(&getLocalCluster, tc.localClusterFn)
+			}
+			builder, err := NewBuilder(dummyRunContext())
+			t.CheckError(tc.shouldErr, err)
+			if !tc.shouldErr {
+				t.CheckDeepEqual(tc.expectedBuilder, builder, cmp.AllowUnexported(Builder{}, dummyDaemon))
+			}
+		})
+	}
+}
+
+func dummyRunContext() *runcontext.RunContext {
+	return &runcontext.RunContext{
+		Cfg: &latest.Pipeline{
+			Build: latest.BuildConfig{
+				BuildType: latest.BuildType{
+					LocalBuild: &latest.LocalBuild{},
+				},
+			},
+		},
+		Opts: &config.SkaffoldOptions{
+			NoPrune:        false,
+			CacheArtifacts: false,
+			SkipTests:      false,
+		},
+	}
+
 }

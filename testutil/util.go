@@ -43,7 +43,11 @@ func (t *T) FakeRunOutErr(command string, output string, err error) *FakeCmd {
 }
 
 func (t *T) Override(dest, tmp interface{}) {
-	teardown := Override(t.T, dest, tmp)
+	teardown, err := override(t.T, dest, tmp)
+	if err != nil {
+		t.Errorf("temporary override value is invalid: %v", err)
+		return
+	}
 	t.teardownActions = append(t.teardownActions, teardown)
 }
 
@@ -234,11 +238,27 @@ func ServeFile(t *testing.T, content []byte) (url string, tearDown func()) {
 // Returns the function to call to restore the variable
 // to its original state.
 func Override(t *testing.T, dest, tmp interface{}) func() {
+	f, err := override(t, dest, tmp)
+	if err != nil {
+		t.Errorf("temporary value is invalid: %v", err)
+	}
+	return f
+}
+
+func override(t *testing.T, dest, tmp interface{}) (f func(), err error) {
 	t.Helper()
 
 	defer func() {
 		if r := recover(); r != nil {
-			t.Error("temporary value is of invalid type")
+			f = nil
+			switch x := r.(type) {
+			case string:
+				err = errors.New(x)
+			case error:
+				err = x
+			default:
+				err = errors.New("unknown panic")
+			}
 		}
 	}()
 
@@ -257,5 +277,12 @@ func Override(t *testing.T, dest, tmp interface{}) func() {
 	}
 	dValue.Set(tmpV)
 
-	return func() { dValue.Set(curValue) }
+	return func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Error("panic while restoring original value")
+			}
+		}()
+		dValue.Set(curValue)
+	}, nil
 }

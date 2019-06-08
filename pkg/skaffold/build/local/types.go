@@ -44,14 +44,25 @@ type Builder struct {
 	insecureRegistries map[string]bool
 }
 
+// external dependencies are wrapped
+// into private functions for testability
+
+var getLocalCluster = func() (bool, error) {
+	return configutil.GetLocalCluster()
+}
+
+var getLocalDocker = func(runCtx *runcontext.RunContext) (docker.LocalDaemon, error) {
+	return docker.NewAPIClient(runCtx.Opts.Prune(), runCtx.InsecureRegistries)
+}
+
 // NewBuilder returns an new instance of a local Builder.
 func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
-	localDocker, err := docker.NewAPIClient(runCtx.Opts.Prune(), runCtx.InsecureRegistries)
+	localDocker, err := getLocalDocker(runCtx)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
 
-	localCluster, err := configutil.GetLocalCluster()
+	localCluster, err := getLocalCluster()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting localCluster")
 	}
