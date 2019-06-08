@@ -648,9 +648,6 @@ func TestHelmDependencies(t *testing.T) {
 }
 
 func TestExpandPaths(t *testing.T) {
-	home := os.Getenv("HOME")
-	defer os.Setenv("HOME", home)
-
 	homedir.DisableCache = true // for testing only
 
 	var tests = []struct {
@@ -658,31 +655,27 @@ func TestExpandPaths(t *testing.T) {
 		paths        []string
 		unixExpanded []string //unix expands path with forward slashes, windows with backward slashes
 		winExpanded  []string
-		setEnvFunc   func()
+		env          map[string]string
 	}{
 		{
 			description:  "expand paths on unix",
 			paths:        []string{"~/path/with/tilde/values.yaml", "/some/absolute/path/values.yaml"},
 			unixExpanded: []string{"/home/path/with/tilde/values.yaml", "/some/absolute/path/values.yaml"},
 			winExpanded:  []string{`\home\path\with\tilde\values.yaml`, "/some/absolute/path/values.yaml"},
-			setEnvFunc: func() {
-				os.Setenv("HOME", "/home")
-			},
+			env:          map[string]string{"HOME": "/home"},
 		},
 		{
 			description:  "expand paths on windows",
 			paths:        []string{"~/path/with/tilde/values.yaml", `C:\Users\SomeUser\path\values.yaml`},
 			unixExpanded: []string{`C:\Users\SomeUser/path/with/tilde/values.yaml`, `C:\Users\SomeUser\path\values.yaml`},
 			winExpanded:  []string{`C:\Users\SomeUser\path\with\tilde\values.yaml`, `C:\Users\SomeUser\path\values.yaml`},
-			setEnvFunc: func() {
-				os.Setenv("HOME", `C:\Users\SomeUser`)
-			},
+			env:          map[string]string{"HOME": `C:\Users\SomeUser`},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			test.setEnvFunc()
+			t.SetEnvs(test.env)
 			expanded := expandPaths(test.paths)
 
 			if runtime.GOOS == "windows" {
