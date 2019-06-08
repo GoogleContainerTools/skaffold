@@ -47,9 +47,7 @@ type Builder struct {
 // external dependencies are wrapped
 // into private functions for testability
 
-var getLocalCluster = func() (bool, error) {
-	return configutil.GetLocalCluster()
-}
+var getLocalCluster = configutil.GetLocalCluster
 
 var getLocalDocker = func(runCtx *runcontext.RunContext) (docker.LocalDaemon, error) {
 	return docker.NewAPIClient(runCtx.Opts.Prune(), runCtx.InsecureRegistries)
