@@ -88,11 +88,6 @@ func (t *T) Chdir(dir string) {
 	t.teardownActions = append(t.teardownActions, teardown)
 }
 
-func (t *T) SetEnvs(envs map[string]string) {
-	teardown := SetEnvs(t.T, envs)
-	t.teardownActions = append(t.teardownActions, teardown)
-}
-
 func Run(t *testing.T, name string, f func(t *T)) {
 	if name == "" {
 		name = t.Name()
@@ -199,29 +194,6 @@ func checkErr(shouldErr bool, err error) error {
 		return fmt.Errorf("unexpected error: %s", err)
 	}
 	return nil
-}
-
-// SetEnvs takes a map of key values to set using os.Setenv and returns
-// a function that can be called to reset the envs to their previous values.
-func SetEnvs(t *testing.T, envs map[string]string) func() {
-	prevEnvs := map[string]string{}
-	for key, value := range envs {
-		prevEnv := os.Getenv(key)
-		prevEnvs[key] = prevEnv
-		err := os.Setenv(key, value)
-		if err != nil {
-			t.Error(err)
-		}
-	}
-
-	return func() {
-		for key, value := range prevEnvs {
-			err := os.Setenv(key, value)
-			if err != nil {
-				t.Error(err)
-			}
-		}
-	}
 }
 
 // ServeFile serves a file with http. Returns the url to the file and a teardown
