@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -81,11 +80,6 @@ func (t *T) NewTempDir() *TempDir {
 	tmpDir, teardown := NewTempDir(t.T)
 	t.teardownActions = append(t.teardownActions, teardown)
 	return tmpDir
-}
-
-func (t *T) Chdir(dir string) {
-	teardown := Chdir(t.T, dir)
-	t.teardownActions = append(t.teardownActions, teardown)
 }
 
 func Run(t *testing.T, name string, f func(t *T)) {
@@ -162,27 +156,6 @@ func CheckErrorContains(t *testing.T, message string, err error) {
 func EnsureTestPanicked(t *testing.T) {
 	if recover() == nil {
 		t.Errorf("should have panicked")
-	}
-}
-
-// Chdir changes current directory for a test
-func Chdir(t *testing.T, dir string) func() {
-	t.Helper()
-
-	pwd, err := os.Getwd()
-	if err != nil {
-		t.Fatal("unable to get current directory")
-	}
-
-	err = os.Chdir(dir)
-	if err != nil {
-		t.Fatal("unable to change current directory")
-	}
-
-	return func() {
-		if err := os.Chdir(pwd); err != nil {
-			t.Fatal("unable to reset current directory")
-		}
 	}
 }
 
