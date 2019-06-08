@@ -149,10 +149,10 @@ func TestKubectlDeploy(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().
+			t.NewTempDir().
 				Write("deployment.yaml", deploymentWebYAML).
-				Write("empty.ignored", "")
-			t.Chdir(tmpDir.Root())
+				Write("empty.ignored", "").
+				Chdir()
 
 			t.Override(&util.DefaultExecCommand, test.command)
 
@@ -221,9 +221,9 @@ func TestKubectlCleanup(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().
-				Write("deployment.yaml", deploymentWebYAML)
-			t.Chdir(tmpDir.Root())
+			t.NewTempDir().
+				Write("deployment.yaml", deploymentWebYAML).
+				Chdir()
 
 			t.Override(&util.DefaultExecCommand, test.command)
 

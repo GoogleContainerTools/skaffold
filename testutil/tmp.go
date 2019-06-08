@@ -47,8 +47,9 @@ func TempFile(t *testing.T, prefix string, content []byte) (name string, tearDow
 
 // TempDir offers actions on a temp directory.
 type TempDir struct {
-	t    *testing.T
-	root string
+	t               *testing.T
+	root            string
+	resetCurrentDir func()
 }
 
 // NewTempDir creates a temporary directory and a teardown function
@@ -60,13 +61,17 @@ func NewTempDir(t *testing.T) (tmp *TempDir, tearDown func()) {
 	}
 
 	tmpDir := &TempDir{
-		t:    t,
-		root: root,
+		t:               t,
+		root:            root,
+		resetCurrentDir: func() {},
 	}
 
-	return tmpDir, func() {
-		os.RemoveAll(root)
-	}
+	return tmpDir, tmpDir.tearDown
+}
+
+func (h *TempDir) tearDown() {
+	h.resetCurrentDir()
+	os.RemoveAll(h.Root())
 }
 
 // Root returns the temp directory.
@@ -136,4 +141,25 @@ func (h *TempDir) Paths(files ...string) []string {
 		paths = append(paths, h.Path(file))
 	}
 	return paths
+}
+
+// Chdir changes current directory to this temp directory.
+func (h *TempDir) Chdir() *TempDir {
+	pwd, err := os.Getwd()
+	if err != nil {
+		h.t.Fatal("unable to get current directory")
+	}
+
+	err = os.Chdir(h.Root())
+	if err != nil {
+		h.t.Fatal("unable to change current directory")
+	}
+
+	h.resetCurrentDir = func() {
+		if err := os.Chdir(pwd); err != nil {
+			h.t.Fatal("unable to reset current directory")
+		}
+	}
+
+	return h
 }

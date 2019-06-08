@@ -29,14 +29,14 @@ import (
 func TestDockerContext(t *testing.T) {
 	for _, dir := range []string{".", "sub"} {
 		testutil.Run(t, dir, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().
+			t.NewTempDir().
 				Write(dir+"/files/ignored.txt", "").
 				Write(dir+"/files/included.txt", "").
 				Write(dir+"/.dockerignore", "**/ignored.txt\nalsoignored.txt").
 				Write(dir+"/Dockerfile", "FROM alpine\nCOPY ./files /files").
 				Write(dir+"/ignored.txt", "").
-				Write(dir+"/alsoignored.txt", "")
-			t.Chdir(tmpDir.Root())
+				Write(dir+"/alsoignored.txt", "").
+				Chdir()
 
 			imageFetcher := fakeImageFetcher{}
 			t.Override(&RetrieveImage, imageFetcher.fetch)

@@ -130,9 +130,9 @@ func TestCreateTarSubDirectory(t *testing.T) {
 
 func TestCreateTarEmptyFolder(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		tmpDir := t.NewTempDir()
-		tmpDir.Mkdir("empty")
-		t.Chdir(tmpDir.Root())
+		t.NewTempDir().
+			Mkdir("empty").
+			Chdir()
 
 		var b bytes.Buffer
 		err := CreateTar(&b, ".", []string{"empty"})
@@ -192,8 +192,8 @@ func TestCreateTarWithAbsolutePaths(t *testing.T) {
 }
 
 func prepareFiles(t *testutil.T, files map[string]string) (*testutil.TempDir, []string) {
-	tmpDir := t.NewTempDir()
-	t.Chdir(tmpDir.Root())
+	tmpDir := t.NewTempDir().
+		Chdir()
 
 	var paths []string
 	for path, content := range files {
