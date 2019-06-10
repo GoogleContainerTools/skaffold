@@ -46,30 +46,40 @@ func NewCmdFindConfigs(out io.Writer) *cobra.Command {
 }
 
 func doFindConfigs(out io.Writer) error {
-	pathOutLen, versionOutLen := 70, 20
+	return findConfigs(out, directory)
+}
+
+func findConfigs(out io.Writer, directory string) error {
+	pathOutLen, versionOutLen := 70, 30
 
 	return filepath.Walk(directory,
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
+				fmt.Println(err)
 				return err
 			}
 
 			// Find files ending in ".yaml" and parseable to skaffold config in the specified root directory recursively.
-			if !info.IsDir() && strings.HasSuffix(path, ".yaml") {
+			if !info.IsDir() && strings.Contains(path, ".yaml") {
 				cfg, err := schema.ParseConfig(path, false)
 				if err == nil {
+					var version string
+					var c color.Color
+
 					if cfg.GetVersion() == latest.Version {
-						printColoredRow(out, pathOutLen, versionOutLen, path, "LATEST", color.Default)
+						version = cfg.GetVersion() + " (LATEST)"
+						c = color.Default
 					} else {
-						printColoredRow(out, pathOutLen, versionOutLen, path, cfg.GetVersion(), color.Green)
+						version = cfg.GetVersion()
+						c = color.Green
 					}
+					c.Fprintf(out, getFormatTemplate(pathOutLen, versionOutLen), path, version)
 				}
 			}
 			return nil
 		})
 }
 
-func printColoredRow(out io.Writer, pathLen, versionLen int, path, version string, c color.Color) {
-	formatTemplate := fmt.Sprintf("%%-%ds\t%%-%ds\n", pathLen, versionLen)
-	c.Fprintf(out, formatTemplate, path, version)
+func getFormatTemplate(pathLen, versionLen int) string {
+	return fmt.Sprintf("%%-%ds\t%%-%ds\n", pathLen, versionLen)
 }
