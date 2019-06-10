@@ -49,13 +49,17 @@ func TestExtractProjectID(t *testing.T) {
 			imageName:   "gcr.io",
 			shouldErr:   true,
 		},
+		{
+			description: "invalid reference",
+			imageName:   "",
+			shouldErr:   true,
+		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			projectID, err := ExtractProjectID(test.imageName)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, projectID)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, projectID)
 		})
 	}
 }

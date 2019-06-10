@@ -25,6 +25,7 @@ import (
 	"go/token"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -92,8 +93,8 @@ func generateSchemas(root string, dryRun bool) (bool, error) {
 			strict = true
 		}
 
-		input := fmt.Sprintf("%s/pkg/skaffold/schema/%s/config.go", root, folder)
-		output := fmt.Sprintf("%s/docs/content/en/schemas/%s.json", root, apiVersion)
+		input := filepath.Join(root, "pkg", "skaffold", "schema", folder, "config.go")
+		output := filepath.Join(root, "docs", "content", "en", "schemas", apiVersion+".json")
 
 		generator := schemaGenerator{
 			strict: strict,
@@ -114,6 +115,8 @@ func generateSchemas(root string, dryRun bool) (bool, error) {
 		} else if !os.IsNotExist(err) {
 			return false, errors.Wrapf(err, "unable to check that file exists %s", output)
 		}
+
+		current = bytes.Replace(current, []byte("\r\n"), []byte("\n"), -1)
 
 		if string(current) != string(buf) {
 			same = false

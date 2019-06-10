@@ -58,6 +58,26 @@ func (c *FakeCmd) popRun() (*run, error) {
 	return &run, nil
 }
 
+func FakeRun(t *testing.T, command string) *FakeCmd {
+	return NewFakeCmd(t).WithRun(command)
+}
+
+func FakeRunInput(t *testing.T, command, input string) *FakeCmd {
+	return NewFakeCmd(t).WithRunInput(command, input)
+}
+
+func FakeRunErr(t *testing.T, command string, err error) *FakeCmd {
+	return NewFakeCmd(t).WithRunErr(command, err)
+}
+
+func FakeRunOut(t *testing.T, command string, output string) *FakeCmd {
+	return NewFakeCmd(t).WithRunOut(command, output)
+}
+
+func FakeRunOutErr(t *testing.T, command string, output string, err error) *FakeCmd {
+	return NewFakeCmd(t).WithRunOutErr(command, output, err)
+}
+
 func (c *FakeCmd) WithRun(command string) *FakeCmd {
 	return c.addRun(run{
 		command: command,

@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -32,6 +33,8 @@ const (
 	tags = iota
 	commitSha
 	abbrevCommitSha
+	treeSha
+	abbrevTreeSha
 )
 
 // GitCommit tags an image by the git commit it was built at.
@@ -50,6 +53,10 @@ func NewGitCommit(taggerVariant string) (*GitCommit, error) {
 		variant = commitSha
 	case "abbrevcommitsha":
 		variant = abbrevCommitSha
+	case "treesha":
+		variant = treeSha
+	case "abbrevtreesha":
+		variant = abbrevTreeSha
 	default:
 		return nil, fmt.Errorf("%s is not a valid git tagger variant", taggerVariant)
 	}
@@ -94,11 +101,42 @@ func (c *GitCommit) makeGitTag(workingDir string) (string, error) {
 		if c.variant == abbrevCommitSha {
 			args = append(args, "--abbrev-commit")
 		}
+	case treeSha, abbrevTreeSha:
+		gitPath, err := getGitPathToWorkdir(workingDir)
+		if err != nil {
+			return "", err
+		}
+		args = append(args, "rev-parse")
+		if c.variant == abbrevTreeSha {
+			args = append(args, "--short")
+		}
+		// revision must come after the --short flag
+		args = append(args, "HEAD:"+gitPath+"/")
 	default:
 		return "", errors.New("invalid git tag variant: defaulting to 'dirty'")
 	}
 
 	return runGit(workingDir, args...)
+}
+
+func getGitPathToWorkdir(workingDir string) (string, error) {
+	absWorkingDir, err := filepath.Abs(workingDir)
+	if err != nil {
+		return "", err
+	}
+
+	// git reports the gitdir with resolved symlinks, so we need to do this too in order for filepath.Rel to work
+	absWorkingDir, err = filepath.EvalSymlinks(absWorkingDir)
+	if err != nil {
+		return "", err
+	}
+
+	gitRoot, err := runGit(workingDir, "rev-parse", "--show-toplevel")
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Rel(gitRoot, absWorkingDir)
 }
 
 func runGit(workingDir string, arg ...string) (string, error) {

@@ -18,6 +18,8 @@ package config
 
 import (
 	"strings"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // SkaffoldOptions are options that are set by command line arguments not included
@@ -33,7 +35,9 @@ type SkaffoldOptions struct {
 	CacheArtifacts     bool
 	EnableRPC          bool
 	Force              bool
+	ForceDev           bool
 	NoPrune            bool
+	NoPruneChildren    bool
 	CustomTag          string
 	Namespace          string
 	CacheFile          string
@@ -84,5 +88,19 @@ func (opts *SkaffoldOptions) Prune() bool {
 }
 
 func (opts *SkaffoldOptions) ForceDeploy() bool {
-	return opts.Command == "dev" || opts.Force
+	return opts.ForceDev || opts.Force
+}
+
+func (opts *SkaffoldOptions) IsTargetImage(artifact *latest.Artifact) bool {
+	if len(opts.TargetImages) == 0 {
+		return true
+	}
+
+	for _, targetImage := range opts.TargetImages {
+		if strings.Contains(artifact.ImageName, targetImage) {
+			return true
+		}
+	}
+
+	return false
 }

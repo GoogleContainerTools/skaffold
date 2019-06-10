@@ -17,7 +17,6 @@ limitations under the License.
 package integration
 
 import (
-	"os"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -36,7 +35,7 @@ func TestRun(t *testing.T) {
 		deployments []string
 		pods        []string
 		env         []string
-		remoteOnly  bool
+		gcpOnly     bool
 	}{
 		{
 			description: "getting-started",
@@ -45,8 +44,7 @@ func TestRun(t *testing.T) {
 		}, {
 			description: "nodejs",
 			dir:         "examples/nodejs",
-			env:         []string{"SCRIPT=dev"},
-			pods:        []string{"node"},
+			deployments: []string{"node"},
 		}, {
 			description: "structure-tests",
 			dir:         "examples/structure-tests",
@@ -68,54 +66,51 @@ func TestRun(t *testing.T) {
 			description: "Google Cloud Build",
 			dir:         "examples/google-cloud-build",
 			pods:        []string{"getting-started"},
-			remoteOnly:  true,
+			gcpOnly:     true,
 		}, {
 			description: "Google Cloud Build with sub folder",
 			dir:         "testdata/gcb-sub-folder",
 			pods:        []string{"getting-started"},
-			remoteOnly:  true,
+			gcpOnly:     true,
 		}, {
 			description: "kaniko",
 			dir:         "examples/kaniko",
 			pods:        []string{"getting-started-kaniko"},
-			remoteOnly:  true,
+			gcpOnly:     true,
 		}, {
 			description: "kaniko local",
 			dir:         "examples/kaniko-local",
 			pods:        []string{"getting-started-kaniko"},
-			remoteOnly:  true,
+			gcpOnly:     true,
 		}, {
 			description: "kaniko local with sub folder",
 			dir:         "testdata/kaniko-sub-folder",
 			pods:        []string{"getting-started-kaniko"},
-			remoteOnly:  true,
+			gcpOnly:     true,
 		}, {
 			description: "kaniko microservices",
 			dir:         "testdata/kaniko-microservices",
 			deployments: []string{"leeroy-app", "leeroy-web"},
-			remoteOnly:  true,
-			// }, {
-			// 	description: "helm",
-			// 	dir:         "examples/helm-deployment",
-			// 	deployments: []string{"skaffold-helm"},
-			// 	remoteOnly:  true,
+			gcpOnly:     true,
 		}, {
 			description: "jib in googlecloudbuild",
 			dir:         "testdata/jib",
 			args:        []string{"-p", "gcb"},
 			deployments: []string{"web"},
-			remoteOnly:  true,
+			gcpOnly:     true,
 		}, {
 			description: "custom builder",
 			dir:         "testdata/custom",
 			pods:        []string{"bazel"},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			if test.remoteOnly && os.Getenv("REMOTE_INTEGRATION") != "true" {
-				t.Skip("skipping remote only test")
+			if test.gcpOnly && !ShouldRunGCPOnlyTests() {
+				t.Skip("skipping gcp only test")
+			}
+			if !test.gcpOnly && ShouldRunGCPOnlyTests() {
+				t.Skip("skipping test that is not gcp only")
 			}
 
 			ns, client, deleteNs := SetupNamespace(t)

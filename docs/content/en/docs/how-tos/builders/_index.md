@@ -100,18 +100,44 @@ Kubernetes cluster. Kaniko enables building container images in environments
 that cannot easily or securely run a Docker daemon.
 
 Skaffold can help build artifacts in a Kubernetes cluster using the Kaniko
-image; after the artifacts are built, kaniko can push them to remote registries.
+image; after the artifacts are built, kaniko must push them to a registry.
 
 ### Configuration
 
 To use Kaniko, add build type `kaniko` to the `build` section of
 `skaffold.yaml`. The following options can optionally be configured:
 
-{{< schema root="KanikoBuild" >}}
+{{< schema root="KanikoArtifact" >}}
 
 The `buildContext` can be either:
 
 {{< schema root="KanikoBuildContext" >}}
+
+Since Kaniko must push images to a registry, it is required to set up cluster credentials.
+These credentials are configured in the `cluster` section with the following options:
+
+{{< schema root="ClusterDetails" >}}
+
+To set up the credentials for kaniko have a look at the [kaniko docs](https://github.com/GoogleContainerTools/kaniko#kubernetes-secret).
+The recommended way is to store the pull secret in Kubernetes and configure `pullSecretName`.
+Alternatively, the path to a credentials file can be set with the `pullSecret` option:
+```yaml
+build:
+  cluster:
+    pullSecretName: pull-secret-in-kubernetes
+    # OR
+    pullSecret: path-to-service-account-key-file
+```
+Similarly, when pushing to a docker registry:
+```yaml
+build:
+  cluster:
+    dockerConfig:
+      path: ~/.docker/config.json
+      # OR
+      secretName: docker-config-secret-in-kubernetes
+```
+Note that the kubernetes secret must not be of type `kubernetes.io/dockerconfigjson` which stores the config json under the key `".dockerconfigjson"`, but an opaque secret with the key `"config.json"`.
 
 ### Example
 
@@ -299,7 +325,7 @@ custom:
         file: foo
 ```
 
-##### Getting depedencies from a command
+##### Getting dependencies from a command
 Sometimes you might have a builder that can provide the dependencies for a given artifact.
 For example bazel has the `bazel query deps` command.
 Custom artifact builders can ask Skaffold to execute a custom command, which Skaffold can use to get the dependencies for the artifact for file watching.

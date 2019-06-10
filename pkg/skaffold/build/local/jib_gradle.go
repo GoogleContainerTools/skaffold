@@ -19,7 +19,6 @@ package local
 import (
 	"context"
 	"io"
-	"os"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
@@ -56,7 +55,7 @@ func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, w
 
 func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {
 	cmd := jib.GradleCommand.CreateCommand(ctx, workspace, args)
-	cmd.Env = append(os.Environ(), b.localDocker.ExtraEnv()...)
+	cmd.Env = append(util.OSEnviron(), b.localDocker.ExtraEnv()...)
 	cmd.Stdout = out
 	cmd.Stderr = out
 

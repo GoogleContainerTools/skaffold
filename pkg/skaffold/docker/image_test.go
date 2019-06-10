@@ -29,7 +29,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/random"
@@ -79,14 +78,14 @@ func TestPush(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			localDocker := &localDaemon{
 				apiClient: &test.api,
 			}
 
 			digest, err := localDocker.Push(context.Background(), ioutil.Discard, test.imageName)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedDigest, digest)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDigest, digest)
 		})
 	}
 }
@@ -118,14 +117,14 @@ func TestRunBuild(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			localDocker := &localDaemon{
 				apiClient: &test.api,
 			}
 
 			_, err := localDocker.Build(context.Background(), ioutil.Discard, ".", &latest.DockerArtifact{}, "finalimage")
 
-			testutil.CheckError(t, test.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
@@ -163,14 +162,14 @@ func TestImageID(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			localDocker := &localDaemon{
 				apiClient: &test.api,
 			}
 
 			imageID, err := localDocker.ImageID(context.Background(), test.ref)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, imageID)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, imageID)
 		})
 	}
 }
@@ -247,20 +246,17 @@ func TestGetBuildArgs(t *testing.T) {
 			want: []string{"--build-arg", "key1=value1", "--cache-from", "foo", "--target", "stage1", "--network", "none"},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.description, func(t *testing.T) {
-			util.OSEnviron = func() []string {
-				return tt.env
-			}
-			result, err := GetBuildArgs(tt.artifact)
-			if tt.shouldErr && err != nil {
-				t.Errorf("expected to see an error, but saw none")
-			}
-			if tt.shouldErr {
-				return
-			}
-			if diff := cmp.Diff(result, tt.want); diff != "" {
-				t.Errorf("%T differ (-got, +want): %s", tt.want, diff)
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.OSEnviron, func() []string { return test.env })
+
+			result, err := GetBuildArgs(test.artifact)
+
+			if test.shouldErr {
+				// TODO(dgageot): should be true
+				t.CheckNoError(err)
+			} else {
+				t.CheckErrorAndDeepEqual(test.shouldErr, err, test.want, result)
 			}
 		})
 	}
@@ -268,30 +264,30 @@ func TestGetBuildArgs(t *testing.T) {
 
 func TestImageExists(t *testing.T) {
 	tests := []struct {
-		name            string
+		description     string
 		tagToImageID    map[string]string
 		image           string
 		errImageInspect bool
 		expected        bool
 	}{
 		{
-			name:         "image exists",
+			description:  "image exists",
 			image:        "image:tag",
 			tagToImageID: map[string]string{"image:tag": "imageID"},
 			expected:     true,
 		}, {
-			name:            "image does not exist",
+			description:     "image does not exist",
 			image:           "dne",
 			errImageInspect: true,
 			tagToImageID:    map[string]string{"image:tag": "imageID"},
 		}, {
-			name:            "error getting image",
+			description:     "error getting image",
 			tagToImageID:    map[string]string{"image:tag": "imageID"},
 			errImageInspect: true,
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			api := &testutil.FakeAPIClient{
 				ErrImageInspect: test.errImageInspect,
 				TagToImageID:    test.tagToImageID,
@@ -300,16 +296,16 @@ func TestImageExists(t *testing.T) {
 			localDocker := &localDaemon{
 				apiClient: api,
 			}
-
 			actual := localDocker.ImageExists(context.Background(), test.image)
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expected, actual)
+
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }
 
 func TestRepoDigest(t *testing.T) {
 	tests := []struct {
-		name            string
+		description     string
 		image           string
 		tagToImageID    map[string]string
 		repoDigests     []string
@@ -318,21 +314,21 @@ func TestRepoDigest(t *testing.T) {
 		expected        string
 	}{
 		{
-			name:         "repo digest exists",
+			description:  "repo digest exists",
 			image:        "image:tag",
 			tagToImageID: map[string]string{"image:tag": "image", "image1:tag": "image1"},
 			repoDigests:  []string{"repoDigest", "repoDigest1"},
 			expected:     "repoDigest",
 		},
 		{
-			name:         "repo digest does not exist",
+			description:  "repo digest does not exist",
 			image:        "image",
 			tagToImageID: map[string]string{},
 			repoDigests:  []string{},
 			shouldErr:    true,
 		},
 		{
-			name:            "err getting repo digest",
+			description:     "err getting repo digest",
 			image:           "image:tag",
 			errImageInspect: true,
 			shouldErr:       true,
@@ -340,9 +336,8 @@ func TestRepoDigest(t *testing.T) {
 			repoDigests:     []string{"repoDigest", "repoDigest1"},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			api := &testutil.FakeAPIClient{
 				ErrImageInspect: test.errImageInspect,
 				TagToImageID:    test.tagToImageID,
@@ -352,80 +347,72 @@ func TestRepoDigest(t *testing.T) {
 			localDocker := &localDaemon{
 				apiClient: api,
 			}
-
 			actual, err := localDocker.RepoDigest(context.Background(), test.image)
-			testutil.CheckError(t, test.shouldErr, err)
+
 			if test.shouldErr {
-				return
+				t.CheckError(test.shouldErr, err)
+			} else {
+				t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 			}
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
 		})
 	}
 }
 
 func TestInsecureRegistry(t *testing.T) {
-	called := false // variable to make sure we've called our getInsecureRegistry function
-	getInsecureRegistryImpl = func(_ string) (name.Reference, error) {
-		called = true
-		return name.Tag{}, nil
-	}
-	getRemoteImageImpl = func(_ name.Reference) (v1.Image, error) {
-		return random.Image(0, 0)
-	}
-
 	tests := []struct {
-		name               string
+		description        string
 		image              string
 		insecureRegistries map[string]bool
 		insecure           bool
 		shouldErr          bool
 	}{
 		{
-			name:               "secure image",
+			description:        "secure image",
 			image:              "gcr.io/secure/image",
 			insecureRegistries: map[string]bool{},
 		},
 		{
-			name:  "insecure image",
-			image: "my.insecure.registry/image",
+			description: "insecure image",
+			image:       "my.insecure.registry/image",
 			insecureRegistries: map[string]bool{
 				"my.insecure.registry": true,
 			},
 			insecure: true,
 		},
 		{
-			name:      "insecure image not provided by user",
-			image:     "my.insecure.registry/image",
-			insecure:  true,
-			shouldErr: true,
+			description: "insecure image not provided by user",
+			image:       "my.insecure.registry/image",
+			insecure:    true,
+			shouldErr:   true,
 		},
 		{
-			name:  "secure image provided in insecure registries list",
-			image: "gcr.io/secure/image",
+			description: "secure image provided in insecure registries list",
+			image:       "gcr.io/secure/image",
 			insecureRegistries: map[string]bool{
 				"gcr.io": true,
 			},
 			shouldErr: true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			called := false // variable to make sure we've called our getInsecureRegistry function
+
+			t.Override(&getInsecureRegistryImpl, func(string) (name.Reference, error) {
+				called = true
+				return name.Tag{}, nil
+			})
+			t.Override(&getRemoteImageImpl, func(name.Reference) (v1.Image, error) {
+				return random.Image(0, 0)
+			})
+
 			_, err := remoteImage(test.image, test.insecureRegistries)
-			if err != nil {
-				t.Errorf("error calling remoteImage: %s", err.Error())
+
+			t.CheckNoError(err)
+			if !test.shouldErr {
+				t.CheckDeepEqual(false, test.insecure && !called)
+				t.CheckDeepEqual(false, !test.insecure && called)
 			}
-			if test.insecure && !called { // error condition
-				if !test.shouldErr {
-					t.Errorf("getInsecureRegistry not called for insecure registry")
-				}
-			}
-			if !test.insecure && called { // error condition
-				if !test.shouldErr {
-					t.Errorf("getInsecureRegistry called for secure registry")
-				}
-			}
-			called = false
 		})
 	}
 }

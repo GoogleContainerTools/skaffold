@@ -17,19 +17,15 @@ limitations under the License.
 package event
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/proto"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/golang/protobuf/ptypes"
-	"github.com/pkg/errors"
-	"google.golang.org/grpc"
 )
 
 const (
@@ -40,11 +36,8 @@ const (
 )
 
 var (
-	handler    *eventHandler
-	once       sync.Once
-	pluginMode bool
-
-	cli proto.SkaffoldServiceClient // for plugin RPC connections
+	handler *eventHandler
+	once    sync.Once
 )
 
 type eventHandler struct {
@@ -61,6 +54,22 @@ type listener struct {
 	callback func(*proto.LogEntry) error
 	errors   chan error
 	closed   bool
+}
+
+func GetState() (*proto.State, error) {
+	state := handler.getState()
+	return &state, nil
+}
+
+func ForEachEvent(callback func(*proto.LogEntry) error) error {
+	return handler.forEachEvent(callback)
+}
+
+func Handle(event *proto.Event) error {
+	if event != nil {
+		handler.handle(event)
+	}
+	return nil
 }
 
 func (ev *eventHandler) getState() proto.State {
@@ -137,35 +146,12 @@ func emptyState(build *latest.BuildConfig) proto.State {
 }
 
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
-// It returns a shutdown callback for tearing down the grpc server, which the runner is responsible for calling.
-// This function can only be called once.
-func InitializeState(runCtx *runcontext.RunContext) (func() error, error) {
-	var err error
-	serverShutdown := func() error { return nil }
+func InitializeState(runCtx *runcontext.RunContext) {
 	once.Do(func() {
 		handler = &eventHandler{
 			state: emptyState(&runCtx.Cfg.Build),
 		}
-
-		if runCtx.Opts.EnableRPC {
-			serverShutdown, err = newStatusServer(runCtx.Opts.RPCPort, runCtx.Opts.RPCHTTPPort)
-			if err != nil {
-				err = errors.Wrap(err, "creating status server")
-				return
-			}
-		}
 	})
-	return serverShutdown, err
-}
-
-func SetupRPCClient(opts *config.SkaffoldOptions) error {
-	pluginMode = true
-	conn, err := grpc.Dial(fmt.Sprintf(":%d", opts.RPCPort), grpc.WithInsecure())
-	if err != nil {
-		return errors.Wrap(err, "opening gRPC connection to remote skaffold process")
-	}
-	cli = proto.NewSkaffoldServiceClient(conn)
-	return nil
 }
 
 // DeployInProgress notifies that a deployment has been started.
@@ -200,7 +186,7 @@ func BuildComplete(imageName string) {
 
 // PortForwarded notifies that a remote port has been forwarded locally.
 func PortForwarded(localPort, remotePort int32, podName, containerName, namespace string, portName string) {
-	handler.doHandle(&proto.Event{
+	go handler.handle(&proto.Event{
 		EventType: &proto.Event_PortEvent{
 			PortEvent: &proto.PortEvent{
 				LocalPort:     localPort,
@@ -215,7 +201,7 @@ func PortForwarded(localPort, remotePort int32, podName, containerName, namespac
 }
 
 func (ev *eventHandler) handleDeployEvent(e *proto.DeployEvent) {
-	ev.doHandle(&proto.Event{
+	go ev.handle(&proto.Event{
 		EventType: &proto.Event_DeployEvent{
 			DeployEvent: e,
 		},
@@ -223,19 +209,11 @@ func (ev *eventHandler) handleDeployEvent(e *proto.DeployEvent) {
 }
 
 func (ev *eventHandler) handleBuildEvent(e *proto.BuildEvent) {
-	ev.doHandle(&proto.Event{
+	go ev.handle(&proto.Event{
 		EventType: &proto.Event_BuildEvent{
 			BuildEvent: e,
 		},
 	})
-}
-
-func (ev *eventHandler) doHandle(event *proto.Event) {
-	if pluginMode {
-		go cli.Handle(context.Background(), event)
-	} else {
-		go ev.handle(event)
-	}
 }
 
 func LogSkaffoldMetadata(info *version.Info) {

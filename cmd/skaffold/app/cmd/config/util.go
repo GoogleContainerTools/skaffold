@@ -19,6 +19,7 @@ package config
 import (
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
@@ -226,5 +227,10 @@ func GetInsecureRegistries() ([]string, error) {
 func isDefaultLocal(kubeContext string) bool {
 	return kubeContext == constants.DefaultMinikubeContext ||
 		kubeContext == constants.DefaultDockerForDesktopContext ||
-		kubeContext == constants.DefaultDockerDesktopContext
+		kubeContext == constants.DefaultDockerDesktopContext ||
+		IsKindCluster(kubeContext)
+}
+
+func IsKindCluster(kubeContext string) bool {
+	return strings.HasSuffix(kubeContext, "@kind")
 }

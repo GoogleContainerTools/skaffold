@@ -21,42 +21,30 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
-	"github.com/pkg/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // NewCmdRun describes the CLI command to run a pipeline.
 func NewCmdRun(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "run",
-		Short: "Runs a pipeline file",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			err := run(out)
-			if err == nil {
-				tips.PrintForRun(out, opts)
-			}
-			return err
-		},
-	}
-	AddRunDevFlags(cmd)
-	AddRunDeployFlags(cmd)
-
-	cmd.Flags().StringVarP(&opts.CustomTag, "tag", "t", "", "The optional custom tag to use for images which overrides the current Tagger configuration")
-	return cmd
+	return NewCmd(out, "run").
+		WithDescription("Runs a pipeline file").
+		WithCommonFlags().
+		WithFlags(func(f *pflag.FlagSet) {
+			f.StringVarP(&opts.CustomTag, "tag", "t", "", "The optional custom tag to use for images which overrides the current Tagger configuration")
+		}).
+		NoArgs(cancelWithCtrlC(context.Background(), doRun))
 }
 
-func run(out io.Writer) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	catchCtrlC(cancel)
+func doRun(ctx context.Context, out io.Writer) error {
+	return withRunner(ctx, func(r *runner.SkaffoldRunner, config *latest.SkaffoldConfig) error {
+		err := r.Run(ctx, out, config.Build.Artifacts)
+		if err == nil {
+			tips.PrintForRun(out, opts)
+		}
 
-	runner, config, err := newRunner(opts)
-	if err != nil {
-		return errors.Wrap(err, "creating runner")
-	}
-	defer runner.RPCServerShutdown()
-
-	err = runner.Run(ctx, out, config.Build.Artifacts)
-	return err
+		return err
+	})
 }

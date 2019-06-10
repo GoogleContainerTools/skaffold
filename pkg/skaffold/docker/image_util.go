@@ -20,28 +20,69 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/docker/docker/api/types"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+)
+
+var (
+	opts = &config.SkaffoldOptions{}
 )
 
 func Prune(ctx context.Context, out io.Writer, images []string, client LocalDaemon) error {
+	pruneChildren := true
+
+	if opts.NoPruneChildren {
+		pruneChildren = false
+	}
+
 	for _, id := range images {
 		resp, err := client.ImageRemove(ctx, id, types.ImageRemoveOptions{
 			Force:         true,
-			PruneChildren: true,
+			PruneChildren: pruneChildren,
 		})
 		if err != nil {
 			return errors.Wrap(err, "pruning images")
 		}
 		for _, r := range resp {
 			if r.Deleted != "" {
-				out.Write([]byte(fmt.Sprintf("deleted image %s\n", r.Deleted)))
+				fmt.Fprintf(out, "deleted image %s\n", r.Deleted)
 			}
 			if r.Untagged != "" {
-				out.Write([]byte(fmt.Sprintf("untagged image %s\n", r.Untagged)))
+				fmt.Fprintf(out, "untagged image %s\n", r.Untagged)
 			}
 		}
 	}
 	return nil
+}
+
+func RetrieveWorkingDir(tagged string, insecureRegistries map[string]bool) (string, error) {
+	var cf *v1.ConfigFile
+	var err error
+
+	if strings.ToLower(tagged) == "scratch" {
+		return "/", nil
+	}
+
+	localDocker, err := NewAPIClient(false, nil)
+	if err == nil {
+		cf, err = localDocker.ConfigFile(context.Background(), tagged)
+	}
+	if err != nil {
+		// No local Docker is available
+		cf, err = RetrieveRemoteConfig(tagged, insecureRegistries)
+	}
+	if err != nil {
+		return "", errors.Wrap(err, "retrieving image config")
+	}
+
+	if cf.Config.WorkingDir == "" {
+		logrus.Debugf("Using default workdir '/' for %s", tagged)
+		return "/", nil
+	}
+	return cf.Config.WorkingDir, nil
 }

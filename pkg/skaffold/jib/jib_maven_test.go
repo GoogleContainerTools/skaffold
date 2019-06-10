@@ -83,24 +83,22 @@ func TestGetDependenciesMaven(t *testing.T) {
 			expected:    []string{"build", "dep1", "dep2"},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOutErr(
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, t.FakeRunOutErr(
 				strings.Join(getCommandMaven(ctx, tmpDir.Root(), &latest.JibMavenArtifact{Module: "maven-test"}).Args, " "),
 				test.stdout,
 				test.err,
-			)
+			))
 
 			// Change build file mod time
 			os.Chtimes(build, test.modTime, test.modTime)
 
 			deps, err := GetDependenciesMaven(ctx, tmpDir.Root(), &latest.JibMavenArtifact{Module: "maven-test"})
 			if test.err != nil {
-				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jibMaven dependencies: initial Jib dependency refresh failed: failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.3.0+): "+test.err.Error(), err.Error())
+				t.CheckErrorAndDeepEqual(true, err, "getting jibMaven dependencies: initial Jib dependency refresh failed: failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.3.0+): "+test.err.Error(), err.Error())
 			} else {
-				testutil.CheckDeepEqual(t, test.expected, deps)
+				t.CheckDeepEqual(test.expected, deps)
 			}
 		})
 	}
@@ -173,11 +171,9 @@ func TestGetCommandMaven(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			tmpDir, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
 
 			for _, file := range test.filesInWorkspace {
 				tmpDir.Write(file, "")
@@ -185,15 +181,16 @@ func TestGetCommandMaven(t *testing.T) {
 
 			cmd := getCommandMaven(ctx, tmpDir.Root(), &test.jibMavenArtifact)
 			expectedCmd := test.expectedCmd(tmpDir.Root())
-			testutil.CheckDeepEqual(t, expectedCmd.Path, cmd.Path)
-			testutil.CheckDeepEqual(t, expectedCmd.Args, cmd.Args)
-			testutil.CheckDeepEqual(t, expectedCmd.Dir, cmd.Dir)
+
+			t.CheckDeepEqual(expectedCmd.Path, cmd.Path)
+			t.CheckDeepEqual(expectedCmd.Args, cmd.Args)
+			t.CheckDeepEqual(expectedCmd.Dir, cmd.Dir)
 		})
 	}
 }
 
 func TestGenerateMavenArgs(t *testing.T) {
-	var testCases = []struct {
+	var tests = []struct {
 		in        latest.JibMavenArtifact
 		skipTests bool
 		out       []string
@@ -207,10 +204,9 @@ func TestGenerateMavenArgs(t *testing.T) {
 		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, false, []string{"-Djib.console=plain", "--activate-profiles", "profile", "--projects", "module", "--also-make", "package", "jib:goal", "-Djib.containerize=module", "-Dimage=image"}},
 		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, true, []string{"-Djib.console=plain", "--activate-profiles", "profile", "--projects", "module", "--also-make", "-DskipTests=true", "package", "jib:goal", "-Djib.containerize=module", "-Dimage=image"}},
 	}
+	for _, test := range tests {
+		args := GenerateMavenArgs("goal", "image", &test.in, test.skipTests)
 
-	for _, tt := range testCases {
-		args := GenerateMavenArgs("goal", "image", &tt.in, tt.skipTests)
-
-		testutil.CheckDeepEqual(t, tt.out, args)
+		testutil.CheckDeepEqual(t, test.out, args)
 	}
 }

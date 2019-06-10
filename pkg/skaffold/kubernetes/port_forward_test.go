@@ -25,7 +25,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -433,16 +432,11 @@ func TestPortForwardPod(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			taken := map[int]struct{}{}
-			originalGetAvailablePort := util.GetAvailablePort
-			retrieveAvailablePort = mockRetrieveAvailablePort(taken, test.availablePorts)
-			defer func() {
-				retrieveAvailablePort = originalGetAvailablePort
-			}()
+
+			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(taken, test.availablePorts))
 
 			p := NewPortForwarder(ioutil.Discard, NewImageList(), []string{""})
 			if test.forwarder == nil {
@@ -452,11 +446,11 @@ func TestPortForwardPod(t *testing.T) {
 
 			for _, pod := range test.pods {
 				err := p.portForwardPod(context.Background(), pod)
-				testutil.CheckError(t, test.shouldErr, err)
+				t.CheckError(test.shouldErr, err)
 			}
 
 			// Error is already checked above
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedPorts, test.forwarder.forwardedPorts)
+			t.CheckDeepEqual(test.expectedPorts, test.forwarder.forwardedPorts)
 
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
 			if !reflect.DeepEqual(test.expectedEntries, test.forwarder.forwardedEntries) {

@@ -45,18 +45,15 @@ func TestNewEnvClient(t *testing.T) {
 			shouldErr: true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			unsetEnvs := testutil.SetEnvs(t, test.envs)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetEnvs(test.envs)
 
 			env, _, err := newEnvAPIClient()
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, []string(nil), env)
-			unsetEnvs(t)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, []string(nil), env)
 		})
 	}
-
 }
 
 func TestNewMinikubeImageAPIClient(t *testing.T) {
@@ -113,17 +110,18 @@ DOCKER_CERT_PATH=testdata
 DOCKER_API_VERSION=1.23`,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut("minikube docker-env --shell none", test.env)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, t.FakeRunOut(
+				"minikube docker-env --shell none",
+				test.env,
+			))
 
 			env, _, err := newMinikubeAPIClient()
 
-			testutil.CheckError(t, test.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
-				testutil.CheckDeepEqual(t, test.expectedEnv, env)
+				t.CheckDeepEqual(test.expectedEnv, env)
 			}
 		})
 	}

@@ -60,13 +60,11 @@ func TestWatch(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			folder, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
+			test.setup(tmpDir)
 
-			test.setup(folder)
 			folderChanged := newCallback()
 			somethingChanged := newCallback()
 
@@ -74,8 +72,8 @@ func TestWatch(t *testing.T) {
 			watcher := NewWatcher(&pollTrigger{
 				Interval: 10 * time.Millisecond,
 			})
-			err := watcher.Register(folder.List, folderChanged.call)
-			testutil.CheckError(t, false, err)
+			err := watcher.Register(tmpDir.List, folderChanged.call)
+			t.CheckNoError(err)
 
 			// Run the watcher
 			ctx, cancel := context.WithCancel(context.Background())
@@ -84,10 +82,10 @@ func TestWatch(t *testing.T) {
 			go func() {
 				err = watcher.Run(ctx, ioutil.Discard, somethingChanged.callNoErr)
 				stopped.Done()
-				testutil.CheckError(t, false, err)
+				t.CheckNoError(err)
 			}()
 
-			test.update(folder)
+			test.update(tmpDir)
 
 			// Wait for the callbacks
 			folderChanged.wait()

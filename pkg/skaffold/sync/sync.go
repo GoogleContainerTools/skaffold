@@ -31,7 +31,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/bmatcuk/doublestar"
-	registry_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -40,12 +39,14 @@ import (
 
 var (
 	// WorkingDir is here for testing
-	WorkingDir = retrieveWorkingDir
+	WorkingDir = docker.RetrieveWorkingDir
 )
 
 type Syncer interface {
 	Sync(context.Context, *Item) error
 }
+
+type syncMap map[string][]string
 
 type Item struct {
 	Image  string
@@ -91,27 +92,6 @@ func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact, insecu
 	}, nil
 }
 
-func retrieveWorkingDir(tagged string, insecureRegistries map[string]bool) (string, error) {
-	var cf *registry_v1.ConfigFile
-	var err error
-
-	localDocker, err := docker.NewAPIClient(false, insecureRegistries)
-	if err != nil {
-		// No local Docker is available
-		cf, err = docker.RetrieveRemoteConfig(tagged, insecureRegistries)
-	} else {
-		cf, err = localDocker.ConfigFile(context.Background(), tagged)
-	}
-	if err != nil {
-		return "", errors.Wrap(err, "retrieving image config")
-	}
-
-	if cf.Config.WorkingDir == "" {
-		return "/", nil
-	}
-	return cf.Config.WorkingDir, nil
-}
-
 func latestTag(image string, builds []build.Artifact) string {
 	for _, build := range builds {
 		if build.ImageName == image {
@@ -121,8 +101,8 @@ func latestTag(image string, builds []build.Artifact) string {
 	return ""
 }
 
-func intersect(contextWd, containerWd string, syncRules []*latest.SyncRule, files []string) (map[string][]string, error) {
-	ret := make(map[string][]string)
+func intersect(contextWd, containerWd string, syncRules []*latest.SyncRule, files []string) (syncMap, error) {
+	ret := make(syncMap)
 	for _, f := range files {
 		relPath, err := filepath.Rel(contextWd, f)
 		if err != nil {
@@ -169,7 +149,7 @@ func matchSyncRules(syncRules []*latest.SyncRule, relPath, containerWd string) (
 	return dsts, nil
 }
 
-func Perform(ctx context.Context, image string, files map[string][]string, cmdFn func(context.Context, v1.Pod, v1.Container, map[string][]string) []*exec.Cmd, namespaces []string) error {
+func Perform(ctx context.Context, image string, files syncMap, cmdFn func(context.Context, v1.Pod, v1.Container, map[string][]string) []*exec.Cmd, namespaces []string) error {
 	if len(files) == 0 {
 		return nil
 	}

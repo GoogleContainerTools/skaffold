@@ -39,19 +39,19 @@ func TestValidateStructRequired(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		description string
+		args        args
+		shouldErr   bool
 	}{
 		{
-			name: "missing all",
+			description: "missing all",
 			args: args{
 				s: &required{},
 			},
-			wantErr: true,
+			shouldErr: true,
 		},
 		{
-			name: "all set",
+			description: "all set",
 			args: args{
 				s: &required{
 					A: "hey",
@@ -61,10 +61,10 @@ func TestValidateStructRequired(t *testing.T) {
 					},
 				},
 			},
-			wantErr: false,
+			shouldErr: false,
 		},
 		{
-			name: "missing some",
+			description: "missing some",
 			args: args{
 				s: &required{
 					A: "hey",
@@ -73,14 +73,14 @@ func TestValidateStructRequired(t *testing.T) {
 					},
 				},
 			},
-			wantErr: true,
+			shouldErr: true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := ValidateStruct(tt.args.s); (err != nil) != tt.wantErr {
-				t.Errorf("ValidateStruct() error = %v, wantErr %v", err, tt.wantErr)
-			}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			err := ValidateStruct(test.args.s)
+
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
@@ -103,41 +103,41 @@ func TestValidateStructOneOf(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		description string
+		args        args
+		shouldErr   bool
 	}{
 		{
-			name: "only one",
+			description: "only one",
 			args: args{
 				s: &oneOfStruct{
 					A: "foo",
 					C: 3,
 				},
 			},
-			wantErr: false,
+			shouldErr: false,
 		},
 		{
-			name: "too many in one set",
+			description: "too many in one set",
 			args: args{
 				s: &oneOfStruct{
 					A: "foo",
 					B: "baz",
 					C: 3,
 				}},
-			wantErr: true,
+			shouldErr: true,
 		},
 		{
-			name: "too many pointers set",
+			description: "too many pointers set",
 			args: args{
 				s: &oneOfStruct{
 					D: &nested{F: "foo"},
 					E: nested{F: "foo"},
 				}},
-			wantErr: true,
+			shouldErr: true,
 		},
 		{
-			name: "too many in both sets",
+			description: "too many in both sets",
 			args: args{
 				s: &oneOfStruct{
 					A: "foo",
@@ -145,30 +145,36 @@ func TestValidateStructOneOf(t *testing.T) {
 					C: 3,
 					D: &nested{F: "foo"},
 				}},
-			wantErr: true,
+			shouldErr: true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := ValidateStruct(tt.args.s); (err != nil) != tt.wantErr {
-				t.Errorf("ValidateStruct() error = %v, wantErr %v", err, tt.wantErr)
-			}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			err := ValidateStruct(test.args.s)
+
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
 
 func TestValidateStructInvalid(t *testing.T) {
-	invalidYamlTags := struct {
+	defer testutil.EnsureTestPanicked(t)
+
+	invalidTags := struct {
 		A string `yamltags:"invalidTag"`
-	}{A: "whatever"}
+	}{}
 
-	defer func() {
-		if recover() == nil {
-			t.Errorf("should have panicked")
-		}
-	}()
+	ValidateStruct(invalidTags)
+}
 
-	_ = ValidateStruct(invalidYamlTags)
+func TestValidateStructInvalidSyntax(t *testing.T) {
+	invalidTags := struct {
+		A string `yamltags:"oneOf=set1=set2"`
+	}{}
+
+	err := ValidateStruct(invalidTags)
+
+	testutil.CheckError(t, true, err)
 }
 
 func TestIsZeroValue(t *testing.T) {

@@ -19,6 +19,8 @@ package kubernetes
 import (
 	"testing"
 	"time"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestSinceSeconds(t *testing.T) {
@@ -40,12 +42,10 @@ func TestSinceSeconds(t *testing.T) {
 		{"60s", 60 * time.Second, 60},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			since := sinceSeconds(test.duration)
 
-			if since != test.expected {
-				t.Errorf("Expected %d. Got %d", test.expected, since)
-			}
+			t.CheckDeepEqual(test.expected, since)
 		})
 	}
 }

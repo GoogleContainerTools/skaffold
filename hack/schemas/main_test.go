@@ -17,9 +17,9 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
+	"bytes"
 	"io/ioutil"
-	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -49,8 +49,8 @@ func TestGenerators(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			input := fmt.Sprintf("./testdata/%s/input.go", tc.name)
-			expectedOutput := fmt.Sprintf("./testdata/%s/output.json", tc.name)
+			input := filepath.Join("testdata", tc.name, "input.go")
+			expectedOutput := filepath.Join("testdata", tc.name, "output.json")
 
 			generator := schemaGenerator{
 				strict: false,
@@ -59,12 +59,10 @@ func TestGenerators(t *testing.T) {
 			actual, err := generator.Apply(input)
 			testutil.CheckError(t, false, err)
 
-			var expected []byte
-			if _, err := os.Stat(expectedOutput); err == nil {
-				var err error
-				expected, err = ioutil.ReadFile(expectedOutput)
-				testutil.CheckError(t, false, err)
-			}
+			expected, err := ioutil.ReadFile(expectedOutput)
+			testutil.CheckError(t, false, err)
+
+			expected = bytes.Replace(expected, []byte("\r\n"), []byte("\n"), -1)
 
 			if diff := cmp.Diff(string(actual), string(expected)); diff != "" {
 				t.Errorf("%T differ (-got, +want): %s\n actual:\n%s", string(expected), diff, string(actual))

@@ -25,26 +25,15 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
 )
 
-func NewCmdSet(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "set",
-		Short: "Set a value in the global Skaffold config",
-		Args:  cobra.ExactArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := setConfigValue(args[0], args[1]); err != nil {
-				return err
-			}
-			logSetConfigForUser(out, args[0], args[1])
-			return nil
-		},
+func Set(out io.Writer, args []string) error {
+	if err := setConfigValue(args[0], args[1]); err != nil {
+		return err
 	}
-	AddConfigFlags(cmd)
-	AddSetFlags(cmd)
-	return cmd
+	logSetConfigForUser(out, args[0], args[1])
+	return nil
 }
 
 func setConfigValue(name string, value string) error {
@@ -138,8 +127,8 @@ func writeFullConfig(cfg *Config) error {
 
 func logSetConfigForUser(out io.Writer, key string, value string) {
 	if global {
-		out.Write([]byte(fmt.Sprintf("set global value %s to %s\n", key, value)))
+		fmt.Fprintf(out, "set global value %s to %s\n", key, value)
 	} else {
-		out.Write([]byte(fmt.Sprintf("set value %s to %s for context %s\n", key, value, kubecontext)))
+		fmt.Fprintf(out, "set value %s to %s for context %s\n", key, value, kubecontext)
 	}
 }

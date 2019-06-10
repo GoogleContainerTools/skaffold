@@ -85,9 +85,6 @@ func (t *TestWatcher) Run(ctx context.Context, out io.Writer, onChange func() er
 }
 
 func TestDevFailFirstCycle(t *testing.T) {
-	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
-	defer restore()
-
 	var tests = []struct {
 		description     string
 		testBench       *TestBench
@@ -128,9 +125,10 @@ func TestDevFailFirstCycle(t *testing.T) {
 			}},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+
 			runner := createRunner(t, test.testBench)
 			runner.Watcher = test.watcher
 
@@ -138,15 +136,12 @@ func TestDevFailFirstCycle(t *testing.T) {
 				ImageName: "img",
 			}})
 
-			testutil.CheckErrorAndDeepEqual(t, true, err, test.expectedActions, test.testBench.Actions())
+			t.CheckErrorAndDeepEqual(true, err, test.expectedActions, test.testBench.Actions())
 		})
 	}
 }
 
 func TestDev(t *testing.T) {
-	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
-	defer restore()
-
 	var tests = []struct {
 		description     string
 		testBench       *TestBench
@@ -259,9 +254,10 @@ func TestDev(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+
 			runner := createRunner(t, test.testBench)
 			runner.Watcher = &TestWatcher{
 				events:    test.watchEvents,
@@ -273,15 +269,13 @@ func TestDev(t *testing.T) {
 				{ImageName: "img2"},
 			})
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedActions, test.testBench.Actions())
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedActions, test.testBench.Actions())
 		})
 	}
 }
 
 func TestDevSync(t *testing.T) {
-	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
-	defer restore()
-
 	var tests = []struct {
 		description     string
 		testBench       *TestBench
@@ -327,16 +321,11 @@ func TestDevSync(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			originalWorkingDir := sync.WorkingDir
-			sync.WorkingDir = func(_ string, _ map[string]bool) (string, error) {
-				return "/", nil
-			}
-			defer func() {
-				sync.WorkingDir = originalWorkingDir
-			}()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+			t.Override(&sync.WorkingDir, func(string, map[string]bool) (string, error) { return "/", nil })
+
 			runner := createRunner(t, test.testBench)
 			runner.Watcher = &TestWatcher{
 				events:    test.watchEvents,
@@ -355,7 +344,8 @@ func TestDevSync(t *testing.T) {
 				},
 			})
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedActions, test.testBench.Actions())
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedActions, test.testBench.Actions())
 		})
 	}
 }

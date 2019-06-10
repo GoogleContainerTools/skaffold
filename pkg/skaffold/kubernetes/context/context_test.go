@@ -24,10 +24,12 @@ import (
 )
 
 func TestCurrentContext(t *testing.T) {
-	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
-	defer restore()
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 
-	context, err := CurrentContext()
+		context, err := CurrentContext()
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, "cluster1", context)
+		t.CheckNoError(err)
+		t.CheckDeepEqual("cluster1", context)
+	})
 }

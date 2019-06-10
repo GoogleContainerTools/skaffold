@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
@@ -79,12 +80,9 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing build config")
 	}
-
 	artifactCache := cache.NewCache(builder, runCtx)
-	tester, err := getTester(runCtx)
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing test config")
-	}
+
+	tester := getTester(runCtx)
 
 	deployer, err := getDeployer(runCtx)
 	if err != nil {
@@ -99,15 +97,16 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		deployer = WithNotification(deployer)
 	}
 
-	trigger, err := watch.NewTrigger(opts)
+	trigger, err := watch.NewTrigger(runCtx)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating watch trigger")
 	}
 
-	shutdown, err := event.InitializeState(runCtx)
+	shutdown, err := server.Initialize(runCtx)
 	if err != nil {
-		return nil, errors.Wrap(err, "initializing skaffold event handler")
+		return nil, errors.Wrap(err, "initializing skaffold server")
 	}
+	event.InitializeState(runCtx)
 
 	event.LogSkaffoldMetadata(version.Get())
 
@@ -145,7 +144,7 @@ func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
 	}
 }
 
-func getTester(runCtx *runcontext.RunContext) (test.Tester, error) {
+func getTester(runCtx *runcontext.RunContext) test.Tester {
 	return test.NewTester(runCtx)
 }
 
@@ -189,18 +188,6 @@ func getTagger(t latest.TagPolicy, customTag string) (tag.Tagger, error) {
 	}
 }
 
-func (r *SkaffoldRunner) newLogger(out io.Writer, artifacts []*latest.Artifact) *kubernetes.LogAggregator {
-	var imageNames []string
-	for _, artifact := range artifacts {
-		imageNames = append(imageNames, artifact.ImageName)
-	}
-	return r.newLoggerForImages(out, imageNames)
-}
-
-func (r *SkaffoldRunner) newLoggerForImages(out io.Writer, images []string) *kubernetes.LogAggregator {
-	return kubernetes.NewLogAggregator(out, images, r.imageList, r.runCtx.Namespaces)
-}
-
 // HasDeployed returns true if this runner has deployed something.
 func (r *SkaffoldRunner) HasDeployed() bool {
 	return r.hasDeployed
@@ -209,63 +196,6 @@ func (r *SkaffoldRunner) HasDeployed() bool {
 // HasBuilt returns true if this runner has built something.
 func (r *SkaffoldRunner) HasBuilt() bool {
 	return r.hasBuilt
-}
-
-func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
-	bRes, err := r.BuildAndTest(ctx, out, artifacts)
-	if err != nil {
-		return err
-	}
-
-	// Update which images are logged.
-	for _, build := range bRes {
-		r.imageList.Add(build.Tag)
-	}
-
-	// Make sure all artifacts are redeployed. Not only those that were just built.
-	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
-
-	if err := r.deploy(ctx, out, r.builds); err != nil {
-		return errors.Wrap(err, "deploy failed")
-	}
-
-	return nil
-}
-
-// Run builds artifacts, runs tests on built artifacts, and then deploys them.
-func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
-	if err := r.buildTestDeploy(ctx, out, artifacts); err != nil {
-		return err
-	}
-	if r.runCtx.Opts.Tail {
-		logger := r.newLogger(out, artifacts)
-		return r.TailLogs(ctx, out, logger)
-	}
-	return nil
-}
-
-// Deploy deploys build artifacts.
-func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
-	if err := r.deploy(ctx, out, artifacts); err != nil {
-		return err
-	}
-	if r.runCtx.Opts.Tail {
-		images := make([]string, len(artifacts))
-		for i, a := range artifacts {
-			images[i] = a.ImageName
-		}
-		logger := r.newLoggerForImages(out, images)
-		return r.TailLogs(ctx, out, logger)
-	}
-	return nil
-}
-
-func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, logger *kubernetes.LogAggregator) error {
-	if err := logger.Start(ctx); err != nil {
-		return errors.Wrap(err, "starting logger")
-	}
-	<-ctx.Done()
-	return nil
 }
 
 type tagErr struct {
@@ -317,39 +247,23 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 	return imageTags, nil
 }
 
-// BuildAndTest builds artifacts and runs tests on built artifacts
-func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	tags, err := r.imageTags(ctx, out, artifacts)
+func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
+	bRes, err := r.BuildAndTest(ctx, out, artifacts)
 	if err != nil {
-		return nil, errors.Wrap(err, "generating tag")
-	}
-	r.hasBuilt = true
-
-	artifactsToBuild, res, err := r.cache.RetrieveCachedArtifacts(ctx, out, artifacts)
-	if err != nil {
-		return nil, errors.Wrap(err, "retrieving cached artifacts")
+		return err
 	}
 
-	bRes, err := r.Build(ctx, out, tags, artifactsToBuild)
-	if err != nil {
-		return nil, errors.Wrap(err, "build failed")
+	// Update which images are logged.
+	for _, build := range bRes {
+		r.imageList.Add(build.Tag)
 	}
-	r.cache.RetagLocalImages(ctx, out, artifactsToBuild, bRes)
-	bRes = append(bRes, res...)
-	if err := r.cache.CacheArtifacts(ctx, artifacts, bRes); err != nil {
-		logrus.Warnf("error caching artifacts: %v", err)
-	}
-	if !r.runCtx.Opts.SkipTests {
-		if err = r.Test(ctx, out, bRes); err != nil {
-			return nil, errors.Wrap(err, "test failed")
-		}
-	}
-	return bRes, err
-}
 
-// Deploy deploys the given artifacts and tail logs if tail present
-func (r *SkaffoldRunner) deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
-	err := r.Deployer.Deploy(ctx, out, artifacts, r.labellers)
-	r.hasDeployed = true
-	return err
+	// Make sure all artifacts are redeployed. Not only those that were just built.
+	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
+
+	if err := r.deploy(ctx, out, r.builds); err != nil {
+		return errors.Wrap(err, "deploy failed")
+	}
+
+	return nil
 }

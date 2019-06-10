@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -86,6 +87,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 		}
 	}
 
+	SetUpFlags()
 	rootCmd.SetOutput(out)
 	rootCmd.AddCommand(NewCmdCompletion(out))
 	rootCmd.AddCommand(NewCmdVersion(out))
@@ -105,7 +107,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.PersistentFlags().BoolVar(&forceColors, "force-colors", false, "Always print color codes (hidden)")
 	rootCmd.PersistentFlags().MarkHidden("force-colors")
 
-	setFlagsFromEnvVariables(rootCmd.Commands())
+	setFlagsFromEnvVariables(rootCmd)
 
 	return rootCmd
 }
@@ -126,8 +128,14 @@ func updateCheck(ch chan string) error {
 }
 
 // Each flag can also be set with an env variable whose name starts with `SKAFFOLD_`.
-func setFlagsFromEnvVariables(commands []*cobra.Command) {
-	for _, cmd := range commands {
+func setFlagsFromEnvVariables(rootCmd *cobra.Command) {
+	rootCmd.PersistentFlags().VisitAll(func(f *pflag.Flag) {
+		envVar := FlagToEnvVarName(f)
+		if val, present := os.LookupEnv(envVar); present {
+			rootCmd.PersistentFlags().Set(f.Name, val)
+		}
+	})
+	for _, cmd := range rootCmd.Commands() {
 		cmd.Flags().VisitAll(func(f *pflag.Flag) {
 			// special case for backward compatibility.
 			if f.Name == "namespace" {
@@ -149,39 +157,6 @@ func FlagToEnvVarName(f *pflag.Flag) string {
 	return fmt.Sprintf("SKAFFOLD_%s", strings.Replace(strings.ToUpper(f.Name), "-", "_", -1))
 }
 
-func AddRunCommonFlags(cmd *cobra.Command) {
-	cmd.Flags().BoolVar(&opts.EnableRPC, "enable-rpc", false, "Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)")
-	cmd.Flags().IntVar(&opts.RPCPort, "rpc-port", constants.DefaultRPCPort, "tcp port to expose event API")
-	cmd.Flags().IntVar(&opts.RPCHTTPPort, "rpc-http-port", constants.DefaultRPCHTTPPort, "tcp port to expose event REST API over HTTP")
-	cmd.Flags().StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
-	cmd.Flags().BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
-	cmd.Flags().StringSliceVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
-	cmd.Flags().StringVarP(&opts.Namespace, "namespace", "n", "", "Run deployments in the specified namespace")
-	cmd.Flags().StringVarP(&opts.DefaultRepo, "default-repo", "d", "", "Default repository value (overrides global config)")
-	cmd.Flags().BoolVar(&opts.NoPrune, "no-prune", false, "Skip removing images and containers built by Skaffold")
-	cmd.Flags().StringSliceVar(&opts.InsecureRegistries, "insecure-registry", nil, "Target registries for built images which are not secure")
-}
-
-func AddRunDeployFlags(cmd *cobra.Command) {
-	cmd.Flags().BoolVar(&opts.Tail, "tail", false, "Stream logs from deployed objects")
-	cmd.Flags().BoolVar(&opts.Force, "force", false, "Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)")
-	cmd.Flags().StringSliceVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels.")
-}
-
-func AddRunDevFlags(cmd *cobra.Command) {
-	AddRunCommonFlags(cmd)
-	cmd.Flags().BoolVar(&opts.SkipTests, "skip-tests", false, "Whether to skip the tests after building")
-	cmd.Flags().BoolVar(&opts.CacheArtifacts, "cache-artifacts", false, "Set to true to enable caching of artifacts.")
-	cmd.Flags().StringVarP(&opts.CacheFile, "cache-file", "", "", "Specify the location of the cache file (default $HOME/.skaffold/cache)")
-}
-
-func AddDevDebugFlags(cmd *cobra.Command) {
-	cmd.Flags().BoolVar(&opts.TailDev, "tail", true, "Stream logs from deployed objects")
-	cmd.Flags().BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
-	cmd.Flags().BoolVar(&opts.PortForward, "port-forward", true, "Port-forward exposed container ports within pods")
-	cmd.Flags().StringSliceVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels")
-}
-
 func SetUpLogs(out io.Writer, level string) error {
 	logrus.SetOutput(out)
 	lvl, err := logrus.ParseLevel(v)
@@ -190,4 +165,12 @@ func SetUpLogs(out io.Writer, level string) error {
 	}
 	logrus.SetLevel(lvl)
 	return nil
+}
+
+func alwaysSucceedWhenCancelled(ctx context.Context, err error) error {
+	// if the context was cancelled act as if all is well
+	if err != nil && ctx.Err() == context.Canceled {
+		return nil
+	}
+	return err
 }

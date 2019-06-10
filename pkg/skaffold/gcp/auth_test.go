@@ -98,22 +98,17 @@ func TestAutoConfigureGCRCredentialHelper(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			tmp, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
-
-			reset := testutil.SetEnvs(t, map[string]string{
-				"PATH": tmp.Root(),
-			})
-			defer reset(t)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
+			t.SetEnvs(map[string]string{"PATH": tmpDir.Root()})
 
 			if test.helperInPath {
-				tmp.Write("docker-credential-gcloud", "")
+				tmpDir.Write("docker-credential-gcloud", "")
 			}
 
 			AutoConfigureGCRCredentialHelper(test.config, test.registry)
 
-			testutil.CheckDeepEqual(t, test.expected, test.config)
+			t.CheckDeepEqual(test.expected, test.config)
 		})
 	}
 }
