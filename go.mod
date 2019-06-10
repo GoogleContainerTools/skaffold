@@ -47,6 +47,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.4 // indirect
 	github.com/rjeczalik/notify v0.9.2
+	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.3
@@ -62,6 +63,7 @@ require (
 	google.golang.org/grpc v1.21.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.5
 	gopkg.in/inf.v0 v0.9.1 // indirect
+	gopkg.in/russross/blackfriday.v2 v2.0.0-00010101000000-000000000000
 	gopkg.in/src-d/go-git.v4 v4.11.0
 	gopkg.in/yaml.v2 v2.2.2
 	gotest.tools v2.2.0+incompatible // indirect
@@ -71,3 +73,5 @@ require (
 	k8s.io/kube-openapi v0.0.0-20190603182131-db7b694dc208 // indirect
 	k8s.io/utils v0.0.0-20190607212802-c55fbcfc754a // indirect
 )
+
+replace gopkg.in/russross/blackfriday.v2 => github.com/russross/blackfriday/v2 v2.0.1

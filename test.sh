@@ -33,7 +33,6 @@ scripts=(
     "hack/boilerplate.sh"
     "hack/gofmt.sh"
     "hack/linter.sh"
-    "hack/dep.sh"
     "hack/check-samples.sh"
     "hack/check-docs.sh"
 )
