@@ -161,7 +161,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 	}
 	// map of containers -> debugging configuration maps; k8s ensures that a pod's containers are uniquely named
 	configurations := make(map[string]map[string]interface{})
-	// the container images that require debugging suport files
+	// the container images that require debugging support files
 	var containersRequiringSupport []*v1.Container
 	// the set of image IDs required to provide debugging support files
 	requiredSupportImages := make(map[string]bool)
