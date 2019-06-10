@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -81,16 +80,6 @@ func (t *T) NewTempDir() *TempDir {
 	tmpDir, teardown := NewTempDir(t.T)
 	t.teardownActions = append(t.teardownActions, teardown)
 	return tmpDir
-}
-
-func (t *T) Chdir(dir string) {
-	teardown := Chdir(t.T, dir)
-	t.teardownActions = append(t.teardownActions, teardown)
-}
-
-func (t *T) SetEnvs(envs map[string]string) {
-	teardown := SetEnvs(t.T, envs)
-	t.teardownActions = append(t.teardownActions, teardown)
 }
 
 func Run(t *testing.T, name string, f func(t *T)) {
@@ -170,27 +159,6 @@ func EnsureTestPanicked(t *testing.T) {
 	}
 }
 
-// Chdir changes current directory for a test
-func Chdir(t *testing.T, dir string) func() {
-	t.Helper()
-
-	pwd, err := os.Getwd()
-	if err != nil {
-		t.Fatal("unable to get current directory")
-	}
-
-	err = os.Chdir(dir)
-	if err != nil {
-		t.Fatal("unable to change current directory")
-	}
-
-	return func() {
-		if err := os.Chdir(pwd); err != nil {
-			t.Fatal("unable to reset current directory")
-		}
-	}
-}
-
 func checkErr(shouldErr bool, err error) error {
 	if err == nil && shouldErr {
 		return errors.New("expected error, but returned none")
@@ -199,29 +167,6 @@ func checkErr(shouldErr bool, err error) error {
 		return fmt.Errorf("unexpected error: %s", err)
 	}
 	return nil
-}
-
-// SetEnvs takes a map of key values to set using os.Setenv and returns
-// a function that can be called to reset the envs to their previous values.
-func SetEnvs(t *testing.T, envs map[string]string) func() {
-	prevEnvs := map[string]string{}
-	for key, value := range envs {
-		prevEnv := os.Getenv(key)
-		prevEnvs[key] = prevEnv
-		err := os.Setenv(key, value)
-		if err != nil {
-			t.Error(err)
-		}
-	}
-
-	return func() {
-		for key, value := range prevEnvs {
-			err := os.Setenv(key, value)
-			if err != nil {
-				t.Error(err)
-			}
-		}
-	}
 }
 
 // ServeFile serves a file with http. Returns the url to the file and a teardown

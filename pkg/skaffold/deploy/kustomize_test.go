@@ -66,8 +66,8 @@ func TestKustomizeDeploy(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir()
-			t.Chdir(tmpDir.Root())
+			t.NewTempDir().
+				Chdir()
 
 			t.Override(&util.DefaultExecCommand, test.command)
 

@@ -39,28 +39,27 @@ func TestSchemas(t *testing.T) {
 }
 
 func TestGenerators(t *testing.T) {
-	tcs := []struct {
+	tests := []struct {
 		name string
 	}{
 		{name: "inline"},
 		{name: "inline-anyof"},
 		{name: "inline-hybrid"},
 	}
-
-	for _, tc := range tcs {
-		t.Run(tc.name, func(t *testing.T) {
-			input := filepath.Join("testdata", tc.name, "input.go")
-			expectedOutput := filepath.Join("testdata", tc.name, "output.json")
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			input := filepath.Join("testdata", test.name, "input.go")
+			expectedOutput := filepath.Join("testdata", test.name, "output.json")
 
 			generator := schemaGenerator{
 				strict: false,
 			}
 
 			actual, err := generator.Apply(input)
-			testutil.CheckError(t, false, err)
+			t.CheckNoError(err)
 
 			expected, err := ioutil.ReadFile(expectedOutput)
-			testutil.CheckError(t, false, err)
+			t.CheckNoError(err)
 
 			expected = bytes.Replace(expected, []byte("\r\n"), []byte("\n"), -1)
 
