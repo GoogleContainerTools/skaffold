@@ -78,6 +78,7 @@ Commands and their flags are subject to the deprecation policy based on the foll
 - build:  beta
 - completion:  beta
 - config:  alpha
+- debug: alpha
 - delete:  beta
 - deploy:  beta
 - dev:  beta
