@@ -101,6 +101,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdConfig(out))
 	rootCmd.AddCommand(NewCmdInit(out))
 	rootCmd.AddCommand(NewCmdDiagnose(out))
+	rootCmd.AddCommand(NewCmdFindConfigs(out))
 
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
 	rootCmd.PersistentFlags().IntVar(&defaultColor, "color", int(color.Default), "Specify the default output color in ANSI escape codes")
