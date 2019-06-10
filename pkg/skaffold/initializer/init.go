@@ -195,7 +195,7 @@ func DoInit(out io.Writer, c Config) error {
 
 func detectBuildFile(path string) ([]InitBuilder, error) {
 	// Check for jib
-	if builders := jib.CheckForJib(path); builders != nil {
+	if builders := jib.ValidateJibConfig(path); builders != nil {
 		results := []InitBuilder{}
 		for _, b := range builders {
 			results = append(results, b)

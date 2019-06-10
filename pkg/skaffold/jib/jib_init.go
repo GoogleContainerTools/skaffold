@@ -98,8 +98,8 @@ type jibJSON struct {
 	Project string `json:"project"`
 }
 
-// CheckForJib checks if a file is a valid Jib configuration. Returns the list of Config objects corresponding to each Jib project built by the file, or nil if Jib is not configured.
-func CheckForJib(path string) []Config {
+// ValidateJibConfig checks if a file is a valid Jib configuration. Returns the list of Config objects corresponding to each Jib project built by the file, or nil if Jib is not configured.
+func ValidateJibConfig(path string) []Config {
 	var builderType, executable, wrapper, taskName string
 	if strings.HasSuffix(path, "pom.xml") {
 		builderType = JibMaven
