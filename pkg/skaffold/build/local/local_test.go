@@ -136,7 +136,7 @@ func TestLocalRun(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "unkown artifact type",
+			description: "unknown artifact type",
 			artifacts:   []*latest.Artifact{{}},
 			shouldErr:   true,
 		},
