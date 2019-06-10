@@ -24,12 +24,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
+// Dockerfile is the path to a dockerfile
 type Dockerfile string
 
+// GetPrompt returns the initBuilder's string representation, used when prompting the user to choose a builder.
 func (d Dockerfile) GetPrompt() string {
 	return fmt.Sprintf("Docker (%s)", d)
 }
 
+// GetArtifact returns the Artifact used to generate the Build Config.
 func (d Dockerfile) GetArtifact(image string) *latest.Artifact {
 	path := string(d)
 	workspace := filepath.Dir(path)
@@ -46,6 +49,7 @@ func (d Dockerfile) GetArtifact(image string) *latest.Artifact {
 	return a
 }
 
+// GetConfiguredImage returns the target image configured by the builder
 func (d Dockerfile) GetConfiguredImage() string {
 	// Target image is not configured in dockerfiles
 	return ""

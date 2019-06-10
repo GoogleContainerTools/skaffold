@@ -30,25 +30,30 @@ import (
 )
 
 const (
+	// JibGradle the name of the Jib Gradle Plugin
 	JibGradle = "Jib Gradle Plugin"
-	JibMaven  = "Jib Maven Plugin"
+	// JibMaven the name of the Jib Maven Plugin
+	JibMaven = "Jib Maven Plugin"
 )
 
-type JibConfig struct {
+// Config holds information about a Jib project
+type Config struct {
 	Name    string
 	Image   string
 	Path    string
 	Project string
 }
 
-func (j JibConfig) GetPrompt() string {
+// GetPrompt returns the initBuilder's string representation, used when prompting the user to choose a builder.
+func (j Config) GetPrompt() string {
 	if j.Project != "" {
 		return fmt.Sprintf("%s (%s, %s)", j.Name, j.Project, j.Path)
 	}
 	return fmt.Sprintf("%s (%s)", j.Name, j.Path)
 }
 
-func (j JibConfig) GetArtifact(image string) *latest.Artifact {
+// GetArtifact returns the Artifact used to generate the Build Config.
+func (j Config) GetArtifact(image string) *latest.Artifact {
 	path := string(j.Path)
 	workspace := filepath.Dir(path)
 	a := &latest.Artifact{ImageName: path}
@@ -82,7 +87,8 @@ func (j JibConfig) GetArtifact(image string) *latest.Artifact {
 	return a
 }
 
-func (j JibConfig) GetConfiguredImage() string {
+// GetConfiguredImage returns the target image configured by the builder
+func (j Config) GetConfiguredImage() string {
 	return j.Image
 }
 
@@ -92,7 +98,8 @@ type jibJSON struct {
 	Project string `json:"project"`
 }
 
-func CheckForJib(path string) []JibConfig {
+// CheckForJib checks if a file is a valid Jib configuration. Returns the list of Config objects corresponding to each Jib project built by the file, or nil if Jib is not configured.
+func CheckForJib(path string) []Config {
 	var builderType, executable, wrapper, taskName string
 	if strings.HasSuffix(path, "pom.xml") {
 		builderType = JibMaven
@@ -123,7 +130,7 @@ func CheckForJib(path string) []JibConfig {
 		return nil
 	}
 
-	results := []JibConfig{}
+	results := []Config{}
 	for _, m := range matches {
 		line := bytes.Replace(m[1], []byte(`\`), []byte(`\\`), -1)
 		parsedJSON := jibJSON{}
@@ -131,7 +138,7 @@ func CheckForJib(path string) []JibConfig {
 			return nil
 		}
 
-		results = append(results, JibConfig{Name: builderType, Image: parsedJSON.Image, Path: path, Project: parsedJSON.Project})
+		results = append(results, Config{Name: builderType, Image: parsedJSON.Image, Path: path, Project: parsedJSON.Project})
 	}
 	return results
 }

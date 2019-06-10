@@ -56,11 +56,11 @@ type Initializer interface {
 
 // InitBuilder represents a builder that can be chosen by skaffold init.
 type InitBuilder interface {
-	// getPrompt returns the initBuilder's string representation, used when prompting the user to choose a builder.
+	// GetPrompt returns the initBuilder's string representation, used when prompting the user to choose a builder.
 	GetPrompt() string
-	// getArtifact returns the Artifact used to generate the Build Config.
+	// GetArtifact returns the Artifact used to generate the Build Config.
 	GetArtifact(image string) *latest.Artifact
-	// getConfiguredImage returns the target image configured by the builder
+	// GetConfiguredImage returns the target image configured by the builder
 	GetConfiguredImage() string
 }
 
@@ -72,6 +72,11 @@ type Config struct {
 	Force        bool
 	Analyze      bool
 	Opts         *config.SkaffoldOptions
+}
+
+type buildConfigPair struct {
+	BuildConfig InitBuilder
+	ImageName   string
 }
 
 // DoInit executes the `skaffold init` flow.
@@ -191,7 +196,11 @@ func DoInit(out io.Writer, c Config) error {
 func detectBuildFile(path string) ([]InitBuilder, error) {
 	// Check for jib
 	if builders := jib.CheckForJib(path); builders != nil {
-		return builders, filepath.SkipDir
+		results := []InitBuilder{}
+		for _, b := range builders {
+			results = append(results, b)
+		}
+		return results, filepath.SkipDir
 	}
 
 	// Check for Dockerfile
@@ -219,10 +228,9 @@ func processCliArtifacts(artifacts []string) ([]buildConfigPair, error) {
 	return pairs, nil
 }
 
-// For each image parsed from all k8s manifests, prompt the user for
-// the dockerfile that builds the referenced image
+// For each image parsed from all k8s manifests, prompt the user for the builder that builds the referenced image
 func resolveDockerfileImages(buildConfigs []InitBuilder, images []string) []buildConfigPair {
-	// if we only have 1 image and 1 dockerfile, don't bother prompting
+	// if we only have 1 image and 1 build config, don't bother prompting
 	if len(images) == 1 && len(buildConfigs) == 1 {
 		return []buildConfigPair{{
 			BuildConfig: buildConfigs[0],
@@ -322,11 +330,6 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, buildConfigs []InitBuilder,
 	}
 	_, err = out.Write(contents)
 	return err
-}
-
-type buildConfigPair struct {
-	BuildConfig InitBuilder
-	ImageName   string
 }
 
 func walk(dir string, force bool, validateBuildFile func(string) ([]InitBuilder, error)) ([]string, []InitBuilder, error) {
