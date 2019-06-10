@@ -70,6 +70,7 @@ However the **behavior** of individual component might suffer breaking changes d
     - Kustomize: beta
     - Kubectl: beta
 - Profiles: beta
+- Debug: alpha
 
 ## Skaffold commands
 
