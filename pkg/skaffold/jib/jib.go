@@ -243,8 +243,9 @@ func relativize(path string, roots ...string) (string, error) {
 // checkJibVersion checks if the provided version is a Maven-style version string
 // and is compatible with our minimum supported version.
 func checkJibVersion(mavenVersion string) error {
-	// we assume -SNAPSHOT are just as good as the release
-	if index := strings.Index(mavenVersion, "-SNAPSHOT"); index >= 0 {
+	// semver.Parse doesn't support maven-style version qualifiers
+	// we assume a version with a qualifiers is just as good as the release
+	if index := strings.Index(mavenVersion, "-"); index >= 0 {
 		mavenVersion = mavenVersion[0:index]
 	}
 

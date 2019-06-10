@@ -145,6 +145,7 @@ func TestCheckJibVersion(t *testing.T) {
 		{"1.2.0-SNAPSHOT", true},
 		{"1.3.0", false},
 		{"1.3.0-SNAPSHOT", false},
+		{"1.4.0-rc1", false},
 		{"2.0.0", false},
 	}
 	for _, test := range tests {
