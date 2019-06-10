@@ -34,7 +34,7 @@ var (
 	directory string
 )
 
-// NewCmdInit describes the CLI command to generate a Skaffold configuration.
+// NewCmdFindConfigs list the skaffold config files in the specified directory.
 func NewCmdFindConfigs(out io.Writer) *cobra.Command {
 	return NewCmd(out, "find-configs").
 		WithDescription("Find in a given directory all skaffold yamls files that are parseable or upgradeable with their versions.").
