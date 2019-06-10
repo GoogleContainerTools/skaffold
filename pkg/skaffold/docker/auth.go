@@ -71,7 +71,11 @@ func (credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
 
 	authConfig, err := cf.GetAuthConfig(registry)
 
-	return asApiAuthConfig(authConfig), err
+	if err != nil {
+		return types.AuthConfig{}, errors.Wrap(err, "docker config")
+	}
+
+	return asApiAuthConfig(authConfig), nil
 }
 
 func asApiAuthConfig(cliConfig types2.AuthConfig) types.AuthConfig {
@@ -97,13 +101,17 @@ func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
 
 	configs, err := cf.GetCredentialsStore("").GetAll()
 
+	if err != nil {
+		return nil, errors.Wrap(err, "docker config")
+	}
+
 	apiConfigs := make(map[string]types.AuthConfig)
 
 	for name, cliConfig := range configs {
 		apiConfigs[name] = asApiAuthConfig(cliConfig)
 	}
 
-	return apiConfigs, err
+	return apiConfigs, nil
 }
 
 func (l *localDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelper, image string) (string, error) {
