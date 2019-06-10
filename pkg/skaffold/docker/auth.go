@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	types2 "github.com/docker/cli/cli/config/types"
 	"os"
 	"path/filepath"
 
@@ -68,7 +69,21 @@ func (credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
 
 	gcp.AutoConfigureGCRCredentialHelper(cf, registry)
 
-	return cf.GetAuthConfig(registry)
+	authConfig, err := cf.GetAuthConfig(registry)
+
+	return asApiAuthConfig(authConfig), err
+}
+
+func asApiAuthConfig(cliConfig types2.AuthConfig) types.AuthConfig {
+	return types.AuthConfig{
+		Auth:          cliConfig.Auth,
+		Email:         cliConfig.Email,
+		IdentityToken: cliConfig.IdentityToken,
+		Password:      cliConfig.Password,
+		RegistryToken: cliConfig.RegistryToken,
+		ServerAddress: cliConfig.ServerAddress,
+		Username:      cliConfig.Username,
+	}
 }
 
 func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
@@ -79,7 +94,16 @@ func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
 
 	// TODO(dgageot): this is really slow because it has to run all the credential helpers.
 	// return cf.GetAllCredentials()
-	return cf.GetCredentialsStore("").GetAll()
+
+	configs, err := cf.GetCredentialsStore("").GetAll()
+
+	apiConfigs := make(map[string]types.AuthConfig)
+
+	for name, cliConfig := range configs {
+		apiConfigs[name] = asApiAuthConfig(cliConfig)
+	}
+
+	return apiConfigs, err
 }
 
 func (l *localDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelper, image string) (string, error) {

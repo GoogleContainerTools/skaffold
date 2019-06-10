@@ -139,7 +139,7 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 	}
 	logrus.Debugln("Patching", name, "in namespace", ns)
 
-	if _, err := client.Resource(gvr).Namespace(ns).Patch(name, types.StrategicMergePatchType, p); err != nil {
+	if _, err := client.Resource(gvr).Namespace(ns).Patch(name, types.StrategicMergePatchType, p, metav1.PatchOptions{}); err != nil {
 		return errors.Wrapf(err, "patching resource %s/%s", namespace, name)
 	}
 
