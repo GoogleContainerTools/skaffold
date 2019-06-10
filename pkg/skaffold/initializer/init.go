@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -112,7 +113,7 @@ func DoInit(out io.Writer, c Config) error {
 	var pairs []BuilderImagePair
 	if !c.SkipBuild {
 		if len(buildConfigs) == 0 {
-			return errors.New("one or more valid Dockerfiles must be present to build images with skaffold; please provide at least Dockerfile and try again or run `skaffold init --skip-build`")
+			return errors.New("one or more valid builder configuration (Dockerfile or Jib configuration) must be present to build images with skaffold; please provide at least one build config and try again or run `skaffold init --skip-build`")
 		}
 
 		var filteredImages []string
@@ -207,6 +208,15 @@ func autoSelectBuilders(buildConfigs []InitBuilder, images []string) ([]BuilderI
 }
 
 func detectBuildFile(path string) ([]InitBuilder, error) {
+	// Check for jib
+	if builders := jib.ValidateJibConfig(path); builders != nil {
+		results := make([]InitBuilder, len(builders))
+		for i := range builders {
+			results[i] = builders[i]
+		}
+		return results, filepath.SkipDir
+	}
+
 	// Check for Dockerfile
 	if docker.ValidateDockerfile(path) {
 		results := []InitBuilder{docker.Dockerfile(path)}
@@ -226,6 +236,7 @@ func processCliArtifacts(artifacts []string) ([]BuilderImagePair, error) {
 			return nil, fmt.Errorf("malformed artifact provided: %s", artifact)
 		}
 
+		// TODO: Allow passing Jib config via CLI
 		pairs = append(pairs, BuilderImagePair{
 			Builder:   docker.Dockerfile(parts[0]),
 			ImageName: parts[1],
@@ -327,7 +338,7 @@ func generateSkaffoldConfig(k Initializer, buildConfigPairs []BuilderImagePair) 
 
 func printAnalyzeJSON(out io.Writer, skipBuild bool, buildConfigs []InitBuilder, images []string) error {
 	if !skipBuild && len(buildConfigs) == 0 {
-		return errors.New("one or more valid Dockerfiles must be present to build images with skaffold; please provide at least one Dockerfile and try again, or run `skaffold init --skip-build`")
+		return errors.New("one or more valid build configuration must be present to build images with skaffold; please provide at least one Dockerfile or Jib configuration and try again, or run `skaffold init --skip-build`")
 	}
 	a := struct {
 		Builders []InitBuilder `json:"builders,omitempty"`

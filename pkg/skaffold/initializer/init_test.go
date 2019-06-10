@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -36,9 +37,13 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 	}{
 		{
 			description: "builders and images",
-			builders:    []InitBuilder{docker.Dockerfile("Dockerfile1"), docker.Dockerfile("Dockerfile2")},
-			images:      []string{"image1", "image2"},
-			expected:    "{\"builders\":[\"Dockerfile1\",\"Dockerfile2\"],\"images\":[\"image1\",\"image2\"]}",
+			builders: []InitBuilder{
+				docker.Dockerfile("Dockerfile"),
+				jib.Config{Name: jib.JibGradle, Image: "image1", Path: "build.gradle", Project: "project"},
+				jib.Config{Name: jib.JibMaven, Image: "image2", Path: "pom.xml"},
+			},
+			images:   []string{"image1", "image2"},
+			expected: "{\"builders\":[\"Dockerfile\",{\"name\":\"Jib Gradle Plugin\",\"image\":\"image1\",\"path\":\"build.gradle\",\"project\":\"project\"},{\"name\":\"Jib Maven Plugin\",\"image\":\"image2\",\"path\":\"pom.xml\"}],\"images\":[\"image1\",\"image2\"]}",
 		},
 		{
 			description: "no builders, skip build",
@@ -79,11 +84,13 @@ func TestWalk(t *testing.T) {
 		{
 			description: "should return correct k8 configs and build files",
 			filesWithContents: map[string]string{
-				"config/test.yaml":  emptyFile,
-				"k8pod.yml":         emptyFile,
-				"README":            emptyFile,
-				"deploy/Dockerfile": emptyFile,
-				"Dockerfile":        emptyFile,
+				"config/test.yaml":    emptyFile,
+				"k8pod.yml":           emptyFile,
+				"README":              emptyFile,
+				"deploy/Dockerfile":   emptyFile,
+				"gradle/build.gradle": emptyFile,
+				"maven/pom.xml":       emptyFile,
+				"Dockerfile":          emptyFile,
 			},
 			force: false,
 			expectedConfigs: []string{
@@ -93,6 +100,29 @@ func TestWalk(t *testing.T) {
 			expectedPaths: []string{
 				"Dockerfile",
 				"deploy/Dockerfile",
+				"gradle/build.gradle",
+				"maven/pom.xml",
+			},
+			shouldErr: false,
+		},
+		{
+			description: "skip validating nested jib configs",
+			filesWithContents: map[string]string{
+				"config/test.yaml":               emptyFile,
+				"k8pod.yml":                      emptyFile,
+				"gradle/build.gradle":            emptyFile,
+				"gradle/subproject/build.gradle": emptyFile,
+				"maven/pom.xml":                  emptyFile,
+				"maven/subproject/pom.xml":       emptyFile,
+			},
+			force: false,
+			expectedConfigs: []string{
+				"config/test.yaml",
+				"k8pod.yml",
+			},
+			expectedPaths: []string{
+				"gradle/build.gradle",
+				"maven/pom.xml",
 			},
 			shouldErr: false,
 		},
@@ -164,7 +194,8 @@ deploy:
 				tmpDir.Write(file, contents)
 			}
 
-			t.Override(&docker.ValidateDockerfile, testValidDocker)
+			t.Override(&docker.ValidateDockerfile, fakeValidateDockerfile)
+			t.Override(&jib.ValidateJibConfig, fakeValidateJibConfig)
 
 			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, detectBuildFile)
 
@@ -178,8 +209,17 @@ deploy:
 	}
 }
 
-func testValidDocker(path string) bool {
+func fakeValidateDockerfile(path string) bool {
 	return strings.HasSuffix(path, "Dockerfile")
+}
+
+func fakeValidateJibConfig(path string) []jib.Config {
+	if strings.HasSuffix(path, "build.gradle") {
+		return []jib.Config{{Name: jib.JibGradle, Path: path}}
+	} else if strings.HasSuffix(path, "pom.xml") {
+		return []jib.Config{{Name: jib.JibMaven, Path: path}}
+	}
+	return nil
 }
 
 func TestResolveBuilderImages(t *testing.T) {
@@ -211,7 +251,7 @@ func TestResolveBuilderImages(t *testing.T) {
 		},
 		{
 			description:      "prompt for multiple builders and images",
-			buildConfigs:     []InitBuilder{docker.Dockerfile("Dockerfile1"), docker.Dockerfile("Dockerfile2")},
+			buildConfigs:     []InitBuilder{docker.Dockerfile("Dockerfile1"), jib.Config{Name: jib.JibGradle, Path: "build.gradle"}, jib.Config{Name: jib.JibMaven, Project: "project", Path: "pom.xml"}},
 			images:           []string{"image1", "image2"},
 			shouldMakeChoice: true,
 			expectedPairs: []BuilderImagePair{
@@ -220,7 +260,7 @@ func TestResolveBuilderImages(t *testing.T) {
 					ImageName: "image1",
 				},
 				{
-					Builder:   docker.Dockerfile("Dockerfile2"),
+					Builder:   jib.Config{Name: jib.JibGradle, Path: "build.gradle"},
 					ImageName: "image2",
 				},
 			},
@@ -239,6 +279,68 @@ func TestResolveBuilderImages(t *testing.T) {
 			pairs := resolveBuilderImages(test.buildConfigs, test.images)
 
 			t.CheckDeepEqual(test.expectedPairs, pairs)
+		})
+	}
+}
+
+func TestAutoSelectBuilders(t *testing.T) {
+	tests := []struct {
+		description            string
+		buildConfigs           []InitBuilder
+		images                 []string
+		expectedPairs          []BuilderImagePair
+		expectedFilteredImages []string
+	}{
+		{
+			description: "no automatic matches",
+			buildConfigs: []InitBuilder{
+				docker.Dockerfile("Dockerfile"),
+				jib.Config{Name: jib.JibGradle, Path: "build.gradle"},
+				jib.Config{Name: jib.JibMaven, Path: "pom.xml", Image: "not a k8s image"},
+			},
+			images:                 []string{"image1", "image2"},
+			expectedPairs:          []BuilderImagePair{},
+			expectedFilteredImages: []string{"image1", "image2"},
+		},
+		{
+			description: "automatic jib matches",
+			buildConfigs: []InitBuilder{
+				docker.Dockerfile("Dockerfile"),
+				jib.Config{Name: jib.JibGradle, Path: "build.gradle", Image: "image1"},
+				jib.Config{Name: jib.JibMaven, Path: "pom.xml", Image: "image2"},
+			},
+			images: []string{"image1", "image2", "image3"},
+			expectedPairs: []BuilderImagePair{
+				{
+					jib.Config{Name: jib.JibGradle, Path: "build.gradle", Image: "image1"},
+					"image1",
+				},
+				{
+					jib.Config{Name: jib.JibMaven, Path: "pom.xml", Image: "image2"},
+					"image2",
+				},
+			},
+			expectedFilteredImages: []string{"image3"},
+		},
+		{
+			description: "multiple matches for one image",
+			buildConfigs: []InitBuilder{
+				jib.Config{Name: jib.JibGradle, Path: "build.gradle", Image: "image1"},
+				jib.Config{Name: jib.JibMaven, Path: "pom.xml", Image: "image1"},
+			},
+			images:                 []string{"image1", "image2"},
+			expectedPairs:          []BuilderImagePair{},
+			expectedFilteredImages: []string{"image1", "image2"},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+
+			pairs, filteredImages := autoSelectBuilders(test.buildConfigs, test.images)
+
+			t.CheckDeepEqual(test.expectedPairs, pairs)
+			t.CheckDeepEqual(test.expectedFilteredImages, filteredImages)
 		})
 	}
 }

@@ -1,0 +1,205 @@
+/*
+Copyright 2019 The Skaffold Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package jib
+
+import (
+	"path/filepath"
+	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/testutil"
+)
+
+func TestValidateJibConfig(t *testing.T) {
+	var tests = []struct {
+		description    string
+		path           string
+		command        string
+		stdout         string
+		expectedConfig []Config
+	}{
+		{
+			description:    "not a jib file",
+			path:           "path/to/something.txt",
+			expectedConfig: nil,
+		},
+		{
+			description:    "jib not configured",
+			path:           "path/to/build.gradle",
+			command:        "gradle _jibSkaffoldInit -q",
+			stdout:         "error",
+			expectedConfig: nil,
+		},
+		{
+			description: "jib gradle single project",
+			path:        "path/to/build.gradle",
+			command:     "gradle _jibSkaffoldInit -q",
+			stdout:      "BEGIN JIB JSON\n{\"image\":\"image\",\"project\":\"project\"}\n",
+			expectedConfig: []Config{
+				{Name: JibGradle, Path: "path/to/build.gradle", Image: "image", Project: "project"},
+			},
+		},
+		{
+			description: "jib gradle multi-project",
+			path:        "path/to/build.gradle",
+			command:     "gradle _jibSkaffoldInit -q",
+			stdout:      "BEGIN JIB JSON\n{\"image\":\"image\",\"project\":\"project1\"}\n\nBEGIN JIB JSON\n{\"project\":\"project2\"}\n",
+			expectedConfig: []Config{
+				{Name: JibGradle, Path: "path/to/build.gradle", Image: "image", Project: "project1"},
+				{Name: JibGradle, Path: "path/to/build.gradle", Project: "project2"},
+			},
+		},
+		{
+			description: "jib maven single module",
+			path:        "path/to/pom.xml",
+			command:     "mvn jib:_skaffold-init -q",
+			stdout:      "BEGIN JIB JSON\n{\"image\":\"image\",\"project\":\"project\"}\n",
+			expectedConfig: []Config{
+				{Name: JibMaven, Path: "path/to/pom.xml", Image: "image", Project: "project"},
+			},
+		},
+		{
+			description: "jib maven multi-module",
+			path:        "path/to/pom.xml",
+			command:     "mvn jib:_skaffold-init -q",
+			stdout:      "BEGIN JIB JSON\n{\"image\":\"image\",\"project\":\"project1\"}\n\nBEGIN JIB JSON\n{\"project\":\"project2\"}\n",
+			expectedConfig: []Config{
+				{Name: JibMaven, Path: "path/to/pom.xml", Image: "image", Project: "project1"},
+				{Name: JibMaven, Path: "path/to/pom.xml", Project: "project2"},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, t.FakeRunOut(test.command, test.stdout))
+			t.CheckDeepEqual(test.expectedConfig, ValidateJibConfig(test.path))
+		})
+	}
+}
+
+func TestGetPrompt(t *testing.T) {
+	var tests = []struct {
+		description    string
+		config         Config
+		expectedPrompt string
+	}{
+		{
+			description:    "gradle without project",
+			config:         Config{Name: JibGradle, Path: "path/to/build.gradle"},
+			expectedPrompt: "Jib Gradle Plugin (path/to/build.gradle)",
+		},
+		{
+			description:    "gradle with project",
+			config:         Config{Name: JibGradle, Project: "project", Path: "path/to/build.gradle"},
+			expectedPrompt: "Jib Gradle Plugin (project, path/to/build.gradle)",
+		},
+		{
+			description:    "maven without project",
+			config:         Config{Name: JibMaven, Path: "path/to/pom.xml"},
+			expectedPrompt: "Jib Maven Plugin (path/to/pom.xml)",
+		},
+		{
+			description:    "maven with project",
+			config:         Config{Name: JibMaven, Project: "project", Path: "path/to/pom.xml"},
+			expectedPrompt: "Jib Maven Plugin (project, path/to/pom.xml)",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.CheckDeepEqual(test.expectedPrompt, test.config.GetPrompt())
+		})
+	}
+}
+
+func TestGetArtifact(t *testing.T) {
+	var tests = []struct {
+		description      string
+		config           Config
+		manifestImage    string
+		expectedArtifact latest.Artifact
+		expectedImage    string
+	}{
+		{
+			description:   "jib gradle with image and project",
+			config:        Config{Name: JibGradle, Path: filepath.Join("path", "to", "build.gradle"), Image: "image", Project: "project"},
+			manifestImage: "different-image",
+			expectedArtifact: latest.Artifact{
+				ImageName: "image",
+				Workspace: filepath.Join("path", "to"),
+				ArtifactType: latest.ArtifactType{
+					JibGradleArtifact: &latest.JibGradleArtifact{Project: "project"},
+				},
+			},
+		},
+		{
+			description:   "jib gradle without image and project",
+			config:        Config{Name: JibGradle, Path: filepath.Join("path", "to", "build.gradle")},
+			manifestImage: "different-image",
+			expectedArtifact: latest.Artifact{
+				ImageName: "different-image",
+				Workspace: filepath.Join("path", "to"),
+				ArtifactType: latest.ArtifactType{
+					JibGradleArtifact: &latest.JibGradleArtifact{
+						Flags: []string{"-Dimage=different-image"},
+					},
+				},
+			},
+		},
+		{
+			description:   "jib maven with image and project",
+			config:        Config{Name: JibMaven, Path: filepath.Join("path", "to", "pom.xml"), Image: "image", Project: "project"},
+			manifestImage: "different-image",
+			expectedArtifact: latest.Artifact{
+				ImageName: "image",
+				Workspace: filepath.Join("path", "to"),
+				ArtifactType: latest.ArtifactType{
+					JibMavenArtifact: &latest.JibMavenArtifact{Module: "project"},
+				},
+			},
+		},
+		{
+			description:   "jib maven without image and project",
+			config:        Config{Name: JibGradle, Path: filepath.Join("path", "to", "build.gradle")},
+			manifestImage: "different-image",
+			expectedArtifact: latest.Artifact{
+				ImageName: "different-image",
+				Workspace: filepath.Join("path", "to"),
+				ArtifactType: latest.ArtifactType{
+					JibGradleArtifact: &latest.JibGradleArtifact{
+						Flags: []string{"-Dimage=different-image"},
+					},
+				},
+			},
+		},
+		{
+			description:   "ignore workspace",
+			config:        Config{Name: JibGradle, Path: "build.gradle", Image: "image"},
+			manifestImage: "different-image",
+			expectedArtifact: latest.Artifact{
+				ImageName:    "image",
+				ArtifactType: latest.ArtifactType{JibGradleArtifact: &latest.JibGradleArtifact{}},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			artifact := test.config.GetArtifact(test.manifestImage)
+			t.CheckDeepEqual(test.expectedArtifact, *artifact)
+		})
+	}
+}
