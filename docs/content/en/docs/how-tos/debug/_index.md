@@ -58,5 +58,7 @@ such that the on-disk representations are untouched.
         [Eclipse LSP4e](https://projects.eclipse.org/projects/technology.lsp4e),
         [and other editors and IDEs](https://microsoft.github.io/debug-adapter-protocol/implementors/tools/).
         DAP is not yet supported by JetBrains IDEs like PyCharm.
+      - Go apps should be built without optimizations, so your build should be capable of building with
+        `-gcflags='all=-N -l'`
   
  Support for additional language runtimes will be forthcoming.
