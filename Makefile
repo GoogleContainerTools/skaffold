@@ -176,7 +176,6 @@ integration-in-kind: kind-cluster skaffold-builder
 integration-in-docker: skaffold-builder
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
-		-v $(HOME)/.kube/config:/root/.kube/config \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		-v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
 		-e GCP_ONLY=$(GCP_ONLY) \
