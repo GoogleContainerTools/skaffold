@@ -1,11 +1,14 @@
 FROM golang:1.12 as builder
 
 COPY app.go .
-# disable optimizations for debugging
-RUN go build -gcflags='all=-N -l' -o /app .
+# Seemingly must assign the ARG to an environment variable for proper handling
+# of args with spaces like `-gcflags='all=-N -l'`
+ARG GOBUILDFLAGS
+ENV GOBUILDFLAGS=${GOBUILDARGS}
+RUN go build ${GOBUILDFLAGS} -o /app .
 
 FROM gcr.io/distroless/base
-# add GOTRACEBACK=all to trigger `skaffold debug`
+# use GOTRACEBACK=all to trigger `skaffold debug`
 ENV GOTRACEBACK=all
 EXPOSE 8080
 COPY --from=builder /app .
