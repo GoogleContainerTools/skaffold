@@ -40,7 +40,7 @@ func TestFindConfigs(t *testing.T) {
 		tmpDir1, tmpDir2 := setUpTempFiles(tt, latestVersion, upgradableVersion)
 
 		tests := []struct {
-			flagDir                string
+			flagDir                *testutil.TempDir
 			resultCounts           int
 			shouldContainsFiles    []string
 			shouldContainsVersions []string
@@ -60,10 +60,10 @@ func TestFindConfigs(t *testing.T) {
 		}
 		for _, test := range tests {
 			var b bytes.Buffer
-			err := findConfigs(&b, test.flagDir)
+			err := findConfigs(&b, test.flagDir.Root())
 
 			for _, f := range test.shouldContainsFiles {
-				tt.CheckContains(fmt.Sprintf("%s/%s", test.flagDir, f), b.String())
+				tt.CheckContains(test.flagDir.Path(f), b.String())
 			}
 
 			for _, v := range test.shouldContainsVersions {
@@ -87,7 +87,7 @@ This helper function will generate the following file tree for testing purpose
 	├── valid-skaffold.yaml
 	└── invalid-skaffold.yaml
 */
-func setUpTempFiles(tt *testutil.T, latestVersion, upgradableVersion string) (string, string) {
+func setUpTempFiles(tt *testutil.T, latestVersion, upgradableVersion string) (*testutil.TempDir, *testutil.TempDir) {
 	validYaml := fmt.Sprintf(`apiVersion: %s
 kind: Config
 build:
@@ -145,5 +145,5 @@ build:
 		file.tmpDir.Write(file.fileName, file.content)
 	}
 
-	return tmpDir1.Root(), tmpDir2.Root()
+	return tmpDir1, tmpDir2
 }
