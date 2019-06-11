@@ -60,7 +60,7 @@ $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 
 $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
 	if [ "$(GOOS)" = "$*" ]; then \
-		GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=1 go build -linkmode external -tags $(GO_BUILD_TAGS) -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE);\
+		GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS) -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE);\
 	else \
 		docker build --build-arg PROJECT=$(REPOPATH) \
 		 --build-arg TARGETS=$*/$(GOARCH) \
