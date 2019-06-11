@@ -26,16 +26,16 @@ import (
 )
 
 var (
-	invalidFileName    = "invalid-skaffold.yaml"
-	validFileName      = "valid-skaffold.yaml"
-	upgradableFileName = "upgradable-skaffold.yaml"
+	invalidFileName     = "invalid-skaffold.yaml"
+	validFileName       = "valid-skaffold.yaml"
+	upgradeableFileName = "upgradeable-skaffold.yaml"
 )
 
 func TestFindConfigs(t *testing.T) {
 	testutil.Run(t, "", func(tt *testutil.T) {
 		latestVersion := latest.Version
-		upgradableVersion := v1beta7.Version
-		tmpDir1, tmpDir2 := setUpTempFiles(tt, latestVersion, upgradableVersion)
+		upgradeableVersion := v1beta7.Version
+		tmpDir1, tmpDir2 := setUpTempFiles(tt, latestVersion, upgradeableVersion)
 
 		tests := []struct {
 			flagDir                *testutil.TempDir
@@ -45,7 +45,7 @@ func TestFindConfigs(t *testing.T) {
 			{
 				flagDir:                tmpDir1,
 				resultCounts:           2,
-				shouldContainsMappings: map[string]string{validFileName: latestVersion, upgradableFileName: upgradableVersion},
+				shouldContainsMappings: map[string]string{validFileName: latestVersion, upgradeableFileName: upgradeableVersion},
 			},
 			{
 				flagDir:                tmpDir2,
@@ -71,13 +71,13 @@ This helper function will generate the following file tree for testing purpose
 ...
 ├── tmpDir1
 │   ├── valid-skaffold.yaml
-|   ├── upgradable-skaffold.yaml
+|   ├── upgradeable-skaffold.yaml
 │   └── invalid-skaffold.yaml
 └── tmpDir2
 	├── valid-skaffold.yaml
 	└── invalid-skaffold.yaml
 */
-func setUpTempFiles(tt *testutil.T, latestVersion, upgradableVersion string) (*testutil.TempDir, *testutil.TempDir) {
+func setUpTempFiles(tt *testutil.T, latestVersion, upgradeableVersion string) (*testutil.TempDir, *testutil.TempDir) {
 	validYaml := fmt.Sprintf(`apiVersion: %s
 kind: Config
 build:
@@ -86,14 +86,14 @@ build:
     docker:
       dockerfile: dockerfile.test
 `, latestVersion)
-	upgradableYaml := fmt.Sprintf(`apiVersion: %s
+	upgradeableYaml := fmt.Sprintf(`apiVersion: %s
 kind: Config
 build:
   artifacts:
   - image: docker/image
     docker:
       dockerfile: dockerfile.test
-`, upgradableVersion)
+`, upgradeableVersion)
 	invalidYaml := `This is invalid`
 
 	tmpDir1 := tt.NewTempDir()
@@ -115,8 +115,8 @@ build:
 			tmpDir:   tmpDir1,
 		},
 		{
-			fileName: upgradableFileName,
-			content:  upgradableYaml,
+			fileName: upgradeableFileName,
+			content:  upgradeableYaml,
 			tmpDir:   tmpDir1,
 		},
 		{
