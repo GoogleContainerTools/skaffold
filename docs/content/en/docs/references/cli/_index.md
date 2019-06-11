@@ -478,6 +478,7 @@ Usage:
 
 Flags:
   -d, --directory string   Root directory to lookup the config files. (default ".")
+  -o, --output string      Result format, default to table. [(-o|--output=)json|table] (default "table")
 
 Global Flags:
       --color int          Specify the default output color in ANSI escape codes (default 34)
@@ -488,6 +489,7 @@ Global Flags:
 Env vars:
 
 * `SKAFFOLD_DIRECTORY` (same as `--directory`)
+* `SKAFFOLD_OUTPUT` (same as `--output`)
 
 ### skaffold fix
 
