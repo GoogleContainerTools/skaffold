@@ -17,9 +17,7 @@ limitations under the License.
 package cmd
 
 import (
-	"bytes"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -42,36 +40,28 @@ func TestFindConfigs(t *testing.T) {
 		tests := []struct {
 			flagDir                *testutil.TempDir
 			resultCounts           int
-			shouldContainsFiles    []string
-			shouldContainsVersions []string
+			shouldContainsMappings map[string]string
 		}{
 			{
 				flagDir:                tmpDir1,
 				resultCounts:           2,
-				shouldContainsFiles:    []string{validFileName, upgradableFileName},
-				shouldContainsVersions: []string{latestVersion, upgradableVersion},
+				shouldContainsMappings: map[string]string{validFileName: latestVersion, upgradableFileName: upgradableVersion},
 			},
 			{
 				flagDir:                tmpDir2,
 				resultCounts:           1,
-				shouldContainsFiles:    []string{validFileName},
-				shouldContainsVersions: []string{latestVersion},
+				shouldContainsMappings: map[string]string{validFileName: latestVersion},
 			},
 		}
 		for _, test := range tests {
-			var b bytes.Buffer
-			err := findConfigs(&b, test.flagDir.Root())
+			pathToVersion, err := findConfigs(test.flagDir.Root())
 
-			for _, f := range test.shouldContainsFiles {
-				tt.CheckContains(test.flagDir.Path(f), b.String())
+			tt.CheckErrorAndDeepEqual(false, err, len(test.shouldContainsMappings), len(pathToVersion))
+			for f, v := range test.shouldContainsMappings {
+				version, ok := pathToVersion[test.flagDir.Path(f)]
+				tt.CheckDeepEqual(true, ok)
+				tt.CheckDeepEqual(version, v)
 			}
-
-			for _, v := range test.shouldContainsVersions {
-				tt.CheckContains(v, b.String())
-			}
-
-			tt.CheckDeepEqual(test.resultCounts, strings.Count(b.String(), "\n"))
-			tt.CheckError(false, err)
 		}
 	})
 }
