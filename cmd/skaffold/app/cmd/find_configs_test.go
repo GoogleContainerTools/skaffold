@@ -28,9 +28,9 @@ import (
 )
 
 var (
-	invalidFileName    string = "invalid-skaffold.yaml"
-	validFileName      string = "valid-skaffold.yaml"
-	upgradableFileName string = "upgradable-skaffold.yaml"
+	invalidFileName    = "invalid-skaffold.yaml"
+	validFileName      = "valid-skaffold.yaml"
+	upgradableFileName = "upgradable-skaffold.yaml"
 )
 
 func TestFindConfigs(t *testing.T) {
