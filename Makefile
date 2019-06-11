@@ -96,7 +96,7 @@ ifeq ($(GCP_ONLY),true)
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-	GCP_ONLY=$(GCP_ONLY) go test -v $(REPOPATH)/integration -timeout 15m
+	GCP_ONLY=$(GCP_ONLY) go test -v $(REPOPATH)/integration -timeout 15m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
@@ -176,6 +176,7 @@ integration-in-kind: kind-cluster skaffold-builder
 integration-in-docker: skaffold-builder
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(HOME)/.kube/config:/root/.kube/config \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		-v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
 		-e GCP_ONLY=$(GCP_ONLY) \
@@ -184,6 +185,7 @@ integration-in-docker: skaffold-builder
 		-e GKE_ZONE=$(GKE_ZONE) \
 		-e DOCKER_CONFIG=/root/.docker \
 		-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
+		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		gcr.io/$(GCP_PROJECT)/skaffold-integration
 
 .PHONY: submit-build-trigger

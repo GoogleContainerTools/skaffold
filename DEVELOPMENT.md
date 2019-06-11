@@ -170,6 +170,14 @@ _These tests require push access to a project in GCP, and so can only be run
 by maintainers who have access. These tests will be kicked off by [reviewers](#reviews)
 for submitted PRs._
 
+### Running a chosen integration tests
+
+You can select a chosen integration tests via the `INTEGRATION_TEST_ARGS` env var:
+
+```shell
+INTEGRATION_TEST_ARGS="-run=TestDev/" make integration-test
+```
+
 ## Building skaffold docs
 
 The latest version of the skaffold site is based on the Hugo theme of the github.com/google/docsy template.

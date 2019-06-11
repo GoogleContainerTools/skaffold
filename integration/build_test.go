@@ -52,6 +52,10 @@ func TestBuild(t *testing.T) {
 			dir:         "testdata/build",
 		},
 		{
+			description: "testing skaffold itself in alpine",
+			dir:         "testdata/alpine",
+		},
+		{
 			description: "git tagger",
 			dir:         "testdata/tagPolicy",
 			args:        []string{"-p", "gitCommit"},
