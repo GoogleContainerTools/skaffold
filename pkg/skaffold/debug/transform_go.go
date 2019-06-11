@@ -34,7 +34,7 @@ func init() {
 const (
 	// dlv defaults to port 56268
 	defaultDlvPort    = 56268
-	defaultApiVersion = 2
+	defaultAPIVersion = 2
 )
 
 // dlvSpec captures the useful nodejs devtools options
@@ -42,13 +42,13 @@ type dlvSpec struct {
 	mode       string
 	host       string
 	port       uint16
-	apiVersion int
 	headless   bool
 	log        bool
+	apiVersion int
 }
 
 func newDlvSpec(port uint16) dlvSpec {
-	return dlvSpec{mode: "exec", host: "localhost", port: port, apiVersion: defaultApiVersion, headless: true}
+	return dlvSpec{mode: "exec", host: "localhost", port: port, apiVersion: defaultAPIVersion, headless: true}
 }
 
 // isLaunchingDlv determines if the arguments seems to be invoking Delve

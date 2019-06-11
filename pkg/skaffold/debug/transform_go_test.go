@@ -144,7 +144,7 @@ func TestDlvTransformerApply(t *testing.T) {
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{entrypoint: []string{"app"}},
 			result: v1.Container{
-				Command: []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2","app"},
+				Command: []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app"},
 				Ports:   []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 			},
 		},
@@ -155,7 +155,7 @@ func TestDlvTransformerApply(t *testing.T) {
 			},
 			configuration: imageConfiguration{entrypoint: []string{"app"}},
 			result: v1.Container{
-				Command: []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2","app"},
+				Command: []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app"},
 				Ports:   []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}, {Name: "dlv", ContainerPort: 56268}},
 			},
 		},
@@ -164,7 +164,7 @@ func TestDlvTransformerApply(t *testing.T) {
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{arguments: []string{"app"}},
 			result: v1.Container{
-				Args:  []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2","app"},
+				Args:  []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app"},
 				Ports: []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 			},
 		},
