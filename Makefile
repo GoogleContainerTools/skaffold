@@ -41,17 +41,23 @@ endif
 GO_GCFLAGS := "all=-trimpath=${PWD}"
 GO_ASMFLAGS := "all=-trimpath=${PWD}"
 
-LDFLAGS ?= "-static"
+LDFLAGS_linux = -static
+LDFLAGS_darwin =
+LDFLAGS_windows =
 
-GO_LDFLAGS :="
-GO_LDFLAGS += -extldflags \"${LDFLAGS}\"
-GO_LDFLAGS += -X $(VERSION_PACKAGE).version=$(VERSION)
+GO_BUILD_TAGS_linux := "osusergo netgo static_build"
+GO_BUILD_TAGS_darwin := ""
+GO_BUILD_TAGS_windows := ""
+
+
+GO_LDFLAGS = -X $(VERSION_PACKAGE).version=$(VERSION)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).buildDate=$(shell date +'%Y-%m-%dT%H:%M:%SZ')
 GO_LDFLAGS += -X $(VERSION_PACKAGE).gitCommit=$(COMMIT)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).gitTreeState=$(if $(shell git status --porcelain),dirty,clean)
-GO_LDFLAGS +="
 
-GO_BUILD_TAGS := "osusergo netgo static_build"
+GO_LDFLAGS_windows =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_windows)\""
+GO_LDFLAGS_darwin =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_darwin)\""
+GO_LDFLAGS_linux =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_linux)\""
 
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
@@ -60,12 +66,12 @@ $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 
 $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
 	if [ "$(GOOS)" = "$*" ]; then \
-		GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS) -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE);\
+		GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(*)) -ldflags $(GO_LDFLAGS_$(*)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE);\
 	else \
 		docker build --build-arg PROJECT=$(REPOPATH) \
 		 --build-arg TARGETS=$*/$(GOARCH) \
-		 --build-arg FLAG_LDFLAGS=$(GO_LDFLAGS) \
-		 --build-arg FLAG_TAGS=$(GO_BUILD_TAGS) \
+		 --build-arg FLAG_LDFLAGS=$(GO_LDFLAGS_$(*)) \
+		 --build-arg FLAG_TAGS=$(GO_BUILD_TAGS_$(*)) \
 		 -f deploy/cross/Dockerfile -t skaffold/cross .;\
 		docker run --rm --entrypoint sh skaffold/cross -c "cat /build/skaffold*" > $@;\
 	fi
