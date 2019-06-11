@@ -61,11 +61,11 @@ func TestWaitForPodSucceeded(t *testing.T) {
 			pod := &v1.Pod{}
 			client := fakekubeclientset.NewSimpleClientset(pod)
 
-			fakeWatcher := watch.NewFake()
+			fakeWatcher := watch.NewRaceFreeFake()
 			client.PrependWatchReactor("*", watcher(fakeWatcher))
 			fakePods := client.CoreV1().Pods("")
 
-			errChan := make(chan (error))
+			errChan := make(chan error)
 			go func() {
 				errChan <- WaitForPodSucceeded(context.TODO(), fakePods, "", 5*time.Second)
 			}()
