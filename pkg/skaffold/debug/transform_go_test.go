@@ -88,16 +88,6 @@ func TestDlvTransformer_IsApplicable(t *testing.T) {
 			result:      true,
 		},
 		{
-			description: "skaffold runtime label with go",
-			source:      imageConfiguration{labels: map[string]string{"skaffold.dev/debug/runtime": "go"}},
-			result:      true,
-		},
-		{
-			description: "skaffold runtime label without go",
-			source:      imageConfiguration{labels: map[string]string{"skaffold.dev/debug/runtime": "java"}},
-			result:      false,
-		},
-		{
 			description: "entrypoint with dlv",
 			source:      imageConfiguration{entrypoint: []string{"dlv", "exec", "--headless"}},
 			result:      true,

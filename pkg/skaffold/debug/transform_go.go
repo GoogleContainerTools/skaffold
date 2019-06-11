@@ -62,9 +62,6 @@ func (t dlvTransformer) IsApplicable(config imageConfiguration) bool {
 			return true
 		}
 	}
-	if config.labels["skaffold.dev/debug/runtime"] == "go" {
-		return true
-	}
 	if len(config.entrypoint) > 0 {
 		return isLaunchingDlv(config.entrypoint)
 	} else if len(config.arguments) > 0 {
