@@ -41,6 +41,8 @@ endif
 GO_GCFLAGS := "all=-trimpath=${PWD}"
 GO_ASMFLAGS := "all=-trimpath=${PWD}"
 
+LDFLAGS := "-static"
+
 GO_LDFLAGS :="
 GO_LDFLAGS += -extldflags \"${LDFLAGS}\"
 GO_LDFLAGS += -X $(VERSION_PACKAGE).version=$(VERSION)
@@ -49,6 +51,8 @@ GO_LDFLAGS += -X $(VERSION_PACKAGE).gitCommit=$(COMMIT)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).gitTreeState=$(if $(shell git status --porcelain),dirty,clean)
 GO_LDFLAGS +="
 
+GO_BUILD_TAGS := "osusergo netgo static_build"
+
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
@@ -56,9 +60,13 @@ $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 
 $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
 	if [ "$(GOOS)" = "$*" ]; then \
-		GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=1 go build -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE);\
+		GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=1 go build -linkmode external -tags $(GO_BUILD_TAGS) -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE);\
 	else \
-		docker build --build-arg PROJECT=$(REPOPATH) --build-arg TARGETS=$*/$(GOARCH) --build-arg FLAG_LDFLAGS=$(GO_LDFLAGS) -f deploy/cross/Dockerfile -t skaffold/cross .;\
+		docker build --build-arg PROJECT=$(REPOPATH) \
+		 --build-arg TARGETS=$*/$(GOARCH) \
+		 --build-arg FLAG_LDFLAGS=$(GO_LDFLAGS) \
+		 --build-arg FLAG_TAGS=$(GO_BUILD_TAGS) \
+		 -f deploy/cross/Dockerfile -t skaffold/cross .;\
 		docker run --rm --entrypoint sh skaffold/cross -c "cat /build/skaffold*" > $@;\
 	fi
 
