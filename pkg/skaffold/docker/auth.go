@@ -20,12 +20,12 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	types2 "github.com/docker/cli/cli/config/types"
 	"os"
 	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/docker/cli/cli/config"
+	types2 "github.com/docker/cli/cli/config/types"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/pkg/homedir"
@@ -75,10 +75,10 @@ func (credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
 		return types.AuthConfig{}, errors.Wrap(err, "docker config")
 	}
 
-	return asApiAuthConfig(authConfig), nil
+	return asAPIAuthConfig(authConfig), nil
 }
 
-func asApiAuthConfig(cliConfig types2.AuthConfig) types.AuthConfig {
+func asAPIAuthConfig(cliConfig types2.AuthConfig) types.AuthConfig {
 	return types.AuthConfig{
 		Auth:          cliConfig.Auth,
 		Email:         cliConfig.Email,
@@ -108,7 +108,7 @@ func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
 	apiConfigs := make(map[string]types.AuthConfig)
 
 	for name, cliConfig := range configs {
-		apiConfigs[name] = asApiAuthConfig(cliConfig)
+		apiConfigs[name] = asAPIAuthConfig(cliConfig)
 	}
 
 	return apiConfigs, nil
