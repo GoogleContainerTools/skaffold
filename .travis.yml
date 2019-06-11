@@ -5,6 +5,9 @@ git:
 
 go_import_path: github.com/GoogleContainerTools/skaffold
 
+env:
+  - GO111MODULE=on
+
 jobs:
   include:
     - os: linux
