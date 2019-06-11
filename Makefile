@@ -41,7 +41,7 @@ endif
 GO_GCFLAGS := "all=-trimpath=${PWD}"
 GO_ASMFLAGS := "all=-trimpath=${PWD}"
 
-LDFLAGS := "-static"
+LDFLAGS ?= "-static"
 
 GO_LDFLAGS :="
 GO_LDFLAGS += -extldflags \"${LDFLAGS}\"
