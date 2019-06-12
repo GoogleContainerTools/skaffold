@@ -64,17 +64,16 @@ GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
 
+$(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
+
 $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
-	if [ "$(GOOS)" = "$*" ]; then \
-		GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(*)) -ldflags $(GO_LDFLAGS_$(*)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE);\
-	else \
-		docker build --build-arg PROJECT=$(REPOPATH) \
-		 --build-arg TARGETS=$*/$(GOARCH) \
-		 --build-arg FLAG_LDFLAGS=$(GO_LDFLAGS_$(*)) \
-		 --build-arg FLAG_TAGS=$(GO_BUILD_TAGS_$(*)) \
-		 -f deploy/cross/Dockerfile -t skaffold/cross .;\
-		docker run --rm --entrypoint sh skaffold/cross -c "cat /build/skaffold*" > $@;\
-	fi
+	docker build --build-arg PROJECT=$(REPOPATH) \
+		--build-arg TARGETS=$*/$(GOARCH) \
+		--build-arg FLAG_LDFLAGS=$(GO_LDFLAGS_$(*)) \
+		--build-arg FLAG_TAGS=$(GO_BUILD_TAGS_$(*)) \
+		-f deploy/cross/Dockerfile -t skaffold/cross .
+	docker run --rm --entrypoint sh skaffold/cross -c "cat /build/skaffold*" > $@
 
 %.sha256: %
 	shasum -a 256 $< > $@
