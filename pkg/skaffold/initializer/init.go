@@ -74,9 +74,9 @@ type Config struct {
 	Opts         *config.SkaffoldOptions
 }
 
-type buildConfigPair struct {
-	BuildConfig InitBuilder
-	ImageName   string
+type builderImagePair struct {
+	builder   InitBuilder
+	imageName string
 }
 
 // DoInit executes the `skaffold init` flow.
@@ -105,8 +105,9 @@ func DoInit(out io.Writer, c Config) error {
 	if c.Analyze {
 		return printAnalyzeJSON(out, c.SkipBuild, buildConfigs, images)
 	}
+
 	// conditionally generate build artifacts
-	var pairs, newPairs []buildConfigPair
+	var pairs []builderImagePair
 	filteredImages := []string{}
 	if !c.SkipBuild {
 		if len(buildConfigs) == 0 {
@@ -130,8 +131,8 @@ func DoInit(out io.Writer, c Config) error {
 			}
 
 			if matchingConfigIndex != -1 {
-				// Exactly one pair found
-				pairs = append(pairs, buildConfigPair{ImageName: image, BuildConfig: buildConfigs[matchingConfigIndex]})
+				// Exactly one pair found; save the pair and remove from remaining build configs
+				pairs = append(pairs, builderImagePair{imageName: image, builder: buildConfigs[matchingConfigIndex]})
 				buildConfigs = append(buildConfigs[:matchingConfigIndex], buildConfigs[matchingConfigIndex+1:]...)
 			} else {
 				// No definite pair found, add to images list
@@ -140,16 +141,16 @@ func DoInit(out io.Writer, c Config) error {
 		}
 
 		if c.CliArtifacts != nil {
-			newPairs, err = processCliArtifacts(c.CliArtifacts)
+			newPairs, err := processCliArtifacts(c.CliArtifacts)
 			if err != nil {
 				return errors.Wrap(err, "processing cli artifacts")
 			}
+			pairs = append(pairs, newPairs...)
 		} else {
-			newPairs = resolveDockerfileImages(buildConfigs, filteredImages)
+			pairs = append(pairs, resolveBuilderImages(buildConfigs, filteredImages)...)
 		}
 	}
 
-	pairs = append(pairs, newPairs...)
 	pipeline, err := generateSkaffoldConfig(k, pairs)
 	if err != nil {
 		return err
@@ -196,9 +197,9 @@ func DoInit(out io.Writer, c Config) error {
 func detectBuildFile(path string) ([]InitBuilder, error) {
 	// Check for jib
 	if builders := jib.ValidateJibConfig(path); builders != nil {
-		results := []InitBuilder{}
-		for _, b := range builders {
-			results = append(results, b)
+		results := make([]InitBuilder, len(builders))
+		for i := range builders {
+			results[i] = builders[i]
 		}
 		return results, filepath.SkipDir
 	}
@@ -208,11 +209,14 @@ func detectBuildFile(path string) ([]InitBuilder, error) {
 		results := []InitBuilder{docker.Dockerfile(path)}
 		return results, nil
 	}
+
+	// TODO: Check for more builders
+
 	return nil, nil
 }
 
-func processCliArtifacts(artifacts []string) ([]buildConfigPair, error) {
-	var pairs []buildConfigPair
+func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
+	var pairs []builderImagePair
 	for _, artifact := range artifacts {
 		parts := strings.Split(artifact, "=")
 		if len(parts) != 2 {
@@ -220,33 +224,35 @@ func processCliArtifacts(artifacts []string) ([]buildConfigPair, error) {
 		}
 
 		// TODO: Allow passing Jib config via CLI
-		pairs = append(pairs, buildConfigPair{
-			BuildConfig: docker.Dockerfile(parts[0]),
-			ImageName:   parts[1],
+		pairs = append(pairs, builderImagePair{
+			builder:   docker.Dockerfile(parts[0]),
+			imageName: parts[1],
 		})
 	}
 	return pairs, nil
 }
 
 // For each image parsed from all k8s manifests, prompt the user for the builder that builds the referenced image
-func resolveDockerfileImages(buildConfigs []InitBuilder, images []string) []buildConfigPair {
+func resolveBuilderImages(buildConfigs []InitBuilder, images []string) []builderImagePair {
 	// if we only have 1 image and 1 build config, don't bother prompting
 	if len(images) == 1 && len(buildConfigs) == 1 {
-		return []buildConfigPair{{
-			BuildConfig: buildConfigs[0],
-			ImageName:   images[0],
+		return []builderImagePair{{
+			builder:   buildConfigs[0],
+			imageName: images[0],
 		}}
 	}
 
-	choices := []string{}
-	choiceMap := map[string]InitBuilder{}
-	for _, b := range buildConfigs {
+	// Build map from choice string to builder config struct
+	choices := make([]string, len(buildConfigs))
+	choiceMap := make(map[string]InitBuilder, len(buildConfigs))
+	for i, b := range buildConfigs {
 		choice := b.GetPrompt()
-		choices = append(choices, choice)
+		choices[i] = choice
 		choiceMap[choice] = b
 	}
 
-	pairs := []buildConfigPair{}
+	// For each choice, use prompt string to pair builder config with k8s image
+	pairs := []builderImagePair{}
 	for {
 		if len(images) == 0 {
 			break
@@ -254,13 +260,13 @@ func resolveDockerfileImages(buildConfigs []InitBuilder, images []string) []buil
 		image := images[0]
 		choice := promptUserForBuildConfig(image, choices)
 		if choice != NoBuilder {
-			pairs = append(pairs, buildConfigPair{BuildConfig: choiceMap[choice], ImageName: image})
+			pairs = append(pairs, builderImagePair{builder: choiceMap[choice], imageName: image})
 			choices = util.RemoveFromSlice(choices, choice)
 		}
 		images = util.RemoveFromSlice(images, image)
 	}
 	if len(buildConfigs) > 0 {
-		logrus.Warnf("unused dockerfiles found in repository: %v", buildConfigs)
+		logrus.Warnf("unused builder configs found in repository: %v", buildConfigs)
 	}
 	return pairs
 }
@@ -277,19 +283,19 @@ func promptUserForBuildConfig(image string, choices []string) string {
 	return selectedBuildConfig
 }
 
-func processBuildArtifacts(pairs []buildConfigPair) latest.BuildConfig {
+func processBuildArtifacts(pairs []builderImagePair) latest.BuildConfig {
 	var config latest.BuildConfig
 	if len(pairs) > 0 {
 		var artifacts []*latest.Artifact
 		for _, pair := range pairs {
-			artifacts = append(artifacts, pair.BuildConfig.GetArtifact(pair.ImageName))
+			artifacts = append(artifacts, pair.builder.GetArtifact(pair.imageName))
 		}
 		config.Artifacts = artifacts
 	}
 	return config
 }
 
-func generateSkaffoldConfig(k Initializer, buildConfigPairs []buildConfigPair) ([]byte, error) {
+func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) ([]byte, error) {
 	// if we're here, the user has no skaffold yaml so we need to generate one
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	logrus.Info("generating skaffold config")
@@ -318,11 +324,11 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, buildConfigs []InitBuilder,
 		return errors.New("one or more valid build configuration must be present to build images with skaffold; please provide at least one Dockerfile or Jib configuration and try again, or run `skaffold init --skip-build`")
 	}
 	a := struct {
-		BuilderConfigs []InitBuilder `json:"builderconfigs,omitempty"`
-		Images         []string      `json:"images,omitempty"`
+		Builders []InitBuilder `json:"builders,omitempty"`
+		Images   []string      `json:"images,omitempty"`
 	}{
-		BuilderConfigs: buildConfigs,
-		Images:         images,
+		Builders: buildConfigs,
+		Images:   images,
 	}
 	contents, err := json.Marshal(a)
 	if err != nil {

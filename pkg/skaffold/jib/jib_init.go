@@ -53,7 +53,7 @@ func (j Config) GetPrompt() string {
 }
 
 // GetArtifact returns the Artifact used to generate the Build Config.
-func (j Config) GetArtifact(image string) *latest.Artifact {
+func (j Config) GetArtifact(manifestImage string) *latest.Artifact {
 	path := string(j.Path)
 	workspace := filepath.Dir(path)
 	a := &latest.Artifact{ImageName: path}
@@ -67,7 +67,7 @@ func (j Config) GetArtifact(image string) *latest.Artifact {
 			jibMaven.Module = j.Project
 		}
 		if j.Image == "" {
-			jibMaven.Flags = []string{"-Dimage=" + image}
+			jibMaven.Flags = []string{"-Dimage=" + manifestImage}
 		}
 		a.ArtifactType = latest.ArtifactType{JibMavenArtifact: jibMaven}
 
@@ -77,11 +77,9 @@ func (j Config) GetArtifact(image string) *latest.Artifact {
 			jibGradle.Project = j.Project
 		}
 		if j.Image == "" {
-			jibGradle.Flags = []string{"-Dimage=" + image}
+			jibGradle.Flags = []string{"-Dimage=" + manifestImage}
 		}
-		a.ArtifactType = latest.ArtifactType{
-			JibGradleArtifact: jibGradle,
-		}
+		a.ArtifactType = latest.ArtifactType{JibGradleArtifact: jibGradle}
 	}
 
 	return a
@@ -100,6 +98,7 @@ type jibJSON struct {
 
 // ValidateJibConfig checks if a file is a valid Jib configuration. Returns the list of Config objects corresponding to each Jib project built by the file, or nil if Jib is not configured.
 func ValidateJibConfig(path string) []Config {
+	// Determine whether maven or gradle
 	var builderType, executable, wrapper, taskName string
 	if strings.HasSuffix(path, "pom.xml") {
 		builderType = JibMaven
@@ -115,6 +114,7 @@ func ValidateJibConfig(path string) []Config {
 		return nil
 	}
 
+	// Run Jib's skaffold init task/goal to check if Jib is configured
 	if wrapperExecutable, err := util.AbsFile(filepath.Dir(path), wrapper); err == nil {
 		executable = wrapperExecutable
 	}
@@ -125,6 +125,7 @@ func ValidateJibConfig(path string) []Config {
 		return nil
 	}
 
+	// Parse Jib output. Multiple JSON strings may be printed for multi-project/multi-module setups.
 	matches := regexp.MustCompile(`BEGIN JIB JSON\r?\n({.*})`).FindAllSubmatch(stdout, -1)
 	if len(matches) == 0 {
 		return nil
