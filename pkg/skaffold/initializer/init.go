@@ -245,10 +245,10 @@ func resolveBuilderImages(buildConfigs []InitBuilder, images []string) []builder
 	// Build map from choice string to builder config struct
 	choices := make([]string, len(buildConfigs))
 	choiceMap := make(map[string]InitBuilder, len(buildConfigs))
-	for i, b := range buildConfigs {
-		choice := b.GetPrompt()
+	for i, buildConfig := range buildConfigs {
+		choice := buildConfig.GetPrompt()
 		choices[i] = choice
-		choiceMap[choice] = b
+		choiceMap[choice] = buildConfig
 	}
 
 	// For each choice, use prompt string to pair builder config with k8s image
@@ -286,11 +286,10 @@ func promptUserForBuildConfig(image string, choices []string) string {
 func processBuildArtifacts(pairs []builderImagePair) latest.BuildConfig {
 	var config latest.BuildConfig
 	if len(pairs) > 0 {
-		var artifacts []*latest.Artifact
-		for _, pair := range pairs {
-			artifacts = append(artifacts, pair.builder.GetArtifact(pair.imageName))
+		config.Artifacts = make([]*latest.Artifact, len(pairs))
+		for i, pair := range pairs {
+			config.Artifacts[i] = pair.builder.GetArtifact(pair.imageName)
 		}
-		config.Artifacts = artifacts
 	}
 	return config
 }
@@ -362,9 +361,9 @@ func walk(dir string, force bool, validateBuildFile func(string) ([]InitBuilder,
 		}
 		// try and parse build file
 		if builderConfigs, err := validateBuildFile(path); builderConfigs != nil {
-			for _, b := range builderConfigs {
-				logrus.Infof("existing builder found: %s", b.GetPrompt())
-				buildFiles = append(buildFiles, b)
+			for _, buildConfig := range builderConfigs {
+				logrus.Infof("existing builder found: %s", buildConfig.GetPrompt())
+				buildFiles = append(buildFiles, buildConfig)
 			}
 			return err
 		}

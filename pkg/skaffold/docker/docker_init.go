@@ -33,10 +33,10 @@ func (d Dockerfile) GetPrompt() string {
 }
 
 // GetArtifact returns the Artifact used to generate the Build Config.
-func (d Dockerfile) GetArtifact(image string) *latest.Artifact {
+func (d Dockerfile) GetArtifact(manifestImage string) *latest.Artifact {
 	path := string(d)
 	workspace := filepath.Dir(path)
-	a := &latest.Artifact{ImageName: path}
+	a := &latest.Artifact{ImageName: manifestImage}
 	if workspace != "." {
 		a.Workspace = workspace
 	}

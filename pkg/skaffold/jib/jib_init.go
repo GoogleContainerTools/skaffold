@@ -56,7 +56,7 @@ func (j Config) GetPrompt() string {
 func (j Config) GetArtifact(manifestImage string) *latest.Artifact {
 	path := string(j.Path)
 	workspace := filepath.Dir(path)
-	a := &latest.Artifact{ImageName: path}
+	a := &latest.Artifact{ImageName: manifestImage}
 	if workspace != "." {
 		a.Workspace = workspace
 	}
@@ -131,15 +131,15 @@ func ValidateJibConfig(path string) []Config {
 		return nil
 	}
 
-	results := []Config{}
-	for _, m := range matches {
-		line := bytes.Replace(m[1], []byte(`\`), []byte(`\\`), -1)
+	results := make([]Config, len(matches))
+	for i, match := range matches {
+		line := bytes.Replace(match[1], []byte(`\`), []byte(`\\`), -1)
 		parsedJSON := jibJSON{}
 		if err := json.Unmarshal(line, &parsedJSON); err != nil {
 			return nil
 		}
 
-		results = append(results, Config{Name: builderType, Image: parsedJSON.Image, Path: path, Project: parsedJSON.Project})
+		results[i] = Config{Name: builderType, Image: parsedJSON.Image, Path: path, Project: parsedJSON.Project}
 	}
 	return results
 }
