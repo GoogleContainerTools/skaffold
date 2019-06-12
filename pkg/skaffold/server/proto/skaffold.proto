@@ -65,6 +65,8 @@ message PortEvent {
   string containerName = 4;
   string namespace = 5;
   string portName = 6;
+  string resourceType=7;
+  string resourceName=8;
 }
 
 message LogEntry {
