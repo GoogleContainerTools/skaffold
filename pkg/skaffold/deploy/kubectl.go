@@ -17,8 +17,10 @@ limitations under the License.
 package deploy
 
 import (
+	"bytes"
 	"context"
 	"io"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -38,6 +40,7 @@ import (
 type KubectlDeployer struct {
 	*latest.KubectlDeploy
 
+	originalImages     []build.Artifact
 	workingDir         string
 	kubectl            deploy.CLI
 	defaultRepo        string
@@ -79,6 +82,24 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		event.DeployFailed(err)
 		return errors.Wrap(err, "reading manifests")
 	}
+
+	for _, m := range k.RemoteManifests {
+		manifest, err := k.readRemoteManifest(ctx, m)
+		if err != nil {
+			return errors.Wrap(err, "get remote manifests")
+		}
+
+		manifests = append(manifests, manifest)
+	}
+
+	if len(k.originalImages) == 0 {
+		k.originalImages, err = manifests.GetImages()
+		if err != nil {
+			return errors.Wrap(err, "get images from manifests")
+		}
+	}
+
+	logrus.Debugln("manifests", manifests.String())
 
 	if len(manifests) == 0 {
 		return nil
@@ -122,6 +143,22 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		return errors.Wrap(err, "reading manifests")
 	}
 
+	// pull remote manifests
+	var rm kubectl.ManifestList
+	for _, m := range k.RemoteManifests {
+		manifest, err := k.readRemoteManifest(ctx, m)
+		if err != nil {
+			return errors.Wrap(err, "get remote manifests")
+		}
+		rm = append(rm, manifest)
+	}
+	upd, err := rm.ReplaceImages(k.originalImages, k.defaultRepo)
+	if err != nil {
+		return errors.Wrap(err, "replacing with originals")
+	}
+	if err := k.kubectl.Apply(ctx, out, upd); err != nil {
+		return errors.Wrap(err, "apply original")
+	}
 	if err := k.kubectl.Delete(ctx, out, manifests); err != nil {
 		return errors.Wrap(err, "delete")
 	}
@@ -181,4 +218,23 @@ func (k *KubectlDeployer) readManifests(ctx context.Context) (deploy.ManifestLis
 	}
 
 	return k.kubectl.ReadManifests(ctx, manifests)
+}
+
+// readRemoteManifests will try to read manifests from the given kubernetes
+// context in the specified namespace and for the specified type
+func (k *KubectlDeployer) readRemoteManifest(ctx context.Context, name string) ([]byte, error) {
+	var args []string
+	if parts := strings.Split(name, ":"); len(parts) > 1 {
+		args = append(args, "--namespace", parts[0])
+		name = parts[1]
+	}
+	args = append(args, name, "-o", "yaml")
+
+	var manifest bytes.Buffer
+	err := k.kubectl.Run(ctx, nil, &manifest, "get", nil, args...)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting manifest")
+	}
+
+	return manifest.Bytes(), nil
 }
