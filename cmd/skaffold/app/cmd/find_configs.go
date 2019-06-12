@@ -76,7 +76,6 @@ func doFindConfigs(out io.Writer) error {
 		for p, v := range pathToVersion {
 			var c color.Color
 			if v == latest.Version {
-				v += " (LATEST)"
 				c = color.Default
 			} else {
 				c = color.Green
@@ -84,7 +83,7 @@ func doFindConfigs(out io.Writer) error {
 			c.Fprintf(out, fmt.Sprintf("%%-%ds\t%%-%ds\n", pathOutLen, versionOutLen), p, v)
 		}
 	default:
-		return errors.New("Unsupported template")
+		return errors.New("unsupported template")
 	}
 
 	return nil
