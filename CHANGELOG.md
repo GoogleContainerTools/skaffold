@@ -150,7 +150,6 @@ Huge thanks goes out to all of our contributors for this release:
 - Priya Wadhwa
 - Taylor Barrella
 - Tejal Desai
->>>>>>> origin/master
 
 # v0.29.0 Release - 05/09/2019
 
