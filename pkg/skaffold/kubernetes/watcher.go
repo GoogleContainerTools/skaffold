@@ -40,8 +40,7 @@ func AggregatePodWatcher(namespaces []string, aggregate chan<- watch.Event) (fun
 
 	for _, ns := range namespaces {
 		watcher, err := kubeclient.CoreV1().Pods(ns).Watch(meta_v1.ListOptions{
-			IncludeUninitialized: true,
-			TimeoutSeconds:       &forever,
+			TimeoutSeconds: &forever,
 		})
 		if err != nil {
 			stopWatchers()
