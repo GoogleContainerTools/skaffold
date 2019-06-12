@@ -59,8 +59,8 @@ func TestReadConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir()
-			t.Chdir(tmpDir.Root())
+			tmpDir := t.NewTempDir().
+				Chdir()
 
 			if test.filename != "" {
 				c, _ := yaml.Marshal(*baseConfig)

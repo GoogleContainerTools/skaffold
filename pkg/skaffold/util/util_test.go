@@ -61,12 +61,6 @@ func TestSupportedKubernetesFormats(t *testing.T) {
 }
 
 func TestExpandPathsGlob(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
-
-	tmpDir.Write("dir/sub_dir/file", "")
-	tmpDir.Write("dir_b/sub_dir_b/file", "")
-
 	var tests = []struct {
 		description string
 		in          []string
@@ -76,17 +70,17 @@ func TestExpandPathsGlob(t *testing.T) {
 		{
 			description: "match exact filename",
 			in:          []string{"dir/sub_dir/file"},
-			out:         []string{tmpDir.Path("dir/sub_dir/file")},
+			out:         []string{"dir/sub_dir/file"},
 		},
 		{
 			description: "match leaf directory glob",
 			in:          []string{"dir/sub_dir/*"},
-			out:         []string{tmpDir.Path("dir/sub_dir/file")},
+			out:         []string{"dir/sub_dir/file"},
 		},
 		{
 			description: "match top level glob",
 			in:          []string{"dir*"},
-			out:         []string{tmpDir.Path("dir/sub_dir/file"), tmpDir.Path("dir_b/sub_dir_b/file")},
+			out:         []string{"dir/sub_dir/file", "dir_b/sub_dir_b/file"},
 		},
 		{
 			description: "invalid pattern",
@@ -96,9 +90,14 @@ func TestExpandPathsGlob(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir().
+				Write("dir/sub_dir/file", "").
+				Write("dir_b/sub_dir_b/file", "")
+
 			actual, err := ExpandPathsGlob(tmpDir.Root(), test.in)
 
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.out, actual)
+			expected := tmpDir.Paths(test.out...)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, expected, actual)
 		})
 	}
 }

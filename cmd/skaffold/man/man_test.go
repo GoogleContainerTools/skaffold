@@ -29,11 +29,10 @@ func TestPrintMan(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	err := printMan(&stdout, &stderr)
+	printMan(&stdout, &stderr)
 	output := stdout.String()
 
 	// Sanity checks
-	testutil.CheckError(t, false, err)
 	testutil.CheckDeepEqual(t, "", stderr.String())
 	testutil.CheckContains(t, "skaffold build", output)
 	testutil.CheckContains(t, "skaffold run", output)

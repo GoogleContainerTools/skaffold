@@ -81,9 +81,9 @@ func TestNewRunner(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().
-				Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, test.config))
-			t.Chdir(tmpDir.Root())
+			t.NewTempDir().
+				Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, test.config)).
+				Chdir()
 
 			_, _, err := newRunner(test.options)
 
