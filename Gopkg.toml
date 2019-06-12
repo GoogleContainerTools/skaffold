@@ -1,0 +1,84 @@
+[prune]
+  unused-packages = true
+  non-go = true
+  go-tests = true
+
+[[constraint]]
+  name = "github.com/pkg/errors"
+  version = "0.8.1"
+
+[[constraint]]
+  name = "github.com/google/go-containerregistry"
+  revision = "7d6d1d3cd63b486f713ddf83be5956744f4e1bb3"
+
+[[constraint]]
+  name = "github.com/sirupsen/logrus"
+  version = "1.4.1"
+
+[[constraint]]
+  name = "github.com/spf13/cobra"
+  version = "0.0.2"
+
+[[override]]
+  name = "github.com/xeipuuv/gojsonschema"
+  revision = "0c8571ac0ce161a5feb57375a9cdf148c98c0f70"
+
+[[constraint]]
+  name = "github.com/docker/distribution"
+  revision = "83389a148052d74ac602f5f1d62f86ff2f3c4aa5"
+
+[[constraint]]
+  name = "k8s.io/apimachinery"
+  version = "kubernetes-1.11.0"
+
+[[constraint]]
+  name = "k8s.io/client-go"
+  version = "kubernetes-1.11.0"
+
+[[constraint]]
+  name = "k8s.io/api"
+  version = "kubernetes-1.11.0"
+
+[[override]]
+  name = "github.com/Azure/go-autorest"
+  version = "v10.6.2"
+
+[[constraint]]
+  name = "cloud.google.com/go"
+  version = "0.17.0"
+
+[[constraint]]
+  name = "google.golang.org/api"
+  revision = "ff7b961889714494dc1feb2e8359298cbd20e5e3"
+
+[[constraint]]
+  name = "gopkg.in/src-d/go-git.v4"
+  revision = "v4.11.0"
+
+[[constraint]]
+  name = "github.com/google/go-github"
+  version = "18.2.0"
+
+[[constraint]]
+  name = "gopkg.in/AlecAivazis/survey.v1"
+  revision = "17861e192dc11fd2f5081df1932c94cce262fa1e"
+
+[[override]]
+  name = "github.com/docker/docker"
+  revision = "71cd53e4a197b303c6ba086bd584ffd67a884281"
+
+[[constraint]]
+  name = "github.com/bmatcuk/doublestar"
+  revision = "v1.1.1"
+
+[[constraint]]
+  name = "github.com/rjeczalik/notify"
+  version = "0.9.2"
+
+[[constraint]]
+  name = "github.com/golang/protobuf"
+  branch = "master"
+
+[[constraint]]
+  branch = "master"
+  name = "4d63.com/tz"

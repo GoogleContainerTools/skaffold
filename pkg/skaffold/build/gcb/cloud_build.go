@@ -37,10 +37,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/google"
-	"google.golang.org/api/cloudbuild/v1"
+	cloudbuild "google.golang.org/api/cloudbuild/v1"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
-	"google.golang.org/api/option"
 )
 
 // Build builds a list of artifacts with Google Cloud Build.
@@ -53,7 +52,8 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 	if err != nil {
 		return "", errors.Wrap(err, "getting google client")
 	}
-	cbclient, err := cloudbuild.NewService(ctx, option.WithHTTPClient(client))
+
+	cbclient, err := cloudbuild.New(client)
 	if err != nil {
 		return "", errors.Wrap(err, "getting builder")
 	}

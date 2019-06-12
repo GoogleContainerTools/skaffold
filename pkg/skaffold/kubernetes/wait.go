@@ -60,7 +60,9 @@ func watchUntilTimeout(ctx context.Context, timeout time.Duration, w watch.Inter
 func WaitForPodSucceeded(ctx context.Context, pods corev1.PodInterface, podName string, timeout time.Duration) error {
 	logrus.Infof("Waiting for %s to be complete", podName)
 
-	w, err := pods.Watch(meta_v1.ListOptions{})
+	w, err := pods.Watch(meta_v1.ListOptions{
+		IncludeUninitialized: true,
+	})
 	if err != nil {
 		return fmt.Errorf("initializing pod watcher: %s", err)
 	}
@@ -97,7 +99,9 @@ func isPodSucceeded(podName string) func(event *watch.Event) (bool, error) {
 func WaitForPodInitialized(ctx context.Context, pods corev1.PodInterface, podName string) error {
 	logrus.Infof("Waiting for %s to be initialized", podName)
 
-	w, err := pods.Watch(meta_v1.ListOptions{})
+	w, err := pods.Watch(meta_v1.ListOptions{
+		IncludeUninitialized: true,
+	})
 	if err != nil {
 		return fmt.Errorf("initializing pod watcher: %s", err)
 	}

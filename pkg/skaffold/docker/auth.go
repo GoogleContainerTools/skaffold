@@ -25,7 +25,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/docker/cli/cli/config"
-	types2 "github.com/docker/cli/cli/config/types"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/pkg/homedir"
@@ -69,25 +68,7 @@ func (credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
 
 	gcp.AutoConfigureGCRCredentialHelper(cf, registry)
 
-	authConfig, err := cf.GetAuthConfig(registry)
-
-	if err != nil {
-		return types.AuthConfig{}, errors.Wrap(err, "docker config")
-	}
-
-	return asAPIAuthConfig(authConfig), nil
-}
-
-func asAPIAuthConfig(cliConfig types2.AuthConfig) types.AuthConfig {
-	return types.AuthConfig{
-		Auth:          cliConfig.Auth,
-		Email:         cliConfig.Email,
-		IdentityToken: cliConfig.IdentityToken,
-		Password:      cliConfig.Password,
-		RegistryToken: cliConfig.RegistryToken,
-		ServerAddress: cliConfig.ServerAddress,
-		Username:      cliConfig.Username,
-	}
+	return cf.GetAuthConfig(registry)
 }
 
 func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
@@ -98,20 +79,7 @@ func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
 
 	// TODO(dgageot): this is really slow because it has to run all the credential helpers.
 	// return cf.GetAllCredentials()
-
-	configs, err := cf.GetCredentialsStore("").GetAll()
-
-	if err != nil {
-		return nil, errors.Wrap(err, "docker config")
-	}
-
-	apiConfigs := make(map[string]types.AuthConfig)
-
-	for name, cliConfig := range configs {
-		apiConfigs[name] = asAPIAuthConfig(cliConfig)
-	}
-
-	return apiConfigs, nil
+	return cf.GetCredentialsStore("").GetAll()
 }
 
 func (l *localDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelper, image string) (string, error) {
