@@ -26,6 +26,9 @@ func TestInit(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
 
 	tests := []struct {
 		name string
@@ -50,7 +53,6 @@ func TestInit(t *testing.T) {
 			args: []string{"--compose-file", "docker-compose.yaml"},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ns, _, deleteNs := SetupNamespace(t)

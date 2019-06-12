@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/rjeczalik/notify"
 	"github.com/sirupsen/logrus"
 )
@@ -40,20 +40,24 @@ type Trigger interface {
 }
 
 // NewTrigger creates a new trigger.
-func NewTrigger(opts *config.SkaffoldOptions) (Trigger, error) {
-	switch strings.ToLower(opts.Trigger) {
+func NewTrigger(runctx *runcontext.RunContext) (Trigger, error) {
+	switch strings.ToLower(runctx.Opts.Trigger) {
 	case "polling":
 		return &pollTrigger{
-			Interval: time.Duration(opts.WatchPollInterval) * time.Millisecond,
+			Interval: time.Duration(runctx.Opts.WatchPollInterval) * time.Millisecond,
 		}, nil
 	case "notify":
 		return &fsNotifyTrigger{
-			Interval: time.Duration(opts.WatchPollInterval) * time.Millisecond,
+			Interval: time.Duration(runctx.Opts.WatchPollInterval) * time.Millisecond,
 		}, nil
 	case "manual":
 		return &manualTrigger{}, nil
+	case "api":
+		return &apiTrigger{
+			Trigger: runctx.Trigger,
+		}, nil
 	default:
-		return nil, fmt.Errorf("unsupported type of trigger: %s", opts.Trigger)
+		return nil, fmt.Errorf("unsupported trigger: %s", runctx.Opts.Trigger)
 	}
 }
 
@@ -147,9 +151,8 @@ func (t *fsNotifyTrigger) WatchForChanges(out io.Writer) {
 	color.Yellow.Fprintln(out, "Watching for changes...")
 }
 
-// Start Listening for file system changes
+// Start listening for file system changes
 func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
-	// TODO(@dgageot): If file changes happen too quickly, events might be lost
 	c := make(chan notify.EventInfo, 100)
 
 	// Watch current directory recursively
@@ -179,4 +182,35 @@ func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	}()
 
 	return trigger, nil
+}
+
+type apiTrigger struct {
+	Trigger chan bool
+}
+
+// Start receives triggers from gRPC/HTTP and triggers a rebuild.
+func (t *apiTrigger) Start(ctx context.Context) (<-chan bool, error) {
+	trigger := make(chan bool)
+
+	go func() {
+		for {
+			select {
+			case <-t.Trigger:
+				logrus.Debugln("build request received")
+				trigger <- true
+			case <-ctx.Done():
+				break
+			}
+		}
+	}()
+
+	return trigger, nil
+}
+
+func (t *apiTrigger) Debounce() bool {
+	return false
+}
+
+func (t *apiTrigger) WatchForChanges(out io.Writer) {
+	color.Yellow.Fprintln(out, "Watching on designated port for build requests...")
 }

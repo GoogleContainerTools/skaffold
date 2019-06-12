@@ -61,33 +61,34 @@ func TestSetDefaults(t *testing.T) {
 }
 
 func TestSetDefaultsOnCluster(t *testing.T) {
-	restore := testutil.SetupFakeKubernetesContext(t, api.Config{
-		CurrentContext: "cluster1",
-		Contexts: map[string]*api.Context{
-			"cluster1": {Namespace: "ns"},
-		},
-	})
-	defer restore()
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.SetupFakeKubernetesContext(api.Config{
+			CurrentContext: "cluster1",
+			Contexts: map[string]*api.Context{
+				"cluster1": {Namespace: "ns"},
+			},
+		})
 
-	cfg := &latest.SkaffoldConfig{
-		Pipeline: latest.Pipeline{
-			Build: latest.BuildConfig{
-				Artifacts: []*latest.Artifact{
-					{ImageName: "image"},
-				},
-				BuildType: latest.BuildType{
-					Cluster: &latest.ClusterDetails{},
+		cfg := &latest.SkaffoldConfig{
+			Pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					Artifacts: []*latest.Artifact{
+						{ImageName: "image"},
+					},
+					BuildType: latest.BuildType{
+						Cluster: &latest.ClusterDetails{},
+					},
 				},
 			},
-		},
-	}
+		}
 
-	err := Set(cfg)
+		err := Set(cfg)
 
-	testutil.CheckError(t, false, err)
-	testutil.CheckDeepEqual(t, "ns", cfg.Build.Cluster.Namespace)
-	testutil.CheckDeepEqual(t, constants.DefaultKanikoTimeout, cfg.Build.Cluster.Timeout)
-	testutil.CheckDeepEqual(t, constants.DefaultKanikoSecretName, cfg.Build.Cluster.PullSecretName)
+		t.CheckNoError(err)
+		t.CheckDeepEqual("ns", cfg.Build.Cluster.Namespace)
+		t.CheckDeepEqual(constants.DefaultKanikoTimeout, cfg.Build.Cluster.Timeout)
+		t.CheckDeepEqual(constants.DefaultKanikoSecretName, cfg.Build.Cluster.PullSecretName)
+	})
 }
 
 func TestSetDefaultsOnCloudBuild(t *testing.T) {

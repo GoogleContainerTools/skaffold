@@ -384,17 +384,15 @@ func TestNewSyncItem(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			reset := testutil.Override(t, &WorkingDir, func(string, map[string]bool) (string, error) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) {
 				return test.workingDir, nil
 			})
-			defer reset()
 
 			actual, err := NewItem(test.artifact, test.evt, test.builds, map[string]bool{})
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}
 }
@@ -406,7 +404,7 @@ func TestIntersect(t *testing.T) {
 		files       []string
 		context     string
 		workingDir  string
-		expected    map[string][]string
+		expected    syncMap
 		shouldErr   bool
 	}{
 		{
@@ -455,11 +453,11 @@ func TestIntersect(t *testing.T) {
 			shouldErr: true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual, err := intersect(test.context, test.workingDir, test.syncRules, test.files)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}
 }
@@ -517,7 +515,7 @@ func TestPerform(t *testing.T) {
 	var tests = []struct {
 		description string
 		image       string
-		files       map[string][]string
+		files       syncMap
 		cmdFn       func(context.Context, v1.Pod, v1.Container, map[string][]string) []*exec.Cmd
 		cmdErr      error
 		clientErr   error
@@ -527,14 +525,14 @@ func TestPerform(t *testing.T) {
 		{
 			description: "no error",
 			image:       "gcr.io/k8s-skaffold:123",
-			files:       map[string][]string{"test.go": {"/test.go"}},
+			files:       syncMap{"test.go": {"/test.go"}},
 			cmdFn:       fakeCmd,
 			expected:    []string{"copy test.go /test.go"},
 		},
 		{
 			description: "cmd error",
 			image:       "gcr.io/k8s-skaffold:123",
-			files:       map[string][]string{"test.go": {"/test.go"}},
+			files:       syncMap{"test.go": {"/test.go"}},
 			cmdFn:       fakeCmd,
 			cmdErr:      fmt.Errorf(""),
 			shouldErr:   true,
@@ -542,7 +540,7 @@ func TestPerform(t *testing.T) {
 		{
 			description: "client error",
 			image:       "gcr.io/k8s-skaffold:123",
-			files:       map[string][]string{"test.go": {"/test.go"}},
+			files:       syncMap{"test.go": {"/test.go"}},
 			cmdFn:       fakeCmd,
 			clientErr:   fmt.Errorf(""),
 			shouldErr:   true,
@@ -550,29 +548,23 @@ func TestPerform(t *testing.T) {
 		{
 			description: "no copy",
 			image:       "gcr.io/different-pod:123",
-			files:       map[string][]string{"test.go": {"/test.go"}},
+			files:       syncMap{"test.go": {"/test.go"}},
 			cmdFn:       fakeCmd,
 			shouldErr:   true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			cmdRecord := &TestCmdRecorder{err: test.cmdErr}
 
-			reset := testutil.Override(t, &util.DefaultExecCommand, cmdRecord)
-			defer reset()
-
-			resetClient := testutil.Override(t, &pkgkubernetes.Client, func() (kubernetes.Interface, error) {
+			t.Override(&util.DefaultExecCommand, cmdRecord)
+			t.Override(&pkgkubernetes.Client, func() (kubernetes.Interface, error) {
 				return fake.NewSimpleClientset(pod), test.clientErr
 			})
-			defer resetClient()
-
-			util.DefaultExecCommand = cmdRecord
 
 			err := Perform(context.Background(), test.image, test.files, test.cmdFn, []string{""})
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cmdRecord.cmds)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, cmdRecord.cmds)
 		})
 	}
 }

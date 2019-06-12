@@ -76,12 +76,11 @@ func TestDocsLabelExists(t *testing.T) {
 			expected:    true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			got := DocsLabelExists(test.labels)
 
-			testutil.CheckDeepEqual(t, test.expected, got)
+			t.CheckDeepEqual(test.expected, got)
 		})
 	}
 }

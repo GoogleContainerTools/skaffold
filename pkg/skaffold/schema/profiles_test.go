@@ -18,7 +18,6 @@ package schema
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -307,17 +306,16 @@ func TestApplyProfiles(t *testing.T) {
 			),
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			err := ApplyProfiles(test.config, &cfg.SkaffoldOptions{
 				Profiles: []string{test.profile},
 			})
 
 			if test.shouldErr {
-				testutil.CheckError(t, test.shouldErr, err)
+				t.CheckError(test.shouldErr, err)
 			} else {
-				testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, test.config)
+				t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, test.config)
 			}
 		})
 	}
@@ -419,19 +417,16 @@ func TestActivatedProfiles(t *testing.T) {
 		},
 	}
 
-	os.Setenv("KEY", "VALUE")
-	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "prod-context"})
-	defer restore()
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetEnvs(map[string]string{"KEY": "VALUE"})
+			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "prod-context"})
 
 			activated, err := activatedProfiles(test.profiles, test.opts)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, activated)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, activated)
 		})
 	}
-
 }
 
 func str(value string) *interface{} {

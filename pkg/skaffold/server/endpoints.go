@@ -20,7 +20,7 @@ import (
 	"context"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/proto"
 	"github.com/golang/protobuf/ptypes/empty"
 )
 
@@ -34,5 +34,10 @@ func (s *server) EventLog(stream proto.SkaffoldService_EventLogServer) error {
 
 func (s *server) Handle(ctx context.Context, e *proto.Event) (*empty.Empty, error) {
 	event.Handle(e)
+	return &empty.Empty{}, nil
+}
+
+func (s *server) Build(context.Context, *empty.Empty) (*empty.Empty, error) {
+	s.trigger <- true
 	return &empty.Empty{}, nil
 }

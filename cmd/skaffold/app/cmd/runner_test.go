@@ -18,62 +18,79 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/pkg/errors"
 )
 
-func writeSkaffoldConfig(t *testing.T, content string) (string, func()) {
-	yaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, content)
-	return testutil.TempFile(t, "skaffold.yaml", []byte(yaml))
-}
-
 func TestNewRunner(t *testing.T) {
-	cfg, delete := writeSkaffoldConfig(t, "")
-	defer delete()
-
-	_, _, err := newRunner(&config.SkaffoldOptions{
-		ConfigurationFile: cfg,
-		Trigger:           "polling",
-	})
-
-	testutil.CheckError(t, false, err)
-}
-
-func TestNewRunnerMissingConfig(t *testing.T) {
-	_, _, err := newRunner(&config.SkaffoldOptions{
-		ConfigurationFile: "missing-skaffold.yaml",
-	})
-
-	testutil.CheckError(t, true, err)
-	if !os.IsNotExist(errors.Cause(err)) {
-		t.Error("error should say that file is missing")
+	tests := []struct {
+		description   string
+		config        string
+		options       *config.SkaffoldOptions
+		shouldErr     bool
+		expectedError string
+	}{
+		{
+			description: "valid config",
+			config:      "",
+			options: &config.SkaffoldOptions{
+				ConfigurationFile: "skaffold.yaml",
+				Trigger:           "polling",
+			},
+			shouldErr: false,
+		},
+		{
+			description: "invalid config",
+			config:      "invalid",
+			options: &config.SkaffoldOptions{
+				ConfigurationFile: "skaffold.yaml",
+			},
+			shouldErr: true,
+		},
+		{
+			description: "missing config",
+			config:      "",
+			options: &config.SkaffoldOptions{
+				ConfigurationFile: "missing-skaffold.yaml",
+			},
+			shouldErr: true,
+		},
+		{
+			description: "unknown profile",
+			config:      "",
+			options: &config.SkaffoldOptions{
+				ConfigurationFile: "skaffold.yaml",
+				Profiles:          []string{"unknown-profile"},
+			},
+			shouldErr:     true,
+			expectedError: "applying profiles",
+		},
+		{
+			description: "unsupported trigger",
+			config:      "",
+			options: &config.SkaffoldOptions{
+				ConfigurationFile: "skaffold.yaml",
+				Trigger:           "unknown trigger",
+			},
+			shouldErr:     true,
+			expectedError: "unsupported trigger",
+		},
 	}
-}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.NewTempDir().
+				Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, test.config)).
+				Chdir()
 
-func TestNewRunnerInvalidConfig(t *testing.T) {
-	cfg, delete := writeSkaffoldConfig(t, "invalid")
-	defer delete()
+			_, _, err := newRunner(test.options)
 
-	_, _, err := newRunner(&config.SkaffoldOptions{
-		ConfigurationFile: cfg,
-	})
-
-	testutil.CheckErrorContains(t, "parsing skaffold config", err)
-}
-
-func TestNewRunnerUnknownProfile(t *testing.T) {
-	cfg, delete := writeSkaffoldConfig(t, "")
-	defer delete()
-
-	_, _, err := newRunner(&config.SkaffoldOptions{
-		ConfigurationFile: cfg,
-		Profiles:          []string{"unknown-profile"},
-	})
-
-	testutil.CheckErrorContains(t, "applying profiles", err)
+			t.CheckError(test.shouldErr, err)
+			if test.expectedError != "" {
+				t.CheckErrorContains(test.expectedError, err)
+			}
+		})
+	}
 }

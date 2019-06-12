@@ -18,7 +18,6 @@ package integration
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -33,8 +32,8 @@ func TestHelmDeploy(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
-	if os.Getenv("REMOTE_INTEGRATION") != "true" {
-		t.Skip("skipping remote only test")
+	if !ShouldRunGCPOnlyTests() {
+		t.Skip("skipping gcp only test")
 	}
 
 	helmDir := "examples/helm-deployment"

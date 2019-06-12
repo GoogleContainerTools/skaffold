@@ -19,6 +19,7 @@ package integration
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"testing"
 	"time"
@@ -30,6 +31,10 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
+
+func ShouldRunGCPOnlyTests() bool {
+	return os.Getenv("GCP_ONLY") == "true"
+}
 
 func Run(t *testing.T, dir, command string, args ...string) {
 	cmd := exec.Command(command, args...)
