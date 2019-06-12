@@ -22,7 +22,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -59,6 +61,16 @@ func TestPod(t *testing.T) {
 					Name:      constants.DefaultKanikoEmptyDirName,
 					MountPath: constants.DefaultKanikoEmptyDirMountPath,
 				}},
+				Resources: v1.ResourceRequirements{
+					Requests: v1.ResourceList{
+						v1.ResourceCPU:    resource.MustParse(initCPURequest),
+						v1.ResourceMemory: resource.MustParse(initMemoryRequest),
+					},
+					Limits: v1.ResourceList{
+						v1.ResourceCPU:    resource.MustParse(initCPULimit),
+						v1.ResourceMemory: resource.MustParse(initMemoryLimit),
+					},
+				},
 			}},
 			Containers: []v1.Container{{
 				Name:            constants.DefaultKanikoContainerName,
@@ -101,5 +113,5 @@ func TestPod(t *testing.T) {
 		},
 	}
 
-	testutil.CheckDeepEqual(t, expectedPod, pod)
+	testutil.CheckDeepEqual(t, expectedPod, pod, cmpopts.IgnoreUnexported(resource.Quantity{}))
 }
