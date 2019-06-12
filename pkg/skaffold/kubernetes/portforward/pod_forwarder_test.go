@@ -14,63 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubernetes
+package portforward
 
 import (
 	"context"
 	"fmt"
 	"io/ioutil"
 	"reflect"
-	"strings"
 	"sync"
 	"testing"
+	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type testForwarder struct {
-	forwardedEntries map[string]*portForwardEntry
-	forwardedPorts   map[int32]bool
-
-	forwardErr error
-}
-
-func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) error {
-	f.forwardedEntries[pfe.key()] = pfe
-	f.forwardedPorts[pfe.localPort] = true
-	return f.forwardErr
-}
-
-func (f *testForwarder) Terminate(pfe *portForwardEntry) {
-	delete(f.forwardedEntries, pfe.key())
-	delete(f.forwardedPorts, pfe.port)
-}
-
-func mockRetrieveAvailablePort(taken map[int]struct{}, availablePorts []int) func(int, *sync.Map) int {
-	// Return first available port in ports that isn't taken
-	return func(int, *sync.Map) int {
-		for _, p := range availablePorts {
-			if _, ok := taken[p]; ok {
-				continue
-			}
-			taken[p] = struct{}{}
-			return p
-		}
-		return -1
-	}
-}
-
-func newTestForwarder(forwardErr error) *testForwarder {
-	return &testForwarder{
-		forwardedEntries: map[string]*portForwardEntry{},
-		forwardedPorts:   map[int32]bool{},
-		forwardErr:       forwardErr,
-	}
-}
-
-func TestPortForwardPod(t *testing.T) {
+func TestAutomaticPortForwardPod(t *testing.T) {
 	var tests = []struct {
 		description     string
 		pods            []*v1.Pod
@@ -91,10 +53,15 @@ func TestPortForwardPod(t *testing.T) {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
-					namespace:       "namespace",
-					portName:        "portname",
-					port:            8080,
-					localPort:       8080,
+					resource: latest.PortForwardResource{
+						Type:      "pod",
+						Name:      "podname",
+						Namespace: "namespace",
+						Port:      8080,
+					},
+					automaticPodForwarding: true,
+					portName:               "portname",
+					localPort:              8080,
 				},
 			},
 			pods: []*v1.Pod{
@@ -129,11 +96,16 @@ func TestPortForwardPod(t *testing.T) {
 				"containername-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
-					containerName:   "containername",
-					namespace:       "namespace",
-					portName:        "portname",
-					port:            8080,
-					localPort:       9000,
+					resource: latest.PortForwardResource{
+						Type:      "pod",
+						Name:      "podname",
+						Namespace: "namespace",
+						Port:      8080,
+					},
+					automaticPodForwarding: true,
+					containerName:          "containername",
+					portName:               "portname",
+					localPort:              9000,
 				},
 			},
 			availablePorts: []int{9000},
@@ -202,10 +174,15 @@ func TestPortForwardPod(t *testing.T) {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
-					namespace:       "namespace",
 					portName:        "portname",
-					port:            8080,
-					localPort:       8080,
+					resource: latest.PortForwardResource{
+						Type:      "pod",
+						Name:      "podname",
+						Namespace: "namespace",
+						Port:      8080,
+					},
+					automaticPodForwarding: true,
+					localPort:              8080,
 				},
 			},
 			pods: []*v1.Pod{
@@ -243,19 +220,29 @@ func TestPortForwardPod(t *testing.T) {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
-					namespace:       "namespace",
-					portName:        "portname",
-					port:            8080,
-					localPort:       8080,
+					resource: latest.PortForwardResource{
+						Type:      "pod",
+						Name:      "podname",
+						Namespace: "namespace",
+						Port:      8080,
+					},
+					portName:               "portname",
+					automaticPodForwarding: true,
+					localPort:              8080,
 				},
 				"containername2-namespace2-portname2-50051": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
-					namespace:       "namespace2",
-					portName:        "portname2",
-					port:            50051,
-					localPort:       50051,
+					resource: latest.PortForwardResource{
+						Type:      "pod",
+						Name:      "podname2",
+						Namespace: "namespace2",
+						Port:      50051,
+					},
+					portName:               "portname2",
+					automaticPodForwarding: true,
+					localPort:              50051,
 				},
 			},
 			pods: []*v1.Pod{
@@ -313,19 +300,29 @@ func TestPortForwardPod(t *testing.T) {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
-					namespace:       "namespace",
 					portName:        "portname",
-					port:            8080,
-					localPort:       8080,
+					resource: latest.PortForwardResource{
+						Type:      "pod",
+						Name:      "podname",
+						Namespace: "namespace",
+						Port:      8080,
+					},
+					automaticPodForwarding: true,
+					localPort:              8080,
 				},
 				"containername2-namespace2-portname2-8080": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
-					namespace:       "namespace2",
 					portName:        "portname2",
-					port:            8080,
-					localPort:       9000,
+					resource: latest.PortForwardResource{
+						Type:      "pod",
+						Name:      "podname2",
+						Namespace: "namespace2",
+						Port:      8080,
+					},
+					automaticPodForwarding: true,
+					localPort:              9000,
 				},
 			},
 			pods: []*v1.Pod{
@@ -382,10 +379,15 @@ func TestPortForwardPod(t *testing.T) {
 					resourceVersion: 2,
 					podName:         "podname",
 					containerName:   "containername",
-					namespace:       "namespace",
 					portName:        "portname",
-					port:            8080,
-					localPort:       8080,
+					resource: latest.PortForwardResource{
+						Type:      "pod",
+						Name:      "podname",
+						Namespace: "namespace",
+						Port:      8080,
+					},
+					automaticPodForwarding: true,
+					localPort:              8080,
 				},
 			},
 			pods: []*v1.Pod{
@@ -436,13 +438,20 @@ func TestPortForwardPod(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			taken := map[int]struct{}{}
 
+			forwardingPollTime = time.Second
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(taken, test.availablePorts))
 
-			p := NewPortForwarder(ioutil.Discard, NewImageList(), []string{""})
+			baseForwarder := BaseForwarder{
+				output:             ioutil.Discard,
+				namespaces:         []string{""},
+				forwardedPorts:     &sync.Map{},
+				forwardedResources: make(map[string]*portForwardEntry),
+			}
+			p := NewAutomaticPodForwarder(baseForwarder, kubernetes.NewImageList())
 			if test.forwarder == nil {
 				test.forwarder = newTestForwarder(nil)
 			}
-			p.Forwarder = test.forwarder
+			p.PortForwardEntryForwarder = test.forwarder
 
 			for _, pod := range test.pods {
 				err := p.portForwardPod(context.Background(), pod)
@@ -457,25 +466,5 @@ func TestPortForwardPod(t *testing.T) {
 				t.Errorf("Forwarded entries differs from expected entries. Expected: %s, Actual: %s", test.expectedEntries, test.forwarder.forwardedEntries)
 			}
 		})
-	}
-}
-
-func TestPortForwardEntryKey(t *testing.T) {
-	pfe := &portForwardEntry{
-		podName:       "pod",
-		containerName: "container",
-		namespace:     "default",
-		portName:      "port",
-		port:          8080,
-	}
-
-	expectedKey := "container-default-port-8080"
-	acutalKey := pfe.key()
-
-	if acutalKey != expectedKey {
-		t.Fatalf("port forward entry key is incorrect: \n actual: %s \n expected: %s", acutalKey, expectedKey)
-	}
-	if strings.Contains(acutalKey, "pod") {
-		t.Fatal("key should not contain podname, otherwise containers will be mapped to a new port every time a pod is regenerated. See Issues #1815 and #1594.")
 	}
 }

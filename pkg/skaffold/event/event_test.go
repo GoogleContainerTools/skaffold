@@ -159,7 +159,7 @@ func TestPortForwarded(t *testing.T) {
 	}
 
 	wait(t, func() bool { return handler.getState().ForwardedPorts["container"] == nil })
-	PortForwarded(8080, 8888, "pod", "container", "ns", "portname")
+	PortForwarded(8080, 8888, "pod", "container", "ns", "portname", "pod", "mypod")
 	wait(t, func() bool { return handler.getState().ForwardedPorts["container"] != nil })
 }
 

@@ -87,9 +87,10 @@ func TestEvents(t *testing.T) {
 			expected: Events{Deleted: []string{"a", "b", "c"}},
 		},
 	}
+
 	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.CheckDeepEqual(test.expected, events(test.prev, test.current))
+		t.Run(test.description, func(t *testing.T) {
+			testutil.CheckDeepEqual(t, test.expected, events(test.prev, test.current))
 		})
 	}
 }
@@ -108,20 +109,18 @@ func TestStat(t *testing.T) {
 			},
 		},
 	}
+
 	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir()
-			test.setup(tmpDir)
+		t.Run(test.description, func(t *testing.T) {
+			folder, cleanup := testutil.NewTempDir(t)
+			defer cleanup()
 
-			list, _ := tmpDir.List()
-			actual, err := Stat(tmpDir.List)
+			test.setup(folder)
+			list, _ := folder.List()
 
-			t.CheckError(test.shouldErr, err)
-			t.CheckDeepEqual(len(list), len(actual))
-			for _, f := range list {
-				_, present := actual[f]
-				t.CheckDeepEqual(true, present)
-			}
+			actual, err := Stat(folder.List)
+			testutil.CheckError(t, test.shouldErr, err)
+			checkListInMap(t, list, actual)
 		})
 	}
 }
@@ -152,14 +151,27 @@ func TestStatNotExist(t *testing.T) {
 			shouldErr: true,
 		},
 	}
+
 	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir()
-			test.setup(tmpDir)
+		t.Run(test.description, func(t *testing.T) {
+			folder, cleanup := testutil.NewTempDir(t)
+			defer cleanup()
+
+			test.setup(folder)
 
 			_, err := Stat(func() ([]string, error) { return test.deps, test.depsErr })
-
-			t.CheckError(test.shouldErr, err)
+			testutil.CheckError(t, test.shouldErr, err)
 		})
+	}
+}
+
+func checkListInMap(t *testing.T, list []string, m FileMap) {
+	for _, f := range list {
+		if _, ok := m[f]; !ok {
+			t.Errorf("File %s not in map", f)
+		}
+	}
+	if len(list) != len(m) {
+		t.Errorf("List and map length differ %s, %s", list, m)
 	}
 }

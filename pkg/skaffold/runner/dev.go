@@ -21,7 +21,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
@@ -38,8 +38,13 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	logger := r.newLogger(out, artifacts)
 	defer logger.Stop()
 
-	portForwarder := kubernetes.NewPortForwarder(out, r.imageList, r.runCtx.Namespaces)
-	defer portForwarder.Stop()
+	var forwarders []portforward.Forwarder
+	if r.runCtx.Opts.PortForward {
+		forwarders = portforward.GetForwarders(out, r.imageList, r.runCtx.Namespaces, r.defaultLabeller.K8sMangedByLabel(), r.runCtx.Opts.AutomaticPodForwarding)
+	}
+	for _, f := range forwarders {
+		defer f.Stop()
+	}
 
 	// Create watcher and register artifacts to build current state of files.
 	changed := changes{}
@@ -139,8 +144,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 	}
 
-	if r.runCtx.Opts.PortForward {
-		if err := portForwarder.Start(ctx); err != nil {
+	for _, f := range forwarders {
+		if err := f.Start(ctx); err != nil {
 			return errors.Wrap(err, "starting port-forwarder")
 		}
 	}

@@ -58,6 +58,25 @@ func (c *SkaffoldConfig) GetVersion() string {
 	return c.APIVersion
 }
 
+// PortForwardResource describes a resource to port forward.
+type PortForwardResource struct {
+	// Type is the Kubernetes type that should be port forwarded.
+	// Acceptable resource types include: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`.
+	Type string `yaml:"resourceType,omitempty"`
+
+	// Name is the name of the Kubernetes resource to port forward.
+	Name string `yaml:"resourceName,omitempty"`
+
+	// Namespace is the namespace of the resource to port forward.
+	Namespace string `yaml:"namespace,omitempty"`
+
+	// Port is the resource port that will be forwarded.
+	Port int32 `yaml:"port,omitempty"`
+
+	// LocalPort is the local port to forward too. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.
+	LocalPort int32 `yaml:"localPort,omitempty"`
+}
+
 // BuildConfig contains all the configuration for the build steps.
 type BuildConfig struct {
 	// Artifacts lists the images you're going to be building.

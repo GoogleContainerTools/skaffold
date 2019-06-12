@@ -63,15 +63,14 @@ func TestNewTrigger(t *testing.T) {
 			shouldErr:   true,
 		},
 	}
+
 	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
+		t.Run(test.description, func(t *testing.T) {
 			runCtx := &runcontext.RunContext{
 				Opts: test.opts,
 			}
-
 			got, err := NewTrigger(runCtx)
-
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, got)
 		})
 	}
 }

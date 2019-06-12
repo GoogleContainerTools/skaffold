@@ -64,24 +64,6 @@ func TestTestDependencies(t *testing.T) {
 	testutil.CheckErrorAndDeepEqual(t, false, err, expectedDeps, deps)
 }
 
-func TestWrongPattern(t *testing.T) {
-	runCtx := &runcontext.RunContext{
-		Cfg: &latest.Pipeline{
-			Test: []*latest.TestCase{
-				{StructureTests: []string{"[]"}},
-			},
-		},
-	}
-
-	tester := NewTester(runCtx)
-
-	_, err := tester.TestDependencies()
-	testutil.CheckError(t, true, err)
-
-	err = tester.Test(context.Background(), ioutil.Discard, nil)
-	testutil.CheckError(t, true, err)
-}
-
 func TestNoTest(t *testing.T) {
 	runCtx := &runcontext.RunContext{
 		Cfg: &latest.Pipeline{},
