@@ -18,10 +18,14 @@ package docker
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/moby/buildkit/frontend/dockerfile/command"
+	"github.com/moby/buildkit/frontend/dockerfile/parser"
+	"github.com/sirupsen/logrus"
 )
 
 // Dockerfile is the path to a dockerfile
@@ -53,4 +57,33 @@ func (d Dockerfile) GetArtifact(manifestImage string) *latest.Artifact {
 func (d Dockerfile) GetConfiguredImage() string {
 	// Target image is not configured in dockerfiles
 	return ""
+}
+
+// GetPath returns the path to the dockerfile
+func (d Dockerfile) GetPath() string {
+	return string(d)
+}
+
+// ValidateDockerfile makes sure the given Dockerfile is existing and valid.
+var ValidateDockerfile = func(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		logrus.Warnf("opening file %s: %s", path, err.Error())
+		return false
+	}
+
+	res, err := parser.Parse(f)
+	if err != nil || res == nil || len(res.AST.Children) == 0 {
+		return false
+	}
+
+	// validate each node contains valid dockerfile directive
+	for _, child := range res.AST.Children {
+		_, ok := command.Commands[child.Value]
+		if !ok {
+			return false
+		}
+	}
+
+	return true
 }

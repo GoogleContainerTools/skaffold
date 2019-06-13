@@ -38,10 +38,10 @@ const (
 
 // Config holds information about a Jib project
 type Config struct {
-	Name    string
-	Image   string
-	Path    string
-	Project string
+	Name    string `json:"name,omitempty"`
+	Image   string `json:"image,omitempty"`
+	Path    string `json:"path,omitempty"`
+	Project string `json:"project,omitempty"`
 }
 
 // GetPrompt returns the initBuilder's string representation, used when prompting the user to choose a builder.
@@ -90,6 +90,11 @@ func (j Config) GetConfiguredImage() string {
 	return j.Image
 }
 
+// GetPath returns the path to the build definition
+func (j Config) GetPath() string {
+	return j.Path
+}
+
 // BuilderConfig contains information about inferred Jib configurations
 type jibJSON struct {
 	Image   string `json:"image"`
@@ -97,7 +102,7 @@ type jibJSON struct {
 }
 
 // ValidateJibConfig checks if a file is a valid Jib configuration. Returns the list of Config objects corresponding to each Jib project built by the file, or nil if Jib is not configured.
-func ValidateJibConfig(path string) []Config {
+var ValidateJibConfig = func(path string) []Config {
 	// Determine whether maven or gradle
 	var builderType, executable, wrapper, taskName string
 	if strings.HasSuffix(path, "pom.xml") {

@@ -62,6 +62,8 @@ type InitBuilder interface {
 	GetArtifact(image string) *latest.Artifact
 	// GetConfiguredImage returns the target image configured by the builder
 	GetConfiguredImage() string
+	// GetPath returns the path to the build file
+	GetPath() string
 }
 
 // Config defines the Initializer Config for Init API of skaffold.
