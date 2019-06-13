@@ -17,14 +17,12 @@ limitations under the License.
 package sources
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -116,5 +114,7 @@ func TestPod(t *testing.T) {
 		},
 	}
 
-	testutil.CheckDeepEqual(t, expectedPod, pod, cmpopts.IgnoreUnexported(resource.Quantity{}))
+	if !reflect.DeepEqual(expectedPod, pod) {
+		t.Errorf("Expected manifest differs from actual manifest. Got: \n%v, \nExpected: \n%v", expectedPod, pod)
+	}
 }
