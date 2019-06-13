@@ -170,9 +170,9 @@ _These tests require push access to a project in GCP, and so can only be run
 by maintainers who have access. These tests will be kicked off by [reviewers](#reviews)
 for submitted PRs._
 
-### Running a chosen integration tests
+### Running a subset of integration tests
 
-You can select a chosen integration tests via the `INTEGRATION_TEST_ARGS` env var:
+You can select specific integration tests to run via the `INTEGRATION_TEST_ARGS` env var:
 
 ```shell
 INTEGRATION_TEST_ARGS="-run=TestDev/" make integration-test
