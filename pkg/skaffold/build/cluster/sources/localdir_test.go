@@ -29,6 +29,17 @@ import (
 )
 
 func TestPod(t *testing.T) {
+	reqs := &latest.ResourceRequirements{
+		Requests: &latest.ResourceRequirement{
+			CPU:    "0.1",
+			Memory: "1Gi",
+		},
+		Limits: &latest.ResourceRequirement{
+			CPU:    "0.5",
+			Memory: "5Gi",
+		},
+	}
+
 	localDir := &LocalDir{
 		artifact: &latest.KanikoArtifact{
 			Image: "image",
@@ -41,6 +52,7 @@ func TestPod(t *testing.T) {
 		clusterDetails: &latest.ClusterDetails{
 			Namespace:      "ns",
 			PullSecretName: "secret",
+			Resources:      reqs,
 		},
 	}
 
@@ -61,16 +73,7 @@ func TestPod(t *testing.T) {
 					Name:      constants.DefaultKanikoEmptyDirName,
 					MountPath: constants.DefaultKanikoEmptyDirMountPath,
 				}},
-				Resources: v1.ResourceRequirements{
-					Requests: v1.ResourceList{
-						v1.ResourceCPU:    resource.MustParse(initCPURequest),
-						v1.ResourceMemory: resource.MustParse(initMemoryRequest),
-					},
-					Limits: v1.ResourceList{
-						v1.ResourceCPU:    resource.MustParse(initCPULimit),
-						v1.ResourceMemory: resource.MustParse(initMemoryLimit),
-					},
-				},
+				Resources: resourceRequirements(reqs),
 			}},
 			Containers: []v1.Container{{
 				Name:            constants.DefaultKanikoContainerName,
@@ -91,7 +94,7 @@ func TestPod(t *testing.T) {
 						MountPath: constants.DefaultKanikoEmptyDirMountPath,
 					},
 				},
-				Resources: v1.ResourceRequirements{},
+				Resources: resourceRequirements(reqs),
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Volumes: []v1.Volume{

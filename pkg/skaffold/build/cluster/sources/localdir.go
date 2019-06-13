@@ -24,24 +24,18 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/pkg/errors"
+	v1 "k8s.io/api/core/v1"
 )
 
 const (
-	initContainer     = "kaniko-init-container"
-	initCPURequest    = "0.1"
-	initCPULimit      = "0.5"
-	initMemoryRequest = "64Mi"
-	initMemoryLimit   = "128Mi"
+	initContainer = "kaniko-init-container"
 )
 
 // LocalDir refers to kaniko using a local directory as a buildcontext
@@ -88,16 +82,7 @@ func (g *LocalDir) Pod(args []string) *v1.Pod {
 		Image:        g.artifact.BuildContext.LocalDir.InitImage,
 		Command:      []string{"sh", "-c", "while [ ! -f /tmp/complete ]; do sleep 1; done"},
 		VolumeMounts: []v1.VolumeMount{vm},
-		Resources: v1.ResourceRequirements{
-			Requests: v1.ResourceList{
-				v1.ResourceCPU:    resource.MustParse(initCPURequest),
-				v1.ResourceMemory: resource.MustParse(initMemoryRequest),
-			},
-			Limits: v1.ResourceList{
-				v1.ResourceCPU:    resource.MustParse(initCPULimit),
-				v1.ResourceMemory: resource.MustParse(initMemoryLimit),
-			},
-		},
+		Resources:    resourceRequirements(g.clusterDetails.Resources),
 	}
 
 	p := podTemplate(g.clusterDetails, g.artifact, args)
