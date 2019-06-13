@@ -49,6 +49,7 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	return &Builder{
 		ClusterDetails: runCtx.Cfg.Build.Cluster,
 		timeout:        timeout,
+		insecureRegistries: runCtx.InsecureRegistries,
 	}, nil
 }
 
