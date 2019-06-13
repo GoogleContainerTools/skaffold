@@ -24,15 +24,14 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/pkg/errors"
+	v1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -83,6 +82,7 @@ func (g *LocalDir) Pod(args []string) *v1.Pod {
 		Image:        g.artifact.BuildContext.LocalDir.InitImage,
 		Command:      []string{"sh", "-c", "while [ ! -f /tmp/complete ]; do sleep 1; done"},
 		VolumeMounts: []v1.VolumeMount{vm},
+		Resources:    resourceRequirements(g.clusterDetails.Resources),
 	}
 
 	p := podTemplate(g.clusterDetails, g.artifact, args)
