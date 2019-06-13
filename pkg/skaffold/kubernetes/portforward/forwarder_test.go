@@ -30,11 +30,11 @@ func TestNewBaseForwarder(t *testing.T) {
 	out := ioutil.Discard
 	namespaces := []string{"ns1", "ns2"}
 	expected := BaseForwarder{
-		output:                    out,
-		namespaces:                namespaces,
-		forwardedPorts:            &sync.Map{},
-		forwardedResources:        make(map[string]*portForwardEntry),
-		PortForwardEntryForwarder: &KubectlForwarder{},
+		output:             out,
+		namespaces:         namespaces,
+		forwardedPorts:     &sync.Map{},
+		forwardedResources: &sync.Map{},
+		EntryForwarder:     &KubectlForwarder{},
 	}
 	actual := NewBaseForwarder(out, namespaces)
 	// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
@@ -60,18 +60,18 @@ func TestStop(t *testing.T) {
 	}
 
 	bf := NewBaseForwarder(ioutil.Discard, nil)
-	bf.forwardedResources = map[string]*portForwardEntry{
-		"pod-resource-default-0":  pfe1,
-		"pod-resource2-default-0": pfe2,
-	}
+
+	bf.forwardedResources = &sync.Map{}
+	bf.forwardedResources.Store("pod-resource-default-0", pfe1)
+	bf.forwardedResources.Store("pod-resource2-default-0", pfe2)
 
 	fakeForwarder := newTestForwarder(nil)
 	fakeForwarder.forwardedEntries = bf.forwardedResources
-	bf.PortForwardEntryForwarder = fakeForwarder
+	bf.EntryForwarder = fakeForwarder
 
 	bf.Stop()
 
-	if len(fakeForwarder.forwardedEntries) != 0 {
-		t.Fatalf("error stopping port forwarding. expected 0 entries and got %d", len(fakeForwarder.forwardedEntries))
+	if count := lengthSyncMap(fakeForwarder.forwardedEntries); count != 0 {
+		t.Fatalf("error stopping port forwarding. expected 0 entries and got %d", count)
 	}
 }

@@ -29,7 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type PortForwardEntryForwarder interface {
+type EntryForwarder interface {
 	Forward(parentCtx context.Context, pfe *portForwardEntry) error
 	Terminate(p *portForwardEntry)
 }

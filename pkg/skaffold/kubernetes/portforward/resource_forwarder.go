@@ -52,7 +52,7 @@ func NewResourceForwarder(baseForwarder BaseForwarder, label string) *ResourceFo
 // Start begins a pod watcher that port forwards any pods involving containers with exposed ports.
 // TODO(r2d4): merge this event loop with pod watcher from log writer
 func (p *ResourceForwarder) Start(ctx context.Context) error {
-	serviceResources, err := retrieveServiceResources(p.label)
+	serviceResources, err := retrieveServices(p.label)
 	if err != nil {
 		return errors.Wrap(err, "retrieving services for automatic port forwarding")
 	}
@@ -86,8 +86,10 @@ func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource)
 		resource: resource,
 	}
 	// If we have, return the current entry
-	oldEntry, ok := p.forwardedResources[entry.key()]
+	oldEntry, ok := p.forwardedResources.Load(entry.key())
+
 	if ok {
+		oldEntry := oldEntry.(*portForwardEntry)
 		entry.localPort = oldEntry.localPort
 		return entry
 	}

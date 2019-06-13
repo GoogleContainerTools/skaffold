@@ -445,26 +445,48 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 				output:             ioutil.Discard,
 				namespaces:         []string{""},
 				forwardedPorts:     &sync.Map{},
-				forwardedResources: make(map[string]*portForwardEntry),
+				forwardedResources: &sync.Map{},
 			}
 			p := NewAutomaticPodForwarder(baseForwarder, kubernetes.NewImageList())
 			if test.forwarder == nil {
 				test.forwarder = newTestForwarder(nil)
 			}
-			p.PortForwardEntryForwarder = test.forwarder
+			p.EntryForwarder = test.forwarder
 
 			for _, pod := range test.pods {
 				err := p.portForwardPod(context.Background(), pod)
 				t.CheckError(test.shouldErr, err)
 			}
 
-			// Error is already checked above
-			t.CheckDeepEqual(test.expectedPorts, test.forwarder.forwardedPorts)
-
+			actualPorts := generateActualPortsMap(test.forwarder.forwardedPorts)
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
-			if !reflect.DeepEqual(test.expectedEntries, test.forwarder.forwardedEntries) {
-				t.Errorf("Forwarded entries differs from expected entries. Expected: %s, Actual: %s", test.expectedEntries, test.forwarder.forwardedEntries)
+			if !reflect.DeepEqual(test.expectedPorts, actualPorts) {
+				t.Errorf("Expected differs from actual entries. Expected: %v, Actual: %v", test.expectedPorts, actualPorts)
+			}
+
+			actualForwardedEntries := generateActualForwardedEntriesMap(test.forwarder.forwardedEntries)
+			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
+			if !reflect.DeepEqual(test.expectedEntries, actualForwardedEntries) {
+				t.Errorf("Forwarded entries differs from expected entries. Expected: %s, Actual: %v", test.expectedEntries, actualForwardedEntries)
 			}
 		})
 	}
+}
+
+func generateActualPortsMap(sm *sync.Map) map[int32]bool {
+	m := make(map[int32]bool)
+	sm.Range(func(k, v interface{}) bool {
+		m[k.(int32)] = v.(bool)
+		return true
+	})
+	return m
+}
+
+func generateActualForwardedEntriesMap(sm *sync.Map) map[string]*portForwardEntry {
+	m := make(map[string]*portForwardEntry)
+	sm.Range(func(k, v interface{}) bool {
+		m[k.(string)] = v.(*portForwardEntry)
+		return true
+	})
+	return m
 }

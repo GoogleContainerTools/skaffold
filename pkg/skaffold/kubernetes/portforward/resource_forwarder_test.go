@@ -31,32 +31,28 @@ import (
 )
 
 type testForwarder struct {
-	forwardedEntries map[string]*portForwardEntry
-	forwardedPorts   map[int32]bool
-	lock             sync.Mutex
+	forwardedEntries *sync.Map
+	forwardedPorts   *sync.Map
 
 	forwardErr error
 }
 
 func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) error {
-	f.lock.Lock()
-	f.forwardedEntries[pfe.key()] = pfe
-	f.forwardedPorts[pfe.localPort] = true
-	f.lock.Unlock()
+	f.forwardedEntries.Store(pfe.key(), pfe)
+	f.forwardedPorts.Store(pfe.localPort, true)
 	return f.forwardErr
 }
 
 func (f *testForwarder) Terminate(pfe *portForwardEntry) {
-	delete(f.forwardedEntries, pfe.key())
-	delete(f.forwardedPorts, pfe.resource.Port)
+	f.forwardedEntries.Delete(pfe.key())
+	f.forwardedPorts.Delete(pfe.resource.Port)
 }
 
 func newTestForwarder(forwardErr error) *testForwarder {
 	return &testForwarder{
-		forwardedEntries: map[string]*portForwardEntry{},
-		forwardedPorts:   map[int32]bool{},
+		forwardedEntries: &sync.Map{},
+		forwardedPorts:   &sync.Map{},
 		forwardErr:       forwardErr,
-		lock:             sync.Mutex{},
 	}
 }
 
@@ -100,11 +96,11 @@ func TestStart(t *testing.T) {
 			resources:      []latest.PortForwardResource{svc1, svc2},
 			availablePorts: []int{8080, 9000},
 			expected: map[string]*portForwardEntry{
-				"service-svc1-default-8080": &portForwardEntry{
+				"service-svc1-default-8080": {
 					resource:  svc1,
 					localPort: 8080,
 				},
-				"service-svc2-default-9000": &portForwardEntry{
+				"service-svc2-default-9000": {
 					resource:  svc2,
 					localPort: 9000,
 				},
@@ -115,17 +111,19 @@ func TestStart(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			fakeForwarder := newTestForwarder(nil)
 			rf := NewResourceForwarder(NewBaseForwarder(ioutil.Discard, nil), "")
-			rf.PortForwardEntryForwarder = fakeForwarder
+			rf.EntryForwarder = fakeForwarder
 
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, test.availablePorts))
 			t.Override(&retrieveServices, func(string) ([]latest.PortForwardResource, error) {
 				return test.resources, nil
 			})
 
-			rf.Start(context.Background())
+			if err := rf.Start(context.Background()); err != nil {
+				t.Fatalf("error starting resource forwarder: %v", err)
+			}
 			// poll for 10 seconds for the resources to be forwarded
 			err := wait.PollImmediate(time.Second, 10*time.Second, func() (bool, error) {
-				return len(test.expected) == len(fakeForwarder.forwardedEntries), nil
+				return len(test.expected) == lengthSyncMap(fakeForwarder.forwardedEntries), nil
 			})
 			if err != nil {
 				t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", test.expected, fakeForwarder.forwardedEntries)
@@ -134,7 +132,7 @@ func TestStart(t *testing.T) {
 	}
 }
 
-func TestGetCurrentEntryfunc(t *testing.T) {
+func TestGetCurrentEntryFunc(t *testing.T) {
 	tests := []struct {
 		description        string
 		forwardedResources map[string]*portForwardEntry
@@ -162,7 +160,7 @@ func TestGetCurrentEntryfunc(t *testing.T) {
 				Port:      8080,
 			},
 			forwardedResources: map[string]*portForwardEntry{
-				"deployment-depName-default-8080": &portForwardEntry{
+				"deployment-depName-default-8080": {
 					resource: latest.PortForwardResource{
 						Type:      "deployment",
 						Namespace: "default",
@@ -184,7 +182,7 @@ func TestGetCurrentEntryfunc(t *testing.T) {
 			expectedEntry.resource = test.resource
 
 			rf := NewResourceForwarder(BaseForwarder{}, "")
-			rf.forwardedResources = test.forwardedResources
+			rf.forwardedResources = generateSyncMap(test.forwardedResources)
 
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, test.availablePorts))
 
@@ -196,4 +194,21 @@ func TestGetCurrentEntryfunc(t *testing.T) {
 			}
 		})
 	}
+}
+
+func generateSyncMap(m map[string]*portForwardEntry) *sync.Map {
+	sm := &sync.Map{}
+	for k, v := range m {
+		sm.Store(k, v)
+	}
+	return sm
+}
+
+func lengthSyncMap(m *sync.Map) int {
+	count := 0
+	m.Range(func(key, value interface{}) bool {
+		count++
+		return true
+	})
+	return count
 }

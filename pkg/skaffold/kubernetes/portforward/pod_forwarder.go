@@ -112,13 +112,16 @@ func (p *AutomaticPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod)
 			if entry.resource.Port != entry.localPort {
 				color.Yellow.Fprintf(p.output, "Forwarding container %s to local port %d.\n", c.Name, entry.localPort)
 			}
-			if prevEntry, ok := p.forwardedResources[entry.key()]; ok {
+			if prevEntry, ok := p.forwardedResources.Load(entry.key()); ok {
 				// Check if this is a new generation of pod
+				prevEntry := prevEntry.(*portForwardEntry)
 				if entry.resourceVersion > prevEntry.resourceVersion {
 					p.Terminate(prevEntry)
 				}
 			}
-			return p.forwardPortForwardEntry(ctx, entry)
+			if err := p.forwardPortForwardEntry(ctx, entry); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -139,8 +142,10 @@ func (p *AutomaticPodForwarder) getAutomaticPodForwardingEntry(resourceVersion, 
 	}
 
 	// If we have, return the current entry
-	oldEntry, ok := p.forwardedResources[entry.key()]
+	oldEntry, ok := p.forwardedResources.Load(entry.key())
+
 	if ok {
+		oldEntry := oldEntry.(*portForwardEntry)
 		entry.localPort = oldEntry.localPort
 		return entry, nil
 	}

@@ -56,7 +56,7 @@ func GetForwarders(out io.Writer, podSelector kubernetes.PodSelector, namespaces
 // BaseForwarder is the base port forwarder for automatic port forwarding
 // and for port forwarding generic resources
 type BaseForwarder struct {
-	PortForwardEntryForwarder
+	EntryForwarder
 	output     io.Writer
 	namespaces []string
 
@@ -64,21 +64,21 @@ type BaseForwarder struct {
 	forwardedPorts *sync.Map
 
 	// forwardedResources is a map of portForwardEntry key (string) -> portForwardEntry
-	forwardedResources map[string]*portForwardEntry
+	forwardedResources *sync.Map
 }
 
 func NewBaseForwarder(out io.Writer, namespaces []string) BaseForwarder {
 	return BaseForwarder{
-		output:                    out,
-		namespaces:                namespaces,
-		forwardedPorts:            &sync.Map{},
-		forwardedResources:        make(map[string]*portForwardEntry),
-		PortForwardEntryForwarder: &KubectlForwarder{},
+		output:             out,
+		namespaces:         namespaces,
+		forwardedPorts:     &sync.Map{},
+		forwardedResources: &sync.Map{},
+		EntryForwarder:     &KubectlForwarder{},
 	}
 }
 
 func (b *BaseForwarder) forwardPortForwardEntry(ctx context.Context, entry *portForwardEntry) error {
-	b.forwardedResources[entry.key()] = entry
+	b.forwardedResources.Store(entry.key(), entry)
 	color.Default.Fprintln(b.output, fmt.Sprintf("Port Forwarding %s/%s %d -> %d", entry.resource.Type, entry.resource.Name, entry.resource.Port, entry.localPort))
 	return wait.PollImmediate(time.Second, forwardingPollTime, func() (bool, error) {
 		if err := b.Forward(ctx, entry); err != nil {
@@ -90,7 +90,9 @@ func (b *BaseForwarder) forwardPortForwardEntry(ctx context.Context, entry *port
 
 // Stop terminates all kubectl port-forward commands.
 func (b *BaseForwarder) Stop() {
-	for _, entry := range b.forwardedResources {
+	b.forwardedResources.Range(func(key, value interface{}) bool {
+		entry := value.(*portForwardEntry)
 		b.Terminate(entry)
-	}
+		return true
+	})
 }
