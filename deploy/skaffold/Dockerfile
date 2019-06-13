@@ -39,7 +39,7 @@ RUN curl -LO https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-c
 ENV PATH=$PATH:/google-cloud-sdk/bin
 RUN /google-cloud-sdk/bin/gcloud auth configure-docker
 
-ENV KUSTOMIZE_VERSION=1.0.1
+ENV KUSTOMIZE_VERSION=2.0.3
 RUN curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/v${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64 && \
   chmod +x kustomize_${KUSTOMIZE_VERSION}_linux_amd64 && \
   mv kustomize_${KUSTOMIZE_VERSION}_linux_amd64 /usr/local/bin/kustomize
