@@ -30,6 +30,11 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 )
 
+var (
+	// For testing
+	aggregatePodWatcher = kubernetes.AggregatePodWatcher
+)
+
 // AutomaticPodForwarder is responsible for selecting pods satisfying a certain condition and port-forwarding the exposed
 // container ports within those pods. It also tracks and manages the port-forward connections.
 type AutomaticPodForwarder struct {
@@ -47,7 +52,7 @@ func NewAutomaticPodForwarder(baseForwarder BaseForwarder, podSelector kubernete
 
 func (p *AutomaticPodForwarder) Start(ctx context.Context) error {
 	aggregate := make(chan watch.Event)
-	stopWatchers, err := kubernetes.AggregatePodWatcher(p.namespaces, aggregate)
+	stopWatchers, err := aggregatePodWatcher(p.namespaces, aggregate)
 	if err != nil {
 		stopWatchers()
 		return errors.Wrap(err, "initializing pod watcher")
@@ -79,7 +84,6 @@ func (p *AutomaticPodForwarder) Start(ctx context.Context) error {
 				if evt.Type == watch.Deleted {
 					continue
 				}
-
 				// At this point, we know the event's type is "ADDED" or "MODIFIED".
 				// We must take both types into account as it is possible for the pod to have become ready for port-forwarding before we established the watch.
 				if p.podSelector.Select(pod) && pod.Status.Phase == v1.PodRunning && pod.DeletionTimestamp == nil {

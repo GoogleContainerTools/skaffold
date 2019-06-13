@@ -30,6 +30,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/watch"
+	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 )
 
 func TestAutomaticPortForwardPod(t *testing.T) {
@@ -43,10 +47,8 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		shouldErr       bool
 	}{
 		{
-			description: "single container port",
-			expectedPorts: map[int32]bool{
-				8080: true,
-			},
+			description:    "single container port",
+			expectedPorts:  map[int32]bool{8080: true},
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {
@@ -88,10 +90,8 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			},
 		},
 		{
-			description: "unavailable container port",
-			expectedPorts: map[int32]bool{
-				9000: true,
-			},
+			description:   "unavailable container port",
+			expectedPorts: map[int32]bool{9000: true},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {
 					resourceVersion: 1,
@@ -162,10 +162,8 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			},
 		},
 		{
-			description: "forward error",
-			expectedPorts: map[int32]bool{
-				8080: true,
-			},
+			description:    "forward error",
+			expectedPorts:  map[int32]bool{8080: true},
 			forwarder:      newTestForwarder(fmt.Errorf("")),
 			shouldErr:      true,
 			availablePorts: []int{8080},
@@ -209,11 +207,8 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			},
 		},
 		{
-			description: "two different container ports",
-			expectedPorts: map[int32]bool{
-				8080:  true,
-				50051: true,
-			},
+			description:    "two different container ports",
+			expectedPorts:  map[int32]bool{8080: true, 50051: true},
 			availablePorts: []int{8080, 50051},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {
@@ -289,11 +284,8 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			},
 		},
 		{
-			description: "two same container ports",
-			expectedPorts: map[int32]bool{
-				8080: true,
-				9000: true,
-			},
+			description:    "two same container ports",
+			expectedPorts:  map[int32]bool{8080: true, 9000: true},
 			availablePorts: []int{8080, 9000},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {
@@ -369,10 +361,8 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			},
 		},
 		{
-			description: "updated pod gets port forwarded",
-			expectedPorts: map[int32]bool{
-				8080: true,
-			},
+			description:    "updated pod gets port forwarded",
+			expectedPorts:  map[int32]bool{8080: true},
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {
@@ -468,6 +458,100 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
 			if !reflect.DeepEqual(test.expectedEntries, actualForwardedEntries) {
 				t.Errorf("Forwarded entries differs from expected entries. Expected: %s, Actual: %v", test.expectedEntries, actualForwardedEntries)
+			}
+		})
+	}
+}
+
+func TestStartPodForwarder(t *testing.T) {
+
+	tests := []struct {
+		description   string
+		entryExpected bool
+		obj           runtime.Object
+		event         watch.EventType
+	}{
+		{
+			description:   "pod modified event",
+			entryExpected: true,
+			event:         watch.Modified,
+		}, {
+			description: "pod error event",
+			event:       watch.Error,
+		}, {
+			description: "event isn't for a pod",
+			obj:         &v1.Service{},
+			event:       watch.Modified,
+		}, {
+			description: "event is deleted",
+			event:       watch.Deleted,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			client := fakekubeclientset.NewSimpleClientset(&v1.Pod{})
+			fakeWatcher := watch.NewRaceFreeFake()
+			client.PrependWatchReactor("*", testutil.SetupFakeWatcher(fakeWatcher))
+
+			waitForWatcher := make(chan bool)
+
+			t.Override(&aggregatePodWatcher, func(_ []string, aggregate chan<- watch.Event) (func(), error) {
+				go func() {
+					waitForWatcher <- true
+					for msg := range fakeWatcher.ResultChan() {
+						aggregate <- msg
+					}
+				}()
+				return func() {}, nil
+			})
+
+			imageList := kubernetes.NewImageList()
+			imageList.Add("image")
+
+			p := NewAutomaticPodForwarder(NewBaseForwarder(ioutil.Discard, nil), imageList)
+			fakeForwarder := newTestForwarder(nil)
+			p.EntryForwarder = fakeForwarder
+			p.Start(context.Background())
+
+			// Wait for the watcher to start before we send it an event
+			<-waitForWatcher
+			obj := test.obj
+			if test.obj == nil {
+				obj = &v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace:       "default",
+						ResourceVersion: "9",
+					},
+					Spec: v1.PodSpec{
+						Containers: []v1.Container{
+							{
+								Name:  "mycontainer",
+								Image: "image",
+								Ports: []v1.ContainerPort{
+									{
+										Name:          "myport",
+										ContainerPort: 8080,
+									},
+								},
+							},
+						},
+					},
+					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
+					},
+				}
+			}
+
+			fakeWatcher.Action(test.event, obj)
+
+			// poll for 2 seconds for the pod resource to be forwarded
+			err := wait.PollImmediate(time.Second, 2*time.Second, func() (bool, error) {
+				_, ok := fakeForwarder.forwardedEntries.Load("mycontainer-default-myport-8080")
+				return ok, nil
+			})
+			if err != nil && test.entryExpected {
+				t.Fatalf("expected entry wasn't forwarded: %v", err)
 			}
 		})
 	}
