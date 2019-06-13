@@ -108,7 +108,7 @@ Flags:
   -f, --filename string              Filename or URL to the pipeline file (default "skaffold.yaml")
       --insecure-registry strings    Target registries for built images which are not secure
   -n, --namespace string             Run deployments in the specified namespace
-  -o, --output *flags.TemplateFlag   Used in conjuction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags#BuildOutput (default {{json .}})
+  -o, --output *flags.TemplateFlag   Used in conjunction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags#BuildOutput (default {{json .}})
   -p, --profile strings              Activate profiles by name
   -q, --quiet                        Suppress the build output and print image built on success. See --output to format output.
       --rpc-http-port int            tcp port to expose event REST API over HTTP (default 50052)
