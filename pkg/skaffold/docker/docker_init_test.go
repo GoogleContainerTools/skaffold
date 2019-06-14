@@ -19,6 +19,7 @@ package docker
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -61,6 +62,73 @@ func TestValidateDockerfile(t *testing.T) {
 			valid := ValidateDockerfile(tmp.Path(test.fileToValidate))
 
 			t.CheckDeepEqual(test.expectedValid, valid)
+		})
+	}
+}
+
+func TestGetPrompt(t *testing.T) {
+	var tests = []struct {
+		description    string
+		dockerfile     Dockerfile
+		expectedPrompt string
+	}{
+		{
+			description:    "Dockerfile prompt",
+			dockerfile:     Dockerfile("path/to/Dockerfile"),
+			expectedPrompt: "Docker (path/to/Dockerfile)",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.CheckDeepEqual(test.expectedPrompt, test.dockerfile.GetPrompt())
+		})
+	}
+}
+
+func TestGetArtifact(t *testing.T) {
+	var tests = []struct {
+		description      string
+		dockerfile       Dockerfile
+		manifestImage    string
+		expectedArtifact latest.Artifact
+		expectedImage    string
+	}{
+		{
+			description:   "default filename",
+			dockerfile:    Dockerfile("path/to/Dockerfile"),
+			manifestImage: "image",
+			expectedArtifact: latest.Artifact{
+				ImageName:    "image",
+				Workspace:    "path/to",
+				ArtifactType: latest.ArtifactType{},
+			},
+		},
+		{
+			description:   "non-default filename",
+			dockerfile:    Dockerfile("path/to/Dockerfile1"),
+			manifestImage: "image",
+			expectedArtifact: latest.Artifact{
+				ImageName: "image",
+				Workspace: "path/to",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{DockerfilePath: "path/to/Dockerfile1"},
+				},
+			},
+		},
+		{
+			description:   "ignore workspace",
+			dockerfile:    Dockerfile("Dockerfile"),
+			manifestImage: "image",
+			expectedArtifact: latest.Artifact{
+				ImageName:    "image",
+				ArtifactType: latest.ArtifactType{},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			artifact := test.dockerfile.GetArtifact(test.manifestImage)
+			t.CheckDeepEqual(test.expectedArtifact, *artifact)
 		})
 	}
 }

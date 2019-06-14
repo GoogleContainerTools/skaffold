@@ -116,7 +116,8 @@ func DoInit(out io.Writer, c Config) error {
 			return errors.New("one or more valid builder configuration (Dockerfile or Jib configuration) must be present to build images with skaffold; please provide at least one build config and try again or run `skaffold init --skip-build`")
 		}
 
-		pairs, filteredImages := autoSelectBuilders(buildConfigs, images)
+		var filteredImages []string
+		pairs, filteredImages = autoSelectBuilders(buildConfigs, images)
 
 		if c.CliArtifacts != nil {
 			newPairs, err := processCliArtifacts(c.CliArtifacts)
