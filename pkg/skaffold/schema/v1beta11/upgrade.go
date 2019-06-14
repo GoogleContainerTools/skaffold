@@ -14,19 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta10
+package v1beta11
 
 import (
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta11"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v1beta9 to v1beta10
-// 1. Additions:
-//    - GitTagger variants `TreeSha` and `AbbrevTreeSha`
-// 2. No removals
+// 1. No Additions
+// 2. No Removals
 // 3. No Updates
 func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
