@@ -221,3 +221,126 @@ func fakeValidateJibConfig(path string) []jib.Config {
 	}
 	return nil
 }
+
+func TestResolveBuilderImages(t *testing.T) {
+	tests := []struct {
+		description      string
+		buildConfigs     []InitBuilder
+		images           []string
+		shouldMakeChoice bool
+		expectedPairs    []BuilderImagePair
+	}{
+		{
+			description:      "nothing to choose from",
+			buildConfigs:     []InitBuilder{},
+			images:           []string{},
+			shouldMakeChoice: false,
+			expectedPairs:    []BuilderImagePair{},
+		},
+		{
+			description:      "don't prompt for single dockerfile and image",
+			buildConfigs:     []InitBuilder{docker.Dockerfile("Dockerfile1")},
+			images:           []string{"image1"},
+			shouldMakeChoice: false,
+			expectedPairs: []BuilderImagePair{
+				{
+					Builder:   docker.Dockerfile("Dockerfile1"),
+					ImageName: "image1",
+				},
+			},
+		},
+		{
+			description:      "prompt for multiple builders and images",
+			buildConfigs:     []InitBuilder{docker.Dockerfile("Dockerfile1"), jib.Config{Name: jib.JibGradle, Path: "build.gradle"}, jib.Config{Name: jib.JibMaven, Project: "project", Path: "pom.xml"}},
+			images:           []string{"image1", "image2"},
+			shouldMakeChoice: true,
+			expectedPairs: []BuilderImagePair{
+				{
+					Builder:   docker.Dockerfile("Dockerfile1"),
+					ImageName: "image1",
+				},
+				{
+					Builder:   jib.Config{Name: jib.JibGradle, Path: "build.gradle"},
+					ImageName: "image2",
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			// Overrides promptUserForBuildConfig to choose first option rather than using the interactive menu
+			t.Override(&promptUserForBuildConfig, func(image string, choices []string) string {
+				if !test.shouldMakeChoice {
+					t.FailNow()
+				}
+				return choices[0]
+			})
+
+			pairs := resolveBuilderImages(test.buildConfigs, test.images)
+
+			t.CheckDeepEqual(test.expectedPairs, pairs)
+		})
+	}
+}
+
+func TestAutoSelectBuilders(t *testing.T) {
+	tests := []struct {
+		description            string
+		buildConfigs           []InitBuilder
+		images                 []string
+		expectedPairs          []BuilderImagePair
+		expectedFilteredImages []string
+	}{
+		{
+			description: "no automatic matches",
+			buildConfigs: []InitBuilder{
+				docker.Dockerfile("Dockerfile"),
+				jib.Config{Name: jib.JibGradle, Path: "build.gradle"},
+				jib.Config{Name: jib.JibMaven, Path: "pom.xml", Image: "not a k8s image"},
+			},
+			images:                 []string{"image1", "image2"},
+			expectedPairs:          []BuilderImagePair{},
+			expectedFilteredImages: []string{"image1", "image2"},
+		},
+		{
+			description: "automatic jib matches",
+			buildConfigs: []InitBuilder{
+				docker.Dockerfile("Dockerfile"),
+				jib.Config{Name: jib.JibGradle, Path: "build.gradle", Image: "image1"},
+				jib.Config{Name: jib.JibMaven, Path: "pom.xml", Image: "image2"},
+			},
+			images: []string{"image1", "image2", "image3"},
+			expectedPairs: []BuilderImagePair{
+				{
+					jib.Config{Name: jib.JibGradle, Path: "build.gradle", Image: "image1"},
+					"image1",
+				},
+				{
+					jib.Config{Name: jib.JibMaven, Path: "pom.xml", Image: "image2"},
+					"image2",
+				},
+			},
+			expectedFilteredImages: []string{"image3"},
+		},
+		{
+			description: "multiple matches for one image",
+			buildConfigs: []InitBuilder{
+				jib.Config{Name: jib.JibGradle, Path: "build.gradle", Image: "image1"},
+				jib.Config{Name: jib.JibMaven, Path: "pom.xml", Image: "image1"},
+			},
+			images:                 []string{"image1", "image2"},
+			expectedPairs:          []BuilderImagePair{},
+			expectedFilteredImages: []string{"image1", "image2"},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+
+			pairs, filteredImages := autoSelectBuilders(test.buildConfigs, test.images)
+
+			t.CheckDeepEqual(test.expectedPairs, pairs)
+			t.CheckDeepEqual(test.expectedFilteredImages, filteredImages)
+		})
+	}
+}

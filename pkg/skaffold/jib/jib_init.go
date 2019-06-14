@@ -54,8 +54,7 @@ func (j Config) GetPrompt() string {
 
 // GetArtifact returns the Artifact used to generate the Build Config.
 func (j Config) GetArtifact(manifestImage string) *latest.Artifact {
-	path := string(j.Path)
-	workspace := filepath.Dir(path)
+	workspace := filepath.Dir(j.Path)
 	a := &latest.Artifact{ImageName: manifestImage}
 	if workspace != "." {
 		a.Workspace = workspace

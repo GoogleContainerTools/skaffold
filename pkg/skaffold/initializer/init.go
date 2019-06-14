@@ -76,9 +76,10 @@ type Config struct {
 	Opts         *config.SkaffoldOptions
 }
 
-type builderImagePair struct {
-	builder   InitBuilder
-	imageName string
+// BuilderImagePair defines a builder and the image it builds
+type BuilderImagePair struct {
+	Builder   InitBuilder
+	ImageName string
 }
 
 // DoInit executes the `skaffold init` flow.
@@ -109,38 +110,13 @@ func DoInit(out io.Writer, c Config) error {
 	}
 
 	// conditionally generate build artifacts
-	var pairs []builderImagePair
-	filteredImages := []string{}
+	var pairs []BuilderImagePair
 	if !c.SkipBuild {
 		if len(buildConfigs) == 0 {
 			return errors.New("one or more valid builder configuration (Dockerfile or Jib configuration) must be present to build images with skaffold; please provide at least one build config and try again or run `skaffold init --skip-build`")
 		}
 
-		// Auto-select builders that have a definite target image
-		for _, image := range images {
-			matchingConfigIndex := -1
-			for i, config := range buildConfigs {
-				if image != config.GetConfiguredImage() {
-					continue
-				}
-
-				// Found more than one match; can't auto-select.
-				if matchingConfigIndex != -1 {
-					matchingConfigIndex = -1
-					break
-				}
-				matchingConfigIndex = i
-			}
-
-			if matchingConfigIndex != -1 {
-				// Exactly one pair found; save the pair and remove from remaining build configs
-				pairs = append(pairs, builderImagePair{imageName: image, builder: buildConfigs[matchingConfigIndex]})
-				buildConfigs = append(buildConfigs[:matchingConfigIndex], buildConfigs[matchingConfigIndex+1:]...)
-			} else {
-				// No definite pair found, add to images list
-				filteredImages = append(filteredImages, image)
-			}
-		}
+		pairs, filteredImages := autoSelectBuilders(buildConfigs, images)
 
 		if c.CliArtifacts != nil {
 			newPairs, err := processCliArtifacts(c.CliArtifacts)
@@ -196,6 +172,37 @@ func DoInit(out io.Writer, c Config) error {
 	return nil
 }
 
+func autoSelectBuilders(buildConfigs []InitBuilder, images []string) ([]BuilderImagePair, []string) {
+	// Auto-select builders that have a definite target image
+	pairs := []BuilderImagePair{}
+	filteredImages := []string{}
+	for _, image := range images {
+		matchingConfigIndex := -1
+		for i, config := range buildConfigs {
+			if image != config.GetConfiguredImage() {
+				continue
+			}
+
+			// Found more than one match; can't auto-select.
+			if matchingConfigIndex != -1 {
+				matchingConfigIndex = -1
+				break
+			}
+			matchingConfigIndex = i
+		}
+
+		if matchingConfigIndex != -1 {
+			// Exactly one pair found; save the pair and remove from remaining build configs
+			pairs = append(pairs, BuilderImagePair{ImageName: image, Builder: buildConfigs[matchingConfigIndex]})
+			buildConfigs = append(buildConfigs[:matchingConfigIndex], buildConfigs[matchingConfigIndex+1:]...)
+		} else {
+			// No definite pair found, add to images list
+			filteredImages = append(filteredImages, image)
+		}
+	}
+	return pairs, filteredImages
+}
+
 func detectBuildFile(path string) ([]InitBuilder, error) {
 	// Check for jib
 	if builders := jib.ValidateJibConfig(path); builders != nil {
@@ -217,8 +224,8 @@ func detectBuildFile(path string) ([]InitBuilder, error) {
 	return nil, nil
 }
 
-func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
-	var pairs []builderImagePair
+func processCliArtifacts(artifacts []string) ([]BuilderImagePair, error) {
+	var pairs []BuilderImagePair
 	for _, artifact := range artifacts {
 		parts := strings.Split(artifact, "=")
 		if len(parts) != 2 {
@@ -226,21 +233,26 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 		}
 
 		// TODO: Allow passing Jib config via CLI
-		pairs = append(pairs, builderImagePair{
-			builder:   docker.Dockerfile(parts[0]),
-			imageName: parts[1],
+		pairs = append(pairs, BuilderImagePair{
+			Builder:   docker.Dockerfile(parts[0]),
+			ImageName: parts[1],
 		})
 	}
 	return pairs, nil
 }
 
 // For each image parsed from all k8s manifests, prompt the user for the builder that builds the referenced image
-func resolveBuilderImages(buildConfigs []InitBuilder, images []string) []builderImagePair {
+func resolveBuilderImages(buildConfigs []InitBuilder, images []string) []BuilderImagePair {
+	// If nothing to choose, don't bother prompting
+	if len(images) == 0 || len(buildConfigs) == 0 {
+		return []BuilderImagePair{}
+	}
+
 	// if we only have 1 image and 1 build config, don't bother prompting
 	if len(images) == 1 && len(buildConfigs) == 1 {
-		return []builderImagePair{{
-			builder:   buildConfigs[0],
-			imageName: images[0],
+		return []BuilderImagePair{{
+			Builder:   buildConfigs[0],
+			ImageName: images[0],
 		}}
 	}
 
@@ -254,7 +266,7 @@ func resolveBuilderImages(buildConfigs []InitBuilder, images []string) []builder
 	}
 
 	// For each choice, use prompt string to pair builder config with k8s image
-	pairs := []builderImagePair{}
+	pairs := []BuilderImagePair{}
 	for {
 		if len(images) == 0 {
 			break
@@ -262,7 +274,7 @@ func resolveBuilderImages(buildConfigs []InitBuilder, images []string) []builder
 		image := images[0]
 		choice := promptUserForBuildConfig(image, choices)
 		if choice != NoBuilder {
-			pairs = append(pairs, builderImagePair{builder: choiceMap[choice], imageName: image})
+			pairs = append(pairs, BuilderImagePair{Builder: choiceMap[choice], ImageName: image})
 			choices = util.RemoveFromSlice(choices, choice)
 		}
 		images = util.RemoveFromSlice(images, image)
@@ -273,7 +285,7 @@ func resolveBuilderImages(buildConfigs []InitBuilder, images []string) []builder
 	return pairs
 }
 
-func promptUserForBuildConfig(image string, choices []string) string {
+var promptUserForBuildConfig = func(image string, choices []string) string {
 	var selectedBuildConfig string
 	options := append(choices, NoBuilder)
 	prompt := &survey.Select{
@@ -285,18 +297,18 @@ func promptUserForBuildConfig(image string, choices []string) string {
 	return selectedBuildConfig
 }
 
-func processBuildArtifacts(pairs []builderImagePair) latest.BuildConfig {
+func processBuildArtifacts(pairs []BuilderImagePair) latest.BuildConfig {
 	var config latest.BuildConfig
 	if len(pairs) > 0 {
 		config.Artifacts = make([]*latest.Artifact, len(pairs))
 		for i, pair := range pairs {
-			config.Artifacts[i] = pair.builder.GetArtifact(pair.imageName)
+			config.Artifacts[i] = pair.Builder.GetArtifact(pair.ImageName)
 		}
 	}
 	return config
 }
 
-func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) ([]byte, error) {
+func generateSkaffoldConfig(k Initializer, buildConfigPairs []BuilderImagePair) ([]byte, error) {
 	// if we're here, the user has no skaffold yaml so we need to generate one
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	logrus.Info("generating skaffold config")
