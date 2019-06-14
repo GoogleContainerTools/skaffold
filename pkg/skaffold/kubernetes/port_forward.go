@@ -26,6 +26,7 @@ import (
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -95,7 +96,7 @@ func (*kubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntr
 		return errors.Wrapf(err, "port forwarding pod: %s/%s, port: %d to local port: %d, err: %s", pfe.namespace, pfe.podName, pfe.port, pfe.localPort, buf.String())
 	}
 
-	event.PortForwarded(pfe.localPort, pfe.port, pfe.podName, pfe.containerName, pfe.namespace, pfe.portName)
+	event.PortForwarded(pfe.localPort, pfe.port, pfe.podName, pfe.containerName, pfe.namespace, pfe.portName, string(constants.Pod), pfe.podName)
 
 	go cmd.Wait()
 
