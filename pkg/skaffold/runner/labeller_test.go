@@ -51,3 +51,14 @@ func TestDefaultLabeller(t *testing.T) {
 		})
 	}
 }
+
+func TestK8sMangedByLabel(t *testing.T) {
+	defaultLabeller := &DefaultLabeller{
+		version: "version",
+	}
+	expected := "app.kubernetes.io/managed-by=skaffold-version"
+	actual := defaultLabeller.K8sMangedByLabel()
+	if actual != expected {
+		t.Fatalf("actual label not equal to expected label. Actual: \n %s \n Expected: \n %s", actual, expected)
+	}
+}
