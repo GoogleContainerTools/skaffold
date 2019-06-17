@@ -55,9 +55,9 @@ type Initializer interface {
 
 // InitBuilder represents a builder that can be chosen by skaffold init.
 type InitBuilder interface {
-	// GetPrompt returns the initBuilder's string representation, used when prompting the user to choose a builder.
-	GetPrompt() string
-	// GetArtifact returns the Artifact used to generate the Build Config.
+	// Describe returns the initBuilder's string representation, used when prompting the user to choose a builder
+	Describe() string
+	// GetArtifact creates an Artifact to be included in the generated Build Config
 	GetArtifact(image string) *latest.Artifact
 	// GetConfiguredImage returns the target image configured by the builder
 	GetConfiguredImage() string
@@ -172,6 +172,9 @@ func DoInit(out io.Writer, c Config) error {
 	return nil
 }
 
+// autoSelectBuilders takes a list of builders and images, checks if any of the builders' configured target
+// images match an image in the image list, and returns a list of the matching builder/image pairs. Also
+// returns the images from the original image list that didn't match any build configurations.
 func autoSelectBuilders(buildConfigs []InitBuilder, images []string) ([]BuilderImagePair, []string) {
 	// Auto-select builders that have a definite target image
 	pairs := []BuilderImagePair{}
@@ -250,7 +253,7 @@ func resolveBuilderImages(buildConfigs []InitBuilder, images []string) []Builder
 	choices := make([]string, len(buildConfigs))
 	choiceMap := make(map[string]InitBuilder, len(buildConfigs))
 	for i, buildConfig := range buildConfigs {
-		choice := buildConfig.GetPrompt()
+		choice := buildConfig.Describe()
 		choices[i] = choice
 		choiceMap[choice] = buildConfig
 	}
@@ -366,7 +369,7 @@ func walk(dir string, force bool, validateBuildFile func(string) ([]InitBuilder,
 		// try and parse build file
 		if builderConfigs, err := validateBuildFile(path); builderConfigs != nil {
 			for _, buildConfig := range builderConfigs {
-				logrus.Infof("existing builder found: %s", buildConfig.GetPrompt())
+				logrus.Infof("existing builder found: %s", buildConfig.Describe())
 				buildFiles = append(buildFiles, buildConfig)
 			}
 			return err

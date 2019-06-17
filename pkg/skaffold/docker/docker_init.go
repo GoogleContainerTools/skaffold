@@ -28,15 +28,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Dockerfile is the path to a dockerfile
+// Dockerfile is the path to a dockerfile. Implements the InitBuilder interface.
 type Dockerfile string
 
-// GetPrompt returns the initBuilder's string representation, used when prompting the user to choose a builder.
-func (d Dockerfile) GetPrompt() string {
+// Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.
+func (d Dockerfile) Describe() string {
 	return fmt.Sprintf("Docker (%s)", d)
 }
 
-// GetArtifact returns the Artifact used to generate the Build Config.
+// GetArtifact creates an Artifact to be included in the generated Build Config
 func (d Dockerfile) GetArtifact(manifestImage string) *latest.Artifact {
 	path := string(d)
 	workspace := filepath.Dir(path)
@@ -53,7 +53,7 @@ func (d Dockerfile) GetArtifact(manifestImage string) *latest.Artifact {
 	return a
 }
 
-// GetConfiguredImage returns the target image configured by the builder
+// GetConfiguredImage returns the target image configured by the builder, or an empty string if no image is configured
 func (d Dockerfile) GetConfiguredImage() string {
 	// Target image is not configured in dockerfiles
 	return ""
