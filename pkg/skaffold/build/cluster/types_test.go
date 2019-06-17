@@ -17,11 +17,12 @@ limitations under the License.
 package cluster
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -33,7 +34,7 @@ func TestNewBuilder(t *testing.T) {
 	tcs := []struct {
 		name            string
 		shouldErr       bool
-		runCtx          *context.RunContext
+		runCtx          *runcontext.RunContext
 		expectedBuilder *Builder
 	}{
 		{
@@ -92,17 +93,18 @@ func TestLabels(t *testing.T) {
 }
 
 func TestPruneIsNoop(t *testing.T) {
-	testutil.CheckDeepEqual(t, nil, (&Builder{}).Prune(nil, nil))
+	pruneError := (&Builder{}).Prune(context.TODO(), nil)
+	testutil.CheckDeepEqual(t, nil, pruneError)
 }
 
 func TestSyncMapNotSupported(t *testing.T) {
-	syncMap, err := (&Builder{}).SyncMap(nil, nil)
+	syncMap, err := (&Builder{}).SyncMap(context.TODO(), nil)
 	var expected map[string][]string
 	testutil.CheckErrorAndDeepEqual(t, true, err, expected, syncMap)
 }
 
-func stubRunContext(clusterDetails *latest.ClusterDetails, insecureRegistries map[string]bool) *context.RunContext {
-	return &context.RunContext{
+func stubRunContext(clusterDetails *latest.ClusterDetails, insecureRegistries map[string]bool) *runcontext.RunContext {
+	return &runcontext.RunContext{
 		InsecureRegistries: insecureRegistries,
 		Cfg: &latest.Pipeline{
 			Build: latest.BuildConfig{
