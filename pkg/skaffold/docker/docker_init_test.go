@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -95,23 +96,23 @@ func TestGetArtifact(t *testing.T) {
 	}{
 		{
 			description:   "default filename",
-			dockerfile:    Dockerfile("path/to/Dockerfile"),
+			dockerfile:    Dockerfile(filepath.Join("path", "to", "Dockerfile")),
 			manifestImage: "image",
 			expectedArtifact: latest.Artifact{
 				ImageName:    "image",
-				Workspace:    "path/to",
+				Workspace:    filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{},
 			},
 		},
 		{
 			description:   "non-default filename",
-			dockerfile:    Dockerfile("path/to/Dockerfile1"),
+			dockerfile:    Dockerfile(filepath.Join("path", "to", "Dockerfile1")),
 			manifestImage: "image",
 			expectedArtifact: latest.Artifact{
 				ImageName: "image",
-				Workspace: "path/to",
+				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
-					DockerArtifact: &latest.DockerArtifact{DockerfilePath: "path/to/Dockerfile1"},
+					DockerArtifact: &latest.DockerArtifact{DockerfilePath: filepath.Join("path", "to", "Dockerfile1")},
 				},
 			},
 		},

@@ -17,6 +17,7 @@ limitations under the License.
 package jib
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -135,11 +136,11 @@ func TestGetArtifact(t *testing.T) {
 	}{
 		{
 			description:   "jib gradle with image and project",
-			config:        Config{Name: JibGradle, Path: "path/to/build.gradle", Image: "image", Project: "project"},
+			config:        Config{Name: JibGradle, Path: filepath.Join("path", "to", "build.gradle"), Image: "image", Project: "project"},
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
 				ImageName: "image",
-				Workspace: "path/to",
+				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
 					JibGradleArtifact: &latest.JibGradleArtifact{Project: "project"},
 				},
@@ -147,11 +148,11 @@ func TestGetArtifact(t *testing.T) {
 		},
 		{
 			description:   "jib gradle without image and project",
-			config:        Config{Name: JibGradle, Path: "path/to/build.gradle"},
+			config:        Config{Name: JibGradle, Path: filepath.Join("path", "to", "build.gradle")},
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
 				ImageName: "different-image",
-				Workspace: "path/to",
+				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
 					JibGradleArtifact: &latest.JibGradleArtifact{
 						Flags: []string{"-Dimage=different-image"},
@@ -161,11 +162,11 @@ func TestGetArtifact(t *testing.T) {
 		},
 		{
 			description:   "jib maven with image and project",
-			config:        Config{Name: JibMaven, Path: "path/to/pom.xml", Image: "image", Project: "project"},
+			config:        Config{Name: JibMaven, Path: filepath.Join("path", "to", "pom.xml"), Image: "image", Project: "project"},
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
 				ImageName: "image",
-				Workspace: "path/to",
+				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
 					JibMavenArtifact: &latest.JibMavenArtifact{Module: "project"},
 				},
@@ -173,11 +174,11 @@ func TestGetArtifact(t *testing.T) {
 		},
 		{
 			description:   "jib maven without image and project",
-			config:        Config{Name: JibGradle, Path: "path/to/build.gradle"},
+			config:        Config{Name: JibGradle, Path: filepath.Join("path", "to", "build.gradle")},
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
 				ImageName: "different-image",
-				Workspace: "path/to",
+				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
 					JibGradleArtifact: &latest.JibGradleArtifact{
 						Flags: []string{"-Dimage=different-image"},
