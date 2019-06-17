@@ -44,15 +44,15 @@ type Config struct {
 	Project string `json:"project,omitempty"`
 }
 
-// GetPrompt returns the initBuilder's string representation, used when prompting the user to choose a builder.
-func (j Config) GetPrompt() string {
+// Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.
+func (j Config) Describe() string {
 	if j.Project != "" {
 		return fmt.Sprintf("%s (%s, %s)", j.Name, j.Project, j.Path)
 	}
 	return fmt.Sprintf("%s (%s)", j.Name, j.Path)
 }
 
-// GetArtifact returns the Artifact used to generate the Build Config.
+// GetArtifact creates an Artifact to be included in the generated Build Config
 func (j Config) GetArtifact(manifestImage string) *latest.Artifact {
 	workspace := filepath.Dir(j.Path)
 
@@ -89,7 +89,7 @@ func (j Config) GetArtifact(manifestImage string) *latest.Artifact {
 	return a
 }
 
-// GetConfiguredImage returns the target image configured by the builder
+// GetConfiguredImage returns the target image configured by the builder, or empty string if no image is configured
 func (j Config) GetConfiguredImage() string {
 	return j.Image
 }

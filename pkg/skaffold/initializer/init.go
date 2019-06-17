@@ -60,7 +60,7 @@ type InitBuilder interface {
 	Describe() string
 	// GetArtifact creates an Artifact to be included in the generated Build Config
 	GetArtifact(image string) *latest.Artifact
-	// GetConfiguredImage returns the target image configured by the builder
+	// GetConfiguredImage returns the target image configured by the builder, or empty string if no image is configured
 	GetConfiguredImage() string
 	// GetPath returns the path to the build file
 	GetPath() string

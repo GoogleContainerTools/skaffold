@@ -92,7 +92,7 @@ func TestValidateJibConfig(t *testing.T) {
 	}
 }
 
-func TestGetPrompt(t *testing.T) {
+func TestDescribe(t *testing.T) {
 	var tests = []struct {
 		description    string
 		config         Config
@@ -121,7 +121,7 @@ func TestGetPrompt(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.CheckDeepEqual(test.expectedPrompt, test.config.GetPrompt())
+			t.CheckDeepEqual(test.expectedPrompt, test.config.Describe())
 		})
 	}
 }
