@@ -17,22 +17,22 @@ func TestNewBuilder(t *testing.T) {
 	tcs := []struct {
 		name            string
 		shouldErr       bool
-		clusterDetails  *latest.ClusterDetails
+		runCtx          *context.RunContext
 		expectedBuilder *Builder
 	}{
 		{
 			name: "failed to parse cluster build timeout",
-			clusterDetails: &latest.ClusterDetails{
+			runCtx: stubRunContext(&latest.ClusterDetails{
 				Timeout: "illegal",
-			},
+			}, nil),
 			shouldErr: true,
 		},
 		{
 			name: "cluster builder inherits the config",
-			clusterDetails: &latest.ClusterDetails{
+			runCtx: stubRunContext(&latest.ClusterDetails{
 				Timeout:   "100s",
 				Namespace: "test-ns",
-			},
+			}, nil),
 			shouldErr: false,
 			expectedBuilder: &Builder{
 				ClusterDetails: &latest.ClusterDetails{
@@ -43,10 +43,26 @@ func TestNewBuilder(t *testing.T) {
 				insecureRegistries: nil,
 			},
 		},
+		{
+			name: "insecure registries are taken from the run context",
+			runCtx: stubRunContext(&latest.ClusterDetails{
+				Timeout:   "100s",
+				Namespace: "test-ns",
+			}, map[string]bool{"insecure-reg1": true}),
+			shouldErr: false,
+			expectedBuilder: &Builder{
+				ClusterDetails: &latest.ClusterDetails{
+					Timeout:   "100s",
+					Namespace: "test-ns",
+				},
+				timeout:            100 * time.Second,
+				insecureRegistries: map[string]bool{"insecure-reg1": true},
+			},
+		},
 	}
 	for _, tc := range tcs {
 		testutil.Run(t, tc.name, func(t *testutil.T) {
-			builder, err := NewBuilder(stubRunContext(tc.clusterDetails))
+			builder, err := NewBuilder(tc.runCtx)
 			t.CheckError(tc.shouldErr, err)
 			if !tc.shouldErr {
 				t.CheckDeepEqual(tc.expectedBuilder, builder, cmp.AllowUnexported(Builder{}))
@@ -69,8 +85,9 @@ func TestSyncMapNotSupported(t *testing.T) {
 	testutil.CheckErrorAndDeepEqual(t, true, err, expected, syncMap)
 }
 
-func stubRunContext(clusterDetails *latest.ClusterDetails) *context.RunContext {
+func stubRunContext(clusterDetails *latest.ClusterDetails, insecureRegistries map[string]bool) *context.RunContext {
 	return &context.RunContext{
+		InsecureRegistries: insecureRegistries,
 		Cfg: &latest.Pipeline{
 			Build: latest.BuildConfig{
 				BuildType: latest.BuildType{
