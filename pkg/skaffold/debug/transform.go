@@ -15,9 +15,9 @@ limitations under the License.
 */
 
 /*
-The `debug` package transforms Kubernetes pod-bearing objects to configure containers
-for remote debugging as required for a container's runtime technology.  This package defines
-a _container transformer_ interface. Each implementation does 4 things:
+The `debug` package transforms Kubernetes pod-bearing resources so as to configure containers
+for remote debugging as suited for a container's runtime technology.  This package defines
+a _container transformer_ interface. Each transformer implementation should do the following:
 
 1. The transformer should modify the container's entrypoint, command arguments, and environment to enable debugging for the appropriate language runtime.
 2. The transformer should expose the port(s) required to connect remote debuggers.
