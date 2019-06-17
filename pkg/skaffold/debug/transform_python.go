@@ -66,7 +66,7 @@ func (t pythonTransformer) RuntimeSupportImage() string {
 	return "python"
 }
 
-// configureNodeJsDebugging configures a container definition for NodeJS Chrome V8 Inspector.
+// Apply configures a container definition for Python with pydev/ptvsd
 // Returns a simple map describing the debug configuration details.
 func (t pythonTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
 	logrus.Infof("Configuring %q for python debugging", container.Name)

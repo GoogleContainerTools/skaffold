@@ -37,7 +37,7 @@ As Kubernetes container objects don't actually carry metadata, we place this met
 the container's parent as an _annotation_; as a pod/podspec can have multiple containers, each of which may
 be debuggable, we record this metadata using as a JSON object keyed by the container name.
 Kubernetes requires that containers within a podspec are uniquely named.
-For example, a pod with two containers named `microservice` and `web` may be:
+For example, a pod with two containers named `microservice` and `adapter` may be:
 
   debug.cloud.google.com/config: '{
     "microservice":{"devtools":9229,"runtime":"nodejs"},
@@ -205,7 +205,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 			}
 			podSpec.InitContainers = append(podSpec.InitContainers, supportFilesInitContainer)
 		}
-		// thhe populated volume is then mounted in the containers at `/dbg` too
+		// the populated volume is then mounted in the containers at `/dbg` too
 		for _, container := range containersRequiringSupport {
 			container.VolumeMounts = append(container.VolumeMounts, supportVolumeMount)
 		}
