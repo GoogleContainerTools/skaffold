@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"os"
 
 	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
@@ -33,14 +34,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func withRunner(action func(*runner.SkaffoldRunner, *latest.SkaffoldConfig) error) error {
+func withRunner(ctx context.Context, action func(*runner.SkaffoldRunner, *latest.SkaffoldConfig) error) error {
 	runner, config, err := newRunner(opts)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}
 	defer runner.RPCServerShutdown()
 
-	return action(runner, config)
+	err = action(runner, config)
+	return alwaysSucceedWhenCancelled(ctx, err)
 }
 
 // newRunner creates a SkaffoldRunner and returns the SkaffoldConfig associated with it.

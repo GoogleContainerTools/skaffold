@@ -20,25 +20,11 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	yaml "gopkg.in/yaml.v2"
 )
 
-func NewCmdList(out io.Writer) *cobra.Command {
-	return commands.
-		New(out).
-		WithDescription("list", "List all values set in the global Skaffold config").
-		WithFlags(func(f *pflag.FlagSet) {
-			f.BoolVarP(&showAll, "all", "a", false, "Show values for all kubecontexts")
-			AddConfigFlags(f)
-		}).
-		NoArgs(doList)
-}
-
-func doList(out io.Writer) error {
+func List(out io.Writer) error {
 	var configYaml []byte
 	if showAll {
 		cfg, err := readConfig()

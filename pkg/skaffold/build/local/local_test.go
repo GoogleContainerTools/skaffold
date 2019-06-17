@@ -21,6 +21,10 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/pkg/errors"
+
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -132,7 +136,7 @@ func TestLocalRun(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "unkown artifact type",
+			description: "unknown artifact type",
 			artifacts:   []*latest.Artifact{{}},
 			shouldErr:   true,
 		},
@@ -215,12 +219,10 @@ func TestLocalRun(t *testing.T) {
 			shouldErr: true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			fakeWarner := &warnings.Collect{}
-			reset := testutil.Override(t, &warnings.Printf, fakeWarner.Warnf)
-			defer reset()
+			t.Override(&warnings.Printf, fakeWarner.Warnf)
 
 			cfg := latest.BuildConfig{
 				BuildType: latest.BuildType{
@@ -241,9 +243,122 @@ func TestLocalRun(t *testing.T) {
 
 			res, err := l.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
-			testutil.CheckDeepEqual(t, test.expectedWarnings, fakeWarner.Warnings)
-			testutil.CheckDeepEqual(t, test.expectedPushed, test.api.Pushed)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
+			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
+			t.CheckDeepEqual(test.expectedPushed, test.api.Pushed)
 		})
 	}
+}
+
+type dummyLocalDaemon struct {
+	docker.LocalDaemon
+}
+
+func TestNewBuilder(t *testing.T) {
+	dummyDaemon := dummyLocalDaemon{}
+
+	pFalse := false
+
+	tcs := []struct {
+		name            string
+		shouldErr       bool
+		localBuild      *latest.LocalBuild
+		expectedBuilder *Builder
+		localClusterFn  func() (bool, error)
+		localDockerFn   func(*runcontext.RunContext) (docker.LocalDaemon, error)
+	}{
+		{
+			name: "failed to get docker client",
+			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
+				e = errors.New("dummy docker error")
+				return
+			},
+			shouldErr: true,
+		}, {
+			name: "pushImages becomes !localCluster when local:push is not defined",
+			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
+				daemon = dummyDaemon
+				return
+			},
+			localClusterFn: func() (b bool, e error) {
+				b = false //because this is false and localBuild.push is nil
+				return
+			},
+
+			shouldErr: false,
+			expectedBuilder: &Builder{
+				cfg:                &latest.LocalBuild{},
+				kubeContext:        "",
+				localDocker:        dummyDaemon,
+				localCluster:       false,
+				pushImages:         true, //this will be true
+				skipTests:          false,
+				prune:              true,
+				insecureRegistries: nil,
+			},
+		}, {
+			name: "pushImages defined in config (local:push)",
+			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
+				daemon = dummyDaemon
+				return
+			},
+			localClusterFn: func() (b bool, e error) {
+				b = false
+				return
+			},
+			localBuild: &latest.LocalBuild{
+				Push: &pFalse, //because this is false
+			},
+			shouldErr: false,
+			expectedBuilder: &Builder{
+				pushImages: false, //this will be false too
+				cfg: &latest.LocalBuild{ // and the config is inherited
+					Push: &pFalse,
+				},
+				kubeContext:  "",
+				localDocker:  dummyDaemon,
+				localCluster: false,
+
+				skipTests:          false,
+				prune:              true,
+				insecureRegistries: nil,
+			},
+		},
+	}
+	for _, tc := range tcs {
+		testutil.Run(t, tc.name, func(t *testutil.T) {
+			if tc.localDockerFn != nil {
+				t.Override(&getLocalDocker, tc.localDockerFn)
+			}
+			if tc.localClusterFn != nil {
+				t.Override(&getLocalCluster, tc.localClusterFn)
+			}
+			builder, err := NewBuilder(stubRunContext(tc.localBuild))
+			t.CheckError(tc.shouldErr, err)
+			if !tc.shouldErr {
+				t.CheckDeepEqual(tc.expectedBuilder, builder, cmp.AllowUnexported(Builder{}, dummyDaemon))
+			}
+		})
+	}
+}
+
+func stubRunContext(localBuild *latest.LocalBuild) *runcontext.RunContext {
+	if localBuild == nil {
+		localBuild = &latest.LocalBuild{}
+	}
+	return &runcontext.RunContext{
+		Cfg: &latest.Pipeline{
+			Build: latest.BuildConfig{
+				BuildType: latest.BuildType{
+					LocalBuild: localBuild,
+				},
+			},
+		},
+		Opts: &config.SkaffoldOptions{
+			NoPrune:        false,
+			CacheArtifacts: false,
+			SkipTests:      false,
+		},
+	}
+
 }

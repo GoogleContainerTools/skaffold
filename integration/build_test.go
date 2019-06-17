@@ -36,6 +36,9 @@ func TestBuild(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
 
 	tests := []struct {
 		description string
@@ -75,7 +78,6 @@ func TestBuild(t *testing.T) {
 			expectImage: imageName + "tag",
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			if test.setup != nil {

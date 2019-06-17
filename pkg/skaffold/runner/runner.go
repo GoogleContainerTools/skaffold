@@ -97,7 +97,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		deployer = WithNotification(deployer)
 	}
 
-	trigger, err := watch.NewTrigger(opts)
+	trigger, err := watch.NewTrigger(runCtx)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating watch trigger")
 	}

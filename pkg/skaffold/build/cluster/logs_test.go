@@ -35,7 +35,6 @@ func TestLogLevel(t *testing.T) {
 		{logrusLevel: logrus.FatalLevel, expected: logrus.InfoLevel},
 		{logrusLevel: logrus.PanicLevel, expected: logrus.InfoLevel},
 	}
-
 	for _, test := range tests {
 		defer func(l logrus.Level) { logrus.SetLevel(l) }(logrus.GetLevel())
 		logrus.SetLevel(test.logrusLevel)

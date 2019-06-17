@@ -50,11 +50,11 @@ func TestExtractInspectArg(t *testing.T) {
 		{"--inspect-brk=foo:9329", &inspectSpec{host: "foo", port: 9329, brk: true}},
 	}
 	for _, test := range tests {
-		t.Run(test.in, func(t *testing.T) {
+		testutil.Run(t, test.in, func(t *testutil.T) {
 			if test.result == nil {
-				testutil.CheckDeepEqual(t, test.result, extractInspectArg(test.in))
+				t.CheckDeepEqual(test.result, extractInspectArg(test.in))
 			} else {
-				testutil.CheckDeepEqual(t, *test.result, *extractInspectArg(test.in), cmp.AllowUnexported(inspectSpec{}))
+				t.CheckDeepEqual(*test.result, *extractInspectArg(test.in), cmp.AllowUnexported(inspectSpec{}))
 			}
 		})
 	}
@@ -151,11 +151,11 @@ func TestNodeTransformer_IsApplicable(t *testing.T) {
 			result:      false,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			result := nodeTransformer{}.IsApplicable(test.source)
-			testutil.CheckDeepEqual(t, test.result, result)
+
+			t.CheckDeepEqual(test.result, result)
 		})
 	}
 }
@@ -168,14 +168,15 @@ func TestRewriteNodeCommandLine(t *testing.T) {
 		{[]string{"node", "index.js"}, []string{"node", "--inspect=9226", "index.js"}},
 		{[]string{"node"}, []string{"node", "--inspect=9226"}},
 	}
-
 	for _, test := range tests {
-		t.Run(strings.Join(test.in, " "), func(t *testing.T) {
+		testutil.Run(t, strings.Join(test.in, " "), func(t *testutil.T) {
 			result := rewriteNodeCommandLine(test.in, inspectSpec{port: 9226})
-			testutil.CheckDeepEqual(t, test.result, result)
+
+			t.CheckDeepEqual(test.result, result)
 		})
 	}
 }
+
 func TestRewriteNpmCommandLine(t *testing.T) {
 	tests := []struct {
 		in     []string
@@ -184,11 +185,11 @@ func TestRewriteNpmCommandLine(t *testing.T) {
 		{[]string{"npm", "run", "server"}, []string{"npm", "run", "server", "--node-options=--inspect=9226"}},
 		{[]string{"npm", "run", "server", "--", "option"}, []string{"npm", "run", "server", "--node-options=--inspect=9226", "--", "option"}},
 	}
-
 	for _, test := range tests {
-		t.Run(strings.Join(test.in, " "), func(t *testing.T) {
+		testutil.Run(t, strings.Join(test.in, " "), func(t *testutil.T) {
 			result := rewriteNpmCommandLine(test.in, inspectSpec{port: 9226})
-			testutil.CheckDeepEqual(t, test.result, result)
+
+			t.CheckDeepEqual(test.result, result)
 		})
 	}
 }
@@ -240,9 +241,10 @@ func TestNodeTransformerApply(t *testing.T) {
 		return port
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			nodeTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
-			testutil.CheckDeepEqual(t, test.result, test.containerSpec)
+
+			t.CheckDeepEqual(test.result, test.containerSpec)
 		})
 	}
 }
@@ -521,15 +523,16 @@ func TestTransformManifestNodeJS(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			value := test.in.DeepCopyObject()
 
 			retriever := func(image string) (imageConfiguration, error) {
 				return imageConfiguration{}, nil
 			}
 			result := transformManifest(value, retriever)
-			testutil.CheckDeepEqual(t, test.transformed, result)
-			testutil.CheckDeepEqual(t, test.out, value)
+
+			t.CheckDeepEqual(test.transformed, result)
+			t.CheckDeepEqual(test.out, value)
 		})
 	}
 }

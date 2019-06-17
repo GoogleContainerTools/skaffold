@@ -80,11 +80,11 @@ func TestJdwpTransformer_IsApplicable(t *testing.T) {
 			result:      false,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			result := jdwpTransformer{}.IsApplicable(test.source)
-			testutil.CheckDeepEqual(t, test.result, result)
+
+			t.CheckDeepEqual(test.result, result)
 		})
 	}
 }
@@ -133,9 +133,10 @@ func TestJdwpTransformerApply(t *testing.T) {
 		return port
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			jdwpTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
-			testutil.CheckDeepEqual(t, test.result, test.containerSpec)
+
+			t.CheckDeepEqual(test.result, test.containerSpec)
 		})
 	}
 }
@@ -159,10 +160,10 @@ func TestParseJdwpSpec(t *testing.T) {
 		{"address=localhost:5005,quiet=y,server=y,suspend=n", jdwpSpec{transport: "dt_socket", quiet: true, suspend: false, server: true, host: "localhost", port: 5005}},
 	}
 	for _, test := range tests {
-		t.Run(test.in, func(t *testing.T) {
-			testutil.CheckDeepEqual(t, test.result, *parseJdwpSpec(test.in), cmp.AllowUnexported(jdwpSpec{}))
-			testutil.CheckDeepEqual(t, test.result, *extractJdwpArg("-agentlib:jdwp=" + test.in), cmp.AllowUnexported(jdwpSpec{}))
-			testutil.CheckDeepEqual(t, test.result, *extractJdwpArg("-Xrunjdwp:" + test.in), cmp.AllowUnexported(jdwpSpec{}))
+		testutil.Run(t, test.in, func(t *testutil.T) {
+			t.CheckDeepEqual(test.result, *parseJdwpSpec(test.in), cmp.AllowUnexported(jdwpSpec{}))
+			t.CheckDeepEqual(test.result, *extractJdwpArg("-agentlib:jdwp=" + test.in), cmp.AllowUnexported(jdwpSpec{}))
+			t.CheckDeepEqual(test.result, *extractJdwpArg("-Xrunjdwp:" + test.in), cmp.AllowUnexported(jdwpSpec{}))
 		})
 	}
 }
@@ -184,8 +185,8 @@ func TestJdwpSpecString(t *testing.T) {
 		{jdwpSpec{transport: "dt_socket", quiet: false, suspend: true, server: false, host: "localhost", port: 5005}, "transport=dt_socket,address=localhost:5005"},
 	}
 	for _, test := range tests {
-		t.Run(test.result, func(t *testing.T) {
-			testutil.CheckDeepEqual(t, test.result, test.in.String())
+		testutil.Run(t, test.result, func(t *testutil.T) {
+			t.CheckDeepEqual(test.result, test.in.String())
 		})
 	}
 }
@@ -472,15 +473,16 @@ func TestTransformManifestJVM(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			value := test.in.DeepCopyObject()
 
 			retriever := func(image string) (imageConfiguration, error) {
 				return imageConfiguration{}, nil
 			}
 			result := transformManifest(value, retriever)
-			testutil.CheckDeepEqual(t, test.transformed, result)
-			testutil.CheckDeepEqual(t, test.out, value)
+
+			t.CheckDeepEqual(test.transformed, result)
+			t.CheckDeepEqual(test.out, value)
 		})
 	}
 }

@@ -25,23 +25,23 @@ import (
 
 func TestAppendCacheIfExists(t *testing.T) {
 	tests := []struct {
-		name         string
+		description  string
 		cache        *latest.KanikoCache
 		args         []string
 		expectedArgs []string
 	}{
 		{
-			name:         "no cache",
+			description:  "no cache",
 			cache:        nil,
 			args:         []string{"some", "args"},
 			expectedArgs: []string{"some", "args"},
 		}, {
-			name:         "cache layers",
+			description:  "cache layers",
 			cache:        &latest.KanikoCache{},
 			args:         []string{"some", "more", "args"},
 			expectedArgs: []string{"some", "more", "args", "--cache=true"},
 		}, {
-			name: "cache layers to specific repo",
+			description: "cache layers to specific repo",
 			cache: &latest.KanikoCache{
 				Repo: "myrepo",
 			},
@@ -49,55 +49,55 @@ func TestAppendCacheIfExists(t *testing.T) {
 			expectedArgs: []string{"initial", "args", "--cache=true", "--cache-repo=myrepo"},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual := appendCacheIfExists(test.args, test.cache)
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedArgs, actual)
+
+			t.CheckDeepEqual(test.expectedArgs, actual)
 		})
 	}
 }
 
 func TestAppendTargetIfExists(t *testing.T) {
 	tests := []struct {
-		name         string
+		description  string
 		target       string
 		args         []string
 		expectedArgs []string
 	}{
 		{
-			name:         "pass in empty target",
+			description:  "pass in empty target",
 			args:         []string{"first", "args"},
 			expectedArgs: []string{"first", "args"},
 		}, {
-			name:         "pass in target",
+			description:  "pass in target",
 			target:       "stageOne",
 			args:         []string{"first", "args"},
 			expectedArgs: []string{"first", "args", "--target=stageOne"},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual := appendTargetIfExists(test.args, test.target)
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedArgs, actual)
+
+			t.CheckDeepEqual(test.expectedArgs, actual)
 		})
 	}
 }
 
 func TestAppendBuildArgsIfExists(t *testing.T) {
 	tests := []struct {
-		name         string
+		description  string
 		buildArgs    map[string]*string
 		args         []string
 		expectedArgs []string
 	}{
 		{
-			name:         "no build args",
+			description:  "no build args",
 			args:         []string{"first", "args"},
 			expectedArgs: []string{"first", "args"},
 		}, {
-			name: "buid args",
+			description: "buid args",
 			buildArgs: map[string]*string{
 				"nil_key":   nil,
 				"empty_key": pointer(""),
@@ -108,9 +108,10 @@ func TestAppendBuildArgsIfExists(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual := appendBuildArgsIfExists(test.args, test.buildArgs)
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedArgs, actual)
+
+			t.CheckDeepEqual(test.expectedArgs, actual)
 		})
 	}
 }

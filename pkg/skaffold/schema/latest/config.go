@@ -228,11 +228,12 @@ type KanikoCache struct {
 
 // ClusterDetails *beta* describes how to do an on-cluster build.
 type ClusterDetails struct {
-	// PullSecret is the path to the secret key file.
+	// PullSecret is the path to the Google Cloud service account secret key file.
 	PullSecret string `yaml:"pullSecret,omitempty"`
 
 	// PullSecretName is the name of the Kubernetes secret for pulling the files
-	// from the build context and pushing the final image.
+	// from the build context and pushing the final image. If given, the secret needs to
+	// contain the Google Cloud service account secret key under the key `kaniko-secret`.
 	// Defaults to `kaniko-secret`.
 	PullSecretName string `yaml:"pullSecretName,omitempty"`
 
@@ -254,10 +255,11 @@ type ClusterDetails struct {
 // DockerConfig contains information about the docker `config.json` to mount.
 type DockerConfig struct {
 	// Path is the path to the docker `config.json`.
-	Path string `yaml:"path,omitempty"`
+	Path string `yaml:"path,omitempty" yamltags:"oneOf=dockerSecret"`
 
-	// SecretName is the Kubernetes secret that will hold the Docker configuration.
-	SecretName string `yaml:"secretName,omitempty"`
+	// SecretName is the Kubernetes secret that contains the `config.json` Docker configuration.
+	// Note that the expected secret type is not 'kubernetes.io/dockerconfigjson' but 'Opaque'.
+	SecretName string `yaml:"secretName,omitempty" yamltags:"oneOf=dockerSecret"`
 }
 
 // ResourceRequirements describes the resource requirements for the kaniko pod.

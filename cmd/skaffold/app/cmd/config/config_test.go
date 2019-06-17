@@ -39,50 +39,56 @@ var baseConfig = &Config{
 var emptyConfig = &Config{}
 
 func TestReadConfig(t *testing.T) {
-	c, _ := yaml.Marshal(*baseConfig)
-	cfg, teardown := testutil.TempFile(t, "config", c)
-	defer teardown()
-
 	var tests = []struct {
+		description string
 		filename    string
 		expectedCfg *Config
 		shouldErr   bool
 	}{
 		{
-			filename:  "",
-			shouldErr: true,
-		},
-		{
-			filename:    cfg,
+			description: "valid config",
+			filename:    "config",
 			expectedCfg: baseConfig,
 			shouldErr:   false,
 		},
+		{
+			description: "missing config",
+			filename:    "",
+			shouldErr:   true,
+		},
 	}
-
 	for _, test := range tests {
-		cfg, err := ReadConfigForFile(test.filename)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir().
+				Chdir()
 
-		testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedCfg, cfg)
+			if test.filename != "" {
+				c, _ := yaml.Marshal(*baseConfig)
+				tmpDir.Write(test.filename, string(c))
+			}
+
+			cfg, err := ReadConfigForFile(test.filename)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedCfg, cfg)
+		})
 	}
 }
 
 func TestSetAndUnsetConfig(t *testing.T) {
 	dummyContext := "dummy_context"
-	reset := testutil.Override(t, &kubecontext, dummyContext)
-	defer reset()
 
 	var tests = []struct {
 		expectedSetCfg   *Config
 		expectedUnsetCfg *Config
-		name             string
+		description      string
 		key              string
 		value            string
 		kubecontext      string
 		global           bool
-		shouldErrSet     bool
+		shouldErr        bool
 	}{
 		{
-			name:        "set default repo",
+			description: "set default repo",
 			key:         "default-repo",
 			value:       "value",
 			kubecontext: "this_is_a_context",
@@ -103,7 +109,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			},
 		},
 		{
-			name:        "set local cluster",
+			description: "set local cluster",
 			key:         "local-cluster",
 			value:       "false",
 			kubecontext: "this_is_a_context",
@@ -124,10 +130,10 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			},
 		},
 		{
-			name:         "set invalid local cluster",
-			key:          "local-cluster",
-			shouldErrSet: true,
-			value:        "not-a-bool",
+			description: "set invalid local cluster",
+			key:         "local-cluster",
+			shouldErr:   true,
+			value:       "not-a-bool",
 			expectedSetCfg: &Config{
 				ContextConfigs: []*ContextConfig{
 					{
@@ -137,9 +143,9 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			},
 		},
 		{
-			name:         "set fake value",
-			key:          "not_a_real_value",
-			shouldErrSet: true,
+			description: "set fake value",
+			key:         "not_a_real_value",
+			shouldErr:   true,
 			expectedSetCfg: &Config{
 				ContextConfigs: []*ContextConfig{
 					{
@@ -149,10 +155,10 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			},
 		},
 		{
-			name:   "set global default repo",
-			key:    "default-repo",
-			value:  "global",
-			global: true,
+			description: "set global default repo",
+			key:         "default-repo",
+			value:       "global",
+			global:      true,
 			expectedSetCfg: &Config{
 				Global: &ContextConfig{
 					DefaultRepo: "global",
@@ -165,10 +171,10 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			},
 		},
 		{
-			name:   "set global local cluster",
-			key:    "local-cluster",
-			value:  "true",
-			global: true,
+			description: "set global local cluster",
+			key:         "local-cluster",
+			value:       "true",
+			global:      true,
 			expectedSetCfg: &Config{
 				Global: &ContextConfig{
 					LocalCluster: util.BoolPtr(true),
@@ -181,7 +187,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			},
 		},
 		{
-			name:        "set insecure registries",
+			description: "set insecure registries",
 			key:         "insecure-registries",
 			value:       "my.insecure.registry",
 			kubecontext: "this_is_a_context",
@@ -202,34 +208,28 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&kubecontext, dummyContext)
+
 			// create new config file
 			c, _ := yaml.Marshal(*emptyConfig)
-			cfg, teardown := testutil.TempFile(t, "config", c)
-			defer teardown()
 
+			cfg := t.TempFile("config", c)
+
+			t.Override(&configFile, cfg)
+			t.Override(&global, test.global)
 			if test.kubecontext != "" {
-				reset := testutil.Override(t, &kubecontext, test.kubecontext)
-				defer reset()
+				t.Override(&kubecontext, test.kubecontext)
 			}
-
-			resetConfigFile := testutil.Override(t, &configFile, cfg)
-			defer resetConfigFile()
-
-			resetGlobal := testutil.Override(t, &global, test.global)
-			defer resetGlobal()
 
 			// set specified value
 			err := setConfigValue(test.key, test.value)
 			actualConfig, cfgErr := readConfig()
-			if cfgErr != nil {
-				t.Error(cfgErr)
-			}
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErrSet, err, test.expectedSetCfg, actualConfig)
+			t.CheckNoError(cfgErr)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedSetCfg, actualConfig)
 
-			if test.shouldErrSet {
+			if test.shouldErr {
 				// if we expect an error when setting, don't try and unset
 				return
 			}
@@ -237,10 +237,10 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			// unset the value
 			err = unsetConfigValue(test.key)
 			newConfig, cfgErr := readConfig()
-			if cfgErr != nil {
-				t.Error(cfgErr)
-			}
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedUnsetCfg, newConfig)
+			t.CheckNoError(cfgErr)
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedUnsetCfg, newConfig)
 		})
 	}
 }

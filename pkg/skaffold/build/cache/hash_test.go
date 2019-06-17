@@ -45,18 +45,22 @@ func (m *mockBuilder) Prune(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
+func (m *mockBuilder) SyncMap(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
+	return nil, nil
+}
+
 var mockCacheHasher = func(s string) (string, error) {
 	return s, nil
 }
 
 func TestGetHashForArtifact(t *testing.T) {
 	tests := []struct {
-		name         string
+		description  string
 		dependencies [][]string
 		expected     string
 	}{
 		{
-			name: "check dependencies in different orders",
+			description: "check dependencies in different orders",
 			dependencies: [][]string{
 				{"a", "b"},
 				{"b", "a"},
@@ -64,29 +68,30 @@ func TestGetHashForArtifact(t *testing.T) {
 			expected: "eb394fd4559b1d9c383f4359667a508a615b82a74e1b160fce539f86ae0842e8",
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			reset := testutil.Override(t, &hashFunction, mockCacheHasher)
-			defer reset()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&hashFunction, mockCacheHasher)
 
 			for _, d := range test.dependencies {
 				builder := &mockBuilder{dependencies: d}
 				actual, err := getHashForArtifact(context.Background(), builder, nil)
-				testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
+
+				t.CheckNoError(err)
+				t.CheckDeepEqual(test.expected, actual)
 			}
 		})
 	}
 }
+
 func TestCacheHasher(t *testing.T) {
 	tests := []struct {
-		name          string
+		description   string
 		differentHash bool
 		newFilename   string
 		update        func(oldFile string, folder *testutil.TempDir)
 	}{
 		{
-			name:          "change filename",
+			description:   "change filename",
 			differentHash: true,
 			newFilename:   "newfoo",
 			update: func(oldFile string, folder *testutil.TempDir) {
@@ -94,14 +99,14 @@ func TestCacheHasher(t *testing.T) {
 			},
 		},
 		{
-			name:          "change file contents",
+			description:   "change file contents",
 			differentHash: true,
 			update: func(oldFile string, folder *testutil.TempDir) {
 				folder.Write(oldFile, "newcontents")
 			},
 		},
 		{
-			name:          "change both",
+			description:   "change both",
 			differentHash: true,
 			newFilename:   "newfoo",
 			update: func(oldFile string, folder *testutil.TempDir) {
@@ -110,46 +115,36 @@ func TestCacheHasher(t *testing.T) {
 			},
 		},
 		{
-			name:          "change nothing",
+			description:   "change nothing",
 			differentHash: false,
 			update:        func(oldFile string, folder *testutil.TempDir) {},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			originalFile := "foo"
 			originalContents := "contents"
 
-			folder, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
-			folder.Write(originalFile, originalContents)
+			tmpDir := t.NewTempDir().
+				Write(originalFile, originalContents)
 
 			path := originalFile
-			builder := &mockBuilder{dependencies: []string{folder.Path(originalFile)}}
+			builder := &mockBuilder{dependencies: []string{tmpDir.Path(originalFile)}}
 
 			oldHash, err := getHashForArtifact(context.Background(), builder, nil)
-			if err != nil {
-				t.Errorf("error getting hash for artifact: %v", err)
-			}
+			t.CheckNoError(err)
 
-			test.update(originalFile, folder)
+			test.update(originalFile, tmpDir)
 			if test.newFilename != "" {
 				path = test.newFilename
 			}
 
-			builder.dependencies = []string{folder.Path(path)}
+			builder.dependencies = []string{tmpDir.Path(path)}
 			newHash, err := getHashForArtifact(context.Background(), builder, nil)
-			if err != nil {
-				t.Errorf("error getting hash for artifact: %v", err)
-			}
 
-			if test.differentHash && oldHash == newHash {
-				t.Fatalf("expected hashes to be different but they were the same:\n oldHash: %s\n newHash: %s", oldHash, newHash)
-			}
-			if !test.differentHash && oldHash != newHash {
-				t.Fatalf("expected hashes to be the same but they were different:\n oldHash: %s\n newHash: %s", oldHash, newHash)
-			}
+			t.CheckNoError(err)
+			t.CheckDeepEqual(false, test.differentHash && oldHash == newHash)
+			t.CheckDeepEqual(false, !test.differentHash && oldHash != newHash)
 		})
 	}
 }
