@@ -44,8 +44,7 @@ such that the on-disk representations are untouched.
 
   - Only the `kubectl` and `kustomize` deployers are supported at the moment: support for
     the Helm deployer is not yet available.
-  - File sync is disabled for all artifacts, regardless of whether
-    the artifact could be configured for debugging.
+  - File sync is disabled for all artifacts.
   - Only JVM, NodeJS, and Python applications are supported:
       - JVM applications are configured using the `JAVA_TOOL_OPTIONS` environment variable
         which causes extra debugging output on launch.

@@ -21,7 +21,7 @@ a _container transformer_ interface. Each transformer implementation should do t
 
 1. The transformer should modify the container's entrypoint, command arguments, and environment to enable debugging for the appropriate language runtime.
 2. The transformer should expose the port(s) required to connect remote debuggers.
-3. The transformer should identify any additional support files required to enable debugging (e.g., the `Delve` debugger for Go).
+3. The transformer should identify any additional support files required to enable debugging (e.g., the `ptvsd` debugger for Python).
 4. The transform should return metadata to describe the remote connection information.
 
 Certain language runtimes require additional support files to enable remote debugging.
