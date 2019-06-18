@@ -1674,8 +1674,8 @@
         },
         "src": {
           "type": "string",
-          "description": "a glob pattern to match local paths against.",
-          "x-intellij-html-description": "a glob pattern to match local paths against.",
+          "description": "a glob pattern to match local paths against. Directories should be delimited by `/` on all platforms.",
+          "x-intellij-html-description": "a glob pattern to match local paths against. Directories should be delimited by <code>/</code> on all platforms.",
           "examples": [
             "\"css/**/*.css\""
           ]

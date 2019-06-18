@@ -498,6 +498,7 @@ type Sync struct {
 // SyncRule specifies which local files to sync to remote folders.
 type SyncRule struct {
 	// Src is a glob pattern to match local paths against.
+	// Directories should be delimited by `/` on all platforms.
 	// For example: `"css/**/*.css"`.
 	Src string `yaml:"src,omitempty" yamltags:"required"`
 
