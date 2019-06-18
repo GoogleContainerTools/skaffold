@@ -126,7 +126,7 @@ func TestDescribe(t *testing.T) {
 	}
 }
 
-func TestGetArtifact(t *testing.T) {
+func TestCreateArtifact(t *testing.T) {
 	var tests = []struct {
 		description      string
 		config           Config
@@ -198,7 +198,7 @@ func TestGetArtifact(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			artifact := test.config.GetArtifact(test.manifestImage)
+			artifact := test.config.CreateArtifact(test.manifestImage)
 			t.CheckDeepEqual(test.expectedArtifact, *artifact)
 		})
 	}

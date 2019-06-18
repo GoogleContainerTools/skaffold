@@ -52,8 +52,8 @@ func (j Config) Describe() string {
 	return fmt.Sprintf("%s (%s)", j.Name, j.Path)
 }
 
-// GetArtifact creates an Artifact to be included in the generated Build Config
-func (j Config) GetArtifact(manifestImage string) *latest.Artifact {
+// CreateArtifact creates an Artifact to be included in the generated Build Config
+func (j Config) CreateArtifact(manifestImage string) *latest.Artifact {
 	workspace := filepath.Dir(j.Path)
 
 	a := &latest.Artifact{ImageName: j.Image}
