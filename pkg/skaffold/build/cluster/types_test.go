@@ -112,11 +112,6 @@ func stubRunContext(clusterDetails *latest.ClusterDetails, insecureRegistries ma
 					Cluster: clusterDetails,
 				},
 			},
-		},
-		Opts: &config.SkaffoldOptions{
-			NoPrune:        false,
-			CacheArtifacts: false,
-			SkipTests:      false,
-		},
+		},		
 	}
 }
