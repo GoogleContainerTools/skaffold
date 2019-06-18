@@ -115,8 +115,8 @@ func DoInit(out io.Writer, c Config) error {
 			return errors.New("one or more valid Dockerfiles must be present to build images with skaffold; please provide at least Dockerfile and try again or run `skaffold init --skip-build`")
 		}
 
-		var filteredImages []string
-		pairs, filteredImages = autoSelectBuilders(buildConfigs, images)
+		var unresolvedImages []string
+		pairs, unresolvedImages = autoSelectBuilders(buildConfigs, images)
 
 		if c.CliArtifacts != nil {
 			newPairs, err := processCliArtifacts(c.CliArtifacts)
@@ -125,7 +125,7 @@ func DoInit(out io.Writer, c Config) error {
 			}
 			pairs = append(pairs, newPairs...)
 		} else {
-			pairs = append(pairs, resolveBuilderImages(buildConfigs, filteredImages)...)
+			pairs = append(pairs, resolveBuilderImages(buildConfigs, unresolvedImages)...)
 		}
 	}
 
@@ -178,7 +178,7 @@ func DoInit(out io.Writer, c Config) error {
 func autoSelectBuilders(buildConfigs []InitBuilder, images []string) ([]BuilderImagePair, []string) {
 	// Auto-select builders that have a definite target image
 	pairs := []BuilderImagePair{}
-	filteredImages := []string{}
+	unresolvedImages := []string{}
 	for _, image := range images {
 		matchingConfigIndex := -1
 		for i, config := range buildConfigs {
@@ -200,10 +200,10 @@ func autoSelectBuilders(buildConfigs []InitBuilder, images []string) ([]BuilderI
 			buildConfigs = append(buildConfigs[:matchingConfigIndex], buildConfigs[matchingConfigIndex+1:]...)
 		} else {
 			// No definite pair found, add to images list
-			filteredImages = append(filteredImages, image)
+			unresolvedImages = append(unresolvedImages, image)
 		}
 	}
-	return pairs, filteredImages
+	return pairs, unresolvedImages
 }
 
 func detectBuildFile(path string) ([]InitBuilder, error) {
