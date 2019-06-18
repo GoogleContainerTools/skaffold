@@ -38,7 +38,7 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 			description: "builders and images",
 			builders:    []InitBuilder{docker.Dockerfile("Dockerfile1"), docker.Dockerfile("Dockerfile2")},
 			images:      []string{"image1", "image2"},
-			expected:    "{\"builders\":[\"Dockerfile1\",\"Dockerfile2\"],\"images\":[\"image1\",\"image2\"]}",
+			expected:    "{\"builders\":[{\"path\":\"Dockerfile1\"},{\"path\":\"Dockerfile2\"}],\"images\":[\"image1\",\"image2\"]}",
 		},
 		{
 			description: "no builders, skip build",
@@ -166,7 +166,7 @@ deploy:
 
 			t.Override(&docker.ValidateDockerfile, testValidDocker)
 
-			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, detectBuildFile)
+			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, detectBuilders)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(tmpDir.Paths(test.expectedConfigs...), potentialConfigs)
@@ -188,21 +188,21 @@ func TestResolveBuilderImages(t *testing.T) {
 		buildConfigs     []InitBuilder
 		images           []string
 		shouldMakeChoice bool
-		expectedPairs    []BuilderImagePair
+		expectedPairs    []builderImagePair
 	}{
 		{
 			description:      "nothing to choose from",
 			buildConfigs:     []InitBuilder{},
 			images:           []string{},
 			shouldMakeChoice: false,
-			expectedPairs:    []BuilderImagePair{},
+			expectedPairs:    []builderImagePair{},
 		},
 		{
 			description:      "don't prompt for single dockerfile and image",
 			buildConfigs:     []InitBuilder{docker.Dockerfile("Dockerfile1")},
 			images:           []string{"image1"},
 			shouldMakeChoice: false,
-			expectedPairs: []BuilderImagePair{
+			expectedPairs: []builderImagePair{
 				{
 					Builder:   docker.Dockerfile("Dockerfile1"),
 					ImageName: "image1",
@@ -214,7 +214,7 @@ func TestResolveBuilderImages(t *testing.T) {
 			buildConfigs:     []InitBuilder{docker.Dockerfile("Dockerfile1"), docker.Dockerfile("Dockerfile2")},
 			images:           []string{"image1", "image2"},
 			shouldMakeChoice: true,
-			expectedPairs: []BuilderImagePair{
+			expectedPairs: []builderImagePair{
 				{
 					Builder:   docker.Dockerfile("Dockerfile1"),
 					ImageName: "image1",

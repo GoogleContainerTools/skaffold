@@ -36,8 +36,8 @@ func (d Dockerfile) Describe() string {
 	return fmt.Sprintf("Docker (%s)", d)
 }
 
-// GetArtifact creates an Artifact to be included in the generated Build Config
-func (d Dockerfile) GetArtifact(manifestImage string) *latest.Artifact {
+// CreateArtifact creates an Artifact to be included in the generated Build Config
+func (d Dockerfile) CreateArtifact(manifestImage string) *latest.Artifact {
 	path := string(d)
 	workspace := filepath.Dir(path)
 	a := &latest.Artifact{ImageName: manifestImage}
