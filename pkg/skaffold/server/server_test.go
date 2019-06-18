@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/proto"
 	"google.golang.org/grpc"
 )
@@ -34,13 +33,10 @@ var (
 
 func TestServerStartup(t *testing.T) {
 	// start up servers
-	runCtx := &runcontext.RunContext{
-		Opts: &config.SkaffoldOptions{
-			RPCPort:     rpcAddr,
-			RPCHTTPPort: httpAddr,
-		},
-	}
-	initialize(runCtx)
+	initialize(&config.SkaffoldOptions{
+		RPCPort:     rpcAddr,
+		RPCHTTPPort: httpAddr,
+	})
 
 	// create gRPC client and ensure we can connect
 	conn, err := grpc.Dial(fmt.Sprintf(":%d", rpcAddr), grpc.WithInsecure())

@@ -28,6 +28,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/rjeczalik/notify"
 	"github.com/sirupsen/logrus"
 )
@@ -54,7 +55,7 @@ func NewTrigger(runctx *runcontext.RunContext) (Trigger, error) {
 		return &manualTrigger{}, nil
 	case "api":
 		return &apiTrigger{
-			Trigger: runctx.Trigger,
+			Trigger: server.Trigger,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported trigger: %s", runctx.Opts.Trigger)

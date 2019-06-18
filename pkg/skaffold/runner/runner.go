@@ -102,12 +102,11 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		return nil, errors.Wrap(err, "creating watch trigger")
 	}
 
-	shutdown, err := server.Initialize(runCtx)
+	shutdown, err := server.Initialize(opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "initializing skaffold server")
 	}
 	event.InitializeState(runCtx)
-
 	event.LogSkaffoldMetadata(version.Get())
 
 	return &SkaffoldRunner{
