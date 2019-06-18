@@ -20,7 +20,6 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -30,25 +29,20 @@ import (
 
 // NewCmdDev describes the CLI command to run a pipeline in development mode.
 func NewCmdDev(out io.Writer) *cobra.Command {
-	return commands.
-		New(out).
-		WithDescription("dev", "Runs a pipeline file in development mode").
+	cmdUse := "dev"
+	return NewCmd(out, cmdUse).
+		WithDescription("Runs a pipeline file in development mode").
+		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.StringVar(&opts.Trigger, "trigger", "polling", "How are changes detected? (polling, manual or notify)")
 			f.StringSliceVarP(&opts.TargetImages, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")
 			f.IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes")
-			AddRunDevFlags(f)
-			AddDevDebugFlags(f)
 		}).
-		NoArgs(doDev)
+		NoArgs(cancelWithCtrlC(context.Background(), doDev))
 }
 
-func doDev(out io.Writer) error {
+func doDev(ctx context.Context, out io.Writer) error {
 	opts.EnableRPC = true
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	catchCtrlC(cancel)
 
 	cleanup := func() {}
 	if opts.Cleanup {
@@ -90,10 +84,11 @@ func doDev(out io.Writer) error {
 				}
 			}
 			if err != nil {
-				if errors.Cause(err) != runner.ErrorConfigurationChanged {
-					r.RPCServerShutdown()
+				if errors.Cause(err) == runner.ErrorConfigurationChanged {
 					return err
 				}
+				r.RPCServerShutdown()
+				return alwaysSucceedWhenCancelled(ctx, err)
 			}
 			r.RPCServerShutdown()
 		}

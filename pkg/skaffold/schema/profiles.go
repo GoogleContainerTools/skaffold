@@ -112,12 +112,12 @@ func isKubeContext(kubeContext string) (bool, error) {
 		return true, nil
 	}
 
-	currentKubeContext, err := kubectx.CurrentContext()
+	currentKubeConfig, err := kubectx.CurrentConfig()
 	if err != nil {
 		return false, errors.Wrap(err, "getting current cluster context")
 	}
 
-	return satisfies(kubeContext, currentKubeContext), nil
+	return satisfies(kubeContext, currentKubeConfig.CurrentContext), nil
 }
 
 func satisfies(expected, actual string) bool {

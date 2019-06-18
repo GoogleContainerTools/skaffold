@@ -74,14 +74,13 @@ func TestGetEncodedRegistryAuth(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			defer func(h AuthConfigHelper) { DefaultAuthHelper = h }(DefaultAuthHelper)
-			DefaultAuthHelper = test.authType
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&DefaultAuthHelper, test.authType)
 
 			l := &localDaemon{}
 			out, err := l.encodedRegistryAuth(context.Background(), test.authType, test.image)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, out)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, out)
 		})
 	}
 }

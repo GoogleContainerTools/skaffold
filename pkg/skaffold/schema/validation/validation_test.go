@@ -55,22 +55,22 @@ var (
 
 func TestValidateSchema(t *testing.T) {
 	tests := []struct {
-		name      string
-		cfg       *latest.SkaffoldConfig
-		shouldErr bool
+		description string
+		cfg         *latest.SkaffoldConfig
+		shouldErr   bool
 	}{
 		{
-			name:      "config with errors",
-			cfg:       cfgWithErrors,
-			shouldErr: true,
+			description: "config with errors",
+			cfg:         cfgWithErrors,
+			shouldErr:   true,
 		},
 		{
-			name:      "empty config",
-			cfg:       &latest.SkaffoldConfig{},
-			shouldErr: true,
+			description: "empty config",
+			cfg:         &latest.SkaffoldConfig{},
+			shouldErr:   true,
 		},
 		{
-			name: "minimal config",
+			description: "minimal config",
 			cfg: &latest.SkaffoldConfig{
 				APIVersion: "foo",
 				Kind:       "bar",
@@ -78,11 +78,11 @@ func TestValidateSchema(t *testing.T) {
 			shouldErr: false,
 		},
 	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			err := Process(test.cfg)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := Process(tt.cfg)
-			testutil.CheckError(t, tt.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
@@ -98,22 +98,22 @@ type nestedEmptyStruct struct {
 
 func TestVisitStructs(t *testing.T) {
 	tests := []struct {
-		name         string
+		description  string
 		input        interface{}
 		expectedErrs int
 	}{
 		{
-			name:         "single struct to validate",
+			description:  "single struct to validate",
 			input:        emptyStruct{},
 			expectedErrs: 1,
 		},
 		{
-			name:         "recurse into nested struct",
+			description:  "recurse into nested struct",
 			input:        nestedEmptyStruct{},
 			expectedErrs: 2,
 		},
 		{
-			name: "check all slice items",
+			description: "check all slice items",
 			input: struct {
 				A []emptyStruct
 			}{
@@ -122,7 +122,7 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 3,
 		},
 		{
-			name: "recurse into slices",
+			description: "recurse into slices",
 			input: struct {
 				A []nestedEmptyStruct
 			}{
@@ -135,7 +135,7 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 3,
 		},
 		{
-			name: "recurse into ptr slices",
+			description: "recurse into ptr slices",
 			input: struct {
 				A []*nestedEmptyStruct
 			}{
@@ -148,21 +148,21 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 3,
 		},
 		{
-			name: "ignore empty slices",
+			description: "ignore empty slices",
 			input: struct {
 				A []emptyStruct
 			}{},
 			expectedErrs: 1,
 		},
 		{
-			name: "ignore nil pointers",
+			description: "ignore nil pointers",
 			input: struct {
 				A *struct{}
 			}{},
 			expectedErrs: 1,
 		},
 		{
-			name: "recurse into members",
+			description: "recurse into members",
 			input: struct {
 				A, B emptyStruct
 			}{
@@ -172,7 +172,7 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 3,
 		},
 		{
-			name: "recurse into ptr members",
+			description: "recurse into ptr members",
 			input: struct {
 				A, B *emptyStruct
 			}{
@@ -182,7 +182,7 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 3,
 		},
 		{
-			name: "ignore other fields",
+			description: "ignore other fields",
 			input: struct {
 				A emptyStruct
 				C int
@@ -193,7 +193,7 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 2,
 		},
 		{
-			name: "unexported fields",
+			description: "unexported fields",
 			input: struct {
 				a emptyStruct
 			}{
@@ -202,7 +202,7 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 1,
 		},
 		{
-			name: "exported and unexported fields",
+			description: "exported and unexported fields",
 			input: struct {
 				a, A, b emptyStruct
 			}{
@@ -213,7 +213,7 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 2,
 		},
 		{
-			name: "unexported nil ptr fields",
+			description: "unexported nil ptr fields",
 			input: struct {
 				a *emptyStruct
 			}{
@@ -222,7 +222,7 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 1,
 		},
 		{
-			name: "unexported ptr fields",
+			description: "unexported ptr fields",
 			input: struct {
 				a *emptyStruct
 			}{
@@ -231,7 +231,7 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 1,
 		},
 		{
-			name: "unexported and exported ptr fields",
+			description: "unexported and exported ptr fields",
 			input: struct {
 				a, A, b *emptyStruct
 			}{
@@ -242,24 +242,23 @@ func TestVisitStructs(t *testing.T) {
 			expectedErrs: 2,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual := visitStructs(test.input, alwaysErr)
 
-			testutil.CheckDeepEqual(t, test.expectedErrs, len(actual))
+			t.CheckDeepEqual(test.expectedErrs, len(actual))
 		})
 	}
 }
 
 func TestValidateNetworkMode(t *testing.T) {
 	tests := []struct {
-		name      string
-		artifacts []*latest.Artifact
-		shouldErr bool
+		description string
+		artifacts   []*latest.Artifact
+		shouldErr   bool
 	}{
 		{
-			name: "not a docker artifact",
+			description: "not a docker artifact",
 			artifacts: []*latest.Artifact{
 				{
 					ImageName: "image/bazel",
@@ -270,7 +269,7 @@ func TestValidateNetworkMode(t *testing.T) {
 			},
 		},
 		{
-			name: "no networkmode",
+			description: "no networkmode",
 			artifacts: []*latest.Artifact{
 				{
 					ImageName: "image/no-network",
@@ -281,7 +280,7 @@ func TestValidateNetworkMode(t *testing.T) {
 			},
 		},
 		{
-			name: "bridge",
+			description: "bridge",
 			artifacts: []*latest.Artifact{
 				{
 					ImageName: "image/bridge",
@@ -294,7 +293,7 @@ func TestValidateNetworkMode(t *testing.T) {
 			},
 		},
 		{
-			name: "none",
+			description: "none",
 			artifacts: []*latest.Artifact{
 				{
 					ImageName: "image/none",
@@ -307,7 +306,7 @@ func TestValidateNetworkMode(t *testing.T) {
 			},
 		},
 		{
-			name: "host",
+			description: "host",
 			artifacts: []*latest.Artifact{
 				{
 					ImageName: "image/host",
@@ -320,8 +319,8 @@ func TestValidateNetworkMode(t *testing.T) {
 			},
 		},
 		{
-			name:      "invalid networkmode",
-			shouldErr: true,
+			description: "invalid networkmode",
+			shouldErr:   true,
 			artifacts: []*latest.Artifact{
 				{
 					ImageName: "image/bad",
@@ -334,7 +333,7 @@ func TestValidateNetworkMode(t *testing.T) {
 			},
 		},
 		{
-			name: "case insensitive",
+			description: "case insensitive",
 			artifacts: []*latest.Artifact{
 				{
 					ImageName: "image/case-insensitive",
@@ -347,13 +346,11 @@ func TestValidateNetworkMode(t *testing.T) {
 			},
 		},
 	}
-
-	// disable yamltags validation
-	defer func(v func(interface{}) error) { validateYamltags = v }(validateYamltags)
-	validateYamltags = func(interface{}) error { return nil }
-
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			// disable yamltags validation
+			t.Override(&validateYamltags, func(interface{}) error { return nil })
+
 			err := Process(
 				&latest.SkaffoldConfig{
 					Pipeline: latest.Pipeline{
@@ -362,23 +359,24 @@ func TestValidateNetworkMode(t *testing.T) {
 						},
 					},
 				})
-			testutil.CheckError(t, test.shouldErr, err)
+
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
 
 func TestValidateSyncRules(t *testing.T) {
 	tests := []struct {
-		name      string
-		artifacts []*latest.Artifact
-		shouldErr bool
+		description string
+		artifacts   []*latest.Artifact
+		shouldErr   bool
 	}{
 		{
-			name:      "no artifacts",
-			artifacts: nil,
+			description: "no artifacts",
+			artifacts:   nil,
 		},
 		{
-			name: "no sync rules",
+			description: "no sync rules",
 			artifacts: []*latest.Artifact{
 				{
 					Sync: nil,
@@ -386,7 +384,7 @@ func TestValidateSyncRules(t *testing.T) {
 			},
 		},
 		{
-			name: "two good rules",
+			description: "two good rules",
 			artifacts: []*latest.Artifact{
 				{
 					Sync: &latest.Sync{Manual: []*latest.SyncRule{
@@ -404,7 +402,7 @@ func TestValidateSyncRules(t *testing.T) {
 			},
 		},
 		{
-			name: "one good one bad rule",
+			description: "one good one bad rule",
 			artifacts: []*latest.Artifact{
 				{
 					Sync: &latest.Sync{Manual: []*latest.SyncRule{
@@ -424,7 +422,7 @@ func TestValidateSyncRules(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			name: "two bad rules",
+			description: "two bad rules",
 			artifacts: []*latest.Artifact{
 				{
 					Sync: &latest.Sync{Manual: []*latest.SyncRule{
@@ -443,27 +441,23 @@ func TestValidateSyncRules(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			name: "stripping part of folder name is valid",
-			artifacts: []*latest.Artifact{
-				{
-					Sync: &latest.Sync{Manual: []*latest.SyncRule{
-						{
-							Src:   "srcsomeother/**/*.js",
-							Dest:  ".",
-							Strip: "src",
-						},
+			description: "stripping part of folder name is valid",
+			artifacts: []*latest.Artifact{{
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{{
+						Src:   "srcsomeother/**/*.js",
+						Dest:  ".",
+						Strip: "src",
 					}},
 				},
-			},
+			}},
 		},
 	}
-
-	// disable yamltags validation
-	defer func(v func(interface{}) error) { validateYamltags = v }(validateYamltags)
-	validateYamltags = func(interface{}) error { return nil }
-
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			// disable yamltags validation
+			t.Override(&validateYamltags, func(interface{}) error { return nil })
+
 			err := Process(
 				&latest.SkaffoldConfig{
 					Pipeline: latest.Pipeline{
@@ -472,7 +466,8 @@ func TestValidateSyncRules(t *testing.T) {
 						},
 					},
 				})
-			testutil.CheckError(t, test.shouldErr, err)
+
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
@@ -507,9 +502,8 @@ func TestValidateCustomDependencies(t *testing.T) {
 			expectedErrors: 1,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			artifact := &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					CustomArtifact: &latest.CustomArtifact{
@@ -519,9 +513,8 @@ func TestValidateCustomDependencies(t *testing.T) {
 			}
 
 			errs := validateCustomDependencies([]*latest.Artifact{artifact})
-			if len(errs) != test.expectedErrors {
-				t.Fatalf("got incorrect number of errors. got: %d \n expected: %d \n", len(errs), test.expectedErrors)
-			}
+
+			t.CheckDeepEqual(test.expectedErrors, len(errs))
 		})
 	}
 }

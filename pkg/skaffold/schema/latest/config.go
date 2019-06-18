@@ -20,7 +20,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v1beta10"
+const Version string = "skaffold/v1beta11"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -99,6 +99,8 @@ type GitTagger struct {
 	// `Tags` (default): use git tags or fall back to abbreviated commit hash.
 	// `CommitSha`: use the full git commit sha.
 	// `AbbrevCommitSha`: use the abbreviated git commit sha.
+	// `TreeSha`: use the full tree hash of the artifact workingdir.
+	// `AbbrevTreeSha`: use the abbreviated tree hash of the artifact workingdir.
 	Variant string `yaml:"variant,omitempty"`
 }
 
@@ -219,15 +221,19 @@ type KanikoCache struct {
 	// Repo is a remote repository to store cached layers. If none is specified, one will be
 	// inferred from the image name. See [Kaniko Caching](https://github.com/GoogleContainerTools/kaniko#caching).
 	Repo string `yaml:"repo,omitempty"`
+	// HostPath specifies a path on the host that is mounted to each pod as read only cache volume containing base images.
+	// If set, must exist on each node and prepopulated with kaniko-warmer.
+	HostPath string `yaml:"hostPath,omitempty"`
 }
 
 // ClusterDetails *beta* describes how to do an on-cluster build.
 type ClusterDetails struct {
-	// PullSecret is the path to the secret key file.
+	// PullSecret is the path to the Google Cloud service account secret key file.
 	PullSecret string `yaml:"pullSecret,omitempty"`
 
 	// PullSecretName is the name of the Kubernetes secret for pulling the files
-	// from the build context and pushing the final image.
+	// from the build context and pushing the final image. If given, the secret needs to
+	// contain the Google Cloud service account secret key under the key `kaniko-secret`.
 	// Defaults to `kaniko-secret`.
 	PullSecretName string `yaml:"pullSecretName,omitempty"`
 
@@ -249,10 +255,11 @@ type ClusterDetails struct {
 // DockerConfig contains information about the docker `config.json` to mount.
 type DockerConfig struct {
 	// Path is the path to the docker `config.json`.
-	Path string `yaml:"path,omitempty"`
+	Path string `yaml:"path,omitempty" yamltags:"oneOf=dockerSecret"`
 
-	// SecretName is the Kubernetes secret that will hold the Docker configuration.
-	SecretName string `yaml:"secretName,omitempty"`
+	// SecretName is the Kubernetes secret that contains the `config.json` Docker configuration.
+	// Note that the expected secret type is not 'kubernetes.io/dockerconfigjson' but 'Opaque'.
+	SecretName string `yaml:"secretName,omitempty" yamltags:"oneOf=dockerSecret"`
 }
 
 // ResourceRequirements describes the resource requirements for the kaniko pod.
@@ -410,6 +417,10 @@ type HelmRelease struct {
 
 	// UseHelmSecrets instructs skaffold to use secrets plugin on deployment.
 	UseHelmSecrets bool `yaml:"useHelmSecrets,omitempty"`
+
+	// Remote specifies whether the chart path is remote, or exists on the host filesystem.
+	// `remote: true` implies `skipBuildDependencies: true`.
+	Remote bool `yaml:"remote,omitempty"`
 
 	// Overrides are key-value pairs.
 	// If present, Skaffold will build a Helm `values` file that overrides

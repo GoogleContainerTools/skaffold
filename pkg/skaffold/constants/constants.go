@@ -46,6 +46,8 @@ const (
 	DefaultKanikoContainerName          = "kaniko"
 	DefaultKanikoEmptyDirName           = "kaniko-emptydir"
 	DefaultKanikoEmptyDirMountPath      = "/kaniko/buildcontext"
+	DefaultKanikoCacheDirName           = "kaniko-cache"
+	DefaultKanikoCacheDirMountPath      = "/cache"
 	DefaultKanikoDockerConfigSecretName = "docker-cfg"
 	DefaultKanikoDockerConfigPath       = "/kaniko/.docker"
 

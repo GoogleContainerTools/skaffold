@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -84,6 +85,11 @@ func Config(args ...string) *RunBuilder {
 // Init runs `skaffold init` with the given arguments.
 func Init(args ...string) *RunBuilder {
 	return &RunBuilder{command: "init", args: args}
+}
+
+// Diagnose runs `skaffold diagnose` with the given arguments.
+func Diagnose(args ...string) *RunBuilder {
+	return &RunBuilder{command: "diagnose", args: args}
 }
 
 // InDir sets the directory in which skaffold is running.
@@ -197,7 +203,7 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	args = append(args, b.args...)
 
 	cmd := exec.CommandContext(ctx, "skaffold", args...)
-	cmd.Env = append(removeSkaffoldEnvVariables(os.Environ()), b.env...)
+	cmd.Env = append(removeSkaffoldEnvVariables(util.OSEnviron()), b.env...)
 	if b.stdin != nil {
 		cmd.Stdin = bytes.NewReader(b.stdin)
 	}

@@ -20,10 +20,10 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/pkg/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -35,32 +35,23 @@ var (
 
 // NewCmdDeploy describes the CLI command to deploy artifacts.
 func NewCmdDeploy(out io.Writer) *cobra.Command {
-	return commands.
-		New(out).
-		WithDescription("deploy", "Deploys the artifacts").
+	return NewCmd(out, "deploy").
+		WithDescription("Deploys the artifacts").
+		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.VarP(&preBuiltImages, "images", "i", "A list of pre-built images to deploy")
 			f.VarP(&buildOutputFile, "build-artifacts", "a", `Filepath containing build output.
 E.g. build.out created by running skaffold build --quiet {{json .}} > build.out`)
-			AddRunDevFlags(f)
-			AddRunDeployFlags(f)
 		}).
-		NoArgs(doDeploy)
+		NoArgs(cancelWithCtrlC(context.Background(), doDeploy))
 }
 
-func doDeploy(out io.Writer) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	catchCtrlC(cancel)
-	runner, _, err := newRunner(opts)
-	if err != nil {
-		return errors.Wrap(err, "creating runner")
-	}
-	defer runner.RPCServerShutdown()
+func doDeploy(ctx context.Context, out io.Writer) error {
+	return withRunner(ctx, func(r *runner.SkaffoldRunner, _ *latest.SkaffoldConfig) error {
+		// If the BuildArtifacts contains an image in the preBuilt list,
+		// use image from BuildArtifacts instead
+		deployArtifacts := build.MergeWithPreviousBuilds(buildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts())
 
-	// If the BuildArtifacts contains an image in the preBuilt list,
-	// use image from BuildArtifacts instead
-	deployArtifacts := build.MergeWithPreviousBuilds(buildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts())
-
-	return runner.Deploy(ctx, out, deployArtifacts)
+		return r.Deploy(ctx, out, deployArtifacts)
+	})
 }

@@ -19,7 +19,6 @@ package cmd
 import (
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/spf13/cobra"
@@ -29,9 +28,8 @@ import (
 var versionFlag = flags.NewTemplateFlag("{{.Version}}\n", version.Info{})
 
 func NewCmdVersion(out io.Writer) *cobra.Command {
-	return commands.
-		New(out).
-		WithDescription("version", "Print the version information").
+	return NewCmd(out, "version").
+		WithDescription("Print the version information").
 		WithFlags(func(f *pflag.FlagSet) {
 			f.VarP(versionFlag, "output", "o", versionFlag.Usage())
 		}).

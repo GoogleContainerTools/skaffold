@@ -24,57 +24,56 @@ import (
 
 func TestImageReplaceDefaultRepo(t *testing.T) {
 	tests := []struct {
-		name          string
+		description   string
 		image         string
 		defaultRepo   string
 		expectedImage string
 	}{
 		{
-			name:          "basic GCR concatenation",
+			description:   "basic GCR concatenation",
 			image:         "gcr.io/some/registry",
 			defaultRepo:   "gcr.io/default",
 			expectedImage: "gcr.io/default/gcr.io/some/registry",
 		},
 		{
-			name:          "no default repo set",
+			description:   "no default repo set",
 			image:         "gcr.io/some/registry",
 			expectedImage: "gcr.io/some/registry",
 		},
 		{
-			name:          "provided image has defaultRepo prefix",
+			description:   "provided image has defaultRepo prefix",
 			image:         "gcr.io/default/registry",
 			defaultRepo:   "gcr.io/default",
 			expectedImage: "gcr.io/default/registry",
 		},
 		{
-			name:          "image has shared prefix with defaultRepo",
+			description:   "image has shared prefix with defaultRepo",
 			image:         "gcr.io/default/example/registry",
 			defaultRepo:   "gcr.io/default/repository",
 			expectedImage: "gcr.io/default/repository/example/registry",
 		},
 		{
-			name:          "aws",
+			description:   "aws",
 			image:         "gcr.io/some/registry",
 			defaultRepo:   "aws_account_id.dkr.ecr.region.amazonaws.com",
 			expectedImage: "aws_account_id.dkr.ecr.region.amazonaws.com/gcr_io_some_registry",
 		},
 		{
-			name:          "aws over 255 chars",
+			description:   "aws over 255 chars",
 			image:         "gcr.io/herewehaveanincrediblylongregistryname/herewealsohaveanabnormallylongimagename/doubtyouveseenanimagethislong/butyouneverknowdoyouimeanpeopledosomecrazystuffoutthere/goodluckpushingthistoanyregistrymyfriend",
 			defaultRepo:   "aws_account_id.dkr.ecr.region.amazonaws.com",
 			expectedImage: "aws_account_id.dkr.ecr.region.amazonaws.com/gcr_io_herewehaveanincrediblylongregistryname_herewealsohaveanabnormallylongimagename_doubtyouveseenanimagethislong_butyouneverknowdoyouimeanpeopledosomecrazystuffoutthere_goodluckpushingthistoanyregistrymyfrien",
 		},
 		{
-			name:          "normal GCR concatenation with numbers and other characters",
+			description:   "normal GCR concatenation with numbers and other characters",
 			image:         "gcr.io/k8s-skaffold/skaffold-example",
 			defaultRepo:   "gcr.io/k8s-skaffold",
 			expectedImage: "gcr.io/k8s-skaffold/skaffold-example",
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			testutil.CheckDeepEqual(t, test.expectedImage, SubstituteDefaultRepoIntoImage(test.defaultRepo, test.image))
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.CheckDeepEqual(test.expectedImage, SubstituteDefaultRepoIntoImage(test.defaultRepo, test.image))
 		})
 	}
 }

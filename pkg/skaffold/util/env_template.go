@@ -23,12 +23,14 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
-var OSEnviron = os.Environ
+// For testing
+var (
+	OSEnviron = os.Environ
+)
 
 // ParseEnvTemplate is a simple wrapper to parse an env template
 func ParseEnvTemplate(t string) (*template.Template, error) {

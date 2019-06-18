@@ -65,24 +65,19 @@ func TestQuietFlag(t *testing.T) {
 			mock:           mockCreateRunner,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			defer func(flag bool) { quietFlag = flag }(quietFlag)
-			quietFlag = true
-
-			defer func(tf *flags.TemplateFlag) { buildFormatFlag = tf }(buildFormatFlag)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&quietFlag, true)
+			t.Override(&createRunnerAndBuildFunc, test.mock)
 			if test.template != "" {
-				buildFormatFlag = flags.NewTemplateFlag(test.template, flags.BuildOutput{})
+				t.Override(&buildFormatFlag, flags.NewTemplateFlag(test.template, flags.BuildOutput{}))
 			}
 
-			defer func(f func(context.Context, io.Writer) ([]build.Artifact, error)) { createRunnerAndBuildFunc = f }(createRunnerAndBuildFunc)
-			createRunnerAndBuildFunc = test.mock
-
 			var output bytes.Buffer
-			err := doBuild(&output)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, string(test.expectedOutput), output.String())
+			err := doBuild(context.Background(), &output)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, string(test.expectedOutput), output.String())
 		})
 	}
 }
@@ -115,13 +110,12 @@ func TestRunBuild(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			defer func(f func(context.Context, io.Writer) ([]build.Artifact, error)) { createRunnerAndBuildFunc = f }(createRunnerAndBuildFunc)
-			createRunnerAndBuildFunc = test.mock
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&createRunnerAndBuildFunc, test.mock)
 
-			err := doBuild(ioutil.Discard)
+			err := doBuild(context.Background(), ioutil.Discard)
 
-			testutil.CheckError(t, test.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }

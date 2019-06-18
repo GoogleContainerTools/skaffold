@@ -104,9 +104,6 @@ build:
 )
 
 func TestParseConfig(t *testing.T) {
-	cleanup := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
-	defer cleanup()
-
 	var tests = []struct {
 		apiVersion  string
 		description string
@@ -206,24 +203,22 @@ func TestParseConfig(t *testing.T) {
 			shouldErr:   true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			tmp, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 
-			yaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", test.apiVersion, test.config)
-			tmp.Write("skaffold.yaml", yaml)
+			tmp := t.NewTempDir().
+				Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", test.apiVersion, test.config))
 
 			cfg, err := ParseConfig(tmp.Path("skaffold.yaml"), true)
 			if cfg != nil {
 				config := cfg.(*latest.SkaffoldConfig)
-				if err := defaults.Set(config); err != nil {
-					t.Fatal("unable to set default values")
-				}
+				err := defaults.Set(config)
+
+				t.CheckNoError(err)
 			}
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cfg)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, cfg)
 		})
 	}
 }
@@ -390,11 +385,13 @@ func TestUpgradeToNextVersion(t *testing.T) {
 		to := SchemaVersions[i+1]
 		description := fmt.Sprintf("Upgrade from %s to %s", from.APIVersion, to.APIVersion)
 
-		t.Run(description, func(t *testing.T) {
+		testutil.Run(t, description, func(t *testutil.T) {
 			factory, _ := SchemaVersions.Find(from.APIVersion)
+
 			newer, err := factory().Upgrade()
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, to.APIVersion, newer.GetVersion())
+			t.CheckNoError(err)
+			t.CheckDeepEqual(to.APIVersion, newer.GetVersion())
 		})
 	}
 }

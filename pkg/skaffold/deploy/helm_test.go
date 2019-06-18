@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -36,6 +37,7 @@ import (
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 )
 
@@ -212,7 +214,7 @@ spec:
       containers:
         - name: skaffold-helm
           image: gcr.io/nick-cloudbuild/skaffold-helm:f759510436c8fd6f7ffa13dd9e9d85e64bec8d2bfd12c5aa3fb9af1288eccdab
-          imagePullPolicy: 
+          imagePullPolicy:
           command: ["/bin/bash", "-c", "--" ]
           args: ["while true; do sleep 30; done;"]
           resources:
@@ -301,7 +303,13 @@ func TestHelmDeploy(t *testing.T) {
 			builds:      testBuilds,
 		},
 		{
-			description: "deploy error unmatched parameter",
+			description: "deploy should not error for unmatched parameter when no builds present",
+			cmd:         &MockHelm{t: t},
+			runContext:  makeRunContext(testDeployConfigParameterUnmatched, false),
+			builds:      nil,
+		},
+		{
+			description: "deploy should error for unmatched parameter when builds present",
 			cmd:         &MockHelm{t: t},
 			runContext:  makeRunContext(testDeployConfigParameterUnmatched, false),
 			builds:      testBuilds,
@@ -447,16 +455,14 @@ func TestHelmDeploy(t *testing.T) {
 			builds:      testBuilds,
 		},
 	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, test.cmd)
 
-	for _, tt := range tests {
-		t.Run(tt.description, func(t *testing.T) {
-			event.InitializeState(tt.runContext)
-			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = tt.cmd
+			event.InitializeState(test.runContext)
+			err := NewHelmDeployer(test.runContext).Deploy(context.Background(), ioutil.Discard, test.builds, nil)
 
-			err := NewHelmDeployer(tt.runContext).Deploy(context.Background(), ioutil.Discard, tt.builds, nil)
-
-			testutil.CheckError(t, tt.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
@@ -531,29 +537,29 @@ func (m *MockHelm) RunCmd(c *exec.Cmd) error {
 
 func TestParseHelmRelease(t *testing.T) {
 	var tests = []struct {
-		name      string
-		yaml      []byte
-		shouldErr bool
+		description string
+		yaml        []byte
+		shouldErr   bool
 	}{
 		{
-			name: "parse valid deployment yaml",
-			yaml: []byte(validDeployYaml),
+			description: "parse valid deployment yaml",
+			yaml:        []byte(validDeployYaml),
 		},
 		{
-			name: "parse valid service yaml",
-			yaml: []byte(validServiceYaml),
+			description: "parse valid service yaml",
+			yaml:        []byte(validServiceYaml),
 		},
 		{
-			name:      "parse invalid deployment yaml",
-			yaml:      []byte(invalidDeployYaml),
-			shouldErr: true,
+			description: "parse invalid deployment yaml",
+			yaml:        []byte(invalidDeployYaml),
+			shouldErr:   true,
 		},
 	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			_, err := parseRuntimeObject(testNamespace, test.yaml)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := parseRuntimeObject(testNamespace, tt.yaml)
-			testutil.CheckError(t, tt.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
@@ -573,6 +579,7 @@ func TestHelmDependencies(t *testing.T) {
 		files                 []string
 		valuesFiles           []string
 		skipBuildDependencies bool
+		remote                bool
 		expected              func(folder *testutil.TempDir) []string
 	}{
 		{
@@ -600,32 +607,82 @@ func TestHelmDependencies(t *testing.T) {
 				return []string{"/folder/values.yaml", folder.Path("Chart.yaml")}
 			},
 		},
+		{
+			description:           "no deps for remote chart path",
+			skipBuildDependencies: false,
+			files:                 []string{"Chart.yaml"},
+			remote:                true,
+			expected: func(folder *testutil.TempDir) []string {
+				return nil
+			},
+		},
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.description, func(t *testing.T) {
-			folder, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
-			for _, file := range tt.files {
-				folder.Write(file, "")
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
+			for _, file := range test.files {
+				tmpDir.Write(file, "")
 			}
+
 			deployer := NewHelmDeployer(makeRunContext(&latest.HelmDeploy{
 				Releases: []latest.HelmRelease{
 					{
 						Name:                  "skaffold-helm",
-						ChartPath:             folder.Root(),
-						ValuesFiles:           tt.valuesFiles,
+						ChartPath:             tmpDir.Root(),
+						ValuesFiles:           test.valuesFiles,
 						Values:                map[string]string{"image": "skaffold-helm"},
 						Overrides:             schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 						SetValues:             map[string]string{"some.key": "somevalue"},
-						SkipBuildDependencies: tt.skipBuildDependencies,
+						SkipBuildDependencies: test.skipBuildDependencies,
+						Remote:                test.remote,
 					},
 				},
 			}, false))
 
 			deps, err := deployer.Dependencies()
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, tt.expected(folder), deps)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected(tmpDir), deps)
+		})
+	}
+}
+
+func TestExpandPaths(t *testing.T) {
+	homedir.DisableCache = true // for testing only
+
+	var tests = []struct {
+		description  string
+		paths        []string
+		unixExpanded []string //unix expands path with forward slashes, windows with backward slashes
+		winExpanded  []string
+		env          map[string]string
+	}{
+		{
+			description:  "expand paths on unix",
+			paths:        []string{"~/path/with/tilde/values.yaml", "/some/absolute/path/values.yaml"},
+			unixExpanded: []string{"/home/path/with/tilde/values.yaml", "/some/absolute/path/values.yaml"},
+			winExpanded:  []string{`\home\path\with\tilde\values.yaml`, "/some/absolute/path/values.yaml"},
+			env:          map[string]string{"HOME": "/home"},
+		},
+		{
+			description:  "expand paths on windows",
+			paths:        []string{"~/path/with/tilde/values.yaml", `C:\Users\SomeUser\path\values.yaml`},
+			unixExpanded: []string{`C:\Users\SomeUser/path/with/tilde/values.yaml`, `C:\Users\SomeUser\path\values.yaml`},
+			winExpanded:  []string{`C:\Users\SomeUser\path\with\tilde\values.yaml`, `C:\Users\SomeUser\path\values.yaml`},
+			env:          map[string]string{"HOME": `C:\Users\SomeUser`},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetEnvs(test.env)
+			expanded := expandPaths(test.paths)
+
+			if runtime.GOOS == "windows" {
+				t.CheckDeepEqual(test.winExpanded, expanded)
+			} else {
+				t.CheckDeepEqual(test.unixExpanded, expanded)
+			}
 		})
 	}
 }

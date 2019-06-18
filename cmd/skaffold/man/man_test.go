@@ -18,6 +18,8 @@ package main
 
 import (
 	"bytes"
+	"io/ioutil"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -27,12 +29,26 @@ func TestPrintMan(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	err := printMan(&stdout, &stderr)
+	printMan(&stdout, &stderr)
+	output := stdout.String()
 
-	testutil.CheckError(t, false, err)
-	testutil.CheckContains(t, "skaffold build", stdout.String())
-	testutil.CheckContains(t, "skaffold run", stdout.String())
-	testutil.CheckContains(t, "skaffold dev", stdout.String())
-	testutil.CheckContains(t, "Env vars", stdout.String())
+	// Sanity checks
 	testutil.CheckDeepEqual(t, "", stderr.String())
+	testutil.CheckContains(t, "skaffold build", output)
+	testutil.CheckContains(t, "skaffold run", output)
+	testutil.CheckContains(t, "skaffold dev", output)
+	testutil.CheckContains(t, "Env vars", output)
+
+	// Compare to current man page
+	header, err := ioutil.ReadFile(filepath.Join("..", "..", "..", "docs", "content", "en", "docs", "references", "cli", "index_header"))
+	testutil.CheckError(t, false, err)
+	header = bytes.Replace(header, []byte("\r\n"), []byte("\n"), -1)
+
+	expected, err := ioutil.ReadFile(filepath.Join("..", "..", "..", "docs", "content", "en", "docs", "references", "cli", "_index.md"))
+	testutil.CheckError(t, false, err)
+	expected = bytes.Replace(expected, []byte("\r\n"), []byte("\n"), -1)
+
+	if string(expected) != string(header)+output {
+		t.Error("You have skaffold command changes but haven't generated the CLI reference docs. Please run ./hack/generate-man.sh and commit the results!")
+	}
 }

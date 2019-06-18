@@ -24,32 +24,26 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 func TestDockerContext(t *testing.T) {
 	for _, dir := range []string{".", "sub"} {
-		t.Run(dir, func(t *testing.T) {
-			tmpDir, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
+		testutil.Run(t, dir, func(t *testutil.T) {
+			t.NewTempDir().
+				Write(dir+"/files/ignored.txt", "").
+				Write(dir+"/files/included.txt", "").
+				Write(dir+"/.dockerignore", "**/ignored.txt\nalsoignored.txt").
+				Write(dir+"/Dockerfile", "FROM alpine\nCOPY ./files /files").
+				Write(dir+"/ignored.txt", "").
+				Write(dir+"/alsoignored.txt", "").
+				Chdir()
 
-			defer func(f func(string, map[string]bool) (*v1.ConfigFile, error)) { RetrieveImage = f }(RetrieveImage)
 			imageFetcher := fakeImageFetcher{}
-			RetrieveImage = imageFetcher.fetch
+			t.Override(&RetrieveImage, imageFetcher.fetch)
 
 			artifact := &latest.DockerArtifact{
 				DockerfilePath: "Dockerfile",
 			}
-
-			tmpDir.Write(dir+"/files/ignored.txt", "")
-			tmpDir.Write(dir+"/files/included.txt", "")
-			tmpDir.Write(dir+"/.dockerignore", "**/ignored.txt\nalsoignored.txt")
-			tmpDir.Write(dir+"/Dockerfile", "FROM alpine\nCOPY ./files /files")
-			tmpDir.Write(dir+"/ignored.txt", "")
-			tmpDir.Write(dir+"/alsoignored.txt", "")
-
-			reset := testutil.Chdir(t, tmpDir.Root())
-			defer reset()
 
 			reader, writer := io.Pipe()
 			go func() {
@@ -68,28 +62,16 @@ func TestDockerContext(t *testing.T) {
 				if err == io.EOF {
 					break
 				}
-				if err != nil {
-					t.Fatal(err)
-				}
+				t.CheckNoError(err)
 
 				files[header.Name] = true
 			}
 
-			if files["ignored.txt"] {
-				t.Error("File ignored.txt should have been excluded, but was not")
-			}
-			if files["alsoignored.txt"] {
-				t.Error("File alsoignored.txt should have been excluded, but was not")
-			}
-			if files["files/ignored.txt"] {
-				t.Error("File files/ignored.txt should have been excluded, but was not")
-			}
-			if !files["files/included.txt"] {
-				t.Error("File files/included.txt should have been included, but was not")
-			}
-			if !files["Dockerfile"] {
-				t.Error("File Dockerfile should have been included, but was not")
-			}
+			t.CheckDeepEqual(false, files["ignored.txt"])
+			t.CheckDeepEqual(false, files["alsoignored.txt"])
+			t.CheckDeepEqual(false, files["files/ignored.txt"])
+			t.CheckDeepEqual(true, files["files/included.txt"])
+			t.CheckDeepEqual(true, files["Dockerfile"])
 		})
 	}
 }

@@ -23,7 +23,7 @@ GSC_BUILD_LATEST ?= gs://$(RELEASE_BUCKET)/builds/latest
 GSC_RELEASE_PATH ?= gs://$(RELEASE_BUCKET)/releases/$(VERSION)
 GSC_RELEASE_LATEST ?= gs://$(RELEASE_BUCKET)/releases/latest
 
-REMOTE_INTEGRATION ?= false
+GCP_ONLY ?= false
 GCP_PROJECT ?= k8s-skaffold
 GKE_CLUSTER_NAME ?= integration-tests
 GKE_ZONE ?= us-central1-a
@@ -41,22 +41,39 @@ endif
 GO_GCFLAGS := "all=-trimpath=${PWD}"
 GO_ASMFLAGS := "all=-trimpath=${PWD}"
 
-GO_LDFLAGS :="
-GO_LDFLAGS += -extldflags \"${LDFLAGS}\"
-GO_LDFLAGS += -X $(VERSION_PACKAGE).version=$(VERSION)
+LDFLAGS_linux = -static
+LDFLAGS_darwin =
+LDFLAGS_windows =
+
+GO_BUILD_TAGS_linux := "osusergo netgo static_build"
+GO_BUILD_TAGS_darwin := ""
+GO_BUILD_TAGS_windows := ""
+
+
+GO_LDFLAGS = -X $(VERSION_PACKAGE).version=$(VERSION)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).buildDate=$(shell date +'%Y-%m-%dT%H:%M:%SZ')
 GO_LDFLAGS += -X $(VERSION_PACKAGE).gitCommit=$(COMMIT)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).gitTreeState=$(if $(shell git status --porcelain),dirty,clean)
-GO_LDFLAGS +="
+
+GO_LDFLAGS_windows =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_windows)\""
+GO_LDFLAGS_darwin =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_darwin)\""
+GO_LDFLAGS_linux =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_linux)\""
 
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
-GO_BUILD_TAGS := "kqueue"
 
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
 
+$(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
+
 $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
-	GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -tags $(GO_BUILD_TAGS) -o $@ $(BUILD_PACKAGE)
+	docker build --build-arg PROJECT=$(REPOPATH) \
+		--build-arg TARGETS=$*/$(GOARCH) \
+		--build-arg FLAG_LDFLAGS=$(GO_LDFLAGS_$(*)) \
+		--build-arg FLAG_TAGS=$(GO_BUILD_TAGS_$(*)) \
+		-f deploy/cross/Dockerfile -t skaffold/cross .
+	docker run --rm --entrypoint sh skaffold/cross -c "cat /build/skaffold*" > $@
 
 %.sha256: %
 	shasum -a 256 $< > $@
@@ -82,17 +99,17 @@ test: $(BUILD_DIR)
 
 .PHONY: install
 install: $(GO_FILES) $(BUILD_DIR)
-	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go install -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -tags $(GO_BUILD_TAGS) $(BUILD_PACKAGE)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go install -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) $(BUILD_PACKAGE)
 
 .PHONY: integration
 integration: install
-ifeq ($(REMOTE_INTEGRATION),true)
+ifeq ($(GCP_ONLY),true)
 	gcloud container clusters get-credentials \
 		$(GKE_CLUSTER_NAME) \
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-	REMOTE_INTEGRATION=$(REMOTE_INTEGRATION) go test -v $(REPOPATH)/integration -timeout 15m
+	GCP_ONLY=$(GCP_ONLY) go test -v $(REPOPATH)/integration -timeout 15m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
@@ -144,24 +161,43 @@ release-build-in-docker:
 clean:
 	rm -rf $(BUILD_DIR)
 
-.PHONY: integration-in-docker
-integration-in-docker:
+.PHONY: kind-cluster
+kind-cluster:
+	kind get clusters | grep -q kind || kind create cluster
+
+.PHONY: skaffold-builder
+skaffold-builder:
 	-docker pull gcr.io/$(GCP_PROJECT)/skaffold-builder
 	docker build \
 		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		-f deploy/skaffold/Dockerfile \
 		--target integration \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-integration .
+
+.PHONY: integration-in-kind
+integration-in-kind: kind-cluster skaffold-builder
+	docker exec -it kind-control-plane cat /etc/kubernetes/admin.conf > /tmp/kind-config
+	echo '{}' > /tmp/docker-config
+	docker run --rm \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v /tmp/kind-config:/kind-config \
+		-v /tmp/docker-config:/root/.docker/config.json \
+		-e KUBECONFIG=/kind-config \
+		gcr.io/$(GCP_PROJECT)/skaffold-integration
+
+.PHONY: integration-in-docker
+integration-in-docker: skaffold-builder
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		-v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
-		-e REMOTE_INTEGRATION=true \
+		-e GCP_ONLY=$(GCP_ONLY) \
 		-e GCP_PROJECT=$(GCP_PROJECT) \
 		-e GKE_CLUSTER_NAME=$(GKE_CLUSTER_NAME) \
 		-e GKE_ZONE=$(GKE_ZONE) \
 		-e DOCKER_CONFIG=/root/.docker \
 		-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
+		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		gcr.io/$(GCP_PROJECT)/skaffold-integration
 
 .PHONY: submit-build-trigger

@@ -46,7 +46,9 @@ representations are untouched.
   - Only JVM and NodeJS applications are supported:
       - JVM applications are configured using the `JAVA_TOOL_OPTIONS` environment variable
         which causes extra debugging output on launch.
-      - NodeJS applications must be launched using `node` or `nodemon`
+      - NodeJS applications must be launched using `node` or `nodemon`, or `npm`
+          - `npm` scripts shouldn't then invoke `nodemon` as the DevTools inspector
+            configuration will be picked up by `nodemon` 
   - File watching is disabled for all artifacts, regardless of whether
     the artifact could be configured for debugging.
   

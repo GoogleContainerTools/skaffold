@@ -73,29 +73,29 @@ func TestHelperProcess(*testing.T) {
 
 func TestCmd_RunCmdOut(t *testing.T) {
 	tests := []struct {
-		name      string
-		cmd       *exec.Cmd
-		want      string
-		shouldErr bool
+		description string
+		cmd         *exec.Cmd
+		want        string
+		shouldErr   bool
 	}{
 		{
-			name:      "skaffold test",
-			cmd:       helperCommand("skaffold", "dev"),
-			want:      "dev\n",
-			shouldErr: false,
+			description: "skaffold test",
+			cmd:         helperCommand("skaffold", "dev"),
+			want:        "dev\n",
+			shouldErr:   false,
 		},
 		{
-			name:      "unknown command test",
-			cmd:       helperCommand("foo", "bar"),
-			want:      "",
-			shouldErr: true,
+			description: "unknown command test",
+			cmd:         helperCommand("foo", "bar"),
+			want:        "",
+			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			got, err := RunCmdOut(test.cmd)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.want, string(got))
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.want, string(got))
 		})
 	}
 }

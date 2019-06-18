@@ -39,16 +39,15 @@ func TestDefaultLabeller(t *testing.T) {
 			expected:    fmt.Sprintf("skaffold-unknown"),
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			l := &DefaultLabeller{
 				version: test.version,
 			}
-			expected := map[string]string{
-				"app.kubernetes.io/managed-by": test.expected,
-			}
-			testutil.CheckDeepEqual(t, expected, l.Labels())
+			labels := l.Labels()
+
+			expected := map[string]string{"app.kubernetes.io/managed-by": test.expected}
+			t.CheckDeepEqual(expected, labels)
 		})
 	}
 }

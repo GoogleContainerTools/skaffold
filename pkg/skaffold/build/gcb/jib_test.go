@@ -25,14 +25,14 @@ import (
 )
 
 func TestJibMavenBuildSteps(t *testing.T) {
-	var testCases = []struct {
+	var tests = []struct {
 		skipTests bool
 		args      []string
 	}{
 		{false, []string{"-Djib.console=plain", "--non-recursive", "prepare-package", "jib:dockerBuild", "-Dimage=img"}},
 		{true, []string{"-Djib.console=plain", "--non-recursive", "-DskipTests=true", "prepare-package", "jib:dockerBuild", "-Dimage=img"}},
 	}
-	for _, tt := range testCases {
+	for _, test := range tests {
 		artifact := &latest.Artifact{
 			ArtifactType: latest.ArtifactType{
 				JibMavenArtifact: &latest.JibMavenArtifact{},
@@ -43,7 +43,7 @@ func TestJibMavenBuildSteps(t *testing.T) {
 			GoogleCloudBuild: &latest.GoogleCloudBuild{
 				MavenImage: "maven:3.6.0",
 			},
-			skipTests: tt.skipTests,
+			skipTests: test.skipTests,
 		}
 
 		steps, err := builder.buildSteps(artifact, []string{"img"})
@@ -51,7 +51,7 @@ func TestJibMavenBuildSteps(t *testing.T) {
 
 		expected := []*cloudbuild.BuildStep{{
 			Name: "maven:3.6.0",
-			Args: tt.args,
+			Args: test.args,
 		}}
 
 		testutil.CheckDeepEqual(t, expected, steps)
@@ -59,14 +59,14 @@ func TestJibMavenBuildSteps(t *testing.T) {
 }
 
 func TestJibGradleBuildSteps(t *testing.T) {
-	var testCases = []struct {
+	var tests = []struct {
 		skipTests bool
 		args      []string
 	}{
 		{false, []string{"-Djib.console=plain", ":jibDockerBuild", "--image=img"}},
 		{true, []string{"-Djib.console=plain", ":jibDockerBuild", "--image=img", "-x", "test"}},
 	}
-	for _, tt := range testCases {
+	for _, test := range tests {
 		artifact := &latest.Artifact{
 			ArtifactType: latest.ArtifactType{
 				JibGradleArtifact: &latest.JibGradleArtifact{},
@@ -77,7 +77,7 @@ func TestJibGradleBuildSteps(t *testing.T) {
 			GoogleCloudBuild: &latest.GoogleCloudBuild{
 				GradleImage: "gradle:5.1.1",
 			},
-			skipTests: tt.skipTests,
+			skipTests: test.skipTests,
 		}
 
 		steps, err := builder.buildSteps(artifact, []string{"img"})
@@ -85,7 +85,7 @@ func TestJibGradleBuildSteps(t *testing.T) {
 
 		expected := []*cloudbuild.BuildStep{{
 			Name: "gradle:5.1.1",
-			Args: tt.args,
+			Args: test.args,
 		}}
 
 		testutil.CheckDeepEqual(t, expected, steps)

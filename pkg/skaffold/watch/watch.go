@@ -20,6 +20,8 @@ import (
 	"context"
 	"io"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/pkg/errors"
 )
 
@@ -72,6 +74,16 @@ func (w *watchList) Run(ctx context.Context, out io.Writer, onChange func() erro
 	defer cancelTrigger()
 
 	t, err := w.trigger.Start(ctxTrigger)
+	if err != nil {
+		if notifyTrigger, ok := w.trigger.(*fsNotifyTrigger); ok {
+			w.trigger = &pollTrigger{
+				Interval: notifyTrigger.Interval,
+			}
+
+			logrus.Debugln("Couldn't start notify trigger. Falling back to a polling trigger")
+			t, err = w.trigger.Start(ctxTrigger)
+		}
+	}
 	if err != nil {
 		return errors.Wrap(err, "unable to start trigger")
 	}
