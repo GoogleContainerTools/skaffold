@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta9
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -28,6 +29,11 @@ import (
 
 const (
 	incompatibleSyncWarning = `The semantics of sync has changed, the folder structure is no longer flattened but preserved (see https://skaffold.dev/docs/how-tos/filesync/). The likely impacted patterns in your skaffold yaml are: %s`
+)
+
+var (
+	// compatibleSimplePattern have a directory prefix without stars and a basename with at most one star.
+	compatibleSimplePattern = regexp.MustCompile(`^([^*]*/)?([^*/]*\*[^*/]*|[^*/]+)$`)
 )
 
 // Upgrade upgrades a configuration to the next version.
@@ -94,17 +100,25 @@ func (config *SkaffoldConfig) convertSyncRules() [][]*next.SyncRule {
 		newRules := make([]*next.SyncRule, 0, len(a.Sync))
 		for src, dest := range a.Sync {
 			var syncRule *next.SyncRule
-			if strings.Contains(src, "***") {
+			switch {
+			case compatibleSimplePattern.MatchString(src):
+				syncRule = &next.SyncRule{
+					Src:   src,
+					Dest:  dest,
+					Strip: compatibleSimplePattern.FindStringSubmatch(src)[1],
+				}
+			case strings.Contains(src, "***"):
 				syncRule = &next.SyncRule{
 					Src:   strings.Replace(src, "***", "**", -1),
 					Dest:  dest,
 					Strip: strings.Split(src, "***")[0],
 				}
-			} else {
-				// only patterns with '**' are incompatible
-				if strings.Contains(src, "**") {
-					incompatiblePatterns = append(incompatiblePatterns, src)
-				}
+			default:
+				// Incompatible patterns contain `**` or glob directories.
+				// Such patterns flatten the content at the destination which
+				// cannot be reproduced with the current config. For example:
+				// `/app/**/subdir/*.html`, `/app/*/*.html`
+				incompatiblePatterns = append(incompatiblePatterns, src)
 				syncRule = &next.SyncRule{
 					Src:  src,
 					Dest: dest,

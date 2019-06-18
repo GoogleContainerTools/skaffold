@@ -140,10 +140,33 @@ apiVersion: skaffold/v1beta9
 kind: Config
 build:
   artifacts:
+  - image: gcr.io/no-star-1
+    sync:
+      '/public/A/B/a.html': /www
+  - image: gcr.io/no-star-2
+    sync:
+      '/b.html': /www
+  - image: gcr.io/no-star-3
+    sync:
+      'c.html': /www
+  - image: gcr.io/no-star-4
+    sync:
+      'public/A/d.html': /www
+  - image: gcr.io/single-star-1
+    sync:
+      'public/*': /app
+  - image: gcr.io/single-star-2
+    sync:
+      'main*.js': /app
+  - image: gcr.io/single-star-3
+    sync:
+      '/public/b/*.js': /app
+  - image: gcr.io/single-star-4
+    sync:
+      '/c/prefix-*': /app
   - image: gcr.io/k8s-skaffold/node-example
     sync:
       '**/*.js': .
-  - image: gcr.io/k8s-skaffold/leeroy
   - image: gcr.io/k8s-skaffold/react-reload
     sync:
       'src/***/*.js': app/
@@ -158,12 +181,57 @@ apiVersion: skaffold/v1beta10
 kind: Config
 build:
   artifacts:
+  - image: gcr.io/no-star-1
+    sync:
+      manual:
+      - src: /public/A/B/a.html
+        dest: /www
+        strip: /public/A/B/
+  - image: gcr.io/no-star-2
+    sync:
+      manual:
+      - src: /b.html
+        dest: /www
+        strip: /
+  - image: gcr.io/no-star-3
+    sync:
+      manual:
+      - src: c.html
+        dest: /www
+  - image: gcr.io/no-star-4
+    sync:
+      manual:
+      - src: public/A/d.html
+        dest: /www
+        strip: public/A/
+  - image: gcr.io/single-star-1
+    sync:
+      manual:
+      - src: 'public/*'
+        dest: /app
+        strip: public/
+  - image: gcr.io/single-star-2
+    sync:
+      manual:
+      - src: 'main*.js'
+        dest: /app
+  - image: gcr.io/single-star-3
+    sync:
+      manual:
+      - src: '/public/b/*.js'
+        dest: /app
+        strip: /public/b/
+  - image: gcr.io/single-star-4
+    sync:
+      manual:
+      - src: '/c/prefix-*'
+        dest: /app
+        strip: /c/
   - image: gcr.io/k8s-skaffold/node-example
     sync:
       manual:
       - src: '**/*.js'
         dest: .
-  - image: gcr.io/k8s-skaffold/leeroy
   - image: gcr.io/k8s-skaffold/react-reload
     sync:
       manual:
