@@ -38,23 +38,23 @@ const (
 
 // Config holds information about a Jib project
 type Config struct {
-	Name    string `json:"name,omitempty"`
-	Image   string `json:"image,omitempty"`
-	Path    string `json:"path,omitempty"`
-	Project string `json:"project,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Image    string `json:"image,omitempty"`
+	FilePath string `json:"path,omitempty"`
+	Project  string `json:"project,omitempty"`
 }
 
 // Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.
 func (j Config) Describe() string {
 	if j.Project != "" {
-		return fmt.Sprintf("%s (%s, %s)", j.Name, j.Project, j.Path)
+		return fmt.Sprintf("%s (%s, %s)", j.Name, j.Project, j.FilePath)
 	}
-	return fmt.Sprintf("%s (%s)", j.Name, j.Path)
+	return fmt.Sprintf("%s (%s)", j.Name, j.FilePath)
 }
 
 // CreateArtifact creates an Artifact to be included in the generated Build Config
 func (j Config) CreateArtifact(manifestImage string) *latest.Artifact {
-	workspace := filepath.Dir(j.Path)
+	workspace := filepath.Dir(j.FilePath)
 
 	a := &latest.Artifact{ImageName: j.Image}
 	if j.Image == "" {
@@ -89,14 +89,14 @@ func (j Config) CreateArtifact(manifestImage string) *latest.Artifact {
 	return a
 }
 
-// GetConfiguredImage returns the target image configured by the builder, or empty string if no image is configured
-func (j Config) GetConfiguredImage() string {
+// ConfiguredImage returns the target image configured by the builder, or empty string if no image is configured
+func (j Config) ConfiguredImage() string {
 	return j.Image
 }
 
-// GetPath returns the path to the build definition
-func (j Config) GetPath() string {
-	return j.Path
+// Path returns the path to the build definition
+func (j Config) Path() string {
+	return j.FilePath
 }
 
 // BuilderConfig contains information about inferred Jib configurations
@@ -148,7 +148,7 @@ var ValidateJibConfig = func(path string) []Config {
 			return nil
 		}
 
-		results[i] = Config{Name: builderType, Image: parsedJSON.Image, Path: path, Project: parsedJSON.Project}
+		results[i] = Config{Name: builderType, Image: parsedJSON.Image, FilePath: path, Project: parsedJSON.Project}
 	}
 	return results
 }
