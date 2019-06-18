@@ -142,7 +142,7 @@ build:
   artifacts:
   - image: gcr.io/no-star-1
     sync:
-      '/public/A/B/a.html': /www
+      '/public/A/B/a.html': /public/A/B
   - image: gcr.io/no-star-2
     sync:
       '/b.html': /www
@@ -151,10 +151,10 @@ build:
       'c.html': /www
   - image: gcr.io/no-star-4
     sync:
-      'public/A/d.html': /www
+      'public/A/d.html': public/A/
   - image: gcr.io/single-star-1
     sync:
-      'public/*': /app
+      'public/*': /app/public/
   - image: gcr.io/single-star-2
     sync:
       'main*.js': /app
@@ -185,8 +185,7 @@ build:
     sync:
       manual:
       - src: /public/A/B/a.html
-        dest: /www
-        strip: /public/A/B/
+        dest: /
   - image: gcr.io/no-star-2
     sync:
       manual:
@@ -202,14 +201,12 @@ build:
     sync:
       manual:
       - src: public/A/d.html
-        dest: /www
-        strip: public/A/
+        dest: .
   - image: gcr.io/single-star-1
     sync:
       manual:
       - src: 'public/*'
-        dest: /app
-        strip: public/
+        dest: /app/
   - image: gcr.io/single-star-2
     sync:
       manual:

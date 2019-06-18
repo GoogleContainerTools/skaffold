@@ -102,16 +102,18 @@ func (config *SkaffoldConfig) convertSyncRules() [][]*next.SyncRule {
 			var syncRule *next.SyncRule
 			switch {
 			case compatibleSimplePattern.MatchString(src):
+				dest, strip := simplify(dest, compatibleSimplePattern.FindStringSubmatch(src)[1])
 				syncRule = &next.SyncRule{
 					Src:   src,
 					Dest:  dest,
-					Strip: compatibleSimplePattern.FindStringSubmatch(src)[1],
+					Strip: strip,
 				}
 			case strings.Contains(src, "***"):
+				dest, strip := simplify(dest, strings.Split(src, "***")[0])
 				syncRule = &next.SyncRule{
 					Src:   strings.Replace(src, "***", "**", -1),
 					Dest:  dest,
-					Strip: strings.Split(src, "***")[0],
+					Strip: strip,
 				}
 			default:
 				// Incompatible patterns contain `**` or glob directories.
@@ -134,4 +136,28 @@ func (config *SkaffoldConfig) convertSyncRules() [][]*next.SyncRule {
 		logrus.Warnf(incompatibleSyncWarning, incompatiblePatterns)
 	}
 	return newSync
+}
+
+// simplify dest and strip, if strip is a suffix of dest modulo a trailing `/`.
+func simplify(dest, strip string) (string, string) {
+	if strip == "" || strip == "/" || dest == "" {
+		return dest, strip
+	}
+
+	simpleStrip := strip
+	simpleDest := dest
+
+	if dest[len(dest)-1] != '/' {
+		dest += "/"
+	}
+
+	if strings.HasSuffix(dest, strip) {
+		simpleDest = strings.TrimSuffix(dest, strings.TrimPrefix(strip, "/"))
+		simpleStrip = ""
+		if simpleDest == "" {
+			simpleDest = "."
+		}
+	}
+
+	return simpleDest, simpleStrip
 }
