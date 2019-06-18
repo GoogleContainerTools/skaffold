@@ -256,6 +256,13 @@ type ClusterDetails struct {
 	// PullSecret is the path to the Google Cloud service account secret key file.
 	PullSecret string `yaml:"pullSecret,omitempty"`
 
+	// HTTP_PROXY for kaniko pod
+	HTTP_PROXY string `yaml:"HTTP_PROXY,omitempty"`
+	
+	// HTTPS_PROXY for kaniko pod
+	HTTPS_PROXY string `yaml:"HTTPS_PROXY,omitempty"`
+
+
 	// PullSecretName is the name of the Kubernetes secret for pulling the files
 	// from the build context and pushing the final image. If given, the secret needs to
 	// contain the Google Cloud service account secret key under the key `kaniko-secret`.
