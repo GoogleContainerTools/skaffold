@@ -62,11 +62,11 @@ type InitBuilder interface {
 	Describe() string
 	// GetArtifact creates an Artifact to be included in the generated Build Config
 	CreateArtifact(image string) *latest.Artifact
-	// GetConfiguredImage returns the target image configured by the builder, or an empty string if no image is configured.
+	// ConfiguredImage returns the target image configured by the builder, or an empty string if no image is configured.
 	// This should be a cheap operation.
-	GetConfiguredImage() string
-	// GetPath returns the path to the build file
-	GetPath() string
+	ConfiguredImage() string
+	// Path returns the path to the build file
+	Path() string
 }
 
 // Config defines the Initializer Config for Init API of skaffold.
@@ -186,7 +186,7 @@ func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builde
 	for _, image := range images {
 		matchingConfigIndex := -1
 		for i, config := range builderConfigs {
-			if image != config.GetConfiguredImage() {
+			if image != config.ConfiguredImage() {
 				continue
 			}
 
@@ -358,8 +358,8 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, builderConfigs []InitBuilde
 	a.Builders = make([]Builder, len(builderConfigs))
 	for i := range builderConfigs {
 		a.Builders[i] = Builder{
-			Path:            builderConfigs[i].GetPath(),
-			ConfiguredImage: builderConfigs[i].GetConfiguredImage(),
+			Path:            builderConfigs[i].Path(),
+			ConfiguredImage: builderConfigs[i].ConfiguredImage(),
 		}
 	}
 

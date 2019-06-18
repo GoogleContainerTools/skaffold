@@ -53,14 +53,14 @@ func (d Dockerfile) CreateArtifact(manifestImage string) *latest.Artifact {
 	return a
 }
 
-// GetConfiguredImage returns the target image configured by the builder, or an empty string if no image is configured
-func (d Dockerfile) GetConfiguredImage() string {
+// ConfiguredImage returns the target image configured by the builder, or an empty string if no image is configured
+func (d Dockerfile) ConfiguredImage() string {
 	// Target image is not configured in dockerfiles
 	return ""
 }
 
-// GetPath returns the path to the dockerfile
-func (d Dockerfile) GetPath() string {
+// Path returns the path to the dockerfile
+func (d Dockerfile) Path() string {
 	return string(d)
 }
 
