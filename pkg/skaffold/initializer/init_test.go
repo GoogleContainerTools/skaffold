@@ -172,7 +172,7 @@ deploy:
 			t.CheckDeepEqual(tmpDir.Paths(test.expectedConfigs...), potentialConfigs)
 			t.CheckDeepEqual(len(test.expectedPaths), len(builders))
 			for i := range builders {
-				t.CheckDeepEqual(tmpDir.Path(test.expectedPaths[i]), builders[i].GetPath())
+				t.CheckDeepEqual(tmpDir.Path(test.expectedPaths[i]), builders[i].Path())
 			}
 		})
 	}
