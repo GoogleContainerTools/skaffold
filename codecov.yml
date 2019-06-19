@@ -9,7 +9,7 @@ ignore:
   - "pkg/webhook"
 
 comment:
-  layout: "reach, flags, files"
+  layout: "flags, files"
   behavior: new
   require_changes: false  # if true: only post the comment if coverage changes
   require_base: no        # [yes :: must have a base report to post]
