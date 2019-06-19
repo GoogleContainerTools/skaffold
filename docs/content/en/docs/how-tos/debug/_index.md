@@ -66,9 +66,15 @@ Go-based applications are configured to run under [Delve](https://github.com/go-
     or `GOTRACEBACK`. `GOTRACEBACK=all` is a generally useful configuration.
   - Go applications should be built without optimizations, so your build should be capable of building with
     `-gcflags='all=-N -l'`. Skaffold [_Profiles_](../profiles/) are a useful option.
+
+{{< alert title="Caution" >}}
+Delve always stops the execution of the application.  You must connect to the
+Delve instance and continue the execution.
+{{< /alert >}}
+
     
 Note for users of [VS Code's debug adapter for Go](https://github.com/Microsoft/vscode-go): Delve seems
-to treat the source location for headless launches as relative to `/go`.  The following
+to treat the source location for headless launches as being relative to `/go`.  The following
 [remote launch configuration](https://github.com/Microsoft/vscode-go/wiki/Debugging-Go-code-using-VS-Code#remote-debugging) was useful:
 ```json
 {
