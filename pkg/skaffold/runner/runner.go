@@ -55,9 +55,9 @@ type SkaffoldRunner struct {
 	watch.Watcher
 
 	cache             *cache.Cache
-	defaultLabeller   *DefaultLabeller
 	runCtx            *runcontext.RunContext
 	labellers         []deploy.Labeller
+	defaultLabeller   *DefaultLabeller
 	builds            []build.Artifact
 	hasBuilt          bool
 	hasDeployed       bool

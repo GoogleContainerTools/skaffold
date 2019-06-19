@@ -136,7 +136,7 @@ func TestLocalRun(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "unkown artifact type",
+			description: "unknown artifact type",
 			artifacts:   []*latest.Artifact{{}},
 			shouldErr:   true,
 		},
@@ -257,9 +257,12 @@ type dummyLocalDaemon struct {
 func TestNewBuilder(t *testing.T) {
 	dummyDaemon := dummyLocalDaemon{}
 
+	pFalse := false
+
 	tcs := []struct {
 		name            string
 		shouldErr       bool
+		localBuild      *latest.LocalBuild
 		expectedBuilder *Builder
 		localClusterFn  func() (bool, error)
 		localDockerFn   func(*runcontext.RunContext) (docker.LocalDaemon, error)
@@ -278,16 +281,44 @@ func TestNewBuilder(t *testing.T) {
 				return
 			},
 			localClusterFn: func() (b bool, e error) {
-				b = false
+				b = false //because this is false and localBuild.push is nil
 				return
 			},
+
 			shouldErr: false,
 			expectedBuilder: &Builder{
 				cfg:                &latest.LocalBuild{},
 				kubeContext:        "",
 				localDocker:        dummyDaemon,
 				localCluster:       false,
-				pushImages:         true,
+				pushImages:         true, //this will be true
+				skipTests:          false,
+				prune:              true,
+				insecureRegistries: nil,
+			},
+		}, {
+			name: "pushImages defined in config (local:push)",
+			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
+				daemon = dummyDaemon
+				return
+			},
+			localClusterFn: func() (b bool, e error) {
+				b = false
+				return
+			},
+			localBuild: &latest.LocalBuild{
+				Push: &pFalse, //because this is false
+			},
+			shouldErr: false,
+			expectedBuilder: &Builder{
+				pushImages: false, //this will be false too
+				cfg: &latest.LocalBuild{ // and the config is inherited
+					Push: &pFalse,
+				},
+				kubeContext:  "",
+				localDocker:  dummyDaemon,
+				localCluster: false,
+
 				skipTests:          false,
 				prune:              true,
 				insecureRegistries: nil,
@@ -302,7 +333,7 @@ func TestNewBuilder(t *testing.T) {
 			if tc.localClusterFn != nil {
 				t.Override(&getLocalCluster, tc.localClusterFn)
 			}
-			builder, err := NewBuilder(dummyRunContext())
+			builder, err := NewBuilder(stubRunContext(tc.localBuild))
 			t.CheckError(tc.shouldErr, err)
 			if !tc.shouldErr {
 				t.CheckDeepEqual(tc.expectedBuilder, builder, cmp.AllowUnexported(Builder{}, dummyDaemon))
@@ -311,12 +342,15 @@ func TestNewBuilder(t *testing.T) {
 	}
 }
 
-func dummyRunContext() *runcontext.RunContext {
+func stubRunContext(localBuild *latest.LocalBuild) *runcontext.RunContext {
+	if localBuild == nil {
+		localBuild = &latest.LocalBuild{}
+	}
 	return &runcontext.RunContext{
 		Cfg: &latest.Pipeline{
 			Build: latest.BuildConfig{
 				BuildType: latest.BuildType{
-					LocalBuild: &latest.LocalBuild{},
+					LocalBuild: localBuild,
 				},
 			},
 		},

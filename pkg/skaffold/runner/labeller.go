@@ -23,9 +23,9 @@ import (
 )
 
 const (
-	K8ManagedByLabel = "app.kubernetes.io/managed-by"
-	UnknownVersion   = "unknown"
-	Empty            = ""
+	K8ManagedByLabelKey = "app.kubernetes.io/managed-by"
+	UnknownVersion      = "unknown"
+	Empty               = ""
 )
 
 // DefaultLabeller adds K9 style managed-by label
@@ -37,21 +37,24 @@ func NewLabeller(verStr string) *DefaultLabeller {
 	if verStr == Empty {
 		verStr = version.Get().Version
 	}
+	if verStr == Empty {
+		verStr = UnknownVersion
+	}
 	return &DefaultLabeller{
 		version: verStr,
 	}
 }
 
 func (d *DefaultLabeller) Labels() map[string]string {
-	version := d.version
-	if version == Empty {
-		version = UnknownVersion
-	}
 	return map[string]string{
-		K8ManagedByLabel: fmt.Sprintf("skaffold-%s", version),
+		K8ManagedByLabelKey: d.skaffoldVersion(),
 	}
 }
 
-func (d *DefaultLabeller) K8sMangedByLabel() string {
-	return fmt.Sprintf("%s=skaffold-%s", K8ManagedByLabel, d.version)
+func (d *DefaultLabeller) K8sManagedByLabelKeyValueString() string {
+	return fmt.Sprintf("%s=%s", K8ManagedByLabelKey, d.skaffoldVersion())
+}
+
+func (d *DefaultLabeller) skaffoldVersion() string {
+	return fmt.Sprintf("skaffold-%s", d.version)
 }
