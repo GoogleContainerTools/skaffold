@@ -22,6 +22,7 @@ import (
 	"io"
 	"time"
 
+	cfg "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster"
@@ -45,7 +46,20 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// SkaffoldRunner is responsible for running the skaffold build and deploy config.
+// Runner is responsible for running the skaffold build, test and deploy config.
+type Runner interface {
+	DiagnoseArtifacts(io.Writer) error
+	Dev(context.Context, io.Writer, []*latest.Artifact) error
+	BuildAndTest(context.Context, io.Writer, []*latest.Artifact) ([]build.Artifact, error)
+	DeployAndLog(context.Context, io.Writer, []build.Artifact) error
+	Cleanup(context.Context, io.Writer) error
+	Prune(context.Context, io.Writer) error
+	HasDeployed() bool
+	HasBuilt() bool
+	Stop() error
+}
+
+// SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
 type SkaffoldRunner struct {
 	build.Builder
 	deploy.Deployer
@@ -189,6 +203,19 @@ func getTagger(t latest.TagPolicy, customTag string) (tag.Tagger, error) {
 	}
 }
 
+func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+	if cfg.IsKindCluster(r.runCtx.KubeContext) {
+		// With `kind`, docker images have to be loaded with the `kind` CLI.
+		if err := r.loadImagesInKindNodes(ctx, out, artifacts); err != nil {
+			return errors.Wrapf(err, "loading images into kind nodes")
+		}
+	}
+
+	err := r.Deployer.Deploy(ctx, out, artifacts, r.labellers)
+	r.hasDeployed = true
+	return err
+}
+
 // HasDeployed returns true if this runner has deployed something.
 func (r *SkaffoldRunner) HasDeployed() bool {
 	return r.hasDeployed
@@ -248,23 +275,7 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 	return imageTags, nil
 }
 
-func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
-	bRes, err := r.BuildAndTest(ctx, out, artifacts)
-	if err != nil {
-		return err
-	}
-
-	// Update which images are logged.
-	for _, build := range bRes {
-		r.imageList.Add(build.Tag)
-	}
-
-	// Make sure all artifacts are redeployed. Not only those that were just built.
-	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
-
-	if err := r.deploy(ctx, out, r.builds); err != nil {
-		return errors.Wrap(err, "deploy failed")
-	}
-
-	return nil
+// Stop stops the runner.
+func (r *SkaffoldRunner) Stop() error {
+	return r.RPCServerShutdown()
 }
