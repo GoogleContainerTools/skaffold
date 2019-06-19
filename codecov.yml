@@ -8,6 +8,20 @@ ignore:
   - "webhook"
   - "pkg/webhook"
 
+codecov:
+  notify:
+    require_ci_to_pass: no
+
+coverage:
+  precision: 2
+  round: down
+  range: "60...100"
+
+  status:
+    project: no
+    patch: no
+    changes: no
+
 comment:
   layout: "flags, files"
   behavior: default
@@ -15,3 +29,4 @@ comment:
   require_base: no        # [yes :: must have a base report to post]
   require_head: yes       # [yes :: must have a head report to post]
   branches: null          # branch names that can post comment
+
