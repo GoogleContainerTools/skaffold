@@ -431,13 +431,12 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			forwardingTimeoutTime = time.Second
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(taken, test.availablePorts))
 
-			baseForwarder := BaseForwarder{
+			entryManager := EntryManager{
 				output:             ioutil.Discard,
-				namespaces:         []string{""},
 				forwardedPorts:     &sync.Map{},
 				forwardedResources: &sync.Map{},
 			}
-			p := NewAutomaticPodForwarder(baseForwarder, kubernetes.NewImageList())
+			p := NewWatchingPodForwarder(entryManager, kubernetes.NewImageList(), nil)
 			if test.forwarder == nil {
 				test.forwarder = newTestForwarder(nil)
 			}
@@ -509,7 +508,7 @@ func TestStartPodForwarder(t *testing.T) {
 			imageList := kubernetes.NewImageList()
 			imageList.Add("image")
 
-			p := NewAutomaticPodForwarder(NewBaseForwarder(ioutil.Discard, nil), imageList)
+			p := NewWatchingPodForwarder(NewEntryManager(ioutil.Discard), imageList, nil)
 			fakeForwarder := newTestForwarder(nil)
 			p.EntryForwarder = fakeForwarder
 			p.Start(context.Background())

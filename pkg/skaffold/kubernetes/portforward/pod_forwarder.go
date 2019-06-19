@@ -35,22 +35,24 @@ var (
 	aggregatePodWatcher = kubernetes.AggregatePodWatcher
 )
 
-// AutomaticPodForwarder is responsible for selecting pods satisfying a certain condition and port-forwarding the exposed
+// WatchingPodForwarder is responsible for selecting pods satisfying a certain condition and port-forwarding the exposed
 // container ports within those pods. It also tracks and manages the port-forward connections.
-type AutomaticPodForwarder struct {
-	BaseForwarder
+type WatchingPodForwarder struct {
+	EntryManager
+	namespaces  []string
 	podSelector kubernetes.PodSelector
 }
 
-// NewAutomaticPodForwarder returns a struct that tracks and port-forwards pods as they are created and modified
-func NewAutomaticPodForwarder(baseForwarder BaseForwarder, podSelector kubernetes.PodSelector) *AutomaticPodForwarder {
-	return &AutomaticPodForwarder{
-		BaseForwarder: baseForwarder,
-		podSelector:   podSelector,
+// NewWatchingPodForwarder returns a struct that tracks and port-forwards pods as they are created and modified
+func NewWatchingPodForwarder(em EntryManager, podSelector kubernetes.PodSelector, namespaces []string) *WatchingPodForwarder {
+	return &WatchingPodForwarder{
+		EntryManager: em,
+		podSelector:  podSelector,
+		namespaces:   namespaces,
 	}
 }
 
-func (p *AutomaticPodForwarder) Start(ctx context.Context) error {
+func (p *WatchingPodForwarder) Start(ctx context.Context) error {
 	aggregate := make(chan watch.Event)
 	stopWatchers, err := aggregatePodWatcher(p.namespaces, aggregate)
 	if err != nil {
@@ -98,7 +100,7 @@ func (p *AutomaticPodForwarder) Start(ctx context.Context) error {
 	return nil
 }
 
-func (p *AutomaticPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
+func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
 	for _, c := range pod.Spec.Containers {
 		for _, port := range c.Ports {
 			// get current entry for this container
@@ -109,9 +111,9 @@ func (p *AutomaticPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod)
 				Port:      port.ContainerPort,
 			}
 
-			entry, err := p.getAutomaticPodForwardingEntry(pod.ResourceVersion, c.Name, port.Name, resource)
+			entry, err := p.podForwardingEntry(pod.ResourceVersion, c.Name, port.Name, resource)
 			if err != nil {
-				return errors.Wrap(err, "getting automatic pod forwarding entry")
+				return errors.Wrap(err, "getting pod forwarding entry")
 			}
 			if entry.resource.Port != entry.localPort {
 				color.Yellow.Fprintf(p.output, "Forwarding container %s/%s to local port %d.\n", pod.Name, c.Name, entry.localPort)
@@ -131,7 +133,7 @@ func (p *AutomaticPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod)
 	return nil
 }
 
-func (p *AutomaticPodForwarder) getAutomaticPodForwardingEntry(resourceVersion, containerName, portName string, resource latest.PortForwardResource) (*portForwardEntry, error) {
+func (p *WatchingPodForwarder) podForwardingEntry(resourceVersion, containerName, portName string, resource latest.PortForwardResource) (*portForwardEntry, error) {
 	rv, err := strconv.Atoi(resourceVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "converting resource version to integer")

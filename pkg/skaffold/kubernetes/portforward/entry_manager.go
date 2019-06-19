@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -33,32 +32,11 @@ var (
 	forwardingTimeoutTime = time.Minute
 )
 
-// Forwarder is an interface that can modify and manage port-forward processes
-type Forwarder interface {
-	Start(ctx context.Context) error
-	Stop()
-}
-
-// GetForwarders returns a list of forwarders
-func GetForwarders(out io.Writer, podSelector kubernetes.PodSelector, namespaces []string, label string, automaticPodForwarding bool) []Forwarder {
-	baseForwarder := NewBaseForwarder(out, namespaces)
-	var f []Forwarder
-	rf := NewResourceForwarder(baseForwarder, label)
-	f = append(f, rf)
-
-	if automaticPodForwarding {
-		apf := NewAutomaticPodForwarder(baseForwarder, podSelector)
-		f = append(f, apf)
-	}
-	return f
-}
-
-// BaseForwarder is the base port forwarder for automatic port forwarding
-// and for port forwarding generic resources
-type BaseForwarder struct {
+// EntryManager handles forwarding entries and keeping track of
+// forwarded ports and resources
+type EntryManager struct {
 	EntryForwarder
-	output     io.Writer
-	namespaces []string
+	output io.Writer
 
 	// forwardedPorts serves as a synchronized set of ports we've forwarded.
 	forwardedPorts *sync.Map
@@ -67,17 +45,18 @@ type BaseForwarder struct {
 	forwardedResources *sync.Map
 }
 
-func NewBaseForwarder(out io.Writer, namespaces []string) BaseForwarder {
-	return BaseForwarder{
+// NewEntryManager returns a new port forward entry manager to keep track
+// of forwarded ports and resources
+func NewEntryManager(out io.Writer) EntryManager {
+	return EntryManager{
 		output:             out,
-		namespaces:         namespaces,
 		forwardedPorts:     &sync.Map{},
 		forwardedResources: &sync.Map{},
 		EntryForwarder:     &KubectlForwarder{},
 	}
 }
 
-func (b *BaseForwarder) forwardPortForwardEntry(ctx context.Context, entry *portForwardEntry) error {
+func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portForwardEntry) error {
 	b.forwardedResources.Store(entry.key(), entry)
 	color.Default.Fprintln(b.output, fmt.Sprintf("Port Forwarding %s/%s %d -> %d", entry.resource.Type, entry.resource.Name, entry.resource.Port, entry.localPort))
 	return wait.PollImmediate(time.Second, forwardingTimeoutTime, func() (bool, error) {
@@ -89,7 +68,7 @@ func (b *BaseForwarder) forwardPortForwardEntry(ctx context.Context, entry *port
 }
 
 // Stop terminates all kubectl port-forward commands.
-func (b *BaseForwarder) Stop() {
+func (b *EntryManager) Stop() {
 	b.forwardedResources.Range(func(key, value interface{}) bool {
 		entry := value.(*portForwardEntry)
 		b.Terminate(entry)

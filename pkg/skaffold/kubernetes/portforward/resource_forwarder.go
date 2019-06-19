@@ -31,7 +31,7 @@ import (
 // ResourceForwarder is responsible for forwarding user defined port forwarding resources and automatically forwarding
 // services deployed by skaffold.
 type ResourceForwarder struct {
-	BaseForwarder
+	EntryManager
 	label string
 }
 
@@ -42,10 +42,10 @@ var (
 )
 
 // NewResourceForwarder returns a struct that tracks and port-forwards pods as they are created and modified
-func NewResourceForwarder(baseForwarder BaseForwarder, label string) *ResourceForwarder {
+func NewResourceForwarder(em EntryManager, label string) *ResourceForwarder {
 	return &ResourceForwarder{
-		BaseForwarder: baseForwarder,
-		label:         label,
+		EntryManager: em,
+		label:        label,
 	}
 }
 

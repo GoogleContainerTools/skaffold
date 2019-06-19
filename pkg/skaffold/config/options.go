@@ -22,36 +22,42 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
+// PortForwardOptions are options set by the command line for port forwarding
+// with additional configuration information as well
+type PortForwardOptions struct {
+	PortForward bool
+	ForwardPods bool
+}
+
 // SkaffoldOptions are options that are set by command line arguments not included
 // in the config file itself
 type SkaffoldOptions struct {
-	ConfigurationFile      string
-	Cleanup                bool
-	Notification           bool
-	Tail                   bool
-	TailDev                bool
-	PortForward            bool
-	SkipTests              bool
-	AutomaticPodForwarding bool
-	CacheArtifacts         bool
-	EnableRPC              bool
-	Force                  bool
-	ForceDev               bool
-	NoPrune                bool
-	NoPruneChildren        bool
-	CustomTag              string
-	Namespace              string
-	CacheFile              string
-	Trigger                string
-	WatchPollInterval      int
-	DefaultRepo            string
-	CustomLabels           []string
-	TargetImages           []string
-	Profiles               []string
-	InsecureRegistries     []string
-	Command                string
-	RPCPort                int
-	RPCHTTPPort            int
+	ConfigurationFile  string
+	Cleanup            bool
+	Notification       bool
+	Tail               bool
+	TailDev            bool
+	SkipTests          bool
+	CacheArtifacts     bool
+	EnableRPC          bool
+	Force              bool
+	ForceDev           bool
+	NoPrune            bool
+	NoPruneChildren    bool
+	CustomTag          string
+	Namespace          string
+	CacheFile          string
+	Trigger            string
+	WatchPollInterval  int
+	DefaultRepo        string
+	CustomLabels       []string
+	TargetImages       []string
+	Profiles           []string
+	InsecureRegistries []string
+	Command            string
+	RPCPort            int
+	RPCHTTPPort        int
+	PortForward        PortForwardOptions
 }
 
 // Labels returns a map of labels to be applied to all deployed

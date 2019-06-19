@@ -110,7 +110,7 @@ func TestStart(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			fakeForwarder := newTestForwarder(nil)
-			rf := NewResourceForwarder(NewBaseForwarder(ioutil.Discard, nil), "")
+			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard), "")
 			rf.EntryForwarder = fakeForwarder
 
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, test.availablePorts))
@@ -181,7 +181,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 			expectedEntry := test.expected
 			expectedEntry.resource = test.resource
 
-			rf := NewResourceForwarder(BaseForwarder{}, "")
+			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard), "")
 			rf.forwardedResources = generateSyncMap(test.forwardedResources)
 
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, test.availablePorts))

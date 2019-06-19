@@ -28,18 +28,16 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestNewBaseForwarder(t *testing.T) {
+func TestNewEntryManager(t *testing.T) {
 	out := ioutil.Discard
-	namespaces := []string{"ns1", "ns2"}
-	expected := BaseForwarder{
+	expected := EntryManager{
 		output:             out,
-		namespaces:         namespaces,
 		forwardedPorts:     &sync.Map{},
 		forwardedResources: &sync.Map{},
 		EntryForwarder:     &KubectlForwarder{},
 	}
-	actual := NewBaseForwarder(out, namespaces)
-	testutil.CheckDeepEqual(t, expected, actual, cmp.AllowUnexported(BaseForwarder{}, sync.Map{}, sync.Mutex{}, atomic.Value{}))
+	actual := NewEntryManager(out)
+	testutil.CheckDeepEqual(t, expected, actual, cmp.AllowUnexported(EntryManager{}, sync.Map{}, sync.Mutex{}, atomic.Value{}))
 }
 
 func TestStop(t *testing.T) {
@@ -58,7 +56,7 @@ func TestStop(t *testing.T) {
 		},
 	}
 
-	bf := NewBaseForwarder(ioutil.Discard, nil)
+	bf := NewEntryManager(ioutil.Discard)
 
 	bf.forwardedResources = &sync.Map{}
 	bf.forwardedResources.Store("pod-resource-default-0", pfe1)
