@@ -17,7 +17,7 @@ build:
     context: go
     docker:
       buildArgs:
-        GOBUILDFLAGS: "-gcflags='all=-N -l'"
+        GOGCFLAGS: "-gcflags='all=-N -l'"
 
 deploy:
   kubectl:
