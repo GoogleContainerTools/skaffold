@@ -38,18 +38,23 @@ const (
 
 // Config holds information about a Jib project
 type Config struct {
-	Name     string `json:"name,omitempty"`
-	Image    string `json:"image,omitempty"`
-	FilePath string `json:"path,omitempty"`
-	Project  string `json:"project,omitempty"`
+	BuilderName string `json:"name,omitempty"`
+	Image       string `json:"image,omitempty"`
+	FilePath    string `json:"path,omitempty"`
+	Project     string `json:"project,omitempty"`
+}
+
+// Name returns the name of the builder
+func (j Config) Name() string {
+	return j.BuilderName
 }
 
 // Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.
 func (j Config) Describe() string {
 	if j.Project != "" {
-		return fmt.Sprintf("%s (%s, %s)", j.Name, j.Project, j.FilePath)
+		return fmt.Sprintf("%s (%s, %s)", j.BuilderName, j.Project, j.FilePath)
 	}
-	return fmt.Sprintf("%s (%s)", j.Name, j.FilePath)
+	return fmt.Sprintf("%s (%s)", j.BuilderName, j.FilePath)
 }
 
 // CreateArtifact creates an Artifact to be included in the generated Build Config
@@ -65,7 +70,7 @@ func (j Config) CreateArtifact(manifestImage string) *latest.Artifact {
 		a.Workspace = workspace
 	}
 
-	if j.Name == JibMaven {
+	if j.BuilderName == JibMaven {
 		jibMaven := &latest.JibMavenArtifact{}
 		if j.Project != "" {
 			jibMaven.Module = j.Project
@@ -75,7 +80,7 @@ func (j Config) CreateArtifact(manifestImage string) *latest.Artifact {
 		}
 		a.ArtifactType = latest.ArtifactType{JibMavenArtifact: jibMaven}
 
-	} else if j.Name == JibGradle {
+	} else if j.BuilderName == JibGradle {
 		jibGradle := &latest.JibGradleArtifact{}
 		if j.Project != "" {
 			jibGradle.Project = j.Project
@@ -148,7 +153,7 @@ var ValidateJibConfig = func(path string) []Config {
 			return nil
 		}
 
-		results[i] = Config{Name: builderType, Image: parsedJSON.Image, FilePath: path, Project: parsedJSON.Project}
+		results[i] = Config{BuilderName: builderType, Image: parsedJSON.Image, FilePath: path, Project: parsedJSON.Project}
 	}
 	return results
 }

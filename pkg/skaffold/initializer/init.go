@@ -57,6 +57,8 @@ type Initializer interface {
 
 // InitBuilder represents a builder that can be chosen by skaffold init.
 type InitBuilder interface {
+	// Name returns the name of the builder
+	Name() string
 	// Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.
 	// Must be unique between artifacts.
 	Describe() string
@@ -346,7 +348,7 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, builderConfigs []InitBuilde
 	}
 
 	type Builder struct {
-		Description     string `json:"description,omitempty"`
+		Name            string `json:"name,omitempty"`
 		Path            string `json:"path,omitempty"`
 		ConfiguredImage string `json:"configuredImage,omitempty"`
 	}
@@ -358,6 +360,7 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, builderConfigs []InitBuilde
 	a.Builders = make([]Builder, len(builderConfigs))
 	for i := range builderConfigs {
 		a.Builders[i] = Builder{
+			Name:            builderConfigs[i].Name(),
 			Path:            builderConfigs[i].Path(),
 			ConfiguredImage: builderConfigs[i].ConfiguredImage(),
 		}
