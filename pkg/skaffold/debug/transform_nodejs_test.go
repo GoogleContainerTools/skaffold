@@ -60,6 +60,10 @@ func TestExtractInspectArg(t *testing.T) {
 	}
 }
 
+func TestNodeTransformer_RuntimeSupportImage(t *testing.T) {
+	testutil.CheckDeepEqual(t, "", nodeTransformer{}.RuntimeSupportImage())
+}
+
 func TestNodeTransformer_IsApplicable(t *testing.T) {
 	tests := []struct {
 		description string

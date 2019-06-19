@@ -63,10 +63,15 @@ type jdwpSpec struct {
 	server  bool
 }
 
+func (t jdwpTransformer) RuntimeSupportImage() string {
+	// no additional support required
+	return ""
+}
+
 // Apply configures a container definition for JVM debugging.
 // Returns a simple map describing the debug configuration details.
 func (t jdwpTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
-	logrus.Infof("Configuring [%s] for JVM debugging", container.Name)
+	logrus.Infof("Configuring %q for JVM debugging", container.Name)
 	// try to find existing JAVA_TOOL_OPTIONS or jdwp command argument
 	// todo: find existing containerPort "jdwp" and use port. But what if it conflicts with jdwp spec?
 	spec := retrieveJdwpSpec(config)
