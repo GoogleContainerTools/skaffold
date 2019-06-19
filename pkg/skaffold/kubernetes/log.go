@@ -167,7 +167,6 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 		if err := a.streamRequest(ctx, color, prefix, tr); err != nil {
 			logrus.Errorf("streaming request %s", err)
 		}
-		a.trackedContainers.remove(container.ContainerID)
 	}()
 }
 
@@ -243,12 +242,6 @@ func (t *trackedContainers) add(id string) bool {
 	return alreadyTracked
 }
 
-func (t *trackedContainers) remove(id string) {
-	t.Lock()
-	delete(t.ids, id)
-	t.Unlock()
-}
-
 // PodSelector is used to choose which pods to log.
 type PodSelector interface {
 	Select(pod *v1.Pod) bool
@@ -271,13 +264,6 @@ func NewImageList() *ImageList {
 func (l *ImageList) Add(image string) {
 	l.Lock()
 	l.names[image] = true
-	l.Unlock()
-}
-
-// Remove removes an image from the list.
-func (l *ImageList) Remove(image string) {
-	l.Lock()
-	delete(l.names, image)
 	l.Unlock()
 }
 
