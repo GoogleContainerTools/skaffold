@@ -28,8 +28,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ResourceForwarder is responsible for selecting pods satisfying a certain condition and port-forwarding the exposed
-// container ports within those pods. It also tracks and manages the port-forward connections.
+// ResourceForwarder is responsible for forwarding user defined port forwarding resources and automatically forwarding
+// services deployed by skaffold.
 type ResourceForwarder struct {
 	BaseForwarder
 	label string
@@ -49,8 +49,8 @@ func NewResourceForwarder(baseForwarder BaseForwarder, label string) *ResourceFo
 	}
 }
 
-// Start begins a pod watcher that port forwards any pods involving containers with exposed ports.
-// TODO(r2d4): merge this event loop with pod watcher from log writer
+// Start gets a list of services deployed by skaffold as []latest.PortForwardResource and
+// forwards them.
 func (p *ResourceForwarder) Start(ctx context.Context) error {
 	serviceResources, err := retrieveServices(p.label)
 	if err != nil {
@@ -60,8 +60,7 @@ func (p *ResourceForwarder) Start(ctx context.Context) error {
 	return nil
 }
 
-// We will port forward everything from here
-// We want to wait on the pod to be created and then port forward
+// Port forward each resource individuallly in a goroutine
 func (p *ResourceForwarder) portForwardResources(ctx context.Context, resources []latest.PortForwardResource) {
 	for _, r := range resources {
 		r := r

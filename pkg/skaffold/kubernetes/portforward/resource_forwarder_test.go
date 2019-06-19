@@ -121,7 +121,7 @@ func TestStart(t *testing.T) {
 			if err := rf.Start(context.Background()); err != nil {
 				t.Fatalf("error starting resource forwarder: %v", err)
 			}
-			// poll for 10 seconds for the resources to be forwarded
+			// poll up to 10 seconds for the resources to be forwarded
 			err := wait.PollImmediate(time.Second, 10*time.Second, func() (bool, error) {
 				return len(test.expected) == lengthSyncMap(fakeForwarder.forwardedEntries), nil
 			})

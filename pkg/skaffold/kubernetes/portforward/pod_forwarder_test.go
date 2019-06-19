@@ -428,7 +428,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			taken := map[int]struct{}{}
 
-			forwardingPollTime = time.Second
+			forwardingTimeoutTime = time.Second
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(taken, test.availablePorts))
 
 			baseForwarder := BaseForwarder{

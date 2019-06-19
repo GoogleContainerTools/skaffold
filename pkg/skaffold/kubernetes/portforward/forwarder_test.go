@@ -18,12 +18,14 @@ package portforward
 
 import (
 	"io/ioutil"
-	"reflect"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestNewBaseForwarder(t *testing.T) {
@@ -37,10 +39,7 @@ func TestNewBaseForwarder(t *testing.T) {
 		EntryForwarder:     &KubectlForwarder{},
 	}
 	actual := NewBaseForwarder(out, namespaces)
-	// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
-	if !reflect.DeepEqual(expected, actual) {
-		t.Fatalf("expected differs from actual. Expected: %v, Actual: %v", expected, actual)
-	}
+	testutil.CheckDeepEqual(t, expected, actual, cmp.AllowUnexported(BaseForwarder{}, sync.Map{}, sync.Mutex{}, atomic.Value{}))
 }
 
 func TestStop(t *testing.T) {

@@ -30,7 +30,7 @@ import (
 
 var (
 	// For testing
-	forwardingPollTime = time.Minute
+	forwardingTimeoutTime = time.Minute
 )
 
 // Forwarder is an interface that can modify and manage port-forward processes
@@ -80,7 +80,7 @@ func NewBaseForwarder(out io.Writer, namespaces []string) BaseForwarder {
 func (b *BaseForwarder) forwardPortForwardEntry(ctx context.Context, entry *portForwardEntry) error {
 	b.forwardedResources.Store(entry.key(), entry)
 	color.Default.Fprintln(b.output, fmt.Sprintf("Port Forwarding %s/%s %d -> %d", entry.resource.Type, entry.resource.Name, entry.resource.Port, entry.localPort))
-	return wait.PollImmediate(time.Second, forwardingPollTime, func() (bool, error) {
+	return wait.PollImmediate(time.Second, forwardingTimeoutTime, func() (bool, error) {
 		if err := b.Forward(ctx, entry); err != nil {
 			return false, nil
 		}

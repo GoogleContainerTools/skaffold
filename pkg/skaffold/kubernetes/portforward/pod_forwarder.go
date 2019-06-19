@@ -114,7 +114,7 @@ func (p *AutomaticPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod)
 				return errors.Wrap(err, "getting automatic pod forwarding entry")
 			}
 			if entry.resource.Port != entry.localPort {
-				color.Yellow.Fprintf(p.output, "Forwarding container %s to local port %d.\n", c.Name, entry.localPort)
+				color.Yellow.Fprintf(p.output, "Forwarding container %s/%s to local port %d.\n", pod.Name, c.Name, entry.localPort)
 			}
 			if prevEntry, ok := p.forwardedResources.Load(entry.key()); ok {
 				// Check if this is a new generation of pod
